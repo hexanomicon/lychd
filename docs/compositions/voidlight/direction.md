@@ -5,37 +5,18 @@ icon: material/palette-outline
 
 # :material-palette-outline: Direction
 
-Direction turns the Magus's taste into a visual system that can guide several assets without
-flattening them into one prompt. It owns the answer to “what should this work feel and look like?”
+A palette alone will not tell an illustrator where an exception belongs. Direction makes the Magus's taste usable across several assets: what the work should feel like, which visual rules support that intention, and how a candidate will be judged.
 
 ## A reviewable visual system
 
-`voidlight.establish_style_bible@1` can return a versioned style bible containing composition,
-shape, proportion, palette, material, lighting, camera, typography, motion, and exclusion rules
-where those dimensions apply. References support those decisions, but do not become instructions
-to imitate a named living artist or copy protected expression.
+`voidlight.establish_style_bible@1` can seal composition, shape, proportion, palette, material, light, camera, typography, motion, and exclusions where they apply. Reference observations inform those choices; they are not instructions to copy protected expression or imitate a named living artist.
 
-Direction separates four things that are easy to blur:
-
-1. **intent** — the response the commission seeks;
-2. **observations** — attributable properties seen in admitted references;
-3. **decisions** — the Magus's chosen rules and controlled exceptions; and
-4. **tests** — concrete checks that a candidate can pass or fail.
-
-Provider wording, seeds, control settings, and exploratory candidates may help discover the system.
-They do not own it. A style revision changes only through an explicit forward decision, and
-accepted assets keep the exact direction revision under which they were reviewed.
+Keep four layers legible: the **intent** seeking a response; attributable **observations** about references; the Magus's **decisions**, including controlled exceptions; and concrete **tests** of a candidate. Provider prompts, seeds, controls, and exploratory images may help discover the system without owning it. Accepted assets retain the exact direction revision used in their review.
 
 ## Review and correction
 
-A direction review returns findings against named rules rather than a vague request to “make it
-better.” One bounded repair may revise the direction or candidate through
-`voidlight.revise_from_correction@1`; the finding states which layer was wrong. Conflicting rules,
-an impossible target profile, or exhausted repair ends with an exact non-completion.
+A useful finding identifies the rule and whether the direction or its execution failed. `voidlight.revise_from_correction@1` admits a bounded forward repair of the appropriate layer. Conflicting rules, an impossible target, or exhausted correction produce exact non-completion.
 
-Calibration through `voidlight.presenter_calibration@1` may compare how a presentation or viewer
-changes perception. Calibration evidence can adjust the direction; it never silently edits an
-accepted asset or proves that a display matches every consumer.
+`voidlight.presenter_calibration@1` may compare how a viewer or presentation changes perception. That evidence can inform a direction revision; it cannot edit an accepted asset or certify every display.
 
-The result guides [Assets](assets.md) and [Motion](motion.md). It carries creative constraints, not
-authority to generate, spend, export, publish, or change the brief.
+The resulting visual language guides [Assets](assets.md) and [Motion](motion.md). Generation, spending, egress, publication, and a changed brief still require their own admission.

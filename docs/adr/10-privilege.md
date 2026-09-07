@@ -70,7 +70,7 @@ local file boundary is not remote authentication.
 | `.restored.json` | exact prior world observed after failure or cancellation | reopen with a typed restored result |
 | `.contained.json` | neither desired nor prior world proved | latch containment |
 
-## Manifestation and retirement
+## Materialization and retirement
 
 Binding writes only Scribe receipt-owned Quadlet/plain user-unit files under the lifecycle lock.
 It stages and validates a full generation, rechecks foundation/sites/secrets/generations, replaces

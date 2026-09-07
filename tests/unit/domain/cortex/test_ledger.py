@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 import pytest
 
 from lychd.agents.router import Intent
+from lychd.config.settings import get_settings
 from lychd.domain.cortex.events import RunEvent, RunEventKind
 from lychd.domain.cortex.ledger import ConsentAdmissionEvidence, InMemoryRunLedger
 from lychd.domain.cortex.runs import IllegalRunTransitionError, RunDeliveryState, RunStatus
@@ -41,10 +42,14 @@ def test_profile_switch_selects_ledger_impl(monkeypatch: pytest.MonkeyPatch) -> 
     from lychd.domain.cortex.ledger import DbRunLedger
     from lychd.interface.web.altar_services import _build_run_ledger
 
-    assert isinstance(_build_run_ledger("memory"), InMemoryRunLedger)
-    # `postgres` builds the durable ledger; constructing a session factory opens no
-    # connection, so this stays DB-free.
-    assert isinstance(_build_run_ledger("postgres"), DbRunLedger)
+    get_settings.cache_clear()  # This test's environment defines a fresh process configuration.
+    try:
+        assert isinstance(_build_run_ledger("memory"), InMemoryRunLedger)
+        # `postgres` builds the durable ledger; constructing a session factory opens no
+        # connection, so this stays DB-free.
+        assert isinstance(_build_run_ledger("postgres"), DbRunLedger)
+    finally:
+        get_settings.cache_clear()
 
 
 @pytest.mark.asyncio
@@ -318,7 +323,7 @@ async def test_claimed_failure_is_owned_by_enqueue_sequence() -> None:
     """An old consent hop cannot fail a newer resume that already claimed the run."""
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
     await ledger.create(_intent(), workflow_name="bridge_chat", queue_name="runs", priority=70)
-    assert await ledger.bump_enqueue_seq("run_1") == 1
+    assert await ledger.rotate_delivery("run_1", enqueue_seq=0) == 1
     assert await ledger.try_claim_run("run_1", enqueue_seq=1) is True
 
     await ledger.park_consent("run_1", "consent-current")
@@ -385,7 +390,6 @@ async def test_historical_consent_cannot_admit_a_later_wait() -> None:
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
     await ledger.create(_intent(), workflow_name="bridge_chat", queue_name="runs", priority=70)
     assert await ledger.try_claim_run("run_1", enqueue_seq=0)
-    await ledger.set_consent("run_1", "consent-old")
     await ledger.park_consent("run_1", "consent-old")
     assert (
         await ledger.try_admit_consent(
@@ -396,7 +400,6 @@ async def test_historical_consent_cannot_admit_a_later_wait() -> None:
         == 1
     )
     assert await ledger.try_claim_run("run_1", enqueue_seq=1)
-    await ledger.set_consent("run_1", "consent-current")
     await ledger.park_consent("run_1", "consent-current")
 
     assert (
@@ -499,15 +502,6 @@ async def test_failed_run_is_terminal() -> None:
 
 
 @pytest.mark.asyncio
-async def test_bump_enqueue_seq_is_monotonic() -> None:
-    """bump_enqueue_seq yields a fresh, increasing seq per resume hop."""
-    ledger = InMemoryRunLedger(honor_intent_run_id=True)
-    await ledger.create(_intent(), workflow_name="bridge_chat", queue_name="runs", priority=50)
-    assert await ledger.bump_enqueue_seq("run_1") == 1
-    assert await ledger.bump_enqueue_seq("run_1") == 2
-
-
-@pytest.mark.asyncio
 async def test_append_event_excludes_tokens() -> None:
     """append_event records non-TOKEN events only (tokens are too chatty for Steps)."""
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
@@ -569,9 +563,8 @@ async def test_list_by_status_and_get_by_consent() -> None:
     running = await ledger.list_by_status(RunStatus.RUNNING)
     assert [r.run_id for r in running] == ["a"]
 
-    await ledger.set_status("b", RunStatus.RUNNING)
-    await ledger.set_status("b", RunStatus.AWAITING_CONSENT)
-    await ledger.set_consent("b", "consent_9")
+    assert await ledger.try_claim_run("b", enqueue_seq=0)
+    await ledger.park_consent("b", "consent_9")
     found = await ledger.get_by_consent("consent_9")
     assert found is not None
     assert found.run_id == "b"

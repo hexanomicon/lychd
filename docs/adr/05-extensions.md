@@ -7,10 +7,10 @@ icon: material/toy-brick-outline
 
 !!! abstract "Context and Problem Statement"
     LychD admits native Python where it needs its speed and reach, while keeping authority with
-    the domain that receives a contribution. The architecture must also leave a real boundary for
-    separate engines, dependencies, images, and lifecycles. The operational journey is owned by
-    [the Extensions Sepulcher](../sepulcher/extensions/); this leaf states the constitutional
-    boundary.
+    the explicit Core office or Extension Domain that receives a Contribution. The architecture
+    must also leave a real boundary for separate engines, dependencies, images, and lifecycles.
+    The operational journey is owned by [the Extensions Sepulcher](../sepulcher/extensions/); this
+    leaf states the constitutional boundary.
 
 ## Decision Outcome
 
@@ -24,23 +24,29 @@ conflating their trust or lifecycle boundaries. Semantic contract and profile id
 separate from their concrete Provider implementations. A future Forge lock lifecycle must pin
 foreign source and physical inputs; selected import shims alone are not reproducibility evidence.
 
-An **Extension Domain** is one of the fifteen stable user-facing jurisdictions. A **package** is
-code; a **Manifestation** is a concrete Core office, package-provided contribution, managed
-Provider, external attachment, or dormant profile form. A **Contribution** is a typed addition
-accepted by its Domain owner, and a **Provider** is a concrete mechanism. Domain presence proves
-neither a package nor delivery; activation is of a concrete package or instance, never an abstract
-domain. Compositions use Domain contracts without becoming their Manifestations or owners;
-packages may cross Domains, and one Domain may receive many packages or Providers.
+An **Extension Domain** is one of the fifteen stable user-facing jurisdictions. An **extension
+package** is selected code. A **Contribution** is a typed addition accepted by one explicit
+receiving owner, which may be a Core office or an Extension Domain. A **Provider** is a concrete
+engine or service behind a typed contract. Domain presence proves neither a package nor delivery;
+activation is of a concrete package or declared instance, never an abstract Domain. Compositions
+use Domain contracts without becoming their owners. Packages may contribute across several Core
+offices and Extension Domains, and one receiving owner may admit many packages or Providers.
 
-Manifestation is a descriptive view of the form a Domain takes in one body or profile. It is not
-a common registration kind, runtime base class, stable identity, lifecycle, or activation target.
-Every operational reference resolves to the exact underlying Core office, Contribution, Provider,
-attachment, or dormant profile instead of executing a generic Manifestation.
+A **Registrant** is Core or one explicitly selected extension package performing registration. Its
+host-assigned `registrant_id` (`core`, `builtin:<activation-id>`, or
+`crypt:<activation-id>`) records registration provenance; it is not Provider identity and never
+turns the Registrant into an engine or service Provider.
+
+Do not compress authority owner, package provenance, Contribution kind, Provider or external
+attachment, profile, and maturity into one union category. State the exact applicable facets.
+Every operational reference resolves to its concrete Core office or Extension Domain,
+Contribution, Provider or attachment, profile revision, and Registrant provenance as required by
+the contract.
 
 ### Vocabulary Boundary: Domain Is Not Package
 
 The distinction prevents provenance, trust, evolution, and configuration from being collapsed
-into import location. Core owns schemas, policies, lifecycle, and host effects. An extension can
+into import location. Core owns schemas, policies, lifecycle, and host effects. A package can
 contribute only the explicit shapes that a receiving owner accepts.
 
 ### 1. The Federation Strategy
@@ -107,6 +113,19 @@ package registers. A minimal contribution is explicit:
 context.runes.add_schema(RuneConfig)
 ```
 
+The manager owns the root context and passes each Registrant a registrant-bound
+`ExtensionRegistrationContext`. User activation IDs remain the Settings and filesystem selectors;
+audit provenance uses disjoint trust-domain identities: `core`, `builtin:<activation-id>`, and
+`crypt:<activation-id>`. Its shaped store facades capture one fixed `registrant_id` and do not
+expose the root provenance mutator; even a retained facade cannot inherit a later Registrant's
+identity. Stores retain that provenance, reject another Registrant's replay even when the
+Python value is equal, and seal membership after the one assembly pass. `AssembledExtensions`
+exposes read projections plus the sealed root context; retained registration methods remain
+present for assembly compatibility but reject every post-assembly write. It is not a live registry
+that arbitrary runtime code may extend. This seal does not recursively freeze trusted contributed
+Python objects; each Contribution contract must provide its own immutability or defensive-copy
+boundary.
+
 The accepted general-service capability surface is Designed and is not present in that context.
 It requires separately owned and sealed contribution stores for semantic interface revisions,
 immutable profile revisions/digests, Connector dialect-driver revisions, evidence bindings, and
@@ -121,10 +140,12 @@ runtime/Portal activation definitions. Registration of one kind grants none of t
 - an evidence binding points to producer-attributed results and an admission decision by the
   target contract owner.
 
-Every identity includes a safe stable id plus immutable revision or digest, provider provenance,
-and a single owning contribution. Cross-store references are resolved and validated as one staged
-assembly before membership seals. Registering a Rune schema, Python client, URL, or familiar
-"OpenAI-compatible" label cannot synthesize any missing contribution.
+Every registered identity includes a safe stable id plus immutable revision or digest, one
+explicit receiving owner, its Contribution kind, and Registrant provenance. A
+Provider-facing identity separately pins its concrete Provider. Cross-store references are
+resolved and validated as one staged assembly before membership seals. Registering a Rune schema,
+Python client, URL, or familiar "OpenAI-compatible" label cannot synthesize any missing
+Contribution.
 
 A versioned application deployment profile is another receiving-owner contract, not raw unit text
 or authority inherited from a Composition name. The future sealed `deployment_services` surface
@@ -149,19 +170,6 @@ or Extract authority. The future provider contribution surface must be explicitl
 effect-specific, provenance-preserving, and sealed with the other registration stores. Until that
 surface exists, provider-facing toolsets remain incapable of constituting a delivered Scout path.
 
-The manager owns the root context and passes each registrant a provider-bound
-`ExtensionRegistrationContext`. User activation IDs remain the Settings and filesystem selectors;
-audit provenance uses disjoint trust-domain identities: `core`, `builtin:<activation-id>`, and
-`crypt:<activation-id>`. Its shaped store facades capture one fixed provider identity and do
-not expose the root provenance mutator; even a retained facade cannot inherit a later registrant's
-identity. Stores retain that provenance, reject another provider's replay even when the Python
-value is equal, and seal membership after the one assembly pass. `AssembledExtensions` exposes
-read projections plus the sealed root context; retained registration methods remain present for
-assembly compatibility but reject every post-assembly write. It is not a live registry that
-arbitrary runtime code may extend. This seal does not recursively freeze trusted contributed
-Python objects; each contribution contract must provide its own immutability or defensive-copy
-boundary.
-
 ### 3. Contributions as Organs
 
 Runes, Soulstones, Portals, and Transmutation admit active schemas and definitions. A
@@ -171,7 +179,7 @@ loader is the singular TOML parser and validator, not a ledger. `__subclasses__`
 already-loaded process but cannot establish registration or change whether an admitted schema is a
 file-owning leaf. Branch ownership is computed from the exact admitted schema generation. Exact
 repeat registration is idempotent
-only for the same provider. Rune schema admission also reserves its exact filesystem anchor; a
+only for the same Registrant. Rune schema admission also reserves its exact filesystem anchor; a
 different schema cannot claim the same `relative_path`. Soulstone registration identity is the
 runtime name, Rune schema, and adapter type. The same runtime or schema with another owner fails
 closed instead of silently preserving first registration. Portal schemas likewise have one exact

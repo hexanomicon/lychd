@@ -7,49 +7,60 @@ icon: material/sign-direction
 
 > _A cheap road may still cross the wrong kingdom. Name the custodian before counting the toll._
 
-This page owns the operator's choice of remote model road. It does not make current prices,
-provider claims, or a consumer subscription architectural truth. [Portal](portal.md) owns the
-remote Animator binding, [Security](../../adr/09-security.md#portal-privatization-and-egress) owns
-each exact egress decision, and [Tithe and Toll](../extensions/toll.md) own currency-neutral quotas
-and monetary reservation/settlement respectively. Provider terms, prices, retention, and model
-inventories must be observed again before purchase and before Bind.
+An unattended indexing job is ready to send a document. Who may receive those bytes, and whose
+account authorizes the work? Choose [labor ownership](../extensions/weaver/execution-roads.md)
+first; then choose the service road and retain the evidence that could make it eligible.
 
-[Spellweaver execution roads](../extensions/weaver/execution-roads.md) decides whether a station
-needs native cognition, a sovereign peer task, or a delegated coding runtime before this page helps
-select a model provider. Provider economics never choose that labor boundary.
-
-!!! warning "The general Portal road is still closed"
-    Portal declaration and observation exist, but Dispatcher quarantines every Portal grant. The
-    Privacy Cut and trusted Portal Egress Gate do not ship. This selection guide is accepted
-    operating doctrine and an implementation target, not evidence of remote execution. [State of
-    Work](../../state-of-the-work.md#context-privatization-and-portal-egress) owns that boundary.
+This is operating design. [Portal declarations](portal.md) and probes exist, but general execution
+is closed: every Portal grant remains quarantined while Privacy Cut and trusted Egress Gate are
+absent. [Current maturity](../../state-of-the-work.md#context-privatization-and-portal-egress)
+owns that delivery boundary.
 
 ## The default road
 
-For unattended work, a public Reach service, CI, or A2A-backed application, prefer one exact
-server API credential issued for that workload. The first admitted profile calls its upstream
-directly. Every extra hop becomes another custodian of request bytes, metadata, credentials,
-receipts, and availability.
+For unattended work, Reach/public services, CI and A2A-backed applications, prefer one direct
+server API using a workload-issued API key, service account or workload identity. The initial
+profile calls one upstream directly. This conditional preference establishes neither an admitted
+profile nor a price winner. Every intermediary adds custody of request bytes, metadata,
+credentials and receipts, plus an availability dependency.
 
-Accepted Security law now requires an immutable ordered custody-route digest binding gateway
-endpoint and policy revision, ultimate provider/model/region, redirects, and every material hop.
-No delivered Egress Gate schema, gateway adapter, independent route evidence, or selection receipt
-implements that law. BYOK gateways and aggregators therefore remain Lab candidates; gateway
-configuration or a response label cannot fill the missing executable proof.
+Identify what the offered credential actually buys:
 
-Use human subscriptions only through their provider-supported interactive clients and automation
-surfaces. A local coding-agent seat can be valuable without becoming a Portal. Anonymization
-changes the eligible payload; it does not convert a human seat into a server licence, authorize
-account pooling, or erase an intermediary's custody.
+| Road | Account, custody and eligibility |
+|---|---|
+| BYOK policy gateway | Gateway credential plus separately scoped upstream key; the gateway receives admitted traffic. DLP, accounting, region or control-plane needs may justify study. It remains a Lab candidate until a delivered Gate/adapter binds the complete custody route. |
+| Metered aggregator | Aggregator key and billing; it brokers or selects upstreams. An explicit catalogue, measured fallback or low-volume study may justify consideration, subject to the same unimplemented multi-hop boundary. Opaque cheapest routing and silent policy changes are excluded. |
+| Human operator seat | Provider-supported interactive local Codex, Claude Code, Copilot, Antigravity or similar client holds OAuth/session, including supported automation surfaces. Useful for local coding outside Spellweaver automation; never a Portal or Reach/public-service credential or server-use grant. |
+| Subscription bridge | Stores, translates, pools or reissues consumer OAuth/session behind another API key, often for quotas or cross-client use. Admission requires written upstream authorization for this exact server use and separate security review. |
+| Local inference | No remote credential or provider custody. Local sensitive preprocessing, retrieval, routing and bulk work belong to a [Soulstone](soulstone/index.md), outside Portal. |
 
-| Road | Credential and custody | Fitting use | Canonical stance |
-| --- | --- | --- | --- |
-| **Direct server API** | workload API key, service account, or workload identity; one upstream | Reach, A2A, CI, unattended agents | **Preferred baseline** when the exact provider and policy are eligible |
-| **BYOK policy gateway** | gateway credential plus separately scoped upstream key; gateway sees admitted traffic | DLP, accounting, regional routing, or one control plane | Lab until a delivered Gate/adapter binds the complete custody route; upstream/model claims remain gateway assertions without independent evidence |
-| **Metered aggregator** | aggregator key and billing relationship; aggregator selects or brokers upstream capacity | explicit model catalogue, measured fallback, low-volume experiments | Lab under the same undelivered multi-hop profile; no opaque cheapest-route or silent policy change |
-| **Operator seat** | human OAuth/session held by the supported local client | interactive Codex, Claude Code, Copilot, Antigravity, or another coding tool | Outside Spellweaver automation; not a Portal and never the Reach/public-service credential |
-| **Subscription bridge** | consumer OAuth/session is stored, translated, pooled, or re-issued behind another API key | quota pooling or cross-client use | **Not admitted** without written upstream authorization for that exact server use and a separate security review |
-| **Local inference** | no remote credential or provider custody | sensitive preprocessing, retrieval, routing, bulk work | A [Soulstone](soulstone/index.md), not a Portal |
+[Disclosure law](../../adr/09-security.md#portal-privatization-and-egress) requires an immutable,
+ordered custody-route digest binding gateway endpoint and policy revision, ultimate
+provider/model/region, redirects and every material hop. No delivered Gate schema, gateway
+adapter, independent route evidence or selection receipt implements it. Gateway upstream/model
+labels remain assertions without independent evidence; configuration and response labels cannot
+substitute for proof. Anonymization changes eligible payload, never server licence,
+account-pooling authorization or intermediary custody.
+
+## Selection receipt
+
+Retain a dated, source-linked packet covering every item below before considering the road
+eligible. Use [Tithe/Toll](../extensions/toll.md) for quotas and money.
+
+- Actual upstream/service, legal account owner, permitted usage class and provider-terms revision.
+- Authentication kind, credential custodian and rotation, and any human session.
+- Canonical endpoint, protocol, model identifier or revision, capabilities, region and every intermediary.
+- Training, retention, abuse monitoring, deletion, subprocessors and zero-data-retention facts.
+- Price units, gateway fees, included quota, rate and concurrency ceilings, expiry and hard spend cap.
+- Permitted input classes and purposes, required Cut evidence and forbidden data.
+- Explicit fallback set or none, with policy and cost for every member.
+- Timeout, cancellation, idempotency, provider-job lookup, uncertain-effect reconciliation and return quarantine.
+- Observation date and revalidation triggers for prices, terms, models, custody and ownership.
+
+`free`, `included`, an operator-owned VPS or a successful smoke probe proves none of server-use
+permission, caller identity, confidentiality, stable price or production availability. Recheck
+terms, prices, retention and inventory before purchase or Bind. The dated candidate list later
+supports comparison, not endorsement.
 
 ## One admitted remote attempt
 
@@ -93,25 +104,21 @@ When any of those facts is material to policy, require a direct provider road or
 verifiable routing evidence. If a route cannot disclose or constrain that chain, it cannot carry
 material whose policy depends on it.
 
-## Selection receipt
+## Reach placement
 
-Before an operator promotes a candidate road, retain a dated, source-linked decision packet with:
+The [Reach deployment matrix](../../compositions/reach/deployments/index.md) changes where the
+server Portal credential lives, never what authorizes it:
 
-- upstream service, legal account owner, permitted usage class, and the provider terms revision;
-- authentication kind, credential custodian, rotation path, and whether a human session is
-  involved;
-- canonical endpoint, protocol, model id or revision, capabilities, region, and every intermediary;
-- training, retention, abuse-monitoring, deletion, subprocessors, and zero-data-retention facts;
-- price units, gateway fees, included quota, rate/concurrency ceilings, expiry, and a hard spend cap;
-- input classes and purposes allowed through the road, required Cut evidence, and forbidden data;
-- explicit fallback set—or no fallback—with the policy and cost of every member;
-- timeout, cancellation, idempotency, provider-job lookup, uncertain-effect reconciliation, and
-  returned-material quarantine; and
-- the observed date and revalidation trigger for price, terms, models, custody, or ownership.
+- `reach.home.public@1` keeps the provider gate and credentials in the separated home service;
+- `reach.edge-home.public@1` keeps them at home—the VPS Discord edge receives none; and
+- `reach.vps.public@1` gives one isolated VPS egress adapter only its exact provider/peer
+  credential and destinations.
 
-The packet is evidence for a decision, not a timeless endorsement. `free`, `included`, a VPS under
-operator control, or a successful smoke request proves none of server-use permission, caller
-identity, confidentiality, stable price, or production availability.
+For every profile, a human coding subscription remains outside the bot. The practical starting
+road is one direct server API, one low-cost model, one hard budget, no fallback, and a public
+corpus-only E2E. Add another model or remote A2A only after the first route's custody, receipts,
+quality, and cost are measured. A gateway or aggregator additionally waits for the multi-hop
+target binding, independent route evidence, and receipt described above to be delivered.
 
 ## Candidate register — 2026-08-11
 
@@ -173,19 +180,3 @@ Do not run all-to-all review or many identical frontier branches by default. Cac
 whose classification and audience allow that exact reuse. A node hop carries an admitted typed
 task and evidence bundle; it never carries a reusable human subscription token, ambient Sigil, or
 raw private Context.
-
-## Reach placement
-
-The [Reach deployment matrix](../../compositions/reach/deployments/index.md) changes where the
-server Portal credential lives, never what authorizes it:
-
-- `reach.home.public@1` keeps the provider gate and credentials in the separated home service;
-- `reach.edge-home.public@1` keeps them at home—the VPS Discord edge receives none; and
-- `reach.vps.public@1` gives one isolated VPS egress adapter only its exact provider/peer
-  credential and destinations.
-
-For every profile, a human coding subscription remains outside the bot. The practical starting
-road is one direct server API, one low-cost model, one hard budget, no fallback, and a public
-corpus-only E2E. Add another model or remote A2A only after the first route's custody, receipts,
-quality, and cost are measured. A gateway or aggregator additionally waits for the multi-hop
-target binding, independent route evidence, and receipt described above to be delivered.

@@ -5,19 +5,21 @@ icon: material/cube-outline
 
 # :material-cube-outline: Form
 
-Prism's **Form** faculty covers bounded generation, reconstruction, and declared transformation of
-spatial material. A model may infer a textured object from an image, reconstruct a scene from
-views, propose a rig, or generate a block volume. It does not thereby own art direction, engine
-integration, animation, a live game world, or publication.
+A photograph may suggest geometry, a capture set may support reconstruction, and an existing mesh
+may need a new material, rig, or block projection. **Form** carries each requested operation to a
+validated spatial result with its sources, representation, scale, and loss still visible.
 
-This candidate study was reviewed on **2026-08-08**. It records a proposed contract, toolchain,
-model register, voxel branch, and proving bake—not delivery, automatic fallback, or permission to
-generate, transform, import, place, or publish spatial material.
+Choose the operation first, then inspect the facets it must return. A useful preview cannot settle
+those technical questions. Creative adoption, engine import, animation, and live-world placement
+remain with the consuming owner.
+
+This candidate study was reviewed on **2026-08-08**. The contracts and bakes below are Designed;
+[State](../../../state-of-the-work.md#vision-admission) records the present visual boundary.
 
 ## One form job, explicit operation
 
 There is no mature universal OpenAI-compatible 3D serving protocol to make the inner contract.
-The candidate `FormJob@1` names one explicit operation while its selected profile declares the
+The candidate `FormJob@2` names one explicit operation while its selected profile declares the
 inputs, output facets, controls, and limits it has actually proved:
 
 | Operation | Inputs | Required meaning |
@@ -42,13 +44,15 @@ generated image remains an attributable intermediate artifact rather than hidden
 facets. Form owns reconstruction and form generation; monocular relative depth is neither metric
 geometry nor a reconstructed mesh.
 
-`FormJob@1` owns spatial stages, candidate facets, technical validation, and result settlement.
+`FormJob@2` owns spatial stages, candidate facets, technical validation, and result settlement.
 Creative adoption and engine use belong to their consuming Compositions. Each concrete service or
 tool execution uses Core's Designed
 [`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts-designed) state,
 idempotency, cancellation, reconciliation, and indeterminate-effect law. The parent Run remains
 nonterminal and fenced while the same attempt is indeterminate; neither job nor effect is replayed
 under a new identity.
+
+### Progress, cancellation, and return
 
 Stages such as camera solve, generating or reconstructing, extracting, texturing, rigging, baking,
 validating, and exporting are reported separately from numeric progress. Cancellation before GPU
@@ -58,7 +62,7 @@ stopped or failed.
 
 Partial, temporary, failed, or uncertain output enters quarantined Reliquary custody with its own
 digest and working-set relation so restart and reconciliation can inspect it. Only validated
-output is promoted into the settled Prism Form result. Reconnect reconciles the exact
+output enters the settled Prism Form result. Reconnect reconciles the exact
 provider job, request digest, working-set receipt, and returned artifacts; it never blindly
 retries an uncertain paid or remote effect.
 
@@ -111,6 +115,24 @@ scripts, arbitrary plug-ins or nodes, and runtime downloads. A capture set addit
 consent, camera facts, and every source frame; rendering another view cannot launder the people,
 places, or restricted material it depicts.
 
+<span id="composition-boundaries-and-the-proving-bake"></span>
+
+## Composition boundaries
+
+Prism owns hostile-form handling, technical dispatch, transforms, facet semantics, conformance to
+the declared Form profile, and effect provenance. An independent validator checks tool output
+where the transforming tool cannot establish its own result.
+[Voidlight](../../../compositions/voidlight/assets.md) owns creative acceptance, the brief,
+candidate review, accepted form asset, and visual package. Foundry owns target-engine import and
+validation, coordinate and material adaptation, collision, LOD, performance, engine-native scene
+assembly, and playability. Blockworld owns live-world effect validation and bounded missions. A
+Form output crossing any boundary is an exact artifact handoff, never shared authority.
+
+An [Avatar](../../../compositions/avatar/index.md) profile may reference an exact Form asset, rig,
+and morph ontology. Form still owns only that spatial material and its provenance; it does not
+bind Persona, open an Avatar presence, admit a Spectre VR Habitat or Encounter, drive the
+projection, or acquire world or body authority.
+
 ## Model workers, graph serving, and tool workers
 
 The first implementation should expose one Prism-owned Form semantic interface and several
@@ -122,8 +144,8 @@ both can emit GLB.
 
 | Candidate | Office | Present judgment |
 | --- | --- | --- |
-| pinned Form model workers | Run one admitted generation, decomposition, rigging, reconstruction, or block-model profile behind `FormJob@1`. | Primary route. Each worker exposes only proved operations, accepts no ambient code or download, and settles output through custody. |
-| [ComfyUI](https://docs.comfy.org/api-reference/v2/jobs/submit-a-workflow-for-execution) | Graph route for multi-stage image-to-form, texture, preview, and future 3D nodes. | Advanced connector only. Admit immutable allowlisted graphs and pinned nodes; partner or cloud nodes are not proof of a local runtime. |
+| pinned Form model workers | Run one admitted generation, decomposition, rigging, reconstruction, or block-model profile behind `FormJob@2`. | Primary route. Each worker exposes only proved operations, accepts no ambient code or download, and settles output through custody. |
+| [ComfyUI](../../animator/soulstone/engines/comfyui.md#pin-the-dialect-and-execution-lifecycle) | Graph route for multi-stage image-to-form, texture, preview, and future 3D nodes. | Advanced connector only. Admit immutable allowlisted graphs and pinned nodes; partner or cloud nodes are not proof of a local runtime. |
 | [Blender](https://docs.blender.org/manual/en/latest/advanced/command_line/arguments.html) | Headless UV, bake, material normalization, decimation or retopology, armature work, animation bake, GLB export, and validation renders. | Separate sandboxed tool process, never authority or deterministic truth. Pin build, add-ons, scene digest, command, environment, seeds where available, and output validation; prove semantic equivalence unless byte identity is explicitly claimed. |
 | [trimesh](https://github.com/mikedh/trimesh), [Open3D](https://github.com/isl-org/Open3D), and [OpenVDB](https://www.openvdb.org/) | Geometry probing, bounds, topology checks, repair, registration, ray or signed-distance queries, voxelization, and sparse volumes. | Deterministic substrate only where the exact operation proves reproducible. NumPy or a bitset is enough for the 32-cubed fixture; OpenVDB is reserved for sparse volumes that justify it. |
 | [COLMAP](https://colmap.github.io/), [Nerfstudio](https://docs.nerf.studio/), and [gsplat](https://github.com/nerfstudio-project/gsplat) | COLMAP supplies SfM/MVS and camera solving; Nerfstudio supplies reconstruction and training pipelines; gsplat supplies Gaussian rasterization and training machinery. | First composable reconstruction stack, not three equivalent video-to-3D engines. Retain camera calibration and pose uncertainty; the result stays a radiance or Gaussian form until a separately proved conversion creates another facet. |
@@ -133,10 +155,9 @@ They may produce conditioning images or video through their own contracts, but F
 facet semantics, custody, and recovery. Diffusers or a repository's Python demo is a model
 integration substrate, not a durable multi-user job service by itself.
 
-A Comfy graph is an engine program, not a Spellweaver Pattern or another workflow jurisdiction.
-Its Rune selects a preset whose graph, nodes, model dependencies, parameter openings, network
-behavior, and output paths passed Assimilation. Runtime downloads, arbitrary imported workflows,
-ambient custom-node installation, and unapproved remote nodes fail closed.
+A Form graph must use only the preset and parameter openings admitted under the
+[ComfyUI engine contract](../../animator/soulstone/engines/comfyui.md#keep-model-engine-and-road-apart).
+Unapproved runtime downloads or remote nodes cannot fill gaps in a local profile.
 
 ## First model profiles
 
@@ -184,91 +205,15 @@ exact skeleton, hierarchy, rest and bind transforms, local frames, axes, units, 
 and morph ontology to [Kinesis](kinesis.md). Kinesis owns motion clips and technical retargeting;
 Voidlight owns animated storytelling. Neither is an implied feature of `rig`.
 
-## Voxels and the 32-cubed proving fixture
-
-Form distinguishes three voxel routes rather than calling each a Minecraft generator:
-
-1. **Deterministic conversion:** normalize an admitted mesh or volume, choose `solid`, `shell`, or
-   `surface` occupancy, sample exactly 32 by 32 by 32 cells, apply an optional palette and interior
-   rule, validate, and export.
-2. **Block-native generation:** an eligible future model produces or inpaints a bounded semantic
-   block region. The result maps through the same canonical palette and validation; it does not
-   masquerade as a voxelized mesh.
-3. **Procedural composition:** a Mind may propose an inert `ProceduralFormRecipe@1` using admitted
-   shapes, transforms, repetition, booleans, symmetry, palette entries, and bounds. A separate
-   contained interpreter effect validates and renders it. Arbitrary Python, shell, Blender scripts,
-   or Minecraft commands are not this contract.
-
-`VoxelGrid@1` pins dimensions, axes, origin, cell scale, occupancy or density channels, optional
-colors, source AABB fit and padding, cell-center or cell-volume sampling, boundary and tie rules,
-axis-to-index mapping, and source transform. The canonical `BlockGrid@1` pins dimensions, origin,
-axes, units, exact game registry edition and version plus registry digest, palette revision and
-ordering, exact block identifiers and state properties, air and unknown policy, source relation,
-and digest. It remains independent of one game-file encoding.
-
-The derived Minecraft projection pins Java edition and version, `DataVersion`, palette mapping,
-offset, unsupported-block policy, block-entity and entity policy, metadata and timestamp policy,
-and encoder revision. Its first profile permits full cubes only; stairs, slabs, fences, fluids,
-redstone, and stateful blocks require later explicit topology and behavior profiles. Unknown or
-unsupported states fail closed unless the profile names and records an exact substitution.
-
-The export candidate is
-[Sponge Schematic v3](https://github.com/SpongePowered/Schematic-Specification/blob/master/versions/schematic-3.md):
-GZip-compressed NBT with an outer `Schematic` compound, `Version = 3`, required `DataVersion`,
-unsigned-short interpretation of `Width`, `Height`, and `Length`, `Blocks.Palette`, and varint
-`Blocks.Data` indexed as `x + z*Width + y*Width*Length`. Read-back normalization proves dimensions,
-palette, offsets, states, block data, and metadata against the canonical grid.
-
-The package contains the source grid, canonical block grid, `.schem`, preview GLB and PNG, block
-counts, palette statistics, clipping and unsupported-material findings, plus an export-and-read-back
-receipt. Thirty-two cubed is only 32,768 cells, so this first golden fixture favors simple,
-inspectable data structures over a large-volume framework. It is one proving profile, never a
-universal product limit.
-
-A `.schem` admitted to [Foundry](../../../compositions/foundry/assets.md) is a project asset. The
-same exact blueprint admitted to a [Blockworld mission](../../../compositions/blockworld/mission.md)
-still grants no live placement authority: Sentinel must validate every bounded world effect
-against world epoch, plot lease, inventory, and mission policy.
-
 ## Profiles, Runes, Covens, and arbitrary iron
 
-Hardware suitability belongs to an exact model and deployment profile, not to `FormJob@1`. One
-operator may run two independent workers on two consumer GPUs; another may keep a large Mind and a
-Form generator resident on a high-memory workstation; a third may settle incompatible leases,
-let the requesting Run enter Stasis while Orchestrator transitions affected services, or use an
-explicitly admitted Portal. Two GPUs do not automatically pool VRAM, and a published minimum does
-not prove an unmeasured driver, precision, resolution, or offload topology.
+Use [Prism's admission route](index.md#sight-on-finite-iron) to obtain the exact model and
+deployment binding. Separate consumer-GPU workers, a resident workstation profile, an Orchestrator
+transition after affected leases drain, or an explicitly admitted Portal each needs its own
+measured evidence. Two GPUs do not automatically pool VRAM; a published minimum does not prove an
+unmeasured driver, precision, resolution, or offload topology.
 
-```text
-FormJob@1 service operation
-→ CapabilityDemand(interface, operation, typed facets, eligible profile refs)
-→ Dispatcher issues JobGrant or HardwareTransitionRequired
-→ Orchestrator converges scarce local iron when required
-→ re-dispatch and invoke the exact granted driver
-```
-
-The model profile pins weights, license, conditioning, facets, defaults, and measured requirements.
-A Designed Rune describes one concrete service instance and exact `[[capabilities]]` references;
-current `[[models]]` hints are only v1 compatibility. Finite ToolProfiles remain Spell resolution
-inputs, not Runes. A Coven names compatible Soulstones that may rise together. It does not schedule
-a job, merge GPU memory, load every model named by its members, evict another service, or authorize
-Portal fallback.
-
-## Composition boundaries and the proving bake
-
-Prism owns hostile-form handling, technical dispatch, transforms, facet semantics, conformance to
-the declared Form profile, and effect provenance. An independent validator checks tool output
-where the transforming tool cannot establish its own result.
-[Voidlight](../../../compositions/voidlight/assets.md) owns creative acceptance, the brief,
-candidate review, accepted form asset, and visual package. Foundry owns target-engine import and
-validation, coordinate and material adaptation, collision, LOD, performance, engine-native scene
-assembly, and playability. Blockworld owns live-world effect validation and bounded missions. A
-Form output crossing any boundary is an exact artifact handoff, never shared authority.
-
-An [Avatar](../../../compositions/avatar/index.md) profile may reference an exact Form asset, rig,
-and morph ontology. Form still owns only that spatial material and its provenance; it does not
-bind Persona, open an Avatar presence, admit a Spectre VR Habitat or Encounter, drive the
-projection, or acquire world or body authority.
+## The proving bake
 
 The proving corpus covers single images, multiview references, transparent and ambiguous objects,
 thin structures, open and non-manifold meshes, hard-surface and organic forms, PBR channels,
@@ -287,3 +232,9 @@ silhouette error, palette validity, output validity, latency, peak VRAM and host
 cancellation settlement, recovery, lineage, and license closure. Promotion is per exact model,
 worker, dependency, tool, preset, precision, device topology, input class, and facet set. A prettier
 turntable cannot conceal an invalid asset or authority gap.
+
+<span id="voxels-and-the-32-cubed-proving-fixture"></span>
+
+For the complete bounded grid, palette, schematic, and read-back workflow, follow
+[Voxel and block export](voxel-and-block-export.md). Form retains the spatial request and result;
+the consuming application admits the exported artifact and any later world effect.

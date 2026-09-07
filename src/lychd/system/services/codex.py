@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import structlog
 from jinja2 import Environment, FileSystemLoader
-from tomlkit import dumps as _tomlkit_dumps  # pyright: ignore[reportUnknownVariableType]
+from tomlkit import dumps as _tomlkit_dumps
 
 from lychd.config.runes import RuneConfig
 from lychd.config.runes.writer import ConfigWriter
@@ -22,7 +22,7 @@ logger = structlog.get_logger()
 
 
 def _toml_dumps(data: dict[str, Any]) -> str:
-    """Narrow tomlkit's untyped Mapping signature at the dependency boundary."""
+    """Serialize settings through tomlkit's Mapping boundary."""
     return _tomlkit_dumps(data)
 
 

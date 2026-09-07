@@ -369,7 +369,7 @@ def _build_harness(
         bindings=cast("BindingCleanupPort", bindings),
         checkpoint=checkpoint,
         trees=trees,
-        lock_factory=lambda: nullcontext(),
+        lock_factory=nullcontext,
     )
     return _Harness(
         paths=paths,
@@ -409,7 +409,7 @@ def _wire_root_authority(
         bindings=cast("BindingCleanupPort", harness.bindings),
         checkpoint=harness.checkpoint,
         trees=harness.trees,
-        lock_factory=lambda: nullcontext(),
+        lock_factory=nullcontext,
     )
     return planner, executor
 

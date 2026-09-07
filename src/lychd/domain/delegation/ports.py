@@ -35,7 +35,12 @@ class DelegatedAgentRuntime(Protocol):
         ...
 
     async def cancel(self, job: DelegatedAgentJobRef) -> None:
-        """Request cancellation of one active external job."""
+        """Return only after this exact job's execution is contained.
+
+        Successful return authorizes durable ``CANCELLED`` settlement. An
+        acknowledged cancellation request alone is insufficient; raise while
+        termination or external effects remain uncontained or indeterminate.
+        """
         ...
 
 

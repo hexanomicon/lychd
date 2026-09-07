@@ -5,70 +5,88 @@ icon: material/graph-outline
 
 # :material-graph-outline: ComfyUI
 
-**ComfyUI** is a graph execution engine, not a Prism or Echo Domain and not a Riffmaw, Language Edition,
-Voidlight, or Broadcast application owner. A local ComfyUI service can be a Soulstone when LychD
-owns its container, queue, readiness, GPU placement, model mounts, and lifecycle. The same engine
-may implement capabilities used by several semantic owners.
+Choose a bounded workflow before admitting [ComfyUI](https://github.com/Comfy-Org/ComfyUI). Its
+graph and dependency closure must describe exactly what may execute, which parameters may vary, and
+how results return to their owners. ComfyUI is a graph execution engine; a local service can become
+a Soulstone when LychD owns its container, queue, readiness, GPU placement, model mounts, and
+lifecycle. Several semantic owners may use that engine.
 
-| Engine output | Owning LychD office |
-| --- | --- |
-| image, image edit, video, vision, or spatial graph | Prism technical contract; Voidlight or another consuming Composition owns creative acceptance |
-| speech transcription, synthesis, cloning, or another speech operation | Echo when it satisfies the exact speech contract |
-| music generation, musical vocal, musical production effect, or musical cue artifact | Riffmaw |
-| timed-language dialogue or caption candidate | Language Edition application admission over exact Echo/translation operations |
-| picture-bound effect, foley, or ambience candidate | Broadcast |
-| final audiovisual assembly | Broadcast |
+This adapter is a **Designed** candidate. No LychD Comfy adapter or visual byte path is delivered;
+[State of Work](../../../../state-of-the-work.md#vision-admission) owns delivery status.
 
 ## Keep model, engine, and road apart
 
-The same semantic job may have several independently admitted realizations:
+An immutable semantic profile belongs to its domain and pins the operation, request and result
+schemas, model or voice identity, languages, formats, license, limits, and bake evidence. Each
+engine/provider implementation pins that exact semantic revision together with its dialect, runtime,
+placement, and evidence. Local open-weight MiniMax Music and the hosted MiniMax API remain distinct
+unless exact model, protocol, and evidence establish equivalence. The
+[engine and semantic-owner map](index.md#engine-versus-technical-contract-and-semantic-owner)
+supplies the shared division of responsibility.
 
-| Layer | Owns |
-| --- | --- |
-| owning semantic profile | Exact Prism/Echo operation or application-specific Riffmaw, Language Edition, or Broadcast request/result schema, model or voice identity, languages, formats, licence, limits, and bake evidence. |
-| ComfyUI preset | One immutable graph, node closure, model-file bindings, open parameters, and output mapping for that profile. |
-| Soulstone Rune | Local container, endpoint, devices, mounts, lifecycle, resources, and the exact admitted profile/preset references exposed by this instance. |
-| Portal profile | A separately admitted remote provider, endpoint, dialect, credential, custody, cost, and reconciliation path. It is never inferred from the existence of a local pack with a similar name. |
-| Scroll placement | The semantic Spell contract and its inputs, outputs, authority, recovery, and finish boundary. It does not name ComfyUI editor state. |
-| Resolution Lock | The exact local Soulstone or Portal implementation selected for this casting. |
+A Comfy preset pins the immutable editor/API graph, complete node and custom-node closure, model
+files, allowed parameter openings, output mapping and paths, network behavior, container revision, and license
+set. The complete engine program must pass [Assimilation](../../../../adr/35-assimilation.md)
+before execution. Callers select an admitted preset and its permitted parameters. Arbitrary caller
+graphs, partner/cloud nodes, runtime downloads, and ambient custom-node installation fail closed.
 
-This is not duplicate model truth. The owning domain publishes one immutable semantic profile;
-each engine or provider implementation states exactly which revision it implements and adds only
-its dialect, runtime, placement, and evidence facts. A local open-weight MiniMax Music profile and
-a hosted MiniMax music API, for example, are different implementations unless exact model,
-protocol, and evidence identity prove otherwise.
+The Soulstone Rune pins the local container, endpoint, devices, mounts, lifecycle, resources, and
+admitted profile/preset references. A Portal requires separate admission of provider, endpoint,
+dialect, credentials, custody, cost, and reconciliation. A local pack name proves no remote
+equivalence.
 
-The first adapter should expose an immutable LychD workflow profile rather than accept arbitrary
-graphs from callers. A profile pins the editor/API graph, node and custom-node closure, model
-files, parameter openings, output paths, network behavior, container revision, and license set.
-Partner/cloud nodes, runtime downloads, ambient custom-node installation, and arbitrary imported
-workflows fail closed.
+[Scroll placement](../../../extensions/weaver/pattern-lifecycle.md) pins the semantic Spell request,
+result, authority, recovery, and finish. Its
+Resolution Lock pins the chosen exact local Soulstone or Portal implementation. Comfy editor state
+is not a Scroll.
 
-The adapter owns the engine dialect: upload, submit, queue state, progress events, history,
-outputs, interruption/cancellation request, and reconciliation. LychD still owns
-`ServiceJobAttempt@1`, authority, artifact custody, retry law, and canonical provenance. A Comfy
-filename or PNG metadata is evidence, not durable identity.
+## Pin the dialect and execution lifecycle
 
-GPU placement is a Soulstone/profile fact. One managed host may run separate `comfy-qwen` and
-`comfy-ltx` instances on different GPUs, or one experimental multi-GPU service with explicit
-workflow device nodes. LychD must not infer parallelism, shared VRAM, model residency, or safe
-batching from ComfyUI visibility alone.
+The official external [Comfy API v2](https://docs.comfy.org/api-reference/v2/overview) is currently
+beta 0.1.x, exposed by cloud and serverless services. Self-hosting that v2 API currently requires a
+separately pinned `comfy-api-proxy` alongside ordinary ComfyUI; its default loopback arrangement
+connects proxy port 8189 to ComfyUI port 8188. A deployment choosing that dialect therefore pins
+both services. The [classic server](https://docs.comfy.org/development/comfyui-server/comms_routes),
+including `/prompt`, `/history`, `/queue`, `/interrupt`, and WebSocket communication, remains a
+distinct dialect.
 
-The first candidate profiles are Qwen image generation/editing, LTX-2.5 or Wan video workflows,
-MiniMax Music 3 generation, and later exact speech, role-qualified sound, and Form graphs. Each
-profile must separately prove input and output modalities, languages, limits, cancellation,
-VRAM/offload behavior, model licences, and artifact validation. If an LTX preset returns
-synchronized sound and video, the adapter reports the provider job, container digest, child
-streams, shared timebase, and engine facts to the exact Prism technical job. Prism binds the
-compound candidate to Core's attempt record, while Reliquary retains canonical artifact custody
-and provenance. Voidlight may judge the visual candidate, Riffmaw music, Language Edition timed-language
-material, and Broadcast picture sound and their final relation.
+Pin authentication and the exact behavior of the chosen route. For
+[v2 submission](https://docs.comfy.org/api-reference/v2/jobs/submit-a-workflow-for-execution),
+creation is durable until expiry, and a single-use `Idempotency-Key` rejects duplicate submission
+rather than replaying a response. An ambiguous submit therefore requires lookup before deciding
+recovery; blind retry is inadmissible.
 
-See [ComfyUI](https://github.com/Comfy-Org/ComfyUI), the
-[ComfyUI server routes](https://docs.comfy.org/development/comfyui-server/comms_routes), and the
-owning [Prism Image](../../../extensions/prism/image.md),
-[Prism Video](../../../extensions/prism/video.md),
-[Prism Form](../../../extensions/prism/form.md), and
-[Riffmaw](../../../../compositions/riffmaw/index.md),
-[Language Edition](../../../../compositions/language-edition/index.md), and
-[Broadcast](../../../../compositions/broadcast/index.md) contracts.
+An admitted adapter must supply upload, submit, queue, progress, history, output, interruption,
+cancellation-request, and reconciliation facts. Core alone owns `ServiceJobAttempt@1`; the domain
+job links that attempt. LychD retains authority, custody, retry law, and canonical provenance.
+Filenames and PNG metadata may support evidence, but cannot serve as durable identity.
+
+## Measure each admitted profile
+
+GPU placement belongs to an exact profile and instance. Separate `comfy-qwen` and `comfy-ltx`
+instances may use separate GPUs. An experimental multi-GPU instance requires explicit device nodes
+and a measured profile. Neither arrangement implies parallelism, pooled VRAM, residency, or
+batching.
+
+Candidate profiles begin with Qwen [image/edit](../../../extensions/prism/image.md), LTX-2.5 or Wan
+[video](../../../extensions/prism/video.md), and MiniMax Music 3. Exact speech, role-qualified
+sound, and [Form](../../../extensions/prism/form.md) profiles follow. Each must independently prove
+inputs and outputs, languages, limits, cancellation, VRAM and offload behavior, licenses, and
+artifact validation. Evidence for one profile does not admit another.
+
+## Preserve compound results through handoff
+
+For native synchronized video and sound, the exact Prism `VideoJob@2` receives provider identity,
+the compound container digest, child streams, shared timebase, and engine facts. Sound is enabled
+only after `MediaFacetAuthoritySet@1` declares every requested role, the consuming Composition
+identity and revision, and the owner-request digest. Follow Prism's
+[compound-facet admission](../../../extensions/prism/video.md#admit-every-compound-facet) for
+detailed sound preflight and inseparable-facet behavior.
+
+Prism links the Core attempt; Reliquary owns custody and provenance. Each requested facet needs
+its consuming owner's independent `SemanticFacetAdmissionReceipt@1` under the linked Video
+contract. Unexpected sound is quarantined or deleted rather than assigned a guessed owner.
+
+Broadcast alone judges the final editorial audiovisual relation. Engine completion supplies
+execution facts; passage to an application still requires the exact profile's artifact validation,
+preserved custody and provenance, and each requested facet's independent semantic admission.

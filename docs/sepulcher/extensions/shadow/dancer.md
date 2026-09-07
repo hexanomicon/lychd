@@ -7,7 +7,8 @@ icon: material/dance-ballroom
 
 > _“Open another door, but do not call it the exit.”_
 
-One source Intent forks beneath a declared Lens. **Dancer** is [Shadow's](./index.md) expansion
+One source Intent forks beneath a declared [Shadow Lens](../../../adr/20-agents.md#mechanical-cognitive-postures),
+an operational Posture. **Dancer** is [Shadow's](./index.md) expansion
 office: it makes several alternatives legible from the same starting point, preserving what each
 assumes and requires while favoring none of them.
 
@@ -40,10 +41,9 @@ One bounded Invocation returns:
 Shadow attaches that return to the common Intent and pinned Context. Dancer supplies typed
 expansion material, not a private reasoning trace.
 
-Every alternative remains a possibility awaiting measurement; **Vikalpa** is the page's literary
-correspondence for that state, not a source claim that the possibility is honest. Evidence and the
-responsible owner decide what follows. **Phantasma** names Shadow's isolated expansion mode; it
-grants no identity, execution sandbox, or proof of containment.
+In Shadow’s **Vikalpa** image, each alternative awaits measurement.
+[Shadow](index.md#possibility-with-lineage) keeps that literary correspondence and **Phantasma**,
+its isolated expansion mode, distinct from evidence, identity, and execution containment.
 
 Dancer may open, combine, reframe, or vary candidate material. It produces no score, rank, pruning
 decision, certification, promotion, selection, live effect, or proof of novelty. An alternative

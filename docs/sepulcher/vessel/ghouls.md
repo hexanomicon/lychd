@@ -7,87 +7,98 @@ icon: material/robot-dead
 
 > _Work is queued. The dead hand rises. The result returns._
 
-A **Ghoul** is one worker-task invocation carrying admitted labor. A **Run** is the canonical
-lifecycle record and may cross several sequential Ghouls after durable parks. Invocation, active
-Agent, pinned Pattern, and authority remain attributable to the Run.
+A **Run** carries the canonical identity and lifecycle of admitted work. A **Ghoul** is the
+worker-task invocation that advances it. After a durable park, another Ghoul may carry the same
+Run forward with its Invocation, pinned Pattern, and retained Agent selection. Return rebuilds step
+dependencies, reacquires the grants it needs, and revalidates the recorded authority.
 
 ## The living worker
 
-The current topology has two fixed SAQ worker loops, for `runs` and `rites`, inside the single
-[Vessel](./index.md):
+The single [Vessel](index.md) owns two fixed SAQ worker loops, `runs` and `rites`.
+`QueueConfig.separate_process=False` keeps them in process;
+`SAQConfig.use_server_lifespan=False` leaves startup and shutdown to the application. Exactly one
+ASGI process is required while `RunEventBus` and the service graph remain process-local.
 
-- `QueueConfig.separate_process=False`;
-- `SAQConfig.use_server_lifespan=False`;
-- application startup owns the worker lifecycle; and
-- exactly one ASGI process is required while the live `RunEventBus` remains process-local.
-
-Every workflow Run is a queued SAQ job, not an isolated process. A blocking Ghoul can block HTTP;
-death destroys its live task and subscribers even when broker work survives.
+Queued work has no process isolation. A blocking Ghoul can block HTTP, and Vessel death destroys
+the live task and subscribers even when the broker retains its job.
 
 ### Admission and claim
 
-`RunEngine.submit` selects workflow and queue. The `RunLedger` mints the Run id and commits
-`QUEUED`, Pattern, Intent, queue, priority, authority, and its exact initial delivery in one
-transaction. Caller retention keeps that delivery `HELD`; success releases it before the engine
-opens the live channel and publishes `run:<run_id>:<enqueue_seq>`.
+`RunEngine.submit` selects the workflow and queue. In one transaction, `RunLedger` mints the Run
+id and commits `QUEUED`, the Pattern, Intent, queue, priority, authority, and exact initial
+delivery. That delivery remains `HELD` until caller-owned retention succeeds. Release precedes
+opening the live channel and publishing `run:<run_id>:<enqueue_seq>`.
 
-Database admission and broker publication are not one distributed transaction. Retention failure
-settles only an unreleased held admission, with bounded compensation retry. Broker failure leaves
-the exact queued delivery for the startup/runtime relay; ambiguous publication is resolved by
-idempotent key and claim fencing. If cancellation fences canonical truth while broker acceptance is
-still in flight, the losing publisher aborts the late physical job.
+Each failure keeps its own boundary:
 
-Only `perform_run` executes the Graph. It claims exact `(run_id, enqueue_seq)` through
-`QUEUED → RUNNING`; stale or duplicate delivery returns `skipped`. Missing workflow, changed
-Pattern, or missing checkpoint fails rather than starting over.
+| Failure | What remains true |
+| --- | --- |
+| Caller retention fails | Only an exact unreleased held admission may be settled; compensation retry is bounded. |
+| Broker publication fails | The admitted Run and exact pending delivery remain for the startup/runtime relay. |
+| Broker acceptance is ambiguous | The idempotent delivery key and claim fence settle ownership. |
+| Cancellation wins while publication is in flight | The losing publisher aborts the late physical job. |
 
-SAQ `timeout=0` disables its generic wall clock, not Graph, provider, or Orchestrator deadlines.
-Each Run job instead has a 120-second heartbeat refreshed by its live invocation. Workflow jobs
-have zero automatic SAQ retries; recovery belongs to Run and Graph state.
+PostgreSQL admission and broker publication are separate commits. Only `perform_run` executes the
+Graph: it claims exact `(run_id, enqueue_seq)` through `QUEUED → RUNNING`. A stale or duplicate
+delivery returns `skipped`. A missing workflow, changed Pattern, or missing resume checkpoint
+fails the claim; execution never starts the Intent over to fill the gap.
+
+SAQ `timeout=0` disables its generic wall clock. Graph, provider, and Orchestrator deadlines still
+apply, and the live invocation refreshes a 120-second Run-job heartbeat. Workflow jobs have zero
+automatic SAQ retries.
 
 ### Parks, terminal truth, and cancellation
 
-Consent commits checkpoint and identity before `AWAITING_CONSENT`; delegated work parks as
-`AWAITING_DELEGATE` with its owner. Resume wins one admission and creates the next pending delivery
-in the same transaction; publication may follow later. `AWAITING_HARDWARE` resumes in the same
-Ghoul and is not restartable.
+A hardware wait keeps this Ghoul resident: `AWAITING_HARDWARE` returns in the same hop and cannot
+survive restart. A consent or delegated wait commits checkpoint and exact owner before entering
+`AWAITING_CONSENT` or `AWAITING_DELEGATE`. One later resume admission creates the next pending
+delivery in the same transaction; publication may follow. [Stasis and return](../extensions/weaver/stasis-and-return.md)
+explains those thresholds.
 
-Terminal order is commit `DONE`, `FAILED`, or `CANCELLED` plus exact delivery settlement; release
-context; delete stasis best-effort; drain one terminal Step event; close. Cleanup cannot conceal
-committed truth. Startup repairs missing or mismatched terminal evidence from every canonical
-terminal Run before deleting residual stasis. Worker failure retries transient child containment;
-if authority remains uncertain, the Run stays nonterminal for restart recovery instead of claiming
-false `FAILED` truth. Cancellation elects one writer, commits `CANCELLING`, requires broker and
-delegate containment, then commits fenced `CANCELLED`; it becomes a no-op when completion already
-won.
+The worker's terminal sequence is:
 
-`RunEvent` is process-local with bounded replay. Non-token events copy to `step` best-effort; token
-deltas are live-only. Evidence is `durable_best_effort`.
+```text
+commit DONE / FAILED / CANCELLED and exact delivery settlement
+→ release context
+→ delete stasis best-effort
+→ durably drain one terminal Step event
+→ close the live channel
+```
+
+Cleanup cannot revise committed status. If child containment fails transiently, the worker retries
+it; continuing uncertainty leaves the Run nonterminal for recovery. It cannot claim `FAILED`
+while correlated authority may still act.
+
+Cancellation elects one writer, commits `CANCELLING`, and fences claims and delivery rotation.
+Broker and delegate containment must acknowledge before the elected generation commits
+`CANCELLED`. Uncertain containment preserves `CANCELLING`; completion that already won makes a
+new cancellation a no-op.
+
+`RunEvent` has bounded process-local replay. Non-token events copy to `step` best-effort; token
+deltas are live-only. The evidence class is `durable_best_effort`, not a transactional event outbox.
 
 ### Death and reconciliation
 
-Startup settles previous-process `RUNNING` and `AWAITING_HARDWARE` as `FAILED / ghoul lost`,
-deletes checkpoints, and drains terminal events. Every `QUEUED` row must have its exact delivery:
-current-boot work is retained, proven pre-boot active work is terminally fenced and re-probed,
-absent work is republished, terminal broker records rotate without changing fresh/resume mode, and
-unresolved held admission is refused. Missing/mismatched truth, an active row without trustworthy
-start time, or an unprobeable queue reports degradation and aborts PostgreSQL startup. A
-checkpoint-plus-Consent crash window parks only when the first resumable snapshot names the exact
-latest pending consent; decided consent is re-fired; terminal delegated owners re-admit their exact waits. A
-lifespan-owned relay set continues delivery, consent, and delegated-owner repair. Every distinct
-degraded page is retained while forward scanning continues, rather than keyset-passing blocked
-owners forever. There is no same-boot worker-failure custody watchdog, public failed-Run retry,
-workflow scheduler, or transactional event outbox.
+A new process judges committed Run, delivery, checkpoint, Consent, and delegated-owner truth.
+[Reanimation](../phylactery/reanimation.md#reanimation-a-new-vessel-judges-durable-truth) owns the
+state-by-state return: unsupported active work becomes `FAILED / ghoul lost`, exact durable
+waits may return, and missing or ambiguous required truth aborts PostgreSQL startup.
 
-[Workers](../../adr/14-workers.md) owns claims, interruption, ordering, and recovery; [Graph
-(24)](../../adr/24-graph.md) owns checkpoints and terminal commits.
-[Topology-A](../../state-of-the-work.md#topology-a-local-runs) is **Available**; [graph stasis and
-consent re-admission](../../state-of-the-work.md#graph-stasis-consent) remain **Partial**.
+Before deleting residual stasis, startup repairs missing or mismatched terminal evidence from
+canonical terminal Runs. Lifespan-owned relays continue delivery, consent, and delegated-owner
+repair. They retain every degraded page while scanning forward, so a blocked owner is not lost
+behind a keyset cursor. There is no same-boot worker-failure custody watchdog, public failed-Run
+retry, or workflow scheduler.
+
+[Workers](../../adr/14-workers.md) owns claims and recovery;
+[Graph](../../adr/24-graph.md) owns checkpoints and terminal commits. [Topology-A](../../state-of-the-work.md#topology-a-local-runs)
+is Available; [durable stasis and consent re-admission](../../state-of-the-work.md#graph-stasis-consent)
+remain Partial.
 
 ## The unbuilt worker
 
-The designed **Tomb** would accept a narrow payload and workspace grant without model credentials
-or Graph authority. Its worker, queue, credentials, and sandbox do not exist; unsafe execution is
-disabled.
+The designed **Tomb** would receive a narrow payload and workspace grant without model
+credentials or Graph authority. Its worker, queue, credentials, and sandbox do not exist; unsafe
+execution remains disabled.
 
 > _The Ghoul may borrow the hand. It never inherits the Will._

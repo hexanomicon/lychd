@@ -11,25 +11,6 @@ An unfamiliar organ becomes legible by its attachment, governing jurisdiction, a
 This directory maps fifteen **Extension Domains**. Their names say
 where work belongs; presence on the map proves neither a package nor delivered behavior.
 
-| Term | Place in the body |
-| --- | --- |
-| **Extension Domain** | One of the fifteen stable user-facing jurisdictions through which the Lich may grow |
-| **extension package** | Explicitly selected built-in or private Crypt code admitted through `register(context)` and shaped stores |
-| **Manifestation** | The form a Domain takes in one profile: Core office, package-provided contribution, managed Provider, external attachment, or dormant design |
-| **Contribution** | A typed addition admitted through a Domain-owned store while that Domain keeps authority |
-| **Provider** | A concrete engine or service supplying mechanism behind a typed contract |
-| **Composition** | A [reusable native application capability](../../compositions/index.md) with a Pattern catalogue, domain state, judgment, policy, and effects |
-| **Product** | A named professional or market package selecting Compositions, Suites, profiles, projections, and supported use cases without inheriting their authority |
-
-Packages may contribute across several Domains; a Domain may have several packages or Providers.
-Compositions use Domain contracts without becoming Domains or Manifestations. Products package
-Compositions without becoming Extension Domains, extension packages, or authority owners.
-**Activation** names a concrete package or declared instance, never an abstract Domain.
-
-Manifestation is only a descriptive profile view, not a shared registry kind, base class,
-identity, lifecycle, or activation target. Operational contracts name the exact office,
-Contribution, Provider, attachment, or dormant profile underneath it.
-
 ## The Federation of Fifteen
 
 | Name | Jurisdiction |
@@ -45,10 +26,25 @@ Contribution, Provider, attachment, or dormant profile underneath it.
 | [Riddle](riddle/index.md) | **Evaluation:** binds exact subjects to versioned trials and returns calibrated findings with uncertainty; privilege and promotion remain elsewhere |
 | [Toll](toll.md) | **Economics:** separates quote, authorization, settlement, delivery, refund, and reconciliation |
 | [Prism](prism/index.md) | **Visual and spatial grounding:** binds observations, transformations, reconstructions, and generated forms to exact sources and derivatives without replacing one with another |
-| [Echo](echo.md) | **Speech lifecycle:** carries audio capture, transcription, synthesis, and delivery with origin, consent, and outcome intact |
+| [Echo](echo.md) | **Speech lifecycle:** carries speech capture, transcription, synthesis, and delivery with origin, consent, and outcome intact |
 | [Shadow](shadow/index.md) | **Possibility lineage:** holds isolated candidate worlds with exact parentage, evidence, and terminal disposition; no branch appoints reality |
 | [Mirror](mirror.md) | **Identity:** preserves Persona lineage, hydration provenance, and attribution without minting caller authority |
 | [Legion](legion.md) | **Distributed embodiment:** fences delegation across operator-owned bodies while each body retains authority over its iron |
+
+## Domain, package, and provider
+
+| Term | Place in the body |
+| --- | --- |
+| **Extension Domain** | One of the fifteen stable user-facing jurisdictions through which the Lich may grow |
+| **extension package** | Explicitly selected built-in or private Crypt code admitted through `register(context)` and shaped stores |
+| **Registrant** | Core or one selected extension package performing registration under a host-assigned `registrant_id` |
+| **Contribution** | A typed addition admitted by one explicit receiving Core office or Extension Domain while that owner keeps authority |
+| **Provider** | A concrete engine or service supplying mechanism behind a typed contract |
+
+Packages may contribute across several Core offices or Domains; a Domain may have several packages
+or Providers. [Compositions and Products](../../compositions/index.md) use and package those
+contracts while retaining their own offices. **Activation** names a concrete package or declared
+instance, never an abstract Domain.
 
 ## How an organ enters
 
@@ -58,14 +54,12 @@ entry points. Built-ins evolve atomically with Core, while private packages acce
 breakage. A versioned independent extension-package API and conformance suite remain future work, so an
 external protocol is the present boundary where process or lifecycle coupling is unacceptable.
 
-That assembly is one frozen extension generation per Vessel process. There is no hot-load,
-hot-replace, or hot-unload path. Changing executable code, package selection, dependencies, or a
-contribution contract changes the next body generation; the current process keeps its exact
-assembly until a controlled [Evolution](../../adr/18-evolution.md) replaces it. Volatile extension
-objects are not migrated or cleaned into a new shape. Continuity comes from compatible Phylactery
-truth and explicit [Reanimation](../phylactery/reanimation.md), not from preserving process memory.
-Automated Evolution remains designed rather than delivered; the current implementation enforces
-the frozen-generation side of this boundary at boot.
+The selected assembly is frozen for one Vessel process: there is no hot-load, hot-replace, or
+hot-unload path. A change to code, package selection, dependencies, or contribution contracts
+requires a new body generation under [Evolution](../../adr/18-evolution.md). Its continuity comes
+from compatible Phylactery truth and explicit [Reanimation](../phylactery/reanimation.md), not
+migration of volatile extension objects. The boot boundary is enforced; automated Evolution
+remains Designed.
 
 [ADR 05](../../adr/05-extensions.md) owns admission and compatibility. [State of
 Work](../../state-of-the-work.md#extension-activation-contributions) records the Partial five-store
@@ -74,11 +68,11 @@ workflow, migration, workload, effect, or automatic activation authority.
 
 ## How an organ earns permanence
 
-Authorship, testing, and evaluation can establish a candidate and its evidence. Smith, Shadow, and
-Riddle cannot promote their own conclusions. The target owner revalidates identity, base,
-evidence, current authority, and recovery; required HitL or eligible policy supplies authorization
-where the effect demands it. Packaging, migration, activation, and verification remain
-separately owned effects, with failure or uncertainty still attributed.
+Authorship, tests, and evaluation produce a candidate and evidence for the target owner's
+promotion decision. Smith, Shadow, and Riddle cannot promote their own conclusions. Required HitL
+or eligible policy supplies authorization; packaging, migration, activation, and verification
+remain separately owned effects. Follow the [Assimilation passage](smith.md) to prepare that
+handoff with its failures and uncertainty still attributed.
 
 Automated Smith and Forge promotion is **Designed**, not delivered. [State of
 Work](../../state-of-the-work.md#smith-forge-promotion) owns delivery; the [Assimilation

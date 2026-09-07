@@ -5,52 +5,24 @@ icon: material/connection
 
 # :material-connection: Music Hardware Boundary
 
-Riffmaw does not own ALSA, PipeWire, a microphone, interface, driver, or workstation. It owns the
-musical reason an exact route is armed, the take and performance records created from it, and the
-judgment that admits resulting material into music. The shared
-[Audio Hardware and Host Routes](../../sepulcher/animator/audio-routes.md) page owns the replaceable
-Linux/device candidate map; [Audio](../../adr/37-audio.md) owns capture, custody, transport,
-interruption, and uncertain-playback law.
+The guitar's dry signal and the amp sound heard in the headphones are related, but they are not the same recording. Riffmaw admits the musical reason to arm an exact route and preserves those separate sources for later production.
+
+[Audio Hardware and Host Routes](../../sepulcher/animator/audio-routes.md) owns replaceable Linux/device candidates and setup evidence. [Audio](../../adr/37-audio.md) owns capture, custody, transport, interruption, and uncertain playback. ALSA, PipeWire, interfaces, drivers, and workstation hardware do not become Riffmaw records.
 
 ## Admit a musical route
 
-`riffmaw.capture_take@2` begins only after the operator visibly arms an exact input and musical
-purpose. The request pins device and channel identity, driver and graph revisions, sample format
-and rate, clock epoch, latency and monitoring path, dry/processed split, performer authority,
-retention, stop/cancel behavior, and byte/duration ceilings. Opening a DAW, plugging in a guitar,
-or pairing a transmitter grants none of those facts.
+`riffmaw.capture_take@2` begins after visible operator arming. Pin device/channel, driver/graph revisions, sample format/rate, clock epoch, latency/monitor path, dry/processed split, performer authority, retention, stop/cancel behavior, and byte/duration ceilings. Opening a DAW, attaching an instrument, or pairing a transmitter does not supply that admission.
 
-One interface may carry channels with different owners. A spoken channel intended for dialogue or
-transcription enters Echo and, when part of a timed edition, Language Edition. A sung, rapped, instrumental,
-or musical-spoken-word channel may enter Riffmaw. Shared PCM format and simultaneous capture do not
-merge consent, custody, session, or acceptance.
+Channels sharing an interface can retain different owners. Speech intended for dialogue/transcription enters Echo and, for timed editions, Language Edition. Instrumental, sung, rapped, or musical-spoken-word material may enter Riffmaw. Simultaneous PCM capture merges none of their consent, custody, session, or acceptance.
 
 ## Instrument and vocal tracking
 
-An eligible two-input USB interface can place a microphone on input 1 and guitar or bass on input
-2. Keep `48 V` **off** for a dynamic microphone and instrument input, use `INST/Hi-Z` for guitar or
-bass, begin at low gain, and retain clip/xrun observations. Exact model compatibility still needs
-a host receipt; a USB connector or vendor page is not Linux evidence.
+An admitted profile identifies each microphone/instrument channel, its electrical input mode, power requirements, gain/clip behavior, and monitoring route from exact device instructions and host measurements. Connector shape and vendor claims cannot prove Linux compatibility. Direct monitoring and a processed Guitarix or other effect path must be explicitly mapped so dry/processed doubles are intentional; retain dry DI separately from the amp/cabinet print.
 
-For amp simulation, monitor through Guitarix or another admitted Linux effect chain and disable
-direct monitoring when it would double dry and processed paths. For clean practice or a
-latency-sensitive take, direct monitoring may remain enabled. Riffmaw retains dry DI separately
-from the amp/cabinet print so a later mix can repair the tone without inventing the source.
-
-TWS microphone profiles, motherboard line input for a passive instrument, anonymous microphone
-kits, and unmeasured Bluetooth routes are weak primary music-capture candidates. They may enter
-only after the same exact format, latency, stability, reconnect, and failure bake as any preferred
-device.
+Bluetooth/TWS, passive-instrument inputs, and anonymous microphone kits receive no special compatibility presumption. Every route must pass the exact format, latency, stability, reconnect, and failure bake. Device settings belong to the qualified host route rather than universal instructions inferred from a musical role.
 
 ## Records and proof
 
-One bounded capture returns `PerformanceTake@1`, retaining immutable raw audio or MIDI plus the
-device, clock, channel, consent, discontinuity, and transform facts. A live jam may aggregate
-several takes and routes inside `MusicalPerformanceSession@1`; a single take is not silently
-relabeled as a jam.
+`PerformanceTake@1` retains immutable audio/MIDI with device, clock, channel, consent, discontinuities, and transforms. Several routes/takes may later join `MusicalPerformanceSession@1`; a single take cannot silently become a jam.
 
-The first hardware proof is one network-disabled dry guitar or bass take and one musical-vocal
-take through a real desktop PipeWire session. Exercise channel swap, clip, xrun, device removal,
-clock change, processed-monitor failure, cancellation, crash reconciliation, and deterministic
-export. It proves the musical capture boundary and measured host route—not a general speech path,
-Language Edition edition, live jam, voice-cloning grant, or hardware compatibility beyond the exact receipt.
+The hardware proof records dry guitar/bass and musical vocals through a real desktop PipeWire session with networking disabled. Exercise channel swap, clipping, xrun, removal, clock change, processed-monitor failure, cancellation, crash reconciliation, and deterministic export. The receipt proves only that exact musical host route, not generic speech, timed editions, live Jam, cloning, or other hardware.

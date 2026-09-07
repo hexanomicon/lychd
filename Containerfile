@@ -3,7 +3,7 @@
 # ==============================================================================
 # We define an alias 'uv' for the image containing the uv binary.
 # This allows us to "borrow" the tool later without downloading it into our layers.
-FROM ghcr.io/astral-sh/uv:0.11.28 AS uv
+FROM ghcr.io/astral-sh/uv:0.12.10 AS uv
 
 # ==============================================================================
 # STAGE I: BUILDER

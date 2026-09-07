@@ -34,7 +34,9 @@ The first channel should be node-initiated so the node needs no public listener.
 authenticated stream or long poll carries a versioned, audience-bound, replay-safe envelope;
 transport identity is evidence for Ward, not application permission.
 
-1. Master parks cognition, writes delegation attempt/outbox intent, then publishes.
+1. Master commits the delegation attempt and outbox intent, then checkpoints the exact attempt
+   and local continuation before parking cognition and releasing its leases. Publication follows
+   the committed outbox under [Intercom's Long Sleep contract](26-a2a.md#graph-and-long-sleep).
 2. Node authenticates, persists and deduplicates before acknowledgement, and returns a typed
    decline or a fenced reservation.
 3. Node records execution and terminal result before a replayable receipt.

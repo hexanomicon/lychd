@@ -44,7 +44,7 @@ an independent proof presented to Ward. Edge compromise revokes platform, worklo
 edge-epoch credentials, quarantines its journal, and reconciles external identities. It does not
 imply compromise of disjoint home/provider credentials unless boundary evidence says they crossed.
 
-### 6. Tomb Execution Contract
+### Tomb Execution Contract {#6-tomb-execution-contract}
 
 The Tomb is deliberately non-agent: its child has a task-scoped workspace and artifacts, filtered
 environment, zero network, outer-enforced resource limits, and complete-process-tree cancellation.
@@ -107,6 +107,8 @@ Privacy Cut, transformation evidence, and Cut verification. Security owns declas
 every remote disclosure, not only model calls. The trusted Portal Egress Gate is the first
 implementation name for this general byte-time boundary.
 
+#### Target and disclosure basis
+
 `EgressDecision` carries one tagged `RemoteTarget`:
 
 - `PortalTarget` binds provider/service, operation, model when applicable, canonical origin and
@@ -127,6 +129,8 @@ A coding runtime's child provider request is a separate `PortalTarget`; the oute
 cannot authorize an unknown series of model calls. A black-box runtime that cannot keep its network
 behind the admitted Provider Gate is ineligible for automated remote execution. Transparent MITM,
 ambient proxying, and caller-supplied target fields do not close that boundary.
+
+#### Decision identity and local custody
 
 The decision is explicit, never inferred consent, and binds opaque Principal identity plus Sigil
 identity/revision digest—not either object—Run/occurrence/attempt/transmission generation, purpose,
@@ -149,6 +153,8 @@ linkage oracle. Exported, logged, or operator-wide evidence uses either a random
 record class, key epoch, and retention. It never receives raw low-entropy fields as metadata and
 never claims that a digest anonymizes its input.
 
+#### Transmission and redelivery
+
 Every actual transmission, including exact same-envelope redelivery, settles a fresh
 `EgressDecision` before its first byte and atomically consumes the declared transmission/disclosure
 budget. Transport redelivery under one road-owned attempt preserves the sealed bytes, target,
@@ -156,6 +162,8 @@ external/idempotency identity, road decision, and—when present—Cut/token nam
 target, actor, policy, custody route, semantic retry, resume with changed body, or fallback creates a
 new road decision and, when transformation is required, a new Cut. Uncertain effects reconcile;
 they never silently become a new semantic attempt.
+
+#### Thresholds and refusal
 
 Consent cannot repair missing lineage, override a prohibited category, or broaden named content and
 destination. On the `0.0` public-safe to `1.0` strictly-private scale:
@@ -175,7 +183,7 @@ also refuse whenever policy depends on them. Current local-only source has no ho
 authorization and does not deliver this general egress gate; [State of
 Work](../state-of-the-work.md#context-privatization-and-portal-egress) owns that boundary.
 
-### 7. Return Quarantine
+### Return Quarantine {#7-return-quarantine}
 
 Tomb/Coffin stdout, artifacts, patches, and structured returns are untrusted bytes. They enter only
 as provenance-tagged, instruction-fenced blocks in volatile Context layers; structural validation

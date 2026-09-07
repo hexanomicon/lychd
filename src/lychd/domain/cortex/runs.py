@@ -155,6 +155,7 @@ class RunRecord:
     sigil_name: str = "magus"
     sigil_scopes: frozenset[str] = field(default_factory=frozenset)
     requested_priority: int | None = None
+    admitted_capability_key: str | None = None
     attempt: int = 0
     enqueue_seq: int = 0
     error: str | None = None
@@ -177,6 +178,7 @@ class RunRecord:
             sigil_name=self.sigil_name,
             sigil_scopes=self.sigil_scopes,
             priority=self.priority,
+            admitted_capability_key=self.admitted_capability_key,
         )
 
 

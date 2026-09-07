@@ -11,6 +11,10 @@ icon: material/account-arrow-right-outline
 holds station state; the Run ledger binds its wait. An adapter receives a frozen request, never
 the live Run, and the Pattern parks for one terminal adoption.
 
+Today only the deterministic, effect-free `reference` adapter runs. Foreign CLI execution, Coffin
+containment, and provider effects remain undelivered; [the delivered boundary](#name-the-delivered-truth)
+below separates the current job mechanics from those designs.
+
 [ADR 28](../../../adr/28-workflow.md#parallelism-and-delegation) owns delegation law.
 [Agents](../../../adr/20-agents.md#streaming-history-and-limits) owns the opaque-runtime boundary;
 [Workers](../../../adr/14-workers.md#delegated-agentjob-labor) owns `AgentJob` labor.

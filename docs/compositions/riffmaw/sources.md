@@ -5,28 +5,18 @@ icon: material/folder-music-outline
 
 # :material-folder-music-outline: Sources
 
-A musical idea often arrives sideways: a timestamp, a mouth-made rhythm, a remembered drop, or the
-feel of a transition. Sources turns that clue into an attributable, bounded musical reference.
+The idea arrives as a timestamp and a sound made with the mouth:
 
 > “At `01:32` it drops: _tz, tz, u-do_. Keep the pressure and spacing, change the musical matter.”
 
+Sources helps find that moment without turning the whole media library into admitted influence.
+
 ## Admit, index, mark
 
-`riffmaw.index_sources@2` accepts only named files, recordings, or attributed artifacts. It bounds
-recursion, symlinks, bytes, duration, decoding work, metadata, and retention before indexing.
-Riffmaw never crawls an ambient home directory, and a provider catalogue does not become an
-admitted source merely because it can be searched.
+`riffmaw.index_sources@2` accepts named files, recordings, or attributable artifacts, bounding recursion, symlinks, bytes, duration, decoding, metadata, and retention before indexing. Neither an ambient home directory nor a searchable provider catalogue enters by default.
 
-`riffmaw.mark_moment@2` can use a timestamp, beat range, tapped rhythm, phrase, or other bounded
-clue to rank candidate spans under a pinned feature set. The Magus chooses the useful span. The
-resulting `ReferenceMoment@1` retains source identity, digest, timebase, exact region, observations,
-uncertainty, attribution, rights posture, and the decision that admitted it.
+`riffmaw.mark_moment@2` uses a timestamp, beat range, tapped rhythm, phrase, or other bounded clue to rank spans under a pinned feature set. The Magus selects the useful one. `ReferenceMoment@1` preserves its source, digest, timebase, exact region, observations, uncertainty, attribution, rights, and admission decision.
 
-Similarity is evidence for discovery, not proof of authorship or safe reuse. Requests “in the
-style of” are reduced to reviewable properties such as pocket, density, accents, space, motion,
-instrumental relation, and energy. A lifted melody, disputed source, unresolved permission, or an
-attempt to hide influence leads to quarantine, replacement, or refusal.
+Similarity can locate a clue; it cannot prove authorship or safe reuse. Translate a style request into reviewable pocket, density, accents, space, motion, instrumental relation, and energy. A lifted melody, disputed source, missing permission, or hidden influence leads to quarantine, replacement, or refusal.
 
-The source record guides [Music](music.md), including instrumental and vocal work. It carries no
-permission to copy, generate, spend, arm a device, clone a performer, or publish. Ordinary dialogue
-and picture-bound sound do not become Riffmaw sources merely because they share an audio format.
+[Music](music.md) receives the exact reference without permission to copy, generate, spend, arm capture, clone a performer, or publish. Ordinary dialogue and picture sound retain their owners despite sharing an audio format.

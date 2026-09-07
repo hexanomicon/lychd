@@ -15,6 +15,7 @@ function snapshot(
   return {
     sessions: [],
     session: {
+      pending_count: 0,
       id: sessionId,
       title: "Séance",
       created_at: "2026-07-28T00:00:00Z",

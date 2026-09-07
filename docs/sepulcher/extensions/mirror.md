@@ -8,22 +8,20 @@ icon: material/mirror
 A temporary Agent finishes its step; the act outlasts it. **Mirror** binds that act and its
 contributors to an operative identity, preserving attribution after the movement ends.
 
-It binds one admitted Invocation to an exact Persona revision. [ADR 32](../../adr/32-identity.md)
+Mirror records each admitted Invocation’s exact Persona revision or explicit choice of no Persona. [ADR 32](../../adr/32-identity.md)
 owns the full identity contract;
 [State of Work](../../state-of-the-work.md#mirror-identity) owns its delivery.
 
 ## The mirror and the Mirror
 
 Lowercase [**mirror**](../../lexicon/inner-tongue.md#the-ego) is the contemplative image of mind;
-capitalized **Mirror** borrows that image for exact Persona lineage and attribution across time. It
-is not the whole mind: it keeps the identity through which cognizant acts remain attributable.
+capitalized **Mirror** gives Persona lineage and attribution their technical home.
 
 ## I. The Answer / Ahaṃkāra {#i-identity-as-simulation-the-answer-ahamkara}
 
-[Answer](../lich/answer.md) supplies the focal “I”; [**The
-EGO**](../../lexicon/inner-tongue.md#the-ego) is identity reflected around it. A Persona is the exact
-revision Mirror binds for an Invocation. Attachment—not identity or continuity—turns that
-reflection toward **Corruption**.
+[Answer](../lich/answer.md) supplies the focal “I.” Follow it and [The
+EGO](../../lexicon/inner-tongue.md#the-ego) for the relation between identity, attachment, and
+Corruption; Mirror records the exact identity binding through which an act remains attributable.
 
 ## II. The Names in the Glass
 
@@ -34,12 +32,11 @@ The active **Sigil** records bounded authority. **Pattern** and **Invocation** i
 workflow performance; **Run** is its durable execution identity. Eligible identity-scoped memory
 may enter hydration.
 
-Here Persona **voice** means discourse, commitments, manner, and orientation—not an acoustic voice
-profile, synthesized speech artifact, musical vocal, dubbed performance, or presentation asset.
-Echo retains acoustic and speech-lifecycle facts; Riffmaw musical performance; Language Edition
-timed-language performance; and Avatar the eligible presentation selection.
+Here Persona **voice** means discourse, commitments, manner, and orientation. Acoustic voice,
+musical performance, timed-language editions, and presentation assets retain their
+[separate owners](../../adr/32-identity.md#keep-the-names-apart).
 
-None substitutes for another. [Agent](../../adr/20-agents.md) owns Agent and Posture semantics;
+[Agent](../../adr/20-agents.md) owns Agent and Posture semantics;
 [Spellweaver](../../adr/28-workflow.md) owns Pattern and Invocation law.
 
 ## III. Attribution Without Laundering
@@ -52,11 +49,9 @@ At a handoff, the producer remains attached to the artifact while the consumer b
 admitted Invocation with its own binding. Human edits and rejected branches retain their
 authorship; selection does not launder lineage.
 
-To keep the Mirror **spotless** is to keep the reflection unobscured and its provenance intact:
-origins remain attributable, revisions remain pinned, and ruptures, contradictions, and
-corrections remain visible. Spotlessness never means sanitizing identity lineage, erasing its
-stains, or polishing rejected branches out of history. A clear Mirror shows the stain precisely
-enough to answer for it.
+A **spotless** Mirror keeps provenance clear enough to show the stain: exact origins and
+revisions, ruptures, contradictions, corrections, and rejected branches remain visible. Clarity
+never requires erasing a difficult part of the lineage.
 
 Mirror records relationships, not authorization, truth, quality, credit, or fault.
 [Ward](./ward.md) owns authentication and authorization;

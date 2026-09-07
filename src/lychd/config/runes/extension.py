@@ -8,14 +8,14 @@ from lychd.extensions.base import ExtensionStore
 
 
 class RuneConfigStore(ExtensionStore):
-    """Store for active extension-owned TOML schemas."""
+    """Store for active extension-contributed TOML schemas."""
 
-    def __init__(self, *, current_provider: Callable[[], str] | None = None) -> None:
+    def __init__(self, *, current_registrant: Callable[[], str] | None = None) -> None:
         """Create an empty rune schema store."""
         super().__init__()
-        self._current_provider = current_provider or (lambda: "direct")
+        self._current_registrant = current_registrant or (lambda: "core")
         self._schemas: list[type[RuneConfig]] = []
-        self._owners: dict[type[RuneConfig], str] = {}
+        self._registrants: dict[type[RuneConfig], str] = {}
         self._anchors: dict[Path, tuple[type[RuneConfig], str]] = {}
 
     @property
@@ -26,27 +26,27 @@ class RuneConfigStore(ExtensionStore):
     def add_schema(self, schema: type[RuneConfig]) -> None:
         """Register one schema and reserve its exact filesystem anchor."""
         self._require_mutable()
-        provider_id = self._current_provider()
-        existing_owner = self._owners.get(schema)
-        if existing_owner is not None:
-            if existing_owner == provider_id:
+        registrant_id = self._current_registrant()
+        existing_registrant = self._registrants.get(schema)
+        if existing_registrant is not None:
+            if existing_registrant == registrant_id:
                 return
             msg = (
-                f"Rune schema {schema.__name__} from {provider_id!r} conflicts with "
-                f"the schema already registered by {existing_owner!r}."
+                f"Rune schema {schema.__name__} from {registrant_id!r} conflicts with "
+                f"the schema already registered by {existing_registrant!r}."
             )
             raise ValueError(msg)
 
         anchor = schema.relative_path
         existing_anchor = self._anchors.get(anchor)
         if existing_anchor is not None:
-            existing_schema, anchor_owner = existing_anchor
+            existing_schema, anchor_registrant = existing_anchor
             msg = (
-                f"Rune anchor '{anchor}' for {schema.__name__} from {provider_id!r} conflicts with "
-                f"{existing_schema.__name__} registered by {anchor_owner!r}."
+                f"Rune anchor '{anchor}' for {schema.__name__} from {registrant_id!r} conflicts with "
+                f"{existing_schema.__name__} registered by {anchor_registrant!r}."
             )
             raise ValueError(msg)
 
         self._schemas.append(schema)
-        self._owners[schema] = provider_id
-        self._anchors[anchor] = (schema, provider_id)
+        self._registrants[schema] = registrant_id
+        self._anchors[anchor] = (schema, registrant_id)

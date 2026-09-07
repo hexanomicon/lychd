@@ -45,11 +45,17 @@ training remain later consumers with their own evidence.
 
 ## The Archive record
 
-One immutable revision names stable record/revision, namespace owner/subject, kind/lifecycle,
-content or immutable ref, source/producer/observation/transformations, creation-observation-validity-
-expiry-supersession-contradiction-retention times, classification/sharing/deletion authority,
-quality/evaluator evidence, related Session/Run/Invocation/Pattern/Persona/artifact refs, and
-derived representations.
+Each immutable record revision names the following:
+
+| Concern | Required content |
+| --- | --- |
+| Identity | Stable record and revision; namespace owner and subject; kind and lifecycle. |
+| Material | Content or an immutable reference, plus derived representations. |
+| Provenance | Source, producer, observation, and transformations. |
+| Time | Creation, observation, validity, expiry, supersession, contradiction, and retention times. |
+| Authority | Classification, sharing, and deletion authority. |
+| Evidence | Quality and evaluator evidence. |
+| Relations | Related Session, Run, Invocation, Pattern, Persona, and artifact references. |
 
 ```text
 candidate → promoted → archived
@@ -64,23 +70,35 @@ Pramāṇa both carry source and correction.
 
 ## Namespaces and authority
 
-Write and recall name namespace before retrieval. A namespace may be Principal, Persona,
-Composition, shared body, or published corpus, but id/policy are explicit. Current Sigils lack a
-stable entity_id: Archive must not invent Sigil.id or claim delivered cross-identity isolation.
-Default is no cross-namespace recall. Sharing identifies source, consumer, purpose, record/field
-classes, duration, onward disclosure, revocation. Similarity, organization, delegation, and model
-do not grant it. Authorize candidates before content or embeddings leave owner boundary.
+Every write and recall request names its namespace before retrieval begins. A namespace may
+belong to a Principal, Persona, Composition, shared body or published corpus; each has an explicit
+identity and policy. Current Sigils lack a stable `entity_id`. Archive must not invent `Sigil.id`
+or claim delivered isolation across identities.
+
+Cross-namespace recall is denied by default. A sharing decision binds the source, consumer,
+purpose, record and field classes, duration, onward disclosure and revocation. Similarity,
+organizational membership, delegation and model choice cannot supply that decision. Candidates
+must be authorized before their content or embeddings leave the owner's boundary.
 
 ## Embeddings are derived data
 
-A vector inherits source chunk Privacy Label and deletion lineage; opacity never authorizes remote
-embedding. Context owns labels and Security declassification. Each derived representation records
-source revision/chunk, embedder identity/revision/digest/configuration, dimension/distance,
-normalization/chunking/preprocessing, creation/status/quality receipt, and index generation.
-Incompatible spaces never compare. New embedder creates a new generation; old may remain policy-
-queryable during proved migration, then retires, never overwritten/mixed. pgvector makes one
-governed DB backup target, not a coherent snapshot of artifacts/models/services. Schemas, HNSW,
-lexical/hybrid indexes are deployment work, not current claim.
+Each vector inherits its source chunk's Privacy Label and deletion lineage. Opacity does not
+permit remote embedding: Context owns the labels, and Security owns declassification. Every
+derived representation records:
+
+- source revision and chunk;
+- embedder identity, revision, digest and configuration;
+- dimension, distance measure, normalization, chunking and preprocessing;
+- creation time, status and quality receipt; and
+- index generation.
+
+Incompatible spaces cannot be compared. Changing the embedder creates a new generation. An older
+generation may remain queryable under policy during a proved migration, then retire; migration
+must neither overwrite it nor mix the spaces.
+
+pgvector gives this substrate one governed database backup target. A coherent snapshot of
+artifacts, models and services still requires their own owners. Schema deployment, HNSW and
+lexical or hybrid indexes remain implementation work, not current delivery.
 
 ## Ingestion
 
@@ -95,45 +113,61 @@ Ingestion is admitted workflow:
 7. derive representations through admitted embedding capability;
 8. offer eligible candidates to Curator.
 
-Workers may partition/embed; Dispatcher picks eligible capability and Orchestrator readiness, but
-neither decides worth. Extractor facts/relations/summaries/preferences are attributed claims with
-source excerpt/ref. Authoritative record and derivation may commit separately: asynchronous vector
-work exposes honest index state and stays invisible to vector recall until complete generation;
-retry is idempotent by source revision and derivation spec.
+Workers may partition and embed admitted material. Dispatcher selects an eligible capability;
+Orchestrator supplies readiness. Neither decides what deserves retention. Extracted facts,
+relations, summaries and preferences remain attributed claims with a source excerpt or reference.
+
+An authoritative record and its derivation may commit separately. Asynchronous vector work must
+expose its index state and remain invisible to vector recall until its generation is complete.
+Retries are idempotent by source revision and derivation specification.
 
 ## Curation and sediment {#memory-layering-sediment-not-dump}
 
-Versioned Curator considers source quality, verification, correction, contradiction, use outcome,
-recency, expiry, and Riddle findings. Access, repetition, similarity, and praise are not truth;
-they can affect salience only by declared policy. Curator may promote, retain, archive, revoke and
-invalidate derivatives, or relate supersession/contradiction without rewriting history. Anchors have
-owner/review rule, not immortality. Batch curation stages revisions and never changes active agent
-context. Mirror, Context, and Riddle may use records but do not become Curator.
+A versioned Curator weighs source quality, verification, correction, contradiction, use outcome,
+recency, expiry and Riddle findings. Access, repetition, similarity and praise can affect salience
+only under declared policy; they do not establish truth.
+
+The Curator may promote, retain or archive a record; revoke it and invalidate derivatives; or
+record supersession and contradiction without rewriting history. An anchor has an owner and a
+review rule, so it remains corrigible. Batch curation stages revisions and leaves active Agent
+Context unchanged. Mirror, Context and Riddle may consume these records while the Curator retains
+the curation decision.
 
 ## Recall
 
-One contract serves Pattern context or authorized tool: bind caller/namespace/purpose/policy/query
-and result/token budget; authorize fields/classes; choose compatible lexical/vector/relational/hybrid
-plan; retrieve/rerank versionedly; enforce threshold/diversity/recency/contradiction; return bounded
-provenance/lifecycle/times/uncertainty; write receipt without hidden prompt as memory. Similarity is
-position, not truth probability; threshold miss is no admissible result, not absence from world.
-Context fits results and records omissions; model sees attributed prior, not instruction. Receipt
-pins policy and returned revisions; later correction supersedes future queries and preserves earlier
-Run influence.
+One contract serves Pattern context or an authorized tool:
+
+1. Bind caller, namespace, purpose, policy, query, and result and token budgets.
+2. Authorize fields and classes.
+3. Choose a compatible lexical, vector, relational, or hybrid plan.
+4. Retrieve and rerank under versioned implementations.
+5. Apply the threshold, diversity, recency, and contradiction rules.
+6. Return bounded results with provenance, lifecycle, times, and uncertainty.
+7. Write a receipt without treating a hidden prompt as memory.
+
+Similarity locates a result within a representation; it is not a probability that the result is
+true. A threshold miss establishes only that no result was admissible to this query.
+
+Context fits the returned material and records omissions. The model receives an attributed prior
+rather than an instruction. The receipt pins the policy and returned revisions. Later correction
+changes what future queries may return while preserving the record of influence on earlier Runs.
 
 ## Continuity and deletion
 
-Committed rows survive process death; Reanimation needs explicit Pattern and compatible revisions,
-not restored thought or Persona. Deletion removes/quarantines controlled content/indexes, keeps
-minimum anti-reingestion tombstone, invalidates dependent recall/evaluation, and identifies exported
-or shared copies plus Soulforge descendants. It cannot erase influence in generated artifacts or
-weights; those need their own decisions.
+Committed rows survive process death. Reanimation still requires an explicit Pattern and compatible
+revisions; restoring rows does not restore thought or Persona.
+
+Deletion removes or quarantines controlled content and indexes, preserves the minimum tombstone
+needed to prevent reingestion, and invalidates dependent recall and evaluation. It must also
+identify exported or shared copies and Soulforge descendants. Influence already carried into
+generated artifacts or weights requires decisions by those owners; deleting an Archive row
+cannot erase it.
 
 ## Training boundary
 
-Archive is structured Soulforge input, never corpus by default. Training selects exact revisions
-and independently admits privacy/license/dedup/split/holdout. Findings/feedback may nominate
-review, never automatic Karma/rank/weight change.
+Archive can supply structured input to Soulforge. Corpus admission separately selects exact
+revisions and checks privacy, license, deduplication, splits and holdout. Findings and feedback
+may nominate material for review, but cannot automatically change Karma, rank or weights.
 
 ## Rejected alternatives
 
@@ -161,7 +195,7 @@ It expands privacy exposure and feeds error back into context; only explicit ing
 
 ## Acceptance evidence
 
-The current Partial claim covers only the candidate-admission contract and volatile adapter.
-Broader Partial acceptance requires one class proving authorized ingestion, provenance candidate,
+Archive intake remains **Designed**: there is no candidate-admission port or volatile adapter.
+Partial acceptance requires one bounded class proving authorized ingestion, provenance candidate,
 compatible embedding, namespace recall, threshold miss, correction, staged promotion,
 deletion/index cleanup, restoration, and reproducible receipt. State records delivery.

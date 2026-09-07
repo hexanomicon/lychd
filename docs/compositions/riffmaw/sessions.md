@@ -5,55 +5,29 @@ icon: material/record-circle-outline
 
 # :material-record-circle-outline: Sessions
 
-This contract preserves what a person actually played, sang, rapped, performed as musical spoken word,
-or programmed before editing makes the result look inevitable.
+Keep what was actually played before editing makes it seem inevitable. A take preserves one armed performance; a jam adds participants, mapped clocks, and the conditions under which their responses could be heard.
 
 ## Arm and capture
 
-`riffmaw.capture_take@2` starts only through an explicitly armed interface. It records the device
-profile, clocks, sample rate, latency, monitoring route, channel layout, plug-in state, session
-revision, and consent boundary. The immutable raw audio or MIDI is retained before transcription,
-timing correction, comping, cleanup, or transformation.
+`riffmaw.capture_take@2` requires explicit arming and pins device, clocks, sample rate, latency, monitoring, channels, plug-in state, session revision, and consent. Retain immutable raw audio/MIDI before transcription, timing correction, comping, cleanup, or transformation.
 
-A `PerformanceTake@1` distinguishes raw performance from observations about it. Tempo, pitch,
-timing, score or lyric transcription, and performance notes remain attributed interpretations with
-their source regions and uncertainty. They do not replace the recording. Capture authority is visible,
-time-bounded, revocable, and governed by the custody and hostile-audio rules in
-[Audio](../../adr/37-audio.md).
-
-A later jam may reference one or more settled takes inside `MusicalPerformanceSession@1`; capture
-does not create that session merely because both records contain audio or MIDI.
+`PerformanceTake@1` separates performance from attributed tempo, pitch, timing, score/lyric transcription, and other observations. Their source regions and uncertainty remain visible. [Audio](../../adr/37-audio.md) governs visible, bounded, revocable capture, custody, and hostile input. A later `MusicalPerformanceSession@1` may reference settled takes; shared file formats do not create a jam.
 
 ## Choose without erasing
 
-Comping and editing create new revisions that name every source take and selected region. Rejected
-takes remain subject to their own retention rule; an accepted comp never rewrites them. A changed
-device, clock, session state, or plug-in chain is explicit rather than smuggled into a continuation.
+A comp names each source take and selected region. Rejected takes retain their own retention; acceptance cannot rewrite them. Device, clock, plug-in, and session changes are explicit revisions. If failure leaves capture uncertain, stop the device and reconcile artifacts/session state before retry; silence cannot prove nothing was recorded.
 
-If capture state is uncertain after failure, Riffmaw stops the device and reconciles the artifact
-and session records before retry. It never assumes that silence means nothing was recorded.
-
-Accepted takes anchor [Music](music.md), including its instrumental and vocal work. The handoff
-shares exact artifact references and observations, not microphone authority, credentials, or an
-open DAW session. An ordinary spoken take intended for dialogue replacement or localization belongs to
-[Language Edition](../language-edition/) rather than this musical session.
+[Music](music.md) receives artifacts and observations without an open DAW, microphone authority, or credentials. Ordinary spoken replacement/localization remains Language Edition work.
 
 ## Jam in shared time
 
-Live Jam is **Designed** beyond Audio's first record-and-send slice; no current Portfolio runtime
-or candidate stack proves it. `riffmaw.open_jam@2` describes one bounded performance Pattern.
-Spellweaver separately admits its Invocation and exact Scroll; the Pattern cannot admit a Circle or
-nested production by itself.
+`riffmaw.open_jam@2` is Designed beyond Audio's first record-and-send slice. Neither a current Portfolio runtime nor a candidate stack proves live Jam. Spellweaver admits its Invocation/Scroll; the Pattern cannot admit its own Circle or nested production.
 
-A jam may contain microphones, guitars, keyboards, drum pads, controllers, MIDI, previously
-admitted clips, remote performers, and one or more machine players. Every route independently
-declares monitoring, recording, retention, analysis, transformation, remote transmission, and
-machine-response scopes. If preservation of a route is required but recording or retention is not
-admitted, Riffmaw refuses that route or the jam. Network presence is never recording permission,
-and the Magus cannot alter another performer's monitor or participation scope unilaterally.
+Microphones, instruments, MIDI/controllers, clips, remote performers, and machine players each declare monitor, recording, retention, analysis, transformation, remote transmission, and response scope. Required preservation without admitted recording/retention refuses the route or jam. Network presence does not grant recording consent; one performer cannot change another's participation or monitor scope.
 
-`MusicalPerformanceSession@1` binds the jam revision, participants and roles, assistance policy,
-model and tool allowlist, and these timing and capture records:
+“follow behind my attack,” “answer only at phrase endings,” and “that distortion is energy, not a key change” can create successor `FeelProfile@1` revisions. They correct interpretation without rewriting performance or earlier observations. This is the long road toward performance-native direction through timing, touch, phrasing, dynamics, repetition, and contrast. Persistent personalization/training still requires separate corpus admission and model promotion.
+
+`MusicalPerformanceSession@1` binds revision, participants/roles, assistance policy, model/tool allowlist, and these exact records:
 
 | Record | Binds |
 | --- | --- |
@@ -63,61 +37,20 @@ model and tool allowlist, and these timing and capture records:
 | `CaptureManifest@1` | Immutable pre-fader sources, optional processed prints, MIDI, hardware returns, local and remote stems, exact frame boundaries, discontinuities, and checksums. A guitar DI remains separate from its amp or cabinet monitor path. |
 | `RemoteJamLeg@1` | Peer identity, topology, codec, channels, encryption, jitter buffer, loss concealment, latency estimate, drift, resampling, reconnect epoch, local-monitor policy, and recording consent. |
 
-The shared jam mix, individual sources, MIDI and control events, model responses, and clock or route
-changes remain separately attributable. No PCM, MIDI stream, device handle, or plug-in state enters
-Graph state; checkpoints retain typed references, bounded sequence state, and receipts.
+Mix, individual sources, MIDI/control events, responses, and route/clock changes remain attributable. Graph checkpoints keep typed references, bounded sequence state, and receipts—not PCM/MIDI streams, device handles, or plug-in state.
 
-The admitted participation level for every affected route is one of:
-
-- **observe** records and derives correctable musical observations but produces no audible reply;
-- **accompany** may add a bounded rhythmic, harmonic, melodic, or textural answer;
-- **transform** may process an explicitly selected live route while preserving its dry source; and
-- **conduct** may propose section, tempo, cue, or arrangement changes, but cannot silently impose
-  them on human performers.
-
-Escalating the participation level requires a new visible admission by every affected Principal.
-A model may not turn observation into accompaniment, accompaniment into transformation, or a jam
-into autonomous publication by inference.
+A route's participation is **observe** (correctable observations, no audible reply), **accompany** (bounded musical answer), **transform** (process the selected live route while preserving dry source), or **conduct** (propose structural/tempo/cue changes). Escalation needs new visible admission by every affected Principal; proposals cannot silently become changes to a human performance.
 
 ## Performance as a correctable language
 
-A `MusicalGestureObservation@1` may interpret notes, chords, key or tuning, beat and pocket,
-accents, articulation, dynamics, timbre, phrase boundaries, repetition, tension, release, and the
-relation between players. It retains the exact source regions, feature and model revisions,
-latency, confidence, and competing interpretations. It is an observation about performed sound,
-not access to the performer's emotions or unspoken intent.
+`MusicalGestureObservation@1` may interpret notes/chords, key/tuning, beat/pocket, accents, articulation, dynamics, timbre, phrases, repetition, tension/release, and player relations. Preserve source regions, feature/model revisions, latency, confidence, and competing readings. It grants no access to emotion or unspoken intent.
 
-A `JamResponse@1` binds the context available through an exact source time, its lookahead, jam and
-route epochs, turn sequence, the observation or explicit cue it answered, generation controls,
-ready-by deadline, scheduled window, planned and actual first audible sample, measured path
-latency, output acknowledgement, omission reason, and resulting audio or MIDI artifact. Performer
-corrections create a new immutable `FeelProfile@1` instance linked to its predecessor: “follow behind my attack,” “answer
-only at phrase endings,” or “that distortion is energy, not a key change.” A correction links but
-never rewrites the performance, observation, or earlier profile.
-
-This is the long route toward performance-native direction: a player can steer Riffmaw through
-timing, touch, phrasing, dynamics, repetition, and contrast rather than translating every musical
-decision into prose. Persistent personalization or training from those performances is a separate
-corpus-admission and model-promotion act; a jam alone authorizes neither.
+`JamResponse@1` binds source-time cutoff and lookahead, jam/route epochs, turn sequence, answered observation/cue, controls, ready-by deadline, scheduled window, planned/actual first audible sample, measured latency, output acknowledgement, omission reason, and audio/MIDI artifact.
 
 ## The realtime stopping line
 
-Generic callback, clock-epoch, output-fence, direct-monitoring, reconnect, and uncertain-playback
-law lives in [Audio](../../adr/37-audio.md#application-owned-live-audio). Riffmaw adds musical beat
-and bar mapping, `JamResponse@1` ready-by and scheduled windows, and a safe omission when a machine
-entrance is late. The human monitor route remains available without model cooperation. A partial
-`MusicalPerformanceSession@1` preserves acknowledged takes and events; continuation is a newly armed
-forward Invocation with a new musical clock and route epoch.
+[Audio](../../adr/37-audio.md#application-owned-live-audio) owns callback, clock-epoch, output-fence, monitoring, reconnect, and uncertain-playback law. Riffmaw adds musical beat/bar mapping and deadline windows. A late machine entrance may be safely omitted; the human monitor remains available without a model. Partial sessions retain acknowledged takes/events. Continuation is a newly armed Invocation with new musical clock and route epoch.
 
 ## Proving the jam
 
-Use a focused fixture with an explicitly armed dry guitar DI, keyboard MIDI, two local performer
-roles, and one synthetic remote leg with controlled jitter, loss, and clock drift. Capture a
-`ClockDomainMap@1`, `LiveAudioGraphProfile@1`, `MidiEventStream@1`, `CaptureManifest@1`, and one
-scheduled `JamResponse@1`. Exercise xrun, device removal, clock-epoch loss, plug-in crash or latency
-change, late model output, and uncertain remote acknowledgement. Prove that direct monitoring
-continues, stale frames cannot enter the output route, raw audio and MIDI reconcile, and
-continuation requires a new Invocation. Export the attributable session, source artifacts, stems,
-raw MIDI, and neutral tempo and marker maps. This deterministic fixture proves state, fencing, and
-recovery; a later hardware bake must separately prove measured audio-device latency and musical
-usefulness.
+Use armed dry guitar DI, keyboard MIDI, two local performer roles, and a synthetic remote leg with controlled jitter/loss/drift. Capture every named clock/graph/MIDI/manifest record and a scheduled response. Exercise xrun, removal, epoch loss, plug-in crash/latency change, late output, and uncertain remote acknowledgement. Prove continued direct monitoring, stale-output fencing, raw audio/MIDI reconciliation, and newly admitted continuation. Export session, sources, stems, MIDI, tempo, and marker maps. This fixture proves state and recovery; measured device latency and musical usefulness need a separate hardware bake.

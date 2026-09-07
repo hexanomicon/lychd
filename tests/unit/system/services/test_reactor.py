@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Awaitable, Callable, Iterator
+import os
+from collections.abc import Awaitable, Callable, Generator
 from contextlib import AbstractContextManager, contextmanager
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
@@ -56,7 +57,7 @@ class _Actuator:
 
 
 @contextmanager
-def _uncontended_lock() -> Iterator[None]:
+def _uncontended_lock() -> Generator[None]:
     """Keep parallel unit tests isolated from the process-global host lock."""
     yield
 
@@ -220,7 +221,7 @@ async def test_reactor_holds_the_shared_lifecycle_lock_across_host_effects(tmp_p
     events: list[str] = []
 
     @contextmanager
-    def lock() -> Iterator[None]:
+    def lock() -> Generator[None]:
         events.append("lock-enter")
         try:
             yield
@@ -536,6 +537,53 @@ async def test_reactor_discards_oversized_untrusted_payload(tmp_path: Path) -> N
     assert not pending.exists()
     marker = journal / f"{'c' * 32}.rejected.json"
     assert marker.stat().st_size < 4096
+
+
+@pytest.mark.parametrize("recover", [False, True])
+@pytest.mark.asyncio
+async def test_reactor_refuses_claimed_fifo_without_blocking(
+    tmp_path: Path,
+    mocker: MockerFixture,
+    *,
+    recover: bool,
+) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    intent = _intent(registry)
+    pending = inbox / f"{intent.transition_id}.json"
+    processing = journal / f"{intent.transition_id}.processing.json"
+    original_replace = type(pending).replace
+    original_open = os.open
+
+    def replace_with_fifo(source: Path, target: Path) -> Path:
+        if source == pending:
+            source.unlink()
+            os.mkfifo(source, mode=0o600)
+        return original_replace(source, target)
+
+    def safe_open(path: Path, flags: int, mode: int = 0o777) -> int:
+        # Fail before the OS can block the test runner on the unsafe regression.
+        if path == processing and not flags & os.O_NONBLOCK:
+            pytest.fail("Opening the claimed FIFO would block the lifecycle owner")
+        return original_open(path, flags, mode)
+
+    if recover:
+        os.mkfifo(processing, mode=0o600)
+    else:
+        _write_intent(pending, intent)
+        mocker.patch.object(type(pending), "replace", replace_with_fifo)
+    mocker.patch("lychd.system.services.reactor.os.open", side_effect=safe_open)
+    actuator = _Actuator()
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
+
+    with pytest.raises(RuntimeError, match="intent must be a regular file"):
+        await reactor.consume_all()
+
+    actuator.apply_mock.assert_not_awaited()
+    actuator.recover_mock.assert_not_awaited()
+    assert not pending.exists()
+    assert processing.exists() is recover
+    assert (journal / f"{intent.transition_id}.rejected.json").exists() is not recover
 
 
 def test_reactor_units_are_narrow_and_host_triggered(tmp_path: Path) -> None:

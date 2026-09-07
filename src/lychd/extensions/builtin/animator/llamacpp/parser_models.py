@@ -14,7 +14,10 @@ class LlamaCppRuntimeInference:
     model_path: str | None = None
     models_dir: str | None = None
     models_preset: str | None = None
+    port: int | None = None
     n_ctx: int | None = None
+    n_parallel: int | None = None
+    n_ctx_per_slot: int | None = None
     n_predict: int | None = None
     temperature: float | None = None
     top_p: float | None = None

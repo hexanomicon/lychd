@@ -265,6 +265,30 @@ def test_soulstones_cannot_share_one_control_plane_secret(runes_dir: Path) -> No
         ).load_all()
 
 
+@pytest.mark.parametrize("owner_first", [True, False])
+def test_soulstone_data_secret_cannot_alias_another_control_plane(*, owner_first: bool) -> None:
+    owner = ExLlamaV3SoulstoneConfig.model_validate(
+        {
+            "name": "owner",
+            "auth_secret_name": "tabby_owner_auth",
+            "volumes": ["/data/owner:/app/models:ro"],
+            "models": [{"id": "owner-model", "path": "/app/models/owner-model", "format": "EXL3"}],
+        }
+    )
+    consumer = LlamaCppSoulstoneConfig.model_validate(
+        {
+            "name": "consumer",
+            "model_path": "/models/consumer.gguf",
+            "secret_env_files": {"TOKEN_FILE": "tabby_owner_auth"},
+        }
+    )
+    stones = [owner, consumer] if owner_first else [consumer, owner]
+    loader = _PureAnimatorLoader(reserved_ports={}, core_secret_names=("core_app", "core_db"))
+
+    with pytest.raises(AnimatorConfigError, match="cannot alias a Soulstone control-plane secret"):
+        loader.hydrate_all(stones)
+
+
 def test_soulstone_secret_env_files_reference(runes_dir: Path) -> None:
     _write(
         runes_dir / "animator" / "soulstones" / "llamacpp" / "secure.toml",

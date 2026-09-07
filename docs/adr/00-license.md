@@ -17,7 +17,7 @@ the boundary and does not amend that license.
 - Distributed modifications to covered core files remain open to their recipients.
 - Separate, non-covered files can carry their own terms; private use, including intra-organization
   use, does not require publication.
-- The project remains OSI-approved and contributions enter and leave on the same terms.
+- The project uses an OSI-approved license, and contributions enter and leave on the same terms.
 - MPL's Secondary License compatibility remains available unless a later Covenant changes that
   choice.
 

@@ -4,6 +4,7 @@ Importing this package registers every model on ``orm_registry.metadata`` so
 alembic autogenerate and ``target_metadata`` see the full schema.
 """
 
+from lychd.db.models.atlas import AtlasProjectRecord, AtlasRequestRecord
 from lychd.db.models.checkpoint import RunCheckpoint
 from lychd.db.models.codex import CodexPreauthorization
 from lychd.db.models.consent import Consent
@@ -17,6 +18,8 @@ from lychd.db.models.soulstone import SoulstoneRecord
 from lychd.db.models.step import Step
 
 __all__ = [
+    "AtlasProjectRecord",
+    "AtlasRequestRecord",
     "CodexPreauthorization",
     "Consent",
     "DelegatedAgentEventRecord",

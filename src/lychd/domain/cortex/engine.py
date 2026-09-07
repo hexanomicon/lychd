@@ -8,8 +8,8 @@ via the `RunLedger`, open the run's channel on the `RunEventBus`, and enqueue
 `agents/router.submit` is gone — its logic lives here and in `ghouls/runs.py`.
 
 Consent and delegated waits re-enter through exact durable delivery hops. `cancel`
-settles canonical `CANCELLED` truth before best-effort physical cleanup and waits
-for terminal Step evidence before closing the event channel.
+fences the delivery and contains its worker and child effects before committing
+`CANCELLED`, then retains terminal evidence and cleans context/checkpoints.
 """
 
 from __future__ import annotations
@@ -31,6 +31,7 @@ from lychd.lib.asyncio import complete_under_cancellation
 
 if TYPE_CHECKING:
     from lychd.agents.router import Intent
+    from lychd.agents.workflows.base import Workflow
     from lychd.domain.cortex.events import RunEventBus
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.cortex.runs import RunRecord
@@ -387,6 +388,7 @@ class RunEngine:
         "_release_context",
         "_terminal_repairs",
         "admissions",
+        "bridge_capability_key",
         "bus",
         "cancellations",
         "consents",
@@ -412,11 +414,13 @@ class RunEngine:
         delegates: DelegatedAgentCoordinatorPort | None = None,
         consents: ConsentAuthority | None = None,
         release_context: Callable[[str], None] | None = None,
+        bridge_capability_key: str | None = None,
     ) -> None:
         """Bind the already-constructed run collaborators."""
         self.ledger = ledger
         self.bus = bus
         self.workflows = workflows
+        self.bridge_capability_key = bridge_capability_key
         self.queue_router = queue_router
         self.queues = queues
         self.admissions = admissions or RunAdmissionCoordinator()
@@ -447,6 +451,9 @@ class RunEngine:
         the same session. Terminal ledger truth releases the fence naturally; no
         process-local active marker becomes recovery authority.
         """
+        if intent.admitted_capability_key is not None:
+            msg = "Capability binding is server-owned admission metadata, not caller Intent."
+            raise ValueError(msg)
         if exclusive_session:
             session_key = ("exclusive_session", intent.session_id)
             while not self.admissions.begin(session_key):
@@ -535,6 +542,7 @@ class RunEngine:
                 return await self._replayed_run_handle(existing)
 
         workflow = self.workflows.route(intent)
+        intent = self._bind_workflow_intent(intent, workflow)
         queue_name, priority = self.queue_router.resolve(intent)
         if queue_name not in self.queues:
             msg = f"Run queue {queue_name!r} is not configured."
@@ -565,6 +573,15 @@ class RunEngine:
         elif retain_before_publish is not None:
             await self._retain_and_release_admission(run, retain_before_publish)
         return await self._publish_admission(run)
+
+    def _bind_workflow_intent(self, intent: Intent, workflow: Workflow) -> Intent:
+        """Stamp configured Bridge binding only for a fresh revision 2 admission."""
+        if workflow.manifest.key != "bridge_chat" or workflow.manifest.revision != "2":
+            return intent
+        if not self.bridge_capability_key or not self.bridge_capability_key.strip():
+            msg = "bridge_chat@2 requires a configured exact capability key before admission."
+            raise ValueError(msg)
+        return intent.model_copy(update={"admitted_capability_key": self.bridge_capability_key})
 
     async def _publish_admission(self, run: RunRecord) -> RunHandle:
         """Open the live projection and publish one already-durable admission."""
@@ -840,7 +857,9 @@ class RunEngine:
         fresh = await self.ledger.get(run_id)
         if fresh is None or fresh.status in TERMINAL_STATUSES:
             return None
-        return await self.ledger.begin_cancel(run_id)
+        elected = await self.ledger.begin_cancel(run_id)
+        self.cancellations.election_finished(run_id)
+        return elected
 
     async def _contain_cancel(self, run: RunRecord, *, orphaned: bool) -> list[BaseException]:
         """Stop the parent worker, then sweep every child authority it could create."""
@@ -920,9 +939,9 @@ class RunEngine:
     async def resume_delegate(self, job_id: str) -> bool:
         """Publish a resume only after the coordinator holds terminal job truth.
 
-        Repeated callbacks remain useful: if a prior broker publication failed, the
-        Run was restored to ``AWAITING_DELEGATE`` and this method retries admission.
-        Once a caller wins the status CAS, every duplicate becomes an inert ``False``.
+        A winning admission keeps its QUEUED Run and exact PENDING delivery even
+        if publication fails; the delivery relay republishes that same hop. Later
+        callbacks cannot re-admit it and return ``False``.
         """
         from lychd.domain.delegation.models import TERMINAL_DELEGATED_AGENT_STATUSES
 

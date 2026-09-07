@@ -31,6 +31,7 @@ from lychd.domain.orchestration.actuator import (
     TransitionIntent,
 )
 from lychd.domain.orchestration.arbiter import TransitionArbiter
+from lychd.domain.orchestration.journal import TransitionRecord
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.policies import DeclaredConflictPolicy
 from lychd.domain.orchestration.schema import TransitionTrace
@@ -52,7 +53,7 @@ def _make_manager(broker: object, registry: object, *, leases: LeaseLedger | Non
 def test_transition_observer_failure_cannot_change_transition_control_flow() -> None:
     manager = _make_manager(SimpleNamespace(), StubRegistry([], [], {}))
 
-    def _broken_observer(trace: TransitionTrace) -> None:
+    def _broken_observer(record: TransitionRecord) -> None:
         raise RuntimeError
 
     trace = TransitionTrace(
@@ -328,7 +329,7 @@ async def test_request_transition_does_not_activate_started_shared_dynamic_capab
     broker = AsyncMock()
     manager = _make_manager(broker, registry)
 
-    with pytest.raises(RuntimeError, match="provided by shared animator 'router'.*cannot be lifecycle-managed"):
+    with pytest.raises(RuntimeError, match=r"provided by shared animator 'router'.*cannot be lifecycle-managed"):
         await manager.request_transition(target.key, priority=100)
 
     broker.pause_queues.assert_not_called()
@@ -923,12 +924,12 @@ async def test_hard_swap_bounds_the_initial_target_convergence_probe() -> None:
         switching=SwitchingSettings(drain_timeout_s=5.0, warmup_timeout_s=0.01),
     )
 
-    async def block_convergence_probe(_key: str) -> tuple[CapabilitySpec, CapabilityState]:
+    async def block_convergence_probe(_key: str) -> CapabilityState | None:
         await asyncio.Event().wait()
         raise AssertionError  # pragma: no cover - the test cancels the endless probe
 
     with (
-        patch.object(manager, "_get_capability_record", side_effect=block_convergence_probe),
+        patch.object(manager.registry, "refresh_capability_state", side_effect=block_convergence_probe),
         pytest.raises(ActivationTimeout, match="target convergence exceeded"),
     ):
         await manager.request_transition(target.key, 100)

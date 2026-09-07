@@ -1655,9 +1655,8 @@ async def test_approve_seam_reenqueues_parked_run() -> None:
     """approve (consent seam) re-enqueues an AWAITING_CONSENT run with a resume hop."""
     engine, ledger, queues = _engine()
     await engine.submit(Intent(session_id="s", run_id="run_p", prompt="hi", source="bridge"))
-    await ledger.set_status("run_p", RunStatus.RUNNING)
-    await ledger.set_status("run_p", RunStatus.AWAITING_CONSENT)
-    await ledger.set_consent("run_p", "consent_1")
+    assert await ledger.try_claim_run("run_p", enqueue_seq=0)
+    await ledger.park_consent("run_p", "consent_1")
     _decide(engine, run_id="run_p", consent_id="consent_1")
 
     await engine.resume_consent("consent_1")
@@ -1678,9 +1677,8 @@ async def test_approve_seam_reenqueues_parked_run() -> None:
 async def test_approve_refuses_a_parked_run_without_matching_decided_consent() -> None:
     engine, ledger, queues = _engine()
     await engine.submit(Intent(session_id="s", run_id="run_pending", prompt="hi", source="bridge"))
-    await ledger.set_status("run_pending", RunStatus.RUNNING)
-    await ledger.set_status("run_pending", RunStatus.AWAITING_CONSENT)
-    await ledger.set_consent("run_pending", "consent_pending")
+    assert await ledger.try_claim_run("run_pending", enqueue_seq=0)
+    await ledger.park_consent("run_pending", "consent_pending")
 
     await engine.resume_consent("consent_pending")
 
@@ -1703,9 +1701,8 @@ async def test_double_approve_enqueues_the_resume_once() -> None:
 
     engine, ledger, queues = _engine()
     await engine.submit(Intent(session_id="s", run_id="run_d", prompt="hi", source="bridge"))
-    await ledger.set_status("run_d", RunStatus.RUNNING)
-    await ledger.set_status("run_d", RunStatus.AWAITING_CONSENT)
-    await ledger.set_consent("run_d", "consent_d")
+    assert await ledger.try_claim_run("run_d", enqueue_seq=0)
+    await ledger.park_consent("run_d", "consent_d")
     _decide(engine, run_id="run_d", consent_id="consent_d")
 
     await asyncio.gather(
@@ -1727,9 +1724,8 @@ async def test_approve_enqueue_failure_retains_exact_resume_delivery() -> None:
     """A broker failure after consent admission leaves one relayable resume hop."""
     engine, ledger, queues = _engine()
     await engine.submit(Intent(session_id="s", run_id="run_r", prompt="hi", source="bridge"))
-    await ledger.set_status("run_r", RunStatus.RUNNING)
-    await ledger.set_status("run_r", RunStatus.AWAITING_CONSENT)
-    await ledger.set_consent("run_r", "consent_r")
+    assert await ledger.try_claim_run("run_r", enqueue_seq=0)
+    await ledger.park_consent("run_r", "consent_r")
     _decide(engine, run_id="run_r", consent_id="consent_r")
 
     queues["runs"] = _FailingQueue()  # type: ignore[assignment]
@@ -1757,9 +1753,8 @@ async def test_approve_cancellation_preserves_exact_resume_delivery() -> None:
     """Cancellation after consent admission cannot lose the durable resume hop."""
     engine, ledger, queues = _engine()
     await engine.submit(Intent(session_id="s", run_id="run_cancel", prompt="hi", source="bridge"))
-    await ledger.set_status("run_cancel", RunStatus.RUNNING)
-    await ledger.set_status("run_cancel", RunStatus.AWAITING_CONSENT)
-    await ledger.set_consent("run_cancel", "consent_cancel")
+    assert await ledger.try_claim_run("run_cancel", enqueue_seq=0)
+    await ledger.park_consent("run_cancel", "consent_cancel")
     _decide(engine, run_id="run_cancel", consent_id="consent_cancel")
     queue = _CancellationQueue()
     queues["runs"] = queue  # type: ignore[assignment]

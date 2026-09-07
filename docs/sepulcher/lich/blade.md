@@ -17,16 +17,13 @@ real choice from pressure disguised as inevitability. It may preserve one line o
 A **truthful non-answer** succeeds when no grounded continuation remains. When the exact contradiction,
 failing test, missing authority, decisive evidence, or irreducible choice becomes visible: _touché_.
 
-Its three Pramāṇa correspondences are direct perception (an observable result, test, or deterministic
+Its three [Pramāṇa correspondences](../../lexicon/inner-tongue.md#pramana-viparyaya) are direct perception (an observable result, test, or deterministic
 check), inspectable inference, and trustworthy testimony. A schema-valid or typed result can still
 be false; form is evidence of form, no more.
 
-Context is itself one of the Blade's cuts. [ADR 21 — Context](../../adr/21-context.md) owns the
-mechanism: an Agent cannot receive all LychD knows, so assembly preserves the non-negotiable floor,
-query, continuation, and newest complete history that fit the granted window, and refuses when the
-floor cannot fit. In this correspondence, Context trimming is Buddhi's progressive clarification:
-not a judgment that omitted material is false, but the selection of a bounded surface on which the
-next judgment may occur.
+Context is itself one of the Blade's cuts. In this correspondence, selecting its bounded surface
+is Buddhi's progressive clarification: omitted material has not thereby been judged false.
+[ADR 21 — Context](../../adr/21-context.md) owns what must fit and when assembly must refuse.
 
 Giving a model tokens does not tell attention what is true or important; it only makes those signs
 available to its attention mechanism. Reassembling a narrower Context at each bounded handoff can
@@ -38,23 +35,19 @@ forgetting, and a sharp answer may only be a narrow one.
 ## Crucible
 
 **Crucible** is the Blade's named adversarial discipline for a consequential question with more
-than one defensible cut. Several deliberately biased [Postures](../../adr/20-agents.md#mechanical-cognitive-postures)
-receive the same attributed evidence, acceptance criteria, non-goals, and limits. A bias gives one
-edge a declared angle; it grants no authority, does not change the evidence, and must name the
-finding that would defeat its own case.
+than one defensible cut. A deliberately biased [Posture](../../adr/20-agents.md#mechanical-cognitive-postures)
+gives an edge a declared angle. It grants no authority, does not change the evidence, and must
+name the finding that would defeat its own case.
 
-The first clash keeps advocates independent. A bounded join then carries forward each side's
-strongest claims, citations, concessions, and unknowns. The second clash answers those actual
-claims rather than a rehearsed straw opponent. A separate Lead quenches the result into a decision
-candidate without voting, erasing dissent, or treating fluency as evidence. The Magus's Viveka
-still decides what distinction matters and whether more evidence, refusal, or another Invocation
-is required.
+A serious clash meets the strongest opposing claim. Concessions and dissent expose where a
+judgment may still fail. Fluency and agreement do not make the surviving claim true. The Magus's
+[Viveka](../../lexicon/inner-tongue.md#viveka) names which distinction matters and whether more
+evidence, refusal, or another Invocation is required.
 
-Compression may narrow the packet between clashes only while it preserves provenance, strongest
-claims, concessions, dissent, missing evidence, and declared omissions. Otherwise the Crucible
-merely rewards what survived summarization. Its executable choreography belongs to
-[Spellweaver](../extensions/weaver/crucible.md); Blade owns the quality of the cut, not scheduling,
-parallelism, model selection, or promotion.
+Compression must carry what could defeat a favored answer, including dissent and missing evidence.
+Otherwise the Crucible merely rewards what survived summarization. [Spellweaver](../extensions/weaver/crucible.md)
+owns the two-round score, its attributed joins, and separate synthesis. Blade owns the quality of
+the cut.
 
 **Vikalpa** is used here as the whetstone: explicitly hypothetical possibilities show where
 discrimination is blunt. Their honest handling is project discipline, not the source meaning of

@@ -7,12 +7,11 @@ through the matching Pydantic AI OpenAI-interface provider or profile resolver.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING, cast
 
 from openai import AsyncOpenAI
 from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.profiles import InlineDefsJsonSchemaTransformer, ModelProfile
+from pydantic_ai.profiles import InlineDefsJsonSchemaTransformer
 from pydantic_ai.profiles.openai import OpenAIModelProfile
 from pydantic_ai.providers import Provider
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -36,18 +35,16 @@ LOCAL_COMPAT_PROFILE = OpenAIModelProfile(
 
 
 class _ProfiledOpenAIProvider(Provider[AsyncOpenAI]):
-    """Give an OpenAI-shaped transport its truthful provider identity and profile."""
+    """Give an OpenAI-shaped transport its truthful provider identity."""
 
     def __init__(
         self,
         *,
         transport: OpenAIProvider,
         name: str,
-        profile_resolver: Callable[[str], ModelProfile | None],
     ) -> None:
         self._transport = transport
         self._name = name
-        self._profile_resolver = profile_resolver
 
     @property
     def name(self) -> str:
@@ -61,27 +58,29 @@ class _ProfiledOpenAIProvider(Provider[AsyncOpenAI]):
     def client(self) -> AsyncOpenAI:
         return self._transport.client
 
-    def model_profile(self, model_name: str) -> ModelProfile | None:
-        return self._profile_resolver(model_name)
-
 
 def _profiled_transport(
     transport: OpenAIProvider,
     profile_provider: Provider[AsyncOpenAI],
-) -> _ProfiledOpenAIProvider:
+) -> tuple[_ProfiledOpenAIProvider, ModelProfileSpec]:
     """Keep the configured transport while borrowing provider identity and profiles."""
-    return _ProfiledOpenAIProvider(
-        transport=transport,
-        name=profile_provider.name,
-        profile_resolver=profile_provider.model_profile,
+    return (
+        _ProfiledOpenAIProvider(transport=transport, name=profile_provider.name),
+        profile_provider.model_profile,
     )
 
 
 def openai_compatible_provider(*, base_url: str, api_key: str | None = None) -> OpenAIProvider:
-    """Build an OpenAI provider bound to a base URL, with an optional API key."""
-    if api_key:
-        return OpenAIProvider(base_url=base_url, api_key=api_key)
-    return OpenAIProvider(base_url=base_url)
+    """Bind only the declared endpoint and credential before exposing the SDK client."""
+    # The SDK reads OPENAI_API_KEY when no key is passed. A local runtime or
+    # credential-free Portal has no authority to receive that unrelated secret.
+    provider = OpenAIProvider(base_url=base_url, api_key=api_key if api_key is not None else "api-key-not-set")
+    # The SDK also imports account and webhook metadata from its environment.
+    # None of those values belongs to this endpoint's declared configuration.
+    provider.client.organization = None
+    provider.client.project = None
+    provider.client.webhook_secret = None
+    return provider
 
 
 def openai_interface_route(
@@ -104,15 +103,15 @@ def openai_interface_route(
     if provider == "openrouter":
         from pydantic_ai.providers.openrouter import OpenRouterProvider
 
-        return _profiled_transport(transport, OpenRouterProvider(openai_client=transport.client)), None
+        return _profiled_transport(transport, OpenRouterProvider(openai_client=transport.client))
     if provider == "litellm":
         from pydantic_ai.providers.litellm import LiteLLMProvider
 
-        return _profiled_transport(transport, LiteLLMProvider(openai_client=transport.client)), None
+        return _profiled_transport(transport, LiteLLMProvider(openai_client=transport.client))
     if provider == "ollama":
         from pydantic_ai.providers.ollama import OllamaProvider
 
-        return _profiled_transport(transport, OllamaProvider(openai_client=transport.client)), None
+        return _profiled_transport(transport, OllamaProvider(openai_client=transport.client))
     if provider == "google-gemini":
         from pydantic_ai.profiles.google import google_model_profile
 
@@ -122,9 +121,8 @@ def openai_interface_route(
             _ProfiledOpenAIProvider(
                 transport=transport,
                 name="google-gla",
-                profile_resolver=google_model_profile,
             ),
-            None,
+            google_model_profile,
         )
     if provider == "openai":
         return transport, None

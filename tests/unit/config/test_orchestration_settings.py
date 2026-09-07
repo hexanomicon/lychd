@@ -18,6 +18,7 @@ def test_orchestration_defaults() -> None:
     assert orch.switching.policy == "declared-conflicts"
     assert orch.switching.actuator == "host-reactor"
     assert orch.switching.min_priority_for_hard_swap == 40
+    assert orch.switching.planning_timeout_s == 30.0
     assert orch.switching.drain_timeout_s == 120.0
     assert orch.switching.systemctl_timeout_s == 120.0
 
@@ -26,10 +27,12 @@ def test_orchestration_env_round_trip(monkeypatch: pytest.MonkeyPatch) -> None:
     """Nested env vars override the switching knobs (env_nested_delimiter='__')."""
     monkeypatch.setenv("ORCHESTRATION__SWITCHING__MIN_PRIORITY_FOR_HARD_SWAP", "15")
     monkeypatch.setenv("ORCHESTRATION__SWITCHING__DRAIN_TIMEOUT_S", "7.5")
+    monkeypatch.setenv("ORCHESTRATION__SWITCHING__PLANNING_TIMEOUT_S", "6.5")
     monkeypatch.setenv("ORCHESTRATION__SWITCHING__SYSTEMCTL_TIMEOUT_S", "8.5")
     settings = Settings()
     assert settings.orchestration.switching.min_priority_for_hard_swap == 15
     assert settings.orchestration.switching.drain_timeout_s == 7.5
+    assert settings.orchestration.switching.planning_timeout_s == 6.5
     assert settings.orchestration.switching.systemctl_timeout_s == 8.5
 
 
@@ -40,6 +43,7 @@ def test_orchestration_toml_round_trip(monkeypatch: pytest.MonkeyPatch, tmp_path
         "[orchestration.switching]\n"
         'policy = "declared-conflicts"\n'
         "min_priority_for_hard_swap = 33\n"
+        "planning_timeout_s = 4.5\n"
         "systemctl_timeout_s = 9.5\n"
         "[server.jobs]\n"
         "interactive_concurrency = 9\n",
@@ -49,6 +53,7 @@ def test_orchestration_toml_round_trip(monkeypatch: pytest.MonkeyPatch, tmp_path
     monkeypatch.setattr(settings_mod, "PATH_LYCHD_TOML", toml)
     settings = Settings()
     assert settings.orchestration.switching.min_priority_for_hard_swap == 33
+    assert settings.orchestration.switching.planning_timeout_s == 4.5
     assert settings.orchestration.switching.systemctl_timeout_s == 9.5
     assert settings.server.jobs.interactive_concurrency == 9
     assert settings.server.jobs.background_concurrency == 4
@@ -57,6 +62,11 @@ def test_orchestration_toml_round_trip(monkeypatch: pytest.MonkeyPatch, tmp_path
 @pytest.mark.parametrize(
     ("field_name", "timeout_s"),
     [
+        ("planning_timeout_s", 0.0),
+        ("planning_timeout_s", -1.0),
+        ("planning_timeout_s", float("inf")),
+        ("planning_timeout_s", float("-inf")),
+        ("planning_timeout_s", float("nan")),
         ("drain_timeout_s", 0.0),
         ("warmup_timeout_s", 0.0),
         ("systemctl_timeout_s", 0.0),

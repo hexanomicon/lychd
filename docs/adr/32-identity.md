@@ -6,14 +6,18 @@ icon: material/drama-masks
 # :material-drama-masks: 32. Identity
 
 !!! abstract "Context"
-    A model process is not an accountable actor. **Mirror** gives Ahaṃkāra—the Answer that says
-    “I”—a filtered, durable but revisable Persona binding and legible lineage. It is neither a
-    hidden runtime nor a claim of continuous Cognizance.
+    **Mirror** governs filtered, durable but revisable Persona bindings and their attribution.
+    Those bindings must remain traceable when model processes end, work resumes, or a Persona
+    revision changes. Mirror is neither a hidden runtime nor evidence of continuous Cognizance.
+
+The [Answer](../sepulcher/lich/answer.md) develops the corresponding account of Ahaṃkāra and
+local identity.
 
 ## Decision
 
 Mirror is LychD's singular identity-binding jurisdiction. It owns Persona definitions/revisions,
-one exact Persona binding per Invocation, scoped identity context and eligible memory hydration,
+an exact Persona revision binding when an Invocation selects one, explicit absence when it selects
+none, scoped identity context and eligible memory hydration,
 hydration receipts, attribution across people and machinery, and reviewed Persona-revision
 proposals. It does not authenticate a Principal, grant scope, select model, schedule Pattern,
 evaluate quality or causal blame, or train weights; IAM/Ward, Dispatcher, Spellweaver, Riddle, and
@@ -48,19 +52,28 @@ Persona **voice** means declared discourse, commitments, manner, and orientation
 acoustic voice profile, synthesized speech artifact, musical vocal, dubbed performance, or
 presentation asset. Echo retains acoustic and speech-lifecycle facts; Riffmaw musical performance;
 Language Edition timed-language performance; and Avatar the eligible presentation selection that may
-reference any exact permitted artifact.
+reference any exact permitted artifact. Avatar's Morphe may select presentation style and an
+already eligible output locale; it cannot select or rewrite Persona discourse manner, translate
+text, or turn localized wording into identity.
 
 ## Persona and binding
 
-A Persona has a stable id and immutable revisions. Each declares owner/provenance/parent/creation
-and lifecycle; name, voice, commitments, domain, and non-goals; ordered instruction fragments;
-memory namespace/eligibility; compatible Postures; protected terms/relationships; required Riddle
-Trial Suites; and replacement, rollback, export, and retirement law. Codex owns declared intent and
-Phylactery stores revisions, bindings, receipts, and attribution—not an untyped prompt dump.
-Publication freezes a revision; edits make candidate children. A name may route new work to a
-promoted revision, but every Run retains the exact bound revision.
+A Pattern explicitly selects an exact Persona revision or selects no Persona. Every admitted Run
+keeps that choice. A name may direct later work to a promoted revision, but promotion cannot
+rewrite an existing binding.
 
-An admitted Pattern selects that revision, or expressly none, and Mirror compiles:
+One Persona has a stable id and immutable revisions. Publication freezes a revision; editing
+produces candidate children. Each revision declares:
+
+| Concern | Required content |
+| --- | --- |
+| Lineage | Owner, provenance, parent, creation and lifecycle. |
+| Identity | Name, discourse voice, commitments, domain, non-goals, and protected terms and relationships. |
+| Hydration | Ordered instruction fragments, memory namespace and eligibility, and compatible Postures. |
+| Review and change | Required Riddle Trial Suites; replacement, rollback, export and retirement law. |
+
+Codex owns declared intent. Phylactery stores revisions, bindings, hydration receipts and
+attribution. When a Persona is selected, Mirror compiles its contribution:
 
 ```text
 Persona revision + Pattern/AgentSpec requirements + active Principal/Sigil
@@ -68,52 +81,65 @@ Persona revision + Pattern/AgentSpec requirements + active Principal/Sigil
 ```
 
 The receipt records source revisions, memory references, transformations and exclusions, ordering,
-size/truncation, and envelope digest. It proves supplied context, not model obedience. Context owns
-token budgeting/final prompt assembly; Ward authorizes namespace/tool/scope; Dispatcher chooses a
-capability; Orchestrator makes it ready. Stronger prose cannot repair missing permission.
-Identity memory is deny-by-default between Personas and Principals; every record keeps namespace,
-producer, subject, provenance, eligibility, and retention. Cross-identity recall requires explicit
-policy and retains source attribution. Hydration is revision-pinned on resume, with newly admitted
-memory cited rather than silently waking as the latest Persona.
+size and truncation, and the envelope digest. It establishes what was supplied, not model obedience.
+Context owns token budgeting and final prompt assembly. Ward authorizes namespaces, tools and
+scopes; Dispatcher selects capability; Orchestrator supplies readiness. More forceful identity
+instructions cannot replace any missing permission.
+
+Identity memory is denied by default across Personas and Principals. Every record carries its
+namespace, producer, subject, provenance, eligibility and retention. Cross-identity recall needs
+explicit policy and retains source attribution.
+
+Resume preserves the revision-pinned Persona binding and cites newly admitted memory. It does
+not silently replace the selected revision with the latest Persona.
 
 ## Attribution and congruence
 
-Every identity-bearing Invocation/artifact records initiator, approver, delegate and actor; Sigil;
-Persona, AgentSpec, Posture, Composition, Pattern, and Invocation revisions; contributing models,
-providers, tools, sources, and humans; parent/handoff/artifact lineage; and whether the record is
-assertion, observation, evaluation, correction, or promoted act. These relationships establish
-neither quality, credit, fault, nor causal blame.
+Every identity-bearing Invocation or artifact records who initiated, approved, delegated and
+acted, together with the active Sigil. It retains the exact Persona, AgentSpec, Posture,
+Composition, Pattern and Invocation revisions; contributing models, providers, tools, sources and
+humans; and parent, handoff and artifact lineage. Each record identifies its evidential role:
+assertion, observation, evaluation, correction or promoted act. Attribution establishes these
+relationships without deciding quality, credit, fault or causal blame.
 
-At a Composition Suite handoff the immutable artifact keeps original attribution; the consumer starts a newly
-admitted child Invocation with its own binding. Correlation/handoff receipts do not copy authority
-or authorship. Delegation names both principals and uses the delegate's producer/grant. Edits and
-rejected branches add, never launder, lineage. Riddle retains author and subject for findings and
-corrections; Mirror binds history, while Riddle owns verdicts/attribution candidates and Soulforge
-alone admits training.
+At a Composition Suite handoff, the immutable artifact retains its original attribution. The
+consumer starts a newly admitted child Invocation with its own binding. Handoff and correlation
+receipts convey neither authority nor authorship. Delegation names both principals and uses the
+delegate's producer identity and grant. Edits and rejected branches add to lineage rather than
+laundering it.
 
-A Persona may give Riddle criteria for commitments, voice boundaries, role limits, memory claims,
-tool behavior, and pressure response. Congruence is one evaluated property—not truth or general
-quality. A designed Phantasma Pattern may ask Shadow for bounded branches and use a versioned
-Persona-congruence Trial Suite, but Mirror may not choose the resemblance it prefers. Matched controls
-distinguish continuity from slogans, mimicry, refusal, and leakage. Changed authority language,
-tools, memory policy, or core commitments rerun affected adversarial/regression evidence; a
-punctuation change need not rerun every Trial Suite.
+Riddle keeps the author and subject of findings and corrections. Mirror binds that history;
+Riddle owns verdicts and attribution candidates; Soulforge independently admits any training use.
+
+A Persona may supply Riddle with criteria for commitments, voice boundaries, role limits, memory
+claims, tool behavior and response to pressure. Congruence measures one property of that Persona;
+it does not establish truth or general quality. A designed Phantasma Pattern may request bounded
+Shadow branches and a versioned Persona-congruence Trial Suite. Mirror cannot select whichever
+resemblance it prefers.
+
+Matched controls distinguish continuity from slogans, mimicry, refusal and leakage. Changes to
+authority language, tools, memory policy or core commitments rerun affected adversarial and
+regression evidence. A punctuation change need not rerun every Trial Suite.
 
 ## Revision and recovery
 
-Experience may inform a proposal, never rewrite the promoted definition automatically:
+Experience may inform a revision proposal. The promoted definition changes only through the
+reviewed passage:
 
 ```text
 attributed observations/findings → bounded diff against exact parent → validation
 → Riddle congruence/regression evidence → required Magus/HitL decision → immutable child
 ```
 
-Smith may draft/package and Spellweaver coordinate, but neither publishes through Mirror. Repetition,
-praise, model confidence, and memory volume grant no scope, tool, trigger, queue, or hardware
-priority. Rollback directs future Invocations to a prior promoted revision; it cannot rewrite
-earlier Runs/artifacts. A static prompt lacks binding, scoped memory, receipt, lineage, and
-rollback; retrieval is hydration input, not identity; behavioral resemblance is at most a Riddle
-finding; automatic self-revision is refused as an unauditable feedback loop.
+Smith may draft or package a candidate and Spellweaver may coordinate the work; publication stays
+with Mirror. Repetition, praise, model confidence and memory volume grant no additional scope,
+tool, trigger, queue position or hardware priority.
+
+Rollback directs future Invocations to a prior promoted revision and leaves earlier Runs and
+artifacts intact. A static prompt supplies none of the required binding, scoped memory, receipt,
+lineage or rollback. Retrieval provides hydration input, while behavioral resemblance can support
+at most a Riddle finding. Automatic self-revision is refused because it bypasses the attributable
+reviewed passage.
 
 ## Consequences
 

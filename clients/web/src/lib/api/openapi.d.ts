@@ -21,6 +21,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/atlas/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Projects */
+        get: operations["getAtlasProjects"];
+        put?: never;
+        /** Create */
+        post: operations["createAtlasProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/atlas/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Project */
+        get: operations["getAtlasProject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/atlas/projects/{project_id}/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change */
+        post: operations["changeAtlasProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/atlas/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** References */
+        get: operations["getAtlasReferences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bridge": {
         parameters: {
             query?: never;
@@ -387,6 +456,166 @@ export interface components {
             csrf: components["schemas"]["CsrfClientContract"];
             pending_consents: number;
         };
+        /** AtlasAssessment */
+        AtlasAssessment: {
+            author: string;
+            brief: string;
+            brief_revision: number;
+            /** Format: uuid */
+            concern_id: string;
+            concern_revision: number;
+            /** Format: date-time */
+            created_at: string;
+            criteria: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            judgment: "sufficient" | "insufficient" | "disputed";
+            rationale: string;
+            reference_ids: string[];
+            statement: string;
+        };
+        /** AtlasCatalogue */
+        AtlasCatalogue: {
+            limit: number;
+            offset: number;
+            projects: components["schemas"]["AtlasSummary"][];
+            total: number;
+        };
+        /** AtlasConcern */
+        AtlasConcern: {
+            criteria: string;
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            statement: string;
+        };
+        /** AtlasConcernAssess */
+        AtlasConcernAssess: {
+            /** Format: uuid */
+            concern_id: string;
+            /** @enum {string} */
+            judgment: "sufficient" | "insufficient" | "disputed";
+            /** @constant */
+            kind: "concern.assess";
+            rationale: string;
+            reference_ids: string[];
+        };
+        /** AtlasConcernSave */
+        AtlasConcernSave: {
+            concern_id: string | null;
+            criteria: string;
+            /** @constant */
+            kind: "concern.save";
+            statement: string;
+        };
+        /** AtlasCreate */
+        AtlasCreate: {
+            /** @default  */
+            brief: string;
+            /** Format: uuid */
+            id: string;
+            /** @default  */
+            next_action: string;
+            title: string;
+        };
+        /** AtlasDecision */
+        AtlasDecision: {
+            author: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            rationale: string;
+            statement: string;
+            supersedes_id: string | null;
+        };
+        /** AtlasDecisionRecord */
+        AtlasDecisionRecord: {
+            /** @constant */
+            kind: "decision.record";
+            rationale: string;
+            statement: string;
+            supersedes_id: string | null;
+        };
+        /** AtlasMutation */
+        AtlasMutation: {
+            change: components["schemas"]["AtlasProjectUpdate"] | components["schemas"]["AtlasConcernSave"] | components["schemas"]["AtlasConcernAssess"] | components["schemas"]["AtlasDecisionRecord"] | components["schemas"]["AtlasReferenceAdd"];
+            expected_version: number;
+            /** Format: uuid */
+            request_id: string;
+        };
+        /** AtlasProject */
+        AtlasProject: {
+            assessments: components["schemas"]["AtlasAssessment"][];
+            brief: string;
+            brief_revision: number;
+            concerns: components["schemas"]["AtlasConcern"][];
+            /** Format: date-time */
+            created_at: string;
+            decisions: components["schemas"]["AtlasDecision"][];
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            lifecycle: "active" | "paused" | "closed";
+            next_action: string;
+            references: components["schemas"]["AtlasReference"][];
+            title: string;
+            /** Format: date-time */
+            updated_at: string;
+            version: number;
+        };
+        /** AtlasProjectUpdate */
+        AtlasProjectUpdate: {
+            brief: string;
+            /** @constant */
+            kind: "project.update";
+            /** @enum {string} */
+            lifecycle: "active" | "paused" | "closed";
+            next_action: string;
+            title: string;
+        };
+        /** AtlasReference */
+        AtlasReference: {
+            author: string;
+            concern_id: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "session" | "run";
+            note: string;
+            target_id: string;
+        };
+        /** AtlasReferenceAdd */
+        AtlasReferenceAdd: {
+            concern_id: string | null;
+            /** @constant */
+            kind: "reference.add";
+            note: string;
+            /** @enum {string} */
+            reference_kind: "session" | "run";
+            target_id: string;
+        };
+        /** AtlasSummary */
+        AtlasSummary: {
+            brief: string;
+            concern_count: number;
+            disputed_count: number;
+            /** Format: uuid */
+            id: string;
+            insufficient_count: number;
+            /** @enum {string} */
+            lifecycle: "active" | "paused" | "closed";
+            next_action: string;
+            review_needed_count: number;
+            title: string;
+            unassessed_count: number;
+            /** Format: date-time */
+            updated_at: string;
+            version: number;
+        };
         /** BridgeSnapshot */
         BridgeSnapshot: {
             active_runs: components["schemas"]["RunProjectionSnapshot"][];
@@ -472,7 +701,7 @@ export interface components {
             limitations: string[];
             /** @enum {string} */
             provider_gate: "not_required" | "required_unavailable";
-            provider_id: string;
+            registrant_id: string;
             runnable: boolean;
             runtime_id: string;
             transport: string;
@@ -725,6 +954,7 @@ export interface components {
             /** Format: date-time */
             created_at: string;
             id: string;
+            pending_count: number;
             title: string;
         };
         /** SessionView */
@@ -732,6 +962,7 @@ export interface components {
             /** Format: date-time */
             created_at: string;
             id: string;
+            pending_count: number;
             title: string;
             turns?: components["schemas"]["BridgeTurnView"][];
         };
@@ -834,6 +1065,244 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AltarStatus"];
+                };
+            };
+        };
+    };
+    getAtlasProjects: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtlasCatalogue"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+        };
+    };
+    createAtlasProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AtlasCreate"];
+            };
+        };
+        responses: {
+            /** @description Document created, URL follows */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtlasProject"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+            /** @description Additional response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+        };
+    };
+    getAtlasProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtlasProject"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+        };
+    };
+    changeAtlasProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AtlasMutation"];
+            };
+        };
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtlasProject"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+            /** @description Additional response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+        };
+    };
+    getAtlasReferences: {
+        parameters: {
+            query: {
+                kind: "session" | "run";
+                target_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtlasSummary"][];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
                 };
             };
         };

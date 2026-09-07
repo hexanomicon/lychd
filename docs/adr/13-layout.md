@@ -42,6 +42,8 @@ ancestry (except an appropriate sticky root/invoker-owned directory or a foreign
 `bind` applies the same law while planning and committing, but never creates a missing binding
 site. The per-UID/per-Codex lifecycle lock is under fixed host `/tmp`, not caller-selected `TMPDIR`.
 
+### Publish an owned object
+
 Every traversal is descriptor-relative and no-follow. A missing component is made under a private
 same-directory staging name, opened and device/inode-attested, then atomically published without
 replacement. The receipt records the opened identity and parent descriptor authority rather than a
@@ -49,6 +51,8 @@ replaceable pathname. File publication follows the same rule: write and `fsync` 
 publish no-clobber, re-attest through the pinned parent, `fsync` the directory, then journal. A
 race winner, replacement, ambiguous result, or failed journal is preserved or quarantined as typed
 recovery; it is never broadened into deletion authority.
+
+### Retire only recorded identities
 
 After a complete transaction, the receipt may adopt the exact device/inode identities of the
 dedicated Codex, Crypt, and Forge roots. Shared XDG parents, mounts, source checkouts, and external

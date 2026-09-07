@@ -1,20 +1,15 @@
-"""The `bridge_chat` workflow: WeaveContext -> Converse -> ProjectReply (A5 §5).
+"""Bridge chat: assemble context, converse, optionally await consent, settle reply.
 
-Three stations over the woven Stable Floor. The grant is acquired inside
-`Converse` (the per-step lease); a `HardwareTransitionRequired` raised there
-propagates out of `graph.iter()` for `GraphRunner` to catch and resolve — that is
-Live Stasis, and no node handles hardware.
-
-No module-level mutable state: every collaborator is read from `ctx.deps`
-(a `WorkflowServices`), threaded in as `graph.iter(..., deps=services)`.
+Nodes read collaborators from ``ctx.deps`` and lease capabilities only while using
+them. GraphRunner owns hardware waits; AwaitConsent owns the consent continuation.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, cast
+from dataclasses import dataclass, replace
+from typing import TYPE_CHECKING, Any, Self, cast
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from pydantic_ai import DeferredToolRequests, DeferredToolResults
 from pydantic_ai.messages import (
     ModelMessage,
@@ -51,22 +46,21 @@ from lychd.domain.cortex.runs import ConsentPending
 if TYPE_CHECKING:
     from lychd.agents.router import Intent
     from lychd.agents.services import TurnLedgerPort
+    from lychd.domain.animation.capabilities import CapabilityGrant
     from lychd.domain.web.fragments import FragmentRegistry, ValidatedFragment
 
 __all__ = [
     "BRIDGE_CHAT",
+    "BRIDGE_CHAT_BOUND",
+    "BRIDGE_CHAT_BOUND_GRAPH",
     "BRIDGE_CHAT_GRAPH",
     "AwaitConsent",
+    "BoundBridgeChatState",
     "BridgeChatState",
     "Converse",
     "ProjectReply",
     "WeaveContext",
 ]
-
-
-# ---------------------------------------------------------------------------
-# Typed state (workflow-private; outputs live in lychd.agents.outputs)
-# ---------------------------------------------------------------------------
 
 
 class BridgeChatState(BaseModel):
@@ -76,30 +70,32 @@ class BridgeChatState(BaseModel):
     run_id: str
     prompt: str
     priority: int = PRIORITY_DEFAULT
+    capability_key: str | None = None
     hardware_resume_budget: HardwareResumeBudget = Field(default_factory=HardwareResumeBudget)
     history: list[Any] = Field(default_factory=list)
     new_messages: list[Any] = Field(default_factory=list)
     reply: BridgeReply | None = None
     pending_consent_id: str | None = None
     bottleneck: Bottleneck | None = None
-    # Consent park state (4C-2 contract; wired in 4C-4). `paused_messages` stores
-    # only the JSONABLE current logical-turn suffix; completed history is re-bounded
-    # under the newly acquired grant on resume. NEVER store DeferredToolRequests.
+    # Persist only the current turn's JSON suffix. Re-bound completed history under
+    # the new grant on resume; never checkpoint live DeferredToolRequests.
     paused_messages: list[Any] | None = None
     pending_call_ids: tuple[str, ...] = ()
-    pending_consent_tool_name: str | None = None  # S4: remembered so perform_run emits without a codex read
+    pending_consent_tool_name: str | None = None  # Lets the worker emit without another consent read.
     pending_consent_tool_binding: ConsentToolBinding | None = None
     consent_rounds: int = 0  # bounded by MAX_CONSENT_ROUNDS
 
 
-# ---------------------------------------------------------------------------
-# Node helpers (pure; every collaborator is an explicit argument)
-# ---------------------------------------------------------------------------
+class BoundBridgeChatState(BridgeChatState):
+    """Revision 2 requires its admitted binding even when decoding a parked graph."""
 
-
-def build_user_prompt(state: BridgeChatState) -> str:
-    """Return the query as the user prompt; the woven floor rides in `instructions`."""
-    return state.prompt
+    @model_validator(mode="after")
+    def require_binding(self) -> Self:
+        """Refuse a revision 2 resume that has lost its admitted binding."""
+        if self.capability_key is None or not self.capability_key.strip():
+            msg = "bridge_chat@2 requires its admitted exact capability key."
+            raise ValueError(msg)
+        return self
 
 
 async def _session_history(session_id: str, turns: TurnLedgerPort) -> list[Any]:
@@ -115,6 +111,20 @@ def _fallback_reply(state: BridgeChatState) -> BridgeReply:
     if state.bottleneck is not None:
         return BridgeReply(answer=f"The turn settled without the action: {state.bottleneck.detail}")
     return BridgeReply(answer="The turn settled without a reply.")
+
+
+def _agent_deps(ctx: GraphRunContext[BridgeChatState, WorkflowServices], grant: CapabilityGrant) -> LychDDeps:
+    """Bind fresh identity and step correlation inside the current grant's lease."""
+    return LychDDeps(
+        sigil=ctx.deps.sigil_provider(),
+        grant=grant,
+        dispatcher=ctx.deps.dispatcher,
+        orchestrator=ctx.deps.orchestrator,
+        context=ctx.deps.context,
+        run_id=ctx.state.run_id,
+        step_id=new_step_id(),
+        priority=ctx.state.priority,
+    )
 
 
 def _usage_limits(context_window: int | None, grant: Any) -> UsageLimits | None:
@@ -166,17 +176,12 @@ async def settle_turn(
     )
 
 
-# ---------------------------------------------------------------------------
-# The graph nodes
-# ---------------------------------------------------------------------------
-
-
 @dataclass
 class WeaveContext(BaseNode[BridgeChatState, WorkflowServices]):
-    """The Archivist step: assemble the keyed-block Stable Floor (ADR 28 §2, ADR 21)."""
+    """Assemble completed session history and the keyed-block Stable Floor."""
 
     async def run(self, ctx: GraphRunContext[BridgeChatState, WorkflowServices]) -> Converse:
-        """Assemble the floor, stamp the prefix digest, and hand off to Converse."""
+        """Retain the bounded history for the capability-bound context assembly."""
         emit = ctx.deps.events.emitter(ctx.state.run_id)
         emit.status("weaving")
         assembled = ctx.deps.context.assemble(
@@ -191,19 +196,17 @@ class WeaveContext(BaseNode[BridgeChatState, WorkflowServices]):
 
 @dataclass
 class Converse(BaseNode[BridgeChatState, WorkflowServices]):
-    """The thinking station. The grant is acquired HERE — the per-step lease."""
+    """Run the first inference hop under a fresh capability lease."""
 
     async def run(self, ctx: GraphRunContext[BridgeChatState, WorkflowServices]) -> ProjectReply | AwaitConsent:
-        """Lease the grant (per-step), stream The First One, capture reply or park.
+        """Stream a reply or record consent after releasing the capability lease.
 
-        The pump runs INSIDE the lease CM; `park_on_consent` runs AFTER the CM exits,
-        so the lease is released before the park is recorded (no-lease-across-park at
-        the Converse hop too). A ``HardwareTransitionRequired`` raised by the decision
-        table propagates BEFORE lease acquisition by construction (Live Stasis).
+        Hardware waits propagate to GraphRunner before lease acquisition.
         """
         emit = ctx.deps.events.emitter(ctx.state.run_id)
         async with ctx.deps.dispatcher.lease_grant(
             family="chat",
+            capability_key=ctx.state.capability_key,
             run_id=ctx.state.run_id,
             priority=ctx.state.priority,
             requires_tools=True,
@@ -218,21 +221,12 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
             )
             ctx.state.history = assembled.state_window
             agent = ctx.deps.forge.agent_for(THE_FIRST_ONE_SPEC)
-            deps = LychDDeps(
-                sigil=ctx.deps.sigil_provider(),
-                grant=grant,
-                dispatcher=ctx.deps.dispatcher,
-                orchestrator=ctx.deps.orchestrator,
-                context=ctx.deps.context,
-                run_id=ctx.state.run_id,
-                step_id=new_step_id(),
-                priority=ctx.state.priority,
-            )
+            deps = _agent_deps(ctx, grant)
             emit.status("thinking")
             bound_toolset = bind_consent_toolsets(grant.toolsets, capability_key=grant.spec.key)
             pumped = await pump_agent_events(
                 agent,
-                build_user_prompt(ctx.state),
+                ctx.state.prompt,
                 deps=deps,
                 model=grant.model,
                 model_settings=grant.model_settings(),
@@ -244,7 +238,7 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
         output = pumped.output
         ctx.state.new_messages = pumped.new_messages
         if isinstance(output, DeferredToolRequests):
-            if not is_single_approval(output):  # F5: never share one card's verdict across calls
+            if not is_single_approval(output):
                 ctx.state.bottleneck = Bottleneck(
                     kind="policy_block", detail="multiple tool approvals in one turn are not yet supported"
                 )
@@ -257,12 +251,7 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
                     detail=f"approval tool '{tool_name}' has no durable effect identity",
                 )
                 return ProjectReply()
-            await park_on_consent(
-                ctx,
-                output,
-                ctx.state.new_messages,
-                binding,
-            )  # S4: records the row; does NOT emit
+            await park_on_consent(ctx, output, ctx.state.new_messages, binding)
             return AwaitConsent()
         ctx.state.reply = output
         return ProjectReply()
@@ -270,20 +259,19 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
 
 @dataclass
 class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
-    """The Seat of Consent: check the verdict; park (raise) if pending, else resume.
+    """Resume an approved or refused call; a pending verdict parks without a lease.
 
-    A `Gate` — its presence assigns bridge_chat the Durable Stasis tier. The verdict
-    check PRECEDES grant acquisition (no lease across the park, S6).
+    The Gate marker makes this workflow use durable checkpoints.
     """
 
     async def run(self, ctx: GraphRunContext[BridgeChatState, WorkflowServices]) -> ProjectReply | AwaitConsent:
         """Read the verdict; suspend on pending; else resume the deferred tool run."""
         consent_id = ctx.state.pending_consent_id
-        if consent_id is None:  # defensive: a Gate entered without a park is a bug
+        if consent_id is None:
             ctx.state.bottleneck = Bottleneck(kind="policy_block", detail="gate reached without a parked consent")
             return ProjectReply()
         verdict = await ctx.deps.consents.verdict(consent_id)
-        if verdict is None:  # THE park signal — the run suspends, it does not fail
+        if verdict is None:
             raise ConsentPending(consent_id, ctx.state.run_id, ctx.state.pending_consent_tool_name or "")
 
         expected_binding = ctx.state.pending_consent_tool_binding
@@ -292,6 +280,7 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
         emit = ctx.deps.events.emitter(ctx.state.run_id)
         async with ctx.deps.dispatcher.lease_grant(
             family="chat",
+            capability_key=ctx.state.capability_key,
             run_id=ctx.state.run_id,
             priority=ctx.state.priority,
             requires_tools=True,
@@ -308,16 +297,7 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
             ctx.state.history = assembled.state_window
             history = ModelMessagesTypeAdapter.validate_python(assembled.model_history())
             agent = ctx.deps.forge.agent_for(THE_FIRST_ONE_SPEC)
-            deps = LychDDeps(
-                sigil=ctx.deps.sigil_provider(),
-                grant=grant,
-                dispatcher=ctx.deps.dispatcher,
-                orchestrator=ctx.deps.orchestrator,
-                context=ctx.deps.context,
-                run_id=ctx.state.run_id,
-                step_id=new_step_id(),
-                priority=ctx.state.priority,
-            )
+            deps = _agent_deps(ctx, grant)
             emit.status("thinking")
             try:
                 bound_toolset = bind_consent_toolsets(
@@ -352,7 +332,7 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
         ctx.state.pending_consent_tool_name = None
         ctx.state.pending_consent_tool_binding = None
         if isinstance(output, DeferredToolRequests):  # the tool chained another approval
-            if not is_single_approval(output):  # F5: never share one card's verdict across calls
+            if not is_single_approval(output):
                 ctx.state.bottleneck = Bottleneck(
                     kind="policy_block", detail="multiple tool approvals in one turn are not yet supported"
                 )
@@ -380,11 +360,7 @@ class ProjectReply(BaseNode[BridgeChatState, WorkflowServices, BridgeReply]):
     """Validate FragmentCalls against the Vessel-owned registry, settle the turn."""
 
     async def run(self, ctx: GraphRunContext[BridgeChatState, WorkflowServices]) -> End[BridgeReply]:
-        """Validate fragments and settle. Reached only with a settled reply OR a bottleneck.
-
-        A park now leaves the graph via `ConsentPending` raised out of `AwaitConsent`
-        and NEVER reaches here. Run status is the ledger's — never written here.
-        """
+        """Settle the reply or bottleneck; the worker owns terminal Run status."""
         emit = ctx.deps.events.emitter(ctx.state.run_id)
         emit.status("settling")
         reply = ctx.state.reply or _fallback_reply(ctx.state)
@@ -401,10 +377,6 @@ class ProjectReply(BaseNode[BridgeChatState, WorkflowServices, BridgeReply]):
         return End(reply)
 
 
-# ---------------------------------------------------------------------------
-# The workflow
-# ---------------------------------------------------------------------------
-
 BRIDGE_CHAT_GRAPH: Graph[BridgeChatState, WorkflowServices, BridgeReply] = Graph(
     nodes=(WeaveContext, Converse, AwaitConsent, ProjectReply),
     name="bridge_chat",
@@ -412,10 +384,8 @@ BRIDGE_CHAT_GRAPH: Graph[BridgeChatState, WorkflowServices, BridgeReply] = Graph
 
 
 def _make_state(intent: Intent) -> BridgeChatState:
-    # S3: `perform_run` rebuilds the intent from the run row via `RunRecord.to_intent`,
-    # so `intent.run_id` here is always the canonical ledger id; the `or ""` only
-    # satisfies the type for the advisory-None client-correlation shape.
-    # C6: per-run data (priority) lives in graph State, never deps.
+    # Worker execution reconstructs Intent from the admitted Run, including its
+    # canonical id and priority. Direct test construction may omit the id.
     return BridgeChatState(
         session_id=intent.session_id,
         run_id=intent.run_id or "",
@@ -453,5 +423,50 @@ BRIDGE_CHAT = Workflow(
             PatternEdge(key="consent-to-project", source="await_consent", target="project_reply"),
             PatternEdge(key="project-to-end", source="project_reply", target="end"),
         ),
+    ),
+)
+
+
+def _make_bound_state(intent: Intent) -> BoundBridgeChatState:
+    """Use only the binding persisted at admission, never current configuration."""
+    values = _make_state(intent).model_dump()
+    values["capability_key"] = intent.admitted_capability_key
+    return BoundBridgeChatState.model_validate(values)
+
+
+def _validate_bound_state(intent: Intent, state: BaseModel) -> None:
+    """Refuse checkpoint drift from the Run's admitted input and execution identity."""
+    if not isinstance(state, BoundBridgeChatState) or intent.admitted_capability_key is None:
+        msg = "bridge_chat@2 requires its admitted Run binding."
+        raise ValueError(msg)
+    expected_priority = intent.priority if intent.priority is not None else PRIORITY_DEFAULT
+    if (state.run_id, state.session_id, state.prompt, state.capability_key, state.priority) != (
+        intent.run_id,
+        intent.session_id,
+        intent.prompt,
+        intent.admitted_capability_key,
+        expected_priority,
+    ):
+        msg = "bridge_chat@2 checkpoint does not match its admitted Run."
+        raise ValueError(msg)
+
+
+BRIDGE_CHAT_BOUND_GRAPH: Graph[BridgeChatState, WorkflowServices, BridgeReply] = Graph(
+    nodes=(WeaveContext, Converse, AwaitConsent, ProjectReply),
+    state_type=BoundBridgeChatState,
+    name="bridge_chat",
+)
+
+BRIDGE_CHAT_BOUND = replace(
+    BRIDGE_CHAT,
+    description="Converse with The First One using the exact capability selected at admission.",
+    graph=BRIDGE_CHAT_BOUND_GRAPH,
+    make_state=_make_bound_state,
+    validate_state=_validate_bound_state,
+    manifest=replace(
+        BRIDGE_CHAT.manifest,
+        revision="2",
+        implementation_revision="py.2",
+        checkpoint_schema="bridge-chat-state-v2",
     ),
 )

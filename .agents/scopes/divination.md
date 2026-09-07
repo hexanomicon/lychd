@@ -24,6 +24,8 @@ route or presentation changes.
   `docs/summoning.md` only when their route changes.
 - Altar: `docs/divination/altar/index.md`; use [frontend scope](frontend.md) for experience or
   frontend behavior.
+- Correspondence: `docs/divination/correspondence.md`; use
+  [Transcendence scope](transcendence.md) for its brain/learned-system comparisons and meaning.
 - System correspondence: nearest relevant `docs/sepulcher/` leaf.
 - Navigation and presentation: `zensical.toml`, `docs/overrides/`, `docs/assets/`.
 - Optional comparison, after local authority:

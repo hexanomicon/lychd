@@ -22,10 +22,14 @@ The native Click CLI remains useful without an application graph. `serve` and `d
 lazily to Litestar; help, `init`, `bind`, lifecycle commands, and ordinary operator commands do
 not construct the ASGI application.
 
+### Process and listener boundary
+
 The runtime is one Granian/Litestar process and one event loop. The native launcher rejects
 multi-worker and reload configuration. The launcher and `create_app()` call one pure server policy
 which rejects server-visible worker/reload variables and detectable direct Litestar/Granian
-arguments. Listener authority resolves explicit `--port`, then `LITESTAR_PORT`, `GRANIAN_PORT`,
+arguments.
+
+Listener authority resolves explicit `--port`, then `LITESTAR_PORT`, `GRANIAN_PORT`,
 and the configured server port; the native launcher publishes that result before Litestar loads
 the application, and Host admission consumes the same value. Native `lychd serve` likewise accepts
 only `127.0.0.1` or `::1` from `--host`/`-H`, `LITESTAR_HOST`, or `GRANIAN_HOST`, defaulting to
@@ -33,23 +37,33 @@ only `127.0.0.1` or `::1` from `--host`/`-H`, `LITESTAR_HOST`, or `GRANIAN_HOST`
 arguments or Litestar environment overrides are refused: otherwise they would bypass the owned
 TCP host rather than refine it. The caged image's intentional internal
 Granian `0.0.0.0` listener is a distinct topology behind generated loopback-only host publication;
-it does not authorize the native bootstrap listener to widen. The run-event bus, cancellation
-coordinator, services, and SAQ workers are process-local. This is a correctness boundary, not a
+it does not authorize the native bootstrap listener to widen.
+
+The run-event bus, cancellation coordinator, services, and SAQ workers are process-local. This is a correctness boundary, not a
 scalability claim or permission to use another launcher.
 
 ## Lifespan and ownership
 
 Application initialization creates the typed Settings generation, selected extension assembly, and
 validated Rune registry; installs routes, middleware, framework plugins, and dependency providers;
-then enters its lifespan. Lifespan waits for the Host Reactor fence, connects both queues, builds
-durable dependencies and services, loads runtime registry material off the event loop, publishes
-the shared run substrate, and attempts preauthorization and orphan/consent reconciliation.
-`app.state.services` is published only after required construction succeeds. Reconciliation may
-log a failure and continue; required setup cannot.
+then enters its lifespan. Startup crosses these boundaries in order:
+
+1. Wait for the Host Reactor fence and connect both queues.
+2. Build durable dependencies and services; load runtime registry material off the event loop.
+3. Recover durable authority, including preauthorization policy, cancellation, terminal evidence
+   and checkpoints, orphaned Runs, consent, delegated waits, and pending delivery.
+4. Start the maintenance relays, then publish the shared run substrate and `app.state.services`.
+
+PostgreSQL recovery is an admission prerequisite. A failed or degraded required reconciliation
+aborts startup before workers can claim work or HTTP can resolve services. The memory profile has
+no cross-process state to recover and permits best-effort reconciliation. That exception does not
+weaken durable startup. [Workers (14)](14-workers.md) owns exact recovery order and settlement law.
 
 Any failed startup follows the same reverse order as shutdown: stop in-process workers, withdraw
 the run substrate, close services, then disconnect queues. A collaborator therefore cannot outlive
 what it reads. There is no hot-reload contract.
+
+### Where implementation belongs
 
 The application layer owns HTTP admission and dependency wiring. Domain code speaks ports,
 repositories, and services; persistence adapters own SQLAlchemy sessions and explicit statements
@@ -76,8 +90,12 @@ compiled Svelte assets, not browser state or templates. Mermaid is sent as inert
 client-side rendering. Structlog is present instrumentation; an uninstalled OpenTelemetry exporter
 does not establish external tracing.
 
-The process owns one async SQLAlchemy engine/session factory. Connection and signing secrets are
-resolved only by their consuming component; Settings retain references, never secret contents.
+### Captured credentials and database wire values
+
+The process owns one async SQLAlchemy engine/session factory. Connection and signing secrets load
+once with Settings as excluded `SecretStr` fields; consuming components read the captured values
+without reopening environment variables or files. [Configuration (12)](12-configuration.md)
+owns precedence, explicit reload, and secret-free serialization.
 The asyncpg hook registers separate binary codecs: JSONB adds and removes PostgreSQL's version
 byte, while plain `json` passes its unversioned bytes directly. Focused hook tests pin both wire
 shapes; this is a correctness contract, not a throughput claim.

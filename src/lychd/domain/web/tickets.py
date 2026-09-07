@@ -1,9 +1,7 @@
-"""`TicketStore` — the loop-confined registry of in-flight Coven swaps.
+"""Loop-confined Nexus task tickets with a bounded terminal reconnect window.
 
-Replaces the `nexus._TICKETS` module-global dict. Loop-confined like
-`BridgeSessionStore`: every mutation is synchronous and only ever touched from a
-single event loop, so no locks are needed. It remains a process-local Nexus
-projection rather than durable Run truth.
+Task completion starts retention; it does not establish the physical outcome.
+Tickets remain process-local, and mutations run synchronously on one event loop.
 """
 
 from __future__ import annotations
@@ -36,7 +34,7 @@ def _new_ticket_id() -> str:
 
 @dataclass
 class TicketRecord:
-    """An in-flight coven transition tracked for the polling ticket strip."""
+    """A transition task and trace retained for polling and terminal reconnect."""
 
     id: str
     target: str

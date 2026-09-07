@@ -10,7 +10,7 @@ from lychd.domain.animation.capabilities import (
     CapabilityState,
 )
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import SoulstoneConfig
+from lychd.domain.animation.schemas import GenerationProfile, SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import (
     capability_specs_from_model_infos,
     default_model_id_for_soulstone,
@@ -64,27 +64,24 @@ class LlamaCppRuntimeAdapter:
             default_model_id=default_model_id_for_soulstone(stone, model_infos),
             mode=descriptor.mode,
             router_query_model_id=descriptor.router_query_model_id,
+            generation_defaults=GenerationProfile.model_validate(self._runtime_defaults(descriptor)),
         )
         return SoulstoneAnimator(rune=stone, connector=connector)
 
-    def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
-        """Synthesize capability specs for llama.cpp single or router runtimes."""
+    def build_capability_specs(self, animator: RuntimeAnimator) -> list[CapabilitySpec]:
+        """Synthesize specs from the catalogue and defaults captured at construction."""
+        soulstone = animator.rune
         stone = require_runtime_soulstone(
             soulstone,
             expected_type=LlamaCppSoulstoneConfig,
             runtime=self.runtime,
         )
-        descriptor = self._describe_runtime(stone)
-        hints_by_id = {model.id: model.capabilities for model in stone.models if model.capabilities is not None}
-        # Operator-declared [[models]] ARE the catalog when present (matched, no
-        # spurious name-fallback spec); otherwise fall back to runtime discovery.
-        model_infos = model_infos_from_soulstone(stone, discovered=descriptor.model_infos)
+        connector = cast("LlamacppConnector", animator.connector)
         return capability_specs_from_model_infos(
             stone,
-            model_infos,
-            runtime_defaults=self._runtime_defaults(descriptor),
-            is_dynamic=descriptor.mode == "router",
-            hints_by_id=hints_by_id,
+            connector.model_infos,
+            runtime_defaults=connector.generation_defaults.model_dump(exclude_none=True),
+            is_dynamic=connector.mode == "router",
         )
 
     async def probe_capability_states(
@@ -94,8 +91,9 @@ class LlamaCppRuntimeAdapter:
     ) -> list[CapabilityState]:
         """Map live llama.cpp control-plane data into phase-canonical states.
 
-        Phase mapping (spec §2): single ``/health`` 503-loading → WARMING, 200 →
-        WARM; router ``/models`` status → ACTIVATABLE/WARM; unreachable → COLD;
+        Phase mapping: single ``/health`` 503-loading → WARMING, healthy plus
+        an exact inventory match → WARM; router ``/models`` status →
+        ACTIVATABLE/WARM; unreachable → COLD;
         control-plane exception → ERROR with reason.
         """
         connector = cast("LlamacppConnector", animator.connector)
@@ -163,7 +161,9 @@ class LlamaCppRuntimeAdapter:
         )
         reason: str | None = None
         if phase is CapabilityPhase.ERROR:
-            reason = health_error or "runtime_error"
+            reason = health_error or (
+                f"declared model {spec.model_id!r} is absent from /models" if health == "ok" else "runtime_error"
+            )
         elif phase is CapabilityPhase.ACTIVATABLE:
             reason = "model_not_loaded"
         elif phase is CapabilityPhase.COLD:
@@ -194,8 +194,9 @@ class LlamaCppRuntimeAdapter:
                 return CapabilityPhase.COLD
             loaded = model_id in loaded_ids and health == "ok"
             return CapabilityPhase.WARM if loaded else CapabilityPhase.ACTIVATABLE
-        # single mode is FIXED: reachable health "ok" ⇒ WARM, else COLD.
-        return CapabilityPhase.WARM if health == "ok" else CapabilityPhase.COLD
+        if health == "ok":
+            return CapabilityPhase.WARM if model_id in loaded_ids else CapabilityPhase.ERROR
+        return CapabilityPhase.COLD
 
     async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult:
         """Perform router-native model activation when the runtime supports it."""
@@ -248,6 +249,21 @@ class LlamaCppRuntimeAdapter:
         """Produce connector-facing runtime descriptor for llama.cpp orchestration."""
         inferred = self._infer_runtime(soulstone)
         mode = inferred.mode or soulstone.resolved_mode()
+        if not soulstone.exec:
+            # Managed defaults are emitted as CLI arguments and therefore shadow
+            # both environment and preset values. Describe the command we plan,
+            # including the final extra-argument overlays, rather than an input
+            # fragment that can omit the actual context limit or alias.
+            command = self._planner.plan_exec_args(
+                soulstone=soulstone,
+                inferred=inferred,
+                mode=mode,
+                listen_host=LISTEN_HOST,
+            )
+            inferred = self._parser.merge(
+                primary=self._parser.infer_args(command),
+                secondary=self._parser.infer_env(soulstone.env_vars),
+            )
         return self._planner.describe_runtime(
             soulstone=soulstone,
             inferred=inferred,
@@ -268,9 +284,9 @@ class LlamaCppRuntimeAdapter:
     def _runtime_defaults(self, descriptor: LlamaCppDescriptor) -> dict[str, object]:
         """Translate llama.cpp planner defaults into shared generation-profile keys."""
         defaults: dict[str, object] = {}
-        n_ctx = descriptor.generation_defaults.get("n_ctx")
-        if isinstance(n_ctx, int):
-            defaults["max_context"] = n_ctx
+        request_context = self._request_context(descriptor)
+        if request_context is not None:
+            defaults["max_context"] = request_context
         n_predict = descriptor.generation_defaults.get("n_predict")
         if isinstance(n_predict, int):
             defaults["max_tokens"] = n_predict
@@ -281,6 +297,22 @@ class LlamaCppRuntimeAdapter:
         if isinstance(temperature, int | float):
             defaults["temperature"] = float(temperature)
         return defaults
+
+    def _request_context(self, descriptor: LlamaCppDescriptor) -> int | None:
+        """Derive a conservative configured bound only from known positive slot inputs."""
+        n_ctx = descriptor.generation_defaults.get("n_ctx")
+        n_parallel = descriptor.generation_defaults.get("n_parallel")
+        if not isinstance(n_ctx, int) or not isinstance(n_parallel, int) or n_ctx <= 0 or n_parallel <= 0:
+            return None
+        # --ctx-size allocates total context. A per-slot share is safe for
+        # both split and unified KV layouts, subject to an explicit slot cap.
+        request_context = n_ctx // n_parallel
+        slot_cap = descriptor.generation_defaults.get("n_ctx_per_slot")
+        if slot_cap is not None:
+            if not isinstance(slot_cap, int) or slot_cap <= 0:
+                return None
+            request_context = min(request_context, slot_cap)
+        return request_context if request_context > 0 else None
 
 
 __all__ = ["LlamaCppRuntimeAdapter"]

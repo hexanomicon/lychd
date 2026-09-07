@@ -5,43 +5,22 @@ icon: material/account-group-outline
 
 # :material-account-group-outline: Habitat
 
-This page owns Reach's social Habitat, first manifested as **The Necropolis**. It is related by
-sovereignty, but not identical, to the designed [Necropolis A2A
-topology](../../adr/26-a2a.md#legion-and-necropolis): joining the guild never enrolls a
-peer, trusts a foreign node, creates a Principal, or grants LychD authority.
+The Necropolis first appears as one private Discord guild, one channel named `the-reach`, and a server-installed application named **Reach**. The outbound Gateway session admits social contact without publishing an ad hoc entrance to the loopback Vessel.
 
-Revision one manifests the Habitat as one private Discord guild, **The Necropolis**, one channel, `the-reach`, and a
-server-installed application named **Reach**. The outbound Gateway session avoids exposing the
-loopback Vessel through an ad hoc public endpoint.
+This social Habitat shares a name with the designed [Necropolis A2A topology](../../adr/26-a2a.md#legion-and-necropolis), not its enrollment. Guild membership creates no peer, Principal, node trust, or LychD grant.
 
-The bot receives only `View Channel` and `Send Messages` there, with `GUILDS` and
-`GUILD_MESSAGES`; it receives no administrator, moderation, attachment, mass-mention, voice, or
-privileged intent. Non-mention content is discarded before persistence. Replies disable automatic
-mentions.
+## The channel's boundary
 
-Platform identity is evidence, not local authority. Ward may map one enrolled subject to a
-Principal and current object grants only when the selected adapter/profile supplies its admitted
-proof; an unlinked member receives guest conversation with no private records, tools, or effects.
-Discord roles may narrow visibility but never create a Principal, grant, or consent decision. In
-the VPS-edge/home-core profile, relayed Gateway identity is forgeable by a compromised edge and is
-therefore guest/public-only unless the human independently proves identity directly to home Ward.
+Revision one gives the bot only `View Channel` and `Send Messages`, with `GUILDS` and `GUILD_MESSAGES`. It receives no administrator, moderation, attachments, mass mentions, voice, or privileged intent. Non-mention content is discarded before persistence; replies disable automatic mentions.
 
-Mirror retains Persona lineage. Discord and its adapter retain place, member, event, session, and
-delivery state. A local turn records only purpose-limited material. The same Persona may later be
-projected through [Avatar](../avatar/index.md) into this Reach Habitat, a
-[Blockworld](../blockworld/index.md) inhabitant, or a [Spectre](../spectre/index.md) VR Habitat, but
-that continuity carries no shared Context, authority, or endless session. An Avatar presence
-cannot make Discord history private or grant the next turn.
+A platform subject is evidence of identity only to the adapter/profile's admitted assurance. Ward may map an enrolled subject to a Principal and current object grants; an unlinked member receives guest conversation without private records, tools, or effects. Discord roles can narrow visibility but cannot mint a grant or settle consent.
 
-Everything projected to Discord is obtainable by Discord or an attacker who compromises it.
-Channel privacy and ephemeral replies narrow audience; they are not end-to-end encryption.
+On the split VPS-edge/home-core road, a compromised edge can fabricate relayed Gateway identity. Home therefore treats it as guest/public-only unless the person independently proves identity directly to Ward. Neither fluent account use nor tunnel possession repairs that gap.
 
-Discord is the first Habitat, not the permanent definition of the community. A later
-forum, Reach surface, or self-hosted commons must preserve the same identity, privacy,
-admission, and authority boundaries rather than inherit trust from the name.
+## A place the Lich may return to
 
-The docs-aware, operator-controlled [deployment profiles](deployments/index.md) choose one durable
-body: home-only, a non-authoritative VPS Discord edge with home authority, or an independent
-standalone VPS. None inherits private continuity merely from Discord or network placement.
+Mirror preserves Persona lineage; Discord and its adapter preserve place, member, event, session, and delivery state. A Reach turn keeps purpose-limited material. [Avatar](../avatar/index.md) may later relate presentation here to Blockworld or a Spectre Habitat without shared Context, authority, or endless session.
 
-Continue with [Turn](turn.md) for admission and recovery.
+Discord and an attacker compromising it can obtain projected material. Private channels and ephemeral replies narrow audience, not provide end-to-end encryption. A later forum, Reach surface, or self-hosted commons must independently preserve identity, privacy, admission, and authority rather than inherit trust from the name.
+
+Choose a [deployment profile](deployments/index.md), then follow one [Turn](turn.md).

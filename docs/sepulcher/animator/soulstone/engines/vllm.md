@@ -9,6 +9,11 @@ icon: material/rocket-launch
 adapter binds one declared model service to a Rune, derives its model capability, probes the live
 inventory, and exposes it only when the exact declared model is ready.
 
+A server pinned to one model produces `is_dynamic=False` capabilities. Reachability establishes
+link liveness; a capability becomes `WARM` only when the validated live `/models` inventory also
+contains its exact declared model id. Malformed inventory or a missing id becomes `ERROR`.
+Focused tests cover current planning and connector behavior.
+
 The adapter owns runtime defaults and translation of typed Rune fields into launch arguments.
 Intentional engine-specific changes belong in the runtime's typed overrides or an explicit
 operator-owned `exec`; they do not become Core-wide generation law.

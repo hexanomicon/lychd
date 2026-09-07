@@ -15,9 +15,8 @@ Remote Ward is **Designed**, with its boundary owned by [State of
 Work](../../state-of-the-work.md#remote-iam). The implemented [local Sigil and scope
 floor](../../state-of-the-work.md#local-sigil-authority) is **Partial**: ordinary contained requests
 receive the fixed, secret-free `magus:*` Sigil; middleware reads no credential and distinguishes no
-caller. Scope guards and consent preauthorization exist. No Ward provider, credential-backed
-Principal, remote session, object authorization, delegation, revocation, tenant isolation,
-recovery protocol, or IAM audit ships.
+caller. Scope guards and consent preauthorization exist, but credential-backed authentication and
+the remote IAM path described below remain Designed.
 
 ## The marks inside the circle
 
@@ -46,15 +45,18 @@ object, assurance, delegation, consent or preauthorization, policy generation, a
 epoch. It checks again after queueing, worker claim, Stasis, consent, resume, or another wait.
 Narrowing the tools visible to an Agent helps; the handler remains the lock.
 
+Revocation must invalidate Credentials, sessions, cached grants, and affected pending or sleeping
+work. Recovery begins at zero authority: no universal remote Master token or ambient fallback
+exists.
+
+### The current preauthorization floor
+
 The current preauthorization floor rechecks enabled state, source presence, database time expiry,
 and remaining use budget in the conditional consumption write immediately before granting the
 effect. Startup synchronization marks removed Rune-owned policies `source_present = false` without
 overwriting operator enable/disable or usage state; a later exact reappearance can restore source
 presence. Budget consumption and its consent record share one PostgreSQL transaction, with rollback
 tested against injected insert failure and removal/expiry races.
-Revocation must invalidate Credentials, sessions, cached grants, and affected pending or sleeping
-work. Recovery begins at zero authority: no universal remote Master token or ambient fallback
-exists.
 
 ## No borrowed authority
 

@@ -53,6 +53,7 @@ class _SingleControl(LlamaCppControlPlane):
         del animator
         return AnimatorLifecycle(
             health=self._health,
+            loaded_models=["qwen"] if self._health == "ok" else [],
         )
 
 

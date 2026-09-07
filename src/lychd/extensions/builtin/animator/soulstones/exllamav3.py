@@ -7,7 +7,7 @@ from typing import ClassVar, Literal
 from pydantic import Field, field_validator, model_validator
 
 from lychd.config import QuadletConfig
-from lychd.domain.animation.schemas import LocalModelConfig, ModelFormat, SoulstoneConfig
+from lychd.domain.animation.schemas import LocalModelConfig, ModelFormat, ModelSurface, SoulstoneConfig
 from lychd.extensions.builtin.animator.tabby_auth import is_valid_tabby_auth_secret_name
 
 _MIN_VOLUME_PARTS = 2
@@ -154,6 +154,9 @@ image = "ghcr.io/theroyallab/tabbyapi@sha256:a2a4c5b5cd9ae38ea01410c0e495a39c378
         model: LocalModelConfig,
         allowed_formats: set[ModelFormat],
     ) -> str:
+        if model.capabilities is not None and model.capabilities.surface is ModelSurface.RESPONSES:
+            msg = "The current ExLlamaV3 TabbyAPI adapter supports only the chat surface"
+            raise ValueError(msg)
         runtime_name = exllamav3_runtime_model_name(model)
         if (
             not runtime_name.strip()

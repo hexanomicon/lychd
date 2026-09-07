@@ -19,10 +19,9 @@ Native Oculus is **Designed**. The current [Orb](../../divination/altar/orb.md) 
 read-only Altar projection of one selected Run, presenting available records with their capture
 limits and gaps.
 
-Native ingestion, a durable Oculus query/read model, retention and health services, resource
-telemetry, cross-process completeness, a live tail, and a multi-Run field remain absent.
-[State of Work](../../state-of-the-work.md#native-oculus) owns that exact delivery boundary;
-[ADR 29](../../adr/29-observability.md) owns the evidence contract.
+The Orb does not yet have native Oculus ingestion or a durable query/read model behind it.
+[State of Work](../../state-of-the-work.md#native-oculus) records the remaining delivery boundary;
+[ADR 29](../../adr/29-observability.md) owns the evidence contract developed below.
 
 ## Meanings of evidence
 
@@ -67,12 +66,16 @@ external export passes through a second filter.
 
 Retention is declared by evidence class and subject. Removing an observation cannot erase an
 owning Run fact or effect receipt. A conforming path bounds queues and cardinality, batches
-deliberately, flushes within a shutdown budget, and makes overload or loss visible as a gap. Those
-safeguards are not yet complete: current live subscriber queues are unbounded.
+deliberately, flushes within a shutdown budget, and makes overload or loss visible as a gap.
+Today's live Run replay and each subscriber queue are bounded at 256 events. A stalled subscriber
+receives an explicit snapshot-resync boundary when its pending deltas overflow; the producer does
+not wait for that reader. This channel behavior does not supply the future Oculus ingestion,
+retention, or shutdown contract.
 
 ## External Eyes
 
-An external **Eye** sits behind a versioned, one-way adapter. Phoenix, Logfire, or OpenTelemetry
+An external [**Eye**](../../adr/29-observability.md#decision-outcome), in the observability sense,
+sits behind a versioned, one-way adapter. Phoenix, Logfire, or OpenTelemetry
 tooling may receive an allowlisted, redacted, purpose-bound export; it receives no LychD database
 role or identity, consent, lifecycle, or control authority, and has no canonical read-back.
 Incoming trace context may correlate an authenticated request, but cannot authenticate or

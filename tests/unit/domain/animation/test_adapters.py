@@ -8,9 +8,9 @@ import pytest
 import respx
 from pydantic import BaseModel, ValidationError
 
-from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityPhase
+from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityPhase, CapabilitySpec
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
-from lychd.domain.animation.schemas import GenericSoulstoneConfig
+from lychd.domain.animation.schemas import GenericSoulstoneConfig, SoulstoneConfig
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.services.adapters.runtimes.openai_compat import OpenAICompatibleRuntimeAdapter
@@ -42,6 +42,12 @@ def _runtime_registry() -> RuntimeAdapterRegistry:
     return RuntimeAdapterRegistry(
         adapters=[LlamaCppRuntimeAdapter(), _vllm_adapter(), _sglang_adapter()],
     )
+
+
+def _capability_specs(registry: RuntimeAdapterRegistry, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
+    runtime = registry.build_runtime(soulstone)
+    assert runtime is not None
+    return registry.build_capability_specs(runtime)
 
 
 @pytest.mark.parametrize(
@@ -108,7 +114,7 @@ def test_llamacpp_single_mode_plan() -> None:
     )
 
     connector, plan = _build_llamacpp_connector(soulstone)
-    specs = _runtime_registry().build_capability_specs(soulstone)
+    specs = _capability_specs(_runtime_registry(), soulstone)
 
     assert connector.mode == "single"
     assert plan.exec_args[:2] == ["-m", "/models/qwen.gguf"]
@@ -141,7 +147,7 @@ def test_llamacpp_router_mode_detects_preset_models(tmp_path: Path) -> None:
     )
 
     connector, plan = _build_llamacpp_connector(soulstone)
-    model_ids = {spec.model_id for spec in _runtime_registry().build_capability_specs(soulstone)}
+    model_ids = {spec.model_id for spec in _capability_specs(_runtime_registry(), soulstone)}
 
     assert connector.mode == "router"
     # Without a models catalog the router query model falls back to the Soulstone name.
@@ -166,7 +172,7 @@ def test_llamacpp_declared_models_filter_preset_inventory(tmp_path: Path) -> Non
             "models": [{"id": "declared", "path": "/models/declared.gguf"}],
         }
     )
-    specs = _runtime_registry().build_capability_specs(soulstone)
+    specs = _capability_specs(_runtime_registry(), soulstone)
 
     assert {spec.model_id for spec in specs} == {"declared"}
 
@@ -192,7 +198,7 @@ def test_vllm_openai_compatible_plan() -> None:
     )
 
     _connector, plan = _build_vllm_connector(soulstone)
-    specs = _runtime_registry().build_capability_specs(soulstone)
+    specs = _capability_specs(_runtime_registry(), soulstone)
 
     assert {spec.model_id for spec in specs} == {"glm-flash"}
     assert plan.exec_args == exec_args
@@ -211,7 +217,7 @@ def test_vllm_model_uses_runtime_profile_capabilities() -> None:
         }
     )
 
-    model = _runtime_registry().build_capability_specs(soulstone)[0]
+    model = _capability_specs(_runtime_registry(), soulstone)[0]
 
     assert model.model_id == "vision-awq"
     assert model.modalities_in == ("text",)
@@ -241,7 +247,7 @@ def test_sglang_openai_compatible_plan() -> None:
     )
 
     _connector, plan = _build_sglang_connector(soulstone)
-    specs = _runtime_registry().build_capability_specs(soulstone)
+    specs = _capability_specs(_runtime_registry(), soulstone)
 
     assert {spec.model_id for spec in specs} == {"public-qwen"}
     assert plan.exec_args == exec_args
@@ -261,7 +267,7 @@ def test_vllm_builds_capability_specs_with_concurrency_metadata() -> None:
     )
 
     registry = _runtime_registry()
-    specs = registry.build_capability_specs(soulstone)
+    specs = _capability_specs(registry, soulstone)
 
     assert len(specs) == 1
     spec = specs[0]
@@ -288,7 +294,7 @@ async def test_vllm_probe_warms_only_the_exact_observed_model(respx_mock: respx.
         return_value=httpx.Response(200, json={"object": "list", "data": [{"id": "public-model-alias"}]})
     )
 
-    specs = adapter.build_capability_specs(soulstone)
+    specs = adapter.build_capability_specs(runtime)
     states = await adapter.probe_capability_states(runtime, specs)
 
     assert [spec.model_id for spec in specs] == ["public-model-alias"]
@@ -311,7 +317,7 @@ async def test_vllm_probe_rejects_a_declared_model_absent_from_inventory(respx_m
         return_value=httpx.Response(200, json={"object": "list", "data": [{"id": "unrelated-model"}]})
     )
 
-    states = await adapter.probe_capability_states(runtime, adapter.build_capability_specs(soulstone))
+    states = await adapter.probe_capability_states(runtime, adapter.build_capability_specs(runtime))
 
     assert {state.phase for state in states} == {CapabilityPhase.ERROR}
     assert all(state.health == "model_missing" for state in states)
@@ -333,7 +339,7 @@ async def test_vllm_probe_fails_closed_on_malformed_inventory(respx_mock: respx.
         return_value=httpx.Response(200, json={"object": "list", "data": [{"object": "model"}]})
     )
 
-    states = await adapter.probe_capability_states(runtime, adapter.build_capability_specs(soulstone))
+    states = await adapter.probe_capability_states(runtime, adapter.build_capability_specs(runtime))
 
     assert runtime.connector.link.up is True
     assert {state.phase for state in states} == {CapabilityPhase.ERROR}
@@ -369,7 +375,7 @@ async def test_vllm_probe_bounds_live_model_inventory(
         return_value=httpx.Response(200, json={"object": "list", "data": inventory})
     )
 
-    states = await adapter.probe_capability_states(runtime, adapter.build_capability_specs(soulstone))
+    states = await adapter.probe_capability_states(runtime, adapter.build_capability_specs(runtime))
 
     assert {state.phase for state in states} == {CapabilityPhase.ERROR}
     assert all(state.health == "inventory_invalid" for state in states)
@@ -399,7 +405,7 @@ def test_llamacpp_router_builds_specs_for_preset_catalog(tmp_path: Path) -> None
     )
 
     registry = _runtime_registry()
-    specs = registry.build_capability_specs(soulstone)
+    specs = _capability_specs(registry, soulstone)
 
     # Preset sections plus the Soulstone-name fallback each yield a dynamic spec.
     assert {spec.model_id for spec in specs} == {"router", "router-main", "router-vision"}
@@ -443,7 +449,7 @@ async def test_llamacpp_router_probe_maps_dynamic_capability_state(tmp_path: Pat
     assert runtime is not None
     runtime.connector.link.up = True
 
-    specs = adapter.build_capability_specs(soulstone)
+    specs = adapter.build_capability_specs(runtime)
     states = {state.capability_key: state for state in await adapter.probe_capability_states(runtime, specs)}
 
     main = next(spec for spec in specs if spec.model_id == "router-main")
@@ -487,8 +493,8 @@ async def test_llamacpp_router_activation_reports_clean_load_rejection(tmp_path:
         control_plane=cast("LlamaCppControlPlane", RejectingControlPlane()),
     )
     runtime = adapter.build_runtime(soulstone)
-    target = next(spec for spec in adapter.build_capability_specs(soulstone) if spec.model_id == "target")
     assert runtime is not None
+    target = next(spec for spec in adapter.build_capability_specs(runtime) if spec.model_id == "target")
 
     result = await adapter.activate_capability(runtime, target)
 
@@ -496,40 +502,23 @@ async def test_llamacpp_router_activation_reports_clean_load_rejection(tmp_path:
     assert result.reason == "router rejected model load"
 
 
-def test_generic_runtime_does_not_assume_openai_compatible_surface() -> None:
+@pytest.mark.parametrize("runtime_name", ["crawler", "openai_compatible", "openai-compatible", "openai"])
+def test_unregistered_runtime_keeps_command_plan_without_fabricating_a_surface(runtime_name: str) -> None:
+    exec_args = ["custom-server", "--model", "/models/qwen.gguf"]
     soulstone = GenericSoulstoneConfig.model_validate(
         {
-            "name": "crawler",
-            "quadlet": {"image": "crawler:latest"},
-            "runtime": "crawler",
-            "port": 18080,
-        }
-    )
-
-    registry = _runtime_registry()
-    runtime = registry.build_runtime(soulstone)
-    assert runtime is None
-    assert registry.build_capability_specs(soulstone) == []
-
-
-def test_generic_runtime_supports_explicit_openai_compatible_surface() -> None:
-    soulstone = GenericSoulstoneConfig.model_validate(
-        {
-            "name": "local-openai",
-            "quadlet": {"image": "local-openai:latest"},
-            "runtime": "openai_compatible",
+            "name": "unregistered",
+            "quadlet": {"image": "invalid.example/inert"},
+            "runtime": runtime_name,
             "model_path": "/models/qwen.gguf",
             "port": 18080,
+            "exec": exec_args,
         }
     )
 
     registry = _runtime_registry()
-    runtime = registry.build_runtime(soulstone)
-    assert runtime is not None
-    assert isinstance(runtime.connector, OpenAICompatibleConnector)
-    specs = registry.build_capability_specs(soulstone)
-    assert [(spec.family, spec.model_id) for spec in specs] == [(CapabilityFamily.CHAT, "qwen")]
-    assert runtime.connector.get_model(model_id=specs[0].model_id).model_name == "qwen"
+    assert registry.plan(soulstone).exec_args == exec_args
+    assert registry.build_runtime(soulstone) is None
 
 
 def test_llamacpp_resolve_infers_single_mode_and_alias_from_exec() -> None:
@@ -555,10 +544,10 @@ def test_llamacpp_resolve_infers_single_mode_and_alias_from_exec() -> None:
     )
 
     connector, _ = _build_llamacpp_connector(soulstone)
-    specs = _runtime_registry().build_capability_specs(soulstone)
+    specs = _capability_specs(_runtime_registry(), soulstone)
     assert connector.mode == "single"
     assert {spec.model_id for spec in specs} == {"qwen-next-80b"}
-    assert {spec.generation_profile.max_context for spec in specs} == {65536}
+    assert {spec.generation_profile.max_context for spec in specs} == {16384}
 
 
 def test_llamacpp_resolve_infers_router_and_catalog_from_exec_models_preset(tmp_path: Path) -> None:
@@ -590,14 +579,14 @@ def test_llamacpp_resolve_infers_router_and_catalog_from_exec_models_preset(tmp_
     )
 
     connector, _ = _build_llamacpp_connector(soulstone)
-    model_ids = {spec.model_id for spec in _runtime_registry().build_capability_specs(soulstone)}
+    model_ids = {spec.model_id for spec in _capability_specs(_runtime_registry(), soulstone)}
     assert connector.mode == "router"
     assert connector.router_query_model_id == "qwen-next-80b"
     assert "qwen-next-80b" in model_ids
     assert "qwen-next-7b" in model_ids
 
 
-def test_llamacpp_resolve_uses_env_when_no_exec_args() -> None:
+def test_llamacpp_managed_command_shadows_environment_context_default() -> None:
     soulstone = LlamaCppSoulstoneConfig.model_validate(
         {
             "name": "env-driven",
@@ -609,11 +598,12 @@ def test_llamacpp_resolve_uses_env_when_no_exec_args() -> None:
         }
     )
 
-    connector, _ = _build_llamacpp_connector(soulstone)
-    specs = _runtime_registry().build_capability_specs(soulstone)
+    connector, plan = _build_llamacpp_connector(soulstone)
+    specs = _capability_specs(_runtime_registry(), soulstone)
     assert connector.mode == "router"
     assert connector.router_query_model_id == "qwen-from-env"
-    assert {spec.generation_profile.max_context for spec in specs} == {32768}
+    assert plan.exec_args[plan.exec_args.index("-c") + 1] == "8192"
+    assert {spec.generation_profile.max_context for spec in specs} == {8192}
 
 
 def test_llamacpp_plan_follows_inferred_router_mode_from_extra_args(tmp_path: Path) -> None:
@@ -653,7 +643,7 @@ def test_llamacpp_resolve_infers_n_predict_from_predict_alias() -> None:
         }
     )
 
-    specs = _runtime_registry().build_capability_specs(soulstone)
+    specs = _capability_specs(_runtime_registry(), soulstone)
     assert {spec.generation_profile.max_tokens for spec in specs} == {768}
 
 
@@ -672,11 +662,13 @@ def test_llamacpp_resolve_uses_single_model_section_when_provider_does_not_match
         }
     )
 
-    profiles = [spec.generation_profile for spec in _runtime_registry().build_capability_specs(soulstone)]
+    profiles = [spec.generation_profile for spec in _capability_specs(_runtime_registry(), soulstone)]
     assert profiles
     assert all(profile == profiles[0] for profile in profiles)
     profile = profiles[0]
-    assert profile.max_context == 65536
+    command = _runtime_registry().plan(soulstone).exec_args
+    assert command[command.index("-c") + 1] == "8192"
+    assert profile.max_context == 8192
     assert profile.temperature == 0.6
 
 
@@ -698,11 +690,13 @@ def test_llamacpp_resolve_effective_defaults_follow_cli_over_preset_precedence(t
                 "qwen-next-80b",
                 "-c",
                 "131072",
+                "-np",
+                "1",
             ],
         }
     )
 
-    profiles = [spec.generation_profile for spec in _runtime_registry().build_capability_specs(soulstone)]
+    profiles = [spec.generation_profile for spec in _capability_specs(_runtime_registry(), soulstone)]
     assert profiles
     assert all(profile == profiles[0] for profile in profiles)
     profile = profiles[0]

@@ -5,32 +5,18 @@ icon: material/briefcase-account-outline
 
 # :material-briefcase-account-outline: Broker
 
-Broker carries one client request through a regulated service firm. The reference vertical is a
-Slovak non-life insurance intermediary beginning with PZP: somebody calls to check cover, the firm
-looks through its governed product knowledge, and returns an attributable answer, prepared act,
-human handoff, or exact blocker.
+A client calls to check their [PZP](https://nbs.sk/en/dohlad-nad-financnym-trhom/legislativa/legislativa/detail-dokumentu/act-no-381-2001-coll-on-compulsory-motor-third-party-liability-insurance/) cover: compulsory motor third-party liability insurance. Before the office answers, it must establish the request, the product knowledge that applies, and the authority of the person handling it. Broker carries that service case to an attributable answer, a prepared act, a human handoff, or an exact blocker.
 
-## Contract
-
-| Field | Reference contract |
-| --- | --- |
-| **Identity** | `broker.office` revision `1` |
-| **Principal Pattern** | `broker.service_case@1` |
-| **Begins with** | an admitted `ClientContact@1`, one requested action, business policy, product catalogue, and current staff authority |
-| **Can return** | an attributable answer, reviewable act, human handoff, or exact blocker |
-| **Stops before** | unlicensed advice, undisclosed automation, payment, signature, binding, or unsupported product claims |
-
-A deployment pins the firm's legal role, jurisdictions, represented institutions, disclosures,
-complaint route, record duties, and named human authority. Neither a configured product nor a
-fluent model response expands that mandate.
+The reference office is a Slovak non-life insurance intermediary beginning with PZP. Its deployment fixes the firm's legal role, jurisdictions, represented institutions, disclosures, complaint route, record duties, and named human authority. Product configuration and fluent prose cannot expand that mandate.
 
 ## Open the office
 
-- [Cases](cases.md) owns why the client contacted the firm, what action is requested, and how that work ends.
-- [Products](products.md) owns the firm's dated product knowledge, eligibility, comparisons, quotes, and expiry.
-- [Channels](channels.md) owns how contacts arrive and how reviewed results leave without becoming authority.
+[Cases](cases.md) follows the contact and requested action. [Insurance Product Knowledge](products.md) supplies dated coverage, eligibility, comparison, quote, and expiry evidence. [Channels](channels.md) admits contacts and projects reviewed results through separate staff, client, and technical surfaces.
 
-Broker is the application office, not LychD's internal queue broker.
+## Contract
 
-Related: [Composition Portfolio](../index.md) · [Workflow](../../adr/28-workflow.md) ·
-[IAM](../../adr/38-iam.md)
+`broker.office` revision `1` publishes `broker.service_case@1`. Admission requires `ClientContact@1`, one requested action, business policy, product catalogue, and current staff authority. The result stops before unlicensed advice, undisclosed automation, payment, signature, binding, or unsupported product claims.
+
+Broker names this application office. It is unrelated to LychD's internal queue broker.
+
+[Composition Portfolio](../index.md) · [Workflow](../../adr/28-workflow.md) · [IAM](../../adr/38-iam.md)

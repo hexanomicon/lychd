@@ -30,14 +30,14 @@ jobs:
       PYTEST_BASETEMP: .cache/pytest/python-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Install Python and uv
-        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.11.28"
+          version: "0.12.10"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: checks-python
@@ -54,14 +54,14 @@ jobs:
       PYTEST_BASETEMP: .cache/pytest/postgres-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Install Python and uv
-        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.11.28"
+          version: "0.12.10"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: checks-postgres
@@ -77,20 +77,20 @@ jobs:
       UV_CACHE_DIR: .cache/uv
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Install Python and uv
-        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.11.28"
+          version: "0.12.10"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: checks-altar
 
       - name: Install Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -98,7 +98,7 @@ jobs:
 
       - name: Install pinned npm and Altar dependencies
         run: |
-          npm install --global npm@11.16.0
+          npm install --global npm@12.0.2
           npm ci --prefix clients/web
 
       - name: Check and build the Altar
@@ -134,14 +134,14 @@ jobs:
       UV_CACHE_DIR: .cache/uv
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Install Python and uv
-        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.11.28"
+          version: "0.12.10"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: checks-documentation

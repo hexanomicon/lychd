@@ -73,16 +73,22 @@ def _turn_view(turn: BridgeTurn) -> BridgeTurnView:
     )
 
 
-def _session_summary(session: SessionRecord) -> SessionSummary:
-    return SessionSummary(id=session.id, title=session.title, created_at=session.created_at)
+def _session_summary(session: SessionRecord, *, pending_count: int) -> SessionSummary:
+    return SessionSummary(
+        id=session.id,
+        title=session.title,
+        created_at=session.created_at,
+        pending_count=pending_count,
+    )
 
 
-def _session_view(session: SessionRecord) -> SessionView:
+def _session_view(session: SessionRecord, *, pending_count: int) -> SessionView:
     return SessionView(
         id=session.id,
         title=session.title,
         created_at=session.created_at,
         turns=[_turn_view(turn) for turn in session.turns],
+        pending_count=pending_count,
     )
 
 
@@ -181,7 +187,7 @@ class BridgeController(Controller):
         bridge_sessions: NamedDependency[SessionStorePort],
     ) -> SessionCreated:
         """Open a new séance and return its typed identity."""
-        return SessionCreated(session=_session_view(await bridge_sessions.create_session()))
+        return SessionCreated(session=_session_view(await bridge_sessions.create_session(), pending_count=0))
 
     @post(
         "/sessions/{session_id:str}/messages",
@@ -328,6 +334,7 @@ class BridgeController(Controller):
         workflows: WorkflowRegistry,
         state: State,
     ) -> RunProjectionSnapshot:
+        """Project Run evidence with delegated details bound to one same-Run job."""
         manifest = run.pattern_manifest
         pattern_id = str(manifest.get("key") or run.workflow_name)
         revision = str(manifest.get("revision") or "legacy-unversioned")
@@ -368,49 +375,33 @@ class BridgeController(Controller):
         )
         retained_transition_request_id = latest_transition.data if latest_transition is not None else None
         retained_transition_phase = latest_transition.meta.get("phase") if latest_transition is not None else None
-        retained_delegated_job_id = latest_node.meta.get("delegated_job_id") if latest_node is not None else None
-        retained_delegated_runtime = latest_node.meta.get("delegated_runtime") if latest_node is not None else None
+        live = run_bus.snapshot(run.run_id)
+        delegated_job_id = (live.delegated_job_id if live is not None else None) or (
+            latest_node.meta.get("delegated_job_id") if latest_node is not None else None
+        )
         delegates = getattr(state.services, "delegates", None)
-        delegated_jobs = (
-            await delegates.jobs_for_run(run.run_id, limit=1, event_limit=0) if delegates is not None else ()
-        )
-        delegated_job = delegated_jobs[-1] if delegated_jobs else None
-        retained_delegated_job_id = retained_delegated_job_id or (
-            delegated_job.ref.job_id if delegated_job is not None else None
-        )
-        retained_delegated_runtime = retained_delegated_runtime or (
-            delegated_job.ref.runtime if delegated_job is not None else None
-        )
+        delegated_job = None
+        if delegates is not None:
+            if delegated_job_id is not None:
+                delegated_job = await delegates.get(delegated_job_id)
+            else:
+                jobs = await delegates.jobs_for_run(run.run_id, limit=1, event_limit=0)
+                delegated_job = jobs[-1] if jobs else None
+            if delegated_job is not None and delegated_job.ref.run_id != run.run_id:
+                delegated_job = None
+        # Missing or foreign observed jobs remain unknown; another job cannot
+        # supply their status, runtime or containment profile.
+        if delegated_job is not None:
+            delegated_job_id = delegated_job.ref.job_id
+        delegated_runtime = delegated_job.ref.runtime if delegated_job is not None else None
         delegated_profile = delegated_job.ref.profile if delegated_job is not None else None
         delegated_status = delegated_job.status.value if delegated_job is not None else None
-        live = run_bus.snapshot(run.run_id)
         if live is not None:
             fragments = [(await projector.project(fragment)).payload for fragment in live.fragments]
             cursor, content, activity = (
                 live.cursor,
                 live.content,
                 run.status.value if run.status in TERMINAL_STATUSES else live.activity,
-            )
-            (
-                occurrence_id,
-                dispatch_occurrence_id,
-                grant_id,
-                capability_key,
-                transition_occurrence_id,
-                transition_request_id,
-                transition_phase,
-                delegated_job_id,
-                delegated_runtime,
-            ) = (
-                live.occurrence_id or retained_occurrence_id,
-                live.dispatch_occurrence_id or retained_dispatch_occurrence_id,
-                live.grant_id or retained_grant_id,
-                live.capability_key or retained_capability_key,
-                live.transition_occurrence_id or retained_transition_occurrence_id,
-                live.transition_request_id or retained_transition_request_id,
-                live.transition_phase or retained_transition_phase,
-                live.delegated_job_id or retained_delegated_job_id,
-                live.delegated_runtime or retained_delegated_runtime,
             )
             terminal = live.terminal or run.status in TERMINAL_STATUSES
         else:
@@ -421,27 +412,6 @@ class BridgeController(Controller):
                 run.status.value,
             )
             fragments = [dict(fragment) for fragment in turn.fragments] if turn is not None else []
-            (
-                occurrence_id,
-                dispatch_occurrence_id,
-                grant_id,
-                capability_key,
-                transition_occurrence_id,
-                transition_request_id,
-                transition_phase,
-                delegated_job_id,
-                delegated_runtime,
-            ) = (
-                retained_occurrence_id,
-                retained_dispatch_occurrence_id,
-                retained_grant_id,
-                retained_capability_key,
-                retained_transition_occurrence_id,
-                retained_transition_request_id,
-                retained_transition_phase,
-                retained_delegated_job_id,
-                retained_delegated_runtime,
-            )
             terminal = run.status in TERMINAL_STATUSES
 
         return RunProjectionSnapshot(
@@ -457,13 +427,16 @@ class BridgeController(Controller):
             orb_path=orb_path,
             evidence_capture=evidence_capture,
             fragments=fragments,
-            occurrence_id=occurrence_id,
-            dispatch_occurrence_id=dispatch_occurrence_id,
-            grant_id=grant_id,
-            capability_key=capability_key,
-            transition_occurrence_id=transition_occurrence_id,
-            transition_request_id=transition_request_id,
-            transition_phase=transition_phase,
+            occurrence_id=(live.occurrence_id if live is not None else None) or retained_occurrence_id,
+            dispatch_occurrence_id=(live.dispatch_occurrence_id if live is not None else None)
+            or retained_dispatch_occurrence_id,
+            grant_id=(live.grant_id if live is not None else None) or retained_grant_id,
+            capability_key=(live.capability_key if live is not None else None) or retained_capability_key,
+            transition_occurrence_id=(live.transition_occurrence_id if live is not None else None)
+            or retained_transition_occurrence_id,
+            transition_request_id=(live.transition_request_id if live is not None else None)
+            or retained_transition_request_id,
+            transition_phase=(live.transition_phase if live is not None else None) or retained_transition_phase,
             delegated_job_id=delegated_job_id,
             delegated_runtime=delegated_runtime,
             delegated_profile=delegated_profile,
@@ -590,16 +563,20 @@ class BridgeController(Controller):
         session_id: FromPath[str],
         bridge_sessions: NamedDependency[SessionStorePort],
         consents: NamedDependency[ConsentLedger],
+        state: State,
     ) -> SessionInspector:
-        """Return a compact contextual inspector."""
+        """Return context and pending consent owned by this session's Runs."""
         session = await bridge_sessions.get_session(session_id)
         if session is None:
             raise NotFoundException(detail="Unknown session.")
+        ledger = cast("RunLedger", state.services.ledger)
+        runs = await ledger.list_for_session(session_id)
+        pending = await consents.pending_views_for_runs(frozenset(run.run_id for run in runs))
         return SessionInspector(
             session_id=session_id,
             title=session.title,
             turn_count=len(session.turns),
-            pending_count=await consents.pending_count(),
+            pending_count=len(pending),
         )
 
     async def _snapshot(
@@ -614,12 +591,21 @@ class BridgeController(Controller):
         state: State,
     ) -> BridgeSnapshot:
         ledger = cast("RunLedger", state.services.ledger)
-        session_runs = await ledger.list_for_session(session.id) if session is not None else []
-        session_run_ids = frozenset(run.run_id for run in session_runs)
-        pending_views = await consents.pending_views_for_runs(session_run_ids)
+        session_ids = dict.fromkeys(item.id for item in sessions)
+        if session is not None:
+            session_ids[session.id] = None
+        runs_by_session = {session_id: await ledger.list_for_session(session_id) for session_id in session_ids}
+        run_sessions = {run.run_id: run.session_id for runs in runs_by_session.values() for run in runs}
+        # One consent read supplies the rail and selected cards from the same rows.
+        # Unmapped pending consents remain part of the separate global count.
+        pending_by_session: dict[str, list[ConsentView]] = {session_id: [] for session_id in session_ids}
+        for view in await consents.pending_views_for_runs(frozenset(run_sessions)):
+            pending_by_session[run_sessions[view.run_id]].append(view)
+        session_runs = runs_by_session[session.id] if session is not None else []
+        pending_views = pending_by_session[session.id] if session is not None else []
         return BridgeSnapshot(
-            sessions=[_session_summary(item) for item in sessions],
-            session=_session_view(session) if session is not None else None,
+            sessions=[_session_summary(item, pending_count=len(pending_by_session[item.id])) for item in sessions],
+            session=_session_view(session, pending_count=len(pending_views)) if session is not None else None,
             active_runs=await self._active_run_projections(
                 session,
                 session_runs,

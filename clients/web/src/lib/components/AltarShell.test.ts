@@ -4,13 +4,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AltarStatus } from "$lib/api/models";
 
-vi.mock("$app/state", () => ({
-  page: { url: new URL("http://localhost/bridge") }
-}));
+vi.mock("$app/state", async () => {
+  const { SvelteURL } = await import("svelte/reactivity");
+  return { page: { url: new SvelteURL("http://localhost/bridge") } };
+});
 vi.mock("$lib/api/client", () => ({
   getAltarStatus: vi.fn()
 }));
 
+import { page } from "$app/state";
 import { getAltarStatus } from "$lib/api/client";
 import AltarShell from "./AltarShell.svelte";
 
@@ -35,6 +37,7 @@ function deferred<T>() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  page.url.href = "http://localhost/bridge";
 });
 
 describe("Altar consent status", () => {
@@ -94,5 +97,32 @@ describe("Altar consent status", () => {
     expect(screen.getByText(/1 awaiting/)).toBeTruthy();
     expect(screen.queryByText("Consent clear")).toBeNull();
     view.unmount();
+  });
+});
+
+
+describe("shell contextual navigation", () => {
+  it("resumes the latest selected event across switches, while a bare Orb visit stays bare", async () => {
+    vi.mocked(getAltarStatus).mockResolvedValue(status(1));
+    page.url.href = "http://localhost/orb/run-a?event=event-a";
+    const view = render(AltarShell, { children });
+    await act(() => Promise.resolve());
+    expect(screen.getByRole("link", { name: "Orb" }).getAttribute("href"))
+      .toBe("/orb/run-a?event=event-a");
+    await act(() => { page.url.search = "?event=event-b&job=job-a"; });
+    await act(() => { page.url.href = "http://localhost/atlas/project-a"; });
+    expect(screen.getByRole("link", { name: "Orb" }).getAttribute("href"))
+      .toBe("/orb/run-a?event=event-b&job=job-a");
+    await act(() => { page.url.href = "http://localhost/orb"; });
+    expect(page.url.pathname).toBe("/orb");
+    expect(screen.getByRole("link", { name: "Orb" }).getAttribute("href"))
+      .toBe("/orb/run-a?event=event-b&job=job-a");
+    expect(screen.getByRole("link", { name: /1 awaiting/ }).getAttribute("href"))
+      .toBe("/bridge?attention=pending");
+    view.unmount();
+    page.url.href = "http://localhost/bridge";
+    const newShell = render(AltarShell, { children });
+    expect(screen.getByRole("link", { name: "Orb" }).getAttribute("href")).toBe("/orb");
+    newShell.unmount();
   });
 });

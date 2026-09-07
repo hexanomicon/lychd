@@ -58,7 +58,10 @@ class LlamaCppCliInferenceParser:
             model_path=self._as_str(options.get("--model")),
             models_dir=self._as_str(options.get("--models-dir")),
             models_preset=self._as_str(options.get("--models-preset")),
-            n_ctx=self._as_int(options.get("--ctx-size")),
+            port=self._as_present_int(options.get("--port")),
+            n_ctx=self._as_present_int(options.get("--ctx-size")),
+            n_parallel=self._as_present_int(options.get("--parallel")),
+            n_ctx_per_slot=self._as_present_int(options.get("--kv-unified-per-slot")),
             n_predict=self._as_int(options.get("--n-predict")),
             temperature=self._as_float(options.get("--temp")),
             top_p=self._as_float(options.get("--top-p")),
@@ -91,7 +94,10 @@ class LlamaCppCliInferenceParser:
             model_path=env.get("LLAMA_ARG_MODEL"),
             models_dir=env.get("LLAMA_ARG_MODELS_DIR"),
             models_preset=env.get("LLAMA_ARG_MODELS_PRESET"),
-            n_ctx=self._as_int(env.get("LLAMA_ARG_CTX_SIZE")),
+            port=self._as_present_int(env.get("LLAMA_ARG_PORT")),
+            n_ctx=self._as_present_int(env.get("LLAMA_ARG_CTX_SIZE")),
+            n_parallel=self._as_present_int(env.get("LLAMA_ARG_N_PARALLEL")),
+            n_ctx_per_slot=self._as_present_int(env.get("LLAMA_ARG_KV_UNIFIED_PER_SLOT")),
             n_predict=self._as_int(env.get("LLAMA_ARG_N_PREDICT")),
             temperature=self._as_float(env.get("LLAMA_ARG_TEMPERATURE")),
             top_p=self._as_float(env.get("LLAMA_ARG_TOP_P")),
@@ -110,7 +116,10 @@ class LlamaCppCliInferenceParser:
             model_path=primary.model_path or secondary.model_path,
             models_dir=primary.models_dir or secondary.models_dir,
             models_preset=primary.models_preset or secondary.models_preset,
+            port=primary.port if primary.port is not None else secondary.port,
             n_ctx=primary.n_ctx if primary.n_ctx is not None else secondary.n_ctx,
+            n_parallel=primary.n_parallel if primary.n_parallel is not None else secondary.n_parallel,
+            n_ctx_per_slot=primary.n_ctx_per_slot if primary.n_ctx_per_slot is not None else secondary.n_ctx_per_slot,
             n_predict=primary.n_predict if primary.n_predict is not None else secondary.n_predict,
             temperature=primary.temperature if primary.temperature is not None else secondary.temperature,
             top_p=primary.top_p if primary.top_p is not None else secondary.top_p,
@@ -205,6 +214,12 @@ class LlamaCppCliInferenceParser:
             return int(value)
         except ValueError:
             return None
+
+    def _as_present_int(self, value: object) -> int | None:
+        """Keep present invalid/automatic integer inputs from falling back to a lower source."""
+        if value is None:
+            return None
+        return self._as_int(value) or 0
 
     def _as_float(self, value: object) -> float | None:
         if not isinstance(value, str):

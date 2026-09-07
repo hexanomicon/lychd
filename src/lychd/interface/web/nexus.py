@@ -78,7 +78,7 @@ class NexusController(Controller):
                 DelegatedRuntimeObservation(
                     runtime_id=definition.runtime_id,
                     display_name=definition.display_name,
-                    provider_id=registration.provider_id,
+                    registrant_id=registration.registrant_id,
                     transport="reference",
                     delivery="available",
                     runnable=True,

@@ -1,4 +1,9 @@
-"""Pure, honest selected-Run evidence projections for the Orb."""
+"""Bounded selected-Run evidence in ledger order.
+
+Sequence establishes recorded order, not causal edges. Delegated job event
+sequences remain separate from the Run sequence. Capture and gaps qualify the
+account; a projection does not infer missing history or execute work.
+"""
 
 from __future__ import annotations
 

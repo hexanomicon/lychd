@@ -1,14 +1,20 @@
 # LychD Examples
 
-These files are not loaded automatically. They are copy/edit starting points
-for a Codex at `~/.config/lychd/`.
+These files collect individual Rune declarations, hardware-oriented profiles, and llama.cpp
+support files. LychD does not load this tree automatically.
+
+Some Soulstone fragments retain an earlier configuration shape: they assume a default model
+mount, place presets inside Codex, or express vLLM flags as top-level TOML fields. Adapt them to the
+current [Rune contract](../docs/sepulcher/animator/soulstone/rune.md) before use. For a first host
+and model, follow [Summoning](../docs/summoning.md), which supplies the current declaration and
+acceptance procedure.
 
 ## Groups
 
-- `runes/`: individual Codex-mirror snippets, by Rune anchor.
-- `profiles/`: copyable shapes for particular hardware.
-- `llamacpp/`: llama.cpp support files, including router presets.
+- [Rune snippets](runes/README.md): one declaration for an existing Codex.
+- [Operator profiles](profiles/README.md): runtime choices organized by hardware capacity class.
+- [llama.cpp support](llamacpp/README.md): router presets and their explicit file mounts.
 
-Choose a profile for a machine shape; choose a Rune when adding one declaration
-to an existing Codex. For a bounded host acceptance attempt, use
-[Summoning](../docs/summoning.md), not an example alone.
+Choose the runtime and model first, then bind their exact files, image, devices, and launch
+arguments. A profile gives you material to adapt; a host receipt records what that adaptation
+actually did.

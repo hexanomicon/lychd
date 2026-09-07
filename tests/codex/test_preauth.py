@@ -116,6 +116,15 @@ def test_zte_bounded_is_valid() -> None:
     assert rune.klass == "zte"
 
 
+def test_preauth_rejects_timezone_free_expiry() -> None:
+    with pytest.raises(ValueError, match="timezone"):
+        CodexPreauthRune(
+            slug="ambiguous-expiry",
+            tool_pattern="request_coven_swap",
+            expires_at=datetime(2030, 1, 1),  # noqa: DTZ001 - invalid policy input
+        )
+
+
 # -- InMemoryConsentLedger preauth match / exhaustion -----------------------
 
 

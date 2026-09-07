@@ -219,9 +219,8 @@ class _OrphanQueue:
 async def _seed_awaiting_consent(ledger: InMemoryRunLedger, run_id: str, consent_id: str) -> None:
     intent = Intent(session_id="s", run_id=run_id, prompt="p", source="bridge")
     await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=50)
-    await ledger.set_status(run_id, RunStatus.RUNNING)
-    await ledger.set_status(run_id, RunStatus.AWAITING_CONSENT)
-    await ledger.set_consent(run_id, consent_id)
+    assert await ledger.try_claim_run(run_id, enqueue_seq=0)
+    await ledger.park_consent(run_id, consent_id)
 
 
 @pytest.mark.asyncio
@@ -272,7 +271,8 @@ async def test_reconcile_recovers_checkpointed_pending_consent_park() -> None:
 
 
 @pytest.mark.asyncio
-async def test_reconcile_recovers_checkpointed_decided_consent_then_refires_it() -> None:
+@pytest.mark.parametrize("orphan_status", [RunStatus.RUNNING, RunStatus.AWAITING_HARDWARE])
+async def test_reconcile_recovers_checkpointed_decided_consent_then_refires_it(orphan_status: RunStatus) -> None:
     substrate, ledger, consents = _substrate()
     intent = Intent(session_id="s", run_id="run_decided_window", prompt="p", source="bridge")
     await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=50)
@@ -291,6 +291,8 @@ async def test_reconcile_recovers_checkpointed_decided_consent_then_refires_it()
     )
     await consents.decide(decision.consent_id, approved=True, decided_by="magus")
     substrate.queues = {"runs": _OrphanQueue("run_decided_window")}
+    if orphan_status is RunStatus.AWAITING_HARDWARE:
+        await ledger.set_status(intent.run_id, orphan_status)
 
     await reconcile_runs({"run_substrate": substrate})
 
@@ -304,7 +306,8 @@ async def test_reconcile_recovers_checkpointed_decided_consent_then_refires_it()
 
 
 @pytest.mark.asyncio
-async def test_reconcile_recovers_exact_checkpointed_delegate_park() -> None:
+@pytest.mark.parametrize("orphan_status", [RunStatus.RUNNING, RunStatus.AWAITING_HARDWARE])
+async def test_reconcile_recovers_exact_checkpointed_delegate_park(orphan_status: RunStatus) -> None:
     substrate, ledger, _consents = _substrate()
     runtime = _DelegateRuntime()
     coordinator = DelegatedAgentCoordinator(
@@ -334,6 +337,8 @@ async def test_reconcile_recovers_exact_checkpointed_delegate_park() -> None:
         return await jobs_for_run(run_id, limit=limit, event_limit=event_limit)
 
     coordinator.jobs_for_run = record_bounded_read
+    if orphan_status is RunStatus.AWAITING_HARDWARE:
+        await ledger.set_status(intent.run_id, orphan_status)
 
     result = await reconcile_runs({"run_substrate": substrate})
 
@@ -371,7 +376,8 @@ async def test_reconcile_contains_uncheckpointed_delegate_before_parent_failure(
 
 
 @pytest.mark.asyncio
-async def test_reconcile_rejects_pending_consent_bound_to_older_checkpoint() -> None:
+@pytest.mark.parametrize("orphan_status", [RunStatus.RUNNING, RunStatus.AWAITING_HARDWARE])
+async def test_reconcile_rejects_pending_consent_bound_to_older_checkpoint(orphan_status: RunStatus) -> None:
     """A later consent row cannot park a Run on an earlier round's checkpoint."""
     substrate, ledger, consents = _substrate()
     intent = Intent(session_id="s", run_id="run_stale", prompt="p", source="bridge")
@@ -400,6 +406,8 @@ async def test_reconcile_rejects_pending_consent_bound_to_older_checkpoint() -> 
     )
     queue = _OrphanQueue("run_stale")
     substrate.queues = {"runs": queue}
+    if orphan_status is RunStatus.AWAITING_HARDWARE:
+        await ledger.set_status(intent.run_id, orphan_status)
 
     result = await reconcile_runs({"run_substrate": substrate})
 

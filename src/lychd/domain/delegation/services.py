@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import deque
-from collections.abc import AsyncIterator, Awaitable, Mapping
+from collections.abc import AsyncGenerator, Awaitable, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
@@ -266,7 +266,9 @@ class DelegatedAgentCoordinator:
         Cancellation before ``runtime.start`` returns leaves the external outcome
         indeterminate and settles ``LOST``. Once start returns, runtime acceptance
         is established: the ``RUNNING`` transition finishes despite repeated caller
-        cancellation, then the cancellation propagates.
+        cancellation, then the cancellation propagates. An unclassified exception
+        from start also settles ``LOST``; only failures before invoking the runtime
+        establish ``FAILED`` without an adapter-specific rejection receipt.
         """
         async with self._locked(f"request:{request.request_id}"):
             existing = await self._store.get_by_request(request.request_id)
@@ -286,10 +288,12 @@ class DelegatedAgentCoordinator:
             if not created:
                 return job.ref
             ref = job.ref
+            start_invoked = False
             try:
                 runtime = self._runtime(request.runtime)
                 await self._store.transition(ref.job_id, DelegatedAgentJobStatus.ADMITTED)
                 await self._store.transition(ref.job_id, DelegatedAgentJobStatus.PREPARING)
+                start_invoked = True
                 await runtime.start(request, ref)
             except asyncio.CancelledError:
                 await complete_under_cancellation(
@@ -304,14 +308,21 @@ class DelegatedAgentCoordinator:
                 )
                 raise
             except Exception as exc:
-                await self._store.adopt(
-                    ref.job_id,
-                    DelegatedAgentResult(
-                        job_id=ref.job_id,
-                        status=DelegatedAgentJobStatus.FAILED,
-                        error=str(exc) or type(exc).__name__,
-                    ),
+                failure_settlement = asyncio.create_task(
+                    self._store.adopt(
+                        ref.job_id,
+                        DelegatedAgentResult(
+                            job_id=ref.job_id,
+                            status=DelegatedAgentJobStatus.LOST if start_invoked else DelegatedAgentJobStatus.FAILED,
+                            error=str(exc) or type(exc).__name__,
+                        ),
+                    )
                 )
+                try:
+                    await asyncio.shield(failure_settlement)
+                except asyncio.CancelledError:
+                    await complete_under_cancellation(failure_settlement)
+                    raise
                 raise
             running_transition = asyncio.create_task(
                 self._store.transition(ref.job_id, DelegatedAgentJobStatus.RUNNING)
@@ -424,7 +435,7 @@ class DelegatedAgentCoordinator:
         return job
 
     @asynccontextmanager
-    async def _locked_job(self, job_id: str) -> AsyncIterator[DelegatedAgentJob]:
+    async def _locked_job(self, job_id: str) -> AsyncGenerator[DelegatedAgentJob]:
         """Serialize a job operation with submission under its request identity.
 
         A submitted row becomes visible before the runtime has acknowledged start.
@@ -456,7 +467,7 @@ class DelegatedAgentCoordinator:
         return outcome
 
     @asynccontextmanager
-    async def _locked(self, key: str) -> AsyncIterator[None]:
+    async def _locked(self, key: str) -> AsyncGenerator[None]:
         """Serialize one key and discard its lock after the last caller exits."""
         entry = self._locks.get(key)
         if entry is None:

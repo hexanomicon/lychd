@@ -5,79 +5,87 @@ icon: fontawesome/solid/dungeon
 
 # :fontawesome-solid-dungeon: Altar
 
-The **Altar** is the reader journey for a running Lich: the Magus offers an Intent, reviews the
-evidence it leaves, then consents, refuses, or corrects the next move. Its four instruments are
-deliberately non-universal. Each answers a different question without pretending to be one shared
-graph or model.
+A reply is the beginning of a review. The **Altar** lets you stay with one piece of work as you
+move from a project's concerns to conversation and evidence, from evidence to its declared score,
+and from a recorded transition to the state of the iron.
 
-Inside [Bridge](./bridge.md), the [**Circle**](./circle.md) is the pinnacle: the bounded world of
-one Invocation, where an exact Scroll is cast under identity, Context, authority, capability, and
-consequence. Circle composes authorized views from the instruments; it is not a fifth instrument or
-a new owner of their truth.
+## Bring one Intent
 
-The Altar is a contained local surface, not the body it projects: live execution remains in the
-[Vessel](../../sepulcher/vessel/index.md), committed truth in the
-[Phylactery](../../sepulcher/phylactery/index.md), and physical readiness behind the
-Orchestrator. The Altar lets those boundaries be seen and answered without becoming another one.
-Loopback and the fixed `magus:*` Sigil are not caller authentication or browser-origin isolation:
-keep the dedicated local browser profile, literal `127.0.0.1` listener, and no proxy, tunnel, or
-port-forwarding described in [The Awakening](../../summoning.md#the-awakening).
-
-The Altar keeps its own tongue separate from the language of an Invocation. Its interface is
-designed to follow the Magus's selected locale while leaving prompts, answers, artifacts, and Run
-evidence in their attributed source form; changing the chrome never translates or rewrites what
-the Altar projects. The current delivered interface remains English-only.
-[Frontend](../../adr/15-frontend.md#interface-locale-and-content-language) owns the localization
-contract, while [State](../../state-of-the-work.md#altar-and-observability) keeps its delivery
-boundary.
-
-The Altar likewise has one canonical appearance: **LychD Dark**. Core focuses on making that single
-interface legible in bright and dim conditions rather than shipping a nominal light/system toggle.
-Its semantic colour seam is designed for a future validated, partial operator palette, but not for
-arbitrary CSS or extension-supplied UI; no palette override is delivered today. [Frontend](../../adr/15-frontend.md#canonical-appearance-and-bounded-palette-configuration)
-owns the complete boundary.
-
-## One Altar, Four Instruments
-
-- **[Bridge](./bridge.md)** carries conversation, consent, and settled result.
-- **[Orb](./orb.md)** opens one Run as retained ordered evidence; **scrying** is that inspection.
-- **[Nexus](./nexus.md)** makes capability readiness and physical transition legible.
-- **[Loom](./loom.md)** shows an exact Scroll/Pattern and its declared stations, which become Spell
-  placements in the future; it is a declared score, never an execution trace.
-
-Each instrument may use a graph when it is the clearest answer, but none supplies a universal graph
-or domain model. A Loom edge permits; an Orb relation records; a Nexus relation reports what the
-Orchestrator observed. Loom and Orb may share framework-neutral snapshot, identity, intent, and
-semantic-projection mechanics while keeping distinct view models over the designed one shared DOM
-renderer adapter. They do not share one graph schema or collapse permitted score into observed
-evidence. Nexus remains a native control board unless a measured body-map requirement earns a
-separate read-only lens. The distinctions stay visible.
-
-## Enter through the Bridge
-
-After the four observations in [Summoning](../../summoning.md) agree on this host, enter:
+Establish the four observations in [Summoning](../../summoning.md). That rite ends by stopping
+the Vessel; for a later Altar session, return through [The Awakening’s
+startup](../../summoning.md#the-awakening) before opening the browser. Use a dedicated profile on
+the same host:
 
 ```text
 http://127.0.0.1:7134/
 ```
 
-The root opens Bridge. On a fresh Phylactery, choose **New Séance**, offer one bounded Intent, and
-answer an inline consent card only when the Run asks. That admission opens one conceptual Circle
-inside the continuing séance. Follow the same-host boundary in
-[The Awakening](../../summoning.md#the-awakening); deeper limits remain in
-[State of Work](../../state-of-the-work.md#altar-and-observability).
+The root opens **Bridge**. On a fresh Phylactery, choose **New Séance** and offer a bounded Intent.
+Answer an inline consent card only when the Run asks for judgment.
 
-## Review one Run across the Altar
+Keep the listener on literal loopback, with no proxy, tunnel, or forwarding. Loopback and the
+fixed `magus:*` Sigil do not authenticate the caller or isolate hostile origins. The full current
+boundary lives in [The Awakening](../../summoning.md#the-awakening); [State of
+Work](../../state-of-the-work.md#altar-and-observability) records the delivered surface.
 
-1. In Bridge, create a séance and offer one bounded Intent; treat its admitted Run projection as
-   one Circle, not the whole séance.
-2. On its result, confirm the Run identity, Scroll/Pattern revision, and canonical status, then choose
-   **Look into the Orb**.
-3. In the Orb, confirm the Run id, capture class, loaded boundary, gaps, and omissions. Select an
-   event to give it a stable URL.
-4. Open **Exact Pattern** only when its pinned Scroll manifest validates. Loom verifies the declared
-   score, never execution.
-5. Open a Nexus transition only when selected evidence supplies exact correlation. Compare a
-   capability's `checked` time with the Nexus snapshot time.
-6. Treat **Preview** as non-binding. **Request transition** is a real maximum-priority lifecycle
-   mutation.
+## Carry the Run with you
+
+One séance can hold many [Circles](./circle.md). Each Circle is one admitted Invocation, whose
+casting performs an exact Scroll and whose Run keeps durable execution identity. Keep that Run
+identity in view when changing instruments.
+
+| What you need to establish | Instrument |
+| --- | --- |
+| What are we trying to accomplish or care for, what needs judgment, and what comes next? | [Atlas](./atlas.md) |
+| What was offered, what judgment is pending, and what settled? | [Bridge](./bridge.md) |
+| Which events were retained, and where does the evidence run out? | [Orb](./orb.md) |
+| Which stations and paths does this exact Scroll permit? | [Loom](./loom.md) |
+| What was observed about readiness or a physical transition? | [Nexus](./nexus.md) |
+
+These are the Altar's five instruments. Atlas keeps a Project across conversations and Runs;
+it can also begin without either. Circle is the Invocation-shaped pinnacle within Bridge,
+not a separate instrument. Its current material form is the thin per-turn Run strip. A
+composed Circle workspace is not delivered.
+
+At a Bridge result, keep its Run identity and choose **Look into the Orb**. The leaf guides show
+how to account for capture and gaps, compare the pinned score in Loom, and follow exact physical
+transition correlations into Nexus. Carrying the same Run through those views keeps each
+observation attached to the work that raised your question.
+
+Nexus inspection changes no lifecycle state. **Preview** is nonbinding; **Request transition**
+performs a real maximum-priority mutation. Read the [Nexus guide](./nexus.md) before making that
+request.
+
+## The surface and its owners
+
+Execution belongs to the [Vessel](../../sepulcher/vessel/index.md), committed truth to the
+[Phylactery](../../sepulcher/phylactery/index.md), and physical readiness to the Orchestrator.
+The Altar projects those accounts so the Magus can inspect and act through their admitted seams.
+
+The delivered interface is English-only and uses **LychD Dark**, with no locale selector or
+palette override. Future [locale](../../adr/15-frontend.md#interface-locale-and-content-language)
+and [palette](../../adr/15-frontend.md#canonical-appearance-and-bounded-palette-configuration)
+contracts belong to the Frontend Covenant; interface choices preserve retained source content.
+
+## Presentation direction
+
+The next presentation pass follows a quiet observatory: a readable undertaking, conversation,
+account, board, or score is each page's focal point. Secondary identity and history are disclosed
+when useful. Uncertainty, consent, capture limits, and physical consequences stay beside the
+choices they qualify. [Frontend's reading hierarchy](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction)
+owns the shared design; each instrument's **Reading direction** describes its intended
+composition and a practical acceptance case.
+
+Follow [Atlas's concerns and citations](atlas.md#reading-direction),
+[Bridge's conversation and recovery](bridge.md#reading-direction),
+[Orb's evidence lanes](orb.md#reading-direction), [Nexus's preview and observations](nexus.md#reading-direction),
+or [Loom's declared score](loom.md#reading-direction). These are implementation targets. Current
+controls remain those described in the operating sections and [State of
+Work](../../state-of-the-work.md#altar-and-observability).
+
+Artwork supports the entrance rather than repeating behind work on every instrument. The existing
+empty-Bridge scene has a retained [asset notice](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/assets/altar/NOTICE.txt)
+and [generation prompt](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/assets/altar/working-altar.prompt.md).
+They distinguish the generated Altar scene, the authorized character reference, and their terms.
+The source distribution retains [third-party notices](https://github.com/hexanomicon/lychd/blob/main/THIRD_PARTY_NOTICES.md);
+their custody does not require a permanent footer competing with the work.

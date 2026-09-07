@@ -7,72 +7,61 @@ icon: fontawesome/solid/flask
 
 > _“The Vessel passes. The Phylactery keeps only what was committed.”_
 
-The durable Phylactery is the PostgreSQL database cluster assigned to one application partition.
-It owns committed run and continuity records that must survive a
-[Vessel](../vessel/index.md) process boundary. It is not a generic storage facade or an
-interchangeable save/retrieve backend.
+The **Phylactery** is the PostgreSQL database cluster assigned to one application partition.
+It keeps the committed records from which another [Vessel](../vessel/index.md) may recover Run
+and continuity truth. Each domain owns what its records mean and how their lifecycle ends;
+the Phylactery owns engines, codecs, transactions, migrations, and schema admission.
 
-The cluster's `PGDATA` lives inside the [Crypt](../crypt.md), while PostgreSQL runs in its dedicated
-unit. The Phylactery owns engine construction, codecs, transactions, migrations, and schema
-admission; each domain owns the meaning and lifecycle of its records. Process-local and in-memory
-persistence profiles are bounded test or execution substitutes, never deployed Phylacteries.
+## What the inscription keeps
 
-The default topology scales this one cluster up on one host. Its storage may be enlarged or moved
-beneath the exact admitted `postgres/data` mount without changing application authority. Loose
-application-managed files never form a shadow database. A future named Domain store may own a
-separate custody or projection contract through its own port; it is neither a Phylactery nor an
-interchangeable Phylactery backend. Current law selects no scale-out topology; any such design
-requires a further [Persistence](../../adr/06-persistence.md#default-topology-and-scale-seam)
-amendment and evidence.
+| Record surface | What crosses the process boundary |
+| --- | --- |
+| Run and delivery ledger | Canonical lifecycle and the exact publication intent for each fresh or resumed worker hop. |
+| `run_checkpoint` | One replaceable JSONB document per Run containing validated Graph snapshot history; it cascades with its Run. |
+| Consent and delegated-owner records | The exact authority whose settled result may permit a parked Run to return. |
+| Ordered `step` rows | Best-effort structural evidence; they do not replace Run truth. |
+| `session`, `karma`, `soulstone_record`, and `codex_preauthorization` | Domain-owned records admitted by the application migrations; a persisted row establishes only its own contract. |
+| SAQ's `saq_*` tables | Durable broker records through a separate autocommit pool; queue publication and Run admission are not one transaction. |
 
-Growth first meets explicit lifecycle policy: age or disk pressure alone never permits deletion,
-and Shadow's Reaper is not a database collector. PostgreSQL partitioning and tablespaces may later
-place measured hot or cold relations, indexes, or partitions on different local storage tiers while
-remaining one indivisible Phylactery. The application still queries PostgreSQL rather than choosing
-a disk. LychD currently admits only the `postgres/data` mount; additional tablespace mounts require
-Layout, container, and whole-cluster capture/restore support before use.
+The application currently uses PostgreSQL's default schema and search path. Migration history and
+exact table admission belong to [Persistence](../../adr/06-persistence.md). The planned `vectors`,
+`traces`, and isolated `queue` chambers reserve governed memory, cognitive evidence, and broker
+separation; their names alone establish no delivered service.
 
-[First-light persistence](../../state-of-the-work.md#phylactery-first-light) is **Partial**:
-repository shapes, memory-profile behavior, a transactional Run-delivery outbox, and a disposable
-two-boot PostgreSQL application-factory lifecycle are proved. Full memory-profile/PostgreSQL
-repository parity, a transactional Step-event outbox, general retention or compaction, physical
-tiering, and real host/model/browser receipts are not.
+A checkpoint holds declared Graph state, not a process image, runtime dependencies, or an event
+stream. Subscribers, leases, live provider handles, and uncommitted frames die with their process.
+Terminal Run status commits before context release and best-effort checkpoint cleanup. If cleanup
+fails, the retained checkpoint carries no permission to replay; [Reanimation](reanimation.md)
+judges it against canonical truth.
 
-## The Anatomy of Memory
+## One cluster, one custody boundary
 
-The current Phylactery uses its PostgreSQL database's default schema and search path:
+`PGDATA` lives at the exact admitted `postgres/data` mount inside the [Crypt](../crypt.md), and
+PostgreSQL runs in its dedicated unit. The default design enlarges this one cluster on one host.
+Its storage may move beneath that mount without moving application authority. In-memory and
+process-local profiles remain bounded test or execution substitutes; loose files cannot form a
+shadow database.
 
-1. **`public` (The State):** Migration `0001_phylactery_first_light` raises `session`, `run`,
-   `run_checkpoint`, `step`, `consent`, `karma`, `soulstone_record`, and
-   `codex_preauthorization`; migration `0004_run_delivery_outbox` adds the exact publication intent
-   for each Run hop, migrations `0005` and `0006` refine preauthorization order and Rune presence,
-   and migration `0007_nexus_swap_admission` adds the operator transition duplicate-effect fence.
-   `run` is authoritative lifecycle truth; ordered `step` rows are a best-effort evidence
-   projection.
-2. **`run_checkpoint`:** one replaceable JSONB document per Run, holding the complete validated
-   Graph snapshot history. It is distinct from the Run/Step ledger, contains no runtime
-   dependencies or event stream, and cascades with its Run.
-3. **SAQ's `saq_*` tables:** durable broker records created on the default search path through a
-   separate autocommit pool. Run-row commit and queue publication are not one transaction.
-4. **Planned chambers:** `vectors` for governed Karma, `traces` for durable cognitive traces, and
-   isolated `queue` storage and roles. Their names reserve architecture, not delivery.
+A future named Domain store needs its own custody or projection contract. It does not become an
+interchangeable Phylactery backend. Current law selects no scale-out topology.
 
-!!! abstract "The Anchor"
-    Continuity begins at a declared commit boundary: SAQ jobs, Run and Step rows, consent records,
-    and one run-owned checkpoint. Live subscribers, leases, dependencies, and uncommitted frames
-    do not survive merely because a related row exists.
+Growth first requires lifecycle policy. Age or disk pressure permits no deletion, and Shadow's
+Reaper collects no database records. Measured partitioning or tablespaces could later place hot
+and cold relations on different local tiers while PostgreSQL remains the single query boundary.
+Additional mounts require Layout, container, and whole-cluster capture/restore support before use;
+[Persistence's scale seam](../../adr/06-persistence.md#default-topology-and-scale-seam) owns that decision.
 
-Terminal Run status precedes context release and best-effort checkpoint cleanup. On cleanup
-failure, status remains authoritative and [Reanimation](./reanimation.md) judges the retained
-checkpoint; its presence never authorizes arbitrary replay.
+## Read the evidence before claiming continuity
 
-!!! info "The Accumulator of Karma"
-    A narrow Karma row exists today. The larger path from consecrated consequence to curated,
-    attributable memory and eligible formation data belongs to [HitL
-    (25)](../../adr/25-hitl.md), [Memory (27)](../../adr/27-memory.md), and the
-    [Karma record in State](../../state-of-the-work.md#karma-semantic-memory).
+[First-light persistence](../../state-of-the-work.md#phylactery-first-light) is Partial. The
+proved PostgreSQL lifecycle uses offline collaborators; it does not establish a
+Consent-plus-Checkpoint restart or a real host, model, or browser journey. Use State's maintained
+receipt before relying on a particular return path.
 
-[ADR 06](../../adr/06-persistence.md) owns persistence and checkpoint storage. [ADR
-24](../../adr/24-graph.md) owns checkpoint semantics and terminal order; [Ghouls](../vessel/ghouls.md)
-own the worker lifecycle that writes them. Next, enter [Reanimation](./reanimation.md) to follow
-committed continuity across process death.
+General retention, compaction, and physical tiering remain incomplete. The narrow Karma row does
+not deliver the larger admission, curation, retrieval, and formation path owned by
+[Memory](../../adr/27-memory.md) and
+[State](../../state-of-the-work.md#karma-semantic-memory).
+
+To cross death deliberately, continue to [Reanimation](reanimation.md). To follow the worker that
+writes these records, return to [Ghouls](../vessel/ghouls.md).

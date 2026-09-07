@@ -5,56 +5,29 @@ icon: material/target
 
 # :material-target: Mission
 
-A mission gives one awakening a finish line. It is not permission to roam until the bot runs out
-of ideas, and continuity from an older mission does not silently widen the next one.
+The blueprint names a desired wall. The mission names the exact bot, place, resources, and finish line that could make it real. Continuing a project from yesterday does not extend today's lease.
 
 ## Admission
 
-Admission pins the exact Pattern and adapter revisions, `managed` or `attached` server mode,
-authenticated bot UUID, world identity and epoch, attested server capabilities, region lease,
-blueprint, deadline, budgets, and permitted reads and effects. Missing or stale authority refuses
-the mission before the Mind proposes a world action.
+Pin Pattern and adapter revisions, `managed` or `attached` mode, bot UUID, world identity and epoch, attested capabilities, region lease, blueprint, deadline, budgets, and permitted reads/effects. Missing or stale authority refuses before the Mind proposes an action.
 
-A canonical `BlockGrid@1` admitted by exact digest may describe desired blocks; it grants no
-placement authority. A Sponge `.schem` remains hostile source and transport evidence until a
-pinned parser reads it back, applies its offset and `DataVersion` policy, rejects or records every
-unsupported state, and normalizes it to that canonical grid. A closed procedural blueprint must
-likewise be evaluated by its admitted interpreter before it becomes desired-block truth. Sentinel
-computes and validates each bounded effect from the resolved grid against the world epoch, leased
-region, inventory, server capabilities, and mission policy. A preview, generated grid, or
-successful offline round trip cannot be cited as evidence that the live world changed.
+An exact `BlockGrid@1` digest can express desired blocks. A Sponge `.schem` must first pass its pinned parser, offset and `DataVersion` policy, unsupported-state handling, and canonical-grid normalization. A closed procedural blueprint must pass its admitted interpreter. Neither a preview nor an offline round trip proves placement: Sentinel resolves each bounded effect against the current epoch, lease, inventory, capabilities, and mission policy.
 
-Four application records keep long-lived meaning distinct:
+## What the inhabitant carries
 
-| Record | What it carries |
+| Record | Meaning that survives the turn |
 | --- | --- |
-| **Mission** | this finite objective, constraints, cursor, outcome, and exact non-completion |
-| **Project** | purposeful continuity that may relate several separately admitted missions |
-| **Relationship** | world-local social continuity and commitments; never a tool, world permission, Persona, or general Lich memory |
-| **Memory candidate** | material proposed for later remembrance; not admitted Memory by declaration |
+| **Mission** | This finite objective, constraints, cursor, result and exact non-completion. |
+| **Project** | Purposeful continuity across separately admitted missions. |
+| **Relationship** | World-local social continuity and commitments; no lease, tool, Persona, or general Lich memory authority. |
+| **Memory candidate** | Material proposed for remembrance, awaiting its own admission. |
 
-Only the project and memory records relevant to the admitted mission enter its Context. The
-inhabitant does not receive an endless hidden session, and a relationship cannot grant a lease,
-tool, or effect.
-
-When an [Avatar](../avatar/index.md) presence enters the mission, Blockworld records the exact
-Avatar profile, presence, projection-binding, and Persona references but does not copy their
-projection topology. Avatar may receive attributed mission results; it cannot advance the mission
-cursor or claim a world effect.
+Context receives only project and memory material relevant to this mission. These records cannot manufacture an endless hidden session. When Avatar appears, Blockworld retains exact profile, presence, projection-binding, and Persona references without copying their projection topology. Avatar may receive a mission result but cannot advance its cursor.
 
 ## One finite awakening
 
-1. Read bounded world status, inventory, region, nearby entities, and recent chat.
-2. Recall only the admitted project and relevant memory material.
-3. Propose one typed step inside the mission envelope.
-4. Let [Sentinel](sentinel.md) validate, issue, and verify that step.
-5. Commit its action receipt and advance the durable mission cursor.
-6. Continue within budget, finish, or return the exact reason the mission is incomplete.
+Read bounded world status, inventory, region, nearby entities, and recent chat. Recall the admitted project material, propose one typed step, and send it through [Sentinel](sentinel.md). Only after validation, execution, verification, and a durable action receipt may the mission cursor advance. Continue within budget, finish, or name the exact remaining work.
 
-Public autonomy, unrestricted exploration, administrator commands, remote shell, cross-plot power,
-server or modpack mutation, and an invented success after uncertain effects are not alternate
-endings. They are refusals. A managed server changes only through a separately admitted deployment,
-never by widening an inhabitant mission.
+Public autonomy, unbounded exploration, destructive administrator work, remote shell, cross-plot action, or invented success after an uncertain effect are refusals. A managed server changes through a separate deployment. [Continuity](continuity.md) explains which truths must agree before this mission can return.
 
-Continue with [Continuity](continuity.md) for interruption, restoration, and the distinction between
-mission progress and the world's own truth. Return to [Blockworld](index.md).
+Return to [Blockworld](index.md).

@@ -8,9 +8,11 @@ vi.mock("$app/state", () => ({
   page: { url: new URL("http://localhost/orb/run-a") }
 }));
 vi.mock("$lib/api/client", () => ({
+  getAtlasReferences: vi.fn().mockResolvedValue([]),
   getOrbRun: vi.fn()
 }));
 
+import { page } from "$app/state";
 import { getOrbRun } from "$lib/api/client";
 import OrbView from "./OrbView.svelte";
 
@@ -73,6 +75,7 @@ function deferred<T>() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  page.url.href = "http://localhost/orb/run-a";
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
   vi.mocked(getOrbRun).mockResolvedValue(snapshot);
 });
@@ -292,4 +295,15 @@ describe("Orb evidence pagination", () => {
     expect(screen.getByRole("button", { name: /Step completed/ })).toBeTruthy();
     view.unmount();
   });
+});
+
+
+it("hands exact Run and event context to Bridge and the pinned Pattern", async () => {
+  page.url.href = "http://localhost/orb/run-a?event=event-a&job=job-a";
+  const view = render(OrbView, { runId: "run-a" });
+  expect((await screen.findByRole("link", { name: "Bridge" })).getAttribute("href"))
+    .toBe("/bridge/session-a?run=run-a");
+  expect(screen.getByRole("link", { name: "Exact Pattern →" }).getAttribute("href"))
+    .toBe("/loom/bridge_chat/1?run=run-a&event=event-a&job=job-a");
+  view.unmount();
 });

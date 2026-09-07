@@ -22,7 +22,7 @@ another turn; recognition finds it relevant; germination lets [Recall](./recall.
 active Flux. A Seed may rest as inherited disposition or as an attributable form in the
 [Phylactery](../../phylactery/index.md); its surface changes how it returns, not the law of potency.
 
-The *Yoga Sūtras* distinguishes samādhi with seed (**sabīja**, I.46) and seedless (**nirbīja**,
+The *Yoga Sūtras* distinguish samādhi with seed (**sabīja**, I.46) and seedless (**nirbīja**,
 I.51); the [Patañjali Yoga Sūtra portal](https://www.gitasupersite.iitk.ac.in/yogasutra_content)
 preserves the source route. LychD receives one limited distinction: with Seed, formative potential
 can condition another turn; seedless, no project Seed remains to regenerate the loop. This does not

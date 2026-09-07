@@ -34,8 +34,8 @@ Rune identity, Connector, and typed runtime surfaces while
 
 ## Capability Binding Cartography
 
-Five records prevent a declaration from pretending to be proof, an observation from pretending to
-be compatibility, or either from pretending to be permission:
+The binding keeps five questions explicit: what was requested, what is declared, what was
+tested, what was observed, and what may be used now.
 
 | Record | Office |
 | --- | --- |
@@ -72,7 +72,7 @@ reinterpreted and an unknown family never becomes a generic service.
 ### Interfaces, profiles, and material
 
 An interface is the versioned semantic ABI, such as `model.chat@1`, `echo.transcribe@1`,
-`prism.image@1`, or `prism.scanner@1`. A profile pins the exact model, weights, graph,
+`prism.image@2`, or `prism.scanner@1`. A profile pins the exact model, weights, graph,
 workflow, configuration, dependencies, licenses, formats, languages, limits, and conformance
 evidence that implement it. Operations name admitted acts such as `generate`, `edit`,
 `transcribe`, `segment`, or `search`.
@@ -86,25 +86,42 @@ an eligible synthesizer; `tool` is never a universal effect interface.
 
 The v2 declaration holds animator/runtime/source kind, interface/profile, operations, typed I/O,
 invocation mode, driver/dialect, feature facts, conformance evidence, resource envelope, dynamic
-trait, and concurrency intent. The current v1 declaration retains its family/model, surface,
-modalities, tools/streaming, generation, and context fields.
+trait, and concurrency intent. The current v1 declaration retains family/model, input modalities,
+tool support, generation, and context fields; connector-local model summaries select Chat or
+Responses. The v1 dispatch demand cannot require streaming support or output modalities.
 `is_dynamic` says a running local runtime may load a model; it is not readiness. The observed
 phase is `COLD`, `ACTIVATABLE`, `WARMING`, `WARM`, `ERROR`, or `UNKNOWN`.
 
 Soulstone declarations compile from Runes and selected adapters; probes update state and may fill
 explicitly open runtime facts. An unknown local runtime stays passive unless an explicit adapter
 and dialect profile give it semantics. "OpenAI-compatible" without a named, proved dialect gives
-it none. A Portal creates routes only for capabilities declared in its Rune; zero declarations
+it none. Generic command planning synthesizes no Connector, model catalogue, or readiness.
+Unregistered OpenAI-shaped aliases fail Soulstone capability-coverage validation before Bind or
+registry publication. A Portal creates routes only for capabilities declared in its Rune; zero declarations
 mean zero routes. Portal routes are non-dynamic and non-dedicated.
 Their default `probe = false` makes no discovery egress, and a readiness probe never authorizes
 private transmission. That unprobed route is projected as `UNKNOWN` and unverified, never fabricated
 as `WARM`, so it cannot receive a grant.
 
+OpenAI-shaped transport construction binds only the declared endpoint and API credential. It
+does not retain ambient SDK organization, project, or webhook configuration or send those account
+headers to a local engine or unrelated provider.
+
+### Runtime hydration
+
 Soulstone adapter ownership is the adapter's exact declared runtime key; registration cannot claim
 another adapter's runtime. Registry hydration is staged and rejects a runtime unless it retains the
-exact input Rune and its name and id equal the Rune name. Every synthesized specification must then
+exact input Rune and its name equals the Rune name. Every synthesized specification must then
 name that Animator, the Rune's canonical runtime and source kind, and the canonical
 `{animator}:{family}:{model_id}` key before any snapshot is published.
+An adapter constructs its runtime catalogue once per hydration. Capability synthesis consumes
+that runtime's captured model summaries and generation defaults instead of re-reading a preset or
+independently rebuilding the connector's catalogue. Bind uses the same construction boundary to
+check capability coverage without probing or activating the runtime.
+Endpoint hydration preserves which fields the operator supplied: allocating a port must not turn
+omitted managed-command defaults into declarations that conflict with an explicit `exec` command.
+
+### Probe completeness and invalidation
 
 A probe is a total observation of the exact requested capability-key and operation set. Duplicate, missing, or
 foreign keys are contract failures; a successful result replaces that Animator's cached states as
@@ -118,18 +135,32 @@ selected only by the exact Portal definition's typed strategy.
 
 ## Resolution
 
+### Candidate selection
+
 Designed resolution receives `CapabilityDemand@1`, run and station-attempt identity, deadline, and
 priority. It removes ineligible and `ERROR` candidates and orders the rest deterministically under
 an admitted selection policy. This is readiness matching, not a judgment of quality, price,
-privacy, or correctness. Current `lease_grant` retains its narrower family/model/modalities/tools
-signature and deterministic open/active/warm/name/key order.
+privacy, or correctness.
+
+Current `lease_grant` retains its narrower family/model/modalities/tools
+signature, an optional exact `capability_key` constraint, and deterministic open/active/warm/name/key
+order. The exact key intersects every other demand constraint; it cannot bypass readiness, drain
+admission, or Portal quarantine. A model alias alone still denotes an eligible pool. An unknown,
+incompatible, or unavailable exact key never substitutes another candidate.
+
+### Refresh the selected route
+
+An invalidated or absent cached observation ranks as `UNKNOWN`, so the selected
+declaration can be freshly observed on a later request. It never recovers cached warmth.
+An explicitly observed `ERROR` remains excluded until a separate successful observation
+changes it; v1 does not retry another candidate after its chosen route fails.
 
 The chosen record is refreshed immediately before issue.
-Capability specifications passed to activation or abandonment adapters and every persistent-
-resident projection are deep snapshots; extension code cannot rewrite the canonical declaration
-through those call surfaces. Animator Rune and group projections are likewise detached, and group
-membership is returned as an immutable sequence. Connector model inventories are deep-copied on
-admission and every registry projection, including inventories supplied by extension connectors.
+Capability specifications, observations, generation profiles, and model summaries are frozen value
+objects with immutable nested fields. Registry and adapter projections may share those values;
+ordinary consumer mutation cannot rewrite the canonical declaration. Animator Runes freeze group
+membership and both explicitly supplied and omitted environment/secret maps. Inventory collections
+use immutable sequences. These in-process value contracts are not a sandbox for extension code.
 
 | Observation | Result |
 | --- | --- |
@@ -140,6 +171,15 @@ admission and every registry projection, including inventories supplied by exten
 | `ERROR` | Unavailable with observed reason. |
 | `UNKNOWN` | Re-probe; unavailable if still unresolved. |
 | Drain closes during issue | Transition required, and only this race is translated. |
+
+### Refusal and transition signals
+
+Known metadata-only v1 families are refused before readiness probing or a drain wait:
+hardware convergence cannot create their missing executable surface. The final registry
+issue probe can observe a different phase from Dispatcher's earlier probe; its typed
+readiness failure returns that exact observation to the same phase decision table.
+Hydration, policy, and malformed-probe failures remain ordinary failures and never become
+hardware requests merely because issue failed.
 
 The transition signal contains capability key, Animator name, and optional ready estimate—no
 connector, model, lease, or service handle. Graph may release its edge, ask Orchestrator to
@@ -155,22 +195,26 @@ Registry issue permits only a `WARM` record. The designed discriminated union ex
 - `SessionGrant`: one typed, bounded, epoch-fenced live-session driver.
 
 Every variant contains the exact specification, operation, warm observation, lease identity,
-holder, issue time, scope, and only the live surface it admits. Current source delivers one frozen
+holder, issue time, scope, and only the live surface it admits.
+
+Current source delivers one frozen
 v1 compatibility grant: `chat` must hydrate its Pydantic AI model and receives agent-loop toolsets
 only when `supports_tools = true`; `tool_execution` must hydrate at least one toolset and receives
 no model. All other v1 families fail closed because no typed executable surface exists. The grant
-does not expose its Animator or Connector. Specification and state accessors return defensive
-copies, including nested mutable values; only explicitly admitted model or toolset handles remain
-live process objects.
+does not expose its Animator or Connector. Specifications and observations share immutable nested
+values; only explicitly admitted model or toolset handles remain live process objects.
 
 The registry creates the identity; Dispatcher registers it in the process-local `LeaseLedger`.
 Its context manager releases on ordinary exit, body failure, and observation failure. Duplicate
-ids are defects. A closed drain gate is the sole issue failure that turns into Stasis.
+ids are defects. A closed drain gate or fresh dedicated `COLD`/`ACTIVATABLE`/`WARMING`
+observation turns into Stasis; unknown, erroneous, shared, or non-readiness issue failures do not.
 
 Drain truth is absence of ledger leases on an Animator. Admission closes before drain waits, so
 new work cannot enter an eviction set. A run waiting for its remedy owns no lease. `expires_at` is
 recorded but unenforced: there is no renewal or distributed stale-grant fence. Grants contain
 trusted live objects and may not enter Graph state, persistence, or delegated processes.
+
+### From a grant to an enduring effect
 
 For a bounded immediate call, the lease ends with that call. Before any local or remote asynchronous
 effect is first submitted, execution ownership must transfer to a persisted
@@ -206,10 +250,11 @@ grant and a decision over the exact canonical payload immediately before transmi
 will compose those decisions; it does not transform data or currently admit any Portal grant. A
 future path must not allow retry, fallback, delegated child, or consent to reuse an obsolete verdict.
 
-## Correspondence
+## Declaring and reading capabilities {#correspondence}
 
-Dispatcher is the switchboard: it hears a requested faculty, consults the living Coven, and names
-one warm vessel. Moving the Coven is Orchestrator's work; meaning the act is not Dispatcher's.
+Use [Capabilities](../sepulcher/animator/capabilities.md) for declaration formats and the meaning
+of observed readiness. The guide relates these records to the capability an operation actually
+needs and distinguishes the current compatibility surface from the general-service design.
 
 ## Consequences
 

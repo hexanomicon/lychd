@@ -22,7 +22,8 @@ roots. Percent signs, backslashes, and non-printable characters are rejected.
 
 ## Secret Hydration
 
-`secret_env_files` maps an environment-variable name to a Podman secret name:
+`secret_env_files` maps an environment-variable name to a Podman secret name. This schematic
+example demonstrates that mapping; an admitted engine profile must separately pin its image:
 
 ```toml
 name = "private-runtime"
@@ -36,11 +37,11 @@ image = "vllm/vllm-openai:latest"
 HF_TOKEN_FILE = "hf_runtime_token"
 ```
 
-Binding first proves that `hf_runtime_token` exists. The generated Quadlet emits
-`Secret=hf_runtime_token`, and the container receives
+Binding checks that `hf_runtime_token` exists without inspecting its contents. A missing name or
+failed existence probe refuses binding. The generated Quadlet emits `Secret=hf_runtime_token`, and
+the container receives
 `HF_TOKEN_FILE=/run/secrets/hf_runtime_token`. The Codex stores only the name; the value remains
-in rootless Podman's secret store. Binding verifies only that the named Podman secret exists; it
-does not inspect its contents. A missing name or failed existence probe refuses binding. Replacing
+in rootless Podman's secret store. Replacing
 a secret requires recreation of the consuming container.
 
 ## The Port Singularity

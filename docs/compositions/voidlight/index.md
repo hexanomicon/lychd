@@ -5,48 +5,24 @@ icon: material/camera-iris
 
 # :material-camera-iris: Voidlight
 
-Voidlight turns a visual commission into an attributable package of images, models, textures,
-visual effects, and motion. The Magus remains the visual director; generators, editors, renderers,
-and deterministic tools remain replaceable machinery. Here **VFX means visual effects**, never
-sound effects.
+The Magus asks for a still image that can stand on its own. Once accepted, that image may later become the first frame of a moving sequence. Voidlight carries either commission to its declared finish, keeping visual direction, source influence, candidates, and accepted revisions attributable.
 
-| Field | Reference contract |
-| --- | --- |
-| **Identity** | `voidlight.studio` revision `4` |
-| **Principal Pattern** | `voidlight.build_visual_package@2` |
-| **Begins with** | an admitted commission, frozen references, a target profile, and acceptance criteria |
-| **Can return** | one approved, immutable `VisualAssetBundle@1`, or an exact non-completion |
-| **Stops before** | sound production, engine import, final audiovisual assembly, publication, or rights certification |
-
-Revision `4` supersedes the Designed-only revision `3` because its audiovisual handoff consumes a
-`MusicCueMap@1` and routes model-returned sound by role instead of reinterpreting the former
-`SyncCueMap@1` sequence contract. The former `voidlight.build_visual_package@1` and
-`voidlight.forge_visual_sequence@1` meanings remain historical; revision `4` uses `@2`. No
-Portfolio registry or Run used revision `3`, so no executable migration exists.
-
-The commission also declares its finish boundary. It may complete honestly with an accepted still,
-continue through an admitted image-to-video or first/last-frame path, or seal a larger visual
-package. A later continuation starts from the immutable earlier artifact; it does not keep a
-finished image Run artificially paused. [Motion](motion.md#progressive-visual-depth) follows the
-reference journey.
+The craft can combine generators, editors, renderers, procedural work, capture, and authored material. The Magus remains visual director. Here **VFX means visual effects**.
 
 ## The work
 
-- [Brief](brief.md) freezes the commission, references, constraints, source influence, and
-  acceptance line.
-- [Direction](direction.md) turns taste into a reviewable visual system without making a model the
-  author.
-- [Assets](assets.md) creates, transforms, reviews, and traces still images, models, textures, and
-  other visual material.
-- [Motion](motion.md) owns generated or authored animation and visual sequence timing, but not
-  sound or the final edit.
-- [Package](package.md) seals the approved revisions, effects, recovery rules, and consumer
-  handoff.
+[Brief](brief.md) fixes the commission and how its result will be judged. [Direction](direction.md) gives those intentions a visual language. [Assets](assets.md) makes and reviews images, models, textures, and other visual roles; [Motion](motion.md) handles change through time. [Package](package.md) seals exact approved revisions for another craft to admit.
 
-Voidlight owns its commission, visual judgment, candidates, accepted revisions, provenance, and
-package. [Riffmaw](../riffmaw/) owns music; [Language Edition](../language-edition/) owns timed-language editions;
-[Foundry](../foundry/) owns engine integration; and [Broadcast](../broadcast/) owns picture-bound
-sound, editorial assembly, the final timeline, and publication.
+## The requested finish
 
-Related: [Workflow](../../adr/28-workflow.md) · [Vision](../../adr/36-vision.md) ·
-[Composition portfolio](../index.md)
+`voidlight.studio` revision `5` publishes principal Pattern `voidlight.build_visual_package@3`. It begins with an admitted commission, frozen references, target profile, and acceptance criteria. The requested finish may be an accepted still, accepted motion, or an approved immutable `VisualAssetBundle@1`. Failure to reach that requested boundary returns exact partial or non-completion under the pinned score.
+
+Reaching a requested still boundary completes the Run; later motion begins a forward Invocation over the retained artifact. [Motion](motion.md#progressive-visual-depth) follows both motion within the pinned score and separately admitted continuation.
+
+Voidlight owns the commission, visual judgment, candidates, accepted revisions, provenance, and package. It stops before sound production, engine import, final audiovisual assembly, publication, or rights certification. [Riffmaw](../riffmaw/) owns music; [Language Edition](../language-edition/) owns timed-language editions; [Foundry](../foundry/) owns engine integration; [Broadcast](../broadcast/) owns picture sound, the final editorial relation, and publication.
+
+## Revision continuity
+
+Revision `5` supersedes Designed-only revision `4`, advancing `voidlight.build_visual_package` and `voidlight.forge_visual_sequence` to `@3` with exact `ImageJob@2`/`VideoJob@2` Prism placements and pre-execution compound-facet authority. Revision `4` replaced `SyncCueMap@1` with `MusicCueMap@1`, routed returned sound by role, and advanced the former `@1` Patterns to `@2`. No Portfolio registry or Run used revisions `3` or `4`; no executable migration exists, and historical references keep their meanings.
+
+[Workflow](../../adr/28-workflow.md) · [Vision](../../adr/36-vision.md) · [Composition Portfolio](../index.md)

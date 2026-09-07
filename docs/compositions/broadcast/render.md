@@ -5,25 +5,12 @@ icon: material/movie-cog-outline
 
 # :material-movie-cog-outline: Render
 
-Render turns an accepted timeline into a deterministic local candidate. It owns reproduction and
-validation of the presented bytes, not the claims or creative lineage behind them.
+A missing font or changed codec can alter what the audience receives even when the timeline is untouched. Render freezes the dependencies that make one local candidate reproducible and inspectable.
 
-The render pins every input digest plus renderer, fonts, codecs, filters, colour settings, channel
-layout, loudness target, caption format, command or project revision, and target profile. Probes
-record duration, dimensions, frame rate, codec, color and audio facts, caption presence, checksum,
-and declared tolerances.
+Pin every input digest, renderer, font, codec, filter, colour setting, channel layout, loudness target, caption format, command/project revision, and target profile. Probes retain duration, dimensions, frame rate, codec, color/audio facts, caption presence, checksum, and tolerances.
 
-Accessibility is part of the candidate, not release decoration. Captions retain their script and
-timing lineage; contrast, legibility, flashing or motion hazards, audio intelligibility, language,
-and channel-specific alternatives are reviewed against the declared audience. Automated probes
-support that review but do not certify lived accessibility.
+Accessibility travels with the candidate. Captions retain script and timing lineage. Review contrast, legibility, flashing/motion hazards, intelligibility, language, and channel alternatives for the declared audience. Automated measurements support that judgment without certifying lived accessibility.
 
-A renderer may have completed an output before acknowledgement was lost. The effect remains
-**unknown** until the destination and checksum are reconciled; blind retry could create competing
-outputs or hide a partial write. A stale input, missing font, non-deterministic dependency,
-unsupported target, failed probe, or accessibility finding returns a failed render or correction
-request.
+A completed write may precede a lost acknowledgement. Keep it **unknown** until destination and checksum reconcile; blind repetition can create competing outputs or conceal a partial write. Stale inputs, missing fonts, nondeterministic dependencies, unsupported targets, failed probes, and accessibility findings return failed render or correction requests.
 
-An accepted render joins its script, timeline, claim, source, and asset manifests in
-`EditorialPackage@1` and `PublicationCandidate@1`. The local candidate passes to
-[Release](release.md); successful rendering grants no destination authority.
+Accepted bytes join script, timeline, claims, sources, and asset manifests in `EditorialPackage@2` and `PublicationCandidate@2`. Preserve independent semantic-facet receipts and compound-parent relations through muxing. [Release](release.md) handles the separate destination effect; this local candidate is complete without it.

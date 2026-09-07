@@ -46,17 +46,11 @@ foreign-library state, or emitted effects had vanished. Promotion therefore sele
 generation rather than trying to clean a candidate out of the current process; continuity crosses
 that boundary only through owned durable records and explicit recovery semantics.
 
-Verification makes a candidate eligible to ask; it never performs the live effect. The current
-`PATH_LAB_DIR` and its read-write Vessel mount support trusted preparation, while the image's
-`/app` is read-only. They are neither a code Forge nor a sandbox. There is no autonomous repair
-loop, Tomb executor, verified package promotion, compatibility gate, rollback controller, or
-self-extension runtime. [State of Work](../state-of-the-work.md#smith-forge-promotion) owns that
-delivery boundary.
+Creation currently proceeds through ordinary operator-controlled development and review, with checks run through development and CI. Verification authorizes only a request for promotion; it does not execute the live effect.
 
-No Creation contract or state-machine implementation is delivered. Immutable request, candidate,
-custody, verification, compatibility, review, and promotion records below are accepted design; the
-current route remains ordinary operator-controlled development and review. Their names do not
-imply that a workspace, executor, evidence store, or promotion effect exists.
+`PATH_LAB_DIR` and its read-write Vessel mount support trusted preparation in the Lab; the image’s `/app` remains read-only. This writable directory supplies neither an operational code Forge nor execution isolation.
+
+Creation has no implemented contract or state machine. The immutable request, candidate, custody, verification, compatibility, review, and promotion records described below are accepted design; naming them implies no workspace, executor, evidence-store, or promotion-effect implementation. There is no autonomous repair loop, Tomb executor, verified package promotion, compatibility gate, rollback controller, or self-extension runtime. [State of Work](../state-of-the-work.md#smith-forge-promotion) owns delivery status.
 
 ### Admission and candidate identity
 

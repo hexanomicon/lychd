@@ -13,9 +13,9 @@ from lychd.extensions.builtin.catalog import builtin_register_module, builtin_re
 from lychd.extensions.context import ExtensionContext, ExtensionRegistrationContext
 from lychd.system.constants import PATH_EXTENSIONS_DIR
 
-_CORE_PROVIDER_ID = "core"
-_BUILTIN_PROVIDER_PREFIX = "builtin:"
-_CRYPT_PROVIDER_PREFIX = "crypt:"
+_CORE_REGISTRANT_ID = "core"
+_BUILTIN_REGISTRANT_PREFIX = "builtin:"
+_CRYPT_REGISTRANT_PREFIX = "crypt:"
 _CRYPT_PACKAGE_PREFIX = "lychd_crypt_extension_"
 
 
@@ -47,16 +47,16 @@ class ExtensionManager:
         # RuneRegistry always carries CodexPreauthRune instances.
         from lychd.domain.codex.runes import CodexPreauthRune
 
-        with context.provenance(_CORE_PROVIDER_ID):
+        with context.provenance(_CORE_REGISTRANT_ID):
             context.runes.add_schema(CodexPreauthRune)
 
         for activation_id in builtin_registration_order(self._builtins):
-            provider_id = f"{_BUILTIN_PROVIDER_PREFIX}{activation_id}"
-            self._register_builtin(activation_id, context.registration_view(provider_id))
+            registrant_id = f"{_BUILTIN_REGISTRANT_PREFIX}{activation_id}"
+            self._register_builtin(activation_id, context.registration_view(registrant_id))
 
         for activation_id in self._crypt:
-            provider_id = f"{_CRYPT_PROVIDER_PREFIX}{activation_id}"
-            self._register_crypt(activation_id, context.registration_view(provider_id))
+            registrant_id = f"{_CRYPT_REGISTRANT_PREFIX}{activation_id}"
+            self._register_crypt(activation_id, context.registration_view(registrant_id))
 
         context.freeze()
         return context

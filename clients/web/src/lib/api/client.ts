@@ -3,6 +3,11 @@ import createClient from "openapi-fetch";
 import type { paths } from "./openapi";
 import type {
   AltarStatus,
+  AtlasCatalogue,
+  AtlasCreate,
+  AtlasMutation,
+  AtlasProject,
+  AtlasSummary,
   BridgeSnapshot,
   LoomSummary,
   LoomView,
@@ -24,7 +29,8 @@ let csrfContract: CsrfContract | null = null;
 export class ApiError extends Error {
   constructor(
     message: string,
-    readonly status?: number
+    readonly status?: number,
+    readonly code?: string
   ) {
     super(message);
   }
@@ -41,7 +47,11 @@ function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T
       typeof result.error === "object" && result.error !== null && "detail" in result.error
         ? String(result.error.detail)
         : `The Vessel refused the request (${result.response.status}).`;
-    throw new ApiError(detail, result.response.status);
+    const extra = typeof result.error === "object" && result.error !== null && "extra" in result.error
+      ? result.error.extra : undefined;
+    const code = typeof extra === "object" && extra !== null && "code" in extra && typeof extra.code === "string"
+      ? extra.code : undefined;
+    throw new ApiError(detail, result.response.status, code);
   }
   return result.data;
 }
@@ -50,6 +60,46 @@ export async function getAltarStatus(): Promise<AltarStatus> {
   const status = unwrap(await client.GET("/api/v1/altar/status")) as AltarStatus;
   csrfContract = status.csrf;
   return status;
+}
+
+export async function getAtlasProjects(
+  options: { limit?: number; offset?: number; signal?: AbortSignal } = {}
+): Promise<AtlasCatalogue> {
+  return unwrap(await client.GET("/api/v1/atlas/projects", {
+    signal: options.signal,
+    params: { query: { limit: options.limit, offset: options.offset } }
+  }));
+}
+
+export async function getAtlasProject(id: string, signal?: AbortSignal): Promise<AtlasProject> {
+  return unwrap(await client.GET("/api/v1/atlas/projects/{project_id}", {
+    signal,
+    params: { path: { project_id: id } }
+  }));
+}
+
+export async function createAtlasProject(data: AtlasCreate): Promise<AtlasProject> {
+  return unwrap(await client.POST("/api/v1/atlas/projects", {
+    body: data,
+    headers: await csrfHeaders()
+  }));
+}
+
+export async function changeAtlasProject(id: string, data: AtlasMutation): Promise<AtlasProject> {
+  return unwrap(await client.POST("/api/v1/atlas/projects/{project_id}/changes", {
+    params: { path: { project_id: id } },
+    body: data,
+    headers: await csrfHeaders()
+  }));
+}
+
+export async function getAtlasReferences(
+  kind: "session" | "run", targetId: string, signal?: AbortSignal
+): Promise<AtlasSummary[]> {
+  return unwrap(await client.GET("/api/v1/atlas/references", {
+    signal,
+    params: { query: { kind, target_id: targetId } }
+  }));
 }
 
 export async function getBridgeSnapshot(sessionId?: string): Promise<BridgeSnapshot> {

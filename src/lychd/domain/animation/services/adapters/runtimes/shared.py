@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import cast
 
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import SoulstoneConfig
+from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import (
     default_model_id_for_soulstone,
     model_infos_from_soulstone,
@@ -22,7 +22,7 @@ from lychd.lib.http import HttpJsonError, request_json
 
 
 def require_runtime_soulstone[RuntimeSoulstone: SoulstoneConfig](
-    soulstone: SoulstoneConfig,
+    soulstone: SoulstoneConfig | PortalConfig,
     *,
     expected_type: type[RuntimeSoulstone],
     runtime: str,
@@ -109,7 +109,7 @@ async def probe_openai_compatible_link(
         up = True
         reason = None
         try:
-            model_ids = _parse_openai_model_inventory(payload)
+            model_ids = parse_openai_model_inventory(payload)
         except HttpJsonError as exc:
             connector.set_observed_model_ids(None)
             connector.set_inventory_error(f"inventory validation failed: {exc}")
@@ -123,7 +123,7 @@ async def probe_openai_compatible_link(
     )
 
 
-def _parse_openai_model_inventory(payload: dict[str, object]) -> tuple[str, ...]:
+def parse_openai_model_inventory(payload: dict[str, object]) -> tuple[str, ...]:
     """Validate and detach one OpenAI ``/models`` response."""
     data = payload.get("data")
     if not isinstance(data, list):
@@ -158,6 +158,7 @@ def _parse_openai_model_inventory(payload: dict[str, object]) -> tuple[str, ...]
 
 __all__ = [
     "build_openai_connector",
+    "parse_openai_model_inventory",
     "probe_openai_compatible_link",
     "require_runtime_soulstone",
     "resolved_soulstone_base_url",

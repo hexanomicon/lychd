@@ -91,7 +91,7 @@ def test_descriptor_relative_operations_reject_non_component_names(
     directory_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
 
     try:
-        with pytest.raises(ValueError, match="relative filename|null byte"):
+        with pytest.raises(ValueError, match=r"relative filename|null byte"):
             rename_noreplace_at(
                 name,
                 "destination",

@@ -1,16 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
-
-import structlog
 
 from lychd.domain.animation.capabilities import (
     CapabilityPhase,
     CapabilitySpec,
-    CapabilityState,
 )
 from lychd.domain.animation.errors import ActivationTimeout, HardwareTransitionRequired
 from lychd.domain.animation.protocols import CapabilityRegistry, require_capability_record
@@ -18,6 +14,7 @@ from lychd.domain.cortex.leases import AnimatorAdmission
 from lychd.domain.cortex.priority import validate_priority
 from lychd.domain.orchestration.actuator import (
     RuntimeActuationRestoredError,
+    RuntimeCancellationNoEffectError,
     RuntimeCancellationRestoredError,
     RuntimePreconditionError,
     TransitionIntent,
@@ -25,12 +22,12 @@ from lychd.domain.orchestration.actuator import (
     capability_config_generation,
 )
 from lychd.domain.orchestration.arbiter import TransitionArbiter, TransitionDeclined
-from lychd.domain.orchestration.journal import TransitionJournal
+from lychd.domain.orchestration.journal import TransitionJournal, notify_transition
 from lychd.domain.orchestration.schema import TransitionPlan, TransitionTrace
 from lychd.lib.asyncio import complete_under_cancellation
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncGenerator
 
     from lychd.config.settings.orchestration import SwitchingSettings
     from lychd.domain.cortex.leases import LeaseLedger
@@ -40,21 +37,6 @@ if TYPE_CHECKING:
     from lychd.domain.orchestration.schema import TransitionPhase
 
 __all__ = ["OrchestratorManager", "TransitionDeclined"]
-
-logger = structlog.get_logger()
-
-
-class _RuntimeMutationBarrierState:
-    """Control whether a mutation barrier may safely reopen on context exit."""
-
-    def __init__(self, contain: Callable[[str], None]) -> None:
-        self.release_on_exit = True
-        self._contain = contain
-
-    def fail_closed(self, reason: str) -> None:
-        """Keep queue claims paused and animator admission draining."""
-        self.release_on_exit = False
-        self._contain(reason)
 
 
 class OrchestratorManager:
@@ -98,19 +80,8 @@ class OrchestratorManager:
         trace.phase = phase
         if detail is not None:
             trace.detail = detail
-        self.transitions.record(trace)
-        if trace.observer is not None:
-            try:
-                trace.observer(trace)
-            except Exception:  # noqa: BLE001 - projection sinks are deliberately isolated
-                # Evidence is a projection of physical truth, never a participant
-                # in it. A broken sink must not trigger rollback or containment.
-                logger.warning(
-                    "transition_observer_failed",
-                    request_id=trace.request_id,
-                    phase=trace.phase,
-                    exc_info=True,
-                )
+        record = self.transitions.record(trace)
+        notify_transition(record, trace.observer)
 
     @property
     def containment_reason(self) -> str | None:
@@ -148,13 +119,21 @@ class OrchestratorManager:
         return items
 
     async def calculate_transition_plan(self, target_capability_key: str) -> TransitionPlan:
-        """Calculate the transition from a fresh lifecycle-managed world view."""
+        """Calculate from fresh managed-runtime observations under one planning deadline."""
         # A target-only refresh is insufficient: persistent residents start in
         # parallel at boot and an operator may also start a managed unit outside
         # this process.  Policy and the host stale-world fence must therefore see
         # the same current peer set. The registry serializes probes under one lock,
         # so refresh deterministically instead of creating fake parallel tasks.
-        await self._refresh_lifecycle_managed_animators()
+        planning_deadline = asyncio.timeout(self._switching.planning_timeout_s)
+        try:
+            async with planning_deadline:
+                await self._refresh_lifecycle_managed_animators()
+        except TimeoutError as exc:
+            if not planning_deadline.expired():
+                raise
+            msg = f"Transition planning for '{target_capability_key}' exceeded the planning deadline."
+            raise RuntimePreconditionError(msg) from exc
         target = self.registry.get_capability(target_capability_key)
         if target is None:
             msg = f"Unknown capability: {target_capability_key}"
@@ -203,13 +182,7 @@ class OrchestratorManager:
         *,
         trace: TransitionTrace | None = None,
     ) -> None:
-        """Execute the required transition and converge deterministically on WARM.
-
-        ``TransitionDeclined`` (a priority-gated HARD_SWAP) propagates to `perform_run`
-        and fails the run with the plan in the message — an honest refusal, not a hang.
-        The terminal ``await_warm`` fails the transition loudly (``ActivationTimeout``)
-        instead of handing a cold capability back to the stasis loop.
-        """
+        """Converge the requested capability; propagate priority or readiness failure."""
         await self.request_transition(exception.capability_key, signal_priority, trace=trace)
 
     async def request_transition(
@@ -219,14 +192,10 @@ class OrchestratorManager:
         *,
         trace: TransitionTrace | None = None,
     ) -> TransitionPlan:
-        """Calculate, execute, and converge a lifecycle transition on WARM.
+        """Converge on WARM, coalescing same-capability, same-priority requests.
 
-        A HARD_SWAP below ``min_priority_for_hard_swap`` is declined loudly.
-        SOFT_SWAP / NO_OP are NEVER gated. A cheap NO_OP pre-check short-circuits before
-        the arbiter (a warm capability must never queue behind a swap); every other plan
-        is (re-)computed INSIDE the arbiter's single-owner section so the evict set always
-        reflects post-predecessor reality — a stale plan computed against an older world
-        can no longer evict the wrong animator and violate the Law of Exclusivity.
+        Warm/open preflight bypasses physical arbitration. All other plans refresh
+        inside the arbiter; only HARD_SWAP is subject to the priority threshold.
         """
         priority = validate_priority(priority)
         trace = trace or TransitionTrace(target_capability_key=target_capability_key, priority=float(priority))
@@ -248,10 +217,10 @@ class OrchestratorManager:
                     ),
                 )
         except TransitionDeclined as exc:
-            trace.plan = exc.plan
+            trace.action_type, trace.total_metabolic_cost = exc.plan.action_type, exc.plan.total_metabolic_cost
             self._publish(trace, "declined_no_effect", detail=str(exc))
             raise
-        except RuntimePreconditionError as exc:
+        except (RuntimePreconditionError, RuntimeCancellationNoEffectError) as exc:
             self._publish(trace, "declined_no_effect", detail=str(exc))
             raise
         except RuntimeActuationRestoredError as exc:
@@ -283,8 +252,8 @@ class OrchestratorManager:
                 trace.detail = str(exc)
                 self.transitions.record(trace)
             raise
-        if trace.plan is None:
-            trace.plan = result  # coalesced follower: actual owner plan, no invented host id
+        # Coalesced followers report the owner's outcome without retaining its plan.
+        trace.action_type, trace.total_metabolic_cost = result.action_type, result.total_metabolic_cost
         self._publish(trace, "completed")
         return result
 
@@ -301,7 +270,7 @@ class OrchestratorManager:
         self._raise_if_contained()
         target_animator = self._target_animator(target_capability_key)
         if pre.action_type == "NO_OP" and self._leases.admission(target_animator) is AnimatorAdmission.OPEN:
-            trace.plan = pre
+            trace.action_type, trace.total_metabolic_cost = pre.action_type, pre.total_metabolic_cost
             return pre
         self._publish(trace, "arbitrating")
         return None
@@ -316,7 +285,7 @@ class OrchestratorManager:
         """Run the arbiter-guarded critical section: re-plan against fresh world, then actuate."""
         self._raise_if_contained()
         plan = await self.calculate_transition_plan(target_capability_key)  # fresh, post-predecessor
-        trace.plan = plan
+        trace.action_type, trace.total_metabolic_cost = plan.action_type, plan.total_metabolic_cost
         if plan.action_type == "NO_OP":
             target_animator = self._target_animator(target_capability_key)
             if self._leases.admission(target_animator) is not AnimatorAdmission.OPEN:
@@ -334,9 +303,9 @@ class OrchestratorManager:
 
             affected_animators = list(dict.fromkeys([*plan.evict_coven_ids, *plan.launch_coven_ids]))
             self._publish(trace, "draining")
-            async with self._runtime_mutation_barrier(affected_animators) as barrier:
+            async with self._runtime_mutation_barrier(affected_animators):
                 intent = TransitionIntent(
-                    config_generation=self._config_generation(),
+                    config_generation=capability_config_generation(self.registry),
                     target_animator=self._target_animator(target_capability_key),
                     target_capability_key=target_capability_key,
                     evict_animators=tuple(plan.evict_coven_ids),
@@ -350,6 +319,7 @@ class OrchestratorManager:
                 except (
                     RuntimePreconditionError,
                     RuntimeActuationRestoredError,
+                    RuntimeCancellationNoEffectError,
                     RuntimeCancellationRestoredError,
                 ):
                     # The host either rejected before mutation or proved that a
@@ -360,7 +330,7 @@ class OrchestratorManager:
                     # The current actuator contract cannot prove whether a
                     # raising call restored the expected world. Keep both gates
                     # closed rather than admit work into a possibly partial swap.
-                    barrier.fail_closed("runtime actuator outcome is uncertain")
+                    self._contain("runtime actuator outcome is uncertain")
                     raise
                 try:
                     # The actuator returns only after the physical transition has
@@ -383,7 +353,7 @@ class OrchestratorManager:
                     except BaseException as compensation_error:
                         # A half-restored physical world is unsafe. Deliberately
                         # leave both admission layers closed for operator recovery.
-                        barrier.fail_closed("typed runtime compensation failed")
+                        self._contain("typed runtime compensation failed")
                         message = (
                             f"Transition '{intent.transition_id}' failed readiness convergence and "
                             "its typed compensation failed; runtime admission remains closed."
@@ -405,7 +375,7 @@ class OrchestratorManager:
         # an existing A grant cannot be invalidated underneath a running graph.
         target_animator = self._target_animator(target_capability_key)
         self._publish(trace, "draining")
-        async with self._runtime_mutation_barrier([target_animator]) as barrier:
+        async with self._runtime_mutation_barrier([target_animator]):
             try:
                 self._publish(trace, "actuating")
                 deadline = asyncio.get_running_loop().time() + self._switching.warmup_timeout_s
@@ -413,7 +383,7 @@ class OrchestratorManager:
             except (Exception, asyncio.CancelledError):
                 # There is no trustworthy model-level inverse without recording
                 # the previously loaded model. Do not reopen into unknown state.
-                barrier.fail_closed("soft runtime mutation failed without a trustworthy model inverse")
+                self._contain("soft runtime mutation failed without a trustworthy model inverse")
                 raise
         return plan
 
@@ -421,9 +391,8 @@ class OrchestratorManager:
     async def _runtime_mutation_barrier(
         self,
         animator_names: list[str],
-    ) -> AsyncIterator[_RuntimeMutationBarrierState]:
-        """Close new claims and wait for every affected animator lease to drain."""
-        state = _RuntimeMutationBarrierState(self._contain)
+    ) -> AsyncGenerator[None]:
+        """Drain affected leases; reopen both gates unless containment was latched."""
         self._leases.begin_drain(animator_names)
         try:
             try:
@@ -435,14 +404,14 @@ class OrchestratorManager:
                 if not drained:
                     msg = f"Lease drain timed out on: {animator_names}"
                     raise RuntimeError(msg)
-                yield state
+                yield
             finally:
                 # The claim gate must reopen on timeout, cancellation, or a
                 # failed drain; otherwise all future runs wedge.
-                if state.release_on_exit and self._contained_reason is None:
+                if self._contained_reason is None:
                     await self.worker_broker.unpause_queues()
         finally:
-            if state.release_on_exit and self._contained_reason is None:
+            if self._contained_reason is None:
                 self._leases.end_drain(animator_names)
 
     def _contain(self, reason: str) -> None:
@@ -459,9 +428,6 @@ class OrchestratorManager:
         )
         raise RuntimeError(msg)
 
-    async def _get_capability_record(self, key: str) -> tuple[CapabilitySpec, CapabilityState]:
-        return await require_capability_record(self.registry, key)
-
     async def _refresh_lifecycle_managed_animators(self) -> None:
         """Refresh every local managed runtime before policy reads peer state."""
         animator_names = sorted(
@@ -475,7 +441,7 @@ class OrchestratorManager:
             await self.registry.refresh_capability_states_for_animator(animator_name)
 
     def _is_animator_runtime_started(self, animator_name: str) -> bool:
-        """Return whether a dynamic animator can converge without a host restart."""
+        """Return whether any capability observes this runtime as started."""
         return any(state.runtime_started for state in self.registry.list_capability_states_for_animator(animator_name))
 
     async def _activate_dynamic_capability(self, target: CapabilitySpec) -> None:
@@ -490,7 +456,7 @@ class OrchestratorManager:
         loop = asyncio.get_running_loop()
         try:
             async with asyncio.timeout_at(deadline):
-                spec, current_state = await self._get_capability_record(capability_key)
+                spec, current_state = await require_capability_record(self.registry, capability_key)
                 if spec.is_dynamic and current_state.phase not in {CapabilityPhase.WARM, CapabilityPhase.WARMING}:
                     await self._activate_dynamic_capability(spec)
                 remaining = max(0.0, deadline - loop.time())
@@ -537,7 +503,3 @@ class OrchestratorManager:
                 }
             )
         )
-
-    def _config_generation(self) -> str:
-        """Digest the immutable capability projection used to compute this transition."""
-        return capability_config_generation(self.registry)

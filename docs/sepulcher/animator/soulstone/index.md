@@ -17,11 +17,6 @@ For a model-backed capability, the Soulstone is the local furnace in which an
 [Animus](../index.md#animus-the-power-answering) may become active. The loaded model lends bounded
 power through its Connector and CapabilityGrant; it is not the Lich's Spirit or identity.
 
-The name is one domain concept, not a Python decomposition into `Soul + Stone`. `Soulstone` is the
-only service term ending in “Stone”; shared deployment code uses the literal `QuadletConfig` name.
-Soulstone and Phoenix already embed that minimum value under `quadlet` without sharing Domain or
-Rune ancestry, while future Tether or Veil Runes may compose it without changing their identities.
-
 The local contract also preserves a practical dimension of sovereignty: useful capability can be
 possessed, inspected, stopped, and resumed by the operator rather than existing only as revocable
 remote tenancy.
@@ -31,10 +26,13 @@ remote tenancy.
 ## The Local Contract
 
 Local placement carries local obligations. A Soulstone names its `quadlet.image`, runtime, models,
-endpoint,
-devices, mounts, secrets, and lifecycle intent. It receives only that explicit substrate. A
+endpoint, devices, mounts, secrets, and lifecycle intent. It receives only that explicit substrate. A
 generated Quadlet is its body, not the capability object granted to a caller. The live Soulstone
 Animator holds the Rune and Connector, not that generated Quadlet document.
+
+The [Rune's schema boundary](./rune.md#schema-and-process-generation) keeps embedded deployment
+structure separate from Rune ancestry and Domain ownership. `Soulstone` remains one domain concept,
+never `Soul + Stone`, and the only service term ending in “Stone”.
 
 Read [Soulstone Rune](./rune.md) to declare the service and its models. Read
 [Resources and Secrets](./resources.md) before granting a device, mount, port, or credential.

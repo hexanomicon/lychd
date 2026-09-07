@@ -168,6 +168,33 @@ def test_run_snapshot_replaces_live_projection_at_exact_cursor(
     assert snapshot["terminal"] is False
 
 
+def test_malformed_fragment_does_not_break_snapshot_or_stream(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    run_id = "run_malformed_fragment"
+    _seed_live_run(fake_services, run_id)
+    emitter = fake_services.bus.emitter(run_id)
+    emitter.emit(RunEventKind.FRAGMENT, "[]")
+    emitter.emit(RunEventKind.TOKEN, "still streaming")
+    emitter.emit(RunEventKind.DONE, "done")
+
+    response = altar_client.get(f"/api/v1/bridge/runs/{run_id}")
+    assert response.status_code == 200
+    snapshot = response.json()
+    assert snapshot["fragments"] == [
+        {"kind": "genui.unknown", "schema_version": 1, "props": {}, "actions": []},
+    ]
+    assert snapshot["content"] == "still streaming"
+
+    stream = altar_client.get(f"/api/v1/bridge/runs/{run_id}/events")
+    assert stream.status_code == 200
+    events = _sse_events(stream.text)
+    assert [event["event"] for event in events] == ["fragment", "token", "done"]
+    assert events[0]["data"]["payload"] == snapshot["fragments"][0]
+    assert events[1]["data"]["payload"]["text"] == "still streaming"
+
+
 def test_stream_unknown_run_is_404(altar_client: TestClient[Litestar]) -> None:
     response = altar_client.get(
         "/api/v1/bridge/runs/does-not-exist/events",

@@ -56,7 +56,7 @@ def test_daemon_reload_wraps_timeout_as_typed_failure() -> None:
 
     with pytest.raises(
         SystemdUserManagerError,
-        match="could not complete.*exceeded its timeout",
+        match=r"could not complete.*exceeded its timeout",
     ):
         SystemdUserManager(
             systemctl_bin="/usr/bin/systemctl",

@@ -13,8 +13,8 @@ A **Coven** is a named systemd target emitted when two or more compatible
 neither conflict nor eviction policy.
 
 One member emits no target. Different groups create no coexistence promise. Members' effective
-conflict sets must not overlap; an internally conflicting Coven fails closed. `alliances` is
-accepted shape without enforcement authority.
+conflict sets must not overlap; an internally conflicting Coven fails closed. The current Rune
+schema has no `alliances` setting and rejects that field.
 
 One Rune may participate in more than one formation:
 
@@ -27,115 +27,26 @@ That still names one service instance. Starting `conversation.target` and `studi
 create two copies, and common membership does not prove the complete union fits. The compiled
 conflict graph remains the executable coexistence law.
 
-A Coven is also not a scheduler, semantic capability set, VRAM pool, placement request, or cloud
-burst policy. A later `CapabilitySetRequest@1` may ask Orchestrator to converge several exact
-capabilities using measured resource envelopes and placement profiles. It may use a Coven as an
-operator convenience only after expanding and validating every member; the Coven itself grants no
-capacity, route, lease, egress, or authority. That is one serialized desired-world transaction,
-not an atomic hardware promise; partial effect uses compensation, restoration, and containment.
+For later multi-capability placement, follow the [capability and resource
+design](capabilities.md#runes-runes-in-groups-and-placement). A `CapabilitySetRequest@1` may use a
+Coven as an operator convenience only after Orchestrator expands and validates every member
+against measured envelopes and placement profiles. Membership grants no resources, routing, lease,
+or egress authority. Convergence is serialized, while physical effects remain non-atomic and use
+compensation, restoration, and containment after partial change.
 
 !!! warning "Operator break-glass surface"
     Starting or stopping a generated Coven target directly propagates through its compatible
     Animator targets. This bypasses Orchestrator admission, lease drain, stale-world validation,
     readiness, and compensation. Reserve it for host administration or recovery.
 
-## What the Nexus Shows
 
-The [Nexus](../../divination/altar/nexus.md) projects the six
-[capability phases](./capabilities.md#readiness-is-not-compatibility) as five operator labels; Capabilities
-owns that mapping.
+<span id="what-the-nexus-shows"></span>
+<span id="the-transition-contract"></span>
+<span id="inspect-and-request"></span>
+<span id="queue-and-routing-context"></span>
+<span id="switching-settings"></span>
+<span id="tune-with-intent"></span>
 
-## The Transition Contract
-
-The [Orchestrator](../../adr/23-orchestrator.md) owns every application-requested transition:
-
-1. refresh the target and compute its exact affected conflict neighborhood;
-2. close lease admission and the Run claim gate;
-3. drain affected leases;
-4. revalidate configuration and the loaded Scribe-owned unit graph;
-5. request one physical transaction or supported runtime-native activation;
-6. require honest `WARM`, then reopen only under the restoration law.
-
-A parked requester holds no lease. Refusal before effect or an exact restoration reopens
-admission. An uncertain mutation remains contained for operator recovery.
-
-## Inspect and Request
-
-```bash
-curl -s http://localhost:7134/orchestrator/queues | jq
-curl -s http://localhost:7134/orchestrator/status | jq '.mutation_containment'
-```
-
-The queues response exposes `depth`, `active`, `paused`, and each lease's `capability_key`,
-`holder`, and `priority`. `mutation_containment` is normally `null`; a reason means later
-transitions remain fenced.
-
-Request a target capability directly:
-
-```bash
-curl -s -X POST \
-  "http://localhost:7134/orchestrator/activate?target=atelier:chat:qwen3-8b&priority=70"
-```
-
-- **202**: accepted, including runtime-started convergence or no-op.
-- **409**: a hard swap was declined because priority was below
-  `min_priority_for_hard_swap`; the response carries the plan and threshold.
-
-Priority is **higher = hotter**. This endpoint is an explicit operational surface, not a side door
-for an Agent or extension to bypass ordinary dispatch.
-
-## Queue and Routing Context
-
-`[server.jobs]` fixes two in-process queues: `runs` uses `interactive_concurrency = 2`; `rites`
-uses `background_concurrency = 4`. These settings bound tasks, not CPU, memory, admission, or
-preemption. The optional SAQ diagnostic UI is disabled by default; enabling it starts no second
-server. `admin_ui_path` defaults to `/saq`; exposing it requires an explicit access policy.
-
-`[orchestration.routing]` maps Intent source to queue and doctrine priority:
-
-| Source | Queue | Default priority |
-| :--- | :--- | :--- |
-| `default` | `runs` | `50` |
-| `cli` | `runs` | `50` |
-| `bridge` | `runs` | `70` |
-| `rite` | `rites` | `20` |
-
-Each rule accepts priority 0–100. Queue execution belongs to
-[Workers (14)](../../adr/14-workers.md); these values matter here only because transition policy
-receives the Run's doctrine priority.
-
-## Switching Settings
-
-| Field | Default | Meaning |
-| :--- | :--- | :--- |
-| `actuator` | `"host-reactor"` | Caged mediated actuation; `"systemd"` selects explicit uncaged mode. |
-| `host_reactor_dir` | XDG trigger inbox | Absolute writable intent inbox; sibling journal is derived read-only. |
-| `policy` | `"declared-conflicts"` | Select exact active conflict neighbors; `"evict-idle"` is a compatibility alias. |
-| `min_priority_for_hard_swap` | `40` | Decline colder hard swaps. |
-| `drain_timeout_s` | `120.0` | Bound lease drain. |
-| `warmup_timeout_s` | `180.0` | One absolute readiness-convergence budget. |
-| `reactor_ack_timeout_s` | `120.0` | Bound only the unclaimed Reactor phase. |
-
-Unknown policy values fail at startup. Coven and alliance labels never alter the compiled conflict
-graph.
-
-The Host Reactor records exact outcomes: `.declined.json` proves no effect,
-`.restored.json` proves the prior world, `.contained.json` fences an uncertain physical outcome,
-`.processing.json` is claimed and nonterminal, and `.rejected.json` is invalid delivery. A
-systemd unit may remain active while the probe sees it absent; reconcile that mismatch before
-retrying.
-
-## Tune With Intent
-
-- Raise `min_priority_for_hard_swap` to resist disruptive swaps.
-- Change drain and warm-up deadlines to match measured local convergence.
-- Mark support services `persistent_resident = true` to keep them outside conflicts and eviction.
-- Give incompatible managed Soulstones a shared conflict-domain label; use explicit `[]` only
-  after measuring safe coexistence.
-
-`[orchestration.whim]` accepts `idle_evict_after_s` and `preload`, but no Whim rite consumes them.
-They are validated and inert. The current graph is not a VRAM capacity solver.
-
-[State of Work](../../state-of-the-work.md#declared-conflict-topology) records the available
-conflict contract; [safe runtime transitions](../../state-of-the-work.md#safe-runtime-transitions)
-remain partial, including soft-load recovery and real-host proof.
+For inspection, activation requests, priority, switching settings, and Reactor outcome recovery,
+continue to [Runtime transitions](runtime-transitions.md). The old operation fragments remain here
+so existing links still find that passage.

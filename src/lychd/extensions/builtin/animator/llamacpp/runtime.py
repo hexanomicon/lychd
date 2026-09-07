@@ -87,6 +87,10 @@ class LlamaCppRuntimePlanner:
         defaults: dict[str, object] = {}
         if inferred.n_ctx is not None:
             defaults["n_ctx"] = inferred.n_ctx
+        if inferred.n_parallel is not None:
+            defaults["n_parallel"] = inferred.n_parallel
+        if inferred.n_ctx_per_slot is not None:
+            defaults["n_ctx_per_slot"] = inferred.n_ctx_per_slot
         if inferred.n_predict is not None:
             defaults["n_predict"] = inferred.n_predict
         if inferred.temperature is not None:
@@ -96,6 +100,8 @@ class LlamaCppRuntimePlanner:
         return defaults
 
     def preferred_model_id(self, soulstone: LlamaCppSoulstoneConfig) -> str:
+        if soulstone.served_model_id:
+            return soulstone.served_model_id
         if soulstone.model_path:
             return Path(soulstone.model_path).stem
         return soulstone.name

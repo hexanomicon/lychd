@@ -8,8 +8,9 @@ icon: material/book-cog-outline
 ## Historical record
 
 This Covenant records the decision to select the Markdown/Zensical Hexanomicon and its register
-discipline. It is not current topology law: [ADR 01](./01-doctrine.md#documentation-topology) owns
-placement, while `CONTRIBUTING.md` owns authoring and verification mechanics.
+discipline. For current placement rules, follow
+[ADR 01](./01-doctrine.md#documentation-topology); for authoring and verification, use
+[CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md).
 
 ## Context and requirements
 

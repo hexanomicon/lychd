@@ -21,7 +21,8 @@ Work](../state-of-the-work.md#smith-forge-promotion) owns this boundary.
 
 **Assimilation** is the Smith Domain's governed protocol for re-expressing admitted foreign
 pattern as attributable local LychD code. Its output is a candidate, never a live organ. The
-protocol coordinates separately owned admissions and effects; it is not a Portfolio Composition.
+protocol orders governance questions and settled handoffs; it does not coordinate or execute the
+separately owned admissions and effects, and it is not a Portfolio Composition.
 
 | Act | Meaning |
 | --- | --- |
@@ -33,6 +34,21 @@ protocol coordinates separately owned admissions and effects; it is not a Portfo
 No act promises bit-for-bit reproduction, protocol or license compatibility, or freedom from
 upstream maintenance without separate evidence.
 
+### Execution has no second coordinator
+
+There is no `assimilation.*` Pattern, end-to-end Graph, Suite, or Assimilation coordinator in this
+decision. For one future application-owned job, that application's exact Pattern must admit the
+purpose, Dossier, candidate-author Agent, ceilings, and terminal result; Spellweaver may validate
+and execute its pinned Scroll but owns neither Smith's candidate semantics nor any promotion
+effect. Each later receiving owner acts only from a settled typed request and re-admits its own
+effect. If a reusable promise must actively coordinate several Composition-owned Invocations, it
+requires a separately named and revisioned Suite before execution.
+
+Until one of those exact application contracts is published, Assimilation remains a non-executable
+governance protocol. Source/custody, Smith candidate authorship, verification, HitL, packaging,
+migration, activation, and observation owners may each perform their own already-admitted action;
+the protocol stages transfer no lifecycle authority and imply no ambient resume of the next action.
+
 ## Teaching a missing Spell
 
 A peer may answer an unknown-Spell refusal with an attributed **teaching bundle**. The bundle is a
@@ -42,13 +58,14 @@ source/artifact identities, provenance, license and notice duties, implementatio
 declared authority/effects, and claimed evidence. Every claim remains untrusted until local
 admission and proof; intake never imports or executes its contents.
 
-A candidate-author Agent operating within Smith may re-express the lesson as a local Spell-contract or implementation candidate
-under an Assimilation Dossier. Existing code may satisfy the contract, or the candidate may require
-new code, an adapter, package, tool, or capability; each follows its own owner and verification
-path. Spellweaver validates contract and Scroll candidates. Where the candidate adds a
-Contribution, its receiving Extension Domain retains its semantics; Extension law governs package
-admission; Creation, Packaging, Security, Evolution, and effect owners retain implementation,
-promotion, and activation authority.
+A candidate-author AgentSpec selected by an exact owning application Pattern may satisfy Smith's
+role contract and re-express the lesson as a local Spell-contract or implementation candidate under an
+Assimilation Dossier. Existing code may satisfy the contract, or the candidate may require new
+code, an adapter, package, tool, or capability; each follows its own owner and verification path.
+Spellweaver validates contract and Scroll candidates but does not coordinate the Assimilation
+protocol. Where the candidate adds a Contribution, its receiving Core office or Extension Domain
+retains its semantics; Extension law governs package admission; Creation, Packaging, Security,
+Evolution, and effect owners retain implementation, promotion, and activation authority.
 
 Policy may refuse teaching entirely, request it only from named peers and content classes, or
 accept only an already trusted exact contract with a local implementation binding. No configuration
@@ -62,15 +79,17 @@ catalogue truth.
 Code or contribution changes activate through controlled [Evolution](18-evolution.md): close or
 drain admission as required, preserve retained executable closures for pinned Runs, replace the
 Vessel or process-built catalogue, reconcile durable state, verify readiness, and reopen. This is
-not **Reanimation**, which restores an exact whole-body checkpoint. Declarative-only Scroll
-publication may avoid replacement only after an atomic durable catalogue-generation mechanism and
+not **Reanimation**, which reconstructs the same body from committed records after process death.
+A whole-body restore additionally requires the exact sealed cut in [Snapshots](07-snapshots.md).
+Declarative-only Scroll publication may avoid replacement only after an atomic durable catalogue-generation mechanism and
 already-admitted implementations exist; neither is delivered now.
 
 ## Candidate author and admission
 
-A **candidate-author Agent** is the future reference Agent manifestation inside the Smith Extension Domain.
-It may inspect admitted source and write candidate code, schemas, migrations, tests,
-documentation, and packaging inputs inside a bounded Lab coordinate. It has no ambient authority
+A **candidate-author Agent** is the future reference Agent role defined by the Smith Extension
+Domain. A future exact owning application Pattern must select a registered AgentSpec satisfying
+that role. The Agent may inspect admitted source and write candidate code, schemas, migrations,
+tests, documentation, and packaging inputs inside a bounded Lab coordinate. It has no ambient authority
 over active checkout/Vessel, locks, publication, database migration, lifecycle, secrets,
 unrestricted network, or promotion; it submits typed requests to their owners. Authorship is not
 authority.
@@ -83,8 +102,7 @@ studied but may not request promotion.
 
 Source, manifest, documentation, examples, archive, comments, tests, issue text, and generated
 configuration are hostile data, never instruction authority. Admission acquires only exact
-material,
-retains provenance/classification, fences it outside stable instructions, denies ambient
+material, retains provenance and classification, fences it outside stable instructions, denies ambient
 credentials/home/undeclared egress, bounds size/recursion/decompression/parser/subprocess effects,
 and records every transform. Typed candidate-author output constrains shape, not truth; prompt injection
 can produce valid-looking schemas.
@@ -105,13 +123,20 @@ toolchains/effect surfaces. A compile, faster language, or foreign suite never b
 
 ## Verify, then promote separately
 
-The Dossier selects evidence matching the claim: lint/types/tests/build; focused behavior;
-differential/conformance for equivalence; migration rehearsal; install/import/package checks;
-extension registration/startup; permission/egress/secret/hostile-input probes; license/notice audit;
-and performance only when claimed. Foreign tests evidence foreign behavior, generated tests cannot
-solely judge generated code, and heuristic review cannot override failed deterministic gates. A
-bounded correction loop ends verified or explicitly incomplete; traces/failures may inform repair
-only through Memory, Shadow, Riddle, and consent owners.
+The Dossier selects evidence that can establish its particular claim:
+
+- lint, types, tests, build and focused behavior;
+- differential or conformance checks when equivalence is claimed;
+- migration rehearsal, install, import and package checks;
+- extension registration and startup;
+- permission, egress, secret and hostile-input probes;
+- license and notice review; and
+- performance measurements only when performance is claimed.
+
+Foreign tests establish foreign behavior. Generated tests cannot be the sole judge of generated
+code, and heuristic review cannot override a failed deterministic gate. A bounded correction loop
+ends verified or explicitly incomplete. Traces and failures may inform repair through their
+Memory, Shadow, Riddle and consent owners.
 
 The candidate-author Agent emits a **Promotion Request**, while owners decide and perform their own effects:
 

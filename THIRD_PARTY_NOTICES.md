@@ -19,7 +19,14 @@ npm run licenses
 ```
 
 The corresponding rebuildable Altar source is distributed in `clients/web/` within the LychD source
-distribution. The browser footer links the source revision and this notice inventory.
+distribution. The About panel under the LychD mark links the project source, or the exact source
+revision for a release build. License inventories accompany the distributed artifacts without a
+dedicated footer or third-party-notices link in the interface.
+
+The bundled illustration's AI-generation record, character reference, hashes, and rights boundary
+are recorded in [the artwork notice](clients/web/src/lib/assets/altar/NOTICE.txt), with the exact
+[generation prompt](clients/web/src/lib/assets/altar/working-altar.prompt.md) alongside it. The artwork
+notice is also included in the browser's generated notice inventory.
 
 ## Vessel Python Environment
 

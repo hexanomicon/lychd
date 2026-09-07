@@ -154,7 +154,7 @@ class _LifecycleReceipt(BaseModel):
             | set(files).intersection(subvolumes)
         )
         if overlap:
-            msg = f"Lifecycle receipt path has conflicting kinds: {sorted(overlap)[0]}"
+            msg = f"Lifecycle receipt path has conflicting kinds: {min(overlap)}"
             raise ValueError(msg)
         return self
 

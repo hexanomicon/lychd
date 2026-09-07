@@ -47,6 +47,30 @@ async def test_project_fragment_unknown_key_is_visible_descriptor(
     assert envelope.payload["kind"] == "genui.unknown"
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "not json",
+        "null",
+        "[]",
+        '"fragment"',
+        "1",
+        "true",
+        "{}",
+        '{"fragment": "genui.plan_checklist", "params": []}',
+        '{"fragment": "genui.plan_checklist", "params": {"steps": []}}',
+    ],
+)
+async def test_project_fragment_malformed_payload_is_inert(
+    projector: EventProjector,
+    payload: str,
+) -> None:
+    envelope = await projector.project(_event("fragment", payload))
+
+    assert envelope.payload == {"kind": "genui.unknown", "schema_version": 1, "props": {}, "actions": []}
+
+
 def test_registry_drops_unknown_and_invalid() -> None:
     registry = build_fragment_registry()
     calls = [

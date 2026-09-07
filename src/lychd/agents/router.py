@@ -27,3 +27,6 @@ class Intent(BaseModel):
     sigil_name: str = Field(default="magus", min_length=1)
     sigil_scopes: frozenset[str] = Field(default_factory=frozenset)
     priority: int | None = Field(default=None, ge=0, le=100)  # None → the per-source default
+    # Server-owned admission metadata. submit rejects this from callers; only the
+    # admission path and RunRecord.to_intent may populate it for durable execution.
+    admitted_capability_key: str | None = Field(default=None, min_length=1)

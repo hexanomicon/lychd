@@ -1,0 +1,13 @@
+{% extends "main.html" %}
+
+{% block content %}
+  <h1 id="__skip">404 — This passage has no page</h1>
+  <p>
+    The address may be old, or the path may be incomplete. Return to
+    <a href="{{ base_url }}">the Prophecy</a> to enter the grimoire again.
+  </p>
+  <p>
+    The <a href="{{ 'map/' | url }}">Map</a> follows the relationships between its parts;
+    the <a href="{{ 'lexicon/' | url }}">Lexicon</a> can help you find a chapter by its name.
+  </p>
+{% endblock %}

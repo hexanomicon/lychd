@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -113,7 +113,7 @@ class DirectoryProvisioning:
             )
 
     @contextmanager
-    def pin(self, path: Path) -> Iterator[int]:
+    def pin(self, path: Path) -> Generator[int]:
         """Yield the exact previously observed directory through a live descriptor."""
         self._require_unsettled()
         expected = self._observed.get(path)

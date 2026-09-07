@@ -5,24 +5,12 @@ icon: material/account-heart-outline
 
 # :material-account-heart-outline: Profile
 
-Profile keeps the reviewed human constraints under which Wellbeing may plan. It is private input,
-not a diagnosis or a permanent claim about the person.
+A preference can change. A hard restriction needs an explicit, confirmed successor before planning may relax it. Profile keeps that difference visible instead of turning yesterday's input into a permanent claim about the person.
 
-`wellbeing.profile@1` creates an immutable profile revision from restrictions, preferences, time,
-equipment, enabled modes, consent, and privacy choices. Relaxing a hard restriction requires a
-confirmed successor profile. Records distinguish `user_entered`, `source_imported`,
-`model_proposed`, `deterministically_derived`, and `user_confirmed`; one generic health blob owns
-none of them.
+`wellbeing.profile@1` seals an immutable revision of restrictions, preferences, time, equipment, enabled modes, consent, and privacy choices. Every fact retains its provenance: `user_entered`, `source_imported`, `model_proposed`, `deterministically_derived`, or `user_confirmed`. A proposed interpretation cannot pass as a confirmed human constraint.
 
-Storage and inference are local by default. Remote providers, lookup, reminders, retained media,
-calorie or weight features, imports, sharing, export, or research use require revocable,
-purpose-specific consent. Journals, measurements, symptoms, diagnoses, medication, clinical
-records, movement history, and genetics never enter [Homestead](../homestead/index.md), shop
-queries, catalogues, carts, providers, or merchant messages.
+Storage and inference are local by default. Remote providers, lookup, reminders, retained media, calorie or weight features, imports, sharing, export, and research each require revocable consent for their purpose. Journals, measurements, symptoms, diagnoses, medication, clinical records, movement history, and genetics stay out of Homestead, shop queries, catalogues, carts, providers, and merchant messages.
 
-`wellbeing.export@1` creates only the approved export. `wellbeing.delete@1` fences admission,
-disables schedules, drains atomic work, removes permitted records and derivatives, verifies
-absence, and leaves a content-free receipt. Restored backups reapply tombstones before reopening
-data.
+The same custody boundary governs departure. `wellbeing.export@1` creates the approved export. `wellbeing.delete@1` closes admission, disables schedules, drains atomic work, removes permitted records and derivatives, verifies absence, and leaves a content-free receipt. A restored backup must reapply deletion tombstones before reopening data.
 
-Return to [Wellbeing](index.md).
+Return to [Wellbeing](index.md), or use the reviewed profile in [Eating](eating.md) and [Fitness](fitness.md).

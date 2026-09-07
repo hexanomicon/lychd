@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import stat
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Protocol
@@ -23,7 +23,6 @@ _REACTOR_DIRECTORY_MODE = 0o700
 
 if TYPE_CHECKING:
     from lychd.config.settings.root import Settings
-    from lychd.config.settings.server import DatabaseSettings, WebSettings
 
 type BindingPreflightIssueCode = Literal[
     "codex-shape",
@@ -105,18 +104,14 @@ class BindingPreflightService:
         legacy_vessel_unit_path: Path = PATH_SYSTEMD_USER_UNITS_DIR / "lychd-vessel.service",
         current_uid: int | None = None,
         host_readiness: HostReadinessPort | None = None,
-        web_secret_resolver: Callable[[WebSettings], str] | None = None,
-        database_secret_resolver: Callable[[DatabaseSettings], str] | None = None,
     ) -> None:
-        """Bind inspection to explicit, replaceable host and resolver dependencies."""
+        """Bind inspection to explicit, replaceable host dependencies."""
         self._codex_path = codex_path
         self._legacy_vessel_unit_path = legacy_vessel_unit_path
         self._current_uid = os.getuid() if current_uid is None else current_uid
         self._host_readiness = host_readiness or HostReadinessService(
             current_uid=self._current_uid,
         )
-        self._web_secret_resolver = web_secret_resolver
-        self._database_secret_resolver = database_secret_resolver
 
     def inspect(
         self,
@@ -327,35 +322,21 @@ class BindingPreflightService:
                 )
             )
 
-        web_resolver = self._web_secret_resolver
-        if web_resolver is None:
-            from lychd.config.components import resolve_web_secret_key
-
-            web_resolver = resolve_web_secret_key
-        try:
-            web_resolver(settings.server.web)
-        except ValueError as exc:
+        if settings.server.web.secret_key is None:
             issues.append(
                 BindingPreflightIssue(
                     code="uncaged-web-secret",
                     target="application signing key",
-                    detail=str(exc),
+                    detail="Required application signing key is unavailable in Settings.",
                 )
             )
 
-        database_resolver = self._database_secret_resolver
-        if database_resolver is None:
-            from lychd.db.factory import resolve_database_password
-
-            database_resolver = resolve_database_password
-        try:
-            database_resolver(settings.server.database)
-        except ValueError as exc:
+        if settings.server.database.password is None:
             issues.append(
                 BindingPreflightIssue(
                     code="uncaged-database-secret",
                     target="database password",
-                    detail=str(exc),
+                    detail="Required database password is unavailable in Settings.",
                 )
             )
         return issues

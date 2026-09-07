@@ -22,6 +22,7 @@ N ?= 0
 VERBOSE ?= 0
 PYTEST_TARGETS ?= tests
 CONTAINER_TEST_TARGETS ?= tests/integration/test_db_consent_pg.py \
+	tests/integration/test_db_atlas_pg.py \
 	tests/integration/test_db_migrations_pg.py \
 	tests/integration/test_db_nexus_pg.py \
 	tests/integration/test_db_run_ledger_pg.py \

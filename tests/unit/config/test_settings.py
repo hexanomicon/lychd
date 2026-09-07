@@ -3,31 +3,44 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 
-from lychd.config.components import resolve_web_secret_key
+from lychd.config.components import build_csrf_config
 from lychd.config.settings import Settings, SettingsSnapshot
 from lychd.config.settings.extensions import ExtensionSettings
 from lychd.config.settings.orchestration import SwitchingSettings
 from lychd.config.settings.server import DatabaseSettings, ServerSettings, WebSettings
-from lychd.db.factory import database_saq_dsn, database_url, resolve_database_password
+from lychd.db.factory import database_saq_dsn, database_url
 
 
 def test_web_secret_key_resolves_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LYCHD_APP_SECRET_KEY", "app-secret")
-    settings = WebSettings()
-    assert resolve_web_secret_key(settings) == "app-secret"
+    settings = Settings()
+    assert settings.server.web.secret_key == SecretStr("app-secret")
 
 
 def test_db_password_resolves_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LYCHD_DB_PASSWORD", "db-pass")
-    settings = DatabaseSettings()
-    assert resolve_database_password(settings) == "db-pass"
+    settings = Settings()
+    assert settings.server.database.password == SecretStr("db-pass")
+
+
+def test_db_password_resolves_from_file_environment(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    secret_file = tmp_path / "db-password"
+    secret_file.write_text("db-pass\n", encoding="utf-8")
+    monkeypatch.delenv("LYCHD_DB_PASSWORD", raising=False)
+    monkeypatch.setenv("LYCHD_DB_PASSWORD_FILE", str(secret_file))
+
+    assert Settings().server.database.password == SecretStr("db-pass")
 
 
 def test_database_urls_escape_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LYCHD_DB_PASSWORD", "a/b:c@d")
-    settings = DatabaseSettings(user="lich@example")
+    settings = Settings().server.database
+    settings.user = "lich@example"
 
     assert "lich%40example:a%2Fb%3Ac%40d@" in database_url(settings)
     assert database_url(settings).startswith("postgresql+asyncpg://")
@@ -44,10 +57,10 @@ def test_missing_secrets_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(key, raising=False)
 
     settings = Settings()
-    with pytest.raises(ValueError, match="Required secret"):
-        resolve_web_secret_key(settings.server.web)
-    with pytest.raises(ValueError, match="Required secret"):
-        resolve_database_password(settings.server.database)
+    with pytest.raises(ValueError, match="Required application signing key"):
+        build_csrf_config(settings)
+    with pytest.raises(ValueError, match="Required database password"):
+        database_url(settings.server.database)
 
 
 def test_root_nested_environment_grammar(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -57,11 +70,11 @@ def test_root_nested_environment_grammar(monkeypatch: pytest.MonkeyPatch) -> Non
     settings = Settings()
 
     assert settings.server.port == 9011
-    assert resolve_web_secret_key(settings.server.web) == "explicit-app-secret"
-    assert resolve_database_password(settings.server.database) == "explicit-db-secret"
+    assert settings.server.web.secret_key == SecretStr("explicit-app-secret")
+    assert settings.server.database.password == SecretStr("explicit-db-secret")
 
 
-def test_only_the_three_declared_top_level_sections_are_accepted() -> None:
+def test_undeclared_top_level_sections_and_fields_are_rejected() -> None:
     with pytest.raises(ValueError, match="app"):
         Settings.model_validate({"app": {"debug": True}})
 

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import ClassVar
+from typing import IO, Any, ClassVar
 
 import pytest
 from pydantic import ValidationError
 
 from lychd.config.runes import RuneConfig
 from lychd.config.runes.loader import ConfigLoader
+from lychd.config.runes.markers import SAMPLE_MARKER
 
 
 class RootConfig(RuneConfig):
@@ -47,6 +48,81 @@ def test_leaf_schema_loads_multiple_instances(tmp_path: Path) -> None:
 
     assert [instance.value for instance in instances] == ["alpha", "beta"]
     assert [instance.source_file for instance in instances] == [first, second]
+
+
+def test_marker_and_payload_use_the_same_opened_file_generation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "test" / "leaf" / "alpha.toml"
+    target.parent.mkdir(parents=True)
+    target.write_text('value = "active"\n', encoding="utf-8")
+    replacement = tmp_path / "replacement"
+    replacement.write_text(f'{SAMPLE_MARKER}\nvalue = "inactive"\n', encoding="utf-8")
+    original_open = Path.open
+    opens = 0
+
+    def replace_after_open(
+        path: Path,
+        mode: str = "r",
+        buffering: int = -1,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> IO[Any]:
+        nonlocal opens
+        handle = original_open(path, mode, buffering, encoding, errors, newline)
+        if path == target:
+            opens += 1
+            if opens == 1:
+                replacement.replace(target)
+        return handle
+
+    monkeypatch.setattr(Path, "open", replace_after_open)
+
+    instances = ConfigLoader(runes_dir=tmp_path).load_all([LeafConfig])
+
+    assert len(instances) == 1
+    assert isinstance(instances[0], LeafConfig)
+    assert instances[0].value == "active"
+    assert instances[0].source_file == target
+    assert opens == 1
+    assert ConfigLoader(runes_dir=tmp_path).load_all([LeafConfig]) == []
+
+
+@pytest.mark.parametrize("prefix", ["", "\n  \n"])
+def test_inactive_sample_is_skipped_before_toml_validation(tmp_path: Path, prefix: str) -> None:
+    target = tmp_path / "test" / "leaf" / "sample.toml"
+    target.parent.mkdir(parents=True)
+    target.write_text(f"{prefix}{SAMPLE_MARKER}\ninvalid = [\n", encoding="utf-8")
+
+    assert ConfigLoader(runes_dir=tmp_path).load_all([LeafConfig]) == []
+
+
+def test_sample_marker_only_applies_to_the_first_nonempty_line(tmp_path: Path) -> None:
+    target = tmp_path / "test" / "leaf" / "active.toml"
+    target.parent.mkdir(parents=True)
+    target.write_text(f'# Operator comment\n{SAMPLE_MARKER}\nvalue = "active"\n', encoding="utf-8")
+
+    instances = ConfigLoader(runes_dir=tmp_path).load_all([LeafConfig])
+
+    assert len(instances) == 1
+    assert isinstance(instances[0], LeafConfig)
+    assert instances[0].value == "active"
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [(b"value = [\n", "Malformed TOML"), (b"\xff", "Could not read")],
+)
+def test_invalid_rune_content_names_its_source(tmp_path: Path, payload: bytes, message: str) -> None:
+    target = tmp_path / "test" / "leaf" / "invalid.toml"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(payload)
+
+    with pytest.raises(ValueError, match=message) as raised:
+        ConfigLoader(runes_dir=tmp_path).load_all([LeafConfig])
+
+    assert str(target) in str(raised.value)
 
 
 def test_source_file_is_provenance_not_toml_field(tmp_path: Path) -> None:

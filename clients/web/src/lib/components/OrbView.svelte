@@ -8,6 +8,8 @@
   import type { OrbRunSnapshot } from "$lib/api/models";
   import { delegationStatusLabel } from "$lib/delegation/presentation";
   import DelegateMark from "./DelegateMark.svelte";
+  import AtlasLinks from "./AtlasLinks.svelte";
+  import { bridgeRunHref, loomOriginHref } from "$lib/navigation/instruments";
 
   type Evidence = OrbRunSnapshot["evidence"][number];
   type TimelineItem =
@@ -33,6 +35,8 @@
   let activeRunId: string | undefined;
   let selectedInspector: HTMLElement | undefined;
   let selectionReturnFocus: HTMLElement | undefined;
+  let bridgeHref = $derived(snapshot ? bridgeRunHref(snapshot.run.bridge_path, snapshot.run.run_id) : null);
+  let loomHref = $derived(snapshot?.pattern.loom_path ? loomOriginHref(snapshot.pattern.loom_path, snapshot.run.run_id, page.url.search) : null);
   let requestedEventId = $derived(page.url.searchParams.get("event"));
   let requestedJobId = $derived(page.url.searchParams.get("job"));
 
@@ -245,10 +249,10 @@
             <span class="eyebrow">Selected Run</span>
             <h1>Run {snapshot.run.run_id}</h1>
             <nav class="context-links" aria-label="Related instruments">
-              <a href={resolve(snapshot.run.bridge_path as `/bridge/${string}`)}>Bridge</a>
+              {#if bridgeHref}<a href={resolve(bridgeHref)}>Bridge</a>{:else}<span>Bridge context unavailable</span>{/if}
               <span>{snapshot.pattern.pattern_id}@{snapshot.pattern.revision}</span>
-              {#if snapshot.pattern.loom_path}
-                <a href={resolve(snapshot.pattern.loom_path as `/loom/${string}/${string}`)}>Exact Pattern →</a>
+              {#if loomHref}
+                <a href={resolve(loomHref)}>Exact Pattern →</a>
               {:else}
                 <span class="context-unavailable">
                   Exact Pattern unavailable — the pinned manifest could not be validated against
@@ -262,6 +266,8 @@
             <span>{snapshot.capture.replaceAll("_", " ")}</span>
           </div>
         </header>
+
+        <AtlasLinks kind="run" targetId={snapshot.run.run_id} />
 
         {#if snapshot.run.error_present}
           <div class="evidence-failure" role="status">

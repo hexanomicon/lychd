@@ -37,11 +37,12 @@ class BridgeTurnView(ClientContract):
 
 
 class SessionSummary(ClientContract):
-    """Compact session entry for the Bridge rail."""
+    """Compact session entry with its own authoritative pending-consent count."""
 
     id: str
     title: str
     created_at: datetime
+    pending_count: int = Field(ge=0)
 
 
 class SessionView(SessionSummary):
@@ -185,7 +186,7 @@ class DelegatedRuntimeObservation(ClientContract):
 
     runtime_id: str
     display_name: str
-    provider_id: str
+    registrant_id: str
     transport: str
     delivery: str
     runnable: bool

@@ -88,7 +88,7 @@ def test_systemd_service_quotes_environment_as_one_assignment() -> None:
 def test_systemd_service_rejects_directive_escape_and_unsafe_names(
     override: dict[str, object],
 ) -> None:
-    with pytest.raises(ValueError, match="backslash|environment variable|unit-name"):
+    with pytest.raises(ValueError, match=r"backslash|environment variable|unit-name"):
         SystemdService.model_validate({"exec_start": _GOLDEN_EXEC, **override})
 
 

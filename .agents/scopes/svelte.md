@@ -36,12 +36,12 @@ For every `.svelte`, `.svelte.ts`, or `.svelte.js` analysis or change:
 When callable tools are unavailable, use the pinned portable fallback:
 
 ```bash
-npx --yes @sveltejs/mcp@0.1.25 list-sections
-npx --yes @sveltejs/mcp@0.1.25 get-documentation '<relevant,sections>'
-npx --yes @sveltejs/mcp@0.1.25 svelte-autofixer <path> --svelte-version 5
+npx --yes @sveltejs/mcp@0.1.26 list-sections
+npx --yes @sveltejs/mcp@0.1.26 get-documentation '<relevant,sections>'
+npx --yes @sveltejs/mcp@0.1.26 svelte-autofixer <path> --svelte-version 5
 ```
 
-The fallback version is `0.1.25`; change it only as an intentional scope update. Do not install the
+The fallback version is `0.1.26`; change it only as an intentional scope update. Do not install the
 MCP package as an application dependency, make a user-level MCP installation a hidden
 prerequisite, or generate a Playground link for repository code.
 

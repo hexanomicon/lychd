@@ -127,6 +127,7 @@ def test_db_record_normalizes_legacy_fragment_keys_into_inert_descriptors() -> N
     store = DbBridgeSessionStore(cast("Any", lambda: None), sigil_name="magus")
     row = SimpleNamespace(
         id=uuid4(),
+        sigil_name="magus",
         title="Old communion",
         created_at=datetime.now(UTC),
         message_history=[],
@@ -144,6 +145,7 @@ def test_db_record_normalizes_legacy_fragment_keys_into_inert_descriptors() -> N
 
     record = store._record(row)
 
+    assert record.sigil_name == "magus"
     assert record.turns[0].fragments == (
         {
             "kind": "genui.plan_checklist",

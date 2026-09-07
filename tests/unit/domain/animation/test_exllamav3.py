@@ -167,7 +167,7 @@ def test_exllamav3_plan_is_dynamic_and_uses_pinned_private_envelope(
     assert runtime is not None
     connector = cast("ExLlamaV3Connector", runtime.connector)
     plan = registry.plan(stone)
-    specs = registry.build_capability_specs(stone)
+    specs = registry.build_capability_specs(runtime)
 
     assert stone.quadlet.image.startswith("ghcr.io/theroyallab/tabbyapi@sha256:")
     assert connector.runtime_model_name("daily-driver") == "qwen-exl3"
@@ -790,7 +790,7 @@ async def test_exllamav3_probe_maps_stable_ids_and_dynamic_phases() -> None:
     registry = RuntimeAdapterRegistry(adapters=[adapter])
     runtime = registry.build_runtime(stone)
     assert runtime is not None
-    specs = registry.build_capability_specs(stone)
+    specs = registry.build_capability_specs(runtime)
     states = await registry.probe_capability_states(runtime, specs)
     by_id = {spec.model_id: state for spec, state in zip(specs, states, strict=True)}
 

@@ -110,7 +110,8 @@ _REGISTER_SOURCE = dedent(
                 connector=AdversarialConnector(soulstone.capability_model_id),
             )
 
-        def build_capability_specs(self, soulstone):
+        def build_capability_specs(self, animator):
+            soulstone = animator.rune
             if not isinstance(soulstone, AdversarialCryptRune):
                 return []
             return [

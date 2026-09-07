@@ -334,8 +334,19 @@ class BindUseCase:
         *,
         created: tuple[str, ...],
     ) -> None:
-        """Require every secret after generated-secret reconciliation."""
-        missing = tuple(name for name, present in self._observe_secrets(request.secret_names) if not present)
+        """Revalidate every secret without losing confirmed creation on probe failure."""
+        try:
+            observed = self._observe_secrets(request.secret_names)
+        except BaseException as exc:  # cancellation must retain confirmed secret creation
+            if not created:
+                raise
+            self._raise_partial(
+                "Podman secret revalidation failed before binding commit",
+                phase="secret-revalidation",
+                progress=BindProgress(created_secrets=created),
+                error=exc,
+            )
+        missing = tuple(name for name, present in observed if not present)
         if not missing:
             return
         msg = f"Podman secrets disappeared before binding commit: {', '.join(missing)}"

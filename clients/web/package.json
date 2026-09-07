@@ -2,10 +2,10 @@
   "name": "@lychd/altar",
   "private": true,
   "type": "module",
-  "packageManager": "npm@11.16.0",
+  "packageManager": "npm@12.0.2",
   "engines": {
-    "node": ">=24.18.0 <25",
-    "npm": ">=11.16.0 <12"
+    "node": ">=24.20.0 <25",
+    "npm": ">=12.0.2 <13"
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -17,22 +17,22 @@
     "verify": "npm run generate:api && npm run check && npm run test && npm run build"
   },
   "dependencies": {
-    "mermaid": "11.16.0",
+    "mermaid": "11.17.2",
     "openapi-fetch": "0.17.0",
-    "zod": "4.4.3"
+    "zod": "4.5.4"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "3.0.10",
-    "@sveltejs/kit": "2.70.1",
-    "@sveltejs/vite-plugin-svelte": "7.2.0",
+    "@sveltejs/kit": "2.70.3",
+    "@sveltejs/vite-plugin-svelte": "7.3.0",
     "@testing-library/svelte": "5.4.2",
     "@types/node": "24.13.3",
-    "jsdom": "29.1.1",
+    "jsdom": "30.0.1",
     "openapi-typescript": "7.13.0",
-    "svelte": "5.56.8",
-    "svelte-check": "4.7.3",
+    "svelte": "5.57.0",
+    "svelte-check": "4.7.6",
     "typescript": "5.9.3",
-    "vite": "8.1.5",
-    "vitest": "4.1.10"
+    "vite": "8.2.2",
+    "vitest": "4.1.11"
   }
 }

@@ -12,6 +12,10 @@ icon: material/tournament
 
 [Spellweaver](../sepulcher/extensions/weaver/index.md) keeps the score through motion, pause, and return.
 
+For one casting, follow [score identity](#spells-scrolls-and-casting), [exact road selection](#execution-road-planning), [admission](#admission-and-ownership), and [Stasis](#gates-effects-and-stasis). To change what may be cast, follow [migration](#migration-without-rewritten-history), [contribution](#pattern-contribution), and [protected authorship](#authorship-provenance-and-protected-regions). [Application and coordination ownership](#compositions-products-suites-and-schedules) keeps those scores accountable to their Compositions, Products, and Suites.
+
+The [current material](#current-material) and [Pattern identity](#pattern-identity) sections describe the fixed source registry. Portable Spells, general Resolution Locks, and the later authoring and coordination surfaces retain their stated Designed boundaries.
+
 ## Decision
 
 **Spellweaver** is LychD's single logical workflow jurisdiction; `Weaver` remains its short,
@@ -20,8 +24,9 @@ code-facing name and the compatibility spelling used by existing paths.
 | Name | Office |
 | --- | --- |
 | Composition | Reusable application capability owning domain records, judgment, effects, policies, projections, and a Pattern catalogue |
+| Composition Revision | One immutable version of a stable Composition contract; a materially different application capability requires another identity |
 | Product | Named professional or market package selecting Composition or Suite revisions, owner-qualified profiles, projections, and concrete use cases |
-| Pattern | One named executable-score lineage owned by a Composition |
+| Pattern | One named executable-score lineage published by an application owner: a Composition, or a Suite for coordination only |
 | Scroll | The mythic name for one immutable Pattern revision: the whole score, not one node |
 | Spell | One independently named semantic action contract: what a station may do |
 | Spell placement | One Scroll-local station that invokes an exact Spell contract |
@@ -30,7 +35,7 @@ code-facing name and the compatibility spelling used by existing paths.
 | Run | Durable execution/ledger identity |
 | Graph | Typed state topology |
 | Loom | Read-only declared-score projection |
-| Suite | Versioned coordination of separate Compositions |
+| Suite | Versioned live coordination of separate Composition-owned Invocations, independent of Product packaging |
 
 Spellweaver owns validation, registration, routing, logical dependencies, Gates, schedules/overlap,
 revision continuity, and contribution. Composition owns domain judgment. Product owns its customer
@@ -54,9 +59,10 @@ Spell placement only when the Scroll must independently type, route, authorize, 
 retry, inspect, or recover it.
 
 The **Spell contract** defines typed input, output, errors and non-completion; semantic
-requirements; authority and effect demands; and continuity obligations. A provider-owned **Spell
-implementation** claims to realize one exact contract revision and has separate code, package,
-adapter, provenance, checkpoint, and evidence identity. A Spell is not an uppercase Dispatcher
+requirements; authority and effect demands; and continuity obligations. A **Spell implementation**
+Contribution claims to realize one exact contract revision, retains its Registrant provenance, and
+separately names any concrete Provider it binds. It has distinct code, package, adapter,
+checkpoint, and evidence identity. A Spell is not an uppercase Dispatcher
 `Capability`, tool, Agent, credential, grant, Python type, or live handle. Its name requests a
 bounded action and grants no power to perform it.
 
@@ -165,8 +171,9 @@ canonical namespace.
 
 ## Current material
 
-Fixed source registry has bridge_chat@1 (Bridge conversation, context, Agent turn, optional consent
-Gate, reply) and delegated_rite@1 (exact `/delegate` command token, reference job, Durable Stasis,
+Fixed source registry retains bridge_chat@1 (Bridge conversation, context, Agent turn, optional consent
+Gate, reply), adds bridge_chat@2 with an admission-pinned exact capability key, and retains
+delegated_rite@1 (exact `/delegate` command token, reference job, Durable Stasis,
 result/reply). The latter proves no external coding-agent/Tomb plane. One boot-composed catalogue
 is shared by admission, workers, Bridge, Loom, and Orb. It freezes after construction, rejects
 duplicate exact revisions, requires an explicit active revision when alternatives exist, permits
@@ -175,24 +182,35 @@ route precedence whenever multiple names are active, and has one active default.
 name and manifest; resume never routes Intent again. Loom exposes active/default/route-rank metadata
 without making retained revisions admissible.
 
-This is Core registry, not Extension contribution, Composition registry, Suite executor, scheduler,
-editor, or durable Pattern publication store. State separately owns v1 adapter, delegation, stasis,
-and Loom.
+This is a retained Core-owned legacy Pattern registry, not Extension contribution, Composition or
+Suite publication, scheduler, editor, or durable Pattern store. The `bridge_chat` lineage and
+`delegated_rite@1` are the explicit pre-Portfolio exception: new application Patterns require a
+Composition owner, while a Suite may publish only its coordination Pattern. State separately owns
+v1 adapter, delegation, stasis, and Loom.
 
 ## Pattern identity
 
-Manifest has schema, URL-safe key/revision, reviewed implementation revision, checkpoint schema,
-a declared entry station, unique semantic station key/label/kind, permitted declared-endpoint edges, and deterministic
-SHA-256 digest. Executable
-stations map one-to-one with Python nodes; construction rejects missing/duplicate/unknown/mismatch,
-duplicate semantic edges, Gate or delegate marker drift, dynamic `BaseNode` returns whose topology
-cannot be proved, and any semantic transition set that differs from the public Graph node
-definitions. The declared entry must name the actual executable start node and participates in the
-digest. Exactly one terminal is required. Gate loops remain explicit Graph edges; a delegate
-station additionally declares its durable same-station re-entry edge. Gate/delegate derives Durable
-Stasis. The opaque implementation revision is a human-reviewed compatibility closure, not a hash
-of Python bytes: behavior that would invalidate parked state or replay must bump it or the Pattern
-revision. The manifest fingerprints source-adjacent declaration rather than compiling all semantics.
+The manifest binds:
+
+- schema, URL-safe key and revision;
+- reviewed implementation revision and checkpoint schema;
+- the declared entry station;
+- semantic stations, each with a unique key, a label, and a kind;
+- permitted edges between declared endpoints; and
+- a deterministic SHA-256 digest.
+
+Executable stations map one-to-one with Python nodes. Construction rejects missing, duplicate,
+unknown, or mismatched station mappings; duplicate semantic edges; Gate or delegate marker drift;
+dynamic `BaseNode` returns whose topology cannot be proved; and any semantic transition set that
+differs from the public Graph node definitions.
+
+The declared entry names the actual executable start node and participates in the digest. Exactly
+one terminal is required. Gate loops remain explicit Graph edges; a delegate station additionally
+declares its durable same-station re-entry edge. A Gate or delegate derives Durable Stasis.
+
+The opaque implementation revision is a human-reviewed compatibility closure, not a hash of Python
+bytes. Behavior that would invalidate parked state or replay must bump it or the Pattern revision.
+The manifest fingerprints source-adjacent declaration rather than compiling all semantics.
 
 Admission persists snapshot/digest; execution/resume requires exact current registered equality or
 fails pinned Pattern unavailable. Multiple exact source-registered revisions may coexist: new
@@ -210,8 +228,9 @@ Portable Spells and Scrolls arrive additively:
    v2 snapshots.
 3. Adapt each v2 station at assembly as a Scroll-private `legacy_inline` Spell identity; it is
    neither reusable nor portable.
-4. Add separate provider-attributed Spell-contract, implementation, and Scroll stores, then build
-   one immutable registry generation shared by admission, workers, Bridge, Loom, and Orb.
+4. Add separate receiving-owner-governed Spell-contract, implementation, and Scroll stores whose
+   Contributions retain Registrant provenance and any separate concrete Provider reference, then
+   build one immutable registry generation shared by admission, workers, Bridge, Loom, and Orb.
 5. Introduce a new Scroll schema with exact Spell references and a Resolution Lock while dispatching
    v2 and the new schema through separate validators and resolvers.
 6. Publish built-ins only as new revisions. Never rewrite `bridge_chat@1` or `delegated_rite@1`, and
@@ -264,184 +283,16 @@ imports code named by configuration, scans packages for subclasses, or guesses a
 from a similar label. Placement-specific Agent and Context assembly occurs after resolution so a
 Reader may receive an exact `structure` or `verbatim` projection without acquiring Writer tools,
 while a Writer must separately satisfy its declared effect and authority contract. The current
-source delivers only the fixed v2 registry plus the private `legacy_inline` boot adaptation; no
-TOML keys, portable stores, general lock persistence, or dynamic activation for this spine ship.
-
-## Admission and ownership
-
-Spellweaver selects once from admitted Intent; Run ledger owns identity/status:
-
-1. validate/select Pattern;
-2. atomically create Run with exact manifest and its initial durable delivery;
-3. retain caller initiating record while that delivery is held, then release it;
-4. publish the exact job key; relay it later when the broker is unavailable.
-
-The Run delivery outbox is transactional with Run truth, not with the external broker. Workers and
-the relay publish, claim, and settle physical hops; Graph checkpoints; Spellweaver neither writes the
-outbox directly nor operates containers. Spellweaver owns scheduling identity, eligibility, overlap,
-and miss semantics; a separate clock/relay mechanism detects due work and publishes only the
-ordinary delivery that Spellweaver has admitted. Spellweaver does not become that timer or broker.
-
-## Pattern contribution
-
-A publishable Scroll revision declares identity/revision/owner/provenance/support/parentage;
-every required Spell contract and placement; typed
-input/output/state/error/non-completion; topology and cancellation; capability/tool/plane/budget/
-wait; Sigil/effect/privacy/egress/consent and secret-free durable state; checkpoint/idempotency/
-receipt/compatibility/migration/drain/refusal; Loom metadata; and serialization/failure/recovery
-evidence. Assembly uses explicitly selected shaped store, never package scanning; rejects duplicate
-identity, ambiguous routes, unknown adapters, unreachable station, unsafe cycle, unserializable
-state, missing continuity, forbidden effect, then freezes generation. Workflow dataclass is internal
-pre-v1, not ABI. Creation/Assimilation/Extension law governs candidate publication; source/model/
-Loom draft cannot publish without validation, review, evidence, immutable revision.
-
-Spell-contract publication, executable implementation registration, Scroll publication, and
-activation are separate acts and shaped stores. Deactivation of an implementation closes dependent
-Scrolls to new admission; already pinned Runs may use an explicitly retained closure, while security
-revocation forbids even retained execution. Installing code or replacing a process-built catalogue
-is [Evolution](18-evolution.md), not Reanimation; Reanimation restores an exact whole-body
-checkpoint. A future declarative-only Scroll may activate without Vessel replacement only when all
-implementations are already admitted and an atomic durable catalogue-generation mechanism exists.
-
-## Authorship provenance and protected regions
-
-Authorship and approval are different records. A human may approve model-written text without
-having written it; an Agent may commit through a human-configured VCS identity. Git author,
-committer, account name, prose style, detector score, and absence of model metadata are evidence at
-most. None may mint human provenance.
-
-An **Authorship Attestation** binds one artifact revision and stable region id to its canonical
-content digest, locator, origin class, attesting Principal, and evidence references:
-
-| Origin | Meaning |
-| --- | --- |
-| `human_attested` | An authorized human Principal explicitly claims authorship of the exact bound content. Approval alone is insufficient. |
-| `agent_generated` | Host-observed Agent or model lineage produced the bound content. |
-| `mixed` | Human and Agent contribution are materially interleaved and cannot be separated honestly. |
-| `unknown` | No admissible record establishes authorship. |
-
-The attestation is an attributable claim, not proof of private cognition. A trusted local or
-authenticated human surface may create `human_attested`; an Agent, provider assertion, imported
-commit, or style classifier may not. Agent outputs receive `agent_generated` from the host job and
-artifact lineage even when a human later approves them. Approval changes authority to promote, not
-the history of who composed the bytes.
-
-Attestations append; they do not overwrite inconvenient lineage. Contradictory or inseparable
-human and Agent evidence resolves to `mixed`, while insufficient evidence remains `unknown`. A
-trusted human surface may attest a new human-written replacement only when it binds that editing
-boundary and exact result. Copying unchanged Agent output through the human surface cannot launder
-its origin.
-
-A **Protected Region** binds a stable region id, target artifact revision, canonical content digest,
-locator, and `live_change_only` policy. Accepting a human authorship attestation protects that region
-by default; an authorized human may also protect material of another or unknown origin. Line numbers
-are only a projection. Document block ids, syntax-aware symbols, structured field paths, or
-media-specific selectors locate the region, while the digest catches drift. Moving, deleting,
-splitting, reformatting, changing its marker, or changing the protection record itself counts as a
-touch.
-
-Source comments, front matter, editor decoration, and VCS notes may display the mark but are not its
-authority. The target owner retains the base-revision attestation and protection manifest outside
-the candidate's control. An Agent cannot unprotect text by deleting its visible marker.
-
-For a candidate that may replace an artifact, Spellweaver orders one admission path:
-
-1. bind the exact base revision, candidate digest, and target-owner diff;
-2. resolve touched regions against the base-revision protection manifest;
-3. continue normally when none overlap, or enter Durable Stasis for one live HitL verdict naming
-   every affected region, old and replacement digests, and an authorized exact-diff artifact;
-4. after approval, revalidate base, candidate, region set, and effect identity before the target
-   owner writes a successor artifact and manifest.
-
-Protected-region change never accepts Codex preauthorization, a previous verdict, a broad “edit
-this repository” grant, or approval of a different patch. Base or candidate drift creates a new
-call. Denial preserves the candidate as inert evidence; it does not mutate the active artifact.
-An Agent may prepare a suggested replacement in Lab, but cannot apply it to the protected body.
-
-An approved Agent edit remains `agent_generated` when it wholly replaces a region and `mixed` when
-it interleaves with retained human material. Unchanged human-attested content retains its
-provenance across an approved move. A human may later rewrite and freshly attest the exact result;
-the approval itself never performs that relabelling.
-
-For legacy material, history and stylometry may nominate likely regions for review. They remain
-`unknown` until a human explicitly attests the exact current digest. Spellweaver owns the Gate and
-ordering; the artifact/effect owner owns region resolution and mutation; [Creation](16-creation.md)
-owns candidate isolation and target-owner promotion; [HitL](25-hitl.md) owns the live verdict.
-No Authorship Attestation store, protected-region manifest, trusted authoring surface, overlap
-resolver, or candidate-bound review card is delivered. [State of
-Work](../state-of-the-work.md#smith-forge-promotion) owns that boundary.
-
-## Gates, effects, and Stasis
-
-| Boundary | Rule |
-| --- | --- |
-| Live Stasis | Resident process waits and resumes itself. |
-| Durable Stasis | Declared Gate/delegate exits after checkpoint; re-admission mandatory. |
-| Terminal | Run truth commits before checkpoint cleanup. |
-
-Checkpoint is Graph state, never process image or retroactive replay safety. Effect station declares
-idempotency, receipt, cancellation, compensation/refusal, and illegal-repeat boundary. Consent
-appears only where HitL/effect policy demands; a verdict covers exact effect, not Pattern promotion
-or downstream authority. Archive, Ward, Dispatcher, provider, execution retain policy even when
-coordinated.
-
-A protected remote score joins labels, selects a minimum disclosure projection, locally transforms,
-may ask a local Privacy Agent, independently verifies transformation evidence, creates a consumer-
-specific Privacy Cut, gets an exact tagged-target EgressDecision, transmits once, and quarantines
-the return. Censor/Agent proposes only. Context owns the Cut; Security owns declassification.
-
-### Execution projections for procedural Agent placements (Designed)
-
-For a declared long-horizon procedural region, a Composition may define a bounded, versioned
-**Execution Projection**. The Composition owns its meaning; the exact Scroll revision pins its
-schema and initialization, placement mappings, required unknown and omission fields, admitted
-observation inputs, permitted candidate operations, applicator binding, history policy, and hard
-field, cardinality, and byte limits. A changed meaning, schema, mapping, operation set, applicator,
-or history policy is a new Scroll revision. The projection contains only working material required
-by later placements. It is not the whole Graph continuation, an authoritative domain record, an
-effect receipt, an audit trail, Archive memory, or conversation history.
-
-The placement history policy selects exactly `transcript`, `projection`, or `hybrid`. `transcript`
-means [Context](21-context.md)-governed bounded settled message groups. A hybrid pins the
-deterministic selection profile and bounds for attributed history retained beside the projection;
-the assembled call records the exact groups selected at runtime. It is not an undeclared fallback
-to all settled history. Any required provider, tool, or consent continuation remains orthogonal
-and indivisible; it does not turn `projection` into `hybrid`. Semantic sufficiency and continuity
-select the pinned shape before cache, latency, or price. Cache availability cannot change it.
-
-At an explicitly declared Agent placement, [Context](21-context.md) may assemble immutable
-instructions, the recipient-specific current Execution Projection, the exact station request, and
-fresh admitted observation projections without replaying settled reasoning, actions, or
-observations into that model call. Every observation retains its source, revision or cursor,
-freshness, classification, and lineage. The placement may omit settled history only when its
-contract declares the projection sufficient for continuation; required material that does not fit
-refuses before inference. Declared bounds make this input independent of prior-turn count, not
-independent of the actual size of its projection and observation.
-
-The Agent returns typed, bounded candidate operations and, when allowed, an action intent. It does
-not replace the projection, extend its schema, or mutate workflow control, authority, privacy,
-domain truth, or effect settlement. A deterministic workflow-owned applicator binds the candidate
-to the exact current projection value and revision plus its admitted observations, validates the
-permitted fields and invariants, and alone creates the next committed projection value and revision
-for that Casting. An action intent remains inert until the owning effect boundary authorizes,
-executes, and settles it; confirmed world-facing fields follow owner observations or receipts,
-while indeterminate consequence remains `UNKNOWN`.
-
-Canonical sources, full attributable artifacts, receipts, events, and any retained history remain
-with their existing owners even when excluded from a later model call. Exact conversational
-history and an in-progress provider/tool or consent continuation are not replaced by an Execution
-Projection. When no fixed sufficient schema is known, earlier material may become relevant only
-later, or the historical trajectory is itself the requested evidence, the Scroll must admit the
-necessary attributed history or artifacts—or stop with an explicit unknown or non-completion.
-
-[SKILL.state v2](https://arxiv.org/html/2608.26263v2) reports that its projection-only,
-state-plus-latest-observation variant can preserve or improve benchmark performance while
-materially reducing repeated transcript tokens in long sequential single-agent tasks, including
-budget-matched controls. That evidence motivates the accepted shape; it does not establish LychD
-delivery, universal model performance, shared mutable multi-Agent state, concurrent merge law,
-privacy, effect safety, checkpoint recovery, or LychD-specific token savings, cache-aware billing
-savings, cache-hit rates, time-to-first-token improvements, or latency gains. The current Pattern
-v2 manifests and built-in workflows do not deliver Execution Projections.
+source delivers the fixed v2 registry plus the private `legacy_inline` boot adaptation and a bounded
+`[weaver.bridge]` selector for `bridge_chat@2`. Its exact capability key is server-admitted Run
+intent, copied into typed Graph state; a missing key refuses admission or checkpoint decoding,
+and an unavailable target never falls back to another runtime. The worker binds the revision's
+state validator to persisted Run intent; the Graph runner checks fresh and restored state before
+node execution, including hardware re-entry. A differing key, Run/session identity, prompt, or
+admitted priority refuses the checkpoint. Retried admissions first read
+existing Run truth, so configuration changes cannot rewrite queued or parked work. Revision 1
+keeps its original eligible-pool behavior and manifest. Portable stores, general lock persistence,
+placement profiles, and dynamic registration remain undelivered.
 
 ## Execution-road planning
 
@@ -534,6 +385,93 @@ stays attributed and quarantined until the Composition owner validates and adopt
 [Execution roads](../sepulcher/extensions/weaver/execution-roads.md) carries this law through the
 operator-facing selection and failure journey.
 
+## Admission and ownership
+
+Spellweaver selects once from admitted Intent; Run ledger owns identity/status:
+
+1. validate/select Pattern;
+2. atomically create Run with exact manifest and its initial durable delivery;
+3. retain caller initiating record while that delivery is held, then release it;
+4. publish the exact job key; relay it later when the broker is unavailable.
+
+The Run delivery outbox is transactional with Run truth, not with the external broker. Workers and
+the relay publish, claim, and settle physical hops; Graph checkpoints; Spellweaver neither writes the
+outbox directly nor operates containers. Spellweaver owns scheduling identity, eligibility, overlap,
+and miss semantics; a separate clock/relay mechanism detects due work and publishes only the
+ordinary delivery that Spellweaver has admitted. Spellweaver does not become that timer or broker.
+
+## Gates, effects, and Stasis
+
+| Boundary | Rule |
+| --- | --- |
+| Live Stasis | Resident process waits and resumes itself. |
+| Durable Stasis | Declared Gate/delegate exits after checkpoint; re-admission mandatory. |
+| Terminal | Run truth commits before checkpoint cleanup. |
+
+Checkpoint is Graph state, never process image or retroactive replay safety. Effect station declares
+idempotency, receipt, cancellation, compensation/refusal, and illegal-repeat boundary. Consent
+appears only where HitL/effect policy demands; a verdict covers exact effect, not Pattern promotion
+or downstream authority. Archive, Ward, Dispatcher, provider, execution retain policy even when
+coordinated.
+
+A protected remote score joins labels, selects a minimum disclosure projection, locally transforms,
+may ask a local Privacy Agent, independently verifies transformation evidence, creates a consumer-
+specific Privacy Cut, gets an exact tagged-target EgressDecision, transmits once, and quarantines
+the return. Censor/Agent proposes only. Context owns the Cut; Security owns declassification.
+
+### Execution projections for procedural Agent placements (Designed)
+
+For a declared long-horizon procedural region, a Composition may define a bounded, versioned
+**Execution Projection**. The Composition owns its meaning; the exact Scroll revision pins its
+schema and initialization, placement mappings, required unknown and omission fields, admitted
+observation inputs, permitted candidate operations, applicator binding, history policy, and hard
+field, cardinality, and byte limits. A changed meaning, schema, mapping, operation set, applicator,
+or history policy is a new Scroll revision. The projection contains only working material required
+by later placements. It is not the whole Graph continuation, an authoritative domain record, an
+effect receipt, an audit trail, Archive memory, or conversation history.
+
+The placement history policy selects exactly `transcript`, `projection`, or `hybrid`. `transcript`
+means [Context](21-context.md)-governed bounded settled message groups. A hybrid pins the
+deterministic selection profile and bounds for attributed history retained beside the projection;
+the assembled call records the exact groups selected at runtime. It is not an undeclared fallback
+to all settled history. Any required provider, tool, or consent continuation remains orthogonal
+and indivisible; it does not turn `projection` into `hybrid`. Semantic sufficiency and continuity
+select the pinned shape before cache, latency, or price. Cache availability cannot change it.
+
+At an explicitly declared Agent placement, [Context](21-context.md) may assemble immutable
+instructions, the recipient-specific current Execution Projection, the exact station request, and
+fresh admitted observation projections without replaying settled reasoning, actions, or
+observations into that model call. Every observation retains its source, revision or cursor,
+freshness, classification, and lineage. The placement may omit settled history only when its
+contract declares the projection sufficient for continuation; required material that does not fit
+refuses before inference. Declared bounds make this input independent of prior-turn count, not
+independent of the actual size of its projection and observation.
+
+The Agent returns typed, bounded candidate operations and, when allowed, an action intent. It does
+not replace the projection, extend its schema, or mutate workflow control, authority, privacy,
+domain truth, or effect settlement. A deterministic workflow-owned applicator binds the candidate
+to the exact current projection value and revision plus its admitted observations, validates the
+permitted fields and invariants, and alone creates the next committed projection value and revision
+for that Casting. An action intent remains inert until the owning effect boundary authorizes,
+executes, and settles it; confirmed world-facing fields follow owner observations or receipts,
+while indeterminate consequence remains `UNKNOWN`.
+
+Canonical sources, full attributable artifacts, receipts, events, and any retained history remain
+with their existing owners even when excluded from a later model call. Exact conversational
+history and an in-progress provider/tool or consent continuation are not replaced by an Execution
+Projection. When no fixed sufficient schema is known, earlier material may become relevant only
+later, or the historical trajectory is itself the requested evidence, the Scroll must admit the
+necessary attributed history or artifacts—or stop with an explicit unknown or non-completion.
+
+[SKILL.state v2](https://arxiv.org/html/2608.26263v2) reports that its projection-only,
+state-plus-latest-observation variant can preserve or improve benchmark performance while
+materially reducing repeated transcript tokens in long sequential single-agent tasks, including
+budget-matched controls. That evidence motivates the accepted shape; it does not establish LychD
+delivery, universal model performance, shared mutable multi-Agent state, concurrent merge law,
+privacy, effect safety, checkpoint recovery, or LychD-specific token savings, cache-aware billing
+savings, cache-hit rates, time-to-first-token improvements, or latency gains. The current Pattern
+v2 manifests and built-in workflows do not deliver Execution Projections.
+
 ## Parallelism and delegation
 
 Built-ins are serial BaseNode. Parallel map/fork/join/reduce needs branch identity, declared
@@ -567,7 +505,128 @@ in Riddle's place, materializes Shadow branches, nor promotes its own recommenda
 mutation or Covenant edit begins only through its target owner's workflow after the exact human
 verdict.
 
+## Pattern contribution
+
+A publishable Scroll revision declares:
+
+- identity, revision, owner, provenance, support, and parentage;
+- every required Spell contract and placement;
+- typed inputs, outputs, state, errors, and non-completion;
+- topology and cancellation;
+- capabilities, tools, planes, budgets, and waits;
+- Sigil, effect, privacy, egress, and consent requirements, with secret-free durable state;
+- checkpoint, idempotency, receipt, compatibility, migration, drain, and refusal contracts;
+- Loom metadata; and
+- serialization, failure, and recovery evidence.
+
+Assembly uses an explicitly selected shaped store, never package scanning. It rejects duplicate
+identities, ambiguous routes, unknown adapters, unreachable stations, unsafe cycles, unserializable
+state, missing continuity, and forbidden effects before freezing the generation.
+
+The workflow dataclass is internal and pre-v1, not an ABI. Creation, Assimilation, and Extension law
+govern candidate publication. Source, model output, and Loom drafts require validation, review,
+evidence, and an immutable revision before publication.
+
+Spell-contract publication, executable implementation registration, Scroll publication, and
+activation are separate acts and shaped stores. Deactivation of an implementation closes dependent
+Scrolls to new admission; already pinned Runs may use an explicitly retained closure, while security
+revocation forbids even retained execution. Installing code or replacing a process-built catalogue
+is [Evolution](18-evolution.md). Reanimation reconstructs the same body from committed records
+after process death; restoring a whole-body cut additionally follows the
+[Snapshot Protocol](07-snapshots.md). A future declarative-only Scroll may activate without Vessel replacement only when all
+implementations are already admitted and an atomic durable catalogue-generation mechanism exists.
+
+## Authorship provenance and protected regions
+
+Authorship and approval are different records. A human may approve model-written text without
+having written it; an Agent may commit through a human-configured VCS identity. Git author,
+committer, account name, prose style, detector score, and absence of model metadata are evidence at
+most. None may mint human provenance.
+
+An **Authorship Attestation** binds one artifact revision and stable region id to its canonical
+content digest, locator, origin class, attesting Principal, and evidence references:
+
+| Origin | Meaning |
+| --- | --- |
+| `human_attested` | An authorized human Principal explicitly claims authorship of the exact bound content. Approval alone is insufficient. |
+| `agent_generated` | Host-observed Agent or model lineage produced the bound content. |
+| `mixed` | Human and Agent contribution are materially interleaved and cannot be separated honestly. |
+| `unknown` | No admissible record establishes authorship. |
+
+The attestation is an attributable claim, not proof of private cognition. A trusted local or
+authenticated human surface may create `human_attested`; an Agent, provider assertion, imported
+commit, or style classifier may not. Agent outputs receive `agent_generated` from the host job and
+artifact lineage even when a human later approves them. Approval changes authority to promote, not
+the history of who composed the bytes.
+
+Attestations append; they do not overwrite inconvenient lineage. Contradictory or inseparable
+human and Agent evidence resolves to `mixed`, while insufficient evidence remains `unknown`. A
+trusted human surface may attest a new human-written replacement only when it binds that editing
+boundary and exact result. Copying unchanged Agent output through the human surface cannot launder
+its origin.
+
+A **Protected Region** binds a stable region id, target artifact revision, canonical content digest,
+locator, and `live_change_only` policy. Accepting a human authorship attestation protects that region
+by default; an authorized human may also protect material of another or unknown origin. Line numbers
+are only a projection. Document block ids, syntax-aware symbols, structured field paths, or
+media-specific selectors locate the region, while the digest catches drift. Moving, deleting,
+splitting, reformatting, changing its marker, or changing the protection record itself counts as a
+touch.
+
+Source comments, front matter, editor decoration, and VCS notes may display the mark but are not its
+authority. The target owner retains the base-revision attestation and protection manifest outside
+the candidate's control. An Agent cannot unprotect text by deleting its visible marker.
+
+For a candidate that may replace an artifact, Spellweaver orders one admission path:
+
+1. bind the exact base revision, candidate digest, and target-owner diff;
+2. resolve touched regions against the base-revision protection manifest;
+3. continue normally when none overlap, or enter Durable Stasis for one live HitL verdict naming
+   every affected region, old and replacement digests, and an authorized exact-diff artifact;
+4. after approval, revalidate base, candidate, region set, and effect identity before the target
+   owner writes a successor artifact and manifest.
+
+Protected-region change never accepts Codex preauthorization, a previous verdict, a broad “edit
+this repository” grant, or approval of a different patch. Base or candidate drift creates a new
+call. Denial preserves the candidate as inert evidence; it does not mutate the active artifact.
+An Agent may prepare a suggested replacement in Lab, but cannot apply it to the protected body.
+
+An approved Agent edit remains `agent_generated` when it wholly replaces a region and `mixed` when
+it interleaves with retained human material. Unchanged human-attested content retains its
+provenance across an approved move. A human may later rewrite and freshly attest the exact result;
+the approval itself never performs that relabelling.
+
+For legacy material, history and stylometry may nominate likely regions for review. They remain
+`unknown` until a human explicitly attests the exact current digest. Spellweaver owns the Gate and
+ordering; the artifact/effect owner owns region resolution and mutation; [Creation](16-creation.md)
+owns candidate isolation and target-owner promotion; [HitL](25-hitl.md) owns the live verdict.
+No Authorship Attestation store, protected-region manifest, trusted authoring surface, overlap
+resolver, or candidate-bound review card is delivered. [State of
+Work](../state-of-the-work.md#smith-forge-promotion) owns that boundary.
+
 ## Compositions, Products, Suites, and schedules
+
+### Composition identity, revision, and retirement
+
+A Composition has one stable URL-safe identity and immutable numbered revisions. Its revision pins
+the reusable application contract: owned record and request/result families, Pattern catalogue,
+judgment and policy boundaries, effect and authority seams, projections, terminal outcomes, and
+recovery law. Pattern and Scroll revisions remain separate identities; changing a Scroll never
+silently changes the Composition revision that selected its catalogue contract.
+
+Publication freezes a Composition revision even while delivery remains only Designed. A material
+change to any pinned part creates a new revision under the same stable identity. A change that
+creates a materially different reusable application capability, transfers its defining durable
+records or judgment, or replaces its authority, finish, or recovery boundary requires a new
+Composition identity rather than stretching the old one. Editorial clarification that preserves
+the complete contract may update its current explanation without claiming another revision.
+
+Retirement never reinterprets an old identity or revision. The owning Composition record names the
+retired revision, successor or absence of one, reason, compatibility boundary, and any required
+migration or explicit lack of executable migration. If no registry, Run, or stored application
+record ever used a Designed revision, there may be no runtime migration to perform; its historical
+meaning and retirement still remain explicit. [State of Work](../state-of-the-work.md) separately
+records whether any revision is registered, executable, persisted, or supported.
 
 Portfolio membership marks an accepted **Native Reference Composition**: a first-party maintained
 application contract and worked example. It does not prove executable delivery;
@@ -589,8 +648,10 @@ A **Product** gives a profession or market one named operator door. It pins elig
 or Suite revisions, owner-qualified profiles, projections, supported use cases, defaults, and its
 customer and support envelope. A Product may use one Composition or coordinate several through a
 Suite; it does not become another workflow executor, merge member ownership, or convert packaging
-into authority. Deployment instantiates a Product under one operator's configuration without
-creating a new Product identity merely because its host, customer, or credentials differ.
+into authority. Deployment instantiates either a Product revision or an exact Composition-owned
+reference deployment profile under one operator's configuration. A Productless reference
+deployment creates no market promise or Product identity; changing a Product-backed deployment's
+host, customer, or credentials likewise does not create a new Product identity.
 
 A **Product Revision** is one immutable version of that selection and promise. Changing an exact
 Composition or Suite pin, owner-qualified profile, projection, supported use case, default, or
@@ -598,10 +659,11 @@ customer/support policy within the same stable operator promise creates a new Pr
 A materially different profession, market, or operator promise requires a new Product identity.
 Neither a new Deployment nor presentation-only public copy changes the Product Revision.
 
-A Native Reference Composition may also publish an exact reference deployment profile without
-becoming a Product. Such a profile binds an implementation and acceptance target; it creates no
-service until Configuration selects a delivered registered revision and Containers admits its
-complete deployment manifest.
+A Native Reference Composition may publish an exact reference deployment profile without becoming
+a Product. Such a profile binds that Composition's implementation and acceptance target. Once
+Configuration selects a delivered registered revision and Containers admits its complete manifest,
+the resulting configured installation is a Deployment; it still creates no Product, supported-use-
+case catalogue, customer promise, or service before those gates.
 
 A Product or use-case study may expose an unresolved application-ownership need. Until that need
 resolves to an exact external authority or an accepted Composition revision, the Product must not
@@ -616,9 +678,19 @@ admission, or effect authority. Suite is required when one result must initiate 
 retry, cancel, recover, correlate, or settle multiple Composition-owned Invocations. It pins member
 and Pattern revisions, typed ArtifactRef/Intent handoffs, correlation, ceilings, dependencies, and
 partial-completion law while never merging ownership, secrets, Sigils, HitL, or domain judgment.
-Suite execution is Designed: child
-identity/revision/closure/fan-out/join/budget/cancel/stasis/retry/effect/compensation/partial must be
-defined first.
+A Suite has its own technical identity, authority-qualified publisher, and revision as soon as
+that reusable live-coordination contract is published. Each Suite revision pins one exact
+Suite-owned coordination Pattern revision—an immutable Scroll whose only application truth is
+member identity, typed handoff, correlation, ceilings, cancellation/recovery, and aggregate
+settlement. Its Casting opens a parent Suite Invocation and Run; every initiated member remains a
+separate Composition Invocation and Run with its own owner and judgment. A direct Intent may
+therefore resolve the Suite revision and its pinned Scroll without a Product, while a Product may
+pin the same eligible Suite revision. Neither route grants the publisher or parent Run any member
+authority.
+
+Suite execution is Designed: authority-qualified Suite publication, the Suite-to-Pattern pin,
+parent and child identity/revision/closure, fan-out/join, budgets, cancel, Stasis, retry, effects,
+compensation, and partial settlement must be defined before any Suite Casting is delivered.
 
 A Schedule makes one durable, deduplicated **Occurrence** for each firing and enters ordinary
 admission. Spellweaver owns calendar/event meaning, service class, temporal eligibility,

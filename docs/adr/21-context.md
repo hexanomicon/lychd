@@ -52,6 +52,10 @@ binds layer 1 as static instructions and its dynamic hook renders non-empty laye
 becomes model history and Query the user prompt, so the six-layer account does not duplicate them
 as instructions.
 
+Assembly detaches nested history and continuation values from their callers. Cache reads and
+model-history projections also detach mutable messages, so downstream edits cannot change the
+retained assembly or the input against which its budget was checked. Immutable Blocks may be shared.
+
 Context preserves its declared semantic order. Exact append-only transcript groups may extend a
 reusable prefix for a compatible connector while all earlier wire serialization remains
 byte-identical; rewritten summaries and replacement
@@ -65,6 +69,46 @@ not when the session turn is written. Layer 3 snapshots are shared by exact envi
 any referencing Run remains active; terminal settlement releases that Run's leases and evicts a
 snapshot after its final reference. Durable conversation belongs to the session ledger and durable
 suspension to [Graph](./24-graph.md).
+
+## Grant-aware rebinding
+
+Bridge first assembles enough field to enter its workflow, then assembles again inside `Converse`
+after [Dispatcher](./22-dispatcher.md) grants the actual capability. Consent continuation also
+reassembles after grant acquisition. The resolved generation profile's `max_context` takes priority
+over the capability specification's discovered maximum.
+
+Environment records only granted capability key (or `none`) and sorted warm/active capability keys.
+Its key is `(session, capability binding, grant epoch)`. Bridge uses the Dispatcher-issued grant id
+as the epoch in both `Converse` and consent continuation, so every fresh grant observes a fresh
+warm-Coven snapshot even when it selects the same capability binding. Reassembly within the same
+grant remains byte-stable; exact same-key snapshots can be shared, one Run cannot evict another's
+lease, and the final referencing terminal settlement releases the snapshot. VRAM, power,
+connectivity, and Sigil scope are absent; the Sigil belongs in
+[`LychDDeps`](./20-agents.md#run-dependencies), where tools can enforce it rather than prompt prose.
+
+## Governors
+
+The present governors are twenty complete message groups by default and a 96,000-character cap.
+With a grant window, the effective cap is the smaller configured cap or three characters per model
+token: deliberately conservative, not tokenizer accounting. Assembly reserves layers 1–4, query,
+and complete continuation before history. If they overflow, `ContextBudgetExceededError` stops the
+run. Continuation never splits; remaining space retains newest complete groups, up to the turn
+window, never cutting a request from response to keep an older fragment. A nonpositive turn window
+retains no settled history and leaves required continuation intact.
+
+Bridge separately gives Pydantic AI the actual window remaining after output reservation.
+Pydantic AI pre-counts only for models implementing `count_tokens`; current OpenAI-compatible
+models instead enforce provider-reported input usage after a response. The character governor and
+usage limit are therefore independent bounds, not exact cross-provider token equivalence or a
+universal pre-request fence.
+
+## Stable history
+
+Completed messages group by LychD `run_id`; legacy messages fall back to request boundaries. A
+consent pause holds the current logical-turn suffix apart from settled history. Resume re-bounds
+settled history under the new grant and provides its required continuation unchanged. Thus an old
+provider's live objects and assumptions do not cross the park. ADR 25 owns consent record and
+verdict order; this ADR owns only field shape and budget after re-entry.
 
 ## Privatization and the Privacy Cut
 
@@ -116,8 +160,9 @@ erasure. If its durability cannot cover the remote deadline and return window, a
 requires rehydration remains local or refuses. A missing, expired, or unrecoverable lease never
 licenses reconstruction from raw history or retransmission under a new namespace.
 
-The non-bearer lease follows `ACTIVE -> CLAIMED -> CONSUMED | EXPIRED | REVOKED`, with every
-terminal entering key destruction. Claim is an idempotent compare-and-set over authorized
+The non-bearer lease's success path is `ACTIVE -> CLAIMED -> CONSUMED`. Expiry or revocation can
+terminate either nonterminal state as `EXPIRED` or `REVOKED`; every terminal enters key destruction.
+Claim is an idempotent compare-and-set over authorized
 Principal/Sigil, Run, attempt, station, and quarantined-return digest; callers never receive the
 map. Rehydration recognizes only exact lease-issued tokens that appeared in the disclosed candidate
 and only at output-schema paths explicitly marked for their category, cardinality, and purpose. It
@@ -145,45 +190,6 @@ aggregate labels, deterministic Censor, governed SQL/tool/artifact source adapte
 end-to-end lineage, transformation receipts, semantic Privacy Agent, secret-free receipt
 projection, Disclosure Plan, Cut Verification, pseudonym-map vault, sanitized Context branch, and
 trusted Egress Gate remain undelivered.
-
-## Grant-aware rebinding
-
-Bridge first assembles enough field to enter its workflow, then assembles again inside `Converse`
-after [Dispatcher](./22-dispatcher.md) grants the actual capability. Consent continuation also
-reassembles after grant acquisition. The resolved generation profile's `max_context` takes priority
-over the capability specification's discovered maximum.
-
-Environment records only granted capability key (or `none`) and sorted warm/active capability keys.
-Its key is `(session, capability binding, grant epoch)`. Bridge uses the Dispatcher-issued grant id
-as the epoch in both `Converse` and consent continuation, so every fresh grant observes a fresh
-warm-Coven snapshot even when it selects the same capability binding. Reassembly within the same
-grant remains byte-stable; exact same-key snapshots can be shared, one Run cannot evict another's
-lease, and the final referencing terminal settlement releases the snapshot. VRAM, power,
-connectivity, and Sigil scope are absent; the Sigil belongs in
-[`LychDDeps`](./20-agents.md#run-dependencies), where tools can enforce it rather than prompt prose.
-
-## Governors
-
-The present governors are twenty complete message groups by default and a 96,000-character cap.
-With a grant window, the effective cap is the smaller configured cap or three characters per model
-token: deliberately conservative, not tokenizer accounting. Assembly reserves layers 1–4, query,
-and complete continuation before history. If they overflow, `ContextBudgetExceededError` stops the
-run. Continuation never splits; remaining space retains newest complete groups, up to the turn
-window, never cutting a request from response to keep an older fragment.
-
-Bridge separately gives Pydantic AI the actual window remaining after output reservation.
-Pydantic AI pre-counts only for models implementing `count_tokens`; current OpenAI-compatible
-models instead enforce provider-reported input usage after a response. The character governor and
-usage limit are therefore independent bounds, not exact cross-provider token equivalence or a
-universal pre-request fence.
-
-## Stable history
-
-Completed messages group by LychD `run_id`; legacy messages fall back to request boundaries. A
-consent pause holds the current logical-turn suffix apart from settled history. Resume re-bounds
-settled history under the new grant and provides its required continuation unchanged. Thus an old
-provider's live objects and assumptions do not cross the park. ADR 25 owns consent record and
-verdict order; this ADR owns only field shape and budget after re-entry.
 
 ## Typed Codex material projections (Designed)
 

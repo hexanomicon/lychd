@@ -5,101 +5,79 @@ icon: material/sign-direction
 
 # :material-sign-direction: Choosing a Home
 
-When a promising idea appears, do not begin by minting another Composition. Begin with the truth
-that must survive the work. [Workflow](../adr/28-workflow.md#compositions-products-suites-and-schedules)
-owns the law; this page is the practical routing test.
+“Help a garage diagnose cars and find parts” is an operator promise before it is an architecture. Follow the durable work: a technical service case needs an owner, a parts request may use another owner's result, and a promise to coordinate both live processes needs its own coordination contract.
+
+[Workflow](../adr/28-workflow.md#compositions-products-suites-and-schedules) owns the law. This page tests where the idea belongs.
+
+## One idea end to end
+
+**Mechanic** is the proposed Product a garage would recognize. “Choose the next diagnostic test” is one use case. [Workshop](workshop/index.md), still a candidate, would own the durable service case under its passenger-vehicle profile. One configured garage installation would be a **Deployment**.
+
+An already-settled part requirement may pass to Scavenger as exact sourcing input. Only a result that must actively coordinate diagnostic and acquisition Invocations needs a **Suite**. None of those packaging or transport choices can supply a missing application owner.
 
 ## The shortest routing test
 
 | What actually changed? | Give it this home |
 | --- | --- |
-| another customer, host, credential set, or local configuration | a **Deployment** of an existing Product |
+| another customer, host, credential set, or local configuration | a **Deployment** from an exact Product revision or Composition-owned reference deployment-profile revision |
 | another concrete job the operator needs to finish | a **use case** supported by a Product |
 | another profession, market promise, default set, or support envelope | a **Product** identity or immutable revision, according to whether the stable operator promise changed |
 | another repeatable score under the same application owner | a **Pattern** and immutable Scroll revisions |
 | another vertical, region, provider, or form factor under the same records, authority, recovery, and finish judgment | an exact owner-qualified **profile** |
 | another UI, report, device view, or public explanation | a **projection**, with its own presentation owner |
-| another engine, API, transport, capture surface, or implementation mechanism | an exact Provider, Animator/Connector, adapter, or client integration, plus a typed package **Contribution** through the owning **Extension Domain** when registration is required |
+| another engine, API, transport, capture surface, or implementation mechanism | an exact Provider, Animator/Connector, adapter, or client integration, plus a typed package **Contribution** through its explicit **Core** or **Extension Domain** owner when registration is required |
 | an already-settled result from another owner | an exact typed record, artifact, observation, or receipt reference |
 | one live result must coordinate the lifecycle and settlement of several application owners | a **Suite** |
 | genuinely new durable records, judgment, effects, outcomes, and recovery reused beyond one Product, client, or deployment | a candidate **Composition** |
 
-`Profile` is not one global LychD entity. Name its owner and kind—such as a Workshop service
-profile, Reach deployment profile, or Animator capability profile—and pin its exact revision. A
-profile remains valid only while the owning records, authority, recovery, and honest terminal
-judgment remain unchanged.
+Name the owner and kind of every profile: Workshop service profile, Reach deployment profile, Animator capability profile. `Profile` is no global LychD entity. Pin its exact revision and retain the owning records, authority, recovery, and honest finish.
 
-“Translate this” is normally a versioned Translation Spell or an owner-declared transformation,
-not a Composition by itself. [Language Edition](language-edition/index.md) is a Composition because a timed-language
-edition adds durable source/segment alignment, casting, spoken performance, captions, dialogue
-conform, acceptance, and recovery. Website interface localization remains a Frontend catalogue
-concern. Shared language machinery does not merge those owners.
-
-### One idea end to end
-
-Suppose the idea is “help a garage diagnose cars and find parts”:
-
-- **Mechanic** is the proposed Product operators recognize.
-- “Choose the next diagnostic test” is one supported use case.
-- The durable technical service case belongs to the **Workshop candidate** and its passenger-vehicle
-  service profile.
-- One configured installation for one garage would be a **Deployment**.
-- An already-settled part requirement can be referenced by Scavenger; only one live coordinated
-  diagnostic-and-acquisition promise needs a **Suite**.
+“Translate this” usually names a versioned Translation Spell or owner-declared transformation. [Language Edition](language-edition/index.md) earns application ownership through durable source/segment alignment, casting, spoken performance, captions, conform, acceptance, and recovery. Interface localization remains a Frontend catalogue; common language machinery does not merge them.
 
 ## A curated Portfolio, not a closed universe
 
-The first-party Portfolio should grow more slowly than Products, use cases, profiles, and
-Deployments. That pressure preserves comprehensible owners; it is not a numerical cap. A cap would
-reward god-Compositions that absorb unrelated records and safety laws merely to keep the count
-small.
+The Portfolio should grow more slowly than Products, profiles, use cases, and Deployments. A numerical cap would instead reward god-Compositions that accumulate incompatible records and safety law.
 
-Before promoting a candidate, answer all of these:
-
-1. What durable application record exists after chat history is gone?
-2. Which judgments and policies belong to that record rather than to a provider or Product?
-3. What can finish, refuse, remain unknown, partially settle, restart, and recover?
-4. Which existing office already owns the truth, if any?
-5. Why is a Pattern, profile, Product, projection, Extension Domain or package Contribution,
-   Provider, or typed reference insufficient?
-6. What is the smallest fixture that can falsify the proposed boundary?
-7. Which independently motivated Products or use cases corroborate reuse?
-
-Two independent consumers are strong evidence, not a quota. A single compelling reference case
-may reveal a valid owner; two decorative Product wrappers do not.
+Before acceptance, identify the record that survives chat, its judgments/policies, and every finish/refusal/unknown/partial/restart/recovery. Find the existing owner, if any, and explain why a Pattern, profile, Product, projection, Extension Domain, package Contribution, Provider, or typed reference is insufficient. Name the smallest falsifying fixture and independently motivated consumers. Two Products/use cases corroborate reuse; they are neither quota nor proof, and decorative wrappers count for little.
 
 ## Reuse without making a god
 
-Keep a profile when vocabulary and rules vary but the same record lifecycle, authority, recovery,
-and terminal judgment still make sense. Split the owner when those invariants diverge.
+A profile can vary vocabulary and rules while keeping one lifecycle, authority, recovery, and finish. Workshop can admit a new trade only while the service case still fits. Homestead remains place custody/provision even when a professional visits the property. Familiar can reuse a body contract only while its capability, safety, stop, and settlement law stays coherent; a different emergency/recovery boundary may need another owner. A vague universal casework schema cannot absorb Broker, legal, accounting, or municipal judgment without evidence of a shared root lifecycle.
 
-- [Workshop](workshop/index.md) may gain another trade profile only while one technical service
-  case and honest disposition still govern it.
-- [Homestead](homestead/index.md) remains coherent while place custody and household provision own
-  the work; a foreign professional operation does not become Homestead merely because it occurs on
-  the property.
-- [Familiar](familiar/index.md) remains coherent while one admitted body's capabilities, safety,
-  stop law, and bounded task settlement remain shared. A body class with different emergency and
-  recovery law may deserve another owner.
-- A generic “casework” helper is not automatically a Composition. Broker, accounting, legal, and
-  municipal cases keep separate judgment unless evidence proves one root lifecycle rather than a
-  union schema with a vague name.
+## Shared machinery, separate judgments
+
+Scout supplies search/fetch/render/crawl; applications keep source policy, interpretation, rank, and consequence. Mail/platform delivery keeps transport; applications keep recipient purpose, disclosure, review, reply meaning, and follow-up. Echo/Prism supply admitted media effects; applications retain interpretation and acceptance. Tether/Veil create roads, not identity or grants. Legion can carry a bounded task while the body retains fresh local refusal. A model/tool provider never owns application decision policy.
+
+Exact requests, observations, artifacts, and receipts can cross. Ambient databases, credentials, Sigils, sessions, and judgment cannot. Wellbeing supplies personal food needs and confirmed consumption; Homestead owns inventory/provision. Scavenger keeps irregular listings, sellers, major commitments, parcels, and property diligence. Avatar groups presentation across targets while Reach, Blockworld, Spectre, and Familiar keep their local work.
+
+### Media owners do not follow file extensions
+
+A single engine or compound container can produce several roles. The role's acceptance determines its owner:
+
+| Office | Owns | Does not inherit |
+| --- | --- | --- |
+| **[Prism](../sepulcher/extensions/prism/index.md) · Extension Domain** | visual/spatial effect contracts, technical result settlement, provenance, and derivative facts | a visual commission or creative acceptance |
+| **[Echo](../sepulcher/extensions/echo.md) · Extension Domain** | speech capture, STT/TTS, speech chronology, delivery, and playback facts | translation, casting, music, or application purpose |
+| **[Voidlight](voidlight/index.md) · Composition** | visual commission, direction, image, VFX, motion, and accepted visual package | music, timed-language editions, editorial cut, or publication |
+| **[Riffmaw](riffmaw/index.md) · Composition** | musical composition, instrumental and vocal performance, arrangement, mix/master, and musical cue map | ordinary speech, dubbing, standalone foley, or picture sound |
+| **[Language Edition](language-edition/index.md) · Composition** | source-aligned language versions, translation/adaptation judgment, spoken performance, captions, dialogue conform, and restricted language-version packaging | Persona identity, music, editorial recut, or publication |
+| **[Avatar](avatar/index.md) · Composition** | Persona-linked presentation eligibility, Morphe selection, and projection bindings, including exact eligible voice references | Persona lineage, raw media, speech engines, or target-world authority |
+| **[Foundry](foundry/index.md) · Composition** | interactive world sound bound to exact game events, states, places, listeners, and runtime behavior | music, ordinary speech, picture-bound post-production, or a reusable universal sound library |
+| **[Broadcast](broadcast/index.md) · Composition** | canonical source words and claims, picture-bound sound, final editorial timeline/render/mux, release, and correction | upstream visual, musical, voice, or provider truth |
+
+A Translation Spell has an authority-qualified publisher; Spellweaver validates placement without taking linguistic or application truth. Compound model returns likewise keep one technical parent and independent visual/music/dialogue/picture/world-sound semantic admission. No generic reusable-sound Composition is accepted; a future owner must prove its own lifecycle rather than hide in an existing craft.
 
 ## An unresolved ownership need stops at study
 
-A Product or use-case study may reveal necessary truth for which no accepted Composition yet
-exists. Record that as an **unresolved ownership need**; never let the Product temporarily own it.
+If an external system already owns the needed truth, define an exact typed integration. If the state is bounded client UI or device-local presentation, leave it there. If LychD needs distinct durable application records, judgment, effects, finish, and recovery, prepare a candidate study.
 
-Classify it before proposing a new Composition:
+Until an exact external authority or accepted Composition revision resolves the need, affected use cases remain candidate or unsupported. A Product cannot temporarily own the missing truth or admit that path as supported.
 
-- If an external system is already authoritative, integrate through a typed contract.
-- If a client owns bounded UI or device-local presentation state, keep it at the client boundary.
-- If LychD needs durable application truth with distinct judgment, effects, finish, and recovery,
-  develop a candidate Composition study.
+## How a leaf should read
 
-Until the need resolves to an exact external authority or accepted Composition revision, affected
-use cases remain candidate or unsupported. The Product must not claim them as supported, and no
-Invocation depending on the missing truth may be admitted as a supported Product path.
+Give the reader one representative journey, then the exact identity, Pattern catalogue, inputs, outcomes, records, handoffs, and stopping line needed to understand it. Classify foreign relations as settled reference, unmanaged external precondition, or live Suite seam. Keep local authority/privacy/effect/recovery and the smallest falsifying fixture; link shared architecture and delivery instead of repeating them.
+
+Native records, policies, and finish judgment enter `src/lychd/compositions/<identity>/**`; `clients/<target>/**` can project them without acquiring their authority. A stable key and separate Composition revision, such as `example.application` revision `1`, differs from Pattern `example.perform_work@1`. [Workflow](../adr/28-workflow.md#composition-identity-revision-and-retirement) owns frozen revision, successor, and retirement law, including Designed revisions. [State](../state-of-the-work.md#composition-portfolio-delivery) owns registration and execution evidence.
 
 ## From study to matter
 
@@ -111,9 +89,6 @@ Product/use-case study exposes a need
 → State of Work records what is actually delivered
 ```
 
-A placeholder package does not advance that sequence. Today there is no live Composition store,
-Product catalogue, Product selector, or Suite executor, so speculative source stubs would create
-topology without executable truth.
+A placeholder package cannot advance this sequence. There is no Crypt `compositions/` loader or Markdown discovery. [State](../state-of-the-work.md#composition-portfolio-delivery) records Composition registration, selection, scheduling, and execution evidence; its [Loom entry](../state-of-the-work.md#loom-workflow-views) retains the bounded source-registry projection.
 
-Next, learn how accepted owners [assemble into Products and Suites](products-and-suites.md), or
-return to the [Portfolio](index.md).
+Continue with [Products and Suites](products-and-suites.md), or return to the [Portfolio](index.md).

@@ -295,36 +295,22 @@ def test_preflight_rejects_symlinked_reactor_parent(tmp_path: Path) -> None:
     ]
 
 
-def test_uncaged_preflight_uses_read_only_secret_resolvers_and_aggregates_failures(
+def test_uncaged_preflight_checks_loaded_credentials_and_aggregates_failures(
     tmp_path: Path,
 ) -> None:
     codex = tmp_path / "lychd.toml"
     _private_file(codex)
-    settings = Settings()
-    calls: list[str] = []
-
-    def resolve_web(_settings: object) -> str:
-        calls.append("web")
-        msg = "web secret unavailable"
-        raise ValueError(msg)
-
-    def resolve_database(_settings: object) -> str:
-        calls.append("database")
-        msg = "database secret unavailable"
-        raise ValueError(msg)
+    settings = Settings.model_construct()
 
     report = BindingPreflightService(
         codex_path=codex,
         host_readiness=_host_ready(),
-        web_secret_resolver=resolve_web,
-        database_secret_resolver=resolve_database,
     ).inspect(
         settings,
         uncaged=True,
         uncaged_control_plane_secrets=("runtime_token",),
     )
 
-    assert calls == ["web", "database"]
     assert [issue.code for issue in report.issues] == [
         "uncaged-control-secret",
         "uncaged-web-secret",

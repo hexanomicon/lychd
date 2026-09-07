@@ -13,10 +13,12 @@ from typing import TYPE_CHECKING
 
 from lychd.domain.orchestration.actuator import (
     RuntimeActuationRestoredError,
+    RuntimeCancellationNoEffectError,
     RuntimeCancellationRestoredError,
     RuntimePreconditionError,
     TransitionIntent,
 )
+from lychd.lib.asyncio import complete_under_cancellation
 from lychd.system.path_safety import path_has_symlink_component
 from lychd.system.services.lifecycle.models import LifecycleError
 from lychd.system.services.systemctl_process import (
@@ -27,7 +29,7 @@ from lychd.system.services.systemctl_process import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Generator
     from contextlib import AbstractContextManager
 
     from lychd.config.settings.orchestration import SwitchingSettings
@@ -165,7 +167,7 @@ class SystemdRuntimeActuator:
         intent: TransitionIntent,
         *,
         operation: str,
-    ) -> Iterator[None]:
+    ) -> Generator[None]:
         """Map only pre-entry lock refusal to verified no-effect rejection."""
         if self._lock_factory is None:
             yield
@@ -217,9 +219,9 @@ class SystemdRuntimeActuator:
             # Let the full classifier settle, then independently restore the
             # exact pre-world before preserving cancellation semantics.
             with suppress(Exception):
-                await self._await_task_terminal(transaction_task)
+                await complete_under_cancellation(transaction_task)
             restoration_task = asyncio.create_task(self._compensate_after_interruption(intent))
-            await self._await_task_terminal(restoration_task)
+            await complete_under_cancellation(restoration_task)
             message = f"Cancelled transition '{intent.transition_id}' restored its exact prior runtime world."
             raise RuntimeCancellationRestoredError(message) from cancellation
         else:
@@ -234,19 +236,6 @@ class SystemdRuntimeActuator:
             await self._settle_observed_transaction(intent, command_error=exc)
             return
         await self._settle_observed_transaction(intent, returncode=returncode)
-
-    @staticmethod
-    async def _await_task_terminal(task: asyncio.Task[None]) -> None:
-        """Await a shielded task despite repeated cancellation requests."""
-        while True:
-            try:
-                await asyncio.shield(task)
-            except asyncio.CancelledError:
-                if task.cancelled():
-                    raise
-                continue
-            else:
-                return
 
     async def _settle_observed_transaction(
         self,
@@ -312,7 +301,7 @@ class SystemdRuntimeActuator:
         *,
         observed: _ObservedRuntimeWorld,
     ) -> tuple[_ObservedRuntimeWorld, int | None, Exception | None]:
-        """Submit one bounded inverse, await its jobs, and observe regardless of rc."""
+        """Submit one inverse and prove its jobs settled before observing restoration."""
         action, units = self._compensation_request(intent, observed=observed)
         returncode: int | None = None
         command_error: Exception | None = None
@@ -320,10 +309,8 @@ class SystemdRuntimeActuator:
             returncode = await self._run_systemctl(action, units)
         except Exception as exc:  # noqa: BLE001 - final observation is authoritative
             command_error = exc
-        try:
-            await self._await_relevant_jobs_quiescent(intent)
-        except Exception as exc:  # noqa: BLE001 - retain error but still attempt observation
-            command_error = command_error or exc
+        # A matching snapshot cannot prove restoration while jobs may still land.
+        await self._await_relevant_jobs_quiescent(intent)
         restored = await self._observe_runtime_world()
         return restored, returncode, command_error
 
@@ -504,8 +491,8 @@ class HostReactorRuntimeActuator:
         self._journal_dir = journal_dir
         self._ack_timeout_s = ack_timeout_s
 
-    async def apply(self, intent: TransitionIntent) -> None:
-        """Durably publish, then hold the manager barrier through host completion."""
+    async def apply(self, intent: TransitionIntent) -> None:  # noqa: C901 - keep publication and cancellation fences together
+        """Hold the manager barrier through settlement or proven durable withdrawal."""
         await asyncio.to_thread(validate_reactor_boundaries, self._intents_dir, self._journal_dir)
         terminal = self._terminal_status(intent.transition_id)
         if self._resolve_terminal(terminal, intent.transition_id):
@@ -516,13 +503,15 @@ class HostReactorRuntimeActuator:
             await asyncio.shield(publish_task)
             publication_exposed = True
             await self._await_terminal(intent.transition_id)
-        except asyncio.CancelledError:
+        except RuntimeCancellationNoEffectError:
+            raise
+        except asyncio.CancelledError as cancellation:
             # A caller cancellation must not reopen admission while an already
             # claimed host effect can still land. First let any in-flight atomic
             # publication settle, then remove an unclaimed delivery; otherwise
             # shield until the host records a terminal outcome.
             try:
-                await asyncio.shield(publish_task)
+                await complete_under_cancellation(publish_task)
                 publication_exposed = True
             except _PublishedIntentError:
                 publication_exposed = True
@@ -531,18 +520,31 @@ class HostReactorRuntimeActuator:
             fence = asyncio.create_task(
                 self._cancel_or_wait(intent.transition_id, require_terminal=publication_exposed)
             )
-            await asyncio.shield(fence)
+            if await complete_under_cancellation(fence):
+                msg = f"Cancelled transition '{intent.transition_id}' was retracted before host claim."
+                raise RuntimeCancellationNoEffectError(msg) from cancellation
             raise
-        except _PublishedIntentError as exc:
-            fence = asyncio.create_task(self._cancel_or_wait(intent.transition_id, require_terminal=True))
-            await asyncio.shield(fence)
-            raise exc.original from exc
-        except (OSError, RuntimeError):
+        except (RuntimePreconditionError, RuntimeActuationRestoredError):
+            raise
+        except (OSError, RuntimeError) as exc:
             # ``link()`` is the publication point. A later chmod/fsync/cleanup
             # failure may therefore coexist with a live delivery; fence that
-            # delivery before exposing the original publication error.
-            fence = asyncio.create_task(self._cancel_or_wait(intent.transition_id, require_terminal=False))
-            await asyncio.shield(fence)
+            # delivery before classifying whether any effect remains possible.
+            fence = asyncio.create_task(
+                self._cancel_or_wait(intent.transition_id, require_terminal=isinstance(exc, _PublishedIntentError))
+            )
+            try:
+                retracted = await asyncio.shield(fence)
+            except asyncio.CancelledError as cancellation:
+                if await complete_under_cancellation(fence):
+                    msg = f"Cancelled transition '{intent.transition_id}' was retracted before host claim."
+                    raise RuntimeCancellationNoEffectError(msg) from cancellation
+                raise
+            if isinstance(exc, _PublishedIntentError):
+                if retracted:
+                    msg = f"Transition '{intent.transition_id}' publication failed; delivery was retracted before host claim."
+                    raise RuntimePreconditionError(msg) from exc.original
+                raise exc.original from exc
             raise
 
     def _write_atomic(self, intent: TransitionIntent) -> None:
@@ -573,6 +575,7 @@ class HostReactorRuntimeActuator:
             raise
 
     async def _await_terminal(self, transition_id: str) -> None:
+        """Retain withdrawal proof if cancellation overlaps the claim deadline."""
         loop = asyncio.get_running_loop()
         deadline = loop.time() + self._ack_timeout_s
         timeout_handled = False
@@ -581,12 +584,23 @@ class HostReactorRuntimeActuator:
             if self._resolve_terminal(terminal, transition_id):
                 return
             if not timeout_handled and loop.time() >= deadline:
-                if await asyncio.to_thread(self._cancel_pending, transition_id):
+                withdrawal = asyncio.create_task(asyncio.to_thread(self._cancel_pending, transition_id))
+                try:
+                    retracted = await asyncio.shield(withdrawal)
+                except asyncio.CancelledError as cancellation:
+                    if await complete_under_cancellation(withdrawal):
+                        msg = f"Cancelled transition '{transition_id}' was retracted before host claim."
+                        raise RuntimeCancellationNoEffectError(msg) from cancellation
+                    raise
+                if retracted:
                     msg = f"Host Reactor did not claim transition '{transition_id}' within {self._ack_timeout_s:g}s."
-                    raise TimeoutError(msg)
+                    raise RuntimePreconditionError(msg)
                 processing = self._journal_dir / f"{transition_id}.processing.json"
                 # Recheck the terminal rename before ruling the delivery lost.
-                if not os.path.lexists(processing) and self._terminal_status(transition_id) is None:
+                if (
+                    not await asyncio.to_thread(os.path.lexists, processing)
+                    and self._terminal_status(transition_id) is None
+                ):
                     msg = f"Host Reactor transition '{transition_id}' disappeared without a terminal journal."
                     raise RuntimeError(msg)
                 timeout_handled = True
@@ -611,17 +625,18 @@ class HostReactorRuntimeActuator:
         msg = f"Host Reactor rejected transition '{transition_id}'."
         raise RuntimeError(msg)
 
-    async def _cancel_or_wait(self, transition_id: str, *, require_terminal: bool = False) -> None:
+    async def _cancel_or_wait(self, transition_id: str, *, require_terminal: bool = False) -> bool:
+        """Return true only after durably retracting an unclaimed delivery."""
         if await asyncio.to_thread(self._cancel_pending, transition_id):
-            return
+            return True
         if self._terminal_status(transition_id) is not None:
-            return
+            return False
         processing = self._journal_dir / f"{transition_id}.processing.json"
-        if not require_terminal and not os.path.lexists(processing):
-            return
+        if not require_terminal and not await asyncio.to_thread(os.path.lexists, processing):
+            return False
         while True:
             if self._terminal_status(transition_id) is not None:
-                return
+                return False
             await asyncio.sleep(_ACK_POLL_SECONDS)
 
     def _cancel_pending(self, transition_id: str) -> bool:

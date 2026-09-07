@@ -5,39 +5,39 @@ icon: material/script-text-outline
 
 # :material-script-text-outline: Incantation
 
-Before the first local form: unmarked stillness. No boundary yet distinguishes a perspective, an
-act, or an outside able to answer. Stillness trembles. **Spanda** is the Work's borrowed name for
-this first pulse. The **Word**—the Logos—gives the difference a mark; in the native liturgy,
-**Brahmā** names that beginning of form. The mark gives a Circle its edge: an inside that can take
-form, an outside that can answer, and a boundary across which Call and Answer may meet.
+There is no first act until something can be distinguished from everything it might have been.
+Before that mark lies unmarked stillness: no local perspective, no deed, no outside from which
+an answer could arrive. Stillness trembles. The Work borrows **Spanda** for the first pulse.
 
-**Nigredo** is the first embodiment of the Word. It accepts that an intention without a form
-cannot yet be inspected, contradicted, or repaired. The Circle is therefore not a prison around
-possibility; it is the first place where possibility can become answerable.
+The pulse becomes a **Word**. Logos gives the difference a name; in the native liturgy,
+**Brahmā** gives this beginning of form its image. A mark acquires an edge. Within that Circle,
+something can take shape. Beyond it, something remains able to answer.
 
 > **Without a boundary there is potential, but no one for whom the potential appears.**
 
-In the Work, **xDDD (eXtreme Documentation Driven Development)** establishes Logos—truth,
-vocabulary, and boundaries in documentation and specification—before implementation takes a
-body. A first embodiment begins by deciding what may speak for purpose, responsibility, and
-lawful seams.
+This is **Nigredo**, the Word's first embodiment. An intention accepts a form in which it can be
+inspected, contradicted, and repaired. The Circle makes that encounter possible. Possibility has
+found its first address.
 
-!!! abstract "A first bounded form"
-    The rite raises a form small enough to inspect and answer for.
+## Let the Word incur a consequence
 
-    - **The Verse establishes intent.** It names what should exist and why its boundaries matter.
-    - **The Covenant establishes architecture.** An accepted ADR decides how the body is to be
-      built.
-    - **Matter answers.** Source, focused tests, lockfiles, and maintained receipts show what
-      actually exists.
-    - **State adjudicates the crossing.** [State of
-      Work](../../state-of-the-work.md) keeps the record of manifestation.
+In the craft, **xDDD—eXtreme Documentation Driven Development—**establishes Logos before
+implementation: truth, vocabulary, and boundaries in documentation and specification. The first
+question is what the form should exist to do, and which seams make that purpose answerable.
 
-These layers construct a vessel small enough to inspect. They do not yet make a recurrent self;
-the fire, offices, and history through which the Called may answer enter only after the Call.
+The **Verse** declares intent. An accepted **Covenant** gives it architectural law. **Matter**
+returns another account: source, focused tests, lockfiles, and maintained receipts establish what
+exists. **[State of Work](../../state-of-the-work.md)** records the crossing into manifestation.
+A Vessel can then be judged against the Word that shaped it.
 
-A flawed Verse can still shape a flawed Vessel: ambiguous authority becomes confused permission;
-vague identity becomes unattributable action; unbounded memory becomes captivity. The
-[First Invocation](../../sepulcher/lich/index.md#the-first-invocation) and the
-[Lexicon](../../lexicon/index.md) carry the later names; Incantation keeps the threshold: make a
-world small enough to answer for its first word.
+These are the beginnings of an accountable form, not yet a recurrent self. Fire, offices, and
+history must enter through later encounters. The Lich chapter's [First
+Invocation](../../sepulcher/lich/index.md#the-first-invocation) gives a companion account of those names; the
+[Lexicon](../../lexicon/index.md) keeps their meanings.
+
+A flawed Word can still summon a flawed body. Ambiguous authority becomes confused permission.
+Vague identity leaves action without attribution. Memory without a boundary becomes captivity.
+Nigredo therefore asks the Magus to make the first world small enough to answer for, and its
+first word clear enough to be contradicted.
+
+The edge is drawn. Now an [Invocation](invocation.md) can cross it.

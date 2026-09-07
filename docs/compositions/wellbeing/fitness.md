@@ -5,19 +5,10 @@ icon: material/run
 
 # :material-run: Fitness
 
-Fitness plans ordinary movement for one consenting adult. It works inside the reviewed profile's
-time, equipment, enabled mode, hard restrictions, and operator maxima; it does not diagnose,
-treat, rehabilitate, or estimate clinical safety.
+The plan called for movement; the day may call for a change. Fitness gives one consenting adult editable choices inside the reviewed profile's time, equipment, enabled mode, hard restrictions, and operator maxima.
 
-For its movement mode, `wellbeing.plan_cycle@1` checks hard constraints before softer preferences
-and returns honest infeasibility rather than silently relaxing a limit. The Magus edits, approves,
-or rejects every plan. `wellbeing.check_in@1` records only confirmed completion, skip,
-substitution, duration, or reflection; silence is not success and a missed activity is not a
-failure of the person.
+In movement mode, `wellbeing.plan_cycle@1` checks those limits before softer preferences. It returns infeasibility when they cannot be met, leaving the Magus to edit, approve, or reject the plan. `wellbeing.check_in@1` records only confirmed completion, skip, substitution, duration, or reflection. Silence supplies no missing result.
 
-Wellbeing does not infer calorie expenditure, analyze gait or form, contact clinicians, share
-automatically, or punish a skipped activity. “My knee hurt” remains operator-authored and halts
-automated progression without inferring injury, cause, adherence, or treatment. Rehabilitation,
-clinical conditions, biomarkers, medication interactions, and emergencies leave this office.
+“My knee hurt” remains the operator's testimony and halts automated progression. It does not establish an injury, cause, adherence judgment, or treatment. Fitness does not infer calorie expenditure, analyze gait or form, contact clinicians, share automatically, or punish missed activity. Diagnosis, treatment, rehabilitation, clinical conditions, biomarkers, medication interactions, and emergencies belong outside this office.
 
-Return to [Wellbeing](index.md).
+Return to [Wellbeing](index.md), or record the day in [Journal](journal.md).

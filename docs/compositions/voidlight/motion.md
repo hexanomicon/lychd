@@ -5,74 +5,40 @@ icon: material/movie-open-outline
 
 # :material-movie-open-outline: Motion
 
-Motion owns visual change through time: animation sets, transitions, camera movement, loops, and
-visual sequences. It does not own music, sound effects, the final audiovisual timeline, or public
-rendering.
+The first frame has been chosen. Motion asks what should change, over which timebase, and how the director will recognize a finished sequence. Its material includes animation, transitions, camera movement, loops, and generated or authored visual sequences.
 
-The method may combine authored animation, capture, procedural tools, generative video, motion
-transfer, and deterministic transforms. Prism's candidate
-[video-effect contract](../../sepulcher/extensions/prism/video.md) supplies pixel-producing
-effects, while [Kinesis](../../sepulcher/extensions/prism/kinesis.md) supplies replaceable
-machinery for structured recovery, generation, retargeting, technical cleanup, synchronization,
-and conversion. Voidlight owns the commission, choreography, visual direction, review, and
-acceptance. An engine job, model worker, Blender task, Comfy graph, provider history, or generated
-clip is not itself a Voidlight Pattern or accepted motion asset.
+Prism's [Video](../../sepulcher/extensions/prism/video.md) supplies pixel effects; [Kinesis](../../sepulcher/extensions/prism/kinesis.md) supplies structured motion recovery, generation, retargeting, cleanup, synchronization, and conversion. Voidlight keeps choreography, visual direction, review, and acceptance across those replaceable tools. Music, sound design, final audiovisual editing, and public rendering retain separate owners.
 
 ## Progressive visual depth
 
-The admitted commission declares how far the current Invocation should go: accepted still,
-accepted motion, or sealed visual package. A broader `voidlight.build_visual_package@2` Scroll may
-contain the exact image, review, motion, probe, and package placements and branch only on that typed
-finish policy. A narrower journey may instead finish one Scroll and pass its immutable artifact to
-`voidlight.forge_visual_sequence@2` in a new Invocation. Neither form lets an engine invent the
-next step.
+The commission declares an accepted still, accepted motion, or sealed package as the requested finish. `voidlight.build_visual_package@3` may contain exact image, review, motion, probe, and package placements branching on that typed policy. Alternatively, a completed image becomes immutable input to a new `voidlight.forge_visual_sequence@3` Invocation.
 
-One reference journey is:
+A path through motion to a sealed package is:
 
 ```text
 brief + target profiles + language policy
-→ ImageJob@1 generate or edit
+→ ImageJob@2 generate or edit
 → review and select exact first frame
 → optional second boundary image
-→ VideoJob@1 i2v or first_last
+→ VideoJob@2 i2v or first_last
 → temporal probe and visual review
 → VisualAssetBundle@1
 ```
 
-The still boundary is terminal success when that is what the commission requested. A review Gate
-may pause before selection or continuation, and a hardware transition may enter Stasis, but a
-completed still is never kept artificially nonterminal merely because animation remains possible.
-Continuing later creates a forward Invocation over the retained image digest.
+At a requested still boundary, success is terminal. A declared review Gate or hardware transition may enter Stasis while something remains outstanding; future animation alone is no reason to keep the completed Run open.
 
-The Scroll names Image and Video Spell contracts rather than Qwen, LTX, ComfyUI, or a hosted API.
-Its Resolution Lock may bind an exact Qwen Image and LTX-2.5 Comfy preset on one host, different
-local profiles on another, or separately admitted Portal implementations. The Prism job's admitted
-prompt-translation record keeps the operator-facing and model-facing texts, translator revision,
-and declared loss; Prism does not own a global Translation service. An imported Comfy graph is
-never a portable Scroll.
+The Scroll names Image and Video Spell contracts. Its exact Resolution Lock may bind Qwen Image and an LTX-2.5 Comfy preset, other local profiles, or separately admitted Portal implementations. This is an illustrative binding, not a delivery claim. Prism's prompt-translation record preserves original/model-facing texts, translator revision, and loss; an imported Comfy graph is no portable Scroll or global Translation service.
 
-`voidlight.forge_animation_set@1` produces accepted animation clips tied to exact asset and Form
-rig revisions plus exact Kinesis motion revisions when that machinery participated.
-`voidlight.forge_visual_sequence@2` arranges visual events under a declared frame rate, duration,
-aspect profile, continuity rules, and transition constraints. Every exported clip retains the
-source asset revisions, tools, transforms, timeline, probes, and checksum that made it.
+## Clips and cues
 
-A `MusicCueMap@1` from [Riffmaw](../riffmaw/sync.md) may describe musical events, time windows,
-intensity, and transitions. Voidlight decides how—or whether—those cues receive a visual answer.
-The map does not prescribe images, and Voidlight does not alter its musical revision. Audio may
-condition a visible performance only through an exact admitted reference. Sound returned by a
-video model retains the compound Prism parent but routes by declared role: music to Riffmaw,
-timed-language material to Language Edition, and picture-bound effects or ambience to Broadcast. None becomes
-accepted merely because the video model returned it.
+`voidlight.forge_animation_set@1` binds clips to exact assets and Form rigs, plus Kinesis motion revisions when used. `voidlight.forge_visual_sequence@3` binds frame rate, duration, aspect, continuity, and transitions. Exports retain source revisions, tools, transforms, timeline, probes, and checksum.
 
-Review checks declared motion rather than only the last frame: duration, loop seams, temporal
-ordering, camera continuity, clipping, flicker or accessibility hazards, and export stability.
-One bounded correction may create a new revision. A mismatched timebase, stale input asset,
-unsupported profile, or ambiguous synchronization ends with a finding or refusal instead of a
-best-effort clip.
+A [Riffmaw](../riffmaw/sync.md) `MusicCueMap@1` offers musical events, windows, intensity, and transitions. The director chooses their visual answer without editing the musical map. Audio conditioning likewise requires an exact admitted reference.
 
-The accepted motion remains a visual artifact inside the [package](package.md). Broadcast owns its
-placement, trim, retime, transitions, caption placement in the final edit, sound relation, and
-editorial claims; Foundry owns engine-native import and runtime behavior. FFmpeg or another deterministic renderer may serve
-either office under its exact contract, but the executable owns neither the creative sequence nor
-the final cut.
+Before a `VideoJob@2`, `MediaFacetAuthoritySet@1` must declare visual role, `voidlight.studio` revision `5`, and exact commission request digest. Any sound role needs separate authority. The compound Prism parent remains attached; Voidlight issues its own `SemanticFacetAdmissionReceipt@1` for the visual facet. Riffmaw, Language Edition, Broadcast, or Foundry separately admits declared music, timed-language, picture-sound, or world-sound facets. Undeclared sound is quarantined/deleted. Inseparable streams cannot be used when any required owner refuses the compound.
+
+## Review the movement
+
+Check duration, seams, ordering, camera continuity, clipping, flicker/accessibility hazards, and export stability across time, not merely in the last frame. A bounded correction makes a successor revision. Wrong timebase, stale assets, unsupported profile, or ambiguous synchronization returns findings or refusal.
+
+[Package](package.md) receives accepted motion as visual material. Broadcast owns its final placement, trim, retime, transitions, captions, sound relation, and claims. Foundry owns engine import/runtime behavior. A pinned FFmpeg or other deterministic renderer may serve either office without deciding the creative sequence or final cut.

@@ -1,8 +1,7 @@
-"""Bridge session contract and loop-confined in-memory implementation.
+"""Bridge conversation records and loop-confined in-memory storage.
 
-`SessionStorePort` is the async surface the turn ledger + web read; it carries ONLY
-sessions and settled turns. ``BridgeSessionStore`` is the loop-confined memory
-profile; durable SQLAlchemy adaptation lives in ``lychd.db.sessions``.
+Sessions retain visible turns and settled invocation history; Run lifecycle
+remains ledger-owned. The durable adapter lives in ``lychd.db.sessions``.
 """
 
 from __future__ import annotations
@@ -28,11 +27,12 @@ def _new_id(prefix: str) -> str:
 
 @dataclass
 class SessionRecord:
-    """One Bridge session: its identity and settled turns."""
+    """One conversation's identity, visible turns, and settled model history."""
 
     id: str
     title: str
     created_at: datetime
+    sigil_name: str = "magus"
     turns: list[BridgeTurn] = field(default_factory=list)
     message_history: list[Any] = field(default_factory=list)
 
@@ -63,17 +63,23 @@ class SessionStorePort(Protocol):
 
 
 class BridgeSessionStore:
-    """In-memory store for Bridge sessions and settled turns (loop-confined)."""
+    """Loop-confined memory storage for conversation projection and history."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, sigil_name: str = "magus") -> None:
         """Initialize the empty, loop-confined store."""
         self._sessions: dict[str, SessionRecord] = {}
+        self._sigil_name = sigil_name
         self._run_to_session: dict[str, str] = {}
 
     async def create_session(self, *, title: str | None = None) -> SessionRecord:
         """Create and store a new empty session."""
         session_id = _new_id("sess")
-        record = SessionRecord(id=session_id, title=title or "New Communion", created_at=datetime.now(UTC))
+        record = SessionRecord(
+            id=session_id,
+            title=title or "New Communion",
+            created_at=datetime.now(UTC),
+            sigil_name=self._sigil_name,
+        )
         self._sessions[session_id] = record
         return deepcopy(record)
 
@@ -88,7 +94,7 @@ class BridgeSessionStore:
         return deepcopy(records)
 
     async def add_turn(self, session_id: str, turn: BridgeTurn) -> None:
-        """Append a settled turn to a session, indexing it by run for O(1) lookup."""
+        """Append a visible turn, indexing its Run for O(1) lookup."""
         session = self._sessions.get(session_id)
         if session is not None:
             existing = next(

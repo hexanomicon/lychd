@@ -8,7 +8,7 @@ adapters use, but it has no network, subprocess, workspace, or credential author
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -34,6 +34,9 @@ from lychd.domain.delegation.models import (
 )
 from lychd.domain.delegation.signals import DelegatedAgentPending
 from lychd.domain.web.schemas import BridgeTurn
+
+if TYPE_CHECKING:
+    from lychd.agents.router import Intent
 
 __all__ = [
     "DELEGATED_RITE",
@@ -86,15 +89,15 @@ class DispatchDelegate(DelegatedAgentNode, BaseNode[DelegatedRiteState, Workflow
             msg = "Delegated labor is unavailable: the composition root did not bind a coordinator."
             raise RuntimeError(msg)
 
+        request = DelegatedAgentRequest(
+            request_id=ctx.state.request_id,
+            run_id=ctx.state.run_id,
+            step_id="dispatch_delegate",
+            runtime=_REFERENCE_RUNTIME,
+            profile=_REFERENCE_PROFILE,
+            prompt=_delegated_prompt(ctx.state.prompt),
+        )
         if ctx.state.job_id is None:
-            request = DelegatedAgentRequest(
-                request_id=ctx.state.request_id,
-                run_id=ctx.state.run_id,
-                step_id="dispatch_delegate",
-                runtime=_REFERENCE_RUNTIME,
-                profile=_REFERENCE_PROFILE,
-                prompt=_delegated_prompt(ctx.state.prompt),
-            )
             job = await delegates.submit(request)
             ctx.state.job_id = job.job_id
             raise DelegatedAgentPending(job)
@@ -103,6 +106,9 @@ class DispatchDelegate(DelegatedAgentNode, BaseNode[DelegatedRiteState, Workflow
         if job is None:
             msg = f"Delegated AgentJob {ctx.state.job_id!r} disappeared from its authoritative store."
             raise RuntimeError(msg)
+        if job.ref.job_id != ctx.state.job_id or job.request != request:
+            msg = "Delegated AgentJob does not match this station's admitted request."
+            raise ValueError(msg)
         if job.status not in TERMINAL_DELEGATED_AGENT_STATUSES:
             raise DelegatedAgentPending(job.ref)
         if job.status is not DelegatedAgentJobStatus.SUCCEEDED or job.result is None:
@@ -145,13 +151,24 @@ DELEGATED_RITE_GRAPH: Graph[DelegatedRiteState, WorkflowServices, str] = Graph(
 )
 
 
-def _make_state(intent: Any) -> DelegatedRiteState:
+def _make_state(intent: Intent) -> DelegatedRiteState:
     return DelegatedRiteState(
         session_id=intent.session_id,
         run_id=intent.run_id or "",
         prompt=intent.prompt,
         request_id=str(uuid4()),
     )
+
+
+def _validate_state(intent: Intent, state: BaseModel) -> None:
+    """Bind a fresh or restored continuation to its admitted Run before execution."""
+    if not isinstance(state, DelegatedRiteState) or (state.run_id, state.session_id, state.prompt) != (
+        intent.run_id,
+        intent.session_id,
+        intent.prompt,
+    ):
+        msg = "delegated_rite@1 checkpoint does not match its admitted Run."
+        raise ValueError(msg)
 
 
 DELEGATED_RITE = Workflow(
@@ -165,6 +182,7 @@ DELEGATED_RITE = Workflow(
     graph=DELEGATED_RITE_GRAPH,
     start_node=DispatchDelegate,
     make_state=_make_state,
+    validate_state=_validate_state,
     manifest=PatternManifest(
         key="delegated_rite",
         revision="1",

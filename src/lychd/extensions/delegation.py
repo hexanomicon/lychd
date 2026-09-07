@@ -43,17 +43,17 @@ class DelegatedRuntimeDefinition:
 class RegisteredDelegatedRuntime:
     """One delivered runtime with host-assigned extension provenance."""
 
-    provider_id: str
+    registrant_id: str
     definition: DelegatedRuntimeDefinition
 
 
 class DelegatedRuntimeStore(ExtensionStore):
     """Strict catalogue of executable delegated runtimes."""
 
-    def __init__(self, *, current_provider: Callable[[], str]) -> None:
+    def __init__(self, *, current_registrant: Callable[[], str]) -> None:
         """Create an empty store bound to the active extension provenance."""
         super().__init__()
-        self._current_provider = current_provider
+        self._current_registrant = current_registrant
         self._registrations: dict[str, RegisteredDelegatedRuntime] = {}
 
     @property
@@ -71,16 +71,16 @@ class DelegatedRuntimeStore(ExtensionStore):
 
     def add(self, definition: DelegatedRuntimeDefinition) -> None:
         self._require_mutable()
-        provider_id = self._current_provider()
+        registrant_id = self._current_registrant()
         existing = self._registrations.get(definition.runtime_id)
         if existing is not None:
             msg = (
-                f"Delegated runtime {definition.runtime_id!r} from {provider_id!r} conflicts with "
-                f"the runtime already registered by {existing.provider_id!r}."
+                f"Delegated runtime {definition.runtime_id!r} from {registrant_id!r} conflicts with "
+                f"the runtime already registered by {existing.registrant_id!r}."
             )
             raise ValueError(msg)
         self._registrations[definition.runtime_id] = RegisteredDelegatedRuntime(
-            provider_id=provider_id,
+            registrant_id=registrant_id,
             definition=definition,
         )
 

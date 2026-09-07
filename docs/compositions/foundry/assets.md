@@ -5,57 +5,24 @@ icon: material/treasure-chest-outline
 
 # :material-treasure-chest-outline: Assets
 
-The proposed Spell `game.import_asset_bundle@2` admits exact `VisualAssetBundle@1`,
-`MusicAssetBundle@1`, and optional `TimedLanguageAssetBundle@1` inputs against the project target,
-semantic roles, formats, rights posture, and spatial or temporal limits. Foundry may transform them
-into engine-native imports, but it cannot rewrite the producer's source lineage. Sound authored
-specifically for game events, spaces, interaction, and runtime behavior remains Foundry application
-truth unless an independently owned reusable sound package is admitted.
+A visual asset can be approved by its director and still fail an engine import. Foundry judges the target use and preserves the producer's exact material so a technical failure can return as evidence rather than become a silent source repair.
 
-| Record | Custody |
-| --- | --- |
-| source bundle manifests | Voidlight, Riffmaw, Language Edition, or another exact producer, admitted by digest |
-| engine-native imports and caches | Foundry |
-| `AssetImportReceipt@1` | exact source, importer, target, transformations, outputs, and checks |
-| `AssetFindingSet@1` | attributable correction evidence returned to the producing Composition |
+`game.import_asset_bundle@3` admits `VisualAssetBundle@1`, `MusicAssetBundle@1`, and optional `TimedLanguageAssetBundle@2` against project roles, target, formats, rights, and spatial/temporal limits. Source manifests remain with Voidlight, Riffmaw, Language Edition, or their exact producer. Foundry owns the engine-native imports and caches.
 
-A rejected import returns findings; it does not silently repair or replace source assets. A Suite
-may retain bundle handoff and Run correlation, but never merges databases, Sigils, secrets,
-provider sessions, approval, budget judgment, or release authority.
+## Source to engine derivative
 
-Spatial admission names the exact facet set and target-engine profile. A glTF/GLB container may
-combine mesh, PBR appearance, skeleton, skinning, and animation facets; Foundry admits the exact
-combination rather than treating "PBR" and "rigged" as mutually exclusive formats. Point cloud,
-Gaussian form, radiance checkpoint, neutral voxel grid, game-specific block grid, and portable
-scene assembly remain distinct import forms. An unsupported form fails or
-returns an attributed finding. Prism Form owns any admitted source-form conversion and returns its
-derivative and declared loss; Foundry owns only target-engine import derivatives. The importer
-never silently meshes, rigs, voxelizes, or bakes a source form.
+`AssetImportReceipt@1` binds source, importer, target, transformations, outputs, and checks. Spatial admission includes source units/axes/origin/scale, coordinate transforms, materials/textures, skeleton/animation mappings, generated collision/LOD/engine derivatives, importer/engine revisions, warnings, validation, and performance. `AssetFindingSet@1` returns attributable correction evidence without changing producer lineage or creative approval.
 
-`AssetImportReceipt@1` additionally pins source units, axes, origin and scale; applied coordinate
-transforms; material and texture mapping; skeleton and animation mapping; generated collision,
-LOD, and engine-native derivatives; importer and engine revisions; warnings; and validation and
-performance results. Creative approval remains with Voidlight even when Foundry returns a
-technical correction finding.
+A glTF/GLB can combine mesh, PBR appearance, skeleton, skinning, and animation. Point clouds, Gaussian/radiance forms, neutral voxels, game block grids, and portable assemblies require their own supported import forms. Unsupported forms fail or return findings. Prism Form owns admitted source-form conversion and declared loss; an engine importer cannot quietly mesh, rig, voxelize, or bake the source.
 
-One asset's importer-level collider, LOD, skeleton map, material conversion, or animation mapping
-belongs here. World-wide collision layers and masks, navigation joins, spawn, streaming,
-interaction roles, actor binding, and animation-controller use belong to the
-[World](world.md) bake. Reusing the asset derivative neither rewrites its source receipt nor grants
-the world compiler authority to repair the producer's asset silently.
+One asset's collider, LOD, skeleton/material/animation map belongs to its import. World-wide collision layers/masks, navigation joins, spawn, streaming, interaction roles, actor bindings, and controller use belong to the [World](world.md) bake. Reusing a derivative changes neither receipt's ownership.
 
-For motion, Foundry consumes an exact accepted animation revision, target Form rig digest when the
-clip is rig-bound, and its Prism [Kinesis](../../sepulcher/extensions/prism/kinesis.md)
-`MotionAssetSet@1` and retarget receipt when those technical derivatives participated. Kinesis
-owns portable curves, mapping, root/contact semantics, and technical validation; Foundry owns
-engine-native import, clip compression, controller or state-machine mapping, blending, gameplay
-root-motion use, and playtest. Import success cannot retroactively prove the source rig, clip, or
-creative choice correct.
+Motion admission pins the accepted animation, target Form rig digest when rig-bound, and Kinesis `MotionAssetSet@1`/retarget receipt when used. [Kinesis](../../sepulcher/extensions/prism/kinesis.md) keeps portable curves, mapping, root/contact semantics, and technical validation. Foundry owns clip compression, engine controllers/state machines, blending, gameplay root motion, and playtest. Import success cannot certify the source rig or creative choice.
 
-A Sponge `.schem` or exact block grid may be admitted as a project or map asset. That import says
-nothing about a live server. Placement into an inhabited world is a separately admitted
-[Blockworld mission](../blockworld/mission.md) and remains subject to its world epoch, region lease,
-inventory, Sentinel, and effect receipts.
+## Distinct sound and world boundaries
 
-Continue with [Project](project.md) for project custody or [Build](build.md) for the candidate that
-uses the admitted assets.
+[World Sound](sound.md) uses `game.import_world_sound@1` and `WorldSoundImportReceipt@1`; it does not widen the spatial meaning of `AssetImportReceipt@1`. A separately owned reusable pack retains producer lineage, while project-specific event/space/runtime sound stays Foundry truth.
+
+A `.schem` or block grid can enter a project/map asset. Live placement still requires a [Blockworld mission](../blockworld/mission.md), its epoch, lease, inventory, Sentinel, and receipts. A Suite can correlate handoffs and Runs but cannot merge member databases, Sigils, secrets, sessions, approvals, budget judgment, or release authority.
+
+[Project](project.md) keeps custody; [Build](build.md) seals the candidate using these derivatives.

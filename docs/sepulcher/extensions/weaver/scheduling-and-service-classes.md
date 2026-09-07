@@ -5,25 +5,47 @@ icon: material/calendar-clock
 
 # :material-calendar-clock: Scheduling and service classes
 
+A Bridge turn needs attention now. A nightly rite may wait until five. A backfill may borrow only
+capacity it can safely release. These are three admission promises, each with a different way to
+wait, miss, yield, or finish.
+
 > _A bell may announce work. It does not grant authority, seize the iron, or perform the score._
 
-Scheduling is **Designed and undelivered**. LychD currently has no periodic workflow scheduler,
-durable Occurrence service, eligibility engine, service-class field, or safe-preemption protocol.
-The physical `runs` and `rites` SAQ queues and scalar priority are current delivery machinery, not
-an implementation of this design.
-[Workflow](../../../adr/28-workflow.md#compositions-products-suites-and-schedules) owns the law;
-[Workers](../../../adr/14-workers.md) owns the present queue truth.
+Scheduling is Designed: no durable Occurrence service, periodic workflow scheduler, eligibility
+engine, service-class field, or safe preemption is implemented. Current `runs` and `rites` queues
+and scalar priorities remain delivery machinery. [Workflow](../../../adr/28-workflow.md#compositions-products-suites-and-schedules)
+owns this temporal design; [Workers](../../../adr/14-workers.md) owns that present machinery.
+
+## Three examples
+
+### Foreground conversation
+
+A Bridge turn is eligible now and normally receives foreground preference. It may still wait for
+worker or capability readiness. The name promises attention, not instantaneous execution.
+
+### A flexible nightly rite
+
+A schedule nominally fires at `02:00 Europe/Bratislava`, permits start until `05:00`, forbids
+overlap, and skips rather than replays an occurrence older than one day. Spellweaver may admit it at any
+feasible instant in the window. At `05:00` it records the pinned miss outcome instead of silently
+running at noon.
+
+### Embedding backfill
+
+Backfill processes one bounded shard against an already-WARM embedding capability, checkpoints,
+releases its grant, and offers another shard only while protected capacity remains free. Without
+that checkpoint and release proof it is ordinary non-preemptible work, not spare-capacity labor.
 
 ## One admission office, three tempos
 
 The three classes describe when work may enter ordinary Invocation admission. They do not prescribe
 three broker queues:
 
-| Service class | Operator meaning | Admission boundary |
-| --- | --- | --- |
-| `foreground` | Eligible work whose latency matters now, often because a person or live interaction is waiting. | Eligible immediately and latency-sensitive, but never guaranteed to start immediately. |
-| `deadline_windowed` | Work may wait inside a declared window. | Eligible at `not_before`; it must claim by `latest_start_at` or settle under its miss policy. `finish_by` is optional and does not manufacture safe cancellation. |
-| `spare_capacity` | Useful work may consume genuinely unclaimed capacity. | No completion-time promise; scarce resources require bounded yielding or an explicit quiet window. |
+| Service class | Admission boundary |
+| --- | --- |
+| `foreground` | Eligible now and latency-sensitive; preference never guarantees an immediate start. |
+| `deadline_windowed` | Eligible at `not_before`; claim by `latest_start_at` or settle under the miss policy. Optional `finish_by` supplies no safe cancellation. |
+| `spare_capacity` | No completion-time promise; scarce resources require bounded yielding or an explicit quiet window. |
 
 `immediate` is not the canonical name because it would promise capacity and preemption that do not
 exist. `cron` is a trigger grammar, not a class: a scheduled firing may be deadline-windowed, strict
@@ -168,35 +190,13 @@ A deadline passing after claim does not retroactively make a non-cancellable eff
 The Pattern follows its declared completion, checkpoint, compensation, or containment law and
 records the miss honestly.
 
-## Three examples
-
-### Foreground conversation
-
-A Bridge turn is eligible now and normally receives foreground preference. It may still wait for
-worker or capability readiness. The name promises attention, not instantaneous execution.
-
-### A flexible nightly rite
-
-A schedule nominally fires at `02:00 Europe/Bratislava`, permits start until `05:00`, forbids
-overlap, and skips rather than replays an occurrence older than one day. Spellweaver may admit it at any
-feasible instant in the window. At `05:00` it records the pinned miss outcome instead of silently
-running at noon.
-
-### Embedding backfill
-
-Backfill processes one bounded shard against an already-WARM embedding capability, checkpoints,
-releases its grant, and offers another shard only while protected capacity remains free. Without
-that checkpoint and release proof it is ordinary non-preemptible work, not spare-capacity labor.
-
 ## Evidence before delivery
 
-Promotion from Designed requires, at minimum, durable deduplication; crash windows before and after
-Run admission; revision and authority revocation; IANA-zone DST folds and gaps; clock jumps;
-bounded misfire and catch-up; every overlap policy; deadline starvation and overload refusal;
-foreground latency under backfill; checkpoint/lease release bounds; no hard swap from default
-spare-capacity work; queue remapping without semantic drift; and exact recovery without duplicate
-effects.
+Promotion requires an executable receipt for the declared calendar, deduplication, admission,
+overlap, yielding, authority, and recovery behavior. The [Workflow Covenant](../../../adr/28-workflow.md#compositions-products-suites-and-schedules)
+owns those obligations; each temporal choice above must be exercised through its failure and
+restart boundaries before it becomes an operating promise.
 
-Until that evidence exists, current `runs`/`rites`, priority constants, and Whim idle settings must
+Until that evidence exists, current `runs`/`rites`, priority constants, and proposed Whim or idle controls must
 not be presented as this scheduler. The former no-effect `perform_rite` placeholder has been
 removed.

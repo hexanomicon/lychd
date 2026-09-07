@@ -5,19 +5,12 @@ icon: material/waveform
 
 # :material-waveform: Sound boundary
 
-Riffmaw retains sound only when its role is musical: instrument and vocal processing, designed
-timbres, samples, transitions, textures, and production effects judged inside a composition,
-arrangement, or mix. Their sources, tools, transformations, rights posture, parameters, and digests
-remain attached, and technical fit never substitutes for musical acceptance.
+The same noise can be a musical texture in one work and room tone under a film scene in another. The intended role determines who judges it.
 
-Picture-bound sound effects, foley, room tone, environmental beds, and ambience belong to
-[Broadcast](../broadcast/sound.md) because their meaning and acceptance depend on an exact picture,
-editorial timebase, event, place, material, distance, perspective, and continuity. Other
-application-specific sound remains with its consuming Composition. Sharing a codec, plug-in,
-generator, or DAW does not move that judgment into Riffmaw.
+Riffmaw accepts instrument/vocal processing, designed timbres, samples, transitions, textures, and effects inside composition, arrangement, or mix. Sources, tools, transforms, rights, parameters, and digests stay attached. A technically clean waveform can still fail the musical purpose.
 
-Reusable standalone sound packs have no accepted owner in the current Portfolio. A future
-standalone-sound Composition may earn that office if its records, acceptance, recovery, and consumers
-prove an independent lifecycle. Until then Riffmaw publishes no standalone sound-pack Pattern;
-unexplained library material or provider-returned sound remains an attributable candidate, not
-accepted music.
+[Broadcast](../broadcast/sound.md) owns picture-bound effects, foley, room tone, environmental beds, and ambience judged against exact picture, timebase, event, place, material, distance, perspective, and continuity. Other application sound stays with its consuming Composition. A common codec, plug-in, generator, or DAW does not transfer that judgment.
+
+Reusable standalone sound packs have no accepted Portfolio owner. A future Composition must prove independent records, acceptance, recovery, and consumers. Until then Riffmaw publishes no standalone sound-pack Pattern; unexplained library material and provider-returned sound remain attributed candidates.
+
+Continue with [Music](music.md) for a musical use, or return to [Riffmaw](index.md).

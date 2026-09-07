@@ -40,6 +40,8 @@ def test_board_lists_covens(altar_client: TestClient[Litestar]) -> None:
     assert "portals" in board
     runtimes = response.json()["delegated_runtimes"]
     assert [runtime["runtime_id"] for runtime in runtimes] == ["reference"]
+    assert runtimes[0]["registrant_id"] == "builtin:delegation"
+    assert "provider_id" not in runtimes[0]
     assert runtimes[0]["runnable"] is True
 
 

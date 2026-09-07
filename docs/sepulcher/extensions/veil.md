@@ -34,15 +34,12 @@ explicitly trusts. That is designed behavior, not today's loopback service.
 
 ## Gateway
 
-Veil may share the Core host or run on an optional separate
-[Gateway Host](../gateway.md). The reference placements **Home** and **Remote** move the same typed
-ingress boundary onto operator-controlled local iron or an off-site host respectively. They do not
-create another Extension Domain or application authority. Home uses an exact local backend road;
-Remote may add one Tether peer and route. In both, the Core accepts only the declared Gateway
-identity and port. Policy outside the Gateway host—a router/firewall, L3-switch ACL, or cloud-network
-rule—plus the receiving Core firewall enforces that narrow zone; local Gateway rules are defense in
-depth. The Gateway receives no general LAN route, database, Context, Sigil, provider credential, or
-host-control path.
+Veil may share the Core host or occupy a separate [Gateway Host](../gateway.md). Follow that
+guide to choose **Home** or **Remote** and its exact backend road; neither placement creates
+application authority. Core accepts only the declared Gateway identity and port. Policy outside
+the Gateway plus the receiving Core firewall must enforce the narrow zone; local Gateway rules
+are defense in depth. No broad LAN route, database, Context, Sigil, provider credential, or
+host-control path may cross it.
 
 ## Reach route profiles
 

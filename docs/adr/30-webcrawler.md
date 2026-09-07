@@ -1,25 +1,32 @@
 ---
-title: 30. Web Acquisition
+title: 30. Webcrawler
 icon: material/spider-thread
 ---
 
-# :material-spider-thread: 30. Web Acquisition
+# :material-spider-thread: 30. Webcrawler
 
 !!! abstract "Context and Problem Statement"
     Web acquisition crosses an untrusted network and returns untrusted bytes. Search, fetch,
     extraction, crawling, rendering, interaction, credentials, sessions, and storage are distinct
-    effects; failure may never authorize a stronger one. **Scout** may bring a voice from beyond
-    the Circle. It may not grant that voice the throne.
+    effects; failure may never authorize a stronger one. [Scout](../sepulcher/extensions/scout.md)
+    binds each acquisition attempt to its admitted effect and retains its source attribution.
 
 ## Decision
 
-Scout is the acquisition Extension Domain, not a crawler service or a Composition. A provider
-supplies mechanism only; the host binds an Agent's proposed locator to principal, Run, effect,
-destination scope, consent, provider, and budget. Scout owns acquisition, attribution, freshness,
-and source policy—not interpretation, truth, autonomy, or consequence.
+Scout is the acquisition Extension Domain, not a crawler service or a Composition. [The first passage](#the-first-passage) follows one bounded static read from proposed URL to attributed text. A provider
+supplies mechanism only; the host binds an Agent's or admitted application Pattern's proposed
+locator to principal, Run, effect, destination scope, consent, provider, and budget. Scout owns
+acquisition mechanics, attribution, freshness, and destination/contact policy—not an application's
+source-eligibility judgment, interpretation, truth, autonomy, or consequence.
 
 Each of **Search, Fetch, Extract, Crawl, Render, Interact, Credential Use, Session Custody,
-Screenshot, Download,** and **Artifact Admission** needs its own host-owned `ScoutEffectGrant` and ceiling.
+Screenshot,** and **Download** needs its own host-owned `ScoutEffectGrant` and ceiling. **Artifact
+Admission is a separate custody-owner effect**, not an eleventh Scout track: Scout may hand off the
+quarantine identity and acquisition receipt, but the custody owner validates classification,
+retention, retrieval authority, and exact bytes, and alone returns the durable artifact reference.
+Neither the application eligibility decision nor a Scout grant can pre-approve that custody
+judgment.
+
 Authentication, CAPTCHA, payment, quota, robots denial, provider failure, cancellation, or a
 challenge is a terminal typed result: no identity rotation, provider switch, retry, spend, or
 effect escalation follows. No-web profiles are valid and confer no ambient egress.
@@ -48,13 +55,13 @@ effect-specific Scout provider contribution grants no acquisition authority.
 LychD's first-party web path must remain useful without a paid remote service. The accepted
 mechanism sequence is:
 
-| Mechanism | Manifestation | First-party office |
+| Mechanism | Concrete form | First-party office |
 | --- | --- | --- |
 | Native static passage | trusted local Scout code, with isolation added when evidence requires it | one bounded public-HTTPS Fetch followed by network-free Extract |
 | [SearXNG](https://github.com/searxng/searxng) | digest-pinned Soulstone behind a native adapter | selected Search provider; locators and attributed snippets only |
 | [Crawl4AI](https://github.com/unclecode/crawl4ai) | digest-pinned, separately isolated Soulstone | experimental candidate for one exact public-HTTPS Fetch + Render + Extract passage |
-| [Firecrawl](https://github.com/firecrawl/firecrawl) self-hosted | no selected manifestation | deferred comparison candidate, admitted only if it later proves a material advantage over Crawl4AI under the same effect and containment contract |
-| [Browserless](https://github.com/browserless/browserless) | no selected manifestation | no first-party raw CDP, Playwright, function-execution, or download adapter; future comparison must satisfy the same narrow renderer contract |
+| [Firecrawl](https://github.com/firecrawl/firecrawl) self-hosted | no selected concrete form | deferred comparison candidate, admitted only if it later proves a material advantage over Crawl4AI under the same effect and containment contract |
+| [Browserless](https://github.com/browserless/browserless) | no selected concrete form | no first-party raw CDP, Playwright, function-execution, or download adapter; future comparison must satisfy the same narrow renderer contract |
 | Paid web-acquisition API, including Tavily and hosted crawler/browser services | operator-owned private Portal extension | no first-party built-in adapter or automatic compatibility promise |
 
 SearXNG is Search, not Fetch. Its result URL remains an observation and needs a new Fetch effect grant
@@ -101,7 +108,7 @@ No provider is a fallback. One prepared Scout effect attempt binds one selected 
 profile. A static page that needs JavaScript, an exhausted Search provider, or a renderer failure
 settles with that outcome; another provider or stronger effect requires a newly admitted attempt.
 
-### Integration, not vendoring
+### Native adapters and upstream services {#integration-not-vendoring}
 
 A **native adapter** means LychD-owned Rune schemas, provider binding, probe, request allowlist,
 normalizer, receipts, and conformance tests. It does not mean copying a search engine, crawler, or
@@ -114,9 +121,10 @@ catalogues and service internals do not.
 
 The first designed passage is one unauthenticated static HTTPS GET and network-free extraction:
 
-1. An Agent proposes one exact URL. The host validates its principal and Run, mints a one-effect
-   destination grant, selects an eligible static provider, reserves worst-case budget, and
-   durably records the Scout effect attempt as `prepared` before I/O.
+1. An Agent or admitted application Pattern proposes one exact URL. The host validates its
+   principal and Run, admits separate Fetch and Extract grants with their own ceilings, and binds
+   the Fetch destination. It selects an eligible static provider, reserves worst-case budget, and
+   durably records those exact grants in one Scout effect attempt as `prepared` before I/O.
 2. The provider pins and performs one GET: no subresources, JavaScript, cookies, cache, URL
    credentials, `.netrc`, ambient proxy, custom headers, automatic retry, or rendering.
 3. A network-free extractor accepts only allowed HTML, XHTML, or plain text; it records raw and
@@ -155,9 +163,9 @@ They are never instructions, code, policy, or truth. Interpretation belongs to
 
 ## Custody and stronger tracks
 
-A digest or receipt is not an artifact. Bytes stay ephemeral unless custody verifies digest,
-media type, size, classification, retention, retrieval authority, and storage, then returns a
-retrievable `ArtifactRef`. Download arrival creates neither a workspace nor an artifact; it enters
+A digest or receipt is not an artifact. Bytes stay ephemeral unless the custody owner verifies
+digest, media type, size, classification, retention, retrieval authority, and storage, then
+returns a retrievable `ArtifactRef`. Download arrival creates neither a workspace nor an artifact; it enters
 bounded quarantine. Render, Interact, Credential Use, Session Custody, Screenshot, and Download
 remain Designed. JavaScript or a challenge returns refusal or `human_required`, never a browser.
 

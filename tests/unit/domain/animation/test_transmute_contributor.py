@@ -76,7 +76,7 @@ def test_contribution_ports_append_after_core() -> None:
     ],
 )
 def test_contribution_ports_cannot_escape_the_loopback_port_boundary(mapping: str) -> None:
-    with pytest.raises(ValueError, match="PublishPort|single-line"):
+    with pytest.raises(ValueError, match=r"PublishPort|single-line"):
         _transmuter(_UnsafePortContributor(mapping)).transmute_all([], runes=RuneRegistry([]))
 
 
@@ -187,12 +187,13 @@ def test_transmutation_store_registration_order() -> None:
     store.add_contributor(first)
     store.add_contributor(second)
     assert store.contributors == (first, second)
+    assert [registration.registrant_id for registration in store.registrations] == ["core", "core"]
 
 
-def test_transmutation_store_rejects_cross_provider_replay() -> None:
+def test_transmutation_store_rejects_cross_registrant_replay() -> None:
     context = ExtensionContext()
     contributor = _PortOnlyContributor()
     with context.provenance("one"):
         context.transmutation.add_contributor(contributor)
-    with context.provenance("two"), pytest.raises(ValueError, match="owned by 'one'"):
+    with context.provenance("two"), pytest.raises(ValueError, match="registered by 'one'"):
         context.transmutation.add_contributor(contributor)

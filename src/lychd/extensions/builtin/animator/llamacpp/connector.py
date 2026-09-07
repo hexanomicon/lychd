@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from lychd.domain.animation.links import Link
-    from lychd.domain.animation.schemas import ModelInfo
+    from lychd.domain.animation.schemas import GenerationProfile, ModelInfo
 
 
 class LlamacppConnector(OpenAICompatibleConnector):
@@ -31,6 +31,7 @@ class LlamacppConnector(OpenAICompatibleConnector):
         default_model_id: str | None,
         mode: Literal["single", "router"],
         router_query_model_id: str | None,
+        generation_defaults: GenerationProfile,
     ) -> None:
         """Initialize llama.cpp connector with runtime lifecycle metadata."""
         super().__init__(
@@ -41,6 +42,12 @@ class LlamacppConnector(OpenAICompatibleConnector):
         )
         self._mode: Literal["single", "router"] = mode
         self._router_query_model_id = router_query_model_id
+        self._generation_defaults = generation_defaults
+
+    @property
+    def generation_defaults(self) -> GenerationProfile:
+        """Frozen runtime defaults captured with this connector's catalogue."""
+        return self._generation_defaults
 
     @property
     def mode(self) -> Literal["single", "router"]:

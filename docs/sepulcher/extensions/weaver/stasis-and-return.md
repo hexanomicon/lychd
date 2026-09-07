@@ -15,14 +15,20 @@ Intent. [ADR 28](../../../adr/28-workflow.md#gates-effects-and-stasis) owns this
 | Boundary | State movement | Custody | Return |
 | --- | --- | --- | --- |
 | Live hardware wait | `RUNNING → AWAITING_HARDWARE → RUNNING` | Resident Ghoul; Orchestrator owns readiness | Same worker hop; no queue re-admission |
-| Durable Gate or delegate wait | `RUNNING → AWAITING_CONSENT` or `AWAITING_DELEGATE` | Checkpoint and exact wait owner | Fresh enqueue and worker claim |
+| Durable Gate or delegate wait | `RUNNING → AWAITING_CONSENT` or `AWAITING_DELEGATE` | Checkpoint and exact wait owner | Fresh enqueue and worker claim, including in the same Vessel |
 | Terminal Run | `DONE`, `FAILED`, or `CANCELLED` | Canonical ledger | None |
 
 A `Gate` or `DelegatedAgentNode` makes its Pattern durable, but hardware
-waiting stays Live: the worker remains resident without a capability lease. Eight total
-transitions or three consecutive requests for one capability exhaust the bound and fail the Run.
+waiting stays Live: the worker remains resident without a capability lease. A Run may make up to
+eight hardware convergence calls in total and three consecutively for one capability. A further `HardwareTransitionRequired` fails before another Orchestrator call. The
+initial ordinary node execution is not a counted hardware convergence request.
 [Live and Durable
 Stasis](../../../adr/24-graph.md#live-and-durable-stasis) owns the distinction.
+
+A durable park ends the current worker execution; it does not require the Vessel to die. If the
+process does die, [Reanimation](../../phylactery/reanimation.md) reconciles committed Run, queue,
+checkpoint, and wait-owner truth in the replacement process. Restoring an earlier whole-body
+snapshot is a separate [Restoration](../../../adr/07-snapshots.md) rite and remains Designed.
 
 ## What crosses the threshold
 
@@ -71,14 +77,15 @@ each durable delegated wait and re-admits it only when its exact owning job is t
 
 ## Truth closes first
 
-For a worker terminal hop: commit the ledger, release context, attempt checkpoint deletion, then
-publish one terminal `DONE` from committed status and close. Failed deletion leaves
-terminal truth intact as cleanup debt; startup retries terminal checkpoint deletion in bounded
-keyset pages. API cancellation orders its writer as parent abort, final child/Consent sweep, commit
-`CANCELLED`, publish and close, then delete stasis.
-Competing writers converge on one terminal event. A retained checkpoint cannot make a terminal
-Run resumable. [Checkpoint
-ownership](../../../adr/24-graph.md#checkpoint-ownership-and-terminal-commit) owns the worker path.
+Committed terminal status closes the return path even if checkpoint cleanup fails. The worker
+settles its exact delivery before releasing Context and attempting cleanup; retained stasis cannot
+revive that Run. [Ghouls](../../vessel/ghouls.md#parks-terminal-truth-and-cancellation) carries the
+terminal-event and cleanup sequence, governed by
+[Graph's commit law](../../../adr/24-graph.md#checkpoint-ownership-and-terminal-commit).
+
+Cancellation fences Run claims and delivery rotation while the parent broker job, delegated jobs,
+and Consent authority are contained. Only acknowledged containment permits `CANCELLED`; failure
+leaves honest, retryable `CANCELLING` truth. Completion that already won makes cancellation a no-op.
 
 Every effectful station needs its own idempotency identity, completion receipt, cancellation rule,
 compensation or refusal path, and illegal-repeat boundary. A checkpoint cannot settle an uncertain

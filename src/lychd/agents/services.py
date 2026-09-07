@@ -1,13 +1,8 @@
-"""`WorkflowServices` — the one shared graph DepsT (A5 §3).
+"""Ports shared by workflow nodes through ``ctx.deps``.
 
-Retires the module-global singleton indirection.
-A single frozen `WorkflowServices` keeps the worker generic: it is threaded as
-`graph.iter(..., deps=services)` and read by every node via `ctx.deps.<port>`.
-Nothing here is loop- or process-bound except through the ports, so a future SAQ
-ghoul builds its own instance at worker startup.
-
-Per-run data (run_id, session_id, priority) lives in graph **State**, never in
-deps — that is what keeps durable snapshots clean and workers generic.
+``RunSubstrate.build_services`` binds process-owned collaborators and the persisted
+caller identity for worker execution. Run identity, session and priority live in
+Graph state; live service handles never enter a checkpoint.
 """
 
 from __future__ import annotations
@@ -34,18 +29,10 @@ if TYPE_CHECKING:
     from lychd.domain.web.fragments import FragmentRegistry
 
 
-# ---------------------------------------------------------------------------
-# Narrow ports — the seams the nodes and tools depend on
-# ---------------------------------------------------------------------------
-
-
 class TurnLedgerPort(Protocol):
-    """Session/turn writes. Today: `BridgeSessionStore`; later a DB-backed store.
+    """Settle turns and read session history through the memory or database store.
 
-    Run *status* is NOT written here — the `RunLedger` owns it (single-writer
-    discipline, A4 §2). This port carries only settled turns + history reads.
-    Async (4C-2): the DB-backed `SessionStore` awaits; in-memory bodies are trivially
-    async.
+    Run status belongs to RunLedger, outside this port.
     """
 
     async def settle_agent_turn(
@@ -60,11 +47,9 @@ class TurnLedgerPort(Protocol):
 
 
 class ConsentLedgerPort(Protocol):
-    """The consent surface the graph parks into (v2 — the verdict lives in the ledger).
+    """Record consent requests and read granted, denied/expired or pending verdicts.
 
-    `park` records the pause (returning the ledger's decision); `verdict` reads the
-    tri-state (True granted / False denied|expired / None pending). The non-serializable
-    `DeferredToolRequests` is NEVER stored — only its `tool_call_id`s (in graph state).
+    Graph state retains call identities, not live DeferredToolRequests objects.
     """
 
     async def park(
@@ -88,7 +73,7 @@ class TransitionPort(Protocol):
 
 
 class GrantPort(Protocol):
-    """The narrow slice of `Dispatcher` a node needs — the C1 lease CM.
+    """Lease-scoped Dispatcher access for a workflow node.
 
     ``@asynccontextmanager``-decorated methods satisfy this structurally.
     """
@@ -98,6 +83,7 @@ class GrantPort(Protocol):
         *,
         family: CapabilityFamily | str,
         model_name: str | None = None,
+        capability_key: str | None = None,
         run_id: str,
         priority: int = 50,
         require_modalities: tuple[str, ...] = (),
@@ -105,19 +91,9 @@ class GrantPort(Protocol):
     ) -> AbstractAsyncContextManager[CapabilityGrant]: ...
 
 
-# ---------------------------------------------------------------------------
-# The single graph DepsT
-# ---------------------------------------------------------------------------
-
-
 @dataclass(frozen=True, kw_only=True)
 class WorkflowServices:
-    """THE single graph DepsT for every LychD workflow.
-
-    Built once per run in `router.submit` from handles that live on `app.state`
-    (the web/composition root owns those handles); passed to
-    `graph.iter(..., deps=services)`.
-    """
+    """Worker-bound collaborators passed to ``graph.iter(..., deps=services)``."""
 
     dispatcher: GrantPort
     orchestrator: TransitionPort
@@ -129,11 +105,6 @@ class WorkflowServices:
     forge: AgentForge
     sigil_provider: Callable[[], Sigil]
     delegates: DelegatedAgentCoordinatorPort | None = None
-
-
-# ---------------------------------------------------------------------------
-# Sigil provider (v1 single-identity stand-in for the Ward)
-# ---------------------------------------------------------------------------
 
 
 def default_sigil() -> Sigil:

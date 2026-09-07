@@ -5,110 +5,102 @@ icon: material/crystal-ball
 
 # :material-crystal-ball: Orb
 
-The **Orb** opens one selected **Invocation**, represented in the UI as a **Run**, as ordered
-structural evidence. Looking through it is **scrying**. It shows records and explicit gaps; it does
-not fill missing history with inference.
+Before trusting a result, find the Run that produced it and the limit of what was retained.
+Looking through the **Orb** is **scrying**: inspecting ordered structural evidence with its gaps
+still visible.
 
-The Run owns canonical ledger status; the Orb exposes only the bounded **trace** available to its
-sources. A trace may gap or disappear and cannot replace Run, consent, grant, effect, or artifact
-truth. Under separate Memory policy some residue may become a Seed, but observation alone gives it
-no power to return.
+Choose **Look into the Orb** at a Bridge result, or open `/orb/{run_id}`. The bare `/orb` route
+sends you toward Bridge; there is no authorized searchable Run list. During this browser visit,
+the shell’s **Orb** tab returns to the last selected Run and event.
 
-Enter from a Bridge result with **Look into the Orb**, or open `/orb/{run_id}` directly. The bare
-`/orb` route asks you to open Bridge because there is no authorized run list.
+## Establish the account you are reading
 
-## The Orb and the Eye
+Confirm the **Run id**, canonical status, and capture class in the header. The Run owns ledger
+status. The Orb shows the bounded trace its sources can supply and cannot replace Run, consent,
+grant, effect, or artifact truth.
 
-The **Orb** is the Altar surface; **Oculus** is the evidence office. Native durable Oculus storage
-is not delivered. The current Orb reads evidence available through this running Vessel and labels
-capture `process local` or `durable best effort`.
+**[Oculus](../../sepulcher/extensions/oculus.md)** names the body’s evidence service; **Orb** is
+its Altar surface. Native durable Oculus storage is
+not delivered. Current evidence is available through this running Vessel and is labeled
+`process local` or `durable best effort`.
 
-## The First Invocation
+Then read the coverage strip:
 
-Start at the run header:
+| Label | Boundary |
+| --- | --- |
+| **snapshot** | The snapshot being inspected. |
+| **retained through** | The retained ledger head. |
+| **loaded through** | How far this page has loaded. |
+| **live updates** | Current snapshots say `not available`. |
 
-1. Confirm the **Run id**, canonical status, and capture class.
-2. Follow **Bridge** to return to the owning conversation.
-3. Use **Exact Pattern** only when the pinned manifest still validates. Its Loom URL carries
-   `?run={run_id}` as return context; it does not change Pattern identity.
-4. Read the coverage strip: **snapshot**, **retained through** (ledger head), **loaded through**
-   (this page), and **live updates**. Current snapshots say `not available` for live updates.
-5. Choose **Refresh** to request a new bounded snapshot.
+**Refresh** requests a new bounded snapshot. The first page contains up to 100 evidence records;
+**Load more retained evidence** requests another page while more remain. A visible `#start–end`
+gap means an unknown or omitted interval. The Orb does not infer why those sequence numbers are
+absent.
 
-The first request loads up to 100 evidence records. **Load more retained evidence** requests the
-next page while more records exist. A visible `#start–end` gap means **unknown or omitted
-interval**; the Orb does not decide why those sequence numbers are absent.
+## Locate the event
 
-## Designed: Ask Why It Waits
+Select a row to open **Selected event**. Its stable review URL is
+`/orb/{run_id}?event={event_id}`. The inspector shows recorded sequence, kind, subject, phase,
+occurrence, and capture class.
 
-There is no **Why waiting?** analysis. The Orb shows recorded status, phase, subject, occurrence,
-and transition correlation when present. A generic wait does not reveal its cause.
+If the linked event lies beyond the loaded page, load more. If it is no longer retained, the Orb
+says so. To investigate a wait, inspect its recorded status, phase, subject, occurrence, and
+transition correlation. These observations may leave the cause unknown; the Orb has no
+**Why waiting?** analysis. Follow [Stasis and return](../../sepulcher/extensions/weaver/stasis-and-return.md)
+for the recorded wait's owner and return boundary, or
+[Reanimation](../../sepulcher/phylactery/reanimation.md#reanimation-a-new-vessel-judges-durable-truth)
+when the Vessel has died.
 
-## Not Yet in the Orb
+When delegated work exists, **Delegated jobs** shows at most the newest 32 summaries, each with
+its `AgentJob` identity, runtime, Coffin profile, station, status, bounded-result presence,
+artifact-reference count, and up to the latest 64 lifecycle events. Older omitted jobs and
+truncation are explicit. Prompts, output text, and private errors are not exposed.
 
-The current Orb has no searchable run list, multi-run field, graph canvas, time lens, historical
-replay, or live tail. Select another Run in Bridge.
+## Follow a relation only where it was recorded
 
-## Designed graph boundary
+**Bridge** returns to the owning conversation and focuses the exact Run’s turn when available.
+An unavailable turn is reported. **Exact Pattern** opens [Loom](loom.md) only when the Run's pinned
+manifest validates. Its Run and selected-event query preserves the return destination; neither
+changes Pattern identity.
 
-The accepted future direction is the one DOM renderer Orb shares with [Loom](./loom.md), reached
-through a LychD-owned Svelte adapter over the shared projection supply. Neither dependency nor a
-graph field is delivered. The renderer would hold only a disposable view of the selected
-authoritative snapshot and ordered evidence; its arrays, camera, animation, and hit-testing state
-could never become Run, capture, gap, annotation, or settlement truth.
+A selected event with exact transition correlation offers **Open transition in Nexus** and
+carries the selected event id. The link supplies a relation worth inspecting; viewing it requests
+no mutation. [Nexus](nexus.md) keeps any lifecycle decision separate.
 
-Orb is bounded by folding, not by a dense engine. A separate WebGL renderer would double the
-adapter, semantic twin, teardown audit, and licence review while supplying no accessible surface,
-and no measured Orb field requires it. Sigma with Graphology and cosmos.gl remain mapped in the
-[Frontend Covenant](../../adr/15-frontend.md#decision-lock-and-reopening-gate) against a later field
-that folding cannot bound; G6 was evaluated and rejected. That Covenant owns the choice, and State
-of Work owns whether any part has entered matter.
+Selection and pagination leave Run state unchanged. To inspect another Run, return through
+Bridge. The current Orb offers no annotation, retry, cancellation, approval, publication or
+transition action. Multi-Run fields, graph canvases, time lenses, historical replay and live tails
+also remain outside this surface.
 
-## Folding and bounded expansion
+## Witness without possession
 
-The field never renders a whole trace. Folding keeps the rendered set bounded at every camera scale,
-because a field no reader can read is not evidence.
+Evidence ends where capture, retention, or loading ends. Future graph views must preserve those
+limits; [Frontend's folding law](../../adr/15-frontend.md#folding-not-scale) governs their groups,
+expansion, and faithful sequence.
 
-Folding follows structure this Vessel already declares: Run, then station subject, then occurrence,
-then event, with delegated jobs as their own declared groups. A group carries its declared name and
-membership count and stays selectable and expandable through the same typed identities. Geometric or
-computed clustering is not admitted; proximity would assert a relation no authority declared.
+That projection is designed. [Oculus](../../sepulcher/extensions/oculus.md) owns the evidence office.
+Neither a richer view nor more retained rows can authorize the Orb to invent the
+missing part of a history.
 
-Bounded progressive loading is a Vessel contract, not a renderer feature: authority serves what was
-asked for, and the browser holds only what it was served. An unexpanded group whose members were
-never served is an explicit unknown, exactly like a `#start–end` sequence gap, and the Orb does not
-infer across it.
+## Reading direction
 
-Folding is presentation only. A group is never an evidence record, and collapsing never merges,
-omits, or reorders retained sequence truth.
+The planned hierarchy brings Run identity, canonical status, capture class, snapshot time,
+retained and loaded boundaries, omissions, and unavailable live updates before the records.
+Delegated-job detail unfolds after that account, so a large job collection cannot hide the
+limits that qualify all evidence.
 
-## Inspect One Event
+A future lane view can arrange records by their supplied subject and sequence. Equal spacing
+means order, not elapsed time; proximity does not establish causality. Unknown subjects remain
+unknown. Gaps span the account instead of being bridged by an invented connector. Delegated-job
+events retain their own sequence unless the server supplies a Run correlation. List and lanes
+preserve identical record selection and omissions. Complete fold membership, counts and bounded
+expansion need the [server-owned folding contract](../../adr/15-frontend.md#folding-not-scale).
 
-Select an evidence row to open **Selected event**. The URL becomes
-`/orb/{run_id}?event={event_id}`, so the same retained event can be revisited. The inspector shows
-only recorded structural fields: sequence, kind, subject, phase, occurrence, and capture class. A
-correlated transition adds **Open transition in Nexus** and carries the selected event id.
-
-If the linked event is outside the loaded page, load more. If it is no longer retained, the Orb
-says so.
-
-When delegated work exists, **Delegated jobs** shows at most the newest 32 summaries. Each gives
-the `AgentJob` identity, runtime, Coffin profile, station, status, bounded-result presence,
-artifact-reference count, and up to the latest 64 lifecycle events. Truncation and older omitted
-jobs are explicit. Prompts, output text, and private errors are not exposed.
-
-## Projection and Annotation Law
-
-Selection and pagination do not change Run state. The Orb has no annotation, retry, cancellation,
-approval, publication, or transition action. The Nexus link changes instruments; it does not claim
-that viewing requested a mutation.
-
-## Witness Without Possession
-
-The current journey is exact:
-
-1. Select or create a Run in [Bridge](./bridge.md).
-2. **Look into the Orb** and confirm identity, status, capture, coverage, gaps, and omissions.
-3. Select an event for a stable review URL.
-4. Open [Loom](./loom.md) only for a validated exact Pattern.
-5. Open [Nexus](./nexus.md) only from an event with transition correlation.
+Acceptance case: open an event beyond the first page, distinguish not-yet-loaded evidence from
+an unretained interval or failed read, inspect the exact score or correlated physical transition,
+and return to the same selected event using only the keyboard. A narrow display should start
+with a readable list. Efficient direct event seeking needs a separate retrieval contract; the
+current path remains loading subsequent pages. This is a [presentation
+target](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction), not a delivered graph,
+live tail, complete trace, or execution control.

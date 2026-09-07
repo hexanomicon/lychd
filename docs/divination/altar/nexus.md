@@ -5,141 +5,130 @@ icon: material/transit-connection-variant
 
 # :material-transit-connection-variant: Nexus
 
-The **Nexus** is the local readiness and transition board. Viewing changes nothing.
-**Preview** calculates a non-binding plan; **Request transition** is a real maximum-priority
-lifecycle mutation.
+The **Nexus** lets you inspect readiness, preview a change, and request one physical transition.
+These are different acts. Viewing changes nothing. **Preview** calculates a nonbinding plan.
+**Request transition** performs a real maximum-priority lifecycle mutation.
 
-## What the board witnesses
+After [first life](../../summoning.md#the-awakening), open
+`http://127.0.0.1:7134/nexus` within the same-host browser boundary.
 
-The board loads a timestamped snapshot, refreshes every five seconds, and refreshes after a ticket
-settles. A containment alert appears when runtime admission is fenced.
+## Read the observation before planning
 
-Managed capabilities are grouped under the Soulstone's first Coven, falling back to the Animator.
-Each row shows:
+The board loads a timestamped snapshot, refreshes every five seconds, and refreshes when a ticket
+settles. Stop if **Runtime admission is contained** appears: runtime admission is fenced.
 
-- the capability key, normally `{animator}:{family}:{model_id}`;
-- its state chip and `checked` time, or **freshness unknown**; and
-- **Preview**.
+Managed capabilities are grouped under their Soulstone's first Coven, falling back to the
+Animator. A row shows its capability key, normally `{animator}:{family}:{model_id}`, a state chip,
+its `checked` time or **freshness unknown**, and **Preview**. Compare `checked` with the board's
+snapshot time before treating a row as current.
 
-**Portals** use the same observation row but remain read-only. **Delegated runtime pools** are also
-read-only and show display/delivery state, adapter and transport, owning extension, Coffin
-profiles, Provider Gate posture, capacity posture, and declared limitations.
+| Displayed chip | Raw observation |
+| --- | --- |
+| `active` | `warm` |
+| `warming` | `warming` |
+| `awaited` | `activatable` on a dynamic capability |
+| `fault` | `error` |
+| `cold` | Everything else, including `cold`, `unknown`, and non-dynamic `activatable` |
 
-This is cached observation, not a probe or reservation. Refreshing the board does not reserve what
-a later Run will receive.
+For distinctions the chip collapses, `/orchestrator/status` exposes raw `phase`, `warm`, `health`,
+`reason`, and process-wide `mutation_containment`.
 
-## Read the state without guessing
+**Portals** remain read-only. **Delegated runtime pools** also remain read-only and show
+display/delivery state, adapter and transport, owning extension, Coffin profiles, Provider Gate
+posture, capacity posture, and declared limitations. These are cached observations, not probes or
+reservations. A refresh does not reserve a capability for a later Run.
 
-The chip mapping is exact:
+## Preview the change you intend
 
-- `active` ← raw `warm`;
-- `warming` ← raw `warming`;
-- `awaited` ← raw `activatable` on a dynamic capability;
-- `fault` ← raw `error`;
-- `cold` ← every other raw state, including `cold`, `unknown`, and non-dynamic `activatable`.
+Choose **Preview** on a managed capability. The **Non-binding preview** drawer shows `action`
+(`NO_OP`, `SOFT_SWAP`, or `HARD_SWAP`), `target`, Animator ids selected for `evict` and `launch`,
+and `policy cost`. Cost currently counts planned evictions; it does not measure VRAM, time,
+energy, or topology.
 
-For the distinction hidden by the chip, `/orchestrator/status` exposes raw `phase`, `warm`,
-`health`, `reason`, and process-wide `mutation_containment`. Compare the row's `checked` time with
-the board snapshot time before treating it as current.
+`NO_OP` disables the action. Otherwise, **Request transition** submits the real request at maximum
+operator priority. The server recalculates before acting, so the preview reserves nothing and
+cannot promise the same eviction set.
 
-## Observation and control are different rites
+Evictions are named by Animator while board rows are keyed by capability. A Coven cannot hold
+two conflicting Animators, so an eviction lands on another card, not the previewed one. The
+current board does not mark those affected rows from the plan; read the served eviction identities
+directly.
 
-Choose **Preview** on a managed capability. The **Non-binding preview** drawer shows:
+## Keep one request identity through uncertainty
 
-- `action`: `NO_OP`, `SOFT_SWAP`, or `HARD_SWAP`;
-- `target`;
-- Animator ids selected for `evict`;
-- Animator ids selected for `launch`; and
-- `policy cost`, currently the number of planned evictions.
+The browser allocates a request id before submission. If the response is uncertain, retry keeps
+that id and target. Admission reserves the first target before task launch. PostgreSQL preserves
+this fence across Vessel restarts; the memory profile preserves it for one process. Reusing the
+id for a different target is rejected.
 
-`NO_OP` disables the action. Otherwise **Request transition** submits a real request at maximum
-operator priority. The server recalculates the plan before acting, so preview is neither a
-reservation nor a promise of the same evict set. Policy cost is not VRAM, time, energy, or topology.
+A retry returns the live ticket when available. If its ticket expired or its process ended, the
+same request id is refused without relaunch: ticket state no longer establishes the physical
+outcome. The client retains that refused id. A lost answer is not permission to mint another
+physical request.
 
-The browser allocates one request id before submission. If the response is uncertain, retry reuses
-that id and target. The selected persistence profile reserves the first target before task launch:
-PostgreSQL keeps that admission across Vessel restarts, while the memory profile keeps it for one
-process. A retry returns the live ticket when available. If the ticket has expired or its process
-has ended, the same request id is refused without relaunch because physical outcome is no longer
-known from ticket state. The client retains that refused id instead of minting a fresh physical
-request. Reusing the id for another target is rejected.
+## Follow the ticket and the physical observation
 
-## What a swap ticket proves
+An accepted request returns HTTP 202 with a process-local ticket:
 
-The accepted request returns HTTP 202 with a process-local ticket:
+| Ticket | What it establishes |
+| --- | --- |
+| `warming` | No terminal task result has been observed. |
+| `settled` | The task returned; Nexus refreshes the board. |
+| `failed` | The task raised or was cancelled. |
 
-- `warming` — no terminal result observed yet;
-- `settled` — the task returned and Nexus refreshes; or
-- `failed` — the task raised or was cancelled.
+The strip shows target, current transition phase, and request id. Terminal ticket truth remains
+for a 60-second reconnect window by default. The bounded store refuses new work before launch
+rather than evicting active or fresh-terminal tickets. Tickets have no cancellation action,
+durable history, or restart recovery. Durable admission prevents duplicate effects; it does not
+settle, fail, or resume a lost ticket.
 
-The ticket strip shows target, current transition phase, and request id. Terminal ticket truth is
-retained for a 60-second reconnect window by default. The bounded store refuses a new request
-before launch rather than evicting active or fresh-terminal tickets. Tickets have no cancel action,
-durable history, or restart recovery. The durable request admission is only a duplicate-effect
-fence; it does not claim that a lost ticket settled, failed, or can be resumed.
+**Latest transition observations** shows up to 24 newest retained requests from Run and operator
+sources. Select one, or open `/nexus?transition={request_id}`, to inspect `request`, `source`,
+`target`, `phase`, chosen `action`, Run `occurrence` when supplied, `physical` transition identity,
+and compensation identity labeled `restoration`.
 
-**Latest transition observations** shows up to 24 newest retained requests from both Run and
-operator sources. Select one, or open `/nexus?transition={request_id}`, to inspect:
+Its phases are `requested`, `arbitrating`, `draining`, `actuating`, `verifying`, `compensating`,
+`completed`, `declined_no_effect`, `failed_restored`, `cancelled_restored`, `contained_uncertain`,
+or `failed`. Ticket settlement and these physical observations answer different questions; read
+both before judging what happened.
 
-- `request`, `source`, `target`, `phase`, and chosen `action`;
-- Run `occurrence`, when supplied;
-- `physical` transition identity; and
-- compensation identity, labelled `restoration`.
+An Orb link may add `event={event_id}`. Nexus keeps it only while that request is selected and,
+when Run correlation exists, offers the return to `/orb/{run_id}?event={event_id}`. Closing the
+inspector or selecting another transition drops the event context.
 
-Observed phases can be `requested`, `arbitrating`, `draining`, `actuating`, `verifying`,
-`compensating`, `completed`, `declined_no_effect`, `failed_restored`, `cancelled_restored`,
-`contained_uncertain`, or `failed`.
+## When the accounts disagree
 
-An Orb link may add `event={event_id}`. Nexus preserves it only while that request is selected and
-returns to `/orb/{run_id}?event={event_id}` when Run correlation exists. Closing the inspector or
-selecting another transition drops the event context.
+If a chip, raw status and host disagree—or a lost ticket leaves the outcome unknown—follow the
+[existing runtime-transition contract](../../sepulcher/animator/runtime-transitions.md#the-transition-contract)
+and its [Host Reactor observations](../../sepulcher/animator/runtime-transitions.md#switching-settings).
+Keep the original request identity while reconciling the physical outcome. A contained or
+unresolved result needs operator recovery; another transition request cannot clear that uncertainty.
+Reconcile a unit/probe mismatch before retrying.
 
-## The Designed Body Map
+The current surface is a card board, preview drawer, ticket strip, and latest-observation
+inspector. It shows no queue order, leases, GPU/VRAM/topology/thermal pressure, durable history,
+configuration editing, provider accounts, billing, or credentials. Its semantic board remains
+primary; any future body map starts as a read-only lens over validated observations. The
+[Frontend Covenant](../../adr/15-frontend.md#decision-lock-and-reopening-gate) owns that design and
+its admission gates.
 
-No graph-shaped body map is delivered. Nexus is a card board, preview drawer, ticket strip, and
-latest-observation inspector. It does not show queue order, leases, GPU/VRAM/topology/thermal
-pressure, durable history, configuration editing, provider accounts, billing, or credentials.
+## Reading direction
 
-That native semantic board remains the primary Nexus form. If a body map is admitted later, its
-first trial is a read-only Svelte DOM/SVG lens over one timestamped, validated snapshot and
-available typed transition observations. It may show declared conflicts, containment, affected-set
-membership, drain, actuation, verification, and restoration, but it cannot derive a plan from
-layout, drag or edit a capability, reserve resources, or submit a transition from an edge. Preview
-and mutation remain typed server operations against a stable capability identity; stale or
-contained authority disables them in both the board and lens.
+The planned refinement keeps snapshot time and containment first, then grouped observations
+with their freshness, one selected preview, and its explicit request. Aligned eviction and
+launch lists make the consequence easier to compare than an inferred topology graph. Preserve
+the distinction between a capability row and the Animator that would be evicted; affected-row
+highlighting requires exact identity mapping from the served data.
 
-Nexus therefore inherits no renderer from Loom or Orb. What the board displays is a hierarchy—
-Coven, Animator, capability—and a hierarchy folds by disclosure without a graph. The conflict
-structure that selects an eviction set is a real many-to-many graph, but it is compiled and consumed
-by the Vessel, spans two or three Animators on the profiles shipped here, and is not served to the
-browser. A graph library is considered only after a measured host or Legion topology exceeds the
-native lens, and then it must pass the same FOSS, public-API, authority, focus, accessibility,
-recovery, and repeated teardown gates in the
-[Frontend Covenant](../../adr/15-frontend.md#decision-lock-and-reopening-gate). The semantic board
-remains the complete fallback and screen-reader surface.
+Ticket outcome and physical observation stay separately identified by request, target and time.
+A recently observed phase is not a complete progress rail, and the latest bounded list is not
+full history. Unknown or stale states remain recognizable even when a compact chip merges
+several raw values. New memory, temperature, duration, impact, or health graphics need actual
+observations and their interpretation before they gain a place on the board.
 
-One designed gap is recorded rather than rendered. Preview names its evictions by Animator while the
-board keys its rows by capability, and a Coven can never hold two conflicting Animators, so an
-eviction always lands on a card other than the one previewed. Marking affected rows from the served
-plan would close that gap inside the existing board. Such a mark would restate one served plan in
-place—never a second calculation, reservation, or promise that the recalculated set will match—and
-would carry in text as well as treatment.
-
-## Enter after first life
-
-After the four observations and same-host browser boundary in
-[The Awakening](../../summoning.md#the-awakening) agree, open:
-
-```text
-http://127.0.0.1:7134/nexus
-```
-
-1. Confirm the snapshot and each row's `checked` time.
-2. Stop if **Runtime admission is contained** appears.
-3. Choose **Preview** and read action, target, evictions, launches, and cost.
-4. Request only the transition you intend to make real.
-5. Watch the ticket reach `settled` or `failed`, then inspect its latest transition observation.
-6. If you arrived from Orb, use **Return to evidence in the Orb**.
-
-If the chip, raw status, and host disagree, diagnose the runtime; a transition request is not a
-way to make the board look calm.
+Acceptance case: inspect a proposed target while an older request is observed as verifying,
+then lose the response to the new request. Keep both identities clear, retain the original
+request, and avoid treating a settled ticket as physical success or making a fresh request to
+cover the unknown result. Check keyboard return from the inspector and a narrow layout with
+long Animator ids. These [presentation targets](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction)
+do not deliver durable observation history, restart recovery, or a body map.

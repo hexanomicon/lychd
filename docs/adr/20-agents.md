@@ -29,7 +29,7 @@ icon: material/robot-outline
 
 ## Decision
 
-LychD uses in-process **Pydantic AI**, at lockfile-pinned `pydantic-ai-slim==1.25.1`. The
+LychD uses in-process **Pydantic AI**, at lockfile-pinned `pydantic-ai-slim==1.107.5`. The
 [State](../state-of-the-work.md#pydantic-ai-v1-adapter) owns present adapter evidence; its
 [v2 migration](../state-of-the-work.md#pydantic-ai-v2-migration) is Designed.
 A v2 adapter must set `end_strategy` explicitly: allowing sibling mutating tools to finish is a
@@ -82,11 +82,13 @@ required hydrated Pydantic AI model, and agent-loop toolsets only when the capab
 declares `supports_tools = true`. The grant exposes neither its Animator nor Connector. Bridge
 passes `grant.model`, `grant.model_settings()`, and `grant.toolsets` to
 `agent.run_stream_events`. Agent specifications therefore name neither endpoint nor credential;
-no fictitious model/tool-provider pair is needed.
+the specification needs no separate model/tool-provider pair.
 
 One spec can run with any admitted model meeting the adapter contract. A foreign framework is not
 an in-process Agent by analogy: it remains a typed delegated runtime or Animator boundary until a
-later ADR admits a versioned interface.
+later amendment to the owning Covenant admits a versioned interface.
+
+### Delegated runtimes and remote attempts
 
 A **coding agent** is a delegated runtime when an external process owns an iterative planner/tool
 loop and receives an exact repository or workspace projection under an `AgentJob` `read`,
@@ -97,7 +99,7 @@ capability or its job-scoped Provider Gate, but every child remote payload remai
 Security-admitted Portal attempt. The outer job never conveys provider credentials, a general
 network route, authoritative checkout, or promotion authority.
 
-The same byte-time rule applies inside a native Agent loop: validation repair, tool-result follow-
+The accepted remote-attempt law also applies inside a native Agent loop: validation repair, tool-result follow-
 up, changed history, or another model round creates another canonical payload and therefore another
 Portal road decision/EgressDecision. One grant or first-round approval never authorizes the whole
 loop's future payloads.
@@ -107,6 +109,8 @@ child body and presents it to Spellweaver's road-decision service under the pinn
 policy. It must obtain a fresh road decision, a consumer-specific Cut when transformation is
 required, and the byte-time EgressDecision before sending. A native model loop or Coffin runtime
 cannot mint, cache, widen, or reuse them; inability to obtain the full chain refuses that round.
+
+### Provider compatibility under the pinned adapter
 
 Provider Portals route their declared alias through the matching Pydantic AI provider or
 model-profile resolver, including unsupported-setting filtering. OpenRouter, LiteLLM, and Ollama

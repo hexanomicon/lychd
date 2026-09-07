@@ -1,20 +1,23 @@
 # NVIDIA 24 GB Profile
 
-Use a single 24 GB card for one carefully sized local model before adding
-router or dual-card complexity.
+Begin with one model and a measured context size on one 24 GB NVIDIA card. The single-server
+shape gives you a small first workload before adding router or multi-card coordination.
 
 ## Contents
 
-- `runes/animator/soulstones/llamacpp/single.toml`: one llama.cpp Soulstone
-  serving one GGUF model through an OpenAI-compatible endpoint.
+- `runes/animator/soulstones/llamacpp/single.toml`: an earlier llama.cpp declaration for one GGUF
+  model and an OpenAI-compatible endpoint.
 
 ## Copy Flow
 
-1. Copy `runes/` into `~/.config/lychd/runes/`.
-2. Put models in `~/models`, or set `LYCHD_DEFAULT_SOULSTONE_MOUNTS` for a
-   different library.
-3. Edit `model_path` so `/models/...` resolves in the container.
-4. Run the normal bind/start flow; expect one static chat capability.
-
-This is conservative: a desktop 4090 often needs lower context than a headless
-3090 because desktop/driver overhead consumes more VRAM.
+1. Start from the current [llama.cpp Rune](../../../docs/sepulcher/animator/soulstone/rune.md),
+   using this fragment's single-server intent as a reference.
+2. Declare an absolute host model directory in `volumes`, with the intended container target
+   such as `/models`, and declare the NVIDIA CDI device. There is no automatic `~/models` mount
+   or current `LYCHD_DEFAULT_SOULSTONE_MOUNTS` setting.
+3. Set `model_path` to the container-visible GGUF file. Choose the image and size context,
+   parallelism, and cache against the actual free VRAM; desktop and driver allocations need
+   room too.
+4. Follow [Summoning](../../../docs/summoning.md) for configuration, binding, first reply, and
+   shutdown. This profile aims at one static chat capability; only your recorded observations
+   establish the running combination.

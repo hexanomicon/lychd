@@ -58,6 +58,11 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         return self._base_url
 
     @property
+    def model_infos(self) -> tuple[ModelInfo, ...]:
+        """Return the immutable catalogue captured for this runtime generation."""
+        return self._model_infos
+
+    @property
     def observed_model_ids(self) -> tuple[str, ...] | None:
         """Return the last validated live ``/models`` inventory, if one was probed."""
         return self._observed_model_ids

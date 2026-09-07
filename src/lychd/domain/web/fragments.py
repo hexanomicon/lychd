@@ -87,17 +87,23 @@ class FragmentRegistry:
         """Validate fragment calls; drop-and-log unknown keys and invalid params."""
         validated: list[ValidatedFragment] = []
         for call in calls:
-            definition = self._defs.get(call.fragment)
-            if definition is None:
-                logger.warning("fragment_unknown", fragment=call.fragment)
-                continue
-            try:
-                params = definition.params_model.model_validate(call.params)
-            except ValidationError as exc:
-                logger.warning("fragment_invalid_params", fragment=call.fragment, error=str(exc))
-                continue
-            validated.append(ValidatedFragment(key=definition.key, params=params))
+            fragment = self.validate_call(call.fragment, call.params)
+            if fragment is not None:
+                validated.append(fragment)
         return validated
+
+    def validate_call(self, key: str, params: object) -> ValidatedFragment | None:
+        """Apply the same closed descriptor gate to model output and event replay."""
+        definition = self._defs.get(key)
+        if definition is None:
+            logger.warning("fragment_unknown", fragment=key)
+            return None
+        try:
+            validated = definition.params_model.model_validate(params)
+        except ValidationError as exc:
+            logger.warning("fragment_invalid_params", fragment=key, error=str(exc))
+            return None
+        return ValidatedFragment(key=definition.key, params=validated)
 
     def descriptor(self, fragment: ValidatedFragment) -> dict[str, Any]:
         """Return the inert client descriptor for a validated fragment."""

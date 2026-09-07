@@ -18,6 +18,703 @@
         "title": "AltarStatus",
         "type": "object"
       },
+      "AtlasAssessment": {
+        "additionalProperties": false,
+        "properties": {
+          "author": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "brief": {
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "brief_revision": {
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "concern_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "concern_revision": {
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "criteria": {
+            "maxLength": 8000,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "judgment": {
+            "enum": [
+              "sufficient",
+              "insufficient",
+              "disputed"
+            ],
+            "type": "string"
+          },
+          "rationale": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "reference_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "type": "array"
+          },
+          "statement": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          }
+        },
+        "required": [
+          "author",
+          "brief",
+          "brief_revision",
+          "concern_id",
+          "concern_revision",
+          "created_at",
+          "criteria",
+          "id",
+          "judgment",
+          "rationale",
+          "reference_ids",
+          "statement"
+        ],
+        "title": "AtlasAssessment",
+        "type": "object"
+      },
+      "AtlasCatalogue": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/AtlasSummary"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "total": {
+            "minimum": 0.0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "limit",
+          "offset",
+          "projects",
+          "total"
+        ],
+        "title": "AtlasCatalogue",
+        "type": "object"
+      },
+      "AtlasConcern": {
+        "additionalProperties": false,
+        "properties": {
+          "criteria": {
+            "maxLength": 8000,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "statement": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          }
+        },
+        "required": [
+          "criteria",
+          "id",
+          "revision",
+          "statement"
+        ],
+        "title": "AtlasConcern",
+        "type": "object"
+      },
+      "AtlasConcernAssess": {
+        "additionalProperties": false,
+        "properties": {
+          "concern_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "judgment": {
+            "enum": [
+              "sufficient",
+              "insufficient",
+              "disputed"
+            ],
+            "type": "string"
+          },
+          "kind": {
+            "const": "concern.assess",
+            "type": "string"
+          },
+          "rationale": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "reference_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "type": "array"
+          }
+        },
+        "required": [
+          "concern_id",
+          "judgment",
+          "kind",
+          "rationale",
+          "reference_ids"
+        ],
+        "title": "AtlasConcernAssess",
+        "type": "object"
+      },
+      "AtlasConcernSave": {
+        "additionalProperties": false,
+        "properties": {
+          "concern_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "criteria": {
+            "maxLength": 8000,
+            "type": "string"
+          },
+          "kind": {
+            "const": "concern.save",
+            "type": "string"
+          },
+          "statement": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          }
+        },
+        "required": [
+          "concern_id",
+          "criteria",
+          "kind",
+          "statement"
+        ],
+        "title": "AtlasConcernSave",
+        "type": "object"
+      },
+      "AtlasCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "brief": {
+            "default": "",
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "next_action": {
+            "default": "",
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AtlasCreate",
+        "type": "object"
+      },
+      "AtlasDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "author": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "rationale": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "statement": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "supersedes_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "author",
+          "created_at",
+          "id",
+          "rationale",
+          "statement",
+          "supersedes_id"
+        ],
+        "title": "AtlasDecision",
+        "type": "object"
+      },
+      "AtlasDecisionRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "decision.record",
+            "type": "string"
+          },
+          "rationale": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "statement": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "supersedes_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "rationale",
+          "statement",
+          "supersedes_id"
+        ],
+        "title": "AtlasDecisionRecord",
+        "type": "object"
+      },
+      "AtlasMutation": {
+        "additionalProperties": false,
+        "properties": {
+          "change": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AtlasProjectUpdate"
+              },
+              {
+                "$ref": "#/components/schemas/AtlasConcernSave"
+              },
+              {
+                "$ref": "#/components/schemas/AtlasConcernAssess"
+              },
+              {
+                "$ref": "#/components/schemas/AtlasDecisionRecord"
+              },
+              {
+                "$ref": "#/components/schemas/AtlasReferenceAdd"
+              }
+            ]
+          },
+          "expected_version": {
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "request_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "change",
+          "expected_version",
+          "request_id"
+        ],
+        "title": "AtlasMutation",
+        "type": "object"
+      },
+      "AtlasProject": {
+        "additionalProperties": false,
+        "properties": {
+          "assessments": {
+            "items": {
+              "$ref": "#/components/schemas/AtlasAssessment"
+            },
+            "maxItems": 2000,
+            "type": "array"
+          },
+          "brief": {
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "brief_revision": {
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "concerns": {
+            "items": {
+              "$ref": "#/components/schemas/AtlasConcern"
+            },
+            "maxItems": 200,
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/AtlasDecision"
+            },
+            "maxItems": 2000,
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "active",
+              "paused",
+              "closed"
+            ],
+            "type": "string"
+          },
+          "next_action": {
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "references": {
+            "items": {
+              "$ref": "#/components/schemas/AtlasReference"
+            },
+            "maxItems": 2000,
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assessments",
+          "brief",
+          "brief_revision",
+          "concerns",
+          "created_at",
+          "decisions",
+          "id",
+          "lifecycle",
+          "next_action",
+          "references",
+          "title",
+          "updated_at",
+          "version"
+        ],
+        "title": "AtlasProject",
+        "type": "object"
+      },
+      "AtlasProjectUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "brief": {
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "kind": {
+            "const": "project.update",
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "active",
+              "paused",
+              "closed"
+            ],
+            "type": "string"
+          },
+          "next_action": {
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          }
+        },
+        "required": [
+          "brief",
+          "kind",
+          "lifecycle",
+          "next_action",
+          "title"
+        ],
+        "title": "AtlasProjectUpdate",
+        "type": "object"
+      },
+      "AtlasReference": {
+        "additionalProperties": false,
+        "properties": {
+          "author": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "concern_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "session",
+              "run"
+            ],
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "target_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "author",
+          "concern_id",
+          "created_at",
+          "id",
+          "kind",
+          "note",
+          "target_id"
+        ],
+        "title": "AtlasReference",
+        "type": "object"
+      },
+      "AtlasReferenceAdd": {
+        "additionalProperties": false,
+        "properties": {
+          "concern_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "const": "reference.add",
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "reference_kind": {
+            "enum": [
+              "session",
+              "run"
+            ],
+            "type": "string"
+          },
+          "target_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "concern_id",
+          "kind",
+          "note",
+          "reference_kind",
+          "target_id"
+        ],
+        "title": "AtlasReferenceAdd",
+        "type": "object"
+      },
+      "AtlasSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "brief": {
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "concern_count": {
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "disputed_count": {
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "insufficient_count": {
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "lifecycle": {
+            "enum": [
+              "active",
+              "paused",
+              "closed"
+            ],
+            "type": "string"
+          },
+          "next_action": {
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "review_needed_count": {
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "unassessed_count": {
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "brief",
+          "concern_count",
+          "disputed_count",
+          "id",
+          "insufficient_count",
+          "lifecycle",
+          "next_action",
+          "review_needed_count",
+          "title",
+          "unassessed_count",
+          "updated_at",
+          "version"
+        ],
+        "title": "AtlasSummary",
+        "type": "object"
+      },
       "BridgeSnapshot": {
         "additionalProperties": false,
         "properties": {
@@ -318,7 +1015,7 @@
             ],
             "type": "string"
           },
-          "provider_id": {
+          "registrant_id": {
             "type": "string"
           },
           "runnable": {
@@ -338,7 +1035,7 @@
           "display_name",
           "limitations",
           "provider_gate",
-          "provider_id",
+          "registrant_id",
           "runnable",
           "runtime_id",
           "transport"
@@ -1399,6 +2096,10 @@
           "id": {
             "type": "string"
           },
+          "pending_count": {
+            "minimum": 0.0,
+            "type": "integer"
+          },
           "title": {
             "type": "string"
           }
@@ -1406,6 +2107,7 @@
         "required": [
           "created_at",
           "id",
+          "pending_count",
           "title"
         ],
         "title": "SessionSummary",
@@ -1421,6 +2123,10 @@
           "id": {
             "type": "string"
           },
+          "pending_count": {
+            "minimum": 0.0,
+            "type": "integer"
+          },
           "title": {
             "type": "string"
           },
@@ -1434,6 +2140,7 @@
         "required": [
           "created_at",
           "id",
+          "pending_count",
           "title"
         ],
         "title": "SessionView",
@@ -1770,6 +2477,450 @@
           }
         },
         "summary": "Status"
+      }
+    },
+    "/api/v1/atlas/projects": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getAtlasProjects",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100.0,
+              "minimum": 1.0,
+              "type": "integer"
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0.0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtlasCatalogue"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Projects"
+      },
+      "post": {
+        "deprecated": false,
+        "operationId": "createAtlasProject",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtlasCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtlasProject"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          }
+        },
+        "summary": "Create"
+      }
+    },
+    "/api/v1/atlas/projects/{project_id}": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getAtlasProject",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtlasProject"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          }
+        },
+        "summary": "Project"
+      }
+    },
+    "/api/v1/atlas/projects/{project_id}/changes": {
+      "post": {
+        "deprecated": false,
+        "operationId": "changeAtlasProject",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtlasMutation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtlasProject"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          }
+        },
+        "summary": "Change"
+      }
+    },
+    "/api/v1/atlas/references": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getAtlasReferences",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "session",
+                "run"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "target_id",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AtlasSummary"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "References"
       }
     },
     "/api/v1/bridge": {

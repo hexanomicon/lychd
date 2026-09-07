@@ -1,6 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import { resolve } from "$app/paths";
+  import { navigationId, orbReturnHref, loomOriginHref } from "$lib/navigation/instruments";
   import { onDestroy } from "svelte";
 
   import { getLoomCatalogue, getLoomPatternRevision, getOrbRun } from "$lib/api/client";
@@ -26,10 +28,13 @@
   let error = $state("");
   let showDiagram = $state(false);
   let loadVersion = 0;
-  let sourceRunId = $derived(page.url.searchParams.get("run"));
+  let sourceContextError = $state("");
+  let sourceRunHint = $derived(page.url.searchParams.get("run"));
+  let sourceRunId = $derived(navigationId(sourceRunHint));
+  let returnHref = $derived(sourceRun ? orbReturnHref(sourceRun.run.run_id, page.url.search) : null);
 
   $effect(() => {
-    void load(patternId, revision, sourceRunId);
+    void load(patternId, revision, sourceRunId, sourceRunHint);
   });
 
   onDestroy(() => {
@@ -39,13 +44,15 @@
   async function load(
     requestedPattern?: string,
     requestedRevision?: string,
-    requestedRun?: string | null
+    requestedRun?: string | null,
+    requestedHint?: string | null
   ) {
     const version = ++loadVersion;
     loading = true;
     error = "";
     view = null;
     sourceRun = null;
+    sourceContextError = requestedHint && !requestedRun ? "Run context unavailable — the linked identity is invalid." : "";
     try {
       const [patterns, origin] = await Promise.all([
         getLoomCatalogue(),
@@ -66,16 +73,20 @@
       if (version !== loadVersion) return;
       view = next;
       const originMatches =
+        origin?.run.run_id === requestedRun &&
         origin?.pattern.exact === true &&
         origin.pattern.loom_path !== null &&
         origin.pattern.pattern_id === next.pattern_id &&
         origin.pattern.revision === next.revision;
       sourceRun = originMatches ? origin : null;
-      if (!requestedPattern || !requestedRevision || (requestedRun && !originMatches)) {
+      if (requestedRun && !originMatches) {
+        sourceContextError = "Run context unavailable — this Run could not be verified against the displayed Pattern revision.";
+      }
+      if ((!requestedPattern || !requestedRevision) && (!requestedHint || requestedRun)) {
         const exactPath = `/loom/${next.pattern_id}/${next.revision}`;
         await goto(
-          originMatches && requestedRun
-            ? `${exactPath}?run=${encodeURIComponent(requestedRun)}`
+          requestedRun
+            ? loomOriginHref(exactPath, requestedRun, page.url.search) ?? exactPath
             : exactPath,
           {
           replaceState: true
@@ -133,13 +144,14 @@
           <span class="eyebrow">Published Pattern</span>
           <h2>{view.title}</h2>
           <p>{view.description}</p>
-          {#if sourceRun}
+          {#if returnHref}
             <nav class="context-links" aria-label="Run context">
-              <a href={`/orb/${encodeURIComponent(sourceRun.run.run_id)}`}>
+              <a href={resolve(returnHref)}>
                 Return to Run in Orb →
               </a>
             </nav>
           {/if}
+          {#if sourceContextError}<p class="context-unavailable" role="status">{sourceContextError}</p>{/if}
         </div>
         <div class="identity-seal">
           <strong>{view.pattern_id}@{view.revision}</strong>

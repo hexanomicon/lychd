@@ -1,6 +1,20 @@
 import type { components } from "./openapi";
 
 export type AltarStatus = components["schemas"]["AltarStatus"];
+export type AtlasProject = components["schemas"]["AtlasProject"];
+export type AtlasSummary = components["schemas"]["AtlasSummary"];
+export type AtlasCatalogue = components["schemas"]["AtlasCatalogue"];
+export type AtlasCreate = components["schemas"]["AtlasCreate"];
+export type AtlasMutation = components["schemas"]["AtlasMutation"];
+export type AtlasConcern = components["schemas"]["AtlasConcern"];
+export type AtlasAssessment = components["schemas"]["AtlasAssessment"];
+export type AtlasDecision = components["schemas"]["AtlasDecision"];
+export type AtlasReference = components["schemas"]["AtlasReference"];
+export type AtlasProjectUpdate = components["schemas"]["AtlasProjectUpdate"];
+export type AtlasConcernSave = components["schemas"]["AtlasConcernSave"];
+export type AtlasConcernAssess = components["schemas"]["AtlasConcernAssess"];
+export type AtlasDecisionRecord = components["schemas"]["AtlasDecisionRecord"];
+export type AtlasReferenceAdd = components["schemas"]["AtlasReferenceAdd"];
 export type BridgeSnapshot = components["schemas"]["BridgeSnapshot"];
 export type BridgeTurnView = components["schemas"]["BridgeTurnView"];
 export type ConsentCard = components["schemas"]["ConsentCard"];

@@ -55,25 +55,30 @@ that boundary.
 4. The engine opens the local event channel and publishes `perform_run` under
    `run:<run_id>:<enqueue_seq>`; broker acknowledgement moves the delivery to `PUBLISHED`.
 
+### Idempotent admission and session order
+
 A surface may supply one scoped idempotency key. The ledger derives a server-owned deterministic
 Run UUID, atomically creates Run plus delivery once, and returns the prior admission only when its
 session, prompt, source, Sigil, scopes, content, and requested priority still match. Topology A
-single-flights concurrent
-same-key retention and publication; PostgreSQL primary-key conflict resolution provides durable
-cross-request convergence. A replay classifies the prior exact delivery before returning: an
-unresolved `HELD` admission is re-retained through the caller's idempotent context hook and released,
-while a held admission with no retention owner fails loudly. It therefore cannot hand out a
-successful handle while custody remains stranded. A replay returns the same canonical Run and
-retained turn without consulting the current workflow router; a later registry generation cannot
-invalidate already admitted truth. An exact `PENDING` delivery is published again before replay
-returns, while an already published or claimed hop is only observed. Key reuse for different work
-fails closed.
+single-flights concurrent same-key retention and publication; PostgreSQL primary-key conflict
+resolution provides durable cross-request convergence. Key reuse for different work fails closed.
+
+Before returning, a replay classifies the prior exact delivery. An unresolved `HELD` admission is
+re-retained through the caller's idempotent context hook and released; a held admission with no
+retention owner fails loudly. No successful handle may leave custody stranded. An exact `PENDING`
+delivery is published again before replay returns, while an already published or claimed hop is
+only observed.
+
+The returned Run and retained turn remain the canonical admission. Replay does not consult the
+current workflow router, so a later registry generation cannot invalidate already admitted truth.
 
 Bridge additionally requests a Topology-A session fence. The process-local admission coordinator
 serializes that session's admission decision, permits an exact idempotent replay, and otherwise
 refuses a second nonterminal Run through a bounded ledger lookup. Durable terminal Run truth
 releases the policy naturally; no process-local active-session marker becomes recovery authority.
 This is a one-process conversation causality rule, not a cross-process quota.
+
+### Publication and exact-hop claims
 
 Run plus delivery intent are transactional; PostgreSQL plus SAQ publication are not one
 distributed transaction. A broker error or caller cancellation after durable admission leaves the
@@ -92,6 +97,7 @@ The claim moves that exact delivery to `CLAIMED` in the same transaction. Termin
 fenced by the claimed sequence and settles its delivery; an old Ghoul cannot rewrite a later hop.
 `started_at` records the Run's first successful claim and remains stable across resume hops, so boot
 ownership is not rewritten by later deliveries.
+
 The worker also verifies the pinned Pattern and, for a resume, the checkpoint. `retries=0`;
 `timeout=0` disables only SAQ's generic wall clock, while each operation retains its own bound.
 Each Run job carries a 120-second SAQ heartbeat and its live invocation refreshes broker `touched`
@@ -114,16 +120,21 @@ closing their channel, so recovery does not report completion while its terminal
 scheduled. A failed Step append is surfaced at that barrier but cannot roll back already committed
 Run truth, so this evidence remains `durable_best_effort`, not a transactional event outbox or
 durable live stream.
+
 The bus detaches mutable event metadata at every replay, subscriber, snapshot, and persistence
 boundary. All waiters on one failed writer generation observe the same latched failure. If terminal
 evidence persistence fails, the closed process-local channel is discarded; startup or a later
 single-flight repair confirms canonical terminal truth, starts an explicit fresh writer generation,
 seeds a fresh sequence, and retries the missing Step exactly once.
 
+### Terminal settlement
+
 Normal return, failure, and cancellation settle the claimed status/sequence under shielding.
 Terminal Run state commits before contextual release and best-effort stasis deletion. The channel
 accepts one terminal `DONE`, rejects later events, then closes after subscribers drain or grace
 expires. Cleanup failure cannot conceal terminal truth.
+
+### Durable consent and delegated waits
 
 Consent and delegation release their Ghoul but retain the Run. Consent persists the checkpoint and
 Consent row before one Run transaction verifies that authority, parks `AWAITING_CONSENT`, and
@@ -142,11 +153,15 @@ Concurrent handlers converge. Publication failure leaves the new `QUEUED` hop fo
 wait state is recreated and no possibly published key is reused. Delegation additionally requires
 terminal truth for the same job.
 
+### Live hardware waits
+
 Hardware stasis is different: the same Ghoul checkpoints, marks `AWAITING_HARDWARE`, awaits a
 bounded orchestrator transition, returns to `RUNNING`, and resumes from persistence. It holds no
 capability lease while waiting but still occupies its worker task.
 
 ## Cancellation, mutation, and recovery
+
+### Cancel and contain
 
 API cancellation elects one process-local writer, locks the Run, and commits nonterminal
 `CANCELLING` to freeze its exact delivery generation. The broker parent job is abort-fenced first;
@@ -158,36 +173,59 @@ settle that delivery. Failed, timed-out, or cancelled containment leaves honest,
 with authority to fence a pre-boot SAQ job. Only after terminal truth does the engine persist
 terminal evidence, close the channel, and best-effort delete stasis. Re-reading an already
 `CANCELLED` Run repeats the child/consent sweep before repairing evidence and cleanup debt.
-A Ghoul observing `CANCELLING` releases its execution resources and waits for the election rather
-than racing `FAILED`; completion may win before election and makes cancellation an idempotent
-no-op. This election is valid only in the one-process topology.
+A Ghoul observing its exact generation in `CANCELLING` releases execution resources so the broker
+can acknowledge containment. An interruption before that commit waits only for the local election
+or leader failure, then re-reads durable truth; it never waits for full API settlement, which may
+itself need that worker to exit. If election failed, the worker may attempt its exact-generation
+`FAILED` transition. Completion may win before election and makes cancellation an idempotent
+no-op. This coordination is valid only in the one-process topology.
+
+### Close admission before mutation
 
 Runtime mutation closes affected capability lease admission and the global pre-claim gate, then
 waits for those exact leases to drain. `pause_queues()` is only that gate: SAQ may still dequeue a
-task which then waits before ledger claim. `broadcast_soft_stop()` is a v1 no-op. Queue depth and
-worker count do not prove quiescence. Gates reopen after no effect, success, exact restoration,
-timeout, or ordinary failure; uncertain physical outcomes retain containment.
+task which then waits before ledger claim. Queue depth and
+worker count do not prove quiescence. Pre-effect drain timeout, cancellation, or failure reopens
+the gates. A submitted mutation reopens them only on verified no effect, observed success, or exact
+restoration under
+[Orchestrator's settlement law](23-orchestrator.md#host-mutation-port-and-privilege-boundary);
+uncertain physical outcomes retain containment.
 
-Startup first synchronizes standing policy, retries `CANCELLING`, repairs missing terminal evidence
-for every canonical terminal status, and pages across all terminal Runs to retry idempotent checkpoint deletion. It then
-fences each pre-boot SAQ generation before failing orphaned
-`RUNNING` or `AWAITING_HARDWARE` work as lost. An exact checkpoint-plus-Consent or delegated-job
-pre-park window is parked instead; otherwise correlated effects are contained before terminal
-failure, and uncertainty leaves the Run nonterminal while required startup degrades. It inspects
-every `QUEUED` Run's exact delivery: unresolved `HELD` admission is
-refused; current-boot active or queued broker work is retained; a proven pre-boot active generation
-is terminally fenced and re-probed before delivery rotation; an absent job is republished under the
-same key; and a terminal broker record rotates to a new sequence while preserving its stored
-fresh/resume mode. An active row without a trustworthy start timestamp degrades recovery.
-Missing or mismatched delivery truth, an unavailable queue, an unprobeable broker, or an unfenced
-orphan makes the pass degraded. Settled consent reconciliation reads each Run's persisted owner,
-never the newest row for that Run. Decided consents and terminal delegated waits are re-admitted before
-a second delivery flush. PostgreSQL startup aborts before publishing workers or HTTP services when
-required reconciliation is degraded; memory-profile startup remains best-effort.
-Delivery pages are ordered by the Run's eligibility-changing `updated_at` plus identity, not its
-creation time. A previously parked old Run that becomes `QUEUED` after a cursor has passed is
-therefore visible in a later page. The scan starts from every queued Run, so a missing delivery row
-is reported as corruption rather than filtered out by a join.
+### Startup reconciliation
+
+Startup classifies existing work in this order:
+
+1. Synchronize standing policies, retry `CANCELLING` Runs, repair missing terminal evidence
+   across every canonical terminal status, and perform paged retries of idempotent checkpoint
+   deletion across all terminal Runs.
+2. Fence every pre-boot SAQ generation before failing orphan `RUNNING` or `AWAITING_HARDWARE`
+   work as lost. Recover an exact checkpoint-plus-Consent or delegated-job pre-park crash window
+   by parking. For the remaining orphan failure paths, contain correlated effects before
+   terminal failure. Uncertain containment retains nonterminal Run truth and degrades required
+   startup.
+3. Inspect the exact delivery for every `QUEUED` Run and apply the matching case below. An
+   active broker row without a trustworthy start timestamp degrades recovery.
+
+    | Queued-delivery case | Action |
+    | --- | --- |
+    | `HELD` admission is still unresolved | Refuse. |
+    | Current-boot broker work is active or queued | Retain. |
+    | A pre-boot active broker generation is proven | Terminally fence it, probe again, then rotate delivery. |
+    | No broker job exists | Republish the same key. |
+    | A terminal broker record exists | Use a new sequence, retaining the stored fresh/resume mode. |
+
+4. Reconcile Consent using the owner persisted on the Run, never the newest consent row.
+   Re-admit decided consents and terminal delegated waits before a second delivery flush.
+
+Delivery pagination orders by the Run’s eligibility-changing `updated_at` plus identity.
+Creation time is unsuitable: an older parked Run that becomes `QUEUED` after a cursor has passed
+must appear on a later page. Begin the scan from every queued Run so missing delivery rows
+remain visible as corruption; a join must not filter them away. Missing or mismatched delivery
+truth, an unavailable queue, an unprobeable broker, or an unfenced orphan degrades the pass. If
+required reconciliation is degraded, abort PostgreSQL startup before publishing workers or HTTP
+services. The memory profile remains best-effort.
+
+### Ongoing recovery and fairness
 
 After startup, lifespan-owned delivery, delegated-wait, and consent relays repeat bounded recovery.
 One internal page scheduler retains every distinct degraded, caller-held, or clean-but-still-active
@@ -198,23 +236,32 @@ The lifespan supervisor restarts any relay that exits before shutdown with deter
 exponential backoff capped at five seconds. Delegated and consent probes share their timeout-bounded
 reconciliation paths with startup; a verdict or terminal child committed after an earlier clean
 probe is therefore re-fired without requiring another process restart.
+
 These relays are not generic SAQ retry: Graph effects remain
 fenced by claim sequence and their own idempotency law. There is still no periodic workflow
 scheduler or public failed-Run retry. Recovery exists only at declared checkpoints; uncheckpointed
 process death is failed, never guessed forward.
 
+### Shutdown order and deadline
+
 Shutdown cancels all maintenance relays and stops every in-process worker before shared services or
 queue pools are dismantled. A relay timeout or worker-stop failure raises and leaves those shared
-dependencies live. Returning from a worker's stop method is insufficient when a captured worker
+dependencies live.
+
+Returning from a worker's stop method is insufficient when a captured worker
 task remains live; teardown must not manufacture use-after-close behavior in a task whose stop was
 never proved. Lifespan therefore owns both each worker's stop coroutine and SAQ's captured launcher
 task, cancels the launchers, and proves every observed worker task ended under one 30-second
-deadline. Queue teardown then attempts every configured disconnect and reports the grouped failures
+deadline.
+
+Queue teardown then attempts every configured disconnect and reports the grouped failures
 instead of abandoning later pools after the first error. Cancellation is retained but deferred until
 the queue currently closing has completed and that reverse sweep has attempted every queue. The
 PostgreSQL queue facade is installed before
 connect and explicitly closes a managed pool if SAQ opens it but fails schema initialization before
 marking itself connected; SAQ's disconnected-flag no-op cannot leak that partial owner.
+
+### Unsettled failure and late publication
 
 A Ghoul retries transient child-authority containment before committing worker failure. Persistent
 failure remains explicit nonterminal Run truth because `FAILED` would falsely claim all effects are
@@ -303,9 +350,11 @@ Work](../state-of-the-work.md#delegated-agent-execution) owns the Partial claim.
 `LOST` is terminal for result adoption and ordinary polling, but it is not evidence that an external
 process stopped. Parent cancellation must still call the owning runtime's containment operation and
 may record `LOST → CANCELLED` only after that operation returns.
-Before an effectful runtime is admitted, its contract must also distinguish a definitely rejected
-start from a post-transmission ambiguous failure; a generic exception after an effect may have
-escaped is not proof that the job failed or stopped.
+Once `runtime.start` has been invoked, an unclassified exception records `LOST`, never proof that
+the job failed or stopped. Exact-request replay retains the original job; late success is inert,
+and explicit cancellation still calls its owning runtime. A failure before that invocation may
+record `FAILED`. An effectful adapter additionally needs a proved definitely-rejected outcome and
+durable provider/executor lookup before its reconciliation contract can be admitted.
 
 There is no Rite registry or Rite handler. The former no-effect `perform_rite` placeholder has been
 removed, and background work on `rites` is ordinary `perform_run` execution. Any future registry
@@ -317,8 +366,6 @@ policy, and settlement.
 - Exact hop keys and conditional settlement prevent an old delivery from rewriting a later resume.
 - Pending broker work survives a Vessel restart and transient broker publication failure; active
   uncheckpointed execution does not.
-- A disposable two-boot application lifecycle proves application-factory, PostgreSQL, SAQ, HTTP,
-  terminal Bridge state, and Orb recovery wiring after live dispatch, orchestration, and context
-  collaborators are replaced with offline doubles. Their composed behavior and real
-  host/model/browser and checkpoint-plus-consent restart receipts remain absent.
-  [State of Work](../state-of-the-work.md#current-evidence-envelope) owns delivery boundaries.
+- The [current evidence envelope](../state-of-the-work.md#current-evidence-envelope) records the
+  tested persistence and recovery wiring with offline collaborators. Their composed behavior,
+  real host/model/browser operation, and checkpoint-plus-consent restart still need separate proof.

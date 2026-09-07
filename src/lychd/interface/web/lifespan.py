@@ -27,7 +27,7 @@ from lychd.system.services.queues import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable
+    from collections.abc import AsyncGenerator, Awaitable, Callable
 
     from litestar import Litestar
 
@@ -59,7 +59,7 @@ def _collect_run_queues(app: Litestar) -> dict[str, RunQueue]:
 
 
 @asynccontextmanager
-async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
+async def altar_services_lifespan(app: Litestar) -> AsyncGenerator[None]:
     """Assemble, warm, reconcile, publish, and later drain the Altar services."""
     from lychd.config.settings.root import get_settings
     from lychd.extensions.host import get_extensions  # application assembly root only

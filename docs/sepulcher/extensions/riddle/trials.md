@@ -27,7 +27,7 @@ A trial fixes six records before execution:
 | **Outcome** | Observations, measurements, verdicts, uncertainty, errors, cost, latency, and retained evidence |
 
 A Trial Suite groups Cases and evaluation controls. A
-[Composition Suite](../../../compositions/index.md#suites-do-not-dissolve-their-members) is a
+[Composition Suite](../../../compositions/products-and-suites.md#compositions-relate-without-nesting) is a
 versioned graph of separately owned Compositions and typed handoffs. Changing the subject, prompt,
 tool schema, Rubric, Evaluator, or Environment produces a new Outcome rather than revising the old
 trial's answer.

@@ -18,6 +18,10 @@ Stable LychD `[[models]].id` values are not Tabby directory names. Each model `p
 validated direct child of the mounted model directory. The connector derives the runtime name from
 that path's basename and translates it on both lifecycle and data planes.
 
+The current LychD TabbyAPI adapter executes the Chat Completions surface. A model declaration
+with `capabilities.surface = "responses"` is rejected at Rune validation because that surface is
+outside this adapter's admitted contract.
+
 Authentication is mandatory even inside the unpublished private pod. The two distinct API and
 admin keys remain Podman-secret material and are never placed in browser code or ordinary Rune
 fields. `bind --uncaged` rejects this Soulstone.

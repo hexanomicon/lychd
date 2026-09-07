@@ -495,7 +495,7 @@ async def test_rune_sync_refuses_non_rune_owned_slug_without_partial_mutation(
     async with pg_factory() as session:
         with pytest.raises(
             ValueError,
-            match="non-Rune-owned preauthorization slug.*operator-owned.*magus:operator",
+            match=r"non-Rune-owned preauthorization slug.*operator-owned.*magus:operator",
         ):
             await PreauthService(session=session).sync_from_runes(
                 [

@@ -6,7 +6,7 @@ from typing import Literal
 from urllib.parse import urlsplit
 
 from litestar.data_extractors import RequestExtractorField, ResponseExtractorField
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 
 from lychd.config.settings.section import SettingsSection
 from lychd.system.secret_names import validate_podman_secret_name
@@ -24,6 +24,8 @@ class DatabaseSettings(SettingsSection):
     image: str = "docker.io/pgvector/pgvector:pg18-trixie"
     password_secret: str = "lychd_db_password"  # noqa: S105
     """Podman secret name holding the Postgres password, never the password itself."""
+    password: SecretStr | None = Field(default=None, min_length=1, exclude=True, repr=False, frozen=True)
+    """Password loaded with Settings; absent before provisioning and never exported."""
     profile: Literal["memory", "postgres"] = "postgres"
     """Persistence backend: Postgres for normal operation; memory only for focused tests."""
     echo: bool = False
@@ -55,6 +57,8 @@ class WebSettings(SettingsSection):
 
     secret_key_secret: str = "lychd_app_secret_key"  # noqa: S105
     """Podman secret name holding the application signing key, never the key itself."""
+    secret_key: SecretStr | None = Field(default=None, min_length=1, exclude=True, repr=False, frozen=True)
+    """Signing key loaded with Settings; absent before provisioning and never exported."""
     debug: bool = False
     name: str = "lychd"
     image: str = "ghcr.io/hexanomicon/lychd:latest"

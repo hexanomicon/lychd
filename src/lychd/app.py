@@ -134,6 +134,7 @@ class AppInit(InitPluginProtocol):
         from lychd.interface.api.orchestrator import OrchestratorController
         from lychd.interface.web import (
             AltarController,
+            AtlasController,
             BridgeController,
             LoomController,
             NexusController,
@@ -149,6 +150,7 @@ class AppInit(InitPluginProtocol):
                 ),
                 OrchestratorController,
                 AltarController,
+                AtlasController,
                 BridgeController,
                 NexusController,
                 LoomController,

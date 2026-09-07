@@ -5,55 +5,24 @@ icon: material/image-multiple-outline
 
 # :material-image-multiple-outline: Assets
 
-Voidlight may create a concept set, sprites, textures, illustrations, model assets, or another
-declared visual role. The method can combine AI generation, procedural work, deterministic
-transforms, manual editing, capture, and authored source material; no single tool defines the
-craft.
+A sprite, texture, illustration, or model begins as a candidate. Its attractive surface is only one part of the decision: Voidlight must also retain what influenced it, which transformations made it, and whether it meets the declared role.
 
 ## Candidate lineage
 
-The narrower Patterns include `voidlight.forge_concept_set@1`,
-`voidlight.forge_sprite_set@1`, `voidlight.forge_texture_set@1`, and
-`voidlight.forge_model_asset@1`. Each candidate records:
+`voidlight.forge_concept_set@1`, `voidlight.forge_sprite_set@1`, `voidlight.forge_texture_set@1`, and `voidlight.forge_model_asset@1` combine admitted generation, procedural work, deterministic transforms, manual editing, capture, or authored sources.
 
-| Record | Preserved fact |
-| --- | --- |
-| source set | exact references, classifications, permitted influence, and retention |
-| production receipt | provider or tool revision, prompt or control material, seed when available, cost, and result |
-| transforms | parent digest, operation, parameters, implementation revision, output digest, and declared loss |
-| asset revision | semantic role, format/profile facts, findings, approval, and every derivative |
+Keep the candidate's source references, classifications, permitted influence, and retention together. Its production record names the tool/provider revision, prompts or controls, seed when available, cost, and result.
 
-Generated, edited, captured, and transformed material are all new artifacts. A fluent model result
-does not erase a control image, and a normalized export does not replace its source. Hostile-media
-limits from [Vision](../../adr/36-vision.md) apply before decoding or transformation.
+Each transform binds its parent digest, operation, parameters, implementation, output digest, and loss. Review then binds the asset revision, role, format/profile facts, findings, approval, and derivatives. Generation and normalization always create artifacts with parents.
 
-Spatial candidates additionally name their exact geometry, appearance, structure, deformation,
-assembly, and procedural facets; units, axes, origin, scale, bounds, coordinate transforms,
-material channels, parts, skeleton or camera facts; and every representation conversion. One
-glTF/GLB container may combine mesh, PBR appearance, skeleton, skinning, and animation facets;
-those facets remain explicit rather than becoming mutually exclusive file kinds. Point cloud,
-Gaussian form, radiance form, neutral voxel grid, game-specific block grid, and portable scene
-assembly remain distinct artifact forms. Prism's
-[Form](../../sepulcher/extensions/prism/form.md) owns their candidate generation, reconstruction,
-and transformation contract. Voidlight retains the brief, visual judgment, accepted revision, and
-package lineage.
+Spatial candidates additionally declare geometry, appearance, structure, deformation, assembly and procedural facets; units, axes, origin, scale, bounds and transforms; material channels, parts, skeleton and camera facts; and representation conversions. A glTF/GLB can contain mesh, PBR appearance, skeleton, skinning and animation together. Point clouds, Gaussian and radiance forms, neutral voxels, game block grids, and portable assemblies remain distinct forms. [Prism Form](../../sepulcher/extensions/prism/form.md) owns their technical production; Voidlight owns visual acceptance.
 
 ## Produce, normalize, review
 
-Candidates are made against the exact brief and direction revision. Deterministic probes establish
-format, dimensions, frames, color facts, geometry, topology, material channels, units, axes,
-bounds, size, and other target constraints before review. Normalization, retopology, baking,
-rigging, or voxelization records its own lineage and declared loss; none can launder a failed
-source or ambiguous likeness.
+Make the candidate against the exact brief and direction. Apply [Vision](../../adr/36-vision.md) hostile-media limits before decoding. Probe format, dimensions, frames, color, geometry, topology, materials, units, axes, bounds, size, and other target limits before review. Retopology, baking, rigging, voxelization, and other normalization preserve lineage and declared loss; none resolves an ambiguous likeness or failed source by itself.
 
-Review chooses, rejects, or returns attributed findings. The smallest supported correction may
-produce one new candidate. Replacement of accepted material is a new revision, never an in-place
-edit. Unresolved source influence, missing consent, prohibited likeness use, unsafe Portal egress,
-or a profile the work cannot meet leads to quarantine, a reduced scope, or refusal.
+Review selects, rejects, or returns attributed findings. The smallest supported repair creates a new candidate; accepted material is replaced only by a successor revision. Unresolved influence, consent, likeness, Portal egress, or target fit produces quarantine, reduced scope, or refusal.
 
-Paid generation is an effect. It uses an idempotency key and exact request digest; a lost
-acknowledgement leaves the outcome **unknown** until provider records are reconciled. Retrying just
-to obtain a cleaner answer could purchase the same work twice and is refused.
+Paid generation binds idempotency identity and exact request digest. A lost acknowledgement leaves it **unknown** until provider records reconcile it; another attempt could buy the same work twice.
 
-Accepted revisions pass to [Package](package.md). Motion-specific candidates continue through
-[Motion](motion.md); neither path grants engine, editorial, or publication authority.
+Accepted revisions enter [Package](package.md); temporal work continues through [Motion](motion.md). Neither result carries engine, editorial, or publication authority.

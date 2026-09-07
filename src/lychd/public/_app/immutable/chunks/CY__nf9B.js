@@ -1,0 +1,1 @@
+function e(e,t){return e!==`session`&&e!==`run`||typeof t!=`string`||t.length===0||t.length>128||t.trim()!==t?null:{kind:e,targetId:t}}function t(t,n){let r=t?`/atlas/${encodeURIComponent(t)}`:`/atlas`,i=e(n?.kind,n?.targetId);return i?`${r}?link_kind=${encodeURIComponent(i.kind)}&link_id=${encodeURIComponent(i.targetId)}`:r}export{e as n,t};

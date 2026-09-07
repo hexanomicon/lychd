@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from copy import deepcopy
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
@@ -49,8 +50,17 @@ class AssembledContext:
         )
 
     def model_history(self) -> list[Any]:
-        """Return bounded settled history followed by the indivisible current chain."""
-        return [*self.state_window, *self.continuation]
+        """Return detached settled history followed by the indivisible current chain."""
+        return deepcopy([*self.state_window, *self.continuation])
+
+
+def _detached_context(assembled: AssembledContext) -> AssembledContext:
+    """Detach mutable message values while sharing immutable context blocks."""
+    return replace(
+        assembled,
+        state_window=deepcopy(assembled.state_window),
+        continuation=deepcopy(assembled.continuation),
+    )
 
 
 @dataclass
@@ -100,7 +110,7 @@ class ContextOrchestrator:
         grant: CapabilityGrant | None = None,
         grant_epoch: str | int = 0,
     ) -> AssembledContext:
-        """Assemble the six-layer floor."""
+        """Assemble and retain the six-layer floor without borrowing mutable messages."""
         environment_key, environment_block = self._environment_block(
             session_id=session_id,
             grant=grant,
@@ -118,7 +128,7 @@ class ContextOrchestrator:
             # A conservative conversion keeps the assembled textual context below
             # the discovered token window without pretending to be a tokenizer.
             effective_char_cap = min(effective_char_cap, context_window * 3)
-        current_chain = list(continuation or [])
+        current_chain = deepcopy(continuation or [])
         continuation_chars = self._history_cost(current_chain)
         fixed_chars = sum(len(block.text) for block in stable_blocks) + len(query) + continuation_chars
         if fixed_chars > effective_char_cap:
@@ -127,9 +137,11 @@ class ContextOrchestrator:
                 f"exceeding the {effective_char_cap}-character context budget."
             )
             raise ContextBudgetExceededError(msg)
-        window = self._bounded_history(
-            list(history or []),
-            budget=effective_char_cap - fixed_chars,
+        window = deepcopy(
+            self._bounded_history(
+                list(history or []),
+                budget=effective_char_cap - fixed_chars,
+            )
         )
         state_block = self._state_block([*window, *current_chain])
         query_block = self._query_block(query)
@@ -147,7 +159,7 @@ class ContextOrchestrator:
             key=environment_key,
             block=environment_block,
         )
-        self._cache[run_id] = assembled
+        self._cache[run_id] = _detached_context(assembled)
         return assembled
 
     def floor_text(self, run_id: str) -> str:
@@ -156,8 +168,9 @@ class ContextOrchestrator:
         return assembled.floor_text() if assembled is not None else ""
 
     def get(self, run_id: str) -> AssembledContext | None:
-        """Return the assembled context cached for `run_id`, if any."""
-        return self._cache.get(run_id)
+        """Return a detached projection of the cached context for `run_id`, if any."""
+        assembled = self._cache.get(run_id)
+        return _detached_context(assembled) if assembled is not None else None
 
     def release(self, run_id: str) -> None:
         """Drop one settled run's assembly and its environment-snapshot leases."""
@@ -226,6 +239,8 @@ class ContextOrchestrator:
 
     def _bounded_history(self, history: list[Any], *, budget: int) -> list[Any]:
         """Keep newest complete Pydantic message groups within both governors."""
+        if self.turn_window <= 0:
+            return []
         groups = self._history_groups(history)[-self.turn_window :]
         selected: list[list[Any]] = []
         remaining = budget

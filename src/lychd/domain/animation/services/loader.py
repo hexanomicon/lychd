@@ -1,20 +1,19 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from copy import deepcopy
 from ipaddress import ip_address
-from typing import Any, cast, overload
+from typing import Any, cast
 from urllib.parse import urlsplit
 
 import structlog
 
 from lychd.config.runes import RuneConfig
 from lychd.domain.animation.schemas import (
-    AnimatorConfig,
     PortalConfig,
     SoulstoneConfig,
     is_placeholder,
 )
+from lychd.domain.animation.secret_isolation import validate_secret_declarations
 
 logger = structlog.get_logger()
 
@@ -31,7 +30,6 @@ class AnimatorLoader:
     it never performs a second configuration read.
     """
 
-    _INHERITABLE_FIELDS: tuple[str, ...] = ()
     _AUTO_PORT_START = 20000
     _MAX_PORT = 65535
 
@@ -51,13 +49,8 @@ class AnimatorLoader:
     ) -> tuple[list[SoulstoneConfig], list[PortalConfig]]:
         """Hydrate Soulstone and Portal Runes from one validated snapshot."""
         snapshot = tuple(loaded)
-        animator_defaults = self._resolve_animator_defaults(snapshot)
         soulstones = [instance for instance in snapshot if isinstance(instance, SoulstoneConfig)]
         portals = [instance for instance in snapshot if isinstance(instance, PortalConfig)]
-
-        if animator_defaults is not None:
-            soulstones = [self._inherit_defaults(stone, animator_defaults) for stone in soulstones]
-            portals = [self._inherit_defaults(portal, animator_defaults) for portal in portals]
 
         soulstones = [stone for stone in soulstones if not self._is_unresolved_sample_soulstone(stone)]
         portals = [portal for portal in portals if not self._is_unresolved_sample_portal(portal)]
@@ -69,54 +62,17 @@ class AnimatorLoader:
 
         logger.info(
             "animators_loaded",
-            animator_defaults=animator_defaults is not None,
             soulstones=len(soulstones),
             portals=len(portals),
         )
         return soulstones, portals
 
-    def _resolve_animator_defaults(self, loaded: Sequence[Any]) -> AnimatorConfig | None:
-        defaults = [instance for instance in loaded if type(instance) is AnimatorConfig]
-        if len(defaults) > 1:
-            msg = "Animator defaults must resolve to at most one parent Rune instance."
-            raise AnimatorConfigError(msg)
-        return defaults[0] if defaults else None
-
-    @overload
-    def _inherit_defaults(self, instance: SoulstoneConfig, defaults: AnimatorConfig) -> SoulstoneConfig: ...
-
-    @overload
-    def _inherit_defaults(self, instance: PortalConfig, defaults: AnimatorConfig) -> PortalConfig: ...
-
-    def _inherit_defaults(
-        self,
-        instance: SoulstoneConfig | PortalConfig,
-        defaults: AnimatorConfig,
-    ) -> SoulstoneConfig | PortalConfig:
-        data = instance.model_dump(mode="python")
-        defaults_data = defaults.model_dump(mode="python")
-
-        for field in self._INHERITABLE_FIELDS:
-            if field in instance.model_fields_set:
-                continue
-            if field not in defaults.model_fields_set:
-                continue
-            fallback = defaults_data.get(field)
-            if not self._is_unset(fallback):
-                data[field] = deepcopy(fallback)
-
-        validator = cast("Any", type(instance))
-        merged = validator.model_validate(data)
-        if instance.source_file is not None:
-            merged = merged.bind_source_file(instance.source_file)
-        return cast("SoulstoneConfig | PortalConfig", merged)
-
     def _hydrate_soulstone_endpoints(self, stones: list[SoulstoneConfig]) -> list[SoulstoneConfig]:
         used_ports = set(self._reserved_ports.values())
         for stone in stones:
             self._validate_soulstone_base_url(stone)
-            port_was_set = self._field_was_set(stone, "port")
-            base_url_was_set = self._field_was_set(stone, "base_url")
+            port_was_set = "port" in stone.model_fields_set
+            base_url_was_set = "base_url" in stone.model_fields_set
             base_url_port = self._port_from_base_url(stone.base_url)
             if (
                 port_was_set
@@ -136,7 +92,7 @@ class AnimatorLoader:
         hydrated: list[SoulstoneConfig] = []
         for stone in stones:
             auto_port = stone.port is None
-            auto_base_url = not self._field_was_set(stone, "base_url")
+            auto_base_url = "base_url" not in stone.model_fields_set
 
             port = stone.port
             if auto_port:
@@ -148,7 +104,10 @@ class AnimatorLoader:
                 hydrated.append(stone)
                 continue
 
-            data = stone.model_dump(mode="json")
+            # Defaults are not operator declarations. Reintroducing every default
+            # as an explicit field breaks command-authority validation (notably
+            # llama.cpp exec passthrough) while merely allocating an endpoint.
+            data = stone.model_dump(mode="json", exclude_unset=True)
             data["port"] = port
             data["base_url"] = base_url
             validator = cast("Any", type(stone))
@@ -188,9 +147,6 @@ class AnimatorLoader:
             return ip_address(hostname).is_loopback
         except ValueError:
             return False
-
-    def _field_was_set(self, instance: SoulstoneConfig | PortalConfig, field_name: str) -> bool:
-        return field_name in instance.model_fields_set
 
     def _port_from_base_url(self, base_url: object | None) -> int | None:
         if base_url is None:
@@ -254,45 +210,15 @@ class AnimatorLoader:
         soulstones: list[SoulstoneConfig],
         portals: list[PortalConfig],
     ) -> None:
-        """Reject credential aliases before any Portal connector can resolve them."""
-        app_secret, db_secret = self._core_secret_names
-        if app_secret == db_secret:
-            msg = "Core application-signing and database-password secrets must use distinct names"
-            raise AnimatorConfigError(msg)
-
-        core_names = {app_secret, db_secret}
-        portal_names = {portal.api_key_secret_name for portal in portals if portal.api_key_secret_name is not None}
-        core_aliases = sorted(core_names.intersection(portal_names))
-        if core_aliases:
-            msg = f"Portal API secret(s) {', '.join(core_aliases)} cannot alias core application or database secrets"
-            raise AnimatorConfigError(msg)
-
-        privileged = core_names | portal_names
-        control_plane_owners: dict[str, str] = {}
-        for stone in soulstones:
-            for secret_name in stone.control_plane_secret_names:
-                previous_owner = control_plane_owners.get(secret_name)
-                if previous_owner is not None:
-                    msg = (
-                        f"Soulstones '{previous_owner}' and '{stone.name}' cannot share "
-                        f"control-plane secret '{secret_name}'"
-                    )
-                    raise AnimatorConfigError(msg)
-                control_plane_owners[secret_name] = stone.name
-            rune_secret_names = {
-                *stone.secret_env_files.values(),
-                *stone.control_plane_secret_names,
-            }
-            aliases = sorted(rune_secret_names.intersection(privileged))
-            if aliases:
-                msg = (
-                    f"Soulstone '{stone.name}' secret(s) {', '.join(aliases)} must be distinct "
-                    "from core and Portal secrets"
-                )
-                raise AnimatorConfigError(msg)
-
-    def _is_unset(self, value: Any) -> bool:
-        return value in (None, "", [], {})
+        """Apply the shared declaration policy before any runtime is hydrated."""
+        try:
+            validate_secret_declarations(
+                core_secret_names=self._core_secret_names,
+                soulstones=soulstones,
+                portals=portals,
+            )
+        except ValueError as exc:
+            raise AnimatorConfigError(str(exc)) from exc
 
     def _is_unresolved_sample_soulstone(self, stone: SoulstoneConfig) -> bool:
         if is_placeholder(stone.name) or is_placeholder(stone.quadlet.image):

@@ -5,30 +5,14 @@ icon: material/source-repository
 
 # :material-source-repository: Project
 
-A project binds the design, repository revision, `EngineProfile@1`, adapter versions,
-dependencies, environment, build recipe, declared scenarios, and acceptance checks before work
-begins. The engine profile pins the engine and export templates, target platform and renderer,
-physics and navigation settings, importers and plug-ins, locale and random streams, network and
-containment policy, and measured resource envelope.
+The request names one feature. Project binds that request to a repository revision and an engine environment before generated source or an editor can change the work around it.
 
-The proposed Spell `game.bootstrap_project@1` creates that custody boundary. The principal Pattern
-`game.build_playable_slice@2` coordinates only the feature named by the Invocation and preserves
-the source diff produced by its placed Spells. Project truth includes scenes, resources, settings,
-tests, and design decisions; engine-native imports and rebuildable caches remain separate records.
+`game.bootstrap_project@1` establishes custody of design, repository, `EngineProfile@1`, adapters, dependencies, environment, build recipe, declared scenarios, and acceptance checks. The profile pins engine/export templates, platform/renderer, physics/navigation, importers/plug-ins, locale/random streams, network/containment, and measured resources.
 
-A passing model explanation, attractive screenshot, or generated source tree is not a game. The
-project must still load under its pinned engine, satisfy deterministic checks, build, and survive
-the declared playtest scenario.
+`game.build_playable_slice@3` coordinates only the admitted feature and retains the source diff created by its Spells. Scenes, resources, settings, tests, and design decisions are project truth; imports and rebuildable caches retain separate records. An attractive screenshot or generated tree must still load, pass checks, build, and survive the declared scenario.
 
-Project source is executable material. Generated code, foreign scenes, editor scripts, native
-extensions, plug-ins, shaders, external resources, and import hooks receive no ambient execution,
-network, device, secret, or installation authority. The first proof admits only a trusted fixture;
-general project execution requires the Tomb profile named by the engine contract. Headless engine
-mode is not containment.
+The project can execute code. Generated source, foreign scenes, editor scripts, native extensions, plug-ins, shaders, resources, and import hooks receive no ambient network, device, secret, filesystem-execution, or installation permission. The first proof uses a trusted fixture. General execution requires its engine contract's Tomb profile; headless mode supplies no containment.
 
-License acceptance and destructive source changes are separate gates. Restart resolves the pinned
-Pattern, source, engine, adapter, environment, and schema. Incompatible parked work drains,
-migrates through an explicit adapter, or ends honestly rather than moving to “latest.”
+Licence acceptance and destructive source changes have separate gates. Restart resolves the pinned Pattern, source, engine, adapters, environment, and schema. Incompatible work drains, migrates through an explicit adapter, or ends honestly rather than switching to latest.
 
-Continue with [Assets](assets.md), [World](world.md), [Playtest](playtest.md), or
-[Build](build.md).
+Continue with [Assets](assets.md), [World](world.md), [Playtest](playtest.md), or [Build](build.md).

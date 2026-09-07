@@ -1,0 +1,32 @@
+LychD Altar — visual assets
+
+working-altar.png
+AI-generated for Altar with the built-in imagegen tool on 2026-09-06.
+1536 x 1024 pixels; original generated PNG, bundled unchanged.
+SHA-256: 678d5d9ac7ecd7baa33e536df6763cc0d5d8428dba50c85133d3cf16d0a94532
+Generation prompt (source distribution):
+clients/web/src/lib/assets/altar/working-altar.prompt.md
+The operator authorized retaining the fictional mechanical mage in a new
+interior scene. The Mechanimous poster is a character reference, not a shipped
+Altar asset.
+
+Character reference: Mechanimous, static/mechanimous-poster.webp
+Reference checkout revision: ad5c8bd004d44a7d9b6bcf5a2c39103bd29d8bfe
+Reference SHA-256: 274dc32376d17754a7ee8c33cc00c0c103248e95d463a76f25aa9dd320f24775
+
+Mechanimous identifies the reference as generated or assisted with AI tools.
+Its README reserves all rights in visual assets, videos, brand marks, logos,
+and written content unless separately stated. The source-code MIT license
+in Mechanimous does not grant permission to reuse those materials.
+These existing visual-asset terms are retained. This notice records provenance
+and authorized use; it does not grant a new license for the reference artwork
+or character under LychD's source-code license.
+
+favicon.svg
+Original code-native Altar hood mark. Covered by the repository's MPL-2.0.
+
+Both are fixed brand assets outside the semantic status palette. The hood
+identifies Altar; its appearance never indicates consent or runtime state.
+The scene appears only at the empty Bridge entrance and carries no evidence
+or operational meaning. Its source bytes are bundled locally by Vite;
+Altar does not depend on a Mechanimous checkout or a remote image service.

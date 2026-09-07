@@ -17,11 +17,44 @@ sign, settle, retry, identify a caller, grant access, or enlarge a budget. Toll 
 system-wallet middleware that pays the challenge and retries. Neither Agent nor Dispatcher
 receives wallet or signing authority.
 
-## One paid request
+## First road, later rails
+
+Initial Toll delivery is issuer-local. An operator may manually grant **MANA** service credits,
+then optionally fund an exact balance through one conventional payment processor or charge one
+bounded request as pay-as-you-go. MANA is an issuer-qualified, account-bound balance in that
+issuer's Counting House. It is not cash or cryptocurrency; the initial profile cannot be spent
+with or accepted by another issuer and carries no peer transfer, cash redemption, or cross-issuer
+conversion.
+
+Tithe meters model-token and resource consumption; the Counting House separately reserves, debits,
+credits, releases, refunds, and reconciles MANA. A purchased balance remains the issuing operator's
+service obligation. Spending it still requires the same authenticated Principal, eligible task,
+budget authority, idempotency, and delivery accounting as an external payment.
+
+Only the authorized issuer boundary may issue, expire, or correct MANA; an Agent, model, or ordinary
+tool cannot. The ledger appends the authority and grant reason or independently verified funding
+identity for every entry, uses compensating corrections instead of rewriting history, and prevents
+reservation from making available balance negative. A webhook, client-supplied receipt, pending
+authorization, or ambiguous settlement cannot fund spendable MANA.
+
+The two practical flows remain distinct:
+
+```text
+MANA → quote → reserve local balance → execute → debit / release / refund → reconcile
+PAYG → quote → reserve budget → authorize → Irreversible Gate → settle → execute → reconcile
+```
+
+Conventional pay-as-you-go, x402, and any later crypto scheme are distinct settlement adapters over
+the same quote, reservation, authorization, delivery, refund, and reconciliation law. x402 is not
+a currency. The first delivered adapter need not use it, and selecting it later does not imply a
+project-native token or chain.
+
+## One external paid request
 
 A destination-pinned connector produces a candidate request and quote.
-[Dispatcher](../../adr/22-dispatcher.md) considers an admitted price only after capability,
-privacy, policy, and resource eligibility. Two unequal planes then carry the same request.
+Execution-road policy considers quotes among roads that satisfy capability, privacy, policy, and
+resource eligibility. Toll judges their economic terms and reserves the exposure;
+[Dispatcher](../../adr/22-dispatcher.md) binds an already eligible capability without ranking prices. Two unequal planes then carry the same request.
 
 For Intercom, casting work and teaching a missing Spell are different purchased resources. Each
 needs its own exact quote, content identity, budget reservation, consent or standing authority,
@@ -50,11 +83,11 @@ settlement to useful delivery.
 
 ## What settlement cannot buy
 
-**Tithe** accounts currency-neutral tokens, generated media, concurrency, queue weight, and
-hardware time against a stable Principal or service grant, including when every payment adapter is
-disabled. Money or a receipt cannot mint or widen a Sigil or [Ward](ward.md) authority, expose
-memory or tools, bypass consent, or displace protected local work. A purchased grant exists only
-at the intersection of settlement evidence, Ward policy, capability policy, and available
+**Tithe** accounts currency-neutral model-token usage, generated media, concurrency, queue weight,
+and hardware time against a stable Principal or service grant, including when every payment
+adapter is disabled. Money or a receipt cannot mint or widen a Sigil or [Ward](ward.md) authority,
+expose memory or tools, bypass consent, or displace protected local work. A purchased grant exists
+only at the intersection of settlement evidence, Ward policy, capability policy, and available
 resources. Currency-free [Legion](legion.md) work still needs quotas, reservations, attribution,
 and evidence.
 
@@ -78,5 +111,8 @@ bearer proofs, preimages, invoices, and unrestricted wallet credentials stay out
 Codex values, logs, traces, and artifacts.
 
 Protocols and settlement rails are adapters around this law, never rival ledgers. The first
-implementation must pin one exact x402 profile and conformance corpus; ADR 41 owns every later
-adapter decision.
+implementation may remain local; every external adapter must pin one exact provider or protocol
+profile and conformance corpus. x402 and crypto rails are later options, not first-delivery
+requirements. A shared asset, validator network, or sovereign chain requires a later
+amendment to [ADR 41](../../adr/41-x402.md#deferred-shared-and-sovereign-settlement) and every
+affected Covenant rather than silently entering as an adapter.

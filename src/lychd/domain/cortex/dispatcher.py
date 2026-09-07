@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Never
 
 from lychd.domain.animation.capabilities import CapabilityPhase, CapabilitySpec, CapabilityState, SourceKind
-from lychd.domain.animation.errors import CapabilityUnavailable, HardwareTransitionRequired
+from lychd.domain.animation.errors import CapabilityNotWarm, CapabilityUnavailable, HardwareTransitionRequired
 from lychd.domain.animation.protocols import CapabilityRegistry, require_capability_record
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.cortex.leases import AnimatorAdmission, LeaseAdmissionClosed
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncGenerator
 
     from lychd.domain.animation.capabilities import CapabilityGrant
     from lychd.domain.cortex.events import RunEventBus
@@ -51,19 +51,23 @@ class Dispatcher:
         *,
         family: CapabilityFamily | str,
         model_name: str | None = None,
+        capability_key: str | None = None,
         run_id: str,
         priority: int = 50,
         require_modalities: tuple[str, ...] = (),
         requires_tools: bool = False,
-    ) -> AsyncIterator[CapabilityGrant]:
-        """Lease a scoped grant for the resolved family/model/modality request.
+    ) -> AsyncGenerator[CapabilityGrant]:
+        """Lease a scoped grant satisfying every declared request constraint.
 
-        Resolves family (+ model preference, + modality admission) to a spec,
-        drives the phase decision table to WARM, and yields the grant.
+        An exact capability key pins its Animator as well as its model; a model
+        name alone still permits any eligible Animator declaring that model.
+        Neither selector bypasses family, modality, tools, readiness, or policy
+        admission. Contradictory constraints fail without selecting another route.
         """
         spec = self._resolve_spec(
             family,
             model_name=model_name,
+            capability_key=capability_key,
             require_modalities=require_modalities,
             requires_tools=requires_tools,
         )
@@ -94,6 +98,7 @@ class Dispatcher:
         after this returns).
         """
         self._require_egress_admission(spec)
+        spec.require_executable_v1_family()
         if self._leases.admission(spec.animator_name) is AnimatorAdmission.DRAINING:
             raise self._transition_required(spec)
         return await self._drive_to_grant(spec, holder=holder)
@@ -137,7 +142,18 @@ class Dispatcher:
             # closed while that probe yielded, before grant assembly even begins.
             if self._leases.admission(spec.animator_name) is AnimatorAdmission.DRAINING:
                 raise self._transition_required(spec)
-            return await self._registry.issue_grant(spec.key, holder=holder)
+            try:
+                return await self._registry.issue_grant(spec.key, holder=holder)
+            except CapabilityNotWarm as exc:
+                if exc.state is None:
+                    raise
+                return self._raise_non_warm(spec, exc.state)
+
+        return self._raise_non_warm(spec, state)
+
+    def _raise_non_warm(self, spec: CapabilitySpec, state: CapabilityState) -> Never:
+        """Apply the same phase law to preflight and fresh issue-time observations."""
+        phase = state.phase
 
         if phase in {CapabilityPhase.COLD, CapabilityPhase.ACTIVATABLE, CapabilityPhase.WARMING}:
             if spec.concurrency.dedicated:
@@ -150,8 +166,8 @@ class Dispatcher:
         if phase is CapabilityPhase.ERROR:
             raise CapabilityUnavailable(spec.key, state.reason)
 
-        # ``require_capability_record`` already performed the one admitted refresh.
-        # UNKNOWN after that observation settles unavailable without a probe loop.
+        # This row already has its fresh observation. UNKNOWN settles unavailable
+        # without a probe loop, whether preflight or issue observed it.
         raise CapabilityUnavailable(spec.key, state.reason or "capability phase unknown")
 
     def _resolve_spec(
@@ -159,6 +175,7 @@ class Dispatcher:
         family: CapabilityFamily | str,
         *,
         model_name: str | None,
+        capability_key: str | None,
         require_modalities: tuple[str, ...],
         requires_tools: bool = False,
     ) -> CapabilitySpec:
@@ -167,7 +184,7 @@ class Dispatcher:
         candidates: list[tuple[CapabilitySpec, CapabilityState]] = []
         quarantined_portal = False
         for spec in self._registry.list_capabilities():
-            if spec.family != target:
+            if spec.family != target or (capability_key is not None and spec.key != capability_key):
                 continue
             if model_name is not None and spec.model_id != model_name:
                 continue
@@ -178,15 +195,20 @@ class Dispatcher:
             if spec.source_kind is SourceKind.PORTAL:
                 quarantined_portal = True
                 continue
-            state = self._registry.get_capability_state(spec.key)
-            if state is None or not state.is_available:
+            # Invalidation removes evidence; it does not remove the declared
+            # route. Rank it as unknown so a later request can observe recovery.
+            state = self._registry.get_capability_state(spec.key) or CapabilityState(
+                capability_key=spec.key, phase=CapabilityPhase.UNKNOWN
+            )
+            if not state.is_available:
                 continue
             candidates.append((spec, state))
 
         if not candidates:
+            requested = capability_key if capability_key is not None else str(family)
             if quarantined_portal:
-                raise CapabilityUnavailable(str(family), "portal egress admission is not configured")
-            raise CapabilityUnavailable(str(family), "no registered capability can fulfill the request")
+                raise CapabilityUnavailable(requested, "portal egress admission is not configured")
+            raise CapabilityUnavailable(requested, "no registered capability can fulfill the request")
 
         candidates.sort(key=self._candidate_sort_key)
         return candidates[0][0]

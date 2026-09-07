@@ -33,6 +33,8 @@ class SwitchingSettings(SettingsSection):
     """Owner-only Host Reactor inbox; its sibling journal is derived automatically."""
     min_priority_for_hard_swap: int = Field(default=40, ge=0, le=100)
     """Lowest request priority allowed to trigger a disruptive hard runtime swap."""
+    planning_timeout_s: float = Field(default=30.0, gt=0, allow_inf_nan=False)
+    """Maximum seconds for all managed-runtime observations in each preflight or replan."""
     drain_timeout_s: float = Field(default=120.0, gt=0, allow_inf_nan=False)
     """Maximum seconds to wait for active work to reach a safe transition boundary."""
     warmup_timeout_s: float = Field(default=180.0, gt=0, allow_inf_nan=False)

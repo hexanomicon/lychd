@@ -12,6 +12,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from lychd.config.runes.loader import ConfigLoader
 from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import get_settings
+from lychd.domain.animation.animators import RuntimeAnimator
 from lychd.domain.animation.capabilities import (
     CapabilityPhase,
     CapabilitySpec,
@@ -148,8 +149,8 @@ def test_registry_rejects_capability_outside_runtime_ownership(
     )
 
     class ForeignCapabilityAdapter(OpenAICompatibleRuntimeAdapter):
-        def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
-            return [spec.model_copy(update=update) for spec in super().build_capability_specs(soulstone)]
+        def build_capability_specs(self, animator: RuntimeAnimator) -> list[CapabilitySpec]:
+            return [spec.model_copy(update=update) for spec in super().build_capability_specs(animator)]
 
     registry = AnimatorRegistry(
         declarations=_declarations(runes_dir, [VllmSoulstoneConfig]),
@@ -172,8 +173,8 @@ def test_registry_rejects_duplicate_capability_keys_with_declaration_provenance(
     )
 
     class DuplicatingCapabilityAdapter(OpenAICompatibleRuntimeAdapter):
-        def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
-            specs = super().build_capability_specs(soulstone)
+        def build_capability_specs(self, animator: RuntimeAnimator) -> list[CapabilitySpec]:
+            specs = super().build_capability_specs(animator)
             return [*specs, *specs]
 
     registry = AnimatorRegistry(
@@ -488,23 +489,23 @@ def test_portal_schema_without_exact_definition_builds_no_runtime_or_capabilitie
 
     adapters = RuntimeAdapterRegistry()
     runtime = adapters.build_runtime(portal)
-    specs = adapters.build_capability_specs(portal)
 
     assert runtime is None
-    assert specs == []
 
 
 class _HealthControl(LlamaCppControlPlane):
     """Stub control plane reporting a fixed single-mode health for issue_grant tests."""
 
-    def __init__(self, health: str) -> None:
+    def __init__(self, health: str, *, model_id: str = "qwen") -> None:
         super().__init__()
         self._health = health
+        self._model_id = model_id
 
     async def inspect_animator(self, animator: Any) -> AnimatorLifecycle:
         del animator
         return AnimatorLifecycle(
             health=self._health,
+            loaded_models=[self._model_id] if self._health == "ok" else [],
         )
 
     def set_health(self, health: str) -> None:
@@ -535,8 +536,8 @@ def _family_registry(
                 cast("Any", runtime.connector)._toolsets = toolsets
             return runtime
 
-        def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
-            base = super().build_capability_specs(soulstone)[0]
+        def build_capability_specs(self, animator: RuntimeAnimator) -> list[CapabilitySpec]:
+            base = super().build_capability_specs(animator)[0]
             return [
                 base.model_copy(
                     update={
@@ -549,7 +550,7 @@ def _family_registry(
 
     registry = AnimatorRegistry(
         declarations=_declarations(runes_dir, [LlamaCppSoulstoneConfig]),
-        runtime_adapters=[FamilyAdapter(control_plane=_HealthControl("ok"))],
+        runtime_adapters=[FamilyAdapter(control_plane=_HealthControl("ok", model_id="family"))],
     )
     registry.ensure_loaded()
     return registry, registry.list_capabilities()[0].key

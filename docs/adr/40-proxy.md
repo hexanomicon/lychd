@@ -63,7 +63,7 @@ time/stream ceilings, backend, exposure tier, authentication precondition, and a
 wildcard path is forbidden. Veil receives edge certificates and routing material only, never bot,
 provider, A2A application, corpus-write, database, or delivery authority.
 
-## Compiled ingress, not shared text
+## Compile the admitted ingress routes {#compiled-ingress-not-shared-text}
 
 Core and extensions contribute typed route intent: host/route match, backend service and port,
 protocol/streaming behaviour, body/timeout/header limits, application-authentication preconditions,
@@ -73,7 +73,7 @@ admitted service topology. It renders complete Caddy configuration in staging, v
 inscribes transactionally. The Scribe owns the generated projection; contributions remain separate
 and attributable.
 
-## Transport is never application authority
+## Caller authority at the backend {#transport-is-never-application-authority}
 
 TLS authenticates the configured endpoint and protects bytes; path routing chooses a backend.
 Neither identifies a caller or permits an effect. Ward and Vessel authenticate callers and enforce
@@ -100,5 +100,5 @@ the browser boundary is unsafe to publish: no ad hoc reverse proxy, tunnel, or p
 stand in for the missing contract. [State of Work](../state-of-the-work.md#proxy-veil) owns the
 delivery boundary.
 
-Veil gives remote transport a dedicated owner, while adding certificate, DNS, firewall, abuse, and
-availability duties that do not exist on loopback.
+Operating Veil adds certificate, DNS, firewall, abuse, and availability duties alongside its
+dedicated remote-transport role. A loopback-only deployment avoids those duties.

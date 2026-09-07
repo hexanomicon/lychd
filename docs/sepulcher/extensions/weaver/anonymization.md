@@ -19,39 +19,34 @@ and refusal; this page owns the journey through the score.
     provider branch, and Portal Egress Gate are also undelivered. Portal declarations and probes
     remain observable, but Dispatcher still quarantines both family and direct-key Portal dispatch.
 
-## The leverage of a local boundary
+## Labels begin at the source
 
-Anonymization is not merely a defensive filter. Once delivered, it is what can make subsidized
-remote reasoning admissible for a delegated coding agent. The **local anonymizer** is the whole
-chain—deterministic Censor, local Privacy Agent, verifier, and Privacy Cut—not one model trusted to
-declare its own output safe. The **local bastion** is likewise a compound boundary: Coffin
-supervision, the Portal Egress Gate, and the Provider Gate.
+SQL is storage, not the classifier. Domain and repository ports attach table and column defaults,
+row- or subject-specific policy, and query lineage before values reach Context. Computed fields
+inherit the values that formed them. Unknown or raw access is restricted at the governed boundary.
 
-Together they can expose one useful, sanitized task projection to one named remote runtime under
-job, destination, model, time, token, and spend bounds. The raw checkout, credentials, identity
-map, pseudonym map, and promotion authority remain local. The returned candidate comes back
-quarantined for local rehydration, testing, and admission.
+Tools declare whether output introduces a sensitive source, inherits or joins inputs, remains
+local-only, proposes sanitization, or enters quarantine. A `sensitive` annotation warns the
+contract; it does not become a prompt hint that the model may ignore.
 
-That is the economic leverage: inexpensive or subsidized provider capacity becomes usable without
-pricing raw disclosure into the bargain. If the Cut cannot preserve enough program structure and
-diagnostic meaning to answer the task, or the bastion cannot attest the exact exit, the work stays
-local.
+The same rule covers screenshots, filenames, EXIF, OCR, transcripts, captions, embeddings, model
+summaries, checkpoints, and delegated results. A derivative does not launder its source.
 
 ## One cut, two contexts
 
-```mermaid
-flowchart LR
-    A["Governed inputs<br/>query · SQL · tools · memory · artifacts"] --> B["Join labels and lineage"]
-    B --> C["DisclosurePlan@1<br/>consumer · purpose · minimum projection"]
-    C --> D["Deterministic Censor<br/>candidate + TransformationReceipt"]
-    D --> E["Local Privacy Agent<br/>proposal/findings only"]
-    E --> F["Deterministic applicator<br/>final candidate + chained receipt"]
-    F --> G["Independent verifier<br/>CutVerification@1"]
-    G --> H["Privacy Cut<br/>new Context branch"]
-    H --> I["Security Egress Gate<br/>exact target and wire payload"]
-    I --> J["Portal · A2A · remote delegate"]
-    J --> K["Quarantined return"]
-```
+The handoff proceeds in this order:
+
+1. **Governed inputs** — query · SQL · tools · memory · artifacts.
+2. **Join labels and lineage.**
+3. **DisclosurePlan@1** — consumer · purpose · minimum projection.
+4. **Deterministic Censor** — candidate + TransformationReceipt.
+5. **Local Privacy Agent** — proposal/findings only.
+6. **Deterministic applicator** — final candidate + chained receipt.
+7. **Independent verifier** — CutVerification@1.
+8. **Privacy Cut** — new Context branch.
+9. **Security Egress Gate** — exact target and wire payload.
+10. **Portal · A2A · remote delegate.**
+11. **Quarantined return.**
 
 The raw branch remains local and labelled. The Privacy Cut rebuilds every field that will reach the
 consumer/target: Portal instructions/history/query/tools/options, A2A values/envelope/ArtifactRefs,
@@ -67,6 +62,20 @@ rehydration station, expiry, and cryptographic erasure. Another Cut receives ano
 that lease cannot survive the declared remote deadline and return window, the Pattern stays local
 or accepts a redaction-only result explicitly.
 
+## The leverage of a local boundary
+
+The **local anonymizer** combines a deterministic Censor, local Privacy Agent, verifier, and
+Privacy Cut. The **local bastion** combines Coffin supervision, the Portal Egress Gate, and Provider
+Gate. Together they can make inexpensive or subsidized remote reasoning admissible for a delegated
+coding agent: one named runtime receives a useful sanitized task projection under job, destination,
+model, time, token, and spend bounds.
+
+The raw checkout, credentials, identity and pseudonym maps, and promotion authority remain local.
+Returned candidates enter quarantine before local rehydration, testing, and admission. This economy
+depends on both utility and an attested exit: if the Cut cannot preserve enough program structure
+and diagnostic meaning, or the bastion cannot attest the exact crossing, the work stays local. No
+single model may certify its own sanitization.
+
 ## Transformations are evidence
 
 | Act | Result |
@@ -76,13 +85,11 @@ or accepts a redaction-only result explicitly.
 | Generalize | Reduce precision while preserving useful meaning |
 | Anonymize | Meet a declared residual-risk policy and threat model |
 
-None grants egress by itself. The Censor produces a candidate and receipt; the Privacy Agent emits
-findings and typed proposed operations but never changes authoritative bytes. A deterministic
-applicator creates any final candidate and a terminal receipt chained to every prior receipt. That
-ordered chain binds the exact wire candidate and all transformations while remaining non-
-authorizing. An independent verifier issues a separate `CutVerification@1`; Context seals the
-branch; Security decides whether that exact wire/export candidate may cross its tagged target. One
-component never upgrades its own claim into permission.
+None grants egress by itself. The [ordered Cut sequence](#one-cut-two-contexts) preserves an
+exact transformation-receipt chain and independent `CutVerification@1` before Context seals the
+branch and Security decides its exit. No component upgrades its own claim into permission; the
+[Context contract](../../../adr/21-context.md#privatization-and-the-privacy-cut) keeps their exact
+roles separate.
 
 Source influence also survives. A successful disclosure assessment does not relabel a private
 source or its derivatives as public. Pseudonymized material remains private while a reversal or
@@ -107,7 +114,7 @@ relevant entity that may reasonably use auxiliary information: provider and subp
 peer, delegated runtime, configured gateway or storage custodian, and intended later recipients.
 The verifier evaluates the exact candidate from each relevant perspective:
 
-- **no isolation:** can a person, account, household, organization, repository, or record still be
+- **no singling out (isolation):** can a person, account, household, organization, repository, or record still be
   singled out inside the supplied material?
 - **no linkage:** can remaining values, structure, timing, paths, quotations, commits, or outside
   data reconnect it to its source?
@@ -134,19 +141,6 @@ claim of legal compliance.
 | filenames, URLs, repository names, commits, stack traces, unique strings | treat as potentially identifying and proprietary; a secret-free checkout is not anonymous |
 | relationships and ordering | retain only the minimum dependency structure required by the task |
 | task-critical semantics | validate independently; if transformation breaks them, choose a local road or refuse |
-
-## Labels begin at the source
-
-SQL is storage, not the classifier. Domain and repository ports attach table and column defaults,
-row- or subject-specific policy, and query lineage before values reach Context. Computed fields
-inherit the values that formed them. Unknown or raw access is restricted at the governed boundary.
-
-Tools declare whether output introduces a sensitive source, inherits or joins inputs, remains
-local-only, proposes sanitization, or enters quarantine. A `sensitive` annotation warns the
-contract; it does not become a prompt hint that the model may ignore.
-
-The same rule covers screenshots, filenames, EXIF, OCR, transcripts, captions, embeddings, model
-summaries, checkpoints, and delegated results. A derivative does not launder its source.
 
 ## Seal the exact exit
 

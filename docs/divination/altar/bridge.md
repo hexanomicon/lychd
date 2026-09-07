@@ -5,105 +5,120 @@ icon: material/bridge
 
 # :material-bridge: Bridge
 
-The **Bridge** is the operating conversation: the Magus offers a bounded Intent, follows its
-result, and decides a supported consent request. It carries conversation without becoming Spellweaver,
-Oculus, artifact custody, or authority over anything mentioned in a reply.
+Bridge is where you offer work to the Lich and return to its reply. A session, or séance, keeps the conversation together. Each admitted turn opens its own [Circle](circle.md), with a Run you can follow from request to result.
 
-Bridge is the place of continuing relation. Its [**Circle**](circle.md) is the pinnacle: one
-Invocation in which that relation concentrates into an answerable casting. A séance may hold many
-Circles without merging their Runs, Sigils, Context boundaries, or consequences.
+After completing [Altar setup](index.md), open `http://127.0.0.1:7134/bridge` in the dedicated browser profile on the same host. Keep the listener on literal `127.0.0.1`; do not proxy, tunnel, or forward it.
 
-Enter through:
+## Offer one Intent {#follow-a-turn-to-settlement}
 
-```text
-http://127.0.0.1:7134/bridge
-```
+Choose **New Séance** to create a local session, or select an existing session to continue it.
+Submit your message once. Its request receives an identity that retries reuse, so an identical
+retry can return the same canonical Run. If the response is lost, **Retry original offering**
+resends that immutable request. A later refusal does not erase an earlier unknown outcome; the
+next offering stays disabled until the original is resolved. You can write a later draft while
+waiting. If the original is definitely refused, its text is retained beside that draft for
+restoration or dismissal.
 
-The current Altar is a contained same-host surface: keep the listener on literal `127.0.0.1`, use a
-dedicated browser profile, and do not proxy, tunnel, or port-forward it. Begin with the
-[Altar boundary](index.md) if that containment is not already in place.
+Drafts and unresolved offerings remain separate for each session when you visit another Altar
+instrument. They last while this browser document stays open; reload or closing the tab warns
+before losing them. This is not storage across browser restarts.
 
-## One crossing at a time
+The shell's consent count opens **Conversations awaiting consent**. Choose a marked session to
+review its requests; its rail and inspector show that session's count. Requests without an
+available Bridge conversation remain in the global count and are reported in the chooser.
 
-The delivered Bridge supports:
+When arriving from Atlas, choose a linked conversation or use the conversation chooser. The
+project return link stays available, including after opening a new séance. **Link this conversation
+to…** opens a prefilled Atlas form for an explicit save; it does not link or send project context
+merely because you navigated.
 
-- local sessions and **New Séance**;
-- text submission with one retry-stable request identity, one canonical Run, and held-turn repair;
-- process-local semantic event streaming;
-- pending consent cards and decisions;
-- session inspection;
-- closed, server-validated GenUI fragments retained through terminal refresh, with inert key-only
-  compatibility for older rows that never enters a current renderer; and
-- a per-turn run strip linking exact run evidence into the [Orb](orb.md).
+The Run strip beside the turn shows the Pattern revision, canonical status and current activity.
+Keep its Run identity when you follow the result into another instrument. This strip is the
+present Circle interface; the fuller workspace is described in the [Circle guide](circle.md).
 
-The run strip names the Run, Pattern revision, canonical status, and current activity. It does not
-show evidence freshness or a structured **Why waiting?** explanation. A spinner, elapsed clock, or
-open stream is never promoted into workflow progress.
+If a consent card appears, read the pending request and choose one of its supported decisions.
+The server validates the request, descriptor, reference and decision together. Your choice
+applies to that pending request. Each Invocation has its own Sigil, Context boundary and
+consequences; permission for another object, wider tools or a later effect needs its own
+admission. Suggesting an action in conversation cannot authorize it.
 
-The strip is the current thin material projection of a Circle. No focused Circle workspace exists:
-Bridge does not yet compose the exact Scroll, active Spell placement, Context and authority
-boundary, Animator grant, or Orb evidence into one view.
+## Read the result
 
-Bridge is not a general run dashboard, workflow editor, annotation canvas, or ambient view of
-every Agent. Loom owns Pattern projection; Orb owns evidence; Nexus owns physical transitions.
+When the Run settles, follow the strip's link to [Orb](orb.md) to inspect its evidence. A failed
+or cancelled Run stays visible even when it has no corresponding settled agent turn. Your
+admitted message may therefore appear in the conversation without an answer beside it.
 
-## Continuity without invented memory
+Follow the question raised by the result: [Loom](loom.md) shows the declared score, Orb shows
+Run evidence, and [Nexus](nexus.md) shows physical observations. Each instrument keeps its own
+controls and owners for any action it offers.
 
-Visible turns and model history are different records. A user turn may appear immediately, but
-only a settled agent turn appends one complete Pydantic AI history unit. Provider hops inside that
-unit are normalized to the owning LychD run, so a consent return cannot survive without its
-originating tool call. Replaying the same settled Run outcome is a no-op; reusing its Run/role
-identity for different visible content, state, or fragments fails closed.
+## When a turn cannot advance
 
-A later invocation takes the newest whole turns within configured turn and character budgets,
-validates typed messages, then rebuilds the Stable Floor under the capability actually granted.
-Consent resume keeps the current call chain whole and re-bounds older settled turns under the new
-grant.
+| What you encounter | What it means or what to do |
+| --- | --- |
+| Another Run in this séance is still nonterminal | A different message is refused; an identical retry returns the same canonical Run. Wait for terminal ledger status before starting a new turn. |
+| The activity stream lags or remains open | Use durable Run status to establish lifecycle state. An open stream, spinner or advancing clock cannot independently establish that work is advancing. |
+| Cancellation is followed by a failed session refresh | The selected session's consent cards and count have already been cleared. Those actions stay revoked until authoritative session truth is available. |
 
-An admitted user turn is not a completed answer. Until a matching agent turn settles, a terminal
-failed or cancelled Run remains visible as a Run projection. Its durable status outranks a lagging
-process-local stream, and delayed recovery snapshots cannot replace a newer cursor/generation.
-Cancelling a Run immediately clears the selected session's consent cards and count, then refetches
-authoritative session truth. A failed refetch leaves those actions revoked rather than displaying
-stale authority.
+The interface currently shows activity without a structured **Why waiting?** explanation or an
+evidence-freshness indicator.
 
-This is bounded conversational continuity. One Bridge session admits at most one nonterminal Run:
-an exact retry reuses its canonical Run, while a different message is refused until terminal ledger
-truth admits the next crossing. That process-local policy is not Archive retrieval, full-session
-replay, cross-process event durability, or a queued multi-process conversation scheduler.
+## What the next turn remembers
 
-## Consent is not a suggestion
+Bridge carries forward recent, complete, settled turns. It selects the newest whole turns that
+fit the configured turn and character budgets. A visible user row can precede settlement; it
+becomes part of this retained history only with the settled agent turn. Full-session replay and
+Archive retrieval are outside this history path.
 
-The server validates the request, descriptor, reference, and decision. A conversational proposal
-never carries executable authority. Approval applies to the exact pending request presented; it
-does not widen the Agent's tools, mutate another object, or grant a later effect.
+??? info "How Bridge retains and restores a turn"
 
-The current boundary supports the existing consent round. Run admission has a durable database
-delivery outbox, but general multi-approval flows, notifications, and durable token/event delivery
-remain absent.
-[State of Work](../../state-of-the-work.md#bridge-surface) owns the exact boundary.
+    Only a settled agent turn appends one complete Pydantic AI history unit. Bridge validates
+    typed messages, normalizes provider hops to their owning LychD Run, and keeps a consent
+    return paired with its original tool call. For a later Invocation it rebuilds the Stable
+    Floor for the newly granted capability. Consent resume preserves the current call chain
+    while fitting older settled turns to that grant's bounds.
 
-## Designed crossings
+    Closed, server-validated GenUI fragments survive a terminal refresh. Older rows retain inert
+    compatibility keys and stay outside the current renderer. Replaying an identical settled
+    outcome makes no change. Reusing a Run and role identity with different visible content,
+    state or fragments is rejected. An older recovery snapshot cannot replace a newer cursor
+    or generation.
 
-Two useful movements remain designed:
+    Admission has a durable database delivery outbox. Conversation streaming has a narrower
+    lifetime: semantic events and their reconstruction remain process-local, with no durable
+    token or event delivery. The single-active-Run rule does not create a conversation queue
+    across multiple processes. The existing consent round is supported; general multi-approval
+    flows and notifications remain unavailable. The [Bridge delivery
+    record](../../state-of-the-work.md#bridge-surface) gives the current scope.
 
-- **Pin and Ask** would attach an authorized typed reference—such as an exact Scroll/Pattern
-  revision and Spell placement, Run event, transition, or artifact revision—to a new Intent. The composer must preview
-  identity, included/summarized/unavailable/redacted material, and permission; the Vessel must
-  reauthorize the reference at admission. A pin grants neither retrieval nor mutation by itself.
-- **Propose in Loom** would turn selected conversation into an attributable charcoal Scroll candidate
-  against an exact base Pattern. The candidate would remain inert until Spellweaver's future draft
-  contract validates and publishes a new revision.
+## Two crossings still being designed
 
-Neither exists today. Copying prose or a canvas coordinate is not a typed reference, and natural
-language does not round-trip into executable workflow law.
+**Pin and Ask** would carry an authorized typed reference into a new Intent. Before admission, a preview would identify the reference, show what material would be included or summarized, disclose unavailable or redacted material, and state the permission involved. The Vessel would then reauthorize the request. Pinning a reference grants no retrieval or mutation authority.
 
-For the movement that does exist:
+**Propose in Loom** would turn selected conversation material into an attributed, inert charcoal Scroll candidate against a specified base Pattern revision. A future Spellweaver draft contract would have to validate it and publish a new revision before it could become executable work. The selection must become a typed handoff; copied prose or canvas coordinates alone cannot supply it.
 
-```text
-offer Intent
-→ inspect the admitted Run
-→ answer consent when asked
-→ receive the settled result
-→ follow its exact Orb evidence
-```
+Neither action is available yet. Follow their development through [Loom](loom.md) and the [delivery record](../../state-of-the-work.md#bridge-surface).
+
+## Reading direction
+
+The planned composition gives the conversation the widest readable area, keeps conversation
+selection accessible, and discloses secondary metadata on demand. The offered text, exact Run
+status, reply or explicit missing reply, and any consent or unresolved admission form one reading
+sequence. The next draft remains distinct. A permission request shows its actual target and
+scope beside its supported decisions; a disabled offering explains what must resolve and does
+not imply that the draft is queued.
+
+Returning from Orb should bring the reader to the originating Run without displacing a later
+draft. New activity preserves the reader's place in older text, with a separate path to the
+latest turn. Project origin, saved membership, and material included in model Context remain
+different facts. The run strip supplies links rather than a second execution graph; a composed
+Circle still requires its own delivered contracts.
+
+Acceptance case: lose an offering's admission response, write a later draft, inspect another
+instrument, and attend to consent in a different session. Return to the original session with
+the same request identity and original text, the later draft intact, and correctly scoped
+attention. Test unknown admission and accepted-Run consent independently; a mock must not suggest
+two unrelated active offerings are permitted in one session. Browser restart recovery needs a
+persistence contract beyond the current open-document state. These are [presentation
+targets](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction), not a new queue, memory,
+or recovery service.

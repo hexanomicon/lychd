@@ -42,8 +42,9 @@ support closure has broken. Independently supported claims remain intact. Recove
 bounded [trial](./trials.md) and a new claim, while causal uncertainty can move through
 [Returning findings](./returning-findings.md).
 
-Missing or stale evidence preserves the Dispatcher's documented fallback. It creates no synthetic
-intelligence floor and supplies no reason to rank untested subjects.
+Missing or stale evidence leaves the Dispatcher's existing deterministic readiness order in place.
+It neither introduces retry through another candidate nor creates an intelligence floor for
+untested subjects.
 
 ## Let each consumer decide
 

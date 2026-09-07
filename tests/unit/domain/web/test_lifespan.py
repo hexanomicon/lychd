@@ -28,7 +28,7 @@ from lychd.interface.web.lifespan import (
 from lychd.system.services.queues import connect_run_queues, disconnect_run_queues
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncGenerator
 
     from pytest_mock import MockerFixture
 
@@ -609,7 +609,7 @@ async def test_preauth_sync_reuses_the_app_rune_snapshot(
     session = object()
 
     @asynccontextmanager
-    async def session_factory() -> AsyncIterator[object]:
+    async def session_factory() -> AsyncGenerator[object]:
         yield session
 
     mocker.patch(

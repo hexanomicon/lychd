@@ -7,42 +7,37 @@ icon: material/skull-scan
 
 > _“The Vessel is where the daemon takes breath: one trusted process, never the whole Lich.”_
 
-The Vessel is LychD's trusted application process and composition root. It serves the
-[Altar](../../divination/altar/index.md), admits supported Invocations, binds domain services, and
-hands queued execution to [Ghouls](./ghouls.md). Through it the [Lich](../lich/index.md) can answer.
+The **Vessel** is the application process through which LychD receives work and serves the
+[Altar](../../divination/altar/index.md). Its composition root assembles domain services, admits
+supported Invocations, and gives queued execution to [Ghouls](ghouls.md). The
+[Lich](../lich/index.md) is the recurrent whole that may answer through this process and return
+after it dies.
 
-!!! abstract "Anatomy of the Husk"
-    Four technologies give the current Vessel its shape:
+## One process takes breath
 
-    - **The Breath (`Granian`):** production ASGI.
-    - **The Skeleton (`Litestar`):** routing, injection, lifecycle, and API authority.
-    - **The Wards (`Pydantic`):** typed configuration and validation.
-    - **The Synapses (`Pydantic AI`):** Agent and Graph mechanics over
-      [Animator](../animator/index.md) capabilities.
+Granian supplies production ASGI; Litestar owns routing, injection, lifecycle, and API authority.
+Pydantic validates configuration and typed boundaries. Pydantic AI supplies Agent and Graph
+mechanics over [Animator](../animator/index.md) capabilities. Litestar also serves the compiled
+static SvelteKit client: the browser projection acquires no separate server authority.
 
-!!! info "The Will of the Vessel"
-    The current Vessel has three concrete duties:
+Exactly one ASGI process is required. Two SAQ workers, live Run events, cancellation, and the
+service graph share its event loop. A second process or reload supervisor would create another
+private runtime world. A blocking Ghoul can therefore delay HTTP as well as other work.
 
-    1. **Serve the Altar:** Litestar serves the compiled static SvelteKit client and remains the
-       sole API and server authority.
-    2. **Admit work:** supported Intent enters a pinned Pattern, Run, authority, and continuity
-       boundary.
-    3. **Coordinate execution:** Ghouls perform admitted background work while the Dispatcher,
-       Orchestrator, Graph, and Phylactery retain their separate jurisdictions.
+## Before the Altar opens
 
-Exactly one ASGI process is a correctness boundary. Its two SAQ workers, live run events,
-cancellation, and service graph share one event loop; a second process or reload supervisor would
-create a second private world.
+Startup connects queues, constructs services, warms the registry, and synchronizes standing
+policy. With PostgreSQL, every required durable reconciliation pass must succeed before workers
+or HTTP can observe the substrate; failure or degradation aborts startup. The memory profile has
+no cross-process truth and retains best-effort recovery. Delivery, consent, and delegated-wait
+relays carry repair forward after admission opens.
 
-Queue connection, service construction, registry warm-up, and substrate publication must succeed
-before the Altar serves. Reconciliation then runs best-effort: failure is logged and leaves the
-Altar available. Shutdown stops workers before collaborators and queues.
+Shutdown stops workers before their collaborators and queues. Process death loses active tasks,
+subscribers, leases, and other volatile state. Only records committed through the
+[Phylactery](../phylactery/index.md) can enter a supported return path.
 
-!!! warning "A Conduit, Not the Source"
-    Process death ends volatile work and live subscribers. State committed through the
-    [Phylactery](../phylactery/index.md) may cross that boundary through a supported
-    [Reanimation](../phylactery/reanimation.md) path.
-
-Follow [Ghouls](./ghouls.md) for execution or the [Phylactery](../phylactery/index.md) for what
-survives. [ADR 11](../../adr/11-backend.md) owns this architecture; [Topology-A local run
-execution](../../state-of-the-work.md#topology-a-local-runs) is **Available**.
+Follow [Ghouls](ghouls.md) from admission to settlement, or
+[Reanimation](../phylactery/reanimation.md) across process death.
+[Backend](../../adr/11-backend.md) owns the architecture;
+[State of Work](../../state-of-the-work.md#topology-a-local-runs) records the available local
+execution and its evidence limits.

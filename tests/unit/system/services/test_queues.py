@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any
@@ -19,7 +19,7 @@ class _Connection:
         self.transaction_entries = 0
 
     @asynccontextmanager
-    async def transaction(self) -> AsyncIterator[None]:
+    async def transaction(self) -> AsyncGenerator[None]:
         assert not self.in_transaction
         self.transaction_entries += 1
         self.in_transaction = True
@@ -34,7 +34,7 @@ class _Pool:
         self.acquired = _Connection()
 
     @asynccontextmanager
-    async def connection(self) -> AsyncIterator[_Connection]:
+    async def connection(self) -> AsyncGenerator[_Connection]:
         yield self.acquired
 
 

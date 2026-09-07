@@ -28,7 +28,7 @@ Every effect declares eligible outcome. Confidence, repetition, previous approva
 cannot change it. Core mutation, migration, destructive deletion, secret/authority change, and
 host lifecycle remain live-only until narrower enforced law exists. Current ledger, bounded ZTE
 Rune, Altar verdict, Graph park/resume, and guards do not prove a complete live-only taxonomy;
-State owns delivery.
+[State of Work](../state-of-the-work.md#graph-stasis-consent) owns the consent and stasis delivery boundary.
 
 A candidate that touches a Spellweaver [Protected
 Region](28-workflow.md#authorship-provenance-and-protected-regions) is always live-only. Its call
@@ -131,6 +131,9 @@ string prefixes, optional expiry, and optional max uses; unknown constraints fai
 uses guarded UPDATE RETURNING for budget consumption and commits a consumed use with its consent
 row in one transaction. ZTE requires non-empty constraints, expiry, and max_uses; standard may still
 be broader.
+
+An expiry names an absolute instant with an explicit timezone. Rune validation rejects timezone-free
+datetimes before policy admission rather than interpreting them in the host's local timezone.
 
 A named argument constraint requires that argument to be present. Absence never aliases an explicit
 JSON `null`, even when `null` is itself an allowed value; otherwise an omitted authority-bearing

@@ -13,16 +13,9 @@ discipline anchors used by the Lexicon.
 
 ## I. The Kinetic (vLLM) {#i-the-kinetic-vllm}
 
-The [vLLM engine page](./engines/vllm.md) owns the detailed adapter contract. The vLLM adapter
-serves a pinned model through an OpenAI-compatible surface; its runtime defaults and live
-inventory rules remain engine-specific, not universal Soulstone law.
-
-A server pinned to one model produces `is_dynamic=False` capabilities. Reachability establishes
-only link liveness: a capability becomes `WARM` when the validated live `/models` inventory also
-contains its exact declared model id. Malformed inventory or a missing id becomes `ERROR`. Current
-planning and connector behavior are covered by focused tests; a named image, model, driver,
-readiness, inference, and shutdown receipt remains [operator
-validation](../../../state-of-the-work.md#vllm-integration).
+The Kinetic serves a pinned model through an OpenAI-compatible surface. Continue to the
+[vLLM engine contract](./engines/vllm.md) for its exact live-inventory readiness rule, runtime
+defaults, and outstanding operator receipt. These are adapter-specific obligations.
 
 ## II. The Radix (SGLang) {#ii-the-radix-sglang}
 

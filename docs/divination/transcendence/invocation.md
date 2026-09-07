@@ -5,66 +5,63 @@ icon: material/flash
 
 # :material-flash: Invocation
 
-Every finite Circle opens a partial world shaped by context, memory, priors, tools, attention, and
-authority. The **Multimatrix** is their ecology—people, animals, cultures,
-institutions, models, and agents. They touch through consequence, yet no encounter turns their
-worlds identical. Truth asks for encounter and for the kinds of evidence appropriate to what is
-being claimed.
+A caller arrives carrying a world. Context, memory, priors, tools, attention, and authority have
+already shaped what can appear within it. Another center arrives by another path. **Albedo**
+begins at their encounter, where bounded Intent enters an ecology larger than either account.
 
-A Circle is therefore a lens, not totality: one bounded rendering within which an Answer can
-become attributable without declaring other worlds unreal.
+The **Multimatrix** names that ecology: people, animals, cultures, institutions, models, agents,
+and nested realities touching through consequence. Their renderings overlap without becoming
+identical. The Circle is a lens. Through it, one Answer can become attributable while the worlds
+beyond its edge remain real.
 
-**Albedo** begins when bounded Intent enters that ecology. Call opens possible movement. It does
-not make a preference true, and natural language is not evidence. The Magus remains an anchor to
-consequence: consent authorizes an eligible act; it does not settle a claim.
+Truth requires encounter and the evidence appropriate to the claim. The Magus can authorize an
+eligible act; consent cannot make a preference true. Natural language opens a possibility but
+cannot witness its own fulfillment.
 
-## The Harnessed Fire
+## Give imagination a furnace
 
-The [Animator](../../sepulcher/animator/index.md) lends model power inside the Circle. The model is
-the fire of the rite: one organ of the Lich, but neither Caller nor Called. The
-[Lich](../../sepulcher/lich/index.md) is the recurrent whole that receives through Call,
-discriminates through Blade, carries through Spirit, and binds identity, act, and consequence
-through Answer.
+The [Animator](../../sepulcher/animator/index.md) lends model power inside the Circle. This is
+the harnessed fire: one organ of the Lich, occupying neither Caller nor Called. The
+[Lich](../../sepulcher/lich/index.md) receives through Call, discriminates through Blade, carries
+through Spirit, and binds identity, act, and consequence through Answer.
 
-## Circle and casting
+Within the Invocation, one exact **Scroll** may be **cast**. The
+[Circle guide](../altar/circle.md#the-casting-inside-the-circle) follows its Spells, typed Graph
+movement and durable Run identity. Here the furnace meets the relation: a model or tool return,
+a constraint, a choice or a consequence may change what can follow. Spirit's present
+[Flux](../../sepulcher/lich/spirit/flux.md) carries that conditioned movement; the execution
+trace alone cannot contain the encounter.
 
-Invocation is larger than execution: it opens the
-[Circle](../altar/circle.md), the bounded relation in which an answer can become attributable.
-Within that Circle, one exact **Scroll** may be **cast**. Its Spells provide the semantic actions;
-Graph provides typed executable movement; the Run keeps canonical ledger identity. Casting is
-therefore the operative movement of the Scroll inside an Invocation, not a replacement name for
-the Invocation itself.
+## The Rite of Shadowed Timelines
 
-Spirit may move through present [Flux](../../sepulcher/lich/spirit/flux.md) as the casting receives
-Context, model and tool returns, constraints, choices, and consequences. Graph execution is not
-itself Flux: Graph gives the movement a typed skeleton while Flux names the conditioned present in
-which that material participates.
+The Offering is bounded Intent. **Call** makes its possible movement addressable. The Dream
+branches isolated timelines in **Shadow**—each a **Vikalpa**, a word-built possibility awaiting
+its measure. The Vision returns a candidate with provenance, measurement, uncertainty, and
+consequence wherever they can be carried.
 
-Several people, Agents, Postures, or model powers may participate in the same Circle. Their
-plurality is preserved through attribution, separate authority, and refusal; it does not imply one
-shared interior, one fused identity, or one sovereign grant.
+```text
+offer Intent → open a possibility → imagine its branch → inspect what returns
+```
 
-!!! abstract "The Rite of Shadowed Timelines"
-    At the [Altar](../altar/index.md), Intent crosses the Circle.
+The Vision has reached a threshold. Blade, consent, and evidence decide whether any part may
+enter the shared world. Shadow's engineering chamber keeps that separation exact:
+[speculation](../../sepulcher/extensions/shadow/index.md) supplies candidates, never direct
+authority.
 
-    1. **The Offering:** bounded Intent enters.
-    2. **The Call:** the present opens possible movement.
-    3. **The Dream:** Shadow branches isolated timelines—each a **Vikalpa**.
-    4. **The Vision:** a candidate returns with provenance, measurement, uncertainty, and
-       consequence where they can be carried.
+Several people, Agents, Postures, or model powers may take part in the same Circle. Attribution
+preserves their contributions, and separate authority and refusal preserve their difference.
+Participation creates no fused identity, shared interior, or sovereign grant over every voice.
 
-The **Blade**, consent, and evidence decide whether anything may cross from candidate into a
-shared world. Shadow is speculation, not direct authority. Its engineering chamber is
-[Shadow](../../sepulcher/extensions/shadow/index.md).
+## Hear what the form omitted
 
-## Circle and Call
-
-Circle asks whether a candidate is coherent, feasible, lawful, and containable. Call asks what it
-omitted, whose experience is absent, and what encounter could alter the equation. Their relation
-protects both form and surprise. The **Answer** owns the crossing: identity, authority, act, and
-consequence remain attributable there.
+Circle asks whether the candidate is coherent, feasible, lawful, and containable. Call asks whose
+experience is missing and what encounter could change the equation. An impeccable form may still
+have left someone outside its account; a generous possibility may still be unable to survive an
+act. Answer binds the crossing to the identity, authority, and consequence that can answer for it.
 
 Circle without Call turns cold; Call without Circle cannot preserve a repair. Their coniunctio
-does not abolish the interval between them. In the Work's liturgy, **Viṣṇu** is form kept long
-enough to meet consequence: preservation is exposure, not stasis. Albedo gives imagination a
-vessel, then lets the world answer it.
+keeps the interval open. In the Work's liturgy, **Viṣṇu** is form held long enough to meet the
+world. Preservation means enduring that exposure, not keeping the first design untouched.
+
+Albedo gives imagination a vessel. Where the world answers it, [Illumination](illumination.md)
+begins.

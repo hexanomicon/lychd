@@ -5,30 +5,14 @@ icon: material/package-variant
 
 # :material-package-variant: Build
 
-The proposed Spell `game.build_candidate@1` runs static and engine tests, performs reproducible
-imports where the exact profile proves them, and creates a
-content-addressed candidate with source, command, environment, probe, and checksum evidence.
-Human review may request a forward repair or accept one `PlayableBuildBundle@1`; acceptance does
-not imply release authority.
+The local candidate is ready when someone else can identify its source, reproduce the admitted checks, and inspect its playtest evidence. `game.build_candidate@1` runs static/engine tests, performs reproducible imports where the exact profile proves them, and returns content-addressed bytes with source, command, environment, probes, and checksum.
 
-The proposed Spell `game.prepare_release@1` freezes the candidate, compatibility statement, required evidence, and
-consumer handoff without publishing it. Signing, store credentials, upload, staged rollout,
-public multiplayer, telemetry, correction, takedown, and remote-copy reconciliation belong to a
-future release or distribution application. Foundry neither invents that authority nor records a
-distribution receipt for an effect it did not own.
+Human review can accept `PlayableBuildBundle@1` or request a forward repair. `game.prepare_release@1` freezes that candidate, compatibility statement, evidence, and handoff. Neither step signs, uploads, opens public multiplayer, controls store accounts, exports telemetry, rolls out, corrects, takes down, or reconciles remote copies. Those effects require a future release/distribution owner.
 
-Deletion inventories local build candidates, imports, caches, and derivatives under Foundry
-custody. An exported handoff is recorded but not silently recalled or reported as deleted.
+Deletion inventories local candidates, imports, caches, and derivatives. An exported handoff is recorded, without a promise that the consumer's copy was recalled.
 
 ## Proving the build
 
-Use a synthetic local 2D project with networking disabled. Bootstrap one repository, admit one
-small visual and music bundle, import them through test adapters, build one playable scene, run one
-declared controller scenario, and emit exactly one `PlayableBuildBundle@1` with source, build,
-test, playtest, and checksum receipts. Signing, upload, store accounts, telemetry export, public
-players, and release remain outside the proof.
+A network-disabled synthetic 2D project should bootstrap a repository, admit small visual/music bundles, import through test adapters, build a scene, and run one controller scenario. Emit exactly one `PlayableBuildBundle@1` with source, build, test, playtest, and checksum receipts. Signing, upload, store accounts, telemetry, public players, and release remain outside it.
 
-A separate 3D fixture adds one validated GLB, collision, a baked navigation route, one accepted
-Kinesis clip and animation controller, one interaction, a headless logic scenario, and one real
-renderer/hardware playtest receipt. It is not evidence for hostile project execution, open-world
-streaming, model-driven actors, networking, or another engine profile.
+A separate 3D fixture adds validated GLB, collision, baked navigation, accepted Kinesis clip/controller, an interaction, headless logic checks, and a real renderer/hardware playtest receipt. It proves no hostile-project execution, open-world streaming, model-driven actor, networking, or other engine profile.

@@ -5,67 +5,30 @@ icon: material/transmission-tower
 
 # :material-transmission-tower: Utilities
 
-Utilities keeps the household's energy, water, gas or stored fuel, network, and device systems
-separately legible. It may observe, advise, or request an effect inside a commissioned envelope;
-observation alone never becomes authority to actuate.
+Before spending the afternoon's solar surplus, the household must know what remains reserved for the night. Utilities makes energy, water, gas or stored fuel, network, and device systems separately inspectable. It can observe, advise, or request an effect inside a commissioned envelope.
 
 ## Map and observe
 
-`homestead.map_site@1` maps the dwelling, water points, circuits, critical loads, generation,
-storage, gas or fuel service boundaries, network zones, devices, work zones, hazards, unknowns,
-and professional or permit needs into `HomesteadPlan@1`. `homestead.observe_cycle@1` admits fresh
-bounded telemetry and weather, checks attribution, calibration, staleness, and contradiction,
-then updates a resource ledger or shows an honest gap.
+`homestead.map_site@1` creates `HomesteadPlan@1` from the dwelling, water points, circuits, critical loads, generation, storage, fuel/service boundaries, network zones, devices, work zones, hazards, unknowns, and professional or permit needs. `homestead.observe_cycle@1` checks the attribution, calibration, age, and contradictions in bounded telemetry and weather before updating a ledger or showing a gap.
 
-Energy, water, fuel, habitat, network, camera, and embodied-node ledgers remain separate. A device
-report becomes an attributed observation, then a calibrated derivation, then a reconciled
-estimate; these stages are never collapsed into generic “home state.” Observations, calibration,
-forecasts, plans, alerts, approvals, commands, controller receipts, laboratory evidence,
-professional documents, and configuration keep independent revisions.
-
-Gas and fuel remain observe-or-advise only in this reference contract; it defines no burner,
-combustion, or valve-control Pattern.
+A device report, calibrated derivation, and reconciled estimate are different evidence stages. Energy, water, fuel, habitat, network, camera, and embodied-node ledgers keep their own truth. Observations, calibration, forecasts, plans, alerts, approvals, commands, receipts, laboratory evidence, professional documents, and configuration retain independent revisions. Gas and fuel remain observe-or-advise only: this contract supplies no burner, combustion, or valve-control Pattern.
 
 ## Balance without bypass
 
-`homestead.balance_energy@1` combines critical-load policy with PV, load, battery, grid, alarm,
-and forecast evidence. It may return reserve-aware advice or an exact set-point intent inside
-inverter, BMS, anti-islanding, thermal, fire, and electrician-set protection.
+`homestead.balance_energy@1` uses critical-load policy with PV, load, battery, grid, alarm, and forecast evidence. Its advice or exact set-point intent stays inside inverter, BMS, anti-islanding, thermal, fire, and electrician-set protection. Model/GPU work is an ordinary household load. A finite surplus window may inform compute admission, but cannot schedule a model job, grant peer authority, or outrank refrigeration, habitat, communications, water, safety, or the declared battery reserve.
 
-Local model or GPU work is a household load, never a critical service merely because it is
-intelligent. An energy balance may expose a finite surplus window to the owner of compute admission;
-it does not schedule a model job, grant peer authority, or let computation outrank refrigeration,
-habitat, communications, water, safety systems, or the household's declared battery reserve.
+`homestead.guard_water@1` works from well, tank, pressure, quality, weather, and allocation evidence. Pump or valve intent remains inside dry-run, pressure, level, freeze, contamination, and reserve interlocks. Sensor readings cannot establish potability.
+
+The freshest local BMS, inverter, pump, float, pressure, and fire veto wins. Each effect binds asset/controller identity, configuration generation, commissioned envelope, live observations, preconditions, expiry, local reservation, expected postcondition, and compensation or containment. LychD sends typed requests; it does not emit prompt-produced shell, bus, GPIO, relay, or manufacturer commands.
 
 ### Follow the sun without moving the Lich
 
-A later energy-aware coordination profile may offer delay-tolerant labor to a sovereign
-[A2A peer](../../adr/26-a2a.md) when fresh local evidence shows surplus PV, admitted battery margin,
-and compatible compute. The offer is coarse, expiring, and bounded by energy, time, task class, and
-local resource policy; it need not reveal raw household telemetry. Before accepting work, the
-destination rechecks its own load, forecast, thermals, reservation, and safety margin. Homestead's
-local controller may narrow or refuse the window, and no remote scheduler may override that veto.
+Beyond the household utility contract, a later Designed coordination profile may offer delay-tolerant labor to a sovereign [A2A peer](../../adr/26-a2a.md) from fresh evidence of surplus PV, battery margin, and compatible compute. The offer is coarse, expiring, and bounded by energy, time, task class, and local policy. Raw household telemetry need not travel. The destination rechecks load, forecast, thermals, reservations, and safety margin; no remote scheduler can override its local veto.
 
-Only bounded labor and admitted artifacts cross. The Lich, its private Graph, identity, memory,
-household records, and infrastructure authority do not migrate with the Sun. Context and Security
-must separately permit any data egress; price or bounty cannot widen privacy, energy, or admission
-authority. This is a designed horizon for coordination, not a delivered energy market, fleet
-scheduler, or claim that remote work is greener without measured receipts.
+Only bounded labor and admitted artifacts cross. Identity, private Graph, memory, household records, and infrastructure authority remain with the Lich. Context and Security separately admit egress. Price cannot widen those limits, and an unmeasured remote route cannot claim to be greener. This remains a designed horizon, without a delivered energy market or fleet scheduler.
 
-`homestead.guard_water@1` combines well, tank, pressure, quality, weather, and allocation evidence.
-Pump or valve intent stays inside dry-run, pressure, level, freeze, contamination, and reserve
-interlocks. No sensor result becomes a potability claim.
+## Return to observed state
 
-The freshest local BMS, inverter, pump, float, pressure, and fire veto always wins. Every effect
-binds asset and controller identity, configuration generation, commissioned envelope, live
-observations, preconditions, expiry, local reservation, expected postcondition, and compensation
-or containment. LychD sends typed requests, never prompt-produced shell, bus, GPIO, relay, or
-manufacturer API commands.
-
-The household remains safe without internet, Wi-Fi, Master, model, or cloud. Lost acknowledgement
-is an unknown physical effect: recovery reads the exact controller and independent sensors before
-any repeat. Restore closes admission until clocks, controller generations, safety envelopes,
-pending effects, alarms, and local state reconcile. Replaced devices and changed calibration add
-new evidence rather than rewriting history.
+The household must remain safe without internet, Wi-Fi, Master, model, or cloud. Lost acknowledgement leaves a physical effect unknown until the exact controller and independent sensors reconcile it. Restore keeps admission closed while clocks, controller generations, envelopes, pending effects, alarms, and local state are checked. Replacement devices and changed calibration add evidence instead of rewriting history.
 
 Return to [Homestead](index.md).

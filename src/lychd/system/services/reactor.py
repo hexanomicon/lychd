@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
@@ -201,7 +202,7 @@ class HostReactor:
                 processed += 1
                 continue
             errors.append(error)
-            if os.path.lexists(claimed):
+            if await asyncio.to_thread(os.path.lexists, claimed):
                 return processed, errors, True
         return processed, errors, False
 
@@ -243,13 +244,13 @@ class HostReactor:
                 self._fsync_directory(self._inbox_dir)
                 return False, None
             claimed = self._journal_dir / f"{transition_id}.processing.json"
-            if os.path.lexists(claimed):
+            if os.path.lexists(claimed):  # noqa: ASYNC240 - claim check and rename must not yield under the lifecycle lock
                 self._discard_path(pending)
                 self._fsync_directory(self._inbox_dir)
                 return False, None
             # The host claims before reading. The Vessel cannot rename or
             # replace the journal path after this boundary.
-            pending.replace(claimed)
+            pending.replace(claimed)  # noqa: ASYNC240 - finish rename and fsync before cancellation can release the lock
             self._fsync_directory(self._inbox_dir)
             self._fsync_directory(self._journal_dir)
             await self._apply_claimed(claimed)
@@ -357,7 +358,8 @@ class HostReactor:
         claimed: bool = False,
         terminal_status: Literal["completed", "contained", "declined", "rejected", "restored"] | None = None,
     ) -> TransitionIntent:
-        flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+        """Open without blocking on raced special files, then attest the descriptor."""
+        flags = os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
         try:
             descriptor = os.open(path, flags)
         except OSError as exc:

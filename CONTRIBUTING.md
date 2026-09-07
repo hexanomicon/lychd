@@ -1,15 +1,28 @@
 # Contributing to LychD
 
-Coding agents begin at **[AGENTS.md](AGENTS.md)**. This page owns the maintained development
-environment, commands, and contribution conventions; [State of Work](docs/state-of-the-work.md)
-owns claims about present delivery.
+Begin with one concrete change: a reader who cannot find the right page, a failing contract, or a
+new capability with a named owner. Establish what the owning documentation promises, make the
+change at that boundary, and leave enough evidence for the next contributor to understand it.
 
-## License
+This guide takes you from a checkout to a reviewable contribution. [State of
+Work](docs/state-of-the-work.md) tells you what current evidence supports; the
+[Covenants](docs/adr/index.md) explain accepted decisions. Coding agents first load the routes in
+[AGENTS.md](AGENTS.md).
 
-Contributions are accepted and distributed under **MPL-2.0**. There is no CLA or private
-relicensing grant, and no `Signed-off-by` trailer is required. See
-**[ADR 00](docs/adr/00-license.md)** for the contribution policy and [LICENSE](LICENSE) for the
-binding terms.
+## Find the part you want to change
+
+If you are new to the codebase, follow one request through the [Map](docs/map.md). Then choose
+the boundary your change crosses:
+
+| Your change concerns… | Read first |
+| --- | --- |
+| Application startup, domain logic, or persistence | [Backend](docs/adr/11-backend.md), then its linked source and tests. |
+| Run admission, execution, or recovery | [Workers](docs/adr/14-workers.md) and the relevant [Graph](docs/adr/24-graph.md) section. |
+| Browser behavior or API projection | [Frontend](docs/adr/15-frontend.md), then the affected instrument in the [Altar source map](clients/web/src/README.md). |
+| Documentation, vocabulary, or lore | [Documentation topology](docs/adr/01-doctrine.md#documentation-topology), then the owning page and its neighbors. |
+
+You can start with that one boundary. Use the Covenant index for adjacent decisions as the change
+reaches them; the full grimoire is not a prerequisite to a first contribution.
 
 ## Supported Environment
 
@@ -18,9 +31,10 @@ binding terms.
 - Host operation targets a free and open-source Linux stack with systemd, cgroup v2, and rootless
   Podman/Quadlet. Most repository tests use isolated substitutes and do not prove that a real host
   works; [Summoning](docs/summoning.md) owns the live-host prerequisites and rite.
-- Frontend work uses Node.js 24.18.0 (`.nvmrc`) and npm 11.16.0
-  (`clients/web/package.json`): supported ranges are 24.18.x-or-newer within Node 24 and
-  11.16.x-or-newer within npm 11.
+- Frontend work uses Node.js 24.20.0 (`.nvmrc`) and npm 12.0.2
+  (`clients/web/package.json`): supported ranges are 24.20.x-or-newer within Node 24 and
+  12.0.x-or-newer within npm 12, starting at 12.0.2. npm 12 keeps dependency lifecycle
+  scripts blocked unless explicitly approved; the Linux Altar build requires no such approvals.
 
 ## Setup and Commands
 
@@ -91,14 +105,32 @@ Both regenerate the Litestar OpenAPI contract. The build updates the tracked sta
 For documentation changes, run:
 
 ```bash
+make test PYTEST_TARGETS="tests/architecture" N=0
 uv run --locked --only-group docs zensical build --clean
 ```
 
-`make docs` serves the Hexanomicon at `http://localhost:7778` for local inspection.
+Check local file links and fragments, including links into a renamed heading. A moved page needs
+its incoming links, parent index, compatibility anchors, and `zensical.toml` navigation updated
+together. The architecture suite checks the delivery ledger and its evidence routes; the clean
+build checks the published tree. `make docs` serves the Hexanomicon at `http://localhost:7778` for
+local reading and layout inspection.
 
 ### Test Selection
 
-Start with the closest test that can fail, then widen by boundary:
+Start with the closest test that can fail, then widen by boundary. For example:
+
+```bash
+make test PYTEST_TARGETS="tests/unit" K="expression"
+make test PYTEST_TARGETS="tests/integration" M="integration"
+make coverage
+```
+
+`K` selects test names; `M` selects registered markers. Most tests are classified by directory,
+and the registered `unit` and `slow` markers are currently unapplied. `M=unit` therefore collects
+nothing: use `PYTEST_TARGETS="tests/unit"`. `make coverage` is a separate serial branch-coverage
+gate with the configured 80% floor; ordinary tests and CI do not enable coverage implicitly.
+
+Choose the evidence boundary that matches the change:
 
 - Pure domain or utility changes: the matching `tests/unit/` subtree.
 - Database, filesystem, service wiring, or cross-layer changes: matching `tests/integration/`
@@ -153,3 +185,9 @@ A review description should state:
 
 Review against the owning source, test, ADR, and State of Work entry rather than against prose
 elsewhere that merely repeats them.
+
+## License
+
+Contributions are accepted and distributed under **MPL-2.0**. There is no CLA or private
+relicensing grant, and no `Signed-off-by` trailer is required. See [ADR 00](docs/adr/00-license.md)
+for the contribution policy and [LICENSE](LICENSE) for the binding terms.

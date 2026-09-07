@@ -5,131 +5,158 @@ icon: material/telescope
 
 # :material-telescope: 29. Observability
 
-!!! abstract "Context and Problem Statement"
-    Runs, consent, dispatch, delegated work, runtime transition, and failure need evidence. Logs
-    and telemetry cannot authorize or settle them; a shared id supplies correlation, not causality
-    or completeness. This Covenant defines evidence law, Oculus, and Orb.
+A Run can finish while an observer misses an event. A provider can report success while the
+owning ledger still has an unresolved effect. Observability must let a reader distinguish those
+situations without making a log, timestamp, or convincing picture authoritative.
 
 ## Requirements
 
-- Acting offices retain state/effect receipts; Oculus owns observations and rebuildable projections.
-- Every record identifies producer, subject, id, ordering domain, capture class; loss and uncertainty are explicit.
-- Content is allowlisted; secrets prohibited. Signals retain distinct authority and retention.
-- First Orb query is bounded authorized one-Run view. Eyes are one-way redacted exports without LychD authority.
+Every record identifies its producer, subject, identity, ordering domain, and capture class.
+Missing material, stale observations, and uncertain outcomes remain visible. Content is
+allowlisted and secrets are prohibited. The office performing an effect keeps its authoritative
+record; observations and rebuildable projections retain their own purpose and retention.
+
+The first Orb query is a bounded, authorized view of one Run. An external viewer receives only
+redacted exports and gains no LychD authority.
 
 ## Considered Options
 
 | Option | Result |
 | --- | --- |
-| Mandatory metrics/trace stack | Rejected: adds retention/control without evidence ownership. |
-| Generic JSONB for all signal/body | Rejected: collapses records, telemetry, privacy, schemas. |
-| Native contract, optional Eyes | Selected: LychD vocabulary remains authoritative and viewers replaceable. |
+| Require an external metrics and tracing stack | Rejected: deployment and retention would precede a clear account of evidence ownership. |
+| Put every signal and body in generic JSONB | Rejected: authoritative records, diagnostics, privacy, and schema boundaries would become indistinguishable. |
+| Keep a native evidence contract and optional external Eyes | Selected: tools may change while LychD retains its own record meanings. |
 
 ## Decision Outcome
 
-[Oculus](../sepulcher/extensions/oculus.md) is designed native evidence domain; Orb is its Altar
-instrument and scrying its use. Phoenix, Logfire, OpenTelemetry collector, or another viewer may
-be an external Eye; names never change ownership.
+[Oculus](../sepulcher/extensions/oculus.md) is the designed native evidence Domain. **Orb** is its
+Altar instrument; **scrying** is the act of using it. Phoenix, Logfire, an OpenTelemetry collector,
+or another viewer may serve as an external **[Eye](../lexicon/iron-tongue.md#e)**. A viewer supplies a way to look, not a second
+source of truth.
 
-!!! warning "Exact implementation state"
-    Structured logging and bounded Orb exist at State scopes. Native Oculus is Designed, with no
-    telemetry adapter, ingestion, trace/metric store, retention, health query, cross-process bus,
-    resource telemetry, or multi-Run query. Optional Phoenix only contributes service; application
-    export is unproved.
+Structured logging and the bounded Orb have current repository evidence. Native Oculus has no
+ingestion or telemetry adapter, trace/metric store, retention, health query, cross-process bus,
+resource telemetry, or multi-Run query. The optional Phoenix contribution supplies a service;
+application trace export remains unproved. [State of Work](../state-of-the-work.md#altar-and-observability)
+owns those delivery boundaries.
 
 ### 1. Evidence Ownership and Correlation
 
-Evidence classes are authoritative record (its responsible transition/effect office), bounded
-observation (producer/subject/method/times/freshness/limits), derivation (parents/algorithm/
-uncertainty/invalidation), and interpretation/verdict (named criteria, e.g. Riddle). RunLedger owns
-Run status; consent, grants, jobs, host transitions, artifacts, and evaluations retain theirs.
-Step/RunEvent may report, never overwrite.
+| Evidence class | What the reader can establish |
+| --- | --- |
+| Authoritative record | The responsible office committed this transition or effect state. |
+| Bounded observation | This producer observed this subject by a named method, at stated times, with explicit freshness and limits. |
+| Derivation | A named algorithm used these parents; uncertainty and invalidation remain attributable. |
+| Interpretation or verdict | An evaluator applied declared criteria, as in Riddle. |
 
-RunEvent identity is run_id plus UUID event_id; seq is monotonic per-Run emission order, ts producer
-time. Live channel makes contiguous in-process seq and one terminal; non-token events tee to Step
-ledger in order but best-effort append may gap; PostgreSQL enforces (run_id, seq) where used. Token
-deltas are never Step evidence. Seq orders one producer, timestamps no global order. Cross-office
-relations name typed Pattern revision, occurrence, grant, job, or transition id. Shared id/time is
-correlation only; trace context never authenticates or authorizes.
+RunLedger owns Run status. Consent, grants, jobs, host transitions, artifacts, and evaluations each
+keep their own records. Step and RunEvent observations may describe that truth but cannot
+supersede it.
+
+A RunEvent names `run_id`, UUID `event_id`, monotonic per-Run `seq`, and producer timestamp `ts`.
+The live channel emits a contiguous process-local sequence and one terminal event. Non-token
+events tee to the Step ledger in order, but append is best-effort and may leave gaps; PostgreSQL
+enforces `(run_id, seq)` where that store is used. Token deltas never become Step evidence.
+
+Sequence orders one producer. Timestamps do not establish a global order, and a shared identifier
+proves correlation rather than causality or completeness. Cross-office relations name the exact
+Pattern revision, trigger Occurrence, station attempt, grant, job, or transition. A trigger
+Occurrence and a station attempt remain distinct identities; ADR 28 owns their relationship.
+Trace context never authenticates a caller or authorizes an effect.
 
 ### 2. Native Service and External Eyes
 
 | Signal | Current shape | Authority |
 | --- | --- | --- |
-| Run events | in-process, 256 replay, best-effort non-token Step tee | observation |
-| Logs | Structlog/stdlib human or JSON stderr | diagnostic, not audit |
-| Traces | no producer or export adapter | no ingest/export/retention/read |
-| Metrics | no producer/registry/store/query | Designed |
-| Orb | bounded selected-Run projection | read-only |
+| Run events | Process-local channel, 256-event replay, best-effort non-token Step tee | Observation |
+| Logs | Structlog/stdlib human or JSON stderr | Diagnostic |
+| Traces | No producer or export adapter | No native ingestion, export, retention, or read contract |
+| Metrics | No producer, registry, store, or query | Designed |
+| Orb | Bounded selected-Run projection | Read-only |
 
-Future Oculus exposes typed event/query contracts; clients do not query tables. Eye sees allowlisted
-export and has no canonical read-back. Phoenix legacy name = oculus compatibility cannot make it
-native Oculus.
+Future Oculus exposes typed query and event ports; clients do not inspect its tables directly.
+An Eye receives a one-way allowlisted export, with no canonical read-back. The legacy Phoenix
+service spelling `oculus` is a compatibility name and cannot make that service native Oculus.
 
 ### 3. Interior Evidence Without Mind Reading
 
-Oculus may hold first-person testimony, operated telemetry, declared interpretation. None is hidden
-chain-of-thought: progress is testimony, tool/provider span observation, scored explanation
-versioned interpretation. Prompt/completion, retrieved context, tool bodies, provider exchange,
-media, credentials, and identity data are absent unless current policy admits; useful structural
-view and missing-evidence result must remain possible.
+First-person testimony, operated telemetry, and declared interpretation are separate sources.
+Progress text is testimony; a tool/provider span is an observation; a scored explanation is a
+versioned interpretation. None is hidden chain-of-thought.
+
+Prompts and completions, retrieved Context, tool bodies, provider exchanges, media, credentials,
+and identity data remain absent unless the applicable policy admits them. A useful structural
+view must remain possible without that content. It must also be able to say that the evidence
+needed for a stronger conclusion was not captured.
 
 ### 4. Delegated-Agent Evidence
 
-Observe delegated runtimes only at admitted adapter boundary. LychD job state/policy/settlement/
-artifacts/adoption differs from provider-reported usage/protocol; neither reveals planner,
-subagent tree, or private reasoning. Orb exposes at most 32 newest job summaries and 64 newest
-lifecycle events/job, state/result-or-artifact presence but no prompt/output/private error, with
-truncation explicit. Its bounded read asks the job store for one extra job and event as omission
-sentinels; database `LIMIT`s select those newest suffixes before per-job event hydration, then
-restore creation/sequence order for projection. Raw future protocol artifact is untrusted bounded
-input; it cannot settle a job, authorize an effect, mutate Graph, or become training data by
-default.
+The admitted adapter is the observation boundary for a delegated runtime. LychD records job
+admission, policy, settlement, artifacts, and adoption. Provider-reported usage and protocol
+messages remain attributed provider evidence; neither source reveals the foreign planner,
+subagent tree, or private reasoning.
+
+Orb displays at most **32 newest job summaries** and **64 newest lifecycle events per job**. It
+shows state and result-or-artifact presence while withholding prompts, output, and private errors.
+The store queries one extra job and event as omission sentinels. Database `LIMIT`s select the
+newest suffixes before per-job event hydration; projection then restores creation/sequence order
+and marks truncation explicitly.
+
+Any later raw protocol artifact remains bounded untrusted input. It cannot settle the job,
+authorize an effect, mutate Graph, or become training material by default.
 
 ### 5. Orb Read Models
 
-[Orb](../divination/altar/orb.md) reads one Run by direct URL: retained bounded non-token events,
-separate ledger-head/page bounds, seq gaps, capture class process_local/durable_best_effort,
-omissions, and Pattern link only if pinned manifest validates. LOG is summarized without raw
-message; Nexus links only recorded transition ids. No run list, live tail, graph view, native Oculus
-model, cross-process completeness, artifact custody, annotation, or multi-Run field. SSE RESYNC
-instructs client to replace projection from snapshot; it is not browser-restored history.
-Viewing/filtering/layout never changes Run. Annotation would be separate authorized record, never
-retry/approval/cancel/publication/transition.
+[Orb](../divination/altar/orb.md) opens one Run by direct URL. It keeps ledger-head and page bounds
+separate, reports sequence gaps and omissions, and names capture as `process_local` or
+`durable_best_effort`. A Pattern link requires a valid pinned manifest; a Nexus link requires a
+recorded transition identity. LOG events are summarized without their raw message.
+
+Current Orb has no Run list, live tail, graph view, native Oculus model, cross-process
+completeness, artifact custody, annotation, or multi-Run field. An SSE `RESYNC` asks the browser to
+replace its projection from a snapshot; it does not recover history inside the browser.
+Viewing, filtering, and layout never change a Run. A future annotation is a separately authorized
+record, not an implicit retry, approval, cancellation, publication, or transition.
 
 ### 6. The Physical Body and Pulse
 
-No Resource Snapshot exists for VRAM, thermal, power, ownership, pressure. Future node measurement
-carries units, method, age, errors, freshness; failed/stale means unknown, never free. Orchestrator
-consumes fresh truth under admission; Oculus may explain it. Rates/percentiles/trends are derivation,
-not grants/reservations/health verdicts/promotion thresholds.
+A future Resource Snapshot records the node, units, measurement method, age, errors, and freshness
+of VRAM, thermal, power, ownership, and pressure observations. No such snapshot exists today.
+Stale or failed measurement means unknown capacity, never free capacity.
+
+Orchestrator may consume fresh physical truth during admission; Oculus can help explain it.
+Rates, percentiles, and trends are derived observations. They confer no grant, reservation,
+health verdict, or promotion threshold.
 
 ### 7. Privacy, Retention, and Failure
 
-Each class declares purpose/fields/classification/visibility/retention/export. Redact before
-serialization with policy version; Eye applies second filter; reject secret material. Privatization
-telemetry stores opaque decision/receipt ids, `EvidenceDigest@1` keyed projections,
-categories/counts, policy version, failure stage, and gaps—never canonical raw payload/source
-digests, sensitive spans, or pseudonym reversal maps. Plain digests of low-entropy or stable private
-values are linkage oracles, not anonymization. Security owns the local-only decision and keyed
-evidence projection; Context owns receipts.
+Each evidence class declares its purpose, fields, classification, visibility, retention, and export
+policy. Redaction occurs before serialization under a named policy version; an Eye applies another
+filter. Secret material is rejected.
 
-Current Orb allowlists structural fields and omits raw prompts, output, private errors, LOG
-messages. Shared logging has no general redaction/storage/rotation/retention/correlation contract;
-HTTP instrumentation disabling blanket body/header capture is not whole proof. A conforming Oculus
-bounds producer/subscriber queues and batching/flush/shutdown. Today each live Run subscriber and
-its replay window are bounded at 256 events; an overflow collapses pending deltas to an explicit
-snapshot-resync boundary rather than applying producer backpressure. Persist failure logs and may
-gap Step.
-Correctness records remain acting-office transactions: lost telemetry harms diagnosis, never proves success.
+Privatization telemetry may retain opaque decision/receipt identities, keyed
+`EvidenceDigest@1` projections, categories and counts, policy version, failure stage, and gaps.
+It carries no canonical raw payload/source digest, sensitive span, or pseudonym reversal map.
+Plain hashes of stable or low-entropy private values allow linkage; hashing alone does not
+anonymize them. Security owns local-only decisions and keyed evidence projections; Context owns
+transformation receipts.
+
+Current Orb allowlists structural fields and omits raw prompts, output, private errors, and LOG
+messages. Shared logging has no general redaction, storage, rotation, retention, or correlation
+contract. Disabling blanket HTTP body/header capture establishes only that instrumentation choice.
+
+A conforming Oculus must bound producer/subscriber queues, batching, flush, and shutdown. Today's
+live Run replay and each subscriber queue are bounded at **256 events**. On overflow, pending
+deltas collapse to an explicit snapshot-resync boundary; the channel does not apply producer
+backpressure. Failed Step persistence is logged and may leave a gap. A lost observation impairs
+diagnosis; authoritative correctness records still commit through their owning transactions.
 
 ## Consequences
 
-!!! success "Accepted"
-    - Rebuildable correlated observations leave authoritative records with their offices.
-    - Capture class, gap, freshness, redaction, and uncertainty are evidence.
-    - Eyes are replaceable.
+A reader can distinguish what happened, what was observed, what was derived, and what someone
+concluded. Capture class, gaps, freshness, and uncertainty become part of the evidence instead of
+being hidden by a seamless display. External Eyes remain replaceable.
 
-!!! failure "Cost"
-    - Oculus requires ingest, retention, query, migration, health, backpressure.
-    - Partial-order correlation and privacy boundary cost more than arbitrary spans.
+The cost is explicit ingestion, retention, query, migration, health, and queue work. Privacy and
+partial-order correlation require more care than arbitrary tracing spans, and some questions must
+remain unanswered when their evidence was never retained.

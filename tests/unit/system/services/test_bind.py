@@ -390,6 +390,57 @@ def test_apply_reports_committed_bindings_when_reload_fails() -> None:
     assert failure.value.progress.binding_generation == "bindings-after"
 
 
+@pytest.mark.parametrize("created", [False, True])
+@pytest.mark.parametrize("error_factory", [RuntimeError, KeyboardInterrupt, SystemExit])
+def test_secret_revalidation_failure_preserves_confirmed_effects(
+    monkeypatch: pytest.MonkeyPatch,
+    error_factory: Callable[[], BaseException],
+    *,
+    created: bool,
+) -> None:
+    request = _request(required=())
+    scribe = MagicMock()
+    scribe.plan_reconcile_all.return_value = BindingReconcilePlan(
+        changes=(),
+        observed_generation="bindings-a",
+        desired_generation="desired-a",
+    )
+    error = error_factory()
+    secrets = MagicMock()
+    secrets.exists.side_effect = [not created, not created, error]
+    secrets.ensure_present.return_value = True
+    systemd = MagicMock()
+    observed_logger = MagicMock()
+    monkeypatch.setattr(bind_module, "logger", observed_logger)
+    use_case = _use_case(scribe=scribe, secrets=secrets, systemd=systemd)
+    approved = use_case.plan(request)
+    expected_error = BindApplyError if created and isinstance(error, Exception) else type(error)
+
+    with pytest.raises(expected_error) as failure:
+        use_case.apply(request, approved)
+
+    if isinstance(failure.value, BindApplyError):
+        assert failure.value.__cause__ is error
+        assert failure.value.progress.created_secrets == ("lychd-core",)
+        assert failure.value.progress.binding_commit_state is BindingCommitState.NOT_ATTEMPTED
+        assert not failure.value.progress.secret_reconciliation_indeterminate
+    else:
+        assert failure.value is error
+        if created:
+            assert any("created core secrets remain: lychd-core" in note for note in error.__notes__)
+    if created:
+        secrets.ensure_present.assert_called_once_with("lychd-core", "generated")
+        partial = observed_logger.error.call_args
+        assert partial.args == ("bind_apply_partial_failure",)
+        assert partial.kwargs["phase"] == "secret-revalidation"
+        assert partial.kwargs["created_secrets"] == ("lychd-core",)
+    else:
+        secrets.ensure_present.assert_not_called()
+        observed_logger.error.assert_not_called()
+    scribe.reconcile_all.assert_not_called()
+    systemd.daemon_reload.assert_not_called()
+
+
 def test_keyboard_interrupt_during_secret_commit_preserves_indeterminate_truth(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

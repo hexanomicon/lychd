@@ -27,13 +27,20 @@ boundary.
 ## The Prime Inscription
 
 `lychd.toml` contains process-wide settings only: server and persistence settings, orchestration
-policy, and extension selection. Named runtime or provider instances belong in individual Rune
+policy, extension selection, and the [bounded Bridge selector](extensions/weaver/index.md#choose-a-bridge-capability).
+Named runtime or provider instances belong in individual Rune
 documents beneath `runes/`. **Scroll** is reserved for an immutable Spellweaver Pattern revision;
 configuration is not executable workflow law.
 
 Settings resolve in one order: explicit construction → environment overrides → `lychd.toml` →
 Pydantic file secrets → model defaults. LychD loads no `.env`; nested sections load no separate
 sources.
+
+Set database and signing credentials in the process environment or mounted secret files before
+starting the Vessel. Their values are captured with Settings at startup and omitted from generated
+TOML and serialized snapshots. Editing an environment variable or secret file does not update a
+running process; restart it to load the change. The exact credential names and precedence belong to
+[Configuration](../adr/12-configuration.md#secrets-privacy-autonomy-and-projections).
 
 An incomplete law may be edited; it may not half-enter the body. The complete configuration must
 validate before infrastructure projection begins.
@@ -45,9 +52,9 @@ The generated foundation selects the caged Host Reactor:
 actuator = "host-reactor"
 ```
 
-`actuator = "systemd"` is the explicit uncaged development path. The full Reactor path,
-acknowledgement, mount, and validation contract belongs to
-[Configuration](../adr/12-configuration.md#extension-activation-and-application-selection).
+`actuator = "systemd"` is the explicit uncaged development path. [Runtime transitions](animator/runtime-transitions.md#switching-settings) gives the Reactor path
+and acknowledgement settings; [Orchestrator](../adr/23-orchestrator.md#host-mutation-port-and-privilege-boundary)
+owns the validated host handoff and recovery outcomes.
 
 ## The Rune Archive
 
@@ -80,10 +87,12 @@ Read [Animator](animator/index.md), [Soulstone](animator/soulstone/index.md), an
 
 ## The Rite of Binding
 
-Edit the Codex, then project it:
+Edit the Codex, then project it from the stable
+[Summoning checkout](../summoning.md#the-desecration), under the same operator user and XDG
+environment:
 
 ```bash
-lychd bind
+uv run --extra postgres-binary lychd bind
 ```
 
 Binding follows one direction:

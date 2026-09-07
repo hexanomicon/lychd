@@ -33,6 +33,34 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
+def _declaration_provenance(declaration: SoulstoneConfig | PortalConfig) -> str:
+    source_file = str(declaration.source_file) if declaration.source_file is not None else None
+    return f"{type(declaration).__name__}(name={declaration.name!r}, source_file={source_file!r})"
+
+
+def runtime_provenance(runtime: RuntimeAnimator) -> str:
+    return f"{type(runtime).__name__} from {_declaration_provenance(runtime.rune)}"
+
+
+def _require_runtime_identity(
+    declaration: SoulstoneConfig | PortalConfig,
+    runtime: RuntimeAnimator,
+) -> None:
+    """Reject a factory result that does not preserve its exact Rune and identity."""
+    if runtime.rune != declaration:
+        msg = (
+            f"Runtime factory for {_declaration_provenance(declaration)} returned "
+            f"{runtime_provenance(runtime)}, which does not retain the declared Rune value."
+        )
+        raise ValueError(msg)
+    if runtime.name != declaration.name:
+        msg = (
+            f"Runtime for {_declaration_provenance(declaration)} must use canonical name "
+            f"{declaration.name!r}; received name={runtime.name!r}."
+        )
+        raise ValueError(msg)
+
+
 class RuntimeAdapterRegistry:
     """Runtime switchboard for command planning and runtime-handle construction.
 
@@ -79,22 +107,26 @@ class RuntimeAdapterRegistry:
     def build_runtime(self, rune: SoulstoneConfig | PortalConfig) -> RuntimeAnimator | None:
         """Build runtime handle for Soulstone/Portal rune declarations."""
         if isinstance(rune, PortalConfig):
-            return self._build_portal_runtime(rune)
-
-        return self._adapter_for(rune).build_runtime(rune)
+            runtime = self._build_portal_runtime(rune)
+        else:
+            runtime = self._adapter_for(rune).build_runtime(rune)
+        if runtime is not None:
+            _require_runtime_identity(rune, runtime)
+        return runtime
 
     def build_capability_specs(
         self,
-        rune: SoulstoneConfig | PortalConfig,
+        animator: RuntimeAnimator,
     ) -> list[CapabilitySpec]:
-        """Build capability specs for either a Soulstone Rune or Portal Rune."""
+        """Derive specs from the same runtime generation that will execute them."""
+        rune = animator.rune
         if isinstance(rune, PortalConfig):
             if type(rune) not in self._portal_definitions:
                 return []
             return self._build_portal_capability_specs(rune)
 
         adapter = self._adapter_for(rune)
-        return adapter.build_capability_specs(rune)
+        return adapter.build_capability_specs(animator)
 
     async def probe_capability_states(
         self,

@@ -21,7 +21,7 @@ from pydantic_core import to_jsonable_python
 from pydantic_graph import BaseNode, End, Graph
 
 from lychd.agents.router import Intent
-from lychd.agents.workflows import BRIDGE_CHAT, DELEGATED_RITE, builtin_workflow_registry
+from lychd.agents.workflows import BRIDGE_CHAT, BRIDGE_CHAT_BOUND, DELEGATED_RITE, builtin_workflow_registry
 from lychd.agents.workflows.base import (
     Gate,
     PatternEdge,
@@ -46,7 +46,10 @@ def _intent() -> Intent:
 
 def test_every_workflow_state_round_trips() -> None:
     for workflow in builtin_workflow_registry().all():
-        state = workflow.make_state(_intent())
+        intent = _intent()
+        if workflow is BRIDGE_CHAT_BOUND:
+            intent = intent.model_copy(update={"admitted_capability_key": "chat:offline"})
+        state = workflow.make_state(intent)
         # A live handle typed into State would break schema generation.
         state.model_json_schema()
         restored = type(state).model_validate_json(state.model_dump_json())

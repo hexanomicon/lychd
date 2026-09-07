@@ -21,7 +21,8 @@ objective, Recipe, and Training Intent with resource envelope. The trainer recei
 inputs. It cannot expand the corpus, pull ambient traces, or alter them after admission.
 
 The resource request names exact accelerators, memory, storage, network policy, duration, and
-conflicting Covens. Training receives no universal priority. When a physical transition is
+conflict-domain requirements. Orchestrator determines the affected set from fresh observations and
+the compiled conflict graph. Training receives no universal priority. When a physical transition is
 required, only affected leases drain; unused devices stay undisturbed. The operator may postpone
 or refuse the request.
 

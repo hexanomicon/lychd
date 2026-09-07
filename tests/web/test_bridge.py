@@ -6,6 +6,8 @@ import asyncio
 import json
 from typing import TYPE_CHECKING, Any
 
+import pytest
+
 from lychd.agents.router import Intent
 from lychd.domain.codex.sigil import Sigil
 from lychd.domain.cortex.events import RunEvent, RunEventKind
@@ -132,6 +134,64 @@ def test_selected_session_never_projects_another_sessions_consent(
     assert [(card["run_id"], card["tool_name"]) for card in body["pending_consents"]] == [
         ("run-selected-consent", "selected-tool")
     ]
+
+
+def test_session_attention_counts_follow_pending_consent_ownership(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    older = _session(fake_services)
+    newest = _session(fake_services)
+
+    async def _seed() -> str:
+        for session_id, run_id in (
+            (older.id, "older-waiting"),
+            (newest.id, "newest-without-consent"),
+            ("unlisted-session", "unlisted-run"),
+        ):
+            await fake_services.ledger.create(
+                Intent(session_id=session_id, run_id=run_id, prompt="approve", source="bridge"),
+                workflow_name="bridge_chat",
+                queue_name="runs",
+                priority=70,
+            )
+        # Run status alone must not create a pending consent count.
+        await fake_services.ledger.set_status("newest-without-consent", RunStatus.RUNNING)
+        await fake_services.ledger.set_status("newest-without-consent", RunStatus.AWAITING_CONSENT)
+        consent_ids: list[str] = []
+        for index, run_id in enumerate(("older-waiting", "older-waiting", "unlisted-run", "missing-run")):
+            decision = await fake_services.consents.park(
+                run_id=run_id,
+                tool_name="review",
+                tool_call_id=f"call-{index}",
+                call_ids=(f"call-{index}",),
+                args={},
+                sigil=Sigil(name="magus", scopes=frozenset({"*"})),
+            )
+            consent_ids.append(decision.consent_id)
+        return consent_ids[0]
+
+    first_consent = asyncio.run(_seed())
+    body = altar_client.get("/api/v1/bridge").json()
+    assert body["session"]["id"] == newest.id
+    assert body["session"]["pending_count"] == 0
+    assert body["pending_consents"] == []
+    assert body["pending_count"] == 4
+    assert {session["id"]: session["pending_count"] for session in body["sessions"]} == {
+        older.id: 2,
+        newest.id: 0,
+    }
+    selected = altar_client.get(f"/api/v1/bridge/sessions/{older.id}").json()
+    assert selected["session"]["pending_count"] == len(selected["pending_consents"]) == 2
+    for session_id, count in ((older.id, 2), (newest.id, 0)):
+        inspector = altar_client.get(f"/api/v1/bridge/sessions/{session_id}/inspector")
+        assert inspector.status_code == 200
+        assert inspector.json()["pending_count"] == count
+
+    asyncio.run(fake_services.consents.decide(first_consent, approved=False, decided_by="magus"))
+    refreshed = altar_client.get(f"/api/v1/bridge/sessions/{older.id}").json()
+    assert refreshed["session"]["pending_count"] == len(refreshed["pending_consents"]) == 1
+    assert refreshed["pending_count"] == 3
 
 
 def test_cancel_run_is_idempotent_and_remains_visible_without_a_settled_turn(
@@ -387,6 +447,112 @@ def test_run_snapshot_reconstructs_delegated_crossing(
     assert body["delegated_runtime"] == "reference"
     assert body["delegated_profile"] == "read"
     assert body["delegated_status"] == "running"
+
+
+@pytest.mark.parametrize("observation", ["retained", "live", "absent"])
+def test_run_snapshot_binds_delegated_details_to_one_job(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+    observation: str,
+) -> None:
+    session = _session(fake_services)
+    run_id = "run-two-delegates"
+
+    async def seed() -> tuple[str, str]:
+        await fake_services.ledger.create(
+            Intent(session_id=session.id, run_id=run_id, prompt="inspect", source="bridge"),
+            workflow_name="delegated_rite",
+            queue_name="runs",
+            priority=70,
+        )
+        jobs: list[str] = []
+        for name, profile in (("older", DelegatedAgentProfile.READ), ("newer", DelegatedAgentProfile.VERIFY)):
+            job = await fake_services.delegates.submit(
+                DelegatedAgentRequest(
+                    request_id=name,
+                    run_id=run_id,
+                    step_id="dispatch_delegate",
+                    runtime="reference",
+                    profile=profile,
+                    prompt=name,
+                )
+            )
+            jobs.append(job.job_id)
+        await fake_services.delegates.refresh(jobs[0])
+        if observation == "retained":
+            await fake_services.ledger.append_event(
+                RunEvent(
+                    run_id=run_id,
+                    seq=0,
+                    kind=RunEventKind.NODE,
+                    data="dispatch_delegate",
+                    meta={"delegated_job_id": jobs[0], "delegated_runtime": "reference"},
+                )
+            )
+        return jobs[0], jobs[1]
+
+    older, newer = asyncio.run(seed())
+    if observation == "live":
+        fake_services.bus.emitter(run_id).emit(
+            RunEventKind.NODE,
+            "dispatch_delegate",
+            delegated_job_id=older,
+            delegated_runtime="reference",
+        )
+    body = altar_client.get(f"/api/v1/bridge/runs/{run_id}").json()
+    assert body["delegated_runtime"] == "reference"
+    assert (body["delegated_job_id"], body["delegated_profile"], body["delegated_status"]) == (
+        (newer, "verify", "running") if observation == "absent" else (older, "read", "succeeded")
+    )
+
+
+@pytest.mark.parametrize("observed_owner", ["missing", "foreign"])
+def test_run_snapshot_does_not_borrow_details_for_unresolved_delegated_job(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+    observed_owner: str,
+) -> None:
+    session = _session(fake_services)
+    run_id = "run-unresolved-delegate"
+
+    async def seed() -> str:
+        await fake_services.ledger.create(
+            Intent(session_id=session.id, run_id=run_id, prompt="inspect", source="bridge"),
+            workflow_name="delegated_rite",
+            queue_name="runs",
+            priority=70,
+        )
+        # A real newest local job must not be used to fill the observed identity.
+        observed_id = "missing-job"
+        for job_run in (run_id, "another-run"):
+            job = await fake_services.delegates.submit(
+                DelegatedAgentRequest(
+                    request_id=job_run,
+                    run_id=job_run,
+                    step_id="dispatch_delegate",
+                    runtime="reference",
+                    prompt="inspect",
+                )
+            )
+            if observed_owner == "foreign" and job_run == "another-run":
+                observed_id = job.job_id
+        await fake_services.ledger.append_event(
+            RunEvent(
+                run_id=run_id,
+                seq=0,
+                kind=RunEventKind.NODE,
+                data="dispatch_delegate",
+                meta={"delegated_job_id": observed_id, "delegated_runtime": "reference"},
+            )
+        )
+        return observed_id
+
+    observed_id = asyncio.run(seed())
+    body = altar_client.get(f"/api/v1/bridge/runs/{run_id}").json()
+    assert body["delegated_job_id"] == observed_id
+    assert body["delegated_runtime"] is None
+    assert body["delegated_profile"] is None
+    assert body["delegated_status"] is None
 
 
 def test_run_snapshot_preserves_cross_occurrence_correlations(

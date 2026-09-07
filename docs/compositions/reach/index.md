@@ -5,25 +5,12 @@ icon: material/hand-back-right-outline
 
 # :material-hand-back-right-outline: Reach
 
-Reach lets one revision-pinned Persona answer in an external social place without handing that
-place LychD's authority. A mention, command, or admitted presence event creates one finite
-awakening; the platform account never becomes the Lich.
+A mention in the Necropolis wakes one bounded turn. Reach admits the event, forms an answer under a pinned Persona, and records whether the external place received it. The platform account remains a way to appear there, without becoming the Lich.
 
-| Field | Reference contract |
-| --- | --- |
-| **Identity** | `reach.discord` revision `1` |
-| **Patterns** | `reach.external_converse@1`, `reach.external_summon@1`, `reach.external_presence@1` |
-| **Begins with** | one allowlisted mention, guild command, or policy-admitted internal event |
-| **Can return** | `ReachTurn@1` and optional `ReachDelivery@1` |
-| **Stops before** | Lich identity or cross-place projection continuity, moderation, ambient surveillance, attachments, DMs, remote shell, deployment effects, or platform-settled consent |
+[Habitat](habitat.md) defines who and what may enter that social place. [Turn](turn.md) follows a question through committed answer and delivery. [Deployment profiles](deployments/index.md) choose where its durable authority and transport custody live.
 
-- [Habitat](habitat.md) defines The Necropolis as the admitted social place, caller boundary, and cross-world continuity.
-- [Turn](turn.md) carries one event through Context, committed result, delivery, and recovery.
-- [Deployment profiles](deployments/index.md) close home-only, VPS-edge/home-core, and standalone
-  VPS placement, service, secret, E2E, and recovery boundaries.
+`reach.discord` revision `1` publishes `reach.external_converse@1`, `reach.external_summon@1`, and `reach.external_presence@1`. An allowlisted mention, guild command, or policy-admitted internal event may return `ReachTurn@1` and optional `ReachDelivery@1`.
 
-[Avatar](../avatar/index.md) may bind one Lich projection into a Habitat, but Reach still owns the
-platform event, audience, turn, delivery, and reply receipt. Avatar receives only those attributed
-results; the platform account never becomes the Lich or grants the next projection.
+Reach stops before cross-place identity/continuity, moderation, ambient surveillance, attachments, DMs, shell, deployment effects, and platform-settled consent. [Avatar](../avatar/index.md) may bind presentation, while Reach retains the event, audience, turn, delivery, and receipt. One result gives no next projection its authority.
 
-Related: [Composition Portfolio](../index.md) · [Workflow](../../adr/28-workflow.md)
+[Composition Portfolio](../index.md) · [Workflow](../../adr/28-workflow.md)

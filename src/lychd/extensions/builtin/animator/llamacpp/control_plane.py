@@ -6,6 +6,7 @@ from urllib.parse import urlencode, urlsplit, urlunsplit
 
 from lychd.domain.animation.animators import RuntimeAnimator
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
+from lychd.domain.animation.services.adapters.runtimes.shared import parse_openai_model_inventory
 from lychd.extensions.builtin.animator.llamacpp.connector import LlamacppConnector
 from lychd.lib.http import DEFAULT_TIMEOUT_SECONDS, HttpJsonError, request_json
 
@@ -15,10 +16,11 @@ _HTTP_SERVICE_UNAVAILABLE = 503
 class LlamaCppControlPlaneError(RuntimeError):
     """Raised when llama.cpp control-plane calls fail."""
 
-    def __init__(self, message: str, *, status: int | None = None) -> None:
+    def __init__(self, message: str, *, status: int | None = None, transport: bool = False) -> None:
         """Preserve the optional HTTP status for readiness classification."""
         super().__init__(message)
         self.status = status
+        self.transport = transport
 
 
 class LlamaCppControlPlane:
@@ -84,6 +86,20 @@ class LlamaCppControlPlane:
                 self._populate_router_models(lifecycle, models)
             except LlamaCppControlPlaneError as exc:
                 lifecycle.error = str(exc)
+        elif lifecycle.health == "ok":
+            try:
+                models = await self._request_json(base_url, "GET", "/v1/models")
+                model_ids = parse_openai_model_inventory(models)
+                lifecycle.available_models = list(model_ids)
+                lifecycle.loaded_models = list(model_ids)
+            except LlamaCppControlPlaneError as exc:
+                lifecycle.health = "unknown" if exc.transport else "error"
+                if exc.status == _HTTP_SERVICE_UNAVAILABLE and "loading model" in str(exc).lower():
+                    lifecycle.health = "loading"
+                lifecycle.error = f"model inventory unavailable: {exc}"
+            except HttpJsonError as exc:
+                lifecycle.health = "error"
+                lifecycle.error = f"model inventory unavailable or invalid: {exc}"
 
         return lifecycle
 
@@ -113,7 +129,7 @@ class LlamaCppControlPlane:
             )
         except HttpJsonError as exc:
             error_msg = f"{method} {path} failed: {exc}"
-            raise LlamaCppControlPlaneError(error_msg, status=exc.status) from exc
+            raise LlamaCppControlPlaneError(error_msg, status=exc.status, transport=exc.transport) from exc
 
     def _build_url(self, base_url: str, path: str, *, query: dict[str, str] | None = None) -> str:
         split = urlsplit(base_url)

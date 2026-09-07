@@ -15,6 +15,12 @@ class LlamaCppPresetParser:
         "ctx-size": "n_ctx",
         "n_ctx": "n_ctx",
         "llama_arg_ctx_size": "n_ctx",
+        "np": "n_parallel",
+        "parallel": "n_parallel",
+        "n_parallel": "n_parallel",
+        "llama_arg_n_parallel": "n_parallel",
+        "kv-unified-per-slot": "n_ctx_per_slot",
+        "llama_arg_kv_unified_per_slot": "n_ctx_per_slot",
         "n-predict": "n_predict",
         "predict": "n_predict",
         "n": "n_predict",
@@ -28,7 +34,7 @@ class LlamaCppPresetParser:
         "llama_arg_top_p": "top_p",
     }
     _PRESET_MODEL_KEYS: Final[set[str]] = {"model", "m", "llama_arg_model"}
-    _INTEGER_KEYS: Final[set[str]] = {"n_ctx", "n_predict"}
+    _INTEGER_KEYS: Final[set[str]] = {"n_ctx", "n_parallel", "n_ctx_per_slot", "n_predict"}
     _FLOAT_KEYS: Final[set[str]] = {"temperature", "top_p"}
 
     def parse_preset_defaults(

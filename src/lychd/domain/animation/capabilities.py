@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from pydantic_ai.settings import ModelSettings
     from pydantic_ai.toolsets import AbstractToolset
 
+from lychd.domain.animation.errors import CapabilityUnavailable
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.animation.schemas.generation import GenerationProfile
@@ -58,6 +59,17 @@ class CapabilitySpec(BaseModel):
     generation_profile: GenerationProfile = Field(default_factory=GenerationProfile)
     is_dynamic: bool = False
     concurrency: ConcurrencyIntent = Field(default_factory=ConcurrencyIntent)
+
+    def require_executable_v1_family(self) -> None:
+        """Refuse metadata-only labels before readiness can request physical work.
+
+        A supported family still requires its connector's admitted callable surface.
+        """
+        if self.family not in {CapabilityFamily.CHAT, CapabilityFamily.TOOL_EXECUTION}:
+            raise CapabilityUnavailable(
+                self.key,
+                f"v1 {self.family.value} is routing metadata without an executable grant surface",
+            )
 
     @model_validator(mode="after")
     def _enforce_portal_invariants(self) -> CapabilitySpec:

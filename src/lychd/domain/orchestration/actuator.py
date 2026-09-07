@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 __all__ = [
     "RuntimeActuationRestoredError",
     "RuntimeActuator",
+    "RuntimeCancellationNoEffectError",
     "RuntimeCancellationRestoredError",
     "RuntimePreconditionError",
     "TransitionIntent",
@@ -33,6 +34,10 @@ class RuntimePreconditionError(RuntimeError):
 
 class RuntimeActuationRestoredError(RuntimeError):
     """A failed physical transition was observed back at its exact prior world."""
+
+
+class RuntimeCancellationNoEffectError(asyncio.CancelledError):
+    """Caller cancellation whose delivery was durably retracted before host claim."""
 
 
 class RuntimeCancellationRestoredError(asyncio.CancelledError):

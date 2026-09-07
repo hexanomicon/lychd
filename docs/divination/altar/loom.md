@@ -5,105 +5,76 @@ icon: material/vector-polyline
 
 # :material-vector-polyline: Loom: The Visible Scroll
 
-The **Loom** is a read-only browser for exact source-registered **Pattern** revisions—the immutable
-**Scrolls** read by Spellweaver. It exposes each declared station and permitted edge under one
-manifest identity. In the future grammar, each semantic station places an exact **Spell** contract;
-the current manifests do not yet carry that independent identity. Loom does not execute, edit,
-publish, teach, or follow a live Run.
+Loom lets you read a Pattern revision as a declared Scroll: the stations it contains and the routes they permit. Use it to understand what a chosen workflow could do, then compare that declaration with the evidence of a particular Run in [Orb](orb.md). The current instrument is read-only.
 
-## Composition, Scroll, Loom, casting
+## Find the exact score
 
-- A **Scroll** is one immutable Pattern revision identified by `pattern_id`, `revision`, and
-  `digest`.
-- A **Spell** is one independently named semantic action; one Scroll-local station places it.
-- The **Loom** projects that Scroll.
-- An **Invocation** opens a Circle; casting performs the Scroll within it; the Run carries durable
-  ledger truth.
+After [Altar setup](index.md#bring-one-intent), open `http://127.0.0.1:7134/loom`. The catalogue retains `bridge_chat@1`, `bridge_chat@2`, and
+`delegated_rite@1`; the rail pairs each title with its `pattern_id@revision` and marks the default,
+other active routes, and retained revisions.
 
-A station or permission states what the published score allows; it is not evidence that a Run
-entered that station or completed that edge.
+Opening `/loom` selects the configured default and replaces the URL with its exact route. Without
+`weaver.bridge`, that is `/loom/bridge_chat/1`; configuring the
+[Bridge capability selector](../../sepulcher/extensions/weaver/index.md#choose-a-bridge-capability)
+selects `/loom/bridge_chat/2`. An exact revision link continues to open that retained score.
 
-## What the Loom renders now
+A direct link takes the form `/loom/{pattern_id}/{revision}`. Both parts are required: `/loom/{pattern_id}` is rejected. This lets a review name the revision it concerns instead of leaving its identity to a later selection.
 
-Open:
+## Read identity, then possibility
 
-```text
-http://127.0.0.1:7134/loom
-```
+Read the three views together:
 
-The current catalogue contains `bridge_chat@1` and `delegated_rite@1`. The rail shows each Pattern
-title and `pattern_id@revision`. `/loom` selects the catalogue default and replaces the URL with
-its exact route, currently `/loom/bridge_chat/1`. Browser deep links require both id and revision:
-`/loom/{pattern_id}` is not accepted.
+| View | What to inspect |
+| --- | --- |
+| Header | `title`, `description`, `pattern_id@revision`, and the UI label `published`. Here, published means registered from source; a durable publication store is not implemented. |
+| **Semantic score** | Station and permission counts; each node's `label`, `key`, `kind`, and permitted next station. |
+| **Immutable identity** | `checkpoint`, declared `entry`, reviewed `implementation` revision, 64-character `digest`, `trigger`, and plain-text Mermaid `source`. |
 
-For the selected Scroll, confirm:
+The semantic score is the main reading surface. A station and its permitted edge tell you what the score allows. A Run's retained evidence establishes which movements were observed.
 
-- header: `title`, `description`, `pattern_id@revision`, and the current UI label `published`;
-- **Semantic score**: station count, permission count, and each node's `label`, `key`, `kind`, and
-  permitted next station;
-- **Immutable identity**: `checkpoint`, declared `entry` station, reviewed `implementation`
-  revision, 64-character `digest`, `trigger`, and the plain-text Mermaid `source`.
+**Reveal** and **Hide** under **Diagram lens** control an optional static diagram. It subscribes to no execution and highlights no live station.
 
-The source links use `/api/v1/loom/source/patterns/{pattern_id}/{revision}`. Current-revision
-convenience source uses `/api/v1/loom/source/workflows/{workflow}`. Keeping source below this longer
-namespace leaves every legal `/api/v1/loom/{pattern_id}/{revision}` identity available, including a
-revision literally named `source`.
+The station's kind needs care when interpreting the score. A Spell is an independently identified semantic action, and the accepted grammar places its exact contract in a Scroll-local station. Current manifests do not yet carry independent Spell identity. In particular, the distinct glyph for a `delegate` station does not establish an independent Spell contract or provider-backed execution.
 
-Choose **Reveal** or **Hide** under **Diagram lens** for the optional static diagram. The semantic
-score remains primary. The diagram does not highlight a live node or subscribe to execution.
+## Compare it with a Run
 
-When Orb opens Loom with `?run={run_id}`, Loom keeps **Return to Run in Orb** only if that Run's
-pinned manifest is valid and equal in full to the registered score. Matching only its digest,
-Pattern id, or revision is insufficient. Selecting another Pattern drops the query. `run` is review
-context, never part of Pattern identity.
+An Invocation is the admitted Circle; casting performs its Scroll, and the Run is its durable ledger identity. Compare the declaration in Loom with [Orb's retained evidence of traversal](orb.md), accounting for any gaps and omissions there.
 
-## The Designed Map
+Orb can open a score with `?run={run_id}` attached. That query supplies review context; it does not select the Pattern identity. Loom offers **Return to Run in Orb** only after the Run's pinned manifest validates and equals the entire registered score. Matching the digest, Pattern ID, and revision alone is insufficient. The return also preserves the selected event or delegated-job hint. Invalid, unavailable, or mismatched Run context is shown explicitly. Selecting another Pattern discards the Run query.
 
-No Portfolio, Composition hierarchy, independent Spell catalogue, compatibility negotiation,
-teaching surface, node inspector, live occurrence overlay, nested Pattern, Suite, draft, or editor
-map is delivered. A station with kind `delegate` receives a distinct glyph; that mark does not
-prove a provider-backed runtime executed or establish an independent Spell contract.
+??? info "Compare the source contract"
 
-A future grey Spell placement belongs only to an inert candidate/resolution report with a redacted
-status such as missing contract, missing implementation, incompatible, unauthorized, or revoked.
-The whole Scroll must remain `castable=false`; no grey placeholder may enter the executable Graph.
+    The revision endpoint is `/api/v1/loom/source/patterns/{pattern_id}/{revision}`. The
+    current-revision shortcut is `/api/v1/loom/source/workflows/{workflow}`. Their separate source
+    namespace keeps `/api/v1/loom/{pattern_id}/{revision}` legal, including a revision named `source`.
 
-## Renderer admission
+## The planned editor {#where-charcoal-must-wait}
 
-No graph editor or XYFlow dependency is delivered. The Altar remains Svelte; a future Loom
-renderer is a replaceable projection behind framework-neutral TypeScript views of validated Scroll
-snapshots and mutation-intent contracts, not a reason to move Pattern truth into a component store
-or reopen the frontend by preference.
+Editing, proposal, publication, execution, and layout changes belong to the future design. The [Loom workflow views record](../../state-of-the-work.md#loom-workflow-views) tracks which parts of that design have been implemented.
 
-XYFlow is the admitted candidate for the one DOM renderer Loom shares with [Orb](./orb.md), under
-the [Frontend Covenant's lifecycle gate](../../adr/15-frontend.md#decision-lock-and-reopening-gate).
-A released candidate must use only public APIs, show no retained heap growth after repeated
-replacement and forced collection on every supported engine, and preserve one authority-derived
-semantic score through drag, keyboard, resize, selection, connect, reconnect, delete, rejection, and
-resync. Renderer arrays and geometry remain drafts. Failure rejects the dependency; only matched
-evidence that Svelte cannot satisfy the whole Altar contract while a replacement can is evidence to
-reopen the framework.
+Future charcoal drafts and grey Spell placements would first produce inert candidates and redacted
+resolution reports. Until every exact placement passes [Scroll admission](../../adr/28-workflow.md#spells-scrolls-and-casting),
+the whole candidate remains `castable=false`; no placeholder enters the executable Graph.
 
-Loom is an editor at editor scale. `bridge_chat@1` places five stations over six permitted edges,
-including a self-edge and a diamond; `delegated_rite@1` places three. Both stay in the tens to low
-hundreds under any admitted Suite grammar, so a DOM-node renderer is the fit. A
-dense engine would cost Loom the drag, connect, reconnect, and handle grammar it exists to provide,
-and would supply no accessible twin.
+Follow [ADR 15's editing gate](../../adr/15-frontend.md#loom-workload-and-editing-gate) for the future editor and [Spellweaver](../../sepulcher/extensions/weaver/index.md) for a candidate's passage to a published revision.
 
-Two gates stand between that renderer and an editing Loom, and neither is a renderer defect. The
-served score carries no position and the Scroll grammar declares no layout document, so until
-authority owns layout and mutation intent, Loom projects a computed layout and admits no drag.
-XYFlow also exposes no keyboard path to create a connection, because its connection handles are not
-focusable; Loom owns that path above the renderer rather than shipping an editor its keyboard twin
-cannot operate.
+## Reading direction
 
-## Charcoal, Law, and Publication
+The next reading pass emphasizes the exact revision, registration from source, entry, station
+counts, and declared successors before secondary digest and source detail. The current semantic
+outline and optional static Mermaid lens remain the starting point. A future computed graph may
+become the wide-screen default only when it makes branches, joins, and returns easier to
+understand; narrow screens begin with the outline.
 
-The current Loom shows only source-registered revisions and labels them `published`; that label is
-not evidence of a durable publication store. There is no charcoal candidate, layout document,
-**Propose**, **Run**, **Publish**, drag, connect, or mutation action.
+Both views must use the same declared nodes and permission endpoints. A station's incoming and
+outgoing permissions belong in its detail. Draw a self-loop only when declared, and say **No
+outgoing permission declared** rather than inferring execution termination. Do not invent
+conditional edge labels, station effects, independent Spell identity, or execution colours from
+placement. The read-only graph offers no handles that imply connecting, editing, publishing,
+or running the score.
 
-## Before the Loom May Accept Executable Drafts
-
-Executable drafts are outside the current contract. Loom cannot change the registry, revise a
-manifest, migrate a checkpoint, invoke a Pattern, or execute a Suite.
+Acceptance case: open a retained exact revision with Run context, find all permitted successors
+and a return loop using the keyboard, then disable or fail the diagram. The outline must still
+answer the same question and preserve selection. Return to the original Orb event; selecting a
+different Pattern discards that context. [Frontend](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction)
+owns this target and the shared renderer gates; the mock diagram is not their production receipt.

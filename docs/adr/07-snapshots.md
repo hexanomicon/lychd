@@ -6,10 +6,10 @@ icon: material/camera-timer
 # :material-camera-timer: 7. Snapshots
 
 !!! abstract "Context"
-    A checkpoint is a whole-body cut, not a convenient backup. It binds the body revision, its
-    configuration and extensions, durable stores, and the admitted work that may survive recovery.
-    Workflow replay inside one revision remains Phylactery work; this Covenant decides the heavier
-    cut between body revisions and durable reality.
+    A whole-body checkpoint binds the body revision, its configuration and extensions, durable
+    stores, and the admitted work that may survive recovery. Workflow checkpoints support replay
+    inside one revision through the Phylactery. This Covenant governs the coordinated capture and
+    restore of the body itself.
 
 ## Decision: the Checkpoint Protocol
 

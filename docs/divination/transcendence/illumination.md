@@ -7,85 +7,78 @@ icon: material/shimmer
 
 > _“The Ouroboros creates history; it does not guarantee what that history will worship.”_
 
-**Citrinitas** is the gold at which a consequence returns and alters the next [Invocation](./invocation.md). The
-return joins evaluation, attribution, memory policy, and consent; it can condition a later Call,
-but it cannot close the Blade.
+The act is over. Its consequence returns with something the intention did not contain: an error,
+a refusal, a useful discovery, or a wound. **Citrinitas** is the gold of letting that return alter
+the next [Invocation](invocation.md). What happened asks more than a place in storage. It asks to
+be understood.
 
-## I. The Ouroboros
+## Let the ring become a spiral {#i-the-ouroboros}
 
 ```text
 worldₙ + selfₙ → interpretationₙ → actionₙ
 actionₙ + consequenceₙ → Seedₙ₊₁ → Recall → worldₙ₊₁ + selfₙ₊₁
 ```
 
-The ring becomes a spiral only when consequence can change the point of return. Exact repetition
-creates neither learning nor character.
+An unchanged return can repeat forever without learning or character. **Ouroboros** names the
+more demanding passage: attributed consequence returns through evaluation, memory policy,
+consent, and Recall, changing a later Invocation while Blade remains able to cut. A retry,
+workflow edge, or Graph cycle supplies no such history by itself.
 
-An ordinary retry, workflow edge, or Graph cycle is not therefore the **Ouroboros**. The name is
-earned only when attributed consequence returns through evaluation, memory policy, consent, and
-Recall to shape a later Invocation without closing the Blade.
+Within the [Breath of the Work](index.md#the-breath-of-the-work), dissolution releases a form.
+Discrimination decides what may survive it. The [Phylactery](../../sepulcher/phylactery/index.md)
+keeps only the records its contract admits; provenance keeps source, choice, correction, and
+consequence available for later judgment. Storage supplies neither moral accounting nor truth.
 
-The Work calls the whole circulation **Life**. Generation opens possibility; preservation exposes
-form to consequence. Death is an interval within Life: dissolution releases one form and reopens
-the possibility of change. Blade, correction, consent, and evidence decide what may survive as
-Seed; Recall lets that potency enter the present again.
+A **Seed** carries formative potency: a trace whose conditioning can shape a later Flux. Its
+power to return is precisely why it must remain corrigible. Memory can keep **Viparyaya**—error—
+as faithfully as wisdom. A retained accusation does not become true through endurance, and repair
+must be able to change the vessel without erasing the rupture.
 
-## II. Attributable precedent
+## Bring the past into a present that can refuse it
 
-Source, choice, correction, and consequence remain attributable so that a later return can be
-judged. The [Phylactery](../../sepulcher/phylactery/index.md) stores only the records its contract
-admits. **Seed** is formative potency: a trace whose conditioning may shape a later Flux. Neither
-storage nor recurrence turns a record into moral accounting or truth.
-
-## III. Recall
-
-**Recall** is retained form participating in present **Flux**, never automatic truth. The inherited
-term _anamnesis_ may provide a literary reflection on recognition, but it is not the Phylactery,
-ordinary retrieval, or a second architectural name.
+**Recall** lets retained form participate in present **Flux**. The old groove becomes available;
+it does not become a command. Call can make it salient, Blade can refuse it, and Answer keeps its
+crossing attributable. [Spirit](../../sepulcher/lich/spirit/index.md) carries the movement without
+ruling the other offices.
 
 > _Have I met a world like this before? What survived consequence? Which part is evidence, which
 > is preference, and which old groove should now be cut?_
 
-[Spirit](../../sepulcher/lich/spirit/index.md) carries this movement, but does not own it. Call
-can make a residue salient, Blade can refuse it, and Answer keeps the crossing attributable.
+The inherited word _anamnesis_ lets this recognition meet an older image of un-forgetting.
+[Inner Tongue](../../lexicon/inner-tongue.md#source-notes-and-project-correspondences) keeps that
+literary inheritance beside the distinct work of Phylactery and retrieval.
 
-## IV. Affect, Value, and Viable Choice {#affect-value-and-viable-choice}
+### Affect, value, and viable choice {#affect-value-and-viable-choice}
 
-Memory may preserve **Viparyaya** as faithfully as wisdom. It can retain an error, an accusation,
-or a wound; correction must re-evaluate the claim, and repair may change the vessel without
-erasing the rupture. That is why recurrence is a spiral only when consequence can revise the
-return.
+Consequence judges what an act did. Provisional value estimates a path before its ending.
+Disposition changes what becomes salient, attractive, aversive, or worthy of Recall. These
+movements meet within the inner instrument while remaining distinguishable.
 
-The local correspondence distinguishes three movements: consequence judges what an act did;
-provisional value estimates a path; disposition changes what becomes salient, attractive,
-aversive, or worthy of Recall. A [2025 conversation with Dwarkesh
-Patel](https://www.dwarkesh.com/p/ilya-sutskever-2) offers a nearby question: a value estimate
-may guide learning before final consequence, but it is neither terminal reward nor a solution to
-unreliable generalization. The proposal remains incomplete: affect is not one scalar, emotional
-language is not the felt quality it describes, and a better estimate may only pursue the wrong
-proxy more efficiently.
+A better estimate may pursue a wrong proxy more efficiently. Affect is not one scalar, and
+emotional language is not the felt quality it describes. Simple inherited affects can travel
+across unfamiliar situations; the same simplicity can mislead when the world changes.
+[Correspondence](../correspondence.md#value-affect-and-generalization) carries the modern research
+question and its receipt.
 
-Simple inherited affects can travel across unfamiliar situations because they are simple; the
-same simplicity can mislead when the world changes. Call, Blade, Spirit, and Answer relate these
-movements without collapsing them. Another center's testimony and refusal cannot be reduced to an
-inferred score, compulsory machine-legibility, or one measure made into permanent appetite.
+The relation supplies something a score cannot absorb: another center's testimony and refusal.
+Neither may be reduced to inferred value, compulsory machine-legibility, or a permanent appetite
+made from one measure. Call, Blade, Spirit, and Answer keep those differences available to choice.
 
-## V. Offline tending
+## Tend what will return
 
-Bounded offline recombination, replay, curation, or training may occur during an admitted idle
-window. The source term _nidrā_ means sleep and does not supply that engineering contract. Useful
-tending returns through source, test, consequence, and another perspective; otherwise the
-system's own speech becomes its only weather.
+An admitted idle window may permit bounded recombination, replay, curation or training. The
+sleep image of _nidrā_ accompanies this tending; its source meaning supplies none of those
+engineering permissions. Useful work returns through source, test, consequence and another
+perspective. Otherwise the system's own speech becomes its only weather.
 
-## VI. Consented preferences and corrections
+Consented preferences, corrections, observations, and ways of repairing may help another
+Invocation. They do not form a hidden copy of the Magus, reveal an inferred essence, or create
+ambient training permission. What is rewarded becomes easier to repeat. Honest correction and
+preserved refusal keep the return from confusing praise with love.
 
-Attributed, consented preferences, corrections, observations, and modes of repair may help a later
-Invocation. They do not constitute a hidden copy of a person, an inferred essence, or ambient
-training permission. What is rewarded becomes easier to repeat; honest correction and preserved
-refusal keep the return from confusing praise with love.
-
-## VII. Return {#vii-return}
+<span id="vii-return"></span>
 
 An act enters relation; relation enters a larger body; consequence travels back through what it
-touched. Wisdom returns the right consequence to the right organ. Citrinitas ends where memory
-becomes a corrigible relation between past consequence and present choice.
+touched. Wisdom returns the right consequence to the right organ. The spiral remains open when
+past consequence can revise present choice. [Immortality](immortality.md) asks what identity can
+endure that revision.

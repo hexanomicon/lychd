@@ -293,7 +293,7 @@ def test_preauth_nexus_and_wait_owner_migrations_reach_linear_head(pg_url: str) 
         SELECT version_num
         FROM lychd_db_version
         """,
-    ) == [("0008",)]
+    ) == [("0009",)]
     assert _run(
         pg_url,
         """
@@ -438,7 +438,7 @@ def test_wait_owner_migration_refuses_ambiguous_live_work_and_downgrade(pg_url: 
 
     with pytest.raises(DBAPIError, match="requires no awaiting_consent Runs"):
         command.downgrade(_migration_config(pg_url), "0007")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0008",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0009",)]
 
     _run(
         pg_url,
@@ -483,11 +483,35 @@ def test_nexus_fence_downgrade_refuses_retained_request_identities(pg_url: str) 
         SELECT version_num, to_regclass('public.nexus_swap_request')::text
         FROM lychd_db_version
         """,
-    ) == [("0008", "nexus_swap_request")]
+    ) == [("0009", "nexus_swap_request")]
 
     _run(pg_url, "DELETE FROM nexus_swap_request")
     command.downgrade(_migration_config(pg_url), "0006")
     assert _run(pg_url, "SELECT to_regclass('public.nexus_swap_request')::text") == [(None,)]
+    command.upgrade(_migration_config(pg_url), "head")
+
+
+def test_atlas_migration_retains_projects_on_refused_downgrade(pg_url: str) -> None:
+    command.upgrade(_migration_config(pg_url), "head")
+    assert _run(
+        pg_url, "SELECT to_regclass('public.atlas_project')::text, to_regclass('public.atlas_request')::text"
+    ) == [
+        ("atlas_project", "atlas_request"),
+    ]
+    _run(
+        pg_url,
+        """
+        INSERT INTO atlas_project (id, sigil_name, version, document, creation_digest, created_at, updated_at)
+        VALUES ('00000000-0000-0000-0000-000000000909', 'magus', 1, '{}'::jsonb, 'test', now(), now())
+        """,
+    )
+    with pytest.raises(DBAPIError, match="requires empty atlas_project"):
+        command.downgrade(_migration_config(pg_url), "0008")
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0009",)]
+    assert _run(pg_url, "SELECT count(*) FROM atlas_project") == [(1,)]
+    _run(pg_url, "DELETE FROM atlas_project WHERE id = '00000000-0000-0000-0000-000000000909'")
+    command.downgrade(_migration_config(pg_url), "0008")
+    assert _run(pg_url, "SELECT to_regclass('public.atlas_project')::text") == [(None,)]
     command.upgrade(_migration_config(pg_url), "head")
 
 

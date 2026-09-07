@@ -15,23 +15,51 @@ Every layer entrusted with host authority, isolation, lifecycle, or recovery mus
 operator-inspectable, modifiable, rebuildable, and replaceable. Private extensions and Portals may
 contribute at their boundaries; neither may become a required owner of LychD's continuity.
 
-Code names the reusable mechanism directly. `QuadletConfig` is a frozen non-Rune value object
-embedded as the `quadlet` field of operator intent that an admitted owner compiles into a
-Quadlet-backed service; current Soulstone and Phoenix Runes are its concrete consumers. It owns
-only their common OCI image invariant.
-Lifecycle, mounts, devices, secrets, ports, commands, placement, and policy remain explicit fields
-of the receiving owner rather than generic raw-Quadlet authority. `QuadletContainer` is the later
-physical manifest model. Embedding `quadlet` declares the requested body but does not bypass the
-owner-specific contributor or compiler that admits those policies. There is no `Stone`,
-`ServiceStone`, or `AmbientStone` base type:
-**Soulstone** is the sole accepted service term using that suffix.
-
 ## Decision: the manifested body
 
 The generated topology contains `lychd.pod`, one `lychd-animator-*.target` for each
 lifecycle-managed Soulstone, compatible `lychd-coven-*.target` aggregates, the migration gate,
 Phylactery and Vessel, and admitted extension units. A Portal is a logical remote connection; it
 does not summon a local container.
+
+### Current unit graph
+
+A generated Quadlet manifest is a Bind/Scribe deployment artifact. A live Animator retains its
+Rune identity, Connector, and typed runtime surfaces; it never owns the generated manifest.
+`RuntimePlan` compilation is available through the bind planner, not through the live
+`AnimatorRegistry` surface.
+
+Joined containers set `StartWithPod=false`: creating the shared namespace must not awaken every
+Soulstone. Core ordering starts Phylactery, then the migration gate, then the Vessel. Only
+`persistent_resident` Animator targets join normal boot; dedicated non-residents require the
+Orchestrator or explicit break-glass operator action.
+
+`groups`, `concurrency.conflict_domains`, and `alliances` are different declarations. Groups make
+an operator-facing Coven; conflict domains declare finite-hardware exclusion; alliances grant
+neither. The compiler forms the exact conflict graph: an explicit empty set declares coexistence;
+an omitted dedicated non-resident domain becomes compiler-owned `default-exclusive` and conflicts
+with every non-empty effective domain; residents may not declare a non-empty conflict set. It emits
+one Animator target per Soulstone, its target/service ordering and binding, and one lexically
+ordered `Conflicts=`/`After=` edge for each conflicting pair. Friendly grouping never implies safe
+coexistence.
+
+Each Animator target `Requires=` and is `Before=` its service; the service `BindsTo=` and is
+`After=` the target. A Coven only `Wants=` and is `After=` compatible targets, whose members are
+`PartOf=` that Coven. A compiler rejects a Coven with an internal conflict before it writes units.
+
+### Compiler input
+
+Code names the reusable mechanism directly. `QuadletConfig` is a frozen non-Rune value object
+embedded as the `quadlet` field of operator intent that an admitted owner compiles into a
+Quadlet-backed service; current Soulstone and Phoenix Runes are its concrete consumers. It owns
+only their common OCI image invariant.
+
+Lifecycle, mounts, devices, secrets, ports, commands, placement, and policy remain explicit fields
+of the receiving owner rather than generic raw-Quadlet authority. `QuadletContainer` is the later
+physical manifest model. Embedding `quadlet` declares the requested body but does not bypass the
+owner-specific contributor or compiler that admits those policies. There is no `Stone`,
+`ServiceStone`, or `AmbientStone` base type:
+**Soulstone** is the sole accepted service term using that suffix.
 
 ### Versioned application deployments
 
@@ -53,8 +81,11 @@ whole physical manifest and Scribe alone emits the units and receipts. A profile
 hostile parser, credential edge, or browser outside `lychd.pod` in a dedicated rootless network
 zone, but it cannot create a second application authority, raw unit fragment, Podman socket route,
 or lifecycle channel.
+
 Operator provisioning supplies the one non-root host account and platform floor; LychD services
 receive no account-creation or cross-user authority.
+
+#### Gateway placement
 
 An exact profile may place Veil on a separate
 [Gateway Host](../sepulcher/gateway.md). That host is a deployment trust role, not a Composition,
@@ -68,6 +99,8 @@ that backend identity and flow. The reference
 placements **Home** and **Remote** reuse this role with different physical and custody boundaries;
 a hostname, RPi, VPS, or boolean toggle cannot synthesize either topology.
 
+#### Profile delivery and transition
+
 The first concrete consumers are the designed, mutually exclusive
 [Reach deployment profiles](../compositions/reach/deployments/index.md). No application selector,
 deployment-profile registry, service-role contribution store, manifest compiler, or effectful host
@@ -78,29 +111,6 @@ generation, stops and revokes its credential owner, and activates the replacemen
 Two manifests for one profile never license two Phylacteries or Gateway owners. Downgrade or
 rollback refuses when it would erase live custody; after the new authority admits work, return to
 the old body is another quiesced migration rather than process restart.
-
-A generated Quadlet manifest is a Bind/Scribe deployment artifact. A live Animator retains its
-Rune identity, Connector, and typed runtime surfaces; it never owns the generated manifest.
-`RuntimePlan` compilation is available through the bind planner, not through the live
-`AnimatorRegistry` surface.
-
-Joined containers set `StartWithPod=false`: creating the shared namespace must not awaken every
-Soulstone. Core ordering starts migration, Phylactery, and Vessel in sequence. Only
-`persistent_resident` Animator targets join normal boot; dedicated non-residents require the
-Orchestrator or explicit break-glass operator action.
-
-`groups`, `concurrency.conflict_domains`, and `alliances` are different declarations. Groups make
-an operator-facing Coven; conflict domains declare finite-hardware exclusion; alliances grant
-neither. The compiler forms the exact conflict graph: an explicit empty set declares coexistence;
-an omitted dedicated non-resident domain becomes compiler-owned `default-exclusive` and conflicts
-with every non-empty effective domain; residents may not declare a non-empty conflict set. It emits
-one Animator target per Soulstone, its target/service ordering and binding, and one lexically
-ordered `Conflicts=`/`After=` edge for each conflicting pair. Friendly grouping never implies safe
-coexistence.
-
-Each Animator target `Requires=` and is `Before=` its service; the service `BindsTo=` and is
-`After=` the target. A Coven only `Wants=` and is `After=` compatible targets, whose members are
-`PartOf=` that Coven. A compiler rejects a Coven with an internal conflict before it writes units.
 
 ## Three authorities, one transition
 
@@ -133,8 +143,9 @@ verify the prior ownership receipt and exact binding sites, make same-filesystem
 the declared files, remove only stale receipt-named files, publish the new receipt, and daemon
 reload. A changed source, generation, site, secret, filename, mode, symlink, or foreign collision
 refuses; a failed transaction restores the previous files and receipt. Ambiguity authorizes no
-deletion. Filename resemblance never proves ownership. Before planning, the complete ownership
-manifest also requires a one-to-one mapping from every currently runtime-bearing `.container`,
+deletion. Filename resemblance never proves ownership.
+
+Before planning, the complete ownership manifest also requires a one-to-one mapping from every currently runtime-bearing `.container`,
 `.pod`, and generated/plain systemd source to its resolved runtime unit; different source names
 that systemd would collapse onto one unit refuse together.
 

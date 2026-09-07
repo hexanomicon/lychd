@@ -6,10 +6,10 @@ icon: material/refresh
 # :material-refresh: 18. Evolution
 
 !!! abstract "Context and Problem Statement"
-    Ouroboros is the contract for adopting upstream source while retaining deliberate local
-    changes. An update can alter source, dependencies, configuration, schemas, artifacts, and
-    services; replacing files proves neither compatibility nor recovery. The name does not assert
-    an autonomous updater.
+    Evolution governs adoption of upstream source while retaining deliberate local changes. An
+    update can alter source, dependencies, configuration, schemas, artifacts and services together.
+    Each affected owner needs compatibility evidence and a recovery plan before the changed body
+    can be activated.
 
 ## Requirements
 
@@ -35,7 +35,9 @@ icon: material/refresh
 
 ## Decision Outcome
 
-**Ouroboros** applies [Creation](16-creation.md) and [Packaging](17-packaging.md) to a Core update:
+This update law applies [Creation](16-creation.md) and [Packaging](17-packaging.md) to a Core update.
+[Illumination](../divination/transcendence/illumination.md#i-the-ouroboros) keeps the wider meaning
+of Ouroboros. The update passage is:
 
 `Update Request → Inactive Candidate → Verification → Promotion Request → owned effects`
 
@@ -55,7 +57,7 @@ break. The selected set must build and test with the candidate; no Smith repair 
 external-service Animator is decoupled only where its declared protocol and adapter remain
 compatible.
 
-### Replace the generation, not its memory
+### Start the changed body as a new generation {#replace-the-generation-not-its-memory}
 
 A promoted Core or coupled extension change activates as a new Vessel process generation.
 Evolution never imports replacement modules into the live Vessel and never carries its
@@ -128,8 +130,8 @@ lifecycle authority.
 
 The proposed future **quorum roster** is a versioned roster of active human maintainer seats. Its
 founding profile has six seats. It is not a delivered LychD runtime object, remote identity
-service, or reason to share credentials. A seat
-belongs to one accountable person, not to each of that person's devices; automation, seeds,
+service, or reason to share credentials. A seat belongs to one accountable person, not to each
+of that person's devices; automation, seeds,
 mirrors, runners, and agents receive no seat.
 
 The roster's source-selection law and key separation live in
@@ -139,6 +141,8 @@ signatures. The same humans and threshold may select the canonical source refere
 signatures are not interchangeable: selecting a Git object does not approve its artifacts,
 evidence, recovery plan, or activation. Quorum removes the single-absent-founder bottleneck
 without creating a shared key, founder veto, or unilateral recovery key.
+
+#### The signed candidate and its effects
 
 A future portable promotion envelope is the signed representation of Creation's Promotion
 Request. It binds the governance epoch and replay boundary; exact source object and artifact
@@ -156,17 +160,22 @@ still authorizes and records its own live effect at the temporal boundary. Rewri
 change, changing the Git object, artifacts, plan, or bound inputs invalidates affected evidence and
 authorization.
 
+#### Eligibility at the first effect
+
 The envelope carries a unique promotion-attempt identity and monotonic sequence. Immediately
 before the first live effect, the verifier rechecks the current epoch, every signer's eligibility,
 quorum, replay and expiry state, withdrawal, and conflicts with another envelope for that attempt.
 An unexecuted envelope from a replaced epoch or revoked seat loses eligibility unless the successor
-epoch explicitly carries it forward; its signatures remain historical audit evidence. Before the
-first effect, a trustee may withdraw and quorum is recomputed. A seat's conflicting signatures for
+epoch explicitly carries it forward; its signatures remain historical audit evidence.
+
+Before the first effect, a trustee may withdraw and quorum is recomputed. A seat's conflicting signatures for
 different candidate closures or effect sets under one attempt count toward neither once the
 conflict is observed; pending eligibility is recomputed and the affected credentials enter
 containment and governance review. The designed promotion coordinator and ledger atomically claim
 the attempt and sequence before admitting the first effect, reject a stale or competing envelope,
 and order later effect admission without taking any target owner's authority.
+
+#### Recovery after an effect
 
 Recovery, rollback, or compensation already bound into an active authorized attempt remains an
 owner-executed recovery effect and cannot be delayed waiting for a new quorum vote. Withdrawal or an
@@ -175,6 +184,8 @@ owner recovery authority. A conflict discovered only after that boundary cannot 
 the effect; it triggers credential containment and governance review, while every remaining
 planned effect revalidates and may block. Deliberately selecting an older body as a later steady
 state is a new governed Evolution, not a mutable-ref rewind.
+
+#### Roster recovery and adoption
 
 Key loss, compromise, or loss of quorum fails closed. Promotion-key rotation and roster membership
 changes create a new governance epoch through the preceding epoch's threshold authorization. An

@@ -12,11 +12,12 @@ icon: material/eye-settings-outline
 
 ## Status
 
-Vision admission is **Partial**. The current v1 compatibility spine carries immutable `ArtifactRef`
-metadata in an `Intent`, projects image media types to the `image` modality, distinguishes the
-closed `vision` family from image-capable `chat`, and filters declarations by required input
-modality. Those family labels prove schema and routing metadata only, not an executable visual
-interface.
+Vision admission is **Partial**. The current v1 compatibility spine defines immutable `ArtifactRef`
+metadata, projects image media types to the `image` modality, distinguishes the closed `vision`
+family from image-capable `chat`, and filters capability declarations by required input modality.
+Delegated-job contracts can carry artifact references; the current `Intent` and Bridge admission
+remain text-only and carry neither artifacts nor required modalities through the Run ledger.
+These shapes prove metadata and routing contracts, not an executable visual interface.
 
 It does **not** upload, store, authorize, materialize, decode, normalize, or transport image
 bytes. Bridge does not forward artifact modalities into dispatch. No Prism package, Reliquary
@@ -31,14 +32,20 @@ provenance, and declared information loss.
 
 | Faculty | Contract |
 | --- | --- |
-| **Eye** | Dedicated general visual analysis; current v1 projects this as the `vision` family. |
+| **Eye (Prism)** | Dedicated general visual analysis; current v1 projects this as the `vision` family. |
 | **Multimodal Mind** | A `model.chat@1` profile with image input; current v1 projects `chat` plus `image` in `modalities_in`, and it remains chat. |
 | **Sight** | Finite typed estimates such as regions, masks, tracks, depth, pose, flow, and registered change under a dedicated perception contract; later live sources require a separate bounded session. |
 | **Scanner** | Source-grounded document extraction through native parsing, OCR, layout, reading order, and structured reconstruction. |
-| **Lens** | Deterministic decode, orientation, crop, resize, or normalization. |
+| **Lens (Prism)** | Deterministic decode, orientation, crop, resize, or normalization. |
 | **Maker/editor** | Text- or source-conditioned image and time-based video generation or mutation producing new artifacts through separate effect contracts. |
 | **Form** | Bounded generation, reconstruction, texturing, structural decomposition, rigging, rendering, and representation conversion of spatial material through separate tool or effect contracts. |
 | **Kinesis** | Bounded recovery, generation, retargeting, cleanup, synchronization, validation, and conversion of structured motion through a dedicated finite-job contract. |
+
+Here Eye and Lens name Prism faculties. An external [observability Eye](29-observability.md)
+consumes bounded evidence exports; a [Shadow Lens](20-agents.md#mechanical-cognitive-postures)
+seeds a speculative branch with a Posture. Their owners and contracts remain distinct.
+
+### Language and faculty admission
 
 Visual language is typed per job, not inherited from the host or Altar locale. Original prompt,
 requested model-facing language, permitted detection, translation or enhancement revision, and
@@ -54,6 +61,8 @@ declare its exact operation, accepted modalities, produced artifact facets, tool
 semantics, and recovery contract; a repository that can emit a mesh is not thereby a general 3D
 runtime.
 
+### Finite and live perception
+
 Sight likewise does not establish another capability family or turn image-capable chat into
 precise perception. A finite Sight result binds every estimate to original source pixels and, for
 video, exact frame identity, PTS, and rational timebase through the full transform chain. Masks,
@@ -68,12 +77,14 @@ transport reconnect may continue the same epoch; otherwise reconnect closes it, 
 epoch receives a new track namespace. Observation grants no PTZ, recording, robot, game, or other
 effect authority.
 
+### Spatial form, motion, and engine use
+
 Form owns the exact skeleton, hierarchy, rest and bind pose, skinning, morph controls, and rig
 revision. Kinesis owns structured curves and their technical motion derivatives. A pose
 observation is not a motion clip; a rig is not proof of compatible animation; moving pixels are
 not reusable curves; and a clip is not an engine controller or an authorized world effect.
-`KinesisJob@1` acts on finite admitted material and returns a typed `MotionAssetSet@1` or, for
-validation, `MotionFindingSet@1`; later live motion requires a separate `LiveKinesisSession@1`
+`KinesisJob@2` acts on finite admitted material and returns a typed `MotionAssetSet@1` or, for
+validation, `MotionFindingSet@1`; later live motion requires a separate `LiveKinesisSession@2`
 with bounded queues, clock and calibration epochs, drop policy, consent, retention, and consumers.
 Neither contract inherits source capture, creative acceptance, engine, avatar, robot, or
 publication authority.
@@ -104,7 +115,7 @@ admit source → authorize materialization → inspect and decode → admit decl
 → resolve an exact finite tool or dispatch an eligible provider → retain grounded observation or derivative
 ```
 
-Each Lens transformation records its exact parent, operation and implementation revision,
+Each Prism Lens transformation records its exact parent, operation and implementation revision,
 parameters, result artifact and digest, and loss from crop, resize, compression, frame selection,
 or color conversion. The source remains available according to retention policy; a thumbnail,
 OCR result, or caption cannot silently replace it.
@@ -142,12 +153,25 @@ image, video, audio-video, mesh, scene, voxel, or structured-motion material a n
 with effect provenance. Fluent output never becomes source truth, and conversion between spatial
 or motion representations creates a new derivative with declared loss.
 
-A provider that returns synchronized audio and video still creates one technical attempt and one
-compound provenance parent. Prism records the container, stream digests, shared timebase, and
-technical settlement; semantic adoption then follows the declared role. Voidlight owns visual/VFX
-acceptance, Riffmaw music, Language Edition timed-language material, and Broadcast picture-bound sound and
-the final audiovisual relation. Inseparable streams must be accepted or refused for the declared
-compound use. Provider shape and a `generate_sound` flag grant none of those judgments.
+### Compound media and application acceptance
+
+Synchronized audio and video from a provider belong to one technical attempt and one compound
+provenance parent. Before execution, `MediaFacetAuthoritySet@1` names every requested semantic
+role, its owning Composition identity and revision, and the exact owner-request digest. Prism
+records the container, stream digests, shared timebase and technical settlement.
+
+Each declared owner then issues its own `SemanticFacetAdmissionReceipt@1` before that facet may
+enter application truth:
+
+- Voidlight judges visual and VFX material;
+- Riffmaw judges music;
+- Language Edition judges timed-language material;
+- Foundry judges interactive world sound; and
+- Broadcast judges picture-bound sound and the final editorial audiovisual relation.
+
+An undeclared facet fails closed. Inseparable streams must be accepted or refused for their
+declared compound use. Neither the provider's output shape nor a `generate_sound` flag supplies
+an owner's judgment.
 
 ## Consequences and acceptance
 

@@ -5,17 +5,20 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const lockPath = join(frontendRoot, "package-lock.json");
 const outputPath = join(frontendRoot, "static", "THIRD_PARTY_NOTICES.txt");
+const artworkNotices = await readFile(join(frontendRoot, "src", "lib", "assets", "altar", "NOTICE.txt"), "utf8");
 
 const fallbackCopyright = new Map([
   ["@polka/url", "Copyright (c) Luke Edwards"],
   ["@redocly/openapi-core", "Copyright 2019 Redocly Inc."],
   ["@rolldown/binding-linux-x64-gnu", "Copyright (c) 2024-present VoidZero Inc. & Contributors"],
   ["change-case", "Copyright (c) Blake Embrey"],
+  ["fastdom", "Copyright (c) 2016 Wilson Page <wilsonpage@me.com>"],
   ["is-reference", "Copyright (c) Rich Harris"],
   ["locate-character", "Copyright (c) Rich Harris"],
   ["saxes", "Copyright (c) Louis-Dominique Dubeau"],
   ["sirv", "Copyright (c) Luke Edwards"],
   ["stackback", "Copyright (c) Roman Shtylman"],
+  ["strictdom", "Copyright (c) 2013 Wilson Page <wilsonpage@me.com>"],
   ["uri-js-replace", "Copyright (c) Andreinwald and contributors"]
 ]);
 
@@ -67,7 +70,7 @@ function packageNameFromPath(relativePath) {
 }
 
 function normalize(text) {
-  return text.replaceAll("\r\n", "\n").trim();
+  return text.replaceAll("\r\n", "\n").split("\n").map((line) => line.trimEnd()).join("\n").trim();
 }
 
 const lock = JSON.parse(await readFile(lockPath, "utf8"));
@@ -125,7 +128,10 @@ const output = `${[
   "non-optional set; inclusion here does not claim that every package contributes code to every",
   "bundle. Platform-specific optional build packages are not shipped in the browser artifact.",
   "",
+  "Bundled artwork notices are retained from src/lib/assets/altar/NOTICE.txt.",
   "Regenerate with: npm run licenses",
+  "",
+  normalize(artworkNotices),
   ""
 ].join("\n")}${sections.join("\n\n")}\n`;
 

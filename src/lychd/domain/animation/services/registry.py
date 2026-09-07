@@ -23,8 +23,9 @@ from lychd.domain.animation.capabilities import (
 )
 from lychd.domain.animation.conflicts import require_soulstone_capability_coverage
 from lychd.domain.animation.connectors import ModelConnector, ToolConnector
-from lychd.domain.animation.errors import ActivationFailed, ActivationTimeout, CapabilityUnavailable
+from lychd.domain.animation.errors import ActivationFailed, ActivationTimeout, CapabilityNotWarm, CapabilityUnavailable
 from lychd.domain.animation.schemas import CapabilityFamily, PortalConfig, SoulstoneConfig
+from lychd.domain.animation.services.adapters.registry import runtime_provenance
 from lychd.lib.asyncio import complete_under_cancellation
 from lychd.lib.http import run_sync
 
@@ -52,20 +53,11 @@ class _ProbeContractError(ValueError):
         self.requested_keys = frozenset(requested_keys)
 
 
-def _declaration_provenance(declaration: AnimatorConfigDeclaration) -> str:
-    source_file = str(declaration.source_file) if declaration.source_file is not None else None
-    return f"{type(declaration).__name__}(name={declaration.name!r}, source_file={source_file!r})"
-
-
-def _runtime_provenance(runtime: RuntimeAnimator) -> str:
-    return f"{type(runtime).__name__} from {_declaration_provenance(runtime.rune)}"
-
-
 def _capability_provenance(spec: CapabilitySpec, runtime: RuntimeAnimator) -> str:
     return (
         f"{type(spec).__name__}(animator_name={spec.animator_name!r}, runtime={spec.runtime!r}, "
         f"source_kind={spec.source_kind.value!r}, family={spec.family.value!r}, model_id={spec.model_id!r}) "
-        f"from {_runtime_provenance(runtime)}"
+        f"from {runtime_provenance(runtime)}"
     )
 
 
@@ -75,25 +67,6 @@ def _canonical_capability_owner(
     if isinstance(declaration, SoulstoneConfig):
         return declaration.runtime, SourceKind.SOULSTONE
     return f"portal:{declaration.provider_name.strip().lower()}", SourceKind.PORTAL
-
-
-def _require_runtime_identity(
-    declaration: AnimatorConfigDeclaration,
-    runtime: RuntimeAnimator,
-) -> None:
-    """Reject a factory result that does not preserve its exact Rune and identity."""
-    if runtime.rune != declaration:
-        msg = (
-            f"Runtime factory for {_declaration_provenance(declaration)} returned "
-            f"{_runtime_provenance(runtime)}, which does not retain the declared Rune value."
-        )
-        raise ValueError(msg)
-    if runtime.name != declaration.name:
-        msg = (
-            f"Runtime for {_declaration_provenance(declaration)} must use canonical name "
-            f"{declaration.name!r}; received name={runtime.name!r}."
-        )
-        raise ValueError(msg)
 
 
 def _require_capability_identity(
@@ -183,17 +156,16 @@ class AnimatorRegistry:
                     rune_type=rune.__class__.__name__,
                 )
                 continue
-            _require_runtime_identity(rune, runtime)
             existing_runtime = new_animators.get(runtime.name)
             if existing_runtime is not None:
                 msg = (
                     f"Duplicate runtime key {runtime.name!r}: existing contributor "
-                    f"{_runtime_provenance(existing_runtime)} conflicts with "
-                    f"{_runtime_provenance(runtime)}."
+                    f"{runtime_provenance(existing_runtime)} conflicts with "
+                    f"{runtime_provenance(runtime)}."
                 )
                 raise ValueError(msg)
             new_animators[runtime.name] = runtime
-            for spec in self._runtime_adapters.build_capability_specs(rune):
+            for spec in self._runtime_adapters.build_capability_specs(runtime):
                 _require_capability_identity(rune, runtime, spec)
                 canonical_spec = spec
                 existing_spec = new_capabilities.get(canonical_spec.key)
@@ -421,7 +393,9 @@ class AnimatorRegistry:
 
         Mechanics only — NO warm-up driving here (that is the Dispatcher's decision
         table). Raises ``CapabilityUnavailable`` if the capability is unknown, its
-        animator is not registered, or it is not observed WARM at issue time.
+        animator is not registered, or no executable surface exists. Non-WARM
+        issue-time observations raise its typed ``CapabilityNotWarm`` subtype so
+        Dispatcher can apply the managed-runtime transition rule to that state.
         """
         self.ensure_loaded()
         spec = self._capabilities.get(key)
@@ -429,6 +403,7 @@ class AnimatorRegistry:
             raise CapabilityUnavailable(key, "unknown capability")
         if spec.source_kind is SourceKind.PORTAL:
             raise CapabilityUnavailable(key, "portal egress admission is not configured")
+        spec.require_executable_v1_family()
 
         # ADR 22 requires a fresh exact observation immediately before issue.
         # A cached WARM state may outlive the runtime or loaded model and cannot
@@ -437,8 +412,7 @@ class AnimatorRegistry:
         async with self._probe_lock:
             state = self._capability_states.get(key)
             if state is None or state.phase is not CapabilityPhase.WARM:
-                reason = f"phase={state.phase.value}" if state else "capability state unavailable"
-                raise CapabilityUnavailable(key, reason)
+                raise CapabilityNotWarm(key, state)
 
             animator = self._animators.get(spec.animator_name)
             if animator is None:
@@ -558,7 +532,7 @@ class AnimatorRegistry:
             with anyio.move_on_after(_ACTIVATION_CLEANUP_TIMEOUT_SECONDS, shield=True) as cleanup_scope:
                 try:
                     await self._runtime_adapters.abandon_activation(animator, spec)
-                except Exception:  # noqa: BLE001 - cleanup must never mask the canonical activation failure
+                except Exception:  # cleanup must never mask the canonical activation failure
                     logger.warning(
                         "activation_observer_cleanup_failed",
                         capability_key=spec.key,

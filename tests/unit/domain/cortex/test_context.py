@@ -3,6 +3,7 @@
 White-box cache assertions prove active-run ownership and release bounds.
 """
 
+from copy import deepcopy
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -76,6 +77,84 @@ def test_context_keeps_newest_complete_message_group() -> None:
     )
 
     assert assembled.state_window == second
+
+
+@pytest.mark.parametrize("turn_window", [0, -1])
+def test_nonpositive_history_window_preserves_only_required_continuation(turn_window: int) -> None:
+    history = [*_exchange("settled-1", "old", "old reply"), *_exchange("settled-2", "new", "new reply")]
+    continuation = _exchange("current", "current", "tool call")
+    context = ContextOrchestrator(registry=cast("Any", _Registry()), turn_window=turn_window)
+
+    assembled = context.assemble(
+        run_id="run",
+        session_id="session",
+        query="query",
+        history=history,
+        continuation=continuation,
+    )
+
+    assert assembled.state_window == []
+    assert assembled.continuation == continuation
+    assert assembled.model_history() == continuation
+
+
+def test_context_detaches_input_history_and_required_continuation() -> None:
+    history = _exchange("settled", "old", "old reply")
+    continuation = _exchange("current", "current", "tool call")
+    expected_history = deepcopy(history)
+    expected_continuation = deepcopy(continuation)
+    context = ContextOrchestrator(registry=cast("Any", _Registry()))
+    assembled = context.assemble(
+        run_id="run",
+        session_id="session",
+        query="query",
+        history=history,
+        continuation=continuation,
+    )
+    state_block = next(block.text for block in assembled.blocks if block.layer == 5)
+
+    history[0]["parts"][0]["content"] = "x" * context.char_cap
+    continuation[0]["parts"][0]["content"] = "changed after admission"
+
+    assert assembled.state_window == expected_history
+    assert assembled.continuation == expected_continuation
+    assert next(block.text for block in assembled.blocks if block.layer == 5) == state_block
+    assert assembled.model_history() == [*expected_history, *expected_continuation]
+
+
+def test_context_detaches_every_cached_projection_and_model_history() -> None:
+    history = _exchange("settled", "old", "old reply")
+    continuation = _exchange("current", "current", "tool call")
+    expected_history = deepcopy(history)
+    expected_continuation = deepcopy(continuation)
+    context = ContextOrchestrator(registry=cast("Any", _Registry()))
+    assembled = context.assemble(
+        run_id="run",
+        session_id="session",
+        query="query",
+        history=history,
+        continuation=continuation,
+    )
+
+    projected = assembled.model_history()
+    projected[0]["parts"][0]["content"] = "changed model history"
+    projected[-1]["parts"][0]["content"] = "changed model continuation"
+    assert assembled.state_window == expected_history
+    assert assembled.continuation == expected_continuation
+
+    assembled.state_window[0]["parts"][0]["content"] = "changed admission view"
+    assembled.continuation.clear()
+    cached = context.get("run")
+    assert cached is not None
+    assert cached.state_window == expected_history
+    assert cached.continuation == expected_continuation
+    cached.state_window.clear()
+    cached.continuation[0]["parts"][0]["content"] = "changed cache view"
+
+    retained = context.get("run")
+    assert retained is not None
+    assert retained.state_window == expected_history
+    assert retained.continuation == expected_continuation
 
 
 def test_bound_environment_replaces_unbound_floor_and_generation_window_wins() -> None:

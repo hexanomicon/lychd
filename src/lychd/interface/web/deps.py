@@ -21,6 +21,7 @@ from lychd.domain.cortex.engine import RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
+from lychd.domain.web.atlas import AtlasStorePort
 from lychd.domain.web.fragments import FragmentRegistry
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.sessions import SessionStorePort
@@ -56,6 +57,11 @@ def provide_fragments(state: State) -> FragmentRegistry:
 def provide_bridge_sessions(state: State) -> SessionStorePort:
     """Return the Bridge session store (in-memory or DB-backed, per the profile)."""
     return state.services.bridge_sessions
+
+
+def provide_atlas(state: State) -> AtlasStorePort:
+    """Return the profile-bound Atlas planning store."""
+    return state.services.atlas
 
 
 def provide_consent_ledger(state: State) -> ConsentLedger:
@@ -100,6 +106,7 @@ web_dependencies: dict[str, Provide] = {
     "leases": Provide(provide_leases, sync_to_thread=False),
     "fragments": Provide(provide_fragments, sync_to_thread=False),
     "bridge_sessions": Provide(provide_bridge_sessions, sync_to_thread=False),
+    "atlas": Provide(provide_atlas, sync_to_thread=False),
     "consents": Provide(provide_consent_ledger, sync_to_thread=False),
     "tickets": Provide(provide_tickets, sync_to_thread=False),
     "swap_requests": Provide(provide_swap_requests, sync_to_thread=False),

@@ -10,7 +10,7 @@ from lychd.domain.animation.capabilities import (
     CapabilityState,
 )
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import ModelInfo, SoulstoneConfig
+from lychd.domain.animation.schemas import ModelInfo, PortalConfig, SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import capability_specs_from_model_infos
 from lychd.domain.animation.services.adapters.contracts import RuntimeAnimator, RuntimePlan
 from lychd.domain.animation.services.adapters.runtimes.shared import require_runtime_soulstone
@@ -88,15 +88,15 @@ class ExLlamaV3RuntimeAdapter:
         )
         return SoulstoneAnimator(rune=stone, connector=connector)
 
-    def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
+    def build_capability_specs(self, animator: RuntimeAnimator) -> list[CapabilitySpec]:
         """Publish every declared TabbyAPI model as a dynamic capability."""
+        soulstone = animator.rune
         stone = self._narrow(soulstone)
-        hints = {model.id: model.capabilities for model in stone.models if model.capabilities is not None}
+        connector = cast("ExLlamaV3Connector", animator.connector)
         return capability_specs_from_model_infos(
             stone,
-            self._model_infos(stone),
+            connector.model_infos,
             is_dynamic=True,
-            hints_by_id=hints,
         )
 
     async def probe_capability_states(
@@ -241,7 +241,7 @@ class ExLlamaV3RuntimeAdapter:
             for model in stone.models
         )
 
-    def _narrow(self, soulstone: SoulstoneConfig) -> ExLlamaV3SoulstoneConfig:
+    def _narrow(self, soulstone: SoulstoneConfig | PortalConfig) -> ExLlamaV3SoulstoneConfig:
         return require_runtime_soulstone(
             soulstone,
             expected_type=ExLlamaV3SoulstoneConfig,

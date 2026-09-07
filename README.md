@@ -1,140 +1,92 @@
 <div align="center">
-  <img src="docs/assets/lich-phylactery-cliparted.png" alt="The Lich and its Phylactery" width="500">
-  <h1>Hexanomicon</h1>
-  <p><strong>LychD — The Dark Arts of LLMs</strong></p>
-  <p>Forty-Two Keys Across the Infinite Naught</p>
+  <img src="docs/assets/lich-phylactery-cliparted.png" alt="LychD" width="500">
+  <p><strong>LychD</strong> - The Dark Arts of LLMs</p>
   <p>
     <a href="https://github.com/hexanomicon/lychd">
-      <img src="https://img.shields.io/badge/LychD-Source-1a1a20?style=for-the-badge&labelColor=4a148c" alt="Browse the LychD source on GitHub">
+      <img src="https://img.shields.io/badge/LychD-Source-1a1a20?style=for-the-badge&labelColor=4a148c" alt="Source">
     </a>
     <a href="https://hexanomicon.dev/">
-      <img src="https://img.shields.io/badge/Enter-Hexanomicon-7c4dff?style=for-the-badge&labelColor=1a1a20" alt="Enter the Hexanomicon">
+      <img src="https://img.shields.io/badge/Documentation-The_Hexanomicon-7c4dff?style=for-the-badge&labelColor=1a1a20" alt="Docs">
     </a>
     <a href="LICENSE">
-      <img src="https://img.shields.io/badge/License-MPL_2.0-b71c1c?style=for-the-badge&labelColor=1a1a20" alt="License: MPL 2.0">
+      <img src="https://img.shields.io/badge/License-MPL_2.0-b71c1c?style=for-the-badge&labelColor=1a1a20" alt="License">
     </a>
+  </p>
+  <p>
     <img src="https://img.shields.io/badge/Status-Pre--Alpha-ff6f00?style=for-the-badge&labelColor=1a1a20" alt="Status: Pre-Alpha">
   </p>
 </div>
 
 Summon **The Lich** 💀.
 
-**LychD** is its pre-alpha software body: a self-hosted Linux daemon coordinating local model
-services and bounded agent runs on hardware you control. The **Hexanomicon** is its grimoire:
-**The Dark Arts of LLMs.**
+LychD is a **self-hosted Linux daemon for local models and bounded agent work**. It brings model
+services, typed workflows, durable Run records, and a browser interface into one body on hardware
+you control. The project is pre-alpha; [State of Work](docs/state-of-the-work.md) names the verified
+pieces and the conjunctions still awaiting proof.
 
-A model is one organ. **The Lich is what returns:** identity, memory, tools, action, consequence,
-and repair through time.
+Its larger undertaking is **the Lich**: a life of work that can return to what it has done. A model
+can answer a question and disappear. The Great Work asks for more—a place to keep the consequence,
+revisit a judgment, and begin again with the mistake still visible. Memory, identity, and
+self-creation are long architectural commitments, each with its own unfinished machinery.
 
-> ⚠️ **Acolyte's Warning:** The summoning remains pre-alpha. The incantations are still being
-> inscribed. Expect instability, missing components, and the occasional rogue spirit.
-> [State of Work](docs/state-of-the-work.md) names the exact boundary.
+**The Hexanomicon** is the book of that undertaking. Its myth gives the machine a purpose; its
+engineering makes each promise answerable. You can read the story before you build the body.
 
 ## 🗺️ The Path of Ascension
 
-The knowledge you seek is inscribed in the **[Hexanomicon](https://hexanomicon.dev/)**. Choose the
-gate that answers your next question.
+Enter through [the Prophecy](docs/index.md), or choose a shorter road:
 
-- 📜 **[Read the Prophecy](https://hexanomicon.dev/)** — unearth the book and choose your gate.
-- 🗺️ **[Map what it is meant to automate](docs/map.md)** — orient yourself, then browse the
-  [Composition Portfolio](docs/compositions/index.md) without mistaking design for delivery.
-- 🕯️ **[Perform the Summoning](docs/summoning.md)** — bring one source revision, one Linux host,
-  and one local model to the bounded first-life rite.
-- 🏛️ **[Open the Sepulcher](docs/sepulcher/index.md)** — study the body, memory, animation, and
-  return of the Lich.
-- 🔮 **[Approach the Altar](docs/divination/altar/index.md)** — meet the running body through its
-  instruments.
-- 🔍 **[Judge the evidence](docs/state-of-the-work.md)** — separate what answers now from what has
-  not yet entered matter.
-- ⚒️ **[Enter the forge](CONTRIBUTING.md)** — learn the rites of construction and find the
-  governing [Covenant](docs/adr/index.md) before you cut.
+| You have come to… | Begin here |
+| --- | --- |
+| Read the myth and follow the Great Work | [Transcendence](docs/divination/transcendence/index.md) |
+| Bring one Linux host and model to first light | [Summoning](docs/summoning.md) |
+| Understand how the body works | [Sepulcher](docs/sepulcher/index.md) |
+| Follow one request through the system | [Map](docs/map.md) |
+| Explore the applications being designed | [Composition Portfolio](docs/compositions/index.md) |
+| Examine or change an architectural decision | [Covenants](docs/adr/index.md) |
+| Contribute to the repository | [CONTRIBUTING](CONTRIBUTING.md) |
+
+The [Lexicon](docs/lexicon/index.md) keeps the two tongues of the book close at hand. The complete
+grimoire is also [published online](https://hexanomicon.dev/).
+
+> ⚠️ **Acolyte’s Warning:** Expect unfinished organs and the occasional rogue spirit. No maintained
+> receipt yet joins a real host, model, and browser. The current Altar requires a dedicated browser
+> profile on the same host, with its listener confined to loopback. Follow the exact
+> [Summoning boundary](docs/summoning.md#the-awakening).
 
 ## 🚩 Local sovereignty — a rebellion against digital feudalism
 
-The cloud is not a service. **It is a prison**—a modern fiefdom where your data is currency and
-your intelligence is leased at the whim of monopolist overlords. While they build walls to keep
-you in, LychD is being built as a foundation to set you free.
+> *I would rather reign in a local hell than serve in a cloud heaven.*
 
-Its premise is that identity, memory, and authority should remain on your own iron. Remote services
-may lend capability; they need not own the history that makes it yours.
+The memory of a life or a workshop should be yours to keep. That conviction makes the individual
+**Magus** sovereign—and responsible for the machine, its boundaries, and the history entrusted to
+it.
 
-The individual is the sovereign unit. A company is not the soul-bearing actor; it is an emergent
-coordination graph of sovereign people and their Liches. In the Hexanomicon's horizon, future
-policy, IAM, and A2A boundaries may expose selected labor while the underlying Phylacteries remain
-locally owned.
+The intended architecture lets a company coordinate consenting people and their Liches without
+inheriting their private memory and craft. The designed [A2A Intercom](docs/adr/26-a2a.md) gives
+independent implementations a way to meet as peers. Remote services, including paid ones, may
+participate through an admitted exchange. The continuity remains locally held.
 
-The software surface changes accordingly: you commune primarily with the Lich, while SaaS,
-company APIs, and remote peers become negotiated surfaces the Lich may traverse without
-surrendering your continuity, memory, or private priors.
+**No surrender! Viva la résistance!**
 
-In that horizon, A2A leases labor, not continuity: a company may invoke a consented capability,
-but the memory, workflows, and agentic expertise that produced it remain anchored in your
-Phylactery unless explicitly shared.
+## ⚖️ [The Iron Pact](docs/adr/00-license.md) (MPL 2.0)
 
-- ⛓️ **No masters.**
-- 💰 **No tolls.**
-- 🎭 **No more gaslighting while they lobotomize your models.**
-
-**No surrender. Viva la résistance!**
-
-> _A rough machine you own is worth more than a polished cage you rent._
-
-> _No chain is sacred because it is convenient. No gate is holy because it is profitable._
-
-## ⚖️ [The Iron Pact](docs/adr/00-license.md)
-
-**This project is for those who believe in the free evolution of intelligence, not those who seek
-to chain it.**
-
-LychD is licensed under the [Mozilla Public License 2.0](LICENSE). MPL follows covered source
-files, not the project's mythic anatomy.
-
-- **The Engine is Shared.** Distributed modifications to covered files remain MPL-2.0 and
-  available to their recipients.
-- **The Soul is Private.** Data, secrets, configuration, prompts, models, and other material
-  containing no covered code do not become MPL-covered merely because LychD stores or processes
-  them.
-- **Separate Organs Stay Possible.** Genuinely separate files may carry other terms; renaming
-  copied covered code an Extension creates no loophole.
-
-Contributions enter and leave under MPL-2.0. There is no CLA and no private relicensing grant.
-[ADR 00](docs/adr/00-license.md) records the boundary; the [license](LICENSE) is binding.
-
-**The Lich is not built; it is summoned.** LychD practices
-[xDDD](docs/adr/01-doctrine.md): establish the Logos, derive the domain, prove the contract,
-manifest code, and return observed consequence to the Word.
+LychD is licensed under **MPL-2.0**. Read [LICENSE](LICENSE) for the binding terms and
+[ADR 00](docs/adr/00-license.md) for the boundary between covered source, separate original work,
+private data, and network operation. Contributions carry no CLA or private relicensing grant.
 
 ## ⛩️ A Tribute to the Spirits
 
-> _The Lich is stitched from the work of many careful builders._
+> *"The Lich only sees far because it stands on the shoulders of Giants."*
 
-This Work stands on code freely given and relentlessly maintained. To its makers: thank you.
+Portions of the database connection setup are adapted from [Litestar
+Fullstack](https://github.com/litestar-org/litestar-fullstack). Our thanks extend to the people
+whose libraries and tools make this work possible. Their place in the system is traced through the
+[anatomy and engineering guides](docs/sepulcher/index.md); shipped attribution and license
+inventories remain in [Third-Party Source Notices](THIRD_PARTY_NOTICES.md).
 
-- **The Vessel** — [Litestar](https://litestar.dev/) and
-  [Granian](https://github.com/emmett-framework/granian) serve the application;
-  [Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy),
-  [SQLAlchemy](https://www.sqlalchemy.org/), PostgreSQL, Alembic, and pgvector anchor material
-  state.
-- **The inner loop** — [Pydantic AI](https://ai.pydantic.dev/) and Graph carry bounded model,
-  tool, output, and graph contracts; [SAQ](https://github.com/tobymao/saq) carries background labor
-  without becoming the workflow ledger.
-- **The Altar** — [Svelte](https://svelte.dev/), SvelteKit, Vite, Zod, OpenAPI Fetch, and Mermaid
-  shape the browser instruments.
-- **The iron** — Linux, systemd user units, rootless Podman, and Quadlet define the generated
-  deployment plan; maintained real-host embodiment still awaits its receipt.
-- **The flame** — llama.cpp, vLLM, SGLang, and ExLlamaV3 through TabbyAPI lend local inference its
-  several bodies; [State](docs/state-of-the-work.md#animation-and-orchestration) records where
-  real-host proof is still owed.
-- **The scribes** — [Zensical](https://zensical.org/) renders the Hexanomicon; uv, Ruff,
-  basedpyright, pytest, Vitest, and Svelte Check keep source and contracts legible.
-
-Portions of the database connection setup are adapted from
-[Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack). Shipped license
-inventories, adapted-source attribution, and regeneration rules live in
-[Third-Party Source Notices](THIRD_PARTY_NOTICES.md).
-
----
-
-> _The vessel changes. The work remains._
+> *"The Flesh is temporary. The Word is eternal."*
 
 ### [💀 Join the Cult](https://github.com/hexanomicon/lychd/discussions)
+
+Bring questions, experiments, and considered disagreement.

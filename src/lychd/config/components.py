@@ -7,7 +7,6 @@ object is produced by a ``build_*`` factory called from the application assembly
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from advanced_alchemy.extensions.litestar import (
@@ -26,7 +25,6 @@ from lychd.config.constants import (
     PATH_MIGRATION_DIR,
 )
 from lychd.config.logging import build_log_config, should_render_as_json
-from lychd.config.utils import read_secret_from_env_or_file
 from lychd.db.engine import get_engine
 from lychd.db.factory import database_saq_dsn
 
@@ -34,17 +32,6 @@ if TYPE_CHECKING:
     from litestar.plugins.structlog import StructlogConfig
 
     from lychd.config.settings.root import Settings
-    from lychd.config.settings.server import WebSettings
-
-
-def resolve_web_secret_key(settings: WebSettings) -> str:
-    """Resolve the signing secret at the web-component boundary, not in settings."""
-    return read_secret_from_env_or_file(
-        value_env_keys=("LYCHD_APP_SECRET_KEY",),
-        file_env_keys=("LYCHD_APP_SECRET_KEY_FILE",),
-        default_file=Path("/run/secrets") / settings.secret_key_secret,
-        secret_label=settings.secret_key_secret,
-    )
 
 
 def build_db_config(settings: Settings) -> SQLAlchemyAsyncConfig:
@@ -135,8 +122,11 @@ def build_allowed_hosts_config(
 
 def build_csrf_config(settings: Settings) -> CSRFConfig:
     """Build the CSRF config from the app signing key."""
+    if settings.server.web.secret_key is None:
+        msg = "Required application signing key is unavailable in Settings."
+        raise ValueError(msg)
     return CSRFConfig(
-        secret=resolve_web_secret_key(settings.server.web),
+        secret=settings.server.web.secret_key.get_secret_value(),
         cookie_name=settings.server.web.csrf_cookie_name,
         cookie_secure=settings.server.web.csrf_cookie_secure,
     )

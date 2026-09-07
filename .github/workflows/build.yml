@@ -24,20 +24,20 @@ jobs:
       RELEASE_ARTIFACT_DIR: dist
     steps:
       - name: Check out the immutable candidate source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Install Python and uv
-        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.11.28"
+          version: "0.12.10"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: release-candidate
 
       - name: Install Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -45,14 +45,14 @@ jobs:
 
       - name: Install pinned npm and Altar dependencies
         run: |
-          npm install --global npm@11.16.0
+          npm install --global npm@12.0.2
           npm ci --prefix clients/web
 
       - name: Build and audit the candidate
         run: make release-candidate
 
       - name: Retain private candidate archives
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lychd-${{ github.sha }}
           path: |

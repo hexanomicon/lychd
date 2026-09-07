@@ -352,6 +352,57 @@ async def test_queues_api_reads_real_substrate_zero_injection(monkeypatch: pytes
         await services.aclose()
 
 
+def _create_atlas_project_for_run(
+    client: Any, headers: dict[str, str], run_id: str
+) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    """Retain an Atlas undertaking and Run reference through the real HTTP boundary."""
+    project_id = str(uuid.uuid4())
+    created_project = client.post(
+        "/api/v1/atlas/projects",
+        json={"id": project_id, "title": "Keep the work answerable", "brief": "Review the retained return."},
+        headers=headers,
+    )
+    assert created_project.status_code == 201, created_project.text
+    atlas_change = {
+        "request_id": str(uuid.uuid4()),
+        "expected_version": 1,
+        "change": {
+            "kind": "reference.add",
+            "reference_kind": "run",
+            "target_id": run_id,
+            "concern_id": None,
+            "note": "First return",
+        },
+    }
+    linked_project = client.post(
+        f"/api/v1/atlas/projects/{project_id}/changes",
+        json=atlas_change,
+        headers=headers,
+    )
+    assert linked_project.status_code == 200, linked_project.text
+    atlas_snapshot = linked_project.json()
+    return project_id, atlas_change, atlas_snapshot
+
+
+def _assert_restored_atlas_project(
+    second_client: Any, project_id: str, atlas_change: dict[str, Any], atlas_snapshot: dict[str, Any], run_id: str
+) -> None:
+    """Prove retained Project content, retry receipt, and backlinks on a second boot."""
+    restored_project = second_client.get(f"/api/v1/atlas/projects/{project_id}")
+    assert restored_project.status_code == 200
+    assert restored_project.json() == atlas_snapshot
+    second_headers = _csrf_headers(second_client)
+    replay = second_client.post(
+        f"/api/v1/atlas/projects/{project_id}/changes",
+        json=atlas_change,
+        headers=second_headers,
+    )
+    assert replay.status_code == 200
+    assert replay.json() == atlas_snapshot
+    backlinks = second_client.get(f"/api/v1/atlas/references?kind=run&target_id={run_id}").json()
+    assert [project["id"] for project in backlinks] == [project_id]
+
+
 @pytest.mark.integration
 @pytest.mark.container
 def test_production_wiring_real_factory_over_postgres_survives_second_boot(
@@ -422,13 +473,15 @@ def test_production_wiring_real_factory_over_postgres_survives_second_boot(
                 _assert_done_projection(projection)
                 _assert_orb_done(client, run_id)
 
+                project_id, atlas_change, atlas_snapshot = _create_atlas_project_for_run(client, headers, run_id)
+
             asyncio.run(dispose_engine())
-            second_app = create_app()
-            with TestClient(app=second_app, base_url="http://127.0.0.1:7134") as second_client:
+            with TestClient(app=create_app(), base_url="http://127.0.0.1:7134") as second_client:
                 restored = second_client.get(f"/api/v1/bridge/runs/{run_id}")
                 assert restored.status_code == 200
                 _assert_done_projection(restored.json())
                 _assert_orb_done(second_client, run_id)
+                _assert_restored_atlas_project(second_client, project_id, atlas_change, atlas_snapshot, run_id)
     finally:
         asyncio.run(dispose_engine())
         get_extensions.cache_clear()

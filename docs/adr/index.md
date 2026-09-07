@@ -7,15 +7,14 @@ icon: material/pillar
 
 > _Prophecy names the destination. A Covenant decides what may be built._
 
-The Covenants are LychD's technical law. Each one owns a decision, the forces that shaped it, and
-the invariants that later work must preserve. They are living contracts: the current text states
-the current architecture, while version history records how that law changed.
+Open a Covenant when a choice needs its reasons. Each numbered record states one architectural
+decision, the constraints that shaped it, and the consequences a later change must preserve.
+Current text gives current law; version history keeps earlier rulings available.
 
-Use this page to find the smallest decision that owns a question. Follow related Covenants only
-where the boundary crosses more than one office.
-
-[State of Work](../state-of-the-work.md) answers a different question: what current evidence
-supports. An accepted Covenant can govern an organ that has not yet entered matter.
+For a first reading, follow [Doctrine](01-doctrine.md), then the question that brought you here.
+For an operating procedure, enter the [Sepulcher](../sepulcher/index.md). For an implementation
+claim, consult [State of Work](../state-of-the-work.md): a decision can govern a body part long
+before that part can be used.
 
 ## The Return from Myth to Law
 
@@ -79,9 +78,9 @@ name the telos it serves, but its decision must stand on technical requirements 
 | How does human consent survive pause and re-admission? | [25 — HitL](25-hitl.md) |
 | How may sovereign Liches address one another? | [26 — A2A](26-a2a.md) |
 | How are Seeds admitted, retrieved, corrected, and reanimated? | [27 — Memory](27-memory.md) |
-| How do Products package Compositions, how are Spells woven into immutable Scrolls and attributable castings, and how do human-attested regions stop for live review? | [28 — Workflow](28-workflow.md) |
+| Who owns an application, its exact score, casting, coordination, and protected authorship? | [28 — Workflow](28-workflow.md) |
 | Which evidence makes an execution legible without granting authority? | [29 — Observability](29-observability.md) |
-| How are search, fetch, render, and extraction effects contained? | [30 — Web Acquisition](30-webcrawler.md) |
+| How are search, fetch, render, and extraction effects contained? | [30 — Webcrawler](30-webcrawler.md) |
 | How are speculative worlds isolated, judged, and promoted? | [31 — Simulation](31-simulation.md) |
 | How are Persona, Sigil, attribution, and revision bound? | [32 — Identity](32-identity.md) |
 | How are training corpora admitted and resulting weights promoted? | [33 — Training](33-training.md) |
@@ -97,7 +96,7 @@ name the telos it serves, but its decision must stand on technical requirements 
 | How do Sigils, roles, grants, and revocation enforce identity? | [38 — IAM](38-iam.md) |
 | How does the Tether admit remote peers and routes? | [39 — VPN](39-vpn.md) |
 | How does the Veil terminate transport without becoming application authority? | [40 — Proxy](40-proxy.md) |
-| How are paid effects reserved, signed, committed, and reconciled? | [41 — X402](41-x402.md) |
+| How are paid effects reserved, signed, committed, and reconciled? | [41 — Toll](41-x402.md) |
 | How may many physical nodes serve one sovereign control plane? | [42 — Legion](42-legion.md) |
 
 ## Changing a Covenant

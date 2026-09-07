@@ -1,1 +1,0 @@
-var e={queued:`queued`,admitted:`admitted`,preparing:`preparing`,running:`running`,succeeded:`succeeded`,failed:`failed`,cancelled:`cancelled`,timed_out:`timed out`,lost:`lost`};function t(t){return t?e[t]??t.replaceAll(`_`,` `):`awaiting completion`}export{t};

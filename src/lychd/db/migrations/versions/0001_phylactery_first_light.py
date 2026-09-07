@@ -1,4 +1,3 @@
-# type: ignore
 """phylactery first light
 
 Revision ID: 0001

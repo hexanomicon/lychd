@@ -1,13 +1,10 @@
-"""Workflow registry: route by `Trigger`, look up by persisted name.
+"""Immutable workflow revisions and routing for new admissions.
 
-The engine routes an `Intent` to a `Workflow` ONCE via `WorkflowRegistry.route`
-(explicit-precedence `Trigger` semantics, absorbing the former `agents.router.route`),
-persists the choice, and thereafter `perform_run` looks the workflow up by name
-and exact persisted revision — it never re-routes an in-flight run.
+RunEngine routes each new Intent to an active revision and pins its full manifest.
+Worker execution resolves that exact snapshot; inactive retained revisions remain
+available for replay. Changing active routes never reroutes an admitted Run.
 
-The current registry wraps the built-in `bridge_chat` and offline reference
-`delegated_rite` workflows. Production consumers receive one registry from the
-application assembly root.
+The application assembly root supplies one registry to all consumers.
 """
 
 from __future__ import annotations
@@ -16,14 +13,16 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
 from lychd.agents.workflows.base import Trigger, Workflow, pattern_snapshot_is_valid
-from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT
+from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT, BRIDGE_CHAT_BOUND
 from lychd.agents.workflows.delegated_rite import DELEGATED_RITE
 
 if TYPE_CHECKING:
     from lychd.agents.router import Intent
+    from lychd.config.settings import WeaverSettings
 
 __all__ = [
     "BRIDGE_CHAT",
+    "BRIDGE_CHAT_BOUND",
     "DELEGATED_RITE",
     "BuiltinWorkflowRegistry",
     "Trigger",
@@ -36,7 +35,7 @@ __all__ = [
 
 @runtime_checkable
 class WorkflowRegistry(Protocol):
-    """The route-once / look-up-by-name surface the engine and Loom consume."""
+    """Route new admissions and resolve retained revisions for execution and Loom."""
 
     @property
     def default(self) -> Workflow:
@@ -48,7 +47,7 @@ class WorkflowRegistry(Protocol):
         ...
 
     def get(self, name: str, /) -> Workflow | None:
-        """Return the workflow persisted under ``name``, or ``None``."""
+        """Return the active revision for ``name``, or ``None`` if inactive or unknown."""
         ...
 
     def get_revision(self, pattern_id: str, revision: str, /) -> Workflow | None:
@@ -197,7 +196,7 @@ class BuiltinWorkflowRegistry:
         return self.default
 
     def get(self, name: str, /) -> Workflow | None:
-        """Return the workflow registered under ``name``, or ``None``."""
+        """Return the active revision for ``name``, or ``None`` if inactive or unknown."""
         for active_name, revision in self.active_revisions:
             if active_name == name:
                 return self.get_revision(name, revision)
@@ -237,12 +236,13 @@ class BuiltinWorkflowRegistry:
             return None
 
 
-def builtin_workflow_registry() -> BuiltinWorkflowRegistry:
-    """Build the built-in workflow registry (the sole construction site today)."""
+def builtin_workflow_registry(*, weaver: WeaverSettings | None = None) -> BuiltinWorkflowRegistry:
+    """Select the active Bridge revision while retaining both executable revisions."""
+    bridge = BRIDGE_CHAT_BOUND if weaver is not None and weaver.bridge is not None else BRIDGE_CHAT
     return BuiltinWorkflowRegistry(
-        workflows=(BRIDGE_CHAT, DELEGATED_RITE),
+        workflows=(BRIDGE_CHAT, BRIDGE_CHAT_BOUND, DELEGATED_RITE),
         active_revisions=(
-            (BRIDGE_CHAT.name, BRIDGE_CHAT.manifest.revision),
+            (bridge.name, bridge.manifest.revision),
             (DELEGATED_RITE.name, DELEGATED_RITE.manifest.revision),
         ),
         route_precedence=(DELEGATED_RITE.name,),

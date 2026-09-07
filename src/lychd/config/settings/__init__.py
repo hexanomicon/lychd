@@ -18,8 +18,10 @@ from lychd.config.settings.server import (
     ServerSettings,
     WebSettings,
 )
+from lychd.config.settings.weaver import BridgeCastingSettings, WeaverSettings
 
 __all__ = (
+    "BridgeCastingSettings",
     "DatabaseSettings",
     "ExtensionSettings",
     "LoggingSettings",
@@ -30,6 +32,7 @@ __all__ = (
     "Settings",
     "SettingsSnapshot",
     "SwitchingSettings",
+    "WeaverSettings",
     "WebSettings",
     "get_settings",
 )

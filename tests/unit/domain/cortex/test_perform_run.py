@@ -1016,7 +1016,8 @@ async def test_reconcile_runs_preserves_queued_with_durable_job() -> None:
 
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
     await _seed_run(ledger, sessions, "durable")
-    enqueue_seq = await ledger.bump_enqueue_seq("durable")
+    enqueue_seq = await ledger.rotate_delivery("durable", enqueue_seq=0)
+    assert enqueue_seq == 1
     durable = await ledger.get("durable")
     assert durable is not None
 
@@ -1113,7 +1114,8 @@ async def test_reconcile_runs_preserves_queued_when_broker_probe_fails() -> None
 
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
     await _seed_run(ledger, sessions, "uncertain")
-    enqueue_seq = await ledger.bump_enqueue_seq("uncertain")
+    enqueue_seq = await ledger.rotate_delivery("uncertain", enqueue_seq=0)
+    assert enqueue_seq == 1
     uncertain = await ledger.get("uncertain")
     assert uncertain is not None
 

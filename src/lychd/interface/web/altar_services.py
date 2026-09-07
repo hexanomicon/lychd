@@ -53,6 +53,7 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.engine import RunQueue
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.delegation.ports import DelegatedAgentRuntime
+    from lychd.domain.web.atlas import AtlasStorePort
     from lychd.domain.web.fragments import FragmentRegistry
     from lychd.domain.web.sessions import SessionStorePort
     from lychd.domain.web.swap_requests import SwapRequestLedger
@@ -69,6 +70,7 @@ class AltarServices:
     leases: LeaseLedger
     fragments: FragmentRegistry
     bridge_sessions: SessionStorePort
+    atlas: AtlasStorePort
     consents: ConsentLedger
     tickets: TicketStore
     swap_requests: SwapRequestLedger
@@ -131,11 +133,23 @@ def _build_session_store(profile: str, *, sigil_name: str) -> SessionStorePort:
     from lychd.domain.web.sessions import BridgeSessionStore
 
     if profile == "memory":
-        return BridgeSessionStore()
+        return BridgeSessionStore(sigil_name=sigil_name)
     from lychd.db.engine import get_session_factory
     from lychd.db.sessions import DbBridgeSessionStore
 
     return DbBridgeSessionStore(get_session_factory(), sigil_name=sigil_name)
+
+
+def _build_atlas_store(profile: str) -> AtlasStorePort:
+    """Use the shared persistence profile for Project planning records."""
+    from lychd.domain.web.atlas import InMemoryAtlasStore
+
+    if profile == "memory":
+        return InMemoryAtlasStore()
+    from lychd.db.atlas import DbAtlasStore
+    from lychd.db.engine import get_session_factory
+
+    return DbAtlasStore(get_session_factory())
 
 
 def _build_consent_ledger(profile: str) -> ConsentLedger:
@@ -208,6 +222,10 @@ def build_altar_services(
     """
     if settings is None:
         settings = get_settings()
+    bridge_casting = settings.weaver.bridge
+    if workflows is not None and bridge_casting is not None:
+        msg = "Explicit workflow registry injection cannot be combined with [weaver.bridge] configuration."
+        raise ValueError(msg)
     if profile is None:
         profile = settings.server.database.profile
     queues = protect_run_queues(queues)
@@ -244,12 +262,13 @@ def build_altar_services(
     context_orchestrator = ContextOrchestrator(registry=registry)
     fragments = build_fragment_registry()
     bridge_sessions = _build_session_store(profile, sigil_name=default_sigil().name)
+    atlas = _build_atlas_store(profile)
     consents = _build_consent_ledger(profile)
     tickets = TicketStore()
     swap_requests = _build_swap_request_ledger(profile)
     projector = EventProjector(fragments=fragments, sessions=bridge_sessions, consents=consents)
     if workflows is None:
-        workflows = builtin_workflow_registry()
+        workflows = builtin_workflow_registry(weaver=settings.weaver)
     delegates = _build_delegation_coordinator(profile, delegated_runtime_adapters)
     cancellations = RunCancellationCoordinator()
     if profile == "postgres":
@@ -290,6 +309,7 @@ def build_altar_services(
         delegates=delegates,
         consents=consents,
         release_context=context_orchestrator.release,
+        bridge_capability_key=bridge_casting.capability_key if bridge_casting is not None else None,
     )
     return AltarServices(
         registry=registry,
@@ -298,6 +318,7 @@ def build_altar_services(
         leases=leases,
         fragments=fragments,
         bridge_sessions=bridge_sessions,
+        atlas=atlas,
         consents=consents,
         tickets=tickets,
         swap_requests=swap_requests,

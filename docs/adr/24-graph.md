@@ -21,13 +21,6 @@ and serialization, not every hidden premise or mutation.
 The engine is serial. GraphBuilder, broadcast, map/spread, joins, reducers, and parallel execution
 are not installed behavior; State owns the Pydantic AI v2 migration boundary.
 
-Migration is staged: `1.25.1` → exact final-v1
-[`1.107.1`](https://github.com/pydantic/pydantic-ai/releases/tag/v1.107.1) with deprecations as
-errors → versioned checkpoint/cursor and parked-Run migration → a `WorkflowRuntime` port → audited
-v2. Version `1.107.0` is forbidden because `1.107.1` closes its AG-UI trailing-message
-authorization bypass. GraphBuilder parallelism and external durability remain separate experiments;
-neither may ride inside the checkpoint-format migration.
-
 ## State and dependencies
 
 Resume state is a JSON-round-tripping Pydantic model containing only declared continuation data.
@@ -68,7 +61,8 @@ attempt gets a process-local station-attempt correlation and an entered, settled
 `occurrence_id`; canonical Spellweaver **Occurrence** instead names a schedule or external-trigger firing
 before Invocation admission. Dispatch adds its grant event only after lease admission;
 Orchestrator events retain the station-attempt correlation. Events observe; they neither recover
-work nor establish a global order.
+work nor establish a global order. Ordinary observer exceptions are logged and cannot replace
+completion, the original execution failure, or a checkpointed wait. Cancellation still propagates.
 
 ## Capability handshake
 
@@ -99,7 +93,11 @@ new queue claim. Gate or DelegatedAgentNode automatically selects the durable ti
 Long Sleep means a durable wait that outlives the worker. Vessel lifecycle and A2A waits remain
 designs until they use this same checkpoint/re-admission rule. `AWAITING_SERVICE` is accepted law
 but has no source, persistence, or relay yet. Missing checkpoint fails as stasis lost; process death
-in RUNNING or AWAITING_HARDWARE reconciles to failure, never opportunistic replay.
+in RUNNING or AWAITING_HARDWARE recovers only an exact Consent or delegated pre-park boundary
+bound by the first resumable checkpoint; otherwise startup contains correlated effects and records
+failure. It never guesses a
+replay. [Reanimation](../sepulcher/phylactery/reanimation.md#reanimation-a-new-vessel-judges-durable-truth)
+keeps the state-by-state return conditions.
 
 For a future service job, the owning station persists `ServiceJobAttempt@1` before first submit,
 checkpoints the same owner, then parks. Re-entry reads terminal attempt truth and dispatches afresh;
@@ -120,11 +118,11 @@ GraphRunner can create/resume snapshots but cannot decide their deletion. Termin
 1. Commit DONE, FAILED, or CANCELLED to Run ledger.
 2. Release run-scoped context.
 3. Delete durable checkpoint.
-4. Publish the single terminal event from committed status.
+4. Publish the single terminal event from committed status, durably drain its Step evidence, then close the live channel.
 
 Cleanup is best-effort. Failed deletion retains checkpoint for reconciliation; committed terminal
 truth remains authority. Repository evidence proves adapter and memory-profile recovery, not a real
-PostgreSQL consent-plus-checkpoint restart, schema migration, transactional outbox, or distributed fence.
+PostgreSQL consent-plus-checkpoint restart, schema migration, transactional Step-event outbox, or distributed fence.
 
 ## Consent re-entry
 
@@ -133,7 +131,7 @@ consent relation and AWAITING_CONSENT; one guarded verdict edge admits QUEUED an
 resumes the same Graph. One approval call per model round, with bounded chained rounds, is current;
 ADR 25 owns verdict order and recovery.
 
-## 3. Delegated Agent Macro-Nodes
+## Delegated Agent Macro-Nodes {#3-delegated-agent-macro-nodes}
 
 DelegatedAgentNode is one typed opaque station. Graph owns purpose and result routing, not the
 foreign planner, subagents, tool loop, or events. DelegatedAgentRequest names request/run/step,
@@ -147,15 +145,31 @@ QUEUED → ADMITTED → PREPARING → RUNNING → terminal
 ```
 
 Terminals are SUCCEEDED, FAILED, CANCELLED, TIMED_OUT, LOST. Request id is idempotency key:
-different reuse fails, first admitted terminal wins, late terminals are inert. LOST records
-indeterminate external truth and never authorizes automatic repetition.
+different reuse fails. For result adoption and ordinary polling, the first admitted terminal wins
+and late results are inert. LOST records indeterminate external truth and never authorizes automatic
+repetition. Explicit cancellation still contains the owning runtime and may record `LOST → CANCELLED`
+only after containment returns, as required by [Workers](14-workers.md#delegated-agentjob-labor).
 
 delegated_rite@1 proves no-effect reference submit, park, adoption, re-admission, and projection.
 It performs no subprocess, provider, network, credential, or workspace effect. Runtime selection is
 exact-name only, not Dispatcher grant or Orchestrator capacity; memory store is process-local.
-Postgres adapter/schema/migration lack a real receipt. Coffin, Provider Gate, effectful adapters,
-cancellation, artifact custody, budgets, and cross-process recovery remain State-bounded. Provider
+The [artifact-reference receipt](../state-of-the-work.md#artifact-reference-contract) covers a
+bounded PostgreSQL metadata round-trip through job creation and result adoption, using tables
+created from schema metadata. It does not establish migration execution, process restart,
+provider effects, Graph park/resume, or artifact-byte custody.
+
+Coffin, Provider Gate, effectful adapters, cancellation, artifact custody, budgets, and
+cross-process recovery retain their [State boundaries](../state-of-the-work.md#delegated-agent-execution). Provider
 testimony is labelled, bounded evidence, never hidden reasoning.
+
+## Runtime migration
+
+Migration is staged: `1.25.1` → exact final-v1
+[`1.107.1`](https://github.com/pydantic/pydantic-ai/releases/tag/v1.107.1) with deprecations as
+errors → versioned checkpoint/cursor and parked-Run migration → a `WorkflowRuntime` port → audited
+v2. Version `1.107.0` is forbidden because `1.107.1` closes its AG-UI trailing-message
+authorization bypass. GraphBuilder parallelism and external durability remain separate experiments;
+neither may ride inside the checkpoint-format migration.
 
 ## Future parallel topology
 
@@ -177,10 +191,11 @@ only applies its predicate; consensus, first completion, or a model judge does n
 Event replay is process-local. A terminal manifest station is declarative: Pydantic Graph returns
 End directly, so observers must not fabricate a terminal-node occurrence.
 
-## Correspondence
+## Following a pause and return {#correspondence}
 
-Graph gives Flux a shape: node as station, edge as passage, checkpoint as lawful beginning again.
-Identity and judgment stay elsewhere.
+[Stasis and return](../sepulcher/extensions/weaver/stasis-and-return.md) follows a running or
+parked workflow. [Reanimation](../sepulcher/phylactery/reanimation.md) explains how a new Vessel
+judges the durable records after process loss.
 
 ## Consequences
 

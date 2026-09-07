@@ -5,149 +5,60 @@ icon: material/drone
 
 # :material-drone: Embodiment
 
-A Familiar body is one physical form admitted for bounded real-world work. The form determines
-what the body can sense, how it moves or presents, where it may go, and what must stop it.
+A phone, a wheeled body, and an airborne body cannot share one emergency action. Embodiment admits the exact capabilities and commissioned local behavior that make a particular body eligible for a bounded task. A form-factor name is only orientation.
 
 ## Body admission
 
-`familiar.admit_body@2` pins one exact body identity from an admitted controller or device
-attachment, closes the capability snapshot, and seals the safety contract. Admission is distinct
-from attachment enrollment: Legion may own a remote node credential and reservation; a mobile
-client/device enrollment owner may supply its exact binding while Ward proves current authority;
-another bounded local adapter may own its exact controller binding. Familiar owns only the
-application judgment that this physical body is fit for the declared work. Companion is
-downstream: it may open its mobile device record and session only after Familiar returns the exact
-admitted body revision.
+`familiar.admit_body@3` returns immutable `FamiliarBody@3` after checking an already admitted controller/device attachment. Legion may own remote enrollment/reservation; a bounded local adapter may own another controller binding. For a phone, Ward first supplies the device/application `Principal`, revocable `Credential` and generation, current object-scoped `Authority Grant`, and policy generation. Companion needs no prior record: it opens its device/session only after Familiar supplies the body.
 
-| Field | What it binds |
-| --- | --- |
-| Controller/device attachment | exact owner, enrolled attachment identity, revision or epoch, credential generation, fencing, and local/remote route |
-| Form factor | `car`, `drone`, `rover`, `legged`, `manipulator`, `card`, `display`, or another explicitly admitted form |
-| Make and model | hardware identity for capability inference and safety defaults |
-| Capability snapshot | requested, required, granted, missing, and revoked sensors and actuators |
-| Safety envelope | geofence, altitude floor/ceiling, speed ceiling, battery floor, terrain allowlist |
-| Emergency stop | autonomous triggers, manual override channel, stop behaviour per form |
+The body record pins:
 
-Missing a required capability refuses admission. Missing an optional capability becomes an explicit
-downgrade recorded on the body. A later hardware change creates a new body revision; it never
-silently widens a running mission.
+- attachment owner, typed identity, revision/epoch, credential generation, fencing, and local/remote road;
+- admitted form factor and exact make/model, hardware and controller revisions;
+- requested, required, granted, missing, and revoked sensor/actuator capabilities;
+- commissioned operating limits, relevant geofence, altitude/speed/battery/terrain limits where applicable;
+- autonomous stop triggers, independently reachable manual override, form-specific stopped/contained state, and recovery policy.
 
-No attachment kind is universal Familiar law. Remote robots commonly need a Legionnaire so the
-body can retain node-local safety and refusal across network loss. A phone represented through
-an authenticated client can instead use its exact enrolled mobile attachment plus Ward's current
-authority decision; Companion then consumes the resulting body record. Both paths must expose the
-capabilities, fencing, recovery, and independently reachable stop behavior required by the
-selected body profile.
+Missing required capability refuses admission. Optional absence is a recorded downgrade. A changed hardware, firmware, attachment, or safety envelope creates a new body revision; no running mission wakes to a silently widened body.
 
 ## Example forms
 
-These are orientation profiles, not compatibility, purchasing, regulatory, or safety guidance.
-Each admitted body still needs an exact hardware/controller revision, measured envelope, local-law
-closure, and an independently reachable stop path.
+These comparisons name the contracts a future profile must close, not tested builds, shopping recommendations, operating limits, or safety certification.
 
 ### Drone
 
-A quadcopter or hexacopter. Airborne, fast, overhead perspective. Best for outdoor following,
-aerial observation, and property survey.
-
-| Typical build | 250–450 mm frame, 4S/6S LiPo, GPS, optical flow, downward rangefinder, forward obstacle-avoidance sensors |
-| --- | --- |
-| **Movement** | 3D waypoint navigation, hover-hold, altitude envelope, speed typically 2–10 m/s |
-| **Sensors** | GPS/GLONASS, IMU (accelerometer + gyroscope + magnetometer), barometer, optical flow camera, forward-facing RGB camera, optional thermal, optional LIDAR |
-| **Audio** | onboard mic (noisy — propeller wash), speaker or buzzer |
-| **Endurance** | 15–40 minutes depending on payload and battery |
-| **Safety envelope** | max altitude (regulatory + terrain), min altitude, geofence polygon, no-fly zones, kill-switch behaviour (immediate land vs. return-to-home) |
-| **Emergency stop** | motor disarm + controlled descent or immediate cut; autonomous trigger on geofence breach, battery critical, signal loss timeout, or manual override |
-| **Controller stack** | Pixhawk-class flight controller running one pinned ArduPilot or PX4 build; a separately admitted companion computer may connect over UART/MAVLink |
-| **Legionnaire** | companion computer runs Node Agent; connects to LychD via Intercom; relays MAVLink telemetry and receives waypoint commands |
+An airborne profile must prove its exact flight-controller/companion-computer road, positioning, motion and altitude envelope, obstacle policy, battery/signal behavior, permitted geography, and locally executable recovery. Pixhawk-class, ArduPilot, PX4, and MAVLink are possible controller/mechanism references, not interchangeable or admitted implementations. The controller must distinguish actions that maintain controlled flight from disarm and other terminal actions; a generic immediate motor stop is no universal emergency policy.
 
 ### Rover
 
-A wheeled or tracked ground vehicle. Stable, quiet, longer endurance. Best for indoor/outdoor
-following, close-range observation, and terrain the Lich walks.
-
-| Typical build | 1/10 or 1/8 scale chassis, brushed/brushless motors, LIDAR or ultrasonic obstacle sensors, wheel encoders |
-| --- | --- |
-| **Movement** | 2D waypoint navigation, speed envelope, differential or Ackermann steering |
-| **Sensors** | forward RGB camera, optional 360° camera array, microphone (quieter than drone), LIDAR or ultrasonic rangefinders, wheel odometry, optional GPS |
-| **Audio** | onboard mic, speaker |
-| **Endurance** | 1–6 hours depending on motors and battery |
-| **Safety envelope** | geofence polygon, max speed, terrain allowlist (paved, grass, gravel, stairs-capable), water-crossing policy |
-| **Emergency stop** | motor brake + hold position; autonomous trigger on geofence breach, obstacle at zero-range, signal loss timeout, or manual override |
-| **Controller stack** | ESP32 or Arduino Mega with motor driver; optional Raspberry Pi 5 for vision |
-| **Legionnaire** | ESP32 may run Node Agent directly for simple missions; companion SBC for vision-heavy missions |
+A wheeled/tracked profile must prove steering, braking/holding, slope/terrain, obstacle and water-crossing policy, local positioning, power, override, and loss recovery. ESP32, Arduino, or SBC examples grant no compatibility or Node Agent capability without an exact profile. The body's stop state must account for its actual mechanics and environment.
 
 ### Legged
 
-A quadruped or hexapod robot. Can handle stairs, uneven terrain, and indoor spaces a rover cannot.
-Best for indoor following, multi-floor environments, and close physical presence.
-
-| Typical build | open-source quadruped (Stanford Pupper, Petoi Bittle, Mini Pupper), 8–12 DOF |
-| --- | --- |
-| **Movement** | gait-based navigation, stair climbing, step-over obstacles, posture control |
-| **Sensors** | forward RGB camera, IMU, joint encoders, foot contact sensors, optional LIDAR |
-| **Audio** | onboard mic, speaker |
-| **Endurance** | 20–60 minutes depending on gait and payload |
-| **Safety envelope** | geofence, stair policy (allowed/refused), max gait speed, terrain allowlist, self-righting policy |
-| **Emergency stop** | freeze posture + hold; autonomous trigger on fall, joint overload, geofence breach, signal loss timeout, or manual override |
-| **Controller stack** | Raspberry Pi 5 or Jetson with ROS2; servo driver board |
-| **Legionnaire** | same SBC runs Node Agent alongside controller |
+A legged profile must close gait/posture, joint/load limits, falls, terrain/stairs, self-righting, local sensing, and recoverable stop behavior. Neither a ROS2 route nor a marketed robot name proves stair capability or that freezing its motors is safe.
 
 ### Manipulator, phone, card, and display
 
-A Familiar need not locomote. A robotic hand, phone, tactile device, card, or display can be
-admitted as a physical presentation or effect body when its controller or client exposes an exact
-capability snapshot, local safety envelope, bounded effect vocabulary, and physical stop path. A
-phone may carry a [Companion](../companion/index.md) session while Familiar retains its body and
-hardware facts. Such a body does not inherit drone, vehicle, or locomotion authority merely because
-it shares the Familiar identity.
+Locomotion is optional. A manipulator or personal presentation device still needs an exact capability snapshot, bounded effect vocabulary, local safety envelope, and reachable stop. A phone may host [Companion](../companion/index.md), while Familiar keeps its physical capability and stop truth. These forms inherit no vehicle or flight authority.
 
 ### Car and other vehicles
 
-A car or other vehicle is admitted as a vehicle body with its own controller, occupants, motion
-envelope, route boundary, local override, and emergency policy. Familiar receives semantic vehicle
-tasks and attributed receipts; it does not receive raw steering, throttle, brake, or actuator
-authority.
+The vehicle profile retains occupants, route/motion envelope, controller, local override, and emergency policy. Familiar receives semantic tasks and attributed receipts without raw steering, throttle, brake, or actuator authority.
 
 ## Capability admission is honest
 
-A capability declared "required" refuses body admission when the hardware or controller cannot
-supply it. A capability declared "optional" becomes an explicit downgrade recorded on
-`FamiliarBody@2`. Familiar never infers capabilities from a form-factor label alone.
+Capabilities must be proved by the attachment/profile rather than inferred from make or form. Positioning may use `gps`, `optical_flow`, `wheel_odometry`, or another admitted local reference. `obstacle_avoidance` and `lidar` require exact detection/control and failure evidence. `rgb_camera` or `thermal_camera` can support declared observation or subject designation, without proving identity or consent.
 
-| Capability | What it enables | Absence means |
-| --- | --- | --- |
-| `gps` | outdoor waypoint navigation, return-to-home, geofence enforcement with global coordinates | indoor-only or relative-position missions |
-| `optical_flow` | hover-hold without GPS, indoor position holding | drift-prone hover, refused for indoor drones |
-| `obstacle_avoidance` | autonomous path deviation around detected obstacles | stop-on-obstacle only; mission may require manual clearance |
-| `rgb_camera` | visual subject lock and separately admitted Prism/Sight observations or visual source material | follow by beacon/GPS only; no visual observation or image-derived grounding |
-| `thermal_camera` | subject lock by heat signature, thermal observation | visible-spectrum-only subject designation |
-| `microphone` | separately admitted Echo capture/transcription and an authorized activation event | no audio capture; microphone-dependent speaking mode unavailable |
-| `speaker` | Echo delivery, authorized Avatar voice projection, audible alerts, and disclosure announcements | silent body; Avatar projection limited to display or motion |
-| `lidar` | precise obstacle mapping, SLAM, 3D observation | coarser obstacle detection via ultrasonic or vision |
-| `wheel_odometry` (rover or vehicle) | dead-reckoning position between GPS fixes | position drift without external reference; other forms use their own admitted local reference |
+`microphone` permits only separately admitted Echo capture/transcription and authorized activation. `speaker` permits admitted playback, alerts, or Avatar voice presentation. Missing capabilities narrow eligible missions or produce the required refusal; another sensor is not a silent equivalent.
 
 ## One body, many missions
 
-A `FamiliarBody@2` may admit many `FamiliarMission@2` records. Changing the hardware, controller
-firmware, or safety envelope creates a new body revision. A mission always references an exact
-immutable body revision; it never wakes to find its body silently upgraded underneath it.
-
-A body that loses a capability between revisions — a broken camera, a downgraded controller —
-records that loss. Missions that required the lost capability refuse admission. Missions that
-declared it optional may proceed with the downgrade explicit.
+Every `FamiliarMission@3` pins the body revision. Broken or withdrawn capabilities remain visible; required ones block new missions and affect live work according to its stop/downgrade policy. An eligible body may host many finite missions without becoming an endless control session.
 
 ## The body decides what fits
 
-Familiar receives no raw motor authority. The controller — Pixhawk, ESP32, ROS2 node — remains
-the sole authority over motor PWMs, PID loops, and obstacle avoidance interrupts. Familiar sends
-semantic waypoints and receives attributed receipts; it never sends `motor_pwm=1400`.
+The exact controller owns fast motion loops, actuation, and local safety interrupts. Familiar issues admitted semantic waypoint/task intents and receives receipts, never prompt-produced `motor_pwm=1400` or generic actuator commands.
 
-The emergency stop is hardware-level and autonomous. Familiar declares the stop policy
-(kill-switch behaviour, autonomous triggers) at body admission. The controller enforces it
-without waiting for a LychD round-trip. A lost admitted control link—Intercom on a Legion-backed
-route—triggers the signal-loss policy, not an unbounded hover.
+Stop behavior must remain enforceable locally without a LychD round trip. On a Legion route the admitted node carries that responsibility; local/mobile attachments prove their equivalent. Link loss invokes the commissioned body-specific policy, not a universal hover, land, brake, disarm, or freeze instruction. Re-entry requires observed controller state and the profile's recovery admission.
 
-Continue with [Follow](follow.md) for how the body locks onto a subject, traces a path, avoids
-obstacles, handles signal loss, and transitions into speaking presence. Return to
-[Familiar](index.md).
+Continue with [Follow](follow.md), or return to [Familiar](index.md).

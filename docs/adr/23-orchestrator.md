@@ -42,11 +42,7 @@ icon: material/scale-balance
 A non-warm managed route arrives as handle-free HardwareTransitionRequired; canonical registry
 truth is fetched again.
 
-### 1. The Tipping Point (Whim Algorithm)
-
-**Whim is Designed, not current behavior.** declared-conflicts (and compatibility alias
-evict-idle) only counts selected evictees in total_metabolic_cost. It measures no VRAM, load time,
-context rebuild, thermal state, topology, bandwidth, transition peak, or tier substitution.
+### Current conflict policy
 
 After refreshing every managed Animator, the current policy gives NO_OP to a warm/open target,
 SOFT_SWAP to a started but non-warm dedicated runtime, HARD_SWAP to a down dedicated runtime, and
@@ -59,8 +55,11 @@ non-dedicated or persistent-resident Animators with non-empty conflicts.
 Leased neighbours remain evictees: a lease forces drain; it does not make incompatible work
 immortal. Affected set means evictees plus launch targets.
 
-TransitionArbiter has one owner. It orders contenders by descending priority then FIFO; same
-capability/same priority joins one in-flight plan, different priorities do not. A hard swap below
+### Arbitration and planning budget
+
+TransitionArbiter has one owner. It orders contenders by descending priority, then FIFO.
+Requests for the same capability at the same priority join one in-flight plan; requests at
+different priorities remain separate. A hard swap below
 min_priority_for_hard_swap declines before effect; NO_OP and SOFT_SWAP are never threshold gated.
 A manual or internal transition request must carry canonical doctrine priority `0..100`; the
 manager rejects an out-of-range value before it records a trace or enters the arbiter, and the HTTP
@@ -70,11 +69,20 @@ its predecessor settles. The arbiter reserves the exact capability/priority coho
 owner begins asynchronous registry preflight; followers join that result without probing, while a
 warm/open result still bypasses the global physical-transition section. Previews bind nothing.
 
+Each preflight and each post-arbitration replan has one `planning_timeout_s` observation budget
+for the complete managed-Animator set, including waiting for the registry probe lock. It does not
+reset for each peer, consume the later warm-up budget, or limit time queued for arbitration.
+An expired planning budget cancels and settles the probe, invalidates interrupted observations,
+and declines before effect. Cohort followers receive the same failure; a later request may retry
+with fresh observations. No lease or claim gate closes until planning succeeds.
+
+### Drain, change, and observe
+
 The actual rite is:
 
 1. Refresh and compute target plus exact affected set.
 2. Close affected lease admission, then the process claim gate.
-3. Wait for no live LeaseLedger grant on any affected Animator; broadcast_soft_stop() is now a no-op.
+3. Wait for no live LeaseLedger grant on any affected Animator.
 4. Freeze a TransitionIntent with target, evict/launch sets, expected active pre-world, and capability/conflict digest.
 5. Have the host boundary attest freshness, ownership, loaded topology, and pending systemd work.
 6. Perform one hard target transaction or one permitted runtime-native soft activation.
@@ -84,6 +92,10 @@ The actual rite is:
 Pre-effect drain timeout/cancellation reopens gates. The waiting run has no lease. Hardware Stasis
 is live; Graph and Snapshots own durable sleep. The process-local bounded TransitionJournal is for
 Nexus/run-event projection, not a Host Reactor journal or complete history.
+The journal and Run observers consume the same immutable transition observation. Callbacks never
+receive the mutable control trace or physical plan. Traces retain only the action and cost summary,
+not the plan's mutable eviction and launch sets. Projection failures do not direct or abort a
+physical transition.
 
 ### Runtime-Started Convergence (`SOFT_SWAP` Plan Label)
 
@@ -97,13 +109,16 @@ boundary before considering runtime-started convergence, so an already-started s
 Animator cannot enter SOFT_SWAP.
 
 llama.cpp router and ExLlamaV3/TabbyAPI prove the seam in repository tests, not live model/GPU
-operation; State records their Operator-validation receipts. One absolute warm-up deadline bounds
+operation; State records their Operator-validation receipts.
+
+One absolute warm-up deadline bounds
 the complete target convergence operation: initial refresh, optional adapter activation, accepted-
 activation refresh, and final WARM polling. That same deadline bounds post-stop cold observation of every evictee. A hung probe therefore enters
 typed compensation or containment instead of holding closed admission and claim gates forever.
 Cancellation or failure during adapter activation or its accepted-state refresh invokes bounded
 adapter abandonment before the canonical error is propagated; repeated caller cancellation cannot
 interrupt that cleanup.
+
 Soft activation has no sufficient prior model state for a trustworthy inverse: failure leaves its
 claim and admission gates closed for operator recovery.
 
@@ -137,9 +152,17 @@ unresolved compensation fails closed. Direct containment latches
 only process lifetime; Reactor .processing/.contained survive and fence startup/effects until
 operator recovery. Inert private-systemd tests prove ordering, not Quadlet/Podman/GPU embodiment.
 
+## Designed resource policy
+
+### 1. The Tipping Point (Whim Algorithm)
+
+**Whim is Designed.** The current `declared-conflicts` policy (and its compatibility alias
+`evict-idle`) counts only selected evictees in `total_metabolic_cost`. It measures no VRAM, load time,
+context rebuild, thermal state, topology, bandwidth, transition peak, or tier substitution.
+
 ### 2. Model Tiering and Reservation
 
-Resource-aware scheduling is Designed. Preload and idle-eviction fields are validated but unused;
+Resource-aware scheduling is Designed. Preload and idle-eviction settings are not implemented;
 explicit coexistence and persistent_resident are declarations, not capacity proof. Future measured
 `ResourceEnvelopeRef`s record idle, active, and transition-peak GPU memory, host RAM, devices and
 topology, disk, bandwidth, warm/unload time, concurrency, and measurement conditions.

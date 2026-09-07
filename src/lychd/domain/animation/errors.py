@@ -9,9 +9,14 @@ canonical type instead of the dispatcher-local copy.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from lychd.domain.animation.capabilities import CapabilityState
+
 
 class CapabilityUnavailable(Exception):  # noqa: N818
-    """Raised when a capability cannot be granted and no transition will fix it."""
+    """Raised when a capability cannot be granted under the current observation or contract."""
 
     def __init__(self, capability_key: str, reason: str | None = None) -> None:
         """Store the offending capability key and an optional human reason."""
@@ -19,6 +24,20 @@ class CapabilityUnavailable(Exception):  # noqa: N818
         super().__init__(f"Capability unavailable: {capability_key}{detail}")
         self.capability_key = capability_key
         self.reason = reason
+
+
+class CapabilityNotWarm(CapabilityUnavailable):
+    """Grant issue observed non-WARM readiness after dispatch's earlier probe.
+
+    Only this issue failure carries a fresh phase back to Dispatcher for the
+    managed-runtime transition decision. Surface and policy failures do not.
+    """
+
+    def __init__(self, capability_key: str, state: CapabilityState | None) -> None:
+        """Retain the exact failed observation without exposing runtime handles."""
+        self.state = state.model_copy(deep=True) if state is not None else None
+        reason = f"phase={state.phase.value}" if state is not None else "capability state unavailable"
+        super().__init__(capability_key, reason)
 
 
 class HardwareTransitionRequired(Exception):  # noqa: N818
@@ -55,6 +74,7 @@ class ActivationFailed(CapabilityUnavailable):
 __all__ = [
     "ActivationFailed",
     "ActivationTimeout",
+    "CapabilityNotWarm",
     "CapabilityUnavailable",
     "HardwareTransitionRequired",
 ]

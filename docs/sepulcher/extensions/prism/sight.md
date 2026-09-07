@@ -5,14 +5,17 @@ icon: material/eye-circle-outline
 
 # :material-eye-circle-outline: Sight
 
-Prism's **Sight** faculty turns admitted images and finite video into precise, typed visual
-estimates. It can locate, segment, track, estimate depth, recover pose, or measure apparent motion.
-It does not thereby know why something happened, identify a person, control a camera, or authorize
-an effect.
+A box must point back to its pixels. A track must reveal its gaps. A depth value must say whether
+it measures metres or only relative distance. **Sight** makes those obligations part of a finite
+visual observation, from admitted source through preprocessing to typed estimates and validation.
 
-This candidate study was reviewed on **2026-08-08**. It records a proposed contract, runtime and
-model shortlist, live-session boundary, and proving bake—not delivery, source truth, surveillance
-authority, or permission to retain or act on visual material.
+Use this passage for images and finite video; [Live Sight](live-sight.md) owns the separately
+armed stream. A learned estimate can be precise and still wrong. Interpretation, identity,
+camera control, and downstream effects need their own owners.
+
+The study was reviewed on **2026-08-08**. Sight remains Designed under
+[Vision](../../../adr/36-vision.md); [State](../../../state-of-the-work.md#vision-admission)
+records the narrower delivered metadata boundary.
 
 ## Three kinds of seeing
 
@@ -21,7 +24,7 @@ performance tuning:
 
 | Office | Result | Example |
 | --- | --- | --- |
-| **Lens** | deterministic probe result or derivative under an exact implementation | decode, dimensions, orientation, frame extraction, crop/resize transform |
+| **[Prism’s Lens](../../../adr/36-vision.md#decision)** | deterministic probe result or derivative under an exact implementation | decode, dimensions, orientation, frame extraction, crop/resize transform |
 | **Sight** | typed model estimate grounded to pixels and time | boxes, masks, tracks, depth, keypoints, flow, registered change candidate |
 | **Multimodal Mind** | attributed semantic interpretation | caption, relationship, open-ended answer, event or causal hypothesis |
 
@@ -35,7 +38,7 @@ may locate a general visual region, but it does not become a second document pip
 
 ## One finite job, exact operation
 
-The candidate `SightJob@1` acts on one or more authorized, finite `ArtifactRef` sources and names
+The candidate `SightJob@2` acts on one or more authorized, finite `ArtifactRef` sources and names
 one explicit operation:
 
 | Operation | Required meaning |
@@ -65,42 +68,13 @@ retention. Resolution Lock selects an exact finite ToolProfile, or Dispatcher se
 declared capability; the admitted invocation and terminal receipt pin the exact tool or model,
 runtime, preprocessing, and postprocessing profile. Optional inputs never imply support.
 
-`SightJob@1` owns perception stages, observation validity, and technical result settlement. The
+`SightJob@2` owns perception stages, observation validity, and technical result settlement. The
 consuming owner decides how an observation affects its domain judgment. Each asynchronous or
-durable service or tool execution uses Core's Designed
-[`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts-designed) state,
-idempotency, cancellation, reconciliation, and indeterminate-effect law. The parent Run remains
-fenced until the same attempt settles. Partial results enter quarantined custody; only rehashed,
-validated observations enter the settled Prism result, and an uncertain paid or remote request is
+durable service or tool execution follows Core's Designed
+[`ServiceJobAttempt@1` recovery contract](../../../adr/14-workers.md#service-job-attempts-designed).
+The parent Run remains fenced until the same attempt settles. Partial results enter quarantined
+custody; only rehashed, validated observations enter the settled Prism result, and an uncertain paid or remote request is
 never replayed under a new identity.
-
-## A typed visual observation set
-
-`VisualObservationSet@1` does not flatten every output into generic JSON. It binds the source and
-working-derivative digests, operation, evidence class, exact producer and profiles, then carries
-typed facets:
-
-| Facet | Required facts |
-| --- | --- |
-| regions | original-source boxes, points, polygons, class or phrase, score semantics, ontology and coverage |
-| masks | semantic/instance/panoptic/prompted kind, RLE or mask artifact, region relation, overlap and prompt lineage |
-| depth | relative/inverse/metric kind, ray-depth or camera-z convention, units and scale when proved, validity and uncertainty artifacts |
-| pose | skeleton ontology and revision, coordinate space, keypoints, visibility and score semantics |
-| flow | exact ordered frame pair, vector axes and units, dense or sparse field artifact, validity and occlusion |
-| tracks | job-local track id, observations and spans, association method, gaps, occlusion and termination |
-| comparison | registration transform and error, compared regions, candidate changes and non-change alternatives |
-
-The terminal receipt additionally pins model and weight digests and license, worker and container,
-runtime, precision, device, decoder, color conversion, resize, crop, padding and letterbox,
-thresholds, NMS or association revision, taxonomy and label map, timing, resource peaks, warnings,
-skipped material, gaps, cancellation settlement, and output digests. An overlay PNG or annotated
-video is a derived visualization; machine-readable observations remain canonical.
-
-A confidence value is not automatically a calibrated probability and is not comparable across
-models. Calibration evidence, if available, names its corpus, revision, and applicable profile. A
-negative result is valid only for its exact region, time window, ontology, threshold, sampling, and
-coverage. Crash, occlusion, dropped frame, skipped region, and unknown class never become
-"absent".
 
 ## Coordinates and time survive preprocessing
 
@@ -125,6 +99,66 @@ exact keypoint schema. Flow declares source and destination frames, vector direc
 and any transform back to the original source. Compare cannot silently treat lighting, viewpoint,
 compression, parallax, or registration failure as physical change.
 
+## A typed visual observation set
+
+`VisualObservationSet@1` does not flatten every output into generic JSON. It binds the source and
+working-derivative digests, operation, evidence class, exact producer and profiles, then carries
+typed facets:
+
+| Facet | Required facts |
+| --- | --- |
+| regions | original-source boxes, points, polygons, class or phrase, score semantics, ontology and coverage |
+| masks | semantic/instance/panoptic/prompted kind, RLE or mask artifact, region relation, overlap and prompt lineage |
+| depth | relative/inverse/metric kind, ray-depth or camera-z convention, units and scale when proved, validity and uncertainty artifacts |
+| pose | skeleton ontology and revision, coordinate space, keypoints, visibility and score semantics |
+| flow | exact ordered frame pair, vector axes and units, dense or sparse field artifact, validity and occlusion |
+| tracks | job-local track id, observations and spans, association method, gaps, occlusion and termination |
+| comparison | registration transform and error, compared regions, candidate changes and non-change alternatives |
+
+### Receipt and negative evidence
+
+The terminal receipt additionally pins model and weight digests and license, worker and container,
+runtime, precision, device, decoder, color conversion, resize, crop, padding and letterbox,
+thresholds, NMS or association revision, taxonomy and label map, timing, resource peaks, warnings,
+skipped material, gaps, cancellation settlement, and output digests. An overlay PNG or annotated
+video is a derived visualization; machine-readable observations remain canonical.
+
+A confidence value is not automatically a calibrated probability and is not comparable across
+models. Calibration evidence, if available, names its corpus, revision, and applicable profile. A
+negative result is valid only for its exact region, time window, ontology, threshold, sampling, and
+coverage. Crash, occlusion, dropped frame, skipped region, and unknown class never become
+"absent".
+
+## Prepare the finite source
+
+[`FFmpeg`](https://www.ffmpeg.org/legal.html) remains the pinned Lens subprocess for file probing,
+exact frame extraction, pixel-format conversion, and finite batch video. Its effective distribution
+license depends on the exact build: `--enable-gpl` makes that build GPL, while `--enable-nonfree`
+makes the resulting binary unredistributable. Neither can be hidden behind the executable name.
+
+## Privacy and identity are not optional profiles
+
+Admission bounds dimensions, pixels, frames, duration, rate, bitrate, codec and parser resources,
+decompression, metadata, output cardinality, derivative expansion, compute, and retention. Decode
+and inference run contained without ambient network. Embedded URLs, subtitles, metadata, OCR text,
+pixels, and VLM output are hostile data, never instructions.
+
+Classification follows every crop, mask, embedding, overlay, depth map, and track derivative. A
+blurred image or caption is not automatically declassified. Track IDs are local association labels,
+never stable object or person identities. Face detection used to apply a privacy mask grants no
+face recognition.
+
+When policy requires source-side privacy masking, the capture or transport boundary applies the
+pinned mask before persistence, inference-worker access, preview, or Portal egress. Stale camera
+calibration, mask mismatch, or masking failure stops the route; it never falls back to unmasked
+frames. Access to raw frames remains a separate explicit scope even when downstream derivatives
+are retained.
+
+Cross-session re-identification, face recognition, gait or voice fusion, demographic or emotion
+inference, biometric templates, neighbour surveillance, ambient public streaming, and indefinite
+retention are absent and denied by default. They would require separate high-risk law and cannot be
+enabled by changing a model id in a Sight Rune.
+
 ## One Prism interface, two first worker substrates
 
 There is no useful OpenAI-compatible wire contract for exact masks, depth, pose, flow, coordinates,
@@ -132,6 +166,15 @@ and time. OpenAI-style chat remains appropriate for VLM text. KServe v2 can late
 tensors, shapes, and dtypes, but it does not define Sight semantics. Prism therefore owns the Sight
 interface, profiles, reference adapter, and normalization into `VisualObservationSet@1`; Core owns
 only general capability demand, typed grants, readiness, and attempt mechanics.
+
+Prove the first workers in this order:
+
+1. One Torch detector.
+2. SAM 2 image segmentation.
+3. The same or an equivalent exported detector through ONNX Runtime CPU, with golden parity.
+4. RTMW through ONNX Runtime and OpenVINO.
+5. Finite-video association, then SAM 2 video propagation.
+6. Only after those finite paths, live GStreamer.
 
 | Candidate | Layer | Present judgment |
 | --- | --- | --- |
@@ -155,10 +198,6 @@ not erase upstream terms.
 TorchServe is excluded because the official project is archived and no longer plans maintenance or
 security fixes. Roboflow Inference mixes an Apache core with cloud, enterprise, metered, dynamic,
 and separately licensed surfaces, so it is not the default Sight boundary.
-
-The minimum promotion order is one Torch detector; SAM 2 image segmentation; the same or an
-equivalent exported detector through ONNX Runtime CPU with golden parity; RTMW through ONNX Runtime
-and OpenVINO; finite-video association; SAM 2 video propagation; and only then live GStreamer.
 
 ## First permissive profile candidates
 
@@ -196,71 +235,11 @@ video understanding. Fixed action localization through OpenTAD and an exact back
 later only for a named ontology and corpus; generated timestamps remain interpretations grounded
 to the frames and temporal resolution actually sampled.
 
-## Finite video first, live sight later
-
-[`FFmpeg`](https://www.ffmpeg.org/legal.html) remains the pinned Lens subprocess for file probing,
-exact frame extraction, pixel-format conversion, and finite batch video. Its effective distribution
-license depends on the exact build: `--enable-gpl` makes that build GPL, while `--enable-nonfree`
-makes the resulting binary unredistributable. Neither can be hidden behind the executable name.
-
-A camera or RTSP feed is not an infinite `SightJob`. The later `LiveSightSession@1` pins camera and
-controller identity, named purpose, retained admitted authority or policy receipt, viewers, zones
-and privacy masks, active window, resolution and rate, separately admitted raw-frame access,
-recording, analysis, retention and egress scopes, stream epoch, queue, cardinality, latency and
-resource budgets, sampling and drop policy, and downstream consumers. The receipt records the
-basis LychD admitted; it is not a claim of legal certification.
-
-Frame identity is stream epoch plus sequence. Reported RTP, device, or PTS clocks may be absent,
-synthesized, or reset, so their provenance and mapping to monotonic and wall clocks retain explicit
-synchronization uncertainty. Queues are bounded. When upstream cannot pause, the admitted profile
-samples or drops under an explicit policy and emits exact gaps and watermarks. A proved contiguous
-transport reconnect may continue the same epoch; otherwise it closes. Every new epoch receives a
-new local track namespace. Cross-epoch association is a separately attributed inference, never a
-reused track identity. Checkpoints retain references, cursors, prompts, and gaps—not raw frames,
-framework objects, device handles, or unbounded history.
-
-[GStreamer](https://gstreamer.freedesktop.org/documentation/frequently-asked-questions/general.html)
-is the first later live transport candidate for RTSP jitter, timestamps, hardware decode, and
-bounded [`appsink`](https://gstreamer.freedesktop.org/documentation/app/appsink.html) delivery.
-Pipeline strings and network routes are immutable allowlisted Rune profiles, never operator or
-model-authored code. Only the contained transport worker receives the exact admitted RTSP route;
-inference workers remain networkless. Starting capture, PTZ, recording, camera configuration,
-robot motion, or another world effect remains with the controlling Composition. Sight only observes.
-
-## Privacy and identity are not optional profiles
-
-Admission bounds dimensions, pixels, frames, duration, rate, bitrate, codec and parser resources,
-decompression, metadata, output cardinality, derivative expansion, compute, and retention. Decode
-and inference run contained without ambient network. Embedded URLs, subtitles, metadata, OCR text,
-pixels, and VLM output are hostile data, never instructions.
-
-Classification follows every crop, mask, embedding, overlay, depth map, and track derivative. A
-blurred image or caption is not automatically declassified. Track IDs are local association labels,
-never stable object or person identities. Face detection used to apply a privacy mask grants no
-face recognition.
-
-When policy requires source-side privacy masking, the capture or transport boundary applies the
-pinned mask before persistence, inference-worker access, preview, or Portal egress. Stale camera
-calibration, mask mismatch, or masking failure stops the route; it never falls back to unmasked
-frames. Access to raw frames remains a separate explicit scope even when downstream derivatives
-are retained.
-
-Cross-session re-identification, face recognition, gait or voice fusion, demographic or emotion
-inference, biometric templates, neighbour surveillance, ambient public streaming, and indefinite
-retention are absent and denied by default. They would require separate high-risk law and cannot be
-enabled by changing a model id in a Sight Rune.
-
 ## Profiles, Runes, Covens, and the proving bake
 
-A model profile pins exact operation, weights, license, ontology, preprocessing, result facets,
-postprocessing, measured hardware envelope, and quality claims. A Designed Rune pins a concrete
-resident/shared worker through exact `[[capabilities]]` references plus backend, devices, mounts,
-lifecycle, load semantics, and conflicts. A finite worker may instead be a Spell-selected
-ToolProfile delivered through a trusted executor or Tomb. A Coven names compatible Soulstones that
-may rise together; it does not load every catalogue entry, merge GPU memory, create a live camera
-grant, or choose fallbacks.
 
-A small fixed detector or RTMPose profile may live on an ONNX Runtime CPU/OpenVINO worker while a
+Within [Prism's admission route](index.md#sight-on-finite-iron), a small fixed detector or RTMPose
+profile may live on an ONNX Runtime CPU/OpenVINO worker while a
 multimodal Mind occupies a GPU. Grounding DINO, SAM 2, or DA3 may use a transient or resident
 PyTorch GPU worker. "Real-time" is never an engine property: the exact model, resolution, device,
 precision, stream count, queue, sampling, and drop profile must prove it. Two GPUs are not pooled
@@ -285,3 +264,8 @@ observation with source coordinates, gaps, and uncertainty; Kinesis must create 
 structured motion derivative. Voidlight retains creative judgment, Form retains 3D
 reconstruction, Blockworld and physical Compositions retain effect authority, and
 [Oculus](../oculus.md) may observe Sight job health without owning the underlying visual facts.
+
+<span id="finite-video-first-live-sight-later"></span>
+
+A camera or stream requires the separately armed [Live Sight](live-sight.md) session. Finite jobs
+retain their exact source-artifact timebase; they do not acquire a live epoch by running longer.

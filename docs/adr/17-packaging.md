@@ -129,17 +129,22 @@ an explicit cutover selects another canon, however, they are downstream mirrors 
 there is no bidirectional “newest branch wins” merge and no second canonical `main`. Contributions
 arriving through a mirror are proposals until admitted by the canonical-source policy.
 
+#### Human seats and source selection
+
 The proposed initial source policy uses a versioned roster of six independently controlled human
 maintainer seats and a threshold of four. A later quorum design chooses its roster and threshold explicitly
 in each governance epoch from its compromise, unavailability, conflict, safety, and liveness
-assumptions; neither the previous ratio nor mathematical majority changes it implicitly. A person
-receives one vote regardless of device count. Maintainers publish work under personal references
+assumptions; neither the previous ratio nor mathematical majority changes it implicitly.
+
+A person receives one vote regardless of device count. Maintainers publish work under personal references
 or branches and collectively nominate an exact Git object; they never share one private “main
 key.” Signed namespaced references show that eligible protocol keys published that object, and a
 canonical reference may be synthesized when the configured threshold agrees. A separately
 verified epoch roster must bind each eligible key to one human seat. These facts do not by
 themselves prove conscious human review, successful verification, release approval, or safe
 activation.
+
+#### Credential custody and roster recovery
 
 Seat authority is independent from protocol and machinery. A Radicle identity or delegate set
 cannot silently redefine LychD's release roster. Seed nodes, mirrors, bots, CI runners, and
@@ -151,11 +156,14 @@ Those higher-trust domains use distinct individual credentials and never share a
 Promotion credentials should be more strongly protected than ordinary online collaboration keys
 and are never installed in an untrusted builder. Rotation or revocation changes future eligibility
 without rewriting historically valid evidence.
+
 An ordinary roster transition requires the preceding epoch's threshold authorization. Any
 exceptional recovery rule must itself be threshold-authorized and bound into that preceding epoch,
 may only reconstruct the roster under its stated failure conditions, and cannot endorse a
 candidate or authorize a live effect. Key loss or compromise without either freezes selection and
 promotion rather than revealing a founder master key.
+
+#### Portable verification
 
 Verification is also forge-neutral. A versioned plan and its receipts, not the service that ran
 them, form the interface. A local workstation, isolated host or VM, GitHub or Forgejo runner, or a
@@ -165,6 +173,8 @@ output digests. Host-level Podman, systemd, migration, or recovery claims still 
 operator boundary defined by [Testing](04-testing.md); a green container cannot attest its own
 host. Changing the candidate or any bound input invalidates affected receipts and signatures.
 Deterministic failure cannot be outvoted.
+
+#### Conditions for a canonical cutover
 
 Radicle becomes eligible for canonical use only after all of these gates pass:
 

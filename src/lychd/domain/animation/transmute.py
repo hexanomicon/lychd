@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final, Protocol
 
 from lychd.domain.animation.conflicts import build_conflict_topology
+from lychd.domain.animation.secret_isolation import validate_secret_declarations
 from lychd.extensions.base import ExtensionStore
 from lychd.system.constants import (
     CONTAINER_LYCHD_PORT,
@@ -125,40 +126,40 @@ class QuadletContributor(Protocol):
 class RegisteredQuadletContributor:
     """One contributor with host-assigned extension provenance."""
 
-    provider_id: str
+    registrant_id: str
     contributor: QuadletContributor
 
 
 class TransmutationStore(ExtensionStore):
     """Store for Quadlet contributions from extensions."""
 
-    def __init__(self, *, current_provider: Callable[[], str] | None = None) -> None:
+    def __init__(self, *, current_registrant: Callable[[], str] | None = None) -> None:
         """Create an empty contributor store."""
         super().__init__()
-        self._current_provider = current_provider or (lambda: "direct")
+        self._current_registrant = current_registrant or (lambda: "core")
         self._registrations: list[RegisteredQuadletContributor] = []
 
     @property
     def registrations(self) -> tuple[RegisteredQuadletContributor, ...]:
-        """Contributors in registration order with exact provider ownership."""
+        """Contributors in registration order with exact registrant provenance."""
         return tuple(self._registrations)
 
     def add_contributor(self, contributor: QuadletContributor) -> None:
         """Register one Quadlet contributor."""
         self._require_mutable()
-        provider_id = self._current_provider()
+        registrant_id = self._current_registrant()
         for registration in self._registrations:
             if registration.contributor is contributor or registration.contributor == contributor:
-                if registration.provider_id == provider_id:
+                if registration.registrant_id == registrant_id:
                     return
                 msg = (
-                    f"Quadlet contributor from {provider_id!r} duplicates the contributor "
-                    f"owned by {registration.provider_id!r}."
+                    f"Quadlet contributor from {registrant_id!r} duplicates the contributor "
+                    f"registered by {registration.registrant_id!r}."
                 )
                 raise ValueError(msg)
         self._registrations.append(
             RegisteredQuadletContributor(
-                provider_id=provider_id,
+                registrant_id=registrant_id,
                 contributor=contributor,
             )
         )
@@ -397,40 +398,15 @@ class Transmuter:
         soulstones: Sequence[SoulstoneConfig],
         runtime_plans: Sequence[RuntimePlan],
     ) -> None:
-        """Keep every data-plane credential distinct from privileged control secrets."""
-        app_secret = settings.server.web.secret_key_secret
-        db_secret = settings.server.database.password_secret
-        if app_secret == db_secret:
-            msg = "Core application-signing and database-password secrets must use distinct names"
-            raise ValueError(msg)
-        core_secrets = {app_secret, db_secret}
-        portal_secrets = {portal.api_key_secret_name for portal in portals if portal.api_key_secret_name is not None}
-        portal_core_aliases = sorted(portal_secrets.intersection(core_secrets))
-        if portal_core_aliases:
-            aliases = ", ".join(portal_core_aliases)
-            msg = f"Portal API secret(s) {aliases} cannot alias core application or database secrets"
-            raise ValueError(msg)
-        privileged = core_secrets | portal_secrets
-        control_plane_owners: dict[str, tuple[int, str]] = {}
-        for stone_index, stone in enumerate(soulstones):
-            for secret_name in stone.control_plane_secret_names:
-                previous = control_plane_owners.get(secret_name)
-                if previous is not None:
-                    msg = (
-                        f"Soulstones '{previous[1]}' and '{stone.name}' cannot share control-plane "
-                        f"secret '{secret_name}'"
-                    )
-                    raise ValueError(msg)
-                control_plane_owners[secret_name] = (stone_index, stone.name)
-
+        """Validate declarations, then confine adapter-mounted secrets to their owners."""
+        privileged, control_plane_owners = validate_secret_declarations(
+            core_secret_names=(settings.server.web.secret_key_secret, settings.server.database.password_secret),
+            soulstones=soulstones,
+            portals=portals,
+        )
         for stone_index, (stone, plan) in enumerate(zip(soulstones, runtime_plans, strict=True)):
             runtime_secret_names = {podman_secret_source(secret) for secret in plan.secrets}
-            data_plane_secrets = {
-                *stone.secret_env_files.values(),
-                *stone.control_plane_secret_names,
-                *runtime_secret_names,
-            }
-            overlap = sorted(data_plane_secrets.intersection(privileged))
+            overlap = sorted(runtime_secret_names.intersection(privileged))
             if overlap:
                 msg = (
                     f"Soulstone '{stone.name}' secret(s) {', '.join(overlap)} must be distinct "
@@ -439,18 +415,15 @@ class Transmuter:
                 raise ValueError(msg)
 
             # A runtime adapter may mount its own control document into the
-            # runtime it controls (TabbyAPI requires this), but Rune-level data
-            # secrets must never alias any control-plane document, and an
-            # adapter must never mount a document owned by another Soulstone.
-            rune_aliases = sorted(set(stone.secret_env_files.values()).intersection(control_plane_owners))
+            # runtime it controls (TabbyAPI requires this), but must never
+            # mount a document owned by another Soulstone.
             foreign_runtime_aliases = sorted(
                 secret_name
                 for secret_name in runtime_secret_names
-                if (owner := control_plane_owners.get(secret_name)) is not None and owner[0] != stone_index
+                if (owner := control_plane_owners.get(secret_name)) is not None and owner != stone_index
             )
-            forbidden_aliases = sorted({*rune_aliases, *foreign_runtime_aliases})
-            if forbidden_aliases:
-                aliases = ", ".join(forbidden_aliases)
+            if foreign_runtime_aliases:
+                aliases = ", ".join(foreign_runtime_aliases)
                 msg = (
                     f"Soulstone '{stone.name}' data-plane secret(s) {aliases} cannot alias "
                     "a Soulstone control-plane secret"

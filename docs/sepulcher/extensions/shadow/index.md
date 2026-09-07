@@ -25,16 +25,15 @@ possibility fashioned apart from actuality while it awaits measurement. Its expl
 and honest handling come from project law, not from the source term. **Phantasma** is Shadow's
 isolated expansion mode; evaluation remains elsewhere.
 
-Shadow is **Designed**. No simulation Rune or schema, runnable Pattern, branch Graph or store,
-budgeted search, workspace manager, Shadow–Tomb integration, evaluation, verified collapse or
-promotion, or Branch Reaper ships. [ADR
-31](../../../adr/31-simulation.md) owns the design; [State of
-Work](../../../state-of-the-work.md#shadow-simulation) owns delivery.
+Shadow is **Designed**; no operational branch, workspace, or collapse path ships.
+[ADR 31](../../../adr/31-simulation.md) owns the design, and [State of
+Work](../../../state-of-the-work.md#shadow-simulation) records delivery.
 
 ## Choose an office
 
-[Dancer](./dancer.md) opens alternatives through a declared Lens without ranking or choosing among
-them.
+[Dancer](./dancer.md) opens alternatives through a declared
+[Shadow Lens](../../../adr/20-agents.md#mechanical-cognitive-postures), an operational Posture,
+without ranking or choosing among them.
 
 [Hunter](./hunter.md) reviews one named candidate in a separate Invocation, exposing missing
 evidence and boundary failures without inventing its replacement.
@@ -51,8 +50,8 @@ merge, deploy, publish, purchase, restore, or promote itself.
 
 A rank or “winner” inside the experiment remains only a search result. Failed and ineligible
 branches retain required findings, artifacts, provenance, and residue before cleanup. Branch
-Reaper names that cleanup discipline and its receipt; it does not require another child route.
-Deleting a directory cannot settle processes, leases, credentials, ports, or shared effects.
+Reaper names that cleanup discipline and its receipt. Deleting a directory cannot settle
+processes, leases, credentials, ports, or shared effects.
 
 Jujutsu may suit a future tracked-change workspace, but it supplies no execution sandbox. Unsafe
 execution requires its own admitted boundary.

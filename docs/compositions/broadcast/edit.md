@@ -5,45 +5,20 @@ icon: material/timeline-text-outline
 
 # :material-timeline-text-outline: Edit
 
-Edit assembles approved words, visual material, and sound into the final editorial timeline. This
-is where audiovisual relation becomes Broadcast's judgment rather than an implicit side effect of
-either producing craft.
+An accepted image, music master, spoken edition, and room tone still need an editor to decide how they meet. Edit makes that audiovisual relation explicit in one revisioned timeline.
 
 ## Admit the assets
 
-Each `VisualAssetBundle@1`, `MusicAssetBundle@1`, `TimedLanguageAssetBundle@1`, and
-`PictureSoundBundle@1` enters by exact digest, semantic role, constraints, provenance, use
-boundary, validators, findings, and approval. Broadcast records its own asset-admission receipt.
-It cannot amend Voidlight, Riffmaw, or Language Edition lineage, and an upstream producer cannot publish
-through an asset request.
+Admit `VisualAssetBundle@1`, `MusicAssetBundle@1`, `TimedLanguageAssetBundle@2`, and `PictureSoundBundle@1` by exact digest, semantic role, limits, provenance, use boundary, validators, findings, and approval. Broadcast records a separate `SemanticFacetAdmissionReceipt@1` for each role, including the compound digest when facets share a Prism parent. Producer lineage remains with Voidlight, Riffmaw, or Language Edition.
 
-`VisualAssetRequest@1` asks [Voidlight](../voidlight/) for a visual role, target profile, timing,
-constraints, source or likeness requirements, and request digest. `MusicAssetRequest@1` asks
-[Riffmaw](../riffmaw/) for an exact musical role and timing. `LanguageVersionRequest@1` asks
-[Language Edition](../language-edition/) for one source-aligned language edition. `PictureSoundBrief@1` opens
-[Broadcast's own picture-sound work](sound.md). No handoff shares a Sigil, secret, provider
-session, approval, or downstream authority.
+`VisualAssetRequest@1` asks Voidlight for role, target, timing, constraints, source/likeness requirements, and request digest. `MusicAssetRequest@1` asks Riffmaw for musical role/timing. `LanguageVersionRequest@2` asks Language Edition for source-aligned words and performance; `PictureSoundBrief@1` opens Broadcast's own sound work. These requests carry no credentials, Sigils, sessions, approvals, or downstream effect authority.
 
 ## Own the timeline
 
-The edit binds script spans, narration, captions, storyboard decisions, visual, musical,
-timed-language, and picture-sound revisions, and transitions to one explicit timebase. A
-`MusicCueMap@1` can expose musical events
-and a `PictureSoundCueMap@1` can expose editorial sound events; Broadcast decides the final
-placement and cut. Retime, replacement, or changed words create a new timeline revision and stale
-affected approvals.
+Bind script spans, narration, captions, storyboard, all asset revisions, and transitions to an explicit timebase. `MusicCueMap@1` and `PictureSoundCueMap@1` expose producer events; Broadcast chooses placement and cut. Retime, replacement, and changed words create a successor timeline and stale affected approvals.
 
-Review can return attributed findings against pacing, claim-to-image relation, continuity,
-caption timing, legibility, loudness balance, or the target profile. `broadcast.review_package@1`
-does not change accepted material. `broadcast.revise_from_correction@1` admits one bounded forward
-repair. A mismatched digest, timebase, claim revision, or use boundary produces a finding or
-refusal rather than a best-effort edit.
+`broadcast.review_package@2` returns findings against pacing, claim/image relation, continuity, captions, legibility, loudness balance, and target fit. `broadcast.revise_from_correction@2` permits a bounded forward repair. Wrong digests, timebases, claims, or use limits produce findings/refusal instead of an approximate edit.
 
-Generative video editing remains an upstream visual effect even when it accepts a source clip.
-Broadcast may request a new Voidlight revision, but it does not hide stochastic regeneration
-inside a deterministic trim. FFmpeg and equivalent pinned tools may execute probing, trim,
-concat, retime, overlay, mix, mux, and encode operations under this timeline; the executable does
-not own editorial judgment or silently approve a generated visual, musical, dialogue, or
-picture-sound candidate.
+Generative video editing requests new upstream visual work. It cannot hide inside a deterministic trim. Pinned FFmpeg or equivalent tools may probe, trim, concatenate, retime, overlay, mix, mux, and encode under the timeline; they neither decide the edit nor admit stochastic media facets.
 
-The accepted timeline passes to [Render](render.md); it contains no permission to publish.
+[Render](render.md) receives the accepted timeline without permission to publish.

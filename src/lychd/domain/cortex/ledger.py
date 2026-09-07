@@ -54,9 +54,8 @@ __all__ = [
 class ConsentAdmissionEvidence:
     """Settled consent truth required by the non-durable Run adapter.
 
-    PostgreSQL re-reads and locks the canonical Consent row in the same transaction.
-    The loop-confined adapter has no shared database, so its caller must supply the
-    exact verdict read from the consent authority before the admission CAS.
+    PostgreSQL locks the Run and re-reads its exact Consent owner in that transaction.
+    The memory adapter instead requires the caller's freshly read settled verdict.
     """
 
     consent_id: str
@@ -114,6 +113,7 @@ def _intent_payload(intent: Intent, *, idempotency_key: str | None = None) -> di
         "sigil_name": intent.sigil_name,
         "sigil_scopes": sorted(intent.sigil_scopes),
         "priority": intent.priority,
+        "admitted_capability_key": intent.admitted_capability_key,
         **({"idempotency_key": idempotency_key} if idempotency_key is not None else {}),
     }
 
@@ -136,7 +136,12 @@ def _legacy_pattern_manifest(workflow_name: str) -> dict[str, Any]:
 
 
 class RunLedger(Protocol):
-    """The run-truth surface consumed by the engine and the ghoul plane."""
+    """Run, delivery and event operations used by RunEngine and perform_run.
+
+    Use exact-generation methods for claims and settlement, ``park_*`` to bind a
+    wait owner, and ``try_admit_*`` to resume that owner once. ``set_status`` validates
+    ordinary state edges; it does not substitute for those ownership checks.
+    """
 
     async def create(
         self,
@@ -190,11 +195,7 @@ class RunLedger(Protocol):
         ...
 
     async def set_status(self, run_id: str, status: RunStatus, *, error: str | None = None) -> None:
-        """Advance a run's status (validated against the state machine)."""
-        ...
-
-    async def bump_enqueue_seq(self, run_id: str) -> int:
-        """Increment and return the run's enqueue seq (unique SAQ keys across hops)."""
+        """Validate a state edge; consent and delegate resumes require ``try_admit_*``."""
         ...
 
     async def rotate_delivery(self, run_id: str, *, enqueue_seq: int) -> int | None:
@@ -202,7 +203,10 @@ class RunLedger(Protocol):
         ...
 
     async def try_claim_run(self, run_id: str, *, enqueue_seq: int) -> bool:
-        """Claim QUEUED → RUNNING only for this exact published delivery hop."""
+        """Claim QUEUED → RUNNING for this exact PENDING or PUBLISHED delivery.
+
+        A broker worker may arrive before publication acknowledgement is recorded.
+        """
         ...
 
     async def try_fail_queued(self, run_id: str, *, enqueue_seq: int, error: str) -> bool:
@@ -234,10 +238,6 @@ class RunLedger(Protocol):
         error: str | None = None,
     ) -> bool:
         """Settle one exact claimed hop to a terminal status."""
-        ...
-
-    async def set_consent(self, run_id: str, consent_id: str | None) -> None:
-        """Record (or clear) the consent id a run is parked on."""
         ...
 
     async def park_consent(self, run_id: str, consent_id: str) -> None:
@@ -293,7 +293,7 @@ class RunLedger(Protocol):
         after: tuple[datetime, str] | None = None,
         limit: int = 100,
     ) -> list[RunRecord]:
-        """Return one stable keyset page of QUEUED Runs with relayable deliveries."""
+        """Page every QUEUED Run by update time/id, including missing or corrupt deliveries."""
         ...
 
     async def get_by_consent(self, consent_id: str) -> RunRecord | None:
@@ -307,15 +307,11 @@ class RunLedger(Protocol):
         consent_id: str,
         evidence: ConsentAdmissionEvidence | None = None,
     ) -> int | None:
-        """Atomically admit a parked run and allocate its next enqueue sequence.
+        """Admit the exact settled consent owner and allocate one resume delivery.
 
-        The SINGLE resume-admission gate (F1/F4): returns the new sequence iff THIS
-        caller performed the transition. Concurrent resumes, and an `engine.resume_consent`
-        racing `perform_run`'s post-flip re-check, all funnel here so exactly one
-        sequence is allocated and enqueued. ``consent_id`` must own the current wait
-        so a historical verdict cannot advance a later gate. The in-memory adapter
-        additionally requires exact settled evidence because it has no shared DB row
-        to lock; PostgreSQL re-establishes the same truth transactionally.
+        Only the winning caller receives the new sequence; concurrent or historical
+        resumes return ``None``. Memory requires caller-supplied settled evidence;
+        PostgreSQL re-reads the Consent while holding the Run lock.
         """
         ...
 
@@ -391,13 +387,10 @@ class InMemoryRunLedger:
     """Loop-confined, DB-free Run ledger for tests and the memory profile."""
 
     def __init__(self, *, honor_intent_run_id: bool = False) -> None:
-        """Create an empty ledger.
+        """Create an empty ledger; ``honor_intent_run_id`` enables fixed test IDs.
 
-        `honor_intent_run_id` is a TEST-ONLY seam (default off): when set, `create`
-        adopts `intent.run_id` as the canonical id so unit tests can key off stable
-        ids. Production NEVER sets it — identity is always ledger-minted (R4/S3),
-        mirroring `DbRunLedger` (whose id is always the row UUID). Do NOT overload
-        the advisory `Intent.run_id` field to route identity in production.
+        Production leaves it off: the ledger owns Run identity, and ``Intent.run_id``
+        is only caller correlation. Idempotent admission derives identity from its key.
         """
         self._runs: dict[str, RunRecord] = {}
         self._events: dict[str, list[RunEvent]] = {}
@@ -415,13 +408,7 @@ class InMemoryRunLedger:
         priority: int,
         hold_delivery: bool = False,
     ) -> RunRecord:
-        """Persist a fresh run as QUEUED under a ledger-assigned canonical id.
-
-        S3/R4 (run_id duality dies): identity is ALWAYS the LEDGER's to mint,
-        mirroring `DbRunLedger` (whose id is the row UUID). `intent.run_id` is
-        advisory client-correlation ONLY and is never adopted as the identity —
-        except under the test-only `honor_intent_run_id` constructor seam.
-        """
+        """Create a QUEUED Run and initial delivery, using the constructor's ID policy."""
         run_id = intent.run_id if (self._honor_intent_run_id and intent.run_id) else str(uuid4())
         return self._insert_run(
             intent,
@@ -502,6 +489,7 @@ class InMemoryRunLedger:
             sigil_name=intent.sigil_name,
             sigil_scopes=intent.sigil_scopes,
             requested_priority=intent.priority,
+            admitted_capability_key=intent.admitted_capability_key,
         )
         stored = _copy_run_record(record)
         self._runs[stored.run_id] = stored
@@ -593,15 +581,6 @@ class InMemoryRunLedger:
             )
         elif _settles_delivery(status):
             self._settle_delivery(run_id, record.enqueue_seq)
-
-    async def bump_enqueue_seq(self, run_id: str) -> int:
-        """Allocate a fresh retry delivery for compatibility with explicit callers."""
-        record = self._require(run_id)
-        rotated = await self.rotate_delivery(run_id, enqueue_seq=record.enqueue_seq)
-        if rotated is None:
-            msg = f"Run {run_id!r} has no rotatable current delivery."
-            raise RuntimeError(msg)
-        return rotated
 
     async def rotate_delivery(self, run_id: str, *, enqueue_seq: int) -> int | None:
         """Fence and replace one unclaimed in-memory delivery."""
@@ -723,10 +702,6 @@ class InMemoryRunLedger:
         _apply_status(record, status, error=error)
         self._settle_delivery(run_id, enqueue_seq)
         return True
-
-    async def set_consent(self, run_id: str, consent_id: str | None) -> None:
-        """Record (or clear) the consent id."""
-        self._require(run_id).consent_id = consent_id
 
     async def park_consent(self, run_id: str, consent_id: str) -> None:
         """Bind and park one in-memory consent wait in the same loop turn."""
@@ -1004,11 +979,10 @@ class DbRunLedger:
         priority: int,
         hold_delivery: bool,
     ) -> tuple[RunRecord, bool]:
-        """Commit Run+delivery and resolve a deterministic concurrent insert.
+        """Commit Run and delivery together; resolve same-key concurrent admission.
 
-        Session FK (4C-6): set the real `session_id` when the intent's session id parses
-        as a UUID (it always does once `DbBridgeSessionStore` mints UUID ids); otherwise
-        leave it NULL. The FK is for joins; the `intent` JSONB stays the Intent record.
+        UUID session IDs also populate the relational foreign key. The complete
+        Intent, including non-UUID session IDs, remains in JSONB.
         """
         from sqlalchemy.exc import IntegrityError
 
@@ -1171,13 +1145,10 @@ class DbRunLedger:
     _CAS_RETRIES = 1
 
     async def set_status(self, run_id: str, status: RunStatus, *, error: str | None = None) -> None:
-        """Advance a Run status with bounded compare-and-swap concurrency.
+        """Validate the state edge, then condition the write on the observed status.
 
-        The state machine is validated against the row read at the top, then the write
-        is a conditional ``UPDATE ... WHERE id = :id AND status = :expected``. If a
-        competing writer moved the row, the ledger re-reads once and retries only when
-        the fresh edge remains legal. An already reached target is a benign no-op;
-        every genuinely illegal fresh edge raises ``IllegalRunTransitionError``.
+        A competing write permits one fresh read and retry. An already reached target
+        is a no-op; an illegal edge or exhausted retry raises ``IllegalRunTransitionError``.
         """
         from sqlalchemy import update
 
@@ -1232,15 +1203,12 @@ class DbRunLedger:
                     return  # CAS won
                 await session.rollback()
                 session.expire_all()
-                # Lost the CAS: loop re-reads the fresh row. If the fresh edge is legal
-                # the retry lands it; if illegal, `_apply_status` raises on the re-read;
-                # if the fresh row already IS the target, the top-of-loop check returns.
-            # Retries exhausted (the row kept moving under us): rule on the fresh truth.
+            # One final read distinguishes a reached target from an exhausted retry.
             await self._raise_on_lost_cas(session, run_id, status)
 
     @staticmethod
     async def _raise_on_lost_cas(session: AsyncSession, run_id: str, target: RunStatus) -> None:
-        """Re-read the fresh truth and rule on it after the bounded CAS retry ran out."""
+        """Accept a concurrently reached target; otherwise report the current state."""
         from lychd.db.models import Run
 
         fresh = await session.get(Run, UUID(run_id))
@@ -1251,18 +1219,6 @@ class DbRunLedger:
             msg = f"Unknown run: {run_id}"
             raise KeyError(msg)
         raise IllegalRunTransitionError(run_id, current, target)
-
-    async def bump_enqueue_seq(self, run_id: str) -> int:
-        """Allocate a fresh retry delivery for compatibility with explicit callers."""
-        record = await self.get(run_id)
-        if record is None:
-            msg = f"Unknown run: {run_id}"
-            raise KeyError(msg)
-        rotated = await self.rotate_delivery(run_id, enqueue_seq=record.enqueue_seq)
-        if rotated is None:
-            msg = f"Run {run_id!r} has no rotatable current delivery."
-            raise RuntimeError(msg)
-        return rotated
 
     async def rotate_delivery(self, run_id: str, *, enqueue_seq: int) -> int | None:
         """Fence and replace one unclaimed PostgreSQL delivery."""
@@ -1500,30 +1456,6 @@ class DbRunLedger:
             await session.commit()
             return result.rowcount == 1
 
-    async def set_consent(self, run_id: str, consent_id: str | None) -> None:
-        """Bind or clear the exact durable Consent owner without changing Run status."""
-        from sqlalchemy import select
-
-        from lychd.db.models import Consent, Run
-
-        consent_uuid = UUID(consent_id) if consent_id is not None else None
-        async with self._session_factory() as session, session.begin():
-            row = await session.scalar(select(Run).where(Run.id == UUID(run_id)).with_for_update())
-            if row is None:
-                msg = f"Unknown run: {run_id}"
-                raise KeyError(msg)
-            if consent_uuid is not None:
-                owner = await session.scalar(
-                    select(Consent.run_id).where(
-                        Consent.id == consent_uuid,
-                        Consent.run_id == row.id,
-                    )
-                )
-                if owner != row.id:
-                    msg = f"Consent {consent_id!r} does not belong to Run {run_id!r}."
-                    raise RuntimeError(msg)
-            row.consent_id = consent_uuid
-
     async def park_consent(self, run_id: str, consent_id: str) -> None:
         """Lock the Run, verify its Consent authority, and commit the parked hop."""
         from sqlalchemy import select
@@ -1675,11 +1607,9 @@ class DbRunLedger:
         )
 
     async def next_seq(self, run_id: str) -> int:
-        """Return the next unused Step seq for a run (max(seq)+1, or 0 if none).
+        """Return max retained Step sequence + 1, or 0 for an empty history.
 
-        Feeds the R1 channel-seq seeding: reconcile/resume open a fresh channel with
-        `from_seq=next_seq(run_id)` so the terminal (and any resumed) emit lands past
-        the persisted Step history instead of colliding with `uq_step_run_seq`.
+        Recovery and resume seed new event channels here to preserve Step uniqueness.
         """
         from sqlalchemy import func, select
 
@@ -1794,7 +1724,7 @@ class DbRunLedger:
         try:
             cid = UUID(consent_id)
         except ValueError:
-            return None  # malformed id → unknown (mirror get()'s do-not-invent-a-run stance)
+            return None
         async with self._session_factory() as session:
             row = await session.scalar(
                 select(Run).where(
@@ -1811,7 +1741,7 @@ class DbRunLedger:
         consent_id: str,
         evidence: ConsentAdmissionEvidence | None = None,
     ) -> int | None:
-        """Lock the exact decided Consent owner and allocate one resume delivery."""
+        """Lock the Run, verify its exact settled Consent, and allocate one resume delivery."""
         from sqlalchemy import select
 
         from lychd.db.models import Consent, Run, RunDelivery
@@ -1946,6 +1876,7 @@ class DbRunLedger:
                 "sigil_name": str(intent.get("sigil_name", row.sigil_name)),  # type: ignore[attr-defined]
                 "sigil_scopes": scopes,
                 "priority": intent.get("priority"),
+                "admitted_capability_key": intent.get("admitted_capability_key"),
             }
         )
         return RunRecord(
@@ -1961,6 +1892,7 @@ class DbRunLedger:
             sigil_name=str(intent.get("sigil_name", row.sigil_name)),  # type: ignore[attr-defined]
             sigil_scopes=scopes,
             requested_priority=parsed_intent.priority,
+            admitted_capability_key=parsed_intent.admitted_capability_key,
             attempt=int(row.attempt),  # type: ignore[attr-defined]
             enqueue_seq=int(row.enqueue_seq),  # type: ignore[attr-defined]
             error=row.error,  # type: ignore[attr-defined]

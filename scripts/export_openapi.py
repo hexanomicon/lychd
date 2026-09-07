@@ -9,6 +9,7 @@ from litestar import Litestar
 
 from lychd.interface.web import (
     AltarController,
+    AtlasController,
     BridgeController,
     LoomController,
     NexusController,
@@ -26,6 +27,7 @@ def main() -> None:
     app = Litestar(
         route_handlers=[
             AltarController,
+            AtlasController,
             BridgeController,
             NexusController,
             LoomController,

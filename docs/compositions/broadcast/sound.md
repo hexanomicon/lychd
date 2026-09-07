@@ -5,39 +5,20 @@ icon: material/surround-sound
 
 # :material-surround-sound: Picture-Bound Sound
 
-Broadcast owns effects, foley, room tone, environmental beds, and ambience when their meaning and
-acceptance depend on an exact picture, scene, cut, claim, or editorial timeline. This is
-**picture-bound sound design**, not music, ordinary speech, or a universal sonic library.
+A door closes in a small room. Its impact, distance, reverberant tail, and the silence around it belong to the meaning of that exact shot. Broadcast calls this **picture-bound sound design**: effects, foley, room tone, environmental beds, and ambience judged against picture, scene, cut, claim, or editorial timeline.
 
-`broadcast.design_picture_sound@1` begins with a `PictureSoundBrief@1`, locked picture digest and
-timebase, semantic event and space roles, source and rights references, target channel/loudness
-profile, and acceptance criteria. Recording, synthesis, a compound video-model result, licensed
-material, layering, or signal processing may propose candidates; every layer retains its source,
-tool or provider revision, transform, rights posture, time relation, and digest.
+`broadcast.design_picture_sound@2` starts with `PictureSoundBrief@1`, locked picture digest/timebase, event/space roles, source/rights references, target channel/loudness profile, and acceptance criteria. Recording, synthesis, licensed layers, processing, or a compound video-model result can propose candidates. Each layer retains source, implementation, transforms, rights, time relation, and digest.
 
-The accepted `PictureSoundRevision@1` and optional `PictureSoundCueMap@1` bind event, place,
-material, distance, perspective, duration, continuity, cut relation, and uncertainty. Technical
-probes can establish boundaries, clipping, channels, loudness, and format. They cannot decide that
-the sound communicates the visible event or serves the editorial purpose; Broadcast owns that
-review. A selected set seals as `PictureSoundBundle@1` for exact admission by [Edit](edit.md).
+## Hear the scene, then admit the result
 
-Riffmaw owns music, including musical vocals and the musical mix/master. Language Edition owns spoken
-same- or cross-language performance and captions against a locked source. Echo owns speech
-lifecycle only. Application-specific game sound may remain with Foundry; a reusable standalone
-sound library serving independent applications would need to prove a future standalone-sound
-Composition with its own records, judgment, finish, and recovery. Broadcast does not mint that
-owner pre-emptively.
+`PictureSoundRevision@1` and optional `PictureSoundCueMap@1` bind event, place, material, distance, perspective, duration, continuity, cut relation, and uncertainty. Probes measure boundaries, clipping, channels, loudness, and format. Editorial review decides whether the sound communicates the visible event. Accepted selections seal as `PictureSoundBundle@1` for [Edit](edit.md).
 
-When a video model emits synchronized sound, Core retains one technical attempt while Prism records
-the compound container, child-stream digests, timebase, and technical provenance. Broadcast may
-admit the picture-sound facet only after its role and rights are explicit. Unexpected or
-inseparable audio is quarantined or the declared compound use is refused; it is never accepted
-because `generate_sound` happened to be enabled.
+Riffmaw owns music; Language Edition owns spoken performance/captions against a locked source; Echo owns speech lifecycle; Foundry may own game-event sound. A reusable standalone library would need its own proved Composition records, judgment, finish, and recovery. Broadcast's scene does not create that owner.
 
-Changing the picture digest, cut, source claim, timebase, or sound brief stales affected picture
-sound without rewriting history. Lost acknowledgement from a recorder, generator, renderer, or
-destination remains `unknown` until reconciled. A correction creates a forward revision, and
-successful sound design grants no final mux or publication authority.
+## When the video model also returns sound
 
-Continue with [Edit](edit.md) for final audiovisual relation and [Render](render.md) for the local
-publication candidate.
+Before execution, `MediaFacetAuthoritySet@1` declares `picture_sound`, `broadcast.studio` revision `4`, and exact `PictureSoundBrief@1` digest. Core retains the technical attempt; Prism preserves compound/child digests, timebase, and provenance. Broadcast independently issues `SemanticFacetAdmissionReceipt@1` after technical settlement. Successful demux, another owner's judgment, or `generate_sound` cannot replace it. Unexpected sound is quarantined/deleted; inseparable media requires every necessary owner to accept the exact compound use.
+
+A changed picture, cut, source claim, timebase, or brief stales affected sound. Recorder, generator, renderer, or destination acknowledgement loss remains `unknown` until reconciled. Corrections create successors; sound acceptance itself supplies no final mux or publication authority.
+
+Continue through [Edit](edit.md) and [Render](render.md).

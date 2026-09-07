@@ -8,11 +8,10 @@ validator raises loudly if any is missing (never silently downgraded).
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 from typing import Any, ClassVar, Literal
 
-from pydantic import Field, model_validator
+from pydantic import AwareDatetime, Field, model_validator
 
 from lychd.config.runes import RuneConfig
 
@@ -51,7 +50,9 @@ tool_pattern = "request_coven_swap"
     sigil_pattern: str = Field(default="*", description="fnmatch pattern over the sigil name.")
     tool_pattern: str = Field(description="fnmatch pattern over the tool name.")
     constraints: dict[str, Any] = Field(default_factory=dict, description="Arg allowlists / path prefixes.")
-    expires_at: datetime | None = Field(default=None, description="Absolute expiry; required for ZTE.")
+    expires_at: AwareDatetime | None = Field(
+        default=None, description="Absolute expiry with an explicit timezone; required for ZTE."
+    )
     max_uses: int | None = Field(default=None, ge=1, description="Total grant budget; required for ZTE.")
 
     @model_validator(mode="after")

@@ -5,52 +5,17 @@ icon: material/tools
 
 # :material-tools: Workshop
 
-Workshop keeps one technical service case legible from the first reported symptom to a scoped,
-verified disposition. Its first service profile covers passenger vehicles; **Mechanic** is the
-proposed first Product if Workshop enters the Portfolio. The operator identifies the exact vehicle,
-admits technical evidence, supplies observations or measurements, and receives the next
-policy-admitted diagnostic-check proposal without mistaking fluent advice for professional authority.
+An intermittent no-start complaint is a service case before it is a diagnosis. Workshop would keep the exact vehicle, reported symptom, sources, competing hypotheses, requested checks, and observed results together until the evidence supports a scoped disposition—or makes a qualified handoff the useful result.
 
-This candidate study was reviewed on **2026-08-09**. It tests an application boundary, not a
-new Extension Domain, accepted Portfolio membership, a registered Pattern, a delivered
-Workshop path, or permission to inspect or repair a live machine.
-
-The inert `src/lychd/compositions/workshop/` package is legacy candidate scaffolding, carries no
-architectural or delivery truth, and is not precedent for future candidate stubs. It exports no
-schema, service, registry contribution, Pattern or effect path; package presence does not change
-the [Portfolio delivery boundary](../../state-of-the-work.md#composition-portfolio-delivery).
+This candidate study, reviewed **2026-08-09**, tests that reusable application boundary. Workshop is outside the accepted Portfolio; **Mechanic** is its proposed first Product using the passenger-vehicle service profile. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) retains the delivery boundary.
 
 ## Candidate contract
 
-| Field | Candidate contract |
-| --- | --- |
-| **Identity** | `workshop.service` revision `1` |
-| **Principal Pattern** | `workshop.service_case@1` |
-| **Proposed first Product** | **Mechanic**, backed by the passenger-vehicle service profile rather than a separate Composition contract |
-| **Begins with** | an admitted `WorkshopServiceRequest@1`, case-scoped asset identity and configuration evidence, reported condition, purpose, hazards, operator role, pinned service profile, attributed sources and observations, and authority and privacy ceilings |
-| **Can return** | `WorkshopServiceDisposition@1`: scoped verified restoration, containment advice or attributable containment evidence, professional handoff, exact blocker, unresolved result, refusal, or indeterminate action |
-| **Stops before** | emergency response, professional certification or statutory inspection, unsafe or unqualified work, autonomous machine control, guard or interlock bypass, unsupported part identity, purchase or payment, or declaring an asset generally safe from a conversational result |
+`workshop.service` revision `1` proposes `workshop.service_case@1`. Its `WorkshopServiceRequest@1` binds purpose, case-scoped asset identity/configuration evidence, condition, hazards, operator role, pinned service profile, attributed sources/observations, and privacy/authority ceilings.
 
-`WorkshopServiceCase@1` owns only the service-case truth: purpose and assigned operator; exact
-asset snapshot and its assurance; attributed symptoms, manuals, bulletins, schematics, fault
-codes, images, statements and measurements; revisioned hypotheses and contradictions; proposed
-checks, prerequisites, hazards, tools, results and interruptions; part or tool requirements; and
-the final verification scope. Chat history is not that record, and a hypothesis never silently
-becomes a fact.
+The proposed `WorkshopServiceCase@1` owns that purpose and operator assignment; asset assurance; symptoms, manuals, bulletins, schematics, codes, images, statements and measurements; hypotheses and contradictions; checks, prerequisites, hazards, tools, results and interruptions; part/tool requirements; and verification scope. A hypothesis remains separate from an observed fact, and chat is no substitute for the record.
 
-## One workshop, versioned practices
-
-`WorkshopServiceProfile@1` is a versioned rule set inside Workshop, not a new Core primitive. It
-pins an asset ontology, identity and compatibility keys, acceptable sources, diagnostic checks,
-units, tools, qualifications, hazards, verification recipes and stop rules. The first profile is
-`workshop.automotive_passenger` revision `1`.
-
-A tractor, CNC machine, boiler or appliance may later receive another profile only while it keeps
-the same service-case truth and honest finish. A trade whose authority, records or recovery no
-longer fit that contract earns another Composition and a typed handoff instead. A Product may
-select the profile and its supported use cases; a client projection may change presentation, a
-[Persona](../../adr/32-identity.md) may change voice and commitments, and an Agent Posture may
-change one cognitive step. None carries technical or safety law.
+`WorkshopServiceDisposition@1` can return scoped verified restoration, containment advice or attributable containment evidence, professional handoff, exact blocker, unresolved result, refusal, or indeterminate action. It cannot certify a machine generally safe, perform statutory inspection, admit unsafe/unqualified work, control a machine, bypass guards, invent part identity, purchase, or pay. Emergency response is outside this office.
 
 ## The guided case
 
@@ -60,69 +25,32 @@ identify asset → triage hazards → admit evidence → revise hypotheses
 → verify, advise containment, block, refuse, or hand off
 ```
 
-An operator may open an intermittent no-start case from a phone, speak through explicit
-push-to-talk, attach a fault-code report and finite images, then continue through a headset.
-Workshop pins the exact configuration and applicable source release, then requests one
-non-invasive, engine-off inspection with prerequisites, reason and stop conditions. The reported
-result remains an attributed observation. If the evidence still conflicts, Workshop returns a
-qualified handoff packet rather than guessing or prescribing live repair.
+The operator opens the no-start case from a phone, deliberately speaks through push-to-talk, and attaches a code report and finite images. Work may continue through a headset while retaining the same case. Workshop pins configuration and applicable source release, then proposes one non-invasive, engine-off inspection with reason, prerequisites, and stop conditions. Its reported result remains an attributed observation. Conflicting evidence can end in a qualified handoff instead of another speculative repair.
 
-[Sight](../../sepulcher/extensions/prism/sight.md) may return an uncertain candidate connector
-region; the mobile or glasses client projects it. The estimate proves neither component identity,
-fault cause nor action safety. Future glasses remain another view of the same service case and
-Composition. Silence, “seems fine,” an unobserved repair or an unacknowledged action cannot close
-the case.
+[Sight](../../sepulcher/extensions/prism/sight.md) may nominate a connector region, and a phone or future glasses may show it. The estimate proves no component identity, cause, or action safety. Silence, “seems fine,” unseen repair, and missing acknowledgement cannot close the case.
 
-Revision one guides no vehicle lifting or support, exposed high voltage or other hazardous energy,
-energized or rotating machinery, pressurized or combustible material, pyrotechnics, primary
-vehicle controls, or guard and interlock defeat. It may organize evidence and prepare a qualified
-handoff. Human consent does not manufacture competence, and local inference does not remove
-access, retention, deletion or workplace privacy duties.
+Revision one guides no lifting/support, exposed high voltage or hazardous energy, energized/rotating machinery, pressurized/combustible material, pyrotechnics, primary vehicle controls, or guard/interlock defeat. It can organize evidence for qualified help. Consent does not create competence; local inference retains access, retention, deletion, and workplace privacy duties.
+
+Neither this study nor the inert legacy `src/lychd/compositions/workshop/` scaffold supplies a schema, service, registry contribution, Pattern, effect path, or delivery evidence. The scaffold is no precedent for new candidate stubs.
+
+## One workshop, versioned practices
+
+`WorkshopServiceProfile@1` pins ontology, identity/compatibility keys, acceptable sources, checks, units, tools, qualifications, hazards, verification recipes, and stop rules. The first is `workshop.automotive_passenger` revision `1`. Another trade may use a profile only while the same service-case records, authority, recovery, and honest finish remain coherent. A materially different trade boundary needs another Composition.
+
+A Product selects profiles/use cases; a client changes presentation; a [Persona](../../adr/32-identity.md) changes discourse and commitments; a Posture changes a cognitive step. None owns technical or safety law.
 
 ## Proposed reuse beneath the Product
 
-If accepted, Workshop would be the canonical reusable Composition and Mechanic its first Product,
-not a duplicate engine or a renamed Composition. Until then both remain a candidate boundary and a
-Product study. Common workflow, authority, transport and memory boundaries follow the Portfolio's
-[Product boundary](../index.md#products-package-compositions) and [reuse
-law](../index.md#reuse-without-a-universal-helper).
+Companion, Echo, Tether, and Ward retain mobile controls, speech chronology, transport, authentication, grants, and revocation. Workshop retains purpose and case policy. Scout and Sight supply acquisition/visual evidence; Workshop judges source applicability and the next permitted check. [Scavenger](../scavenger/index.md) retains listing, seller, bargaining, commitment, payment, and parcel truth.
 
-| Existing office | What Workshop retains |
-| --- | --- |
-| [Companion](../companion/index.md), [Echo](../../sepulcher/extensions/echo.md), [Tether](../../sepulcher/extensions/tether.md) and [Ward](../../sepulcher/extensions/ward.md) | case purpose, object-specific application policy and field-conversation meaning—not capture, speech chronology, transport, authentication, grants or revocation |
-| [Scout](../../sepulcher/extensions/scout.md) and [Sight](../../sepulcher/extensions/prism/sight.md) | source applicability, technical interpretation and a policy-admitted next-check proposal—not acquisition mechanics, pixels, regions or uncertainty |
-| [Scavenger](../scavenger/index.md) | exact part need and acceptance evidence—not Bazoš listings, sellers, bargaining, commitment, payment or parcels |
+`WorkshopPartRequirement@1` carries compatibility, quantity, condition, certification, and evidence needs to stock or Scavenger, without reservation or commitment authority. A stock owner can return exact snapshots and reservation/use/return receipts. Workshop records them; it cannot mutate ambient inventory.
 
-The proposed typed seams remain Workshop-owned rather than new shared primitives:
-
-| Projection | Minimum meaning |
-| --- | --- |
-| `WorkshopServiceRequest@1` | an asset owner or direct intake supplies purpose, case-scoped identity evidence, condition, hazards, operator role and ceilings |
-| `WorkshopPartRequirement@1` | Workshop supplies compatibility, quantity, condition, certification and evidence needs to a stock owner or [Scavenger](../scavenger/index.md), without reservation or commitment authority |
-| `WorkshopServiceDisposition@1` | Workshop returns outcome, verification scope, uncertainty, remaining hazards and evidence references; the asset owner retains return-to-service authority |
-
-An asset owner such as [Homestead](../homestead/index.md) may eventually consume these projections
-without giving Workshop its site, work order or controller envelope. A workshop stock owner may
-provide a versioned snapshot and authoritative reservation, use or return receipts. Workshop
-records those receipts against the case; it does not originate or mutate an ambient inventory.
+An asset owner such as [Homestead](../homestead/index.md) may supply the request and consume the disposition while retaining its site, work order, controller envelope, and return-to-service authority. Workshop's typed requests, part needs, and dispositions remain its proposed projections, not new Core primitives. [Products and Suites](../products-and-suites.md) explains settled handoffs versus live coordination.
 
 ## Honest settlement
 
-Verified restoration means only that the case-defined symptom and acceptance checks passed under
-recorded conditions; it is not blanket roadworthiness or certification. Containment advice is
-still advice; containment evidence names the acting human or controller and independent
-verification. A handoff carries identity, evidence, attempted checks, uncertainties and safety
-notes. Missing identity, source, observation, tool, part, qualification or authority returns an
-exact blocker; conflicting evidence or exhausted budget remains unresolved. An action with
-uncertain acknowledgement is indeterminate and is neither repeated nor treated as complete.
+Verified restoration means the case-defined symptom and checks passed under recorded conditions. Containment advice remains advice; containment evidence names the human/controller and independent verification. Handoff preserves identity, evidence, attempted checks, uncertainty, and hazards. Missing identity, source, observation, tool, part, qualification, or authority returns an exact blocker. Conflicts and exhausted budget remain unresolved; an uncertain action remains indeterminate and is not repeated.
 
-A future proving slice should use a network-disabled synthetic passenger-vehicle case with
-conflicting identity evidence, one pinned manual excerpt, finite images, one fault-code and
-measurement sequence, and fake stock evidence. It must prove identity refusal, visible source
-mismatch, one parked and resumed check without duplication, preserved Sight uncertainty,
-evidence-driven hypothesis revision, hazardous-work handoff, a part requirement without purchase
-authority, scoped verification, and interruption without invented completion. No live vehicle,
-public web, camera stream, purchase, actuator or repair enters the fixture.
+The first network-disabled synthetic passenger-vehicle fixture must include conflicting identity, a pinned manual excerpt, finite images, codes/measurements, and fake stock. It proves refusal and source mismatch, one parked/resumed check without duplication, Sight uncertainty, hypothesis revision, hazardous-work handoff, a part need without purchase, scoped verification, and interruption without invented completion. No live vehicle, public web, camera stream, purchase, actuator, or repair enters it.
 
-Related: [Composition Portfolio](../index.md) · [Homestead Maintenance](../homestead/maintenance.md)
-· [Scavenger](../scavenger/index.md)
+[Composition Portfolio](../index.md) · [Homestead Maintenance](../homestead/maintenance.md) · [Scavenger](../scavenger/index.md)

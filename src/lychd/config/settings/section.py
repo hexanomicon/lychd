@@ -10,4 +10,4 @@ class SettingsSection(BaseModel):
 
     # A misspelled operator setting must fail at startup, never be silently ignored.
     # Bare string literals immediately after fields become Pydantic schema descriptions.
-    model_config = ConfigDict(extra="forbid", use_attribute_docstrings=True)
+    model_config = ConfigDict(extra="forbid", use_attribute_docstrings=True, hide_input_in_errors=True)

@@ -4,8 +4,9 @@ from __future__ import annotations
 # pyright: reportPrivateUsage=false
 import asyncio
 import json
+import os
 import stat
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
@@ -15,8 +16,10 @@ import pytest
 from pydantic import ValidationError
 
 from lychd.config.settings.orchestration import SwitchingSettings
+from lychd.domain.cortex.leases import AnimatorAdmission
 from lychd.domain.orchestration.actuator import (
     RuntimeActuationRestoredError,
+    RuntimeCancellationNoEffectError,
     RuntimePreconditionError,
     TransitionIntent,
 )
@@ -30,6 +33,7 @@ from lychd.system.services.runtime import (
     wait_for_host_reactor_idle,
 )
 from lychd.system.services.systemctl_process import SystemctlClientTimeoutError
+from tests.capability_workflows import build_capability_scenario
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -109,7 +113,7 @@ def _secure_reactor_dirs(tmp_path: Path) -> tuple[Path, Path]:
 
 
 @contextmanager
-def _exit_failure_lock() -> Iterator[None]:
+def _exit_failure_lock() -> Generator[None]:
     """Acquire successfully, then fail while relinquishing effect authority."""
     yield
     message = "synthetic post-effect lifecycle release failure"
@@ -119,7 +123,7 @@ def _exit_failure_lock() -> Iterator[None]:
 async def _wait_until_exists(path: Path) -> None:
     deadline = asyncio.get_running_loop().time() + 1.0
     while asyncio.get_running_loop().time() < deadline:
-        if path.exists():
+        if await asyncio.to_thread(path.exists):
             return
         await asyncio.sleep(0.001)
     pytest.fail(f"path was not published: {path}")
@@ -204,20 +208,47 @@ async def test_host_reactor_surfaces_terminal_outcome(
     assert list(inbox.iterdir()) == []
 
 
+@pytest.mark.parametrize("cancel", [False, True], ids=["claim-timeout", "cancel-before-claim"])
 @pytest.mark.asyncio
-async def test_host_reactor_timeout_retracts_only_unclaimed_delivery(
+async def test_unclaimed_host_reactor_delivery_reopens_manager_gates_for_retry(
     tmp_path: Path,
     mocker: MockerFixture,
+    *,
+    cancel: bool,
 ) -> None:
     mocker.patch("lychd.system.services.runtime._ACK_POLL_SECONDS", 0.001)
     inbox, journal = _secure_reactor_dirs(tmp_path)
-    actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=0.001)
+    scenario = build_capability_scenario(active={"a"})
+    actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1 if cancel else 0.001)
+    scenario.manager._actuator = actuator
+    published = asyncio.Event()
+    write_atomic = actuator._write_atomic
 
-    with pytest.raises(TimeoutError, match="did not claim"):
-        await actuator.apply(_intent())
+    def record_publication(intent: TransitionIntent) -> None:
+        write_atomic(intent)
+        published.set()
 
-    assert list(inbox.iterdir()) == []
-    assert list(journal.iterdir()) == []
+    mocker.patch.object(actuator, "_write_atomic", side_effect=record_publication)
+
+    for _attempt in range(2):
+        if cancel:
+            published.clear()
+            transition = asyncio.create_task(scenario.manager.request_transition("b:chat:b-model", 100))
+            await asyncio.wait_for(published.wait(), timeout=1)
+            transition.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await transition
+        else:
+            with pytest.raises(RuntimePreconditionError, match="did not claim"):
+                await scenario.manager.request_transition("b:chat:b-model", 100)
+
+        assert list(inbox.iterdir()) == []
+        assert list(journal.iterdir()) == []
+        assert scenario.world.active == {"a"}
+        assert scenario.manager.containment_reason is None
+        assert not scenario.broker.paused
+        assert scenario.leases.admission("a") is AnimatorAdmission.OPEN
+        assert scenario.leases.admission("b") is AnimatorAdmission.OPEN
 
 
 @pytest.mark.asyncio
@@ -242,10 +273,12 @@ async def test_host_reactor_claim_holds_fence_past_ack_timeout(
     await apply_task
 
 
+@pytest.mark.parametrize("cancellations", [1, 2])
 @pytest.mark.asyncio
 async def test_host_reactor_cancellation_waits_for_claimed_terminal_record(
     tmp_path: Path,
     mocker: MockerFixture,
+    cancellations: int,
 ) -> None:
     mocker.patch("lychd.system.services.runtime._ACK_POLL_SECONDS", 0.001)
     inbox, journal = _secure_reactor_dirs(tmp_path)
@@ -257,19 +290,24 @@ async def test_host_reactor_cancellation_waits_for_claimed_terminal_record(
     apply_task = asyncio.create_task(actuator.apply(_intent()))
     await _wait_until_exists(pending)
     pending.replace(processing)
-    apply_task.cancel()
-    await asyncio.sleep(0.01)
-    assert not apply_task.done()
-
-    processing.replace(completed)
-    with pytest.raises(asyncio.CancelledError):
+    try:
+        for _ in range(cancellations):
+            apply_task.cancel()
+            await asyncio.sleep(0.01)
+            assert not apply_task.done()
+    finally:
+        processing.replace(completed)
+    with pytest.raises(asyncio.CancelledError) as cancelled:
         await apply_task
+    assert type(cancelled.value) is asyncio.CancelledError  # Claimed completion is not a no-effect receipt.
 
 
+@pytest.mark.parametrize("cancellations", [1, 2])
 @pytest.mark.asyncio
 async def test_host_reactor_cancellation_fences_inflight_atomic_publish(
     tmp_path: Path,
     mocker: MockerFixture,
+    cancellations: int,
 ) -> None:
     inbox, journal = _secure_reactor_dirs(tmp_path)
     actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1)
@@ -287,8 +325,13 @@ async def test_host_reactor_cancellation_fences_inflight_atomic_publish(
     apply_task = asyncio.create_task(actuator.apply(_intent()))
     await asyncio.wait_for(started.wait(), timeout=1)
 
-    apply_task.cancel()
-    release.set()
+    try:
+        for _ in range(cancellations):
+            apply_task.cancel()
+            await asyncio.sleep(0.01)
+            assert not apply_task.done()
+    finally:
+        release.set()
     with pytest.raises(asyncio.CancelledError):
         await apply_task
 
@@ -296,37 +339,196 @@ async def test_host_reactor_cancellation_fences_inflight_atomic_publish(
     assert list(journal.iterdir()) == []
 
 
+@pytest.mark.parametrize("retraction_fails", [False, True], ids=["durable-retraction", "uncertain-retraction"])
 @pytest.mark.asyncio
-async def test_host_reactor_post_link_fsync_failure_retracts_exposed_delivery(
+async def test_post_link_failure_reopens_manager_only_after_durable_retraction(
     tmp_path: Path,
     mocker: MockerFixture,
+    *,
+    retraction_fails: bool,
 ) -> None:
     inbox, journal = _secure_reactor_dirs(tmp_path)
-    actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1)
+    scenario = build_capability_scenario(active={"a"})
+    scenario.manager._actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1)
     fsync_calls = 0
-    failure_message = "directory durability failed"
+    publication_error = OSError("publication durability failed")
+    retraction_error = OSError("retraction durability failed")
 
     def fail_directory_fsync(_descriptor: int) -> None:
         nonlocal fsync_calls
         fsync_calls += 1
         if fsync_calls == 2:
-            raise OSError(failure_message)
+            raise publication_error
+        if fsync_calls == 3 and retraction_fails:
+            raise retraction_error
 
     mocker.patch("lychd.system.services.runtime.os.fsync", side_effect=fail_directory_fsync)
 
-    with pytest.raises(OSError, match=failure_message):
-        await actuator.apply(_intent())
+    if retraction_fails:
+        with pytest.raises(OSError, match="retraction durability failed") as failure:
+            await scenario.manager.request_transition("b:chat:b-model", 100)
+        assert failure.value is retraction_error
+        assert scenario.manager.containment_reason is not None
+    else:
+        with pytest.raises(RuntimePreconditionError, match="retracted before host claim") as declined:
+            await scenario.manager.request_transition("b:chat:b-model", 100)
+        assert declined.value.__cause__ is publication_error
+        assert scenario.manager.containment_reason is None
 
-    assert fsync_calls >= 3  # payload, failed publish-dir sync, retraction-dir sync
-    assert not (inbox / f"{_intent().transition_id}.json").exists()
-    assert list(inbox.glob(".*.tmp")) == []
+    assert fsync_calls == 3  # payload, failed publish-dir sync, retraction-dir sync
+    assert list(inbox.iterdir()) == []
     assert list(journal.iterdir()) == []
+    assert scenario.world.active == {"a"}
+    assert scenario.broker.paused is retraction_fails
+    admission = AnimatorAdmission.DRAINING if retraction_fails else AnimatorAdmission.OPEN
+    assert scenario.leases.admission("a") is admission
+    assert scenario.leases.admission("b") is admission
 
 
+@pytest.mark.asyncio
+async def test_cancellation_during_post_link_retraction_preserves_no_effect_proof(
+    tmp_path: Path,
+    mocker: MockerFixture,
+) -> None:
+    inbox, journal = _secure_reactor_dirs(tmp_path)
+    scenario = build_capability_scenario(active={"a"})
+    actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1)
+    scenario.manager._actuator = actuator
+    retracting = asyncio.Event()
+    release_retraction = asyncio.Event()
+    fsync = os.fsync
+    fsync_calls = 0
+
+    def fail_publication_sync(descriptor: int) -> None:
+        nonlocal fsync_calls
+        fsync_calls += 1
+        if fsync_calls == 2:
+            message = "publication durability failed"
+            raise OSError(message)
+        fsync(descriptor)
+
+    async def controlled_offload(function: object, /, *args: object, **kwargs: object) -> object:
+        if function == actuator._cancel_pending:
+            retracting.set()
+            await release_retraction.wait()
+        return function(*args, **kwargs)  # type: ignore[operator]
+
+    mocker.patch("lychd.system.services.runtime.os.fsync", side_effect=fail_publication_sync)
+    mocker.patch("lychd.system.services.runtime.asyncio.to_thread", side_effect=controlled_offload)
+    transition = asyncio.create_task(scenario.manager.request_transition("b:chat:b-model", 100))
+    await asyncio.wait_for(retracting.wait(), timeout=1)
+    try:
+        for _ in range(2):
+            transition.cancel()
+            await asyncio.sleep(0)
+            assert not transition.done()
+            assert scenario.broker.paused
+    finally:
+        release_retraction.set()
+    with pytest.raises(RuntimeCancellationNoEffectError, match="retracted before host claim"):
+        await transition
+
+    assert fsync_calls == 3
+    assert list(inbox.iterdir()) == []
+    assert list(journal.iterdir()) == []
+    assert scenario.world.active == {"a"}
+    assert scenario.manager.containment_reason is None
+    assert not scenario.broker.paused
+    assert scenario.leases.admission("a") is AnimatorAdmission.OPEN
+    assert scenario.leases.admission("b") is AnimatorAdmission.OPEN
+
+
+@pytest.mark.parametrize("retraction_fails", [False, True], ids=["durable-retraction", "uncertain-retraction"])
+@pytest.mark.asyncio
+async def test_claim_timeout_withdrawal_retains_outcome_through_cancellation(  # noqa: PLR0915 - preserve the full withdrawal and manager outcome oracle
+    tmp_path: Path,
+    mocker: MockerFixture,
+    *,
+    retraction_fails: bool,
+) -> None:
+    inbox, journal = _secure_reactor_dirs(tmp_path)
+    scenario = build_capability_scenario(active={"a"})
+    actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=0.001)
+    scenario.manager._actuator = actuator
+    retracting = asyncio.Event()
+    release_receipt = asyncio.Event()
+    transition_id = ""
+    fsync = os.fsync
+    fsync_calls = 0
+    retraction_error = OSError("retraction durability failed")
+
+    def sync_directory(descriptor: int) -> None:
+        nonlocal fsync_calls
+        fsync_calls += 1
+        if fsync_calls == 3 and retraction_fails:
+            raise retraction_error
+        fsync(descriptor)
+
+    async def controlled_offload(function: object, /, *args: object, **kwargs: object) -> object:
+        nonlocal transition_id
+        if function != actuator._cancel_pending:
+            return function(*args, **kwargs)  # type: ignore[operator]
+        transition_id = str(args[0])
+        outcome: object = None
+        failure: OSError | None = None
+        try:
+            outcome = actuator._cancel_pending(transition_id)
+        except OSError as exc:
+            failure = exc
+        # The offloaded unlink/fsync has finished, but the caller has not yet
+        # received its outcome. Cancelling that await cannot erase the receipt.
+        retracting.set()
+        await release_receipt.wait()
+        if failure is not None:
+            raise failure
+        return outcome
+
+    mocker.patch("lychd.system.services.runtime._ACK_POLL_SECONDS", 0.001)
+    mocker.patch("lychd.system.services.runtime.os.fsync", side_effect=sync_directory)
+    mocker.patch("lychd.system.services.runtime.asyncio.to_thread", side_effect=controlled_offload)
+    transition = asyncio.create_task(scenario.manager.request_transition("b:chat:b-model", 100))
+    try:
+        await asyncio.wait_for(retracting.wait(), timeout=1)
+        for _ in range(2):
+            transition.cancel()
+            await asyncio.sleep(0)
+            assert not transition.done()
+            assert scenario.broker.paused
+        release_receipt.set()
+        done, _ = await asyncio.wait({transition}, timeout=1)
+        assert transition in done, "Withdrawal outcome was lost; waiting for a journal that cannot arrive."
+        if retraction_fails:
+            with pytest.raises(OSError, match="retraction durability failed") as failure:
+                await transition
+            assert failure.value is retraction_error
+            assert scenario.manager.containment_reason is not None
+        else:
+            with pytest.raises(RuntimeCancellationNoEffectError, match="retracted before host claim"):
+                await transition
+            assert scenario.manager.containment_reason is None
+    finally:
+        release_receipt.set()
+        if not transition.done():
+            # Teardown also settles the pre-fix negative control's stranded waiter.
+            (journal / f"{transition_id}.contained.json").touch(mode=0o600)
+            await asyncio.gather(transition, return_exceptions=True)
+
+    assert fsync_calls == 3
+    assert list(inbox.iterdir()) == []
+    assert list(journal.iterdir()) == []
+    assert scenario.world.active == {"a"}
+    assert scenario.broker.paused is retraction_fails
+    admission = AnimatorAdmission.DRAINING if retraction_fails else AnimatorAdmission.OPEN
+    assert scenario.leases.admission("a") is admission
+    assert scenario.leases.admission("b") is admission
+
+
+@pytest.mark.parametrize("cancellations", [0, 2])
 @pytest.mark.asyncio
 async def test_host_reactor_post_link_failure_waits_for_concurrent_claim(
     tmp_path: Path,
     mocker: MockerFixture,
+    cancellations: int,
 ) -> None:
     inbox, journal = _secure_reactor_dirs(tmp_path)
     actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1)
@@ -351,9 +553,20 @@ async def test_host_reactor_post_link_failure_waits_for_concurrent_claim(
     await asyncio.sleep(0.01)
     assert not apply_task.done()
 
-    processing.replace(completed)
-    with pytest.raises(OSError, match=failure_message):
-        await apply_task
+    try:
+        for _ in range(cancellations):
+            apply_task.cancel()
+            await asyncio.sleep(0.01)
+            assert not apply_task.done()
+    finally:
+        processing.replace(completed)
+    if cancellations:
+        with pytest.raises(asyncio.CancelledError) as cancelled:
+            await apply_task
+        assert type(cancelled.value) is asyncio.CancelledError
+    else:
+        with pytest.raises(OSError, match=failure_message):
+            await apply_task
 
 
 @pytest.mark.asyncio
@@ -592,6 +805,24 @@ async def test_systemd_actuator_compensates_target_active_service_failed_world()
         call("start", ("lychd-animator-vision.target",)),
         call("start", ("lychd-animator-chat.target",)),
     ]
+
+
+@pytest.mark.parametrize("recover", [False, True], ids=["forward-failure", "crash-recovery"])
+@pytest.mark.asyncio
+async def test_systemd_compensation_requires_settled_jobs_before_restoration(*, recover: bool) -> None:
+    actuator = _observing_actuator("chat", "vision")
+    prior = _ObservedRuntimeWorld(("chat",), ("chat",))
+    partial = _ObservedRuntimeWorld(("vision",), ())
+    actuator._observe_runtime_world = AsyncMock(side_effect=[partial, prior] if recover else [prior, partial, prior])
+    actuator._run_systemctl = AsyncMock(return_value=1)
+    unsettled = RuntimeError("compensation jobs still pending")
+    actuator._await_relevant_jobs_quiescent = AsyncMock(side_effect=[None, unsettled])
+    operation = actuator.recover if recover else actuator.apply
+
+    with pytest.raises(RuntimeError, match="compensation jobs still pending") as caught:
+        await operation(_intent())
+
+    assert caught.value is unsettled
 
 
 @pytest.mark.asyncio

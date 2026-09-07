@@ -76,10 +76,10 @@ class ConfigLoader:
         instances: list[RuneConfig] = []
 
         for file_path in files:
-            if self._is_generated_sample(file_path):
+            payload = self._read_payload(file_path)
+            if payload is None:
                 logger.debug("skipping_sample_rune", schema=cls.__name__, path=str(file_path))
                 continue
-            payload = self._read_payload(file_path)
             instance = cls.model_validate(payload).bind_source_file(file_path)
             instances.append(instance)
 
@@ -101,40 +101,30 @@ class ConfigLoader:
 
         return sorted(anchor.glob("*.toml"))
 
-    def _is_generated_sample(self, file_path: Path) -> bool:
-        """Return whether a TOML file is a generated inactive sample."""
-        try:
-            with file_path.open(encoding="utf-8") as handle:
-                for line in handle:
-                    stripped = line.strip()
-                    if not stripped:
-                        continue
-                    return stripped == SAMPLE_MARKER
-        except OSError as exc:
-            msg = f"Could not read '{file_path}'."
-            raise ValueError(msg) from exc
-        return False
-
-    def _read_payload(self, file_path: Path) -> dict[str, Any]:
-        """Read one TOML payload.
+    def _read_payload(self, file_path: Path) -> dict[str, Any] | None:
+        """Read the activation marker and TOML payload from one file generation.
 
         Args:
             file_path: TOML file to read.
 
         Returns:
-            Parsed TOML payload with string keys.
+            Parsed TOML payload, or None for an inactive generated sample.
 
         Raises:
             ValueError: If the file is unreadable or malformed.
 
         """
         try:
-            parsed = tomllib.loads(file_path.read_text(encoding="utf-8"))
-        except tomllib.TOMLDecodeError as exc:
-            msg = f"Malformed TOML in '{file_path}'."
-            raise ValueError(msg) from exc
-        except OSError as exc:
+            content = file_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
             msg = f"Could not read '{file_path}'."
             raise ValueError(msg) from exc
 
-        return {str(k): v for k, v in parsed.items()}
+        first_line = next((line.strip() for line in content.splitlines() if line.strip()), "")
+        if first_line == SAMPLE_MARKER:
+            return None
+        try:
+            return tomllib.loads(content)
+        except tomllib.TOMLDecodeError as exc:
+            msg = f"Malformed TOML in '{file_path}'."
+            raise ValueError(msg) from exc

@@ -173,9 +173,10 @@ class SoulstoneConfig(AnimatorConfig, ABC):
         description="Emit SecurityLabelDisable=true (SELinux label off) on the Quadlet.",
     )
     volumes: tuple[str, ...] = Field(default_factory=tuple, description="Extra bind mounts for this soulstone.")
-    env_vars: dict[str, str] = Field(default_factory=dict)
+    env_vars: dict[str, str] = Field(default_factory=dict, validate_default=True)
     secret_env_files: dict[str, str] = Field(
         default_factory=dict,
+        validate_default=True,
         description=(
             "Map ENV var name -> Podman secret name. "
             "Transmutation hydrates entries as ENV=/run/secrets/<secret> and mounts Secret=<secret>."

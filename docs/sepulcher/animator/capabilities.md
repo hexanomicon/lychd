@@ -9,17 +9,9 @@ A **capability** is the exact versioned service contract a caller may request fr
 [Animator](./index.md). It says what operation and typed material may cross a grant; it is not a
 model name, endpoint, container, tool, Rune, Coven, or application purpose.
 
-The currently delivered spine is narrower: `CapabilitySpec` uses the key
-`{animator}:{family}:{model_id}`, seven closed families, coarse input/output modality strings, and
-one compatibility grant class. `chat` grants carry a hydrated Pydantic AI model and only explicitly
-declared agent-loop toolsets; `tool_execution` grants require a non-empty toolset surface. The other
-five family labels remain routing metadata and fail closed at issue. That v1 shape supports the
-proved chat/model path, narrow toolset compatibility, and readiness mechanics. It does not prove
-executable audio, visual, embedding, rerank, service-job, or host-tool routes. [State of
-Work](../../state-of-the-work.md#animator-dispatch-spine) owns that boundary.
-
-The accepted general service design below is **Designed** until source, migrations, adapters,
-tests, and operator receipts promote it.
+The interface/profile design below is **Designed** until source, migrations, adapters, tests, and
+operator receipts promote it. The [delivered v1 surface](#the-delivered-v1-surface) remains a narrower
+chat/model and toolset compatibility path.
 
 ## Interface, profile, and operation
 
@@ -27,7 +19,7 @@ Three identities prevent a model catalogue from becoming an unsafe universal rou
 
 | Record | Question it answers | Example |
 | --- | --- | --- |
-| `CapabilityInterfaceRef` | Which versioned semantic ABI is requested? | `model.chat@1`, `echo.transcribe@1`, `prism.image@1`, `prism.scanner@1`, `scout.search@1` |
+| `CapabilityInterfaceRef` | Which versioned request-and-return contract is requested? | `model.chat@1`, `echo.transcribe@1`, `prism.image@2`, `prism.scanner@1`, `scout.search@1` |
 | `CapabilityProfileRef` | Which exact implementation closure can perform it? | one model and weights, Comfy graph, native parser, engine toolchain, language set, limits, and licenses at an immutable revision/digest |
 | **operation** | Which admitted act within that interface is requested now? | `generate`, `edit`, `transcribe`, `segment`, `retarget`, `search`, `validate` |
 
@@ -41,6 +33,17 @@ Image input may enrich `model.chat@1`; it does not become precise Sight. Audio o
 model does not become an eligible speech synthesizer. A Comfy graph that can produce an image and
 a video exposes two proved interfaces or operations only when each contract closes. `tool` is not
 an interface that means every side effect.
+
+## The delivered v1 surface
+
+The currently delivered spine is narrower: `CapabilitySpec` uses the key
+`{animator}:{family}:{model_id}`, seven closed families, coarse input/output modality strings, and
+one compatibility grant class. `chat` grants carry a hydrated Pydantic AI model and only explicitly
+declared agent-loop toolsets; `tool_execution` grants require a non-empty toolset surface. The other
+five family labels remain routing metadata and fail closed at issue. That v1 shape supports the
+proved chat/model path, narrow toolset compatibility, and readiness mechanics. It does not prove
+executable audio, visual, embedding, rerank, service-job, or host-tool routes. [State of
+Work](../../state-of-the-work.md#animator-dispatch-spine) owns that boundary.
 
 ## Stable identity
 
@@ -80,10 +83,10 @@ persisted key, and no unknown family is converted to a generic service.
   and
 - run, station-attempt, deadline, priority, and reservation requirements.
 
-Core matches exact declared and admitted facts. It does not interpret an OCR ontology, choose a
-creative image model, judge Slovak speech quality, decide a retarget map, or infer that a wider
-format can satisfy a narrower domain contract. The interface owner validates those constraints
-before demand and after return.
+The interface owner validates domain constraints before demand and after return. Core matches
+the resulting exact declared and admitted facts. For example, accepting a motion format cannot
+establish that its skeleton satisfies the requested retarget map; that compatibility must already
+be expressed in the domain contract.
 
 ## Declaration, evidence, observation, and grant
 
@@ -103,8 +106,8 @@ foreign craft but does not own every capability. The target interface/profile ow
 promotes evidence under its policy. Dispatcher consumes that decision without becoming a benchmark
 judge.
 
-The source implementation currently exposes only the narrow compatibility grant described above;
-it never exposes its Animator or Connector. The designed grant union is:
+A grant exposes neither its Animator nor its Connector. The designed union separates four
+callable surfaces:
 
 | Grant | Live surface | Typical use |
 | --- | --- | --- |
@@ -159,15 +162,19 @@ Dispatcher never starts, stops, loads, evicts, submits an effect, or waits on a 
 [Orchestrator](../../adr/23-orchestrator.md) owns readiness convergence. The interface owner or
 Worker invokes the granted surface. A waiting Graph holds no live grant. Runtime models and
 toolsets are bound only while issuing an admitted grant. Capability, specification, and state
-reads expose detached declarations and observations. The retained `get_runtime()` lookup is an
+reads expose detached declarations and observations. The retained `get_runtime()` lookup is a
 control-plane-internal runtime handle; it is neither a model/toolset bind nor a second public grant
 route.
+
+### One process generation
 
 One loaded `AnimatorRegistry` is one sealed process generation. Successful loading is one-shot;
 changing declarations, runtime adapters, or exact Portal definitions requires constructing a new
 application generation rather than mutating the live registry underneath admitted Runs. A failed
 staged first load publishes nothing and remains retryable; it does not leave a partly sealed
 catalogue.
+
+### Calls, durable jobs, and live sessions
 
 Immediate calls retain a scoped process-local lease only during use. Every asynchronous effect,
 local or remote, must persist `ServiceJobAttempt@1` before first submit so timeout or process death
@@ -206,17 +213,11 @@ prove.
 
 ## Composition boundary
 
-A capability answers "which exact technical interface can be invoked now?" A Spell answers "which
-semantic action belongs at this Pattern station?" A Composition answers "which reusable records,
-policy, judgment, effects, and outcomes own the work?" A Product answers "which profession or
-market receives that capability, through which supported use cases and operator promise?" Sharing
-a capability or packaging a Product never merges those offices.
-
-Scanner, Image, Video, Sight, Form, Kinesis, Scout, Echo, and Foundry retain their distinct domain
-jobs and results. They reuse discriminated capability-backed or direct-tool execution binding,
-Connector dialects where applicable, `ServiceJobAttempt@1`,
-artifact custody, Stasis, cancellation, and recovery mechanics; they do not collapse into one
-`MediaJob`, generic `tool_execution`, or universal OpenAI adapter.
+A capability supplies an exact technical interface; a Spell defines the semantic action at a
+Pattern station. The [consuming Composition](../../compositions/index.md) retains application records,
+judgment, policy, and effects. Domain jobs and results may share grants, attempt recovery, and
+artifact custody without collapsing into a generic `MediaJob`, `tool_execution`, or universal
+OpenAI adapter.
 
 [Connectors](connectors.md) owns invocation dialects and the current chat-only implementation
 boundary. [Dispatcher (22)](../../adr/22-dispatcher.md) owns matching and leases;

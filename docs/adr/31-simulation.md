@@ -6,11 +6,11 @@ icon: material/source-branch
 # :material-source-branch: 31. Simulation
 
 !!! abstract "Context"
-    Alternatives are not reality. **Shadow**, whose possibility work uses Vikalpa as a literary
-    correspondence, opens
-    bounded candidates against a pinned base, preserves why they ended, and offers evidence to the
-    boundary that owns reality. [Dancer](../sepulcher/extensions/shadow/dancer.md) opens doors;
-    [Hunter](../sepulcher/extensions/shadow/hunter.md) tests their ground; neither chooses the exit.
+    [Shadow](../sepulcher/extensions/shadow/index.md) explores bounded alternatives against a
+    pinned base and retains the evidence and outcome of each branch. Candidate generation,
+    independent review, and promotion need separate owners: [Dancer](../sepulcher/extensions/shadow/dancer.md)
+    proposes alternatives; [Hunter](../sepulcher/extensions/shadow/hunter.md) reviews them; the target
+    owner decides whether a proposed change may affect the system.
 
 ## Decision
 
@@ -44,7 +44,7 @@ retained evidence, teardown, residue, and terminal state.
 
 Repository, fixture, world, and artifact bases are exact revisions, never “latest.” Branches are
 either text-only **idea** branches, isolated **material** branches, or a **promotion candidate**
-packaged as a complete Vision. The latter is not selected, true, or authorized. Terminal truth is
+packaged as a complete Vision. The latter is not selected, true, or authorized. Branch status is
 explicit:
 
 ```text

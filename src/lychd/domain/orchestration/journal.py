@@ -6,8 +6,15 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Literal
 
+import structlog
+
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from lychd.domain.orchestration.schema import TransitionTrace
+
+
+logger = structlog.get_logger()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -28,6 +35,43 @@ class TransitionRecord:
     compensation_transition_id: str | None
     detail: str | None
 
+    @classmethod
+    def from_trace(cls, trace: TransitionTrace) -> TransitionRecord:
+        """Snapshot scalar evidence without retaining the mutable trace or observer."""
+        return cls(
+            request_id=trace.request_id,
+            source="run" if trace.run_id is not None else "operator",
+            target_capability_key=trace.target_capability_key,
+            priority=trace.priority,
+            phase=trace.phase,
+            requested_at=trace.requested_at,
+            observed_at=datetime.now(UTC),
+            run_id=trace.run_id,
+            occurrence_id=trace.occurrence_id,
+            action_type=trace.action_type,
+            physical_transition_id=trace.physical_transition_id,
+            compensation_transition_id=trace.compensation_transition_id,
+            detail=trace.detail,
+        )
+
+
+def notify_transition(
+    record: TransitionRecord,
+    observer: Callable[[TransitionRecord], None] | None,
+) -> None:
+    """Deliver immutable evidence without giving projection failures execution authority."""
+    if observer is None:
+        return
+    try:
+        observer(record)
+    except Exception:  # projection sinks cannot decide physical or Run outcomes
+        logger.warning(
+            "transition_observer_failed",
+            request_id=record.request_id,
+            phase=record.phase,
+            exc_info=True,
+        )
+
 
 class TransitionJournal:
     """Loop-confined bounded latest-state journal for every transition source."""
@@ -42,21 +86,7 @@ class TransitionJournal:
 
     def record(self, trace: TransitionTrace) -> TransitionRecord:
         """Snapshot a mutable trace without retaining host handles or callbacks."""
-        record = TransitionRecord(
-            request_id=trace.request_id,
-            source="run" if trace.run_id is not None else "operator",
-            target_capability_key=trace.target_capability_key,
-            priority=trace.priority,
-            phase=trace.phase,
-            requested_at=trace.requested_at,
-            observed_at=datetime.now(UTC),
-            run_id=trace.run_id,
-            occurrence_id=trace.occurrence_id,
-            action_type=trace.plan.action_type if trace.plan is not None else None,
-            physical_transition_id=trace.physical_transition_id,
-            compensation_transition_id=trace.compensation_transition_id,
-            detail=trace.detail,
-        )
+        record = TransitionRecord.from_trace(trace)
         if trace.request_id in self._records:
             self._records.pop(trace.request_id)
         elif len(self._records) >= self._capacity:

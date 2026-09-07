@@ -268,6 +268,9 @@ class Workflow:
     start_node: type[BaseNode[Any, Any, Any]]
     make_state: Callable[[Intent], BaseModel]
     manifest: PatternManifest
+    # An executable revision may require checkpoint values to match its durable
+    # admission. The worker binds the Intent; the runner checks each loaded state.
+    validate_state: Callable[[Intent, BaseModel], None] | None = None
     # Computed once at construction: a workflow whose graph contains any `Gate` node
     # takes the Durable Stasis tier. Kept a derived property (not a hand-set flag) so it
     # can never drift from the graph — but resolved HERE, near `Gate`, not re-scanned by

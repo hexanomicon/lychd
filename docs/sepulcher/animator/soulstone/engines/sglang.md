@@ -9,8 +9,15 @@ icon: material/graph
 runtime-native graph/DSL features. LychD binds the declared service through the Soulstone adapter;
 it does not require the caller to depend on `sgl.gen` or any other SGLang-specific language.
 
-Adapter-specific flags remain part of the exact engine profile. They must be declared, pinned, and
-included in the runtime receipt rather than inferred from a generic OpenAI-compatible endpoint.
+The current adapter uses **operator-owned `exec` passthrough**: the Rune supplies the complete
+SGLang launch command, while typed fields retain container and endpoint intent. Its registered
+`OpenAICompatibleRuntimeAdapter` binds that declared service; it does not synthesize an SGLang
+program from a generic endpoint. Keep the command's listening port and served model aligned with
+the declared endpoint and model identity.
+
+Pin framework flags with that command and include them in the exact engine profile and runtime
+receipt. Neither a healthy URL nor a generic compatibility label establishes every declared model
+or API operation.
 
 The exact image, model, quantization, GPU and driver, launch arguments, readiness, inference, and
 shutdown still require an operator receipt. The current delivery boundary is recorded under

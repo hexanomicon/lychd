@@ -16,7 +16,7 @@ from lychd.domain.animation.schemas import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
 
     from lychd.domain.animation.schemas import LocalModelConfig, PortalModelConfig
 
@@ -80,16 +80,10 @@ def model_infos_from_soulstone(
         discovered_by_id = {info.id: info for info in discovered or ()}
         admitted: list[ModelInfo] = []
         for model in soulstone.models:
-            observed = discovered_by_id.get(model.id)
-            if observed is None:
-                admitted.append(
-                    _build_model_info(
-                        model_id=model.id,
-                        profile=profile,
-                    )
-                )
-            else:
-                admitted.append(observed)
+            observed = discovered_by_id.get(model.id) or _build_model_info(model_id=model.id, profile=profile)
+            # Connectors and capability synthesis consume this same projection;
+            # an admitted surface hint must also select the executable API.
+            admitted.append(_hydrate_model_info(info=observed, hints=model.capabilities, profile=profile))
         return admitted
     if discovered is not None:
         return list(discovered)
@@ -111,28 +105,12 @@ def model_info_from_portal_model(model: PortalModelConfig) -> ModelInfo:
     )
 
 
-def capability_specs_from_soulstone(
-    soulstone: SoulstoneConfig,
-    *,
-    runtime_defaults: dict[str, object] | None = None,
-    is_dynamic: bool = False,
-) -> list[CapabilitySpec]:
-    """Build capability specs from runtime-derived model info."""
-    return capability_specs_from_model_infos(
-        soulstone,
-        model_infos_from_soulstone(soulstone),
-        runtime_defaults=runtime_defaults,
-        is_dynamic=is_dynamic,
-    )
-
-
 def capability_specs_from_model_infos(
     soulstone: SoulstoneConfig,
     model_infos: Sequence[ModelInfo],
     *,
     runtime_defaults: dict[str, object] | None = None,
     is_dynamic: bool = False,
-    hints_by_id: Mapping[str, ModelCapabilityHints] | None = None,
 ) -> list[CapabilitySpec]:
     """Build capability specs from adapter-discovered model info.
 
@@ -145,11 +123,7 @@ def capability_specs_from_model_infos(
     base_generation = GenerationProfile.model_validate(runtime_defaults or {}).overlay(soulstone.generation)
 
     models_by_id: dict[str, LocalModelConfig] = {model.id: model for model in soulstone.models}
-    resolved_hints: dict[str, ModelCapabilityHints] = (
-        dict(hints_by_id)
-        if hints_by_id is not None
-        else {model.id: model.capabilities for model in soulstone.models if model.capabilities is not None}
-    )
+    resolved_hints = {model.id: model.capabilities for model in soulstone.models if model.capabilities is not None}
     specs: list[CapabilitySpec] = []
     admitted_infos = model_infos_from_soulstone(soulstone, discovered=model_infos)
     for info in admitted_infos:
@@ -278,7 +252,6 @@ def synthesize_families(
 
 
 __all__ = [
-    "capability_specs_from_soulstone",
     "default_model_id_for_soulstone",
     "model_infos_from_soulstone",
     "synthesize_families",

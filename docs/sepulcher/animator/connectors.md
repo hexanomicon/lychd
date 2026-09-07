@@ -5,11 +5,11 @@ icon: material/connection
 
 # :material-connection: Connectors and Dialects
 
-A **Connector** turns one admitted Animator endpoint into callable runtime surfaces. It speaks a
-wire or process dialect; it does not decide what an application means, whether an artifact may
-leave, which model is good, whether a long job may be repeated, or when a local service should
-rise. Those decisions remain with the capability interface, owning Domain, policy gates, Workers,
-Dispatcher, and Orchestrator.
+A **Connector** turns one admitted Animator endpoint into callable runtime surfaces by encoding
+requests and decoding responses in an exact wire or process dialect. Read this page when binding
+a protocol; [Capabilities](capabilities.md) defines the contracts and permission carried by the
+grant. Domain judgment, egress policy, job recovery, and runtime transitions remain with their
+owning services.
 
 The current implementation is narrower than this designed office. Its
 `OpenAICompatibleConnector` hydrates only Pydantic AI Chat Completions or Responses model
@@ -22,8 +22,8 @@ Videos, OCR, Scout, Form, Kinesis, engine jobs, and live sessions have no delive
 
 | Boundary | Owns | Does not own |
 | --- | --- | --- |
-| **Capability interface** | versioned semantic request and result contract | transport, model choice, deployment, or application judgment |
-| **Capability profile** | exact model, tool, graph, workflow, configuration, limits, licenses, and proved operations | endpoint lifecycle or wire behavior |
+| **Capability interface** | [versioned request and result contract](capabilities.md#interface-profile-and-operation) | transport or application judgment |
+| **Capability profile** | [exact implementation closure and proved operations](capabilities.md#interface-profile-and-operation) | endpoint lifecycle or wire behavior |
 | **Dialect driver** | request encoding, authentication shape, response decoding, errors, progress, cancellation, and reconciliation for one exact protocol | provider truth beyond that proved subset |
 | **Runtime adapter** | Rune hydration, process/container plan, readiness probe, optional in-runtime activation, and control-plane facts | semantic routing or job meaning |
 | **Animator** | one addressable local Soulstone or remote Portal bearing those surfaces | Composition records, Graph, policy, or effect authority |
@@ -48,7 +48,7 @@ Endpoint names are only evidence inputs. Each provider profile records exact rou
 supported operations and fields; required and rejected parameters; media encodings and limits;
 authentication; whether "streaming" means token deltas, audio frames, progress, previews, or
 partial artifacts; error and rate-limit mapping; idempotency support; cancellation semantics;
-provider-job lookup; retention and expiry; and the conformance bake that established those facts.
+provider-job lookup; retention and expiry; and the recorded compatibility test—the conformance bake—that established those facts.
 An omitted fact is unsupported, not silently forwarded in an `extra_body` bag.
 
 A service may implement only part of a dialect. That partial profile is legitimate when every
@@ -103,20 +103,17 @@ than replaced by a runtime fallback.
 
 ## Durable job handoff
 
-A live connector handle never enters Graph state. Before any local or remote asynchronous effect is
-submitted, the owning Worker persists `ServiceJobAttempt@1` under the complete
-[Workers law](../../adr/14-workers.md#service-job-attempts-designed). That owner pins request,
-idempotency, the discriminated capability-backed or direct-tool execution binding,
-provider/executor identity, artifacts, managed local reservation when needed, progress,
-cancellation, usage/cost, results, and reconciliation without making the Connector a second ledger.
+Before any local or remote asynchronous effect is submitted, the owning Worker persists
+[`ServiceJobAttempt@1`](../../adr/14-workers.md#service-job-attempts-designed) with the exact
+request, execution route, and recovery identity, plus a managed local reservation when required.
+Only then may the driver or executor receive its idempotency identity; persist any returned
+provider/executor job identity.
+The attempt remains the ledger for progress, result, and settlement.
 
-Only after that pre-submit record exists may the selected capability driver or direct executor
-receive the idempotency identity and persist the returned provider/executor job identity when one
-exists. The parent Run may then enter owner-specific durable service wait without retaining a
-Connector, grant, socket, response iterator, tensor, process, or provider SDK object. Re-admission
-rebinds the exact capability or Resolution Lock/ToolProfile as applicable and reconciles the same
-attempt. An unknown remote, paid, or local tool effect is never repeated merely because a client
-timed out.
+The parent Run may enter its owner's durable service wait with no live Connector or grant in
+Graph state. Re-admission rebinds the exact capability or Resolution Lock/ToolProfile and reconciles
+the same attempt. An unknown remote, paid, or local tool effect is never repeated merely because a
+client timed out. The Workers law carries the complete persisted record and recovery protocol.
 
 ## Egress and secrets
 

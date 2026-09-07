@@ -1,12 +1,11 @@
 # Portal Runes
 
-Portals are network/API-backed Animator declarations.
+Portals declare remote Animator services reached through network APIs. These examples describe
+an OpenAI Portal (`openai/main.toml`) and Gemini through Google's OpenAI-compatible endpoint
+(`google-gemini/main.toml`).
 
-Current examples:
-
-- `openai/main.toml`: OpenAI API Portal.
-- `google-gemini/main.toml`: Gemini through Google's OpenAI-compatible endpoint.
-
-`portals/` is only a branch; each provider leaf owns its TOML below that
-directory. These examples do not make remote egress or a provider safe—consult
-[State of Work](../../../../docs/state-of-the-work.md) before relying on either.
+`portals/` is a branch anchor; each concrete provider leaf owns its TOML. The
+[Portal guide](../../../../docs/sepulcher/animator/portal.md) explains declaration and admission.
+Current dispatch quarantines Portal issue, and the general privacy/egress path remains designed;
+[State of Work](../../../../docs/state-of-the-work.md#animator-dispatch-spine) records that limit.
+A stored declaration alone cannot enable a remote request.

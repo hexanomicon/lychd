@@ -8,11 +8,13 @@ icon: material/state-machine
 > _A Spell gives one station its action. The Spellweaver keeps the Scroll through motion, pause,
 > and return._
 
-An Agent call, Gate, tool, effect, wait, or delegation may warrant an independently named semantic
-action: a **Spell**. One Scroll-local station places that Spell's exact contract. The whole
-immutable Pattern revision is its **Scroll**. **Spellweaver** is LychD's singular logical workflow
-jurisdiction: it validates Scrolls and admits their casting through execution, pause, return, and
-ending. `Weaver` remains the short name used by code and existing paths.
+**Spellweaver** keeps one chosen score through execution, pause, return, and ending. It is LychD's
+singular logical workflow jurisdiction: it validates immutable **Scrolls** and admits their casting.
+`Weaver` remains the short name used by code and existing paths.
+
+A Scroll is one immutable revision of a **Pattern**. An Agent call, Gate, tool, effect, wait, or
+delegation may warrant an independently named **Spell**; a Scroll-local station places that
+Spell's exact contract. The score fixes their relationship before work begins.
 
 Future packages may contribute Spell contracts and Scroll declarations through separate
 Spellweaver-shaped stores. Executable implementations and adapters remain separate Extension or
@@ -22,19 +24,22 @@ the offices it sequences. [ADR 28](../../../adr/28-workflow.md) owns the complet
 
 ## From Product to performance
 
-These identities keep packaging, domain truth, score, performance, and ledger distinct:
+A [Composition or Suite](../../../compositions/products-and-suites.md) publishes the score for its
+work. A Product packages that choice; application records, judgment, and effects remain with their
+owners.
 
-- **[Product](../../../compositions/index.md#products-package-compositions)** names the professional
-  or market package and its supported use cases; it grants no member authority.
-- **[Composition](../../../compositions/index.md)** owns reusable application records, judgment,
-  policy, effects, and outcomes.
-- **Pattern** is one named executable-score lineage owned by that Composition; one immutable
-  revision is a **Scroll**.
+- **Pattern** is one named executable-score lineage published by its application owner: normally a
+  Composition, or a Suite for coordination only; one immutable revision is a **Scroll**. The two
+  delivered Core Patterns are an explicit retained pre-Portfolio exception.
 - **Spell** is one independently named semantic action contract; a station places it in that
   Scroll.
 - **Invocation** opens one bounded [Circle](../../../divination/altar/circle.md).
 - **Casting** performs the exact Scroll inside that Invocation.
 - **Run** is the durable execution and ledger identity of that Invocation.
+
+A Suite Casting opens one parent coordination Invocation/Run from its Suite-owned Scroll and
+separate child Composition Invocations/Runs. The parent owns correlation and aggregate settlement,
+never a member's records, judgment, consent, credentials, or effects.
 
 Graph is the typed topology that advances Scroll state among Spell placements. The
 [Loom](../../../divination/altar/loom.md) is a read-only projection of its declared truth. The
@@ -43,7 +48,7 @@ current fixed registry has no independent Spell catalogue or teaching surface.
 The current registry is fixed and source-defined:
 
 ```text
-bridge_chat@1
+bridge_chat@1 (default) / bridge_chat@2 (configured exact capability)
 WeaveContext → Converse → AwaitConsent? → ProjectReply → End
 
 delegated_rite@1
@@ -57,53 +62,29 @@ The registry is executable substrate, not a general workflow platform. `delegate
 exercises only the deterministic reference adapter; it delivers no foreign runtime or execution
 plane.
 
-## Progressive craft without a mutable score
+## Choose a Bridge capability
 
-A future media Scroll shows how exact stations can compose without making an engine graph or one
-model canonical:
+In the Codex's `lychd.toml`, select the registered Bridge revision and the exact capability key
+from your declared runtime inventory:
 
-```text
-commission + sources + language policy + finish boundary
-→ Prism Image candidates
-→ exact Magus review Gate
-├─ requested still reached → VisualAssetBundle@1 → terminal
-└─ continue in the pinned score
-   → Prism Video i2v or first_last
-   → motion review and visual package → terminal
+```toml
+[weaver.bridge]
+revision = "2"
+capability_key = "my-runtime:chat:my-model"
 ```
 
-Qwen Image, another local model, or a Portal may implement the image Spell; LTX, Wan, or another
-eligible profile may implement the video Spell. A ComfyUI graph is the immutable engine preset
-behind one implementation, never this Scroll. The receiver-owned Resolution Lock binds each
-placement to its exact local or Portal implementation before casting.
+Replace the example key with your runtime's key. It identifies the Animator, capability family,
+and model together; a shared model name alone cannot pin a runtime. The selected capability must
+support chat and tools. Loading Settings validates the selector's shape without contacting an
+engine; Dispatcher checks the actual declaration, readiness, and policy at execution. An unknown,
+incompatible, or unavailable target refuses the turn rather than choosing another runtime.
 
-The finish boundary answers “how far this Invocation should go.” Stopping at an admitted still is
-completion, not an indefinite pause. A review, hardware transition, or remote wait may enter
-Stasis while the same casting remains live. Continuing a terminal still into motion starts a new
-Invocation over its immutable artifact. Optional music starts a Riffmaw Invocation. Synchronized
-audio returned by a video model remains a compound candidate whose declared role routes musical
-material to Riffmaw, timed-language material to Language Edition, and picture-bound effects or ambience to
-Broadcast while retaining the shared Prism attempt and provenance parent. Final audiovisual
-relation belongs to Broadcast, and live cross-Composition coordination is a Suite.
-
-An A2A peer can request the public task while the receiver privately chooses this decomposition,
-or send a portable Scroll as an inert candidate. Neither path imports a Comfy graph, model,
-custom node, credential, or authority. The same Scroll may accept different prompts, languages,
-source frames, target profiles, and finish boundaries; changing its stations or contracts creates
-a new revision.
-
-## The present score
-
-[Topology-A local runs](../../../state-of-the-work.md#topology-a-local-runs) and the [Pydantic AI
-1.25.1 adapter](../../../state-of-the-work.md#pydantic-ai-v1-adapter) are **Available**. [Graph
-Stasis](../../../state-of-the-work.md#graph-stasis-consent), [delegated
-execution](../../../state-of-the-work.md#delegated-agent-execution), [extension
-activation](../../../state-of-the-work.md#extension-activation-contributions), and
-[Loom](../../../state-of-the-work.md#loom-workflow-views) remain **Partial**.
-
-Pattern contribution and durable publication, scheduling, durable parallelism, compatibility and
-migration, editing, authorship attestation, and protected-region admission remain undelivered.
-Architectural treatment is not operational evidence.
+Restarting with this configuration selects revision 2 for new Bridge admissions. The Run stores
+its choice before queue publication and retains it through hardware retries and consent pauses.
+Changing or removing the setting does not redirect an existing Run or an idempotent retry. Omitting
+the section keeps revision 1's eligible-pool selection for new turns. Both revisions stay registered
+for retained work. This key pins capability identity, not a model artifact or runtime configuration
+fingerprint; the general Resolution Lock remains a separate contract.
 
 ## Follow the Scroll
 
@@ -125,6 +106,25 @@ Choose the route that matches the question:
 - **[Delegated agents](delegated-agents.md)** covers the typed delegated station, `AgentJob`
   boundary, containment, and the present deterministic, no-network, effect-free reference
   adapter.
+
+## Progressive craft without a mutable score
+
+A Scroll may admit several explicit finish boundaries. A completed intermediate artifact can
+begin a new forward Invocation; a terminal Run is never reopened to continue it.
+[Pattern lifecycle](pattern-lifecycle.md#a-new-score-is-a-new-revision) distinguishes new input
+from a changed score.
+
+Model and engine choice stays in the receiver-owned Resolution Lock. A Comfy graph is an
+implementation preset, and a portable A2A Scroll remains inert until admitted. Follow
+[Composition Suites](../../../compositions/products-and-suites.md#compositions-relate-without-nesting) when the
+work needs live coordination across application owners.
+
+## The present score
+
+[State of Work](../../../state-of-the-work.md) records local execution and the separate Stasis,
+delegation, extension, and Loom delivery boundaries. Pattern
+contribution and durable publication, scheduling, durable parallelism, compatibility and migration,
+editing, authorship attestation, and protected-region admission remain undelivered.
 
 Repository coding-agent choreography is separate: the
 [tracked workflow playbooks](https://github.com/hexanomicon/lychd/tree/main/.agents/workflows) own

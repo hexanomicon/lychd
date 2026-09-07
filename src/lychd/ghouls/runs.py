@@ -20,6 +20,7 @@ from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
+from functools import partial
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 import structlog
@@ -32,7 +33,7 @@ from lychd.domain.cortex.engine import (
     enqueue_run,
     run_job_key,
 )
-from lychd.domain.cortex.graph_runner import GraphRunner, NodeOccurrenceEvent, TransitionTraceEvent
+from lychd.domain.cortex.graph_runner import GraphRunner, NodeOccurrenceEvent
 from lychd.domain.cortex.runs import (
     TERMINAL_STATUSES,
     IllegalRunTransitionError,
@@ -53,6 +54,7 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.runs import RunDeliveryRecord, RunRecord
     from lychd.domain.cortex.stasis import PhylacteryProtocol
     from lychd.domain.cortex.substrate import RunSubstrate
+    from lychd.domain.orchestration.journal import TransitionRecord
 
 logger = structlog.get_logger()
 
@@ -298,7 +300,7 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
                 delegated_runtime=event.delegated_runtime or "",
             )
 
-        def _on_transition_event(event: TransitionTraceEvent) -> None:
+        def _on_transition_event(event: TransitionRecord) -> None:
             emitter.transition(
                 event.request_id,
                 phase=event.phase,
@@ -309,6 +311,7 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
                 action_type=event.action_type or "",
             )
 
+        admitted_intent = run.to_intent()
         runner: GraphRunner[Any] = GraphRunner(
             orchestrator=substrate.orchestrator,
             persistence=persistence,
@@ -317,6 +320,9 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
             on_stasis_exit=_on_stasis_exit,
             on_node_event=_on_node_event,
             on_transition_event=_on_transition_event,
+            validate_state=(
+                partial(workflow.validate_state, admitted_intent) if workflow.validate_state is not None else None
+            ),
             run_id=run_id,
         )
         from lychd.domain.codex.sigil import Sigil
@@ -332,7 +338,7 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
             result = await runner.run_graph(
                 workflow.graph,
                 workflow.start_node(),
-                workflow.make_state(run.to_intent()),
+                workflow.make_state(admitted_intent),
                 deps=services,
             )
         if isinstance(result, RunParked):
@@ -415,7 +421,8 @@ async def _settle_interrupted_claim(
     Once the Run is ``CANCELLING``, the worker releases its resources immediately so
     SAQ can acknowledge containment; the API commits ``CANCELLED`` only after that
     acknowledgement. Outside that elected state, the worker waits for an in-process
-    cancellation leader before falling back to its exact-sequence failure CAS.
+    cancellation election before falling back to its exact-sequence failure CAS.
+    It cannot wait for API settlement, which may need this worker to exit first.
 
     Returns ``True`` only when this worker owns the terminal write and must emit the
     terminal event.  A terminal written elsewhere owns its own event publication.
@@ -430,7 +437,7 @@ async def _settle_interrupted_claim(
         await _cleanup_cancelled_claim(substrate, run, persistence=persistence)
         return False
     if substrate.cancellations.active(run.run_id):
-        await substrate.cancellations.wait(run.run_id)
+        await substrate.cancellations.wait_election(run.run_id)
         current = await substrate.ledger.get(run.run_id)
         if current is None:
             return False
@@ -586,12 +593,17 @@ async def _commit_consent_park(
         verdict = None
     if verdict is not None:
         run = await ledger.get(run_id)
-        if run is not None and await admit_consent_resume(
-            substrate.queues,
-            ledger,
-            substrate.consents,
-            run,
-            consent_id=parked.consent_id,
+        consents = substrate.consents
+        if (
+            run is not None
+            and consents is not None
+            and await admit_consent_resume(
+                substrate.queues,
+                ledger,
+                consents,
+                run,
+                consent_id=parked.consent_id,
+            )
         ):
             return {"status": "queued", "run_id": run_id}
     return {"status": "awaiting_consent", "run_id": run_id}
@@ -1251,6 +1263,11 @@ async def _reconcile_orphaned_run(substrate: RunSubstrate, run: RunRecord) -> bo
     delegated_job_id = await _recoverable_delegate_park(substrate, run)
     if not await _fence_orphaned_job(substrate, run):
         return False
+    exact_park = (consent_id is not None) != (delegated_job_id is not None)
+    if exact_park and run.status is RunStatus.AWAITING_HARDWARE:
+        # Leave the dead process's live wait through its existing legal edge.
+        # A crash before the owner-specific park remains recoverable as RUNNING.
+        await substrate.ledger.set_status(run.run_id, RunStatus.RUNNING)
     if consent_id is not None and delegated_job_id is None:
         await substrate.ledger.park_consent(run.run_id, consent_id)
         return True

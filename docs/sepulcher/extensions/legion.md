@@ -11,10 +11,9 @@ icon: material/hexagon-multiple-outline
 
 **Legion** is the distributed-embodiment Extension Domain for operator-owned compute nodes. It
 lets one Magus place bounded work across owned iron while every destination remains the sole
-authority over its own hardware. Legion is **Designed**, not delivered: no working node
-enrollment, delegation, reservation, fencing, artifact movement, or fleet evidence path exists
-today. [State of Work](../../state-of-the-work.md#legion-federation) owns delivery truth;
-[ADR 42](../../adr/42-legion.md) owns the accepted design.
+authority over its own hardware. Legion is **Designed**; no operational node path is delivered.
+[State of Work](../../state-of-the-work.md#legion-federation) records that boundary, and
+[ADR 42](../../adr/42-legion.md) owns the accepted design below.
 
 ## One continuity, sovereign bodies
 

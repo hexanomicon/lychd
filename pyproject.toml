@@ -43,7 +43,7 @@ dependencies = [
     "pgvector>=0.4.0",
     "psycopg[pool]>=3.2.13,<4",
     "pydantic>=2.10.0",
-    "pydantic-ai-slim[openai,logfire]==1.25.1", # exact until the v2 durability/message migration suite lands
+    "pydantic-ai-slim[logfire,openai]==1.107.5", # exact until the v2 durability/message migration suite lands
     "pydantic-settings[toml]>=2.10.1",
     "rich>=13.9.0",
     "sqlalchemy>=2.0.0",
@@ -56,7 +56,7 @@ dependencies = [
 # system libpq is unavailable. The production Vessel never installs extras and
 # explicitly rejects this distribution at image-build time.
 postgres-binary = [
-    "psycopg-binary==3.2.13",
+    "psycopg-binary==3.3.5",
 ]
 
 [project.urls]
@@ -213,8 +213,6 @@ fixable = ["ALL"]
 # the annoying ones like "Missing docstring in __init__".
 ignore = [
     "E501",    # Line length (Handled by formatter)
-    "ANN101",  # Missing type annotation for `self`
-    "ANN102",  # Missing type annotation for `cls`
     "ANN401",  # Dynamically typed expressions (Any)
     "D100",    # Missing docstring in public module
     "D104",    # Missing docstring in public package
@@ -234,6 +232,8 @@ ignore = [
     "TC003",  # Move import to TYPE_CHECKING
     "TD",      # flake8-todos - Ignores rules about TODO formatting
     "PLR0913", # Too many arguments
+    "PLR0917", # Positional-argument count follows the same policy as PLR0913.
+    "CPY001",  # The root LICENSE owns project terms; per-file copyright headers are not required.
 ]
 
 [tool.ruff.lint.isort]

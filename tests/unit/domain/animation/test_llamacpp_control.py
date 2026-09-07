@@ -8,7 +8,7 @@ from pydantic import AnyHttpUrl
 
 from lychd.domain.animation.capabilities import CapabilityPhase
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import ModelInfo
+from lychd.domain.animation.schemas import GenerationProfile, ModelInfo
 from lychd.domain.animation.services.adapters.surfaces import SoulstoneAnimator
 from lychd.extensions.builtin.animator import LlamaCppMode, LlamaCppSoulstoneConfig
 from lychd.extensions.builtin.animator.llamacpp import (
@@ -36,6 +36,7 @@ def _router_animator() -> SoulstoneAnimator[LlamacppConnector, LlamaCppSoulstone
         default_model_id="qwen-next-80b",
         mode="router",
         router_query_model_id="qwen-next-80b",
+        generation_defaults=GenerationProfile(),
     )
     return SoulstoneAnimator(rune=rune, connector=connector)
 
@@ -126,7 +127,7 @@ async def test_llamacpp_503_loading_is_warming_runtime_not_cold(monkeypatch: Any
     animator = _router_animator()
     lifecycle = await control.inspect_animator(animator)
     adapter = LlamaCppRuntimeAdapter(control_plane=control)
-    specs = adapter.build_capability_specs(animator.rune)
+    specs = adapter.build_capability_specs(animator)
     states = await adapter.probe_capability_states(animator, specs)
 
     assert lifecycle.health == "loading"

@@ -10,7 +10,8 @@ catalog because a pinned server or worker can become a local Animator, while its
 belongs to Echo for speech mechanics, Riffmaw for music, or the consuming application according to
 the admitted operation and semantic role.
 
-The current candidate route covers explicitly supported music, separation, and speech families;
+The candidate study concerns music, separation, and speech families supported by an exact pinned
+runtime profile;
 it does not admit arbitrary model execution merely because the runtime is Apache-2.0. Model
 weights, dependencies, family support, input/output bytes, and license terms remain separate
 profile facts.

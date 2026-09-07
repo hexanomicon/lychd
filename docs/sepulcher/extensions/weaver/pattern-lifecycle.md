@@ -24,19 +24,11 @@ separately, although the current `Workflow` binding requires it to equal the man
 Executable stations bind one-to-one to Python Graph node types, and the declared entry must bind the
 actual Graph start node. The manifest is authored beside
 that Python and fingerprints the declared score; it is not a canonical intermediate
-representation from which all behavior is compiled. The implementation revision (`py.1` for both
-built-ins) records a reviewed compatibility closure: change it or the public Pattern revision when
-new behavior cannot safely resume old state. It does not automatically detect source edits. Edge
-parity and return semantics must still be established by source review and tests.
-
-Each semantic station currently behaves like a legacy inline Spell placement: key, label, kind,
-implementation closure, and edges are bound only inside its Scroll. There is no independent Spell
-identity or portable catalogue. A future portable Scroll pins exact authority-qualified Spell
-contract revisions and digests; a receiver-owned Resolution Lock separately binds each placement
-to an exact local implementation. Admission reports every unknown, unavailable, incompatible,
-revoked, or unauthorized placement instead of substituting a similar name or newer revision. A
-future Loom may show the absence only in an inert resolution report; an unresolved placement never
-enters an executable Graph.
+representation from which all behavior is compiled. The implementation revision (`py.1` for the
+original built-ins, `py.2` for configured Bridge) records a reviewed compatibility closure:
+change it or the public Pattern revision when new behavior cannot safely resume old state. It does
+not automatically detect source edits. Edge parity and return semantics must still be established
+by source review and tests.
 
 Boot assembly derives an internal `legacy_inline` resolution for each executable current station;
 the declarative terminal remains Graph `End`, not a Spell. This private lock fingerprints the
@@ -45,25 +37,19 @@ and digest untouched. It is not
 persisted on Run, portable, configurable from TOML, or exposed by Loom/Orb, and therefore does not
 pretend that the portable Spell catalogue has shipped.
 
-Future configuration follows the closed spine in [ADR 28](../../../adr/28-workflow.md#configuration-to-casting-spine-designed):
-TOML selects exact registered identities and bounded policy only. Never place import paths, node
-classes, graph edges, prompts, source bytes, credentials, or live handles in a Scroll selector.
-Unknown ids and missing exact revisions are refusal, not cues for package scanning or nearest-name
-fallback.
-
 The catalogue is immutable after construction. It rejects duplicate `(key, revision)` pairs,
 requires an explicit active revision when one name has alternatives, requires explicit non-default
-route precedence, and names its default. Its two current source-defined manifests are
-`bridge_chat@1`, the default with checkpoint schema `bridge-chat-state-v1`, and
-`delegated_rite@1`, the exact `/delegate` command-token route with
-`delegated-rite-state-v1`. Construction performs no package scan.
+route precedence, and names its default. Construction performs no package scan. Three current
+source-defined manifests retain these routes:
 
-??? example "The fixed registry in source"
-    ```python
-    --8<-- "src/lychd/agents/workflows/__init__.py:239:249"
-    ```
+| Pattern revision | Admission route | Checkpoint schema |
+| --- | --- | --- |
+| `bridge_chat@1` | Unconfigured default | `bridge-chat-state-v1` |
+| `bridge_chat@2` | [Configured exact capability](index.md#choose-a-bridge-capability) | `bridge-chat-state-v2` |
+| `delegated_rite@1` | Exact `/delegate` command token | `delegated-rite-state-v1` |
 
-    [Open the owning registry source](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py#L239-L249)
+[The owning registry source](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py)
+defines the retained revisions and their activation policy.
 
 ## Admission happens once
 
@@ -90,6 +76,23 @@ missing workflow, or unavailable revision fails as
 
 Checkpoint and suspension mechanics belong to [Stasis and return](stasis-and-return.md).
 `AgentJob` and provider boundaries belong to [Delegated agents](delegated-agents.md).
+
+## Portable contracts and configuration (Designed)
+
+Each semantic station currently behaves like a legacy inline Spell placement: key, label, kind,
+implementation closure, and edges are bound only inside its Scroll. There is no independent Spell
+identity or portable catalogue. A future portable Scroll pins exact authority-qualified Spell
+contract revisions and digests; a receiver-owned Resolution Lock separately binds each placement
+to an exact local implementation. Admission reports every unknown, unavailable, incompatible,
+revoked, or unauthorized placement instead of substituting a similar name or newer revision. A
+future Loom may show the absence only in an inert resolution report; an unresolved placement never
+enters an executable Graph.
+
+Future configuration follows the closed spine in [ADR 28](../../../adr/28-workflow.md#configuration-to-casting-spine-designed):
+TOML selects exact registered identities and bounded policy only. Never place import paths, node
+classes, graph edges, prompts, source bytes, credentials, or live handles in a Scroll selector.
+Unknown ids and missing exact revisions are refusal, not cues for package scanning or nearest-name
+fallback.
 
 ## Human-attested material stops at a Gate
 
@@ -141,8 +144,8 @@ artifact is a new forward Invocation, never resurrection of the terminal Run.
 The current catalogue can preserve multiple executable revisions per workflow name. Active routing
 is explicit; a saved Run continues through its exact registered revision even after activation moves
 forward. The catalogue is still source-built and preserves no historical Python by itself. Removing
-old code makes that revision unavailable; automatic compatibility proof, durable publication,
-migration, drain, or refusal remain future work.
+old code makes that revision unavailable: affected Runs fail as `pinned Pattern unavailable`.
+Automatic compatibility proof, durable publication, drain, and migration remain future work.
 
 [Topology-A](../../../state-of-the-work.md#topology-a-local-runs) local runs are **Available** and
 pin manifests. [Extension activation](../../../state-of-the-work.md#extension-activation-contributions)

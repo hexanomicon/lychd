@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import replace
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import httpx
 import pytest
@@ -19,6 +19,9 @@ from pydantic_ai.toolsets import FunctionToolset
 from lychd.agents.deps import LychDDeps
 from lychd.agents.factory import AgentSpec, build_agent
 from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC, default_forge
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_forge_caches_by_complete_specification() -> None:
@@ -81,7 +84,7 @@ def test_provider_connector_retains_model_profile() -> None:
     connector = OpenAICompatibleConnector(
         link=Link(up=True),
         base_url="https://api.openai.com/v1",
-        default_model_id="gpt-5.2",
+        default_model_id="o3",
         provider_name="openai",
     )
 
@@ -89,8 +92,69 @@ def test_provider_connector_retains_model_profile() -> None:
     profile = OpenAIModelProfile.from_profile(model.profile)
 
     assert model.profile is not LOCAL_COMPAT_PROFILE
-    assert "temperature" in profile.openai_unsupported_model_settings
+    assert profile.thinking_always_enabled is True
     assert profile.openai_supports_strict_tool_definition is True
+
+
+@pytest.mark.parametrize(
+    ("provider_name", "declared_key", "expected_authorization"),
+    [
+        ("openai-compatible", None, "Bearer api-key-not-set"),
+        ("openai", None, "Bearer api-key-not-set"),
+        ("openai", "synthetic-declared-provider-token", "Bearer synthetic-declared-provider-token"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_connector_authentication_uses_only_its_declared_secret(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    provider_name: str,
+    declared_key: str | None,
+    expected_authorization: str,
+) -> None:
+    from lychd.domain.animation.links import Link
+    from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector
+
+    monkeypatch.setenv("OPENAI_API_KEY", "synthetic-ambient-provider-token")
+    monkeypatch.setenv("OPENAI_ORG_ID", "synthetic-ambient-organization")
+    monkeypatch.setenv("OPENAI_PROJECT_ID", "synthetic-ambient-project")
+    monkeypatch.setenv("OPENAI_WEBHOOK_SECRET", "synthetic-ambient-webhook-secret")
+    monkeypatch.setenv("LYCHD_SECRET_ROOT", str(tmp_path))
+    secret_name = "declared-provider" if declared_key is not None else None
+    if secret_name is not None:
+        (tmp_path / secret_name).write_text(cast("str", declared_key), encoding="utf-8")
+    model = OpenAICompatibleConnector(
+        link=Link(up=True),
+        base_url="http://runtime.test/v1",
+        default_model_id="test-model",
+        provider_name=provider_name,
+        api_key_secret_name=secret_name,
+    ).get_model()
+    assert isinstance(model, OpenAIChatModel)
+    monkeypatch.setattr(model.client, "_platform", "Linux")
+
+    with (
+        override_allow_model_requests(True),  # noqa: FBT003 - third-party positional API
+        respx.mock(assert_all_called=True, assert_all_mocked=True) as router,
+    ):
+        route = router.post("http://runtime.test/v1/chat/completions").respond(
+            200,
+            json={
+                "id": "chatcmpl-auth-test",
+                "object": "chat.completion",
+                "created": 0,
+                "model": "test-model",
+                "choices": [{"index": 0, "message": {"role": "assistant", "content": "ok"}, "finish_reason": "stop"}],
+            },
+        )
+        await model.request([ModelRequest.user_text_prompt("hello")], None, ModelRequestParameters())
+
+    authorization = route.calls.last.request.headers["Authorization"]
+    assert authorization == expected_authorization
+    assert "synthetic-ambient-provider-token" not in authorization
+    assert "OpenAI-Organization" not in route.calls.last.request.headers
+    assert "OpenAI-Project" not in route.calls.last.request.headers
+    assert model.client.webhook_secret is None
 
 
 @pytest.mark.parametrize(
@@ -128,7 +192,10 @@ def test_portal_factory_routes_provider_profile(
     model = runtime.connector.get_model(model_id=model_id)
     assert isinstance(model, OpenAIChatModel)
     assert model.system == expected_system
-    assert (model.profile is LOCAL_COMPAT_PROFILE) is (provider_name == "openai-compatible")
+    # The model narrows native-tool support on a copied profile. Compare every
+    # configured field, excluding that derived set, instead of object identity.
+    configured_profile = replace(model.profile, supported_native_tools=LOCAL_COMPAT_PROFILE.supported_native_tools)
+    assert (configured_profile == LOCAL_COMPAT_PROFILE) is (provider_name == "openai-compatible")
 
 
 def test_openrouter_rejects_unqualified_model_id_when_portal_is_built() -> None:
@@ -207,7 +274,7 @@ async def test_provider_profile_filters_payload_while_generic_compat_preserves_i
     portal = OpenAICompatibleConnector(
         link=Link(up=True),
         base_url="http://provider.test/v1",
-        default_model_id="gpt-5.2",
+        default_model_id="o3",
         provider_name="openai",
     ).get_model()
     assert isinstance(portal, OpenAIChatModel)
@@ -216,7 +283,7 @@ async def test_provider_profile_filters_payload_while_generic_compat_preserves_i
     local = OpenAICompatibleConnector(
         link=Link(up=True),
         base_url="http://local.test/v1",
-        default_model_id="gpt-5.2",
+        default_model_id="o3",
     ).get_model()
     assert isinstance(local, OpenAIChatModel)
     monkeypatch.setattr(local.client, "_platform", "Linux")
@@ -225,7 +292,7 @@ async def test_provider_profile_filters_payload_while_generic_compat_preserves_i
         "id": "chatcmpl-test",
         "object": "chat.completion",
         "created": 0,
-        "model": "gpt-5.2",
+        "model": "o3",
         "choices": [
             {
                 "index": 0,

@@ -80,6 +80,6 @@ rotation, route policy, health, or revocation path ships; generated deployment r
 IPv4-loopback-only, rejects UDP, and must not be tunnelled or port-forwarded. [State of
 Work](../state-of-the-work.md#vpn-tether) owns that boundary.
 
-Tether makes private transport independently revocable, at the cost of security-sensitive peer and
-route management, backup, rotation, recovery, and uncertain direct reachability. It never changes
-the separate application-authority requirement.
+Independent revocation is Tether's practical return. Operating that private road requires
+security-sensitive peer and route management, backup, rotation, recovery, and an account of
+uncertain direct reachability.

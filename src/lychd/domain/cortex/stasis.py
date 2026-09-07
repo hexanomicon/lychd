@@ -23,7 +23,7 @@ from pydantic_graph.persistence import (
 from pydantic_graph.persistence.in_mem import FullStatePersistence
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncGenerator
 
 __all__ = [
     "DurableStasisPhylactery",
@@ -158,7 +158,7 @@ class DurableStasisPhylactery(BaseStatePersistence[Any, Any]):
         await self._append(EndSnapshot(state=copy.deepcopy(state), result=end.deep_copy_data()))
 
     @asynccontextmanager
-    async def record_run(self, snapshot_id: str) -> AsyncIterator[None]:
+    async def record_run(self, snapshot_id: str) -> AsyncGenerator[None]:
         async with self._lock:
             snapshots = await self._load()
             snapshot = self._node_snapshot(snapshots, snapshot_id)

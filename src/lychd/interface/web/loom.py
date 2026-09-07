@@ -1,4 +1,8 @@
-"""Versioned Loom workflow catalogue and graph projections."""
+"""Read-only Loom projections of the source-registered Pattern catalogue.
+
+Metadata and inert Mermaid describe declared permissions, not Run traversal;
+these routes do not publish revisions.
+"""
 
 from __future__ import annotations
 

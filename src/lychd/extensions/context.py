@@ -11,7 +11,7 @@ from lychd.domain.animation.transmute import TransmutationStore
 from lychd.extensions.delegation import DelegatedRuntimeStore
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator, Mapping
+    from collections.abc import Callable, Generator, Mapping
 
     from lychd.config.runes.base import RuneConfig
     from lychd.domain.animation.services.adapters.contracts import PortalDefinition, SoulstoneDefinition
@@ -51,7 +51,7 @@ class DelegatedRuntimeRegistrationStore(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class _ContributionStoreView:
-    """Expose only provider-bound contribution callables named by the host."""
+    """Expose only registrant-bound contribution callables named by the host."""
 
     _calls: Mapping[str, Callable[..., Any]]
 
@@ -64,7 +64,7 @@ class _ContributionStoreView:
 
 @dataclass(frozen=True, slots=True, init=False)
 class ExtensionRegistrationContext:
-    """Provider-bound shaped surface passed to one extension's ``register`` shim."""
+    """Registrant-bound shaped surface passed to one extension's ``register`` shim."""
 
     runes: RuneRegistrationStore
     soulstones: SoulstoneRegistrationStore
@@ -72,12 +72,12 @@ class ExtensionRegistrationContext:
     transmutation: TransmutationRegistrationStore
     delegated_runtimes: DelegatedRuntimeRegistrationStore
 
-    def __init__(self, root: ExtensionContext, provider_id: str) -> None:
-        """Bind every shaped contribution store to ``provider_id``."""
+    def __init__(self, root: ExtensionContext, registrant_id: str) -> None:
+        """Bind every shaped contribution store to ``registrant_id``."""
 
         def attributed(method: Callable[..., Any]) -> Callable[..., Any]:
             def invoke(*args: Any, **kwargs: Any) -> Any:
-                with root.provenance(provider_id):
+                with root.provenance(registrant_id):
                     return method(*args, **kwargs)
 
             return invoke
@@ -110,17 +110,17 @@ class ExtensionContext:
 
     def __init__(self) -> None:
         """Create the extension registration stores for one assembly pass."""
-        self._current_extension_id: str | None = None
+        self._current_registrant_id: str | None = None
 
-        def current_provider() -> str:
-            return self._current_extension_id or "direct"
+        def current_registrant() -> str:
+            return self.current_registrant_id
 
-        self.runes = RuneConfigStore(current_provider=current_provider)
-        self.soulstones = SoulstoneStore(self.runes, current_provider=current_provider)
-        self.portals = PortalStore(self.runes, current_provider=current_provider)
-        self.transmutation = TransmutationStore(current_provider=current_provider)
+        self.runes = RuneConfigStore(current_registrant=current_registrant)
+        self.soulstones = SoulstoneStore(self.runes, current_registrant=current_registrant)
+        self.portals = PortalStore(self.runes, current_registrant=current_registrant)
+        self.transmutation = TransmutationStore(current_registrant=current_registrant)
         self.delegated_runtimes = DelegatedRuntimeStore(
-            current_provider=lambda: self.current_extension_id,
+            current_registrant=current_registrant,
         )
 
     def freeze(self) -> None:
@@ -134,29 +134,29 @@ class ExtensionContext:
         ):
             store.freeze()
 
-    def registration_view(self, extension_id: str) -> ExtensionRegistrationContext:
+    def registration_view(self, registrant_id: str) -> ExtensionRegistrationContext:
         """Return the only root surface an extension registrant receives."""
-        return ExtensionRegistrationContext(self, extension_id)
+        return ExtensionRegistrationContext(self, registrant_id)
 
     @contextmanager
-    def provenance(self, extension_id: str) -> Iterator[None]:
-        """Manager-only: attribute registrations inside the block to ``extension_id``."""
-        previous = self._current_extension_id
-        self._current_extension_id = extension_id
+    def provenance(self, registrant_id: str) -> Generator[None]:
+        """Manager-only: attribute registrations inside the block to ``registrant_id``."""
+        previous = self._current_registrant_id
+        self._current_registrant_id = registrant_id
         try:
             yield
         finally:
-            self._current_extension_id = previous
+            self._current_registrant_id = previous
 
     @property
-    def current_extension_id(self) -> str:
-        """The extension whose ``register()`` is executing.
+    def current_registrant_id(self) -> str:
+        """The Core or extension registrant whose contribution is being added.
 
         Raises:
             RuntimeError: If accessed outside a ``provenance`` block.
 
         """
-        if self._current_extension_id is None:
-            msg = "current_extension_id is only defined inside an ExtensionContext.provenance(...) block."
+        if self._current_registrant_id is None:
+            msg = "current_registrant_id is only defined inside an ExtensionContext.provenance(...) block."
             raise RuntimeError(msg)
-        return self._current_extension_id
+        return self._current_registrant_id

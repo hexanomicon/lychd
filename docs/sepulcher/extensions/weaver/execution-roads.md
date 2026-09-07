@@ -7,48 +7,16 @@ icon: material/routes
 
 > _Choose who owns the labor before choosing which sky supplies the thought._
 
-Spellweaver chooses an execution shape inside one immutable Scroll. It does not operate a cheapest-
-model router. [Workflow](../../../adr/28-workflow.md#execution-road-planning) owns the road policy
-and occurrence evidence; [Context](../../../adr/21-context.md#privatization-and-the-privacy-cut)
-owns the material branches; [Security](../../../adr/09-security.md#portal-privatization-and-egress)
-owns every remote disclosure. Dispatcher binds an already eligible capability and Orchestrator
-makes managed local substrate ready; neither decides the semantic road.
+A station that needs one answer, a sovereign task, or an iterative coding workspace asks three
+different things. Spellweaver chooses that labor boundary inside an immutable Scroll, then admits
+the cognition and disclosure needed within it. A lower price can order eligible roads; it cannot
+choose their authority or custody.
 
-!!! warning "Designed road planner"
-    Current Spellweaver routes once among fixed source-defined Pattern revisions and can run local
-    capabilities or the no-effect delegated reference adapter. General Portal egress is
-    quarantined; A2A has no transport; and no effectful coding-agent Coffin exists.
-    `ExecutionRoadPolicy@1` and `ExecutionRoadDecision@1` are accepted design targets, not shipped
-    records.
-
-## The roads are layered
-
-Portal, A2A, and coding agents answer different questions. Portal is a cognition/service boundary.
-A2A is sovereign task delegation. A coding agent is a contained iterative runtime. They are not
-three values in one provider dropdown.
-
-```mermaid
-flowchart LR
-    I["Admitted Intent"] --> W["Pinned Scroll and road policy"]
-    W --> N["Native LychD station"]
-    W --> P["A2A peer task"]
-    W --> C["Delegated coding runtime"]
-    N --> D["Deterministic tool"]
-    N --> S["Local Soulstone Agent"]
-    N --> R["Portal capability<br/>or Portal-backed Agent"]
-    C --> L["Local/offline cognition"]
-    C --> G["Job-scoped Provider Gate"]
-    G --> R2["Separate Portal attempts"]
-    P --> O["Receiver-owned workflow and models"]
-```
-
-The peer's internal model is not the sender's Portal. Conversely, a coding CLI does not stop being
-a delegated runtime merely because its planner calls an API. That child API call is another exact
-disclosure edge under the parent job.
-
-A native Agent loop follows the same rule. Validation repair, tool-result follow-up, changed
-history, or another model round creates another exact Portal payload and decision; the first grant
-or disclosure never preauthorizes the loop.
+The road planner is Designed. Current work uses fixed source-defined Patterns, local capabilities,
+and the effect-free delegated reference adapter. Portal egress remains quarantined; A2A transport
+and an effectful Coffin do not ship. [Workflow](../../../adr/28-workflow.md#execution-road-planning)
+owns the policy, [Context](../../../adr/21-context.md#privatization-and-the-privacy-cut) the material
+branch, and [Security](../../../adr/09-security.md#portal-privatization-and-egress) each disclosure.
 
 ## Choose by the work
 
@@ -65,6 +33,29 @@ If the task can be expressed as one model request while LychD keeps the plan, us
 backed native Agent. If the receiver must own a durable public task, use A2A. If the worker needs a
 workspace and iterative tools under LychD containment, use a delegated coding agent. A consumer
 subscription never becomes an automated road merely because the payload was sanitized.
+
+## The roads are layered
+
+Portal, A2A, and coding agents answer different questions. Portal is a cognition/service boundary.
+A2A is sovereign task delegation. A coding agent is a contained iterative runtime. They are not
+three values in one provider dropdown.
+
+| From | Leads to |
+| --- | --- |
+| Admitted Intent | Pinned Scroll and road policy |
+| Pinned Scroll and road policy | Native LychD station; A2A peer task; Delegated coding runtime |
+| Native LychD station | Deterministic tool; Local Soulstone Agent; Portal capability or Portal-backed Agent |
+| Delegated coding runtime | Local/offline cognition; Job-scoped Provider Gate |
+| Job-scoped Provider Gate | Separate Portal attempts |
+| A2A peer task | Receiver-owned workflow and models |
+
+The peer's internal model is not the sender's Portal. Conversely, a coding CLI does not stop being
+a delegated runtime merely because its planner calls an API. That child API call is another exact
+disclosure edge under the parent job.
+
+A native Agent loop follows the same rule. Validation repair, tool-result follow-up, changed
+history, or another model round creates another exact Portal payload and decision; the first grant
+or disclosure never preauthorizes the loop.
 
 ## Decide in this order
 
@@ -113,34 +104,18 @@ selects hidden fallback providers, or requires transparent MITM is ineligible.
 
 ## What Spellweaver closes
 
-Every eligible placement pins `ExecutionRoadPolicy@1` with:
+Before admission, check that the placement's `ExecutionRoadPolicy@1` pins its allowed branches,
+exact input/output and non-completion, authority, projections, budgets, effects, and recovery.
+Spellweaver commits an `ExecutionRoadDecision@1` binding the exact crossing before its road-owned
+submission. The later dispatch event, `ServiceJobAttempt`, Intercom task/outbox, or `AgentJob`
+references that decision. Selection never becomes another status ledger or settles the road owner's
+truth.
 
-- Pattern, Spell, placement, input/output, error, and non-completion identities;
-- allowed labor and cognition roads plus deterministic branch predicates and precedence;
-- source classes, required lineage, consumer-specific projection, Privacy Cut/verifier, consent,
-  and residual-disclosure limits;
-- exact effect, workspace, tool, artifact, quarantine, and result-adoption boundaries;
-- provider/peer/runtime eligibility without embedding credentials or live handles;
-- deadline, request, token, concurrency, spend, retry, and fan-out ceilings;
-- immediate, durable-job, or live-session continuity; idempotency and reconciliation; and
-- explicit fallback edges and the terminals allowed to enter them.
-
-Before admission, Spellweaver creates `ExecutionRoadDecision@1` and the Run ledger stores it. The
-later dispatch event, `ServiceJobAttempt`, Intercom task/outbox, or `AgentJob` references its id.
-The decision binds exact input/export digest, artifact-reference-set digest, opaque custody refs,
-canonical content-digest/media-type/size/classification evidence, source-manifest and influence-label
-digests, safe residual-disclosure summary/digest, opaque restricted lineage refs, purpose, policy,
-expiry, budgets, target, parent-decision/retry generation, expected result, validators, and record
-classification/visibility/retention. It carries no caller-supplied full `ArtifactRef`, raw subject,
-filename, material-parent, source span, reversal value, credential, or live grant/lease handle. It
-records selection only and never
-becomes another status ledger or settles the road owner's truth. A durable road record commits with
-it atomically when possible; otherwise the decision commits first and the idempotent road record
-adopts its id.
-
-The complete record is restricted, deployment-local, and non-exportable. Loom, logs, and external
-receipts receive only an opaque decision id or Security's scoped keyed `EvidenceDigest@1` projection;
-plain canonical hashes never become broadly visible evidence or an anonymization claim.
+[Workflow's execution-road law](../../../adr/28-workflow.md#execution-road-planning) owns the
+complete records and transaction ordering. The decision is restricted, deployment-local, and
+non-exportable; Loom, logs, and external receipts receive only its opaque id or Security's scoped
+keyed `EvidenceDigest@1` projection. Plain canonical hashes are not broadly visible evidence or an
+anonymization claim.
 
 Spellweaver rejects a Scroll when a remote edge can bypass classification, Cut, byte-time egress,
 budget reservation, durable submission, quarantine, or explicit adoption. It also rejects A2A

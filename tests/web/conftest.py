@@ -24,6 +24,7 @@ from lychd.domain.delegation.services import DelegatedAgentCoordinator, InMemory
 from lychd.domain.orchestration.journal import TransitionJournal
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan, TransitionTrace
+from lychd.domain.web.atlas import InMemoryAtlasStore
 from lychd.domain.web.contracts import CsrfClientContract
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.projection import EventProjector
@@ -31,7 +32,14 @@ from lychd.domain.web.sessions import BridgeSessionStore, RunHandle
 from lychd.domain.web.swap_requests import InMemorySwapRequestLedger
 from lychd.domain.web.tickets import TicketStore
 from lychd.extensions.manager import ExtensionManager
-from lychd.interface.web import AltarController, BridgeController, LoomController, NexusController, OrbController
+from lychd.interface.web import (
+    AltarController,
+    AtlasController,
+    BridgeController,
+    LoomController,
+    NexusController,
+    OrbController,
+)
 from lychd.interface.web.deps import web_dependencies
 from lychd.interface.web.openapi import StrictPydanticSchemaPlugin, build_openapi_config
 
@@ -189,7 +197,8 @@ class FakeOrchestrator(OrchestratorManager):
         )
         trace = kwargs.get("trace")
         if isinstance(trace, TransitionTrace):
-            trace.plan = plan
+            trace.action_type = plan.action_type
+            trace.total_metabolic_cost = plan.total_metabolic_cost
             trace.phase = "completed"
             self.transitions.record(trace)
         return plan
@@ -279,6 +288,7 @@ def fake_services() -> SimpleNamespace:
         leases=LeaseLedger(),
         fragments=fragments,
         bridge_sessions=sessions,
+        atlas=InMemoryAtlasStore(),
         consents=consents,
         tickets=tickets,
         swap_requests=swap_requests,
@@ -296,7 +306,14 @@ def fake_services() -> SimpleNamespace:
 def altar_client(fake_services: SimpleNamespace) -> AsgiClient:
     """A test client wired to the real API and SPA controllers."""
     app = Litestar(
-        route_handlers=[AltarController, BridgeController, NexusController, LoomController, OrbController],
+        route_handlers=[
+            AltarController,
+            AtlasController,
+            BridgeController,
+            NexusController,
+            LoomController,
+            OrbController,
+        ],
         dependencies=web_dependencies,
         middleware=[sigil_auth_middleware()],  # the Ward: connection.user = settings Sigil (scopes ["*"])
         openapi_config=build_openapi_config(title="LychD Test", version="test", use_handler_docstrings=True),

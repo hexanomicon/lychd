@@ -1,10 +1,7 @@
-"""Shared workflow-node helpers: the streaming pump + the consent park (C3).
+"""Agent streaming and durable consent binding for workflow nodes.
 
-`pump_agent_events` streams one agent run (token deltas → `emit.token`, RAW; the
-client renders as text), captures the typed output, and returns the JSONABLE message
-history. `park_on_consent` serializes the current logical turn into graph STATE and writes the
-consent record — but does NOT emit (S4: the `CONSENT` event moves to `perform_run`,
-fired only AFTER `set_status(AWAITING_CONSENT)`).
+The worker publishes consent only after committing the Run's parked relation;
+these helpers capture the tool identity and serializable message suffix.
 """
 
 from __future__ import annotations
@@ -197,14 +194,10 @@ def new_step_id() -> str:
 
 
 def is_single_approval(requests: DeferredToolRequests) -> bool:
-    """Whether a park is honestly representable today: exactly one approval, no external calls.
+    """Require one approval and no external calls for the single-verdict consent record.
 
-    One consent record = one card = one tri-state verdict. pydantic-ai requires a
-    result for EVERY deferred call on resume, so a turn that raises >1 approval (or any
-    external deferred `call`) cannot be resolved from a single card without silently
-    applying one seen verdict to unseen calls (finding 5). Until per-call cards land,
-    the caller degrades such a turn to a bottleneck instead of parking it. Today only
-    `coven` is approval-gated, so a well-behaved turn always yields exactly one.
+    Every deferred call needs its own result. Rejecting other shapes prevents one
+    verdict from authorizing unseen calls.
     """
     return len(requests.approvals) == 1 and not requests.calls
 
@@ -259,12 +252,10 @@ async def park_on_consent(
     messages: list[Any],
     binding: ConsentToolBinding,
 ) -> ConsentDecision:
-    """C3 step-2 park: serialize the pause into STATE and write the consent record.
+    """Store the current turn's suffix and tool binding with its consent record.
 
-    `messages` is only the indivisible current LychD turn suffix. Settled history is
-    re-bounded under the grant acquired on resume, then prepended to this chain.
-    S4: writes the row but does NOT emit — the `CONSENT` event fires in `perform_run`
-    after `set_status(AWAITING_CONSENT)`, so a fast verdict can never beat the guard.
+    Resume re-bounds settled history under a fresh grant before appending this
+    suffix. The worker commits the Run's parked relation before publishing consent.
     """
     calls = requests.approvals
     first = calls[0]

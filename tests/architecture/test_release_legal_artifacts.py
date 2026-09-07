@@ -102,7 +102,7 @@ def test_container_carries_project_license_and_notices() -> None:
     assert "psycopg[pool]>=3.2.13,<4" in dependencies
     assert all("psycopg-binary" not in dependency for dependency in dependencies)
     assert project["project"]["optional-dependencies"]["postgres-binary"] == [
-        "psycopg-binary==3.2.13",
+        "psycopg-binary==3.3.5",
     ]
     assert "--no-dev --no-install-project --no-editable" in containerfile
 
@@ -112,8 +112,8 @@ def test_altar_notice_is_generated_and_shipped_with_static_client() -> None:
     public_notice = ROOT / "src" / "lychd" / "public" / "THIRD_PARTY_NOTICES.txt"
     notice = source_notice.read_text(encoding="utf-8")
 
-    assert "mermaid@11.16.0" in notice
-    assert "svelte@5.56.8" in notice
+    assert "mermaid@11.17.2" in notice
+    assert "svelte@5.57.0" in notice
     assert "Regenerate with: npm run licenses" in notice
     assert public_notice.read_bytes() == source_notice.read_bytes()
 
@@ -136,7 +136,7 @@ def test_candidate_workflow_cannot_publish_packages_or_images() -> None:
 
     assert "Release Candidate (No Publication)" in workflow
     assert "make release-candidate" in workflow
-    assert "actions/upload-artifact@v4" in workflow
+    assert "actions/upload-artifact@v7" in workflow
     assert "contents: read" in workflow
     for forbidden in (
         "packages: write",

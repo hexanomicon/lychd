@@ -23,7 +23,16 @@ def test_catalogue_lists_registered_workflow(
     response = altar_client.get("/api/v1/loom")
 
     assert response.status_code == 200
-    entry = response.json()[0]
+    catalogue = response.json()
+    assert [
+        (item["pattern_id"], item["revision"], item["active"], item["default"], item["route_rank"])
+        for item in catalogue
+    ] == [
+        ("bridge_chat", "1", True, True, None),
+        ("bridge_chat", "2", False, False, None),
+        ("delegated_rite", "1", True, False, 1),
+    ]
+    entry = catalogue[0]
     assert entry["pattern_id"] == _NAME
     assert entry["revision"] == _REVISION
     assert entry["implementation_revision"] == "py.1"

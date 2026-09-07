@@ -12,7 +12,6 @@ form, tools return, and constraints reshape what may follow. **Vṛtti** comes f
 occur, or take a condition. Flux is present movement, not a state laid away for later.
 
 [Call](../call.md) makes a movement addressable; [Blade](../blade.md) cuts among those opened.
-Patañjali names five Vṛttis, received here as forms present movement may take:
 
 During a [casting](../../../divination/altar/circle.md#the-casting-inside-the-circle), model and
 tool returns, constraints, choices, and effects may participate in this present movement. Flux is
@@ -20,6 +19,8 @@ not a synonym for Graph traversal or provider output: Graph supplies typed execu
 Spirit carries what becomes present through it.
 
 ## The Five Modifications
+
+Patañjali names five Vṛttis, received here as forms present movement may take:
 
 | Vṛtti | LychD correspondence |
 | :--- | :--- |

@@ -5,42 +5,20 @@ icon: material/archive-music-outline
 
 # :material-archive-music-outline: Package
 
-`riffmaw.forge_music_bundle@1` seals accepted composition, instrumental and vocal performances,
-musical production effects, stems, mix relationships, and masters into `MusicAssetBundle@1`. The
-bundle preserves credits, provenance, findings, checksums, target profiles, and the exact revisions
-from which it was made.
+A master arrives with stems, credits, findings, and enough lineage to understand how it was made. `riffmaw.forge_music_bundle@2` seals accepted composition, instrumental/vocal performances, production effects, stems, mix relationships, and masters into `MusicAssetBundle@1` with target profiles, checksums, and exact source revisions.
+
+A compound model-native layer also retains its compound digest and Riffmaw-issued `SemanticFacetAdmissionReceipt@1`. A visual, timed-language, picture-sound, or world-sound receipt cannot substitute for musical judgment.
 
 ## Handoff and authority
 
-Broadcast may admit a music bundle for editorial assembly; Foundry may admit one for a game build.
-The consumer validates the digest, semantic roles, format, timing, rights posture, findings, and
-approval against its own purpose. A handoff shares no Sigil, secret, provider or DAW session,
-capture authority, performer consent for another use, dialogue-localization or picture-sound
-authority, editorial placement, or publication permission.
+Broadcast or Foundry independently admits the exact digest, role, format, timing, rights, findings, and approval for its purpose. The bundle carries no Sigil, secret, provider/DAW session, capture permission, performer consent for another use, dialogue/picture-sound authority, editorial placement, or publication permission.
 
-Capture, paid generation, DAW export, and application handoff are distinct effects with exact
-request digests and receipts. If a destination may have received or written the artifact before an
-acknowledgement was lost, the result remains **unknown** until reconciled. Riffmaw does not repeat
-the effect merely to obtain a cleaner answer.
+Capture, paid generation, DAW export, and handoff remain separate effects with exact request digests/receipts. A destination may have written bytes before acknowledgement disappeared. Keep that outcome **unknown** and reconcile the write before another attempt.
 
-Restart pins source, feature, Pattern, model, plug-in, session, edit, mix, and export revisions.
-Raw takes, rejected candidates, indexes, accepted works, stems, masters, and handoffs keep separate
-retention. A revoked consent or later-invalid source stales dependants without editing history.
-Deletion stops capture and indexing, removes permitted derivatives, inventories exported copies,
-and preserves only required content-free receipts; it cannot erase a consumer's copy by promise.
+Restart resolves source, feature, Pattern, model, plug-in, session, edit, mix, and export revisions. Takes, rejects, indexes, works, stems, masters, and handoffs keep independent retention. Revocation or invalid source stales dependants while preserving history. Deletion stops capture/indexing, removes permitted derivatives, inventories exports, and leaves required content-free receipts without promising a consumer forgot the work.
 
 ## Proving the bundle
 
-Use two local synthetic two-minute references with known events, one frozen thirty-second guitar
-take, one short MIDI fixture, one approved sung-vocal fixture, and a marker at `01:32`. Produce
-pinned onset and tempo observations, an editable `FeelProfile@1`, an original four-section arrangement,
-one AI-generated candidate with complete receipt, human selection and editing, one vocal layer or
-musical production-effect print, rendered intermediate stems, a candidate mix, a target-conformant
-technical master, three synchronization markers, restart-safe indexing, and a lineage-complete
-`MusicAssetBundle@1`.
-Separated estimates must be labelled separately from native or rendered stems. No arbitrary folder,
-ambient microphone, copyrighted catalogue, Portal, visual generation, paid effect, or platform
-call enters this proof.
+Use two local synthetic two-minute references, a frozen thirty-second guitar take, short MIDI, an approved sung fixture, and the `01:32` marker. Produce pinned onset/tempo observations, editable `FeelProfile@1`, original four-section arrangement, one generated candidate with complete receipt, human selection/edit, vocal layer or production-effect print, intermediate stems, candidate mix, target-conformant technical master, three sync markers, restart-safe indexing, and lineage-complete bundle.
 
-The separate live-jam fixture belongs to [Sessions](sessions.md#proving-the-jam). Package proves
-only the lineage-complete music bundle and its exact handoff.
+Label separated estimates separately from native or rendered stems. No ambient folder/microphone, copyrighted catalogue, Portal, visuals, paid effect, or platform call enters the proof. [Sessions](sessions.md#proving-the-jam) owns the independent live-jam fixture.

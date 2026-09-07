@@ -1,0 +1,1 @@
+import"./CoA4358r.js";import{M as e}from"./BFnTIri1.js";export{e as createArchitectureServices};

@@ -419,7 +419,7 @@
                 </header>
                 <dl class="kv">
                   <dt>adapter</dt><dd>{runtime.runtime_id} · {runtime.transport}</dd>
-                  <dt>extension</dt><dd>{runtime.provider_id}</dd>
+                  <dt>registrant</dt><dd>{runtime.registrant_id}</dd>
                   <dt>coffin</dt>
                   <dd>{runtime.coffin_profiles.length ? runtime.coffin_profiles.join(" · ") : "not required"}</dd>
                   <dt>Provider Gate</dt><dd>{runtime.provider_gate.replaceAll("_", " ")}</dd>

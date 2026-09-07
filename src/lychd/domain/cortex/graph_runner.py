@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 from uuid import uuid4
 
+import structlog
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_graph import BaseNode, End, Graph
 from pydantic_graph.persistence import BaseStatePersistence
@@ -13,12 +14,16 @@ from lychd.domain.cortex.execution_context import bind_occurrence, reset_occurre
 from lychd.domain.cortex.runs import ConsentPending, RunParked
 from lychd.domain.cortex.stasis import PhylacteryProtocol
 from lychd.domain.delegation.signals import DelegatedAgentParked, DelegatedAgentPending
+from lychd.domain.orchestration.journal import TransitionRecord, notify_transition
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
     from lychd.domain.cortex.priority import Priority
     from lychd.domain.orchestration.schema import TransitionTrace
+
+
+logger = structlog.get_logger()
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -85,20 +90,6 @@ class NodeOccurrenceEvent:
     delegated_runtime: str | None = None
 
 
-@dataclass(frozen=True, kw_only=True)
-class TransitionTraceEvent:
-    """A safe immutable observation copied from a mutable transition trace."""
-
-    request_id: str
-    phase: str
-    target_capability_key: str
-    run_id: str | None
-    occurrence_id: str | None
-    physical_transition_id: str | None
-    compensation_transition_id: str | None
-    action_type: str | None
-
-
 def _extract_signal[T: BaseException](exc: BaseException, kind: type[T], *, max_depth: int = 5) -> T | None:
     """Find one unambiguous `kind` signal through cause/context or an exception group.
 
@@ -157,7 +148,8 @@ class GraphRunner[StateT: BaseModel]:
         on_stasis_enter: Callable[[], Awaitable[None]] | None = None,
         on_stasis_exit: Callable[[], Awaitable[None]] | None = None,
         on_node_event: Callable[[NodeOccurrenceEvent], None] | None = None,
-        on_transition_event: Callable[[TransitionTraceEvent], None] | None = None,
+        on_transition_event: Callable[[TransitionRecord], None] | None = None,
+        validate_state: Callable[[StateT], None] | None = None,
         run_id: str | None = None,
         policy: StasisPolicy | None = None,
     ) -> None:
@@ -169,6 +161,8 @@ class GraphRunner[StateT: BaseModel]:
         (spec-00 C7) fire around a transition so the ledger
         can flip ``RUNNING → AWAITING_HARDWARE → RUNNING`` — ``on_stasis_enter`` after
         rehydration, ``on_stasis_exit`` after ``handle_transition`` returns.
+        A workflow-owned ``validate_state`` checks fresh or restored state against
+        its admitted Run before any node executes, including hardware re-entry.
         """
         self.orchestrator = orchestrator
         self.persistence = persistence
@@ -177,6 +171,7 @@ class GraphRunner[StateT: BaseModel]:
         self._on_stasis_exit = on_stasis_exit
         self._on_node_event = on_node_event
         self._on_transition_event = on_transition_event
+        self._validate_state = validate_state
         self._run_id = run_id
         self._policy = policy or StasisPolicy()
 
@@ -191,35 +186,32 @@ class GraphRunner[StateT: BaseModel]:
         delegated_job_id: str | None = None,
         delegated_runtime: str | None = None,
     ) -> None:
-        """Publish a runtime occurrence edge without making GraphRunner an evidence store."""
+        """Project an occurrence without letting observer failure change execution truth."""
         if self._on_node_event is not None:
-            self._on_node_event(
-                NodeOccurrenceEvent(
-                    occurrence_id=occurrence_id,
-                    node_type=type(node),
-                    phase=phase,
-                    wait_kind=wait_kind,
-                    transition_request_id=transition_request_id,
-                    delegated_job_id=delegated_job_id,
-                    delegated_runtime=delegated_runtime,
+            try:
+                self._on_node_event(
+                    NodeOccurrenceEvent(
+                        occurrence_id=occurrence_id,
+                        node_type=type(node),
+                        phase=phase,
+                        wait_kind=wait_kind,
+                        transition_request_id=transition_request_id,
+                        delegated_job_id=delegated_job_id,
+                        delegated_runtime=delegated_runtime,
+                    )
                 )
-            )
+            except Exception:  # projection sinks cannot decide Run outcomes
+                logger.warning(
+                    "node_observer_failed",
+                    run_id=self._run_id,
+                    occurrence_id=occurrence_id,
+                    phase=phase,
+                    exc_info=True,
+                )
 
     def _transition_event(self, trace: TransitionTrace) -> None:
-        """Copy the mutable trace at one acknowledged semantic boundary."""
-        if self._on_transition_event is not None:
-            self._on_transition_event(
-                TransitionTraceEvent(
-                    request_id=trace.request_id,
-                    phase=trace.phase,
-                    target_capability_key=trace.target_capability_key,
-                    run_id=trace.run_id,
-                    occurrence_id=trace.occurrence_id,
-                    physical_transition_id=trace.physical_transition_id,
-                    compensation_transition_id=trace.compensation_transition_id,
-                    action_type=trace.plan.action_type if trace.plan is not None else None,
-                )
-            )
+        """Project a Graph-owned transition phase through the shared observer boundary."""
+        notify_transition(TransitionRecord.from_trace(trace), self._on_transition_event)
 
     async def run_graph(
         self,
@@ -277,6 +269,8 @@ class GraphRunner[StateT: BaseModel]:
                 )
 
             async with context_manager as graph_run:
+                if self._validate_state is not None:
+                    self._validate_state(graph_run.state)
                 active_node: BaseNode[Any, Any, Any] | None = None
                 occurrence_id: str | None = None
                 try:
@@ -370,7 +364,7 @@ class GraphRunner[StateT: BaseModel]:
                             priority=float(self.signal_priority),
                             run_id=self._run_id,
                             occurrence_id=occurrence_id,
-                            observer=self._transition_event,
+                            observer=self._on_transition_event,
                         )
                         try:
                             await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)

@@ -46,7 +46,7 @@ closes preference-driven stack selection:
 
 - Svelte 5 with static SvelteKit is the browser framework; Litestar remains the only production
   server and durable authority.
-- Node 24.18 and npm 11.16 are the only JavaScript build grammar. Do not introduce Bun, a second
+- Node 24.20 and npm 12.0 are the only JavaScript build grammar. Do not introduce Bun, a second
   lockfile, or command paths whose runtime changes by invocation.
 - Native semantic CSS and custom properties are the styling language. Refactor ownership and
   cascade layers instead of adding Tailwind, Sass, project-owned PostCSS, or a parallel token set.

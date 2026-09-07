@@ -36,7 +36,7 @@ def test_mountdata_rejects_mirror_true_for_non_symmetric_paths() -> None:
 
 @pytest.mark.parametrize("option", ["x\nExec=/bin/sh", "idmap=uids=0-1-1", ""])
 def test_mountdata_rejects_unbounded_or_injected_options(option: str) -> None:
-    with pytest.raises(ValueError, match="unsafe volume option|Unsupported"):
+    with pytest.raises(ValueError, match=r"unsafe volume option|Unsupported"):
         MountData.from_str(f"/data/models:/models:ro,{option}")
 
 
@@ -68,7 +68,7 @@ def test_quadlet_container_rejects_directive_and_specifier_injection(
     }
     with pytest.raises(
         ValueError,
-        match="single-line|specifier|backslash|environment expansion|command separator",
+        match=r"single-line|specifier|backslash|environment expansion|command separator",
     ):
         QuadletContainer.model_validate(payload)
 
@@ -174,7 +174,7 @@ def test_mountdata_rejects_systemd_quote_canonicalization(
     host_path: str,
     container_path: str,
 ) -> None:
-    with pytest.raises(ValueError, match="volume delimiters|quote characters"):
+    with pytest.raises(ValueError, match=r"volume delimiters|quote characters"):
         MountData(host_path=Path(host_path), container_path=Path(container_path), mirror=False)
 
 
@@ -213,7 +213,7 @@ def test_mountdata_rejects_systemd_environment_expansion(
     ],
 )
 def test_quadlet_pod_rejects_unsafe_publish_port_mappings(mapping: str) -> None:
-    with pytest.raises(ValueError, match="PublishPort|single-line"):
+    with pytest.raises(ValueError, match=r"PublishPort|single-line"):
         QuadletPod(publish_ports=[mapping])
 
 
@@ -232,7 +232,7 @@ def test_quadlet_pod_rejects_duplicate_host_ports() -> None:
     ],
 )
 def test_quadlet_target_rejects_directive_and_escape_injection(payload: dict[str, object]) -> None:
-    with pytest.raises(ValueError, match="single-line|backslash|safe unit-name component"):
+    with pytest.raises(ValueError, match=r"single-line|backslash|safe unit-name component"):
         QuadletTarget.model_validate(payload)
 
 

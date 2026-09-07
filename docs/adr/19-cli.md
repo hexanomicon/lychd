@@ -47,10 +47,10 @@ renders the plan without LychD-managed mutation. Probes are bounded, though an i
 write its own metadata; therefore this is not a bit-for-bit host no-effect claim. Missing runtime
 capabilities remain for `bind`; only an unsafe or impossible inscription blocks `init`.
 
-Effectful `init` rejects effective UID 0 before Settings, host inspection, locks, or filesystem
-effects; locks and requires the previewed plan unchanged; creates only planned paths, journals
-confirmed progress, verifies convergence; and records exact device, inode, and mount authority for
-dedicated Codex, Crypt, and Forge roots. It adopts an existing dedicated root only through that
+Effectful `init` rejects effective UID 0 before Settings, host inspection, locks or filesystem
+effects. It then takes the lifecycle lock and requires the previewed plan to remain unchanged.
+Execution creates only planned paths, journals confirmed progress, verifies convergence, and
+records exact device, inode and mount authority for dedicated Codex, Crypt and Forge roots. It adopts an existing dedicated root only through that
 verified receipt. Shared XDG parents, source checkouts, foreign mounts, and the mounted
 Phylactery are never recursively adopted. Dry-run is available under effective root because it
 does not grant LychD mutation authority.
@@ -73,8 +73,9 @@ not silent unit enablement. Planned binding truth belongs here; current host inv
 For `lychd start [TARGET]` and `lychd stop [TARGET]`, omission means the source-owned `system`
 target. Direct control accepts only the help-advertised lifecycle subset and exact Scribe-owned
 user units. Before an effect it holds the lifecycle lock and revalidates binding generation, unit
-identity/state, and Vessel authority, refusing unknown, split, or ambiguous state. An active Vessel
-must be controlled through its authenticated lifecycle port. That port is not in the production
+identity/state, and Vessel authority, refusing unknown, split, or ambiguous state.
+
+An active Vessel must be controlled through its authenticated lifecycle port. That port is not in the production
 composition, so both commands refuse rather than bypass the Vessel. Direct control neither runs
 migrations nor evaluates application readiness nor executes a general dependency graph; graceful
 admission closure, lease-aware draining, and force semantics are likewise not delivered.

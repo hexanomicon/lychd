@@ -5,19 +5,10 @@ icon: material/notebook-heart-outline
 
 # :material-notebook-heart-outline: Journal
 
-Journal keeps what the Magus explicitly confirms or writes. It does not turn plans, reminders,
-receipts, absence, or model inference into lived history.
+The meal was planned. Whether it was eaten is another fact, supplied by the person who lived the day. Journal preserves that distinction for check-ins, missed activities, substitutions, and reflection.
 
-`wellbeing.check_in@1` records only confirmed eating, completion, skip, substitution, duration, or
-reflection. `wellbeing.journal@1` preserves operator words. `wellbeing.review_cycle@1` may report
-neutral counts and propose the next manual intent, but it cannot silently change the next plan,
-relax a profile, order household goods, diagnose a pattern, or disclose private history.
+`wellbeing.check_in@1` records confirmed eating, completion, skip, substitution, duration, or reflection. `wellbeing.journal@1` preserves the Magus's words. A later `wellbeing.review_cycle@1` may return neutral counts and propose the next manual Intent. It cannot revise a plan or restriction, order goods, diagnose a pattern, or disclose history on that person's behalf.
 
-Profiles, sources, plan revisions, decisions, check-ins, journals, derived summaries, schedules,
-exports, deletion fences, and deletion receipts remain separately attributable. Schedules are
-opt-in, timezone-aware, bounded, pausable, and revocable; missed reminders expire and reviews
-coalesce. Restart resumes only compatible pinned work and never duplicates a check-in, export, or
-deletion effect.
+Profiles, sources, plans, decisions, check-ins, journals, derived summaries, schedules, exports, deletion fences, and receipts remain separately attributable. A reminder cannot fill a blank in lived history. Schedules are opt-in, timezone-aware, bounded, pausable, and revocable; missed reminders expire and reviews coalesce.
 
-Export and deletion follow the consent and lifecycle boundary in [Profile](profile.md). Return to
-[Wellbeing](index.md).
+Restart resumes only compatible pinned work and creates no duplicate check-in, export, or deletion effect. [Profile](profile.md) owns the consent, export, and deletion journey. Return to [Wellbeing](index.md).

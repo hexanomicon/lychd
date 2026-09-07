@@ -20,7 +20,7 @@ while [Spellweaver](../../../adr/28-workflow.md#returning-findings) owns any lat
 ## Fix the graph under examination
 
 Entry requires an exact, version-pinned
-[Composition Suite](../../../compositions/index.md#suites-do-not-dissolve-their-members) graph;
+[Composition Suite](../../../compositions/products-and-suites.md#compositions-relate-without-nesting) graph;
 each member Composition and Pattern revision; retained artifact and Intent handoffs; the downstream
 failing observation; its Rubric, Evaluator, Environment, verdict, and uncertainty; and declared
 dependencies between artifacts and evidence.

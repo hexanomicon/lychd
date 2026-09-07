@@ -1,3 +1,4 @@
+import { SvelteURL } from "svelte/reactivity";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,8 +8,11 @@ import type {
   RunEventEnvelope,
   RunProjectionSnapshot
 } from "$lib/api/models";
+import { goto, replaceState } from "$app/navigation";
 
-vi.mock("$app/navigation", () => ({ goto: vi.fn() }));
+const mockPage = vi.hoisted(() => ({ state: {} as { bridgeComposerFocus?: string }, url: new URL("http://localhost/bridge") }));
+vi.mock("$app/state", () => ({ page: mockPage }));
+vi.mock("$app/navigation", () => ({ goto: vi.fn(), replaceState: vi.fn() }));
 vi.mock("$lib/api/client", () => ({
   ApiError: class ApiError extends Error {
     status?: number;
@@ -17,19 +21,25 @@ vi.mock("$lib/api/client", () => ({
   createBridgeSession: vi.fn(),
   decideConsent: vi.fn(),
   getBridgeSnapshot: vi.fn(),
+  getAtlasReferences: vi.fn().mockResolvedValue([]),
+  getAtlasProject: vi.fn(),
   getRunSnapshot: vi.fn(),
   listenToRun: vi.fn(),
   sendBridgeMessage: vi.fn()
 }));
 
 import {
+  ApiError,
+  getAtlasProject,
   cancelBridgeRun,
+  createBridgeSession,
   decideConsent,
   getBridgeSnapshot,
   getRunSnapshot,
   listenToRun,
   sendBridgeMessage
 } from "$lib/api/client";
+import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
 import BridgeView from "./BridgeView.svelte";
 
 const createdAt = "2026-07-28T00:00:00Z";
@@ -56,7 +66,8 @@ function snapshot(
   const sessions = ["session-a", "session-b"].map((id) => ({
     id,
     title: `Séance ${id.at(-1)?.toUpperCase()}`,
-    created_at: createdAt
+    created_at: createdAt,
+    pending_count: 0
   }));
   const selected = sessions.find((session) => session.id === sessionId);
   if (!selected) throw new Error("Unknown test session.");
@@ -178,6 +189,8 @@ function latestRunListener() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPage.state = {};
+  mockPage.url = new URL("http://localhost/bridge");
   getSnapshotMock.mockImplementation(async (sessionId) =>
     snapshot(sessionId ?? "session-a")
   );
@@ -191,6 +204,47 @@ afterEach(() => {
 });
 
 describe("Bridge route and stream ownership", () => {
+  it("opens the first séance once and focuses its composer", async () => {
+    getSnapshotMock.mockResolvedValueOnce({
+      sessions: [], session: null, active_runs: [], pending_consents: [], pending_count: 0
+    });
+    let finish!: (value: Awaited<ReturnType<typeof createBridgeSession>>) => void;
+    vi.mocked(createBridgeSession).mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+    const view = render(BridgeView);
+    expect(await screen.findByRole("heading", { name: "Begin a séance." })).toBeTruthy();
+    const begin = screen.getByRole("button", { name: "New Séance" });
+    await fireEvent.click(begin);
+    await fireEvent.click(begin);
+    expect(createBridgeSession).toHaveBeenCalledTimes(1);
+    expect((begin as HTMLButtonElement).disabled).toBe(true);
+    const created = snapshot("session-b").session;
+    if (!created) throw new Error("The fixture has no created session.");
+    finish({ session: created });
+    await waitFor(() => expect(goto).toHaveBeenCalledWith("/bridge/session-b", {
+      keepFocus: true, state: { bridgeComposerFocus: "session-b" }
+    }));
+    view.unmount();
+    mockPage.state = { bridgeComposerFocus: "session-b" };
+    const destination = render(BridgeView, { sessionId: "session-b" });
+    const composer = await screen.findByRole("textbox", { name: "Message" });
+    await waitFor(() => expect(document.activeElement).toBe(composer));
+    expect(replaceState).toHaveBeenCalledWith("", {});
+    expect(screen.queryByRole("heading", { name: "Begin a séance." })).toBeNull();
+    destination.unmount();
+  });
+
+  it("does not mistake a pending or failed read for first use", async () => {
+    let fail!: (reason: Error) => void;
+    getSnapshotMock.mockReturnValueOnce(new Promise((_resolve, reject) => { fail = reject; }));
+    const view = render(BridgeView);
+    expect(screen.queryByRole("heading", { name: "Begin a séance." })).toBeNull();
+    fail(new Error("Bridge unavailable"));
+    expect(await screen.findByText("Bridge unavailable")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Begin a séance." })).toBeNull();
+    expect(createBridgeSession).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
   it("renders retained GenUI descriptors from settled turns", async () => {
     const settled = snapshot("session-a");
     if (!settled.session) throw new Error("The fixture has no selected session.");
@@ -554,8 +608,8 @@ describe("Bridge route and stream ownership", () => {
     expect(await screen.findByText("session-a")).toBeTruthy();
 
     await offer("one offering");
-    expect((screen.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("one offering");
-    await fireEvent.click(screen.getByRole("button", { name: /Offer/ }));
+    expect(screen.getByRole("region", { name: "Unresolved offering" }).textContent).toContain("one offering");
+    await fireEvent.click(screen.getByRole("button", { name: "Retry original offering" }));
     await act(async () => {
       await Promise.resolve();
     });
@@ -631,5 +685,227 @@ describe("Bridge route and stream ownership", () => {
 
     await act(() => vi.advanceTimersByTime(50));
     expect(getSnapshotMock).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("Bridge shell recovery and deliberate handoffs", () => {
+  function mountWithWork(work: ReturnType<typeof createBridgeWorkspace>, sessionId = "session-a") {
+    return render(BridgeView, { props: { sessionId }, context: new Map([[bridgeWorkspaceKey, work]]) });
+  }
+
+  it("restores exact-session drafts across remounts without sending or leaking them", async () => {
+    const work = createBridgeWorkspace();
+    const first = mountWithWork(work);
+    await screen.findByLabelText("Message");
+    await fireEvent.input(screen.getByLabelText("Message"), { target: { value: "unfinished A" } });
+    expect(work.needsUnloadWarning).toBe(true);
+    first.unmount();
+    const other = mountWithWork(work, "session-b");
+    await screen.findByLabelText("Message");
+    expect((screen.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("");
+    other.unmount();
+    const returned = mountWithWork(work);
+    await screen.findByLabelText("Message");
+    expect((screen.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("unfinished A");
+    expect(sendMock).not.toHaveBeenCalled();
+    await fireEvent.input(screen.getByLabelText("Message"), { target: { value: "" } });
+    expect(work.needsUnloadWarning).toBe(false);
+    returned.unmount();
+  });
+
+  it("retains the immutable unknown request across remount, later refusal, and a different draft", async () => {
+    const refusal = new ApiError("Scope refused");
+    Object.assign(refusal, { status: 403 });
+    sendMock.mockRejectedValueOnce(new TypeError("Response lost"))
+      .mockRejectedValueOnce(refusal)
+      .mockResolvedValueOnce(accepted("run-a", "original offering"));
+    const work = createBridgeWorkspace();
+    const first = mountWithWork(work);
+    await screen.findByLabelText("Message");
+    await offer("original offering");
+    first.unmount();
+    const returned = mountWithWork(work);
+    await screen.findByRole("button", { name: "Retry original offering" });
+    await fireEvent.input(screen.getByLabelText("Message"), { target: { value: "later draft" } });
+    await fireEvent.keyDown(screen.getByLabelText("Message"), { key: "Enter" });
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect((screen.getByRole("button", { name: "Offer" }) as HTMLButtonElement).disabled).toBe(true);
+    await fireEvent.click(screen.getByRole("button", { name: "Retry original offering" }));
+    await screen.findByText("Scope refused");
+    await fireEvent.click(screen.getByRole("button", { name: "Retry original offering" }));
+    await waitFor(() => expect(sendMock).toHaveBeenCalledTimes(3));
+    expect(sendMock.mock.calls.map((call) => call[2])).toEqual(Array(3).fill(sendMock.mock.calls[0]![2]));
+    expect(sendMock.mock.calls.every((call) => call[1] === "original offering")).toBe(true);
+    expect((screen.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("later draft");
+    expect(work.pending.size).toBe(0);
+    returned.unmount();
+  });
+
+  it("settles an in-flight response after unmount and refreshes the remounted conversation", async () => {
+    const admission = deferred<Awaited<ReturnType<typeof sendBridgeMessage>>>();
+    sendMock.mockReturnValueOnce(admission.promise);
+    const work = createBridgeWorkspace();
+    const first = mountWithWork(work);
+    await screen.findByLabelText("Message");
+    await offer("in flight");
+    first.unmount();
+    const returned = mountWithWork(work);
+    await screen.findByLabelText("Message");
+    getSnapshotMock.mockClear();
+    await act(() => admission.resolve(accepted("run-a", "in flight")));
+    await waitFor(() => expect(getSnapshotMock).toHaveBeenCalledWith("session-a"));
+    expect(work.pending.size).toBe(0);
+    expect(work.needsUnloadWarning).toBe(false);
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    returned.unmount();
+  });
+
+  it("recovers a failure arriving after unmount with the same request identity", async () => {
+    const admission = deferred<Awaited<ReturnType<typeof sendBridgeMessage>>>();
+    sendMock.mockReturnValueOnce(admission.promise).mockResolvedValueOnce(accepted("run-a", "late failure"));
+    const work = createBridgeWorkspace();
+    const first = mountWithWork(work);
+    await screen.findByLabelText("Message");
+    await offer("late failure");
+    first.unmount();
+    await act(() => admission.reject(new TypeError("Lost late")));
+    const returned = mountWithWork(work);
+    await screen.findByRole("button", { name: "Retry original offering" });
+    await fireEvent.click(screen.getByRole("button", { name: "Retry original offering" }));
+    expect(sendMock.mock.calls[1]![2]).toBe(sendMock.mock.calls[0]![2]);
+    returned.unmount();
+  });
+
+  it("keeps a definitely refused text alongside a later draft across remount", async () => {
+    const admission = deferred<Awaited<ReturnType<typeof sendBridgeMessage>>>();
+    sendMock.mockReturnValueOnce(admission.promise);
+    const work = createBridgeWorkspace();
+    const first = mountWithWork(work);
+    await screen.findByLabelText("Message");
+    await offer("refused original");
+    await fireEvent.input(screen.getByLabelText("Message"), { target: { value: "later draft" } });
+    const refusal = Object.assign(new ApiError("Admission refused"), { status: 403 });
+    await act(() => admission.reject(refusal));
+    first.unmount();
+    const returned = mountWithWork(work);
+    await screen.findByRole("region", { name: "Refused offering" });
+    expect((screen.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("later draft");
+    expect(screen.getByText("refused original")).toBeTruthy();
+    expect(work.pending.size).toBe(0);
+    expect((screen.getByRole("button", { name: "Restore refused offering" }) as HTMLButtonElement).disabled).toBe(true);
+    await fireEvent.input(screen.getByLabelText("Message"), { target: { value: "" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Restore refused offering" }));
+    expect((screen.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("refused original");
+    expect(work.refused.size).toBe(0);
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    returned.unmount();
+  });
+
+  it("hides the prior composer immediately when a same-component attention chooser read stalls", async () => {
+    mockPage.url = new SvelteURL("http://localhost/bridge");
+    const work = createBridgeWorkspace();
+    const view = render(BridgeView, { context: new Map([[bridgeWorkspaceKey, work]]) });
+    await screen.findByLabelText("Message");
+    await fireEvent.input(screen.getByLabelText("Message"), { target: { value: "draft for A" } });
+    const read = deferred<BridgeSnapshot>();
+    getSnapshotMock.mockReturnValueOnce(read.promise);
+    await act(() => { mockPage.url.search = "?attention=pending"; });
+    expect(screen.queryByLabelText("Message")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Offer" })).toBeNull();
+    await act(() => read.reject(new Error("Chooser unavailable")));
+    expect(await screen.findByText("Chooser unavailable")).toBeTruthy();
+    expect(screen.queryByLabelText("Message")).toBeNull();
+    expect(work.drafts.get("session-a")).toBe("draft for A");
+    expect(sendMock).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it("refetches when admission completes ahead of an older returning session snapshot", async () => {
+    const admission = deferred<Awaited<ReturnType<typeof sendBridgeMessage>>>();
+    sendMock.mockReturnValueOnce(admission.promise);
+    const work = createBridgeWorkspace();
+    const view = mountWithWork(work);
+    await screen.findByLabelText("Message");
+    await offer("message arriving during return");
+    await view.rerender({ sessionId: "session-b" });
+    await screen.findByText("session-b");
+    const olderRead = deferred<BridgeSnapshot>();
+    getSnapshotMock.mockReturnValueOnce(olderRead.promise);
+    await view.rerender({ sessionId: "session-a" });
+    const newest = snapshot("session-a", [projection()]);
+    newest.session!.turns = [accepted("run-a", "message arriving during return").turn];
+    getSnapshotMock.mockResolvedValueOnce(newest);
+    await act(() => admission.resolve(accepted("run-a", "message arriving during return")));
+    await act(() => olderRead.resolve(snapshot("session-a")));
+    expect(await screen.findByText("message arriving during return")).toBeTruthy();
+    expect(getSnapshotMock).toHaveBeenCalledTimes(4);
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it("focuses the exact Run again after another session and browser return", async () => {
+    mockPage.url = new SvelteURL("http://localhost/bridge/session-a?run=run-a");
+    const settled = snapshot("session-a");
+    settled.session!.turns = [{ ...accepted("run-a", "result for A").turn, role: "agent" }];
+    getSnapshotMock.mockImplementation(async (id) => id === "session-b" ? snapshot(id) : settled);
+    const view = render(BridgeView, { sessionId: "session-a" });
+    const first = (await screen.findByText("result for A")).closest("article");
+    await waitFor(() => expect(document.activeElement).toBe(first));
+    await act(() => { mockPage.url.search = ""; });
+    await view.rerender({ sessionId: "session-b" });
+    await screen.findByText("session-b");
+    await act(() => { mockPage.url.search = "?run=run-a"; });
+    await view.rerender({ sessionId: "session-a" });
+    const returned = (await screen.findByText("result for A")).closest("article");
+    expect(returned).not.toBe(first);
+    await waitFor(() => expect(document.activeElement).toBe(returned));
+    view.unmount();
+  });
+
+  it("clears only the decided session's attention while preserving another session count", async () => {
+    const initial = snapshot("session-a");
+    initial.pending_consents = [{ ...pendingConsent }];
+    initial.session!.pending_count = initial.sessions[0]!.pending_count = 1;
+    initial.sessions[1]!.pending_count = 2;
+    initial.pending_count = 3;
+    getSnapshotMock.mockResolvedValueOnce(initial);
+    decideConsentMock.mockResolvedValueOnce({ consent: { ...pendingConsent, state: "refused" }, pending_count: 2 });
+    const view = render(BridgeView, { sessionId: "session-a" });
+    await screen.findByRole("button", { name: "Consecrate" });
+    await fireEvent.click(screen.getByRole("button", { name: "Refuse" }));
+    await waitFor(() => expect(screen.getByRole("link", { name: /Séance A/ }).textContent).not.toContain("awaiting consent"));
+    expect(screen.getByRole("link", { name: /Séance B/ }).textContent).toContain("2 awaiting consent");
+    const label = screen.getByText("awaiting consent", { selector: "dt" });
+    expect(label.nextElementSibling?.textContent).toBe("0");
+    view.unmount();
+  });
+
+  it("opens a project chooser without selecting or submitting to the newest conversation", async () => {
+    const id = "00000000-0000-4000-8000-000000000001";
+    mockPage.url = new URL(`http://localhost/bridge?project=${id}&choose=conversation`);
+    vi.mocked(getAtlasProject).mockResolvedValue({ id, title: "Project A" } as Awaited<ReturnType<typeof getAtlasProject>>);
+    const view = render(BridgeView);
+    await screen.findByRole("heading", { name: "Choose a conversation" });
+    expect(screen.queryByLabelText("Message")).toBeNull();
+    expect(screen.getByRole("link", { name: /Séance A/ }).getAttribute("href")).toBe(`/bridge/session-a?project=${id}`);
+    expect(screen.getByRole("link", { name: /Project A/ }).getAttribute("href")).toBe(`/atlas/${id}`);
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(createBridgeSession).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it("routes global attention through only sessions with pending consent", async () => {
+    mockPage.url = new URL("http://localhost/bridge?attention=pending");
+    const next = snapshot("session-b");
+    next.sessions[0]!.pending_count = 2;
+    next.pending_count = 3;
+    getSnapshotMock.mockResolvedValueOnce(next);
+    const view = render(BridgeView);
+    await screen.findByRole("heading", { name: "Conversations awaiting consent" });
+    expect(screen.getByRole("link", { name: /Séance A.*2 awaiting consent/ }).getAttribute("href")).toBe("/bridge/session-a");
+    expect(screen.queryByRole("link", { name: /Séance B/ })).toBeNull();
+    expect(screen.queryByLabelText("Message")).toBeNull();
+    view.unmount();
   });
 });

@@ -5,10 +5,24 @@ icon: material/tune-vertical
 
 # :material-tune-vertical: Studio
 
-Riffmaw is the producer and application contract; no inference runtime, plug-in host, DAW, or
-workflow UI becomes its identity. The Studio admits replaceable tools behind typed jobs so the same
-production can return assets for manual work, an editable handoff, or an autonomously produced
-master candidate for the Magus to accept.
+A production plan might call for a new bass layer, a dry guitar print, a changed transition, and a candidate master. Each need belongs to a different tool role. Studio keeps those roles replaceable while Riffmaw retains the music, its acceptance, and its recoverable history.
+
+## Closed-loop production
+
+```text
+brief + admitted sources + takes or jam
+→ MusicProductionPlan@1
+→ generate, capture, or separate candidates
+→ analyze musical and measurable facts
+→ arrange and render a multitrack revision
+→ mix and master under declared targets
+→ listen, measure, accept, repair, or stop
+→ assets, editable session handoff, or MusicAssetBundle@1
+```
+
+Every iteration names parents and consumes a bounded attempt while accepted sources/takes remain unchanged. Model ranking, measured facts, and Magus acceptance stay distinguishable. [Music](music.md#production-autonomy) follows permitted finishes and bounded repair.
+
+[Sessions](sessions.md#the-realtime-stopping-line) follows live deadlines and epoch recovery against `ClockDomainMap@1`. The Scroll owns execution and termination; the plan owns musical direction. Once Jam closes, its accepted captured material can enter a slower offline Invocation.
 
 ## Production roles
 
@@ -28,78 +42,37 @@ master candidate for the Magus to accept.
 | **Media utility** | Bounded decode, encode, resample, trim, join, metadata, waveform, and conformance operations. | Semantic interpretation or application finish. |
 | **Human DAW projection** | Portable assets, tempo and marker maps, automation or mix notes, and enough lineage to continue manually. | The canonical Riffmaw record or authority to mutate it behind the handoff. |
 
-`MusicProductionPlan@1` is a neutral creative Riffmaw record rather than a Python script, Scroll,
-DAW session file, or provider request. A Spell implementation compiles only the creative fields
-admitted for its exact pinned placement into one tool dialect. A failed implementation settles;
-another exact predeclared branch or a new forward Invocation may try different admitted craft, but
-the casting never rewrites its Resolution Lock. A human can continue in another workstation
-without pretending that every plug-in and automation lane round-trips losslessly.
+`MusicProductionPlan@1` is a neutral creative record. The exact Spell implementation compiles only the creative fields admitted at its pinned placement into a tool dialect. The plan cannot be executable Python, a Scroll, a DAW session, or a provider request by implication. Failure settles the implementation; another declared exact branch or forward Invocation may try different craft without changing the current Resolution Lock.
+
+A human handoff must name what can be continued: portable assets, MIDI, maps, processing receipts, and notes. It must not promise lossless plug-in/automation round trips merely because two programs can open a project format.
 
 ## Current candidate map
 
-This design study was reviewed on **2026-08-26**. It is not delivery evidence or final engine
-promotion. Each candidate still owes license admission, an exact engine and model profile where
-applicable, a pinned Rune, hardware and latency measurements, hostile-input limits, deterministic
-fixtures, restart behavior, and a bake against the Riffmaw contract.
+The following ledger retains the study reviewed **2026-08-26**. Its dated observations are selection inputs, not delivery or promotion receipts. Before a trial, each candidate still needs licence admission, exact engine/model profile where applicable, pinned Rune, hardware/latency measurements, hostile-input bounds, fixtures, restart behavior, and a bake against the role above. Fast-changing availability and APIs must be checked again at selection time.
 
 | Candidate | Candidate office | Present reading |
 | --- | --- | --- |
-| [audio.cpp](https://github.com/0xShug0/audio.cpp), evaluated at `0.5` | Inference engine for music-generation and separation profiles | Promising, rapidly moving local route for explicitly supported ACE-Step, Stable Audio, Demucs and RoFormer families. A Riffmaw profile admits only proved musical operations; server API and pipelines remain experimental, loaded sessions live until process exit, and Apache-2.0 runtime terms do not admit a model's weights. Keep exact families in isolated, lifecycle-reclaimable workers. |
+| [audio.cpp](https://github.com/0xShug0/audio.cpp), evaluated at `0.5` | Inference engine for music-generation and separation profiles | Local route for explicitly supported ACE-Step, Stable Audio, Demucs and RoFormer families. A Riffmaw profile admits only proved musical operations; server API and pipelines remain experimental, loaded sessions live until process exit, and Apache-2.0 runtime terms do not admit a model's weights. Keep exact families in isolated, lifecycle-reclaimable workers. |
 | [MiniMax Music 3](https://huggingface.co/MiniMaxAI/MiniMax-Music3) | Offline generative-processor model profile | Direct long-form song candidate conditioned on lyrics plus a detailed music description. The upstream card exposes SGLang-Omni and Diffusers routes; the [Comfy-Org pack](https://huggingface.co/Comfy-Org/MiniMax-Music-3) supplies a ComfyUI-shaped route. Each pack, component, structured-caption transform, language, duration, precision, offload plan, cancellation behavior, and licence closure needs an exact bake; no route becomes Riffmaw truth or speech TTS. |
 | [MiniMax hosted Music Generation](https://platform.minimax.io/docs/api-reference/music-generation) | Portal generative-processor candidate | A separate provider API currently names `music-3.0` and accepts prompt plus lyrics. It is not presumed byte-, model-, output-, or policy-equivalent to the open-weight Music 3 profile. The provider announced August 2026 access changes, so availability and terms must be rechecked before every trial; no local failure may replay here automatically. |
-| [DawDreamer](https://github.com/DBraun/DawDreamer) | Isolated offline renderer and DSP/instrument host | Strong first candidate for processor DAGs, audio and MIDI, timing, automation, VST and FAUST, and simultaneous graph-node captures. It is GPLv3 and Alpha, has no capture or live-jam contract, and emits no persistent human-editable DAW session; its “stems” are selected graph outputs. |
-| [FFmpeg](https://ffmpeg.org/) | Media utility and conformance probe | Mature conversion, resampling, channel, packaging, and two-pass loudness-normalization route when the exact binary, build flags and sample format are pinned. Target compliance is not mastering judgment. |
-| [librosa](https://github.com/librosa/librosa) | Initial analysis library | Active ISC-licensed first route for a bounded tempo and onset proving fixture. It is an analysis implementation, not a realtime clock or production decision-maker. |
+| [DawDreamer](https://github.com/DBraun/DawDreamer) | Isolated offline renderer and DSP/instrument host | First candidate for processor DAGs, audio and MIDI, timing, automation, VST and FAUST, and simultaneous graph-node captures. It is GPLv3 and Alpha, has no capture or live-jam contract, and emits no persistent human-editable DAW session; its “stems” are selected graph outputs. |
+| [FFmpeg](https://ffmpeg.org/) | Media utility and conformance probe | Conversion, resampling, channel, packaging, and two-pass loudness-normalization route when the exact binary, build flags and sample format are pinned. Target compliance is not mastering judgment. |
+| [librosa](https://github.com/librosa/librosa) | Initial analysis library | ISC-licensed first route for a bounded tempo and onset proving fixture. It is an analysis implementation, not a realtime clock or production decision-maker. |
 | [PortAudio](https://www.portaudio.com/) with [python-sounddevice](https://github.com/spatialaudio/python-sounddevice) | First bounded capture worker | Small first route for one explicitly armed audio take. It does not supply the multiclient graph, musical clock, remote jam, or full studio session. |
-| [PipeWire](https://pipewire.org/) with [JACK](https://jackaudio.org/) compatibility | Live graph, MIDI and monitor host candidate | Strong Linux route for low-latency ports, links, MIDI, transport, latency and xrun evidence. It is host infrastructure rather than another inference engine and still needs a Riffmaw capture, epoch and output-fence adapter. |
-| [Ableton Link](https://github.com/Ableton/link) | Optional LAN tempo and phase bridge | Useful for musical tempo, beat and phase agreement. It is not audio transport, recording consent, or sample-clock authority. |
-| [JackTrip](https://jacktrip.github.io/jacktrip/) | Remote-jam transport candidate | Credible first research bake for low-latency network audio. Authentication, encryption, jitter, recording consent, drift, failure and local monitoring remain Riffmaw admissions rather than consequences of connection. |
+| [PipeWire](https://pipewire.org/) with [JACK](https://jackaudio.org/) compatibility | Live graph, MIDI and monitor host candidate | Linux route for low-latency ports, links, MIDI, transport, latency and xrun evidence. It is host infrastructure rather than another inference engine and still needs a Riffmaw capture, epoch and output-fence adapter. |
+| [Ableton Link](https://github.com/Ableton/link) | Optional LAN tempo and phase bridge | Provides musical tempo, beat and phase agreement. It is not audio transport, recording consent, or sample-clock authority. |
+| [JackTrip](https://jacktrip.github.io/jacktrip/) | Remote-jam transport candidate | First research-bake candidate for low-latency network audio. Authentication, encryption, jitter, recording consent, drift, failure and local monitoring remain Riffmaw admissions rather than consequences of connection. |
 | [DAWproject](https://github.com/bitwig/dawproject) | Neutral human-handoff candidate | MIT interchange schema for project structure and device state where a target DAW supports it. Canonical handoff remains raw and rendered assets, MIDI, tempo and markers because not every workstation round-trips the format. |
-| [Essentia](https://github.com/MTG/essentia) | Optional broad analysis worker | Credible MIR coverage, but the open path is AGPLv3, commercial alternatives exist, and upstream learned-model terms can be non-commercial or no-derivatives. Do not make it the default first dependency. |
+| [Essentia](https://github.com/MTG/essentia) | Optional broad analysis worker | Broad MIR coverage, but the open path is AGPLv3, commercial alternatives exist, and upstream learned-model terms can be non-commercial or no-derivatives. Do not make it the default first dependency. |
 | [Matchering](https://github.com/sergree/matchering) | Watched reference-guided final processor | GPLv3 optional reference treatment whose latest packaged release is old. It matches one target's measurable spectrum, level, peak and stereo properties to a reference; it neither mixes stems nor proves musical mastering quality. |
-| [Ardour](https://ardour.org/) | Human DAW and watched mature renderer | Strong FOSS workstation for capture, sessions and stem export. Lua, OSC and `libardour` utilities deserve a later bake, but headless/API parity with complex GUI editing is not promised and arbitrary plug-ins are not sandboxed. |
+| [Ardour](https://ardour.org/) | Human DAW and watched mature renderer | FOSS workstation for capture, sessions and stem export. Lua, OSC and `libardour` utilities deserve a later bake, but headless/API parity with complex GUI editing is not promised and arbitrary plug-ins are not sandboxed. |
 | [Diff-MST](https://github.com/sai-soum/Diff-MST) | Ineligible research reference for automatic mixing | Predicts interpretable reference-conditioned gain, pan, EQ and compression, but has no stable package or API and its code is CC-BY-NC-SA. It cannot enter the FOSS Core path under the present policy. |
 | [ACE-Step DAW](https://github.com/ace-step/ACE-Step-DAW) | Design reference | Its sequential “LEGO” generation and scriptable browser state resemble Riffmaw's desired loop, but it is an AGPL WIP browser/Tone.js application with IndexedDB state, no releases, and no versioned remote agent contract. |
 
 ## Minimum first proofs
 
-The first offline proof chooses one baked music profile rather than installing a speculative
-catalogue. MiniMax Music 3 through one immutable allowlisted ComfyUI preset is the first
-product-shaped long-form candidate; an `audio.cpp` profile remains the alternative family route.
-The proof also needs one separated-source profile, an isolated DawDreamer renderer with allowlisted
-processors, a pinned FFmpeg worker, librosa tempo and onset probes, and a LychD-owned
-sample-accurate compiler from `MusicProductionPlan@1` creative placements to one pinned render
-graph. It can prove `assets_only` and a bounded `assisted_session`; the human handoff is stems,
-MIDI, tempo, markers, processor receipts, and mix notes rather than a native DawDreamer project.
+The proposed offline proof chooses one baked music profile. The dated study selects MiniMax Music 3 through an immutable allowlisted ComfyUI preset as the first long-form candidate, with `audio.cpp` as the alternative family road. It also calls for a separated-source profile, isolated DawDreamer with allowlisted processors, pinned FFmpeg, librosa tempo/onset probes, and a LychD sample-accurate compiler from creative plan placements into the exact render graph.
 
-The first input proof adds one PortAudio capture worker for a bounded armed take. The first live
-proof is separate: PipeWire/JACK graph and timebase evidence, MIDI scheduling, capture writer,
-output deadline fence, and only then a machine player. Symbolic MIDI scheduled ahead into a pinned
-synth is a more credible first jam response than claiming ACE-Step audio is realtime before Linux
-hardware measurements exist. Remote Jam and an automatic mix controller remain later bakes.
+That proof may establish `assets_only` and bounded `assisted_session`. Its human return is stems, MIDI, tempo/markers, processor receipts, and mix notes—not a native DawDreamer project. Add PortAudio only for the separate armed-take proof.
 
-Additional tools earn admission by closing a missing musical Riffmaw role, not by offering another
-UI over the same models.
-
-## Closed-loop production
-
-```text
-brief + admitted sources + takes or jam
-→ MusicProductionPlan@1
-→ generate, capture, or separate candidates
-→ analyze musical and measurable facts
-→ arrange and render a multitrack revision
-→ mix and master under declared targets
-→ listen, measure, accept, repair, or stop
-→ assets, editable session handoff, or MusicAssetBundle@1
-```
-
-Every loop iteration names its parents and consumes a bounded attempt. A quality gate can request a
-forward repair such as repainting one region, regenerating one layer, changing an effect chain, or
-rebalancing the mix. It cannot silently mutate an accepted take or source. A model judgment may
-rank candidates, but deterministic facts and the Magus's acceptance remain distinguishable.
-
-For live work, admitted creative intent is scheduled against a `ClockDomainMap@1` in deadline-fenced
-turns; the Scroll, not the plan, owns executable topology and termination. The realtime path favors
-a safe omission over a late or uncertain machine entrance. Accepted captured material can enter a
-new, slower offline Invocation only after the jam closes.
+The live proof starts again from its own contract: PipeWire/JACK graph and clock evidence, MIDI scheduling, capture writer, output-deadline fence, then a machine player. Scheduled symbolic MIDI precedes any realtime ACE-Step audio claim. Remote Jam and automatic mix control remain later bakes. New tools enter only when they close a missing musical role.

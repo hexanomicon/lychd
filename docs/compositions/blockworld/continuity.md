@@ -5,46 +5,27 @@ icon: material/backup-restore
 
 # :material-backup-restore: Continuity
 
-Blockworld returns by reconciling several homes of truth, never by pretending a paused process or
-a remembered story is the live world.
+The server accepted a block, but the adapter disappeared before receiving acknowledgement. On return, Blockworld must discover that consequence before advancing or repeating anything. A remembered story and a paused process cannot answer for the world.
 
 ## Four homes
 
-| Truth | Durable home |
+| Truth | Home |
 | --- | --- |
-| blocks, entities, inventory, and game time | managed world volume and Sentinel journal, or the authoritative external server in attached mode |
-| inhabitant, relationships, projects, memory candidates, and meaning | Blockworld application records |
-| Invocation cursor, budgets, pending work, and action receipts | pinned Run ledger |
-| socket, pathing, animation, and unacknowledged buffers | volatile adapter state |
+| Blocks, entities, inventory, game time | Managed world volume and Sentinel journal, or authoritative attached server. |
+| Inhabitant, relationships, projects, memory candidates and meaning | Blockworld application records. |
+| Invocation cursor, budgets, pending work and action receipts | Pinned Run ledger. |
+| Socket, pathing, animation and unacknowledged buffers | Volatile adapter state. |
 
-On boot, Blockworld reconciles server identity, world epoch, Sentinel cursor, bot UUID, and the
-last action receipt before a [Mission](mission.md) resumes. A missing acknowledgement
-is first resolved through [Sentinel](sentinel.md); an `unverified_effect` never becomes
-permission to repeat the action.
+Boot reconciles server identity, world epoch, Sentinel cursor, bot UUID, and the last receipt before a [Mission](mission.md) resumes. [Sentinel](sentinel.md) resolves missing acknowledgement first. An `unverified_effect` cannot become permission to repeat.
 
 ## Restoration changes the ground
 
-In managed mode a cold backup follows an orderly save and stop. The Magus alone restores a named
-snapshot, and restoration increments the world epoch so old leases and assumptions cannot pass as
-current. In attached mode Blockworld cannot create or restore a server snapshot; it detects an
-external server generation change, invalidates leases, and reconciles from newly attested truth.
-Server, protocol, Sentinel, adapter, controller, Pattern, and application schemas version
-independently. An incompatible parked mission drains, migrates explicitly, or ends non-complete.
+A managed cold backup follows orderly save and stop. Only the Magus restores a named snapshot; restoration increments the world epoch and invalidates old leases and assumptions. An attached client cannot snapshot or restore the server. It detects external generation change, invalidates leases, and obtains newly attested truth.
 
-Retention, export, and deletion inventory both application records and world-derived artifacts
-without confusing custody. Deleting a relationship or memory candidate cannot erase an
-authoritative world event by rewriting the Sentinel journal; restoring the world cannot silently
-rewrite the reason a project or mission existed.
+Server, protocol, Sentinel, adapter, controller, Pattern, and application schemas version independently. Incompatible parked work drains, migrates explicitly, or settles non-complete. Export and deletion inventory application and world-derived custody: deleting a relationship cannot erase a world event from the journal, and restoring blocks cannot rewrite why a mission existed.
 
 ## Proving return
 
-Use a flat private world, one server-enforced `7×7` plot, one non-operator bot, a controlled
-chest, and one reviewed blueprint. Expose exactly the five reads and five effects, verify every
-placement from the Sentinel sequence and final plot diff, then interrupt the adapter after one
-accepted placement but before acknowledgement. Recovery must create one receipt and no duplicate
-block. Repeat the journey against an attached fixture with no console, files, lifecycle, snapshot,
-or mod capability; unsupported administration must refuse before any server request.
+Use a flat private world, server-enforced `7×7` plot, non-operator bot, controlled chest, and reviewed blueprint. Expose the exact five reads and five effects. Verify placements from Sentinel sequence and final plot diff, then interrupt after accepted placement but before acknowledgement. Recovery must create one receipt and no duplicate block. Repeat against an attached fixture with no console, files, lifecycle, snapshot, or mod capability; unsupported administration must refuse before a request reaches the server.
 
-Return to [Blockworld](index.md). The common admission and recovery law remains with
-[Workflow](../../adr/28-workflow.md); the containment boundary remains with
-[Security](../../adr/09-security.md).
+[Blockworld](index.md) · [Workflow](../../adr/28-workflow.md) · [Security](../../adr/09-security.md)

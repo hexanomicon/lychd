@@ -5,60 +5,25 @@ icon: material/music-note-outline
 
 # :material-music-note-outline: Music
 
-Music owns the route from musical intent to an accepted musical work. It can begin with a generated
-sketch, a played take, MIDI, a score, a remembered moment, or an empty session. None of those
-methods receives privileged authorship.
+A guitar phrase can become the center of an arrangement, a reference for an accompaniment, or material the producer decides to leave alone. Music keeps that choice editable through generation, performance, composition, sampling, signal processing, and DAW work.
 
 ## Compose and arrange
 
-`riffmaw.forge_track@2` pins the music brief, admitted sources, `FeelProfile@1`, target form,
-budget, and acceptance criteria. AI music generation may propose motifs, harmony, rhythm, timbre,
-sections, or complete candidates. Human performance, manual composition, procedural systems,
-sampling, and DAW editing may answer or replace those proposals. Every generated or transformed
-artifact keeps its provider or tool revision, control material, seed when available, input and
-output digests, cost, and source influence.
+`riffmaw.forge_track@2` pins brief, sources, `FeelProfile@1`, target form, budget, and acceptance. A model may propose motifs, harmony, rhythm, timbre, sections, or complete sketches; a human performance or another method can answer or replace them. Each artifact retains tool/provider revision, controls, seed where available, source influence, input/output digests, and cost.
 
-A `FeelProfile@1` may begin as explicit direction or be revised from admitted, correctable
-observations of a take or [jam](sessions.md#jam-in-shared-time). It can describe pocket, density,
-attack, space, motion, instrumental relation, tension and release, and when the machine should
-listen rather than answer. Each correction creates a linked immutable revision. It never converts
-a model's guess about a performance into a fact about the performer.
-
-The Magus selects and arranges the musical matter. Structure, tempo map, meter, key or tuning,
-instrumental roles, transitions, repetition, and controlled variation remain editable decisions.
-Generated output is a candidate, not a finished track and not evidence that reuse is safe.
+`FeelProfile@1` can begin as direction or derive from correctable take/[jam](sessions.md#jam-in-shared-time) observations: pocket, density, attack, space, motion, instrumental relation, tension/release, and when the machine should listen. Corrections create linked immutable revisions, never facts about the performer's unspoken intent. The Magus selects structure, tempo map, meter, key/tuning, roles, transitions, repetition, and variation. A generated sketch remains a candidate.
 
 ## Language belongs to the musical request
 
-The music-brief language, structured music-description language, lyric language, requested sung
-language, and any phonetic or transliteration aid are separate typed facts. Riffmaw preserves the
-original words. It may place an exact versioned Translation Spell for a lexical derivative, but
-lyric adaptation and musical fit remain Riffmaw judgment. The derivative retains its author,
-implementation revision, rhyme, metre, pronunciation, and meaning-loss findings; it never silently
-replaces lyrics merely because a generator prefers another prompt language.
+Brief language, structured-description language, lyrics, requested sung language, and phonetic/transliteration aids are separate typed inputs. Preserve original words. An exact Translation Spell can propose a lexical derivative; Riffmaw owns lyric adaptation and musical fit, keeping author, implementation, rhyme, metre, pronunciation, and meaning-loss findings. A generator's favored prompt language cannot replace approved lyrics.
 
-Each exact music profile declares and separately verifies description understanding, lyric
-rendering, pronunciation, structure tags, mixed-language behavior, and instrumental mode. Altar
-locale and Persona language do not select these values. Model-generated or optimized lyrics are a
-separate authored candidate, not an invisible convenience flag and not permission to change words
-already approved for performance.
+Each exact music profile separately proves description understanding, lyric rendering, pronunciation, structure tags, mixed-language behavior, and instrumental mode. Neither Altar locale nor Persona language selects these fields. Optimized lyrics are another authored candidate.
 
-Singing, rap, and spoken-word used as musical material remain Riffmaw performance. Ordinary
-dialogue, narration, spoken dialogue replacement, captions, and spoken timed-language editions belong to
-[Language Edition](../language-edition/). When a translated song enters a wider language edition, Riffmaw retains its
-lyric and sung-performance revision while Language Edition retains source alignment, captions, edition fit,
-and packaging. Their handoff carries exact lyrics, performance, timing, and findings rather than
-merging offices.
+Singing, rap, and musical spoken word remain here. [Language Edition](../language-edition/) owns ordinary dialogue, narration, spoken replacement, captions, and timed editions. A translated song keeps Riffmaw's lyric/performance revisions while the edition keeps source alignment, captions, fit, and packaging; exact words, timing, performance, and findings cross the seam.
 
 ## Answer and develop
 
-During an admitted jam, Riffmaw may generate or schedule accompaniment, counterpoint, percussion,
-harmony, texture, effects, or transitions against the shared clock. A reply may use an exact recent
-performance window, an accumulated submix, MIDI, an explicit cue, or the current `FeelProfile@1`.
-The scheduled and actual entrance are both recorded so a musically useful late answer is not
-misreported as realtime success.
-
-The request declares one latency class rather than calling every machine reply realtime:
+An admitted jam may request accompaniment, counterpoint, percussion, harmony, texture, effects, or transitions from a recent performance window, submix, MIDI, cue, or FeelProfile. Preserve both scheduled and actual entrances. The request chooses an honest latency class:
 
 | Class | Contract |
 | --- | --- |
@@ -67,18 +32,11 @@ The request declares one latency class rather than calling every machine reply r
 | **Scheduled player** | Riffmaw prepares a phrase, bar, or section ahead and fences its future entrance against the mapped musical clock. |
 | **Offline producer** | No live deadline; generation and revision occur only after the captured session is frozen. |
 
-Scheduled phrase- or bar-ahead accompaniment is **near-live**, not proof of sample-continuous
-realtime generation. The first credible Linux path may schedule symbolic MIDI into a deterministic
-synth before attempting generated audio inside the live deadline.
-
-After capture closes, Riffmaw can develop the session without pretending the live moment remains
-open: select or comp takes, infer an editable tempo map, repair a bounded passage, extend an idea,
-generate supporting layers, arrange sections, and propose or execute a mix. Every step works from
-frozen artifact and session revisions. Returning to live performance requires a newly armed jam.
+Phrase- or bar-ahead scheduling is **near-live**. Symbolic MIDI into a deterministic synth is the first proposed Linux road before any claim of sample-continuous generated audio. After capture closes, frozen artifacts may enter slower comping, tempo-map editing, bounded repair, extension, supporting layers, arrangement, or mix. Returning to performance requires a newly armed jam.
 
 ## Production autonomy
 
-The production request declares how far Riffmaw may finish on its own:
+The request pins its permitted finish:
 
 | Finish policy | Riffmaw may do | Required return |
 | --- | --- | --- |
@@ -86,35 +44,16 @@ The production request declares how far Riffmaw may finish on its own:
 | **`assisted_session`** | Also arrange, route, automate, process, and render one or more proposed mixes. | Editable production plan and session state, stems, candidate mixes, findings, and unresolved choices. |
 | **`autonomous_master_candidate`** | Also select bounded candidates, repair failed regions, mix, master, run deterministic gates, and repeat within budget. | A master candidate satisfying its automated gates, stems and receipts, or the exact criteria and budget that prevented completion; Magus acceptance remains separate. |
 
-Autonomy means Riffmaw can close the production loop, not that one model emits a finished song in
-one shot. A planner can direct replaceable generators, analyzers, editors, renderers, effects, and
-mastering tools; deterministic probes and bounded listening judgments feed the next revision.
-Candidate count, wall time, compute, paid cost, similarity risk, loudness target, repair attempts,
-and stopping policy are declared before the loop begins. Exhaustion returns the best attributable
-candidates and findings when policy permits, never a quietly relabelled failure.
+Before the loop, declare candidate count, wall time, compute, paid cost, similarity risk, loudness, repair attempts, and stopping policy. A planner can direct admitted generators, analyzers, editors, renderers, effects, and mastering tools, using deterministic probes and bounded listening judgments for the next revision. Budget exhaustion returns permitted attributable candidates/findings, never a relabeled master.
 
-Each finish policy is a scope ceiling, not an authority grant. It never by itself arms capture,
-authorizes payment or Portal egress, admits a plug-in, permits export, accepts a master, or publishes
-the result. A failed bound implementation is replaced only by an exact predeclared branch in the
-pinned Scroll or by a new forward Invocation after settlement; a casting never silently changes
-its Resolution Lock.
+These policies cannot arm capture, authorize payment/Portal egress, admit a plug-in, export, accept, or publish. A failed binding settles before an exact predeclared branch or new Invocation tries another road; the Resolution Lock never changes mid-casting.
 
 ## Edit, mix, master
 
-Editing preserves its parents: comping, timing changes, tuning, cleanup, resampling, and destructive
-processing each create an attributable revision. The mix owns routing, gain, pan, automation,
-production effects, spatial relation, and the balance among instrumental, vocal, sampled, and
-effected musical elements. A stem is an export of those relationships, not an independent master.
+Comping, timing, tuning, cleanup, resampling, and destructive processing retain parent revisions. The mix records routing, gain, pan, automation, effects, spatial relation, and balance among instrumental, vocal, sampled, and processed elements. Stems export those relationships rather than become independent masters.
 
-Mastering targets declared loudness, peak, dynamic, sample-rate, format, and sequencing profiles.
-The accepted output can include score or MIDI where present, session and edit lineage, stems, mix,
-and master. Deterministic probes establish the measurable facts; listening review still decides
-whether the work fits.
+Mastering binds loudness, peak, dynamics, sample rate, format, and sequencing targets. Score/MIDI where present, edits/session lineage, stems, mix, and master stay attributable. Probes establish measurable fit; listening review decides musical fit. Generation, DAW export, and plug-in renders have separate effects; lost acknowledgement remains **unknown** until provider/session/destination reconciliation. Failed profiles, similarity uncertainty, stale inputs, or exhausted repair return findings/refusal.
 
-Paid generation, DAW export, and plug-in render are separate effects. Lost acknowledgement leaves
-the result **unknown** until the provider, session, or destination is inspected. A failed profile,
-unresolved similarity, stale source, or exhausted repair returns findings or refusal instead of a
-quietly degraded master.
+Compound-model music must have originated under a `VideoJob@2` whose `MediaFacetAuthoritySet@1` predeclared `music`, `riffmaw.music` revision `2`, and exact request digest. After Prism technical settlement, Riffmaw issues `SemanticFacetAdmissionReceipt@1` over music/compound digests, use, rights, evidence, findings, and disposition. Labels, demux, and undeclared sound cannot supply musical acceptance.
 
-Music passes accepted assets and mix relationships to [Package](package.md), and exposes temporal
-events through [Sync](sync.md) when another craft needs them.
+[Package](package.md) seals accepted work. [Sync](sync.md) exposes exact musical events to another craft.

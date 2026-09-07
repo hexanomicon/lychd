@@ -12,13 +12,14 @@ from litestar.params import FromPath
 from litestar.response import Redirect, Response
 from litestar.status_codes import HTTP_302_FOUND
 
-from lychd.config.constants import PATH_ALTAR_INDEX, PATH_ALTAR_LIGHTNING, PATH_ALTAR_NOTICES
+from lychd.config.constants import PATH_ALTAR_FAVICON, PATH_ALTAR_INDEX, PATH_ALTAR_LIGHTNING, PATH_ALTAR_NOTICES
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.web.contracts import AltarStatus
 
 _ALTAR_INDEX = PATH_ALTAR_INDEX.read_text(encoding="utf-8")
 _ALTAR_LIGHTNING = PATH_ALTAR_LIGHTNING.read_text(encoding="utf-8")
+_ALTAR_FAVICON = PATH_ALTAR_FAVICON.read_text(encoding="utf-8")
 _ALTAR_NOTICES = PATH_ALTAR_NOTICES.read_text(encoding="utf-8")
 
 
@@ -37,11 +38,16 @@ class AltarController(Controller):
 
     @get("/altar-lightning.svg", name="altar:lightning", include_in_schema=False)
     async def lightning(self) -> Response[str]:
-        """Return the one compiled-shell root image with an explicit SVG type."""
+        """Return the compiled-shell lightning image with an explicit SVG type."""
         return Response(content=_ALTAR_LIGHTNING, media_type="image/svg+xml")
 
+    @get("/favicon.svg", name="altar:favicon", include_in_schema=False)
+    async def favicon(self) -> Response[str]:
+        """Return the fixed Altar identity mark for browser chrome and the shell."""
+        return Response(content=_ALTAR_FAVICON, media_type="image/svg+xml")
+
     @get(
-        ["/bridge", "/nexus", "/loom", "/orb"],
+        ["/atlas", "/bridge", "/nexus", "/loom", "/orb"],
         name="altar:instrument",
         guards=[requires_scopes("altar:read")],
         include_in_schema=False,
@@ -51,7 +57,7 @@ class AltarController(Controller):
         return Response(content=_ALTAR_INDEX, media_type=MediaType.HTML)
 
     @get(
-        ["/bridge/{client_path:str}", "/orb/{client_path:str}"],
+        ["/atlas/{client_path:str}", "/bridge/{client_path:str}", "/orb/{client_path:str}"],
         name="altar:deep-link",
         guards=[requires_scopes("altar:read")],
         include_in_schema=False,

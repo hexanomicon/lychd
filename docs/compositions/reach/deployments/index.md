@@ -5,90 +5,43 @@ icon: material/tune-variant
 
 # :material-tune-variant: Deployment profiles
 
-Reach can keep its durable body at home, split only the Discord edge onto a VPS, or live as a
-restricted standalone VPS body. These are immutable, mutually exclusive reference profiles—not
-security levels and not independent `use_vps`, `trusted`, `tether`, `veil`, or `local_db` toggles.
-[Configuration](../../../adr/12-configuration.md) selects one exact profile revision.
+When home loses power, should Reach go quiet, retain bounded incoming messages elsewhere, or continue as an independent restricted body? That availability choice determines where authority and credentials must live.
 
-!!! warning "Designed, not deployable"
-    The profiles are acceptance targets. The application selector, deployment-manifest compiler,
-    Reach adapters and records, Tether, Veil, remote Ward IAM, and general Egress Gate do not ship.
-    [State of Work](../../../state-of-the-work.md) remains the delivery owner.
+These profiles are **Designed, not deployable**. [State of Work](../../../state-of-the-work.md#composition-portfolio-delivery) records Reach’s delivery boundary. [Configuration](../../../adr/12-configuration.md) will select one exact immutable profile, not combine loose topology switches.
 
 ## Choose the body
 
-| Profile | Sole application authority | Tether / Veil | Honest trade-off |
-| --- | --- | --- | --- |
-| [`reach.home.public@1`](home-public.md) | home Ward, Vessel, Workers, corpus, effect ledger, and Phylactery | neither; all platform and provider roads are outbound | simplest and keeps durable truth at home; Reach is unavailable when home is offline |
-| [`reach.edge-home.public@1`](vps-edge-home-core.md) | the same home body; VPS owns only bounded Discord transport/effect custody | exact Tether plus a private Tether-only Veil on home | buffers within fixed limits while home is offline; adds a security-critical two-host protocol |
-| [`reach.vps.public@1`](vps-public.md) | independent VPS-local Ward, Vessel, Workers, corpus, effect ledger, and Phylactery | neither in its outbound baseline | availability-first; VPS compromise exposes the complete restricted public body |
+| Profile | Sole application authority | Roads and trade-off |
+| --- | --- | --- |
+| [`reach.home.public@1`](home-public.md) | Home Ward, Vessel, Workers, corpus, effect ledger, Phylactery. | All outbound; no Tether/Veil. Durable truth stays home and Reach is unavailable with that host. |
+| [`reach.edge-home.public@1`](vps-edge-home-core.md) | The same home authority; VPS has only bounded Discord transport/effect custody. | Exact Tether and private home Veil. Bounded offline intake adds a security-critical two-host protocol. |
+| [`reach.vps.public@1`](vps-public.md) | Independent VPS-local Ward, Vessel, Workers, corpus, ledger, Phylactery. | Outbound baseline without Tether/Veil. VPS compromise exposes this entire restricted public body. |
 
-For home durability, choose `reach.home.public@1` unless bounded offline intake is worth the extra
-VPS edge. A backup on another host is a recovery artifact, never a second live authority.
+The [one-question E2E contract](vps-public.md#first-e2e-contract-one-public-discord-question) is shared by all three profiles; its standalone VPS page also explains that profile's particular custody and recovery. Home-only is the default for home durability unless bounded offline intake justifies the edge. A backup elsewhere is recovery material, never a second authority. These are mutually exclusive profiles, not security levels or independent `use_vps`, `trusted`, `tether`, `veil`, or `local_db` options.
 
-Tether and Veil are orthogonal mechanisms:
-
-- **Tether** supplies an exact private network road; it grants no application authority.
-- **Veil** terminates and constrains an admitted HTTP entrance; it need not be public.
-- Home-only and standalone outbound VPS need neither.
-- The split profile needs both because the VPS calls a private HTTP contract on home.
-- A later public callback or A2A server is a different profile revision, not an ingress switch.
-
-The profiles are not ordered low-to-high trust. Compare authority location, private-data blast
-radius, home availability dependency, VPS compromise consequence, operational complexity, and
-recovery. Tunnel possession, VPS ownership, Discord membership, and a `public` label prove none of
-caller identity, consent, egress admission, or provider trust.
+Tether grants an exact private road, not application power. Veil constrains an admitted HTTP entrance and need not be public. The split profile needs both because VPS initiates private HTTP to home. Later callbacks or A2A serving need a different profile revision. Compare authority location, data exposure, home dependency, compromise consequences, complexity, and recovery; no public label, guild membership, tunnel, or VPS ownership proves identity or egress permission.
 
 ## Invariants across every profile
 
-For one `(Discord application, Habitat partition)`, one immutable deployment generation binds:
+For each `(Discord application, Habitat partition)`, one deployment generation binds one profile revision, `ReachAuthorityEpoch`, active Phylactery, `ReachEdgeEpoch`, Gateway/delivery credential owner, corpus authority, and provider/A2A gate. Pin per-host manifest digests, service Principals, credentials/routes, and both epochs in every event, attempt, settlement, backup, and migration receipt.
 
-- exactly one profile revision, `ReachAuthorityEpoch`, and active Phylactery;
-- exactly one `ReachEdgeEpoch` and Discord Gateway/delivery credential owner;
-- one corpus authority and one provider/A2A egress gate;
-- exact per-host manifest digests, service Principals, credential references, and routes; and
-- every event, attempt, delivery, settlement, backup, and migration receipt to both epochs.
-
-Simultaneous activation, an unknown profile combination, or an old-epoch request fails before
-Bind or admission. PostgreSQL is never exposed, shared, synchronously replicated, dual-written,
-or failed over across the WAN. A transport journal can prove narrow custody of bytes and external
-effect observations; it cannot own a Run, Context, Ward decision, Sigil, corpus judgment,
-`ReachTurn`, or application terminal.
-
-Every service keeps the split required by its profile manifest. Local placement does not erase
-the blast radius: compromise of the home host can expose the home body, while compromise of the
-standalone VPS can expose its whole restricted body. Every remote model/A2A attempt still requires
-an exact destination/task policy, a Cut when required, and a fresh payload-bound `EgressDecision`.
+Unknown combinations, simultaneous activation, and stale epochs fail before Bind/admission. PostgreSQL is never WAN-exposed, shared, live-replicated, dual-written, or failed over. A transport journal witnesses bytes/effects without owning Run, Context, Ward, Sigil, corpus judgment, turn, or terminal truth. Service separation remains mandatory locally too. Every remote attempt needs exact destination/task policy, required Cut, and fresh payload-bound egress decision.
 
 ## Selection and migration
 
-A profile change is an Evolution effect, never hot reload:
+Changing profile is a quiesced Evolution effect:
 
-1. close new admission and freeze the intended target generation;
-2. drain or explicitly classify every provider/A2A attempt, delivery intent, `UNKNOWN` effect,
-   Gateway cursor, and edge-spool row;
-3. fence the old authority and edge epochs, stop the old Gateway owner, and revoke its routes and
-   workload credentials;
-4. if authority moves, export exactly the admitted public Reach partition with schema, profile,
-   corpus/source, retention, dedupe, and external-effect identities; restore it transactionally
-   into an inactive body—never copy a whole home Phylactery or use live replication;
-5. compile and attest the new per-host manifests, rotate custody-changing bot/provider/Tether/Veil
-   credentials, and enrol their new service Principals;
-6. activate the new authority last, then reopen admission and reject every old-generation message.
+1. Close admission and freeze the target generation.
+2. Drain or classify all provider/A2A attempts, delivery intents, `UNKNOWN` effects, Gateway cursors, and spool rows.
+3. Fence authority/edge epochs, stop the old Gateway owner, and revoke its routes/credentials.
+4. When authority moves, export only the admitted public Reach partition with schema/profile/corpus/source/retention/dedupe/external-effect identity closure; restore transactionally into an inactive body. Never copy the whole home Phylactery or live-replicate it.
+5. Attest new host manifests, rotate custody-changing bot/provider/Tether/Veil credentials, and enroll service Principals.
+6. Activate the new authority last; reopen admission while rejecting old-generation messages.
 
-Home-only ↔ edge/home retains the home Phylactery but still drains and transfers the Discord edge.
-Any transition to or from standalone VPS transfers authority and refuses while a nonterminal or
-indeterminate effect cannot be preserved safely. After the new authority admits work, rollback is
-another quiesced migration; the old database remains fenced/read-only.
+Home-only/edge-home retain the home database but still transfer the Discord edge. Standalone transitions refuse when nonterminal or indeterminate effects cannot be safely preserved. After new admission begins, rollback is another quiesced migration and the old database remains fenced/read-only.
 
 ## Administrative separation
 
-Application Tether peers, Veil routes, and service credentials never authorize SSH, Podman,
-systemd, deployment, secret rotation, provider consoles, or `magus:*`. Host administration uses a
-separately governed infrastructure path. A later operator VPN peer needs a different key, routes,
-identity, and authorization contract.
+Application peers, routes, and service credentials cannot authorize SSH, Podman, systemd, deployment, rotation, provider consoles, or `magus:*`. Infrastructure administration and any later operator VPN peer require separate keys, routes, identity, and authorization.
 
-Continue with the exact profile:
-[home-only](home-public.md) ·
-[VPS edge + home core](vps-edge-home-core.md) ·
-[standalone VPS](vps-public.md)
+[Home-only](home-public.md) · [VPS edge + home core](vps-edge-home-core.md) · [Standalone VPS](vps-public.md)

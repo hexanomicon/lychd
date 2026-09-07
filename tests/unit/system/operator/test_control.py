@@ -20,7 +20,7 @@ from lychd.system.operator import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Generator
     from contextlib import AbstractContextManager
 
     from pytest_mock import MockerFixture
@@ -271,7 +271,7 @@ def test_direct_actuation_holds_lifecycle_lock_through_effect() -> None:
     events: list[str] = []
 
     @contextmanager
-    def lock() -> Iterator[None]:
+    def lock() -> Generator[None]:
         events.append("lock-enter")
         yield
         events.append("lock-exit")

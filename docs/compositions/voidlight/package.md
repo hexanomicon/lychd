@@ -5,45 +5,26 @@ icon: material/package-variant-closed-check
 
 # :material-package-variant-closed-check: Package
 
-`voidlight.export_visual_package@1` seals approved work into `VisualAssetBundle@1`. Export is not a
-zip-shaped transfer of authority: it is a precise manifest that lets a consumer decide whether the
-visual material fits its own purpose.
+A consumer needs to know exactly which images it received and which uses their acceptance covered. `voidlight.export_visual_package@1` seals that answer in `VisualAssetBundle@1`; `voidlight.review_visual_package@1` returns findings without changing approved material.
 
 ## What crosses the boundary
 
-The bundle records its revision and digest, target profile, asset manifest, visual constraints,
-source and derivative lineage, tool and provider receipts, validators, findings, approvals, and
-known use or likeness boundaries. `voidlight.review_visual_package@1` can return attributed
-findings without changing accepted material.
+The manifest binds revision/digest, target profile, assets, visual constraints, source and derivative lineage, tools/provider receipts, validators, findings, approvals, and known use or likeness boundaries. [Foundry](../foundry/) can admit exact revisions for engine import and playability. [Broadcast](../broadcast/) can admit them for claims, storyboards, timeline, render, accessibility, and publication. Each consumer may refuse.
 
-[Foundry](../foundry/) admits exact asset revisions for engine import and playability.
-[Broadcast](../broadcast/) admits them for claims, storyboards, timelines, renders, accessibility,
-and publication. A handoff carries no Sigil, secret, provider session, approval for another use, or
-downstream effect authority. Consumers retain their own admission and may refuse the package.
+The handoff carries no Sigil, secret, provider session, approval for another use, or downstream effect authority. Exported files cannot convey the director's judgment about an entirely different commission.
 
 ## Effects, failure, and return
 
-External handoff is separate from paid generation. Each effect binds an idempotency key to an exact
-payload digest. Lost acknowledgement produces an **unknown** outcome until provider or consumer
-state is reconciled; blind retry is forbidden.
+Paid generation and external handoff are separate effects. Each binds an idempotency key and exact payload digest. Missing acknowledgement leaves an **unknown** result. Reconcile the same effect with its provider or consumer before deciding whether another attempt is permitted.
 
-A later bad reference, revoked consent, or failed finding marks every dependent revision stale
-without editing accepted history. Restart requires the pinned Pattern, schema, source, provider,
-tool, receipt, and artifact revisions. Incompatible parked work drains, migrates explicitly, or
-ends non-complete. Deletion inventories derivatives and handoffs, requests downstream removal
-where authorized, and cannot promise an exported copy vanished.
+A bad reference, revoked consent, or later finding stales every dependent revision while preserving accepted history. Restart requires pinned Pattern, schema, sources, providers, tools, receipts, and artifacts. Incompatible parked work drains, migrates explicitly, or ends non-complete. Deletion inventories derivatives and handoffs, requests authorized downstream removal, and leaves external custody honest.
 
 ## Proving package
 
-Build one local, style-led 2D package from a licensed reference set: a frozen [brief](brief.md), a
-versioned [direction](direction.md), concept and sprite or texture assets, deterministic probing
-and normalization, one bounded repair, and an accepted `VisualAssetBundle@1`. The proof uses no
-sound production, engine import, channel render, Portal call, paid generation, or public release.
+First build a local, style-led 2D package from licensed references: frozen [brief](brief.md), versioned [direction](direction.md), concept plus sprite/texture assets, probes and normalization, bounded repair, and accepted `VisualAssetBundle@1`. No sound, engine import, channel render, Portal, paid generation, or public release enters that proof.
 
-After that minimum proof, the first progressive worked journey should produce separate landscape
-and portrait hero profiles, retain their accepted stills, animate one or two exact boundary frames
-through an admitted Video implementation, probe loop and export behavior, and seal the result as a
-new visual-package revision. It may stop honestly after either the still or motion boundary.
-Optional model-returned sound retains the shared Prism compound parent and crosses only as a
-role-qualified candidate: music to Riffmaw, timed-language material to Language Edition, and picture-bound
-effects or ambience to Broadcast. Broadcast alone accepts the final audiovisual relation.
+Then exercise separate landscape and portrait hero profiles. Retain their accepted stills, animate one or two exact boundary frames through an admitted Video implementation, probe loop/export behavior, and seal a successor package. Either declared still or motion boundary may finish honestly.
+
+Model-returned sound crosses only with pre-execution role authority, its independent `SemanticFacetAdmissionReceipt@1`, and shared compound parent. [Motion](motion.md#clips-and-cues) follows each role's admission. Broadcast alone accepts the final editorial audiovisual relation.
+
+Return to [Voidlight](index.md), or follow the declared finish in [Motion](motion.md#progressive-visual-depth).

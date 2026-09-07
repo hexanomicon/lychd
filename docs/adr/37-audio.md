@@ -121,13 +121,15 @@ authority. The [Dispatcher](22-dispatcher.md) chooses an exact Ear, Voice, or Mi
 v1 can express only the `stt`, `tts`, or `chat` compatibility projection. For an otherwise eligible
 managed binding that is not `WARM`, Dispatcher returns `HardwareTransitionRequired`; the requesting
 Run enters Graph Stasis while [Orchestrator](23-orchestrator.md) converges readiness, then
-re-dispatches. In current source, however, even `WARM` v1 `stt` and `tts` declarations fail closed
-at grant issue because neither has a typed call surface; readiness convergence cannot turn those
-labels into Ear or Voice. Echo may not preempt, revoke another grant, make its own continuing
-session, or silently select a remote provider. A Portal needs egress eligibility, consent where
-required, and a cost bound. Local execution does
-not remove capture, retention, or tool authority; source influence persists under [Context
-privatization](21-context.md#privatization-and-the-privacy-cut).
+re-dispatches.
+
+In current source, even `WARM` v1 `stt` and `tts` declarations fail closed at grant issue because
+neither has a typed call surface. Readiness convergence cannot turn those labels into Ear or Voice.
+
+Echo may not preempt, revoke another grant, make its own continuing session, or silently select a
+remote provider. A Portal needs egress eligibility, consent where required, and a cost bound. Local
+execution still requires capture, retention, and tool authority; source influence persists under
+[Context privatization](21-context.md#privatization-and-the-privacy-cut).
 
 ## Streaming without pretending a socket is a protocol
 

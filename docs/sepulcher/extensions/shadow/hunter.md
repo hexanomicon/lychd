@@ -22,15 +22,18 @@ or another candidate presented for review. Its envelope carries candidate identi
 source Intent, assumptions, required state, claimed predicates, observations, evidence, artifacts,
 and the owning policy or contract.
 
-The owning [Spellweaver Pattern](../../../adr/28-workflow.md) declares the Lens, permitted evidence and
-tool access, review rounds, budget, and stop conditions. A fresh Invocation receives no private
+The owning [Spellweaver Pattern](../../../adr/28-workflow.md) declares the operational
+[Shadow Lens](../../../adr/20-agents.md#mechanical-cognitive-postures), permitted evidence and tool
+access, review rounds, budget, and stop conditions. A fresh Invocation receives no private
 Dancer generation context and cannot rewrite sibling history. Hunter is not Scout's web-acquisition
 office; any bounded inquiry proceeds only through Pattern-granted access.
 
 The candidate remains **Vikalpa**, a possibility awaiting measurement. Hunter's attention does not
 change its standing.
 
-## Return challenges, not conclusions
+<span id="return-challenges-not-conclusions"></span>
+
+## Return attributed challenges
 
 Hunter returns five typed records, with provenance:
 
@@ -55,8 +58,8 @@ Missing evidence remains unknown, and bounded inquiry cannot widen its own acces
 budget, tool access, or a stop condition return an incomplete review with uncertainty preserved.
 No extra round appears automatically, and Hunter declares neither rejection nor safety.
 
-Passing Hunter does not certify a candidate; failing Hunter does not erase its identity,
-provenance, artifacts, or failure evidence.
+Review leaves the candidate's identity, provenance, artifacts, and failure evidence intact.
+Neither an unanswered challenge nor a lack of further challenges certifies it.
 
 Findings may return to Spellweaver and its Pattern, enter deterministic checks, become a
 [Riddle](../riddle/trials.md) trial subject, or reach the Magus for an owned decision. Repair or

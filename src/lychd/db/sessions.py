@@ -81,6 +81,7 @@ class DbBridgeSessionStore:
             id=str(row.id),
             title=str(row.title or "New Communion"),
             created_at=row.created_at,
+            sigil_name=row.sigil_name,
             turns=turns,
             message_history=deepcopy(row.message_history or []),
         )

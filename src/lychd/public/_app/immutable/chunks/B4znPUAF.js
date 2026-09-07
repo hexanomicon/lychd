@@ -1,0 +1,1 @@
+import{B as e,D as t,T as n,f as r}from"./Ci16HnY5.js";import"./xihTtKlq.js";var i=t(`<span class="delegate-mark">⬢</span>`);function a(t,a){var o=i();e(()=>{r(o,`role`,a.label?`img`:void 0),r(o,`aria-label`,a.label),r(o,`aria-hidden`,a.label?void 0:`true`),r(o,`title`,a.label)}),n(t,o)}export{a as t};

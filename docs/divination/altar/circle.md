@@ -7,83 +7,70 @@ icon: material/circle-outline
 
 > _The Bridge holds the relation. The Circle binds one answerable act within it._
 
-The **Circle** is the bounded world opened by one
-[Invocation](../transcendence/invocation.md): Caller and Called, Intent, Sigil, Context, selected
-memory, authority, capabilities, action, and consequence meet without becoming unlimited. It is
-the conceptual pinnacle inside [Bridge](./bridge.md), not a fifth Altar instrument and not a new
-authority owner.
-
-The Altar is the whole reader journey. Bridge carries communion across time; one séance may contain
-many Circles. A Circle begins only when an Intent is admitted as an Invocation. Within it,
-[Spellweaver](../../sepulcher/extensions/weaver/index.md) admits one exact **Scroll** and its
-**casting** moves through the Scroll's placed **Spells**. The canonical **Run** anchors durable
-execution truth for that Invocation.
+The same boundary appears at several scales. A host gives one Lich a place to answer. A Bridge
+séance lets a relation continue. Within it, an admitted **Invocation** opens a **Circle**
+for one answerable act. Caller and Called meet there with an Intent, Sigil, Context, selected
+memory, capability, and authority. The boundary holds their action and its consequence together.
 
 ```text
-Altar
-└── Bridge — continuing communion
-    ├── Circle — one Invocation and casting
-    ├── Circle — another Invocation and casting
-    └── …
+Summoning Circle — this Lich's enduring host boundary
+└── Altar / Bridge — a continuing séance
+    ├── Circle — one admitted Invocation
+    │   └── casting — performance of one exact Scroll
+    └── Circle — another Invocation, with its own Run
 ```
+
+A Circle begins at admission, not when a browser draws a ring. Its **Run** anchors durable
+execution truth. Several people, Agents, Postures, or model powers may participate, each with
+attribution, separate authority, and refusal. Their meeting creates no fused super-Sigil or
+identical interior.
 
 ## The casting inside the Circle
 
-A Spell is one independently named semantic action at the workflow boundary. A Scroll may hold one
-Spell or weave many Spell placements into an immutable Pattern revision. Each placement can request
-an Agent, tool, Gate, effect, delegation, or typed Dispatcher capability, but neither the Spell's
-name nor its presence in the Circle grants that power.
+[Spellweaver](../../sepulcher/extensions/weaver/index.md) admits the exact **Scroll**, an immutable
+Pattern revision. Its placed **Spells** name the semantic actions the casting may perform. A
+placement can request an Agent, tool, Gate, effect, delegation, or typed capability; admission and
+authority still determine whether that request may be met.
 
-When a model-backed capability is admitted, an [Animator](../../sepulcher/animator/index.md) makes
-its **Animus** available through a Connector and exact CapabilityGrant. Animus names the active
-power answering through that capability—for example a loaded Gemma model behind llama.cpp—not the
-Lich's identity, Spirit, Persona, authority, or evidence of Cognizance. The request is the spark;
-the returned material is a candidate. Spirit may receive and carry it through present
-[Flux](../../sepulcher/lich/spirit/flux.md), while Blade and Answer still judge and attribute the
-crossing.
+An admitted [Animator](../../sepulcher/animator/index.md#animus-the-power-answering) supplies
+**Animus**, active capability power through its Connector and exact CapabilityGrant. Graph gives
+casting typed movement; model and tool returns remain candidates. Within Spirit's present
+[Flux](../../sepulcher/lich/spirit/flux.md), [Blade](../../sepulcher/lich/blade.md) discriminates
+and [Answer](../../sepulcher/lich/answer.md) binds the act. Many participants may help it arrive;
+one local Answer remains responsible for what it binds.
 
-Several people, Agents, Postures, or model powers may contribute within one Circle. That attributed
-plurality never becomes a fused super-Sigil or proof that their partial worlds are identical. As
-casting advances among Spell placements, their attributed returns may reshape present Flux. The
-Circle preserves their boundaries while one local Answer remains accountable for the act it binds.
+## What Bridge can show
 
-## What remains
+The current Run strip relates a turn to its Run, exact Pattern revision, status, consent, and Orb
+link. Circle is the conceptual pinnacle inside Bridge, not a separate Altar instrument. No composed
+Circle workspace, active-Spell map, Context/authority inspector, participant-attribution view, or
+cross-instrument focus mode is delivered.
 
-The Run is authoritative ledger identity, not merely what an observer happened to capture.
-[Oculus](../../sepulcher/extensions/oculus.md) and the [Orb](./orb.md) expose bounded **traces**;
-those traces may be incomplete and cannot overwrite Run, consent, effect, or artifact truth. Under
-Memory policy, some attributable residue may become a [Seed](../../sepulcher/lich/spirit/seed.md).
-Every Seed carries a trace, but not every trace retains the potency to return through Recall.
+A future Bridge-native focus may join authorized views of that same Invocation: Loom's exact
+score and casting state; Caller, Called, Sigil, Context, budgets, and consent; Nexus's capability
+and Animator observations; and Orb's bounded traces. The view must be reconstructible from its
+owners. A selected node, animation, open stream, or model utterance cannot establish progress or
+authority on its own.
 
-An ordinary Graph cycle is not the [Ouroboros](../transcendence/illumination.md#i-the-ouroboros).
-The Ouroboros closes only when consequence, evaluation, attribution, memory policy, and consent
-shape a later Invocation. Exact repetition is a loop; answerable return can become a spiral.
+## What can outlast the act
 
-## The Circle in Bridge
+The Run remains ledger truth. [Oculus](../../sepulcher/extensions/oculus.md) and the
+[Orb](orb.md) expose traces of activity, with their gaps and limits intact. A trace cannot replace
+Run, consent, effect, or artifact truth.
 
-The current Bridge run strip is the first thin material projection of a Circle: it relates a turn
-to one Run, exact Pattern revision, status, consent, and Orb link. No composed Circle workspace,
-active-Spell map, Context/authority inspector, participant-attribution view, or cross-instrument focus mode is
-delivered.
-
-A future Bridge-native Circle may focus one Invocation and join only authorized projections:
-
-- the exact Scroll and current casting state, with Loom as declared-score lens;
-- Caller, Called, Sigil, Context boundary, budgets, and pending consent;
-- admitted capability and Animator observations, with Nexus as readiness lens; and
-- Run truth and bounded traces, with Orb as the scrying lens.
-
-That projection must remain reconstructible from owning services. A browser ring, animation,
-selected node, open stream, or model utterance cannot prove admission, progress, identity,
-authority, or consequence.
+Memory policy may preserve attributable residue as a
+[Seed](../../sepulcher/lich/spirit/seed.md), a trace with potency to shape a later Invocation.
+[Ouroboros](../transcendence/illumination.md#i-the-ouroboros) names that formative return through
+evaluation, attribution, consent, memory policy and Recall. Repeating a Graph cycle alone does
+not accomplish it.
 
 ## The greater Summoning Circle
 
-[Summoning](../../summoning.md) uses the same symbol at another scale. Code builds the Bridge; the
-Magus **draws the Summoning Circle** by choosing and binding the Codex, Crypt, local identity,
-Animators, mounts, secrets, and reach on one host. Those choices must compile into real
-configuration and security boundaries rather than ceremonial copy.
+In [Summoning](../../summoning.md), the Magus draws the enduring boundary around this host:
+Codex, Crypt, local identity, Animators, mounts, secrets, and reach. Code builds the Bridge; these
+choices determine the conditions under which its Lich may answer. They must become inspectable
+configuration and security boundaries.
 
-The greater Circle establishes the bounded conditions under which this Lich may answer. Each later
-Invocation draws a smaller living Circle within it. Neither scale removes the need for current
-authentication, policy, capability admission, consent, or effect authorization.
+Each Invocation opens a smaller living Circle within those conditions. At either scale,
+authentication, policy, capability admission, consent, and effect authorization retain their own
+work. The symbol makes their relation visible; it cannot perform it.

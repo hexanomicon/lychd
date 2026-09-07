@@ -67,7 +67,9 @@ def _portal_declarations(runes_dir: Path) -> AnimatorDeclarations:
 def test_portal_zero_models_yields_zero_specs() -> None:
     portal = OpenAIPortalConfig.model_validate({"name": "empty"})
     adapters = RuntimeAdapterRegistry(portal_definitions=[_OPENAI_PORTAL])
-    assert adapters.build_capability_specs(portal) == []
+    runtime = adapters.build_runtime(portal)
+    assert runtime is not None
+    assert adapters.build_capability_specs(runtime) == []
 
 
 def test_portal_synthesizes_static_chat_spec_with_overlay() -> None:
@@ -88,7 +90,9 @@ def test_portal_synthesizes_static_chat_spec_with_overlay() -> None:
         }
     )
     adapters = RuntimeAdapterRegistry(portal_definitions=[_OPENAI_PORTAL])
-    specs = adapters.build_capability_specs(portal)
+    runtime = adapters.build_runtime(portal)
+    assert runtime is not None
+    specs = adapters.build_capability_specs(runtime)
 
     assert len(specs) == 1
     spec = specs[0]
@@ -346,18 +350,25 @@ def test_portal_store_rejects_conflicting_factory_for_one_schema() -> None:
     def conflicting_factory(portal: PortalConfig) -> RuntimeAnimator:
         return build_openai_portal(portal)
 
-    store = PortalStore(RuneConfigStore())
-    store.add(PortalDefinition(rune_schema=OpenAIPortalConfig, factory=build_openai_portal))
+    context = ExtensionContext()
+    with context.provenance("one"):
+        context.portals.add(PortalDefinition(rune_schema=OpenAIPortalConfig, factory=build_openai_portal))
 
-    with pytest.raises(ValueError, match="Portal schema OpenAIPortalConfig is already registered"):
-        store.add(PortalDefinition(rune_schema=OpenAIPortalConfig, factory=conflicting_factory))
+    with (
+        context.provenance("two"),
+        pytest.raises(
+            ValueError,
+            match="Portal schema OpenAIPortalConfig from 'two' conflicts with the schema registered by 'one'",
+        ),
+    ):
+        context.portals.add(PortalDefinition(rune_schema=OpenAIPortalConfig, factory=conflicting_factory))
 
 
-def test_portal_store_rejects_cross_provider_replay() -> None:
+def test_portal_store_rejects_cross_registrant_replay() -> None:
     context = ExtensionContext()
     with context.provenance("one"):
         context.portals.add(_OPENAI_PORTAL)
-    with context.provenance("two"), pytest.raises(ValueError, match="owned by 'one'"):
+    with context.provenance("two"), pytest.raises(ValueError, match="registered by 'one'"):
         context.portals.add(_OPENAI_PORTAL)
 
 

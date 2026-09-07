@@ -22,7 +22,7 @@ from lychd.domain.orchestration.broker import GhoulBroker
 from lychd.domain.orchestration.schema import TransitionPlan
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncGenerator, AsyncIterator
 
     from lychd.domain.animation.capabilities import CapabilityGrant, CapabilityState
     from lychd.domain.animation.schemas.capability_family import CapabilityFamily
@@ -64,6 +64,7 @@ class FakeDispatcher:
     key: str = "chat:test"
     calls: list[str] = field(default_factory=list)
     requires_tools_calls: list[bool] = field(default_factory=list)
+    capability_key_calls: list[str | None] = field(default_factory=list)
 
     @asynccontextmanager
     async def lease_grant(
@@ -71,14 +72,16 @@ class FakeDispatcher:
         *,
         family: CapabilityFamily | str,
         model_name: str | None = None,
+        capability_key: str | None = None,
         run_id: str,
         priority: int = 50,
         require_modalities: tuple[str, ...] = (),
         requires_tools: bool = False,
-    ) -> AsyncIterator[CapabilityGrant]:
+    ) -> AsyncGenerator[CapabilityGrant]:
         _ = (model_name, run_id, priority, require_modalities)
         self.calls.append(str(family))
         self.requires_tools_calls.append(requires_tools)
+        self.capability_key_calls.append(capability_key)
         # The graph deliberately consumes only the grant surface represented by
         # ``FakeGrant``.  The cast keeps that test double honest at the concrete
         # production seam without constructing live animator/model handles.

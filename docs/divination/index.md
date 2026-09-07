@@ -5,30 +5,24 @@ icon: fontawesome/solid/ankh
 
 # :fontawesome-solid-ankh: Divination
 
-The body has answered; now the question must learn manners. **Divination** is the Magus offering
-an **Intent** to the running **Lich**, witnessing what returns, and deciding where consent,
-refusal, correction, or the next question belongs. One door is made for the hands. The other is
-made for the long weather of meaning.
+**Divination** follows an encounter: the Magus offers an Intent, witnesses a return, and
+decides what deserves consent, correction, refusal, or another question. One door opens onto
+the work before you; the other follows what these encounters may become.
 
 ## The Two Doors
 
-Two doors open from the same threshold. They share a body; they do not do the same work.
+**[Enter the Altar](./altar/index.md)** when there is work before you. Begin in Bridge and follow
+one Run through its result, retained evidence, declared score, and any correlated physical
+transition. Open [Atlas](./altar/atlas.md) when an undertaking needs a continuing brief, concerns,
+and decisions across those encounters. For a first life, complete [Summoning](../summoning.md)
+before crossing this threshold.
 
-### Operate through the Altar
+**[Follow Transcendence](./transcendence/index.md)** when the encounter raises a larger question.
+Its fivefold path follows the formation of a recurrent relation: how it begins, imagines,
+remembers, survives rupture, and meets the Many. Reading needs no installation. This is the door
+made for the long weather of meaning.
 
-Choose the [Altar](./altar/index.md) to offer an Intent, follow one **Run** through evidence and
-state, or answer a request for human judgment. Begin at the **[Bridge](./altar/bridge.md)**. The
-**[Circle](./altar/circle.md)** is the Invocation-shaped pinnacle within that communion. The
-**[Orb](./altar/orb.md)**, **[Nexus](./altar/nexus.md)**, and **[Loom](./altar/loom.md)** show
-different faces of that passage; none is the whole body.
-
-### Read the journey through Transcendence
-
-Choose [Transcendence](./transcendence/index.md) when operation has raised the further question:
-what kind of recurrent relation is being cultivated? It holds the Great Work's constitutional
-**telos**—recurrence, memory, authority, refusal, relation, and repair—and its movement through
-Nigredo, Albedo, Citrinitas, Rubedo, and Infinity.
-
-For a first life, begin with [Summoning](../summoning.md). When its four observations agree,
-enter the [Altar](./altar/index.md) through the [Bridge](./altar/bridge.md). The current operating
-boundary belongs to [State of Work](../state-of-the-work.md#altar-and-observability).
+Beside the path, **[Correspondence](./correspondence.md)** brings modern brain and learned-system
+research into conversation with inherited maps of mind. It turns a functional rhyme into a
+question that an intervention could sharpen. Read it alongside a stage when you want to
+follow that stage’s research correspondences further.

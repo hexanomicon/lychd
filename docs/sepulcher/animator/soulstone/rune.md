@@ -7,19 +7,16 @@ icon: material/script-text
 
 A **Soulstone Rune** is compiler input: one validated TOML document describing a local service.
 It is neither live state nor a generated Quadlet. Concrete instances live beneath a registered
-leaf runtime schema:
+leaf runtime schema, relative to the active [Codex](../../codex.md) root:
 
 ```text
-~/.config/lychd/runes/animator/soulstones/<runtime>/<instance>.toml
+runes/animator/soulstones/<runtime>/<instance>.toml
 ```
+
+Codex defaults to `~/.config/lychd/`; `XDG_CONFIG_HOME` changes that prefix.
 
 The abstract Animator and Soulstone branches cannot own TOML files. Folder ancestry selects the
 Rune type; no `type=` field may switch it after discovery.
-
-In code, the Rune combines Animator-owned identity and capability intent with an embedded
-`quadlet: QuadletConfig` value. That nested value owns the common image invariant only. Soulstone
-keeps its own runtime, endpoint, resource, secret, and lifecycle policy, and the generated
-`QuadletContainer` remains a separate Bind/Scribe artifact.
 
 ## The Runtime Shape
 
@@ -54,27 +51,15 @@ fail during Rune validation. Hydration additionally requires a Soulstone URL to 
 loopback host and an explicit port; when `port` is also declared, the two values must agree. A
 non-loopback endpoint belongs at the Portal boundary.
 
-Loaded Rune values are immutable through their nested models, sequences, and string maps. Change
-the TOML and construct a new process generation; do not mutate an admitted object in place. Rune
-writing uses the same exact schema generation admitted by loading, rather than every imported
-Python subclass, so an unregistered branch cannot leak into generated configuration.
-
 ## Capability declarations
 
-The accepted general-service shape adds first-class `[[capabilities]]` entries. A declaration
-references one registered `interface_id` and immutable `profile_ref` (stable id plus revision or digest), selects its permitted
-operations, and pins the driver/dialect, evidence, resource envelope, and containment profile for
-this instance. A Rune may supply endpoint, secret reference, lifecycle, and explicit admitted
-overlays; it cannot rewrite the referenced profile's request/result schemas, licenses, formats,
-languages, or proved limits.
-
-The following model catalogue is the currently delivered v1 compatibility path, not the universal
-service schema.
+The model catalogue below is the current v1 compatibility path. General service declarations remain
+[Designed](#general-service-declarations-designed).
 
 ### Declared models become v1 capabilities
 
 Each `[[models]]` block names a stable `id`, an explicit container-side `path`, an optional
-description and format, capability hints, and a per-model generation overlay. It yields capability
+format, capability hints, and a per-model generation overlay. It yields capability
 identity `{animator}:{family}:{model_id}`. Duplicate ids fail validation. When at least one block is
 present, those ids are the complete admitted catalogue in declaration order: live discovery for an
 undeclared id is ignored, while a declared id absent from discovery keeps its declaration but may
@@ -83,15 +68,21 @@ be downgraded by readiness evidence.
 `[models.capabilities]` may declare:
 
 - `families`: `chat`, `vision`, `embedding`, `stt`, `tts`, `tool_execution`, or `rerank`;
-- `modalities_in` and `modalities_out`: `text`, `image`, or `audio`; and
-- `supports_tools` and `supports_streaming`.
+- `surface`: `chat` or `responses`, selecting the connector's admitted API surface;
+- `modalities_in`, such as `text`, `image`, or `audio`; and
+- `supports_tools`.
 
 These hints are authoritative for routing. A live probe may downgrade availability or fill an
 explicitly open runtime fact; it may not invent an undeclared model. An explicit `families` list is
-closed. When that field is omitted, v1 applies only its bounded inference: `chat` from the admitted
-surface/text input and probed `embedding` or `rerank`; it never infers `vision`, `stt`, `tts`, or
-`tool_execution`. Image input enriches a `chat` capability and does not create the dedicated
+closed. When that field is omitted, the current catalogue synthesizes `chat`; other families
+require an explicit declaration. Image input enriches a `chat` capability and does not create the dedicated
 `vision` family. The full two-axis law lives in [Capabilities](../capabilities.md).
+
+These fields describe model admission, not a complete application. The current Bridge accepts
+text and requires tool support for its structured reply. It has no image/audio upload or materializer,
+and the `vision`, `embedding`, `rerank`, `stt`, and `tts` families have no executable v1 grant.
+Selecting a model that can accept images does not add image input to Bridge. Output modalities,
+streaming hints, and model descriptions are not current Rune fields and fail validation.
 
 An empty `models` list is not the Portal zero-capability rule. A Soulstone adapter may instead use
 its runtime/discovery model catalogue or derive one model id from `served_model_id`, `model_path`,
@@ -106,16 +97,23 @@ each named [Connector dialect](../connectors.md#openai-compatibility-is-per-dial
 
 ## Generation Overlays
 
-Generation fields are optional: `max_context`, `max_tokens`, `temperature`, `top_p`, `top_k`,
-`repetition_penalty`, and `reasoning_format`. Effective values overlay in this order:
+The current optional generation fields are `max_context`, `max_tokens`, `temperature`, and
+`top_p`. Effective values overlay in this order:
 
 ```text
 runtime defaults → Soulstone [generation] → [models.generation]
 ```
 
-The accepted ranges are `max_context`/`max_tokens ≥ 1`, finite `temperature` 0–2, finite `top_p`
-0–1, `top_k ≥ 0`, and finite `repetition_penalty ≥ 0`; NaN and infinities are invalid even when a
-comparison alone would appear to admit them.
+The accepted ranges are `max_context`/`max_tokens ≥ 1`, finite `temperature` 0–2, and finite
+`top_p` 0–1. Other generation keys fail validation. The overlay bounds request settings; it does
+not resize a running engine. llama.cpp's managed `n_ctx` is reflected from its actual generated
+command before the explicit generation overlays apply.
+
+Bridge normally requests a tool-capable chat grant from Dispatcher's eligible pool. To pin one
+exact current v1 capability for new turns, follow the
+[`[weaver.bridge]` selector](../../extensions/weaver/index.md#choose-a-bridge-capability).
+Dispatcher still checks compatibility, readiness, and policy; a refused target never falls back.
+`[orchestration.routing]` selects only physical queue and priority.
 
 ## Concurrency Intent
 
@@ -136,8 +134,30 @@ must not spell `default-exclusive` directly.
 
 `groups` requests compatible aggregation, and one Rune may name several groups. That means the
 same service participates in several operator formations; it does not duplicate the instance or
-promise that the complete union may coexist. `alliances` is accepted shape without enforcement
-authority. Neither changes the conflict graph, reserves hardware, or asks for semantic dispatch.
+promise that the complete union may coexist. `alliances` is not an accepted Rune field. Groups
+do not change the conflict graph, reserve hardware, or ask for semantic dispatch.
+
+## Schema and process generation
+
+In code, the Rune combines Animator-owned identity and capability intent with an embedded
+`quadlet: QuadletConfig` value. That nested value owns the common image invariant only. Soulstone
+and Phoenix embed it under `quadlet` without sharing Domain or Rune ancestry; future Tether or Veil
+Runes may compose it on the same terms. Soulstone keeps its own runtime, endpoint, resource, secret,
+and lifecycle policy, and the generated `QuadletContainer` remains a separate Bind/Scribe artifact.
+
+Loaded Rune values are immutable through their nested models, sequences, and string maps. Change
+the TOML and construct a new process generation; do not mutate an admitted object in place. Rune
+writing uses the same exact schema generation admitted by loading, rather than every imported
+Python subclass, so an unregistered branch cannot leak into generated configuration.
+
+## General-service declarations (Designed)
+
+The accepted general-service shape adds first-class `[[capabilities]]` entries. A declaration
+references one registered `interface_id` and immutable `profile_ref` (stable id plus revision or digest), selects its permitted
+operations, and pins the driver/dialect, evidence, resource envelope, and containment profile for
+this instance. A Rune may supply endpoint, secret reference, lifecycle, and explicit admitted
+overlays; it cannot rewrite the referenced profile's request/result schemas, licenses, formats,
+languages, or proved limits.
 
 ## Refusal and Handoff
 

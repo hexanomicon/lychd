@@ -10,11 +10,8 @@ import json
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Literal, cast
 
-from pydantic import ValidationError
-
 from lychd.domain.codex.schemas import CENSORED_VALUE
 from lychd.domain.web.contracts import RunEventEnvelope
-from lychd.domain.web.fragments import ValidatedFragment
 from lychd.domain.web.schemas import ConsentCard, SwapTicket
 
 if TYPE_CHECKING:
@@ -97,19 +94,17 @@ class EventProjector:
         return {"consent": asdict(self.consent_card_view(view))} if view is not None else {}
 
     def _project_fragment(self, payload: str) -> dict[str, Any]:
+        """Contain malformed events and reuse the registry's model-output gate."""
         try:
             parsed = json.loads(payload)
         except json.JSONDecodeError:
-            return {"kind": "genui.unknown", "schema_version": 1, "props": {}, "actions": []}
-        definition = self._fragments.get(str(parsed.get("fragment", "")))
-        if definition is None:
-            return {"kind": "genui.unknown", "schema_version": 1, "props": {}, "actions": []}
-        try:
-            params = definition.params_model.model_validate(parsed.get("params", {}))
-        except ValidationError:
-            return {"kind": "genui.unknown", "schema_version": 1, "props": {}, "actions": []}
-        validated = ValidatedFragment(key=definition.key, params=params)
-        return self._fragments.descriptor(validated)
+            parsed = None
+        if isinstance(parsed, dict):
+            fields = cast("dict[str, Any]", parsed)
+            validated = self._fragments.validate_call(str(fields.get("fragment", "")), fields.get("params", {}))
+            if validated is not None:
+                return self._fragments.descriptor(validated)
+        return {"kind": "genui.unknown", "schema_version": 1, "props": {}, "actions": []}
 
     async def _project_done(self, run_id: str, status: str) -> dict[str, Any]:
         from lychd.domain.web.schemas import BridgeTurn
@@ -169,9 +164,11 @@ class EventProjector:
             target=record.target,
             state=state,
             phase=record.trace.phase,
-            action_type=record.trace.plan.action_type if record.trace.plan is not None else record.action_type,
+            action_type=record.trace.action_type if record.trace.action_type is not None else record.action_type,
             total_metabolic_cost=(
-                record.trace.plan.total_metabolic_cost if record.trace.plan is not None else record.total_metabolic_cost
+                record.trace.total_metabolic_cost
+                if record.trace.total_metabolic_cost is not None
+                else record.total_metabolic_cost
             ),
             physical_transition_id=record.trace.physical_transition_id,
             compensation_transition_id=record.trace.compensation_transition_id,

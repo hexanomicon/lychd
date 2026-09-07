@@ -5,13 +5,14 @@ icon: material/text-recognition
 
 # :material-text-recognition: Scanner
 
-Prism's **Scanner** contract is stable while OCR models, native parsers, PDF pipelines, and serving
-projects evolve. LychD therefore does not make PaddleOCR, MinerU, Xberg, or Markdown the universal
-document abstraction. Each enters through [Assimilation](../../../adr/35-assimilation.md) as a
-candidate implementation and earns only the exact document tasks proved by its bake.
+A scanned invoice and a born-digital report can ask the same question of **Scanner**: which text,
+regions, tables, and omissions can be attributed to these exact pages? The route begins with
+admitted source bytes and ends with a `DocumentObservation@1` plus explicit derivatives. Markdown
+is one projection of that return, not the document's canonical replacement.
 
-This survey was reviewed on **2026-08-07**. It records candidates, not delivery or automatic
-fallback. Vision remains Partial and no OCR adapter ships today.
+The semantic boundary remains stable while engines change. No OCR adapter ships; vision remains
+Partial in [State](../../../state-of-the-work.md#vision-admission). The implementation study below
+was reviewed on **2026-08-07**. Its candidates require their own Assimilation and bake.
 
 ## What the Scanner route actually owes
 
@@ -34,14 +35,10 @@ pages, and the exact engine, model, configuration, and license profile. Markdown
 PDF, and a provider's JSON tree are useful projections or derivatives; none is canonical source
 truth.
 
-Four offices must remain distinct:
-
-| Office | Owns |
-| --- | --- |
-| Scanner semantic interface | tasks, request/result schemas, page/region meaning, omission and validation law |
-| immutable capability profile | exact engine/model/pipeline revision, accepted media, languages, page/output limits, quality and license evidence |
-| dialect driver | local call, CLI, REST, MCP, or provider-job encoding; timeout, error, cancellation, result, and reconciliation semantics |
-| runtime adapter | Rune hydration, process/container plan, link and exact profile readiness, and optional activation |
+Scanner fixes page and region meaning. Its immutable profile closes engine, model, media,
+language, limits, quality, and license evidence; a dialect driver supplies invocation and recovery,
+while a runtime adapter supplies service lifecycle. [Capabilities](../../animator/capabilities.md)
+and [Connectors](../../animator/connectors.md) keep those shared contracts exact.
 
 A Prism-owned Scanner reference adapter may assemble those pieces, but its name does not collapse
 their authority. A finite CLI/library path is a Spell-selected ToolProfile delivered into a trusted
@@ -59,21 +56,6 @@ the deployment instance. For a finite tool, the Resolution Lock pins the ToolPro
 Either way the closure retains pipeline or model, weights and digest, device/backend, languages,
 optional modules, concurrency, memory envelope, and exact output fields that passed the bake.
 
-## Three candidate routes
-
-The projects overlap. The table names the office for which each is most interesting rather than
-claiming that it can perform only one task.
-
-| Candidate | Primary office and interface | License reading | Present judgment |
-| --- | --- | --- | --- |
-| [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) | Direct OCR, PP-StructureV3 structured parsing, and PaddleOCR-VL; Python/CLI, self-hosted PaddleX REST, official hosted API, or MCP. | Apache-2.0 code; every selected model and dependency still needs its own receipt. | Primary first Scanner candidate. It covers multilingual text, coordinates, orientation, layout, tables, formulae, charts, reading order, and Markdown/JSON, but upstream breadth is not proof of reliability on LychD fixtures. |
-| [Xberg](https://github.com/xberg-io/xberg) | Rust-first broad format detection and extraction with selective OCR, bindings, CLI, REST, and MCP. | MIT. | Promising native-extraction and routing candidate, especially when a born-digital document should avoid OCR. Xberg v1 is a fresh Kreuzberg rebrand, so it remains Lab material until soak, compatibility, and output-stability evidence exist. |
-| [MinerU](https://github.com/opendatalab/MinerU) | Full PDF/image/Office parsing and reconstruction; CLI, Python, `/file_parse` asynchronous REST jobs, router, and VLM/OpenAI-server modes. | Current custom “MinerU Open Source License” adds commercial thresholds and online-service attribution to Apache-2.0. | Technically strong complex-document candidate, but the added use threshold is incompatible with a strict OSI/FOSS Core policy. Keep documented and license-gated unless its terms change or policy explicitly admits it. |
-
-PaddleOCR remains a first-class, directly callable Scanner implementation even when Xberg or MinerU
-can use OCR internally. A bundled dependency does not hide engine and model identity, prove the
-direct profile, or prevent a Pattern from selecting PaddleOCR without the surrounding pipeline.
-
 ## Routing without a universal wrapper
 
 The first routing study should compare explicit profiles rather than stack every project:
@@ -88,6 +70,21 @@ Fallback is not inferred from a low confidence value or parser failure. A Patter
 comparison or escalation branch with pinned implementations, or a failed attempt may settle and a
 new forward Invocation may admit another extractor. Every result remains separately attributed;
 agreement raises confidence only under an admitted comparison rule.
+
+## Three candidate routes
+
+The projects overlap. The table names the office for which each is most interesting rather than
+claiming that it can perform only one task.
+
+| Candidate | Primary office and interface | License reading | Present judgment |
+| --- | --- | --- | --- |
+| [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) | Direct OCR, PP-StructureV3 structured parsing, and PaddleOCR-VL; Python/CLI, self-hosted PaddleX REST, official hosted API, or MCP. | Apache-2.0 code; every selected model and dependency still needs its own receipt. | Primary first Scanner candidate. It covers multilingual text, coordinates, orientation, layout, tables, formulae, charts, reading order, and Markdown/JSON, but upstream breadth is not proof of reliability on LychD fixtures. |
+| [Xberg](https://github.com/xberg-io/xberg) | Rust-first broad format detection and extraction with selective OCR, bindings, CLI, REST, and MCP. | MIT. | Promising native-extraction and routing candidate, especially when a born-digital document should avoid OCR. Xberg v1 is a fresh Kreuzberg rebrand, so it remains Lab material until soak, compatibility, and output-stability evidence exist. |
+| [MinerU](https://github.com/opendatalab/MinerU) | Full PDF/image/Office parsing and reconstruction; CLI, Python, `/file_parse` asynchronous REST jobs, router, and VLM/OpenAI-server modes. | Current custom “MinerU Open Source License” adds commercial thresholds and online-service attribution to Apache-2.0. | Technically strong complex-document candidate, but the added use threshold is incompatible with a strict OSI/FOSS Core policy. Keep documented and license-gated unless its terms change or policy explicitly admits it. |
+
+PaddleOCR remains a first-class, directly callable Scanner implementation even when Xberg or MinerU
+can use OCR internally. A bundled dependency does not hide engine and model identity, prove the
+direct profile, or prevent a Pattern from selecting PaddleOCR without the surrounding pipeline.
 
 ## Assimilation bake
 
@@ -104,7 +101,7 @@ license closure. Promote profiles, not project logos: PaddleOCR may qualify for 
 while failing formulae; Xberg may qualify for native extraction but not difficult scans; MinerU may
 win a bounded complex-PDF route without becoming admissible to strict-FOSS Core.
 
-The pragmatic first bake compares exactly three profiles: PaddleOCR direct plus PP-StructureV3,
+The pragmatic first bake compares three candidate routes, each through its exact profiles: PaddleOCR direct plus PP-StructureV3,
 Xberg for broad native extraction and selective OCR, and MinerU for difficult documents behind its
 license gate. Later candidates can enter through Assimilation without changing Prism's Scanner
 contract or silently enlarging the initial Core.

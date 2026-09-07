@@ -5,13 +5,15 @@ icon: material/image-auto-adjust
 
 # :material-image-auto-adjust: Image
 
-Prism's **Maker/editor** office covers image-producing effects. It is distinct from a Multimodal
-Mind that accepts an image and returns text: ordinary vLLM can serve that Mind, while a diffusion
-or omni-generation engine must produce the new pixels. Every result is a new derivative artifact,
-never an observation that can replace its source.
+An image request owes more than new pixels. **Image** records which operation was requested,
+which sources and controls it may use, what changed, and which exact profile produced the
+candidate. An image-capable chat model can interpret the picture; this Maker/editor passage
+produces or transforms it.
 
-This candidate study was reviewed on **2026-08-26**. It records a proposed contract and bake, not
-delivery, automatic fallback, or permission to generate, edit, publish, or export an image.
+Begin with the operation and expected return, then select a simple serving or full workflow
+route. The study was reviewed on **2026-08-26**. These are Designed contracts and candidate
+bakes, with delivery owned by [State](../../../state-of-the-work.md#vision-admission). Technical
+settlement leaves creative adoption, export, and publication with their named owners.
 
 ## One job, explicit operation
 
@@ -26,7 +28,9 @@ every admitted model implements every form:
 | `control` | prompt plus pose, depth, edge, sketch, layout, or other control artifact | Preserve the declared structure according to a separately baked control profile. |
 | `enhance` | source image and exact enhancement profile | Restore, remove a background, or upscale while declaring whether the operation can hallucinate detail. |
 
-A candidate `ImageJob@1` therefore carries an explicit operation, prompt and negative prompt,
+### Request and provenance
+
+A candidate `ImageJob@2` therefore carries an explicit operation, prompt and negative prompt,
 authorized source, reference, mask, and control `ArtifactRef` values, requested dimensions and
 candidate count, seed policy, immutable preset, deadline, budget, and output policy. Optional
 inputs do not grant an engine capabilities it has not declared and proved.
@@ -42,7 +46,9 @@ Source-grounded masks, regions, pose, depth, and other controls may come from
 transform lineage, uncertainty, and exact artifact digest remain visible rather than becoming
 anonymous workflow tensors.
 
-`ImageJob@1` owns the requested operation, candidate set, technical validation, and result
+### Technical settlement
+
+`ImageJob@2` owns the requested operation, candidate set, technical validation, and result
 settlement. Creative adoption belongs to Voidlight or another consuming Composition; successful
 custody and probes never accept the image on that owner's behalf. Each concrete execution uses Core's Designed
 [`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts-designed) mechanics;
@@ -74,12 +80,10 @@ must be profiled separately, along with mask, multi-reference, partial-stream, a
 behavior. The API does not provide a universal durable image-job resource; LychD retains job
 identity, state, authority, retry law, and artifact custody.
 
-A Comfy workflow is likewise an engine dialect, not a Spellweaver Pattern or another workflow
-jurisdiction. A Rune selects an immutable LychD preset whose compiled graph, node set, model set,
-and parameter openings passed Assimilation. Arbitrary imported graphs, runtime checkpoint
-downloads, partner API nodes, and ambient custom-node installation are forbidden. The
-[ComfyUI server routes](https://docs.comfy.org/development/comfyui-server/comms_routes) provide
-execution primitives; they do not provide LychD authority or provenance.
+For a Comfy route, select only the immutable preset and parameter openings admitted under the
+[engine contract](../../animator/soulstone/engines/comfyui.md#keep-model-engine-and-road-apart).
+Arbitrary graphs, runtime checkpoint downloads, partner API nodes, and ambient custom-node
+installation are forbidden. The engine graph supplies no Spellweaver or effect authority.
 
 [Diffusers](https://github.com/huggingface/diffusers) remains the reference implementation and
 model-compatibility path. It is a Python library rather than a complete multi-user job service, so
@@ -98,7 +102,7 @@ The initial model bake remains deliberately small:
 
 | Profile | Intended office | License and iron |
 | --- | --- | --- |
-| [FLUX.2 klein 4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B) | Fast interactive text-to-image, single-reference edit, and multi-reference edit in one checkpoint. | Apache-2.0 and approximately 13 GB VRAM by its official card. The 9B, 9B-KV, and dev variants use non-commercial terms and are not substitutes for this profile. |
+| [FLUX.2 klein 4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B) | Fast interactive text-to-image, single-reference edit, and multi-reference edit in one checkpoint. | Apache-2.0 and approximately 13 GB VRAM by its official card. The FLUX.2 klein 9B, 9B-KV, and FLUX.2 dev models use non-commercial terms and are not substitutes for this profile. |
 | [Qwen-Image-2512](https://huggingface.co/Qwen/Qwen-Image-2512) plus [Edit-2511](https://huggingface.co/Qwen/Qwen-Image-Edit-2511) and a pinned control profile | High-quality generation and typography; identity-sensitive single/multi-image editing; masked and structural work across the family. | Apache-2.0 but heavy: the official BF16 packages include roughly 57.7 GB of components. Treat as a stasis/offload or explicitly sharded quality route, not a permanent companion to a large Mind. |
 
 FLUX.2 klein 4B is the first resident-friendly default. The Qwen family is the first heavy quality
@@ -108,12 +112,11 @@ not a hard preservation mask, and separate Qwen checkpoints remain separate Rune
 ## Coven, stasis, and the proving bake
 
 One possible Coven keeps a compact Multimodal Mind on one 24 GB GPU and FLUX.2 klein on the other.
-A large Qwen-Image profile may instead require active work to settle and release its leases. The
-requesting Run enters Graph Stasis while Orchestrator drains and transitions the affected Animators
-before both cards are reassigned.
-Two 24 GB devices are not implicitly one 48 GB device; the exact runtime must prove sharding,
-offload, warm-up, cancellation, and complete release. A Comfy graph or serving engine never chooses
-placement or evicts another Animator.
+A large Qwen-Image profile may instead need affected work to release its leases through
+[Prism's Stasis and readiness passage](index.md#sight-on-finite-iron).
+Two 24 GB devices are not implicitly one 48 GB device: the exact runtime must prove sharding,
+offload, warm-up, cancellation, and complete release. Neither Comfy nor a serving engine may choose
+placement or evict another Animator.
 
 The first corpus should cover natural scenes, illustration, UI and poster text, Slovak diacritics,
 single- and multi-reference identity, preservation edits, masks and expanded canvases, pose/depth/

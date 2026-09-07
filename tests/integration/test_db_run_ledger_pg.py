@@ -478,7 +478,7 @@ async def test_claimed_failure_cannot_overwrite_new_resume_hop(
     """The failure CAS is fenced by the enqueue sequence that this worker claimed."""
     ledger = DbRunLedger(session_factory=pg_factory)
     run_id = await _seed(ledger)
-    assert await ledger.bump_enqueue_seq(run_id) == 1
+    assert await ledger.rotate_delivery(run_id, enqueue_seq=0) == 1
     assert await ledger.try_claim_run(run_id, enqueue_seq=1) is True
 
     consent_id = await _park_decided_consent(

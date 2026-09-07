@@ -17,14 +17,15 @@ from lychd.cli.commands import (
     bind_quadlets,
     init_codex,
 )
-from lychd.config import QuadletConfig
 from lychd.config.runes.registry import RuneRegistry
-from lychd.domain.animation.schemas import GenericSoulstoneConfig
+from lychd.config.settings import Settings
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.declarations import (
     AnimatorDeclarations,
     merge_reserved_ports,
 )
+from lychd.extensions.builtin.animator.soulstones.vllm import VllmSoulstoneConfig
+from lychd.extensions.host import assemble_extensions
 from lychd.system.binding_sites import (
     AttestedBindingSite,
     AttestedBindingSites,
@@ -92,15 +93,18 @@ def _animator_declarations(
     )
 
 
-def _advertised_generic_soulstone(
+def _advertised_soulstone(
+    mocker: MockerFixture,
     *,
     secret_env_files: dict[str, str] | None = None,
-) -> GenericSoulstoneConfig:
-    """Build a real local declaration that synthesizes one fallback capability."""
-    return GenericSoulstoneConfig(
+) -> VllmSoulstoneConfig:
+    """Build one declared model under an explicitly assembled runtime adapter."""
+    settings = Settings.model_validate({"extensions": {"builtins": ("animator/vllm",), "crypt": ()}})
+    mocker.patch("lychd.extensions.host.get_extensions", return_value=assemble_extensions(settings))
+    return VllmSoulstoneConfig(
         name="test",
-        quadlet=QuadletConfig(image="example/runtime"),
-        runtime="openai_compatible",
+        model_path="/models/test",
+        port=20000,
         secret_env_files=secret_env_files or {},
     )
 
@@ -878,7 +882,7 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
         "lychd.config.runes.registry.load_rune_registry",
         return_value=registry,
     )
-    stone = _advertised_generic_soulstone()
+    stone = _advertised_soulstone(mocker)
     portal = SimpleNamespace(api_key_secret_name=None)
     compiler = mocker.patch(
         "lychd.cli.binding.compile_animator_declarations",
@@ -953,14 +957,18 @@ def test_bind_dry_run_uses_real_planner_without_effects(
     from lychd.system.services.scribe import BindingChange, BindingReconcilePlan
 
     lock = mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
-    stone = _advertised_generic_soulstone()
+    stone = _advertised_soulstone(mocker)
     mocker.patch(
         "lychd.cli.binding.compile_animator_declarations",
         return_value=_animator_declarations(soulstones=(stone,)),
     )
     from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+    from lychd.extensions.host import get_extensions
 
-    capability_specs = RuntimeAdapterRegistry().build_capability_specs(stone)
+    adapter_registry = RuntimeAdapterRegistry(adapters=get_extensions().runtime_adapters)
+    runtime = adapter_registry.build_runtime(stone)
+    assert runtime is not None
+    capability_specs = adapter_registry.build_capability_specs(runtime)
     runtime_planner = mocker.patch(
         "lychd.domain.animation.services.adapters.registry.RuntimeAdapterRegistry",
     ).return_value
@@ -1043,7 +1051,7 @@ def test_bind_quadlets_systemd_failure(runner: CliRunner, mocker: MockerFixture)
     mocker.patch(
         "lychd.cli.binding.compile_animator_declarations",
         return_value=_animator_declarations(
-            soulstones=(_advertised_generic_soulstone(),),
+            soulstones=(_advertised_soulstone(mocker),),
         ),
     )
     mock_transmuter_cls = mocker.patch("lychd.domain.animation.transmute.Transmuter")
@@ -1073,7 +1081,8 @@ def test_bind_quadlets_systemd_failure(runner: CliRunner, mocker: MockerFixture)
 
 def test_bind_quadlets_fails_when_soulstone_secret_missing(runner: CliRunner, mocker: MockerFixture) -> None:
     """Bind must fail closed when a soulstone references a missing Podman secret."""
-    stone = _advertised_generic_soulstone(
+    stone = _advertised_soulstone(
+        mocker,
         secret_env_files={"HF_TOKEN_FILE": "hf_runtime_token"},
     )
     mocker.patch(
@@ -1099,14 +1108,18 @@ def test_bind_quadlets_fails_when_adapter_planned_secret_is_missing(
     runner: CliRunner,
     mocker: MockerFixture,
 ) -> None:
-    stone = _advertised_generic_soulstone()
+    stone = _advertised_soulstone(mocker)
     mocker.patch(
         "lychd.cli.binding.compile_animator_declarations",
         return_value=_animator_declarations(soulstones=(stone,)),
     )
     from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+    from lychd.extensions.host import get_extensions
 
-    capability_specs = RuntimeAdapterRegistry().build_capability_specs(stone)
+    adapter_registry = RuntimeAdapterRegistry(adapters=get_extensions().runtime_adapters)
+    runtime = adapter_registry.build_runtime(stone)
+    assert runtime is not None
+    capability_specs = adapter_registry.build_capability_specs(runtime)
     planner = mocker.patch("lychd.domain.animation.services.adapters.registry.RuntimeAdapterRegistry").return_value
     planner.plan.return_value = RuntimePlan(secrets=["adapter_token,target=/run/adapter-token,mode=0444"])
     planner.build_capability_specs.return_value = capability_specs

@@ -42,3 +42,30 @@ def test_core_and_extension_port_collision_has_one_fail_closed_policy() -> None:
             settings=settings,
             runes=RuneRegistry((PhoenixSettings(),)),
         )
+
+
+@pytest.mark.parametrize("field_name", ["env_vars", "secret_env_files"])
+@pytest.mark.parametrize("explicit_endpoint", [False, True])
+def test_default_runtime_maps_remain_immutable_through_declaration_admission(
+    *,
+    field_name: str,
+    explicit_endpoint: bool,
+) -> None:
+    """Omission must not permit post-validation command or secret injection."""
+    rune = GenericSoulstoneConfig.model_validate(
+        {
+            "name": "local",
+            "quadlet": {"image": "example/runtime"},
+            **({"port": 23333, "base_url": "http://localhost:23333/v1"} if explicit_endpoint else {}),
+        },
+    )
+    declarations = compile_animator_declarations(settings=Settings(), runes=RuneRegistry((rune,)))
+    admitted = declarations.soulstones[0]
+    serialized = admitted.model_dump_json()
+
+    for projection in (rune, admitted, admitted.model_copy(deep=True)):
+        with pytest.raises(TypeError, match="immutable"):
+            getattr(projection, field_name)["INJECTED"] = "undeclared"
+
+    assert admitted.model_dump_json() == serialized
+    assert getattr(admitted, field_name) == {}

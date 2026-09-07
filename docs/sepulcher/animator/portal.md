@@ -15,14 +15,6 @@ it may read the one Podman secret explicitly mounted for it.
 The credential shares that trust boundary: file permissions do not hide it from code already
 executing inside the Vessel.
 
-That delivered v1 placement is insufficient for every [Reach deployment
-profile](../../compositions/reach/deployments/index.md). Reach core and the Discord edge must never
-inherit the provider secret merely because services run on one host. Its Designed profiles require
-a separate Provider Gate/egress-adapter service that alone holds one exact provider or peer
-credential and accepts only typed, egress-admitted attempts. Until that service boundary and its
-deployment receipt ship, a current Vessel-local Portal connector cannot activate as a Reach
-provider path, including on the public VPS profile.
-
 LychD does not own the remote service's lifecycle. Portal capabilities are
 `dedicated=False` and `is_dynamic=False`: the Orchestrator cannot start, stop, load, or repair the
 provider.
@@ -59,9 +51,13 @@ the current all-Portal dispatch quarantine.
 [State of Work](../../state-of-the-work.md#context-privatization-and-portal-egress) owns the absent
 egress gate. The documented anonymization Pattern does not authorize transmission.
 
-## Open One Intentionally
+<span id="open-one-intentionally"></span>
 
-This rite assumes a summoned host. Otherwise begin with [Summoning](../../summoning.md).
+## Declare and inspect one Portal
+
+This rite assumes a summoned host. Run its commands from the stable
+[Summoning checkout](../../summoning.md#the-desecration), under the same operator user and XDG
+environment. For a first installation, begin with [Summoning](../../summoning.md).
 
 ### 1. Admit the provider schema
 
@@ -113,7 +109,6 @@ probe = false
 
 [[models]]
 id = "gpt-5.2"
-description = "Remote tool-capable chat model."
 
 [models.capabilities]
 families = ["chat"]
@@ -154,9 +149,15 @@ uv run --extra postgres-binary lychd status
 ```
 
 Successful bind proves Rune validation, secret presence, and atomic unit reconciliation—not
-provider reachability. The `openai-main:chat:gpt-5.2` row proves synthesis and registration. A
-`WARM` observation proves only readiness of that exact declared binding; it proves neither egress
-eligibility nor credentialed invocation. Current Dispatcher policy quarantines every Portal grant.
+provider reachability. CLI `status` inspects the installation; it does not list model capabilities.
+Open the running Vessel's local registry snapshot at `http://127.0.0.1:7134/orchestrator/status`
+within the same-host browser boundary. In `all_capabilities`, find the `capability_key`
+`openai-main:chat:gpt-5.2`. That row establishes synthesis and registration; this example's
+`probe = false` leaves its `phase` as `unknown`.
+
+A later `warm` observation would establish readiness of that exact declared binding, without
+establishing egress eligibility or credentialed invocation. Current Dispatcher policy quarantines
+every Portal grant.
 
 The Bridge has no provider picker. Once the general Egress Gate is delivered, a future attributable
 end-to-end proof may make this Portal the only eligible `chat` plus tools candidate and send one
@@ -174,6 +175,16 @@ Close the sky by removing its routable model declarations, binding the new inten
 the quiescent Vessel. The named secret may then be rotated or retired under the operator's own
 secret policy.
 
+## Credential custody in Reach
+
+The Vessel-local credential placement is insufficient for every [Reach deployment
+profile](../../compositions/reach/deployments/index.md). Reach core and the Discord edge must never
+inherit the provider secret merely because services run on one host. Its Designed profiles require
+a separate Provider Gate/egress-adapter service that alone holds one exact provider or peer
+credential and accepts only typed, egress-admitted attempts. Until that service boundary and its
+deployment receipt ship, a current Vessel-local Portal connector cannot activate as a Reach
+provider path, including on the public VPS profile.
+
 ## Portal Rune Reference
 
 | Field | Default | Meaning |
@@ -187,6 +198,6 @@ secret policy.
 | `generation` | `null` | Portal-wide generation overlay. |
 | `probe` | `false` | Opt in to the unauthenticated `/models` probe. |
 
-Each model requires provider-facing `id`; it may add description, capability hints, and a
-per-model generation overlay. Capability hints default to chat with text admission. Verification
+Each model requires provider-facing `id`; it may add capability hints and a per-model
+generation overlay. Operator description belongs to the Portal, not each model block. Capability hints default to chat with text admission. Verification
 may downgrade a declaration, never invent one.

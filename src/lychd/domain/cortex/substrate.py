@@ -1,17 +1,9 @@
-"""`RunSubstrate` — the run collaborators the ghoul plane needs, shared per process.
+"""Process-owned collaborators shared by HTTP admission and the in-process worker.
 
-Topology A (v1): the SAQ worker runs *inside the web server process* on the same
-event loop, so the in-process ghoul (`perform_run`) and the SSE handler must share
-the SAME `RunEventBus` instance — otherwise a run's tokens would never reach its
-open stream. The substrate bundles the run-scoped collaborators once and exposes
-them to both contexts.
-
-Cross-context handoff is a process memo (`get/set/reset_run_substrate`), mirroring
-`db.engine.get_engine`/`extensions.host.get_extensions` — the established codebase
-pattern for a value built once in the application assembly root and read from the SAQ worker
-context. It is lazily read (never at import), so the web lifespan sets it before any
-job is ever claimed. It is NOT a mutable module-global singleton of behavior: it is
-a test-resettable handoff seat for a value the application assembly root owns.
+Application lifespan publishes the substrate before workers claim jobs. Both use
+the same event bus, leases and cancellation coordinator on one event loop.
+``build_services`` binds these handles to the persisted caller for Graph execution;
+the process handoff itself carries no durable recovery authority.
 """
 
 from __future__ import annotations

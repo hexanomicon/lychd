@@ -5,138 +5,66 @@ icon: material/subtitles-outline
 
 # :material-subtitles-outline: Language Edition
 
-Language Edition turns one admitted timed-media work into an attributable language edition. It owns the
-language-edition project, source-aligned words, target-language judgment, casting and performance
-direction, dialogue timing, captions, and the acceptance of a constrained language-track
-replacement. Speech engines, generic translation, Persona identity, music, visual authorship,
-editorial recutting, and publication remain with their own offices.
+Two speakers share a short scene. One line needs replacement in the original language; another edition needs translated dialogue and captions. Language Edition keeps each result aligned to the same locked source, with attributable words, casting, performance, timing, disclosure, and acceptance.
 
-The target language may equal the source language for replacement dialogue, narration, repair, or
-accessibility. Translation is therefore an optional semantic act inside the Pattern, not the
-definition of dubbing and not a reason to create an ownerless Translation Composition.
+A language edition need not translate. Same-language replacement, narration, repair, and accessibility use the same durable project. Generic translation, speech engines, network acquisition, byte custody, Persona identity, music, visuals, editorial recutting, and publication retain their separate owners.
 
 ## Contract
 
-| Field | Reference contract |
-| --- | --- |
-| **Identity** | `language_edition.timed_media` revision `1` |
-| **Principal Pattern** | `language_edition.build_language_version@1` |
-| **Begins with** | a `LanguageVersionRequest@1` binding an immutable admitted source-media reference and timebase; source and target language facts; localization brief, glossary, audience, rights and disclosure posture; exact eligible performer, voice, or capability references; and timing, caption, format, accessibility, and acceptance criteria |
-| **Can return** | immutable `DialogueTranscriptRevision@1`, `LanguageEditionScriptRevision@1`, `DialoguePerformanceRevision@1`, `DialogueConformMap@1`, or `TimedLanguageAssetBundle@1` records; a constrained `LanguageVersionCandidate@1`; `LanguageEditionFindingSet@1`; or exact partial/non-completion |
-| **Stops before** | acquiring a source locator, granting voice or likeness rights, changing Persona identity, composing music, authoring picture-bound effects, changing the locked editorial cut, publishing, or claiming that generated audio was heard |
+`language_edition.timed_media` revision `2` publishes `language_edition.build_language_version@2`. `LanguageVersionRequest@2` binds an immutable source-media reference/timebase or an exact locator plus source-eligibility criteria and requested custody posture. It also binds source/target languages, localization brief, glossary, audience, rights/disclosure, exact eligible performer/voice/capability references, timing, captions, format, accessibility, and acceptance.
 
-Language Edition qualifies as a Composition because the project survives any one engine or Product. Segment
-identity, source/target correspondence, glossary choices, casting, pronunciation, timing,
-disclosure, review findings, accepted performance revisions, unresolved regions, and recovery all
-remain durable application truth. A Product may package Language Edition by itself, but need not reuse its
-technical name as the market name. Reusing Echo, Prism, Scout, or a translation implementation
-does not turn those Extension Domains into the application.
+The work may return `DialogueTranscriptRevision@2`, `SourceDialogueAttestation@1`, `LanguageEditionScriptRevision@2`, `DialoguePerformanceRevision@2`, `DialogueConformMap@2`, `TimedLanguageAssetBundle@2`, optional constrained `LanguageVersionCandidate@2`, `LanguageEditionFindingSet@2`, or exact partial/non-completion.
+
+Revision `2` supersedes Designed-only revision `1` and its `@1` Pattern/request/result family. It admits locators without taking Scout/custody authority and requires source-dialogue attestation before source-aligned wording becomes canonical. No registry or Run used revision `1`; no executable migration exists and its historical meanings remain intact.
 
 ## One bounded language-edition road
 
-```text
-optional upstream acquisition (outside Language Edition)
-→ source locator
-→ Scout Fetch/Download + separate Artifact Admission
-→ immutable source master + exact timebase handoff
-Language Edition Invocation begins
-→ bounded demux/probe
-→ Echo Ear transcript, diarization, and timing observations
-→ source-aligned DialogueTranscriptRevision@1
-→ optional attributed Translation Spell + human or admitted review
-→ LanguageEditionScriptRevision@1
-→ casting from exact performer/voice eligibility references
-→ human takes or Echo Voice synthesis
-→ DialoguePerformanceRevision@1
-→ dialogue edit, alignment, captions, and DialogueConformMap@1
-→ intelligibility, linguistic, timing, rights, and disclosure acceptance
-→ TimedLanguageAssetBundle@1
-→ optional constrained language-track mux against the locked master
-→ probe and back-check → LanguageVersionCandidate@1 or an exact finding
-```
+Before either edition can replace a line, an authorized source-language reviewer must establish which words were spoken and where they belong in the locked scene. Precise timestamps help locate that judgment; they cannot supply it.
 
-Every arrow is separately admitted. A URL is not media custody, STT is not a canonical script,
-detection is not permission to translate, translated prose is not an accepted performance, TTS
-generation is not playback, and a successful mux is not publication. A provider failure never
-authorizes another language, voice, model, road, or paid service.
+Begin with an exact eligible source locator or an immutable source-media master with a timebase. The Composition judges eligibility. A locator may require separately granted Scout Fetch/Download. Scout owns Search/Fetch/Download, destination/contact policy, quarantine arrival and acquisition receipts. After bounded quarantine, separately granted custody-owned Artifact Admission validates retained bytes and admits the immutable source master. A URL is not that master, and an acquisition receipt grants no custody judgment.
 
-The Language Edition mux may replace or add only the declared dialogue, narration, caption, subtitle, and
-language-metadata tracks against an exact locked source master. It records preserved and replaced
-stream digests, timebases, codecs, channel maps, offsets, loudness and intelligibility probes, and
-the resulting digest. A new cut, reordered scene, changed claim, newly authored picture sound, or
-different music is editorial work for [Broadcast](../broadcast/index.md), not a convenient mux
-option.
+Bounded demux/probe comes before Echo Ear transcript, diarization and timing observations. Its proposed `DialogueTranscriptRevision@2` remains observation. Authorized source-language review creates `SourceDialogueAttestation@1` before aligned words become canonical. The attestation binds source/timebase, stable segment identities, speaker assignments, wording, timing, uncertainty/corrections, reviewer Principal and evidence. Ambiguous regions remain unresolved. If Broadcast `ScriptRevision@1` already supplies canonical words, attestation binds those words to exact spoken segments without revising or re-owning the script.
 
-`TimedLanguageAssetBundle@1` is the accepted downstream handoff: exact source and edition-script
-revisions, performance and dialogue-track artifacts, captions, conform map, rights/disclosure
-posture, findings, lineage, and admission criteria. It is not a recut or final picture container.
-`LanguageVersionCandidate@1` is an optional restricted derivative made by muxing that exact bundle
-against one locked master while preserving every non-language stream. Broadcast or another
-consumer may admit the bundle into its own assembly without treating the candidate as canonical.
+From this attested source, optional attributed Translation Spell and required review lead to `LanguageEditionScriptRevision@2`. The same-language replacement need not translate; the translated/captioned edition follows its reviewed translation. Language Edition retains linguistic judgment through that review; Echo and the Translation Spell keep their separate operations.
+
+Eligible casting then selects human takes or Echo Voice synthesis to produce `DialoguePerformanceRevision@2`, preserving performer/voice eligibility without creating grants or copying Persona authority. Dialogue edit, captions and `DialogueConformMap@2`, which records the dialogue alignment, precede linguistic, intelligibility, timing, rights and disclosure acceptance.
+
+The settled downstream bundle is `TimedLanguageAssetBundle@2`. Where requested, an optional restricted track mux followed by probes/back-check may produce `LanguageVersionCandidate@2`. The master stays locked: only declared language tracks can change. This road permits no editorial recut, music changes or publication, and its results are no proof of hearing. Every crossing needs its own admission. A scene may end with an exact incomplete or unknown result. Each edition retains the attested source and its own reviewed language and performance revisions, including any optional artifact it actually produced.
 
 ## Translation is a Spell, localization is the judgment
 
-[Spellweaver](../../sepulcher/extensions/weaver/index.md) can validate and place a versioned
-Translation Spell, but it does not own linguistic truth. The Spell's authority-qualified publisher
-owns its generic transformation semantics and revision; the placement pins original text, source
-and target languages, glossary and protected spans, implementation revision, detection and
-fallback policy, review requirements, and declared loss. Language Edition retains both source and derivative
-and decides whether the result is fit for this speaker, scene, audience, duration, and edition.
+A versioned Translation Spell's authority-qualified publisher owns its transformation semantics; [Spellweaver](../../sepulcher/extensions/weaver/index.md) validates placement. The request pins attested text, languages, glossary/protected spans, implementation, detection/fallback, review, and loss. Language Edition retains original and derivative and judges speaker, scene, audience, duration, and edition fit. Detection grants no permission to translate; a failed provider cannot authorize a different language, voice, model, road, or paid service.
 
-Another Composition may reuse the same exact Translation contract while retaining its own records,
-criteria, and finish judgment. Website and Altar chrome localization remains a Frontend catalogue
-concern; documents, product copy, and other untimed writing remain with their content owner. Language Edition
-owns captions, subtitles, scripts, and on-screen-language cue sheets only when they are part of its
-timed language edition. The FOSS reference Altar can therefore remain English-only without making
-multilingual media impossible or baking English grammar into canonical identities.
+Other Compositions can reuse the exact Spell under their own records and judgment. Frontend owns website/Altar chrome catalogues, and content owners keep untimed writing. Language Edition owns captions, subtitles, scripts, and on-screen-language cue sheets only as parts of a timed edition. English-only reference Altar chrome does not require English media or translated canonical identities.
 
 ## Voices belong to no shortcut
 
-[Echo](../../sepulcher/extensions/echo.md) owns speech capture, transcription, synthesis, delivery,
-and their chronology. An Animator profile names the exact engine, model or acoustic voice,
-languages, formats, licence, and measured limits. Performer consent and source rights remain exact
-inputs; neither an attractive result nor a profile name grants them.
+[Echo](../../sepulcher/extensions/echo.md) keeps capture, STT/TTS, voice-profile facts, delivery, and playback chronology. Its Animator profile supplies exact engine, model/acoustic voice, languages, formats, licence, and measured limits. Performer consent and source rights are independent exact inputs.
 
-Language Edition owns only the casting of an eligible reference to a role in this edition, its direction,
-pronunciation, timing, disclosure, and performance acceptance. [Avatar](../avatar/index.md) may
-reference an eligible voice in a Lich presentation profile or supply that exact eligibility as an
-external precondition when the Lich is being dubbed. Language Edition cannot revise the Persona, broaden the
-voice use, mint identity from resemblance, or make one approved line authorize arbitrary later
-words. Riffmaw retains sung performance and music production rather than general speech.
+Language Edition assigns an eligible performer or voice to a role, directs pronunciation/performance, and accepts timing/disclosure. [Avatar](../avatar/index.md) may provide exact voice eligibility when dubbing the Lich, retaining Persona-linked presentation and Morphe. Resemblance creates no identity or performer right; one approved line cannot authorize arbitrary later words. Riffmaw retains sung performance and music. Generated audio still proves no playback or hearing.
+
+## Preserve the locked picture
+
+Dialogue editing and conform lead to `TimedLanguageAssetBundle@2`: exact source/attestation/edition-script revisions, performance/dialogue artifacts, captions, conform map, rights/disclosure, findings, lineage, and admission criteria. This is the downstream handoff, not a recut or final picture container.
+
+The optional `LanguageVersionCandidate@2` may add or replace only declared dialogue, narration, caption, subtitle, and language-metadata tracks against the locked master. Preserve every non-language stream and record preserved/replaced digests, timebases, codecs, channels, offsets, loudness/intelligibility probes, and result digest. Changed cuts, scene order, claims, picture sound, or music require [Broadcast](../broadcast/index.md) editorial work. A consumer can admit the bundle without treating the optional mux as canonical.
+
+### Model-native timed-language facet
+
+A `VideoJob@2` may emit synchronized language only under a pre-execution `MediaFacetAuthoritySet@1` declaring `timed_language`, `language_edition.timed_media` revision `2`, and exact `LanguageVersionRequest@2` digest. Resolve exact Echo speech interface/profile, performer/acoustic voice, language support, consent, rights, disclosure, and retention before execution; native video audio cannot stand in for them.
+
+After Prism settlement, Language Edition issues its own `SemanticFacetAdmissionReceipt@1` over child/compound digests, source attestation/script, speaker/language role, use, rights, timing, findings, decision maker, and disposition. Bundle and optional mux retain that receipt and parent. Undeclared speech/text is quarantined/deleted; demux, labels, and another owner's receipt cannot admit it. Inseparable compounds need every required owner's acceptance of the exact digest/use.
 
 ## Neighbours keep their truth
 
-| Neighbour | What Language Edition may consume | What remains there |
-| --- | --- | --- |
-| [Scout](../../sepulcher/extensions/scout.md) | an exact admitted source artifact and acquisition receipt | destination policy, web contact, download, quarantine, and Artifact Admission |
-| [Echo](../../sepulcher/extensions/echo.md) | attributed transcript/timing observations and speech artifacts | capture, STT/TTS capability, voice-profile facts, synthesis and playback chronology |
-| [Prism](../../sepulcher/extensions/prism/index.md) | source-grounded OCR, regions, frames, motion or lip-alignment observations, and bounded technical derivatives | visual/spatial effect contracts and provenance |
-| [Voidlight](../voidlight/index.md) | an immutable accepted visual/VFX master or forward correction | visual commission, creative direction, picture and motion acceptance |
-| [Riffmaw](../riffmaw/index.md) | immutable music masters, stems, and cue maps | composition, musical performance, production, mix, and musical acceptance |
-| [Avatar](../avatar/index.md) | an exact eligible presentation or voice reference when applicable | Persona-linked presentation envelope, Morphe, and projection membership |
-| [Broadcast](../broadcast/index.md) | a locked editorial master and exact language-edition request | canonical claims and words, picture sound, recut, final editorial timeline, release and correction |
+Prism supplies attributed OCR, regions, frames, motion/lip-alignment observations, and technical derivatives. Voidlight supplies accepted visuals; Riffmaw supplies music masters/stems/cues. Avatar supplies eligible presentation. Broadcast supplies locked editorial source and requests, retaining canonical claims/words, picture sound, recut, final edit, release, and correction.
 
-An already-settled reference crosses each seam without a Suite. A Suite is needed only when one
-promised result must actively admit, await, cancel, retry, recover, or jointly settle new Language Edition,
-Voidlight, Riffmaw, Avatar, or Broadcast Invocations.
+Settled exact references need no Suite. A promised result that actively admits, awaits, cancels, retries, recovers, or jointly settles new work across those owners requires one. A Product can package the edition without turning its technical name into a market name or acquiring its records.
 
 ## Failure, restart, and the first proof
 
-Each segment has a stable identity against the exact source digest and timebase. Transcript,
-translation, performance, alignment, dialogue mix, restricted mux, and review attempts retain
-their own revisions and terminal dispositions. Unsupported language, ambiguous speaker, missing rights, excessive timing
-loss, failed intelligibility, stale source, exhausted budget, or indeterminate provider/write
-effect returns a finding, refusal, partial edition, or `unknown`; none is silently repaired by
-substitution. Restart resumes only from reconciled immutable artifacts and settled attempts.
+Stable segment identities bind the exact source/timebase. Transcript, attestation, translation, performance, alignment, dialogue mix, mux, and review attempts retain independent revisions/dispositions. Unsupported languages, ambiguous speakers, missing rights, timing loss, failed intelligibility, stale sources, budget exhaustion, or indeterminate provider/write effects return findings, refusal, partial work, or `unknown`. Restart uses reconciled immutable artifacts and settled attempts, without silent substitution.
 
-The smallest proof is local, synthetic, and network-disabled: one short two-speaker video with a
-known timebase and separate picture, dialogue, music-and-effects, and caption fixtures. Produce one
-same-language replacement and one translated edition through fake Ear, Translation, and Voice
-implementations; preserve the locked picture and non-language stream digests; prove segment
-lineage, glossary protection, one human correction, timing pressure, caption alignment, partial
-speaker refusal, crash recovery, deterministic mux, export, and deletion. It proves the
-Composition contract—not translation quality, a real voice model, performer rights, publication,
-or delivery.
+A network-disabled synthetic two-speaker video supplies separate picture, dialogue, music/effects, and captions under a known timebase. Build same-language replacement and a translated edition through fake Ear/Translation/Voice. Preserve picture/non-language digests and prove lineage, attestation after human correction, glossary protection, timing pressure, caption alignment, partial speaker refusal, crash recovery, deterministic mux, export, and deletion. This proves the contract, not translation quality, a real voice, rights, publication, or delivery.
 
-Related: [Workflow](../../adr/28-workflow.md) · [Audio](../../adr/37-audio.md) ·
-[Vision](../../adr/36-vision.md) · [Composition Portfolio](../index.md)
+[Workflow](../../adr/28-workflow.md) · [Audio](../../adr/37-audio.md) · [Vision](../../adr/36-vision.md) · [Composition Portfolio](../index.md)

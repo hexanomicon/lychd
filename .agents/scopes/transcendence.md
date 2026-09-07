@@ -12,7 +12,7 @@ cosmology, planetary recurrence, eschatology, or claims whose meaning depends on
 - [Inner Tongue](../../docs/lexicon/inner-tongue.md) owns etymology, correspondence, and native
   cosmology, including **The EGO**, egoic **Corruption**, and the contemplative mind-mirror
   correspondence.
-- [Correspondence](../../docs/divination/transcendence/correspondence.md) owns modern
+- [Correspondence](../../docs/divination/correspondence.md) owns modern
   brain/learned-system receipts and the research questions formed where those findings meet the
   inherited maps.
 - The five stage pages own their local movement:

@@ -9,6 +9,8 @@ from pydantic import Field, model_validator
 from lychd.config import QuadletConfig
 from lychd.domain.animation.schemas import SoulstoneConfig
 
+_MAX_PORT = 65535
+
 
 class LlamaCppMode(StrEnum):
     """Operational mode for llama.cpp server."""
@@ -95,6 +97,7 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
     @model_validator(mode="after")
     def _validate_runtime_contract(self) -> LlamaCppSoulstoneConfig:
         """Reject mixed command authority and enforce mode prerequisites."""
+        self._validate_endpoint_port()
         if self.exec:
             conflicting = sorted(field for field in self._PASSTHROUGH_CONFLICT_FIELDS if field in self.model_fields_set)
             if conflicting:
@@ -122,6 +125,27 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
             "(or router flags in extra_args/env_vars)."
         )
         raise ValueError(msg)
+
+    def _validate_endpoint_port(self) -> None:
+        """Reject a known command port that disagrees with the admitted endpoint."""
+        if self.port is None:
+            # Declaration compilation allocates the endpoint and revalidates.
+            return
+
+        from lychd.extensions.builtin.animator.llamacpp.parser_cli import LlamaCppCliInferenceParser
+
+        parser = LlamaCppCliInferenceParser()
+        inferred = parser.infer_args(list(self.exec or self.extra_args))
+        if self.exec:
+            inferred = parser.merge(primary=inferred, secondary=parser.infer_env(self.env_vars))
+        # Managed commands emit their typed port before extra_args, overriding
+        # the environment. Unknown or invalid passthrough syntax proves no port.
+        if inferred.port is not None and 1 <= inferred.port <= _MAX_PORT and inferred.port != self.port:
+            msg = (
+                f"LlamaCppSoulstoneConfig declares endpoint port {self.port}, but its runtime inputs "
+                f"declare listening port {inferred.port}. Set 'port' to match the command or correct the command."
+            )
+            raise ValueError(msg)
 
     def _router_source_in_extra_args(self) -> bool:
         """Return True when extra args provide router model source flags."""

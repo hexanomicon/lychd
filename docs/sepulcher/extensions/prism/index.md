@@ -19,65 +19,22 @@ Prism package, byte-custody or materialization path, OCR tool, or visual provide
 
 ## Several faculties, one source
 
-One Prism deployment or requested capability set may compose a dedicated vision provider, precise
-Sight workers, an OCR extractor, a deterministic decode or transform service, a Form worker, and
-an image-capable multimodal chat provider—which remains chat. Each immutable capability profile is
-still one exact implementation closure. Image, video, spatial-form, or structured-motion
-generation and editing stay under separate effect or tool contracts. Activating one neither loads
-the others nor creates another routing system.
+Choose the return needed by the consuming owner:
 
-[Sight](sight.md) records the finite typed-perception contract for boxes, masks, tracks, depth,
-pose, flow, and registered comparison; the owned worker boundary and first permissive profiles;
-and the stricter future session required before cameras or streams enter.
+| Return | Passage |
+| --- | --- |
+| Text, regions, reading order, tables, or document derivatives | [Scanner](scanner.md). |
+| Boxes, masks, depth, pose, flow, tracks, or registered change estimates | [Sight](sight.md), with a separate [Live Sight](live-sight.md) session for armed streams. |
+| New or edited still-image candidates | [Image](image.md). |
+| Generated or transformed moving-image candidates | [Video](video.md), including exact authorization and independent admission for native sound facets. |
+| Geometry, appearance, parts, rigs, assemblies, or field representations | [Form](form.md); [Voxel and block export](voxel-and-block-export.md) follows bounded grids through schematic read-back. |
+| Reusable motion curves, retargeted clips, or technical motion findings | [Kinesis](kinesis.md), with [Live Kinesis](live-kinesis.md) for bounded epoch-to-rig sessions. |
 
-[Scanner](scanner.md) records the evolving candidate engines,
-pipeline servers, transport shapes, license gates, and bake required before one implements this
-stable Prism boundary.
-
-[Image](image.md) records the complementary OpenAI Images serving route,
-the full ComfyUI workflow route, permissive first model profiles, and the stasis and provenance law
-for text- or image-conditioned visual creation.
-
-[Video](video.md) records the asynchronous temporal-effect contract,
-simple and graph-serving routes, permissive and specialist model profiles, arbitrary-iron
-placement law, and the boundary between generated clips, visual direction, and final editing.
-
-[Form](form.md) records the spatial-form contract for generated or reconstructed geometry,
-appearance, parts, rigs, portable assemblies, radiance and Gaussian forms, voxels, block-native
-generation, and bounded procedures without collapsing those facets or granting engine and world
-authority.
-
-[Kinesis](kinesis.md) records the structured-motion contract for finite recovery, generation,
-retargeting, technical cleanup, cue synchronization, validation, and portable projections; its
-FOSS tool base and license-gated model profiles; and the later bounded session required for live
-motion.
-
-## Designed interface register
-
-These are semantic interfaces, not delivered source or claims that every provider implements every
-operation:
-
-| Interface | Operations | Domain request/result | Execution binding | First dialect/driver study |
-| --- | --- | --- | --- | --- |
-| `prism.image@1` | generate, edit, inpaint, control, enhance | `ImageJob@1` and image artifacts/receipts | Animator `durable_job` → `JobGrant` | OpenAI Images subset or Comfy job driver |
-| `prism.video@1` | t2v, i2v, v2v, first_last, continue, motion_transfer, audio_driven | `VideoJob@1` and video artifacts/receipts | Animator `durable_job` → `JobGrant` | OpenAI Videos job subset or Comfy job driver |
-| `prism.sight@1` | classify, detect, ground, segment, estimate_depth, estimate_pose, estimate_flow, track, compare | `SightJob@1` / `VisualObservationSet@1` | Animator `call`/`durable_job` → matching grant; finite tool → Resolution Lock + `ToolProfile` | Prism worker or proved tensor-service driver |
-| `prism.form@1` | generate, reconstruct, texture, segment_parts, rig, voxelize, block_generate, convert, render | `FormJob@1` / `FormAssetSet@1` | Animator job → `JobGrant`; finite tool → Resolution Lock + `ToolProfile` | Prism worker, Comfy job, or finite tool driver |
-| `prism.kinesis@1` | recover, generate, retarget, synchronize, clean, convert, validate | `KinesisJob@1` / motion or findings set | Animator job → `JobGrant`; finite tool → Resolution Lock + `ToolProfile` | Prism worker or finite tool driver |
-| `prism.scanner@1` | inspect, extract, OCR, structure | Scanner request / `DocumentObservation@1` | Animator call/job → matching grant; direct tool → Resolution Lock + `ToolProfile` | direct worker, native/REST call, or provider job driver |
-
-`ImageJob`, `VideoJob`, `SightJob`, `FormJob`, and `KinesisJob` are domain work identities. Each
-asynchronous or durable provider or local execution is a separately identified
-[`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts-designed). One domain job may
-receive another attempt only through declared forward-branch or retry law; the shared mechanics do
-not collapse these contracts into a generic `MediaJob`.
-
-Two execution paths remain explicit. A resident, shared, independently queued, or remote service
-is an Animator reached through `CapabilityDemand@1` and a typed grant. A finite library, CLI, or
-subprocess is selected by the Spell Resolution Lock and delivered by a Worker into a trusted
-executor or Tomb under an immutable ToolProfile; it does not become a fake Animator or Rune.
-Either path may use `ServiceJobAttempt@1` when it must survive the invoking Ghoul. A wrapper becomes
-an Animator only when its independent lifecycle, residency, queue, or remote boundary justifies it.
+A deployment may combine these faculties, precise workers, deterministic
+[Prism Lens transforms](../../../adr/36-vision.md#decision), and an image-capable multimodal Mind.
+Each profile remains an exact implementation closure; the Mind remains chat, and activating one
+service does not activate every faculty. Generation and editing
+are separate effects from grounded observation.
 
 ## The optic path
 
@@ -105,6 +62,42 @@ region, requested task and output, the producing provider or deterministic opera
 immutable revision, and appropriate uncertainty. It distinguishes extraction, measurement, and
 inference. Generated or edited media is a new artifact with effect provenance. A caption or OCR
 result may enter bounded Context; it is not the image and cannot silently replace or delete it.
+
+## Designed interface register
+
+These are semantic interfaces, not delivered source or claims that every provider implements every
+operation:
+
+| Interface and operation guide | Domain request/result | Execution binding |
+| --- | --- | --- |
+| [`prism.image@2`](image.md#one-job-explicit-operation) | `ImageJob@2` and image artifacts/receipts | Animator `durable_job` → `JobGrant` |
+| [`prism.video@2`](video.md#one-temporal-job-several-proved-operations) | `VideoJob@2` and video artifacts/receipts | Animator `durable_job` → `JobGrant` |
+| [`prism.sight@2`](sight.md#one-finite-job-exact-operation) | `SightJob@2` / `VisualObservationSet@1` | Animator `call`/`durable_job` → matching grant; finite tool → Resolution Lock + `ToolProfile` |
+| [`prism.form@2`](form.md#one-form-job-explicit-operation) | `FormJob@2` / `FormAssetSet@1` | Animator job → `JobGrant`; finite tool → Resolution Lock + `ToolProfile` |
+| [`prism.kinesis@2`](kinesis.md#one-finite-job-exact-operation) | `KinesisJob@2` / motion or findings set | Animator job → `JobGrant`; finite tool → Resolution Lock + `ToolProfile` |
+| [`prism.scanner@1`](scanner.md#what-the-scanner-route-actually-owes): inspect, extract, OCR, structure | Scanner request / `DocumentObservation@1` | Animator call/job → matching grant; direct tool → Resolution Lock + `ToolProfile` |
+
+Each leaf gives its operations and candidate dialect/driver studies.
+
+The Designed-only `prism.image@1`, `prism.video@1`, `prism.sight@1`, `prism.form@1`, and
+`prism.kinesis@1` interfaces and their corresponding `*Job@1` request meanings remain historical.
+Revision `2` separates Prism technical result settlement from a consuming Composition's semantic
+adoption; Kinesis additionally replaces the former generic sonic-cue input with exact musical cue
+and clock contracts. No capability registry, domain job, or service attempt used the `@1` designs,
+so there is no executable migration. `prism.scanner@1` is unchanged.
+
+`ImageJob`, `VideoJob`, `SightJob`, `FormJob`, and `KinesisJob` are domain work identities. Each
+asynchronous or durable provider or local execution is a separately identified
+[`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts-designed). One domain job may
+receive another attempt only through declared forward-branch or retry law; the shared mechanics do
+not collapse these contracts into a generic `MediaJob`.
+
+Two execution paths remain explicit. A resident, shared, independently queued, or remote service
+is an Animator reached through `CapabilityDemand@1` and a typed grant. A finite library, CLI, or
+subprocess is selected by the Spell Resolution Lock and delivered by a Worker into a trusted
+executor or Tomb under an immutable ToolProfile; it does not become a fake Animator or Rune.
+Either path may use `ServiceJobAttempt@1` when it must survive the invoking Ghoul. A wrapper becomes
+an Animator only when its independent lifecycle, residency, queue, or remote boundary justifies it.
 
 ## Sight on finite iron
 

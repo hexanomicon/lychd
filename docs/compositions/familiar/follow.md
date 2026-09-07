@@ -5,208 +5,80 @@ icon: material/directions
 
 # :material-directions: Follow
 
-`familiar.follow@2` is the Pattern that wakes the body, locks a subject, traces a path through
-physical space, and settles what happened. It may transition into speaking mode — mic and camera
-open only under separate capture authority, the Lich may speak through an admitted Avatar/Echo
-path — and return to following when the conversation ends.
+A finite follow mission begins with an explicitly designated, consenting subject and a body proved fit for the task. It can track a path, pause for speaking presence, and report exactly where work stopped. `familiar.follow@3` owns that semantic journey while the local controller keeps the fast motion and safety loop.
 
 ## Admission
 
-Admission pins one exact `FamiliarBody@2` revision, subject designation, path constraints, and
-stop conditions. A missing required body capability (camera for visual lock, GPS for outdoor
-navigation) refuses the mission before the body moves.
+Pin `FamiliarBody@3`, its confirmed capability epoch, designation/fallback chain, path constraints, and stop conditions. The envelope includes target-distance limits, relevant altitude/speed/terrain limits, obstacle policy by class, signal-loss behavior, speaking triggers and media settings, duration/distance/battery budgets, and optional Avatar `ProjectionBinding@2`. Every physical value comes from the exact commissioned body/profile and applicable authority; this contract sets no universal safety distances or operating defaults.
 
-| Field | What it binds |
-| --- | --- |
-| Body reference | exact immutable `FamiliarBody@2` revision with confirmed capability snapshot |
-| Subject designation | one explicit lock method with fallback chain |
-| Follow envelope | target distance (min/max), altitude floor/ceiling (drones), speed ceiling, terrain mode |
-| Obstacle avoidance | stop, reroute, climb, or refuse per obstacle class |
-| Signal-loss policy | hover-and-wait duration, land-in-place, return-to-home waypoint, or freeze |
-| Speaking mode | activation trigger, mic gain, camera resolution, speaker volume, deactivation trigger |
-| Budgets | max duration, max distance, battery floor for continuation vs. settlement |
-| Stop conditions | subject lost beyond policy, geofence breach, battery critical, manual override, emergency stop |
-| Optional Avatar binding | exact `ProjectionBinding@1` for Lich presentation through body speaker and display |
-
-## Subject designation
-
-The body must know _what_ to follow. The designation is explicit, attributable, and pinned at
-admission. "Follow whoever is nearby" is not an admissible designation.
-
-| Method | How it works | Failure mode |
-| --- | --- | --- |
-| **BLE / UWB beacon** | body locks signal strength + angle-of-arrival; subject carries a tag | signal lost in RF-noisy environments; tag battery death |
-| **Visual signature** | AprilTag, ArUco marker, or known face embedding; body tracks with RGB camera | occlusion, lighting change, subject leaves frame |
-| **GPS tag** | subject carries GPS broadcaster; body navigates to reported coordinates | GPS drift, urban canyon, indoor loss |
-| **Thermal profile** | body locks heat signature with thermal camera | ambient temperature crossover, multi-person scenes |
-| **Visual fallback** | color-blob tracker on a bright vest, or ML person-follower | false positives on similar colors/shapes |
-
-A fallback chain is admissible: "lock BLE beacon, fall back to visual signature on AprilTag, fall
-back to color-blob on orange vest." Each fallback transition records a `subject_lock_degraded`
-event. When the chain is exhausted, the mission records `subject_lost` and executes signal-loss
-policy.
-
-Subject designation never proves identity, consent, attention, or relationship. A visual lock on
-a face does not mean the person agreed to be followed.
-
-## Path-tracing loop
-
-The body-local controller runs the fast safety and motion loop. Familiar owns the slower semantic
-mission steps, waypoint intent, observation references, and receipts:
-
-1. **Acquire** — read sensor inputs, compute subject position relative to body, record lock quality
-2. **Plan** — compute path to maintain target distance envelope, avoid known obstacles, respect
-   terrain constraints and geofence
-3. **Move** — issue waypoint to controller; controller handles motor actuation and local obstacle
-   avoidance; Familiar records waypoint receipt
-4. **Observe** — re-acquire subject, validate lock quality, record any obstacle or deviation event
-5. **Adjust** — correct path if subject moved, lock degraded, or obstacle appeared
-6. **Check** — evaluate stop conditions, budgets, speaking-mode triggers
-
-```
-acquire → plan → move → observe → adjust → check → acquire …
-```
-
-The local controller runs at its own pinned and measured rate; LychD promises no universal control
-frequency. Between semantic waypoint updates, the controller maintains or rejects the last
-admitted command and enforces local obstacle avoidance autonomously.
-
-## Distance, altitude, and speed envelopes
-
-The follow envelope keeps the body near enough to observe without crowding or endangering the
-subject. The values below illustrate one candidate profile; they are not defaults or safety
-guidance, and admission must replace them with validated body- and jurisdiction-specific limits.
-
-| Parameter | Drone | Rover | Legged |
-| --- | --- | --- | --- |
-| Min distance | 2 m (propeller safety) | 1 m | 0.5 m |
-| Max distance | 15 m (visual lock range) | 10 m | 5 m |
-| Altitude floor | 1.5 m above ground | — | — |
-| Altitude ceiling | 15 m or regulatory limit | — | — |
-| Max speed | 8 m/s | 3 m/s | 1.5 m/s |
-| Terrain mode | outdoor-only (default), open-indoor (warehouse) | paved, grass, gravel, stairs-capable (rover-dependent) | indoor, stairs, uneven |
-
-Envelope breaches record a deviation event. A sustained breach — subject sprinting beyond max
-speed, drone forced below altitude floor by terrain — may trigger a stop condition.
-
-## Obstacle avoidance
-
-The body may encounter obstacles the subject passed but the body cannot. The avoidance mode is
-declared per obstacle class at admission.
-
-| Obstacle class | Stop | Reroute | Climb (drone) | Refuse mission |
-| --- | --- | --- | --- | --- |
-| Static object (tree, wall, furniture) | hover/brake, record, wait for subject to return or path to clear | plan alternate path around object, record deviation | ascend over object, record deviation | mission requires clear path; obstacle = `refused` |
-| Dynamic object (person, animal, vehicle) | hover/brake, record, wait | reroute with wider margin | — | — |
-| Narrow passage (doorway, gap) | stop, record width, wait for operator decision | — | — | body wider than passage = `refused` |
-| Water (rover) | stop at edge, record | reroute around | — | water crossing not in terrain allowlist = `refused` |
-| Stairs (rover without stairs capability) | stop at base, record | — | — | stairs in path + no stairs capability = `refused` |
-
-The controller enforces obstacle avoidance at hardware level between waypoint updates. Familiar
-records the event and the controller's response; it does not micro-manage the avoidance maneuver.
-
-## Signal loss
-
-The admitted control connection between the body's attachment and LychD may drop. On a remote
-Legion route this is Intercom between the Legionnaire and LychD; a local or mobile attachment names
-its equivalent bounded link. The body must decide what to do without a round-trip.
-
-| Policy | Behaviour | Recovery |
-| --- | --- | --- |
-| **Hover-and-wait** (drone) | hover at current position for N seconds; if signal returns, resume mission; if timeout, execute land-in-place | the attachment owner reconnects, reads the body journal, then requests resume or settlement |
-| **Land-in-place** (drone) | descend vertically at current position, disarm motors, record landing receipt | body on ground, safe; manual retrieval |
-| **Return-to-home** (drone) | ascend to safe altitude, navigate to pre-admitted home waypoint, land | body returns to known safe location |
-| **Brake-and-wait** (rover/legged) | stop, hold position for N seconds; if signal returns, resume; if timeout, remain stopped | body stationary, safe; manual retrieval |
-| **Freeze** (any) | immediate motor stop/brake, hold position indefinitely | safest option; requires manual intervention to resume |
-
-The signal-loss policy is pinned at mission admission and enforced autonomously by the admitted
-body controller. A Legionnaire carries that duty on a Legion-backed route; no Legion requirement
-is implied for another attachment. A late signal return after policy execution settles the
-mission with `signal_lost`; it does not silently resume as though nothing happened.
-
-## Speaking mode
-
-The body transitions from following to conversational presence. The Lich speaks through the body's
-speaker; the body's camera and microphone feed the Lich's senses.
-
-### Activation
-
-A trigger begins the speaking session. The trigger is declared at mission admission.
-
-| Trigger | How it works |
-| --- | --- |
-| **Voice command** | an admitted Echo Listener recognizes the exact activation phrase and emits a bounded activation request |
-| **Proximity** | the admitted subject enters a declared close-distance threshold; proximity may invite interaction but cannot authorize capture by itself |
-| **Gesture** | an exact admitted gesture may request interaction; a visual match still proves neither identity nor consent beyond that request |
-| **Explicit instruction** | an authorized operator or application requests speaking mode through the admitted control channel |
-
-### Active session
-
-1. Body stabilizes — hover hold (drone), park (rover), stand (legged).
-2. Disclosure indicators activate before capture — camera/microphone light and, where appropriate,
-   an audible announcement.
-3. A separately admitted camera epoch opens; Prism/Sight may return exact source-bound observations
-   for Context or Avatar grounding.
-4. A separately admitted Echo capture window opens; any transcript retains its audio source,
-   timing, provider, language assumptions, and uncertainty.
-5. An authorized Avatar voice profile may select presentation while Echo owns synthesis and speech
-   playback chronology; the device reports the physical playback evidence.
-6. Familiar records a bounded speaking-mode window referencing the exact Companion controls when
-   present and the separately owned Prism/Echo epochs, transcript, disclosure, and delivery facts.
-   It is an aggregate mission reference, not a second `FamiliarSpeakingSession` speech chronology.
-
-### Deactivation
-
-| Trigger | Behaviour |
-| --- | --- |
-| **Voice command** | "Goodbye" / "Resume follow" — Lich or subject ends session |
-| **Subject departure** | subject leaves proximity threshold beyond grace period |
-| **Explicit instruction** | Lich ends speaking mode through the admitted control link |
-| **Budget exhaustion** | mission duration or speaking duration budget reached |
-| **Stop condition** | any mission stop condition also ends speaking mode; session closes before mission settlement |
-
-Deactivation closes that bounded speaking-mode window, stops camera and mic streams, deactivates
-disclosure indicators, and returns the body to the follow loop. If the follow mission itself is
-complete, deactivation settles the mission.
-
-## Terminal settlement
-
-Every follow mission ends with one attributed judgment. A partial mission names exactly what was
-completed and what stopped it.
-
-| Settlement | Meaning |
-| --- | --- |
-| `completed` | subject reached declared destination, or mission duration budget expired with subject still locked; all segments have waypoint receipts |
-| `partial` | some segments completed, some refused or interrupted; policy permits the exact settled subset; every absent or interrupted segment is named |
-| `subject_lost` | subject designation chain exhausted and signal-loss policy executed; last known position, last lock quality, and loss event recorded |
-| `emergency_stopped` | autonomous or manual emergency stop triggered; trigger source, body state at stop, and post-stop telemetry recorded |
-| `signal_lost` | admitted control link lost and signal-loss policy executed to completion; body journal available for later reconciliation |
-| `battery_depleted` | battery reached declared floor; body executed low-battery behaviour (land/stop) before power loss; final position and remaining charge recorded |
-| `refused` | mission admission failed (missing capability, infeasible path, geofence conflict, subject designation invalid) before movement began |
-| `unresolved` | a required outcome remains unknown or cannot be reconciled without guessing; mission evidence is incomplete but honestly recorded |
+Required capabilities—such as the admitted camera for visual lock or positioning method for a particular route—must be available before movement. Safety, geography, authority, or designation failure refuses admission.
 
 ## Representative journey
 
-1. Magus admits one `FamiliarBody@2` — a 350 mm quadcopter with GPS, optical flow, forward RGB
-   camera, downward rangefinder, mic, speaker. Safety envelope: max altitude 15 m, min altitude
-   1.5 m, geofence = property boundary, emergency stop = kill switch + autonomous low-battery land.
-2. Magus designates subject: BLE beacon in pocket, visual fallback to color-blob on bright vest.
-   Signal-loss policy: hover 10 s, then land-in-place.
-3. Magus opens `familiar.follow@2` mission: follow at 3 m distance, 3 m altitude, outdoor terrain,
-   speaking mode on voice command "Hey Lich."
-4. Drone lifts off, locks BLE beacon, begins path-tracing loop.
-5. Drone follows Magus through garden — records waypoints, avoids tree branch (reroute event),
-   re-acquires subject after brief visual occlusion (lock-degraded-then-reacquired event).
-6. Magus stops at workbench, faces drone, says "Hey Lich, what do you think of these seedlings?"
-7. The admitted voice-command event requests speaking mode. The drone stabilizes, activates its
-   disclosure indicators, then opens bounded Prism/Sight and Echo capture windows. Their attributed
-   observations and transcript make the seedlings and question available to the Invocation.
-8. Lich responds through drone speaker: "The tomatoes are crowded — give them each a bigger pot.
-   The basil is ready to harvest." The speaking-mode window closes with references to the exact
-   Prism/Echo epochs, transcript, disclosure, and delivery facts.
-9. Magus says "Thanks, resume follow." Speaking mode deactivates. Drone re-acquires beacon,
-   resumes follow loop.
-10. Battery reaches 25% floor. Drone records `battery_low` event, descends to land at current
-    position, settles mission as `partial` with battery-depleted reason. Magus retrieves drone.
+The synthetic fixture admits a mock body with simulated positioning, camera, microphone, speaker, battery, and locally proved stop behavior. A beacon and declared visual fallback identify the subject. Following a recorded outdoor path produces waypoint receipts; an obstacle and occlusion produce deviation/degraded-lock evidence.
 
-Return to [Familiar](index.md) for the full contract and boundaries.
+At a workbench, the subject stops beside a tray of seedlings: “Hey Lich, what do you notice about these leaves?” The admitted activation requests a speaking window. Disclosure precedes separate Sight and Echo capture; their observations and transcript enter Context with uncertainty. An admitted response returns through Avatar/Echo/device receipts. The resume request closes capture before the follow loop continues. A simulated battery floor then triggers the declared local policy and settles the exact completed subset, with battery-depleted reason rather than invented destination success.
+
+This proves workflow and receipt behavior, not drone dynamics, obstacle avoidance, hardware compatibility, plant diagnosis, or physical safety.
+## Subject designation
+
+The subject is explicit, attributable, and pinned. “Follow whoever is nearby” is inadmissible. A profile may use an admitted BLE/UWB beacon, GPS tag, AprilTag/ArUco marker, visual signature, thermal cue, or other bounded visual tracker. Each needs exact sensor, tracking, confidence, ambiguity, and loss behavior. A face embedding or similar cue proves no identity, attention, relationship, or consent.
+
+A declared fallback chain can move from beacon to marker to a selected visual cue. Each transition records `subject_lock_degraded`; it cannot select an arbitrary nearby replacement. Occlusion, lighting, RF loss, tag battery, positioning drift, thermal ambiguity, and lookalike cues must remain visible. Exhausting the chain returns `subject_lost` and invokes the admitted containment/stop policy.
+
+## Path-tracing loop
+
+```text
+acquire → plan → move → observe → adjust → check → acquire …
+```
+
+Acquire the designated subject and lock-quality evidence. Plan a bounded waypoint intent against distance, terrain, obstacles, and geofence. The controller admits and executes motion locally; Familiar records its receipt. Observe again, account for movement/obstacle/lock changes, and check budget, stops, and speaking triggers before the next intent.
+
+The controller runs at its pinned measured rate. LychD declares no universal frequency and does not micromanage avoidance. Between semantic updates, the controller maintains or rejects the last admitted command under its local envelope.
+
+## Distance, altitude, and speed envelopes
+
+Admission must supply the exact body-specific limits and required sensing. A deviation records what crossed the envelope and how the controller responded. Sustained inability to maintain the target relation invokes the pinned stop policy; an appealing follow path cannot widen speed, clearance, geography, or authority.
+
+## Obstacle avoidance
+
+Static objects, moving people/animals/vehicles, narrow passages, water, and stairs require separately admitted responses. The profile may permit bounded stopping, rerouting, or another controller-proved maneuver; unsupported passages and terrain refuse. Controller observations and response receipts establish what happened. No general table can make an airborne climb, vehicle brake, or legged freeze safe for every body or situation.
+
+## Signal loss
+
+The attachment's bounded control link may disappear—Intercom for a Legion-backed route or the exact local/mobile equivalent. A body-specific policy defines the autonomous transition, deadline, contained/stopped state, and evidence/recovery path without waiting for LychD.
+
+Candidate policy names such as hover-and-wait, land-in-place, return-to-home, brake-and-wait, or freeze are meaningful only inside a commissioned profile that proves their applicability. A label itself promises no physical safety. Reconnect reads the body journal, epoch, pending intent, and actual state before any continuation. Once the loss policy has executed, a late signal cannot silently resume the old mission: settle `signal_lost` and use explicit recovery admission.
+
+## Speaking mode
+
+A speaking window is a transition within the mission, not a second speech ledger. The trigger is declared at admission: an Echo Listener's exact activation phrase, authorized operator/application request, or an admitted proximity/gesture request. Proximity or visual resemblance cannot authorize capture, identity, or consent.
+
+### Activation
+
+First obtain the body's admitted stationary/contained presentation posture. Activate visible camera/microphone disclosure and any required audible announcement before separately admitted capture. Exact body policy determines whether this transition is possible; it never assumes a drone, rover, or legged body can use the same stabilization action.
+
+### Active session
+
+Open a separately admitted camera epoch for Prism/Sight source-bound observations and an Echo capture window whose transcript retains source, timing, provider, language assumptions, and uncertainty. Avatar may select an eligible presentation; Echo owns synthesis and playback chronology, while the device supplies physical delivery evidence.
+
+Familiar records the bounded window's exact Companion controls when present, Prism/Echo epochs, transcript, disclosures, and receipts. It creates no duplicate `FamiliarSpeakingSession` chronology.
+
+### Deactivation
+
+An admitted goodbye/resume request, subject departure beyond grace, authorized instruction, exhausted speaking/mission budget, or mission stop closes the window. Stop camera/mic and settle their owner records before withdrawing indicators. Resume following only if the original mission's current admission and body policy permit it; otherwise settle the mission. A spoken request never acquires consequential effect authority by itself.
+
+## Terminal settlement
+
+| Result | Required account |
+| --- | --- |
+| `completed` | Declared destination reached, or the admitted duration finish reached with subject locked, and every completed segment has waypoint receipts. |
+| `partial` | Policy permits the exact completed subset; refused, absent, or interrupted segments are named. |
+| `subject_lost` | Designation chain exhausted; last position/quality, loss event, and admitted policy execution retained. |
+| `emergency_stopped` | Autonomous/manual trigger, source, stopped body state, and post-stop telemetry retained. |
+| `signal_lost` | Control-loss policy executed; journal remains available for reconciliation. |
+| `battery_depleted` | Declared floor reached and body-specific low-battery behavior executed before power loss, with final position/charge evidence. |
+| `refused` | Admission failed before movement: capability, route, geofence, designation, or other required condition. |
+| `unresolved` | Required effect/result evidence remains unknown or unreconcilable. |
+
+Return to [Familiar](index.md).

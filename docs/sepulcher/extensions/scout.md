@@ -5,31 +5,76 @@ icon: material/navigation-variant-outline
 
 # :material-navigation-variant-outline: Scout
 
+An Agent proposes one URL. Before contact, the host must decide which acquisition effect,
+destination, identity, and budget are admitted. **Scout** carries that exact attempt through
+bounded acquisition and attributed return. The response remains external material; the consuming
+Composition decides what it means and whether it serves the work.
+
 > _A Scout may bring a voice from beyond the Circle. It may not grant that voice the throne._
 
-**Scout** is LychD's web-discovery and acquisition Extension Domain. It acquires external material
-under explicit authority and limits; truth, permission, interpretation, and application purpose
-remain elsewhere.
+Scout is Designed under [Webcrawler](../../adr/30-webcrawler.md).
+[State](../../state-of-the-work.md#scout-web-acquisition) records that no acquisition path ships.
 
-**Delivery: Designed, not delivered.** [State of
-Work](../../state-of-the-work.md#scout-web-acquisition) records the exact boundary;
-[ADR 30](../../adr/30-webcrawler.md) owns the acquisition law and protocol.
+## The first passage
 
-## Eleven tracks through the wild
+The first implementable passage is one static public HTTPS page:
+
+1. **Prepare.** An Agent proposes one exact URL. The Host binds it to the canonical Run, verified
+   principal, origin policy, and consent where required. It admits separate Fetch and Extract
+   grants with their own ceilings, reserves worst-case budget, and durably records those grants
+   in one Scout effect attempt as `prepared` before network I/O.
+2. **Pass.** A static adapter authorizes and pins the destination for one bounded GET, repeating
+   the gate for every redirect. It uses no ambient proxy, credentials, cookies, subresources,
+   JavaScript, or automatic retry. A network-free extractor accepts bounded HTML, XHTML, or plain
+   text and returns attributed, fenced material tied to raw and output digests.
+3. **Settle.** A second durable transaction records usage and terminal disposition. Raw bytes are
+   released after extraction unless a separate custody service admits them.
+
+The passage must resist SSRF and destination rebinding, treat every response as hostile, and
+enforce hard network, parser, output, concurrency, and cost ceilings. After a crash, a stranded
+bounded-call Scout effect attempt is `unknown_after_crash` unless independent evidence reconciles
+it. A missing terminal record never authorizes a blind retry.
+
+Needing JavaScript is a typed static-passage outcome, not permission to invoke Crawl4AI. The
+caller must request and receive new Fetch, Render, and Extract effect grants for that exact locator and
+provider profile.
+
+## Ten tracks through the wild
 
 Scout separates effects often hidden behind the word “browser.” **Search** discovers locators;
 **Fetch** performs one bounded network read; **Extract** transforms acquired bytes without a
 network; and **Crawl** manages a finite frontier. **Render** executes hostile site code;
 **Interact** clicks, types, submits, or uploads. **Credential Use** presents one scoped secret
-reference; **Session Custody** owns cookies and browser state; **Screenshot** requests pixels;
-**Download** transfers a bounded payload into quarantine; and **Artifact Admission** asks the
-custody owner to validate and retain exact bytes. Downloading never implies admission, and an
-admitted artifact never becomes trusted or understood merely because it is durable.
+reference; **Session Custody** owns cookies and browser state; **Screenshot** requests pixels; and
+**Download** transfers a bounded payload into quarantine. Artifact Admission is a separate
+custody-owner effect that validates and retains exact bytes. Downloading never implies admission,
+and an admitted artifact never becomes trusted or understood merely because it is durable.
 
-Each track needs its own host-owned `ScoutEffectGrant` and budget. A redirect, JavaScript
+Each Scout track needs its own host-owned `ScoutEffectGrant` and budget. A redirect, JavaScript
 requirement, CAPTCHA, login, payment challenge, quota response, or failure is a result, never
 permission to retry, change provider, present identity, spend, or open a stronger track. Provider
 selection cannot widen the effect grant.
+
+## Attempt layers
+
+A bounded synchronous Scout effect uses one Scout-owned effect attempt. An Animator-backed
+implementation additionally holds a scoped `CallGrant`; a native host-owned adapter pins its exact
+Scout provider/adapter binding and uses no Dispatcher lease. Scout durably records `prepared`
+before I/O; `unknown_after_crash` is its domain disposition when no independent terminal evidence
+exists. Neither implementation adds a `ServiceJobAttempt@1` for that immediate call. An
+asynchronous crawl or render through `JobGrant` keeps its Scout domain job but layers it over Core's
+[`ServiceJobAttempt@1`](../../adr/14-workers.md#service-job-attempts-designed): the domain's
+`unknown_after_crash` maps to `INDETERMINATE`, and recovery reconciles the same capability-backed
+execution binding.
+
+## Contact does not become truth
+
+Following [Oculus](oculus.md), Scout records an attempted acquisition as an **effect receipt**, one
+source response as a **bounded observation**, and each transformation as a **derivation** with
+parentage and loss. **Interpretation** applies declared criteria and belongs to
+[Riddle](riddle/trials.md) or the consuming Composition. A digest is neither proof nor custody, and
+an `ArtifactRef` remains metadata until a service has admitted retrievable bytes under the
+[artifact-custody boundary](../../state-of-the-work.md#artifact-reference-contract).
 
 ## Sources are senses, not applications
 
@@ -37,6 +82,13 @@ A site, feed, or API is a source surface. Its adapter belongs beneath Scout; the
 [Composition](../../compositions/index.md) owns why the observation matters, the criteria applied
 to it, and any consequence. Scout may observe a listing. It cannot decide that the listing suits a
 person or authorize a purchase.
+
+An admitted application Pattern may therefore place a Scout effect for an exact locator it has
+judged eligible for its purpose. That placement does not move Fetch, Download, destination, retry,
+or acquisition-receipt semantics into the application. Conversely, Scout's destination grant says
+only that contact is allowed; it cannot make the source eligible for an application. Downloaded
+bytes enter quarantine, and only the custody owner may validate and return a durable artifact
+reference.
 
 A saved Search, Watch, Source Profile, crawl schedule, or deduplicator remains Scout mechanism
 until it gains an operator-visible purpose and lifecycle. **Hunter** remains [Shadow's adversarial
@@ -77,51 +129,7 @@ failure never triggers a cloud fallback.
 Here **native adapter** means the LychD-owned Rune, probe, narrow request/response translation,
 normalization, and conformance tests around a separate service. It does not mean vendoring the
 SearXNG engine catalogue or a crawler/browser implementation into Core. The full provider and
-manifestation policy belongs to [ADR 30](../../adr/30-webcrawler.md#first-party-mechanism-policy).
-
-## Attempt layers
-
-A bounded synchronous Scout effect uses one Scout-owned effect attempt. An Animator-backed
-implementation additionally holds a scoped `CallGrant`; a native host-owned adapter pins its exact
-Scout provider/adapter binding and uses no Dispatcher lease. Scout durably records `prepared`
-before I/O; `unknown_after_crash` is its domain disposition when no independent terminal evidence
-exists. Neither implementation adds a `ServiceJobAttempt@1` for that immediate call. An
-asynchronous crawl or render through `JobGrant` keeps its Scout domain job but layers it over Core's
-[`ServiceJobAttempt@1`](../../adr/14-workers.md#service-job-attempts-designed): the domain's
-`unknown_after_crash` maps to `INDETERMINATE`, and recovery reconciles the same capability-backed
-execution binding.
-
-## The first passage
-
-The first implementable passage is one static public HTTPS page:
-
-1. **Prepare.** An Agent proposes one exact URL. The Host binds it to the canonical Run, verified
-   principal, origin policy, consent where required, and worst-case budget, then durably records
-   the Scout effect attempt as `prepared` before network I/O.
-2. **Pass.** A static adapter authorizes and pins the destination for one bounded GET, repeating
-   the gate for every redirect. It uses no ambient proxy, credentials, cookies, subresources,
-   JavaScript, or automatic retry. A network-free extractor accepts bounded HTML, XHTML, or plain
-   text and returns attributed, fenced material tied to raw and output digests.
-3. **Settle.** A second durable transaction records usage and terminal disposition. Raw bytes are
-   released after extraction unless a separate custody service admits them.
-
-The passage must resist SSRF and destination rebinding, treat every response as hostile, and
-enforce hard network, parser, output, concurrency, and cost ceilings. After a crash, a stranded
-bounded-call Scout effect attempt is `unknown_after_crash` unless independent evidence reconciles
-it. A missing terminal record never authorizes a blind retry.
-
-Needing JavaScript is a typed static-passage outcome, not permission to invoke Crawl4AI. The
-caller must request and receive new Fetch, Render, and Extract effect grants for that exact locator and
-provider profile.
-
-## Contact does not become truth
-
-Following [Oculus](oculus.md), Scout records an attempted acquisition as an **effect receipt**, one
-source response as a **bounded observation**, and each transformation as a **derivation** with
-parentage and loss. **Interpretation** applies declared criteria and belongs to
-[Riddle](riddle/trials.md) or the consuming Composition. A digest is neither proof nor custody, and
-an `ArtifactRef` remains metadata until a service has admitted retrievable bytes under the
-[artifact-custody boundary](../../state-of-the-work.md#artifact-reference-contract).
+mechanism policy belongs to [ADR 30](../../adr/30-webcrawler.md#first-party-mechanism-policy).
 
 ## The laws of the road
 

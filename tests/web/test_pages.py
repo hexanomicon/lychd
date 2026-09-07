@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.parametrize(
     "path",
-    ["/bridge", "/nexus", "/loom", "/orb"],
+    ["/atlas", "/bridge", "/nexus", "/loom", "/orb"],
 )
 def test_pages_return_compiled_svelte_shell(
     altar_client: TestClient[Litestar],
@@ -37,6 +37,7 @@ def test_fixed_root_assets_have_narrow_routes_and_exact_media_types(
 ) -> None:
     notices = altar_client.get("/THIRD_PARTY_NOTICES.txt")
     lightning = altar_client.get("/altar-lightning.svg")
+    favicon = altar_client.get("/favicon.svg")
 
     assert notices.status_code == 200
     assert notices.headers["content-type"].startswith("text/plain")
@@ -44,6 +45,11 @@ def test_fixed_root_assets_have_narrow_routes_and_exact_media_types(
     assert lightning.status_code == 200
     assert lightning.headers["content-type"].startswith("image/svg+xml")
     assert lightning.text.lstrip().startswith("<svg")
+    assert favicon.status_code == 200
+    assert favicon.headers["content-type"].startswith("image/svg+xml")
+    assert favicon.text.lstrip().startswith("<svg")
+    assert 'href="/favicon.svg"' in altar_client.get("/bridge").text
+    assert "LychD Altar — visual assets" in notices.text
 
 
 def test_altar_status_publishes_the_vessel_csrf_names(
@@ -63,6 +69,11 @@ def test_every_explicit_error_operation_publishes_the_shared_framework_error(
 ) -> None:
     schema = cast("dict[str, Any]", altar_client.get("/schema/openapi.json").json())
     expected = {
+        ("/api/v1/atlas/projects", "post", "404"),
+        ("/api/v1/atlas/projects", "post", "409"),
+        ("/api/v1/atlas/projects/{project_id}", "get", "404"),
+        ("/api/v1/atlas/projects/{project_id}/changes", "post", "404"),
+        ("/api/v1/atlas/projects/{project_id}/changes", "post", "409"),
         ("/api/v1/bridge/consents/{consent_id}/decision", "post", "404"),
         ("/api/v1/bridge/runs/{run_id}", "get", "404"),
         ("/api/v1/bridge/runs/{run_id}/cancel", "post", "404"),
@@ -99,7 +110,7 @@ def test_every_explicit_error_operation_publishes_the_shared_framework_error(
 
 @pytest.mark.parametrize(
     "path",
-    ["/bridge/session-x", "/loom/pattern-x/revision-1", "/orb/run-x"],
+    ["/atlas/project-x", "/bridge/session-x", "/loom/pattern-x/revision-1", "/orb/run-x"],
 )
 def test_deep_links_return_same_static_shell(
     altar_client: TestClient[Litestar],
