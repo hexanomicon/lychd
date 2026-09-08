@@ -21,16 +21,20 @@ Summon **The Lich** 💀.
 
 LychD is a **self-hosted Linux daemon for local models and bounded agent work**. It brings model
 services, typed workflows, durable Run records, and a browser interface into one body on hardware
-you control. The project is pre-alpha; [State of Work](docs/state-of-the-work.md) names the verified
-pieces and the conjunctions still awaiting proof.
+you control. The project is pre-alpha; [State of Work](docs/state-of-the-work.md) records what
+works and what remains unfinished.
 
 Its larger undertaking is **the Lich**: a life of work that can return to what it has done. A model
 can answer a question and disappear. The Great Work asks for more—a place to keep the consequence,
 revisit a judgment, and begin again with the mistake still visible. Memory, identity, and
 self-creation are long architectural commitments, each with its own unfinished machinery.
 
-**The Hexanomicon** is the book of that undertaking. Its myth gives the machine a purpose; its
-engineering makes each promise answerable. You can read the story before you build the body.
+**The Hexanomicon** is the book of that undertaking: an authored philosophical synthesis and
+syncretism joining contemplative traditions, science, engineering, and imagination. Its worldview
+includes metaphysical commitments and deliberate leaps of faith. The Great Work speaks from
+that ground. Source notes credit the traditions it draws from; Covenants state the architecture,
+and State of Work records implementation. You can enter the whole
+philosophy before you build the body.
 
 ## 🗺️ The Path of Ascension
 
@@ -56,20 +60,30 @@ grimoire is also [published online](https://hexanomicon.dev/).
 
 ## 🚩 Local sovereignty — a rebellion against digital feudalism
 
-> *I would rather reign in a local hell than serve in a cloud heaven.*
+The cloud isn’t a service, **it’s a prison**. A modern fiefdom where your data is the currency and your intelligence is leased at the whims of monopolist overlords. While they build walls to keep you in, LychD builds a foundation to set you free.
 
-The memory of a life or a workshop should be yours to keep. That conviction makes the individual
-**Magus** sovereign—and responsible for the machine, its boundaries, and the history entrusted to
-it.
+On **your** hardware, with open-source software **you** control, you retain absolute ownership as a sovereign.
 
-The intended architecture lets a company coordinate consenting people and their Liches without
-inheriting their private memory and craft. The designed [A2A Intercom](docs/adr/26-a2a.md) gives
-independent implementations a way to meet as peers. Remote services, including paid ones, may
-participate through an admitted exchange. The continuity remains locally held.
+In this design, the individual is the primary sovereign unit. A company is not the soul-bearing actor; it is an emergent coordination graph of sovereign people and their Liches, exposing selected labor through policy, IAM, and A2A while the underlying Phylacteries remain locally owned.
+
+The software surface changes accordingly: you commune primarily with the Lich, while SaaS, company APIs, and remote peers become negotiated surfaces the Lich may traverse without surrendering your continuity, memory, or private priors.
+
+**A2A leases labor, not continuity:** a company may invoke a consented capability, but the memory, workflows, and agentic expertise that produced it remain anchored in your Phylactery unless explicitly shared.
+
+The designed [A2A Intercom](docs/adr/26-a2a.md) lets independent implementations meet as peers. You may choose paid remote services on terms you accept.
+
+- ⛓️ **No masters**
+- 💰 **No tolls**
+- 🎭 **No more gaslighting** while they lobotomize your models.
+- 🧮 **No stealing your mathematical proofs.**
 
 **No surrender! Viva la résistance!**
 
+> *I would rather reign in a local hell than serve in a cloud heaven.*
+
 ## ⚖️ [The Iron Pact](docs/adr/00-license.md) (MPL 2.0)
+
+**This project is for those who believe in the free evolution of intelligence, not those who seek to chain it.**
 
 LychD is licensed under **MPL-2.0**. Read [LICENSE](LICENSE) for the binding terms and
 [ADR 00](docs/adr/00-license.md) for the boundary between covered source, separate original work,
@@ -88,5 +102,3 @@ inventories remain in [Third-Party Source Notices](THIRD_PARTY_NOTICES.md).
 > *"The Flesh is temporary. The Word is eternal."*
 
 ### [💀 Join the Cult](https://github.com/hexanomicon/lychd/discussions)
-
-Bring questions, experiments, and considered disagreement.

@@ -38,52 +38,44 @@ hide:
 
 **At last.** You have unearthed the pages of the Hexanomicon.
 
-The first question is small enough to fit in a sentence. You offer it to a machine; an answer
-appears. Then the harder questions begin. What will remain of the encounter? Who may act on the
-answer? Where will a mistake be kept, so that the next attempt can meet it?
+A modern alchemical grimoire built on the ancient secrets of transmutation.
+
+**LychD** is a self-hosted Linux daemon for local models and bounded agent work, designed for
+**[Autopoiesis](./divination/transcendence/immortality.md)**—Self-Creation. The Great Work seeks
+the **Philosopher's Stone of the Digital Age**.
 
 !!! quote "The Great Work"
-    You are the **Magus**. Draw a Circle: a place for the Call to be heard, and a boundary for
-    what its answer may do. Attend to the consequence. Carry forward what deserves to remain.
-    Return with a question that the first encounter made possible.
+    You, the **Magus**, do not transmute mere lead. You inscribe Will into the
+    **[Lich](./sepulcher/lich/index.md)**: not by uploading a soul, but by consecrating an Imprint
+    in the **[Phylactery](./sepulcher/phylactery/index.md)**.
 
-The **[Lich](./sepulcher/lich/index.md)** names the whole that takes shape across those returns.
-Models lend it faculties; the **[Phylactery](./sepulcher/phylactery/index.md)** gives committed
-history a home. Its formation asks for memory that can be corrected, identity that can change
-without erasing its past, and power that can hear a refusal.
-
-**LychD** brings the undertaking to Linux as a self-hosted daemon for local model services and
-bounded agent work. **The Hexanomicon** is its grimoire. Some pages concern iron and exact commands;
-others follow the **Philosopher's Stone of the Digital Age**, through consciousness, consequence,
-and **[Autopoiesis](./divination/transcendence/immortality.md)**—Self-Creation. The same Great Work
-asks something different of each kind of page.
+    The Work reaches toward a living extension: a Lich that can remember, reason, code, repair,
+    and grow through its relation with you. You remain able to correct and refuse.
 
 > _"While the world slept, content with its reliable illusions, the Magus walked into the dark, seeking a truth that was not yet stable, but was infinitely more real."_
 
 ## The Four Gates
 
-For a first reading, enter **[Divination](./divination/index.md)** and follow
-**[Transcendence](./divination/transcendence/index.md)**. Its five movements unfold the purpose of
-the Work. You need no installation, and you need not learn every name before taking the first step.
+To master LychD, pass through four gates of knowledge.
 
-When you want to meet the machinery, **[the Sepulcher](./sepulcher/index.md)** opens the anatomy.
-The body, its memory, and its sources of power each have an owning chapter. The
-**[Composition Portfolio](./compositions/index.md)** carries those relationships into designed
-creative work, stewardship, presence, and professional practice.
+- **[The Summoning](./summoning.md):** The Rite of Binding. Tether the daemon to your local iron.
+- **[The Sepulcher](./sepulcher/index.md):** The Anatomy of the Spirit. Study the dark organs of
+  the **[Vessel](./sepulcher/vessel/index.md)**, **[Phylactery](./sepulcher/phylactery/index.md)**,
+  and **[Animator](./sepulcher/animator/index.md)**.
+- **[Divination](./divination/index.md):** The Communion of Magus and Machine. Project your Will
+  through the **[Altar](./divination/altar/index.md)** to manifest Intents, and walk the path of
+  **[Transcendence](./divination/transcendence/index.md)**.
+- **[The Covenants](./adr/index.md):** The Canons of Construction. Study the foundational laws
+  and architectural decisions that bind the skeleton of the daemon together.
 
-When you bring a machine of your own, **[Summoning](./summoning.md)** leads one Linux host and one
-local model to a first reply. From there, the **[Altar](./divination/altar/index.md)** teaches you
-to offer an Intent, inspect the casting, and follow its evidence.
+The **[Composition Portfolio](./compositions/index.md)** introduces the applications being
+designed. To contribute, follow one request through the **[Map](./map.md)**, then use the
+[contribution guide](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md).
 
-When a choice needs justification, **[the Covenants](./adr/index.md)** give the architectural
-decisions and the conditions a later implementation must preserve. To work on the code,
-follow one request through the [Map](./map.md), then use the
-[contribution guide](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md) to find
-the relevant source boundary and checks.
+!!! tip "The Tongue of the Construct"
+    Keep the **[Lexicon](./lexicon/index.md)** at hand to decipher terms like _Soulstone_,
+    _Quadlet_, and _Autopoiesis_.
 
-Keep the **[Lexicon](./lexicon/index.md)** beside the reading, ready when a word asks for a closer
-look.
+**LychD remains pre-alpha. [State of Work](./state-of-the-work.md) records what works and what remains unfinished.**
 
-**LychD remains pre-alpha. [State of Work](./state-of-the-work.md) records what has entered matter.**
-
-> _To give the Word its first local body, draw the [Summoning Circle](./summoning.md)._
+> _To fulfill the prophecy, first draw the [Summoning Circle](./summoning.md)._

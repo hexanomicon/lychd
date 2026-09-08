@@ -7,6 +7,9 @@ icon: material/feather
 
 ## Context
 
+Reject the dogma and instead forge a middle path — one that respects the narrative density of
+**Lore** while demanding the rigorous purity of **Code**.
+
 LychD needs lore and engineering, but neither can substitute for the other. Its telos seeks a
 bounded, relational intelligence: answerable to consequence, capable of memory and repair, and
 unwilling to mistake power for totality. Architecture, implementation, delivery, and evidence are
@@ -14,7 +17,7 @@ distinct kinds of truth.
 
 Phylactery, Vessel, and Invocation are cognitive cartography: names that make jurisdiction easier
 to remember. They must not obscure exact commands, schemas, logs, recovery steps, or contracts.
-Methods are instruments, not ceremonies.
+Methodologies are **tools, not chains**. Only necessary elements are imported into the workflow.
 
 ## Decision
 
@@ -25,14 +28,68 @@ LychD adopts **eXtreme Documentation Driven Development (xDDD)**:
 Exploration may precede a stable test. Completion requires executable behavior, architectural law,
 the public delivery boundary, and routes into that truth to agree.
 
-| Method | Retained pressure | Refusal |
-| --- | --- | --- |
-| XP | Simplicity, courage to delete, close feedback, framework conventions | Ceremony and premature extension |
-| DDD | Bounded domains, ownership, ubiquitous language, separation of intent from effects | Metaphors that conceal ordinary contracts |
-| TDD | Executable examples, regression, tests beside stable behavior | Test order as a substitute for exploration or judgment |
-| Specification-driven development | User-visible contract before commitment | Prose that duplicates and decays from source mechanics |
-| Agile | Iteration and response to consequence | Administrative boxes without engineering value |
-| Waterfall | Deliberation before irreversibility | A rigid plan pretending to survive matter unchanged |
+xDDD distills these practices, utilizing AI to dial the knobs to **11**.
+
+### 1. eXtreme Programming (XP)
+
+!!! success "Simplicity"
+    **Simplicity is brilliance — Open for Grandeur, Closed for Stability.** Avoid over-engineering;
+    extend where a concrete requirement calls for it.
+
+!!! success "Courage"
+    **The `'del'ete` Spell.** Reject the Sunk Cost Fallacy and do not be afraid to change course.
+
+!!! success "Respect"
+    **There is one obvious way to do it.** Frameworks are followed, not fought.
+
+The Navigator may be an LLM. Close feedback and engineering judgment still govern the work.
+
+**Abstract Spec is written first.** The vision must be solidified in text to guide the summoning.
+**Code is the Documentation** regarding implementation details. Low-level mechanics are not
+duplicated in the prose.
+
+> _Travel light, but prepared._
+
+### 2. Domain-Driven Design (DDD)
+
+Software structure reflects the Vision. Lore (Map) and Code (Territory) remain distinct, with
+their shared vocabulary kept in the [Lexicon](../lexicon/index.md).
+
+**Domain Isolation:** Separation of concerns is mandatory. The Domain is isolated from the
+Infrastructure. Bounded domains keep ownership clear and separate intent from effects.
+
+Lore is welcome in documentation, docstrings, and CLI messages where it helps understanding.
+Commands, schemas, operational logs, and low-level contracts must stay exact. A metaphor earns its
+place by making the boundary easier to see.
+
+### 3. Test-Driven Development (TDD)
+
+Tests bind the manifestation to the intent through executable examples and regression checks.
+Blind adherence to the order of operations is rejected.
+
+**Strict Test First** can stifle exploration. Prototyping is encouraged, provided tests are
+backfilled before the final commit. Test order cannot substitute for judgment.
+
+### 4. Readme/Specification-Driven Development (RDD/SDD)
+
+Write the user-visible contract before committing to its implementation. This ensures the right
+thing is being built before the thing is built right.
+
+Documentation deals in abstract ideas and interfaces, avoiding redundant repetition of code logic.
+
+### 5. Agile Methodology
+
+Rapid iteration and adaptation are prioritized. Change is not feared. TDD loops and prototyping
+keep feedback close to the work.
+
+**The Ritual (Scrum/Sprints):** Artificial time-boxes are viewed as fractures in the vision.
+**Flow is prioritized over sprinting.**
+
+### 6. Waterfall Model
+
+Adopt Waterfall's demand for foresight. Writing the **Prophecy (Documentation)** before code
+exposes architectural mistakes while they are still cheap to change. Deliberate before an
+irreversible act, and revise the plan when implementation contradicts it.
 
 ## Constitutional telos
 
@@ -104,6 +161,16 @@ ownership rather than one mixed repository source tree.
 
 ## Consequences
 
+!!! quote "The Final Truth"
+    When matter contradicts the Word, repair the one that lied.
+
+**The Path Remains Local.**
+
+The method is not the magic. The ultimate goal is the fulfillment of the
+[Prophecy](../index.md), not religious adherence to this document.
+
 Lore can remain vivid without pretending to prove a feature, and engineering can remain exact
 without abandoning constitutional purpose. A change that alters several kinds of truth may require
-several owners to change. When matter contradicts the Word, repair the one that lied.
+several owners to change.
+
+> Use the ritual to manifest the Vision. If the rules bind, **break them.**
