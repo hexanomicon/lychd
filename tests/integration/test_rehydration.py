@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import copy
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Literal
@@ -10,8 +9,7 @@ from uuid import uuid4
 
 import pytest
 from pydantic import BaseModel, Field
-from pydantic_graph import BaseNode, End, FullStatePersistence, Graph, GraphRunContext
-from pydantic_graph.persistence import NodeSnapshot
+from pydantic_graph import BaseNode, End, GraphRunContext
 
 from lychd.domain.animation.capabilities import (
     CapabilityGrant,
@@ -23,10 +21,11 @@ from lychd.domain.animation.capabilities import (
 )
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.cortex.dispatcher import Dispatcher, HardwareTransitionRequired
+from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.graph_runner import GraphRunner, HardwareResumeBudget, StasisPolicy
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.runs import ConsentPending, RunParked
-from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore
+from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore, LiveStasisPhylactery
 
 
 class MockState(BaseModel):
@@ -178,22 +177,11 @@ class ReopenAdmissionOrchestrator:
         self.leases.end_drain([MOCK_SPEC.animator_name])
 
 
-class LychDTestPersistence(FullStatePersistence[MockState, str]):
-    """Full in-memory persistence plus the LychD rehydration hooks."""
+class LychDTestPersistence(LiveStasisPhylactery):
+    """Use the production live checkpoint contract in hardware retry scenarios."""
 
     def __init__(self) -> None:
-        super().__init__()
-        self.job_id = "test-job"
-
-    async def rehydrate_stasis(self, state: MockState, node: BaseNode[MockState, Any, str]) -> None:
-        snapshot_id = node.get_snapshot_id()
-        for snapshot in self.history:
-            if isinstance(snapshot, NodeSnapshot) and snapshot.id == snapshot_id:
-                snapshot.state = copy.deepcopy(state)
-                snapshot.status = "created"
-                return
-
-        await self.snapshot_node(state, node)
+        super().__init__(job_id="test-job")
 
 
 class FailingStasisPersistence(LychDTestPersistence):
@@ -222,12 +210,41 @@ class SimpleMockOrchestrator:
 
 
 @pytest.mark.asyncio
+async def test_initial_resume_validation_is_consumed_before_hardware_reentry() -> None:
+    """The durable wait owner is checked once; state checks still cover the hardware retry."""
+    persistence = DurableStasisPhylactery(job_id="resume-owner", store=InMemoryStasisStore())
+    graph = build_serial_graph(
+        nodes=[StasisNode, SuccessNode], state_type=MockState, deps_type=type(None), output_type=str
+    )
+    persistence.set_graph_types(graph)
+    await persistence.snapshot_node(MockState(), StasisNode())
+    resumed_states: list[bool] = []
+    validated_states: list[bool] = []
+
+    def validate_resume(state: MockState, node: BaseNode[Any, Any, Any] | End[Any]) -> None:
+        assert isinstance(node, StasisNode)
+        resumed_states.append(state.warm)
+
+    runner = GraphRunner(
+        orchestrator=SimpleMockOrchestrator(),
+        persistence=persistence,
+        signal_priority=50,
+        validate_state=lambda state: validated_states.append(state.warm),
+        validate_resume=validate_resume,
+    )
+    assert await runner.resume_graph(graph) == "victory"
+    assert resumed_states == [False]
+    assert validated_states == [False, True]
+
+
+@pytest.mark.asyncio
 async def test_graph_runner_resume_preserves_caller_owned_durable_checkpoint() -> None:
     """A successful resume does not delete the checkpoint before its caller commits Run truth."""
     store = InMemoryStasisStore()
     persistence = DurableStasisPhylactery(job_id="test-job", store=store)
-    graph = Graph[MockState, None, str](nodes=[MockNode])
-    await graph.initialize(MockNode(), state=MockState(data="frozen"), persistence=persistence)
+    graph = build_serial_graph(nodes=[MockNode], state_type=MockState, deps_type=type(None), output_type=str)
+    persistence.set_graph_types(graph)
+    await persistence.snapshot_node(MockState(data="frozen"), MockNode())
     assert await store.exists("test-job")
 
     runner = GraphRunner[MockState](
@@ -246,7 +263,9 @@ async def test_graph_runner_resume_preserves_caller_owned_durable_checkpoint() -
 async def test_graph_runner_stasis_and_reanimation_loop() -> None:
     """Verify interruption, orchestration, and reanimation in one loop."""
     persistence = LychDTestPersistence()
-    graph = Graph[MockState, None, str](nodes=[StasisNode, SuccessNode])
+    graph = build_serial_graph(
+        nodes=[StasisNode, SuccessNode], state_type=MockState, deps_type=type(None), output_type=str
+    )
     mock_orchestrator = SimpleMockOrchestrator()
     occurrences: list[tuple[str, str, str, str | None]] = []
 
@@ -263,7 +282,7 @@ async def test_graph_runner_stasis_and_reanimation_loop() -> None:
 
     assert result == "victory"
     mock_orchestrator.handle_transition_mock.assert_called_once()
-    assert len(persistence.history) > 0
+    assert len(await persistence.load_all()) > 0
     assert [(node, phase, wait) for _, node, phase, wait in occurrences] == [
         ("StasisNode", "entered", None),
         ("StasisNode", "waiting", "hardware"),
@@ -287,7 +306,9 @@ async def test_graph_runner_stasis_and_reanimation_loop() -> None:
 @pytest.mark.asyncio
 async def test_hardware_resume_budget_survives_durable_park_and_new_runner(policy: StasisPolicy) -> None:
     store = InMemoryStasisStore()
-    graph = Graph[MockState, _ResumeDeps, str](nodes=[StasisAcrossDurableParkNode])
+    graph = build_serial_graph(
+        nodes=[StasisAcrossDurableParkNode], state_type=MockState, deps_type=_ResumeDeps, output_type=str
+    )
     first_orchestrator = SimpleMockOrchestrator()
     first_runner = GraphRunner[MockState](
         orchestrator=first_orchestrator,
@@ -322,7 +343,9 @@ async def test_hardware_resume_budget_survives_durable_park_and_new_runner(polic
 
 @pytest.mark.asyncio
 async def test_graph_runner_does_not_report_waiting_when_checkpoint_fails() -> None:
-    graph = Graph[MockState, None, str](nodes=[StasisNode, SuccessNode])
+    graph = build_serial_graph(
+        nodes=[StasisNode, SuccessNode], state_type=MockState, deps_type=type(None), output_type=str
+    )
     occurrences: list[str] = []
     runner = GraphRunner[MockState](
         orchestrator=SimpleMockOrchestrator(),
@@ -344,7 +367,9 @@ async def test_dispatch_drain_race_parks_and_retries_through_graph_runner() -> N
     registry = DrainRaceRegistry()
     dispatcher = Dispatcher(registry=registry, leases=leases)  # type: ignore[arg-type]
     orchestrator = ReopenAdmissionOrchestrator(leases)
-    graph = Graph[MockState, Dispatcher, str](nodes=[LeaseAfterDrainRaceNode])
+    graph = build_serial_graph(
+        nodes=[LeaseAfterDrainRaceNode], state_type=MockState, deps_type=Dispatcher, output_type=str
+    )
     runner = GraphRunner[MockState](
         orchestrator=orchestrator,
         persistence=LychDTestPersistence(),
@@ -366,7 +391,9 @@ async def test_dispatch_drain_race_parks_and_retries_through_graph_runner() -> N
 async def test_graph_runner_threads_signal_priority_and_fires_stasis_callbacks() -> None:
     """O5: the run's priority reaches handle_transition; callbacks bracket the park."""
     persistence = LychDTestPersistence()
-    graph = Graph[MockState, None, str](nodes=[StasisNode, SuccessNode])
+    graph = build_serial_graph(
+        nodes=[StasisNode, SuccessNode], state_type=MockState, deps_type=type(None), output_type=str
+    )
     mock_orchestrator = SimpleMockOrchestrator()
     order: list[str] = []
 

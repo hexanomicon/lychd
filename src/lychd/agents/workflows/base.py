@@ -1,4 +1,4 @@
-"""Workflow = graph + metadata + deterministic trigger (§5.1).
+"""Workflow = graph + metadata + deterministic trigger.
 
 A `Workflow` binds a BaseNode-style `pydantic_graph.Graph` to the metadata the
 Loom renders and the pure predicate the router matches. Adding a workflow never
@@ -13,6 +13,8 @@ from dataclasses import dataclass, field
 from hashlib import sha256
 from typing import TYPE_CHECKING, Any, Literal, cast
 
+from lychd.domain.cortex.graph import serial_graph_topology
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -21,7 +23,7 @@ if TYPE_CHECKING:
 
     from lychd.agents.router import Intent
 
-# The necro-green highlight used for the active node in Loom projections.
+# Optional caller-owned emphasis; the static Loom does not infer active stations.
 HIGHLIGHT_CSS = "fill:#39ff8a33,stroke:#39ff8a,stroke-width:2px"
 _ROUTE_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _SHA256_HEX_LENGTH = 64
@@ -77,11 +79,7 @@ def pattern_snapshot_is_valid(snapshot: dict[str, Any]) -> bool:
 
 
 class Gate:
-    """Marker mixin: a node that can park the run on an external verdict (consent/HitL).
-
-    Any workflow whose graph contains a Gate node is assigned the Durable Stasis tier
-    (`_workflow_parks` scans `graph.get_nodes()` for `issubclass(node, Gate)`).
-    """
+    """Marker for a consent/HitL station requiring durable checkpoint persistence."""
 
 
 class DelegatedAgentNode:
@@ -264,17 +262,14 @@ class Workflow:
     title: str
     description: str
     trigger: Trigger
-    graph: Graph[Any, Any, Any]
+    graph: Graph[Any, Any, Any, Any]
     start_node: type[BaseNode[Any, Any, Any]]
     make_state: Callable[[Intent], BaseModel]
     manifest: PatternManifest
     # An executable revision may require checkpoint values to match its durable
     # admission. The worker binds the Intent; the runner checks each loaded state.
     validate_state: Callable[[Intent, BaseModel], None] | None = None
-    # Computed once at construction: a workflow whose graph contains any `Gate` node
-    # takes the Durable Stasis tier. Kept a derived property (not a hand-set flag) so it
-    # can never drift from the graph — but resolved HERE, near `Gate`, not re-scanned by
-    # the ghoul on every run.
+    # Derive checkpoint policy once from the graph's Gate and delegated stations.
     durable: bool = field(init=False)
 
     def __post_init__(self) -> None:
@@ -283,7 +278,7 @@ class Workflow:
             msg = f"Workflow '{self.name}' must use a Pattern manifest with the same key."
             raise ValueError(msg)
         executable = {node.implementation for node in self.manifest.nodes if node.implementation is not None}
-        graph_nodes = set(self.graph.get_nodes())
+        graph_nodes = set(serial_graph_topology(self.graph)[0].values())
         if self.start_node not in graph_nodes:
             msg = f"Workflow '{self.name}' start node must belong to its graph."
             raise ValueError(msg)
@@ -305,11 +300,13 @@ class Workflow:
         object.__setattr__(
             self,
             "durable",
-            any(issubclass(node, (Gate, DelegatedAgentNode)) for node in self.graph.get_nodes()),
+            any(issubclass(node, (Gate, DelegatedAgentNode)) for node in graph_nodes),
         )
 
     def _validate_manifest_topology(self) -> None:
         """Require the semantic score to match executable and durable re-entry edges."""
+        from pydantic_graph import EndNode, StartNode
+
         terminal_nodes = [node for node in self.manifest.nodes if node.kind == "terminal"]
         if len(terminal_nodes) != 1:
             msg = f"Pattern '{self.manifest.key}@{self.manifest.revision}' must declare exactly one terminal node."
@@ -318,20 +315,18 @@ class Workflow:
         keys_by_implementation = {
             node.implementation: node.key for node in self.manifest.nodes if node.implementation is not None
         }
-        executable_edges: set[tuple[str, str]] = set()
-        for node_def in self.graph.node_defs.values():
-            if node_def.returns_base_node:
-                msg = (
-                    f"Pattern '{self.manifest.key}@{self.manifest.revision}' cannot prove topology for "
-                    f"dynamic BaseNode return from {node_def.node.__name__}."
-                )
-                raise ValueError(msg)
-            source = keys_by_implementation[node_def.node]
-            for target_id in node_def.next_node_edges:
-                target = keys_by_implementation[self.graph.node_defs[target_id].node]
-                executable_edges.add((source, target))
-            if node_def.end_edge is not None:
-                executable_edges.add((source, terminal_key))
+        stations, routes = serial_graph_topology(self.graph)
+        if {target for source, target in routes if source == StartNode.id} != {self.start_node.get_node_id()}:
+            msg = f"Workflow '{self.name}' graph entry must match its Pattern entry station."
+            raise ValueError(msg)
+        executable_edges = {
+            (
+                keys_by_implementation[stations[source]],
+                terminal_key if target == EndNode.id else keys_by_implementation[stations[target]],
+            )
+            for source, target in routes
+            if source != StartNode.id
+        }
 
         # A delegated station exits the in-process graph while parked and is later
         # re-entered at the same station. That lifecycle edge is executable policy
@@ -349,10 +344,23 @@ class Workflow:
             raise ValueError(msg)
 
     def mermaid(self, *, highlight: type[BaseNode[Any, Any, Any]] | None = None) -> str:
-        """Return the stateDiagram-v2 source, optionally highlighting one node."""
-        return self.graph.mermaid_code(
-            title=self.title,
-            direction="LR",
-            highlighted_nodes=(highlight,) if highlight is not None else None,
-            highlight_css=HIGHLIGHT_CSS,
-        )
+        """Draw only admitted stations and permissions, including durable re-entry.
+
+        Renderer aliases encode semantic keys, independent of Python class names or
+        declaration order. Labels cannot introduce Mermaid syntax or directives.
+        """
+        aliases = {node.key: f"station_{node.key.encode().hex()}" for node in self.manifest.nodes}
+        lines = ["---", f"title: {json.dumps(self.title)}", "---", "stateDiagram-v2", "  direction LR"]
+        for node in self.manifest.nodes:
+            label = f"{node.label} ({node.kind}) · {node.key}"
+            escaped = "".join(char if char.isalnum() or char in " _-." else f"#{ord(char)};" for char in label)
+            lines.append(f'  state "{escaped}" as {aliases[node.key]}')
+        lines.extend(f"  {aliases[edge.source]} --> {aliases[edge.target]}" for edge in self.manifest.edges)
+        if highlight is not None:
+            lines.extend(
+                (
+                    f"  classDef highlighted {HIGHLIGHT_CSS}",
+                    f"  class {aliases[self.manifest.node_key(highlight)]} highlighted",
+                )
+            )
+        return "\n".join(lines)

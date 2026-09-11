@@ -41,7 +41,9 @@ class LlamaCppRuntimePlanner:
             args = self._single_mode_args(soulstone=soulstone, args=args, inferred=inferred)
         else:
             args = self._router_mode_args(soulstone=soulstone, args=args, inferred=inferred)
-        return self._append_optional_args(soulstone=soulstone, args=args)
+        # The prefix cannot be consumed as another option's value. Explicit CLI
+        # admission also overrides idle sleep enabled in router model presets.
+        return ["--sleep-idle-seconds", "-1", *self._append_optional_args(soulstone=soulstone, args=args)]
 
     def describe_runtime(
         self,
@@ -142,8 +144,6 @@ class LlamaCppRuntimePlanner:
         return args
 
     def _append_optional_args(self, *, soulstone: LlamaCppSoulstoneConfig, args: list[str]) -> list[str]:
-        if soulstone.sleep_idle_seconds is not None:
-            args.extend(["--sleep-idle-seconds", str(soulstone.sleep_idle_seconds)])
         if soulstone.chat_template:
             args.extend(["--chat-template", soulstone.chat_template])
         for adapter in soulstone.lora_adapters:

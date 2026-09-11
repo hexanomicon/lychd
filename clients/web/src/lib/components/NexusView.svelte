@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { beforeNavigate, goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { tick } from "svelte";
@@ -47,6 +47,15 @@
   let destroyed = false;
   const recoveredTickets = new Set<string>();
   const swapAttempts = new Map<string, string>();
+
+  beforeNavigate((navigation) => {
+    if (!swapAttempts.size) return;
+    if (!navigation.willUnload && navigation.to && navigation.from && navigation.to.url.origin === navigation.from.url.origin &&
+        navigation.to.url.pathname === navigation.from.url.pathname) return;
+    if (navigation.type === "leave" || !window.confirm(busy
+      ? "A transition request is still in progress. Leave before its outcome is known?"
+      : "The transition outcome is unknown. Leave Nexus and lose the prepared retry?")) navigation.cancel();
+  });
 
   let requestedTransitionId = $derived(page.url.searchParams.get("transition"));
   let requestedEventId = $derived(page.url.searchParams.get("event"));
@@ -229,7 +238,8 @@
   async function swap() {
     const selected = preview;
     if (destroyed || !selected || busy || snapshotStale || selected.plan.action_type === "NO_OP") return;
-    const requestId = swapAttempts.get(selected.target) ?? crypto.randomUUID();
+    const previousRequestId = swapAttempts.get(selected.target);
+    const requestId = previousRequestId ?? crypto.randomUUID();
     swapAttempts.set(selected.target, requestId);
     busy = true;
     error = "";
@@ -243,10 +253,12 @@
     } catch (cause) {
       if (destroyed) return;
       const definitiveRejection =
+        previousRequestId === undefined &&
         cause instanceof ApiError &&
         cause.status !== undefined &&
         cause.status < 500 &&
-        cause.status !== 409;
+        cause.status !== 409 &&
+        cause.status !== 408;
       if (definitiveRejection) swapAttempts.delete(selected.target);
       error = cause instanceof Error ? cause.message : "The transition was refused.";
     } finally {

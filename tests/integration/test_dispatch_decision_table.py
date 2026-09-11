@@ -21,6 +21,7 @@ from typing import Any, cast
 from uuid import uuid4
 
 import pytest
+from pydantic_ai.models.test import TestModel as _TestModel
 
 from lychd.domain.animation.capabilities import (
     CapabilityGrant,
@@ -105,7 +106,7 @@ class FakeRegistry:
             spec=self.spec,
             state=self.state,
             lease=GrantLease(grant_id=uuid4().hex, holder=holder, issued_at=datetime.now(UTC)),
-            model=object(),
+            model=_TestModel(),
             toolsets=(),
         )
 

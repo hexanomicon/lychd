@@ -90,10 +90,16 @@ fingerprint; the general Resolution Lock remains a separate contract.
 
 Choose the route that matches the question:
 
+- **[Discovery and router delegation](discovery.md)** follows scope branches, makes nested routes
+  and workflows discoverable, and carries the selected routes into a bounded task handoff.
 - **[Pattern lifecycle](./pattern-lifecycle.md)** covers identity, manifests, admission,
   contribution, authorship protection, and revision continuity.
 - **[Crucible](./crucible.md)** covers two-round adversarial formation: declared biased Postures,
   independent first claims, attributed rebuttal, dissent-preserving synthesis, and the Magus Gate.
+- **[Agentic software development](sdlc.md)** applies bounded Inquiry at direction and construction
+  scales, then follows task handoffs, tests, review, documentation and authorized VCS effects.
+- **[:material-autorenew: Ouroboros](ouroboros.md)** connects work, evaluation and training through
+  correction, memory, Assimilation, Packaging and Evolution.
 - **[Scheduling and service classes](./scheduling-and-service-classes.md)** covers foreground,
   deadline-windowed, and spare-capacity admission, schedule time law, overlap, and explicit misses.
 - **[Stasis and return](stasis-and-return.md)** covers Live and Durable Stasis, checkpoints,
@@ -118,6 +124,19 @@ Model and engine choice stays in the receiver-owned Resolution Lock. A Comfy gra
 implementation preset, and a portable A2A Scroll remains inert until admitted. Follow
 [Composition Suites](../../../compositions/products-and-suites.md#compositions-relate-without-nesting) when the
 work needs live coordination across application owners.
+
+## Hand off a bounded task
+
+In the designed [scoped context handoff](../../../adr/28-workflow.md#scoped-context-handoff-designed),
+the coordinating Agent keeps the wider purpose while another Agent receives a fresh Context for
+one task. For a repository change, that packet gives the requested result, relevant operator
+decisions, acceptance checks, allowed paths, source revision, dependencies, and a scope routing to
+the owning documents and code. The recipient reads those owners without inheriting the whole
+conversation that led to the task.
+
+If a needed decision is missing, the recipient requests that bounded input. It returns a candidate
+patch or findings with verification evidence and unresolved questions for the coordinator to
+assess. Merely loading another scope in the same conversation does not perform this handoff.
 
 ## The present score
 

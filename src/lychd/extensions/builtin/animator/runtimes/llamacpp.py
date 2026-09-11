@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from lychd.domain.animation.capabilities import (
     ActivationResult,
@@ -29,6 +29,9 @@ from lychd.extensions.builtin.animator.llamacpp.parser_cli import LlamaCppCliInf
 from lychd.extensions.builtin.animator.llamacpp.parser_models import LlamaCppRuntimeInference
 from lychd.extensions.builtin.animator.llamacpp.runtime import LlamaCppDescriptor, LlamaCppRuntimePlanner
 from lychd.extensions.builtin.animator.soulstones import LlamaCppSoulstoneConfig
+
+if TYPE_CHECKING:
+    from lychd.domain.animation.lifecycle import AnimatorLifecycle
 
 _REACHABLE_HEALTH = {"ok", "loading"}
 
@@ -93,7 +96,7 @@ class LlamaCppRuntimeAdapter:
 
         Phase mapping: single ``/health`` 503-loading → WARMING, healthy plus
         an exact inventory match → WARM; router ``/models`` status →
-        ACTIVATABLE/WARM; unreachable → COLD;
+        ACTIVATABLE/WARMING/WARM; a missing declared model → ERROR; unreachable → COLD;
         control-plane exception → ERROR with reason.
         """
         connector = cast("LlamacppConnector", animator.connector)
@@ -116,7 +119,6 @@ class LlamaCppRuntimeAdapter:
             ]
 
         health = lifecycle.health
-        reachable = health in _REACHABLE_HEALTH or lifecycle.supports_router
         health_error = lifecycle.error
         connector.set_link(
             Link(
@@ -127,15 +129,11 @@ class LlamaCppRuntimeAdapter:
             )
         )
 
-        loaded_ids = list(lifecycle.loaded_models)
         return [
             self._state_for_spec(
                 spec=spec,
                 mode=mode,
-                health=health,
-                reachable=reachable,
-                loaded_ids=loaded_ids,
-                health_error=str(health_error) if health_error else None,
+                lifecycle=lifecycle,
                 checked_at=checked_at,
             )
             for spec in specs
@@ -146,32 +144,31 @@ class LlamaCppRuntimeAdapter:
         *,
         spec: CapabilitySpec,
         mode: str,
-        health: str,
-        reachable: bool,
-        loaded_ids: list[str],
-        health_error: str | None,
+        lifecycle: AnimatorLifecycle,
         checked_at: datetime,
     ) -> CapabilityState:
         phase = self._phase_for(
             mode=mode,
-            health=health,
-            reachable=reachable,
             model_id=spec.model_id,
-            loaded_ids=loaded_ids,
+            lifecycle=lifecycle,
         )
         reason: str | None = None
         if phase is CapabilityPhase.ERROR:
-            reason = health_error or (
-                f"declared model {spec.model_id!r} is absent from /models" if health == "ok" else "runtime_error"
+            reason = lifecycle.error or (
+                f"declared model {spec.model_id!r} is absent from /models"
+                if lifecycle.health == "ok"
+                else "runtime_error"
             )
         elif phase is CapabilityPhase.ACTIVATABLE:
             reason = "model_not_loaded"
         elif phase is CapabilityPhase.COLD:
             reason = "runtime_unreachable"
+        elif phase is CapabilityPhase.UNKNOWN:
+            reason = "router model has no admitted load state"
         return CapabilityState(
             capability_key=spec.key,
             phase=phase,
-            health=health,
+            health=lifecycle.health,
             reason=reason,
             checked_at=checked_at,
         )
@@ -180,22 +177,30 @@ class LlamaCppRuntimeAdapter:
         self,
         *,
         mode: str,
-        health: str,
-        reachable: bool,
         model_id: str,
-        loaded_ids: list[str],
+        lifecycle: AnimatorLifecycle,
     ) -> CapabilityPhase:
+        health = lifecycle.health
         if health == "error":
             return CapabilityPhase.ERROR
+        if mode == "router":
+            if health not in _REACHABLE_HEALTH and not lifecycle.supports_router:
+                phase = CapabilityPhase.COLD
+            elif model_id not in lifecycle.available_models:
+                phase = CapabilityPhase.ERROR
+            elif model_id in lifecycle.loading_models:
+                phase = CapabilityPhase.WARMING
+            elif model_id in lifecycle.loaded_models and health == "ok":
+                phase = CapabilityPhase.WARM
+            elif model_id in lifecycle.unloaded_models:
+                phase = CapabilityPhase.ACTIVATABLE
+            else:
+                phase = CapabilityPhase.UNKNOWN
+            return phase
         if health == "loading":
             return CapabilityPhase.WARMING
-        if mode == "router":
-            if not reachable:
-                return CapabilityPhase.COLD
-            loaded = model_id in loaded_ids and health == "ok"
-            return CapabilityPhase.WARM if loaded else CapabilityPhase.ACTIVATABLE
         if health == "ok":
-            return CapabilityPhase.WARM if model_id in loaded_ids else CapabilityPhase.ERROR
+            return CapabilityPhase.WARM if model_id in lifecycle.loaded_models else CapabilityPhase.ERROR
         return CapabilityPhase.COLD
 
     async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult:
@@ -214,15 +219,14 @@ class LlamaCppRuntimeAdapter:
                     accepted=False,
                     reason="model not in /models",
                 )
+            if spec.model_id in lifecycle.loaded_models or spec.model_id in lifecycle.loading_models:
+                return ActivationResult(accepted=True)
+            if spec.model_id not in lifecycle.unloaded_models:
+                return ActivationResult(accepted=False, reason="router model has no admitted load state")
             accepted = await self._control_plane.load_model(connector.base_url, spec.model_id)
-            if not accepted:
-                return ActivationResult(
-                    accepted=False,
-                    reason="router rejected model load",
-                )
+            return ActivationResult(accepted=accepted, reason=None if accepted else "router rejected model load")
         except LlamaCppControlPlaneError as exc:
             return ActivationResult(accepted=False, reason=str(exc))
-        return ActivationResult(accepted=True)
 
     def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
         """Plan llama.cpp command args from passthrough or managed fields."""

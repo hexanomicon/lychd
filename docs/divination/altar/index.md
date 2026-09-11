@@ -20,11 +20,15 @@ the same host:
 http://127.0.0.1:7134/
 ```
 
-The root opens **Bridge**. On a fresh Phylactery, choose **New Séance** and offer a bounded Intent.
+Before entering, retrieve the dedicated local credential in a private terminal with `lychd access`
+and answer the browser's authentication dialog as described in
+[The Awakening](../../summoning.md#the-awakening). Keep the password out of URLs and command lines.
+The root then opens **Bridge**. On a fresh Phylactery, choose **New Séance** and offer a bounded Intent.
 Answer an inline consent card only when the Run asks for judgment.
 
 Keep the listener on literal loopback, with no proxy, tunnel, or forwarding. Loopback and the
-fixed `magus:*` Sigil do not authenticate the caller or isolate hostile origins. The full current
+fixed `magus:*` Sigil alone do not authenticate a caller. The separate credential proves local
+possession; it supplies no remote person identity or hostile-browser isolation. The full current
 boundary lives in [The Awakening](../../summoning.md#the-awakening); [State of
 Work](../../state-of-the-work.md#altar-and-observability) records the delivered surface.
 

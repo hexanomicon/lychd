@@ -23,6 +23,7 @@ code-facing name and the compatibility spelling used by existing paths.
 
 | Name | Office |
 | --- | --- |
+| Area | Non-exclusive thematic grouping for discovering Compositions, without application or runtime ownership |
 | Composition | Reusable application capability owning domain records, judgment, effects, policies, projections, and a Pattern catalogue |
 | Composition Revision | One immutable version of a stable Composition contract; a materially different application capability requires another identity |
 | Product | Named professional or market package selecting Composition or Suite revisions, owner-qualified profiles, projections, and concrete use cases |
@@ -42,7 +43,8 @@ revision continuity, and contribution. Composition owns domain judgment. Product
 promise, supported-use-case catalogue, packaging, and defaults, but none of its members' records,
 policy, secrets, consent, or effect authority. IAM/Ward/HitL own authority; Dispatcher capability;
 Orchestrator readiness; Workers delivery/retry; Phylactery/Graph stores and checkpoints; Riddle
-evaluation; Soulforge promotion.
+evaluation; Soulforge corpus and training lineage. Promotion remains with the receiving policy,
+required HitL, and target effect owner under [Training](33-training.md).
 
 ## Spells, Scrolls, and casting
 
@@ -291,7 +293,8 @@ state validator to persisted Run intent; the Graph runner checks fresh and resto
 node execution, including hardware re-entry. A differing key, Run/session identity, prompt, or
 admitted priority refuses the checkpoint. Retried admissions first read
 existing Run truth, so configuration changes cannot rewrite queued or parked work. Revision 1
-keeps its original eligible-pool behavior and manifest. Portable stores, general lock persistence,
+applies the same admitted-state checks while keeping its eligible-pool behavior and manifest.
+Portable stores, general lock persistence,
 placement profiles, and dynamic registration remain undelivered.
 
 ## Execution-road planning
@@ -481,6 +484,57 @@ Dispatcher, Orchestrator, HitL, or revision. Delegated station declares request/
 containment, budget, timeout, cancellation, artifact boundary, downstream use; provider adapter
 invokes foreign runtime, never embedded CLI/credential/private graph.
 
+### Scoped context handoff (Designed)
+
+When a score hands a bounded task to another Agent, the receiving placement starts with a fresh,
+recipient-specific Context. It does not implicitly inherit the parent's conversation, loaded
+documents, tool outputs, or sibling work. Loading a scope into an existing conversation narrows
+the task but does not remove material already present; a handoff requires a new assembly boundary.
+The parent retains the wider purpose, dependencies, shared budget, ordering, and responsibility
+for assessing the return against the owning acceptance contract.
+
+The exact Scroll pins the handoff's input and return contracts. The parent supplies the smallest
+sufficient packet: task and role, acceptance target, relevant operator decisions and constraints,
+allowed inputs and effects, exact source/artifact revisions, dependencies and unresolved unknowns,
+and the applicable scope routes. A scope routes the recipient to canonical owners and the smallest
+useful evidence slice; it is neither a replacement for those owners nor the task specification.
+The recipient may load further material within the admitted boundary. A missing prerequisite
+requires a bounded request or explicit non-completion, never an automatic copy of the parent's
+entire context.
+
+Spellweaver declares the handoff and its continuity requirements;
+[Context](21-context.md) owns assembly, ordering, attribution, and budgeting. Applicable governing
+instructions and authority constraints survive the handoff. Required provider/tool or consent
+continuation remains indivisible; work that requires it must use its declared continuation path.
+When historical material is itself necessary evidence, the contract selects bounded, attributed
+history or artifacts explicitly. Excluding material from a child call never deletes the parent's
+history or canonical records, and prompt isolation alone proves no tool or workspace containment.
+
+The return contains the candidate result or artifact references, observed verification evidence,
+and remaining unknowns or blockers. The parent admits the useful return under the existing
+acceptance and effect boundaries; no complete child transcript is implicitly appended to its
+Context. Independent review receives its own sufficient packet. This handoff contract is Designed;
+the reference delegated adapter does not establish fresh-context assembly in a foreign runtime.
+
+### Bounded Inquiry in an engineering workflow
+
+The [reference SDLC](../sepulcher/extensions/weaver/sdlc.md) uses **Inquiry** as a reusable design
+form: bounded Explore, independent coverage and sufficiency judgment, then Crucible for material
+alternatives. The same form can address direction and later implementation boundaries. It is not
+a registered global Pattern or proof of delivered subgraph composition.
+
+The owning score declares the question, required evidence, omissions, judge independence, probe
+budget, stopping conditions, and typed return. Sufficiency means enough evidence for the declared
+decision, never exhaustive knowledge. A judge may request a bounded source probe or return
+non-decision; another judge is not an unlimited escape from missing evidence. Factual disagreement
+calls for an admitted discriminating test where one can settle it. The receiving owner retains
+acceptance and residual-risk judgment under its law.
+
+Human decision assistance presents a concrete unresolved choice and its consequences. Inquiry
+does not add blanket approval requirements to already admitted work; exact live-only and Protected
+Region rules remain with [HitL](25-hitl.md). Evaluation of a changed procedure produces evidence
+for a new immutable revision and later Invocation, never mutation of a pinned Run.
+
 ### Crucible choreography
 
 [Crucible](../sepulcher/extensions/weaver/crucible.md) is the canonical adversarial choreography
@@ -502,8 +556,10 @@ publish its exact Pattern and dossier contract and apply ordinary revision, road
 authority law. When the receiving decision belongs to another office, that office retains judgment
 and the Composition only coordinates the dossier. The choreography neither evaluates a capability
 in Riddle's place, materializes Shadow branches, nor promotes its own recommendation. A downstream
-mutation or Covenant edit begins only through its target owner's workflow after the exact human
-verdict.
+mutation or Covenant edit begins only through its target owner's workflow and applicable
+authority. Where its law requires an exact human verdict, the dossier cannot substitute for that
+verdict; where standing policy is eligible, Crucible does not introduce a second universal live
+Gate. Protected Regions remain live-only.
 
 ## Pattern contribution
 
@@ -606,6 +662,20 @@ Work](../state-of-the-work.md#smith-forge-promotion) owns that boundary.
 
 ## Compositions, Products, Suites, and schedules
 
+### Concerns and application design
+
+[Atlas](15-frontend.md#independent-concerns-decomposition-and-addressing-designed) maps independent
+Concerns, their decomposition, and where they are addressed. An idea or application can take shape
+through that account without first becoming a Project or native Composition. Its own Covenants
+can record its adopted decisions. Work outside LychD may use LychD's Covenants as one optional
+source of inspiration.
+
+When the design concerns a native Composition, the map explains why its parts exist and exposes
+unresolved needs. The Composition still owns its accepted reusable records, judgment, effects,
+policies, projections, and Pattern catalogue. Addressing links do not publish or revise those
+contracts. Concern decomposition also creates no Scroll transitions or Suite coordination; those
+remain separately declared and admitted under their execution owners.
+
 ### Composition identity, revision, and retirement
 
 A Composition has one stable URL-safe identity and immutable numbered revisions. Its revision pins
@@ -639,10 +709,18 @@ of a mechanism or provider is insufficient. Two independently motivated Products
 strong corroborating evidence, neither a necessary threshold nor proof by themselves. Portfolio
 acceptance remains distinct from runtime registration and from delivery.
 
-Editorial reader views may group accepted Compositions for discovery. They have no identifier,
-revision, records, authority, namespace, source-layout consequence, dependency meaning, delivery
-state, or runtime/Product selection role. A Composition may be discoverable through several views
-while retaining one canonical leaf.
+<span id="areas-for-discovery"></span>An **Area** is a non-exclusive thematic grouping for
+discovering Compositions. Areas name the Portfolio's editorial reader views; their directories
+and indexes provide documentation routes. They have no runtime identity, revision, domain
+records, authority, application namespace, code-layout consequence, dependency meaning, delivery
+state, or runtime/Product selection role. A Composition may be discoverable through several
+Areas while retaining one canonical route and its own contract. Renaming an Area or changing
+its membership does not revise those contracts. Guides organize explanations; Candidate studies
+organize proposals by acceptance status. Neither is a thematic Area.
+
+Suites may coordinate live Composition-owned Invocations within one Area or across several Areas.
+Sharing or crossing an Area boundary alone creates no Suite requirement; the live-coordination
+contract below determines that need.
 
 A **Product** gives a profession or market one named operator door. It pins eligible Composition
 or Suite revisions, owner-qualified profiles, projections, supported use cases, defaults, and its

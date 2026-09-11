@@ -86,6 +86,9 @@ class LlamaCppControlPlane:
                 self._populate_router_models(lifecycle, models)
             except LlamaCppControlPlaneError as exc:
                 lifecycle.error = str(exc)
+            except HttpJsonError as exc:
+                lifecycle.health = "error"
+                lifecycle.error = f"model inventory invalid: {exc}"
         elif lifecycle.health == "ok":
             try:
                 models = await self._request_json(base_url, "GET", "/v1/models")
@@ -155,33 +158,36 @@ class LlamaCppControlPlane:
         return "unknown"
 
     def _populate_router_models(self, lifecycle: AnimatorLifecycle, payload: dict[str, object]) -> None:
-        entries = payload.get("data")
-        if not isinstance(entries, list):
-            return
-
-        available: list[str] = []
+        available = list(parse_openai_model_inventory(payload))
+        entries = cast("list[dict[str, object]]", payload["data"])
         loaded: list[str] = []
-        for entry_obj in cast("list[object]", entries):
-            entry_map = self._as_map(entry_obj)
-            if entry_map is None:
-                continue
-            model_id = self._as_str(entry_map.get("id"))
-            if not model_id:
-                continue
-            available.append(model_id)
-
-            status = entry_map.get("status")
+        loading: list[str] = []
+        unloaded: list[str] = []
+        for model_id, entry in zip(available, entries, strict=True):
+            status = entry.get("status")
             status_map = self._as_map(status)
-            if status_map is not None and self._as_str(status_map.get("value")) == "loaded":
+            value = self._as_str(status_map.get("value")) if status_map is not None else None
+            if value is None:
+                msg = f"router model {model_id!r} has no status.value string"
+                raise HttpJsonError(msg)
+            if status_map is not None and status_map.get("failed", False) is not False:
+                continue
+            if value == "loaded":
                 loaded.append(model_id)
+            elif value == "loading":
+                loading.append(model_id)
+            elif value == "unloaded":
+                unloaded.append(model_id)
 
         lifecycle.available_models = available
         lifecycle.loaded_models = loaded
+        lifecycle.loading_models = loading
+        lifecycle.unloaded_models = unloaded
 
     def _query_model(self, model: str | None) -> dict[str, str] | None:
         if model is None:
             return None
-        return {"model": model}
+        return {"model": model, "autoload": "false"}
 
     def _as_str(self, value: object) -> str | None:
         if isinstance(value, str):

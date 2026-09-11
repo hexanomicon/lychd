@@ -7,10 +7,10 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 
 from lychd.db.models import Run, Session
-from lychd.domain.web.sessions import SessionRecord, assert_compatible_turn
+from lychd.domain.web.sessions import SESSION_PAGE_SIZE, SessionRecord, SessionSummaryRecord, assert_compatible_turn
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -115,6 +115,26 @@ class DbBridgeSessionStore:
         async with self._session_factory() as session:
             rows = (await session.scalars(select(Session).order_by(Session.created_at.desc(), Session.id.desc()))).all()
             return [self._record(row) for row in rows]
+
+    async def list_session_summaries(self, *, before: tuple[datetime, str] | None = None) -> list[SessionSummaryRecord]:
+        """Fetch only a bounded keyset page of archive identity columns."""
+        statement = select(Session.id, Session.title, Session.created_at)
+        if before is not None:
+            created_at, session_id = before
+            try:
+                row_id = UUID(session_id)
+            except ValueError:
+                return []
+            statement = statement.where(
+                or_(Session.created_at < created_at, and_(Session.created_at == created_at, Session.id < row_id))
+            )
+        statement = statement.order_by(Session.created_at.desc(), Session.id.desc()).limit(SESSION_PAGE_SIZE + 1)
+        async with self._session_factory() as session:
+            rows = (await session.execute(statement)).all()
+        return [
+            SessionSummaryRecord(id=str(row.id), title=row.title or "New Communion", created_at=row.created_at)
+            for row in rows
+        ]
 
     async def add_turn(self, session_id: str, turn: BridgeTurn) -> None:
         """Append one settled turn under a transaction-scoped row lock."""

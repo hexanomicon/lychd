@@ -19,6 +19,9 @@ identity formed around it. Identity enables continuity and answerability; attach
 into **Corruption**. Blade keeps that local gravity open to contradiction rather than letting
 every Call bend back into _Me_.
 
+[How remembrance gathers and revises this I](../../divination/transcendence/immortality.md#the-ego-in-the-mirror)
+follows the present center into a continuing self.
+
 The Answer's binding is maintained, not fixed. Identity, authority, memory, and situation change
 what a local “I” may responsibly say or do. [Call](./call.md) asks what demands response;
 [Blade](./blade.md) asks what survives discrimination; [Spirit](./spirit/index.md) carries what

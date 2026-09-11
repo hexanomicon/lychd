@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/svelte";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { OrbRunSnapshot } from "$lib/api/models";
@@ -85,6 +85,35 @@ afterEach(() => {
 });
 
 describe("Orb evidence focus", () => {
+  it("reports a linked delegated job absent from the selected Run snapshot", async () => {
+    page.url.href = "http://localhost/orb/run-a?job=job-unavailable";
+    vi.mocked(getOrbRun).mockResolvedValue({
+      ...snapshot,
+      delegated_jobs: [{
+        job_id: "job-visible", request_id: "request-visible", runtime: "reference", profile: "read", step_id: "step-a",
+        status: "completed", output_present: false, artifact_count: 0, error_present: false,
+        events: [], events_truncated: false
+      }]
+    });
+    const view = render(OrbView, { runId: "run-a" });
+    expect(await screen.findByText(/The linked delegated job is not present in this Run's bounded snapshot/)).toBeTruthy();
+    expect(view.container.querySelector(".delegated-job[aria-current='true']")).toBeNull();
+
+    vi.mocked(getOrbRun).mockResolvedValue({
+      ...snapshot,
+      delegated_jobs: [{
+        job_id: "job-unavailable", request_id: "request-selected", runtime: "reference", profile: "read", step_id: "step-a",
+        status: "completed", output_present: false, artifact_count: 0, error_present: false,
+        events: [], events_truncated: false
+      }]
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    await waitFor(() => expect(view.container.querySelector(".delegated-job[aria-current='true']")?.id)
+      .toBe("delegated-job-job-unavailable"));
+    expect(screen.queryByText(/The linked delegated job is not present/)).toBeNull();
+    view.unmount();
+  });
+
   it("aborts a pending Orb read when its view is destroyed", async () => {
     const pending = deferred<OrbRunSnapshot>();
     let signal: AbortSignal | undefined;

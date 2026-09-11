@@ -12,7 +12,7 @@ from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo, ModelSurface, PortalConfig, SoulstoneConfig
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from pydantic_ai.models import Model
     from pydantic_ai.toolsets import AbstractToolset
@@ -32,6 +32,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         default_surface: ModelSurface = ModelSurface.CHAT,
         provider_name: str = "openai-compatible",
         toolsets: Sequence[AbstractToolset] = (),
+        default_query: Mapping[str, str] | None = None,
     ) -> None:
         """Store readiness, base URL, models, auth, profile policy, and toolsets."""
         self._link = link
@@ -42,6 +43,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         self._default_surface = default_surface
         self._provider_name = provider_name
         self._toolsets = tuple(toolsets)
+        self._default_query = dict(default_query) if default_query else None
         self._observed_model_ids: tuple[str, ...] | None = None
         self._inventory_error: str | None = None
 
@@ -97,6 +99,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
             model_id=provider_model,
             responses=selected_surface == ModelSurface.RESPONSES,
             api_key=self._resolve_api_key(),
+            default_query=self._default_query,
         )
         return build_openai_compatible_model(
             model_id=provider_model,

@@ -10,6 +10,7 @@ vi.mock("$lib/api/client", async (importOriginal) => {
 
 import { decideConsent } from "$lib/api/client";
 import ConsentCard from "./ConsentCard.svelte";
+import { createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
 
 const consent: ConsentCardModel = {
   args: { target: "chat:local" },
@@ -28,7 +29,7 @@ describe("Consent decision uncertainty", () => {
   it("permits only the same verdict after an ambiguous response", async () => {
     vi.mocked(decideConsent).mockRejectedValue(new TypeError("network lost"));
     const onrefresh = vi.fn();
-    render(ConsentCard, { consent, onauthority: () => 7, ondecided: vi.fn(), onrefresh });
+    render(ConsentCard, { consent, sessionId: "session-a", decisions: createBridgeWorkspace().consentDecisions, onauthority: () => 7, ondecided: vi.fn(), onrefresh });
 
     const approve = screen.getByRole("button", { name: "Consecrate" }) as HTMLButtonElement;
     const deny = screen.getByRole("button", { name: "Refuse" }) as HTMLButtonElement;
@@ -48,6 +49,8 @@ describe("Consent decision uncertainty", () => {
   it("presents Run cancellation without attributing a human refusal", () => {
     render(ConsentCard, {
       consent: { ...consent, state: "cancelled" },
+      sessionId: "session-a",
+      decisions: createBridgeWorkspace().consentDecisions,
       onauthority: () => 7,
       ondecided: vi.fn(),
       onrefresh: vi.fn()

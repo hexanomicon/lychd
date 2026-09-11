@@ -41,7 +41,11 @@ def build_agent(
     mutating: frozenset[str] = frozenset(),
     instruction_hooks: tuple[InstructionHook, ...] = (),
 ) -> Agent[LychDDeps, Any]:
-    """Build a model-free agent, omitting mutating toolsets without write authority."""
+    """Build a model-free agent with an explicit final-output boundary.
+
+    Mutating toolsets require write authority. A final output also ends the turn
+    without executing sibling tool calls, independent of the SDK's default policy.
+    """
     toolsets: list[AbstractToolset[LychDDeps]] = []
     for tool_name in spec.toolset_names:
         factory = toolset_factories.get(tool_name)
@@ -56,6 +60,7 @@ def build_agent(
         deps_type=LychDDeps,
         output_type=output_type,
         retries=spec.retries,
+        end_strategy="early",
         instructions=spec.instructions,
         model_settings=ModelSettings(max_tokens=spec.max_tokens) if spec.max_tokens else None,
         toolsets=toolsets,

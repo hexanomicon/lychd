@@ -11,7 +11,7 @@ from lychd.domain.codex import middleware as mw_mod
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.middleware import sigil_auth_middleware
 from lychd.domain.codex.sigil import Sigil
-from tests.web.conftest import AsgiClient
+from tests.web.conftest import TEST_ACCESS_PASSWORD, TEST_AUTHORIZATION, AsgiClient
 
 
 def _sigil(*, name: str = "magus", scopes: list[str]) -> Sigil:
@@ -30,8 +30,11 @@ async def write_handler(request: Request[Any, Any, Any]) -> dict[str, object]:
 
 def _client(monkeypatch: pytest.MonkeyPatch, sigil: Sigil) -> AsgiClient:
     monkeypatch.setattr(mw_mod, "default_local_sigil", lambda: sigil)
-    app = Litestar(route_handlers=[read_handler, write_handler], middleware=[sigil_auth_middleware()])
-    return AsgiClient(app)
+    app = Litestar(
+        route_handlers=[read_handler, write_handler],
+        middleware=[sigil_auth_middleware(access_password=TEST_ACCESS_PASSWORD)],
+    )
+    return AsgiClient(app, headers={"authorization": TEST_AUTHORIZATION})
 
 
 def test_narrowed_sigil_allows_read_denies_write(monkeypatch: pytest.MonkeyPatch) -> None:

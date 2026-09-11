@@ -117,7 +117,7 @@ def test_llamacpp_single_mode_plan() -> None:
     specs = _capability_specs(_runtime_registry(), soulstone)
 
     assert connector.mode == "single"
-    assert plan.exec_args[:2] == ["-m", "/models/qwen.gguf"]
+    assert plan.exec_args[:4] == ["--sleep-idle-seconds", "-1", "-m", "/models/qwen.gguf"]
     assert "--alias" in plan.exec_args
     assert "qwen" in plan.exec_args
     assert {spec.model_id for spec in specs} == {"qwen"}
@@ -441,6 +441,7 @@ async def test_llamacpp_router_probe_maps_dynamic_capability_state(tmp_path: Pat
                 supports_router=True,
                 active_model="/models/router-main.gguf",
                 loaded_models=["router-main"],
+                unloaded_models=["router-vision"],
                 available_models=["router-main", "router-vision"],
             )
 
@@ -484,6 +485,7 @@ async def test_llamacpp_router_activation_reports_clean_load_rejection(tmp_path:
                 health="ok",
                 supports_router=True,
                 available_models=["target"],
+                unloaded_models=["target"],
             )
 
         async def load_model(self, _base_url: str, _model: str) -> bool:
@@ -527,6 +529,8 @@ def test_llamacpp_resolve_infers_single_mode_and_alias_from_exec() -> None:
             "name": "qwen-cmd",
             "exec": [
                 "llama-server",
+                "--sleep-idle-seconds",
+                "-1",
                 "--host",
                 "127.0.0.1",
                 "--port",
@@ -570,6 +574,8 @@ def test_llamacpp_resolve_infers_router_and_catalog_from_exec_models_preset(tmp_
             "name": "router-cmd",
             "exec": [
                 "llama-server",
+                "--sleep-idle-seconds",
+                "-1",
                 "--models-preset",
                 str(preset),
                 "--alias",
@@ -635,6 +641,8 @@ def test_llamacpp_resolve_infers_n_predict_from_predict_alias() -> None:
             "name": "predict-alias",
             "exec": [
                 "llama-server",
+                "--sleep-idle-seconds",
+                "-1",
                 "-m",
                 "/models/qwen-next.gguf",
                 "--predict",
@@ -684,6 +692,8 @@ def test_llamacpp_resolve_effective_defaults_follow_cli_over_preset_precedence(t
             "name": "router-precedence",
             "exec": [
                 "llama-server",
+                "--sleep-idle-seconds",
+                "-1",
                 "--models-preset",
                 str(preset),
                 "--alias",

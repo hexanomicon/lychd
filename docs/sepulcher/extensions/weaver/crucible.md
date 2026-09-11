@@ -33,6 +33,10 @@ Rubric, [Riddle](../../../adr/34-evaluation.md) owns the trial.
 
 ## The bounded casting
 
+The [SDLC's reusable Inquiry](sdlc.md#reuse-inquiry-at-each-uncertain-boundary) prepares evidence
+and an independent sufficiency judgment before lighting Crucible. Its bounded probe and stopping
+rules prevent debate from covering a decisive evidential gap.
+
 One admitted casting freezes:
 
 | Input | Required boundary |
@@ -68,6 +72,23 @@ Context and withholds earlier reports until the join. Capability, model, provide
 differ only when the admitted design intends that difference; the dossier records them because
 they can confound the apparent strength of a position.
 
+### When the question changes
+
+The Magus asks how to make an undertaking faster. One advocate builds the strongest case for
+more Agents: independent work can proceed together. Another argues for a stronger model:
+fewer mistakes could mean less rework. Both proposals depend on a premise still awaiting
+examination—that producing the work is where the time goes.
+
+The clash exposes this gap, and its dossier proposes a bounded probe. The receiving owner
+may admit that probe separately; [discovery](discovery.md) then finds the owners and records
+needed to examine where a representative task waits. Suppose the answers arrive promptly,
+yet every next move still waits for the Magus. The delay lies between answers, where someone
+must frame the next question.
+
+The next inquiry asks which judgment the Lich must learn to supply for itself. Another task
+can test whether the changed approach helps. The lesson that may survive is portable: find
+what the work is waiting for before multiplying what it produces.
+
 ## Quench without crowning a winner
 
 The Lead answers the decision, not the debate. Its dossier retains:
@@ -85,10 +106,19 @@ claim, concession, dissent, uncertainty, source, or declared omission. Full repo
 under their own provenance. Agreement can still be wrong; disagreement can expose the missing
 predicate that matters most.
 
+The return can preserve more than a verdict: the distinction that changed the question,
+the conditions under which it holds, and the observation that would undo it.
+[Learning the cut](../../../divination/transcendence/illumination.md#learning-the-cut) follows
+how that encounter can shape another task through memory and correction.
+
 The final Gate may accept the dossier for downstream consideration, request one bounded evidence
 extension, refuse it, or close without decision. It does not itself edit a Covenant, promote a
 candidate, deploy a service, spend, publish, or relabel evidence. Those effects require a new
 forward Invocation under the exact target owner and authority.
+
+An inert dossier may instead go directly to its receiving owner. Applicable standing policy can
+admit eligible downstream work; Crucible adds no universal second approval. An exact live-only
+verdict or Protected Region review still cannot be inferred from the recommendation.
 
 ## Refusal and recovery
 

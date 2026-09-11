@@ -75,8 +75,11 @@ nav = [
             "sepulcher/extensions/smith.md",
             { "Spellweaver" = [
                 "sepulcher/extensions/weaver/index.md",
+                "sepulcher/extensions/weaver/discovery.md",
                 "sepulcher/extensions/weaver/pattern-lifecycle.md",
                 "sepulcher/extensions/weaver/crucible.md",
+                "sepulcher/extensions/weaver/ouroboros.md",
+                "sepulcher/extensions/weaver/sdlc.md",
                 "sepulcher/extensions/weaver/scheduling-and-service-classes.md",
                 "sepulcher/extensions/weaver/stasis-and-return.md",
                 "sepulcher/extensions/weaver/execution-roads.md",
@@ -88,13 +91,15 @@ nav = [
                 "sepulcher/extensions/soulforge/index.md",
                 "sepulcher/extensions/soulforge/corpus.md",
                 "sepulcher/extensions/soulforge/training-run.md",
-                "sepulcher/extensions/soulforge/candidate-handoff.md"
+                "sepulcher/extensions/soulforge/candidate-handoff.md",
+                "sepulcher/extensions/soulforge/discernment-training.md"
             ]},
             { "Riddle" = [
                 "sepulcher/extensions/riddle/index.md",
                 "sepulcher/extensions/riddle/trials.md",
                 "sepulcher/extensions/riddle/capability-claims.md",
-                "sepulcher/extensions/riddle/returning-findings.md"
+                "sepulcher/extensions/riddle/returning-findings.md",
+                "sepulcher/extensions/riddle/workflow-improvement.md"
             ]},
             "sepulcher/extensions/scout.md",
             "sepulcher/extensions/tether.md",
@@ -151,6 +156,7 @@ nav = [
             "compositions/products-and-suites.md"
         ]},
         { "Creative Works" = [
+            "compositions/creative-works/index.md",
             { "Voidlight" = [
                 "compositions/voidlight/index.md",
                 "compositions/voidlight/brief.md",
@@ -194,6 +200,7 @@ nav = [
             ]}
         ]},
         { "Stewardship & Acquisition" = [
+            "compositions/stewardship-and-acquisition/index.md",
             { "Wellbeing" = [
                 "compositions/wellbeing/index.md",
                 "compositions/wellbeing/profile.md",
@@ -206,8 +213,23 @@ nav = [
                 "compositions/homestead/utilities.md",
                 "compositions/homestead/stores.md",
                 "compositions/homestead/provision.md",
-                "compositions/homestead/cultivation.md",
                 "compositions/homestead/maintenance.md"
+            ]},
+            { "Keeper" = [
+                "compositions/keeper/index.md",
+                "compositions/keeper/subjects.md",
+                "compositions/keeper/territory.md",
+                "compositions/keeper/lifecycle.md",
+                "compositions/keeper/feeding.md",
+                "compositions/keeper/care.md"
+            ]},
+            { "Cultivator" = [
+                "compositions/cultivator/index.md",
+                "compositions/cultivator/cultures.md",
+                "compositions/cultivator/growing-space.md",
+                "compositions/cultivator/lifecycle.md",
+                "compositions/cultivator/tending.md",
+                "compositions/cultivator/harvest.md"
             ]},
             { "Scavenger" = [
                 "compositions/scavenger/index.md",
@@ -218,6 +240,7 @@ nav = [
             ]}
         ]},
         { "Presence & Embodiment" = [
+            "compositions/presence-and-embodiment/index.md",
             { "Blockworld" = [
                 "compositions/blockworld/index.md",
                 "compositions/blockworld/mission.md",
@@ -257,6 +280,7 @@ nav = [
             ]}
         ]},
         { "Professional Operations" = [
+            "compositions/professional-operations/index.md",
             { "Broker" = [
                 "compositions/broker/index.md",
                 "compositions/broker/cases.md",
@@ -265,6 +289,12 @@ nav = [
             ]}
         ]},
         { "Candidate studies" = [
+            { "Accounting Office" = "compositions/accounting-office/index.md" },
+            { "Transmuter" = [
+                "compositions/transmuter/index.md",
+                "compositions/transmuter/extractor.md",
+                "compositions/transmuter/synthesizer.md"
+            ]},
             { "Workshop" = [
                 "compositions/workshop/index.md"
             ]}
@@ -273,7 +303,8 @@ nav = [
     { "Lexicon" = [
         "lexicon/index.md",
         { "Iron Tongue" = "lexicon/iron-tongue.md" },
-        { "Inner Tongue" = "lexicon/inner-tongue.md" }
+        { "Inner Tongue" = "lexicon/inner-tongue.md" },
+        { "Tree of Life" = "lexicon/tree-of-life.md" }
     ]},
     { "Covenants" = [
         "adr/index.md",

@@ -25,6 +25,7 @@ from lychd.agents.workflows.base import (
     Workflow,
 )
 from lychd.agents.workflows.nodes import bind_messages_to_logical_run
+from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.graph_runner import HardwareResumeBudget
 from lychd.domain.delegation.models import (
     TERMINAL_DELEGATED_AGENT_STATUSES,
@@ -145,8 +146,13 @@ class ProjectDelegatedReply(BaseNode[DelegatedRiteState, WorkflowServices, str])
         return End(reply)
 
 
-DELEGATED_RITE_GRAPH: Graph[DelegatedRiteState, WorkflowServices, str] = Graph(
+DELEGATED_RITE_GRAPH: Graph[
+    DelegatedRiteState, WorkflowServices, BaseNode[DelegatedRiteState, WorkflowServices, str], str
+] = build_serial_graph(
     nodes=(DispatchDelegate, ProjectDelegatedReply),
+    state_type=DelegatedRiteState,
+    deps_type=WorkflowServices,
+    output_type=str,
     name="delegated_rite",
 )
 

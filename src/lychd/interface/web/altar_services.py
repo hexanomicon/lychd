@@ -84,19 +84,9 @@ class AltarServices:
     delegated_runtime_catalog: tuple[RegisteredDelegatedRuntime, ...]
 
     async def aclose(self) -> None:
-        """Cancel tracked tasks and drain per-run resources on shutdown.
-
-        R10: drain the bus's in-flight ledger-tee/close tasks before returning so a
-        tail Step write scheduled just before shutdown is not dropped.
-        """
+        """Cancel tracked tasks and drain pending ledger writes before shutdown."""
         await self.tickets.aclose()
         await self.bus.aclose()
-
-
-def _routing_from_settings(settings: Settings) -> dict[str, RouteRule]:
-    """Convert the `[orchestration.routing]` settings table into engine `RouteRule`s."""
-    routing = settings.orchestration.routing
-    return {source: RouteRule(queue=rule.queue, priority=rule.priority) for source, rule in routing.items()}
 
 
 def _validate_routed_queues(routing: Mapping[str, RouteRule], queues: Mapping[str, RunQueue]) -> None:
@@ -110,12 +100,7 @@ def _validate_routed_queues(routing: Mapping[str, RouteRule], queues: Mapping[st
 
 
 def _build_run_ledger(profile: str) -> RunLedger:
-    """Select the `RunLedger` implementation from the shared persistence profile.
-
-    ``postgres`` (default) → the durable `DbRunLedger` over the run/step tables;
-    ``memory`` → the loop-confined `InMemoryRunLedger` used by DB-free tests. Run,
-    consent, session, and stasis stores derive from this same profile.
-    """
+    """Select the Run ledger from the shared persistence profile."""
     if profile == "memory":
         return InMemoryRunLedger()
     from lychd.db.engine import get_session_factory
@@ -125,11 +110,7 @@ def _build_run_ledger(profile: str) -> RunLedger:
 
 
 def _build_session_store(profile: str, *, sigil_name: str) -> SessionStorePort:
-    """Select the `SessionStore` from the SAME persistence profile (§3.5; third leg).
-
-    ``memory`` → the loop-confined `BridgeSessionStore`; ``postgres`` →
-    `DbBridgeSessionStore` over the `session` table (survives a restart).
-    """
+    """Select the Bridge session store from the shared persistence profile."""
     from lychd.domain.web.sessions import BridgeSessionStore
 
     if profile == "memory":
@@ -153,11 +134,7 @@ def _build_atlas_store(profile: str) -> AtlasStorePort:
 
 
 def _build_consent_ledger(profile: str) -> ConsentLedger:
-    """Select the `ConsentLedger` from the SAME persistence profile (§3.5; no second flag).
-
-    ``memory`` → `InMemoryConsentLedger` (process-local, pairs with the in-memory run
-    ledger); ``postgres`` → `CodexConsentLedger` over the consent/preauth tables.
-    """
+    """Select the consent ledger from the shared persistence profile."""
     from lychd.domain.codex.ledger import InMemoryConsentLedger
 
     if profile == "memory":
@@ -218,7 +195,7 @@ def build_altar_services(
     The run ledger is chosen by the persistence ``profile`` (defaults to
     ``settings.server.database.profile`` — ``postgres`` in production, ``memory`` in DB-free
     tests). The bus tees non-TOKEN events into whichever ledger is selected, so the
-    choice MUST happen here, before the bus is built.
+    choice happens here, before the bus is built.
     """
     if settings is None:
         settings = get_settings()
@@ -229,7 +206,10 @@ def build_altar_services(
     if profile is None:
         profile = settings.server.database.profile
     queues = protect_run_queues(queues)
-    routing = _routing_from_settings(settings)
+    routing = {
+        source: RouteRule(queue=rule.queue, priority=rule.priority)
+        for source, rule in settings.orchestration.routing.items()
+    }
     policy = resolve_switch_policy(settings.orchestration.switching.policy)
     _validate_routed_queues(routing, queues)
     registry = AnimatorRegistry(

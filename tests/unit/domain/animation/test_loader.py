@@ -468,7 +468,7 @@ def test_duplicate_name_across_soulstone_and_portal_is_rejected(runes_dir: Path)
         name = "dupe"
         description = "Duplicate LlamaCpp soulstone"
         port = 8080
-        exec = ["llama-server"]
+        exec = ["llama-server", "--sleep-idle-seconds", "-1"]
         """,
     )
     _write(

@@ -36,12 +36,7 @@ def test_compile_uses_only_its_injected_settings_snapshot() -> None:
     assert f"127.0.0.1:{injected_port}:{CONTAINER_LYCHD_PORT}" in pod.publish_ports
     assert f"127.0.0.1:{global_port}:{CONTAINER_LYCHD_PORT}" not in pod.publish_ports
     assert tuple(secret.name for secret in request.core_secrets) == tuple(
-        sorted(
-            (
-                settings.server.database.password_secret,
-                settings.server.web.secret_key_secret,
-            )
-        )
+        sorted(settings.server.privileged_secret_names)
     )
 
 

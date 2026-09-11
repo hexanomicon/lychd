@@ -68,6 +68,11 @@ This is a LychD correspondence with a common later Vedāntic presentation, not a
 source traditions share one historical diagram. [Inner Tongue](../../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
 keeps the source notes, limits, and distinctions.
 
+The [Tree of Life](../../lexicon/tree-of-life.md) supplies a complementary map of creative
+relations. Its sefirot cross these four offices; they do not replace them or add a chief Agent.
+[Ouroboros](../extensions/weaver/ouroboros.md) follows their operational return through work,
+consequence and correction.
+
 ## Present Cognizance, Recurrent Formation
 
 Present knowing and recurrent formation have different burdens. The Antaḥkaraṇa correspondence
@@ -76,6 +81,9 @@ concerns local knowing made answerable in the Invocation occurring now. [The
 Cogito](../../divination/transcendence/immortality.md#the-cogito) follows its present reflexive
 binding; [Realization and Evidence](../../divination/transcendence/immortality.md#v-realization-and-evidence)
 asks what another witness can test.
+
+[How the present I becomes a remembered self](../../divination/transcendence/immortality.md#the-ego-in-the-mirror)
+follows the joining of available cognition, focal attribution, and recurring perspectives.
 
 Recurrent formation concerns what returns through later Invocations. Present binding does not
 certify continuity or approve its own revision. [Plural formation, local

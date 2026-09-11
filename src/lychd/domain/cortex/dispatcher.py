@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import AsyncExitStack, asynccontextmanager
 from typing import TYPE_CHECKING, Never
 
 from lychd.domain.animation.capabilities import CapabilityPhase, CapabilitySpec, CapabilityState, SourceKind
@@ -8,6 +9,7 @@ from lychd.domain.animation.errors import CapabilityNotWarm, CapabilityUnavailab
 from lychd.domain.animation.protocols import CapabilityRegistry, require_capability_record
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.cortex.leases import AnimatorAdmission, LeaseAdmissionClosed
+from lychd.lib.asyncio import complete_under_cancellation
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -63,6 +65,7 @@ class Dispatcher:
         name alone still permits any eligible Animator declaring that model.
         Neither selector bypasses family, modality, tools, readiness, or policy
         admission. Contradictory constraints fail without selecting another route.
+        Model clients close before their lease is released, even on cancellation.
         """
         spec = self._resolve_spec(
             family,
@@ -72,8 +75,13 @@ class Dispatcher:
             requires_tools=requires_tools,
         )
         grant = await self._grant_for_spec(spec, holder=f"run:{run_id}")
-        self._acquire_or_park(grant, priority=priority)
+        resources = AsyncExitStack()
+        acquired = False
         try:
+            if grant.model is not None:
+                await resources.enter_async_context(grant.model)
+            self._acquire_or_park(grant, priority=priority)
+            acquired = True
             if self._events is not None:
                 from lychd.domain.cortex.execution_context import current_occurrence_id
 
@@ -88,7 +96,16 @@ class Dispatcher:
                 )
             yield grant
         finally:
-            self._leases.release(grant.lease.grant_id)
+            closing = asyncio.create_task(resources.aclose())
+            try:
+                try:
+                    await asyncio.shield(closing)
+                except asyncio.CancelledError:
+                    await complete_under_cancellation(closing)
+                    raise
+            finally:
+                if acquired:
+                    self._leases.release(grant.lease.grant_id)
 
     async def _grant_for_spec(self, spec: CapabilitySpec, *, holder: str) -> CapabilityGrant:
         """Drive the A3 §2 phase decision table to a warm grant.
@@ -195,13 +212,12 @@ class Dispatcher:
             if spec.source_kind is SourceKind.PORTAL:
                 quarantined_portal = True
                 continue
-            # Invalidation removes evidence; it does not remove the declared
-            # route. Rank it as unknown so a later request can observe recovery.
+            # Cached failure and invalidation do not remove the declared route.
+            # Rank the observation, then freshly probe the selected candidate so
+            # a later request can observe recovery without an unrelated transition.
             state = self._registry.get_capability_state(spec.key) or CapabilityState(
                 capability_key=spec.key, phase=CapabilityPhase.UNKNOWN
             )
-            if not state.is_available:
-                continue
             candidates.append((spec, state))
 
         if not candidates:
@@ -226,8 +242,15 @@ class Dispatcher:
     def _candidate_sort_key(
         self,
         candidate: tuple[CapabilitySpec, CapabilityState],
-    ) -> tuple[bool, bool, bool, str, str]:
+    ) -> tuple[bool, bool, bool, bool, str, str]:
         """Prefer open admission before warmth so a draining runtime gets no new work."""
         spec, state = candidate
         draining = self._leases.admission(spec.animator_name) is AnimatorAdmission.DRAINING
-        return (draining, not state.is_active, not state.warm, spec.animator_name, spec.key)
+        return (
+            draining,
+            state.phase is CapabilityPhase.ERROR,
+            not state.is_active,
+            not state.warm,
+            spec.animator_name,
+            spec.key,
+        )

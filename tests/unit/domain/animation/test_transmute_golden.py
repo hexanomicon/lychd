@@ -179,7 +179,7 @@ def test_property2_manifest_sequence() -> None:
     ]
 
 
-def test_property3_phoenix_eye_and_core_lattice() -> None:
+def test_property3_phoenix_eye_and_core_lattice() -> None:  # noqa: PLR0915 - compare the complete generated authority graph
     """§8.2/§8.3 — Phoenix Eye verbatim + the unit dependency lattice."""
     settings = get_settings()
     active = _by_id(_transmute(phoenix_active=True))
@@ -187,13 +187,19 @@ def test_property3_phoenix_eye_and_core_lattice() -> None:
     phoenix = active["lychd-phoenix"]
     assert isinstance(phoenix, QuadletContainer)
     assert phoenix.pod == "lychd.pod"
-    db_url = f"postgresql://{settings.server.database.user}@localhost:{constants.CONTAINER_POSTGRES_PORT}/phoenix"
     assert phoenix.env_vars == {
         "PHOENIX_PORT": str(CONTAINER_PHOENIX_UI_PORT),
-        "PHOENIX_SQL_DATABASE_URL": db_url,
+        "PHOENIX_POSTGRES_HOST": "localhost",
+        "PHOENIX_POSTGRES_PORT": str(constants.CONTAINER_POSTGRES_PORT),
+        "PHOENIX_POSTGRES_USER": settings.server.database.phoenix_user,
+        "PHOENIX_POSTGRES_DB": "phoenix",
     }
-    assert phoenix.wants == ["lychd-phylactery.service"]
-    assert phoenix.after == ["lychd-phylactery.service"]
+    assert phoenix.wants == ["lychd-migrate.service"]
+    assert phoenix.requires == ["lychd-migrate.service"]
+    assert phoenix.after == ["lychd-migrate.service"]
+    assert phoenix.secrets == [
+        f"{settings.server.database.phoenix_password_secret},type=env,target=PHOENIX_POSTGRES_PASSWORD"
+    ]
 
     vessel = active["lychd-vessel"]
     phylactery = active["lychd-phylactery"]
@@ -205,18 +211,28 @@ def test_property3_phoenix_eye_and_core_lattice() -> None:
     assert vessel.env_vars["LYCHD_APP_SECRET_KEY_FILE"] == f"/run/secrets/{settings.server.web.secret_key_secret}"
     assert vessel.env_vars["SERVER__DATABASE__HOST"] == "localhost"
     assert vessel.env_vars["SERVER__DATABASE__PORT"] == str(constants.CONTAINER_POSTGRES_PORT)
-    assert vessel.env_vars["LYCHD_DB_PASSWORD_FILE"] == f"/run/secrets/{settings.server.database.password_secret}"
+    assert (
+        vessel.env_vars["LYCHD_RUNTIME_DB_PASSWORD_FILE"]
+        == f"/run/secrets/{settings.server.database.runtime_password_secret}"
+    )
+    assert (
+        vessel.env_vars["LYCHD_LOCAL_ACCESS_PASSWORD_FILE"]
+        == f"/run/secrets/{settings.server.web.access_password_secret}"
+    )
     assert "openai_api_key" in vessel.secrets
     assert settings.server.web.secret_key_secret in vessel.secrets
-    assert settings.server.database.password_secret in vessel.secrets
+    assert settings.server.database.password_secret not in vessel.secrets
+    assert settings.server.database.runtime_password_secret in vessel.secrets
+    assert settings.server.web.access_password_secret in vessel.secrets
+    assert vessel.read_only is True
     assert vessel.wants == ["lychd-migrate.service", "lychd-reactor.path"]
     assert vessel.requires == ["lychd-migrate.service", "lychd-reactor.path"]
     assert vessel.after == ["lychd-migrate.service", "lychd-reactor.path"]
     assert vessel.user == "%U"
     assert vessel.user_ns is None
     assert vessel.pod_service == "lychd-pod.service"
-    # Phylactery hangs off the generated pod service and keeps its image user.
-    assert phylactery.user is None
+    # Explicit identity prevents keep-id from overriding the PostgreSQL image user.
+    assert phylactery.user == "postgres"
     assert phylactery.wants == ["lychd-pod.service"]
     assert phylactery.after == ["lychd-pod.service"]
     assert phylactery.secrets == [settings.server.database.password_secret]
@@ -228,7 +244,13 @@ def test_property3_phoenix_eye_and_core_lattice() -> None:
     # Migration is a bounded one-shot dependency and shares the Vessel's path identity.
     assert migrator.service_type == "oneshot"
     assert migrator.requires == ["lychd-phylactery.service"]
-    assert migrator.exec == "lychd database --wait-seconds 60 upgrade head --no-prompt"
+    assert migrator.exec == "lychd database-bootstrap --wait-seconds 60"
+    assert migrator.read_only is True
+    assert settings.server.web.access_password_secret not in migrator.secrets
+    assert settings.server.web.secret_key_secret not in migrator.secrets
+    assert phylactery.exec
+    assert "hba_file=/etc/lychd-pg_hba.conf" in phylactery.exec
+    assert phylactery.volumes[2].options == ["ro", "Z"]
     assert migrator.wanted_by == []
 
 

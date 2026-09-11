@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import shlex
 from pathlib import Path, PurePosixPath
 from typing import Any, Final, Literal
 
@@ -90,12 +91,21 @@ def podman_secret_source(spec: str) -> str:
     options: dict[str, str] = {}
     for raw_option in raw_options:
         key, separator, value = raw_option.partition("=")
-        if not separator or key not in {"target", "mode"} or not value or key in options:
-            msg = "Podman secret specs support unique target=<absolute-path> and mode=<octal> options only"
+        if not separator or key not in {"target", "mode", "type"} or not value or key in options:
+            msg = "Podman secret specs support unique target, mode and type options only"
             raise ValueError(msg)
         options[key] = value
 
     target = options.get("target")
+    delivery_type = options.get("type", "mount")
+    if delivery_type not in {"mount", "env"}:
+        msg_0 = "Podman secret type must be mount or env"
+        raise ValueError(msg_0)
+    if delivery_type == "env":
+        if target is None or _ENV_NAME.fullmatch(target) is None or "mode" in options:
+            msg_0 = "Environment secrets require an environment-name target and no file mode"
+            raise ValueError(msg_0)
+        return source
     if target is not None:
         path = PurePosixPath(target)
         if (
@@ -230,6 +240,8 @@ class QuadletContainer(QuadletBase):
     user: str | None = None
 
     run_init: bool = True
+    read_only: bool = False
+    read_only_tmpfs: bool = True
     # A container joined to a Pod inherits the Pod's user namespace; Podman
     # ignores per-container --userns in that topology.
     user_ns: str | None = None
@@ -316,6 +328,13 @@ class QuadletContainer(QuadletBase):
             return _validate_unit_name_list(values, field_name=f"QuadletContainer.{info.field_name}")
         for value in values:
             _validate_unit_text(value, field_name=f"QuadletContainer.{info.field_name}")
+            if info.field_name == "podman_args" and any(
+                token.split("=", 1)[0]
+                in {"--cap-add", "--privileged", "--security-opt", "--read-only", "--read-only-tmpfs"}
+                for token in shlex.split(value)
+            ):
+                msg = "Raw Podman arguments cannot override container capability, privilege or root-filesystem policy"
+                raise ValueError(msg)
             if info.field_name == "devices" and any(char.isspace() for char in value):
                 msg = "QuadletContainer.devices entries cannot contain whitespace"
                 raise ValueError(msg)

@@ -73,6 +73,11 @@ required if one reusable promise must actively coordinate multiple Composition I
 
 ## Repair and evolution
 
+The [reference SDLC](weaver/sdlc.md) gives candidate authors a repeatable method from intent and
+evidence through construction, verification and documented disposition. The wider
+[Ouroboros](weaver/ouroboros.md) map returns consequences to evaluation and separately admitted
+correction, including teaching, training and later body generations.
+
 A candidate-author Agent may prepare a pinned update or propose a bounded correction in
 [Shadow](shadow/index.md). Each revision retains parentage and repeats every invalidated check; the
 author cannot certify its repair or widen its budget.

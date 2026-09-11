@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
@@ -45,6 +46,9 @@ from lychd.interface.web.openapi import StrictPydanticSchemaPlugin, build_openap
 
 if TYPE_CHECKING:
     from lychd.domain.cortex.priority import Priority
+
+TEST_ACCESS_PASSWORD = "synthetic-local-access-password-0123456789"  # noqa: S105
+TEST_AUTHORIZATION = "Basic " + base64.b64encode(f"magus:{TEST_ACCESS_PASSWORD}".encode()).decode()
 
 SAMPLE_STATUSES: list[dict[str, Any]] = [
     {
@@ -229,8 +233,9 @@ class AsgiClient:
     directly and does not introduce a second web contract.
     """
 
-    def __init__(self, app: Litestar) -> None:
+    def __init__(self, app: Litestar, *, headers: dict[str, str] | None = None) -> None:
         self.app = app
+        self.headers = headers or {}
         self._loop = asyncio.new_event_loop()
 
     def request(
@@ -246,6 +251,7 @@ class AsgiClient:
             async with httpx.AsyncClient(
                 transport=transport,
                 base_url="http://testserver.local",
+                headers=self.headers,
                 follow_redirects=follow_redirects,
             ) as client:
                 return await client.request(method, url, **kwargs)
@@ -315,7 +321,7 @@ def altar_client(fake_services: SimpleNamespace) -> AsgiClient:
             OrbController,
         ],
         dependencies=web_dependencies,
-        middleware=[sigil_auth_middleware()],  # the Ward: connection.user = settings Sigil (scopes ["*"])
+        middleware=[sigil_auth_middleware(access_password=TEST_ACCESS_PASSWORD)],
         openapi_config=build_openapi_config(title="LychD Test", version="test", use_handler_docstrings=True),
         plugins=[StrictPydanticSchemaPlugin()],
         state=State(
@@ -328,7 +334,7 @@ def altar_client(fake_services: SimpleNamespace) -> AsgiClient:
             },
         ),
     )
-    return AsgiClient(app)
+    return AsgiClient(app, headers={"authorization": TEST_AUTHORIZATION})
 
 
 @pytest.fixture

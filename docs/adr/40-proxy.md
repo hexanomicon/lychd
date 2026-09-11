@@ -43,6 +43,15 @@ and exact declared Gateway identity and backend flow. It does not trust the Gate
 its own rules. Same-host, Home, and Remote are selected by exact deployment profiles, never an
 `ingress`, `gateway`, `rpi`, or `vps` toggle.
 
+TLS termination gives Veil custody of the admitted route's plaintext, including headers and
+credentials carried inside that transport. A second encrypted hop to Core does not remove that
+custody. The route contract therefore binds permitted content classes, the authentication proof
+visible at the edge, request/response logging and retention, and compromise consequences. A
+Gateway forbidden private Context cannot terminate a route carrying it: that route stays closed
+unless a separately accepted protocol keeps the protected payload and reusable application
+authority encrypted end to end to Core. Edge signatures alone cannot independently authenticate
+an end user after that edge is compromised.
+
 ## Reach deployment edges
 
 The [Reach deployment matrix](../compositions/reach/deployments/index.md) selects exact routes, not

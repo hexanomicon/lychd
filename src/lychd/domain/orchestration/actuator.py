@@ -37,7 +37,7 @@ class RuntimeActuationRestoredError(RuntimeError):
 
 
 class RuntimeCancellationNoEffectError(asyncio.CancelledError):
-    """Caller cancellation whose delivery was durably retracted before host claim."""
+    """Cancellation proved before activation or after durable pre-claim withdrawal."""
 
 
 class RuntimeCancellationRestoredError(asyncio.CancelledError):

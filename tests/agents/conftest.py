@@ -1,23 +1,14 @@
-"""Offline test floor for the agent/graph suite (A5 §10).
-
-The module-level side effect below forbids every real model request across the
-whole suite: no test may call out to a soulstone. All agent behaviour is driven
-by `TestModel`/`FunctionModel` under this process-wide request guard.
-"""
+"""Agent/graph fixtures under the repository-wide offline model-request guard."""
 
 from __future__ import annotations
 
-import pydantic_ai.models
 import pytest
 
-# NO test in this package may reach a real model — enforced process-wide.
-pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
-
-from lychd.agents.services import WorkflowServices, default_sigil  # noqa: E402
-from lychd.agents.the_first_one import default_forge  # noqa: E402
-from lychd.domain.cortex.context import ContextOrchestrator  # noqa: E402
-from lychd.domain.web.fragments import build_fragment_registry  # noqa: E402
-from tests.agents.fakes import (  # noqa: E402
+from lychd.agents.services import WorkflowServices, default_sigil
+from lychd.agents.the_first_one import default_forge
+from lychd.domain.cortex.context import ContextOrchestrator
+from lychd.domain.web.fragments import build_fragment_registry
+from tests.agents.fakes import (
     FakeConsents,
     FakeDispatcher,
     FakeEvents,

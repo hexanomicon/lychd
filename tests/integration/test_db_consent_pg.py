@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from testcontainers.community.postgres import PostgresContainer
 
 from lychd.db.models import CodexPreauthorization, Consent, Run, Session
+from lychd.db.sessions import DbBridgeSessionStore
 from lychd.domain.codex.ledger import CodexConsentLedger
 from lychd.domain.codex.runes import CodexPreauthRune
 from lychd.domain.codex.schemas import CENSORED_VALUE
@@ -597,15 +598,15 @@ async def test_consume_update_rechecks_rune_presence_after_candidate_selection(
 
     async with pg_factory() as session:
         service = PreauthService(session=session)
-        original_list = service.list
+        original_get_many = service.get_many
 
-        async def list_then_remove_rune(*filters: Any, **kwargs: Any) -> list[CodexPreauthorization]:
-            rows = cast("list[CodexPreauthorization]", await original_list(*filters, **kwargs))
+        async def get_many_then_remove_rune(*filters: Any, **kwargs: Any) -> list[CodexPreauthorization]:
+            rows = cast("list[CodexPreauthorization]", await original_get_many(*filters, **kwargs))
             async with pg_factory() as removal_session:
                 await PreauthService(session=removal_session).sync_from_runes([])
             return rows
 
-        monkeypatch.setattr(service, "list", list_then_remove_rune)
+        monkeypatch.setattr(service, "get_many", get_many_then_remove_rune)
         matched = await service.match_and_consume(
             sigil=Sigil(name="magus", scopes=frozenset({"*"})),
             tool_name="request_coven_swap",
@@ -786,3 +787,96 @@ async def test_latest_for_run_uses_newest_deterministic_order(
     latest = await CodexConsentLedger(session_factory=pg_factory).latest_for_run(run_id)
     assert latest is not None
     assert (latest.id, latest.tool_name) == (str(second_id), "second")
+
+
+@pytest.mark.asyncio
+async def test_archive_metadata_keyset_pages_do_not_hydrate_retained_session_payloads(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """The production SQL page keeps UUID ties and exact timestamp precision."""
+    instant = datetime(2026, 9, 8, 12, 30, 0, 123456, tzinfo=UTC)
+    async with pg_factory() as session:
+        session.add_all(
+            Session(
+                id=UUID(int=index),
+                channel="bridge",
+                title=f"Session {index}",
+                sigil_name="magus",
+                created_at=instant,
+                # A full SessionRecord conversion would reject these unrelated
+                # historical turns; identity navigation must not deserialize them.
+                meta={"turns": [{"invalid_retained_turn": True}]},
+                message_history=[{"retained": "x" * 4096}],
+            )
+            for index in range(1, 54)
+        )
+        await session.commit()
+    store = DbBridgeSessionStore(pg_factory, sigil_name="magus")
+
+    first = await store.list_session_summaries()
+    assert len(first) == 51
+    boundary = first[49]
+    second = await store.list_session_summaries(before=(boundary.created_at, boundary.id))
+
+    assert [item.id for item in first[:50]] + [item.id for item in second] == [
+        str(UUID(int=index)) for index in range(53, 0, -1)
+    ]
+    assert all(item.created_at == instant for item in [*first, *second])
+
+
+@pytest.mark.asyncio
+async def test_archive_pending_counts_group_only_requested_sessions_in_postgres(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Several Runs aggregate to one session, excluding settled and foreign rows."""
+    session_ids = [UUID(int=index) for index in range(1, 4)]
+    run_owners = [session_ids[0], session_ids[0], session_ids[1], session_ids[2], None]
+    async with pg_factory() as session:
+        session.add_all(Session(id=session_id, sigil_name="magus") for session_id in session_ids)
+        await session.flush()
+        session.add_all(
+            Run(
+                id=UUID(int=100 + index),
+                session_id=owner,
+                workflow_name="bridge_chat",
+                source="bridge",
+                status="queued",
+                priority=70,
+                sigil_name="magus",
+                queue_name="runs",
+            )
+            for index, owner in enumerate(run_owners)
+        )
+        await session.flush()
+        session.add_all(
+            Consent(
+                run_id=UUID(int=100 + index),
+                tool_name="archive-count",
+                tool_call_id=f"pending-{index}",
+                status="pending",
+            )
+            for index in range(len(run_owners))
+        )
+        session.add(
+            Consent(
+                run_id=UUID(int=100),
+                tool_name="archive-count",
+                tool_call_id="settled",
+                status="denied",
+                decided_by="magus",
+                decided_at=datetime.now(UTC),
+            )
+        )
+        await session.commit()
+    ledger = CodexConsentLedger(session_factory=pg_factory)
+
+    async def run_session_id(_run_id: str) -> str | None:
+        pytest.fail("Grouped DB query must not hydrate Runs")
+
+    counts = await ledger.pending_counts_for_sessions(
+        frozenset(map(str, session_ids[:2])), run_session_id=run_session_id
+    )
+
+    assert counts == {str(session_ids[0]): 2, str(session_ids[1]): 1}
+    assert await ledger.pending_count() == 5
+    assert await ledger.pending_counts_for_sessions(frozenset(), run_session_id=run_session_id) == {}

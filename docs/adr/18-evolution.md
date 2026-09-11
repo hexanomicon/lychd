@@ -37,7 +37,8 @@ icon: material/refresh
 
 This update law applies [Creation](16-creation.md) and [Packaging](17-packaging.md) to a Core update.
 [Illumination](../divination/transcendence/illumination.md#i-the-ouroboros) keeps the wider meaning
-of Ouroboros. The update passage is:
+of Ouroboros; the [operating map](../sepulcher/extensions/weaver/ouroboros.md) connects that return
+to SDLC, evaluation, training and separately owned activation. The update passage is:
 
 `Update Request → Inactive Candidate → Verification → Promotion Request → owned effects`
 

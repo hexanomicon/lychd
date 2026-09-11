@@ -107,11 +107,10 @@ class EventProjector:
         return {"kind": "genui.unknown", "schema_version": 1, "props": {}, "actions": []}
 
     async def _project_done(self, run_id: str, status: str) -> dict[str, Any]:
-        from lychd.domain.web.schemas import BridgeTurn
-
+        """Project terminal status without inventing an absent retained answer."""
         turn = await self._sessions.settled_turn_for_run(run_id)
         if turn is None:
-            turn = BridgeTurn(role="agent", content="The turn has settled.", run_id=run_id, state="settled")
+            return {"status": status, "turn": None}
         return {
             "status": status,
             "turn": {

@@ -52,16 +52,21 @@ It requests data through its supervisor and reasoning through the Vessel's typed
 not a more capable Tomb; it is its own delegated-agent boundary.
 
 Rootless Podman maps the Pod with `UserNS=keep-id`; application units select `User=%U`, while the
-Phylactery keeps the PostgreSQL image identity and a `:U,Z` data bind. This maps assigned paths,
+Phylactery explicitly selects `User=postgres` and a `:U,Z` data bind. This maps assigned paths,
 not cross-service authority. Exact mounts, service credentials, and network policy remain the
 boundary: lower-trust units receive no writable authoritative checkout, no whole Crypt, no
 browser/keychain/home state, and no Podman socket. A host Reactor is a host boundary, never a
 container capability.
 
 Joined containers share localhost and routes, so a mount does not protect a reachable service.
-Generated ports bind loopback, which is not authentication. Current local-only bootstrap authority
-does not authenticate a hostile browser, peer, proxy, tunnel, or public endpoint; non-loopback
-operation is refused until its remote identity and front-door contract exists.
+Generated ports bind loopback, which is not authentication. The local operator must also present
+a dedicated high-entropy HTTP Basic credential before receiving the fixed local Sigil. The
+credential belongs only to the Vessel and the host operator; shared Pod membership grants no
+access. Unsafe requests with a foreign Origin are refused even when their CSRF token is valid.
+This local credential does not establish remote identity, object isolation, or effect-time
+revocation. Dedicated-profile browser operation remains subject to its acceptance evidence;
+peer, proxy, tunnel, and non-loopback operation remain refused. The raw SAQ administrative UI
+is disabled: its traceback and broker-mutation surfaces are not admitted operator projections.
 
 Secrets remain references in Codex and Runes, are emitted only for a unit that needs them, and are
 absent from lower-trust child environments, receipts, errors, and command lines. A Tomb supervisor
@@ -182,6 +187,14 @@ expired Cut fails closed. Unknown recipient, retention, training, subprocessor, 
 also refuse whenever policy depends on them. Current local-only source has no hostile-network
 authorization and does not deliver this general egress gate; [State of
 Work](../state-of-the-work.md#context-privatization-and-portal-egress) owns that boundary.
+
+Disclosure accounting must also cover related calls, retries, delegated child requests, and
+intermediaries across one purpose: several individually sanitized payloads can reveal a stable
+identity or reconstruct withheld context together. Per-call censorship is not an anonymity
+guarantee. A future gate must enforce cumulative policy before transmission and retain bounded
+local evidence sufficient to detect reuse without exporting a correlation identifier. Semantic
+re-identification resistance needs adversarial evaluation for the stated observer and workload;
+no general proof or implemented cumulative-disclosure gate is claimed here.
 
 ### Return Quarantine {#7-return-quarantine}
 

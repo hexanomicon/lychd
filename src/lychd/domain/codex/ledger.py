@@ -23,6 +23,8 @@ from uuid import UUID, uuid4
 from lychd.domain.codex.schemas import ConsentDecision, ConsentStatusValue, ConsentView, censor, constraints_admit
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
     from lychd.domain.codex.runes import CodexPreauthRune
@@ -66,6 +68,12 @@ class ConsentLedger(Protocol):
 
     async def pending_views_for_runs(self, run_ids: frozenset[str]) -> list[ConsentView]:
         """Return pending consent cards owned by the named Runs."""
+        ...
+
+    async def pending_counts_for_sessions(
+        self, session_ids: frozenset[str], *, run_session_id: Callable[[str], Awaitable[str | None]]
+    ) -> dict[str, int]:
+        """Count pending consent by session without loading archive Runs or payloads."""
         ...
 
     async def latest_for_run(self, run_id: str) -> ConsentView | None:
@@ -210,6 +218,23 @@ class InMemoryConsentLedger:
         )
         return [self._view(row) for row in rows]
 
+    async def pending_counts_for_sessions(
+        self, session_ids: frozenset[str], *, run_session_id: Callable[[str], Awaitable[str | None]]
+    ) -> dict[str, int]:
+        """Resolve only pending Run identities against the in-memory authority."""
+        counts: dict[str, int] = {}
+        if not session_ids:
+            return counts
+        pending_runs: dict[str, int] = {}
+        for row in self._rows.values():
+            if row.status == "pending":
+                pending_runs[row.run_id] = pending_runs.get(row.run_id, 0) + 1
+        for run_id, count in pending_runs.items():
+            session_id = await run_session_id(run_id)
+            if session_id is not None and session_id in session_ids:
+                counts[session_id] = counts.get(session_id, 0) + count
+        return counts
+
     async def latest_for_run(self, run_id: str) -> ConsentView | None:
         """Return the newest consent row for a run, or None."""
         rows = (r for r in self._rows.values() if r.run_id == run_id)
@@ -335,6 +360,33 @@ class CodexConsentLedger:
         async with self._session_factory() as session:
             return await ConsentService(session=session).pending_count()
 
+    async def pending_counts_for_sessions(
+        self, session_ids: frozenset[str], *, run_session_id: Callable[[str], Awaitable[str | None]]
+    ) -> dict[str, int]:
+        """Group pending counts in PostgreSQL without materializing Run/history rows."""
+        _ = run_session_id  # The durable adapter joins its co-located authoritative Run table.
+        from sqlalchemy import func, select
+
+        from lychd.db.models import Consent, Run
+
+        session_uuids: list[UUID] = []
+        for session_id in session_ids:
+            try:
+                session_uuids.append(UUID(session_id))
+            except ValueError:
+                continue
+        if not session_uuids:
+            return {}
+        statement = (
+            select(Run.session_id, func.count(Consent.id))
+            .join(Consent, Consent.run_id == Run.id)
+            .where(Run.session_id.in_(session_uuids), Consent.status == "pending")
+            .group_by(Run.session_id)
+        )
+        async with self._session_factory() as session:
+            rows = (await session.execute(statement)).all()
+        return {str(session_id): count for session_id, count in rows}
+
     async def pending_views_for_runs(self, run_ids: frozenset[str]) -> list[ConsentView]:
         """Return pending consent cards for named Runs, oldest-first."""
         from lychd.db.models import Consent
@@ -350,7 +402,7 @@ class CodexConsentLedger:
             return []
         async with self._session_factory() as session:
             svc = ConsentService(session=session)
-            rows = await svc.list(
+            rows = await svc.get_many(
                 Consent.status == "pending",
                 Consent.run_id.in_(run_uuids),
                 order_by=[(Consent.created_at, False), (Consent.id, False)],

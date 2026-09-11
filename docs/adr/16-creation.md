@@ -52,6 +52,37 @@ Creation currently proceeds through ordinary operator-controlled development and
 
 Creation has no implemented contract or state machine. The immutable request, candidate, custody, verification, compatibility, review, and promotion records described below are accepted design; naming them implies no workspace, executor, evidence-store, or promotion-effect implementation. There is no autonomous repair loop, Tomb executor, verified package promotion, compatibility gate, rollback controller, or self-extension runtime. [State of Work](../state-of-the-work.md#smith-forge-promotion) owns delivery status.
 
+### The agentic Graph of Creation
+
+The [Tree of Life](../lexicon/tree-of-life.md) supplies a correspondence for differentiated powers
+bringing purpose into form. LychD's **agentic Graph of Creation** is the engineering interpretation:
+admitted intent and present evidence become alternatives, discriminated decisions, a verified
+candidate, and an attributable owner effect. The sefirot do not prescribe ten Agents, replace the
+four coequal offices of the inner instrument, or supply executable Graph contracts.
+
+The reference [SDLC](../sepulcher/extensions/weaver/sdlc.md) applies bounded exploration,
+independent evidence-sufficiency judgment, and Crucible first to direction and again to
+construction where the decision warrants it. Its operation remains subject to the candidate,
+verification, and promotion law below. An application must publish its exact Pattern before this
+method becomes a LychD casting; the diagram alone registers no Pattern or coordinator.
+
+[Ouroboros](../sepulcher/extensions/weaver/ouroboros.md) maps the return from outcomes and human
+correction through evaluation to separately admitted memory, procedural change, or training.
+Autopoiesis names the wider horizon of recurrent self-formation, not an exception to effect
+ownership. Riddle findings cannot mutate a candidate or score; Soulforge cannot promote its own
+weights; a changed body follows Packaging and Evolution. Each successor retains lineage and its
+own admission. The dependency map does not combine those owners into one hidden Run or make the
+whole recurrent process a DAG. Immutable records of its unfolded occurrences may form a causal DAG.
+
+### External workflow research
+
+An independently operated workflow forge may supply candidate SDLC contracts and evaluation cases
+for a future local implementation or explicit service integration. Its own owner retains scope and
+delivery evidence; reuse does not require migration or retirement of that external project. Each
+admitted reuse must separately prove this record's admission, candidate, verification and promotion
+boundaries. No graph, trace export or favorable benchmark imports runtime behavior or grants LychD
+effects by itself.
+
 ### Admission and candidate identity
 
 An immutable **Creation Request** names the principal and intent; exact base revision, admitted

@@ -13,6 +13,7 @@ import pytest
 from lychd.agents.router import Intent
 from lychd.agents.workflows import builtin_workflow_registry
 from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT
+from lychd.domain.cortex.claims import RunClaimCoordinator
 from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine, enqueue_run
 from lychd.domain.cortex.events import InProcessEventBus, RunEventKind
 from lychd.domain.cortex.ledger import DelegateAdmissionEvidence, InMemoryRunLedger
@@ -387,7 +388,7 @@ async def test_commit_delegate_park_sets_wait_status_without_terminal_event() ->
     )
 
     result = await _commit_delegate_park(
-        cast("RunSubstrate", SimpleNamespace(delegates=None, queues={})),
+        cast("RunSubstrate", SimpleNamespace(claims=RunClaimCoordinator(), delegates=None, queues={})),
         ledger,
         bus.emitter("run-4"),
         "run-4",
@@ -422,7 +423,7 @@ async def test_post_park_delegate_probe_failure_preserves_waiting_authority() ->
     result = await _commit_delegate_park(
         cast(
             "RunSubstrate",
-            SimpleNamespace(delegates=SimpleNamespace(refresh=refresh), queues={}),
+            SimpleNamespace(claims=RunClaimCoordinator(), delegates=SimpleNamespace(refresh=refresh), queues={}),
         ),
         ledger,
         bus.emitter("run-probe-failure"),
@@ -455,7 +456,7 @@ async def test_delegate_park_rejects_job_owned_by_another_run() -> None:
 
     with pytest.raises(ValueError, match="belongs to Run 'run-foreign'"):
         await _commit_delegate_park(
-            cast("RunSubstrate", SimpleNamespace(delegates=None, queues={})),
+            cast("RunSubstrate", SimpleNamespace(claims=RunClaimCoordinator(), delegates=None, queues={})),
             ledger,
             bus.emitter("run-owner"),
             "run-owner",
@@ -469,7 +470,13 @@ async def test_delegate_park_rejects_job_owned_by_another_run() -> None:
 
 
 @pytest.mark.asyncio
-async def test_worker_cancellation_during_delegate_probe_preserves_waiting_authority() -> None:
+@pytest.mark.parametrize("deadline", [False, True], ids=["cancelled", "deadline"])
+async def test_interrupted_delegate_probe_preserves_waiting_authority(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    deadline: bool,
+) -> None:
+    monkeypatch.setattr("lychd.ghouls.runs.DELEGATE_PROBE_TIMEOUT_S", 0.01 if deadline else 1)
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
     bus = InProcessEventBus(ledger=ledger)
     await _seed_running(ledger, "run-probe-cancel")
@@ -490,6 +497,7 @@ async def test_worker_cancellation_during_delegate_probe_preserves_waiting_autho
             cast(
                 "RunSubstrate",
                 SimpleNamespace(
+                    claims=RunClaimCoordinator(),
                     delegates=SimpleNamespace(refresh=blocked_refresh),
                     queues={},
                 ),
@@ -502,8 +510,9 @@ async def test_worker_cancellation_during_delegate_probe_preserves_waiting_autho
     )
     await entered.wait()
 
-    task.cancel()
-    result = await task
+    if not deadline:
+        task.cancel()
+    result = await asyncio.wait_for(task, timeout=1)
 
     run = await ledger.get("run-probe-cancel")
     assert run is not None
@@ -546,7 +555,7 @@ async def test_terminal_result_before_park_status_is_rechecked_and_resumed() -> 
     result = await _commit_delegate_park(
         cast(
             "RunSubstrate",
-            SimpleNamespace(delegates=coordinator, queues={"runs": queue}),
+            SimpleNamespace(claims=RunClaimCoordinator(), delegates=coordinator, queues={"runs": queue}),
         ),
         ledger,
         bus.emitter("run-5"),
@@ -602,3 +611,57 @@ async def test_old_terminal_job_cannot_resume_a_newer_delegate_wait_for_same_run
     assert run.status is RunStatus.AWAITING_DELEGATE
     assert run.delegated_job_id == second.job_id
     assert len(queue.enqueued) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("committed", [False, True])
+async def test_delegate_admission_timeout_does_not_starve_later_owner(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    committed: bool,
+) -> None:
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    bus = InProcessEventBus(ledger=ledger)
+    queue = _Queue()
+    coordinator = DelegatedAgentCoordinator(runtimes={"fake": _Runtime()}, store=InMemoryDelegatedAgentJobStore())
+    for run_id in ("blocked-owner", "later-owner"):
+        await _seed_running(ledger, run_id)
+        ref = await _delegated_job(coordinator, run_id=run_id)
+        await ledger.park_delegate(run_id, ref.job_id)
+        await coordinator.adopt(
+            ref.job_id, DelegatedAgentResult(job_id=ref.job_id, status=DelegatedAgentJobStatus.SUCCEEDED)
+        )
+    engine = _engine(ledger=ledger, bus=bus, queue=queue, coordinator=coordinator)
+    original_admit = ledger.try_admit_delegate
+    unblock = asyncio.Event()
+
+    async def admit(run_id: str, *, job_id: str, evidence: DelegateAdmissionEvidence | None = None) -> int | None:
+        if run_id == "blocked-owner" and not committed:
+            await unblock.wait()
+        seq = await original_admit(run_id, job_id=job_id, evidence=evidence)
+        if run_id == "blocked-owner" and committed:
+            await unblock.wait()
+        return seq
+
+    monkeypatch.setattr(ledger, "try_admit_delegate", admit)
+    monkeypatch.setattr("lychd.ghouls.runs.DELEGATE_PROBE_TIMEOUT_S", 0.01)
+    task = asyncio.create_task(_reconcile_delegate_page(engine, after=None))
+    try:
+        done, _pending = await asyncio.wait({task}, timeout=0.3)
+        assert task in done, "one blocked admission must not defeat the per-owner deadline"
+        result, _cursor = await task
+        assert result["probe_errors"] == 1
+        assert result["count"] == 1
+        blocked = await ledger.get("blocked-owner")
+        assert blocked is not None
+        assert blocked.status is (RunStatus.QUEUED if committed else RunStatus.AWAITING_DELEGATE)
+        if committed:
+            delivery = await ledger.get_delivery("blocked-owner", enqueue_seq=1)
+            assert delivery is not None
+            assert delivery.state is RunDeliveryState.PENDING
+        later = await ledger.get("later-owner")
+        assert later is not None
+        assert later.status is RunStatus.QUEUED
+    finally:
+        unblock.set()
+        await task

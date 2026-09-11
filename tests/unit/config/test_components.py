@@ -12,6 +12,7 @@ from lychd.interface.web.openapi import build_openapi_config
 
 def _settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.setenv("LYCHD_DB_PASSWORD", "test-db-password")
+    monkeypatch.setenv("LYCHD_RUNTIME_DB_PASSWORD", "test-runtime-db-password")
     return Settings()
 
 
@@ -29,7 +30,7 @@ def test_topology_a_keeps_both_workers_on_the_web_loop(monkeypatch: pytest.Monke
     assert config.use_server_lifespan is False
 
 
-def test_saq_admin_ui_is_optional_and_uses_the_vessel_http_server(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_raw_saq_admin_ui_is_refused_without_disabling_workers(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = _settings(monkeypatch)
     config = build_saq_config(settings)
     assert config.web_enabled is False
@@ -37,9 +38,8 @@ def test_saq_admin_ui_is_optional_and_uses_the_vessel_http_server(monkeypatch: p
 
     settings.server.jobs.admin_ui_enabled = True
     settings.server.jobs.admin_ui_path = "/jobs"
-    config = build_saq_config(settings)
-    assert config.web_enabled is True
-    assert config.web_path == "/jobs"
+    with pytest.raises(ValueError, match="raw SAQ administrative UI is disabled"):
+        build_saq_config(settings)
 
 
 def test_openapi_runtime_is_json_only_and_has_no_remote_ui_assets() -> None:

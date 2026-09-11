@@ -83,3 +83,16 @@ async def test_assembly_shares_selected_registry_without_probing_capabilities(mo
         assert services.substrate.workflows is services.workflows
     finally:
         await services.aclose()
+
+
+@pytest.mark.parametrize("field", ["run_id", "session_id", "prompt", "priority", "capability_key"])
+def test_legacy_bridge_checkpoint_must_match_admitted_run(field: str) -> None:
+    intent = Intent(session_id="session-1", run_id="run-1", prompt="hello", priority=70)
+    state = BRIDGE_CHAT.make_state(intent)
+    assert BRIDGE_CHAT.validate_state is not None
+    BRIDGE_CHAT.validate_state(intent, state)
+
+    changed = state.model_copy(update={field: 20 if field == "priority" else "changed"})
+    restored = type(state).model_validate_json(changed.model_dump_json())
+    with pytest.raises(ValueError, match="checkpoint does not match its admitted Run"):
+        BRIDGE_CHAT.validate_state(intent, restored)

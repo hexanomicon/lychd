@@ -96,6 +96,14 @@ Soulstone declarations compile from Runes and selected adapters; probes update s
 explicitly open runtime facts. An unknown local runtime stays passive unless an explicit adapter
 and dialect profile give it semantics. "OpenAI-compatible" without a named, proved dialect gives
 it none. Generic command planning synthesizes no Connector, model catalogue, or readiness.
+The supported llama.cpp profile disables engine idle sleep: healthy fixed-runtime inventory can
+survive sleep, and router `autoload=false` does not prevent a sleeping child from waking during
+inference. Managed argument vectors begin with `--sleep-idle-seconds -1`; `extra_args` cannot
+contain another sleep control. Passthrough vectors must begin with that exact pair, either at
+the start for an image entrypoint or immediately after a non-option executable token. Later sleep
+controls, underscore aliases, and equals spellings are refused. Admitted passthrough bytes remain
+unchanged. Arbitrary wrappers that cannot honor this flag are outside this profile. This is command admission,
+not attestation of a running engine, external mutation, or a shared endpoint's actual configuration.
 Unregistered OpenAI-shaped aliases fail Soulstone capability-coverage validation before Bind or
 registry publication. A Portal creates routes only for capabilities declared in its Rune; zero declarations
 mean zero routes. Portal routes are non-dynamic and non-dedicated.
@@ -104,15 +112,15 @@ private transmission. That unprobed route is projected as `UNKNOWN` and unverifi
 as `WARM`, so it cannot receive a grant.
 
 OpenAI-shaped transport construction binds only the declared endpoint and API credential. It
-does not retain ambient SDK organization, project, or webhook configuration or send those account
-headers to a local engine or unrelated provider.
+does not retain ambient SDK organization, project, webhook, admin credential, or custom-header
+configuration. Environment headers cannot override the declared credential or reach another endpoint.
 
 ### Runtime hydration
 
 Soulstone adapter ownership is the adapter's exact declared runtime key; registration cannot claim
 another adapter's runtime. Registry hydration is staged and rejects a runtime unless it retains the
 exact input Rune and its name equals the Rune name. Every synthesized specification must then
-name that Animator, the Rune's canonical runtime and source kind, and the canonical
+name that Animator, the Rune's canonical runtime, source kind and concurrency intent, and the canonical
 `{animator}:{family}:{model_id}` key before any snapshot is published.
 An adapter constructs its runtime catalogue once per hydration. Capability synthesis consumes
 that runtime's captured model summaries and generation defaults instead of re-reading a preset or
@@ -138,13 +146,14 @@ selected only by the exact Portal definition's typed strategy.
 ### Candidate selection
 
 Designed resolution receives `CapabilityDemand@1`, run and station-attempt identity, deadline, and
-priority. It removes ineligible and `ERROR` candidates and orders the rest deterministically under
+priority. It removes ineligible declarations and orders the rest deterministically under
 an admitted selection policy. This is readiness matching, not a judgment of quality, price,
 privacy, or correctness.
 
 Current `lease_grant` retains its narrower family/model/modalities/tools
-signature, an optional exact `capability_key` constraint, and deterministic open/active/warm/name/key
-order. The exact key intersects every other demand constraint; it cannot bypass readiness, drain
+signature, an optional exact `capability_key` constraint, and deterministic
+open/non-error/active/warm/name/key order. Cached observations rank eligible routes; they are not
+permanent denial. The exact key intersects every other demand constraint; it cannot bypass readiness, drain
 admission, or Portal quarantine. A model alias alone still denotes an eligible pool. An unknown,
 incompatible, or unavailable exact key never substitutes another candidate.
 
@@ -152,8 +161,10 @@ incompatible, or unavailable exact key never substitutes another candidate.
 
 An invalidated or absent cached observation ranks as `UNKNOWN`, so the selected
 declaration can be freshly observed on a later request. It never recovers cached warmth.
-An explicitly observed `ERROR` remains excluded until a separate successful observation
-changes it; v1 does not retry another candidate after its chosen route fails.
+An eligible cached `ERROR` ranks behind other candidates with the same admission state and is
+freshly observed when selected. Recovery therefore needs no unrelated transition or polling
+service. A fresh `ERROR` still refuses the request without grant or hardware transition; v1 does
+not retry another candidate after its chosen route fails.
 
 The chosen record is refreshed immediately before issue.
 Capability specifications, observations, generation profiles, and model summaries are frozen value
@@ -208,6 +219,9 @@ The registry creates the identity; Dispatcher registers it in the process-local 
 Its context manager releases on ordinary exit, body failure, and observation failure. Duplicate
 ids are defects. A closed drain gate or fresh dedicated `COLD`/`ACTIVATABLE`/`WARMING`
 observation turns into Stasis; unknown, erroneous, shared, or non-readiness issue failures do not.
+The same scope owns the model's provider context. It closes the provider before releasing the
+lease, including caller cancellation and refusal during admission; provider-profile adapters
+forward this lifecycle to their transport. A cached, model-free Agent owns no grant client.
 
 Drain truth is absence of ledger leases on an Animator. Admission closes before drain waits, so
 new work cannot enter an eviction set. A run waiting for its remedy owns no lease. `expires_at` is

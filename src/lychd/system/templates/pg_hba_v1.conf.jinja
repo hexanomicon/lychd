@@ -1,0 +1,5 @@
+# Private Unix sockets remain inside the trusted PostgreSQL container.
+local all all trust
+# Pod siblings and host loopback clients must present their own credential.
+host all all 0.0.0.0/0 scram-sha-256
+host all all ::0/0 scram-sha-256

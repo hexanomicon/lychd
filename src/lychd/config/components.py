@@ -17,7 +17,7 @@ from advanced_alchemy.extensions.litestar import (
 from litestar.config.allowed_hosts import AllowedHostsConfig
 from litestar.config.cors import CORSConfig
 from litestar.config.csrf import CSRFConfig
-from litestar_saq import QueueConfig, SAQConfig
+from litestar_saq import SAQConfig
 
 from lychd.config.constants import (
     DB_MIGRATION_VERSION_TABLE,
@@ -25,6 +25,7 @@ from lychd.config.constants import (
     PATH_MIGRATION_DIR,
 )
 from lychd.config.logging import build_log_config, should_render_as_json
+from lychd.db.authority import RuntimeQueueConfig
 from lychd.db.engine import get_engine
 from lychd.db.factory import database_saq_dsn
 
@@ -49,41 +50,35 @@ def build_db_config(settings: Settings) -> SQLAlchemyAsyncConfig:
 
 
 def build_saq_config(settings: Settings) -> SAQConfig:
-    """Build the Ghoul-queue (SAQ) config: the ``runs`` + ``rites`` queues (A4-U4).
+    """Build interactive Run and background Rite queues on the web event loop.
 
-    Topology A (v1, F1 hardening): ``separate_process=False`` on BOTH queues is the
-    ONE switch (litestar_saq 0.5.3) that routes each worker through
-    ``Worker.on_app_startup`` onto the *web* event loop instead of forking a
-    ``multiprocessing.Process``. The in-process ghoul (`perform_run`) and the SSE
-    handler therefore share one ``RunEventBus`` — a run's events reach its open
-    stream. ``use_server_lifespan=False`` completes the topology: it stops the SAQ
-    plugin's ``server_lifespan`` from spawning the (now no-op) forked worker
-    processes. No forked workers remain; the substrate is built ONCE in
-    ``altar_services_lifespan`` and read from the process memo by `perform_run`.
-
-    ``runs`` carries interactive graph runs; ``rites`` carries background rites.
-    Both register `perform_run` so rite-routed intents (`source="rite"` → ``rites``)
-    are claimable. Startup owns reconciliation because it supplies the boot cutoff;
-    it is deliberately not a broker-callable task.
+    ``separate_process=False`` keeps workers on the same loop as the SSE event bus.
+    ``use_server_lifespan=False`` disables the plugin's process-server lifespan;
+    application startup connects the queues and shutdown drains workers before
+    shared services close. Both queues execute ``perform_run``; startup owns
+    reconciliation because it supplies the boot cutoff.
     """
+    if settings.server.jobs.admin_ui_enabled:
+        msg = "The raw SAQ administrative UI is disabled; use the curated Altar queue projection."
+        raise ValueError(msg)
     return SAQConfig(
-        web_enabled=settings.server.jobs.admin_ui_enabled,
+        web_enabled=False,
         web_path=settings.server.jobs.admin_ui_path,
-        use_server_lifespan=False,  # Topology A: no forked workers — on_app_startup owns the loop.
+        use_server_lifespan=False,
         queue_configs=[
-            QueueConfig(
+            RuntimeQueueConfig(
                 name="runs",
-                dsn=database_saq_dsn(settings.server.database),
+                dsn=database_saq_dsn(settings.server.database, runtime=True),
                 tasks=["lychd.ghouls.runs.perform_run"],
                 concurrency=settings.server.jobs.interactive_concurrency,
-                separate_process=False,  # Topology A: run on the web loop, share the RunEventBus.
+                separate_process=False,
             ),
-            QueueConfig(
+            RuntimeQueueConfig(
                 name="rites",
-                dsn=database_saq_dsn(settings.server.database),
+                dsn=database_saq_dsn(settings.server.database, runtime=True),
                 tasks=["lychd.ghouls.runs.perform_run"],
                 concurrency=settings.server.jobs.background_concurrency,
-                separate_process=False,  # Topology A: run on the web loop, share the RunEventBus.
+                separate_process=False,
             ),
         ],
     )

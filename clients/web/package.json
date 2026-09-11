@@ -19,7 +19,7 @@
   "dependencies": {
     "mermaid": "11.17.2",
     "openapi-fetch": "0.17.0",
-    "zod": "4.5.4"
+    "zod": "4.6.1"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "3.0.10",

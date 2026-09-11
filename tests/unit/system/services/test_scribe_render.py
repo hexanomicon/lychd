@@ -73,8 +73,8 @@ def test_f2_control_plane_mounts_render_options_and_do_not_leak(tmp_path: Path) 
     assert "share/lychd/triggers" not in soulstone
 
 
-def test_container_user_is_scoped_to_vessel_and_soulstones(tmp_path: Path) -> None:
-    """Host identity is explicit for agent containers, never forced on Postgres."""
+def test_container_users_preserve_host_and_postgres_identities(tmp_path: Path) -> None:
+    """Keep-id preserves agent host identity; explicit postgres selects its image UID."""
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
     stone = _stone(name="hermes", quadlet={"image": "ollama/ollama"}, groups=[])
 
@@ -86,14 +86,15 @@ def test_container_user_is_scoped_to_vessel_and_soulstones(tmp_path: Path) -> No
 
     assert "User=%U" in vessel
     assert "User=%U" in soulstone
-    assert not any(line.startswith("User=") for line in phylactery)
+    assert "User=postgres" in phylactery
+    assert "User=%U" not in phylactery
     assert "UserNS=keep-id" in pod
     assert not any(line.startswith("UserNS=") for line in vessel)
     assert not any(line.startswith("UserNS=") for line in soulstone)
 
 
 def test_migration_gate_renders_as_required_oneshot(tmp_path: Path) -> None:
-    """Vessel starts only after the in-pod, secret-bearing Alembic gate succeeds."""
+    """Vessel starts only after the in-pod role, schema and runtime authority gate succeeds."""
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
 
     output_dir, _ = _inscribe(transmuter.transmute_all([]), tmp_path)
@@ -104,7 +105,9 @@ def test_migration_gate_renders_as_required_oneshot(tmp_path: Path) -> None:
     assert "After=lychd-migrate.service lychd-reactor.path" in vessel
     assert "Type=oneshot" in migrate
     assert "Requires=lychd-phylactery.service" in migrate
-    assert "Exec=lychd database --wait-seconds 60 upgrade head --no-prompt" in migrate
+    assert "Exec=lychd database-bootstrap --wait-seconds 60" in migrate
+    assert "ReadOnly=true" in migrate
+    assert "ReadOnly=true" in vessel
     assert "WantedBy=default.target" not in migrate
 
 

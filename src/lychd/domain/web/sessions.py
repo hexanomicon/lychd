@@ -10,6 +10,7 @@ import uuid
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from heapq import nlargest
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from lychd.domain.cortex.runs import RunHandle
@@ -17,7 +18,18 @@ from lychd.domain.cortex.runs import RunHandle
 if TYPE_CHECKING:
     from lychd.domain.web.schemas import BridgeTurn
 
-__all__ = ["BridgeSessionStore", "RunHandle", "SessionRecord", "SessionStorePort"]
+__all__ = ["BridgeSessionStore", "RunHandle", "SessionRecord", "SessionStorePort", "SessionSummaryRecord"]
+
+SESSION_PAGE_SIZE = 50
+
+
+@dataclass(frozen=True, slots=True)
+class SessionSummaryRecord:
+    """Archive identity without retained turns or model history."""
+
+    id: str
+    title: str
+    created_at: datetime
 
 
 def _new_id(prefix: str) -> str:
@@ -46,6 +58,10 @@ class SessionStorePort(Protocol):
     async def get_session(self, session_id: str) -> SessionRecord | None: ...
 
     async def list_sessions(self) -> list[SessionRecord]: ...
+
+    async def list_session_summaries(self, *, before: tuple[datetime, str] | None = None) -> list[SessionSummaryRecord]:
+        """Return at most one archive page plus its continuation sentinel."""
+        ...
 
     async def add_turn(self, session_id: str, turn: BridgeTurn) -> None: ...
 
@@ -92,6 +108,15 @@ class BridgeSessionStore:
         """Return sessions newest-first."""
         records = sorted(self._sessions.values(), key=lambda record: record.created_at, reverse=True)
         return deepcopy(records)
+
+    async def list_session_summaries(self, *, before: tuple[datetime, str] | None = None) -> list[SessionSummaryRecord]:
+        """Select a bounded newest-first page without copying conversation data."""
+        records = nlargest(
+            SESSION_PAGE_SIZE + 1,
+            (record for record in self._sessions.values() if before is None or (record.created_at, record.id) < before),
+            key=lambda record: (record.created_at, record.id),
+        )
+        return [SessionSummaryRecord(id=row.id, title=row.title, created_at=row.created_at) for row in records]
 
     async def add_turn(self, session_id: str, turn: BridgeTurn) -> None:
         """Append a visible turn, indexing its Run for O(1) lookup."""

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, cast
 
@@ -93,6 +95,48 @@ def test_exact_revision_returns_semantic_score(altar_client: TestClient[Litestar
     assert body["entry_node"] == "weave_context"
     assert {node["key"] for node in body["nodes"]} >= {"weave_context", "converse", "end"}
     assert {edge["relation"] for edge in body["edges"]} == {"permits"}
+
+
+def test_delegated_diagram_uses_every_declared_station_and_permission(
+    altar_client: TestClient[Litestar],
+) -> None:
+    body = altar_client.get("/api/v1/loom/delegated_rite/1").json()
+    source = body["mermaid_source"]
+    aliases = {
+        alias: bytes.fromhex(alias.removeprefix("station_")).decode()
+        for alias in re.findall(r'  state "[^"]*" as (station_[0-9a-f]+)', source)
+    }
+    edges = {
+        (aliases[left], aliases[right])
+        for left, right in re.findall(r"  (station_[0-9a-f]+) --> (station_[0-9a-f]+)", source)
+    }
+
+    assert set(aliases.values()) == {node["key"] for node in body["nodes"]}
+    assert edges == {(edge["source"], edge["target"]) for edge in body["edges"]}
+    assert ("dispatch_delegate", "dispatch_delegate") in edges
+    assert "[*]" not in source
+    assert altar_client.get("/api/v1/loom/source/patterns/delegated_rite/1").text == source
+
+
+def test_diagram_labels_cannot_add_mermaid_statements() -> None:
+    hostile = 'Quoted "label"\nstate "extra" as injected\n%%{init: {"securityLevel": "loose"}}%% <script>&#quot;'
+    labelled = replace(
+        DELEGATED_RITE,
+        title=hostile,
+        manifest=replace(
+            DELEGATED_RITE.manifest,
+            nodes=tuple(replace(node, label=hostile) for node in DELEGATED_RITE.manifest.nodes),
+        ),
+    )
+    source = labelled.mermaid()
+    assert source.startswith(f"---\ntitle: {json.dumps(hostile)}\n---\n")
+    diagram = source.split("\n---\n", maxsplit=1)[1]
+
+    assert diagram.count('\n  state "') == len(labelled.manifest.nodes)
+    assert '\nstate "extra"' not in diagram
+    assert "%%{init" not in diagram
+    assert "<script>" not in diagram
+    assert "#34;label#34;#10;state" in diagram
 
 
 def test_source_is_plaintext_mermaid(altar_client: TestClient[Litestar]) -> None:

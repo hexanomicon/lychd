@@ -1,0 +1,62 @@
+{
+  "version": "1.107.5",
+  "snapshots": [
+    {
+      "state": {
+        "data": "initial",
+        "warm": false,
+        "hardware_resume_budget": {
+          "total_resumes": 0,
+          "same_capability_key": null,
+          "same_capability_resumes": 0
+        }
+      },
+      "node": {
+        "node_id": "StasisAcrossDurableParkNode"
+      },
+      "start_ts": "2026-09-10T06:46:11.790115Z",
+      "duration": 1.3369999578571878e-05,
+      "status": "error",
+      "kind": "node",
+      "id": "StasisAcrossDurableParkNode:ee9c8c0bbbea45ef81fa5c4d2db94d6b"
+    },
+    {
+      "state": {
+        "data": "initial",
+        "warm": true,
+        "hardware_resume_budget": {
+          "total_resumes": 1,
+          "same_capability_key": "mock-anim:chat:mock-cap",
+          "same_capability_resumes": 1
+        }
+      },
+      "node": {
+        "node_id": "StasisAcrossDurableParkNode"
+      },
+      "start_ts": "2026-09-10T06:46:11.790984Z",
+      "duration": 5.4299998737405986e-06,
+      "status": "error",
+      "kind": "node",
+      "id": "StasisAcrossDurableParkNode:7155020d6f53422db0e63f396fd7e0fe"
+    },
+    {
+      "state": {
+        "data": "initial",
+        "warm": true,
+        "hardware_resume_budget": {
+          "total_resumes": 1,
+          "same_capability_key": "mock-anim:chat:mock-cap",
+          "same_capability_resumes": 1
+        }
+      },
+      "node": {
+        "node_id": "StasisAcrossDurableParkNode"
+      },
+      "start_ts": null,
+      "duration": null,
+      "status": "created",
+      "kind": "node",
+      "id": "StasisAcrossDurableParkNode:cb04e494154e484c994975f910a2aa35"
+    }
+  ]
+}

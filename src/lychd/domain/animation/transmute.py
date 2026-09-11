@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final, Protocol
 
 from lychd.domain.animation.conflicts import build_conflict_topology
+from lychd.domain.animation.mounts import validate_soulstone_data_mount
 from lychd.domain.animation.secret_isolation import validate_secret_declarations
 from lychd.extensions.base import ExtensionStore
 from lychd.system.constants import (
@@ -400,7 +401,7 @@ class Transmuter:
     ) -> None:
         """Validate declarations, then confine adapter-mounted secrets to their owners."""
         privileged, control_plane_owners = validate_secret_declarations(
-            core_secret_names=(settings.server.web.secret_key_secret, settings.server.database.password_secret),
+            core_secret_names=settings.server.privileged_secret_names,
             soulstones=soulstones,
             portals=portals,
         )
@@ -445,12 +446,16 @@ class Transmuter:
         migrator_mounts = [MountData.from_str(mount) for mount in self._migrator_mount_strings()]
         app_secret_name = settings.server.web.secret_key_secret
         db_secret_name = settings.server.database.password_secret
+        runtime_db_secret = settings.server.database.runtime_password_secret
+        access_secret = settings.server.web.access_password_secret
         portal_secret_names = [portal.api_key_secret_name for portal in portals if portal.api_key_secret_name]
         control_plane_secret_names = [
             secret_name for stone in soulstones for secret_name in stone.control_plane_secret_names
         ]
         vessel_secrets = list(
-            dict.fromkeys([app_secret_name, db_secret_name, *portal_secret_names, *control_plane_secret_names])
+            dict.fromkeys(
+                [app_secret_name, access_secret, runtime_db_secret, *portal_secret_names, *control_plane_secret_names]
+            )
         )
         reactor_dependencies = (
             ["lychd-reactor.path"] if settings.orchestration.switching.actuator == "host-reactor" else []
@@ -463,13 +468,15 @@ class Transmuter:
             container_name="lychd-vessel",
             pod=LYCHD_POD_QUADLET,
             user="%U",
+            read_only=True,
             volumes=vessel_mounts,
             env_vars={
                 **self._runtime_path_env(),
                 "LYCHD_APP_SECRET_KEY_FILE": self._secret_file(app_secret_name),
                 "SERVER__DATABASE__HOST": "localhost",
                 "SERVER__DATABASE__PORT": str(CONTAINER_POSTGRES_PORT),
-                "LYCHD_DB_PASSWORD_FILE": self._secret_file(db_secret_name),
+                "LYCHD_RUNTIME_DB_PASSWORD_FILE": self._secret_file(runtime_db_secret),
+                "LYCHD_LOCAL_ACCESS_PASSWORD_FILE": self._secret_file(access_secret),
             },
             secrets=vessel_secrets,
             wants=["lychd-migrate.service", *reactor_dependencies],
@@ -481,22 +488,26 @@ class Transmuter:
         # The pinned PostgreSQL 18 image stores PGDATA here. Bind that exact
         # directory: binding its parent would replace the image's traversable
         # /var/lib/postgresql permissions with the host's private 0700 mode,
-        # preventing the entrypoint's re-exec as the postgres image user.
+        # preventing traversal by the explicit postgres image user.
         # Postgres keeps its image UID; :U maps bind ownership for that rootless
         # container identity while :Z applies the SELinux private label.
         data_mount = f"{PATH_POSTGRESS_DATA_DIR}:/var/lib/postgresql/18/docker:U,Z"
         init_mount = f"{PATH_POSTGRES_ROOT_DIR / 'init_db.sh'}:/docker-entrypoint-initdb.d/10-lychd-init.sh:ro,Z"
+        hba_mount = f"{PATH_POSTGRES_ROOT_DIR / 'pg_hba_v1.conf'}:/etc/lychd-pg_hba.conf:ro,Z"
         phylactery = QuadletContainer(
             description="The Phylactery (Postgres & PgVector)",
             image=settings.server.database.image,
             container_name="lychd-phylactery",
             pod=LYCHD_POD_QUADLET,
-            volumes=[MountData.from_str(data_mount), MountData.from_str(init_mount)],
+            user="postgres",
+            volumes=[MountData.from_str(data_mount), MountData.from_str(init_mount), MountData.from_str(hba_mount)],
             env_vars={
                 "POSTGRES_USER": settings.server.database.user,
                 "POSTGRES_DB": settings.server.database.database,
                 "POSTGRES_PASSWORD_FILE": self._secret_file(db_secret_name),
+                "POSTGRES_INITDB_ARGS": "--auth-host=scram-sha-256",
             },
+            exec="postgres -c hba_file=/etc/lychd-pg_hba.conf -c password_encryption=scram-sha-256",
             secrets=[db_secret_name],
             wants=[LYCHD_POD_SERVICE],
             after=[LYCHD_POD_SERVICE],
@@ -512,16 +523,18 @@ class Transmuter:
             container_name="lychd-migrate",
             pod=LYCHD_POD_QUADLET,
             user="%U",
+            read_only=True,
             volumes=migrator_mounts,
             env_vars={
                 **self._runtime_path_env(),
-                "LYCHD_APP_SECRET_KEY_FILE": self._secret_file(app_secret_name),
                 "SERVER__DATABASE__HOST": "localhost",
                 "SERVER__DATABASE__PORT": str(CONTAINER_POSTGRES_PORT),
                 "LYCHD_DB_PASSWORD_FILE": self._secret_file(db_secret_name),
+                "LYCHD_RUNTIME_DB_PASSWORD_FILE": self._secret_file(runtime_db_secret),
+                "LYCHD_PHOENIX_DB_PASSWORD_FILE": self._secret_file(settings.server.database.phoenix_password_secret),
             },
-            secrets=[app_secret_name, db_secret_name],
-            exec="lychd database --wait-seconds 60 upgrade head --no-prompt",
+            secrets=[db_secret_name, runtime_db_secret, settings.server.database.phoenix_password_secret],
+            exec="lychd database-bootstrap --wait-seconds 60",
             wants=["lychd-phylactery.service"],
             requires=["lychd-phylactery.service"],
             after=["lychd-phylactery.service"],
@@ -647,6 +660,8 @@ class Transmuter:
                         f"protected control root {configured_root}"
                     )
                     raise ValueError(msg)
+
+            validate_soulstone_data_mount(resolved_host, parsed.options, stone_name=stone_name)
 
             # Emit the canonical host target we checked. Keeping a symlink alias
             # in the unit would reopen a retargeting race between bind and start.

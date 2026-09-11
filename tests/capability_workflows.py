@@ -150,6 +150,7 @@ def build_capability_scenario(
     models: dict[str, tuple[str, ...]] | None = None,
     active: set[str] | None = None,
     coexist: tuple[str, ...] = (),
+    conflict_domains: dict[str, tuple[str, ...]] | None = None,
     policy: str = "declared-conflicts",
 ) -> CapabilityScenario:
     models = models or {"a": ("a-model",), "b": ("b-model",)}
@@ -159,7 +160,9 @@ def build_capability_scenario(
             name=name,
             runtime=world.runtime,
             quadlet=QuadletConfig(image="invalid.example/scenario:inert"),
-            concurrency=ConcurrencyIntent(conflict_domains=() if name in coexist else ("gpu-0",)),
+            concurrency=ConcurrencyIntent(
+                conflict_domains=(conflict_domains or {}).get(name, () if name in coexist else ("gpu-0",))
+            ),
         )
         for name in models
     )

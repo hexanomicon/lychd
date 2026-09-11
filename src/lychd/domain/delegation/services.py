@@ -352,10 +352,12 @@ class DelegatedAgentCoordinator:
 
         A runtime may opt into reconstruction only through the private,
         explicitly effect-free seam. Ordinary adapters are polled directly;
-        their submission is never replayed during recovery.
+        their submission is never replayed during recovery. Result adoption stays
+        cancellable; a lost commit acknowledgement is repaired on the next read.
         """
         async with self._locked_job(job_id) as job:
             if job.status in TERMINAL_DELEGATED_AGENT_STATUSES:
+                await self._retire_projection(self._runtimes.get(job.ref.runtime), job.ref)
                 return job
             runtime = self._runtime(job.ref.runtime)
             if isinstance(runtime, _EffectFreeRuntimeRehydration):
@@ -366,18 +368,11 @@ class DelegatedAgentCoordinator:
             if not isinstance(runtime, _EffectFreeRuntimeRetirement):
                 settled, _adopted = await self._store.adopt(job_id, result)
                 return settled
-            settlement = asyncio.create_task(
-                self._settle_and_retire_projection(
-                    self._store.adopt(job_id, result),
-                    runtime=runtime,
-                    job=job.ref,
-                )
+            settled, _adopted = await self._settle_and_retire_projection(
+                self._store.adopt(job_id, result),
+                runtime=runtime,
+                job=job.ref,
             )
-            try:
-                settled, _adopted = await asyncio.shield(settlement)
-            except asyncio.CancelledError:
-                await complete_under_cancellation(settlement)
-                raise
             return settled
 
     async def adopt(self, job_id: str, result: DelegatedAgentResult) -> bool:
@@ -387,18 +382,11 @@ class DelegatedAgentCoordinator:
             if not isinstance(runtime, _EffectFreeRuntimeRetirement):
                 _job, adopted = await self._store.adopt(job_id, result)
                 return adopted
-            settlement = asyncio.create_task(
-                self._settle_and_retire_projection(
-                    self._store.adopt(job_id, result),
-                    runtime=runtime,
-                    job=job.ref,
-                )
+            _job, adopted = await self._settle_and_retire_projection(
+                self._store.adopt(job_id, result),
+                runtime=runtime,
+                job=job.ref,
             )
-            try:
-                _job, adopted = await asyncio.shield(settlement)
-            except asyncio.CancelledError:
-                await complete_under_cancellation(settlement)
-                raise
             return adopted
 
     async def cancel(self, job_id: str) -> bool:
@@ -453,8 +441,8 @@ class DelegatedAgentCoordinator:
             msg = f"Unknown delegated-agent runtime {name!r}."
             raise UnknownDelegatedAgentRuntimeError(msg) from exc
 
-    @staticmethod
     async def _settle_and_retire_projection(
+        self,
         settlement: Awaitable[tuple[DelegatedAgentJob, bool]],
         *,
         runtime: DelegatedAgentRuntime,
@@ -462,9 +450,19 @@ class DelegatedAgentCoordinator:
     ) -> tuple[DelegatedAgentJob, bool]:
         """Retire a pure projection only after its terminal store write succeeds."""
         outcome = await settlement
-        if isinstance(runtime, _EffectFreeRuntimeRetirement):
-            await runtime.retire_effect_free(job)
+        await self._retire_projection(runtime, job)
         return outcome
+
+    @staticmethod
+    async def _retire_projection(runtime: DelegatedAgentRuntime | None, job: DelegatedAgentJobRef) -> None:
+        """Finish acknowledged projection cleanup before propagating cancellation."""
+        if isinstance(runtime, _EffectFreeRuntimeRetirement):
+            retirement = asyncio.create_task(runtime.retire_effect_free(job))
+            try:
+                await asyncio.shield(retirement)
+            except asyncio.CancelledError:
+                await complete_under_cancellation(retirement)
+                raise
 
     @asynccontextmanager
     async def _locked(self, key: str) -> AsyncGenerator[None]:

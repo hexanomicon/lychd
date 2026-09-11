@@ -13,29 +13,36 @@ A **Composition** is that reusable native application owner: its domain records,
 
 These **Native Reference Compositions** are accepted first-party contracts and worked examples. [State of Work](../state-of-the-work.md#composition-portfolio-delivery) separately records delivery; membership does not make an application selectable or executable.
 
-| Reader view | Composition | Representative outcomes |
-| --- | --- | --- |
-| **Creative Works** | [Voidlight](voidlight/index.md) | an attributable visual/VFX asset package |
-| **Creative Works** | [Riffmaw](riffmaw/index.md) | an attributable musical work, production package, and optional musical cue map |
-| **Creative Works** | [Language Edition](language-edition/index.md) | an attributable same- or cross-language timed-media edition with constrained track replacement |
-| **Creative Works** | [Foundry](foundry/index.md) | a reproducible, playtested local build candidate |
-| **Creative Works** | [Broadcast](broadcast/index.md) | a source-grounded local publication candidate |
-| **Stewardship & Acquisition** | [Wellbeing](wellbeing/index.md) | an editable eating-or-fitness plan, honest infeasibility, or confirmed check-in |
-| **Stewardship & Acquisition** | [Homestead](homestead/index.md) | a legible place or stores ledger, household provision result, bounded work order, or safely refused effect |
-| **Stewardship & Acquisition** | [Scavenger](scavenger/index.md) | an evidence-bound acquisition campaign, shortlist, bargain, commitment, parcel result, or diligence packet |
-| **Presence & Embodiment** | [Blockworld](blockworld/index.md) | one finite mission whose world effects are verified and recoverable |
-| **Presence & Embodiment** | [Reach](reach/index.md) | one bounded social turn, summon, or admitted presence effect |
-| **Presence & Embodiment** | [Avatar](avatar/index.md) | one attributable Lich presentation projected into separately admitted places, with honest partial settlement |
-| **Presence & Embodiment** | [Spectre](spectre/index.md) | one admitted VR Habitat and bounded Encounter that completes, exits safely, or names its interruption |
-| **Presence & Embodiment** | [Familiar](familiar/index.md) | one admitted physical body and bounded real-world task or presence that settles honestly |
-| **Presence & Embodiment** | [Companion](companion/index.md) | a configurable mobile client and bounded device session over one exact admitted phone-shaped Familiar body |
-| **Professional Operations** | [Broker](broker/index.md) | a client answer grounded in current offer knowledge, prepared act, human handoff, or exact blocker |
+### Areas
 
-Reader views are non-exclusive discovery aids, without their own identity, records, namespace, dependency, maturity, authority, or runtime selection. Every Composition retains one canonical route. Companion's first client target is native Android; Communion is its bounded interaction route, not another Composition or Product.
+An **Area** groups Compositions by the kind of work you want to find. Each Area has an index
+leading to its applications and their outcomes.
+
+| Area | Enter through |
+| --- | --- |
+| [Creative Works](creative-works/index.md) | visual work, music, language editions, playable builds, and publication |
+| [Stewardship & Acquisition](stewardship-and-acquisition/index.md) | personal wellbeing, places, animal care, cultivation, and acquisition |
+| [Presence & Embodiment](presence-and-embodiment/index.md) | social presence, presentation, virtual worlds, physical bodies, and mobile sessions |
+| [Professional Operations](professional-operations/index.md) | attributable client casework and professional handoffs |
+
+Areas can overlap. Each Composition keeps one canonical route and owns its records and judgment;
+the Area supplies orientation. A [Suite](products-and-suites.md#compositions-relate-without-nesting)
+coordinates live work within one Area or across several. The [Area contract](../adr/28-workflow.md#areas-for-discovery)
+keeps navigation separate from application ownership. Guides and Candidate studies remain
+separate views of explanations and proposals.
 
 ## Candidate studies
 
+[Accounting Office](accounting-office/index.md) studies business documents, bank reconciliation,
+entity-owned books, asset and subscription obligations, and period close. Provider adapters and
+jurisdiction profiles vary under one proposed accounting lifecycle; the study establishes no live
+banking, filing, or supported-country capability.
+
 [Workshop](workshop/index.md) tests technical-service casework outside the accepted Portfolio. Mechanic is its proposed first Product under the passenger-vehicle service profile. A candidate proposal establishes neither acceptance nor delivery.
+
+[Transmuter](transmuter/index.md) studies the passage from imported digital material to
+attributed knowledge and proposals for memory and identity. Extractor and Synthesizer are its
+internal stages; naming, labeling, and classification belong to Extractor.
 
 ## The Composition test
 

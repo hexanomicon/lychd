@@ -292,6 +292,17 @@ it("guards unsaved drafts from navigation and refresh", async () => {
   const cancel = vi.fn();
   guard({ willUnload: false, cancel } as unknown as Parameters<typeof guard>[0]);
   expect(cancel).toHaveBeenCalledOnce();
+  const url = new URL(`https://altar.invalid/atlas/${projectId}`);
+  const reload = { type: "link", willUnload: true, from: { url }, to: { url }, cancel };
+  guard(reload as unknown as Parameters<typeof guard>[0]);
+  expect(cancel).toHaveBeenCalledTimes(2);
+  vi.mocked(window.confirm).mockReturnValue(true);
+  guard(reload as unknown as Parameters<typeof guard>[0]);
+  guard({ ...reload, to: { url: new URL("https://altar.invalid/bridge") } } as unknown as Parameters<typeof guard>[0]);
+  expect(cancel).toHaveBeenCalledTimes(2);
+  guard({ ...reload, type: "leave", to: null } as unknown as Parameters<typeof guard>[0]);
+  expect(cancel).toHaveBeenCalledTimes(3);
+  vi.mocked(window.confirm).mockReturnValue(false);
   await fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
   expect(getAtlasProject).toHaveBeenCalledOnce();
   expect((screen.getByRole("textbox", { name: "Brief" }) as HTMLTextAreaElement).value).toBe("Keep this draft");

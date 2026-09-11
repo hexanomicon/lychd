@@ -53,7 +53,8 @@ plan privately, but LychD relies only on admitted outputs and observable boundar
 For multi-agent work:
 
 1. one informed Lead reads canonical owners;
-2. children receive closed, role-specific packets;
+2. children start without inherited conversation history and receive closed, role-specific
+   packets under [ADR 28's scoped context handoff](../../docs/adr/28-workflow.md#scoped-context-handoff-designed);
 3. proposal, review, and repair use separate contexts when self-judgment would matter;
 4. the parent retains global budget, ordering, and acceptance; and
 5. child output returns as a candidate artifact, never as promoted truth.

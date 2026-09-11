@@ -569,17 +569,7 @@ class InMemoryRunLedger:
         previous = record.status
         _reject_generic_resume(previous, status, run_id=run_id)
         _apply_status(record, status, error=error)
-        if previous is not RunStatus.QUEUED and status is RunStatus.QUEUED:
-            record.enqueue_seq += 1
-            self._deliveries[(run_id, record.enqueue_seq)] = RunDeliveryRecord(
-                run_id=run_id,
-                enqueue_seq=record.enqueue_seq,
-                queue_name=record.queue_name,
-                priority=record.priority,
-                resume=True,
-                state=RunDeliveryState.PENDING,
-            )
-        elif _settles_delivery(status):
+        if _settles_delivery(status):
             self._settle_delivery(run_id, record.enqueue_seq)
 
     async def rotate_delivery(self, run_id: str, *, enqueue_seq: int) -> int | None:
@@ -708,6 +698,7 @@ class InMemoryRunLedger:
         record = self._require(run_id)
         _apply_status(record, RunStatus.AWAITING_CONSENT, error=None)
         record.consent_id = consent_id
+        record.delegated_job_id = None
         self._settle_delivery(run_id, record.enqueue_seq)
 
     async def park_delegate(self, run_id: str, job_id: str) -> None:
@@ -715,6 +706,7 @@ class InMemoryRunLedger:
         record = self._require(run_id)
         _apply_status(record, RunStatus.AWAITING_DELEGATE, error=None)
         record.delegated_job_id = job_id
+        record.consent_id = None
         self._settle_delivery(run_id, record.enqueue_seq)
 
     async def append_event(self, event: RunEvent) -> None:
@@ -1152,7 +1144,7 @@ class DbRunLedger:
         """
         from sqlalchemy import update
 
-        from lychd.db.models import Run, RunDelivery
+        from lychd.db.models import Run
 
         async with self._session_factory() as session:
             for _ in range(self._CAS_RETRIES + 1):
@@ -1166,9 +1158,6 @@ class DbRunLedger:
                 _reject_generic_resume(expected, status, run_id=run_id)
                 record = self._to_record(row)
                 _apply_status(record, status, error=error)  # raises on an illegal edge
-                allocating_delivery = expected is not RunStatus.QUEUED and status is RunStatus.QUEUED
-                if allocating_delivery:
-                    record.enqueue_seq += 1
                 result = cast(
                     "CursorResult[Any]",
                     await session.execute(
@@ -1178,7 +1167,6 @@ class DbRunLedger:
                             status=record.status.value,
                             error=record.error,
                             attempt=record.attempt,
-                            enqueue_seq=record.enqueue_seq,
                             updated_at=record.updated_at,
                             started_at=record.started_at,
                             finished_at=record.finished_at,
@@ -1186,18 +1174,7 @@ class DbRunLedger:
                     ),
                 )
                 if result.rowcount != 0:
-                    if allocating_delivery:
-                        session.add(
-                            RunDelivery(
-                                run_id=UUID(run_id),
-                                enqueue_seq=record.enqueue_seq,
-                                queue_name=record.queue_name,
-                                priority=record.priority,
-                                resume=True,
-                                state=RunDeliveryState.PENDING.value,
-                            )
-                        )
-                    elif _settles_delivery(status):
+                    if _settles_delivery(status):
                         await _settle_db_delivery(session, UUID(run_id), record.enqueue_seq)
                     await session.commit()
                     return  # CAS won
@@ -1481,6 +1458,7 @@ class DbRunLedger:
             row.status = record.status.value
             row.error = record.error
             row.consent_id = consent_exists
+            row.delegated_job_id = None
             await _settle_db_delivery(session, row.id, row.enqueue_seq)
 
     async def park_delegate(self, run_id: str, job_id: str) -> None:
@@ -1505,6 +1483,7 @@ class DbRunLedger:
             row.status = record.status.value
             row.error = record.error
             row.delegated_job_id = job_id
+            row.consent_id = None
             await _settle_db_delivery(session, UUID(run_id), row.enqueue_seq)
 
     async def append_event(self, event: RunEvent) -> None:

@@ -68,6 +68,9 @@ commit DONE / FAILED / CANCELLED and exact delivery settlement
 Cleanup cannot revise committed status. If child containment fails transiently, the worker retries
 it; continuing uncertainty leaves the Run nonterminal for recovery. It cannot claim `FAILED`
 while correlated authority may still act.
+Before that containment, the Ghoul verifies its exact delivery generation under the same per-Run
+guard used by claims and park commits. A late failure cannot cancel the next Ghoul's effects or
+undo a durable wait whose commit acknowledgement was lost.
 
 Cancellation elects one writer, commits `CANCELLING`, and fences claims and delivery rotation.
 Broker and delegate containment must acknowledge before the elected generation commits
@@ -87,7 +90,9 @@ waits may return, and missing or ambiguous required truth aborts PostgreSQL star
 Before deleting residual stasis, startup repairs missing or mismatched terminal evidence from
 canonical terminal Runs. Lifespan-owned relays continue delivery, consent, and delegated-owner
 repair. They retain every degraded page while scanning forward, so a blocked owner is not lost
-behind a keyset cursor. There is no same-boot worker-failure custody watchdog, public failed-Run
+behind a keyset cursor. Consent lookup and re-admission have one ten-second deadline per owner;
+timeout preserves the wait or committed pending delivery and lets other owners progress.
+There is no same-boot worker-failure custody watchdog, public failed-Run
 retry, or workflow scheduler.
 
 [Workers](../../adr/14-workers.md) owns claims and recovery;

@@ -28,6 +28,8 @@ _LISTENER_HOST_ENVIRONMENT_KEYS = ("LITESTAR_HOST", "GRANIAN_HOST")
 _ALTERNATE_LISTENER_ENVIRONMENT_KEYS = (
     "LITESTAR_FILE_DESCRIPTOR",
     "LITESTAR_UNIX_DOMAIN_SOCKET",
+    "GRANIAN_FILE_DESCRIPTOR",
+    "GRANIAN_UDS",
 )
 _DISABLED_ENVIRONMENT_VALUES = {"", "0", "false", "no", "off"}
 _SERVER_CLI_NAMES = frozenset({"granian", "litestar"})
@@ -70,6 +72,10 @@ _LONG_ALTERNATE_LISTENER_OPTIONS = (
     "--unix-domain-socket",
 )
 _SHORT_ALTERNATE_LISTENER_OPTIONS = ("-F", "-U")
+_NATIVE_SHORT_FLAGS = frozenset({"-d", "-P", "-r"})
+_NATIVE_SHORT_VALUE_OPTIONS = frozenset(
+    {"-H", "-p", "-W", *_SHORT_RELOAD_VALUE_OPTIONS, *_SHORT_ALTERNATE_LISTENER_OPTIONS}
+)
 _LOOPBACK_LISTENER_HOSTS = frozenset({"127.0.0.1", "::1"})
 _DEFAULT_NATIVE_LISTENER_HOST = "127.0.0.1"
 _MAX_TCP_PORT = 65535
@@ -109,6 +115,8 @@ def evaluate_server_runtime_policy(
         else _detected_server_arguments(argv=argv, original_argv=original_argv)
     )
     native_serve = server_arguments is not None
+    if native_serve:
+        arguments = _expand_native_short_arguments(arguments)
     _validate_environment(environment)
     listener_port, listener_host = _validate_arguments(arguments, require_loopback=native_serve)
     if listener_port is None:
@@ -120,6 +128,33 @@ def evaluate_server_runtime_policy(
         environment_host = _native_environment_host(environment)
         listener_host = listener_host or environment_host or _DEFAULT_NATIVE_LISTENER_HOST
     return ServerRuntimePolicy(listener_port=listener_port, listener_host=listener_host)
+
+
+def _expand_native_short_arguments(arguments: Sequence[str]) -> tuple[str, ...]:
+    """Expand the supported native short grammar before checking authority.
+
+    Click permits flag clusters such as ``-dH::1``. Only known flags can precede
+    a value option; its remaining suffix belongs to that value. Unknown short
+    options fail closed so a new server flag cannot silently hide authority.
+    Long server options remain the delegated CLI's responsibility.
+    """
+    expanded: list[str] = []
+    for argument in arguments:
+        if not argument.startswith("-") or argument.startswith("--") or argument == "-":
+            expanded.append(argument)
+            continue
+        remaining = argument[1:]
+        while remaining:
+            option = f"-{remaining[0]}"
+            remaining = remaining[1:]
+            if option in _NATIVE_SHORT_VALUE_OPTIONS:
+                expanded.append(f"{option}{remaining}")
+                break
+            if option not in _NATIVE_SHORT_FLAGS:
+                message = f"LychD native serve does not support short option {option}; use an explicit long option."
+                raise ServerRuntimePolicyError(message)
+            expanded.append(option)
+    return tuple(expanded)
 
 
 def _detected_server_arguments(

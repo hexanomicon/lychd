@@ -144,6 +144,41 @@ def test_runtime_policy_falls_back_to_configured_listener_port() -> None:
 
 
 @pytest.mark.parametrize(
+    "arguments",
+    [
+        ("-dH::1",),
+        ("-dPH::1", "-p7445"),
+        ("-dPp7445", "-H127.0.0.1"),
+        ("-dPW1", "-H", "::1", "-p", "7445"),
+        ("-dP", "-H::1", "-W1"),
+    ],
+)
+def test_native_short_clusters_agree_with_the_delegated_click_parser(
+    monkeypatch: pytest.MonkeyPatch,
+    arguments: tuple[str, ...],
+) -> None:
+    """Compare admitted authority with the real server parser without starting it."""
+    from litestar_granian.cli import run_command
+
+    _clear_policy_environment(monkeypatch)
+    policy = evaluate_server_runtime_policy(
+        environment={},
+        default_listener_port=8000,
+        server_arguments=arguments,
+    )
+
+    with run_command.make_context("run", list(arguments)) as context:
+        assert policy.listener_host == context.params["host"]
+        assert policy.listener_port == context.params["port"]
+        assert context.params["wc"] == 1
+
+
+def test_native_short_grammar_refuses_unknown_prefixes() -> None:
+    with pytest.raises(ServerRuntimePolicyError, match="does not support short option -z"):
+        evaluate_server_runtime_policy(environment={}, server_arguments=("-zH127.0.0.1",))
+
+
+@pytest.mark.parametrize(
     ("variable", "value"),
     [
         ("LITESTAR_RELOAD", ""),

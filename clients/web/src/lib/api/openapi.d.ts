@@ -182,7 +182,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** SessionPage */
+        get: operations["getBridgeSessions"];
         put?: never;
         /** CreateSession */
         post: operations["createBridgeSession"];
@@ -623,6 +624,7 @@ export interface components {
             pending_count: number;
             session: components["schemas"]["SessionView"] | null;
             sessions: components["schemas"]["SessionSummary"][];
+            sessions_next_cursor?: string | null;
         };
         /** BridgeTurnView */
         BridgeTurnView: {
@@ -948,6 +950,11 @@ export interface components {
             session_id: string;
             title: string | null;
             turn_count: number;
+        };
+        /** SessionPage */
+        SessionPage: {
+            next_cursor?: string | null;
+            sessions: components["schemas"]["SessionSummary"][];
         };
         /** SessionSummary */
         SessionSummary: {
@@ -1511,6 +1518,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+            /** @description Additional response */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+        };
+    };
+    getBridgeSessions: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionPage"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
                 };
             };
         };

@@ -1388,3 +1388,155 @@ async def test_reconcile_runs_fails_orphaned_running() -> None:
     assert channel.closed is True
     # R2: the reconciled channel was dropped, not leaked — reopening mints a fresh one.
     assert substrate.bus.open("orphan") is not channel
+
+
+@pytest.mark.asyncio
+async def test_cancelled_old_park_hop_does_not_contain_successor(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A cancelled publication caller has no authority over its claimed successor."""
+    import lychd.ghouls.runs as runs_mod
+    from lychd.domain.cortex.runs import RunParked
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "cancelled-old-hop")
+    claimed = asyncio.Event()
+    swept: list[str] = []
+
+    class _Consents:
+        async def verdict(self, _consent_id: str) -> bool:
+            return True
+
+        async def get(self, consent_id: str) -> Any:
+            return SimpleNamespace(
+                id=consent_id,
+                run_id="cancelled-old-hop",
+                status="granted",
+                decided_by="test:operator",
+                decided_at=datetime.now(UTC),
+            )
+
+        async def cancel_pending_for_run(self, run_id: str, *, decided_by: str) -> int:
+            _ = decided_by
+            swept.append(run_id)
+            return 1
+
+    class _ParkingRunner:
+        def __init__(self, **_kwargs: Any) -> None:
+            pass
+
+        async def run_graph(self, *_args: Any, **_kwargs: Any) -> RunParked:
+            return RunParked(consent_id="old-consent", tool_name="probe")
+
+    class _ClaimThenBlockQueue(_ProbeQueue):
+        async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
+            _ = job_or_func
+            assert await ledger.try_claim_run(str(kwargs["run_id"]), enqueue_seq=int(kwargs["enqueue_seq"]))
+            claimed.set()
+            await asyncio.Event().wait()
+
+    substrate.consents = _Consents()
+    substrate.queues = {"runs": _ClaimThenBlockQueue()}
+    monkeypatch.setattr(runs_mod, "GraphRunner", _ParkingRunner)
+    worker = asyncio.create_task(perform_run({"run_substrate": substrate}, run_id="cancelled-old-hop", enqueue_seq=0))
+    await asyncio.wait_for(claimed.wait(), timeout=1)
+    worker.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await worker
+    current = await ledger.get("cancelled-old-hop")
+    assert current is not None
+    assert current.status is RunStatus.RUNNING
+    assert current.enqueue_seq == 1
+    assert swept == []
+    await substrate.bus.wait_persisted(current.run_id)
+
+
+@pytest.mark.asyncio
+async def test_failure_guard_excludes_claims_until_children_are_contained(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No successor may enter the claim ledger between authority check and containment."""
+    import lychd.ghouls.runs as runs_mod
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "contained-claim")
+    assert await ledger.try_claim_run("contained-claim", enqueue_seq=0)
+    run = await ledger.get("contained-claim")
+    assert run is not None
+    containing = asyncio.Event()
+    release = asyncio.Event()
+    attempted = asyncio.Event()
+    original_claim = ledger.try_claim_run
+
+    async def contain(_substrate: Any, _run_id: str) -> list[BaseException]:
+        containing.set()
+        await release.wait()
+        return []
+
+    async def observe_claim(run_id: str, *, enqueue_seq: int) -> bool:
+        attempted.set()
+        return await original_claim(run_id, enqueue_seq=enqueue_seq)
+
+    monkeypatch.setattr(runs_mod, "_contain_failed_run_effects", contain)
+    monkeypatch.setattr(ledger, "try_claim_run", observe_claim)
+    failing = asyncio.create_task(
+        runs_mod._fail_claimed_run(substrate, run, enqueue_seq=0, error="failed", persistence=None)
+    )
+    await containing.wait()
+    claiming = asyncio.create_task(runs_mod._claim_run(substrate, run.run_id, 1))
+    await asyncio.sleep(0)
+    assert not attempted.is_set()
+    current = await ledger.get(run.run_id)
+    assert current is not None
+    assert current.status is RunStatus.RUNNING
+    release.set()
+    assert await failing
+    assert not await claiming
+    assert attempted.is_set()
+    assert not substrate.claims._guards
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("missing", ["workflow", "checkpoint"])
+async def test_pre_execution_refusal_contains_children_before_terminal(missing: str) -> None:
+    from lychd.domain.delegation import (
+        DelegatedAgentCoordinator,
+        DelegatedAgentJobStatus,
+        DelegatedAgentRequest,
+        InMemoryDelegatedAgentJobStore,
+    )
+    from lychd.extensions.builtin.delegation.reference import ReferenceDelegatedAgentRuntime
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "early-refusal")
+    runtime = ReferenceDelegatedAgentRuntime()
+    delegates = DelegatedAgentCoordinator(runtimes={runtime.name: runtime}, store=InMemoryDelegatedAgentJobStore())
+    substrate.delegates = delegates
+    job = await delegates.submit(
+        DelegatedAgentRequest(
+            request_id="child-request",
+            run_id="early-refusal",
+            step_id="delegate",
+            runtime=runtime.name,
+            prompt="inspect",
+        )
+    )
+    if missing == "workflow":
+        ledger._require("early-refusal").pattern_manifest["implementation_revision"] = "missing"
+    else:
+        await ledger.set_status("early-refusal", RunStatus.RUNNING)
+        await ledger.park_consent("early-refusal", "consent-1")
+        assert (
+            await ledger.try_admit_consent(
+                "early-refusal",
+                consent_id="consent-1",
+                evidence=_consent_evidence("early-refusal", "consent-1"),
+            )
+            == 1
+        )
+
+    result = await perform_run({"run_substrate": substrate}, run_id="early-refusal")
+
+    assert result["status"] == "failed"
+    current = await ledger.get("early-refusal")
+    assert current is not None
+    assert current.status is RunStatus.FAILED
+    child = await delegates.get(job.job_id)
+    assert child is not None
+    assert child.status is DelegatedAgentJobStatus.CANCELLED

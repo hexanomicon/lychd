@@ -1,12 +1,8 @@
-"""Application lifespan that owns Altar service assembly and publication (§TD-5).
+"""Application lifespan for service assembly, recovery, publication, and shutdown.
 
-Builds one queue-bound `AltarServices` through the co-located assembly module, warms the registry off the event loop,
-reconciles durable startup state, publishes its process `RunSubstrate` (Topology A:
-the in-process ghoul shares this bus), stamps it on `app.state.services`, and drains
-on shutdown.
-
-Together with ``app.py``, ``interface/web`` is the application composition boundary;
-importing ``extensions.host`` here is allowed.
+Registry loading runs off the event loop. The web handlers and in-process ghoul
+share the published services and RunSubstrate. Together with ``app.py``, this is
+the application composition boundary and may import ``extensions.host``.
 """
 
 from __future__ import annotations
@@ -45,13 +41,7 @@ _WORKER_SHUTDOWN_TIMEOUT_S = 30.0
 
 
 def _collect_run_queues(app: Litestar) -> dict[str, RunQueue]:
-    """Return the SAQ queues the engine enqueues onto.
-
-    The production application always carries the SAQ plugin, and every routed queue
-    name MUST resolve. A missing plugin or queue is a startup wiring error; returning
-    an empty map would let the daemon boot with a run engine that can only black-hole
-    work.
-    """
+    """Resolve every Run queue; a missing SAQ plugin or queue is a startup error."""
     from litestar_saq import SAQPlugin
 
     plugin = app.plugins.get(SAQPlugin)
@@ -60,15 +50,14 @@ def _collect_run_queues(app: Litestar) -> dict[str, RunQueue]:
 
 @asynccontextmanager
 async def altar_services_lifespan(app: Litestar) -> AsyncGenerator[None]:
-    """Assemble, warm, reconcile, publish, and later drain the Altar services."""
+    """Assemble, probe, reconcile, publish, and later drain the Altar services."""
     from lychd.config.settings.root import get_settings
     from lychd.extensions.host import get_extensions  # application assembly root only
     from lychd.system.host_tools import trusted_host_tool
     from lychd.system.services.runtime import wait_for_host_reactor_idle
 
-    # F3: stamp the boot cutoff BEFORE the substrate is published (before any worker can
-    # claim + set a run RUNNING). Reconcile sweeps only runs started before this instant,
-    # so a run this process claims mid-startup is never mistaken for a dead-process orphan.
+    # Capture the cutoff before workers can claim Runs, so startup recovery never
+    # mistakes a Run claimed by this process for a dead-process orphan.
     boot_cutoff = datetime.now(UTC)
 
     exts = get_extensions()
@@ -103,9 +92,8 @@ async def altar_services_lifespan(app: Litestar) -> AsyncGenerator[None]:
             systemctl_bin=systemctl_bin,
         )
 
-        # Warm the registry off the event loop: runtime synthesis, Quadlet
-        # transmutation, and initial probes are synchronous/bridged work. Rune
-        # discovery already happened once in AppInit and cannot recur here.
+        # Hydration and initial probes bridge synchronous work; keep them off the
+        # event loop. Rune discovery already happened once in AppInit.
         await asyncio.to_thread(services.registry.ensure_loaded)
 
         await _recover_durable_state(
@@ -375,15 +363,8 @@ async def _supervise_relay(
         try:
             await asyncio.wait_for(stop.wait(), timeout=restart_delay)
         except TimeoutError:
-            restart_delay = _next_relay_restart_delay(restart_delay, maximum=max_restart_delay_s)
+            restart_delay = min(restart_delay * 2, max_restart_delay_s) if restart_delay > 0 else 0
             continue
-
-
-def _next_relay_restart_delay(current: float, *, maximum: float) -> float:
-    """Return deterministic capped exponential backoff for one failed relay."""
-    if current <= 0:
-        return 0
-    return min(current * 2, maximum)
 
 
 async def _stop_delivery_relay(task: asyncio.Task[None], *, timeout_s: float = 5.0) -> None:
@@ -567,7 +548,7 @@ async def _reconcile_at_startup(
     substrate: Any,
     required: bool,
 ) -> None:
-    """Run the orphan-run reconcile once at startup (gated on the boot cutoff, F3).
+    """Reconcile orphan Runs once at startup using the boot cutoff.
 
     PostgreSQL reconciliation is an admission prerequisite. The memory profile has
     no cross-process durability to recover, so its focused/local startup remains

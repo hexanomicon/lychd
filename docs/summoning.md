@@ -114,7 +114,7 @@ uv run --extra postgres-binary lychd --help
 podman image inspect localhost/lychd:dev --format '{{.Id}}'
 ```
 
-Help exposes `init`, `bind`, `start`, `stop`, `status` (with exact alias `st`), `logs`, and `del`.
+Help exposes `init`, `bind`, `start`, `stop`, `status` (with exact alias `st`), `logs`, `access`, and `del`.
 There is no public `run` verb. Image inspection must return an ID. If construction fails, start
 with the first failed step and the supported Python range `>=3.12,<3.15`; a different package or
 image would abandon the source agreement this movement establishes.
@@ -179,8 +179,16 @@ service receives.
 ### Secret references {#the-secret-covenant}
 
 This Rune names no non-core secret. `bind` creates absent `lychd_app_secret_key` and
-`lychd_db_password` secrets and preserves existing values. A later Rune naming an external secret
+`lychd_db_password`, `lychd_runtime_db_password`, `lychd_phoenix_db_password`, and
+`lychd_local_access_password` secrets and preserves existing values. A later Rune naming an external secret
 must have that exact Podman-secret reference available before binding.
+
+The administrative database credential is reserved for PostgreSQL and the migration gate.
+The Vessel/SAQ and optional Phoenix receive separate roles and credentials. Initialization
+creates the versioned HBA file; binding mounts it read-only so TCP authentication also applies
+to existing data. Restart PostgreSQL with that generated policy before the new migration gate
+runs. Preserve existing database secrets and data; replacing the administrator password does
+not reset an initialized PostgreSQL cluster.
 
 ### Inscribe the Rune
 
@@ -250,6 +258,9 @@ Check that the binding left the expected material:
 ```bash
 podman secret exists lychd_app_secret_key && echo "application secret present"
 podman secret exists lychd_db_password && echo "database secret present"
+podman secret exists lychd_runtime_db_password && echo "runtime database secret present"
+podman secret exists lychd_phoenix_db_password && echo "Phoenix database secret present"
+podman secret exists lychd_local_access_password && echo "local access secret present"
 test -f "$QUADLET_DIR/lychd-vessel.container" \
   && echo "Vessel Quadlet present"
 test -f "$USER_UNIT_DIR/lychd-animator-atelier.target" \
@@ -304,8 +315,15 @@ uv run --extra postgres-binary lychd logs --lines 120
     `/schema/scalar`, and do not mix this profile with hostile sites. The two internal SAQ workers
     are required for normal Run execution.
 
-    The fixed `magus:*` Sigil is not authentication. Host, CORS, and CSRF controls do not establish
-    hostile-browser or remote safety. Stop the Vessel after this rite.
+    Protected requests require a separate local credential before receiving the fixed `magus:*`
+    Sigil. This does not establish hostile-browser or remote safety. Stop the Vessel after this rite.
+
+Retrieve the local login explicitly in a private terminal, then enter its displayed username and
+password in the browser's authentication dialog. Do not put the password in a URL or command line:
+
+```bash
+uv run --extra postgres-binary lychd access
+```
 
 Open the local Altar:
 

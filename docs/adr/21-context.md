@@ -96,11 +96,15 @@ run. Continuation never splits; remaining space retains newest complete groups, 
 window, never cutting a request from response to keep an older fragment. A nonpositive turn window
 retains no settled history and leaves required continuation intact.
 
-Bridge separately gives Pydantic AI the actual window remaining after output reservation.
-Pydantic AI pre-counts only for models implementing `count_tokens`; current OpenAI-compatible
-models instead enforce provider-reported input usage after a response. The character governor and
-usage limit are therefore independent bounds, not exact cross-provider token equivalence or a
-universal pre-request fence.
+Bridge separately bounds each model request by the actual window remaining after output
+reservation. Tool follow-ups and validation retries each receive that same capacity; accumulated
+Run usage is accounting, not the context occupancy of the next request. A request-scoped model
+wrapper checks provider-reported input usage before the response can advance the agent loop.
+Pydantic AI pre-counts only for models implementing `count_tokens`, using the same per-request
+bound. Current OpenAI-compatible models instead enforce provider-reported input usage after a
+response. The character governor and usage limit are therefore independent bounds, not exact
+cross-provider token equivalence or a universal pre-request fence. Pydantic AI's separate request
+count ceiling remains in force.
 
 ## Stable history
 

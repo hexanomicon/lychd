@@ -83,6 +83,11 @@ class CodexService:
         creation = JournaledCreation(on_created=on_created)
         self._inscribe_lychd_toml(creation)
         self._inscribe_init_db(creation)
+        creation.create_text_file(
+            self.postgres_root_path / "pg_hba_v1.conf",
+            self._env.get_template("pg_hba_v1.conf.jinja").render() + "\n",
+            mode=0o644,
+        )
         self._inscribe_configurables(creation)
 
         logger.info("codex_inscribed", location=str(self.toml_path.parent))

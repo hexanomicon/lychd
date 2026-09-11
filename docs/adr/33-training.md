@@ -34,6 +34,18 @@ Every arrow is attributable and may refuse; there is no ambient online self-trai
     candidate registry, evaluation integration, or Altar route is installed. The `karma` table is
     not a corpus. [State of Work](../state-of-the-work.md#soulforge-training) owns delivery.
 
+## Training discernment from work
+
+The [discernment training passage](../sepulcher/extensions/soulforge/discernment-training.md)
+applies this law to nominated SDLC traces and human corrections. Preserve the distinction that
+changed a decision, its evidence and conditions, and a counterexample to the superficial rule.
+Preference, fact, authorization, measured result and evaluator judgment remain distinguishable.
+First test whether Context or a versioned procedural correction solves the limitation; changing
+weights requires a separate objective and transfer claim. Meeting capture, retained history,
+accepted work and evaluation consent do not imply training admission. The passage participates in
+[Ouroboros](../sepulcher/extensions/weaver/ouroboros.md) through settled records, with no ambient
+harvesting or self-certified promotion.
+
 ## Records
 
 | Record | Required content |

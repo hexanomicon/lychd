@@ -36,7 +36,7 @@ The installed command is **`lychd`**. `PulseGroup` owns the closed grammar and t
 alias for `status`; `lychd --help` is its executable inventory. No `lych` alias is promised.
 Generated services and development machinery have hidden entrypoints, but hidden registration is
 not public compatibility. The root verbs are `init`, `bind`, `start`, `stop`, `status`/`st`,
-`logs`, and `del`; no run-operation, snapshot, restore, selector shorthand, recovery, promotion, or
+`logs`, `access`, and `del`; no run-operation, snapshot, restore, selector shorthand, recovery, promotion, or
 consent spelling is reserved by the grammar.
 
 ### Inscribe, then bind
@@ -92,6 +92,13 @@ validates and help advertises the line bound. It has no follow mode or joined co
 or Oculus evidence view.
 
 ### Admit work without ceding the language
+
+`lychd access` explicitly displays the local Altar address, fixed operator username, and dedicated
+HTTP Basic password to the invoking host operator. It reads the configured runtime credential or
+its exact Podman secret through the trusted host adapter; it neither starts the Vessel nor opens
+a browser. Ordinary help, status, logs, startup, generated units, and URLs never contain that
+password. Replace its external secret and restart the Vessel to rotate access. This is a local
+operator credential, not Ward enrollment or a remote CLI admission interface.
 
 A future host-owned run-operation verb may become the sole extension execution namespace.
 Registration would contribute inert, typed identity, inputs, authority/scope, mutation and consent

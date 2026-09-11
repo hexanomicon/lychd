@@ -2,18 +2,18 @@
   let { source, label }: { source: string; label: string } = $props();
   let node: HTMLElement;
   let failure = $state("");
-  let renderVersion = 0;
 
   $effect(() => {
-    source;
-    const version = ++renderVersion;
+    const drawing = document.createElement("pre");
+    drawing.className = "mermaid";
+    drawing.textContent = source;
+    node.replaceChildren(drawing);
+    let cancelled = false;
     failure = "";
-    node.textContent = source;
-    node.removeAttribute("data-processed");
     void (async () => {
       try {
         const { default: mermaid } = await import("mermaid");
-        if (version !== renderVersion) return;
+        if (cancelled) return;
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: "strict",
@@ -32,13 +32,18 @@
             fontFamily: "ui-monospace, monospace"
           }
         });
-        await mermaid.run({ nodes: [node], suppressErrors: false });
+        await mermaid.run({ nodes: [drawing], suppressErrors: false });
       } catch {
-        if (version === renderVersion) failure = "Diagram unavailable. The semantic score remains authoritative.";
+        if (!cancelled) failure = "Diagram unavailable. The semantic score remains authoritative.";
       }
     })();
+    return () => {
+      cancelled = true;
+      // Mermaid may still finish, but its old target cannot replace a newer score.
+      drawing.remove();
+    };
   });
 </script>
 
 {#if failure}<p class="diagram-failure" role="status">{failure}</p>{/if}
-<pre class="mermaid" bind:this={node} aria-label={label}>{source}</pre>
+<div bind:this={node} role="img" aria-label={label}></div>

@@ -51,6 +51,13 @@ class SessionView(SessionSummary):
     turns: list[BridgeTurnView] = Field(default_factory=list)
 
 
+class SessionPage(ClientContract):
+    """A bounded archive rail page with an opaque continuation cursor."""
+
+    sessions: list[SessionSummary]
+    next_cursor: str | None = None
+
+
 class RunProjectionSnapshot(ClientContract):
     """Replaceable projection for one run at an exact event cursor."""
 
@@ -85,6 +92,7 @@ class BridgeSnapshot(ClientContract):
     """Refresh-reconstructable Bridge projection."""
 
     sessions: list[SessionSummary]
+    sessions_next_cursor: str | None = None
     session: SessionView | None
     active_runs: list[RunProjectionSnapshot]
     pending_consents: list[ConsentCard]

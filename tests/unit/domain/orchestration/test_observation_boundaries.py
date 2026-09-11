@@ -7,9 +7,10 @@ from typing import Any
 
 import pytest
 from pydantic import BaseModel, Field
-from pydantic_graph import BaseNode, End, Graph, GraphRunContext
+from pydantic_graph import BaseNode, End, GraphRunContext
 
 from lychd.domain.animation.errors import HardwareTransitionRequired
+from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.graph_runner import GraphRunner, HardwareResumeBudget
 from lychd.domain.cortex.leases import AnimatorAdmission
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore
@@ -130,7 +131,9 @@ async def test_graph_transition_observers_preserve_real_completion_or_failure(
         on_transition_event=observe,
         run_id="observer-workflow",
     )
-    graph = Graph(nodes=[_InterruptOnce])
+    graph = build_serial_graph(
+        nodes=[_InterruptOnce], state_type=_ObservationState, deps_type=type(None), output_type=str
+    )
     if failure is not None:
         with pytest.raises(RuntimeError) as caught:
             await runner.run_graph(graph, _InterruptOnce(), _ObservationState())

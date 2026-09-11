@@ -47,6 +47,7 @@ from lychd.domain.cortex.runs import RunStatus
 from lychd.domain.cortex.substrate import RunSubstrate, reset_run_substrate, set_run_substrate
 from lychd.interface.web.altar_services import build_altar_services
 from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry
+from tests.web.conftest import TEST_ACCESS_PASSWORD, TEST_AUTHORIZATION
 
 pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
 
@@ -186,7 +187,10 @@ def _configure_postgres_app_environment(
     monkeypatch.setattr(sys, "argv", ["python"])
     monkeypatch.setattr(sys, "orig_argv", ["python"])
     monkeypatch.setenv("LYCHD_APP_SECRET_KEY", "test-app-secret")
+    monkeypatch.setenv("LYCHD_LOCAL_ACCESS_PASSWORD", TEST_ACCESS_PASSWORD)
     monkeypatch.setenv("LYCHD_DB_PASSWORD", unquote(parsed.password or "test"))
+    monkeypatch.setenv("LYCHD_RUNTIME_DB_PASSWORD", "synthetic-runtime-db-password")
+    monkeypatch.setenv("LYCHD_PHOENIX_DB_PASSWORD", "synthetic-phoenix-db-password")
     monkeypatch.setenv("SERVER__PORT", "7134")
     monkeypatch.setenv("SERVER__DATABASE__PROFILE", "postgres")
     monkeypatch.setenv("SERVER__DATABASE__HOST", parsed.hostname or "localhost")
@@ -198,22 +202,13 @@ def _configure_postgres_app_environment(
 
 
 def _migrate_postgres(pg_url: str) -> None:
-    """Apply the same linear Alembic head the production plugin declares."""
-    from advanced_alchemy.alembic.commands import AlembicCommandConfig
-    from alembic import command
-    from sqlalchemy.ext.asyncio import create_async_engine
+    """Apply the production gate twice to prove its repeatable role/schema split."""
+    from lychd.config.settings.root import get_settings
+    from lychd.db.bootstrap import bootstrap_database
 
-    from lychd.config.constants import DB_MIGRATION_VERSION_TABLE, PATH_MIGRATION_CONFIG
-
-    command.upgrade(
-        AlembicCommandConfig(
-            engine=create_async_engine(pg_url),
-            version_table_name=DB_MIGRATION_VERSION_TABLE,
-            file_=PATH_MIGRATION_CONFIG,
-            render_as_batch=False,
-        ),
-        "head",
-    )
+    _ = pg_url
+    bootstrap_database(get_settings())
+    bootstrap_database(get_settings())
 
 
 def _install_minimal_extensions(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -331,12 +326,13 @@ async def test_queues_api_reads_real_substrate_zero_injection(monkeypatch: pytes
         app = Litestar(
             route_handlers=[OrchestratorController],
             dependencies=web_dependencies,
-            middleware=[sigil_auth_middleware()],
+            middleware=[sigil_auth_middleware(access_password=TEST_ACCESS_PASSWORD)],
             state=State({"services": services}),
         )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app),
             base_url="http://testserver.local",
+            headers={"authorization": TEST_AUTHORIZATION},
         ) as client:
             resp = await client.get("/orchestrator/queues")
         assert resp.status_code == 200
@@ -405,7 +401,7 @@ def _assert_restored_atlas_project(
 
 @pytest.mark.integration
 @pytest.mark.container
-def test_production_wiring_real_factory_over_postgres_survives_second_boot(
+def test_production_wiring_real_factory_over_postgres_survives_second_boot(  # noqa: PLR0915 - complete two-boot receipt
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -444,7 +440,9 @@ def test_production_wiring_real_factory_over_postgres_survives_second_boot(
     _install_minimal_extensions(monkeypatch)
 
     try:
-        with PostgresContainer("pgvector/pgvector:pg18-trixie", driver="asyncpg") as pg:
+        postgres = PostgresContainer("pgvector/pgvector:pg18-trixie", driver="asyncpg")
+        postgres.with_env("POSTGRES_INITDB_ARGS", "--auth-host=scram-sha-256")
+        with postgres as pg:
             pg_url = pg.get_connection_url()
             _configure_postgres_app_environment(
                 monkeypatch,
@@ -457,6 +455,7 @@ def test_production_wiring_real_factory_over_postgres_survives_second_boot(
 
             app = create_app()
             with TestClient(app=app, base_url="http://127.0.0.1:7134") as client:
+                client.headers["Authorization"] = TEST_AUTHORIZATION
                 _configure_offline_dispatch(app)
                 headers = _csrf_headers(client)
                 assert client.get("/api/v1/bridge/sessions/not-a-uuid").status_code == 404
@@ -477,6 +476,7 @@ def test_production_wiring_real_factory_over_postgres_survives_second_boot(
 
             asyncio.run(dispose_engine())
             with TestClient(app=create_app(), base_url="http://127.0.0.1:7134") as second_client:
+                second_client.headers["Authorization"] = TEST_AUTHORIZATION
                 restored = second_client.get(f"/api/v1/bridge/runs/{run_id}")
                 assert restored.status_code == 200
                 _assert_done_projection(restored.json())

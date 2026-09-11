@@ -34,8 +34,11 @@ and the configured server port; the native launcher publishes that result before
 the application, and Host admission consumes the same value. Native `lychd serve` likewise accepts
 only `127.0.0.1` or `::1` from `--host`/`-H`, `LITESTAR_HOST`, or `GRANIAN_HOST`, defaulting to
 `127.0.0.1`, and publishes that host before delegation. File-descriptor and UNIX-domain-socket
-arguments or Litestar environment overrides are refused: otherwise they would bypass the owned
-TCP host rather than refine it. The caged image's intentional internal
+arguments or Litestar/Granian environment overrides are refused, including `GRANIAN_FILE_DESCRIPTOR`
+and `GRANIAN_UDS`: otherwise they would bypass the owned TCP host rather than refine it.
+Native short-option clusters are expanded before policy validation; admitted debug/PDB flags
+cannot hide a host, port, worker, reload, or alternate-listener option. Unknown short options are
+refused and require an explicit long spelling. The caged image's intentional internal
 Granian `0.0.0.0` listener is a distinct topology behind generated loopback-only host publication;
 it does not authorize the native bootstrap listener to widen.
 
@@ -105,8 +108,10 @@ shapes; this is a correctness contract, not a throughput claim.
 The Vessel is the trusted control plane: HTTP admission, orchestration, persistence access,
 runtime projection, and its static client. Its default browser seam admits literal loopback Host
 authorities on the configured external port and detected listener port, same-origin requests, and
-only explicitly configured loopback CORS origins. This does not authenticate the fixed bootstrap
-Sigil. Wider browser controls and queue/execution isolation belong to
+only explicitly configured loopback CORS origins. Protected requests additionally require the
+dedicated local possession credential before receiving the fixed bootstrap Sigil; Host and CORS
+checks alone provide no authentication. This local gate supplies no remote person identity.
+Wider browser controls and queue/execution isolation belong to
 [Security (09)](09-security.md). Tomb is a designed, not delivered, execution plane; there is no
 Tomb queue, executor, credential, mount, sandbox, or promotion authority here. Its delivery
 boundary is maintained by [State of Work](../state-of-the-work.md#tomb-untrusted-execution).

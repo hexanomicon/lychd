@@ -26,13 +26,13 @@ Read the three views together:
 
 | View | What to inspect |
 | --- | --- |
-| Header | `title`, `description`, `pattern_id@revision`, and the UI label `published`. Here, published means registered from source; a durable publication store is not implemented. |
+| Header | `title`, `description`, `pattern_id@revision`, declared entry, and **Registered from source**. A durable publication store is not implemented. |
 | **Semantic score** | Station and permission counts; each node's `label`, `key`, `kind`, and permitted next station. |
-| **Immutable identity** | `checkpoint`, declared `entry`, reviewed `implementation` revision, 64-character `digest`, `trigger`, and plain-text Mermaid `source`. |
+| **Identity & source** | Expand the disclosure for `checkpoint`, declared `entry`, reviewed `implementation` revision, 64-character `digest`, `trigger`, and plain-text Mermaid `source`. |
 
-The semantic score is the main reading surface. A station and its permitted edge tell you what the score allows. A Run's retained evidence establishes which movements were observed.
+The semantic score is the main reading surface. A station and its permitted edge tell you what the score allows. The optional diagram derives the same stations and permissions, including declared wait loops, from that manifest. A Run's retained evidence establishes which movements were observed.
 
-**Reveal** and **Hide** under **Diagram lens** control an optional static diagram. It subscribes to no execution and highlights no live station.
+**Reveal** and **Hide** under **Diagram lens**, below the score, control an optional static diagram. It subscribes to no execution and highlights no live station.
 
 The station's kind needs care when interpreting the score. A Spell is an independently identified semantic action, and the accepted grammar places its exact contract in a Scroll-local station. Current manifests do not yet carry independent Spell identity. In particular, the distinct glyph for a `delegate` station does not establish an independent Spell contract or provider-backed execution.
 
@@ -40,7 +40,7 @@ The station's kind needs care when interpreting the score. A Spell is an indepen
 
 An Invocation is the admitted Circle; casting performs its Scroll, and the Run is its durable ledger identity. Compare the declaration in Loom with [Orb's retained evidence of traversal](orb.md), accounting for any gaps and omissions there.
 
-Orb can open a score with `?run={run_id}` attached. That query supplies review context; it does not select the Pattern identity. Loom offers **Return to Run in Orb** only after the Run's pinned manifest validates and equals the entire registered score. Matching the digest, Pattern ID, and revision alone is insufficient. The return also preserves the selected event or delegated-job hint. Invalid, unavailable, or mismatched Run context is shown explicitly. Selecting another Pattern discards the Run query.
+Orb can open a score with `?run={run_id}` attached. That query supplies review context; it does not select the Pattern identity. Loom offers **Return to Run in Orb** only after the Run's pinned manifest validates and equals the entire registered score. Matching the digest, Pattern ID, and revision alone is insufficient. Loom also checks that the separately fetched displayed score still has the validated digest. The return preserves the selected event or delegated-job hint. Invalid, unavailable, or mismatched Run context is shown explicitly. Selecting another Pattern discards the Run query.
 
 ??? info "Compare the source contract"
 

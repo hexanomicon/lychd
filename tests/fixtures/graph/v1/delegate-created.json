@@ -1,0 +1,120 @@
+{
+  "version": "1.107.5",
+  "run": {
+    "run_id": "v1-delegate",
+    "session_id": "sess_5bfeb0f0305a",
+    "workflow_name": "delegated_rite",
+    "pattern_manifest": {
+      "schema_version": 2,
+      "key": "delegated_rite",
+      "revision": "1",
+      "implementation_revision": "py.1",
+      "checkpoint_schema": "delegated-rite-state-v1",
+      "entry_node": "dispatch_delegate",
+      "nodes": [
+        {
+          "key": "dispatch_delegate",
+          "label": "Delegate sealed labor",
+          "kind": "delegate"
+        },
+        {
+          "key": "project_reply",
+          "label": "Project adopted result",
+          "kind": "step"
+        },
+        {
+          "key": "end",
+          "label": "End",
+          "kind": "terminal"
+        }
+      ],
+      "edges": [
+        {
+          "key": "delegate-waits",
+          "source": "dispatch_delegate",
+          "target": "dispatch_delegate",
+          "relation": "permits"
+        },
+        {
+          "key": "delegate-to-project",
+          "source": "dispatch_delegate",
+          "target": "project_reply",
+          "relation": "permits"
+        },
+        {
+          "key": "project-to-end",
+          "source": "project_reply",
+          "target": "end",
+          "relation": "permits"
+        }
+      ],
+      "digest": "83958866654c06a62276b3894a117cac0a69fa97553451ec59b038c8f64f89ca"
+    },
+    "source": "bridge",
+    "queue_name": "runs",
+    "priority": 50,
+    "status": "queued",
+    "prompt": "/delegate inspect",
+    "sigil_name": "magus",
+    "sigil_scopes": "frozenset()",
+    "requested_priority": null,
+    "admitted_capability_key": null,
+    "attempt": 0,
+    "enqueue_seq": 1,
+    "error": null,
+    "consent_id": null,
+    "delegated_job_id": "498acd40-4e18-47d9-b335-d6c5c80ed97d",
+    "created_at": "2026-09-10 06:46:11.785112+00:00",
+    "updated_at": "2026-09-10 06:46:11.787859+00:00",
+    "started_at": "2026-09-10 06:46:11.785249+00:00",
+    "finished_at": null
+  },
+  "snapshots": [
+    {
+      "state": {
+        "session_id": "sess_5bfeb0f0305a",
+        "run_id": "v1-delegate",
+        "prompt": "/delegate inspect",
+        "hardware_resume_budget": {
+          "total_resumes": 0,
+          "same_capability_key": null,
+          "same_capability_resumes": 0
+        },
+        "request_id": "de53dad5-20ec-4769-b32c-892aa0772963",
+        "job_id": null,
+        "reply": null
+      },
+      "node": {
+        "node_id": "DispatchDelegate"
+      },
+      "start_ts": "2026-09-10T06:46:11.787239Z",
+      "duration": 0.00019336900004418567,
+      "status": "error",
+      "kind": "node",
+      "id": "DispatchDelegate:13999600b36642fba1cdd0abdf97a13d"
+    },
+    {
+      "state": {
+        "session_id": "sess_5bfeb0f0305a",
+        "run_id": "v1-delegate",
+        "prompt": "/delegate inspect",
+        "hardware_resume_budget": {
+          "total_resumes": 0,
+          "same_capability_key": null,
+          "same_capability_resumes": 0
+        },
+        "request_id": "de53dad5-20ec-4769-b32c-892aa0772963",
+        "job_id": "498acd40-4e18-47d9-b335-d6c5c80ed97d",
+        "reply": null
+      },
+      "node": {
+        "node_id": "DispatchDelegate"
+      },
+      "start_ts": null,
+      "duration": null,
+      "status": "created",
+      "kind": "node",
+      "id": "DispatchDelegate:9c444dd871aa44259c10f248d6f1037b"
+    }
+  ]
+}

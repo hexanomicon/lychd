@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Annotated, Any, Literal, cast
 from uuid import NAMESPACE_URL, uuid5
 
 from litestar import Controller, Request, get, post
@@ -12,9 +12,9 @@ from litestar.datastructures import State
 from litestar.di import NamedDependency
 from litestar.exceptions import NotFoundException, ValidationException
 from litestar.openapi.datastructures import ResponseSpec
-from litestar.params import FromPath
+from litestar.params import FromPath, QueryParameter
 from litestar.response import ServerSentEvent, ServerSentEventMessage
-from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
+from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND, HTTP_429_TOO_MANY_REQUESTS
 
 from lychd.agents.router import Intent
 from lychd.agents.workflows import WorkflowRegistry, resolve_pinned_workflow
@@ -36,12 +36,14 @@ from lychd.domain.web.contracts import (
     RunProjectionSnapshot,
     SessionCreated,
     SessionInspector,
-    SessionSummary,
+    SessionPage,
     SessionView,
 )
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.schemas import BridgeTurn, ConsentCard
 from lychd.domain.web.sessions import SessionRecord, SessionStorePort
+from lychd.interface.web.bridge_archive import read_session_page
+from lychd.interface.web.bridge_stream import BoundedRunEventStream
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -70,15 +72,6 @@ def _turn_view(turn: BridgeTurn) -> BridgeTurnView:
         state=turn.state,
         fragments=list(turn.fragments),
         created_at=turn.created_at,
-    )
-
-
-def _session_summary(session: SessionRecord, *, pending_count: int) -> SessionSummary:
-    return SessionSummary(
-        id=session.id,
-        title=session.title,
-        created_at=session.created_at,
-        pending_count=pending_count,
     )
 
 
@@ -130,8 +123,8 @@ class BridgeController(Controller):
         state: State,
     ) -> BridgeSnapshot:
         """Return the newest session or an empty reconstructable Bridge."""
-        sessions = await bridge_sessions.list_sessions()
-        session = sessions[0] if sessions else None
+        sessions = await read_session_page(bridge_sessions, consents, state.services.ledger)
+        session = await bridge_sessions.get_session(sessions.sessions[0].id) if sessions.sessions else None
         return await self._snapshot(
             sessions,
             session,
@@ -160,12 +153,12 @@ class BridgeController(Controller):
         workflows: NamedDependency[WorkflowRegistry],
         state: State,
     ) -> BridgeSnapshot:
-        """Return one selected session and the full session rail."""
+        """Return one selected session and the first bounded archive page."""
         session = await bridge_sessions.get_session(session_id)
         if session is None:
             raise NotFoundException(detail="Unknown session.")
         return await self._snapshot(
-            await bridge_sessions.list_sessions(),
+            await read_session_page(bridge_sessions, consents, state.services.ledger),
             session,
             bridge_sessions,
             consents,
@@ -174,6 +167,22 @@ class BridgeController(Controller):
             workflows,
             state,
         )
+
+    @get(
+        "/sessions",
+        name="bridge:sessions",
+        operation_id="getBridgeSessions",
+        guards=[requires_scopes("altar:read")],
+    )
+    async def session_page(
+        self,
+        bridge_sessions: NamedDependency[SessionStorePort],
+        consents: NamedDependency[ConsentLedger],
+        state: State,
+        cursor: Annotated[str | None, QueryParameter(max_length=512)] = None,
+    ) -> SessionPage:
+        """Continue the archive without loading unrelated conversation histories."""
+        return await read_session_page(bridge_sessions, consents, state.services.ledger, cursor=cursor)
 
     @post(
         "/sessions",
@@ -334,7 +343,7 @@ class BridgeController(Controller):
         workflows: WorkflowRegistry,
         state: State,
     ) -> RunProjectionSnapshot:
-        """Project Run evidence with delegated details bound to one same-Run job."""
+        """Project Run evidence, preferring retained terminal replies over live deltas."""
         manifest = run.pattern_manifest
         pattern_id = str(manifest.get("key") or run.workflow_name)
         revision = str(manifest.get("revision") or "legacy-unversioned")
@@ -404,6 +413,11 @@ class BridgeController(Controller):
                 run.status.value if run.status in TERMINAL_STATUSES else live.activity,
             )
             terminal = live.terminal or run.status in TERMINAL_STATUSES
+            if run.status in TERMINAL_STATUSES:
+                turn = await bridge_sessions.settled_turn_for_run(run.run_id)
+                if turn is not None:
+                    content = turn.content
+                    fragments = [dict(fragment) for fragment in turn.fragments]
         else:
             turn = await bridge_sessions.settled_turn_for_run(run.run_id)
             cursor, content, activity = (
@@ -457,6 +471,7 @@ class BridgeController(Controller):
                 description="Versioned semantic run events.",
             ),
             HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False),
+            HTTP_429_TOO_MANY_REQUESTS: ResponseSpec(FrameworkError, generate_examples=False),
         },
     )
     async def events(
@@ -473,12 +488,14 @@ class BridgeController(Controller):
         if run is None:
             raise NotFoundException(detail="Unknown run.")
         if run.status in TERMINAL_STATUSES:
-            return ServerSentEvent(
+            return BoundedRunEventStream(
                 _terminal_stream(
                     projector,
                     run_id,
                     cursor=(await state.services.ledger.next_seq(run_id)) - 1,
                 ),
+                bus=run_bus,
+                run_id=run_id,
             )
 
         async def stream() -> AsyncIterator[ServerSentEventMessage]:
@@ -514,7 +531,7 @@ class BridgeController(Controller):
                     with contextlib.suppress(Exception):
                         await aclose()
 
-        return ServerSentEvent(stream())
+        return BoundedRunEventStream(stream(), bus=run_bus, run_id=run_id)
 
     @post(
         "/consents/{consent_id:str}/decision",
@@ -581,7 +598,7 @@ class BridgeController(Controller):
 
     async def _snapshot(
         self,
-        sessions: list[SessionRecord],
+        sessions: SessionPage,
         session: SessionRecord | None,
         bridge_sessions: SessionStorePort,
         consents: ConsentLedger,
@@ -591,20 +608,16 @@ class BridgeController(Controller):
         state: State,
     ) -> BridgeSnapshot:
         ledger = cast("RunLedger", state.services.ledger)
-        session_ids = dict.fromkeys(item.id for item in sessions)
-        if session is not None:
-            session_ids[session.id] = None
-        runs_by_session = {session_id: await ledger.list_for_session(session_id) for session_id in session_ids}
-        run_sessions = {run.run_id: run.session_id for runs in runs_by_session.values() for run in runs}
-        # One consent read supplies the rail and selected cards from the same rows.
-        # Unmapped pending consents remain part of the separate global count.
-        pending_by_session: dict[str, list[ConsentView]] = {session_id: [] for session_id in session_ids}
-        for view in await consents.pending_views_for_runs(frozenset(run_sessions)):
-            pending_by_session[run_sessions[view.run_id]].append(view)
-        session_runs = runs_by_session[session.id] if session is not None else []
-        pending_views = pending_by_session[session.id] if session is not None else []
+        session_runs = await ledger.list_for_session(session.id) if session is not None else []
+        pending_views = await consents.pending_views_for_runs(frozenset(run.run_id for run in session_runs))
         return BridgeSnapshot(
-            sessions=[_session_summary(item, pending_count=len(pending_by_session[item.id])) for item in sessions],
+            sessions=[
+                item.model_copy(update={"pending_count": len(pending_views)})
+                if session is not None and item.id == session.id
+                else item
+                for item in sessions.sessions
+            ],
+            sessions_next_cursor=sessions.next_cursor,
             session=_session_view(session, pending_count=len(pending_views)) if session is not None else None,
             active_runs=await self._active_run_projections(
                 session,

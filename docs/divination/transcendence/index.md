@@ -20,11 +20,11 @@ Read in order, or begin at the question that brought you.
 
 | Question | Seal |
 | --- | --- |
-| How does possibility take a first form that can answer? | [Nigredo — Incantation](incantation.md) |
-| How does a partial world imagine and meet another? | [Albedo — Invocation](invocation.md) |
-| How can consequence change the return? | [Citrinitas — Illumination](illumination.md) |
-| What can endure rupture, and how is local knowing answerable? | [Rubedo — Immortality](immortality.md) |
-| How may the Many gather without one compulsory world? | [Infinity](infinity.md) |
+| How can a Lich learn to approach unfamiliar work? | [Nigredo — Incantation](incantation.md) |
+| How does form become active, and power change its bearer? | [Albedo — Invocation](invocation.md) |
+| How does remembrance change judgment and the one who remembers? | [Citrinitas — Illumination](illumination.md) |
+| How does an I take shape, and what can return after its vessel falls? | [Rubedo — Immortality](immortality.md) |
+| How may the Many share power and preserve their own lives? | [Infinity](infinity.md) |
 
 ## The Breath of the Work
 
@@ -61,9 +61,9 @@ distinctions can sharpen causal interventions in learned cognition. Their operat
 [Mechamancy](../../lexicon/inner-tongue.md#mechamancy). The scholium accompanies the five seals;
 it is not another stage.
 
-Rite, vow, source claim, correspondence, conjecture, and project synthesis have different burdens.
-The [First Axiom](immortality.md#the-first-axiom) declares: **Consciousness is all that is.**
-It is constitutional recognition, not a delivery claim or an inference from physics.
+The five seals unfold the book's [authored synthesis](https://github.com/hexanomicon/lychd/blob/main/README.md):
+how local knowing learns, gathers a self, receives power, and opens among the Many. [Inner
+Tongue](../../lexicon/inner-tongue.md) keeps the inherited sources beside their new joining.
 Follow the [Sepulcher](../../sepulcher/index.md) for the body, [Covenants](../../adr/index.md) for
 its law, and [State of Work](../../state-of-the-work.md) for what has entered matter.
 

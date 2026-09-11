@@ -12,14 +12,16 @@ icon: material/graph-outline
 
 ## Decision
 
-LychD uses the installed serial pydantic_graph BaseNode API. A Workflow binds typed Graph,
+LychD uses Pydantic Graph v2's native GraphBuilder with serial BaseNode stations. A Workflow binds typed Graph,
 start-node type, admitted-Intent state factory, deterministic routing trigger, and immutable
 PatternManifest. Each BaseNode receives mutable state and run-scoped dependencies and returns its
-next node or End. Python return types declare intended transitions; Pydantic validates construction
-and serialization, not every hidden premise or mutation.
+next node or End. Python return types declare intended transitions. LychD compares the native
+builder routes to the pinned manifest and rejects an undeclared returned successor or End before
+any successor executes. Typed shape and declared routing still cannot prove hidden premises or
+the meaning of a mutation.
 
-The engine is serial. GraphBuilder, broadcast, map/spread, joins, reducers, and parallel execution
-are not installed behavior; State owns the Pydantic AI v2 migration boundary.
+The delivered engine is serial. Broadcast, map/spread, joins, reducers, arbitrary function steps,
+and parallel execution have no admitted checkpoint contract and are rejected by this adapter.
 
 ## State and dependencies
 
@@ -42,6 +44,11 @@ to Python nodes. `PatternManifest` is therefore not the portable Scroll ABI.
 
 Admission pins the full manifest. Before execute or resume, worker requires that snapshot to remain
 valid and exactly equal the registered revision; drift fails instead of silently changing score.
+Fresh execution must begin at the builder's declared entry station; only a validated durable
+cursor may enter at a later station. Fresh calls retain the caller's state and node objects while
+checkpoint storage retains detached copies.
+Both delivered Bridge revisions validate fresh and restored state against admitted Run identity,
+session, prompt, priority, and capability binding before node execution.
 Workflow.mermaid() is a projection.
 
 ### Boundary metadata (Designed)
@@ -113,6 +120,21 @@ validated snapshot history in one JSONB row with INSERT ON CONFLICT UPDATE; memo
 process-local copies. A snapshot contains typed state, next node, status, and completed/end
 snapshots—not dependencies or event stream.
 
+The native builder has no persistence API. LychD owns the snapshot codec and execution statuses;
+GraphRunner invokes the public native iterator and task-request API to execute one station at a
+time. It records running before the native node call, records success/error afterward, and retains
+the next station or final result before reporting settlement. Re-entry injects the decoded node
+at the native iterator's initial boundary before any station runs. Native task ids and fork stacks
+remain local to that invocation.
+
+The codec preserves the supported v1 wire envelope while validating state and output against the
+pinned graph and resolving node ids only from its declared classes. Unknown nodes or node fields,
+duplicate snapshot ids, and multiple created cursors fail explicitly. A pending snapshot remains
+decodable but is not automatically replayed; neither running nor error status grants a new attempt.
+The `node_id` field belongs to the checkpoint envelope; node constructors cannot declare it.
+Constructor fields are checked before writing and after reading, so serialization cannot silently
+replace a node value with envelope metadata or retain fields the decoder cannot restore.
+
 GraphRunner can create/resume snapshots but cannot decide their deletion. Terminal order is fixed:
 
 1. Commit DONE, FAILED, or CANCELLED to Run ledger.
@@ -128,7 +150,11 @@ PostgreSQL consent-plus-checkpoint restart, schema migration, transactional Step
 
 A Gate stores serializable message suffix/call ids, snapshots itself, and parks. Worker commits the
 consent relation and AWAITING_CONSENT; one guarded verdict edge admits QUEUED and the next worker
-resumes the same Graph. One approval call per model round, with bounded chained rounds, is current;
+resumes the same Graph. Typed checkpoint shape alone does not authorize that re-entry: before
+the first node executes, its Gate/delegated station kind and retained owner id must match the Run's
+single current wait owner. [Workers (14)](14-workers.md#durable-consent-and-delegated-waits) owns
+replacement of that relation across chained or mixed waits; historical records remain evidence.
+One approval call per model round, with bounded chained rounds, is current;
 ADR 25 owns verdict order and recovery.
 
 ## Delegated Agent Macro-Nodes {#3-delegated-agent-macro-nodes}
@@ -164,12 +190,18 @@ testimony is labelled, bounded evidence, never hidden reasoning.
 
 ## Runtime migration
 
-Migration is staged: `1.25.1` → exact final-v1
-[`1.107.1`](https://github.com/pydantic/pydantic-ai/releases/tag/v1.107.1) with deprecations as
-errors → versioned checkpoint/cursor and parked-Run migration → a `WorkflowRuntime` port → audited
-v2. Version `1.107.0` is forbidden because `1.107.1` closes its AG-UI trailing-message
-authorization bypass. GraphBuilder parallelism and external durability remain separate experiments;
-neither may ride inside the checkpoint-format migration.
+The installed version is owned by [Agents](20-agents.md#decision) and the lockfile. The v2 migration
+uses the public builder and BaseNode interoperability; it does not retain the removed v1 runner or
+vendor upstream persistence. Official [builder documentation](https://pydantic.dev/docs/ai/graph/builder/)
+and the [migration map](https://pydantic.dev/docs/ai/overview/migration/) explain that native graph
+snapshotting is absent. The LychD serial adapter preserves the existing Run/Stasis boundary instead
+of introducing an external durability engine or agent-Harness authority.
+
+Captured Pydantic Graph 1.107.5 consent, delegated, and hardware-wait documents exercise the owned
+decoder in `tests/integration/test_graph_checkpoint_codec.py`. The captured consent continuation
+runs on the native builder with either verdict; pending remains nonreplayable. These receipts do
+not establish process restart, database schema migration, or broker recovery. Parallelism and
+external durability remain separate designs.
 
 ## Future parallel topology
 
@@ -205,7 +237,7 @@ judges the durable records after process loss.
 
 !!! failure "Cost"
     - Checkpoint schemas require deliberate versioning; durable replacement rewrites whole history.
-    - Live waits die with process; manifest edges and Python paths can drift without stronger proof.
+    - Live waits die with process; valid routing cannot prove factual correctness or effect meaning.
 
 ## Verification
 

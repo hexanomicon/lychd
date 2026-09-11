@@ -159,6 +159,8 @@ class RunRecord:
     attempt: int = 0
     enqueue_seq: int = 0
     error: str | None = None
+    # Current durable wait owner, retained through its admitted delivery. A new
+    # park sets its pointer and clears the other; related ledgers retain history.
     consent_id: str | None = None
     delegated_job_id: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))

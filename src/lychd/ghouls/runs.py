@@ -47,6 +47,9 @@ from lychd.domain.delegation.signals import DelegatedAgentParked
 from lychd.lib.asyncio import complete_under_cancellation
 
 if TYPE_CHECKING:
+    from pydantic import BaseModel
+    from pydantic_graph import BaseNode, End
+
     from lychd.agents.workflows.base import Workflow
     from lychd.domain.cortex.engine import RunQueue
     from lychd.domain.cortex.events import RunEmitter
@@ -65,6 +68,7 @@ DELEGATE_RELAY_INTERVAL_S = 2.0
 DELEGATE_RELAY_BATCH_SIZE = 32
 DELEGATE_PROBE_TIMEOUT_S = 10.0
 CONSENT_RELAY_INTERVAL_S = 2.0
+CONSENT_PROBE_TIMEOUT_S = 10.0
 FAILURE_CONTAINMENT_ATTEMPTS = 3
 FAILURE_CONTAINMENT_RETRY_S = 0.05
 STARTUP_RECONCILIATION_BATCH_SIZE = 128
@@ -99,9 +103,46 @@ def _phylactery_for(run: RunRecord, workflow: Workflow, substrate: RunSubstrate)
     return LiveStasisPhylactery(job_id=run.run_id)
 
 
+def _validate_resume_owner(run: RunRecord, state: BaseModel, node: BaseNode[Any, Any, Any] | End[Any]) -> None:
+    """Bind the first restored station to the current wait owner retained through admission.
+
+    Historical Consent and AgentJob rows cannot authorize re-entry. The Run retains
+    exactly one current owner across QUEUED and RUNNING until its next durable park.
+    """
+    from lychd.agents.workflows.base import DelegatedAgentNode, Gate
+
+    if getattr(state, "run_id", None) != run.run_id:
+        msg = "Resume checkpoint does not match its admitted Run."
+        raise ValueError(msg)
+    if (run.consent_id is None) == (run.delegated_job_id is None):
+        msg = "Resumed Run must retain exactly one current wait owner."
+        raise ValueError(msg)
+    if run.consent_id is not None:
+        if (
+            not isinstance(node, Gate)
+            or isinstance(node, DelegatedAgentNode)
+            or getattr(state, "pending_consent_id", None) != run.consent_id
+        ):
+            msg = "Resume checkpoint does not match the Run's current consent owner."
+            raise ValueError(msg)
+    elif (
+        not isinstance(node, DelegatedAgentNode)
+        or isinstance(node, Gate)
+        or getattr(state, "job_id", None) != run.delegated_job_id
+    ):
+        msg = "Resume checkpoint does not match the Run's current delegated owner."
+        raise ValueError(msg)
+
+
 async def _await_claim_gate(substrate: RunSubstrate) -> None:
     """Park while runtime mutation has closed admission to new run claims."""
     await substrate.orchestrator.worker_broker.claim_gate.wait()
+
+
+async def _claim_run(substrate: RunSubstrate, run_id: str, enqueue_seq: int) -> bool:
+    """Claim only after any prior worker's child containment has finished."""
+    async with substrate.claims.hold(run_id):
+        return await substrate.ledger.try_claim_run(run_id, enqueue_seq=enqueue_seq)
 
 
 def _require_claimed_delivery(
@@ -188,7 +229,7 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
     if run is None or delivery_seq is None or run.status is not RunStatus.QUEUED or run.enqueue_seq != delivery_seq:
         return {"status": "skipped", "run_id": run_id}  # stale / duplicate claim guard
     claim_enqueue_seq = delivery_seq
-    claim_task = asyncio.ensure_future(ledger.try_claim_run(run_id, enqueue_seq=claim_enqueue_seq))
+    claim_task = asyncio.ensure_future(_claim_run(substrate, run_id, claim_enqueue_seq))
     try:
         claimed = await asyncio.shield(claim_task)
     except asyncio.CancelledError:
@@ -217,7 +258,15 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
         """Commit terminal truth despite cancellation and preserve emit ownership."""
         nonlocal terminal_owned
         settle_task = asyncio.ensure_future(
-            _settle_terminal(
+            _fail_claimed_run(
+                substrate,
+                run,
+                enqueue_seq=claim_enqueue_seq,
+                error=error or "run failed",
+                persistence=persistence,
+            )
+            if status is RunStatus.FAILED
+            else _settle_terminal(
                 ledger,
                 run_id,
                 claim_enqueue_seq,
@@ -261,18 +310,12 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
                 RunStatus.FAILED,
                 error=(f"pinned Pattern unavailable: {pinned_key or run.workflow_name}@{pinned_revision or 'unknown'}"),
             )
-            await _cleanup_claim_resources(substrate, run, persistence=None)
             return {"status": "failed", "run_id": run_id}
 
         if resume and not await substrate.stasis_store.exists(run.run_id):
             # Honest failure: never a silent re-run of a run whose checkpoint is gone.
             # F2: settle inside the try so the finally emits the terminal + closes the channel.
             await settle_terminal(RunStatus.FAILED, error="stasis lost")
-            await _cleanup_claim_resources(
-                substrate,
-                run,
-                persistence=None,
-            )
             return {"status": "failed", "run_id": run_id}
 
         persistence = _phylactery_for(run, workflow, substrate)
@@ -323,6 +366,7 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
             validate_state=(
                 partial(workflow.validate_state, admitted_intent) if workflow.validate_state is not None else None
             ),
+            validate_resume=partial(_validate_resume_owner, run),
             run_id=run_id,
         )
         from lychd.domain.codex.sigil import Sigil
@@ -479,7 +523,34 @@ async def _fail_claimed_run(
     error: str,
     persistence: PhylacteryProtocol | None,
 ) -> bool:
-    """Settle and clean only the active hop this delivery actually claimed."""
+    """Keep exact active-hop ownership throughout child containment and settlement.
+
+    An already committed park belongs to its durable wait owner, even if the worker
+    lost the commit acknowledgement. A superseded worker cannot contain its successor.
+    Claims and park commits share this guard; publication deliberately does not.
+    """
+    async with substrate.claims.hold(run.run_id):
+        current = await substrate.ledger.get(run.run_id)
+        if current is None or current.enqueue_seq != enqueue_seq:
+            return False
+        if current.status not in {RunStatus.RUNNING, RunStatus.AWAITING_HARDWARE}:
+            if current.status in {RunStatus.CANCELLING, RunStatus.CANCELLED}:
+                await _cleanup_cancelled_claim(substrate, run, persistence=persistence)
+            return False
+        return await _contain_and_fail_claim(
+            substrate, run, enqueue_seq=enqueue_seq, error=error, persistence=persistence
+        )
+
+
+async def _contain_and_fail_claim(
+    substrate: RunSubstrate,
+    run: RunRecord,
+    *,
+    enqueue_seq: int,
+    error: str,
+    persistence: PhylacteryProtocol | None,
+) -> bool:
+    """Contain and settle while the caller holds this Run's claim guard."""
     containment_errors = await _contain_failed_run_effects(substrate, run.run_id)
     if containment_errors:
         for exc in containment_errors:
@@ -499,6 +570,9 @@ async def _fail_claimed_run(
         )
     )
     if not settled:
+        current = await substrate.ledger.get(run.run_id)
+        if current is not None and current.status in {RunStatus.CANCELLING, RunStatus.CANCELLED}:
+            await _cleanup_cancelled_claim(substrate, run, persistence=persistence)
         return False
     await _cleanup_claim_resources(
         substrate,
@@ -561,7 +635,7 @@ async def _commit_consent_park(
     run_id: str,
     parked: RunParked,
 ) -> dict[str, Any]:
-    """Commit the consent park, then close the pre-flip verdict race (F1).
+    """Commit the consent park, then probe its verdict within the recovery deadline.
 
     S4 order: persist consent + durable path + status, THEN emit CONSENT last, so a
     verdict arriving on the SSE-event path can never beat the `engine.resume_consent` guard.
@@ -571,12 +645,33 @@ async def _commit_consent_park(
     SAME atomic admission CAS and enqueue the resume ourselves. Exactly one of {this,
     `engine.resume_consent`} wins the CAS — no double-enqueue (F4).
     """
-    await ledger.park_consent(run_id, parked.consent_id)
+    async with substrate.claims.hold(run_id):
+        await ledger.park_consent(run_id, parked.consent_id)
     emitter.consent(parked.consent_id, tool_name=parked.tool_name)
 
+    probing_verdict = True
     try:
-        verdict = await substrate.consents.verdict(parked.consent_id) if substrate.consents is not None else None
+        async with asyncio.timeout(CONSENT_PROBE_TIMEOUT_S):
+            consents = substrate.consents
+            verdict = await consents.verdict(parked.consent_id) if consents is not None else None
+            probing_verdict = False
+            if verdict is not None:
+                run = await ledger.get(run_id)
+                if (
+                    run is not None
+                    and consents is not None
+                    and await admit_consent_resume(
+                        substrate.queues,
+                        ledger,
+                        consents,
+                        run,
+                        consent_id=parked.consent_id,
+                    )
+                ):
+                    return {"status": "queued", "run_id": run_id}
     except asyncio.CancelledError:
+        if not probing_verdict:
+            raise
         logger.warning(
             "consent_post_park_probe_cancelled",
             run_id=run_id,
@@ -590,22 +685,6 @@ async def _commit_consent_park(
             consent_id=parked.consent_id,
             error=str(exc),
         )
-        verdict = None
-    if verdict is not None:
-        run = await ledger.get(run_id)
-        consents = substrate.consents
-        if (
-            run is not None
-            and consents is not None
-            and await admit_consent_resume(
-                substrate.queues,
-                ledger,
-                consents,
-                run,
-                consent_id=parked.consent_id,
-            )
-        ):
-            return {"status": "queued", "run_id": run_id}
     return {"status": "awaiting_consent", "run_id": run_id}
 
 
@@ -616,18 +695,37 @@ async def _commit_delegate_park(
     run_id: str,
     parked: DelegatedAgentParked,
 ) -> dict[str, Any]:
-    """Commit a delegated wait, then close the pre-status terminal-result race."""
+    """Commit a delegated wait, then bound the optional terminal-result probe."""
     from lychd.domain.delegation.models import TERMINAL_DELEGATED_AGENT_STATUSES
 
     if parked.job.run_id != run_id:
         msg = f"Delegated job {parked.job.job_id!r} belongs to Run {parked.job.run_id!r}, not {run_id!r}."
         raise ValueError(msg)
-    await ledger.park_delegate(run_id, parked.job.job_id)
+    async with substrate.claims.hold(run_id):
+        await ledger.park_delegate(run_id, parked.job.job_id)
     emitter.status(RunStatus.AWAITING_DELEGATE.value)
     if substrate.delegates is not None:
+        probing_result = True
         try:
-            job = await substrate.delegates.refresh(parked.job.job_id)
+            async with asyncio.timeout(DELEGATE_PROBE_TIMEOUT_S):
+                job = await substrate.delegates.refresh(parked.job.job_id)
+                probing_result = False
+                if job.status in TERMINAL_DELEGATED_AGENT_STATUSES:
+                    run = await ledger.get(run_id)
+                    if run is not None and await admit_delegate_resume(
+                        substrate.queues,
+                        ledger,
+                        run,
+                        job=job,
+                    ):
+                        return {
+                            "status": RunStatus.QUEUED.value,
+                            "run_id": run_id,
+                            "job_id": parked.job.job_id,
+                        }
         except asyncio.CancelledError:
+            if not probing_result:
+                raise
             logger.warning(
                 "delegate_post_park_probe_cancelled",
                 run_id=run_id,
@@ -645,20 +743,6 @@ async def _commit_delegate_park(
                 delegated_job_id=parked.job.job_id,
                 error=str(exc),
             )
-            job = None
-        if job is not None and job.status in TERMINAL_DELEGATED_AGENT_STATUSES:
-            run = await ledger.get(run_id)
-            if run is not None and await admit_delegate_resume(
-                substrate.queues,
-                ledger,
-                run,
-                job=job,
-            ):
-                return {
-                    "status": RunStatus.QUEUED.value,
-                    "run_id": run_id,
-                    "job_id": parked.job.job_id,
-                }
     return {
         "status": RunStatus.AWAITING_DELEGATE.value,
         "run_id": run_id,
@@ -1429,16 +1513,17 @@ async def _reconcile_consent_page(
                 logger.error("reconcile_consent_owner_missing", run_id=run.run_id)
                 errors += 1
                 continue
-            view = await substrate.consents.get(run.consent_id)
-            if view is None or view.run_id != run.run_id:
-                logger.error("reconcile_consent_missing", run_id=run.run_id)
-                errors += 1
-                continue
-            if view.status == "pending":
-                revisit = True
-                continue
-            await engine.resume_consent(view.id)
-            refired += 1
+            async with asyncio.timeout(CONSENT_PROBE_TIMEOUT_S):
+                view = await substrate.consents.get(run.consent_id)
+                if view is None or view.run_id != run.run_id:
+                    logger.error("reconcile_consent_missing", run_id=run.run_id)
+                    errors += 1
+                    continue
+                if view.status == "pending":
+                    revisit = True
+                    continue
+                await engine.resume_consent(view.id)
+                refired += 1
         except Exception as exc:
             logger.exception(
                 "reconcile_consent_probe_failed",

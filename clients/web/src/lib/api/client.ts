@@ -15,6 +15,7 @@ import type {
   RunProjectionSnapshot,
   OrbRunSnapshot,
   SessionCreated,
+  SessionPage,
   SwapAccepted,
   TransitionPlan,
   TransitionRecordView
@@ -111,6 +112,13 @@ export async function getBridgeSnapshot(sessionId?: string): Promise<BridgeSnaps
     ) as BridgeSnapshot;
   }
   return unwrap(await client.GET("/api/v1/bridge")) as BridgeSnapshot;
+}
+
+export async function getBridgeSessions(cursor: string, signal?: AbortSignal): Promise<SessionPage> {
+  return unwrap(await client.GET("/api/v1/bridge/sessions", {
+    signal,
+    params: { query: { cursor } }
+  }));
 }
 
 export async function getRunSnapshot(runId: string): Promise<RunProjectionSnapshot> {
@@ -309,7 +317,12 @@ export function listenToRun(
     });
   }
   source.onerror = () => {
-    if (!refetching && !stopped) onFault("The run stream went quiet; reconnecting.");
+    if (stopped) return;
+    // Non-200 responses (including capacity refusals) stop native EventSource retries.
+    // Let the owning view apply its bounded snapshot recovery instead of staying live.
+    if (source.readyState === EventSource.CLOSED) {
+      fault("The run stream closed; its projection may be stale.");
+    } else if (!refetching) onFault("The run stream went quiet; reconnecting.");
   };
   return () => {
     stopped = true;

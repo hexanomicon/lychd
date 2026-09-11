@@ -41,15 +41,21 @@ def _compile(fields: dict[str, object]) -> LlamaCppSoulstoneConfig:
 @pytest.mark.parametrize(
     "fields",
     [
-        {"port": 23333, "exec": ["llama-server", "-m", "/models/review.gguf", "--port", "8080"]},
-        {"port": 23333, "exec": ["llama-server", "--port=8080"]},
-        {"port": 23333, "exec": ["llama-server"], "env_vars": {"LLAMA_ARG_PORT": "8080"}},
-        {"port": 23333, "model_path": "/models/review.gguf", "extra_args": ["--port", "8080"]},
-        {"base_url": "http://localhost:23333/v1", "exec": ["llama-server", "--port", "8080"]},
-        {"exec": ["llama-server", "--port", "8080"]},
         {
             "port": 23333,
-            "exec": ["llama-server", "--port", "23333", "--port", "8080"],
+            "exec": ["llama-server", "--sleep-idle-seconds", "-1", "-m", "/models/review.gguf", "--port", "8080"],
+        },
+        {"port": 23333, "exec": ["llama-server", "--sleep-idle-seconds", "-1", "--port=8080"]},
+        {"port": 23333, "exec": ["llama-server", "--sleep-idle-seconds", "-1"], "env_vars": {"LLAMA_ARG_PORT": "8080"}},
+        {"port": 23333, "model_path": "/models/review.gguf", "extra_args": ["--port", "8080"]},
+        {
+            "base_url": "http://localhost:23333/v1",
+            "exec": ["llama-server", "--sleep-idle-seconds", "-1", "--port", "8080"],
+        },
+        {"exec": ["llama-server", "--sleep-idle-seconds", "-1", "--port", "8080"]},
+        {
+            "port": 23333,
+            "exec": ["llama-server", "--sleep-idle-seconds", "-1", "--port", "23333", "--port", "8080"],
             "env_vars": {"LLAMA_ARG_PORT": "23333"},
         },
     ],
@@ -63,21 +69,34 @@ def test_compilation_rejects_known_runtime_port_conflict(fields: dict[str, objec
 @pytest.mark.parametrize(
     ("fields", "expected_port"),
     [
-        ({"port": 23333, "exec": ["llama-server", "--port", "23333"]}, 23333),
-        ({"port": 23333, "exec": ["llama-server", "--port=23333"]}, 23333),
-        ({"base_url": "http://localhost:23333/v1", "exec": ["llama-server", "--port", "23333"]}, 23333),
-        ({"exec": ["llama-server", "--port", "20000"]}, 20000),
-        ({"port": 23333, "exec": ["llama-server"], "env_vars": {"LLAMA_ARG_PORT": "23333"}}, 23333),
+        ({"port": 23333, "exec": ["llama-server", "--sleep-idle-seconds", "-1", "--port", "23333"]}, 23333),
+        ({"port": 23333, "exec": ["llama-server", "--sleep-idle-seconds", "-1", "--port=23333"]}, 23333),
+        (
+            {
+                "base_url": "http://localhost:23333/v1",
+                "exec": ["llama-server", "--sleep-idle-seconds", "-1", "--port", "23333"],
+            },
+            23333,
+        ),
+        ({"exec": ["llama-server", "--sleep-idle-seconds", "-1", "--port", "20000"]}, 20000),
         (
             {
                 "port": 23333,
-                "exec": ["llama-server", "--port", "8080", "--port", "23333"],
+                "exec": ["llama-server", "--sleep-idle-seconds", "-1"],
+                "env_vars": {"LLAMA_ARG_PORT": "23333"},
+            },
+            23333,
+        ),
+        (
+            {
+                "port": 23333,
+                "exec": ["llama-server", "--sleep-idle-seconds", "-1", "--port", "8080", "--port", "23333"],
                 "env_vars": {"LLAMA_ARG_PORT": "8080"},
             },
             23333,
         ),
         ({"port": 23333, "model_path": "/models/review.gguf", "env_vars": {"LLAMA_ARG_PORT": "8080"}}, 23333),
-        ({"port": 23333, "exec": ["custom-wrapper", "--custom-listen", "8080"]}, 23333),
+        ({"port": 23333, "exec": ["custom-wrapper", "--sleep-idle-seconds", "-1", "--custom-listen", "8080"]}, 23333),
     ],
     ids=["exec", "equals", "endpoint-only", "auto-port", "environment", "cli-over-env", "managed-over-env", "unknown"],
 )
@@ -97,7 +116,12 @@ def test_compilation_preserves_consistent_endpoint_and_command(fields: dict[str,
 def test_preset_replacement_cannot_split_a_runtime_catalogue_from_its_specs(tmp_path: Path) -> None:
     preset = tmp_path / "models.ini"
     preset.write_text("[*]\nctx-size=8192\nparallel=1\ntemp=0.3\n[first]\nmodel=/models/first.gguf\n")
-    stone = _compile({"port": 23333, "exec": ["llama-server", "--models-preset", str(preset), "--port", "23333"]})
+    stone = _compile(
+        {
+            "port": 23333,
+            "exec": ["llama-server", "--sleep-idle-seconds", "-1", "--models-preset", str(preset), "--port", "23333"],
+        }
+    )
     adapter = LlamaCppRuntimeAdapter()
     runtime = adapter.build_runtime(stone)
     assert runtime is not None

@@ -135,9 +135,13 @@ async def enqueue_run(
                 # The one and only inversion point lives in `saq_wire_priority`.
                 priority=saq_wire_priority(run.priority),
             )
+    except asyncio.CancelledError:
+        # Durable delivery truth already owns retry. Cancellation must not wait
+        # for an optional diagnostic write before its caller can honor a deadline.
+        raise
     except BaseException as exc:
         with suppress(Exception):
-            await complete_under_cancellation(ledger.note_delivery_error(run.run_id, enqueue_seq=seq, error=str(exc)))
+            await ledger.note_delivery_error(run.run_id, enqueue_seq=seq, error=str(exc))
         raise
     published = await ledger.mark_delivery_published(run.run_id, enqueue_seq=seq)
     if published:
@@ -195,13 +199,10 @@ async def admit_consent_resume(
         decided_by=consent.decided_by,
         decided_at=consent.decided_at,
     )
-    admit_task = asyncio.ensure_future(ledger.try_admit_consent(run.run_id, consent_id=consent_id, evidence=evidence))
-    try:
-        enqueue_seq = await asyncio.shield(admit_task)
-    except asyncio.CancelledError:
-        enqueue_seq = await complete_under_cancellation(admit_task)
-        _ = enqueue_seq
-        raise
+    # The atomic owner CAS leaves either the original wait or a durable PENDING
+    # delivery. Both recover without learning the outcome on a cancelled caller;
+    # shielding this operation would defeat per-owner reconciliation deadlines.
+    enqueue_seq = await ledger.try_admit_consent(run.run_id, consent_id=consent_id, evidence=evidence)
     if enqueue_seq is None:
         return False
     refreshed = await ledger.get(run.run_id) or run
@@ -244,13 +245,9 @@ async def admit_delegate_resume(
         status=job.status,
         result=job.result,
     )
-    admit_task = asyncio.ensure_future(ledger.try_admit_delegate(run.run_id, job_id=job_id, evidence=evidence))
-    try:
-        enqueue_seq = await asyncio.shield(admit_task)
-    except asyncio.CancelledError:
-        enqueue_seq = await complete_under_cancellation(admit_task)
-        _ = enqueue_seq
-        raise
+    # Like consent admission, the atomic transaction leaves either its original
+    # wait or a recoverable pending delivery when the caller's deadline expires.
+    enqueue_seq = await ledger.try_admit_delegate(run.run_id, job_id=job_id, evidence=evidence)
     if enqueue_seq is None:
         return False
     refreshed = await ledger.get(run.run_id) or run

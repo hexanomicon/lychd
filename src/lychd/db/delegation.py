@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert
 
 from lychd.domain.delegation.models import (
@@ -90,16 +90,20 @@ class DbDelegatedAgentJobStore:
             return await self._view(session, row), created
 
     async def get(self, job_id: str) -> DelegatedAgentJob | None:
+        """Read state and event history from the same committed snapshot."""
         from lychd.db.models import DelegatedAgentJobRecord
 
-        async with self._session_factory() as session:
+        async with self._session_factory() as session, session.begin():
+            await session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
             row = await session.scalar(select(DelegatedAgentJobRecord).where(DelegatedAgentJobRecord.job_id == job_id))
             return await self._view(session, row) if row is not None else None
 
     async def get_by_request(self, request_id: str) -> DelegatedAgentJob | None:
+        """Resolve one request with state and events from the same snapshot."""
         from lychd.db.models import DelegatedAgentJobRecord
 
-        async with self._session_factory() as session:
+        async with self._session_factory() as session, session.begin():
+            await session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
             row = await session.scalar(
                 select(DelegatedAgentJobRecord).where(DelegatedAgentJobRecord.request_id == request_id)
             )
@@ -112,7 +116,7 @@ class DbDelegatedAgentJobStore:
         limit: int | None = None,
         event_limit: int | None = None,
     ) -> tuple[DelegatedAgentJob, ...]:
-        """Return newest bounded jobs and event suffixes in creation order."""
+        """Read newest bounded jobs and event suffixes in creation order from one snapshot."""
         from lychd.db.models import DelegatedAgentJobRecord
 
         if limit is not None and limit < 0:
@@ -133,7 +137,8 @@ class DbDelegatedAgentJobStore:
                 DelegatedAgentJobRecord.created_at,
                 DelegatedAgentJobRecord.id,
             )
-        async with self._session_factory() as session:
+        async with self._session_factory() as session, session.begin():
+            await session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
             rows = list((await session.scalars(statement)).all())
             if reverse_rows:
                 rows.reverse()

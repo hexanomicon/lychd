@@ -108,6 +108,7 @@ def test_router_phase_mapping_activatable_vs_warm(tmp_path: Path) -> None:
                 health="ok",
                 supports_router=True,
                 loaded_models=["main"],
+                unloaded_models=["aux"],
                 available_models=["main", "aux"],
             )
 

@@ -27,7 +27,10 @@ from lychd.system.services.btrfs import (
     BtrfsSubvolumeObservation,
 )
 from lychd.system.services.layout_directory_transaction import DirectoryProvisioning
-from lychd.system.services.layout_directory_traversal import require_existing_directory
+from lychd.system.services.layout_directory_traversal import (
+    inspect_preserved_datastore,
+    require_existing_directory,
+)
 from lychd.system.services.lifecycle.models import (
     CreatedBtrfsSubvolume,
     CreatedResources,
@@ -83,7 +86,10 @@ class LayoutService:
 
         for path in self.paths:
             if os.path.lexists(path):
-                require_existing_directory(path)
+                if path == PATH_POSTGRESS_DATA_DIR:
+                    inspect_preserved_datastore(path)
+                else:
+                    require_existing_directory(path)
                 logger.debug("layout_path_exists_skipped", path=str(path))
                 skipped_paths.append(str(path))
                 continue
@@ -236,7 +242,7 @@ class LayoutService:
         """Preserve an entry that appeared after the initial absence check."""
         if not os.path.lexists(path):
             return None
-        require_existing_directory(path)
+        inspect_preserved_datastore(path)
         logger.info("layout_path_raced_preserved", path=str(path))
         return LayoutService._provisioned_path(directories)
 

@@ -27,4 +27,7 @@ meanings and origins remain distinct.
 This tongue also keeps [Mechamancy](./inner-tongue.md#mechamancy), [The
 EGO](./inner-tongue.md#the-ego), and the source distinctions upon which the Great Work depends.
 
+[Tree of Life and Sefirot](tree-of-life.md) gives the English graph, traditional meanings, and
+their correspondence with an agentic Graph of Creation and the Lich's inner instrument.
+
 [:material-eye-circle-outline: Enter the Inner Tongue](./inner-tongue.md)

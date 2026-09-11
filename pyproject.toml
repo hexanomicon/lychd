@@ -35,7 +35,7 @@ dependencies = [
     "anyio>=4.0.0",
     "asyncpg>=0.29.0",
     "click>=8.1.0",
-    "httpx<=0.28.1", # PINNED, review later
+    "httpx>=0.28.1",
     "jinja2>=3.1.6",
     "litestar[sqlalchemy,structlog,pydantic,opentelemetry]>=2.24.0,<3", # v3 migration not audited
     "litestar-granian>=0.14.2",
@@ -43,7 +43,7 @@ dependencies = [
     "pgvector>=0.4.0",
     "psycopg[pool]>=3.2.13,<4",
     "pydantic>=2.10.0",
-    "pydantic-ai-slim[logfire,openai]==1.107.5", # exact until the v2 durability/message migration suite lands
+    "pydantic-ai-slim[logfire,openai]==2.42.0", # exact agent/message/Graph adapter contract
     "pydantic-settings[toml]>=2.10.1",
     "rich>=13.9.0",
     "sqlalchemy>=2.0.0",

@@ -20,7 +20,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections import deque
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -31,7 +31,7 @@ import structlog
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable
+    from collections.abc import AsyncIterator, Callable, Generator
 
     from lychd.domain.cortex.ledger import RunLedger
 
@@ -50,6 +50,7 @@ __all__ = [
     "RunEvent",
     "RunEventBus",
     "RunEventKind",
+    "RunStreamLimitError",
 ]
 
 # Bounded replay retention per run (reconnect backfill ceiling).
@@ -58,6 +59,10 @@ _REPLAY_LIMIT = 256
 # pending deltas are replaced by a RESYNC boundary, and the authoritative snapshot
 # supplies everything through that cursor.
 _SUBSCRIBER_QUEUE_LIMIT = _REPLAY_LIMIT
+
+
+class RunStreamLimitError(RuntimeError):
+    """The process-local HTTP stream budget has no available reservation."""
 
 
 class RunEventKind(StrEnum):
@@ -450,12 +455,40 @@ class InProcessEventBus:
     path itself stays synchronous and authoritative.
     """
 
-    def __init__(self, *, ledger: RunLedger | None = None) -> None:
-        """Create an empty bus, optionally teeing non-TOKEN events to ``ledger``."""
+    def __init__(
+        self, *, ledger: RunLedger | None = None, max_http_streams: int = 32, max_http_streams_per_run: int = 4
+    ) -> None:
+        """Bind event persistence and finite process-local HTTP stream budgets."""
+        if max_http_streams < 1 or max_http_streams_per_run < 1:
+            msg = "HTTP stream budgets must be positive."
+            raise ValueError(msg)
         self._channels: dict[str, RunChannel] = {}
         self._ledger = ledger
         self._pending: set[asyncio.Task[None]] = set()
         self._writers: dict[str, _WriterGeneration] = {}
+        self._max_http_streams = max_http_streams
+        self._max_http_streams_per_run = max_http_streams_per_run
+        self._http_streams: dict[str, int] = {}
+        self._http_stream_count = 0
+
+    @contextmanager
+    def reserve_http_stream(self, run_id: str) -> Generator[None]:
+        """Hold capacity through the response lifetime, including early disconnect."""
+        current = self._http_streams.get(run_id, 0)
+        if self._http_stream_count >= self._max_http_streams or current >= self._max_http_streams_per_run:
+            msg = "Bridge event stream capacity is occupied; retry after another stream closes."
+            raise RunStreamLimitError(msg)
+        self._http_stream_count += 1
+        self._http_streams[run_id] = current + 1
+        try:
+            yield
+        finally:
+            self._http_stream_count -= 1
+            remaining = self._http_streams[run_id] - 1
+            if remaining:
+                self._http_streams[run_id] = remaining
+            else:
+                del self._http_streams[run_id]
 
     def open(self, run_id: str, *, from_seq: int | None = None) -> RunChannel:
         """Return the run's channel, creating it on first access.

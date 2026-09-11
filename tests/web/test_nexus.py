@@ -248,7 +248,9 @@ async def test_concurrent_capacity_is_reserved_before_durable_claim(
     fake_services.tickets = TicketStore(capacity=1)
     fake_services.swap_requests = blocking
     transport = httpx.ASGITransport(app=altar_client.app)  # type: ignore[attr-defined]
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver.local") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver.local", headers=dict(altar_client.headers)
+    ) as client:
         first_request = asyncio.create_task(
             client.post(
                 "/api/v1/nexus/swaps",

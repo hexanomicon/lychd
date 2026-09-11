@@ -39,6 +39,9 @@
   let loomHref = $derived(snapshot?.pattern.loom_path ? loomOriginHref(snapshot.pattern.loom_path, snapshot.run.run_id, page.url.search) : null);
   let requestedEventId = $derived(page.url.searchParams.get("event"));
   let requestedJobId = $derived(page.url.searchParams.get("job"));
+  let linkedJobUnavailable = $derived(Boolean(
+    snapshot && requestedJobId && !snapshot.delegated_jobs.some((job) => job.job_id === requestedJobId)
+  ));
 
   function delegatedJobElementId(jobId: string): string {
     return `delegated-job-${jobId}`;
@@ -262,12 +265,20 @@
             </nav>
           </div>
           <div class="run-outcome">
-            <span class="chip" data-state={snapshot.run.status}>{snapshot.run.status}</span>
+            <span class="eyebrow">Recorded status</span>
+            <span class="chip run-status" data-state={snapshot.run.status}>{snapshot.run.status.replaceAll("_", " ")}</span>
             <span>{snapshot.capture.replaceAll("_", " ")}</span>
           </div>
         </header>
 
         <AtlasLinks kind="run" targetId={snapshot.run.run_id} />
+
+        {#if linkedJobUnavailable}
+          <p class="context-unavailable" role="status">
+            The linked delegated job is not present in this Run's bounded snapshot.
+            Its relationship to this Run could not be verified.
+          </p>
+        {/if}
 
         {#if snapshot.run.error_present}
           <div class="evidence-failure" role="status">
@@ -397,14 +408,6 @@
     </section>
 
     <aside class="orb-inspector">
-      {#if snapshot}
-        <section class="panel">
-          <div class="panel-head"><h2 class="rune-head">Evidence limits</h2></div>
-          <ul class="limits-list">
-            {#each snapshot.known_omissions as omission (omission)}<li>{omission}</li>{/each}
-          </ul>
-        </section>
-      {/if}
       {#if selectionNote}
         <section class="panel selection-note" role="status">
           <p class="inspector-copy">{selectionNote}</p>
@@ -420,6 +423,7 @@
             <h2 class="rune-head">Selected event</h2>
             <button class="sheet-dismiss" type="button" onclick={clearSelection}>Close</button>
           </div>
+          <p class="selected-evidence-summary">{selected.summary}</p>
           <dl class="kv">
             <dt>event</dt><dd class="glyph">{selected.event_id}</dd>
             <dt>sequence</dt><dd>#{selected.seq}</dd>
@@ -439,6 +443,14 @@
               Open transition in Nexus →
             </a>
           {/if}
+        </section>
+      {/if}
+      {#if snapshot}
+        <section class="panel">
+          <div class="panel-head"><h2 class="rune-head">Evidence limits</h2></div>
+          <ul class="limits-list">
+            {#each snapshot.known_omissions as omission (omission)}<li>{omission}</li>{/each}
+          </ul>
         </section>
       {/if}
     </aside>

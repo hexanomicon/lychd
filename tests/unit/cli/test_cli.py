@@ -324,13 +324,20 @@ def test_root_help_does_not_construct_asgi_app(runner: CliRunner, mocker: Mocker
         "stop",
         "status",
         "logs",
+        "access",
         "del",
     }
-    assert {name for name, command in cli.commands.items() if command.hidden} == {"serve", "database", "reactor"}
-    for command in ("init", "bind", "start", "stop", "status", "logs", "del"):
+    assert {name for name, command in cli.commands.items() if command.hidden} == {
+        "serve",
+        "database",
+        "database-bootstrap",
+        "reactor",
+    }
+    for command in ("init", "bind", "start", "stop", "status", "logs", "access", "del"):
         assert command in result.output
     positions = [
-        result.output.index(f"\n  {command}") for command in ("init", "bind", "start", "stop", "status", "logs", "del")
+        result.output.index(f"\n  {command}")
+        for command in ("init", "bind", "start", "stop", "status", "logs", "access", "del")
     ]
     assert positions == sorted(positions)
     for internal in ("destroy", "doctor", "animators", "runs", "reactor", "serve", "database"):
@@ -413,6 +420,7 @@ def test_installed_entrypoint_keeps_effective_root_dry_run_observable(
     [
         (("--host", "127.0.0.1", "--port", "7134"), 7444, 7134),
         (("-H::1", "--port", "7134"), 7444, 7134),
+        (("-dPH::1", "-dPp7134"), 7444, 7134),
         ((), 7444, 7444),
     ],
 )
@@ -473,6 +481,9 @@ def test_serve_hands_one_effective_port_to_litestar_and_app_init(
         ("--host=0.0.0.0",),
         ("-H", "0.0.0.0"),  # noqa: S104 - rejected authority under test
         ("-H0.0.0.0",),
+        ("-dH0.0.0.0",),
+        ("-dPH", "0.0.0.0"),  # noqa: S104 - rejected authority under test
+        ("--host=127.0.0.1", "-dH0.0.0.0"),
     ],
 )
 def test_serve_rejects_non_loopback_listener_arguments(
@@ -498,6 +509,8 @@ def test_serve_rejects_non_loopback_listener_arguments(
         ("--fd", "3"),
         ("--file-descriptor=3",),
         ("-F3",),
+        ("-dPF3",),
+        ("-dU/tmp/server.sock",),
     ],
 )
 def test_serve_rejects_alternate_listener_arguments(
@@ -536,6 +549,8 @@ def test_serve_rejects_non_loopback_listener_environment(
     [
         ("LITESTAR_UNIX_DOMAIN_SOCKET", "/tmp/lychd.sock"),  # noqa: S108 - rejected authority under test
         ("LITESTAR_FILE_DESCRIPTOR", "3"),
+        ("GRANIAN_UDS", "/tmp/server.sock"),  # noqa: S108 - rejected authority under test
+        ("GRANIAN_FILE_DESCRIPTOR", "3"),
     ],
 )
 def test_serve_rejects_alternate_listener_environment(
@@ -580,6 +595,9 @@ def test_litestar_entrypoint_ignores_ambient_foreign_app(
     ("args", "environment", "expected_message"),
     [
         (("--workers", "2"), {}, "exactly one ASGI worker"),
+        (("-dPW2",), {}, "exactly one ASGI worker"),
+        (("-dr",), {}, "does not support Litestar reload mode"),
+        (("-dPRsrc",), {}, "does not support Litestar reload mode"),
         ((), {"LITESTAR_RELOAD": "enabled"}, "does not support Litestar reload mode"),
     ],
 )

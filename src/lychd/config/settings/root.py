@@ -67,6 +67,9 @@ class SettingsSnapshot:
     payload: str
     database_password: SecretStr | None = field(default=None, repr=False)
     web_secret_key: SecretStr | None = field(default=None, repr=False)
+    database_runtime_password: SecretStr | None = field(default=None, repr=False)
+    database_phoenix_password: SecretStr | None = field(default=None, repr=False)
+    web_access_password: SecretStr | None = field(default=None, repr=False)
 
     @classmethod
     def capture(cls, settings: Settings) -> SettingsSnapshot:
@@ -75,13 +78,27 @@ class SettingsSnapshot:
             payload=settings.model_dump_json(round_trip=True),
             database_password=settings.server.database.password,
             web_secret_key=settings.server.web.secret_key,
+            database_runtime_password=settings.server.database.runtime_password,
+            database_phoenix_password=settings.server.database.phoenix_password,
+            web_access_password=settings.server.web.access_password,
         )
 
     def materialize(self) -> Settings:
         """Revalidate the captured values without consulting any settings source."""
         values = _SettingsValues.model_validate(json.loads(self.payload))
-        values.server.database = values.server.database.model_copy(update={"password": self.database_password})
-        values.server.web = values.server.web.model_copy(update={"secret_key": self.web_secret_key})
+        values.server.database = values.server.database.model_copy(
+            update={
+                "password": self.database_password,
+                "runtime_password": self.database_runtime_password,
+                "phoenix_password": self.database_phoenix_password,
+            }
+        )
+        values.server.web = values.server.web.model_copy(
+            update={
+                "secret_key": self.web_secret_key,
+                "access_password": self.web_access_password,
+            }
+        )
         return Settings.model_construct(**dict(values))
 
 

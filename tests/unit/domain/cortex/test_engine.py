@@ -20,6 +20,7 @@ from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine, enqueu
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
 from lychd.domain.cortex.ledger import InMemoryRunLedger, RunAdmissionConflictError
 from lychd.domain.cortex.runs import RunDeliveryState, RunStatus
+from lychd.domain.cortex.substrate import RunSubstrate
 
 _TEST_ROUTING = {
     "default": RouteRule(queue="runs", priority=50),
@@ -948,7 +949,8 @@ async def test_submit_cancellation_during_enqueue_preserves_delivery() -> None:
     delivery = await ledger.get_delivery("cancelled-publish", enqueue_seq=0)
     assert delivery is not None
     assert delivery.state is RunDeliveryState.PENDING
-    assert delivery.publish_attempts == 1
+    # Caller cancellation skips optional diagnostics; durable retry remains intact.
+    assert delivery.publish_attempts == 0
     assert channel.closed is False
 
 
@@ -1749,7 +1751,7 @@ async def test_approve_enqueue_failure_retains_exact_resume_delivery() -> None:
 
 
 @pytest.mark.asyncio
-async def test_approve_cancellation_preserves_exact_resume_delivery() -> None:
+async def test_approve_cancellation_preserves_exact_resume_delivery(monkeypatch: pytest.MonkeyPatch) -> None:
     """Cancellation after consent admission cannot lose the durable resume hop."""
     engine, ledger, queues = _engine()
     await engine.submit(Intent(session_id="s", run_id="run_cancel", prompt="hi", source="bridge"))
@@ -1758,6 +1760,13 @@ async def test_approve_cancellation_preserves_exact_resume_delivery() -> None:
     _decide(engine, run_id="run_cancel", consent_id="consent_cancel")
     queue = _CancellationQueue()
     queues["runs"] = queue  # type: ignore[assignment]
+    diagnostic_called = asyncio.Event()
+
+    async def blocked_diagnostic(*_args: Any, **_kwargs: Any) -> None:
+        diagnostic_called.set()
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(ledger, "note_delivery_error", blocked_diagnostic)
     task = asyncio.create_task(engine.resume_consent("consent_cancel"))
     await queue.entered.wait()
 
@@ -1765,6 +1774,7 @@ async def test_approve_cancellation_preserves_exact_resume_delivery() -> None:
     with pytest.raises(asyncio.CancelledError):
         await task
 
+    assert not diagnostic_called.is_set()
     admitted = await ledger.get("run_cancel")
     assert admitted is not None
     assert admitted.status is RunStatus.QUEUED
@@ -1778,3 +1788,107 @@ async def test_approve_cancellation_preserves_exact_resume_delivery() -> None:
     queues["runs"] = retry_queue
     await enqueue_run(queues, ledger, admitted, enqueue_seq=1)
     assert [job["key"] for job in retry_queue.enqueued] == [run_job_key("run_cancel", 1)]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("commit_first", [False, True])
+async def test_consent_recovery_deadline_during_admission_preserves_recoverable_truth(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    commit_first: bool,
+) -> None:
+    """A bounded owner probe never detaches a shielded admission or blocks later owners."""
+    import lychd.ghouls.runs as runs_mod
+
+    engine, ledger, queues = _engine()
+    for run_id in ("blocked-owner", "next-owner"):
+        await engine.submit(Intent(session_id="s", run_id=run_id, prompt="hi", source="bridge"))
+        assert await ledger.try_claim_run(run_id, enqueue_seq=0)
+        await ledger.park_consent(run_id, f"consent-{run_id}")
+        _decide(engine, run_id=run_id, consent_id=f"consent-{run_id}")
+    original_admit = ledger.try_admit_consent
+    ended = asyncio.Event()
+
+    async def block_admission(run_id: str, **kwargs: Any) -> int | None:
+        if run_id != "blocked-owner":
+            return await original_admit(run_id, **kwargs)
+        if commit_first:
+            await original_admit(run_id, **kwargs)
+        try:
+            await asyncio.Event().wait()
+        finally:
+            ended.set()
+        return None
+
+    monkeypatch.setattr(ledger, "try_admit_consent", block_admission)
+    monkeypatch.setattr(runs_mod, "CONSENT_PROBE_TIMEOUT_S", 0.01)
+    result, _cursor = await asyncio.wait_for(
+        runs_mod._reconcile_consent_page(
+            cast("RunSubstrate", SimpleNamespace(ledger=ledger, consents=engine.consents)), engine, after=None
+        ),
+        timeout=1,
+    )
+    assert ended.is_set()
+    assert result["probe_errors"] == 1
+    assert result["count"] == 1
+    blocked = await ledger.get("blocked-owner")
+    next_owner = await ledger.get("next-owner")
+    assert blocked is not None
+    assert next_owner is not None
+    assert next_owner.status is RunStatus.QUEUED
+    assert blocked.status is (RunStatus.QUEUED if commit_first else RunStatus.AWAITING_CONSENT)
+    assert run_job_key("blocked-owner", 1) not in [item["key"] for item in queues["runs"].enqueued]
+    if commit_first:
+        delivery = await ledger.get_delivery("blocked-owner", enqueue_seq=1)
+        assert delivery is not None
+        assert delivery.state is RunDeliveryState.PENDING
+        await enqueue_run(queues, ledger, blocked)
+        assert [item["key"] for item in queues["runs"].enqueued].count(run_job_key("blocked-owner", 1)) == 1
+
+
+@pytest.mark.asyncio
+async def test_consent_recovery_deadline_interrupts_optional_publication_diagnostic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A broker error followed by a stalled diagnostic cannot defeat owner recovery bounds."""
+    import lychd.ghouls.runs as runs_mod
+
+    engine, ledger, queues = _engine()
+    for run_id in ("failed-publication", "later-publication"):
+        await engine.submit(Intent(session_id="s", run_id=run_id, prompt="hi", source="bridge"))
+        assert await ledger.try_claim_run(run_id, enqueue_seq=0)
+        await ledger.park_consent(run_id, f"consent-{run_id}")
+        _decide(engine, run_id=run_id, consent_id=f"consent-{run_id}")
+    stopped = asyncio.Event()
+
+    class _FailFirstQueue(_FakeQueue):
+        async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
+            if kwargs["run_id"] == "failed-publication":
+                message = "broker unavailable"
+                raise ConnectionError(message)
+            return await super().enqueue(job_or_func, **kwargs)
+
+    async def blocked_diagnostic(*_args: Any, **_kwargs: Any) -> None:
+        try:
+            await asyncio.Event().wait()
+        finally:
+            stopped.set()
+
+    queues["runs"] = _FailFirstQueue()
+    monkeypatch.setattr(ledger, "note_delivery_error", blocked_diagnostic)
+    monkeypatch.setattr(runs_mod, "CONSENT_PROBE_TIMEOUT_S", 0.01)
+    result, _cursor = await asyncio.wait_for(
+        runs_mod._reconcile_consent_page(
+            cast("RunSubstrate", SimpleNamespace(ledger=ledger, consents=engine.consents)),
+            engine,
+            after=None,
+        ),
+        timeout=1,
+    )
+    assert stopped.is_set()
+    assert result["probe_errors"] == 1
+    assert result["count"] == 1
+    delivery = await ledger.get_delivery("failed-publication", enqueue_seq=1)
+    assert delivery is not None
+    assert delivery.state is RunDeliveryState.PENDING
+    assert [item["key"] for item in queues["runs"].enqueued] == [run_job_key("later-publication", 1)]

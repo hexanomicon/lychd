@@ -80,6 +80,7 @@ class InitializationPlanner:
         files: dict[Path, int] = {
             authority.lychd_toml: 0o600,
             authority.postgres_root / "init_db.sh": 0o755,
+            authority.postgres_root / "pg_hba_v1.conf": 0o644,
         }
         files.update(dict.fromkeys(self._sample_paths, 0o600))
         actions = [

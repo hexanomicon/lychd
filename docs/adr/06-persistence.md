@@ -34,6 +34,33 @@ package scanning is not admission, and migration generation or application remai
 release or operator act. Colliding models, table names, or migrations refuse before a schema is
 changed.
 
+### Database credentials and runtime authority
+
+The configured `database.user` and administrative password retain the bootstrap/migration
+identity, including an existing installation's `lich` owner. They never enter the Vessel.
+The separate marked runtime role receives application-database CONNECT, public-schema USAGE,
+table SELECT/INSERT/UPDATE/DELETE and sequence USAGE/SELECT; Alembic and SAQ version tables
+remain read-only. It has no superuser, role/database creation, replication, BYPASSRLS, role
+membership, schema CREATE, or application-object ownership. SQLAlchemy checks each new runtime
+connection; SAQ verifies schema instead of initializing or migrating it at worker startup.
+
+The explicit migration gate verifies administrative identity and SCRAM TCP policy, refuses
+unmarked or overprivileged existing runtime roles, provisions distinct credentials, applies
+Alembic and SAQ migrations as administrator, grants runtime data access, and verifies that actual
+runtime credential and queue schema before dependents start. Phoenix has a distinct marked role
+for its dedicated database. Only known legacy administrator-owned Phoenix relations and enums
+transfer to it; unrelated database owners refuse before mutation. PUBLIC database access is
+revoked to keep these runtime roles out of one another's database. No general reassignment,
+automatic demotion, database reset, or deletion is part of this gate.
+
+The generated versioned HBA file is mounted read-only and selected explicitly on PostgreSQL
+startup, covering existing as well as fresh PGDATA. TCP, including shared-Pod localhost, requires
+SCRAM; local trust is confined to the private PostgreSQL-container Unix socket. An old MD5-only
+administrator verifier cannot authenticate under this policy: startup of dependent services
+fails closed until the operator converts that verifier through the private administrative path.
+Preserved data and a known backup precede such operator repair; replacing a Podman secret cannot
+change a password already stored by PostgreSQL.
+
 The target chambers are deliberately logical rather than a claim of present deployment:
 
 | Chamber | Responsibility |
@@ -171,7 +198,7 @@ be erased underneath live work.
 
 ### Atlas records
 
-The Atlas Project is one versioned aggregate scoped to a Sigil. Its validated JSONB document
+The initial Atlas Project is one versioned aggregate scoped to a Sigil. Its validated JSONB document
 retains the brief, concern definitions, append-only assessments and decisions, and explicit
 references to existing sessions and Runs. Assessments retain their judged text and revisions;
 editing current requirements cannot rewrite their historical basis. Reference identities are
@@ -190,6 +217,23 @@ surface. Closing a Project retains its records and does not cascade into session
 Migration `0009` adds Atlas without rewriting execution identity. Its downgrade takes an
 exclusive table lock and refuses while any Project remains, preserving operator material across
 an attempted rollback. Deployment migration remains an explicit operator act.
+
+### Independent Concern retention (Designed)
+
+[Frontend](15-frontend.md#independent-concerns-decomposition-and-addressing-designed) defines
+Concerns with identity and authorization independent of optional Project membership. Their
+definitions, attributed relation revisions, proposal provenance, and judged bases must survive
+independently of a Project's lifecycle. Removing an association cannot erase the Concern or
+reinterpret another context's judgment. Shared relations refer to retained identities rather than
+copying a Concern's mutable definition into each Project.
+
+Historical assessments retain the exact Concern, context, and relation basis they used. Source
+and target locators bind the actual revision or content identity inspected; a mutable URL or an
+unchanged Covenant number cannot substitute for that identity. Updates preserve prior bases and
+use owner-scoped version checks and retry receipts. Migrating the initial Project aggregates must
+preserve existing Concern, assessment, reference, and retry identities and their Project context;
+it must not infer new shared identities from similar text. This requires a new explicit schema and
+migration contract before delivery; migration `0009` supplies only the initial Project aggregate.
 
 ## Privacy and delivery boundary
 

@@ -1,0 +1,458 @@
+{
+  "version": "1.107.5",
+  "run": {
+    "run_id": "v1-consent",
+    "session_id": "sess_457dec6436be",
+    "workflow_name": "bridge_chat",
+    "pattern_manifest": {
+      "schema_version": 2,
+      "key": "bridge_chat",
+      "revision": "1",
+      "implementation_revision": "py.1",
+      "checkpoint_schema": "bridge-chat-state-v1",
+      "entry_node": "weave_context",
+      "nodes": [
+        {
+          "key": "weave_context",
+          "label": "Weave context",
+          "kind": "step"
+        },
+        {
+          "key": "converse",
+          "label": "Converse",
+          "kind": "step"
+        },
+        {
+          "key": "await_consent",
+          "label": "Await consent",
+          "kind": "gate"
+        },
+        {
+          "key": "project_reply",
+          "label": "Project reply",
+          "kind": "step"
+        },
+        {
+          "key": "end",
+          "label": "End",
+          "kind": "terminal"
+        }
+      ],
+      "edges": [
+        {
+          "key": "weave-to-converse",
+          "source": "weave_context",
+          "target": "converse",
+          "relation": "permits"
+        },
+        {
+          "key": "converse-to-consent",
+          "source": "converse",
+          "target": "await_consent",
+          "relation": "permits"
+        },
+        {
+          "key": "converse-to-project",
+          "source": "converse",
+          "target": "project_reply",
+          "relation": "permits"
+        },
+        {
+          "key": "consent-waits",
+          "source": "await_consent",
+          "target": "await_consent",
+          "relation": "permits"
+        },
+        {
+          "key": "consent-to-project",
+          "source": "await_consent",
+          "target": "project_reply",
+          "relation": "permits"
+        },
+        {
+          "key": "project-to-end",
+          "source": "project_reply",
+          "target": "end",
+          "relation": "permits"
+        }
+      ],
+      "digest": "e23ba8136df95af26744f1c9eee6ba28ae74a3de4578e9769a775d9985b9d163"
+    },
+    "source": "bridge",
+    "queue_name": "runs",
+    "priority": 70,
+    "status": "awaiting_consent",
+    "prompt": "swap the coven",
+    "sigil_name": "magus",
+    "sigil_scopes": "frozenset()",
+    "requested_priority": null,
+    "admitted_capability_key": null,
+    "attempt": 0,
+    "enqueue_seq": 0,
+    "error": null,
+    "consent_id": "5fea2872-b2b6-4128-9882-52cdb4f097a6",
+    "delegated_job_id": null,
+    "created_at": "2026-09-10 06:46:11.751244+00:00",
+    "updated_at": "2026-09-10 06:46:11.781923+00:00",
+    "started_at": "2026-09-10 06:46:11.751432+00:00",
+    "finished_at": null
+  },
+  "snapshots": [
+    {
+      "state": {
+        "session_id": "sess_457dec6436be",
+        "run_id": "v1-consent",
+        "prompt": "swap the coven",
+        "priority": 70,
+        "capability_key": null,
+        "hardware_resume_budget": {
+          "total_resumes": 0,
+          "same_capability_key": null,
+          "same_capability_resumes": 0
+        },
+        "history": [],
+        "new_messages": [],
+        "reply": null,
+        "pending_consent_id": null,
+        "bottleneck": null,
+        "paused_messages": null,
+        "pending_call_ids": [],
+        "pending_consent_tool_name": null,
+        "pending_consent_tool_binding": null,
+        "consent_rounds": 0
+      },
+      "node": {
+        "node_id": "WeaveContext"
+      },
+      "start_ts": "2026-09-10T06:46:11.757045Z",
+      "duration": 0.00013580999984696973,
+      "status": "success",
+      "kind": "node",
+      "id": "WeaveContext:04aeb4ee6614460fb9e23fb713a66fcc"
+    },
+    {
+      "state": {
+        "session_id": "sess_457dec6436be",
+        "run_id": "v1-consent",
+        "prompt": "swap the coven",
+        "priority": 70,
+        "capability_key": null,
+        "hardware_resume_budget": {
+          "total_resumes": 0,
+          "same_capability_key": null,
+          "same_capability_resumes": 0
+        },
+        "history": [],
+        "new_messages": [],
+        "reply": null,
+        "pending_consent_id": null,
+        "bottleneck": null,
+        "paused_messages": null,
+        "pending_call_ids": [],
+        "pending_consent_tool_name": null,
+        "pending_consent_tool_binding": null,
+        "consent_rounds": 0
+      },
+      "node": {
+        "node_id": "Converse"
+      },
+      "start_ts": "2026-09-10T06:46:11.757640Z",
+      "duration": 0.022974815999987186,
+      "status": "success",
+      "kind": "node",
+      "id": "Converse:da68f2ff64a046b1b6be08e181ea3a93"
+    },
+    {
+      "state": {
+        "session_id": "sess_457dec6436be",
+        "run_id": "v1-consent",
+        "prompt": "swap the coven",
+        "priority": 70,
+        "capability_key": null,
+        "hardware_resume_budget": {
+          "total_resumes": 0,
+          "same_capability_key": null,
+          "same_capability_resumes": 0
+        },
+        "history": [],
+        "new_messages": [
+          {
+            "parts": [
+              {
+                "content": "swap the coven",
+                "timestamp": "2026-09-10T06:46:11.778883Z",
+                "part_kind": "user-prompt"
+              }
+            ],
+            "timestamp": "2026-09-10T06:46:11.778994Z",
+            "instructions": "You are The First One, the resident intelligence of the Altar. You speak with cold precision and economy. You reason over the woven Stable Floor you are given and never invent capabilities you were not granted. When you would render structured UI, you name a registered fragment and its params; you never emit markup. You may propose a coven swap, but the Magus disposes.\n\n# Environment\nactive capability: chat:test\nwarm coven: none",
+            "kind": "request",
+            "run_id": "01a08a11-1a41-7744-b2c0-b1e59f9161d1",
+            "conversation_id": "01a08a11-1a41-7744-b2c0-b1e4c31c1a71",
+            "metadata": null
+          },
+          {
+            "parts": [
+              {
+                "tool_name": "request_coven_swap",
+                "args": "{\"capability_key\":\"chat:local\",\"reason\":\"swap\"}",
+                "tool_call_id": "c1",
+                "tool_kind": null,
+                "id": null,
+                "provider_name": null,
+                "provider_details": null,
+                "part_kind": "tool-call"
+              }
+            ],
+            "usage": {
+              "input_tokens": 50,
+              "cache_write_tokens": 0,
+              "cache_read_tokens": 0,
+              "output_tokens": 7,
+              "input_audio_tokens": 0,
+              "cache_audio_read_tokens": 0,
+              "output_audio_tokens": 0,
+              "details": {}
+            },
+            "model_name": "function::_park_then_settle",
+            "timestamp": "2026-09-10T06:46:11.779596Z",
+            "kind": "response",
+            "provider_name": null,
+            "provider_url": null,
+            "provider_details": null,
+            "provider_response_id": null,
+            "finish_reason": null,
+            "run_id": "01a08a11-1a41-7744-b2c0-b1e59f9161d1",
+            "conversation_id": "01a08a11-1a41-7744-b2c0-b1e4c31c1a71",
+            "metadata": null,
+            "state": "complete"
+          }
+        ],
+        "reply": null,
+        "pending_consent_id": "5fea2872-b2b6-4128-9882-52cdb4f097a6",
+        "bottleneck": null,
+        "paused_messages": [
+          {
+            "parts": [
+              {
+                "content": "swap the coven",
+                "timestamp": "2026-09-10T06:46:11.778883Z",
+                "part_kind": "user-prompt"
+              }
+            ],
+            "timestamp": "2026-09-10T06:46:11.778994Z",
+            "instructions": "You are The First One, the resident intelligence of the Altar. You speak with cold precision and economy. You reason over the woven Stable Floor you are given and never invent capabilities you were not granted. When you would render structured UI, you name a registered fragment and its params; you never emit markup. You may propose a coven swap, but the Magus disposes.\n\n# Environment\nactive capability: chat:test\nwarm coven: none",
+            "kind": "request",
+            "run_id": "01a08a11-1a41-7744-b2c0-b1e59f9161d1",
+            "conversation_id": "01a08a11-1a41-7744-b2c0-b1e4c31c1a71",
+            "metadata": null
+          },
+          {
+            "parts": [
+              {
+                "tool_name": "request_coven_swap",
+                "args": "{\"capability_key\":\"chat:local\",\"reason\":\"swap\"}",
+                "tool_call_id": "c1",
+                "tool_kind": null,
+                "id": null,
+                "provider_name": null,
+                "provider_details": null,
+                "part_kind": "tool-call"
+              }
+            ],
+            "usage": {
+              "input_tokens": 50,
+              "cache_write_tokens": 0,
+              "cache_read_tokens": 0,
+              "output_tokens": 7,
+              "input_audio_tokens": 0,
+              "cache_audio_read_tokens": 0,
+              "output_audio_tokens": 0,
+              "details": {}
+            },
+            "model_name": "function::_park_then_settle",
+            "timestamp": "2026-09-10T06:46:11.779596Z",
+            "kind": "response",
+            "provider_name": null,
+            "provider_url": null,
+            "provider_details": null,
+            "provider_response_id": null,
+            "finish_reason": null,
+            "run_id": "01a08a11-1a41-7744-b2c0-b1e59f9161d1",
+            "conversation_id": "01a08a11-1a41-7744-b2c0-b1e4c31c1a71",
+            "metadata": null,
+            "state": "complete"
+          }
+        ],
+        "pending_call_ids": [
+          "c1"
+        ],
+        "pending_consent_tool_name": "request_coven_swap",
+        "pending_consent_tool_binding": {
+          "capability_key": "chat:test",
+          "toolset_id": "test-coven-transition",
+          "toolset_type": "pydantic_ai.toolsets.function.FunctionToolset",
+          "tool_name": "request_coven_swap",
+          "effect_id": "coven.transition",
+          "effect_revision": "test-v1",
+          "definition_digest": "22ddcf3183ea3b56187bc3d3077ce363993a3f93e3cccab826d409c5b1db02a8"
+        },
+        "consent_rounds": 0
+      },
+      "node": {
+        "node_id": "AwaitConsent"
+      },
+      "start_ts": "2026-09-10T06:46:11.781302Z",
+      "duration": 1.1259999155299738e-05,
+      "status": "error",
+      "kind": "node",
+      "id": "AwaitConsent:a2c8e22bd1c84f5eb60ec956464a1c85"
+    },
+    {
+      "state": {
+        "session_id": "sess_457dec6436be",
+        "run_id": "v1-consent",
+        "prompt": "swap the coven",
+        "priority": 70,
+        "capability_key": null,
+        "hardware_resume_budget": {
+          "total_resumes": 0,
+          "same_capability_key": null,
+          "same_capability_resumes": 0
+        },
+        "history": [],
+        "new_messages": [
+          {
+            "parts": [
+              {
+                "content": "swap the coven",
+                "timestamp": "2026-09-10T06:46:11.778883Z",
+                "part_kind": "user-prompt"
+              }
+            ],
+            "timestamp": "2026-09-10T06:46:11.778994Z",
+            "instructions": "You are The First One, the resident intelligence of the Altar. You speak with cold precision and economy. You reason over the woven Stable Floor you are given and never invent capabilities you were not granted. When you would render structured UI, you name a registered fragment and its params; you never emit markup. You may propose a coven swap, but the Magus disposes.\n\n# Environment\nactive capability: chat:test\nwarm coven: none",
+            "kind": "request",
+            "run_id": "01a08a11-1a41-7744-b2c0-b1e59f9161d1",
+            "conversation_id": "01a08a11-1a41-7744-b2c0-b1e4c31c1a71",
+            "metadata": null
+          },
+          {
+            "parts": [
+              {
+                "tool_name": "request_coven_swap",
+                "args": "{\"capability_key\":\"chat:local\",\"reason\":\"swap\"}",
+                "tool_call_id": "c1",
+                "tool_kind": null,
+                "id": null,
+                "provider_name": null,
+                "provider_details": null,
+                "part_kind": "tool-call"
+              }
+            ],
+            "usage": {
+              "input_tokens": 50,
+              "cache_write_tokens": 0,
+              "cache_read_tokens": 0,
+              "output_tokens": 7,
+              "input_audio_tokens": 0,
+              "cache_audio_read_tokens": 0,
+              "output_audio_tokens": 0,
+              "details": {}
+            },
+            "model_name": "function::_park_then_settle",
+            "timestamp": "2026-09-10T06:46:11.779596Z",
+            "kind": "response",
+            "provider_name": null,
+            "provider_url": null,
+            "provider_details": null,
+            "provider_response_id": null,
+            "finish_reason": null,
+            "run_id": "01a08a11-1a41-7744-b2c0-b1e59f9161d1",
+            "conversation_id": "01a08a11-1a41-7744-b2c0-b1e4c31c1a71",
+            "metadata": null,
+            "state": "complete"
+          }
+        ],
+        "reply": null,
+        "pending_consent_id": "5fea2872-b2b6-4128-9882-52cdb4f097a6",
+        "bottleneck": null,
+        "paused_messages": [
+          {
+            "parts": [
+              {
+                "content": "swap the coven",
+                "timestamp": "2026-09-10T06:46:11.778883Z",
+                "part_kind": "user-prompt"
+              }
+            ],
+            "timestamp": "2026-09-10T06:46:11.778994Z",
+            "instructions": "You are The First One, the resident intelligence of the Altar. You speak with cold precision and economy. You reason over the woven Stable Floor you are given and never invent capabilities you were not granted. When you would render structured UI, you name a registered fragment and its params; you never emit markup. You may propose a coven swap, but the Magus disposes.\n\n# Environment\nactive capability: chat:test\nwarm coven: none",
+            "kind": "request",
+            "run_id": "01a08a11-1a41-7744-b2c0-b1e59f9161d1",
+            "conversation_id": "01a08a11-1a41-7744-b2c0-b1e4c31c1a71",
+            "metadata": null
+          },
+          {
+            "parts": [
+              {
+                "tool_name": "request_coven_swap",
+                "args": "{\"capability_key\":\"chat:local\",\"reason\":\"swap\"}",
+                "tool_call_id": "c1",
+                "tool_kind": null,
+                "id": null,
+                "provider_name": null,
+                "provider_details": null,
+                "part_kind": "tool-call"
+              }
+            ],
+            "usage": {
+              "input_tokens": 50,
+              "cache_write_tokens": 0,
+              "cache_read_tokens": 0,
+              "output_tokens": 7,
+              "input_audio_tokens": 0,
+              "cache_audio_read_tokens": 0,
+              "output_audio_tokens": 0,
+              "details": {}
+            },
+            "model_name": "function::_park_then_settle",
+            "timestamp": "2026-09-10T06:46:11.779596Z",
+            "kind": "response",
+            "provider_name": null,
+            "provider_url": null,
+            "provider_details": null,
+            "provider_response_id": null,
+            "finish_reason": null,
+            "run_id": "01a08a11-1a41-7744-b2c0-b1e59f9161d1",
+            "conversation_id": "01a08a11-1a41-7744-b2c0-b1e4c31c1a71",
+            "metadata": null,
+            "state": "complete"
+          }
+        ],
+        "pending_call_ids": [
+          "c1"
+        ],
+        "pending_consent_tool_name": "request_coven_swap",
+        "pending_consent_tool_binding": {
+          "capability_key": "chat:test",
+          "toolset_id": "test-coven-transition",
+          "toolset_type": "pydantic_ai.toolsets.function.FunctionToolset",
+          "tool_name": "request_coven_swap",
+          "effect_id": "coven.transition",
+          "effect_revision": "test-v1",
+          "definition_digest": "22ddcf3183ea3b56187bc3d3077ce363993a3f93e3cccab826d409c5b1db02a8"
+        },
+        "consent_rounds": 0
+      },
+      "node": {
+        "node_id": "AwaitConsent"
+      },
+      "start_ts": null,
+      "duration": null,
+      "status": "pending",
+      "kind": "node",
+      "id": "AwaitConsent:9663103ca74541f593338013d827070e"
+    }
+  ]
+}

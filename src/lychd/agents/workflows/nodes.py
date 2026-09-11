@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import uuid
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Final, cast
 
@@ -70,7 +69,7 @@ class ConsentToolBindingChangedError(RuntimeError):
 
 @dataclass
 class _ConsentBindingToolset(WrapperToolset[Any]):
-    """Capture and verify prepared approval definitions before tool dispatch."""
+    """Capture only the current round's prepared approval definitions before dispatch."""
 
     capability_key: str
     expected: ConsentToolBinding | None = None
@@ -88,11 +87,17 @@ class _ConsentBindingToolset(WrapperToolset[Any]):
             if actual != self.expected:
                 msg = f"approved tool binding changed for '{self.expected.tool_name}'"
                 raise ConsentToolBindingChangedError(msg)
+            # This guard belongs to the resumed deferred call. A later round may
+            # legitimately remove a one-shot tool after its effect has executed.
+            self.expected = None
+        # Pydantic AI clones wrappers for a run/step; keep their shared capture
+        # mapping, but never retain a definition missing from the current round.
+        self.captured.clear()
         self.captured.update(current)
         return tools
 
     def binding_for(self, tool_name: str) -> ConsentToolBinding | None:
-        """Return the captured binding for one approval-required tool."""
+        """Return the current round's binding for one approval-required tool."""
         return self.captured.get(tool_name)
 
 
@@ -106,7 +111,6 @@ __all__ = [
     "bind_consent_toolsets",
     "bind_messages_to_logical_run",
     "is_single_approval",
-    "new_step_id",
     "park_on_consent",
     "pump_agent_events",
 ]
@@ -188,11 +192,6 @@ def bind_consent_toolsets(
     )
 
 
-def new_step_id() -> str:
-    """Return a fresh per-step id."""
-    return f"step_{uuid.uuid4().hex[:12]}"
-
-
 def is_single_approval(requests: DeferredToolRequests) -> bool:
     """Require one approval and no external calls for the single-verdict consent record.
 
@@ -220,7 +219,7 @@ async def pump_agent_events[OutputT](
     Token deltas are emitted raw (`emit.token`); clients must render them as text.
     """
     result_event: AgentRunResultEvent[OutputT] | None = None
-    async for event in agent.run_stream_events(
+    async with agent.run_stream_events(
         prompt,
         deps=deps,
         model=model,
@@ -229,13 +228,14 @@ async def pump_agent_events[OutputT](
         message_history=message_history,
         deferred_tool_results=deferred_tool_results,
         usage_limits=usage_limits,
-    ):
-        if isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
-            emit.token(event.delta.content_delta)
-        elif isinstance(event, PartStartEvent) and isinstance(event.part, TextPart):
-            emit.token(event.part.content)
-        elif isinstance(event, AgentRunResultEvent):
-            result_event = event
+    ) as stream:
+        async for event in stream:
+            if isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
+                emit.token(event.delta.content_delta)
+            elif isinstance(event, PartStartEvent) and isinstance(event.part, TextPart):
+                emit.token(event.part.content)
+            elif isinstance(event, AgentRunResultEvent):
+                result_event = event
     if result_event is None:
         msg = "agent run produced no result event"
         raise RuntimeError(msg)

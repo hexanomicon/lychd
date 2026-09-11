@@ -262,9 +262,11 @@ def test_terminal_run_with_only_a_user_turn_remains_visible(
     assert restored.json()["active_runs"][0]["terminal"] is True
 
 
+@pytest.mark.parametrize("status", [RunStatus.DONE, RunStatus.FAILED, RunStatus.CANCELLED])
 def test_durable_terminal_status_overrides_a_lagging_live_channel(
     altar_client: TestClient[Litestar],
     fake_services: SimpleNamespace,
+    status: RunStatus,
 ) -> None:
     session = _session(fake_services)
 
@@ -279,14 +281,75 @@ def test_durable_terminal_status_overrides_a_lagging_live_channel(
 
     asyncio.run(_seed())
     fake_services.bus.emitter("run_terminal_live").emit(RunEventKind.STATUS, "weaving")
-    asyncio.run(fake_services.ledger.set_status("run_terminal_live", RunStatus.FAILED))
+    fake_services.bus.emitter("run_terminal_live").emit(RunEventKind.TOKEN, "Partial reply")
+    if status is RunStatus.CANCELLED:
+        asyncio.run(fake_services.run_engine.cancel("run_terminal_live"))
+    else:
+        asyncio.run(fake_services.ledger.set_status("run_terminal_live", status))
 
     response = altar_client.get("/api/v1/bridge/runs/run_terminal_live")
 
     assert response.status_code == 200
-    assert response.json()["run_status"] == "failed"
-    assert response.json()["activity"] == "failed"
+    assert response.json()["run_status"] == status.value
+    assert response.json()["activity"] == status.value
+    assert response.json()["content"] == "Partial reply"
+    assert response.json()["cursor"] == 1
     assert response.json()["terminal"] is True
+
+
+@pytest.mark.parametrize("status", [RunStatus.DONE, RunStatus.FAILED, RunStatus.CANCELLED])
+@pytest.mark.parametrize("live_content", ["", "Partial reply"])
+def test_terminal_snapshot_uses_retained_reply_before_channel_cleanup(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+    status: RunStatus,
+    live_content: str,
+) -> None:
+    session = _session(fake_services)
+    run_id = "run_retained_reply"
+    descriptor: dict[str, Any] = {
+        "kind": "genui.plan_checklist",
+        "schema_version": 1,
+        "props": {"title": "Retained plan", "steps": ["inspect"]},
+        "actions": [],
+    }
+
+    async def _seed() -> None:
+        await fake_services.ledger.create(
+            Intent(session_id=session.id, run_id=run_id, prompt="reply", source="bridge"),
+            workflow_name="bridge_chat",
+            queue_name="runs",
+            priority=70,
+        )
+        await fake_services.ledger.set_status(run_id, RunStatus.RUNNING)
+        await fake_services.bridge_sessions.add_turn(
+            session.id,
+            BridgeTurn(role="agent", content="Complete reply", run_id=run_id, fragments=(descriptor,)),
+        )
+
+    asyncio.run(_seed())
+    emitter = fake_services.bus.emitter(run_id)
+    emitter.emit(RunEventKind.TOKEN, live_content)
+    emitter.emit(RunEventKind.STATUS, "settling")
+
+    # A retained turn alone cannot replace a nonterminal channel's exact snapshot.
+    live = altar_client.get(f"/api/v1/bridge/runs/{run_id}").json()
+    assert (live["content"], live["fragments"], live["cursor"]) == (live_content, [], 1)
+    assert live["terminal"] is False
+
+    if status is RunStatus.CANCELLED:
+        asyncio.run(fake_services.run_engine.cancel(run_id))
+    else:
+        asyncio.run(fake_services.ledger.set_status(run_id, status))
+    response = altar_client.get(f"/api/v1/bridge/runs/{run_id}")
+
+    assert response.status_code == 200
+    snapshot = response.json()
+    assert snapshot["content"] == "Complete reply"
+    assert snapshot["fragments"] == [descriptor]
+    assert snapshot["cursor"] == live["cursor"]
+    assert snapshot["run_status"] == snapshot["activity"] == status.value
+    assert snapshot["terminal"] is True
 
 
 def test_terminal_refresh_reconstructs_settled_genui_descriptors(

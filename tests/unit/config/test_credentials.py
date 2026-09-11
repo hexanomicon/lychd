@@ -24,10 +24,19 @@ def isolated_sources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterato
     for key in (
         "LYCHD_DB_PASSWORD",
         "LYCHD_DB_PASSWORD_FILE",
+        "LYCHD_RUNTIME_DB_PASSWORD",
+        "LYCHD_RUNTIME_DB_PASSWORD_FILE",
+        "LYCHD_PHOENIX_DB_PASSWORD",
+        "LYCHD_PHOENIX_DB_PASSWORD_FILE",
         "LYCHD_APP_SECRET_KEY",
         "LYCHD_APP_SECRET_KEY_FILE",
+        "LYCHD_LOCAL_ACCESS_PASSWORD",
+        "LYCHD_LOCAL_ACCESS_PASSWORD_FILE",
         "SERVER__DATABASE__PASSWORD",
+        "SERVER__DATABASE__RUNTIME_PASSWORD",
+        "SERVER__DATABASE__PHOENIX_PASSWORD",
         "SERVER__WEB__SECRET_KEY",
+        "SERVER__WEB__ACCESS_PASSWORD",
     ):
         monkeypatch.delenv(key, raising=False)
     get_settings.cache_clear()
@@ -42,6 +51,7 @@ def test_file_is_read_once_and_shared_by_consumers_and_snapshots(
     password_file = tmp_path / "password"
     password_file.write_text("first-password\n", encoding="utf-8")
     monkeypatch.setenv("LYCHD_DB_PASSWORD_FILE", str(password_file))
+    monkeypatch.setenv("LYCHD_RUNTIME_DB_PASSWORD_FILE", str(password_file))
     monkeypatch.setenv("LYCHD_APP_SECRET_KEY", "first-signing-key")
     original_read = Path.read_text
     reads: list[Path] = []
@@ -54,7 +64,7 @@ def test_file_is_read_once_and_shared_by_consumers_and_snapshots(
     settings = get_settings()
     snapshot = SettingsSnapshot.capture(settings)
     reads_at_boot = list(reads)
-    assert reads.count(password_file) == 1
+    assert reads.count(password_file) == 2  # One read for each explicitly supplied credential field.
 
     password_file.write_text("second-password", encoding="utf-8")
     monkeypatch.setenv("LYCHD_APP_SECRET_KEY", "second-signing-key")
@@ -126,6 +136,12 @@ def test_missing_mounts_allow_bootstrap_but_not_runtime_components() -> None:
         build_csrf_config(settings)
 
 
+def test_legacy_quoted_database_owner_names_remain_usable() -> None:
+    settings = DatabaseSettings(user="My-Existing Owner", database="My.Database", password=SecretStr("synthetic"))
+    assert settings.user == "My-Existing Owner"
+    assert settings.database == "My.Database"
+
+
 def test_credentials_are_excluded_from_exports_and_survive_in_memory_snapshot(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -161,7 +177,16 @@ def test_credentials_are_excluded_from_exports_and_survive_in_memory_snapshot(
         invalid.materialize()
 
 
-@pytest.mark.parametrize(("section", "field"), [("database", "password"), ("web", "secret_key")])
+@pytest.mark.parametrize(
+    ("section", "field"),
+    [
+        ("database", "password"),
+        ("database", "runtime_password"),
+        ("database", "phoenix_password"),
+        ("web", "secret_key"),
+        ("web", "access_password"),
+    ],
+)
 def test_toml_rejects_credential_values(tmp_path: Path, section: str, field: str) -> None:
     (tmp_path / "lychd.toml").write_text(f'[{"server"}.{section}]\n{field}="do-not-persist"\n', encoding="utf-8")
     with pytest.raises(ValueError, match="TOML may contain only its secret reference") as error:

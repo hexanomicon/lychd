@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
+import respx
 from pydantic import AnyHttpUrl
+from respx.models import Call
 
 from lychd.domain.animation.capabilities import CapabilityPhase
 from lychd.domain.animation.links import Link
@@ -62,7 +64,7 @@ async def test_llamacpp_control_inspect_animator_router_lifecycle(monkeypatch: A
             return {
                 "data": [
                     {"id": "qwen-next-80b", "status": {"value": "loaded"}},
-                    {"id": "qwen-next-7b", "status": {"value": "unloaded"}},
+                    {"id": "qwen-next-7b", "status": {"value": "loading"}},
                 ]
             }
         return {}
@@ -73,9 +75,10 @@ async def test_llamacpp_control_inspect_animator_router_lifecycle(monkeypatch: A
     assert lifecycle.health == "ok"
     assert lifecycle.supports_router is True
     assert lifecycle.loaded_models == ["qwen-next-80b"]
+    assert lifecycle.loading_models == ["qwen-next-7b"]
     assert lifecycle.available_models == ["qwen-next-80b", "qwen-next-7b"]
     assert calls == [
-        ("GET", "/health", {"model": "qwen-next-80b"}),
+        ("GET", "/health", {"model": "qwen-next-80b", "autoload": "false"}),
         ("GET", "/models", None),
     ]
 
@@ -106,7 +109,7 @@ async def test_llamacpp_control_inspect_degrades_on_endpoint_error(monkeypatch: 
 
 
 @pytest.mark.asyncio
-async def test_llamacpp_503_loading_is_warming_runtime_not_cold(monkeypatch: Any) -> None:
+async def test_router_loading_health_does_not_override_exact_inventory(monkeypatch: Any) -> None:
     import lychd.extensions.builtin.animator.llamacpp.control_plane as control_plane_mod
 
     async def fake_transport(
@@ -132,9 +135,11 @@ async def test_llamacpp_503_loading_is_warming_runtime_not_cold(monkeypatch: Any
 
     assert lifecycle.health == "loading"
     assert lifecycle.error
-    assert states
-    assert all(state.phase is CapabilityPhase.WARMING for state in states)
-    assert all(state.runtime_started for state in states)
+    phases = {state.capability_key: state.phase for state in states}
+    assert phases == {
+        "router:chat:qwen-next-80b": CapabilityPhase.ACTIVATABLE,
+        "router:chat:qwen-next-7b": CapabilityPhase.ERROR,
+    }
 
 
 @pytest.mark.asyncio
@@ -158,6 +163,85 @@ async def test_llamacpp_control_load_model(monkeypatch: Any) -> None:
 
     assert await control.load_model("http://localhost:8080/v1", "qwen-next-80b") is True
     assert seen == [("POST", "/models/load", {"model": "qwen-next-80b"})]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "invalid_entry",
+    [
+        None,
+        {"id": ""},
+        {"id": "qwen-next-80b", "status": {"value": "unloaded"}},
+        {"id": "qwen-next-7b"},
+    ],
+    ids=["malformed-entry", "missing-identity", "duplicate-identity", "missing-status"],
+)
+async def test_router_inventory_cannot_publish_partial_warmth(
+    respx_mock: respx.MockRouter,
+    invalid_entry: object,
+) -> None:
+    respx_mock.get("http://localhost:8080/health").respond(200, json={"status": "ok"})
+    respx_mock.get("http://localhost:8080/models").respond(
+        200,
+        json={"data": [{"id": "qwen-next-80b", "status": {"value": "loaded"}}, invalid_entry]},
+    )
+    animator = _router_animator()
+    adapter = LlamaCppRuntimeAdapter()
+    states = await adapter.probe_capability_states(animator, adapter.build_capability_specs(animator))
+
+    assert states
+    assert all(state.phase is CapabilityPhase.ERROR for state in states)
+    assert all(state.reason and "inventory invalid" in state.reason for state in states)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("health_status", ["ok", "loading"])
+@pytest.mark.parametrize(
+    ("status", "expected"),
+    [
+        ({"value": "loaded"}, CapabilityPhase.WARM),
+        ({"value": "loading"}, CapabilityPhase.WARMING),
+        ({"value": "unloaded"}, CapabilityPhase.ACTIVATABLE),
+        ({"value": "unloaded", "failed": True}, CapabilityPhase.UNKNOWN),
+        ({"value": "sleeping"}, CapabilityPhase.UNKNOWN),
+        ({"value": "downloading"}, CapabilityPhase.UNKNOWN),
+        ({"value": "unsupported"}, CapabilityPhase.UNKNOWN),
+    ],
+)
+async def test_router_inventory_admits_only_proved_model_states(
+    respx_mock: respx.MockRouter,
+    status: dict[str, object],
+    expected: CapabilityPhase,
+    health_status: str,
+) -> None:
+    health = respx_mock.get("http://localhost:8080/health").respond(
+        200,
+        json={"status": "ok"} if health_status == "ok" else {"error": {"message": "Loading model"}},
+    )
+    respx_mock.get("http://localhost:8080/models").respond(
+        200,
+        json={
+            "data": [
+                {"id": "qwen-next-80b", "status": status},
+                {"id": "qwen-next-7b", "status": {"value": "loaded"}},
+            ]
+        },
+    )
+    load = respx_mock.post("http://localhost:8080/models/load").respond(200, json={"success": True})
+    animator = _router_animator()
+    adapter = LlamaCppRuntimeAdapter()
+    specs = adapter.build_capability_specs(animator)
+    states = {state.capability_key: state for state in await adapter.probe_capability_states(animator, specs)}
+    target = next(spec for spec in specs if spec.model_id == "qwen-next-80b")
+
+    loaded_phase = CapabilityPhase.WARM if health_status == "ok" else CapabilityPhase.UNKNOWN
+    observed_target = loaded_phase if expected is CapabilityPhase.WARM else expected
+    assert states[target.key].phase is observed_target
+    assert states["router:chat:qwen-next-7b"].phase is loaded_phase
+    result = await adapter.activate_capability(animator, target)
+    assert result.accepted is (expected is not CapabilityPhase.UNKNOWN)
+    assert load.called is (expected is CapabilityPhase.ACTIVATABLE)
+    assert all(call.request.url.params["autoload"] == "false" for call in cast("list[Call]", health.calls))
 
 
 @pytest.mark.asyncio

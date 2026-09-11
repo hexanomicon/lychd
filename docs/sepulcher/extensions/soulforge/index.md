@@ -34,3 +34,8 @@ promotion. The serving owner alone registers and routes the exact promoted diges
 
 Observation may trigger rollback or lineage invalidation. It cannot rewrite an earlier record,
 erase completed effects, or remove learned influence from weights already produced.
+
+[Discernment training](discernment-training.md) applies these passages to SDLC experience and
+human corrections: preserve the reason and conditions of a choice, then test transfer through an
+independent evaluation. [Ouroboros](../weaver/ouroboros.md) connects that slower return to ordinary
+Context, memory and workflow improvement.

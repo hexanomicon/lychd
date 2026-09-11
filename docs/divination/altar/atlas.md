@@ -5,10 +5,15 @@ icon: material/map-outline
 
 # :material-map-outline: Atlas
 
-Atlas is the map you return to when the work outlives one conversation. A project keeps what you
-are trying to make or care for, the concerns that deserve attention, the judgments already made,
-and a proposed next step. A software release, a record, and the continuing care of a home all fit.
-You can begin before there is a conversation, a Pattern, or a Run.
+Atlas maps what deserves attention: a question, an idea taking shape, an application, or continuing
+care. Concerns give that map its substance: what they mean, how they break down, where they are
+addressed, and what supports a judgment. A Concern need not begin inside a Project or come from a
+Covenant. [Independent Concerns and their relations](#concerns-before-a-project-designed) are the
+designed direction.
+
+The current surface begins with a Project. It keeps a brief, concerns, judgments, and a proposed
+next step across conversations and Runs. A software release, a record, and the continuing care
+of a home all fit. You can begin before there is a conversation, a Pattern, or a Run.
 
 ## Put an undertaking on the map
 
@@ -100,16 +105,17 @@ and remaining boundary.
 
 ## Reading direction
 
-The planned composition puts the brief and proposed next step before a concern index and one
-readable concern detail. Criteria, judgment, original basis, attribution, and cited references
-belong together; older assessments and decisions can unfold beneath them. Keep unassessed,
+The planned composition gives Concerns their own entrance and one readable detail. Meaning,
+decomposition, where each part is addressed, criteria, judgment, original basis, attribution, and
+cited references belong together; older assessments and decisions can unfold beneath them.
+Inside a Project, its brief and proposed next step frame that same account. Keep unassessed,
 stale, insufficient, and disputed counts distinct. A compact portfolio row helps compare
 undertakings without turning planning lifecycle into a health score.
 
 Start relations as an exact list for the selected concern. A small diagram is useful only if it
-makes that same citation chain easier to follow, without merging reference identities or drawing
-an ambiguous arrow between groups. Neither similarity tags nor visual clustering create Project
-membership or automatic coverage.
+makes a decomposition, addressing relation, or citation chain easier to follow, with the kind of
+relation stated and shared identities preserved. Neither similarity tags nor visual clustering
+create Project membership or automatic coverage.
 
 Acceptance case: return to a project with fifty concerns, find an assessment whose criteria
 changed, inspect its cited Run, and reconcile a conflicting edit while retaining the draft and
@@ -118,3 +124,41 @@ relations remain distinct. Larger collection limits and catalogue-wide search ne
 server contract; hiding rows cannot create that support. This composition and its scale checks
 are targets under [Frontend](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction), not
 additional delivered controls.
+
+## Concerns before a Project (Designed)
+
+Begin with “Can someone trust this answer?” even if the surrounding idea has no name. Break that
+Concern down into “Can its sources be inspected?”, “Is uncertainty visible?”, and “Can a mistake
+be corrected?” Each deserves its own meaning and criteria. The parent still asks whether these
+parts are enough; three sufficient judgments need not settle the original question.
+
+As an application takes shape, map where those Concerns are addressed:
+
+| Concern | Possible place addressing it | What still needs judgment |
+| --- | --- | --- |
+| Sources can be inspected | A source record and the answer's citation view | Whether the cited material supports the actual claim |
+| Uncertainty is visible | An answer policy and its presentation | Whether the reader can distinguish evidence, inference, and missing knowledge |
+| Mistakes can be corrected | A correction procedure and revision history | Whether an earlier answer and its correction remain understandable |
+
+These are proposed design relations, not existing Atlas records or delivered controls. One part
+may address several Concerns, and one Concern may need several parts. An empty addressing list
+makes an unresolved need visible. The map explains how the application is composed around its
+Concerns while keeping an addressing claim distinct from tested adequacy. If the idea later
+becomes a Project, associate the existing Concerns without recreating them.
+
+The idea or Project can author its own Concerns and Covenants. Its questions may lead to an adopted
+decision, whose consequences suggest further Concerns. It may draw inspiration from LychD, another
+document, or an existing Concern; none is a required template. A source-inspired proposal keeps
+the passage and exact version used, why it applies, and the meaning proposed here. Review and
+accept that interpretation; a later source revision should invite comparison rather than replace
+what was written locally.
+
+Acceptance case: start a Concern without a Project, give it three children, and reuse one child
+under another Concern. Map two children to exact parts of a proposed application and leave the
+third visibly unaddressed. Inspect the source of a suggested child, distinguish inspiration from
+an adopted rule, and associate the questions with a Project later. Change a part used by an
+assessment and verify that its original basis survives while the affected judgment needs review.
+
+[Frontend](../../adr/15-frontend.md#independent-concerns-decomposition-and-addressing-designed)
+owns this contract. [State of Work](../../state-of-the-work.md#atlas-projects) records the current
+Project-bound surface and the missing independent records, decomposition, addressing, and seeding.

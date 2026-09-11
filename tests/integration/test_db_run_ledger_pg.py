@@ -1,14 +1,10 @@
-"""[LINUX] DbRunLedger durable-substrate suite (F4/H5): CAS matrix + seq fidelity.
+"""[LINUX] Disposable PostgreSQL receipts for durable Run and related records.
 
-WRITTEN HERE, DEFERRED to the explicit container-test runtime pass. The whole module is skipped
-unless that dependency group is selected. It validates the durable ledger's concurrency story on
-a real Postgres:
-
-- CAS: `set_status` is a compare-and-swap; a CANCELLED write can NOT land over a DONE
-  that won the race (0 rows updated → re-read → `IllegalRunTransitionError`), and an
-  idempotent same-target concurrent write is benign.
-- Seq fidelity: `append_event` persists `RunEvent.seq` VERBATIM as `Step.seq`
-  (no insert-time allocation), so Step order equals emit order (Orb evidence).
+The optional container-test profile checks exact claim generations, owner-specific
+re-admission, Step sequence fidelity, coherent delegated-job projections, and locked
+session settlement. Reconstructed checkpoint/Consent adapters resume typed state
+over committed rows. Tables come from ORM metadata: these cases do not prove schema
+migrations, a replacement process, broker delivery, or application startup.
 """
 # The ordinary contributor gate omits the optional container-test group; the whole module is
 # importorskip'd there. SQLAlchemy Table vs FromClause noise on create_all remains locally ignored.
@@ -22,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator, Iterator
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -31,34 +28,47 @@ import pytest_asyncio
 
 pytest.importorskip("testcontainers", reason="optional disposable PostgreSQL receipt")
 
+from pydantic import BaseModel
+from pydantic_graph import BaseNode, End, GraphRunContext
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from testcontainers.community.postgres import PostgresContainer
 
 from lychd.agents.router import Intent
+from lychd.db.checkpoints import PostgresStasisStore
 from lychd.db.delegation import DbDelegatedAgentJobStore
 from lychd.db.models import (
+    CodexPreauthorization,
     Consent,
     DelegatedAgentEventRecord,
     DelegatedAgentJobRecord,
     Run,
+    RunCheckpoint,
     RunDelivery,
     Session,
     Step,
 )
 from lychd.db.sessions import DbBridgeSessionStore
+from lychd.domain.animation.errors import HardwareTransitionRequired
 from lychd.domain.artifacts import ArtifactRef
+from lychd.domain.codex.ledger import CodexConsentLedger
+from lychd.domain.codex.sigil import Sigil
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
+from lychd.domain.cortex.graph import build_serial_graph
+from lychd.domain.cortex.graph_runner import GraphRunner
 from lychd.domain.cortex.ledger import DbRunLedger, RunAdmissionConflictError
 from lychd.domain.cortex.runs import IllegalRunTransitionError, RunDeliveryState, RunStatus
+from lychd.domain.cortex.stasis import DurableStasisPhylactery
 from lychd.domain.delegation.models import (
+    DelegatedAgentJob,
     DelegatedAgentJobRef,
     DelegatedAgentJobStatus,
     DelegatedAgentProfile,
     DelegatedAgentRequest,
     DelegatedAgentResult,
 )
+from lychd.domain.orchestration.schema import TransitionTrace
 from lychd.domain.web.schemas import BridgeTurn
 
 if TYPE_CHECKING:
@@ -82,8 +92,10 @@ async def pg_factory(pg_url: str) -> AsyncIterator[async_sessionmaker[AsyncSessi
         Session.__table__,
         Run.__table__,
         RunDelivery.__table__,
+        RunCheckpoint.__table__,
         Step.__table__,
         Consent.__table__,
+        CodexPreauthorization.__table__,
         DelegatedAgentJobRecord.__table__,
         DelegatedAgentEventRecord.__table__,
     ]
@@ -304,6 +316,74 @@ async def test_delegated_artifact_references_survive_postgres_create_and_adoptio
     assert restored.result.artifacts == (output_artifact,)
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("read_method", ["get", "get_by_request", "jobs_for_run"])
+async def test_delegated_read_keeps_state_and_events_in_one_snapshot(
+    pg_factory: async_sessionmaker[AsyncSession],
+    monkeypatch: pytest.MonkeyPatch,
+    read_method: str,
+) -> None:
+    """A result committed between component reads cannot tear one job projection."""
+    run_id = await _seed(DbRunLedger(session_factory=pg_factory))
+    request = DelegatedAgentRequest(
+        request_id="snapshot-request",
+        run_id=run_id,
+        step_id="snapshot-step",
+        runtime="reference",
+        prompt="inspect",
+    )
+    ref = DelegatedAgentJobRef(
+        job_id="snapshot-job",
+        request_id=request.request_id,
+        run_id=run_id,
+        runtime=request.runtime,
+    )
+    writer = DbDelegatedAgentJobStore(pg_factory)
+    await writer.create(request, ref)
+    for status in (
+        DelegatedAgentJobStatus.ADMITTED,
+        DelegatedAgentJobStatus.PREPARING,
+        DelegatedAgentJobStatus.RUNNING,
+    ):
+        await writer.transition(ref.job_id, status)
+    reader = DbDelegatedAgentJobStore(pg_factory)
+    # Pause the compound read at its internal row/event boundary.
+    original_view = reader._view  # pyright: ignore[reportPrivateUsage]
+
+    async def adopt_between_reads(
+        session: AsyncSession,
+        row: DelegatedAgentJobRecord,
+        *,
+        event_limit: int | None = None,
+    ) -> DelegatedAgentJob:
+        await writer.adopt(
+            ref.job_id,
+            DelegatedAgentResult(job_id=ref.job_id, status=DelegatedAgentJobStatus.SUCCEEDED, output="done"),
+        )
+        return await original_view(session, row, event_limit=event_limit)
+
+    monkeypatch.setattr(reader, "_view", adopt_between_reads)
+    if read_method == "get":
+        observed = await reader.get(ref.job_id)
+    elif read_method == "get_by_request":
+        observed = await reader.get_by_request(request.request_id)
+    else:
+        observed = (await reader.jobs_for_run(run_id, limit=1, event_limit=2))[0]
+
+    assert observed is not None
+    assert observed.status is DelegatedAgentJobStatus.RUNNING
+    assert observed.result is None
+    assert observed.events[-1].status is DelegatedAgentJobStatus.RUNNING
+    assert observed.events[-1].seq == 3
+    fresh = await writer.get(ref.job_id)
+    assert fresh is not None
+    assert fresh.status is DelegatedAgentJobStatus.SUCCEEDED
+    assert fresh.result is not None
+    assert fresh.result.output == "done"
+    assert fresh.events[-1].status is DelegatedAgentJobStatus.SUCCEEDED
+    assert fresh.events[-1].seq == 4
+
+
 async def _park_decided_consent(
     ledger: DbRunLedger,
     session_factory: async_sessionmaker[AsyncSession],
@@ -331,6 +411,158 @@ async def _park_decided_consent(
     consent_id = str(consent.id)
     await ledger.park_consent(run_id, consent_id)
     return consent_id
+
+
+@pytest.mark.asyncio
+async def test_postgres_mixed_waits_replace_only_the_current_owner(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Consent→delegate→consent replaces pointers while retaining both authority ledgers."""
+    ledger = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+    assert await ledger.try_claim_run(run_id, enqueue_seq=0)
+    first_consent = await _park_decided_consent(ledger, pg_factory, run_id, label="first")
+    assert await ledger.try_admit_consent(run_id, consent_id=first_consent) == 1
+    assert await ledger.try_claim_run(run_id, enqueue_seq=1)
+
+    jobs = DbDelegatedAgentJobStore(pg_factory)
+    request = DelegatedAgentRequest(
+        request_id="mixed-request", run_id=run_id, step_id="mixed", runtime="reference", prompt="inspect"
+    )
+    ref = DelegatedAgentJobRef(
+        job_id="mixed-job", request_id=request.request_id, run_id=run_id, runtime=request.runtime
+    )
+    await jobs.create(request, ref)
+    for status in (
+        DelegatedAgentJobStatus.ADMITTED,
+        DelegatedAgentJobStatus.PREPARING,
+        DelegatedAgentJobStatus.RUNNING,
+    ):
+        await jobs.transition(ref.job_id, status)
+    await jobs.adopt(ref.job_id, DelegatedAgentResult(job_id=ref.job_id, status=DelegatedAgentJobStatus.SUCCEEDED))
+    await ledger.park_delegate(run_id, ref.job_id)
+    waiting = await DbRunLedger(session_factory=pg_factory).get(run_id)
+    assert waiting is not None
+    assert waiting.consent_id is None
+    assert waiting.delegated_job_id == ref.job_id
+    assert await ledger.try_admit_consent(run_id, consent_id=first_consent) is None
+    assert await ledger.try_admit_delegate(run_id, job_id=ref.job_id) == 2
+    assert await ledger.try_claim_run(run_id, enqueue_seq=2)
+
+    current_consent = await _park_decided_consent(ledger, pg_factory, run_id, label="current")
+    waiting = await DbRunLedger(session_factory=pg_factory).get(run_id)
+    assert waiting is not None
+    assert waiting.consent_id == current_consent
+    assert waiting.delegated_job_id is None
+    assert await ledger.try_admit_delegate(run_id, job_id=ref.job_id) is None
+    assert await ledger.try_admit_consent(run_id, consent_id=current_consent) == 3
+    assert await ledger.try_claim_run(run_id, enqueue_seq=3)
+    assert await CodexConsentLedger(session_factory=pg_factory).verdict(first_consent) is True
+    retained_job = await jobs.get(ref.job_id)
+    assert retained_job is not None
+    assert retained_job.status is DelegatedAgentJobStatus.SUCCEEDED
+
+
+class _ConsentCheckpointState(BaseModel):
+    run_id: str
+    consent_id: str
+
+
+@dataclass
+class _ReadRetainedConsent(BaseNode[_ConsentCheckpointState, CodexConsentLedger, bool]):
+    async def run(self, ctx: GraphRunContext[_ConsentCheckpointState, CodexConsentLedger]) -> End[bool]:
+        verdict = await ctx.deps.verdict(ctx.state.consent_id)
+        assert verdict is not None
+        return End(verdict)
+
+
+class _NoCheckpointHardware:
+    async def handle_transition(
+        self,
+        exception: HardwareTransitionRequired,
+        signal_priority: float,
+        *,
+        trace: TransitionTrace | None = None,
+    ) -> None:
+        _ = (exception, signal_priority, trace)
+        pytest.fail("A retained consent checkpoint must not request hardware.")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("approved", [True, False])
+async def test_checkpoint_and_consent_survive_replacement_postgres_adapters(
+    pg_factory: async_sessionmaker[AsyncSession],
+    *,
+    approved: bool,
+) -> None:
+    """Replace adapters over committed rows; this is not a process or migration receipt."""
+    first_ledger = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(first_ledger)
+    assert await first_ledger.try_claim_run(run_id, enqueue_seq=0)
+    first_consents = CodexConsentLedger(session_factory=pg_factory)
+    consent = await first_consents.park(
+        run_id=run_id,
+        tool_name="checkpoint_receipt",
+        tool_call_id="receipt-call",
+        call_ids=("receipt-call",),
+        args={"purpose": "bounded checkpoint receipt"},
+        sigil=Sigil(name="magus", scopes=frozenset({"*"})),
+    )
+    assert consent.status == "pending"
+    graph = build_serial_graph(
+        nodes=[_ReadRetainedConsent], state_type=_ConsentCheckpointState, deps_type=CodexConsentLedger, output_type=bool
+    )
+    first_store = PostgresStasisStore(pg_factory)
+    first_persistence = DurableStasisPhylactery(job_id=run_id, store=first_store)
+    first_persistence.set_graph_types(graph)
+    await first_persistence.snapshot_node(
+        _ConsentCheckpointState(run_id=run_id, consent_id=consent.consent_id),
+        _ReadRetainedConsent(),
+    )
+    await first_ledger.park_consent(run_id, consent.consent_id)
+
+    ledger = DbRunLedger(session_factory=pg_factory)
+    consents = CodexConsentLedger(session_factory=pg_factory)
+    store = PostgresStasisStore(pg_factory)
+    persistence = DurableStasisPhylactery(job_id=run_id, store=store)
+    restored_graph = build_serial_graph(
+        nodes=[_ReadRetainedConsent], state_type=_ConsentCheckpointState, deps_type=CodexConsentLedger, output_type=bool
+    )
+    persistence.set_graph_types(restored_graph)
+    snapshots = await persistence.load_all()
+    assert len(snapshots) == 1
+    assert snapshots[0].state == _ConsentCheckpointState(run_id=run_id, consent_id=consent.consent_id)
+    waiting = await ledger.get(run_id)
+    assert waiting is not None
+    assert waiting.status is RunStatus.AWAITING_CONSENT
+    assert waiting.consent_id == consent.consent_id
+    parked_delivery = await ledger.get_delivery(run_id, enqueue_seq=0)
+    assert parked_delivery is not None
+    assert parked_delivery.state is RunDeliveryState.SETTLED
+    assert await ledger.try_admit_consent(run_id, consent_id=consent.consent_id) is None
+
+    await consents.decide(consent.consent_id, approved=approved, decided_by="magus:test")
+    assert await ledger.try_admit_consent(run_id, consent_id=consent.consent_id) == 1
+    assert await ledger.try_admit_consent(run_id, consent_id=consent.consent_id) is None
+    assert not await ledger.try_claim_run(run_id, enqueue_seq=0)
+    assert await ledger.try_claim_run(run_id, enqueue_seq=1)
+    runner = GraphRunner[_ConsentCheckpointState](
+        orchestrator=_NoCheckpointHardware(),
+        persistence=persistence,
+        signal_priority=50,
+        run_id=run_id,
+    )
+    assert await runner.resume_graph(restored_graph, deps=consents) is approved
+    assert await store.exists(run_id)
+    assert await ledger.try_settle_claim(run_id, enqueue_seq=1, status=RunStatus.DONE)
+    terminal = await DbRunLedger(session_factory=pg_factory).get(run_id)
+    assert terminal is not None
+    assert terminal.status is RunStatus.DONE
+    assert await PostgresStasisStore(pg_factory).exists(run_id)
+    await store.delete(run_id)
+    await store.delete(run_id)
+    assert not await PostgresStasisStore(pg_factory).exists(run_id)
+    assert await CodexConsentLedger(session_factory=pg_factory).verdict(consent.consent_id) is approved
 
 
 @pytest.mark.asyncio

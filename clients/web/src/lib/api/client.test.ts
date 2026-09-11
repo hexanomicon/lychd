@@ -5,8 +5,11 @@ import { listenToRun, listenToSwap } from "./client";
 
 class FakeEventSource {
   static instances: FakeEventSource[] = [];
+  static CONNECTING = 0;
+  static CLOSED = 2;
 
   onerror: ((event: Event) => void) | null = null;
+  readyState = FakeEventSource.CONNECTING;
   closeCalls = 0;
   private readonly listeners = new Map<string, EventListenerOrEventListenerObject[]>();
 
@@ -25,6 +28,7 @@ class FakeEventSource {
   }
 
   close() {
+    this.readyState = FakeEventSource.CLOSED;
     this.closeCalls++;
   }
 
@@ -123,6 +127,24 @@ describe("run stream lifecycle", () => {
 
     source.emit("token", "{}");
     expect(onHardClose).toHaveBeenCalledOnce();
+  });
+
+  it("hands a permanent HTTP stream refusal to recovery once without retrying itself", () => {
+    const onFault = vi.fn();
+    const onHardClose = vi.fn();
+    listenToRun("run-a", vi.fn(), onFault, vi.fn(), { onHardClose });
+    const source = FakeEventSource.instances[0];
+    if (!source) throw new Error("The EventSource was not opened.");
+
+    // Non-200 SSE responses, including the stream budget's 429, are fatal to EventSource.
+    source.readyState = FakeEventSource.CLOSED;
+    source.disconnect();
+    source.disconnect();
+
+    expect(onHardClose).toHaveBeenCalledOnce();
+    expect(onFault).toHaveBeenCalledWith("The run stream closed; its projection may be stale.");
+    expect(source.closeCalls).toBe(1);
+    expect(FakeEventSource.instances).toHaveLength(1);
   });
 
   it("hard-closes a structurally valid event from another run", () => {

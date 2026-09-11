@@ -75,20 +75,21 @@ ENV HOME=/home/lich \
     XDG_CONFIG_HOME=/home/lich/.config \
     XDG_DATA_HOME=/home/lich/.local/share \
     PATH="/app/.venv/bin:$PATH" \
-    LITESTAR_APP="lychd.app:create_app"
+    LITESTAR_APP="lychd.app:create_app" \
+    PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR /app
 
 # --- The Transplant ---
-COPY --from=builder --chown=lich:lich /app/.venv /app/.venv
-COPY --from=builder --chown=lich:lich /app/LICENSE /app/LICENSE
-COPY --from=builder --chown=lich:lich /app/THIRD_PARTY_NOTICES.md /app/THIRD_PARTY_NOTICES.md
-COPY --from=builder --chown=lich:lich /app/PYTHON_THIRD_PARTY_NOTICES.txt /app/PYTHON_THIRD_PARTY_NOTICES.txt
+COPY --from=builder --chown=root:root /app/.venv /app/.venv
+COPY --from=builder --chown=root:root /app/LICENSE /app/LICENSE
+COPY --from=builder --chown=root:root /app/THIRD_PARTY_NOTICES.md /app/THIRD_PARTY_NOTICES.md
+COPY --from=builder --chown=root:root /app/PYTHON_THIRD_PARTY_NOTICES.txt /app/PYTHON_THIRD_PARTY_NOTICES.txt
 
 # --- Layer 4: THE GREAT SEAL (Immutability) ---
 # We strip write access (-w) from the entire /app directory.
 # Reference: ADR 09 [Security] - Layer 4.
-# This ensures that even the 'Magus' (User 1000) cannot modify the Vessel's brain at runtime.
+# Root owns the files: neither UID 1000 nor the image's UID 1001 can chmod them writable.
 RUN chmod -R a-w /app
 
 # --- Domain and Sphere Preparation ---
@@ -99,23 +100,16 @@ RUN mkdir -p /home/lich/.config/lychd \
              /home/lich/library \
              /home/lich/work
 
-# --- THE PERMISSION BRIDGE (Agnosticism) ---
-# We make the internal home directory world-writable (777).
-#
-# WHY? Identity Symmetry (ADR 08/09). 
-# At runtime, the Rune Scribe overrides the user to match the host Magus (UID 1000).
-# If this directory were hard-owned by 'lich' (1001), the Magus (1000) would be 
-# locked out of the internal skeleton before host volumes are mounted. 
-# 777 ensures the "Suit of Armor" fits any UID that steps into it.
-RUN chmod -R 777 /home/lich && \
-    chown -R lich:lich /home/lich
+# Generated units mount exact host-owned writable paths and provide temporary
+# filesystem storage. The image home is traversable; it is not a writable bridge.
+RUN chmod -R 755 /home/lich
 
 # --- Layer 1: The Fail-Secure Default ---
 # Reference: ADR 09 [Security].
 # By default, we run as 'lich' (1001). 
 # 1. If run manually (GHCR): Runs as 1001. Non-root, but "Unbound" from host files.
-# 2. If run via LychD Rune: The Quadlet 'User=%U' overrides this to UID 1000.
-#    Combined with 'keep-id', we achieve the "Double Non-Root Bridge."
+# 2. Generated Quadlets select the invoking host UID with 'User=%U'.
+#    Pod-level keep-id maps that UID; mount access remains separately declared.
 USER lich
 
 # The threshold of the Sepulcher.

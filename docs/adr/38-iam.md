@@ -7,9 +7,10 @@ icon: material/account-check-outline
 
 ## Context
 
-The contained loopback surface carries one fixed `magus:*` Sigil. It exercises scope grammar and
-guards; it does not authenticate callers and cannot serve remote people, services, peers, or
-owned nodes. Remote use needs one authority that can identify a presenter, validate its evidence,
+The contained loopback surface requires a dedicated local HTTP Basic credential before assigning
+one fixed `magus:*` Sigil. It proves possession of the operator's local credential and exercises
+scope grammar and guards; it cannot serve remote people, services, peers, or owned nodes.
+Remote use needs one authority that can identify a presenter, validate its evidence,
 decide its requested object and action, and remain current when an effect occurs.
 
 ## Decision
@@ -67,7 +68,10 @@ generations without exposing credential secrets.
 
 [Veil](40-proxy.md) owns hostile ingress and trusted-proxy canonicalization; [Tether](39-vpn.md)
 owns private reachability. Ward authenticates and authorizes traffic arriving through either.
-Bootstrap `magus:*` remains confined to the same-host profile and is never a remote credential.
+The credential-gated `magus:*` context remains confined to the same-host operator profile and is
+never a remote credential. Its dedicated password is unavailable to shared-Pod model services;
+rotation replaces that secret and restarts the Vessel. No cookie, network-origin header, or
+unauthenticated bootstrap route supplies fallback authority.
 
 This Covenant records **Designed** law. No credential-backed Principal, remote session, object
 authorization, delegation, revocation, tenant isolation, or IAM audit service ships.

@@ -22,7 +22,7 @@ user's home. Shared XDG parents are never recursively owned by LychD.
 
 The Codex contains `lychd.toml`, `.lychd-lifecycle.json`, and `runes/` including the Animator,
 Soulstone, and Portal anchors. The Crypt contains `triggers/inbox` and `triggers/journal`,
-`postgres/init_db.sh`, `postgres/data`, `snapshots`, `lab`, `core`, and `extensions`.
+`postgres/init_db.sh`, `postgres/pg_hba_v1.conf`, `postgres/data`, `snapshots`, `lab`, `core`, and `extensions`.
 `postgres/data` may be an ordinary directory, external mount, or LychD-created Btrfs subvolume.
 The Forge contains `assembly`. [Configuration (12)](12-configuration.md) owns what these paths
 mean; Security owns credentials and network policy.
@@ -41,6 +41,13 @@ non-directories, foreign ownership, unsafe effective access or group/other writa
 ancestry (except an appropriate sticky root/invoker-owned directory or a foreign read-only mount).
 `bind` applies the same law while planning and committing, but never creates a missing binding
 site. The per-UID/per-Codex lifecycle lock is under fixed host `/tmp`, not caller-selected `TMPDIR`.
+
+The exact existing PostgreSQL `data/` leaf is a preservation-only exception to host-UID
+ownership: rootless PostgreSQL may own it through a subordinate UID. Init verifies its real,
+host-owned parent through no-follow descriptors and observes the leaf without entering it;
+neither may be group/other-writable. It neither changes that ownership or mode nor adopts the
+leaf into ordinary directory deletion authority. This observation proves safe preservation,
+not container access, database readiness, or permission to repair an arbitrary foreign directory.
 
 ### Publish an owned object
 

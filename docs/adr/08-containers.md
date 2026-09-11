@@ -125,9 +125,33 @@ Direct target start bypasses those gates and is break-glass only.
 Every mount, device, secret, port, and network edge is declared per unit. Joined containers share
 a Pod network and therefore need service authorization as well as mounts; generated host ports are
 explicitly `127.0.0.1:`. `UserNS=keep-id` belongs at the Pod and application units use `User=%U`;
-the Phylactery retains its PostgreSQL image user and its data mount uses `:U,Z`. These identities
+the Phylactery explicitly sets `User=postgres` and its data mount uses `:U,Z`. These identities
 allow assigned paths, not ambient Crypt access. The Tomb is a separate Security/Workers boundary,
 not a safer Pod member.
+
+`keep-id` maps the invoking host UID/GID into the Pod; process `User=` and each mount's
+ownership and access policy remain separate decisions. It does not nest a second rootless
+runtime or make an arbitrary image user match the host. Initial host layout creation belongs
+to the invoking non-root account. Explicit `User=postgres` prevents `keep-id` from replacing
+the image account with the invoking UID; `:U` supplies that account's mapped datastore ownership
+before the PostgreSQL entrypoint initializes it. This requires no host-root setup. `:U` may
+recursively change host-visible ownership and therefore belongs only on that
+dedicated datastore, never a shared model shelf, home directory, Codex, or Reactor journal.
+Existing mapped datastore ownership is preserved under [Layout](13-layout.md).
+
+Soulstone data mounts cannot request recursive ownership changes (`:U`), host credential or
+configuration roots, container storage, kernel/control filesystems, or existing sockets,
+devices, and FIFOs. Host aliases are resolved before this check. Read-only access still discloses
+credentials and may allow use of a Unix socket, so `ro` does not exempt these sources. Ordinary
+explicit model and runtime-data mounts retain their declared access. This compiler check is not
+a scan of every file inside an operator-selected data directory or a runtime inode attestation;
+the operator must keep that directory free of unrelated private data and control endpoints.
+
+Trusted Vessel and migration code is image-root-owned and their root filesystems are read-only;
+declared writable tmpfs and application mounts supply runtime scratch and state. This rule must
+hold for different host UIDs, including the image's historical application UID. It does not
+assert that third-party images support a read-only root or that a rendered manifest proves
+working subordinate-ID maps, SELinux labels, or filesystem permissions on an operator host.
 
 Current Soulstone compilation joins every service to `lychd.pod`. That topology is not admissible
 for a browser-bearing Scout renderer. Such a Soulstone must compile into a dedicated rootless

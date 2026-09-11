@@ -26,11 +26,12 @@ class PulseGroup(click.Group):
         "stop",
         "status",
         "logs",
+        "access",
         "del",
     )
 
     def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
-        """Resolve a supported alias without listing it as a ninth root."""
+        """Resolve a supported alias without listing it as another public root."""
         return super().get_command(ctx, self._ALIASES.get(cmd_name, cmd_name))
 
     def list_commands(self, ctx: click.Context) -> list[str]:
@@ -121,9 +122,24 @@ def serve(server_args: tuple[str, ...]) -> None:
 @click.argument("database_args", nargs=-1, type=click.UNPROCESSED)
 def database(database_args: tuple[str, ...], wait_seconds: float) -> None:
     """Run an explicit database lifecycle command, such as ``upgrade``."""
+    from lychd.db.engine import database_migration_scope
+
     if wait_seconds:
         _wait_for_database(wait_seconds)
-    _run_litestar(("database", *database_args), prog_name="lychd database")
+    with database_migration_scope():
+        _run_litestar(("database", *database_args), prog_name="lychd database")
+
+
+@cli.command(name="database-bootstrap", hidden=True)
+@click.option("--wait-seconds", type=click.FloatRange(min=0.0), default=60.0, show_default=True)
+def database_bootstrap(wait_seconds: float) -> None:
+    """Provision roles and schema through the dedicated migration credential."""
+    from lychd.config.settings.root import get_settings
+    from lychd.db.bootstrap import bootstrap_database
+
+    if wait_seconds:
+        _wait_for_database(wait_seconds)
+    bootstrap_database(get_settings())
 
 
 def _wait_for_database(timeout: float) -> None:
@@ -150,11 +166,12 @@ def _wait_for_database(timeout: float) -> None:
 
 def _register_local_commands() -> None:
     """Register the bootstrap-safe native command adapters on the Click root."""
+    from lychd.cli.access import access
     from lychd.cli.commands import COMMANDS
     from lychd.cli.deletion import delete_installation
     from lychd.cli.operator import logs, start, status, stop
 
-    for command in (*COMMANDS, start, stop, status, logs, delete_installation):
+    for command in (*COMMANDS, start, stop, status, logs, access, delete_installation):
         cli.add_command(command)
 
 

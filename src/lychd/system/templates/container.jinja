@@ -26,6 +26,14 @@ StartWithPod={{ start_with_pod | lower }}
 {% endif %}
 Image={{ image }}
 ContainerName={{ container_name }}
+NoNewPrivileges=true
+{% if read_only %}
+DropCapability=all
+ReadOnly=true
+ReadOnlyTmpfs={{ read_only_tmpfs | lower }}
+{% else %}
+DropCapability=CAP_NET_RAW CAP_NET_ADMIN
+{% endif %}
 {% if user %}
 User={{ user }}
 {% endif %}

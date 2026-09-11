@@ -14,7 +14,7 @@ from lychd.domain.codex.middleware import sigil_auth_middleware
 from lychd.domain.codex.sigil import Sigil
 from lychd.interface.web import AltarController, AtlasController
 from lychd.interface.web.deps import web_dependencies
-from tests.web.conftest import AsgiClient
+from tests.web.conftest import TEST_ACCESS_PASSWORD, TEST_AUTHORIZATION, AsgiClient
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
@@ -172,10 +172,11 @@ def test_atlas_mutations_use_the_vessel_csrf_boundary(fake_services: SimpleNames
         Litestar(
             route_handlers=[AltarController, AtlasController],
             dependencies=web_dependencies,
-            middleware=[sigil_auth_middleware()],
+            middleware=[sigil_auth_middleware(access_password=TEST_ACCESS_PASSWORD)],
             csrf_config=CSRFConfig(secret=str(uuid4()), cookie_secure=False),
             state=State({"services": fake_services}),
-        )
+        ),
+        headers={"authorization": TEST_AUTHORIZATION},
     )
     body = {"id": str(uuid4()), "title": "Protected"}
     assert client.post("/api/v1/atlas/projects", json=body).status_code == 403

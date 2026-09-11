@@ -14,12 +14,12 @@ from dataclasses import dataclass, field
 import pytest
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
-from pydantic_graph import BaseNode, End, Graph, GraphRunContext
-from pydantic_graph.persistence import NodeSnapshot
+from pydantic_graph import BaseNode, End, GraphRunContext
 
+from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.graph_runner import GraphRunner, HardwareResumeBudget, NodeOccurrenceEvent
 from lychd.domain.cortex.leases import AnimatorAdmission
-from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore
+from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore, NodeSnapshot
 from tests.capability_workflows import CapabilityScenario, build_capability_scenario
 
 
@@ -110,7 +110,13 @@ async def test_hardware_wait_rehydrates_only_interrupted_node_after_real_converg
         scenario.world.before_probe = lose_model_at_second_node_issue
     store = InMemoryStasisStore()
     persistence = DurableStasisPhylactery(job_id="checkpoint-workflow", store=store)
-    graph = Graph(nodes=(Draft, Answer), name="capability-recovery")
+    graph = build_serial_graph(
+        nodes=(Draft, Answer),
+        state_type=WorkflowState,
+        deps_type=WorkflowDeps,
+        output_type=WorkflowState,
+        name="capability-recovery",
+    )
     deps = WorkflowDeps(scenario, answer_model=answer_model)
     target_animator = "a" if answer_model == "a-model" else "b"
     occurrences: list[NodeOccurrenceEvent] = []

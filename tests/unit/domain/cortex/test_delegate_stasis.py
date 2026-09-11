@@ -5,8 +5,9 @@ from typing import Any
 
 import pytest
 from pydantic import BaseModel
-from pydantic_graph import BaseNode, End, Graph, GraphRunContext
+from pydantic_graph import BaseNode, End, GraphRunContext
 
+from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.graph_runner import GraphRunner, NodeOccurrenceEvent
 from lychd.domain.cortex.runs import RunStatus, can_transition
 from lychd.domain.cortex.stasis import LiveStasisPhylactery
@@ -53,7 +54,9 @@ async def test_graph_runner_checkpoints_and_parks_delegated_agent_signal() -> No
         on_node_event=events.append,
         run_id="run-1",
     )
-    graph = Graph(nodes=(_DelegateNode,), name="delegate")
+    graph = build_serial_graph(
+        nodes=(_DelegateNode,), state_type=_State, deps_type=type(None), output_type=type(None), name="delegate"
+    )
 
     parked = await runner.run_graph(
         graph,

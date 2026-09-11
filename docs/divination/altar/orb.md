@@ -55,7 +55,8 @@ when the Vessel has died.
 When delegated work exists, **Delegated jobs** shows at most the newest 32 summaries, each with
 its `AgentJob` identity, runtime, Coffin profile, station, status, bounded-result presence,
 artifact-reference count, and up to the latest 64 lifecycle events. Older omitted jobs and
-truncation are explicit. Prompts, output text, and private errors are not exposed.
+truncation are explicit. A linked job absent from this bounded snapshot remains visibly unverified;
+Orb does not choose another job in its place. Prompts, output text, and private errors are not exposed.
 
 ## Follow a relation only where it was recorded
 

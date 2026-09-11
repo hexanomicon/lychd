@@ -17,6 +17,8 @@ class AnimatorLifecycle:
     supports_router: bool = False
     active_model: str | None = None
     loaded_models: list[str] = field(default_factory=list)
+    loading_models: list[str] = field(default_factory=list)
+    unloaded_models: list[str] = field(default_factory=list)
     available_models: list[str] = field(default_factory=list)
     pending_model: str | None = None
     error: str | None = None

@@ -78,6 +78,7 @@ def test_every_explicit_error_operation_publishes_the_shared_framework_error(
         ("/api/v1/bridge/runs/{run_id}", "get", "404"),
         ("/api/v1/bridge/runs/{run_id}/cancel", "post", "404"),
         ("/api/v1/bridge/runs/{run_id}/events", "get", "404"),
+        ("/api/v1/bridge/runs/{run_id}/events", "get", "429"),
         ("/api/v1/bridge/sessions/{session_id}", "get", "404"),
         ("/api/v1/bridge/sessions/{session_id}/inspector", "get", "404"),
         ("/api/v1/bridge/sessions/{session_id}/messages", "post", "404"),

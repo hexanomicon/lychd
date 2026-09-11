@@ -15,6 +15,17 @@ icon: material/lan-connect
 self-hosted private-reachability layer. It is transport only. Tunnel membership grants neither an
 application role, Sigil, capability, nor permission to a named object or effect.
 
+Private reachability is not anonymous browsing. A tunnel can conceal destination traffic from
+the access network while moving visibility and trust to its endpoint; traffic timing and volume,
+endpoint addresses, browser fingerprints, accounts, and provider-held request content remain
+separate disclosure surfaces. Tether does not currently define a consumer VPN exit, browser
+anonymity profile, or Tor transport. An accepted future outbound privacy profile must name the
+observer it protects against and prove DNS, IPv4/IPv6, direct-route and reconnect failure closure,
+browser-origin isolation, and egress custody. It must never silently bypass a failed private route.
+Remote model/CLI requests still disclose their transmitted content to the receiving provider,
+irrespective of the road carrying it; [Security](09-security.md#portal-privatization-and-egress)
+owns that disclosure decision.
+
 The Tether may manifest a rootless service with only the network capability it needs and explicit
 UDP publication. Interface name, listen port, address space, DNS behaviour, routes, and peer limits
 are Rune-owned configuration, not hard-coded topology. Typed operations under a future host-owned

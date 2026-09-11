@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import stat
 from collections.abc import Awaitable, Callable, Generator
 from contextlib import AbstractContextManager, contextmanager
 from types import SimpleNamespace
@@ -139,6 +141,17 @@ def _write_intent(path: Path, intent: TransitionIntent) -> None:
     path.chmod(0o600)
 
 
+def _write_journal_intent(path: Path, intent: TransitionIntent) -> None:
+    """Seed a host-owned snapshot and its custody proof for recovery tests."""
+    _write_intent(path, intent)
+    custody = path.parent / f"{intent.transition_id}.custody.json"
+    custody.write_text(
+        json.dumps({"version": 1, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}),
+        encoding="utf-8",
+    )
+    custody.chmod(0o600)
+
+
 def test_reactor_threads_the_systemctl_client_budget(
     tmp_path: Path,
     mocker: MockerFixture,
@@ -185,6 +198,257 @@ async def test_reactor_claims_applies_and_journals_once(tmp_path: Path) -> None:
     assert await reactor.consume_all() == 0
     actuator.apply_mock.assert_awaited_once()
     assert not pending.exists()
+
+
+@pytest.mark.parametrize("retained_access", ["descriptor", "hardlink"])
+@pytest.mark.asyncio
+async def test_producer_alias_cannot_rewrite_effect_or_compensation_evidence(
+    tmp_path: Path,
+    retained_access: str,
+) -> None:
+    registry = _swap_registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    original = _intent(registry)
+    forged = original.model_copy(update={"evict_animators": ("old",), "expected_active_animators": ("old",)})
+    pending = inbox / f"{original.transition_id}.json"
+    processing = journal / f"{original.transition_id}.processing.json"
+    completed = journal / f"{original.transition_id}.completed.json"
+    alias = inbox / ".retained"
+    _write_intent(pending, original)
+    original_bytes = pending.read_bytes()
+    original_inode = pending.stat().st_ino
+    if retained_access == "hardlink":
+        os.link(pending, alias)
+
+    with pending.open("r+b") as retained:
+
+        def corrupt_producer_inode() -> None:
+            if retained_access == "hardlink":
+                _write_intent(alias, forged)
+            else:
+                retained.seek(0)
+                retained.write(forged.model_dump_json().encode())
+                retained.truncate()
+                retained.flush()
+
+        async def apply(intent: TransitionIntent) -> None:
+            assert intent == original
+            assert processing.stat().st_ino != original_inode
+            corrupt_producer_inode()
+            assert processing.read_bytes() == original_bytes
+
+        actuator = _Actuator(apply=apply)
+        reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
+        assert await reactor.consume_all() == 1
+        corrupt_producer_inode()
+        assert completed.read_bytes() == original_bytes
+        compensation = build_compensation_intent(forged)
+        _write_intent(inbox / f"{compensation.transition_id}.json", compensation)
+        with pytest.raises(RuntimeError, match="does not exactly invert"):
+            await reactor.consume_all()
+
+    actuator.apply_mock.assert_awaited_once_with(original)
+    actuator.recover_mock.assert_not_awaited()
+    assert (journal / f"{compensation.transition_id}.declined.json").is_file()
+
+
+@pytest.mark.parametrize("published_snapshot", [False, True])
+@pytest.mark.asyncio
+async def test_reactor_classifies_crash_at_snapshot_publication(
+    tmp_path: Path,
+    mocker: MockerFixture,
+    *,
+    published_snapshot: bool,
+) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    intent = _intent(registry)
+    pending = inbox / f"{intent.transition_id}.json"
+    acquiring = journal / f"{intent.transition_id}.acquiring.json"
+    processing = journal / f"{intent.transition_id}.processing.json"
+    _write_intent(pending, intent)
+    actuator = _Actuator()
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
+    original_link = os.link
+
+    class SimulatedCrash(BaseException):
+        pass
+
+    def crash_at_publication(source: Path, target: Path) -> None:
+        if target == processing:
+            assert (journal / f"{intent.transition_id}.custody.json").is_file()
+            if published_snapshot:
+                original_link(source, target)
+            raise SimulatedCrash
+        original_link(source, target)
+
+    patch = mocker.patch("lychd.system.services.reactor.os.link", side_effect=crash_at_publication)
+    with pytest.raises(SimulatedCrash):
+        await reactor.consume_all()
+    mocker.stop(patch)
+    actuator.apply_mock.assert_not_awaited()
+    assert acquiring.exists()
+    assert processing.exists() is published_snapshot
+
+    # A producer-held inode may change across a crash; it never rewrites the
+    # published snapshot and is never parsed as physical recovery authority.
+    acquiring.write_text("not an intent", encoding="utf-8")
+    restarted = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
+    assert await restarted.consume_all() == int(published_snapshot)
+    assert not acquiring.exists()
+    assert not processing.exists()
+    if published_snapshot:
+        actuator.recover_mock.assert_awaited_once_with(intent)
+        assert (journal / f"{intent.transition_id}.completed.json").is_file()
+    else:
+        actuator.recover_mock.assert_not_awaited()
+        assert (journal / f"{intent.transition_id}.rejected.json").is_file()
+    # A surviving custody companion cannot license a replay of settled work.
+    _write_intent(pending, intent)
+    assert await restarted.consume_all() == 0
+    actuator.apply_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_reactor_flushes_custody_and_snapshot_before_effect(
+    tmp_path: Path,
+    mocker: MockerFixture,
+) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    intent = _intent(registry)
+    pending = inbox / f"{intent.transition_id}.json"
+    custody = journal / f"{intent.transition_id}.custody.json"
+    processing = journal / f"{intent.transition_id}.processing.json"
+    _write_intent(pending, intent)
+    original_fsync = os.fsync
+    original_link = os.link
+    events: list[str] = []
+    synced_inodes: set[int] = set()
+
+    def record_fsync(descriptor: int) -> None:
+        metadata = os.fstat(descriptor)
+        original_fsync(descriptor)
+        synced_inodes.add(metadata.st_ino)
+        events.append("directory-sync" if stat.S_ISDIR(metadata.st_mode) else "file-sync")
+
+    def record_publication(source: Path, target: Path) -> None:
+        assert source.stat().st_ino in synced_inodes
+        if target == processing:
+            assert events[-2:] == ["directory-sync", "file-sync"]
+            assert custody.stat().st_ino in synced_inodes
+        original_link(source, target)
+        events.append("custody" if target == custody else "processing")
+
+    async def apply(_intent: TransitionIntent) -> None:
+        assert events == [
+            "directory-sync",  # source removal before content capture
+            "directory-sync",  # acquiring record
+            "file-sync",
+            "custody",
+            "directory-sync",
+            "file-sync",
+            "processing",
+            "directory-sync",
+            "directory-sync",  # untrusted acquisition retired
+        ]
+
+    mocker.patch("lychd.system.services.reactor.os.fsync", side_effect=record_fsync)
+    mocker.patch("lychd.system.services.reactor.os.link", side_effect=record_publication)
+    actuator = _Actuator(apply=apply)
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
+
+    assert await reactor.consume_all() == 1
+    actuator.apply_mock.assert_awaited_once_with(intent)
+
+
+@pytest.mark.asyncio
+async def test_reactor_cannot_act_after_producer_wins_withdrawal(
+    tmp_path: Path,
+    mocker: MockerFixture,
+) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    intent = _intent(registry)
+    pending = inbox / f"{intent.transition_id}.json"
+    _write_intent(pending, intent)
+    original_replace = type(pending).replace
+
+    def withdraw_before_claim(source: Path, target: Path) -> Path:
+        if source == pending:
+            source.unlink()
+        return original_replace(source, target)
+
+    mocker.patch.object(type(pending), "replace", withdraw_before_claim)
+    actuator = _Actuator()
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
+
+    with pytest.raises(RuntimeError, match="did not apply"):
+        await reactor.consume_all()
+
+    actuator.apply_mock.assert_not_awaited()
+    actuator.recover_mock.assert_not_awaited()
+    assert not tuple(journal.iterdir())
+
+
+@pytest.mark.parametrize("custody_defect", ["missing", "digest", "symlink", "fifo", "mode", "oversized"])
+@pytest.mark.asyncio
+async def test_reactor_fences_unverifiable_processing_custody(tmp_path: Path, custody_defect: str) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    intent = _intent(registry)
+    processing = journal / f"{intent.transition_id}.processing.json"
+    custody = journal / f"{intent.transition_id}.custody.json"
+    _write_journal_intent(processing, intent)
+    if custody_defect == "missing":
+        custody.unlink()
+    elif custody_defect == "digest":
+        processing.write_bytes(processing.read_bytes() + b" ")
+    elif custody_defect == "symlink":
+        target = journal / "retained-proof"
+        custody.rename(target)
+        custody.symlink_to(target)
+    elif custody_defect == "fifo":
+        custody.unlink()
+        os.mkfifo(custody, mode=0o600)
+    elif custody_defect == "mode":
+        custody.chmod(0o644)
+    else:
+        custody.write_bytes(b"x" * (64 * 1024 + 1))
+    later = intent.model_copy(update={"transition_id": "b" * 32})
+    pending = inbox / f"{later.transition_id}.json"
+    _write_intent(pending, later)
+    actuator = _Actuator()
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
+
+    with pytest.raises(RuntimeError, match="custody"):
+        await reactor.consume_all()
+
+    actuator.apply_mock.assert_not_awaited()
+    actuator.recover_mock.assert_not_awaited()
+    assert processing.is_file()
+    assert pending.is_file()
+
+
+@pytest.mark.asyncio
+async def test_reactor_refuses_legacy_completed_record_as_compensation_authority(tmp_path: Path) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    forward = _intent(registry)
+    completed = journal / f"{forward.transition_id}.completed.json"
+    _write_intent(completed, forward)
+    compensation = build_compensation_intent(forward)
+    _write_intent(inbox / f"{compensation.transition_id}.json", compensation)
+    actuator = _Actuator()
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
+
+    with pytest.raises(RuntimeError, match="operator reconciliation required"):
+        await reactor.consume_all()
+
+    actuator.apply_mock.assert_not_awaited()
+    assert completed.is_file()
+    assert not (journal / f"{forward.transition_id}.custody.json").exists()
+    assert (journal / f"{compensation.transition_id}.declined.json").is_file()
 
 
 @pytest.mark.asyncio
@@ -249,7 +513,7 @@ async def test_reactor_recovers_preexisting_processing_record(tmp_path: Path) ->
     inbox, journal = _secure_dirs(tmp_path)
     intent = _intent(registry)
     processing = journal / f"{intent.transition_id}.processing.json"
-    _write_intent(processing, intent)
+    _write_journal_intent(processing, intent)
     actuator = _Actuator()
     reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
 
@@ -269,7 +533,7 @@ async def test_uncertain_recovery_fences_later_pending_effects(tmp_path: Path) -
     pending = recovered.model_copy(update={"transition_id": "b" * 32})
     processing_path = journal / f"{recovered.transition_id}.processing.json"
     pending_path = inbox / f"{pending.transition_id}.json"
-    _write_intent(processing_path, recovered)
+    _write_journal_intent(processing_path, recovered)
     _write_intent(pending_path, pending)
 
     async def uncertain(_intent: TransitionIntent) -> None:
@@ -365,7 +629,7 @@ async def test_reactor_accepts_exact_inverse_of_completed_forward(tmp_path: Path
         expected_active_animators=("old",),
     )
     original_record = journal / f"{forward.transition_id}.completed.json"
-    _write_intent(original_record, forward)
+    _write_journal_intent(original_record, forward)
     compensation = build_compensation_intent(forward).model_copy(update={"transition_id": "d" * 32})
     pending = inbox / f"{compensation.transition_id}.json"
     _write_intent(pending, compensation)
@@ -394,7 +658,7 @@ async def test_reactor_rejects_forged_compensation_and_preserves_original(tmp_pa
         expected_active_animators=("old",),
     )
     original_record = journal / f"{forward.transition_id}.completed.json"
-    _write_intent(original_record, forward)
+    _write_journal_intent(original_record, forward)
     expected = build_compensation_intent(forward)
     forged = TransitionIntent.model_validate(
         {
@@ -552,6 +816,7 @@ async def test_reactor_refuses_claimed_fifo_without_blocking(
     intent = _intent(registry)
     pending = inbox / f"{intent.transition_id}.json"
     processing = journal / f"{intent.transition_id}.processing.json"
+    acquiring = journal / f"{intent.transition_id}.acquiring.json"
     original_replace = type(pending).replace
     original_open = os.open
 
@@ -563,7 +828,7 @@ async def test_reactor_refuses_claimed_fifo_without_blocking(
 
     def safe_open(path: Path, flags: int, mode: int = 0o777) -> int:
         # Fail before the OS can block the test runner on the unsafe regression.
-        if path == processing and not flags & os.O_NONBLOCK:
+        if path in (processing, acquiring) and not flags & os.O_NONBLOCK:
             pytest.fail("Opening the claimed FIFO would block the lifecycle owner")
         return original_open(path, flags, mode)
 
@@ -602,6 +867,7 @@ def test_reactor_units_are_narrow_and_host_triggered(tmp_path: Path) -> None:
     assert "RestartSec=1s" in service
     assert f"PathExistsGlob={tmp_path}/inbox/*.json" in path
     assert f"PathExistsGlob={tmp_path}/journal/*.processing.json" in path
+    assert f"PathExistsGlob={tmp_path}/journal/*.acquiring.json" in path
     assert "Unit=lychd-reactor.service" in path
     assert "sudo" not in service
 

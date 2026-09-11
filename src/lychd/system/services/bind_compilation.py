@@ -99,6 +99,9 @@ def compile_bind_request(
         core_secret_factories={
             settings.server.web.secret_key_secret: (lambda: secrets.token_hex(32)),
             settings.server.database.password_secret: (lambda: secrets.token_urlsafe(16)),
+            settings.server.database.runtime_password_secret: (lambda: secrets.token_urlsafe(32)),
+            settings.server.database.phoenix_password_secret: (lambda: secrets.token_urlsafe(32)),
+            settings.server.web.access_password_secret: (lambda: secrets.token_urlsafe(32)),
         },
         required_secret_names=sorted(
             {

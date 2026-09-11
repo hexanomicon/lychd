@@ -23,6 +23,31 @@ the declared endpoint and model identity. Declaration compilation rejects a know
 override of a managed command. LychD does not rewrite passthrough commands or infer unknown wrapper
 syntax; declare the endpoint and command consistently for a runnable profile.
 
+Engine idle sleep is unsupported because readiness probes and `autoload=false` cannot fence its
+automatic wake. Managed argument vectors begin with `--sleep-idle-seconds -1`; omit
+`sleep_idle_seconds` or set it to `-1`. `extra_args` cannot contain any sleep control.
+Passthrough `exec` must begin with that exact disabling pair: either
+`["--sleep-idle-seconds", "-1", ...]` for an image entrypoint, or
+`["llama-server", "--sleep-idle-seconds", "-1", ...]` for a complete command.
+The executable token must be nonempty and cannot begin with `-`. Admitted bytes are not rewritten.
+Later sleep controls, duplicate disabling flags, underscore aliases, equals spellings, and
+misplaced or malformed disabling arguments fail validation. This deliberately bounds the command
+shape instead of inferring arbitrary option arity; a flag consumed as another option's value
+cannot supply admission. Custom wrappers that cannot honor this contract are outside the
+supported llama.cpp profile.
+
+This contract was checked against upstream revision
+[`434ddbbc0e30522e897670681e503b797c12b7c1`](https://github.com/ggml-org/llama.cpp/commit/434ddbbc0e30522e897670681e503b797c12b7c1):
+the router [overlays CLI arguments on every model preset](https://github.com/ggml-org/llama.cpp/blob/434ddbbc0e30522e897670681e503b797c12b7c1/tools/server/server-models.cpp#L531),
+while [sleeping children still count as running](https://github.com/ggml-org/llama.cpp/blob/434ddbbc0e30522e897670681e503b797c12b7c1/tools/server/server-models.h#L93)
+for router autoload admission. The default is disabled, but the explicit command value also
+overrides sleep enabled in global, model, directory, or cached presets. Command validation does
+not attest an already-running service or external changes; operator validation must check the
+actual image revision and arguments.
+The pinned [argument parser](https://github.com/ggml-org/llama.cpp/blob/434ddbbc0e30522e897670681e503b797c12b7c1/common/arg.cpp#L816)
+normalizes underscore option names and consumes values positionally; equals-form sleep flags are
+not accepted by that engine revision.
+
 For managed single-model operation, `served_model_id` supplies the generated `--alias` and the
 capability identity when no explicit `[[models]]` catalogue is present. Otherwise the model path
 basename supplies that alias. Declared model ids must match the engine's live inventory; a healthy
@@ -45,14 +70,21 @@ the engine's allocation.
 
 ## Readiness and control
 
-Router models are dynamic capabilities. An unloaded model may be `ACTIVATABLE`, activation passes
-through `WARMING`, and only verified live inventory makes it `WARM`. Dynamic activation is not a
-restart; reclaiming a conflicting physical runtime remains an Orchestrator transition.
+Router models are dynamic capabilities. Each model's inventory status determines its readiness:
+clean `unloaded` admits activation, `loading` means `WARMING`, and `loaded` plus ready health supplies warmth.
+Missing declared models and malformed inventories fail closed; failed, sleeping, downloading, or
+unknown statuses cannot authorize activation. One model's health cannot establish a sibling's state.
+Activation rechecks inventory and does not repeat a load already in progress. Inference and targeted
+health requests carry `autoload=false`; with engine idle sleep disabled, a missing loaded model
+cannot silently trigger router loading or eviction.
+Dynamic activation is not a restart; reclaiming a conflicting physical runtime remains an
+Orchestrator transition.
 
-The current repository proves planning, discovery, capability derivation, and load/unload control.
+The current repository proves planning, discovery, capability derivation, and model-load control.
+Model unloading is not a separate adapter operation; whole-runtime shutdown belongs to Orchestrator.
 A real engine/GPU/model result remains [operator validation](../../../../state-of-the-work.md#llamacpp-integration).
 
-Control receipts are intentionally literal: load/unload succeeds only on JSON boolean `true`, not
+Control receipts are intentionally literal: model-load succeeds only on JSON boolean `true`, not
 `1` or `"true"`, and a slot count rejects Python/JSON booleans even though they are integer-like.
 Known numeric preset keys use their canonical integer or floating type; boolean words are ignored
 rather than silently becoming `0` or `1`. Treat those refusals as malformed provider/configuration

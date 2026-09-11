@@ -99,7 +99,7 @@ graph, or separate owners of the same action. Each has a different primary readi
 
 | Instrument | Primary reading order | Role of a graph |
 | --- | --- | --- |
-| Atlas | Undertaking and next step; concerns and their current assessment basis; decisions and related activity | An optional selected-concern relation lens, preserving assessment citations separately from merely related references. |
+| Atlas | Concerns, their decomposition and where they are addressed; current assessment basis; optional Project brief and next step | An optional selected-concern relation lens distinguishing decomposition, sources, addressing, and assessment citations. |
 | Bridge | Conversation and offered text; the exact Run's reply, consent or unresolved admission; next draft | No default graph. A future Circle composes authorized lenses around one Invocation. |
 | Orb | Selected Run and capture limits; ordered evidence; selected record; bounded delegated jobs | Recorded subject lanes may aid reading order; they never invent elapsed time, causality, or a complete traversal. |
 | Nexus | Snapshot and containment; observed capabilities; explicit preview and request; ticket and physical observations | A native board remains primary. Planned evictions and launches are more useful than an inferred topology map. |
@@ -130,8 +130,9 @@ only a declared permission: placement cannot invent a branch condition, read/wri
 observed transition. In Orb order and subject lanes describe retained records, with unknown
 subjects and gaps explicit across the view. Equal spacing is ordinal unless a served timestamp
 supports an explicitly labelled time axis. Job and Run sequences remain separate unless the
-server supplies their correlation. In Atlas, the meaningful chain is concern, assessment, cited
-reference, and activity destination; a shared destination cannot collapse the reference records
+server supplies their correlation. In Atlas, decomposition, source inspiration, and where a
+concern is addressed remain distinct from the evidence chain: concern, assessment, cited
+reference, and activity destination. A shared destination cannot collapse the reference records
 or make an uncited relation into evidence. A selected-concern list precedes any optional diagram
 until the diagram demonstrably answers that same question better.
 
@@ -152,7 +153,10 @@ identity, or persuasive copy cannot supply those contracts.
 
 ### Atlas and continuity across Invocations
 
-Atlas is the Altar's map of persistent undertakings. Its server-owned Project aggregate holds a
+Atlas maps Concerns: what needs attention, how it decomposes, where it is addressed, and what
+supports a judgment. A Concern can begin with an idea or question before any Project exists.
+The independent Concern contract is [Designed](#independent-concerns-decomposition-and-addressing-designed).
+The initial server-owned Project aggregate holds a
 brief, concerns, attributed assessments and decisions, a proposed next action, and explicit
 references to existing Bridge sessions or Runs. A Project may begin without a conversation or Run
 and may describe continuing stewardship. Its identity survives individual Invocations. It owns
@@ -200,6 +204,69 @@ does not establish whether that earlier write committed.
 [State](../state-of-the-work.md#atlas-projects) owns the delivered boundary. AI proposal generation,
 automatic concern coverage, autonomous continuation, graph clustering, and implicit shared
 Context remain outside this initial contract.
+
+### Independent Concerns, decomposition, and addressing (Designed)
+
+A Concern has its own stable identity, authorization owner, revisioned statement, and optional
+criteria. It can stand alone, concern an idea or an application, or participate in explicitly
+associated Projects. Project membership is optional context; it does not establish Concern
+identity or authorization. A shared Concern retains one identity across its relations. A materially
+different question or acceptance basis gets a distinct Concern with an explicit derivation link.
+Neither a Project nor a Conversation, Run, Composition, or Covenant is required to create one.
+
+Atlas gives Concerns a dedicated reading and authoring surface. From a selected Concern the reader
+can inspect its meaning and criteria, break it down, see what remains unaddressed, follow where
+each part is addressed, and inspect the judgments and evidence. A Project view gathers that same
+material in its brief's context; it does not become the only entrance to it.
+
+The relation contract distinguishes:
+
+| Relation | Meaning |
+| --- | --- |
+| Decomposition | A parent question is developed into smaller Concerns, with a reason for each part and any remaining scope made explicit. |
+| Addressing | An exact part of a proposal, decision, document, application contract, implementation, or procedure is intended to address a Concern, with its contribution and limits stated. |
+| Source | A Concern was inspired by or derived from identified material, or is constrained by a rule explicitly adopted in its context. Inspiration and adopted obligation remain distinguishable. |
+| Assessment citation | A judgment uses particular retained references as evidence against an exact Concern and context basis. |
+
+Decomposition is acyclic and may share a child between parents. A view preserves those shared
+identities instead of duplicating the questions. Decomposition does not imply complete partition,
+execution order, or sufficiency: the parent retains its own criteria, unresolved remainder, and
+judgment even when every child has a sufficient assessment. General relatedness is not a
+decomposition or an addressing claim.
+
+Addressing is many-to-many. Each relation retains its author, rationale, exact target locator and
+revision or content identity, and whether it names proposed or accepted material. The map exposes
+missing, partial, conflicting, unavailable, and changed targets without equating a link with
+implementation or proof. Decisions can name the Concerns they address. For application design,
+this account explains how the parts serve the Concerns and which needs still have no home. An idea
+or ordinary application need not become a native LychD Composition to be mapped. When the target
+is a native Composition or Pattern, [Workflow](28-workflow.md#concerns-and-application-design)
+keeps its contract and publication authority with that owner.
+
+An assessment binds the exact Concern revision and any context it judges. When it relies on
+decomposition, child judgments, source obligations, or addressing relations, it retains those
+specific revisions as part of its basis. Relevant changes require review while preserving the
+original judgment. A judgment made for one Project's brief does not silently become a judgment
+for another context. Summaries retain the difference between an addressing claim and assessed
+sufficiency; child counts and completed Runs cannot create a coverage verdict.
+
+Concerns are authored directly or proposed through decomposition or selected source material.
+An idea or Project may develop its own Concerns and its own Covenants. A Concern may motivate a
+Covenant; an adopted Covenant may in turn suggest further Concerns. LychD's Covenants are an
+optional source of inspiration, with no default import or authority over unrelated work.
+Other sources and Concerns without any Covenant remain equally admissible.
+
+Seeding or spawning produces attributable proposals: the used source and exact revision or
+content identity, the relevant passage, and the interpretation for the intended context remain
+inspectable. Acceptance explicitly creates or revises the selected Concerns and relations;
+regeneration proposes a comparison instead of overwriting authored meaning. A source change
+requires review of affected derivations without silently rewriting them. Generated proposals do
+not adopt a Covenant, assess coverage, publish an application, or admit execution by themselves.
+
+[Persistence](06-persistence.md#independent-concern-retention-designed) owns retention and
+migration. The initial Project aggregate and activity-only references do not implement this
+independent identity, relation model, or proposal flow; [State](../state-of-the-work.md#atlas-projects)
+keeps that delivery boundary explicit.
 
 ### Projection law
 
@@ -262,6 +329,20 @@ Its named JSON SSE envelope carries `schema_version`, `run_id`, producer-stable 
 browser-managed `Last-Event-ID`, sends keepalives, and projects its process-local bus. Terminal
 runs receive `resync`, not invented token replay.
 
+The Bridge archive rail loads at most 50 session identities per page, ordered by exact creation
+timestamp and stable identity. An opaque, validated keyset cursor and visible **Load more** retain
+access to older conversations. Archive queries select metadata without hydrating other sessions'
+turns or model history; pending-consent counts are grouped for the requested page. A selected
+conversation remains independently addressable even outside that page. This bounds amplification
+across the archive, not the selected conversation's retained turns, model history, or Run list;
+those still load for the selected session and need a separate retention or history-pagination law.
+
+HTTP Run event streams reserve process-local capacity before response headers: at most four per
+Run and 32 per process. Excess streams receive `429` and `Retry-After`; closing, cancellation,
+and failure before the first event all release the reservation. A stream limit never drops a
+settled turn or changes Run execution. Existing bounded subscriber queues still replace overflow
+with explicit `resync`, and browser reconnect uses its transport backoff.
+
 The client seeds from the snapshot cursor, serially validates and reduces events, ignores applied
 sequence numbers, and refetches on gap or `resync`. Its initial cursor is reducer state: the
 current `EventSource` constructor does not send an explicit cursor. A run or ticket identity
@@ -271,7 +352,9 @@ a second failure remains visibly stale rather than animated as live. Each Bridge
 retains its applied cursor and a browser-local authority generation; a delayed recovery may replace
 that Run only while both still match the request it began from. Ordinary transport errors remain
 transient while `EventSource` reconnects. Durable terminal Run status overrides a lagging
-process-local channel, and only a retained agent turn retires that terminal projection from the
+process-local channel. Its retained agent answer and fragments take precedence over incomplete
+live deltas while the captured stream cursor stays intact; absent a retained turn, live content
+remains the fallback. Only a retained agent turn retires that terminal projection from the
 selected session. Token deltas and channels are neither durable nor cross-process; retained
 structural Step evidence is best-effort. Nexus uses its own versioned transition envelope with the
 same retention boundary and completion-driven single-flight polling. Closing a channel fences
@@ -314,6 +397,10 @@ request-version fences overlapping reads, so an arriving local count never becom
 The shell's attention link opens an explicit chooser of conversations with pending consent.
 Per-session counts come from the server's consent-to-Run-to-session relation; the selected
 conversation never presents the global count as its own attention.
+The existing browser-shell workspace retains in-flight and uncertain consent verdicts by consent
+id across refresh and navigation. Only the same verdict may retry after uncertainty, including a
+later middleware refusal. Late responses invalidate their owning session for reconciliation;
+newer snapshots retain authority. Unresolved decisions also trigger the document-unload warning.
 Bridge message submission likewise retains one client UUID across an ambiguous response, and durable
 Run admission maps that identity to exactly one canonical Run. A replay repairs an unresolved held
 turn-retention gate before publication. Within one Bridge session, process-local admission permits
@@ -332,7 +419,9 @@ this initial recovery state does not claim persistence across reload or browser 
 
 Nexus retains an ambiguous transition request UUID per target, so inspecting another target cannot
 discard the only safe retry identity. A lost-ticket conflict retains that UUID and refuses a fresh
-physical launch; only a definitive non-conflict client rejection clears that target. Authoritative
+physical launch. Only an initially definitive rejection clears that target; an earlier unknown
+outcome survives later rejection. Leaving Nexus with in-flight or unresolved admission requires
+explicit discard, while same-document inspector navigation retains the retry identity. Authoritative
 refresh rebinds the inspector to the exact request id so a settled ticket cannot leave stale
 pre-refresh transition detail selected. Board
 refresh remains single-flight, but a refresh requested while one is in flight marks a dirty trailing
@@ -343,8 +432,10 @@ pass; the settling read cannot erase a newer invalidation.
 Extensions have no UI source, template, script, import, or third-party sandbox surface.
 `@xyflow/svelte` is admitted for Loom but not installed; State owns delivery. Loom's optional
 locally bundled Mermaid diagram runs in strict
-security mode; its textual station/permission score remains visible and authoritative on rendering
-failure. Plain-text source lives below `/api/v1/loom/source/workflows/{workflow}` and
+security mode and derives its stations and permission endpoints from the admitted manifest,
+including declared durable re-entry. Each rendering owns a disposable DOM target; replacing the
+score or destroying the lens detaches that target and invalidates a pending import. Its textual
+station/permission score remains visible and authoritative on rendering failure. Plain-text source lives below `/api/v1/loom/source/workflows/{workflow}` and
 `/api/v1/loom/source/patterns/{pattern_id}/{revision}` so every legal two-segment exact Pattern route
 remains addressable. Mermaid source is not Pattern data. A later renderer must isolate DTO identity from
 renderer coordinates, treat geometry and motion as disposable, deny publication/execution from a

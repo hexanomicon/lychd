@@ -39,6 +39,8 @@ class LlamacppConnector(OpenAICompatibleConnector):
             base_url=base_url,
             model_infos=model_infos,
             default_model_id=default_model_id,
+            # A lease authorizes inference, never router loading or LRU eviction.
+            default_query={"autoload": "false"} if mode == "router" else None,
         )
         self._mode: Literal["single", "router"] = mode
         self._router_query_model_id = router_query_model_id

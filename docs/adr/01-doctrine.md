@@ -129,6 +129,19 @@ and registers; it does not compete for topology law.
 Tracked `.agents/scopes/**` cards route agents but own no truth. Tracked `.agents/workflows/**`
 playbooks preserve procedure, load after scope, and yield to canonical owners.
 
+### Router delegation
+
+A router exposes task triggers and explicit links to scope branches, canonical owners, or workflow
+playbooks. It identifies the destination's role so a reader knows whether to continue discovery,
+establish truth, or load procedure. A route may lead to another router, which owns its deeper
+routes; the parent keeps that branch discoverable without duplicating its contents.
+
+Follow only the branches required by the task. Cross-domain links make another scope tree
+reachable without requiring its wholesale ingestion. Workflows load after the matching scope.
+Routing grants no new authority, launches no work, and does not itself assemble a fresh Context.
+[Discovery in Spellweaver](../sepulcher/extensions/weaver/discovery.md) shows the passage from
+scope discovery to workflow selection and a bounded task handoff.
+
 ### One home per truth
 
 | Truth | Owner |

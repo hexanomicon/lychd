@@ -113,11 +113,18 @@ class AppInit(InitPluginProtocol):
         csrf_config = build_csrf_config(settings)
         app_config.csrf_config = csrf_config
 
-        # The Ward (4C-1): stamp every request's connection.user with the settings Sigil
-        # so the scope guards can rule. Excludes /_app + /schema (unauthenticated assets).
+        # Local credential possession precedes the fixed Sigil; remote Ward is not delivered.
         from lychd.domain.codex.middleware import sigil_auth_middleware
 
-        app_config.middleware.append(sigil_auth_middleware())
+        if settings.server.web.access_password is None:
+            msg = "Required local access password is unavailable in Settings."
+            raise ValueError(msg)
+        app_config.middleware.append(
+            sigil_auth_middleware(
+                access_password=settings.server.web.access_password.get_secret_value(),
+                allowed_origins=settings.server.web.allowed_cors_origins,
+            )
+        )
 
         # --- 6. Memory Stores ---
         app_config.stores = StoreRegistry(default_factory=lambda _: MemoryStore())

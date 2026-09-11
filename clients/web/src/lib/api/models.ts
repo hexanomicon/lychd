@@ -26,6 +26,7 @@ export type RunEventEnvelope = components["schemas"]["RunEventEnvelope"];
 export type RunProjectionSnapshot = components["schemas"]["RunProjectionSnapshot"];
 export type OrbRunSnapshot = components["schemas"]["OrbRunSnapshot"];
 export type SessionCreated = components["schemas"]["SessionCreated"];
+export type SessionPage = components["schemas"]["SessionPage"];
 export type SwapAccepted = components["schemas"]["SwapAccepted"];
 export type SwapTicket = components["schemas"]["SwapTicket"];
 export type TransitionEventEnvelope = components["schemas"]["TransitionEventEnvelope"];

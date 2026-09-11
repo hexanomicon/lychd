@@ -51,9 +51,16 @@ def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
     # emitted only when its observability integration rune is active.
     vessel = containers["lychd-vessel"]
     assert settings.server.web.secret_key_secret in vessel.secrets
-    assert settings.server.database.password_secret in vessel.secrets
+    assert settings.server.database.runtime_password_secret in vessel.secrets
+    assert settings.server.database.password_secret not in vessel.secrets
+    assert settings.server.database.phoenix_password_secret not in vessel.secrets
+    assert settings.server.web.access_password_secret in vessel.secrets
     assert vessel.env_vars["LYCHD_APP_SECRET_KEY_FILE"] == f"/run/secrets/{settings.server.web.secret_key_secret}"
-    assert vessel.env_vars["LYCHD_DB_PASSWORD_FILE"] == f"/run/secrets/{settings.server.database.password_secret}"
+    assert (
+        vessel.env_vars["LYCHD_RUNTIME_DB_PASSWORD_FILE"]
+        == f"/run/secrets/{settings.server.database.runtime_password_secret}"
+    )
+    assert "LYCHD_DB_PASSWORD_FILE" not in vessel.env_vars
     assert vessel.user == "%U"
     assert vessel.requires == ["lychd-migrate.service", "lychd-reactor.path"]
     assert vessel.after == ["lychd-migrate.service", "lychd-reactor.path"]
@@ -67,7 +74,7 @@ def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
     assert vessel_mounts[reactor_journal].options == ["ro", "Z"]
 
     phylactery = containers["lychd-phylactery"]
-    assert phylactery.user is None
+    assert phylactery.user == "postgres"
     assert phylactery.secrets == [settings.server.database.password_secret]
     assert phylactery.env_vars["POSTGRES_PASSWORD_FILE"] == f"/run/secrets/{settings.server.database.password_secret}"
     assert phylactery.wants == ["lychd-pod.service"]
@@ -83,7 +90,7 @@ def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
     assert migrator.restart_policy == "no"
     assert migrator.requires == ["lychd-phylactery.service"]
     assert migrator.after == ["lychd-phylactery.service"]
-    assert migrator.exec == "lychd database --wait-seconds 60 upgrade head --no-prompt"
+    assert migrator.exec == "lychd database-bootstrap --wait-seconds 60"
     assert migrator.wanted_by == []
     assert migrator.user == "%U"
 

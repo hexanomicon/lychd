@@ -86,6 +86,8 @@ def _require_capability_identity(
         mismatches.append(f"source_kind={spec.source_kind.value!r}, expected {expected_source.value!r}")
     if spec.key != expected_key:
         mismatches.append(f"key={spec.key!r}, expected {expected_key!r}")
+    if isinstance(declaration, SoulstoneConfig) and spec.concurrency != declaration.concurrency:
+        mismatches.append(f"concurrency={spec.concurrency!r}, expected {declaration.concurrency!r}")
     if mismatches:
         msg = f"Capability ownership mismatch for {_capability_provenance(spec, runtime)}: {'; '.join(mismatches)}."
         raise ValueError(msg)

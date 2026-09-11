@@ -155,18 +155,31 @@ async def test_exact_unresolved_issue_is_unavailable_without_fallback_or_lease(
 
 
 @pytest.mark.asyncio
-async def test_exact_cached_error_keeps_existing_exclusion_policy(
-    scenario: CapabilityScenario, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("fresh_phase", [CapabilityPhase.WARM, CapabilityPhase.ERROR])
+async def test_exact_cached_error_refreshes_only_the_pinned_route(
+    scenario: CapabilityScenario, monkeypatch: pytest.MonkeyPatch, fresh_phase: CapabilityPhase
 ) -> None:
     _observe(scenario, monkeypatch, CapabilityPhase.ERROR)
     await scenario.registry.refresh_capability_state("z:chat:shared")
     scenario.world.probes.clear()
-    _observe(scenario, monkeypatch, CapabilityPhase.WARM)
+    _observe(scenario, monkeypatch, fresh_phase)
 
-    with pytest.raises(CapabilityUnavailable):
-        async with scenario.dispatcher.lease_grant(family="chat", capability_key="z:chat:shared", run_id="known-error"):
-            pytest.fail("an exact key cannot bypass the cached ERROR selection rule")
-    assert scenario.world.probes == []
+    if fresh_phase is CapabilityPhase.WARM:
+        async with scenario.dispatcher.lease_grant(
+            family="chat", model_name="shared", capability_key="z:chat:shared", run_id="recovered-exact"
+        ) as grant:
+            assert grant.spec.key == "z:chat:shared"
+            assert [row.capability_key for row in scenario.leases.active()] == ["z:chat:shared"]
+    else:
+        with pytest.raises(CapabilityUnavailable) as error:
+            async with scenario.dispatcher.lease_grant(
+                family="chat", model_name="shared", capability_key="z:chat:shared", run_id="still-error"
+            ):
+                pytest.fail("a fresh exact ERROR cannot bypass readiness or substitute the warm alias")
+        assert error.value.capability_key == "z:chat:shared"
+    assert scenario.world.probes == ["z"] * (2 if fresh_phase is CapabilityPhase.WARM else 1)
+    assert scenario.world.activations == []
+    assert scenario.actuator.intents == []
     assert scenario.leases.active() == []
 
 

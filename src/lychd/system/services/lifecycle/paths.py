@@ -8,6 +8,7 @@ import stat
 from pathlib import Path
 
 from lychd.system.path_safety import path_has_symlink_component
+from lychd.system.services.layout_directory_traversal import inspect_preserved_datastore
 from lychd.system.services.lifecycle._authority import LifecycleAuthority, current_authority
 from lychd.system.services.lifecycle.models import (
     LifecycleAction,
@@ -138,6 +139,8 @@ def inspect_init_directory(
     authority: LifecycleAuthority,
 ) -> LifecycleAction:
     """Inspect one directory and reject an absent out-of-bound creation target."""
+    if path == authority.postgres_data and os.path.lexists(path):
+        return _inspect_existing_datastore(path)
     action = inspect_directory(path, expected_mode=expected_mode)
     if action.disposition is not LifecycleDisposition.WOULD_CREATE:
         return action
@@ -166,6 +169,25 @@ def inspect_init_directory(
             ),
         )
     return action
+
+
+def _inspect_existing_datastore(path: Path) -> LifecycleAction:
+    """Preservation observes a mapped database owner without acquiring its rights."""
+    try:
+        inspect_preserved_datastore(path)
+    except (OSError, RuntimeError) as exc:
+        return LifecycleAction(
+            LifecycleDisposition.BLOCKED,
+            LifecycleResourceKind.DIRECTORY,
+            str(path),
+            str(exc),
+        )
+    return LifecycleAction(
+        LifecycleDisposition.PRESERVE,
+        LifecycleResourceKind.MOUNT if path.is_mount() else LifecycleResourceKind.DIRECTORY,
+        str(path),
+        "durable database leaf preserved without opening contents or changing its container-mapped ownership",
+    )
 
 
 def inspect_init_file(

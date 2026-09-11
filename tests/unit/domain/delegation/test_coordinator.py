@@ -688,6 +688,53 @@ async def test_reference_retirement_finishes_before_refresh_cancellation_propaga
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("committed", [False, True])
+async def test_reference_adoption_deadline_is_retryable_after_unknown_commit(*, committed: bool) -> None:
+    release = asyncio.Event()
+
+    class DelayedStore(InMemoryDelegatedAgentJobStore):
+        async def adopt(
+            self,
+            job_id: str,
+            result: DelegatedAgentResult,
+        ) -> tuple[DelegatedAgentJob, bool]:
+            if not committed:
+                await release.wait()
+            outcome = await super().adopt(job_id, result)
+            if committed:
+                await release.wait()
+            return outcome
+
+    store = DelayedStore()
+    runtime = ReferenceDelegatedAgentRuntime()
+    coordinator = DelegatedAgentCoordinator(runtimes={runtime.name: runtime}, store=store)
+    ref = await coordinator.submit(_request().model_copy(update={"runtime": runtime.name}))
+
+    async def refresh_with_deadline() -> None:
+        async with asyncio.timeout(0.01):
+            await coordinator.refresh(ref.job_id)
+
+    task = asyncio.create_task(refresh_with_deadline())
+    try:
+        done, _pending = await asyncio.wait({task}, timeout=0.3)
+        assert task in done, "reference result adoption must respect the recovery deadline"
+        with pytest.raises(TimeoutError):
+            await task
+        observed = await store.get(ref.job_id)
+        assert observed is not None
+        assert observed.status is (DelegatedAgentJobStatus.SUCCEEDED if committed else DelegatedAgentJobStatus.RUNNING)
+        assert _reference_projection_count(runtime) == 1
+    finally:
+        release.set()
+        with pytest.raises(TimeoutError):
+            await task
+
+    settled = await coordinator.refresh(ref.job_id)
+    assert settled.status is DelegatedAgentJobStatus.SUCCEEDED
+    assert _reference_projection_count(runtime) == 0
+
+
+@pytest.mark.asyncio
 async def test_lost_is_terminal_and_never_polled_or_retried() -> None:
     coordinator, runtime = _coordinator()
     ref = await coordinator.submit(_request())

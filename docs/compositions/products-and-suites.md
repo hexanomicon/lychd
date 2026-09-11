@@ -23,6 +23,13 @@ Suite coordination pins members/Patterns, typed ArtifactRef/Intent handoffs, cor
 
 ## Compositions relate without nesting
 
+[Areas](index.md#areas) group Compositions for discovery. A Suite may coordinate members within
+one Area or across several; neither shared membership nor crossing a thematic boundary implies
+live coordination. For example, a cultivation plan and a physical task could involve Cultivator
+from Stewardship & Acquisition and Familiar from Presence & Embodiment. A promise to initiate,
+await, and settle both Invocations needs a Suite; passing a settled plan alone does not. Each
+member retains its own judgment and effect authority.
+
 Replace a broad `depends_on: composition` edge with the actual relation:
 
 | Relation | Consequence |
@@ -47,6 +54,14 @@ Companion requires an exact Familiar-backed device, while Familiar retains capab
 ### Workshop and Scavenger
 
 Proposed Mechanic packages Workshop's passenger-vehicle service profile. A settled part requirement can enter Scavenger without moving diagnosis or seller authority. Joint diagnostic/acquisition cancellation, ceilings, recovery, and partial settlement require a Suite that a later Product may pin.
+
+### Homestead, Keeper, and Cultivator
+
+[Keeper](keeper/index.md) can record a colony in a manually tended test tube, and [Cultivator](cultivator/index.md) can follow a plant without a connected sensor. [Homestead](homestead/index.md) owns physical site assets, resources, stores, provision, and commissioned controls when used. Each care owner retains the subject, placement, life history, needs, and biological interpretation. A shared enclosure can have both Keeper and Cultivator placements referencing one Homestead asset; owning the heater does not decide either occupant's needs.
+
+An exact `KeeperSupplyNeed@1` or `CultivatorSupplyNeed@1` can enter Homestead provision; an attributed yield can later enter stores. An admitted environment requirement can receive a `HomesteadEnvironmentResult@1` in separate work. These settled references need no Suite, and technical success does not settle biological care. A common household Product or dashboard also needs no Suite merely to show the three owners together.
+
+“Prepare care during my absence” needs a Suite if it starts care-planning Invocations, awaits household supply and environment work, and recovers or cancels them as one result. Before that path can be cast, its own published revision must pin exact member Patterns, handoffs, deadlines, aggregate ceilings, conflict policy, cancellation, and partial settlement. No Suite identity or executable absence workflow is accepted by this example. A refused water allocation leaves the dependent tending plan blocked; a completed purchase remains committed when another member fails. The parent cannot cancel local life-support protection or erase a member's unknown physical effect to declare the household ready.
 
 ### Voidlight, Riffmaw, Language Edition, and Broadcast
 

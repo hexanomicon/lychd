@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import asyncio
+import hashlib
 import json
 import os
 import re
@@ -40,6 +40,7 @@ _INTENT_MODE = 0o600
 _MAX_INTENT_BYTES = 64 * 1024
 _MAX_REJECTION_DETAIL = 2048
 _PENDING_NAME = re.compile(r"^(?P<transition_id>[0-9a-f]{32})\.json$")
+_CUSTODY_VERSION = 1
 
 __all__ = ["HostReactor", "render_reactor_path_unit", "render_reactor_service_unit"]
 
@@ -110,6 +111,7 @@ def render_reactor_path_unit(*, inbox_dir: Path, journal_dir: Path | None = None
             "",
             "[Path]",
             f"PathExistsGlob={inbox_dir}/*.json",
+            f"PathExistsGlob={resolved_journal}/*.acquiring.json",
             f"PathExistsGlob={resolved_journal}/*.processing.json",
             "Unit=lychd-reactor.service",
             "",
@@ -123,8 +125,10 @@ def render_reactor_path_unit(*, inbox_dir: Path, journal_dir: Path | None = None
 class HostReactor:
     """Validate, claim, apply, and journal one-way transition intents on the host.
 
-    The inbox and journal are sibling host-owned directories. An intent is moved
-    out of the Vessel-writable inbox before execution. The journal is mounted
+    The inbox and journal are sibling host-owned directories. A claimed delivery
+    is copied into a new host-created inode before execution; producer-held file
+    descriptors and hard links never reach the effect or compensation evidence.
+    The journal is mounted
     read-only into the Vessel so terminal records can close its completion fence;
     it is never a Vessel-writable reply or command protocol.
     """
@@ -171,6 +175,7 @@ class HostReactor:
         """Consume all work while excluding every peer lifecycle mutation."""
         validate_reactor_boundaries(self._inbox_dir, self._journal_dir)
         self._require_no_containment()
+        self._retire_incomplete_acquisitions()
 
         processed, errors, mutation_fenced = await self._recover_claimed_batch()
         if not mutation_fenced:
@@ -202,7 +207,7 @@ class HostReactor:
                 processed += 1
                 continue
             errors.append(error)
-            if await asyncio.to_thread(os.path.lexists, claimed):
+            if os.path.lexists(claimed):  # noqa: ASYNC240 - classify the lifecycle fence without a cancellation gap
                 return processed, errors, True
         return processed, errors, False
 
@@ -243,16 +248,7 @@ class HostReactor:
                 self._discard_path(pending)
                 self._fsync_directory(self._inbox_dir)
                 return False, None
-            claimed = self._journal_dir / f"{transition_id}.processing.json"
-            if os.path.lexists(claimed):  # noqa: ASYNC240 - claim check and rename must not yield under the lifecycle lock
-                self._discard_path(pending)
-                self._fsync_directory(self._inbox_dir)
-                return False, None
-            # The host claims before reading. The Vessel cannot rename or
-            # replace the journal path after this boundary.
-            pending.replace(claimed)  # noqa: ASYNC240 - finish rename and fsync before cancellation can release the lock
-            self._fsync_directory(self._inbox_dir)
-            self._fsync_directory(self._journal_dir)
+            claimed = self._acquire_pending(pending, transition_id=transition_id)
             await self._apply_claimed(claimed)
         except Exception as exc:  # noqa: BLE001 - malformed input must leave the live inbox
             if claimed is None:
@@ -262,6 +258,52 @@ class HostReactor:
             # boundary is uncertain and must remain a durable batch fence.
             return False, f"{pending.name}: {exc}"
         return True, None
+
+    def _acquire_pending(self, pending: Path, *, transition_id: str) -> Path:
+        """Separate withdrawal, untrusted custody, and durable effect evidence."""
+        acquiring = self._journal_dir / f"{transition_id}.acquiring.json"
+        claimed = self._journal_dir / f"{transition_id}.processing.json"
+        # Rename arbitrates against producer withdrawal, but cannot revoke an
+        # already-open descriptor or hard link to the producer's inode.
+        pending.replace(acquiring)
+        try:
+            self._fsync_directory(self._inbox_dir)
+            self._fsync_directory(self._journal_dir)
+            payload = self._read_payload(acquiring)
+            custody = json.dumps(
+                {"version": _CUSTODY_VERSION, "sha256": hashlib.sha256(payload).hexdigest()},
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+            self._write_journal_payload(self._journal_dir / f"{transition_id}.custody.json", custody)
+            self._write_journal_payload(claimed, payload)
+            self._discard_path(acquiring)
+            self._fsync_directory(self._journal_dir)
+        except Exception:
+            # Publication may have succeeded before its directory fsync failed.
+            # Preserve any processing record for recovery; never call it rejected.
+            if not os.path.lexists(claimed) and os.path.lexists(acquiring):
+                self._reject_acquisition(acquiring, reason="intent acquisition failed before effect publication")
+            raise
+        return claimed
+
+    def _retire_incomplete_acquisitions(self) -> None:
+        """Reject interrupted pre-effect copies without trusting producer bytes."""
+        for acquiring in sorted(self._journal_dir.glob("*.acquiring.json")):
+            transition_id = acquiring.name.removesuffix(".acquiring.json")
+            if self._already_journaled(transition_id):
+                self._discard_path(acquiring)
+                self._fsync_directory(self._journal_dir)
+            else:
+                self._reject_acquisition(acquiring, reason="intent acquisition interrupted before effect publication")
+
+    def _reject_acquisition(self, acquiring: Path, *, reason: str) -> None:
+        """Durably settle a no-effect acquisition before retiring its input."""
+        transition_id = acquiring.name.removesuffix(".acquiring.json")
+        marker_id = transition_id if re.fullmatch(r"[0-9a-f]{32}", transition_id) else f"invalid-{uuid4().hex}"
+        self._write_rejection(marker_id, reason=reason)
+        self._discard_path(acquiring)
+        self._fsync_directory(self._journal_dir)
 
     async def _apply_claimed(self, claimed: Path, *, recover: bool = False) -> None:
         resolved = self._read_claimed_intent(claimed, recover=recover)
@@ -358,6 +400,32 @@ class HostReactor:
         claimed: bool = False,
         terminal_status: Literal["completed", "contained", "declined", "rejected", "restored"] | None = None,
     ) -> TransitionIntent:
+        """Validate typed bytes and host custody before trusting journal evidence."""
+        payload = self._read_payload(path)
+        intent = TransitionIntent.model_validate_json(payload)
+        expected_name = self._expected_intent_name(
+            intent.transition_id,
+            claimed=claimed,
+            terminal_status=terminal_status,
+        )
+        if path.name != expected_name:
+            msg = "intent filename does not match transition_id"
+            raise RuntimeError(msg)
+        if claimed or terminal_status is not None:
+            custody_path = self._journal_dir / f"{intent.transition_id}.custody.json"
+            try:
+                custody = json.loads(self._read_payload(custody_path))
+            except (OSError, RuntimeError, ValueError) as exc:
+                msg = "journal intent lacks verifiable host custody; operator reconciliation required"
+                raise RuntimeError(msg) from exc
+            expected_custody = {"version": _CUSTODY_VERSION, "sha256": hashlib.sha256(payload).hexdigest()}
+            if custody != expected_custody:
+                msg = "journal intent host custody mismatch; operator reconciliation required"
+                raise RuntimeError(msg)
+        return intent
+
+    @staticmethod
+    def _read_payload(path: Path) -> bytes:
         """Open without blocking on raced special files, then attest the descriptor."""
         flags = os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
         try:
@@ -387,16 +455,7 @@ class HostReactor:
                 raise RuntimeError(msg)
         finally:
             os.close(descriptor)
-        intent = TransitionIntent.model_validate_json(payload)
-        expected_name = self._expected_intent_name(
-            intent.transition_id,
-            claimed=claimed,
-            terminal_status=terminal_status,
-        )
-        if path.name != expected_name:
-            msg = "intent filename does not match transition_id"
-            raise RuntimeError(msg)
-        return intent
+        return bytes(payload)
 
     @staticmethod
     def _expected_intent_name(
@@ -542,7 +601,6 @@ class HostReactor:
         target = self._journal_dir / f"{marker_id}.rejected.json"
         if os.path.lexists(target):
             return
-        temporary = self._journal_dir / f".{marker_id}.{uuid4().hex}.tmp"
         payload = (
             json.dumps(
                 {"status": "rejected", "reason": reason[:_MAX_REJECTION_DETAIL]},
@@ -551,6 +609,11 @@ class HostReactor:
             ).encode()
             + b"\n"
         )
+        self._write_journal_payload(target, payload)
+
+    def _write_journal_payload(self, target: Path, payload: bytes) -> None:
+        """Publish a fsynced host-created inode without replacing prior evidence."""
+        temporary = self._journal_dir / f".{target.name}.{uuid4().hex}.tmp"
         descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, _INTENT_MODE)
         try:
             with os.fdopen(descriptor, "wb") as stream:

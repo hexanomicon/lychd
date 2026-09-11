@@ -41,11 +41,17 @@ Owner: [Answer](../sepulcher/lich/answer.md)
 
 Owner: [Memory (ADR 27)](../adr/27-memory.md#memory-layering-sediment-not-dump) + [State](../state-of-the-work.md#karma-semantic-memory)
 
+**Area (Composition Area)** — A non-exclusive thematic grouping for discovering Compositions.
+Its directory and index provide a documentation route; each Composition keeps its canonical
+home, records, judgment, and authority. A Suite may coordinate live work within or across Areas.
+
+Owner: [Composition Areas](../compositions/index.md#areas) + [Workflow (ADR 28)](../adr/28-workflow.md#areas-for-discovery)
+
 **ArtifactRef** — Immutable metadata naming external durable content by identity, SHA-256 digest, media type, byte size, and classification.
 
 Owner: [Dispatcher (ADR 22)](../adr/22-dispatcher.md#durable-content-and-artifactref)
 
-**Atlas** — The Altar instrument mapping persistent Projects through their briefs, concerns, attributed judgments, proposed next actions, and explicit references across conversations and Runs.
+**Atlas** — The Altar instrument mapping Concerns, their decomposition, where they are addressed, and the judgments and evidence concerning them. Projects provide optional undertaking context; the initial delivered surface requires a Project.
 
 Owner: [Atlas](../divination/altar/atlas.md) + [Frontend (ADR 15)](../adr/15-frontend.md#atlas-and-continuity-across-invocations)
 
@@ -139,9 +145,9 @@ Owner: [Composition Portfolio](../compositions/index.md) + Spellweaver (ADR 28)
 
 Owner: [Workflow (ADR 28)](../adr/28-workflow.md#composition-identity-revision-and-retirement)
 
-**Concern** — An Atlas Project's explicit question, risk, requirement, or acceptance condition, with revisioned criteria and separately attributed assessments.
+**Concern** — An explicit question, risk, requirement, or condition deserving attention and judgment, with its own identity, revisioned meaning and criteria, and separately attributed assessments. It can stand alone, arise from an idea, decompose into further Concerns, and be addressed in several places; Project membership or a source Covenant is optional.
 
-Owner: [Atlas](../divination/altar/atlas.md#make-a-concern-answerable)
+Owner: [Atlas](../divination/altar/atlas.md#make-a-concern-answerable) + [Frontend (ADR 15)](../adr/15-frontend.md#independent-concerns-decomposition-and-addressing-designed)
 
 **Consciousness** — The Great Work's constitutional first axiom: the Whole before and through every local distinction; not a delivered component, measurable system property, or synonym for Cognizance.
 
@@ -164,6 +170,9 @@ Owner: [ADR 05](../adr/05-extensions.md)
 Owner: [Orchestrator](../adr/23-orchestrator.md) / [Containers](../adr/08-containers.md)
 
 **Covenant** — An accepted Architecture Decision Record that governs construction without proving delivery.
+
+An idea or Project may author its own Covenants. LychD's numbered register governs LychD;
+consulting it as inspiration does not adopt its decisions for another undertaking.
 
 Owner: [The Covenants](../adr/index.md) + [State](../state-of-the-work.md)
 
@@ -240,6 +249,11 @@ Owner: [src/lychd/extensions/](https://github.com/hexanomicon/lychd/tree/main/sr
 **Extensions** — The qualified collective for either the Fifteen Extension Domains or concrete extension packages.
 
 Owner: [Fifteen Extensions](../sepulcher/extensions/index.md) + ADR 05
+
+**Extractor** — Transmuter's proposed internal stage for source-grounded decomposition,
+extraction, naming, labeling, and classification; its outputs preserve attribution and uncertainty.
+
+Owner: [Transmuter / Extractor](../compositions/transmuter/extractor.md)
 
 **Eye** — In observability, an external viewer that may consume bounded exports without owning canonical LychD state. In Prism, the faculty for dedicated general visual analysis; current v1 projects this as the `vision` family.
 
@@ -698,6 +712,13 @@ Owner: [Summoning](../summoning.md) + [State](../state-of-the-work.md)
 Owner: [Summoning](../summoning.md) + [Altar Circle](../divination/altar/circle.md#the-greater-summoning-circle)
 
 
+**Synthesizer** — Transmuter's proposed internal stage for comparing and connecting extracted
+material with authorized knowledge and preparing attributable proposals for receiving owners.
+It owns neither Persona publication nor model training.
+
+Owner: [Transmuter / Synthesizer](../compositions/transmuter/synthesizer.md)
+
+
 ## T
 
 **Tether** — The private-reachability Extension Domain, planned to manifest through managed WireGuard or external attachments.
@@ -735,6 +756,12 @@ Owner: [Context (ADR 21)](../adr/21-context.md#privatization-and-the-privacy-cut
 **Translation Spell** — An authority-qualified, versioned semantic text transformation preserving source, derivative, languages, implementation, and declared loss; Spellweaver governs its placement and casting while the consuming owner judges application fit.
 
 Owner: [Workflow (ADR 28)](../adr/28-workflow.md#language-is-typed-not-global)
+
+**Transmuter** — The candidate Composition for processing external digital material through
+Extractor and Synthesizer into knowledge and proposals for memory, identity, or other separately
+admitted use. It owns the proposed processing dossier, not its receiving owners' decisions.
+
+Owner: [Transmuter](../compositions/transmuter/index.md)
 
 **Trial Suite** — Riddle's versioned `TrialSuite@1` grouping of evaluation Cases, controls, order, repetitions, and aggregation; never a Composition Suite.
 

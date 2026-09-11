@@ -6,18 +6,20 @@ from uuid import uuid4
 
 import structlog
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from pydantic_graph import BaseNode, End, Graph
-from pydantic_graph.persistence import BaseStatePersistence
+from pydantic_graph import BaseNode, End, EndMarker, EndNode, Graph, GraphTask, GraphTaskRequest, StartNode
+from pydantic_graph.id_types import NodeID
+from pydantic_graph.step import NodeStep
 
 from lychd.domain.animation.errors import HardwareTransitionRequired
 from lychd.domain.cortex.execution_context import bind_occurrence, reset_occurrence
+from lychd.domain.cortex.graph import serial_graph_topology
 from lychd.domain.cortex.runs import ConsentPending, RunParked
-from lychd.domain.cortex.stasis import PhylacteryProtocol
+from lychd.domain.cortex.stasis import NodeSnapshot, PhylacteryProtocol
 from lychd.domain.delegation.signals import DelegatedAgentParked, DelegatedAgentPending
 from lychd.domain.orchestration.journal import TransitionRecord, notify_transition
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable, Callable, Sequence
 
     from lychd.domain.cortex.priority import Priority
     from lychd.domain.orchestration.schema import TransitionTrace
@@ -136,6 +138,46 @@ class TransitionOrchestrator(Protocol):
     ) -> None: ...
 
 
+def _single_node_task(
+    graph: Graph[Any, Any, Any, Any], event: EndMarker[Any] | Sequence[GraphTask], *, check_inputs: bool = True
+) -> GraphTask:
+    """Refuse scheduler shapes that cannot be represented by one station cursor."""
+    if isinstance(event, EndMarker) or len(event) != 1:
+        msg = "A serial graph boundary must expose exactly one node task."
+        raise ValueError(msg)
+    task = event[0]
+    step = graph.nodes.get(task.node_id)
+    if not isinstance(step, NodeStep) or (check_inputs and type(task.inputs) is not step.node_type):
+        msg = "A serial graph boundary must contain its declared BaseNode station."
+        raise ValueError(msg)
+    return task
+
+
+async def _prepare_entry[StateT: BaseModel](
+    persistence: PhylacteryProtocol,
+    *,
+    is_resume: bool,
+    start_node: BaseNode[StateT, Any, Any] | None,
+    state: StateT | None,
+    permitted_edges: set[tuple[str, str]],
+) -> tuple[NodeSnapshot[Any, Any], StateT, BaseNode[Any, Any, Any]]:
+    """Keep fresh execution on caller objects; resume from one decoded cursor."""
+    if is_resume:
+        snapshot = await persistence.load_next()
+        if snapshot is None:
+            msg = "No created checkpoint remains for this graph resume."
+            raise ValueError(msg)
+        return snapshot, snapshot.state, snapshot.node
+    if start_node is None or state is None:
+        msg = "Fresh graph execution requires both start_node and state."
+        raise ValueError(msg)
+    if (StartNode.id, start_node.get_node_id()) not in permitted_edges:
+        msg = "Fresh graph node does not match its declared entry station."
+        raise ValueError(msg)
+    snapshot = await persistence.snapshot_node(state, start_node)
+    return snapshot, state, start_node
+
+
 class GraphRunner[StateT: BaseModel]:
     """Execute Pydantic Graph loops with LychD stasis and rehydration support."""
 
@@ -150,6 +192,7 @@ class GraphRunner[StateT: BaseModel]:
         on_node_event: Callable[[NodeOccurrenceEvent], None] | None = None,
         on_transition_event: Callable[[TransitionRecord], None] | None = None,
         validate_state: Callable[[StateT], None] | None = None,
+        validate_resume: Callable[[StateT, BaseNode[Any, Any, Any] | End[Any]], None] | None = None,
         run_id: str | None = None,
         policy: StasisPolicy | None = None,
     ) -> None:
@@ -163,6 +206,8 @@ class GraphRunner[StateT: BaseModel]:
         rehydration, ``on_stasis_exit`` after ``handle_transition`` returns.
         A workflow-owned ``validate_state`` checks fresh or restored state against
         its admitted Run before any node executes, including hardware re-entry.
+        ``validate_resume`` binds the initial durable re-entry node and state to
+        its caller's wait owner; later hardware re-entry has already consumed it.
         """
         self.orchestrator = orchestrator
         self.persistence = persistence
@@ -172,6 +217,7 @@ class GraphRunner[StateT: BaseModel]:
         self._on_node_event = on_node_event
         self._on_transition_event = on_transition_event
         self._validate_state = validate_state
+        self._validate_resume = validate_resume
         self._run_id = run_id
         self._policy = policy or StasisPolicy()
 
@@ -215,7 +261,7 @@ class GraphRunner[StateT: BaseModel]:
 
     async def run_graph(
         self,
-        graph: Graph[StateT, Any, Any],
+        graph: Graph[StateT, Any, Any, Any],
         start_node: BaseNode[StateT, Any, Any],
         state: StateT,
         *,
@@ -230,7 +276,7 @@ class GraphRunner[StateT: BaseModel]:
             deps=deps,
         )
 
-    async def resume_graph(self, graph: Graph[StateT, Any, Any], *, deps: Any = None) -> Any:
+    async def resume_graph(self, graph: Graph[StateT, Any, Any, Any], *, deps: Any = None) -> Any:
         """Resume a persisted graph run without finalizing its checkpoint.
 
         Checkpoint ownership belongs to ``perform_run``: only the caller knows when the
@@ -241,7 +287,7 @@ class GraphRunner[StateT: BaseModel]:
 
     async def _run_with_stasis(  # noqa: C901, PLR0912, PLR0915 - bounded stasis execution loop
         self,
-        graph: Graph[StateT, Any, Any],
+        graph: Graph[StateT, Any, Any, Any],
         *,
         is_resume: bool,
         start_node: BaseNode[StateT, Any, Any] | None = None,
@@ -250,38 +296,58 @@ class GraphRunner[StateT: BaseModel]:
     ) -> Any:
         """Execute the graph loop with checkpoint-owned stasis convergence state."""
         current_is_resume = is_resume
+        validate_initial_resume = is_resume
+        self.persistence.set_graph_types(graph)
+        _, permitted_edges = serial_graph_topology(graph)
 
         while True:
-            if not current_is_resume:
-                if start_node is None or state is None:
-                    msg = "Fresh graph execution requires both start_node and state."
-                    raise ValueError(msg)
-                context_manager = graph.iter(
-                    start_node,
-                    state=state,
-                    deps=deps,
-                    persistence=cast("BaseStatePersistence[StateT, Any]", self.persistence),
-                )
-            else:
-                context_manager = graph.iter_from_persistence(
-                    cast("BaseStatePersistence[StateT, Any]", self.persistence),
-                    deps=deps,
-                )
+            snapshot, execution_state, execution_node = await _prepare_entry(
+                self.persistence,
+                is_resume=current_is_resume,
+                start_node=start_node,
+                state=state,
+                permitted_edges=permitted_edges,
+            )
+            if self._validate_state is not None:
+                self._validate_state(snapshot.state)
+            if validate_initial_resume and self._validate_resume is not None:
+                self._validate_resume(snapshot.state, snapshot.node)
+            validate_initial_resume = False
 
-            async with context_manager as graph_run:
-                if self._validate_state is not None:
-                    self._validate_state(graph_run.state)
+            async with graph.iter(state=execution_state, deps=deps, inputs=execution_node) as graph_run:
+                # Advancing the synthetic StartNode only exposes its first task;
+                # it does not execute a workflow station. Its per-invocation fork
+                # stack is used by the native scheduler, never persisted by LychD.
+                initial = _single_node_task(graph, await anext(graph_run), check_inputs=False)
+                tasks = [GraphTaskRequest(NodeID(execution_node.get_node_id()), execution_node, initial.fork_stack)]
+                next_node: BaseNode[Any, Any, Any] | End[Any] = execution_node
                 active_node: BaseNode[Any, Any, Any] | None = None
                 occurrence_id: str | None = None
                 try:
-                    next_node = graph_run.next_node
                     while not isinstance(next_node, End):
                         active_node = next_node
                         occurrence_id = str(uuid4())
                         self._node_event(occurrence_id=occurrence_id, node=active_node, phase="entered")
                         occurrence_token = bind_occurrence(occurrence_id)
                         try:
-                            next_node = await graph_run.next(active_node)
+                            async with self.persistence.record_run(snapshot.id):
+                                event = await graph_run.next(tasks)
+                                target = (
+                                    EndNode.id
+                                    if isinstance(event, EndMarker)
+                                    else _single_node_task(graph, event).node_id
+                                )
+                                if (active_node.get_node_id(), target) not in permitted_edges:
+                                    msg = f"Graph station {active_node.get_node_id()!r} returned undeclared successor {target!r}."
+                                    raise ValueError(msg)
+                            if isinstance(event, EndMarker):
+                                next_node = End(event.value)
+                                await self.persistence.snapshot_end(graph_run.state, next_node)
+                            else:
+                                task = _single_node_task(graph, event)
+                                next_node = cast("BaseNode[Any, Any, Any]", task.inputs)
+                                snapshot = await self.persistence.snapshot_node(graph_run.state, next_node)
+                                tasks = [task]
                         finally:
                             reset_occurrence(occurrence_token)
                         self._node_event(occurrence_id=occurrence_id, node=active_node, phase="settled")
@@ -293,18 +359,18 @@ class GraphRunner[StateT: BaseModel]:
                     # parked node (fresh id) and return the RunParked sentinel — the run
                     # SUSPENDS (it does not fail, and it is not a hardware transition).
                     park = _extract_signal(exc, ConsentPending)
-                    if park is not None:
+                    if park is not None and active_node is not None:
                         try:
-                            await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)
+                            await self.persistence.rehydrate_stasis(graph_run.state, active_node)
                         except BaseException:
-                            if active_node is not None and occurrence_id is not None:
+                            if occurrence_id is not None:
                                 self._node_event(
                                     occurrence_id=occurrence_id,
                                     node=active_node,
                                     phase="failed",
                                 )
                             raise
-                        if active_node is not None and occurrence_id is not None:
+                        if occurrence_id is not None:
                             self._node_event(
                                 occurrence_id=occurrence_id,
                                 node=active_node,
@@ -314,18 +380,18 @@ class GraphRunner[StateT: BaseModel]:
                         return RunParked(consent_id=park.consent_id, tool_name=park.tool_name)
 
                     delegated = _extract_signal(exc, DelegatedAgentPending)
-                    if delegated is not None:
+                    if delegated is not None and active_node is not None:
                         try:
-                            await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)
+                            await self.persistence.rehydrate_stasis(graph_run.state, active_node)
                         except BaseException:
-                            if active_node is not None and occurrence_id is not None:
+                            if occurrence_id is not None:
                                 self._node_event(
                                     occurrence_id=occurrence_id,
                                     node=active_node,
                                     phase="failed",
                                 )
                             raise
-                        if active_node is not None and occurrence_id is not None:
+                        if occurrence_id is not None:
                             self._node_event(
                                 occurrence_id=occurrence_id,
                                 node=active_node,
@@ -338,7 +404,7 @@ class GraphRunner[StateT: BaseModel]:
 
                     signal = _extract_signal(exc, HardwareTransitionRequired)
 
-                    if signal:
+                    if signal and active_node is not None:
                         from lychd.domain.orchestration.schema import TransitionTrace
 
                         checkpoint_state = _require_hardware_resume_checkpoint(graph_run.state)
@@ -348,7 +414,7 @@ class GraphRunner[StateT: BaseModel]:
                             budget.total_resumes > self._policy.max_resumes
                             or budget.same_capability_resumes > self._policy.max_same_key
                         ):
-                            if active_node is not None and occurrence_id is not None:
+                            if occurrence_id is not None:
                                 self._node_event(
                                     occurrence_id=occurrence_id,
                                     node=active_node,
@@ -367,16 +433,16 @@ class GraphRunner[StateT: BaseModel]:
                             observer=self._on_transition_event,
                         )
                         try:
-                            await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)
+                            await self.persistence.rehydrate_stasis(graph_run.state, active_node)
                         except BaseException:
-                            if active_node is not None and occurrence_id is not None:
+                            if occurrence_id is not None:
                                 self._node_event(
                                     occurrence_id=occurrence_id,
                                     node=active_node,
                                     phase="failed",
                                 )
                             raise
-                        if active_node is not None and occurrence_id is not None:
+                        if occurrence_id is not None:
                             self._node_event(
                                 occurrence_id=occurrence_id,
                                 node=active_node,
@@ -418,5 +484,4 @@ class GraphRunner[StateT: BaseModel]:
                         self._node_event(occurrence_id=occurrence_id, node=active_node, phase="failed")
                     raise
                 else:
-                    result = graph_run.result
-                    return result.output if result else None
+                    return next_node.data

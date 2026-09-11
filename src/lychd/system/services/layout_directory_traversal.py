@@ -19,6 +19,48 @@ from lychd.system.services.lifecycle.models import CreatedDirectory
 DIRECTORY_OPEN_FLAGS = descriptor_settlement.DIRECTORY_OPEN_FLAGS
 
 
+def inspect_preserved_datastore(path: Path) -> os.stat_result:
+    """Observe a private datastore leaf without opening or adopting its contents.
+
+    Rootless container initialization may transfer the leaf to a subordinate UID.
+    The host-owned parent remains the namespace boundary; this observation grants
+    no deletion, chown, or claim that the container can use the existing database.
+    """
+    descriptor = open_directory_path(path.parent)
+    descriptors = DescriptorSet()
+    descriptors.add(descriptor)
+    try:
+        parent = os.fstat(descriptor)
+        require_owned_directory(parent, path=path.parent)
+        _require_private_datastore_directory(parent, path=path.parent)
+        metadata = os.stat(path.name, dir_fd=descriptor, follow_symlinks=False)
+        _require_private_datastore_directory(metadata, path=path)
+    except BaseException as exc:  # noqa: BLE001 - observation and close both settle
+        cleanup = directory_failure_ledger()
+        cleanup.record_all(descriptors.settle())
+        cleanup.raise_primary_after_verified_settlement(
+            exc,
+            outcome="observed",
+            terminal_note=f"LychD preserved the datastore without entering its contents: {path}.",
+        )
+    cleanup = directory_failure_ledger()
+    cleanup.record_all(descriptors.settle())
+    cleanup.raise_if_any(
+        message=f"Could not release the datastore parent descriptor for {path}.",
+        outcome="observed",
+        terminal_note=f"LychD left the datastore unchanged: {path}.",
+        verified=True,
+    )
+    return metadata
+
+
+def _require_private_datastore_directory(metadata: os.stat_result, *, path: Path) -> None:
+    """Neither datastore namespace boundary may be replaced by another account."""
+    if not stat.S_ISDIR(metadata.st_mode) or metadata.st_mode & 0o022:
+        message = f"Datastore must be a real directory without group/other write access: {path}"
+        raise RuntimeError(message)
+
+
 def require_existing_directory(path: Path) -> None:
     """Traverse every component without following links, then verify the leaf."""
     descriptor = open_directory_path(path)

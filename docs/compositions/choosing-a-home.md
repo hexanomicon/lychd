@@ -19,6 +19,7 @@ An already-settled part requirement may pass to Scavenger as exact sourcing inpu
 
 | What actually changed? | Give it this home |
 | --- | --- |
+| a thematic route for finding related applications | an **[Area](index.md#areas)**, with links to the existing Composition owners |
 | another customer, host, credential set, or local configuration | a **Deployment** from an exact Product revision or Composition-owned reference deployment-profile revision |
 | another concrete job the operator needs to finish | a **use case** supported by a Product |
 | another profession, market promise, default set, or support envelope | a **Product** identity or immutable revision, according to whether the stable operator promise changed |
@@ -42,13 +43,13 @@ Before acceptance, identify the record that survives chat, its judgments/policie
 
 ## Reuse without making a god
 
-A profile can vary vocabulary and rules while keeping one lifecycle, authority, recovery, and finish. Workshop can admit a new trade only while the service case still fits. Homestead remains place custody/provision even when a professional visits the property. Familiar can reuse a body contract only while its capability, safety, stop, and settlement law stays coherent; a different emergency/recovery boundary may need another owner. A vague universal casework schema cannot absorb Broker, legal, accounting, or municipal judgment without evidence of a shared root lifecycle.
+A profile can vary vocabulary and rules while keeping one lifecycle, authority, recovery, and finish. Workshop can admit a new trade only while the service case still fits. Homestead remains place custody/provision even when a professional visits the property. [Keeper](keeper/index.md) and [Cultivator](cultivator/index.md) separately own living-subject histories and care judgment: a serviced heater establishes neither a colony's seasonal state nor a crop's suitability. Pets and livestock can use Keeper profiles; indoor plants and cultivated fungi can use Cultivator profiles without sharing a universal biological state list. Familiar can reuse a body contract only while its capability, safety, stop, and settlement law stays coherent; a different emergency/recovery boundary may need another owner. A vague universal casework schema cannot absorb Broker, legal, accounting, or municipal judgment without evidence of a shared root lifecycle.
 
 ## Shared machinery, separate judgments
 
 Scout supplies search/fetch/render/crawl; applications keep source policy, interpretation, rank, and consequence. Mail/platform delivery keeps transport; applications keep recipient purpose, disclosure, review, reply meaning, and follow-up. Echo/Prism supply admitted media effects; applications retain interpretation and acceptance. Tether/Veil create roads, not identity or grants. Legion can carry a bounded task while the body retains fresh local refusal. A model/tool provider never owns application decision policy.
 
-Exact requests, observations, artifacts, and receipts can cross. Ambient databases, credentials, Sigils, sessions, and judgment cannot. Wellbeing supplies personal food needs and confirmed consumption; Homestead owns inventory/provision. Scavenger keeps irregular listings, sellers, major commitments, parcels, and property diligence. Avatar groups presentation across targets while Reach, Blockworld, Spectre, and Familiar keep their local work.
+Exact requests, observations, artifacts, and receipts can cross. Ambient databases, credentials, Sigils, sessions, and judgment cannot. Wellbeing supplies personal food needs and confirmed consumption; Keeper and Cultivator supply their care needs, material-use evidence, and collected yields. Homestead owns inventory/provision and commissioned site effects. IoT is an integration mechanism; fauna and flora describe subject groupings within the [Stewardship & Acquisition Area](stewardship-and-acquisition/index.md). Neither supplies application ownership. The [stewardship handoff](products-and-suites.md#homestead-keeper-and-cultivator) distinguishes shared equipment from live coordination. Scavenger keeps irregular listings, sellers, major commitments, parcels, and property diligence. Avatar groups presentation across targets while Reach, Blockworld, Spectre, and Familiar keep their local work.
 
 ### Media owners do not follow file extensions
 

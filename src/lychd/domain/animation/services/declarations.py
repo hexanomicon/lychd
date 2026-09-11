@@ -40,10 +40,7 @@ def compile_animator_declarations(
     )
     soulstones, portals = AnimatorLoader(
         reserved_ports=reserved_ports,
-        core_secret_names=(
-            settings.server.web.secret_key_secret,
-            settings.server.database.password_secret,
-        ),
+        core_secret_names=settings.server.privileged_secret_names,
     ).hydrate_all(runes.all())
     return AnimatorDeclarations(
         soulstones=tuple(soulstones),

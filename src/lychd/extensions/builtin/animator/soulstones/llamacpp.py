@@ -28,6 +28,7 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
     - ``exec`` absent  => managed mode (typed fields synthesize command args)
     - managed single mode requires ``model_path``
     - managed router mode requires ``models_dir``/``models_preset`` or equivalent router flags
+    - engine idle sleep is disabled; passthrough must explicitly carry the disabling flag
     """
 
     path_fragment: ClassVar[Path] = Path("llamacpp")
@@ -41,7 +42,10 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
     models_preset: str | None = None
     models_max: int | None = Field(default=None, ge=0)
     models_autoload: bool = True
-    sleep_idle_seconds: int | None = Field(default=None, ge=-1)
+    sleep_idle_seconds: Literal[-1] | None = Field(
+        default=None,
+        description="Engine idle sleep is unsupported; omitted or -1 emits --sleep-idle-seconds -1.",
+    )
 
     n_gpu_layers: int = Field(default=99, ge=0)
     n_ctx: int = Field(default=8192, ge=1)
@@ -107,8 +111,10 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
                     f"{joined}. Remove managed fields or remove 'exec'."
                 )
                 raise ValueError(msg)
+            self._validate_sleep_contract()
             return self
 
+        self._validate_sleep_contract()
         if self.resolved_mode() == "single":
             if not self.model_path:
                 msg = "LlamaCppSoulstoneConfig in single mode requires 'model_path'."
@@ -125,6 +131,27 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
             "(or router flags in extra_args/env_vars)."
         )
         raise ValueError(msg)
+
+    def _validate_sleep_contract(self) -> None:
+        """Admit only commands that keep readiness transitions under Orchestrator."""
+        remaining = self.extra_args
+        if self.exec:
+            offset = int(bool(self.exec[0]) and not self.exec[0].startswith("-"))
+            if tuple(self.exec[offset : offset + 2]) != ("--sleep-idle-seconds", "-1"):
+                msg = (
+                    "The llama.cpp profile requires --sleep-idle-seconds -1 at the start of exec "
+                    "arguments or immediately after a non-option executable token."
+                )
+                raise ValueError(msg)
+            remaining = self.exec[offset + 2 :]
+        # Reject even a disabling lookalike consumed as another option's value.
+        # We do not clone upstream's full option-arity grammar to prove its role.
+        if any(arg.partition("=")[0].replace("_", "-") == "--sleep-idle-seconds" for arg in remaining):
+            msg = (
+                "The llama.cpp profile forbids later --sleep-idle-seconds controls in exec or extra_args, "
+                "including duplicates, underscore aliases, and equals spellings."
+            )
+            raise ValueError(msg)
 
     def _validate_endpoint_port(self) -> None:
         """Reject a known command port that disagrees with the admitted endpoint."""

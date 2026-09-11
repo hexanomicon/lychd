@@ -1,10 +1,15 @@
 import logging
 from collections.abc import Iterator
 
+import pydantic_ai.models
 import pytest
 import structlog
 
 from lychd.config.logging import apply_logging
+
+# Apply before collecting any subset, including integration tests outside tests/agents.
+# Transport contract tests explicitly opt in around an in-process HTTP mock.
+pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
 
 # 1. Silence the noisy libs using standard logging
 logging.getLogger("faker").setLevel(logging.WARNING)

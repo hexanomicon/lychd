@@ -11,9 +11,10 @@ import asyncio
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
+import httpx2
 import pydantic_ai.models
 import pytest
 import respx
@@ -37,6 +38,9 @@ from lychd.domain.cortex.runs import RunStatus
 from lychd.extensions.host import AssembledExtensions, assemble_extensions
 from lychd.ghouls.runs import perform_run
 from lychd.interface.web.altar_services import build_altar_services
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 @dataclass(frozen=True)
@@ -165,13 +169,23 @@ def test_managed_llamacpp_context_matches_its_launch_command(
         ('n_ctx=8192\nn_parallel=4\n[env_vars]\nLLAMA_ARG_KV_UNIFIED_PER_SLOT="1024"\n', 1024),
         ('n_ctx=8192\nn_parallel=4\nextra_args=["--kv-unified-per-slot", "invalid"]\n', None),
         (
-            'exec=["--port", "20000", "--alias", "qwen", "-m", "/models/qwen.gguf", "-c", "8192", "-np", "4"]\n',
+            (
+                'exec=["--sleep-idle-seconds", "-1", "--port", "20000", "--alias", "qwen", '
+                '"-m", "/models/qwen.gguf", "-c", "8192", "-np", "4"]\n'
+            ),
             2048,
         ),
-        ('exec=["--port", "20000", "--alias", "qwen", "-m", "/models/qwen.gguf", "-c", "8192"]\n', None),
         (
             (
-                'exec=["--port", "20000", "--alias", "qwen", "-m", "/models/qwen.gguf"]\n'
+                'exec=["--sleep-idle-seconds", "-1", "--port", "20000", "--alias", "qwen", '
+                '"-m", "/models/qwen.gguf", "-c", "8192"]\n'
+            ),
+            None,
+        ),
+        (
+            (
+                'exec=["--sleep-idle-seconds", "-1", "--port", "20000", "--alias", "qwen", '
+                '"-m", "/models/qwen.gguf"]\n'
                 '[env_vars]\nLLAMA_ARG_CTX_SIZE="8192"\nLLAMA_ARG_N_PARALLEL="4"\n'
             ),
             2048,
@@ -430,7 +444,9 @@ temperature = 0.2
     _local_http(respx_mock)
     requests: list[dict[str, Any]] = []
 
-    def answer(request: httpx.Request) -> httpx.Response:
+    def answer(request: httpx2.Request) -> httpx2.Response:
+        assert request.method == "POST"
+        assert str(request.url) == "http://localhost:20000/v1/chat/completions"
         body = json.loads(request.content)
         requests.append(body)
         output_tool = body["tools"][0]["function"]["name"]
@@ -460,17 +476,22 @@ temperature = 0.2
                 }
             ],
         }
-        return httpx.Response(
+        return httpx2.Response(
             200,
             headers={"content-type": "text/event-stream"},
             text=f"data: {json.dumps(chunk)}\n\ndata: [DONE]\n\n",
         )
 
-    respx_mock.post("http://localhost:20000/v1/chat/completions").mock(side_effect=answer)
+    monkeypatch.setattr(
+        "pydantic_ai.providers._openai_compatible.create_async_httpx2_client",
+        lambda: httpx2.AsyncClient(transport=httpx2.MockTransport(answer)),
+    )
     monkeypatch.setattr(pydantic_ai.models, "ALLOW_MODEL_REQUESTS", True)
 
-    def offline_platform_provider(*, base_url: str, api_key: str | None = None) -> OpenAIProvider:
-        provider = openai_compatible_provider(base_url=base_url, api_key=api_key)
+    def offline_platform_provider(
+        *, base_url: str, api_key: str | None = None, default_query: Mapping[str, str] | None = None
+    ) -> OpenAIProvider:
+        provider = openai_compatible_provider(base_url=base_url, api_key=api_key, default_query=default_query)
         # The SDK's unrelated host fingerprint uses a worker thread; replace
         # that host observation just as the HTTP engine boundary is replaced.
         monkeypatch.setattr(provider.client, "_platform", "Linux")

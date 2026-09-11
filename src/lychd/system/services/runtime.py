@@ -129,7 +129,7 @@ class SystemdRuntimeActuator:
             await self._apply_locked(intent)
 
     async def _apply_locked(self, intent: TransitionIntent) -> None:
-        """Observe and mutate only after the configured lifecycle authority is held."""
+        """Observe under lifecycle authority, preserving proof until submission begins."""
         try:
             await self._topology_attestor.attest(intent)
             pending = await self._pending_relevant_jobs(intent)
@@ -140,6 +140,9 @@ class SystemdRuntimeActuator:
                 )
                 raise RuntimePreconditionError(message)
             world = await self._observe_runtime_world()
+        except asyncio.CancelledError as cancellation:
+            message = f"Cancelled transition '{intent.transition_id}' during systemd observation before any effect."
+            raise RuntimeCancellationNoEffectError(message) from cancellation
         except SystemctlClientTimeoutError as exc:
             message = (
                 f"Transition '{intent.transition_id}' could not establish its systemd "
@@ -595,10 +598,9 @@ class HostReactorRuntimeActuator:
                 if retracted:
                     msg = f"Host Reactor did not claim transition '{transition_id}' within {self._ack_timeout_s:g}s."
                     raise RuntimePreconditionError(msg)
-                processing = self._journal_dir / f"{transition_id}.processing.json"
                 # Recheck the terminal rename before ruling the delivery lost.
                 if (
-                    not await asyncio.to_thread(os.path.lexists, processing)
+                    not await asyncio.to_thread(self._claim_in_progress, transition_id)
                     and self._terminal_status(transition_id) is None
                 ):
                     msg = f"Host Reactor transition '{transition_id}' disappeared without a terminal journal."
@@ -631,13 +633,19 @@ class HostReactorRuntimeActuator:
             return True
         if self._terminal_status(transition_id) is not None:
             return False
-        processing = self._journal_dir / f"{transition_id}.processing.json"
-        if not require_terminal and not await asyncio.to_thread(os.path.lexists, processing):
+        if not require_terminal and not await asyncio.to_thread(self._claim_in_progress, transition_id):
             return False
         while True:
             if self._terminal_status(transition_id) is not None:
                 return False
             await asyncio.sleep(_ACK_POLL_SECONDS)
+
+    def _claim_in_progress(self, transition_id: str) -> bool:
+        """Check in lifecycle order so acquisition publication cannot be missed."""
+        return any(
+            os.path.lexists(self._journal_dir / f"{transition_id}.{status}.json")
+            for status in ("acquiring", "processing")
+        )
 
     def _cancel_pending(self, transition_id: str) -> bool:
         pending = self._intents_dir / f"{transition_id}.json"
@@ -672,14 +680,16 @@ class HostReactorRuntimeActuator:
 
 
 async def wait_for_host_reactor_idle(settings: SwitchingSettings) -> None:
-    """Fence app startup against a transition left pending by an earlier process."""
+    """Fence app startup through acquisition, processing, and containment."""
     if settings.actuator != "host-reactor":
         return
     deadline = asyncio.get_running_loop().time() + settings.reactor_ack_timeout_s
     inbox = settings.host_reactor_dir
     journal = settings.host_reactor_journal_dir
     await asyncio.to_thread(validate_reactor_boundaries, inbox, journal)
-    while any(inbox.glob("*.json")) or any(journal.glob("*.processing.json")) or any(journal.glob("*.contained.json")):
+    while any(inbox.glob("*.json")) or any(
+        any(journal.glob(f"*.{status}.json")) for status in ("acquiring", "processing", "contained")
+    ):
         if asyncio.get_running_loop().time() >= deadline:
             msg = "Host Reactor still has unfinished transition work; refusing to open run admission."
             raise RuntimeError(msg)

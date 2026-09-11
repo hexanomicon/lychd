@@ -310,19 +310,28 @@ async def test_probe_failure_does_not_turn_invalidated_warmth_into_a_new_grant()
 
 
 @pytest.mark.asyncio
-async def test_cached_error_remains_excluded_until_an_explicit_successful_observation() -> None:
+async def test_next_exact_request_recovers_after_grant_issue_observed_an_error() -> None:
     adapter = ScriptedRuntimeAdapter()
-    adapter.observe("chat", CapabilityPhase.ERROR)
+    adapter.observe("chat", CapabilityPhase.WARM, CapabilityPhase.WARM, CapabilityPhase.ERROR)
     dispatcher, registry, leases, _ = _dispatch(_stone("chat"), adapter=adapter)
-    adapter.observe("chat", CapabilityPhase.WARM)
 
     with pytest.raises(CapabilityUnavailable):
-        async with dispatcher.lease_grant(family="chat", run_id="known-error"):
-            pytest.fail("an observed ERROR remains excluded by the v1 selection policy")
-    assert adapter.probes == ["chat"]
-    await registry.refresh_capability_state("chat:chat:main")
-    async with dispatcher.lease_grant(family="chat", run_id="observed-recovery") as grant:
+        async with dispatcher.lease_grant(family="chat", capability_key="chat:chat:main", run_id="issue-error"):
+            pytest.fail("fresh issue-time ERROR cannot issue a grant or request hardware")
+    assert adapter.probes == ["chat", "chat", "chat"]
+    state = registry.get_capability_state("chat:chat:main")
+    assert state is not None
+    assert state.phase is CapabilityPhase.ERROR
+    assert leases.active() == []
+    assert adapter.connectors["chat"].model_requests == []
+
+    # A later exact request observes recovery itself, without an operator refresh
+    # or unrelated Orchestrator transition removing the cached error first.
+    adapter.observe("chat", CapabilityPhase.WARM)
+    async with dispatcher.lease_grant(family="chat", capability_key="chat:chat:main", run_id="recovered") as grant:
         assert grant.state.phase is CapabilityPhase.WARM
+        assert [row.grant_id for row in leases.active()] == [grant.lease.grant_id]
+    assert adapter.probes == ["chat"] * 5
     assert leases.active() == []
 
 

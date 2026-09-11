@@ -38,7 +38,7 @@ def _consent_evidence(run_id: str, consent_id: str) -> ConsentAdmissionEvidence:
 
 def test_profile_switch_selects_ledger_impl(monkeypatch: pytest.MonkeyPatch) -> None:
     """H5/S3: the persistence profile selects the RunLedger impl (DB-free construction)."""
-    monkeypatch.setenv("LYCHD_DB_PASSWORD", "test-db-password")
+    monkeypatch.setenv("LYCHD_RUNTIME_DB_PASSWORD", "test-runtime-db-password")
     from lychd.domain.cortex.ledger import DbRunLedger
     from lychd.interface.web.altar_services import _build_run_ledger
 

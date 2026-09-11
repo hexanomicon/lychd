@@ -24,6 +24,7 @@ from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import (
     CapabilityFamily,
+    ConcurrencyIntent,
     ModelInfo,
     OpenAIPortalConfig,
     PortalConfig,
@@ -132,6 +133,7 @@ def test_registry_indexes_capabilities(tmp_path: Path) -> None:
         ({"runtime": "sglang"}, "runtime"),
         ({"source_kind": SourceKind.PORTAL}, "source_kind"),
         ({"key": "other-stone:chat:main-model"}, "key"),
+        ({"concurrency": ConcurrencyIntent(dedicated=True)}, "concurrency"),
     ],
 )
 def test_registry_rejects_capability_outside_runtime_ownership(
@@ -145,6 +147,8 @@ def test_registry_rejects_capability_outside_runtime_ownership(
         """
         name = "main-stone"
         model_path = "/models/main-model.gguf"
+        [concurrency]
+        dedicated = false
         """,
     )
 

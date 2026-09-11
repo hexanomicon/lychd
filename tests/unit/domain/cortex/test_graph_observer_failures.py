@@ -8,9 +8,10 @@ from typing import Any, Literal
 
 import pytest
 from pydantic import BaseModel, Field
-from pydantic_graph import BaseNode, End, Graph, GraphRunContext
+from pydantic_graph import BaseNode, End, GraphRunContext
 
 from lychd.domain.animation.errors import HardwareTransitionRequired
+from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.graph_runner import GraphRunner, HardwareResumeBudget, NodeOccurrenceEvent
 from lychd.domain.cortex.runs import ConsentPending, RunParked
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore
@@ -103,7 +104,7 @@ async def test_broken_node_observer_preserves_execution_outcome(
         run_id="run-1",
     )
     state = _State(outcome=outcome)
-    graph = Graph(nodes=(_Work,))
+    graph = build_serial_graph(nodes=(_Work,), state_type=_State, deps_type=type(None), output_type=str)
     if outcome == "failure":
         with pytest.raises(_WorkFailedError, match="The work failed"):
             await runner.run_graph(graph, _Work(), state)
@@ -145,6 +146,8 @@ async def test_node_observer_cancellation_remains_control_flow() -> None:
     )
     state = _State()
     with pytest.raises(asyncio.CancelledError) as caught:
-        await runner.run_graph(Graph(nodes=(_Work,)), _Work(), state)
+        await runner.run_graph(
+            build_serial_graph(nodes=(_Work,), state_type=_State, deps_type=type(None), output_type=str), _Work(), state
+        )
     assert caught.value is cancellation
     assert state.calls == 0

@@ -73,6 +73,21 @@ and conflicts belong to the Environment; hidden chain-of-thought is never requir
 and holdouts protect against tuning. Leakage, duplicates, unstable harnesses and evaluator drift
 invalidate the claims they undermine while leaving independently supported claims intact.
 
+## Evaluating a workflow change
+
+[Workflow improvement](../sepulcher/extensions/riddle/workflow-improvement.md) applies this trial
+contract to an exact score, prompt, schema, Context policy or implementation revision. The claim
+must include relevant trajectory evidence, failures and human burden as well as terminal artifact
+quality. It pins baseline and candidate, matched budgets, controls, uncertainty and stopping rules
+before comparison. Observations and qualitative judgments remain distinguishable.
+
+Cached evidence can support only its unchanged input and evidence closure. Regrading a retained
+artifact creates a judgment over that artifact; it cannot establish that a changed workflow
+produces the same trajectory. Changed actions or relevant state require fresh admitted trials.
+The owner may adopt, reject or investigate the resulting candidate under its authority, without
+rewriting earlier Outcomes or a live Scroll. A later training hypothesis requires separate
+[Soulforge](33-training.md) admission and protected holdout evidence.
+
 ## Capability claims and routing
 
 Riddle may derive a scoped claim from a healthy Trial Suite. Each claim pins:
@@ -87,9 +102,10 @@ There is no universal rank: accuracy, latency, VRAM, cost, restraint, and tool b
 are distinct policy-valued axes. Dispatcher may consume fresh admitted claims only after Ward,
 compatibility, availability, privacy, and authority construct an eligible set. Missing/stale
 evidence leaves the Dispatcher's documented deterministic readiness order in force rather than
-inventing an intelligence floor. Current v1 prefers open admission, then active capability, then
-warmth, with Animator name and capability key as tie-breakers. It selects one candidate; failure
-of that selection does not retry another candidate. Toll may use the same measures in spend policy
+inventing an intelligence floor. [Dispatcher selection](22-dispatcher.md#candidate-selection)
+owns that order, including the treatment of stale or erroneous cached observations. It selects
+one candidate; failure of that selection does not retry another candidate. Toll may use the same
+measures in spend policy
 without making one local or frontier win universal routing authority.
 
 ## Evaluation before and after training

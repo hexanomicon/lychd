@@ -12,6 +12,7 @@ import pytest
 from lychd.agents.router import Intent
 from lychd.agents.workflows import BRIDGE_CHAT, builtin_workflow_registry
 from lychd.domain.cortex.cancellation import RunCancellationCoordinator
+from lychd.domain.cortex.claims import RunClaimCoordinator
 from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.ledger import InMemoryRunLedger
@@ -118,6 +119,7 @@ async def test_interrupted_worker_waits_for_election_not_its_own_abort(
         SimpleNamespace(
             ledger=ledger,
             cancellations=coordinator,
+            claims=RunClaimCoordinator(),
             context=SimpleNamespace(release=release_context),
             stasis_store=store,
             consents=None,

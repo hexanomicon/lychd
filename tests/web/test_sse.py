@@ -168,6 +168,24 @@ def test_run_snapshot_replaces_live_projection_at_exact_cursor(
     assert snapshot["terminal"] is False
 
 
+def test_done_without_a_retained_reply_does_not_invent_an_agent_turn(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    run_id = "run_failed_without_reply"
+    _seed_live_run(fake_services, run_id)
+    emitter = fake_services.bus.emitter(run_id)
+    emitter.emit(RunEventKind.TOKEN, "Partial reply")
+    emitter.emit(RunEventKind.DONE, "failed")
+
+    response = altar_client.get(f"/api/v1/bridge/runs/{run_id}/events")
+
+    assert response.status_code == 200
+    events = _sse_events(response.text)
+    assert events[0]["data"]["payload"]["text"] == "Partial reply"
+    assert events[1]["data"]["payload"] == {"status": "failed", "turn": None}
+
+
 def test_malformed_fragment_does_not_break_snapshot_or_stream(
     altar_client: TestClient[Litestar],
     fake_services: SimpleNamespace,

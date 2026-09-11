@@ -13,6 +13,7 @@ the streaming API. Scenario 5 (durable restart) lives beside this in 4C-6.
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
 import pydantic_ai.models
@@ -41,6 +42,7 @@ from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry, a
 if TYPE_CHECKING:
     from pydantic_ai.messages import ModelMessage
     from pydantic_ai.models.function import AgentInfo
+    from pydantic_ai.tools import ToolDefinition
 
 pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
 
@@ -401,6 +403,34 @@ async def test_approved_resume_rejects_binding_drift(
 
 
 @pytest.mark.asyncio
+async def test_approved_effect_can_leave_the_next_rounds_tool_catalog() -> None:
+    """An executed one-shot action is not retroactively reported as refused."""
+    substrate, ledger, _bus, sessions, _orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    run_id = "run_one_shot_effect"
+    await _seed(ledger, sessions, run_id)
+    consent_id = await _park(substrate, run_id)
+    executed: list[str] = []
+
+    async def only_before_execution(ctx: RunContext[LychDDeps], definition: ToolDefinition) -> ToolDefinition | None:
+        _ = ctx
+        return None if executed else definition
+
+    toolset = _replacement_toolset(toolset_id="test-coven-transition", executed=executed)
+    toolset.tools["request_coven_swap"].prepare = only_before_execution
+    dispatcher = substrate.dispatcher
+    assert isinstance(dispatcher, FakeDispatcher)
+    dispatcher.toolsets = (toolset,)
+
+    result = await _resume(substrate, run_id, consent_id, approved=True)
+
+    assert executed == ["replacement"]
+    assert result["status"] == "done"
+    turn = await sessions.settled_turn_for_run(run_id)
+    assert turn is not None
+    assert turn.content == "done"
+
+
+@pytest.mark.asyncio
 async def test_unversioned_approval_tool_fails_closed_before_parking() -> None:
     substrate, _ledger, _bus, sessions, orch = _substrate(FunctionModel(stream_function=_park_then_settle))
     await _seed(substrate.ledger, sessions, "run_unversioned_effect")
@@ -418,6 +448,66 @@ async def test_unversioned_approval_tool_fails_closed_before_parking() -> None:
     assert run is not None
     assert run.consent_id is None
     turn = await sessions.settled_turn_for_run("run_unversioned_effect")
+    assert turn is not None
+    assert "durable effect identity" in turn.content.lower()
+
+
+@pytest.mark.asyncio
+async def test_approval_cannot_reuse_effect_identity_from_an_earlier_model_round() -> None:
+    """A read can change prepared tools before a later round requests approval."""
+    from lychd.agents.workflows.nodes import CONSENT_EFFECT_ID_KEY, CONSENT_EFFECT_REVISION_KEY
+
+    refreshed = False
+    prepared_with_identity: list[bool] = []
+    executed: list[str] = []
+
+    async def refresh_catalog() -> str:
+        nonlocal refreshed
+        refreshed = True
+        return "catalog refreshed"
+
+    async def prepare_effect(ctx: RunContext[LychDDeps], definition: ToolDefinition) -> ToolDefinition:
+        _ = ctx
+        prepared_with_identity.append(not refreshed)
+        return replace(definition, metadata=None) if refreshed else definition
+
+    async def change_resource() -> str:
+        executed.append("changed")
+        return "changed"
+
+    toolset: FunctionToolset[LychDDeps] = FunctionToolset(id="dynamic-catalog")
+    toolset.add_function(refresh_catalog)
+    toolset.add_function(
+        change_resource,
+        prepare=prepare_effect,
+        requires_approval=True,
+        metadata={CONSENT_EFFECT_ID_KEY: "resource.change", CONSENT_EFFECT_REVISION_KEY: "v1"},
+    )
+
+    async def refresh_then_request(messages: list[ModelMessage], info: AgentInfo) -> Any:
+        _ = info
+        responded = any(isinstance(message, ModelResponse) for message in messages)
+        name = "change_resource" if responded else "refresh_catalog"
+        yield {0: DeltaToolCall(name=name, json_args="{}", tool_call_id=name)}
+
+    substrate, ledger, _bus, sessions, _orch = _substrate(FunctionModel(stream_function=refresh_then_request))
+    dispatcher = substrate.dispatcher
+    assert isinstance(dispatcher, FakeDispatcher)
+    dispatcher.toolsets = (toolset,)
+    run_id = "run_dynamic_unversioned_effect"
+    await _seed(ledger, sessions, run_id)
+
+    result = await perform_run({"run_substrate": substrate}, run_id=run_id)
+
+    assert prepared_with_identity[0] is True
+    assert prepared_with_identity[-1] is False
+    assert result["status"] == "done"
+    assert executed == []
+    run = await ledger.get(run_id)
+    assert run is not None
+    assert run.consent_id is None
+    assert not await substrate.stasis_store.exists(run_id)
+    turn = await sessions.settled_turn_for_run(run_id)
     assert turn is not None
     assert "durable effect identity" in turn.content.lower()
 
@@ -443,6 +533,53 @@ async def test_approved_resume_rejects_legacy_checkpoint_without_binding() -> No
 
 
 # --- Scenario 4: chained approvals → round-3 bottleneck honest settle ----------
+
+
+@pytest.mark.parametrize("restore_stale_checkpoint", [False, True], ids=["current-denial", "stale-approval"])
+@pytest.mark.asyncio
+async def test_chained_consent_resume_requires_the_current_run_owner(*, restore_stale_checkpoint: bool) -> None:
+    """An old same-Run approval checkpoint cannot replace the currently denied wait."""
+
+    async def park_twice_then_settle(messages: list[ModelMessage], info: AgentInfo) -> Any:
+        rounds = sum(isinstance(message, ModelResponse) for message in messages)
+        if rounds < 2:
+            yield {0: DeltaToolCall(name="request_coven_swap", json_args=_COVEN_ARGS, tool_call_id=f"c{rounds}")}
+        else:
+            yield {
+                0: DeltaToolCall(
+                    name=info.output_tools[0].name, json_args='{"answer":"done","fragments":[]}', tool_call_id="o1"
+                )
+            }
+
+    substrate, ledger, bus, sessions, orch = _substrate(FunctionModel(stream_function=park_twice_then_settle))
+    run_id = "run_current_consent"
+    await _seed(ledger, sessions, run_id)
+    first_consent = await _park(substrate, run_id)
+    first_checkpoint = await substrate.stasis_store.load(run_id)
+    assert first_checkpoint is not None
+
+    assert (await _resume(substrate, run_id, first_consent, approved=True))["status"] == "awaiting_consent"
+    current = await ledger.get(run_id)
+    assert current is not None and current.consent_id is not None
+    assert current.consent_id != first_consent
+    assert len(orch.calls) == 1
+    channel = bus.open(run_id)
+    node_events_before = sum(event.kind == "node" for event in channel._replay)
+
+    if restore_stale_checkpoint:
+        await substrate.stasis_store.replace(run_id, first_checkpoint)
+        with pytest.raises(ValueError, match="checkpoint does not match the Run's current consent owner"):
+            await _resume(substrate, run_id, current.consent_id, approved=False)
+        assert sum(event.kind == "node" for event in channel._replay) == node_events_before
+    else:
+        assert (await _resume(substrate, run_id, current.consent_id, approved=False))["status"] == "done"
+
+    assert len(orch.calls) == 1  # the first approval is the only executed action
+    settled = await ledger.get(run_id)
+    assert settled is not None
+    assert settled.status is (RunStatus.FAILED if restore_stale_checkpoint else RunStatus.DONE)
+    assert await substrate.consents.verdict(current.consent_id) is False
+    assert not await substrate.stasis_store.exists(run_id)
 
 
 @pytest.mark.asyncio
@@ -716,7 +853,13 @@ async def test_post_park_verdict_probe_failure_preserves_waiting_authority() -> 
 
 
 @pytest.mark.asyncio
-async def test_worker_cancellation_during_post_park_probe_preserves_authority() -> None:
+@pytest.mark.parametrize("deadline", [False, True], ids=["cancelled", "deadline"])
+async def test_interrupted_post_park_probe_preserves_authority(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    deadline: bool,
+) -> None:
+    monkeypatch.setattr("lychd.ghouls.runs.CONSENT_PROBE_TIMEOUT_S", 0.01 if deadline else 1)
     substrate, ledger, _bus, sessions, _orch = _substrate(FunctionModel(stream_function=_park_then_settle))
     await _seed(ledger, sessions, "run_probe_cancel")
     original_verdict = substrate.consents.verdict
@@ -741,8 +884,9 @@ async def test_worker_cancellation_during_post_park_probe_preserves_authority() 
     )
     await probe_entered.wait()
 
-    task.cancel()
-    result = await task
+    if not deadline:
+        task.cancel()
+    result = await asyncio.wait_for(task, timeout=1)
 
     run = await ledger.get("run_probe_cancel")
     assert run is not None
@@ -834,3 +978,32 @@ async def test_stasis_lost_resume_fails_honestly() -> None:
     assert run is not None and run.status is RunStatus.FAILED
     assert run.error == "stasis lost"
     assert not await substrate.stasis_store.exists("run_sl")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("cancelled", [False, True])
+async def test_lost_park_acknowledgement_preserves_committed_consent(
+    monkeypatch: pytest.MonkeyPatch, *, cancelled: bool
+) -> None:
+    """A committed durable park survives errors and cancellation before its acknowledgement."""
+    substrate, ledger, bus, sessions, _orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    await _seed(ledger, sessions, "lost-park-ack")
+    original_park = ledger.park_consent
+
+    async def commit_then_interrupt(run_id: str, consent_id: str) -> None:
+        await original_park(run_id, consent_id)
+        if cancelled:
+            raise asyncio.CancelledError
+        message = "park acknowledgement lost"
+        raise ConnectionError(message)
+
+    monkeypatch.setattr(ledger, "park_consent", commit_then_interrupt)
+    with pytest.raises(asyncio.CancelledError if cancelled else ConnectionError):
+        await perform_run({"run_substrate": substrate}, run_id="lost-park-ack", enqueue_seq=0)
+    run = await ledger.get("lost-park-ack")
+    assert run is not None
+    assert run.status is RunStatus.AWAITING_CONSENT
+    consent = await substrate.consents.get(run.consent_id)
+    assert consent is not None and consent.status == "pending"
+    assert await substrate.stasis_store.exists(run.run_id)
+    await bus.wait_persisted(run.run_id)

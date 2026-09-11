@@ -37,7 +37,7 @@ class AnimatorLoader:
         self,
         *,
         reserved_ports: Mapping[str, int],
-        core_secret_names: tuple[str, str],
+        core_secret_names: tuple[str, ...],
     ) -> None:
         """Bind hydration to explicit port and secret-isolation policy."""
         self._reserved_ports = dict(reserved_ports)

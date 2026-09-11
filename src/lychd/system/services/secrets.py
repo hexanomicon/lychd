@@ -11,12 +11,18 @@ It is used by the bind ritual so Codex/runes can stay reference-only
 
 from __future__ import annotations
 
+import json
+from typing import Any, cast
+
+from pydantic import SecretStr
+
 from lychd.system.operator.process import (
     InputProcessRunner,
     ProcessInvocationError,
     ProcessResult,
     SubprocessRunner,
 )
+from lychd.system.secret_names import validate_podman_secret_name
 
 _PODMAN_PROBE_TIMEOUT_SECONDS = 5.0
 _PODMAN_CREATE_TIMEOUT_SECONDS = 30.0
@@ -26,6 +32,22 @@ _MAX_DIAGNOSTIC_CHARS = 4096
 
 class PodmanSecretStoreError(RuntimeError):
     """Raised when Podman secret operations fail in a domain-specific way."""
+
+
+def _exact_secret_value(payload: str, name: str) -> SecretStr:
+    rows: Any = json.loads(payload)
+    if not isinstance(rows, list) or len(cast("list[Any]", rows)) != 1:
+        raise ValueError
+    row: Any = cast("list[Any]", rows)[0]
+    if not isinstance(row, dict):
+        raise TypeError
+    entry = cast("dict[str, Any]", row)
+    if entry.get("Spec", {}).get("Name") != name:
+        raise ValueError
+    value: Any = entry.get("SecretData")
+    if not isinstance(value, str) or not value:
+        raise ValueError
+    return SecretStr(value)
 
 
 class PodmanSecretStore:
@@ -40,6 +62,20 @@ class PodmanSecretStore:
         """Bind every command to the preflight-attested Podman executable."""
         self._podman = podman_bin
         self._runner = runner or SubprocessRunner()
+
+    def read(self, name: str) -> SecretStr:
+        """Read one exact named secret without reflecting secret-bearing diagnostics."""
+        validate_podman_secret_name(name, field_name="Podman secret name")
+        try:
+            result = self._runner.run(
+                (self._podman, "secret", "inspect", "--showsecret", name),
+                timeout_s=_PODMAN_PROBE_TIMEOUT_SECONDS,
+            )
+            value = _exact_secret_value(result.stdout if result.returncode == 0 else "null", name)
+        except (ProcessInvocationError, ValueError, TypeError, AttributeError):
+            msg = f"Could not read exact Podman secret {name!r}."
+            raise PodmanSecretStoreError(msg) from None
+        return value
 
     def exists(self, name: str) -> bool:
         """Return exact presence, distinguishing absence from probe failure."""

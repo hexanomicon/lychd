@@ -29,7 +29,7 @@ separately owned admissions and effects, and it is not a Portfolio Composition.
 | Integration | Bind an external service/protocol through an adapter. |
 | Delegation | Ask another runtime or sovereign node for bounded labor. |
 | Assimilation | Study a pattern and implement an owned local expression. |
-| Heritage import | Convert external user data into provenance-bearing Memory/Identity candidates. |
+| Material intake and interpretation | Convert external user data into provenance-bearing candidates; [Transmuter](../compositions/transmuter/index.md) studies the application boundary. |
 
 No act promises bit-for-bit reproduction, protocol or license compatibility, or freedom from
 upstream maintenance without separate evidence.
@@ -83,6 +83,12 @@ not **Reanimation**, which reconstructs the same body from committed records aft
 A whole-body restore additionally requires the exact sealed cut in [Snapshots](07-snapshots.md).
 Declarative-only Scroll publication may avoid replacement only after an atomic durable catalogue-generation mechanism and
 already-admitted implementations exist; neither is delivered now.
+
+The [reference SDLC](../sepulcher/extensions/weaver/sdlc.md) supplies a candidate-working method
+for this passage: establish the foreign lesson and local need, test direction, then test the local
+implementation boundary before constructing it. [Ouroboros](../sepulcher/extensions/weaver/ouroboros.md)
+connects later observations to separately admitted evaluation, correction and training. Neither
+reference creates an Assimilation coordinator or grants an unknown Spell installation authority.
 
 ## Candidate author and admission
 
@@ -154,12 +160,16 @@ recovery. Merge cannot atomically make migration, restart, remote write, and pub
 indeterminate effects remain attributed; the candidate-author Agent cannot erase them by deleting its
 workspace or changing its explanation.
 
-## Heritage and correspondence
+## Transmuter and correspondence {#heritage-and-correspondence}
 
-Cloud archives and historical conversations expose an unresolved **Heritage** ownership need
-outside Smith. It remains a candidate study until distinct records, judgment, finish, recovery,
-and independent use justify a Composition. The candidate-author Agent may propose a parser, but output remains
-provenance-bearing candidate Memory—not Persona, instruction, preference, or training truth.
+Cloud archives, historical conversations, and shared media expose an application ownership need
+outside Smith. **[Transmuter](../compositions/transmuter/index.md)** names that candidate study,
+with Extractor and Synthesizer as internal stages. It remains outside the accepted Portfolio
+until its records, judgment, finish, recovery, and independent use establish an accepted contract.
+The candidate-author Agent may propose a parser or supply attributable candidate artifacts for
+interpretation. Transmuter's proposals retain source lineage; Memory, Mirror, and Soulforge
+independently admit their own effects. Imported material establishes no Persona, instruction,
+preference, or training truth by itself.
 Assimilated capability and every learned Spell are private by default; A2A advertising,
 Legion distribution, or public packaging needs its own authorization.
 

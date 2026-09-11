@@ -27,7 +27,7 @@ Load one matching scope before task action:
 | Implementation or tests under `src/**` or `tests/**` | [.agents/scopes/build.md](.agents/scopes/build.md) |
 | `clients/web/**`, browser projection, Svelte/SvelteKit, Vite, or native CSS | [.agents/scopes/frontend.md](.agents/scopes/frontend.md) |
 | Published Divination pages, Altar reader journey, or Zensical navigation | [.agents/scopes/divination.md](.agents/scopes/divination.md) |
-| The Great Work, mythic voice, formation, consciousness, cosmology, or eschatology | [.agents/scopes/transcendence.md](.agents/scopes/transcendence.md) |
+| The Great Work, mythic voice, formation, consciousness, cosmology, eschatology, or the philosophical aims of agentic autonomy, discernment, memory, and identity | [.agents/scopes/transcendence.md](.agents/scopes/transcendence.md) |
 | A named or decision-relevant external technology, protocol, library, research project, or benchmark | [.agents/scopes/references.md](.agents/scopes/references.md), after the primary scope; probe a matching operator-designated local reference when present |
 
 The frontend scope routes onward to the Svelte scope when required. Backend work under `src/**` or

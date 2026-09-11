@@ -98,7 +98,10 @@ fenced by the claimed sequence and settles its delivery; an old Ghoul cannot rew
 `started_at` records the Run's first successful claim and remains stable across resume hops, so boot
 ownership is not rewritten by later deliveries.
 
-The worker also verifies the pinned Pattern and, for a resume, the checkpoint. `retries=0`;
+The worker also verifies the pinned Pattern and, for a resume, the typed checkpoint and its current
+wait owner before the first native builder station runs. LychD's serial adapter owns persistence;
+upstream builder scheduling does not authorize checkpoint replay. Decodable pending/running/error
+history does not replace a created resumable cursor. `retries=0`;
 `timeout=0` disables only SAQ's generic wall clock, while each operation retains its own bound.
 Each Run job carries a 120-second SAQ heartbeat and its live invocation refreshes broker `touched`
 truth every 30 seconds until the hop returns. This makes abandoned active jobs sweepable without
@@ -130,9 +133,18 @@ seeds a fresh sequence, and retries the missing Step exactly once.
 ### Terminal settlement
 
 Normal return, failure, and cancellation settle the claimed status/sequence under shielding.
+Early refusal for an unavailable Pattern or missing checkpoint also contains correlated effects
+before committing failure.
 Terminal Run state commits before contextual release and best-effort stasis deletion. The channel
 accepts one terminal `DONE`, rejects later events, then closes after subscribers drain or grace
 expires. Cleanup failure cannot conceal terminal truth.
+
+Within Topology-A, claims, durable park commits, and worker failure containment share a per-Run
+process-local guard. Failure re-reads the exact sequence and active status before touching child
+or consent authority and holds the guard through containment and settlement. A stale Ghoul cannot
+cancel a successor's effects, and a committed park survives a lost commit acknowledgement.
+Resume publication occurs outside the guard. API cancellation uses its durable `CANCELLING`
+fence independently, so waiting for broker abort does not deadlock the worker's acknowledgement.
 
 ### Durable consent and delegated waits
 
@@ -149,9 +161,20 @@ requires decided, non-cancelled truth with a decision principal and timestamp, o
 same-run `AgentJob` and requires a shape-valid terminal result matching that job and status. The generic
 status writer cannot move either wait state back to `QUEUED`; only the owner-specific CAS may do so.
 Both consent verdicts resume and Graph reads the durable decision.
+The Run's consent and delegated-job pointers identify its current durable wait, not history.
+Each park sets its exact owner and clears the other pointer atomically; the related Consent,
+AgentJob, and event records retain history. That single owner survives re-admission and claim.
+Before the first restored node executes, the worker requires its station kind and checkpoint
+owner id to match the Run's current owner. Missing, ambiguous, or stale bindings fail without
+executing the checkpoint. Switching between wait kinds therefore cannot resurrect a historical
+approval or job. In-process hardware re-entry after this check does not reconsume the wait owner.
 Concurrent handlers converge. Publication failure leaves the new `QUEUED` hop for the relay; no
 wait state is recreated and no possibly published key is reused. Delegation additionally requires
 terminal truth for the same job.
+Consent and delegate re-admission remain cancellable: interruption before their atomic transaction leaves the
+wait; interruption after commit leaves the exact pending delivery for recovery. Optional broker
+error diagnostics do not defer cancellation. Required containment of a late published job retains
+its separate cancellation shield.
 
 ### Live hardware waits
 
@@ -232,6 +255,11 @@ One internal page scheduler retains every distinct degraded, caller-held, or cle
 external-wait page and alternates queued revisits with forward cursor progress. Multiple old poison,
 live broker, unfinished delegate, pending consent, or not-yet-released pages therefore neither
 disappear from repair nor starve newer identities. Exceptions are isolated per owner within a page.
+Each consent owner has one ten-second deadline covering lookup and re-admission, including broker
+publication. A timed-out owner remains eligible for a later pass while the page advances to others.
+The same consent/delegate bounds cover the worker's optional probe after a durable park. Reference
+delegate result adoption is cancellable; acknowledged projection retirement finishes under
+shielding, and a later terminal read repairs retirement after an unknown commit outcome.
 The lifespan supervisor restarts any relay that exits before shutdown with deterministic
 exponential backoff capped at five seconds. Delegated and consent probes share their timeout-bounded
 reconciliation paths with startup; a verdict or terminal child committed after an earlier clean

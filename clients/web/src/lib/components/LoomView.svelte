@@ -77,7 +77,8 @@
         origin?.pattern.exact === true &&
         origin.pattern.loom_path !== null &&
         origin.pattern.pattern_id === next.pattern_id &&
-        origin.pattern.revision === next.revision;
+        origin.pattern.revision === next.revision &&
+        origin.pattern.digest === next.digest;
       sourceRun = originMatches ? origin : null;
       if (requestedRun && !originMatches) {
         sourceContextError = "Run context unavailable — this Run could not be verified against the displayed Pattern revision.";
@@ -107,7 +108,7 @@
 <div class="instrument-deck instrument-deck--loom">
   <aside class="loom-rail">
     <h1 class="instrument-title rune-head">Loom</h1>
-    <p class="instrument-kicker">Published Patterns</p>
+    <p class="instrument-kicker">Registered Patterns</p>
     <nav aria-label="Pattern revisions">
       {#each catalogue as pattern (`${pattern.pattern_id}@${pattern.revision}`)}
         <a
@@ -133,7 +134,7 @@
     </nav>
   </aside>
 
-  <section class="loom-canvas" aria-label="Published Pattern">
+  <section class="loom-canvas" aria-label="Registered Pattern">
     {#if loading}
       <div class="mist"></div>
     {:else if error}
@@ -141,9 +142,10 @@
     {:else if view}
       <header class="pattern-identity">
         <div>
-          <span class="eyebrow">Published Pattern</span>
+          <span class="eyebrow">Registered Pattern</span>
           <h2>{view.title}</h2>
           <p>{view.description}</p>
+          <p class="pattern-entry">Entry <code>{view.entry_node}</code></p>
           {#if returnHref}
             <nav class="context-links" aria-label="Run context">
               <a href={resolve(returnHref)}>
@@ -155,7 +157,7 @@
         </div>
         <div class="identity-seal">
           <strong>{view.pattern_id}@{view.revision}</strong>
-          <span>{view.publication}</span>
+          <span>Registered from source</span>
         </div>
       </header>
 
@@ -187,8 +189,8 @@
       </section>
 
       <aside class="loom-meta">
-        <section class="panel">
-          <div class="panel-head"><h3 class="rune-head">Immutable identity</h3></div>
+        <details class="panel pattern-details">
+          <summary>Identity &amp; source</summary>
           <dl class="kv">
             <dt>checkpoint</dt><dd>{view.checkpoint_schema}</dd>
             <dt>entry</dt><dd>{view.entry_node}</dd>
@@ -200,21 +202,21 @@
               <a href="/api/v1/loom/source/patterns/{view.pattern_id}/{view.revision}">Mermaid source →</a>
             </dd>
           </dl>
-        </section>
-        <section class="panel diagram-lens">
-          <div class="panel-head">
-            <h3 class="rune-head">Diagram lens</h3>
-            <button class="text-action" type="button" onclick={() => (showDiagram = !showDiagram)}>
-              {showDiagram ? "Hide" : "Reveal"}
-            </button>
-          </div>
-          {#if showDiagram}
-            <MermaidGraph source={view.mermaid_source} label={`${view.title} Pattern diagram`} />
-          {:else}
-            <p class="inspector-copy">Optional visual projection. The semantic score remains primary.</p>
-          {/if}
-        </section>
+        </details>
       </aside>
+      <section class="panel diagram-lens">
+        <div class="panel-head">
+          <h3 class="rune-head">Diagram lens</h3>
+          <button class="text-action" type="button" onclick={() => (showDiagram = !showDiagram)}>
+            {showDiagram ? "Hide" : "Reveal"}
+          </button>
+        </div>
+        {#if showDiagram}
+          <MermaidGraph source={view.mermaid_source} label={`${view.title} Pattern diagram`} />
+        {:else}
+          <p class="inspector-copy">Optional visual projection. The semantic score remains primary.</p>
+        {/if}
+      </section>
     {:else}
       <div class="shell-placeholder">
         <span class="glyph-big">⬡</span>

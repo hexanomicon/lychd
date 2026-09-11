@@ -27,7 +27,7 @@ from lychd.domain.orchestration.schema import TransitionPlan, TransitionTrace
 from lychd.lib.asyncio import complete_under_cancellation
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
+    from collections.abc import AsyncGenerator, Callable
 
     from lychd.config.settings.orchestration import SwitchingSettings
     from lychd.domain.cortex.leases import LeaseLedger
@@ -275,7 +275,7 @@ class OrchestratorManager:
         self._publish(trace, "arbitrating")
         return None
 
-    async def _execute_transition(  # noqa: PLR0915 - explicit transition/compensation state machine
+    async def _execute_transition(
         self,
         target_capability_key: str,
         priority: Priority,
@@ -370,22 +370,39 @@ class OrchestratorManager:
                     raise
             return plan
 
-        # A SOFT_SWAP is still a mutable-runtime transition: loading target B
-        # can unload model A from the same process. Drain the whole animator so
-        # an existing A grant cannot be invalidated underneath a running graph.
+        await self._execute_soft_swap(target_capability_key, trace=trace)
+        return plan
+
+    async def _execute_soft_swap(self, target_capability_key: str, *, trace: TransitionTrace) -> None:
+        """Drain the whole runtime and distinguish observation from attempted activation.
+
+        Loading model B can unload model A from the same process. Once activation
+        is invoked, failure keeps both gates closed because no exact inverse exists.
+        """
         target_animator = self._target_animator(target_capability_key)
         self._publish(trace, "draining")
         async with self._runtime_mutation_barrier([target_animator]):
-            try:
+            activation_invoked = False
+
+            def mark_activation() -> None:
+                nonlocal activation_invoked
+                activation_invoked = True
                 self._publish(trace, "actuating")
+
+            try:
+                self._publish(trace, "verifying")
                 deadline = asyncio.get_running_loop().time() + self._switching.warmup_timeout_s
-                await self._converge_warm(target_capability_key, deadline=deadline)
-            except (Exception, asyncio.CancelledError):
-                # There is no trustworthy model-level inverse without recording
-                # the previously loaded model. Do not reopen into unknown state.
-                self._contain("soft runtime mutation failed without a trustworthy model inverse")
-                raise
-        return plan
+                await self._converge_warm(target_capability_key, deadline=deadline, before_activation=mark_activation)
+            except (Exception, asyncio.CancelledError) as exc:
+                if activation_invoked:
+                    # Invocation may change model residency even when its result
+                    # rejects or fails. No trustworthy inverse exists here.
+                    self._contain("soft runtime mutation failed without a trustworthy model inverse")
+                    raise
+                message = f"Soft convergence for '{target_capability_key}' ended before any activation: {exc}"
+                if isinstance(exc, asyncio.CancelledError):
+                    raise RuntimeCancellationNoEffectError(message) from exc
+                raise RuntimePreconditionError(message) from exc
 
     @asynccontextmanager
     async def _runtime_mutation_barrier(
@@ -451,13 +468,26 @@ class OrchestratorManager:
             msg = f"Failed to activate capability '{target.key}' on '{target.animator_name}'{reason}."
             raise RuntimeError(msg)
 
-    async def _converge_warm(self, capability_key: str, *, deadline: float) -> None:
-        """Perform target refresh, activation, and WARM proof under one deadline."""
+    async def _converge_warm(
+        self,
+        capability_key: str,
+        *,
+        deadline: float,
+        before_activation: Callable[[], None] | None = None,
+    ) -> None:
+        """Bound convergence and mark the activation boundary before invoking it.
+
+        An observation-only failure supplies no reason to contain a soft swap.
+        The hard caller already crossed its physical effect boundary and always
+        retains its separate compensation law.
+        """
         loop = asyncio.get_running_loop()
         try:
             async with asyncio.timeout_at(deadline):
                 spec, current_state = await require_capability_record(self.registry, capability_key)
                 if spec.is_dynamic and current_state.phase not in {CapabilityPhase.WARM, CapabilityPhase.WARMING}:
+                    if before_activation is not None:
+                        before_activation()
                     await self._activate_dynamic_capability(spec)
                 remaining = max(0.0, deadline - loop.time())
                 await self.registry.await_warm(spec.key, timeout_s=remaining)

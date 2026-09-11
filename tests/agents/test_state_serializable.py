@@ -18,7 +18,7 @@ import pytest
 from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
 from pydantic_core import to_jsonable_python
-from pydantic_graph import BaseNode, End, Graph
+from pydantic_graph import BaseNode, End
 
 from lychd.agents.router import Intent
 from lychd.agents.workflows import BRIDGE_CHAT, BRIDGE_CHAT_BOUND, DELEGATED_RITE, builtin_workflow_registry
@@ -33,6 +33,7 @@ from lychd.agents.workflows.base import (
 )
 from lychd.agents.workflows.bridge_chat import BridgeChatState
 from lychd.agents.workflows.nodes import ConsentToolBinding
+from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.runs import RunRecord, RunStatus
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore, LiveStasisPhylactery
 from lychd.ghouls.runs import _phylactery_for
@@ -116,6 +117,11 @@ class _SecondPlainNode(BaseNode[BridgeChatState, None, None]):
         return End(None)
 
 
+class _FirstOfTwo(BaseNode[BridgeChatState, None, None]):
+    async def run(self, ctx: Any) -> _SecondPlainNode:  # noqa: ARG002
+        return _SecondPlainNode()
+
+
 def test_pattern_terminal_remains_declarative() -> None:
     with pytest.raises(ValueError, match="must remain declarative"):
         PatternNode(key="end", label="End", kind="terminal", implementation=_PlainNode)
@@ -150,7 +156,9 @@ def _workflow_for(node: type[BaseNode[Any, Any, Any]]) -> Workflow:
         title="t",
         description="",
         trigger=Trigger(hint="", match=lambda _intent: True),
-        graph=Graph(nodes=(node,), name="t"),
+        graph=build_serial_graph(
+            nodes=(node,), state_type=BridgeChatState, deps_type=type(None), output_type=type(None), name="t"
+        ),
         start_node=node,
         make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
         manifest=PatternManifest(
@@ -201,7 +209,7 @@ def test_pattern_rejects_duplicate_binding_for_non_start_graph_node() -> None:
         checkpoint_schema="test-v1",
         entry_node="start",
         nodes=(
-            PatternNode(key="start", label="Start", kind="step", implementation=_PlainNode),
+            PatternNode(key="start", label="Start", kind="step", implementation=_FirstOfTwo),
             PatternNode(key="second-a", label="Second A", kind="step", implementation=_SecondPlainNode),
             PatternNode(key="second-b", label="Second B", kind="step", implementation=_SecondPlainNode),
         ),
@@ -214,8 +222,14 @@ def test_pattern_rejects_duplicate_binding_for_non_start_graph_node() -> None:
             title="duplicate",
             description="",
             trigger=Trigger(hint="", match=lambda _intent: True),
-            graph=Graph(nodes=(_PlainNode, _SecondPlainNode), name="duplicate"),
-            start_node=_PlainNode,
+            graph=build_serial_graph(
+                nodes=(_FirstOfTwo, _SecondPlainNode),
+                state_type=BridgeChatState,
+                deps_type=type(None),
+                output_type=type(None),
+                name="duplicate",
+            ),
+            start_node=_FirstOfTwo,
             make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
             manifest=manifest,
         )
@@ -230,12 +244,12 @@ def test_pattern_entry_node_is_digested_and_matches_workflow_start() -> None:
             checkpoint_schema="test-v1",
             entry_node=entry_node,
             nodes=(
-                PatternNode(key="first", label="First", implementation=_PlainNode),
+                PatternNode(key="first", label="First", implementation=_FirstOfTwo),
                 PatternNode(key="second", label="Second", implementation=_SecondPlainNode),
                 PatternNode(key="end", label="End", kind="terminal"),
             ),
             edges=(
-                PatternEdge(key="first-to-end", source="first", target="end"),
+                PatternEdge(key="first-to-second", source="first", target="second"),
                 PatternEdge(key="second-to-end", source="second", target="end"),
             ),
         )
@@ -251,8 +265,14 @@ def test_pattern_entry_node_is_digested_and_matches_workflow_start() -> None:
             title="entry-bound",
             description="",
             trigger=Trigger(hint="", match=lambda _intent: True),
-            graph=Graph(nodes=(_PlainNode, _SecondPlainNode), name="entry-bound"),
-            start_node=_PlainNode,
+            graph=build_serial_graph(
+                nodes=(_FirstOfTwo, _SecondPlainNode),
+                state_type=BridgeChatState,
+                deps_type=type(None),
+                output_type=type(None),
+                name="entry-bound",
+            ),
+            start_node=_FirstOfTwo,
             make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
             manifest=second,
         )
@@ -265,7 +285,13 @@ def test_workflow_rejects_start_node_outside_its_graph() -> None:
             title="foreign-start",
             description="",
             trigger=Trigger(hint="", match=lambda _intent: True),
-            graph=Graph(nodes=(_PlainNode,), name="foreign-start"),
+            graph=build_serial_graph(
+                nodes=(_PlainNode,),
+                state_type=BridgeChatState,
+                deps_type=type(None),
+                output_type=type(None),
+                name="foreign-start",
+            ),
             start_node=_SecondPlainNode,
             make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
             manifest=PatternManifest(
@@ -308,7 +334,9 @@ def test_pattern_edges_must_match_executable_graph(
             title=name,
             description="",
             trigger=Trigger(hint="", match=lambda _intent: True),
-            graph=Graph(nodes=(_PlainNode,), name=name),
+            graph=build_serial_graph(
+                nodes=(_PlainNode,), state_type=BridgeChatState, deps_type=type(None), output_type=type(None), name=name
+            ),
             start_node=_PlainNode,
             make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
             manifest=PatternManifest(

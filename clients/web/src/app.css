@@ -241,6 +241,8 @@
     font: 400 var(--text-3xl)/1.1 var(--font-rune);
   }
   .pattern-identity p { max-width: 46rem; color: var(--color-ash); }
+  .pattern-identity .pattern-entry { margin-top: 0.65rem; color: var(--color-parchment); font-size: var(--text-sm); }
+  .pattern-entry code { margin-left: 0.4rem; color: var(--color-frost); }
   .identity-seal {
     min-width: max-content;
     padding: 0.65rem 0.8rem;
@@ -252,7 +254,7 @@
   .identity-seal strong,
   .identity-seal span { display: block; }
   .identity-seal span { color: var(--color-ash); text-transform: uppercase; }
-  .pattern-score { min-width: 0; }
+  .pattern-score { min-width: 0; align-self: start; }
   .score-count { margin-left: auto; color: var(--color-ash); font-size: var(--text-xs); }
   .station-list { padding: 0.35rem 0; }
   .station {
@@ -302,9 +304,13 @@
     flex-direction: column;
     flex-wrap: nowrap;
     gap: 0.85rem;
+    align-self: start;
   }
   .loom-meta .panel { min-width: 0; }
+  .pattern-details summary { padding: 0.85rem 1rem; color: var(--color-rune); cursor: pointer; font-size: var(--text-sm); }
+  .pattern-details[open] summary { border-bottom: 1px solid var(--color-engraving); }
   .digest { word-break: break-all; }
+  .diagram-lens { grid-column: 1 / -1; min-width: 0; }
   .diagram-lens .mermaid { padding: 1rem; overflow: auto; }
   .diagram-failure { padding: 0.8rem 1rem 0; color: var(--color-ember); font-size: var(--text-xs); }
 
@@ -338,6 +344,8 @@
     font: 400 var(--text-xl)/1.25 var(--font-glyph);
     overflow-wrap: anywhere;
   }
+  .run-outcome .run-status { font-size: var(--text-base); padding: 0.3rem 0.7rem; }
+  .selected-evidence-summary { padding: 0.85rem 1rem 0; color: var(--color-bone); line-height: 1.55; overflow-wrap: anywhere; }
   .run-outcome { display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; color: var(--color-ash); font-size: var(--text-xs); }
   .context-links { display: flex; gap: 0.8rem; margin-top: 0.45rem; }
   .context-links a { color: var(--color-rune); font-size: var(--text-xs); text-decoration: none; }
@@ -1525,8 +1533,7 @@
   .pattern-score,
   .loom-meta { grid-column: 1; }
   .loom-meta {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: block;
   }
 }
 

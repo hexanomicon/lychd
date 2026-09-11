@@ -8,6 +8,7 @@
     ApiError,
     cancelBridgeRun,
     createBridgeSession,
+    getBridgeSessions,
     getBridgeSnapshot,
     getAtlasProject,
     getRunSnapshot,
@@ -59,6 +60,9 @@
   let error = $state("");
   let thread: HTMLDivElement | undefined;
   let loadVersion = 0;
+  let sessionsRequest: AbortController | null = null;
+  let sessionsLoading = $state(false);
+  let sessionsError = $state("");
   let renderVersion = $state(0);
   let consentAuthorityVersion = 0;
   let stickToTail = true;
@@ -111,6 +115,10 @@
 
   async function load(id?: string) {
     const version = ++loadVersion;
+    sessionsRequest?.abort();
+    sessionsRequest = null;
+    sessionsLoading = false;
+    sessionsError = "";
     const settlementsAtRequest = new Map(work.settlements);
     const runAuthorityAtRequest = new Map(
       liveTurns.map((turn) => [turn.runId, turn.authorityGeneration])
@@ -132,17 +140,33 @@
         return;
       }
       activeSessionIdentity = nextSessionIdentity;
+      for (const [id, decision] of work.consentDecisions) {
+        if (decision.sessionId === nextSessionIdentity && !decision.sending &&
+            !next.pending_consents.some((consent) => consent.id === id && consent.state === "pending_consent")) {
+          work.consentDecisions.delete(id);
+        }
+      }
       const merged = mergeSnapshotLiveTurns(next, $state.snapshot(liveTurns));
+      const terminalRecoveries = new Set<string>();
       for (const active of next.active_runs) {
         const index = merged.liveTurns.findIndex((turn) => turn.runId === active.run_id);
         const current = merged.liveTurns[index];
         const expectedGeneration = runAuthorityAtRequest.get(active.run_id);
-        if (current && expectedGeneration !== undefined && !streams.has(active.run_id)) {
-          merged.liveTurns[index] = replaceLiveTurnFromSnapshot(
+        if (current && expectedGeneration !== undefined && (active.terminal || !streams.has(active.run_id))) {
+          // Terminal authority remains decisive even when its stream has not closed.
+          const refreshed = replaceLiveTurnFromSnapshot(
             current,
             active,
             expectedGeneration
           );
+          merged.liveTurns[index] = refreshed;
+          if (turnIsTerminal(refreshed)) {
+            streams.get(active.run_id)?.();
+            streams.delete(active.run_id);
+            clearRefreshTimer(active.run_id);
+          } else if (active.terminal) {
+            terminalRecoveries.add(active.run_id);
+          }
         }
       }
       for (const runId of merged.retiredRunIds) {
@@ -156,13 +180,55 @@
       for (const active of next.active_runs) {
         const turn = liveTurns.find((item) => item.runId === active.run_id);
         if (!turn) continue;
-        if (!turnIsTerminal(turn)) attachStream(turn, turn.cursor);
+        if (terminalRecoveries.has(active.run_id)) {
+          // Fence the superseded channel before using its one bounded recovery.
+          streams.get(active.run_id)?.();
+          streams.delete(active.run_id);
+          turn.state = "stale";
+          turn.activity = "projection stale";
+          turn.authorityGeneration++;
+          void recoverHardClosedRun(active.run_id, turn.sessionId);
+        } else if (!turnIsTerminal(turn)) attachStream(turn, turn.cursor);
       }
       window.dispatchEvent(new CustomEvent("altar:attention", { detail: next.pending_count }));
     } catch (cause) {
       if (version === loadVersion) error = cause instanceof Error ? cause.message : "The Bridge stayed dark.";
     } finally {
       if (version === loadVersion) loading = false;
+    }
+  }
+
+  async function loadMoreSessions() {
+    const cursor = snapshot?.sessions_next_cursor;
+    if (!cursor || loading || sessionsLoading || destroyed) return;
+    const version = loadVersion;
+    const controller = new AbortController();
+    sessionsRequest = controller;
+    sessionsLoading = true;
+    sessionsError = "";
+    try {
+      const next = await getBridgeSessions(cursor, controller.signal);
+      if (destroyed || controller.signal.aborted || version !== loadVersion || !snapshot) return;
+      const seen = new Set(snapshot.sessions.map((session) => session.id));
+      const additional = next.sessions.filter((session) => {
+        if (seen.has(session.id)) return false;
+        seen.add(session.id);
+        return true;
+      });
+      snapshot = {
+        ...snapshot,
+        sessions: [...snapshot.sessions, ...additional],
+        sessions_next_cursor: next.next_cursor
+      };
+    } catch {
+      if (!destroyed && !controller.signal.aborted && version === loadVersion) {
+        sessionsError = "Older conversations could not be loaded. Try again.";
+      }
+    } finally {
+      if (sessionsRequest === controller) {
+        sessionsRequest = null;
+        sessionsLoading = false;
+      }
     }
   }
 
@@ -237,6 +303,7 @@
   onDestroy(() => {
     destroyed = true;
     loadVersion++;
+    sessionsRequest?.abort();
     for (const close of streams.values()) close();
     streams.clear();
     for (const timer of refreshTimers.values()) window.clearTimeout(timer);
@@ -532,7 +599,7 @@
       renderVersion++;
       attachStream(live);
     } catch (cause) {
-      const uncertain = prior?.uncertain || !(cause instanceof ApiError) || cause.status === undefined || cause.status >= 500;
+      const uncertain = prior?.uncertain || !(cause instanceof ApiError) || cause.status === undefined || cause.status >= 500 || cause.status === 408;
       const message = cause instanceof Error ? cause.message : "The offering was refused.";
       if (uncertain) {
         work.pending.set(targetSessionId, { text, requestId, uncertain: true, sending: false, error: message });
@@ -598,7 +665,7 @@
   }
 
   function keydown(event: KeyboardEvent) {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
       void submit();
     }
@@ -613,7 +680,16 @@
     pending: number,
     authorityVersion: number
   ) {
-    if (!snapshot) return;
+    const targetSessionId = work.consentDecisions.get(consent.id)?.sessionId;
+    if (targetSessionId) {
+      const revision = (work.settlements.get(targetSessionId) ?? 0) + 1;
+      if (!destroyed) observedSettlements.set(targetSessionId, revision);
+      work.settlements.set(targetSessionId, revision);
+    }
+    if (destroyed || !snapshot || snapshot.session?.id !== targetSessionId) {
+      window.dispatchEvent(new CustomEvent("altar:attention"));
+      return;
+    }
     if (authorityVersion !== consentAuthorityVersion) {
       refreshConsentAuthority();
       return;
@@ -628,6 +704,7 @@
       const summary = snapshot.sessions.find((session) => session.id === snapshot?.session?.id);
       if (summary) summary.pending_count = selectedPending;
     }
+    work.consentDecisions.delete(consent.id);
     window.dispatchEvent(new CustomEvent("altar:attention", { detail: pending }));
   }
 
@@ -649,7 +726,7 @@
   }
 
   function refreshConsentAuthority() {
-    if (selected) void load(selected.id);
+    if (!destroyed && selected) void load(selected.id);
   }
 
   function trackScroll() {
@@ -677,6 +754,12 @@
     {:else if !loading && !error}
       <p class="glyph rail-empty">No séance yet — open one to speak.</p>
     {/if}
+    {#if snapshot?.sessions_next_cursor}
+      <button class="rune-btn" type="button" disabled={loading || sessionsLoading} aria-busy={sessionsLoading} onclick={loadMoreSessions}>
+        {sessionsLoading ? "Loading conversations…" : "Load more conversations"}
+      </button>
+    {/if}
+    {#if sessionsError}<p class="turn__fault" role="status">{sessionsError}</p>{/if}
   </aside>
   {/if}
 
@@ -706,7 +789,7 @@
           <h2 class="rune-head">{attentionOnly ? "Conversations awaiting consent" : "Choose a conversation"}</h2>
           <p>{attentionOnly ? "Select a marked conversation to review its pending requests." : "Select a conversation from the list or open a new séance."}</p>
           {#if attentionOnly && !snapshot?.sessions.some((session) => (session.pending_count ?? 0) > 0)}
-            <p>{snapshot?.pending_count ? "Pending requests have no available Bridge conversation." : "No conversation is awaiting consent."}</p>
+            <p>{snapshot?.pending_count ? snapshot.sessions_next_cursor ? "Load more conversations to find older pending requests." : "Pending requests have no available Bridge conversation." : "No conversation is awaiting consent."}</p>
           {/if}
         </div>
       {:else if firstVisit}
@@ -746,7 +829,7 @@
               <span class="chip" data-state={turn.runStatus}>{operatorState(turn.runStatus)}</span>
               <span class="status" aria-live="polite">{operatorState(turn.activity)}</span>
             </div>
-            <div class="turn__body">{turn.content}</div>
+            <div class="turn__body">{turn.content || (turnIsTerminal(turn) ? "No reply text was retained for this Run." : "")}</div>
             {#if turn.runStatus === "awaiting_hardware" || turn.transitionRequestId}
               <div class="body-crossing">
                 <span class="body-crossing__title">Capability transition</span>
@@ -801,6 +884,8 @@
         {#each snapshot?.pending_consents ?? [] as consent (consent.id)}
           <ConsentCard
             {consent}
+            sessionId={selected.id}
+            decisions={work.consentDecisions}
             onauthority={beginConsentDecision}
             ondecided={consentDecided}
             onrefresh={refreshConsentAuthority}

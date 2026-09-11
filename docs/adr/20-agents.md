@@ -29,11 +29,13 @@ icon: material/robot-outline
 
 ## Decision
 
-LychD uses in-process **Pydantic AI**, at lockfile-pinned `pydantic-ai-slim==1.107.5`. The
-[State](../state-of-the-work.md#pydantic-ai-v1-adapter) owns present adapter evidence; its
-[v2 migration](../state-of-the-work.md#pydantic-ai-v2-migration) is Designed.
-A v2 adapter must set `end_strategy` explicitly: allowing sibling mutating tools to finish is a
-security change requiring review, not a library upgrade.
+LychD uses in-process **Pydantic AI**, at lockfile-pinned `pydantic-ai-slim==2.42.0`. The
+[State](../state-of-the-work.md#pydantic-ai-adapter) owns present cognitive adapter evidence;
+[native Graph integration](../state-of-the-work.md#pydantic-ai-v2-migration) preserves LychD's
+serial checkpoint and wait-owner contract.
+The adapter sets `end_strategy="early"` explicitly: a valid final output does not execute sibling
+function tools. The v2 SDK's `graceful` default would change this effect boundary. Any later
+workflow that needs sibling completion must declare and verify that policy separately.
 
 An Agent joins immutable `AgentSpec`, process-local `AgentForge`, a step-scoped model-shaped
 `CapabilityGrant`, fresh `LychDDeps`, and a declared output union. This is the delivered model path;
@@ -80,8 +82,11 @@ For each Bridge inference step, the current workflow asks the Dispatcher for a v
 containing capability specification and state, step/run lease, resolved generation profile, a
 required hydrated Pydantic AI model, and agent-loop toolsets only when the capability explicitly
 declares `supports_tools = true`. The grant exposes neither its Animator nor Connector. Bridge
-passes `grant.model`, `grant.model_settings()`, and `grant.toolsets` to
-`agent.run_stream_events`. Agent specifications therefore name neither endpoint nor credential;
+passes `grant.model` through a request-scoped [Context](./21-context.md#governors) capacity wrapper,
+along with `grant.model_settings()` and `grant.toolsets`, to `agent.run_stream_events`.
+Bridge owns the event stream's async scope so toolsets close on consumer failure before the
+Dispatcher closes the model-provider scope and releases its lease.
+Agent specifications therefore name neither endpoint nor credential;
 the specification needs no separate model/tool-provider pair.
 
 One spec can run with any admitted model meeting the adapter contract. A foreign framework is not
@@ -116,7 +121,11 @@ Provider Portals route their declared alias through the matching Pydantic AI pro
 model-profile resolver, including unsupported-setting filtering. OpenRouter, LiteLLM, and Ollama
 use their provider resolvers; Google's OpenAI-shaped endpoint uses the Google model profile over
 the OpenAI transport. Generic OpenAI-compatible endpoints and local runtimes instead select
-LychD's conservative inline-schema, non-strict-tool profile. OpenRouter ids must retain their
+LychD's conservative inline-schema, non-strict-tool profile. That local profile replaces resolved
+provider defaults: a local alias such as `o3` does not inherit OpenAI reasoning policy or a
+provider-derived context window. Named provider resolution remains on the provider's
+`model_profile(model_name)` contract, separate from v2's resolved-profile transformation callback.
+OpenRouter ids must retain their
 `provider/model` namespace. Under the pinned adapter, Google, LiteLLM, and Ollama aliases are
 Chat-only; Responses is admitted only for OpenAI, OpenRouter, or an explicitly compatible generic
 endpoint. This does not claim a native Gemini transport or providers outside the registered
@@ -191,8 +200,12 @@ no external deferred calls. It serializes suffix and call identifiers—not a li
 `DeferredToolRequests` object—plus the capability key, durable toolset id and type, tool name,
 project-owned effect id and revision, and prepared-definition digest. Resume reacquires a fresh
 grant and refuses execution if that binding changed before supplying `DeferredToolResults`;
-approval-required tools without an effect id and revision cannot park. The tool owner must revise
+approval-required tools without an effect id and revision in the current prepared model round
+cannot park; an earlier round's binding supplies no authority. The tool owner must revise
 the effect revision whenever executable semantics change without changing the prepared definition.
+The parked binding is checked in the resumed round before dispatch. After that round, a completed
+one-shot tool may leave the prepared catalogue; this must not turn its executed effect into a
+reported refusal. Any subsequent approval captures its own current binding.
 Multiple approvals and generic `CallDeferred` labor fail truthfully because the record cannot
 represent them. No tracked production toolset currently originates an approval request; the
 executable path is exercised by test-injected toolsets only. Delegated labor is a separate Graph

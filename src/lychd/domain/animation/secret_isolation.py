@@ -14,7 +14,7 @@ __all__ = ["validate_secret_declarations"]
 
 def validate_secret_declarations(
     *,
-    core_secret_names: tuple[str, str],
+    core_secret_names: tuple[str, ...],
     soulstones: Sequence[SoulstoneConfig],
     portals: Sequence[PortalConfig],
 ) -> tuple[frozenset[str], dict[str, int]]:
@@ -25,9 +25,8 @@ def validate_secret_declarations(
     Declaration data secrets cannot alias any control document, regardless of
     Rune ordering. No secret values or host state enter this policy.
     """
-    app_secret, db_secret = core_secret_names
-    if app_secret == db_secret:
-        msg = "Core application-signing and database-password secrets must use distinct names"
+    if len(set(core_secret_names)) != len(core_secret_names):
+        msg = "Core credentials must use distinct names"
         raise ValueError(msg)
     portal_secrets = {portal.api_key_secret_name for portal in portals if portal.api_key_secret_name is not None}
     core_aliases = sorted(portal_secrets.intersection(core_secret_names))

@@ -49,3 +49,7 @@ Composition Suite and return inert evidence to the smallest supported boundary, 
 reverse execution.
 
 Riddle names the wound only as far as evidence reaches. It does not take the knife.
+
+For a complete worked method, [Workflow improvement](workflow-improvement.md) follows SDLC traces
+through a baseline/candidate comparison and an owner decision to keep, change or investigate the
+procedure. [Ouroboros](../weaver/ouroboros.md) places that evaluation beside memory and training.

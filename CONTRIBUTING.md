@@ -115,6 +115,24 @@ together. The architecture suite checks the delivery ledger and its evidence rou
 build checks the published tree. `make docs` serves the Hexanomicon at `http://localhost:7778` for
 local reading and layout inspection.
 
+### Browser development and its backend
+
+Frontend checks and the static build need the Python and Node dependencies above, but no running
+Vessel, database, GPU, or model. Start there for a first frontend contribution.
+
+`make frontend-dev` serves the source client at `http://127.0.0.1:5173`. It starts only Vite;
+its `/api` and `/schema` requests currently proxy to `http://127.0.0.1:8000`. A separately prepared,
+isolated backend or fixture must supply that address. Without it, the shell can load while API
+reads fail. The repository does not currently supply a standalone hostless backend launcher for
+this target.
+
+An isolated backend using the application middleware must retain its local login and CSRF checks
+and explicitly admit `http://127.0.0.1:5173` through `server.web.allowed_cors_origins`. A proxy does
+not grant access or authorize effects. Do not put credentials in Vite configuration, rewrite the
+browser's Origin, or point this preview at the installation used for Summoning. Browser acceptance
+against a real host uses the compiled Altar at Litestar's own origin and follows
+[Summoning](docs/summoning.md). Fixture previews and component tests remain separate evidence.
+
 ### Test Selection
 
 Start with the closest test that can fail, then widen by boundary. For example:

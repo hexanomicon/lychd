@@ -109,7 +109,7 @@ const runSnapshot: OrbRunSnapshot = {
   pattern: {
     pattern_id: "bridge_chat",
     revision: "1",
-    digest: "digest-a",
+    digest: projection.digest,
     exact: true,
     loom_path: "/loom/bridge_chat/1"
   },
@@ -144,6 +144,19 @@ it("reports mismatched Run context without offering a different Run", async () =
   vi.mocked(getOrbRun).mockResolvedValue(runSnapshot);
   const view = render(LoomView, { patternId: "bridge_chat", revision: "1" });
   expect(await screen.findByText(/Run context unavailable/)).toBeTruthy();
+  expect(screen.queryByRole("link", { name: "Return to Run in Orb →" })).toBeNull();
+  expect(goto).not.toHaveBeenCalled();
+  view.unmount();
+});
+
+it("refuses Run context when the displayed revision changed between reads", async () => {
+  page.url.href = "http://localhost/loom/bridge_chat/1?run=run-a&event=event-a";
+  vi.mocked(getLoomPatternRevision).mockResolvedValue({ ...projection, digest: "changed-digest" });
+  vi.mocked(getOrbRun).mockResolvedValue(runSnapshot);
+  const view = render(LoomView, { patternId: "bridge_chat", revision: "1" });
+
+  expect(await screen.findByText(/Run context unavailable/)).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Bridge chat" })).toBeTruthy();
   expect(screen.queryByRole("link", { name: "Return to Run in Orb →" })).toBeNull();
   expect(goto).not.toHaveBeenCalled();
   view.unmount();

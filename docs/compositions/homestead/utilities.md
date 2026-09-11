@@ -21,7 +21,19 @@ A device report, calibrated derivation, and reconciled estimate are different ev
 
 The freshest local BMS, inverter, pump, float, pressure, and fire veto wins. Each effect binds asset/controller identity, configuration generation, commissioned envelope, live observations, preconditions, expiry, local reservation, expected postcondition, and compensation or containment. LychD sends typed requests; it does not emit prompt-produced shell, bus, GPIO, relay, or manufacturer commands.
 
-### Follow the sun without moving the Lich
+## Meet an environment request
+
+A greenhouse needs water while an animal enclosure shares the same reserve. `homestead.apply_environment@1` receives an exact `KeeperEnvironmentNeed@1` or `CultivatorEnvironmentNeed@1`, or a reviewed household requirement, and proposes or admits one bounded environmental action. The care owner supplies suitability and source-reviewed needs. Homestead checks physical feasibility and its commissioned limits.
+
+Admission binds the exact need and originating owner, subject/placement/profile revisions, asset and controller generations, affected zones, units and bounds, resource ceiling, live evidence, validity window, and expected technical postcondition. The site envelope must enumerate other affected occupants and their current admitted constraints, including shared water or energy consumers. Unknown occupancy, expired requirements, conflicting bounds, or insufficient reserves yields a blocker or refusal; arrival order and model preference cannot decide whose needs to discard. A feasible alternative returns for the affected owners' review.
+
+`HomesteadEnvironmentResult@1` records the requirement and admission identities, action/attempt id, reserved and observed resource quantities, controller receipt and independent observations, technical result, and unresolved effects. Its outcome distinguishes a proposal, refusal, verified completion, partial completion, interruption, and unknown effect. A command acknowledgement alone is not the measured postcondition, and reaching a set-point is not a biological care verdict. The receiving owner separately records what this evidence establishes for its subject.
+
+For a [Legion](../../adr/42-legion.md) body, the request carries only the fenced task, zone, resources, expiry, and stop conditions. Fresh body admission and local emergency control remain decisive. Lost acknowledgement blocks blind repetition until controller state, reservations, and effect evidence reconcile; cancellation cannot reverse already delivered water or heat. Ongoing environmental protection belongs to the commissioned local controller, even when an Invocation or network connection ends.
+
+Keeper and Cultivator can use human observations and work without Homestead. Exact settled requirements and result references do not grant access to either owner's database. Live multi-owner initiation, waiting, cancellation, or recovery needs the separately admitted [Suite contract](../products-and-suites.md#homestead-keeper-and-cultivator).
+
+## Follow the sun without moving the Lich
 
 Beyond the household utility contract, a later Designed coordination profile may offer delay-tolerant labor to a sovereign [A2A peer](../../adr/26-a2a.md) from fresh evidence of surplus PV, battery margin, and compatible compute. The offer is coarse, expiring, and bounded by energy, time, task class, and local policy. Raw household telemetry need not travel. The destination rechecks load, forecast, thermals, reservations, and safety margin; no remote scheduler can override its local veto.
 

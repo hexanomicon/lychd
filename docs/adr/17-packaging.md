@@ -39,6 +39,11 @@ dependency declaration, generated client, notices, and checks to agree. The repo
 that for Python release-candidate archives and holds a checked-in Vessel definition. Publication,
 synthesized extension bodies, and activation are distinct work.
 
+The [Ouroboros map](../sepulcher/extensions/weaver/ouroboros.md#from-a-useful-lesson-to-a-changed-body)
+places this artifact boundary between candidate work and governed Evolution. Conversational or
+A2A collaboration can change how work is requested while exact source identity, verification,
+publication and activation keep the separate meanings defined here.
+
 ### Candidate identity and archive audit
 
 `src/lychd/__about__.py` is Hatch's version source. Version preparation changes reviewed files;

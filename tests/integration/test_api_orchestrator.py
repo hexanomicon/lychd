@@ -14,6 +14,7 @@ from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan
 from lychd.interface.api.orchestrator import OrchestratorController
 from lychd.interface.web.deps import web_dependencies
+from tests.web.conftest import TEST_ACCESS_PASSWORD, TEST_AUTHORIZATION
 
 
 class _RecordingOrchestrator(OrchestratorManager):
@@ -79,7 +80,7 @@ def _app(orchestrator: OrchestratorManager) -> Litestar:
     return Litestar(
         route_handlers=[OrchestratorController],
         dependencies=web_dependencies,
-        middleware=[sigil_auth_middleware()],
+        middleware=[sigil_auth_middleware(access_password=TEST_ACCESS_PASSWORD)],
         state=State({"services": services}),
     )
 
@@ -87,7 +88,9 @@ def _app(orchestrator: OrchestratorManager) -> Litestar:
 @pytest.mark.asyncio
 async def test_get_status() -> None:
     transport = httpx.ASGITransport(app=_app(_RecordingOrchestrator()))  # pyright: ignore[reportArgumentType]
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver.local") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver.local", headers={"authorization": TEST_AUTHORIZATION}
+    ) as client:
         response = await client.get("/orchestrator/status")
 
     assert response.status_code == 200
@@ -101,7 +104,9 @@ async def test_get_status() -> None:
 async def test_get_plan() -> None:
     orchestrator = _RecordingOrchestrator()
     transport = httpx.ASGITransport(app=_app(orchestrator))  # pyright: ignore[reportArgumentType]
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver.local") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver.local", headers={"authorization": TEST_AUTHORIZATION}
+    ) as client:
         response = await client.get("/orchestrator/solver/plan", params={"target": "new-relic"})
 
     assert response.status_code == 200
@@ -141,7 +146,9 @@ async def test_queues_reports_unavailable_truth(
         )
 
     transport = httpx.ASGITransport(app=_app(_RecordingOrchestrator()))  # pyright: ignore[reportArgumentType]
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver.local") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver.local", headers={"authorization": TEST_AUTHORIZATION}
+    ) as client:
         response = await client.get("/orchestrator/queues")
 
     assert response.status_code == 503
@@ -151,7 +158,9 @@ async def test_queues_reports_unavailable_truth(
 async def test_activate_manual_override() -> None:
     orchestrator = _RecordingOrchestrator()
     transport = httpx.ASGITransport(app=_app(orchestrator))  # pyright: ignore[reportArgumentType]
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver.local") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver.local", headers={"authorization": TEST_AUTHORIZATION}
+    ) as client:
         response = await client.post("/orchestrator/activate", params={"target": "target-relic"})
 
     assert response.status_code == 202
@@ -192,7 +201,9 @@ def _gating_app() -> Litestar:
 async def test_activate_low_priority_hard_swap_returns_409() -> None:
     """POST /activate?priority=25 against a HARD_SWAP → 409 carrying the plan + threshold."""
     transport = httpx.ASGITransport(app=_gating_app())  # pyright: ignore[reportArgumentType]
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver.local") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver.local", headers={"authorization": TEST_AUTHORIZATION}
+    ) as client:
         resp = await client.post("/orchestrator/activate", params={"target": "titan", "priority": 25})
     assert resp.status_code == 409
     body = resp.json()
@@ -205,7 +216,9 @@ async def test_activate_low_priority_hard_swap_returns_409() -> None:
 @pytest.mark.asyncio
 async def test_activate_rejects_priority_outside_doctrine(priority: int) -> None:
     transport = httpx.ASGITransport(app=_gating_app())  # pyright: ignore[reportArgumentType]
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver.local") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver.local", headers={"authorization": TEST_AUTHORIZATION}
+    ) as client:
         response = await client.post(
             "/orchestrator/activate",
             params={"target": "titan", "priority": priority},

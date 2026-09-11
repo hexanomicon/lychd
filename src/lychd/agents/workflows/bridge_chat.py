@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any, Self, cast
+from uuid import uuid4
 
 from pydantic import BaseModel, Field, model_validator
 from pydantic_ai import DeferredToolRequests, DeferredToolResults
@@ -22,6 +23,7 @@ from pydantic_ai.models import Model
 from pydantic_ai.usage import UsageLimits
 from pydantic_graph import BaseNode, End, Graph, GraphRunContext
 
+from lychd.agents.context_limits import ContextWindowModel
 from lychd.agents.deps import LychDDeps
 from lychd.agents.outputs import Bottleneck, BridgeReply
 from lychd.agents.services import WorkflowServices
@@ -34,11 +36,11 @@ from lychd.agents.workflows.nodes import (
     bind_consent_toolsets,
     bind_messages_to_logical_run,
     is_single_approval,
-    new_step_id,
     park_on_consent,
     pump_agent_events,
 )
 from lychd.domain.cortex.context import ContextBudgetExceededError
+from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.graph_runner import HardwareResumeBudget
 from lychd.domain.cortex.priority import PRIORITY_DEFAULT
 from lychd.domain.cortex.runs import ConsentPending
@@ -122,26 +124,28 @@ def _agent_deps(ctx: GraphRunContext[BridgeChatState, WorkflowServices], grant: 
         orchestrator=ctx.deps.orchestrator,
         context=ctx.deps.context,
         run_id=ctx.state.run_id,
-        step_id=new_step_id(),
+        step_id=f"step_{uuid4().hex[:12]}",
         priority=ctx.state.priority,
     )
 
 
-def _usage_limits(context_window: int | None, grant: Any) -> UsageLimits | None:
-    """Build the grant-bounded usage policy and enable pre-counting when supported."""
+def _request_policy(context_window: int | None, grant: Any) -> tuple[Model | None, UsageLimits | None]:
+    """Bind per-request context capacity while preserving aggregate usage accounting."""
+    model = cast("Model | None", grant.model)
     if context_window is None:
-        return None
+        return model, None
     output_reserve = grant.spec.generation_profile.max_tokens or THE_FIRST_ONE_SPEC.max_tokens or 0
     if output_reserve >= context_window:
         msg = (
             f"Output reserve {output_reserve} leaves no input budget inside the {context_window}-token context window."
         )
         raise ContextBudgetExceededError(msg)
-    model = cast("Model | None", grant.model)
-    return UsageLimits(
-        input_tokens_limit=context_window - output_reserve,
+    limits = UsageLimits(
         count_tokens_before_request=model is not None and type(model).count_tokens is not Model.count_tokens,
     )
+    if model is None:
+        return None, limits
+    return ContextWindowModel(model, input_tokens_limit=context_window - output_reserve), limits
 
 
 async def settle_turn(
@@ -224,16 +228,17 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
             deps = _agent_deps(ctx, grant)
             emit.status("thinking")
             bound_toolset = bind_consent_toolsets(grant.toolsets, capability_key=grant.spec.key)
+            model, usage_limits = _request_policy(assembled.context_window, grant)
             pumped = await pump_agent_events(
                 agent,
                 ctx.state.prompt,
                 deps=deps,
-                model=grant.model,
+                model=model,
                 model_settings=grant.model_settings(),
                 toolsets=[bound_toolset],
                 emit=emit,
                 message_history=ModelMessagesTypeAdapter.validate_python(ctx.state.history) or None,
-                usage_limits=_usage_limits(assembled.context_window, grant),
+                usage_limits=usage_limits,
             )
         output = pumped.output
         ctx.state.new_messages = pumped.new_messages
@@ -306,17 +311,18 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
                     expected=expected_binding,
                     require_expected=True,
                 )
+                model, usage_limits = _request_policy(assembled.context_window, grant)
                 pumped = await pump_agent_events(
                     agent,
                     None,
                     deps=deps,
-                    model=grant.model,
+                    model=model,
                     model_settings=grant.model_settings(),
                     toolsets=[bound_toolset],
                     emit=emit,
                     message_history=history,
                     deferred_tool_results=results,
-                    usage_limits=_usage_limits(assembled.context_window, grant),
+                    usage_limits=usage_limits,
                 )
             except ConsentToolBindingChangedError:
                 ctx.state.bottleneck = Bottleneck(
@@ -377,8 +383,13 @@ class ProjectReply(BaseNode[BridgeChatState, WorkflowServices, BridgeReply]):
         return End(reply)
 
 
-BRIDGE_CHAT_GRAPH: Graph[BridgeChatState, WorkflowServices, BridgeReply] = Graph(
+BRIDGE_CHAT_GRAPH: Graph[
+    BridgeChatState, WorkflowServices, BaseNode[BridgeChatState, WorkflowServices, BridgeReply], BridgeReply
+] = build_serial_graph(
     nodes=(WeaveContext, Converse, AwaitConsent, ProjectReply),
+    state_type=BridgeChatState,
+    deps_type=WorkflowServices,
+    output_type=BridgeReply,
     name="bridge_chat",
 )
 
@@ -394,6 +405,20 @@ def _make_state(intent: Intent) -> BridgeChatState:
     )
 
 
+def _validate_state(intent: Intent, state: BaseModel) -> None:
+    """Bind every Bridge revision's checkpoint to its admitted input and identity."""
+    expected_priority = intent.priority if intent.priority is not None else PRIORITY_DEFAULT
+    if not isinstance(state, BridgeChatState) or (
+        state.run_id,
+        state.session_id,
+        state.prompt,
+        state.capability_key,
+        state.priority,
+    ) != (intent.run_id, intent.session_id, intent.prompt, intent.admitted_capability_key, expected_priority):
+        msg = "bridge_chat checkpoint does not match its admitted Run."
+        raise ValueError(msg)
+
+
 BRIDGE_CHAT = Workflow(
     name="bridge_chat",
     title="Bridge Chat",
@@ -402,6 +427,7 @@ BRIDGE_CHAT = Workflow(
     graph=BRIDGE_CHAT_GRAPH,
     start_node=WeaveContext,
     make_state=_make_state,
+    validate_state=_validate_state,
     manifest=PatternManifest(
         key="bridge_chat",
         revision="1",
@@ -439,21 +465,16 @@ def _validate_bound_state(intent: Intent, state: BaseModel) -> None:
     if not isinstance(state, BoundBridgeChatState) or intent.admitted_capability_key is None:
         msg = "bridge_chat@2 requires its admitted Run binding."
         raise ValueError(msg)
-    expected_priority = intent.priority if intent.priority is not None else PRIORITY_DEFAULT
-    if (state.run_id, state.session_id, state.prompt, state.capability_key, state.priority) != (
-        intent.run_id,
-        intent.session_id,
-        intent.prompt,
-        intent.admitted_capability_key,
-        expected_priority,
-    ):
-        msg = "bridge_chat@2 checkpoint does not match its admitted Run."
-        raise ValueError(msg)
+    _validate_state(intent, state)
 
 
-BRIDGE_CHAT_BOUND_GRAPH: Graph[BridgeChatState, WorkflowServices, BridgeReply] = Graph(
+BRIDGE_CHAT_BOUND_GRAPH: Graph[
+    BridgeChatState, WorkflowServices, BaseNode[BridgeChatState, WorkflowServices, BridgeReply], BridgeReply
+] = build_serial_graph(
     nodes=(WeaveContext, Converse, AwaitConsent, ProjectReply),
     state_type=BoundBridgeChatState,
+    deps_type=WorkflowServices,
+    output_type=BridgeReply,
     name="bridge_chat",
 )
 

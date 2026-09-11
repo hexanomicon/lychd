@@ -11,6 +11,14 @@ export type PendingOffering = Readonly<{
   error: string;
 }>;
 
+export type ConsentDecision = Readonly<{
+  sessionId: string;
+  verdict: "approve" | "deny";
+  sending: boolean;
+  error: string;
+  settled?: true;
+}>;
+
 /**
  * Root-layout context, keyed by exact session, that outlives instrument mounts.
  * An unresolved envelope cannot be replaced by a later draft or middleware refusal;
@@ -25,18 +33,24 @@ export function createBridgeWorkspace() {
   const drafts = new SvelteMap<string, string>();
   const pending = new SvelteMap<string, PendingOffering>();
   const refused = new SvelteMap<string, ReadonlyArray<{ requestId: string; text: string; error: string }>>();
-  // Local response generations fence reads overtaken by admission; not Run cursors.
+  // Local response generations fence reads overtaken by a mutation; not Run cursors.
   const settlements = new SvelteMap<string, number>();
+  // Intent survives card remount; only server responses establish a verdict.
+  const consentDecisions = new SvelteMap<string, ConsentDecision>();
   return {
     drafts,
     pending,
     settlements,
+    consentDecisions,
     refused,
     setDraft(sessionId: string, text: string) {
       if (text) drafts.set(sessionId, text);
       else drafts.delete(sessionId);
     },
-    get needsUnloadWarning() { return drafts.size > 0 || pending.size > 0 || refused.size > 0; }
+    get needsUnloadWarning() {
+      return drafts.size > 0 || pending.size > 0 || refused.size > 0 ||
+        [...consentDecisions.values()].some((decision) => !decision.settled);
+    }
   };
 }
 

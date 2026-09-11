@@ -159,10 +159,10 @@
 
   beforeNavigate((navigation) => {
     // Moving within the same document preserves the draft and its editor.
-    if (navigation.to && navigation.from && navigation.to.url.origin === navigation.from.url.origin &&
+    if (!navigation.willUnload && navigation.to && navigation.from && navigation.to.url.origin === navigation.from.url.origin &&
         navigation.to.url.pathname === navigation.from.url.pathname && navigation.to.url.search === navigation.from.url.search) return;
     if (!guarded) return;
-    if (navigation.willUnload) {
+    if (navigation.type === "leave") {
       navigation.cancel();
     } else if (!window.confirm(leaveMessage())) {
       navigation.cancel();
@@ -840,19 +840,23 @@
           <h2 id={`${uid}-brief-title`} tabindex="-1">Brief</h2>
           <button type="button" disabled={editorLocked || loading} onclick={() => openEditor("project")}>Edit project</button>
         </header>
-        <p class="prose">{view.brief || "No brief recorded yet."}</p>
-        <div class="next-step">
-          <h3>Proposed next step</h3>
-          <p class="prose">{view.next_action || "No next step recorded."}</p>
-          <nav class="next-links" aria-label="Continue in Bridge">
-            <a href={`/bridge?choose=conversation&project=${encodeURIComponent(view.id)}`}>Choose or start a conversation →</a>
-            {#each continuationTargets as { targetId, note } (targetId)}
-              <a href={`${referenceHref({ kind: "session", target_id: targetId })}?project=${encodeURIComponent(view.id)}`}>{note || "Conversation"} · {targetId} →</a>
-            {/each}
-          </nav>
-          <p class="field-help">Choose a conversation or start one in Bridge. Project context is not sent automatically.</p>
+        <div class="overview-body">
+          <div class="overview-brief">
+            <p class="prose">{view.brief || "No brief recorded yet."}</p>
+            <p class="metadata">Updated <time datetime={view.updated_at}>{date(view.updated_at)}</time></p>
+          </div>
+          <div class="next-step">
+            <h3>Proposed next step</h3>
+            <p class="prose">{view.next_action || "No next step recorded."}</p>
+            <nav class="next-links" aria-label="Continue in Bridge">
+              <a href={`/bridge?choose=conversation&project=${encodeURIComponent(view.id)}`}>Choose or start a conversation →</a>
+              {#each continuationTargets as { targetId, note } (targetId)}
+                <a href={`${referenceHref({ kind: "session", target_id: targetId })}?project=${encodeURIComponent(view.id)}`}>{note || "Conversation"} · {targetId} →</a>
+              {/each}
+            </nav>
+            <p class="field-help">Choose a conversation or start one in Bridge. Project context is not sent automatically.</p>
+          </div>
         </div>
-        <p class="metadata">Updated <time datetime={view.updated_at}>{date(view.updated_at)}</time></p>
       </section>
 
       <section aria-labelledby={`${uid}-concerns-title`}>
@@ -1003,7 +1007,7 @@
     width: min(100%, 86rem);
     min-width: 0;
     margin-inline: auto;
-    padding: clamp(1rem, 3vw, 2rem);
+    padding: clamp(1rem, 2vw, 1.5rem);
     color: var(--color-bone);
   }
   .atlas-heading, .section-heading, .actions, .form-footer, .pagination {
@@ -1013,10 +1017,10 @@
     flex-wrap: wrap;
     gap: 0.75rem;
   }
-  .atlas-heading { align-items: flex-start; margin-bottom: 1.75rem; }
-  .atlas-heading h1 { margin-block: 0.35rem 0.6rem; font-size: clamp(1.8rem, 3vw, 2.8rem); overflow-wrap: anywhere; }
+  .atlas-heading { align-items: flex-start; margin-bottom: 1rem; }
+  .atlas-heading h1 { margin-block: 0.35rem 0.6rem; font-size: clamp(1.8rem, 2.5vw, 2.2rem); letter-spacing: 0.07em; overflow-wrap: anywhere; }
   .atlas-heading p { color: var(--color-parchment); max-width: 48rem; }
-  .back-link { display: inline-block; margin-bottom: 1.1rem; }
+  .back-link { display: inline-block; margin-bottom: 0.6rem; }
   h2 { font-size: var(--text-xl); font-weight: 500; }
   h3 { font-size: var(--text-lg); font-weight: 500; overflow-wrap: anywhere; }
   h4 { font-size: var(--text-base); font-weight: 600; }
@@ -1121,10 +1125,13 @@
   .atlas-chart { width: clamp(10rem, 22vw, 16rem); flex-shrink: 0; stroke: var(--color-rune-dim); stroke-width: 1; }
   .atlas-chart__route { stroke: var(--color-rune); stroke-width: 1.5; }
   .atlas-chart__point { fill: var(--color-obsidian); stroke: var(--color-rune); stroke-width: 1.5; }
-  .project-detail { display: grid; gap: 1.75rem; }
+  .project-detail { display: grid; gap: 1.2rem; }
+  .overview-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .overview-brief { max-width: 44rem; }
+  .overview-brief .metadata { margin-top: 1rem; }
   .overview, .concern, .supporting { padding: clamp(1rem, 2vw, 1.5rem); }
   .prose { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--color-parchment); line-height: 1.65; }
-  .next-step { margin-block: 1.3rem; padding: 0.9rem 1rem; border-left: 2px solid var(--color-rune-dim); background: color-mix(in srgb, var(--color-rune) 3%, var(--color-void)); }
+  .next-step { padding: 0 0 0 1.1rem; border-left: 2px solid var(--color-rune-dim); }
   .record-list { display: grid; gap: 1rem; }
   .concern .section-heading h3 { flex: 1 1 18rem; }
   .criteria h4 { color: var(--color-parchment); font-weight: 500; }
@@ -1147,7 +1154,7 @@
   @media (max-width: 48rem) {
     .atlas-introduction { gap: 0; }
     .atlas-chart { display: none; }
-    .supporting-grid, .form-pair, .comparison-values, .concern-filters { grid-template-columns: 1fr; }
+    .supporting-grid, .form-pair, .comparison-values, .concern-filters, .overview-body { grid-template-columns: 1fr; }
     .atlas-heading { gap: 1rem; }
     .section-heading { gap: 0.8rem; }
     .atlas { padding: 1rem; }

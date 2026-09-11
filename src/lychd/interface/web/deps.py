@@ -1,10 +1,4 @@
-"""Web DI: pure `Provide` readers of the lifespan-built `AltarServices` (§TD-5).
-
-`interface/web/altar_services.py` constructs the container and the lifespan publishes
-it on `app.state.services`. These providers only read it — no construction, no module
-globals. Removed keys vs the old slice: `graph_runner` (dead) and
-`context_orchestrator` (a graph-internal collaborator, not handler DI).
-"""
+"""Typed Litestar providers for the lifespan-owned ``AltarServices`` container."""
 
 from __future__ import annotations
 

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pytest
 from pydantic import BaseModel
-from pydantic_graph import BaseNode, End, Graph, GraphRunContext
+from pydantic_graph import BaseNode, End, GraphRunContext
 
 from lychd.agents.workflows.base import (
     DelegatedAgentNode,
@@ -14,6 +14,7 @@ from lychd.agents.workflows.base import (
     Trigger,
     Workflow,
 )
+from lychd.domain.cortex.graph import build_serial_graph
 
 
 class _State(BaseModel):
@@ -28,7 +29,9 @@ class _Delegate(DelegatedAgentNode, BaseNode[_State, None, None]):
 
 
 def _workflow() -> Workflow:
-    graph = Graph(nodes=(_Delegate,), name="delegated")
+    graph = build_serial_graph(
+        nodes=(_Delegate,), state_type=_State, deps_type=type(None), output_type=type(None), name="delegated"
+    )
     return Workflow(
         name="delegated",
         title="Delegated",

@@ -41,7 +41,10 @@ class RuntimeSecretsSource(PydanticBaseSettingsSource):
         credentials: dict[str, dict[str, SecretStr]] = {}
         for section, field, env_key, secret_name in (
             ("database", "password", "LYCHD_DB_PASSWORD", server.database.password_secret),
+            ("database", "runtime_password", "LYCHD_RUNTIME_DB_PASSWORD", server.database.runtime_password_secret),
+            ("database", "phoenix_password", "LYCHD_PHOENIX_DB_PASSWORD", server.database.phoenix_password_secret),
             ("web", "secret_key", "LYCHD_APP_SECRET_KEY", server.web.secret_key_secret),
+            ("web", "access_password", "LYCHD_LOCAL_ACCESS_PASSWORD", server.web.access_password_secret),
         ):
             existing = declared.get(section, {})
             if isinstance(existing, BaseModel) or field in existing:
@@ -65,7 +68,7 @@ class RuntimeSecretsSource(PydanticBaseSettingsSource):
                 if not value:
                     msg = f"Secret file for {env_key} is empty: '{path}'."
                     raise ValueError(msg)
-            credentials[section] = {field: SecretStr(value)}
+            credentials.setdefault(section, {})[field] = SecretStr(value)
         return {"server": credentials}
 
     def _reject_toml_credentials(self) -> None:
@@ -73,7 +76,13 @@ class RuntimeSecretsSource(PydanticBaseSettingsSource):
         if not isinstance(raw_server, dict):
             return  # Root validation reports malformed sections.
         toml_server = cast("dict[str, Any]", raw_server)
-        for section, field in (("database", "password"), ("web", "secret_key")):
+        for section, field in (
+            ("database", "password"),
+            ("database", "runtime_password"),
+            ("database", "phoenix_password"),
+            ("web", "secret_key"),
+            ("web", "access_password"),
+        ):
             section_values = toml_server.get(section)
             if isinstance(section_values, dict) and field in section_values:
                 msg = f"server.{section}.{field} is a runtime credential; TOML may contain only its secret reference."

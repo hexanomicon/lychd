@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from lychd.domain.cortex.cancellation import RunCancellationCoordinator
+from lychd.domain.cortex.claims import RunClaimCoordinator
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.stasis import InMemoryStasisStore
 
@@ -74,6 +75,7 @@ class RunSubstrate:
     # Topology A: API cancellation and the in-process worker share this settlement
     # fence so an abort-triggered CancelledError cannot race CANCELLED with FAILED.
     cancellations: RunCancellationCoordinator = field(default_factory=RunCancellationCoordinator)
+    claims: RunClaimCoordinator = field(default_factory=RunClaimCoordinator)
     # Durable Stasis is a run-keyed store. Production injects Postgres; the memory
     # profile uses this DB-free implementation only for tests/local memory mode.
     stasis_store: StasisStore = field(default_factory=InMemoryStasisStore)

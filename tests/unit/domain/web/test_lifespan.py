@@ -16,7 +16,6 @@ from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import Settings
 from lychd.domain.codex.runes import CodexPreauthRune
 from lychd.interface.web.lifespan import (
-    _next_relay_restart_delay,
     _reconcile_cancellations_at_startup,
     _reconcile_terminal_checkpoints_at_startup,
     _stop_delivery_relay,
@@ -28,7 +27,7 @@ from lychd.interface.web.lifespan import (
 from lychd.system.services.queues import connect_run_queues, disconnect_run_queues
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
+    from collections.abc import AsyncGenerator, Coroutine
 
     from pytest_mock import MockerFixture
 
@@ -113,43 +112,46 @@ async def test_delivery_relay_shutdown_is_bounded_when_task_ignores_cancel() -> 
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("first_exit", ["return", "raise"])
-async def test_relay_supervisor_restarts_unexpected_exit_until_shutdown(first_exit: str) -> None:
+@pytest.mark.parametrize("exit_kind", ["return", "raise"])
+async def test_relay_supervisor_backs_off_unexpected_exits_until_shutdown(
+    monkeypatch: pytest.MonkeyPatch, exit_kind: str
+) -> None:
     stop = asyncio.Event()
     restarted = asyncio.Event()
     attempts = 0
+    delays: list[float] = []
+
+    async def expire_restart_wait(
+        waiter: Coroutine[object, object, bool],
+        *,
+        timeout: float,  # noqa: ASYNC109 - records the asyncio.wait_for argument
+    ) -> bool:
+        waiter.close()
+        delays.append(timeout)
+        raise TimeoutError
+
+    monkeypatch.setattr(asyncio, "wait_for", expire_restart_wait)
 
     async def relay() -> None:
         nonlocal attempts
         attempts += 1
-        if attempts == 1:
-            if first_exit == "raise":
+        if attempts <= 8:
+            if exit_kind == "raise":
                 msg = "relay failed"
                 raise RuntimeError(msg)
             return
         restarted.set()
         await stop.wait()
 
-    task = asyncio.create_task(
-        _supervise_relay("test", relay, stop, restart_delay_s=0),
-    )
-    await asyncio.wait_for(restarted.wait(), timeout=1)
-    stop.set()
-    await task
+    task = asyncio.create_task(_supervise_relay("test", relay, stop, restart_delay_s=0.1, max_restart_delay_s=5.0))
+    async with asyncio.timeout(1):
+        await restarted.wait()
+        assert not task.done()
+        stop.set()
+        await task
 
-    assert attempts == 2
-
-
-def test_relay_restart_backoff_is_exponential_and_capped() -> None:
-    delay = 0.1
-    observed: list[float] = []
-
-    for _ in range(8):
-        observed.append(delay)
-        delay = _next_relay_restart_delay(delay, maximum=5.0)
-
-    assert observed == [0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 5.0, 5.0]
-    assert _next_relay_restart_delay(0, maximum=5.0) == 0
+    assert attempts == 9
+    assert delays == [0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 5.0, 5.0]
 
 
 @pytest.mark.asyncio

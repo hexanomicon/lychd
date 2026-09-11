@@ -14,7 +14,7 @@ models_dir = "/models"
 models_preset = "/presets/router-models.ini"
 models_max = 2
 models_autoload = true
-sleep_idle_seconds = 900
+sleep_idle_seconds = -1 # Readiness transitions remain under Orchestrator.
 
 n_gpu_layers = 99
 n_ctx = 8192

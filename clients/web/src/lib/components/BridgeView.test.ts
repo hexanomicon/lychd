@@ -21,6 +21,7 @@ vi.mock("$lib/api/client", () => ({
   createBridgeSession: vi.fn(),
   decideConsent: vi.fn(),
   getBridgeSnapshot: vi.fn(),
+  getBridgeSessions: vi.fn(),
   getAtlasReferences: vi.fn().mockResolvedValue([]),
   getAtlasProject: vi.fn(),
   getRunSnapshot: vi.fn(),
@@ -35,6 +36,7 @@ import {
   createBridgeSession,
   decideConsent,
   getBridgeSnapshot,
+  getBridgeSessions,
   getRunSnapshot,
   listenToRun,
   sendBridgeMessage
@@ -46,6 +48,7 @@ const createdAt = "2026-07-28T00:00:00Z";
 const cancelMock = vi.mocked(cancelBridgeRun);
 const decideConsentMock = vi.mocked(decideConsent);
 const getSnapshotMock = vi.mocked(getBridgeSnapshot);
+const getSessionsMock = vi.mocked(getBridgeSessions);
 const getRunSnapshotMock = vi.mocked(getRunSnapshot);
 const listenMock = vi.mocked(listenToRun);
 const sendMock = vi.mocked(sendBridgeMessage);
@@ -195,15 +198,154 @@ beforeEach(() => {
     snapshot(sessionId ?? "session-a")
   );
   getRunSnapshotMock.mockResolvedValue(projection());
+  getSessionsMock.mockReset();
   listenMock.mockImplementation(() => vi.fn());
   cancelMock.mockResolvedValue(cancelledProjection());
 });
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe("Bridge route and stream ownership", () => {
+  it("loads one older page at a time, retaining the selected conversation and unique rail identities", async () => {
+    getSnapshotMock.mockResolvedValueOnce({ ...snapshot("session-a"), sessions_next_cursor: "older-page" });
+    const page = deferred<Awaited<ReturnType<typeof getBridgeSessions>>>();
+    getSessionsMock.mockReturnValueOnce(page.promise);
+    const view = render(BridgeView, { sessionId: "session-a" });
+    const more = await screen.findByRole("button", { name: "Load more conversations" });
+    await fireEvent.input(screen.getByLabelText("Message"), { target: { value: "retained draft" } });
+    await fireEvent.click(more);
+    await fireEvent.click(more);
+    expect(getSessionsMock).toHaveBeenCalledOnce();
+    expect(getSessionsMock.mock.calls[0]?.[0]).toBe("older-page");
+    expect((more as HTMLButtonElement).disabled).toBe(true);
+    const older = { id: "session-c", title: "Séance C", created_at: createdAt, pending_count: 0 };
+    await act(() => page.resolve({
+      sessions: [...snapshot("session-a").sessions, older, older], next_cursor: null
+    }));
+    expect(screen.getAllByRole("link", { name: /Séance C/ })).toHaveLength(1);
+    expect(screen.getAllByRole("link", { name: /Séance A/ })).toHaveLength(1);
+    expect((screen.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("retained draft");
+    expect(screen.queryByRole("button", { name: "Load more conversations" })).toBeNull();
+    view.unmount();
+  });
+
+  it("keeps a failed page retryable without discarding already loaded conversations", async () => {
+    getSnapshotMock.mockResolvedValueOnce({ ...snapshot("session-a"), sessions_next_cursor: "older-page" });
+    getSessionsMock.mockRejectedValueOnce(new Error("network unavailable"));
+    const view = render(BridgeView, { sessionId: "session-a" });
+    await fireEvent.click(await screen.findByRole("button", { name: "Load more conversations" }));
+    expect(await screen.findByText("Older conversations could not be loaded. Try again.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Séance A/ })).toBeTruthy();
+    getSessionsMock.mockResolvedValueOnce({ sessions: [], next_cursor: null });
+    await fireEvent.click(screen.getByRole("button", { name: "Load more conversations" }));
+    await waitFor(() => expect(screen.queryByText("Older conversations could not be loaded. Try again.")).toBeNull());
+    expect(getSessionsMock.mock.calls.map(([cursor]) => cursor)).toEqual(["older-page", "older-page"]);
+    view.unmount();
+  });
+
+  it("aborts and discards an older page when the route snapshot changes", async () => {
+    getSnapshotMock.mockResolvedValueOnce({ ...snapshot("session-a"), sessions_next_cursor: "older-page" });
+    const page = deferred<Awaited<ReturnType<typeof getBridgeSessions>>>();
+    getSessionsMock.mockReturnValueOnce(page.promise);
+    const view = render(BridgeView, { sessionId: "session-a" });
+    await fireEvent.click(await screen.findByRole("button", { name: "Load more conversations" }));
+    const signal = getSessionsMock.mock.calls[0]?.[1];
+    await view.rerender({ sessionId: "session-b" });
+    await waitFor(() => expect(getSnapshotMock).toHaveBeenLastCalledWith("session-b"));
+    expect(signal?.aborted).toBe(true);
+    await act(() => page.resolve({
+      sessions: [{ id: "session-c", title: "Stale page", created_at: createdAt, pending_count: 0 }], next_cursor: "stale-cursor"
+    }));
+    expect(screen.queryByRole("link", { name: /Stale page/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Load more conversations" })).toBeNull();
+    view.unmount();
+  });
+
+  it("aborts an in-flight older page when a live event refreshes the same session or the view unmounts", async () => {
+    getSnapshotMock.mockResolvedValue({ ...snapshot("session-a", [projection()]), sessions_next_cursor: "older-page" });
+    const page = deferred<Awaited<ReturnType<typeof getBridgeSessions>>>();
+    getSessionsMock.mockReturnValue(page.promise);
+    const view = render(BridgeView, { sessionId: "session-a" });
+    await fireEvent.click(await screen.findByRole("button", { name: "Load more conversations" }));
+    const firstSignal = getSessionsMock.mock.calls[0]?.[1];
+    await act(() => latestRunListener()(event("run-a", 18, "consent", {})));
+    await waitFor(() => expect(getSnapshotMock).toHaveBeenCalledTimes(2));
+    expect(firstSignal?.aborted).toBe(true);
+    await fireEvent.click(screen.getByRole("button", { name: "Load more conversations" }));
+    const secondSignal = getSessionsMock.mock.calls[1]?.[1];
+    expect(secondSignal?.aborted).toBe(false);
+    view.unmount();
+    expect(secondSignal?.aborted).toBe(true);
+    await act(() => page.reject(new Error("aborted transport")));
+  });
+
+  it("keeps older pending conversations discoverable in the attention filter", async () => {
+    mockPage.url = new URL("http://localhost/bridge?attention=pending");
+    getSnapshotMock.mockResolvedValueOnce({ ...snapshot("session-a"), pending_count: 1, sessions_next_cursor: "older-page" });
+    getSessionsMock.mockResolvedValueOnce({
+      sessions: [{ id: "session-c", title: "Older pending séance", created_at: createdAt, pending_count: 1 }], next_cursor: null
+    });
+    const view = render(BridgeView);
+    expect(await screen.findByText("Load more conversations to find older pending requests.")).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Load more conversations" }));
+    expect(await screen.findByRole("link", { name: /Older pending séance/ })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /Séance A/ })).toBeNull();
+    view.unmount();
+  });
+
+  it("keeps the original uncertain consent verdict through its recovery refresh", async () => {
+    getSnapshotMock.mockImplementation(async () => ({
+      ...snapshot("session-a"), pending_consents: [pendingConsent], pending_count: 1
+    }));
+    decideConsentMock.mockRejectedValue(new TypeError("decision response lost"));
+    const view = render(BridgeView, { sessionId: "session-a" });
+    await fireEvent.click(await screen.findByRole("button", { name: "Consecrate" }));
+    await waitFor(() => expect(getSnapshotMock).toHaveBeenCalledTimes(2));
+
+    const refuse = await screen.findByRole("button", { name: "Refuse" });
+    expect((refuse as HTMLButtonElement).disabled).toBe(true);
+    await fireEvent.click(refuse);
+    await fireEvent.click(screen.getByRole("button", { name: "Consecrate" }));
+    expect(decideConsentMock.mock.calls).toEqual([
+      [pendingConsent.id, "approve"], [pendingConsent.id, "approve"]
+    ]);
+    view.unmount();
+  });
+
+  it("keeps an in-flight consent decision busy through a stream-triggered refresh", async () => {
+    getSnapshotMock.mockImplementation(async () => ({
+      ...snapshot("session-a", [projection()]), pending_consents: [pendingConsent], pending_count: 1
+    }));
+    const decision = deferred<Awaited<ReturnType<typeof decideConsent>>>();
+    decideConsentMock.mockReturnValue(decision.promise);
+    const view = render(BridgeView, { sessionId: "session-a" });
+    await fireEvent.click(await screen.findByRole("button", { name: "Consecrate" }));
+    await act(() => latestRunListener()(event("run-a", 18, "consent", {})));
+    await waitFor(() => expect(getSnapshotMock).toHaveBeenCalledTimes(2));
+
+    expect((await screen.findByRole("button", { name: "Refuse" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Consecrate" }) as HTMLButtonElement).disabled).toBe(true);
+    await act(() => decision.resolve({ consent: { ...pendingConsent, state: "consented" }, pending_count: 0 }));
+    expect(decideConsentMock).toHaveBeenCalledOnce();
+    view.unmount();
+  });
+
+  it("does not admit a message while Enter confirms an IME composition", async () => {
+    sendMock.mockResolvedValue(accepted("run-a", "日本語"));
+    const view = render(BridgeView, { sessionId: "session-a" });
+    const composer = await screen.findByLabelText("Message");
+    await fireEvent.input(composer, { target: { value: "日本語" } });
+    await fireEvent.keyDown(composer, { key: "Enter", isComposing: true });
+    expect(sendMock).not.toHaveBeenCalled();
+    expect((composer as HTMLTextAreaElement).value).toBe("日本語");
+    await fireEvent.keyDown(composer, { key: "Enter" });
+    expect(sendMock).toHaveBeenCalledOnce();
+    view.unmount();
+  });
+
   it("opens the first séance once and focuses its composer", async () => {
     getSnapshotMock.mockResolvedValueOnce({
       sessions: [], session: null, active_runs: [], pending_consents: [], pending_count: 0
@@ -489,6 +631,59 @@ describe("Bridge route and stream ownership", () => {
     view.unmount();
   });
 
+  it("resumes from a snapshot after HTTP 429 closes the stream and capacity becomes free", async () => {
+    class BudgetEventSource extends EventTarget {
+      static CLOSED = 2;
+      static instances: BudgetEventSource[] = [];
+      readyState = 1;
+      onerror: ((event: Event) => void) | null = null;
+      constructor(_url: string) {
+        super();
+        BudgetEventSource.instances.push(this);
+      }
+      close() { this.readyState = BudgetEventSource.CLOSED; }
+      rejectHttp() {
+        this.close();
+        this.onerror?.(new Event("error"));
+      }
+    }
+    vi.stubGlobal("EventSource", BudgetEventSource);
+    const actual = await vi.importActual<typeof import("$lib/api/client")>("$lib/api/client");
+    listenMock.mockImplementation(actual.listenToRun);
+    const recovery = deferred<RunProjectionSnapshot>();
+    getSnapshotMock.mockResolvedValue(snapshot("session-a", [projection()]));
+    getRunSnapshotMock.mockReturnValueOnce(recovery.promise);
+    const view = render(BridgeView, { sessionId: "session-a" });
+    expect(await screen.findByText("authoritative partial")).toBeTruthy();
+    const first = BudgetEventSource.instances[0];
+    if (!first) throw new Error("The initial stream was not attached.");
+
+    // Model the browser's permanent CLOSED result for the server's HTTP 429.
+    await act(() => first.rejectHttp());
+    expect(getRunSnapshotMock).toHaveBeenCalledOnce();
+    expect(BudgetEventSource.instances).toHaveLength(1);
+    expect(screen.getByText("projection stale")).toBeTruthy();
+
+    // Capacity is now free. The recovery snapshot admits one new stream at its cursor.
+    await act(() => recovery.resolve({ ...projection(), cursor: 19, content: "recovered projection" }));
+    expect(BudgetEventSource.instances).toHaveLength(2);
+    const resumed = BudgetEventSource.instances[1];
+    if (!resumed) throw new Error("The recovered stream was not attached.");
+    await act(() => {
+      resumed.dispatchEvent(new MessageEvent("token", {
+        data: JSON.stringify(event("run-a", 20, "token", { text: " continued" }))
+      }));
+    });
+    expect(await screen.findByText("recovered projection continued")).toBeTruthy();
+
+    // A repeated refusal exhausts the same Run's recovery budget instead of looping.
+    await act(() => resumed.rejectHttp());
+    expect(getRunSnapshotMock).toHaveBeenCalledOnce();
+    expect(BudgetEventSource.instances).toHaveLength(2);
+    expect(screen.getByText("projection stale")).toBeTruthy();
+    view.unmount();
+  });
+
   it("does not let delayed hard-close recovery overwrite a newer session projection", async () => {
     const sessionRefresh = deferred<BridgeSnapshot>();
     const recovery = deferred<RunProjectionSnapshot>();
@@ -540,6 +735,88 @@ describe("Bridge route and stream ownership", () => {
     await act(() => vi.advanceTimersByTime(500));
 
     expect(getSnapshotMock).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it("settles an attached stream from a terminal session snapshot without an agent turn", async () => {
+    const close = vi.fn();
+    getSnapshotMock
+      .mockResolvedValueOnce(snapshot("session-a", [projection()]))
+      .mockResolvedValueOnce(snapshot("session-b"))
+      .mockResolvedValueOnce(snapshot("session-a", [cancelledProjection()]));
+    listenMock.mockReturnValue(close);
+    const view = render(BridgeView, { sessionId: "session-a" });
+    expect(await screen.findByText("authoritative partial")).toBeTruthy();
+
+    await view.rerender({ sessionId: "session-b" });
+    expect(await screen.findByText("session-b")).toBeTruthy();
+    await view.rerender({ sessionId: "session-a" });
+
+    expect(await screen.findAllByText("cancelled")).toHaveLength(2);
+    expect(screen.getByText("authoritative partial")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Cancel run run-a" })).toBeNull();
+    expect(close).toHaveBeenCalledOnce();
+    expect(listenMock).toHaveBeenCalledOnce();
+    view.unmount();
+  });
+
+  it.each([18, 17])("recovers once when terminal session authority is overtaken, with recovery cursor %s", async (cursor) => {
+    const terminalRead = deferred<BridgeSnapshot>();
+    const recovery = deferred<RunProjectionSnapshot>();
+    const close = vi.fn();
+    getSnapshotMock
+      .mockResolvedValueOnce(snapshot("session-a", [projection()]))
+      .mockResolvedValueOnce(snapshot("session-b"))
+      .mockReturnValueOnce(terminalRead.promise);
+    getRunSnapshotMock.mockReturnValueOnce(recovery.promise);
+    listenMock.mockReturnValue(close);
+    const view = render(BridgeView, { sessionId: "session-a" });
+    expect(await screen.findByText("authoritative partial")).toBeTruthy();
+    const onEvent = latestRunListener();
+    await view.rerender({ sessionId: "session-b" });
+    expect(await screen.findByText("session-b")).toBeTruthy();
+    await view.rerender({ sessionId: "session-a" });
+    await waitFor(() => expect(getSnapshotMock).toHaveBeenCalledTimes(3));
+
+    await act(() => onEvent(event("run-a", 18, "token", { text: " continuation" })));
+    await act(() => terminalRead.resolve(snapshot("session-a", [{ ...cancelledProjection(), cursor: 18 }])));
+
+    await waitFor(() => expect(getRunSnapshotMock).toHaveBeenCalledOnce());
+    expect(close).toHaveBeenCalledOnce();
+    expect(screen.getByText("projection stale")).toBeTruthy();
+    await act(() => recovery.resolve({
+      ...cancelledProjection(), cursor, content: "authoritative partial continuation"
+    }));
+
+    expect(screen.getByText("authoritative partial continuation")).toBeTruthy();
+    if (cursor === 18) {
+      expect(screen.getAllByText("cancelled")).toHaveLength(2);
+    } else {
+      expect(screen.getByText("projection stale")).toBeTruthy();
+      getSnapshotMock.mockImplementation(async (id) =>
+        snapshot(id ?? "session-a", id === "session-b" ? [] : [cancelledProjection()])
+      );
+      await view.rerender({ sessionId: "session-b" });
+      expect(await screen.findByText("session-b")).toBeTruthy();
+      await view.rerender({ sessionId: "session-a" });
+      expect(await screen.findByText("projection stale")).toBeTruthy();
+    }
+    expect(getRunSnapshotMock).toHaveBeenCalledOnce();
+    expect(listenMock).toHaveBeenCalledOnce();
+    view.unmount();
+  });
+
+  it.each(["authoritative partial", ""])("shows a failed Run without inventing reply text when retained content is %j", async (content) => {
+    getSnapshotMock.mockResolvedValue(snapshot("session-a", [{ ...projection(), content }]));
+    const view = render(BridgeView, { sessionId: "session-a" });
+    expect(await screen.findByRole("button", { name: "Cancel run run-a" })).toBeTruthy();
+
+    await act(() => latestRunListener()(event("run-a", 18, "done", { status: "failed", turn: null })));
+
+    expect(screen.getAllByText("failed")).toHaveLength(2);
+    expect(screen.getByText(content || "No reply text was retained for this Run.")).toBeTruthy();
+    expect(screen.queryByText("The turn has settled.")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancel run run-a" })).toBeNull();
     view.unmount();
   });
 
@@ -623,6 +900,26 @@ describe("Bridge route and stream ownership", () => {
     view.unmount();
   });
 
+  it("keeps a timed-out offering and its retry identity separate from a later draft", async () => {
+    const timeout = Object.assign(new ApiError("Admission timed out"), { status: 408 });
+    sendMock
+      .mockRejectedValueOnce(timeout)
+      .mockResolvedValueOnce(accepted("run-a", "original offering"));
+    const view = render(BridgeView, { sessionId: "session-a" });
+    expect(await screen.findByText("session-a")).toBeTruthy();
+
+    await offer("original offering");
+    expect(screen.getByRole("region", { name: "Unresolved offering" }).textContent).toContain("original offering");
+    await fireEvent.input(screen.getByLabelText("Message"), { target: { value: "later draft" } });
+    expect((screen.getByRole("button", { name: "Offer" }) as HTMLButtonElement).disabled).toBe(true);
+    await fireEvent.click(screen.getByRole("button", { name: "Retry original offering" }));
+
+    expect(sendMock).toHaveBeenCalledTimes(2);
+    expect(sendMock).toHaveBeenNthCalledWith(2, "session-a", "original offering", sendMock.mock.calls[0]?.[2]);
+    expect((screen.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("later draft");
+    view.unmount();
+  });
+
   it("removes the previous session authority when replacement loading fails", async () => {
     getSnapshotMock
       .mockResolvedValueOnce(snapshot("session-a"))
@@ -693,6 +990,61 @@ describe("Bridge shell recovery and deliberate handoffs", () => {
   function mountWithWork(work: ReturnType<typeof createBridgeWorkspace>, sessionId = "session-a") {
     return render(BridgeView, { props: { sessionId }, context: new Map([[bridgeWorkspaceKey, work]]) });
   }
+
+  it("retains an uncertain consent across instrument remount and later middleware refusal", async () => {
+    getSnapshotMock.mockImplementation(async (id = "session-a") => ({
+      ...snapshot(id), pending_consents: id === "session-a" ? [pendingConsent] : [], pending_count: 1
+    }));
+    const refusal = new ApiError("Scope refused");
+    Object.assign(refusal, { status: 403 });
+    decideConsentMock.mockRejectedValueOnce(new TypeError("decision response lost"))
+      .mockRejectedValueOnce(refusal)
+      .mockResolvedValueOnce({ consent: { ...pendingConsent, state: "consented" }, pending_count: 0 });
+    const work = createBridgeWorkspace();
+    const first = mountWithWork(work);
+    await fireEvent.click(await screen.findByRole("button", { name: "Consecrate" }));
+    expect(work.needsUnloadWarning).toBe(true);
+    first.unmount();
+    const other = mountWithWork(work, "session-b");
+    await screen.findByLabelText("Message");
+    expect(screen.queryByRole("button", { name: "Consecrate" })).toBeNull();
+    other.unmount();
+    const returned = mountWithWork(work);
+    await fireEvent.click(await screen.findByRole("button", { name: "Consecrate" }));
+    await screen.findByText("Scope refused");
+    const refuse = await screen.findByRole("button", { name: "Refuse" });
+    expect((refuse as HTMLButtonElement).disabled).toBe(true);
+    await fireEvent.click(refuse);
+    await fireEvent.click(screen.getByRole("button", { name: "Consecrate" }));
+    expect(decideConsentMock.mock.calls).toEqual(Array(3).fill([pendingConsent.id, "approve"]));
+    expect(await screen.findByRole("group", { name: "approved consent" })).toBeTruthy();
+    expect(work.consentDecisions.size).toBe(0);
+    expect(work.needsUnloadWarning).toBe(false);
+    returned.unmount();
+  });
+
+  it("reconciles a consent response delivered after the original Bridge unmounts", async () => {
+    let decided = false;
+    getSnapshotMock.mockImplementation(async () => ({
+      ...snapshot("session-a"), pending_consents: decided ? [] : [pendingConsent], pending_count: decided ? 0 : 1
+    }));
+    const response = deferred<Awaited<ReturnType<typeof decideConsent>>>();
+    decideConsentMock.mockReturnValue(response.promise);
+    const work = createBridgeWorkspace();
+    const first = mountWithWork(work);
+    await fireEvent.click(await screen.findByRole("button", { name: "Consecrate" }));
+    first.unmount();
+    const returned = mountWithWork(work);
+    expect((await screen.findByRole("button", { name: "Refuse" }) as HTMLButtonElement).disabled).toBe(true);
+    decided = true;
+    await act(() => response.resolve({ consent: { ...pendingConsent, state: "consented" }, pending_count: 0 }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Consecrate" })).toBeNull());
+    expect(getSnapshotMock).toHaveBeenCalledTimes(3);
+    expect(decideConsentMock).toHaveBeenCalledOnce();
+    expect(work.consentDecisions.size).toBe(0);
+    expect(work.needsUnloadWarning).toBe(false);
+    returned.unmount();
+  });
 
   it("restores exact-session drafts across remounts without sending or leaking them", async () => {
     const work = createBridgeWorkspace();

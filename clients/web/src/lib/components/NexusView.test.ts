@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { NexusSnapshot, SwapTicket, TransitionPlan } from "$lib/api/models";
 
-vi.mock("$app/navigation", () => ({ goto: vi.fn() }));
+vi.mock("$app/navigation", () => ({ goto: vi.fn(), beforeNavigate: vi.fn() }));
 vi.mock("$app/state", () => ({
   page: { url: new URL("http://localhost/nexus") }
 }));
@@ -33,6 +33,7 @@ import {
   listenToSwap
 } from "$lib/api/client";
 import NexusView from "./NexusView.svelte";
+import { beforeNavigate } from "$app/navigation";
 
 const snapshot: NexusSnapshot = {
   snapshot_at: "2026-07-30T00:00:00Z",
@@ -267,6 +268,42 @@ describe("Nexus projection and focus", () => {
     view.unmount();
   });
 
+  it("guards unresolved transition admission from instrument navigation and document exit", async () => {
+    const admission = deferred<Awaited<ReturnType<typeof createNexusSwap>>>();
+    vi.mocked(createNexusSwap).mockReturnValueOnce(admission.promise);
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const view = render(NexusView);
+    await fireEvent.click(await screen.findByRole("button", { name: "Preview" }));
+    await fireEvent.click(await screen.findByRole("button", { name: "Request transition" }));
+    const guard = vi.mocked(beforeNavigate).mock.calls[0]?.[0];
+    if (!guard) throw new Error("The Nexus has no navigation guard.");
+    const cancel = vi.fn();
+    const navigation = {
+      from: { url: new URL("http://localhost/nexus") },
+      to: { url: new URL("http://localhost/bridge") }, type: "link", willUnload: false, cancel
+    };
+    guard(navigation as never);
+    expect(cancel).toHaveBeenCalledOnce();
+    await act(() => admission.reject(new TypeError("response lost")));
+    guard(navigation as never);
+    expect(cancel).toHaveBeenCalledTimes(2);
+    guard({ ...navigation, willUnload: true } as never);
+    expect(cancel).toHaveBeenCalledTimes(3);
+    guard({ ...navigation, to: { url: new URL("http://localhost/nexus?transition=request-a") } } as never);
+    expect(cancel).toHaveBeenCalledTimes(3);
+    guard({ ...navigation, willUnload: true, to: { url: new URL("http://localhost/nexus?transition=request-a") } } as never);
+    expect(cancel).toHaveBeenCalledTimes(4);
+    confirm.mockReturnValue(true);
+    guard(navigation as never);
+    expect(cancel).toHaveBeenCalledTimes(4);
+    guard({ ...navigation, willUnload: true, to: { url: new URL("http://localhost/nexus") } } as never);
+    expect(cancel).toHaveBeenCalledTimes(4);
+    guard({ ...navigation, type: "leave", willUnload: true, to: null } as never);
+    expect(cancel).toHaveBeenCalledTimes(5);
+    confirm.mockRestore();
+    view.unmount();
+  });
+
   it("retains the fenced identity after a lost-ticket conflict", async () => {
     vi.mocked(createNexusSwap)
       .mockRejectedValueOnce(new ApiError("The admitted ticket is no longer retained.", 409))
@@ -282,6 +319,45 @@ describe("Nexus projection and focus", () => {
     const calls = vi.mocked(createNexusSwap).mock.calls;
     expect(calls).toHaveLength(2);
     expect(calls[0]?.[1]).toBe(calls[1]?.[1]);
+    view.unmount();
+  });
+
+  it.each([new TypeError("response lost"), new ApiError("request timed out", 408)])(
+    "retains an uncertain identity after a later middleware rejection: %s",
+    async (initialFailure) => {
+      vi.mocked(createNexusSwap)
+        .mockRejectedValueOnce(initialFailure)
+        .mockRejectedValueOnce(new ApiError("CSRF rejected", 403))
+        .mockResolvedValueOnce({ ticket: ticket() });
+      const view = render(NexusView);
+      await fireEvent.click(await screen.findByRole("button", { name: "Preview" }));
+      const request = await screen.findByRole("button", { name: "Request transition" });
+      await fireEvent.click(request);
+      await screen.findByText(initialFailure.message);
+      await fireEvent.click(request);
+      await screen.findByText("CSRF rejected");
+      await fireEvent.click(request);
+
+      const calls = vi.mocked(createNexusSwap).mock.calls;
+      expect(calls).toHaveLength(3);
+      expect(new Set(calls.map((call) => call[1])).size).toBe(1);
+      view.unmount();
+    }
+  );
+
+  it("allows a fresh identity after the initial attempt is definitively refused", async () => {
+    vi.mocked(createNexusSwap)
+      .mockRejectedValueOnce(new ApiError("CSRF rejected", 403))
+      .mockResolvedValueOnce({ ticket: ticket() });
+    const view = render(NexusView);
+    await fireEvent.click(await screen.findByRole("button", { name: "Preview" }));
+    const request = await screen.findByRole("button", { name: "Request transition" });
+    await fireEvent.click(request);
+    await screen.findByText("CSRF rejected");
+    await fireEvent.click(request);
+    const calls = vi.mocked(createNexusSwap).mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[0]?.[1]).not.toBe(calls[1]?.[1]);
     view.unmount();
   });
 

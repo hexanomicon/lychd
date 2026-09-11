@@ -545,3 +545,52 @@ async def test_reconcile_consents_degrades_on_missing_authority_row() -> None:
 
     assert result == {"status": "degraded", "count": 0, "probe_errors": 1}
     assert engine.consent_resumptions == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("blocked_operation", ["lookup", "resume"])
+async def test_consent_owner_timeout_preserves_progress_and_allows_retry(
+    monkeypatch: pytest.MonkeyPatch,
+    blocked_operation: str,
+) -> None:
+    """A stalled exact owner degrades its page without starving a later verdict."""
+    substrate, ledger, consents = _substrate()
+    owners: list[str] = []
+    for run_id in ("stalled-consent", "later-consent"):
+        decision = await consents.park(
+            run_id=run_id,
+            tool_name="request_coven_swap",
+            tool_call_id=run_id,
+            call_ids=(run_id,),
+            args={},
+            sigil=Sigil(name="magus", scopes=frozenset({"*"})),
+        )
+        owners.append(decision.consent_id)
+        await _seed_awaiting_consent(ledger, run_id, decision.consent_id)
+        await consents.decide(decision.consent_id, approved=True, decided_by="magus")
+    engine = _RecordingEngine()
+    original_get = consents.get
+    original_resume = engine.resume_consent
+    blocked = True
+
+    async def get(consent_id: str) -> Any:
+        if blocked and blocked_operation == "lookup" and consent_id == owners[0]:
+            await asyncio.Event().wait()
+        return await original_get(consent_id)
+
+    async def resume(consent_id: str) -> None:
+        if blocked and blocked_operation == "resume" and consent_id == owners[0]:
+            await asyncio.Event().wait()
+        await original_resume(consent_id)
+
+    monkeypatch.setattr(consents, "get", get)
+    monkeypatch.setattr(engine, "resume_consent", resume)
+    monkeypatch.setattr("lychd.ghouls.runs.CONSENT_PROBE_TIMEOUT_S", 0.01)
+    result, _cursor = await asyncio.wait_for(_reconcile_consent_page(substrate, engine, after=None), timeout=1)
+    assert result["status"] == "degraded"
+    assert result["probe_errors"] == 1
+    assert engine.consent_resumptions == [owners[1]]
+    blocked = False
+    result, _cursor = await _reconcile_consent_page(substrate, engine, after=None)
+    assert result["probe_errors"] == 0
+    assert engine.consent_resumptions == [owners[1], *owners]

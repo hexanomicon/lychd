@@ -62,8 +62,19 @@ restoration, malformed rejection, processing uncertainty, and containment. Claim
 containment keep admission closed; terminal filenames never form a writable reply command. This
 local file boundary is not remote authentication.
 
+Claim first moves producer bytes into `.acquiring.json`, which never authorizes an effect or
+recovery. The host captures a bounded no-follow read into a new private `0600` inode and writes
+a separate host-owned, versioned custody companion binding its exact content digest. Both are
+durable before `.processing.json` can authorize actuation. A producer-held descriptor or hard
+link therefore cannot rewrite admitted or completed evidence. Processing and compensation
+reads require matching custody; a marker inside producer-supplied JSON is not custody proof.
+Interrupted acquisition without processing is rejected without effect. Missing, legacy, or
+mismatched processing custody remains fenced for operator reconciliation; old completed files
+without proof cannot authorize compensation and are never automatically certified or replayed.
+
 | Receipt | Meaning | Admission result |
 | --- | --- | --- |
+| `.acquiring.json` | producer bytes claimed, host custody not yet established | remain closed; reject interrupted acquisition without effect unless durable processing already exists |
 | `.processing.json` | claimed work without a terminal physical observation | remain closed |
 | `.completed.json` | exact desired world observed | proceed to separate readiness |
 | `.declined.json` / `.rejected.json` | no-effect precondition refusal / invalid delivery | fail closed; only a decline may reopen the initial barrier |

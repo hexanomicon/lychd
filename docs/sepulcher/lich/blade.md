@@ -32,10 +32,48 @@ passes forward a more task-specific view. The zoom remains trustworthy only whil
 constraints, omissions, and uncertainty survive the handoffs. Otherwise compression becomes
 forgetting, and a sharp answer may only be a narrow one.
 
+## The Magus bottleneck {#the-magus-bottleneck}
+
+Model power can generate more candidates than one Magus can judge. Adding another Agent does
+little for general intelligence if the human must still discover every important question,
+repair every framing, and decide which test would settle each dispute. **Viveka** names the
+discernment that must become transferable: recognizing what matters, why it matters here, and
+what would change the judgment.
+
+A procedure can work perfectly in isolation while carrying a responsibility that belongs
+elsewhere. A fluent explanation of its operation may conceal the missing question of why it
+exists. The decisive cut follows relationships across the whole: purpose, owner, lifetime,
+callers, and consequence. It can preserve the mechanism while changing the boundary that made
+its use misleading.
+
+The [AGI ambition](../../divination/transcendence/incantation.md#logic-behind-logic) reaches this
+level of judgment. The Lich must learn to examine the problem it has been given, select evidence,
+and transfer a useful distinction to unfamiliar work. The Magus teaches a way to see the next
+case. [Learning the cut](../../divination/transcendence/illumination.md#learning-the-cut) is how
+that encounter can outlast the verdict.
+
+## Measure before the cut {#measure-before-the-cut}
+
+Viveka begins before commitment. **Measure twice, cut once:** establish what the work should
+achieve, why the proposed direction could reach it, and which unchecked assumption could send
+the whole effort astray. The first cut examines the direction itself. A flawless sequence of
+steps can still carry the Work away from its purpose. The depth of this examination should
+answer to the consequence of choosing wrongly and the cost of changing course.
+
+Some directions become legible only through an experiment. Then the next act should be the
+smallest informative trial: name the uncertainty, the observation that would favor or defeat
+the approach, and the point at which to reconsider. The trial is itself a way of measuring.
+Its result must be able to redirect the work before further effort hardens into commitment.
+Discernment includes recognizing when another argument can clarify the path and when contact
+with the world must supply what thought alone cannot.
+
 ## Crucible
 
-**Crucible** is the Blade's named adversarial discipline for a consequential question with more
-than one defensible cut. A deliberately biased [Posture](../../adr/20-agents.md#mechanical-cognitive-postures)
+**Viveka is the discernment being cultivated; Blade makes its cut; Crucible brings a contested
+judgment before its strongest opposition.**
+[Crucible](../extensions/weaver/crucible.md) gives that encounter its two-round form.
+
+A deliberately biased [Posture](../../adr/20-agents.md#mechanical-cognitive-postures)
 gives an edge a declared angle. It grants no authority, does not change the evidence, and must
 name the finding that would defeat its own case.
 
@@ -43,6 +81,26 @@ A serious clash meets the strongest opposing claim. Concessions and dissent expo
 judgment may still fail. Fluency and agreement do not make the surviving claim true. The Magus's
 [Viveka](../../lexicon/inner-tongue.md#viveka) names which distinction matters and whether more
 evidence, refusal, or another Invocation is required.
+
+Steelmanning reconstructs the strongest defensible argument; critical attack then pursues its
+premises, observations, inferences, and consequences. A fact keeps the conditions under which it
+was observed. An inference keeps the premise whose failure would undo it. Deconstruction should
+make those dependencies inspectable enough that an elegant account can lose to one decisive
+observation.
+
+### Illuminate what the argument omitted {#coverage-and-stopping}
+
+Coverage is itself a judgment. The Crucible must examine how the question was framed, which
+alternatives were admitted, whose experience is absent, and what evidence all sides inherited
+without checking. Ten advocates can share one blind spot. A strong opposition must be able to
+change the question, not merely compete inside its first formulation.
+
+For a bounded decision, the Blade should be able to name what was examined, the consequential
+gaps, and the observation that would reopen the case. Another check is useful when it can
+change the act; repetition that only increases agreement supplies no new ground. The cut may
+yield a supported decision, a targeted request for evidence, or an honest ending without a
+decision. Learning to recognize an adequate stopping point belongs to discernment alongside
+learning to search.
 
 Compression must carry what could defeat a favored answer, including dissent and missing evidence.
 Otherwise the Crucible merely rewards what survived summarization. [Spellweaver](../extensions/weaver/crucible.md)

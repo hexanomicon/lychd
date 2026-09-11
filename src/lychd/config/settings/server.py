@@ -6,12 +6,29 @@ from typing import Literal
 from urllib.parse import urlsplit
 
 from litestar.data_extractors import RequestExtractorField, ResponseExtractorField
-from pydantic import Field, SecretStr, field_validator, model_validator
+from pydantic import Field, SecretStr, ValidationInfo, field_validator, model_validator
 
 from lychd.config.settings.section import SettingsSection
 from lychd.system.secret_names import validate_podman_secret_name
 
 QUEUE_NAMES = frozenset({"runs", "rites"})
+_ACCESS_PASSWORD_MIN = 32
+_ACCESS_PASSWORD_MAX = 256
+_POSTGRES_NAME_MAX_BYTES = 63
+
+
+def validate_local_access_password(value: SecretStr) -> SecretStr:
+    """Reject short or terminal-active local access credentials."""
+    password = value.get_secret_value()
+    if (
+        not _ACCESS_PASSWORD_MIN <= len(password) <= _ACCESS_PASSWORD_MAX
+        or not password.isascii()
+        or not password.isprintable()
+        or any(char.isspace() for char in password)
+    ):
+        msg = "Local access password must contain 32 to 256 printable non-space ASCII characters"
+        raise ValueError(msg)
+    return value
 
 
 class DatabaseSettings(SettingsSection):
@@ -26,6 +43,12 @@ class DatabaseSettings(SettingsSection):
     """Podman secret name holding the Postgres password, never the password itself."""
     password: SecretStr | None = Field(default=None, min_length=1, exclude=True, repr=False, frozen=True)
     """Password loaded with Settings; absent before provisioning and never exported."""
+    runtime_user: str = "lychd_runtime"
+    runtime_password_secret: str = "lychd_runtime_db_password"  # noqa: S105
+    runtime_password: SecretStr | None = Field(default=None, min_length=1, exclude=True, repr=False, frozen=True)
+    phoenix_user: str = "lychd_phoenix"
+    phoenix_password_secret: str = "lychd_phoenix_db_password"  # noqa: S105
+    phoenix_password: SecretStr | None = Field(default=None, min_length=1, exclude=True, repr=False, frozen=True)
     profile: Literal["memory", "postgres"] = "postgres"
     """Persistence backend: Postgres for normal operation; memory only for focused tests."""
     echo: bool = False
@@ -45,11 +68,32 @@ class DatabaseSettings(SettingsSection):
     pool_use_lifo: bool = True
     """Reuse the most recently active pooled connection first."""
 
-    @field_validator("password_secret")
+    @field_validator("password_secret", "runtime_password_secret", "phoenix_password_secret")
     @classmethod
     def validate_password_secret(cls, value: str) -> str:
         """Reject absolute/traversal names before secret-path composition."""
         return validate_podman_secret_name(value, field_name="server.database.password_secret")
+
+    @field_validator("user", "runtime_user", "phoenix_user", "database")
+    @classmethod
+    def validate_database_identity(cls, value: str, info: ValidationInfo) -> str:
+        """Preserve quoted legacy names while preventing truncation or control bytes."""
+        if not value or not value.isprintable() or len(value.encode("utf-8")) > _POSTGRES_NAME_MAX_BYTES:
+            msg = "Database identities must be printable, nonempty PostgreSQL names of at most 63 UTF-8 bytes"
+            raise ValueError(msg)
+        if info.field_name in {"runtime_user", "phoenix_user"} and value.startswith("pg_"):
+            msg = "LychD runtime roles cannot use PostgreSQL's reserved pg_ prefix"
+            raise ValueError(msg)
+        return value
+
+    @model_validator(mode="after")
+    def require_separate_roles(self) -> DatabaseSettings:
+        """Preserve the bootstrap owner while keeping runtime identities disjoint."""
+        roles = (self.user, self.runtime_user, self.phoenix_user)
+        if len(set(roles)) != len(roles) or self.database == "phoenix":
+            msg = "Bootstrap, runtime and Phoenix roles and application databases must be distinct"
+            raise ValueError(msg)
+        return self
 
 
 class WebSettings(SettingsSection):
@@ -59,6 +103,17 @@ class WebSettings(SettingsSection):
     """Podman secret name holding the application signing key, never the key itself."""
     secret_key: SecretStr | None = Field(default=None, min_length=1, exclude=True, repr=False, frozen=True)
     """Signing key loaded with Settings; absent before provisioning and never exported."""
+    access_password_secret: str = "lychd_local_access_password"  # noqa: S105
+    access_password: SecretStr | None = Field(
+        default=None, min_length=32, max_length=256, exclude=True, repr=False, frozen=True
+    )
+
+    @field_validator("access_password")
+    @classmethod
+    def validate_access_password(cls, value: SecretStr | None) -> SecretStr | None:
+        """Validate explicit, environment and mounted access credentials identically."""
+        return validate_local_access_password(value) if value is not None else None
+
     debug: bool = False
     name: str = "lychd"
     image: str = "ghcr.io/hexanomicon/lychd:latest"
@@ -68,7 +123,7 @@ class WebSettings(SettingsSection):
     csrf_cookie_secure: bool = False
     """Require HTTPS when browsers send the CSRF cookie; enable behind an HTTPS Ward/Proxy."""
 
-    @field_validator("secret_key_secret")
+    @field_validator("secret_key_secret", "access_password_secret")
     @classmethod
     def validate_secret_key_secret(cls, value: str) -> str:
         """Reject absolute/traversal names before secret-path composition."""
@@ -172,7 +227,18 @@ class ServerSettings(SettingsSection):
         if conflicts:
             msg = f"Configuration Error: {'; '.join(conflicts)}"
             raise ValueError(msg)
-        if self.web.secret_key_secret == self.database.password_secret:
-            msg = "Core application-signing and database-password secrets must use distinct Podman secret names"
+        if len(set(self.privileged_secret_names)) != len(self.privileged_secret_names):
+            msg = "Core credentials must use distinct Podman secret names"
             raise ValueError(msg)
         return self
+
+    @property
+    def privileged_secret_names(self) -> tuple[str, ...]:
+        """Every core credential forbidden to model-runtime declarations."""
+        return (
+            self.web.secret_key_secret,
+            self.web.access_password_secret,
+            self.database.password_secret,
+            self.database.runtime_password_secret,
+            self.database.phoenix_password_secret,
+        )

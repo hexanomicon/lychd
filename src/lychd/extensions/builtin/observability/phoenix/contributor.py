@@ -25,7 +25,7 @@ class PhoenixQuadletContributor:
         phoenix = ctx.runes.one_or_none(PhoenixSettings)  # >1 raises loudly (kept semantics)
         if phoenix is None:
             return QuadletContribution()
-        db_url = f"postgresql://{ctx.settings.server.database.user}@localhost:{CONTAINER_POSTGRES_PORT}/phoenix"
+        database = ctx.settings.server.database
         return QuadletContribution(
             containers=(
                 QuadletContainer(
@@ -35,10 +35,15 @@ class PhoenixQuadletContributor:
                     pod="lychd.pod",
                     env_vars={
                         "PHOENIX_PORT": str(CONTAINER_PHOENIX_UI_PORT),
-                        "PHOENIX_SQL_DATABASE_URL": db_url,
+                        "PHOENIX_POSTGRES_HOST": "localhost",
+                        "PHOENIX_POSTGRES_PORT": str(CONTAINER_POSTGRES_PORT),
+                        "PHOENIX_POSTGRES_USER": database.phoenix_user,
+                        "PHOENIX_POSTGRES_DB": "phoenix",
                     },
-                    wants=["lychd-phylactery.service"],
-                    after=["lychd-phylactery.service"],
+                    secrets=[f"{database.phoenix_password_secret},type=env,target=PHOENIX_POSTGRES_PASSWORD"],
+                    wants=["lychd-migrate.service"],
+                    requires=["lychd-migrate.service"],
+                    after=["lychd-migrate.service"],
                 ),
             ),
             pod_ports=(

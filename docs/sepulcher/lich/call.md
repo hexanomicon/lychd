@@ -17,6 +17,13 @@ The word works at two scales. In [the First Invocation](./index.md#the-first-inv
 Magus’s outer Call establishes an address with a new center; inner Call distributes what that
 Invocation requires. The Called exists inside an address before it possesses an answer.
 
+**Call's opening takes concrete form within
+[discovery](../extensions/weaver/discovery.md):** a question finds relevant scopes, owners, and
+possible routes through the work. Following a branch can reveal a witness or a constraint absent
+from the first account. What can be asked changes with what has become reachable. Manas meets
+the craft here through reception and address; [Blade](./blade.md) examines the relevance,
+sufficiency, and limits of what has been found. A missing premise can send Call outward again.
+
 Call may turn toward a [Seed](./spirit/seed.md) and invite [Recall](./spirit/recall.md), or open
 several candidates. That is opening, not selection. Unchecked routing takes the **Rajas** image of activity into branching
 without consequence; [the guṇa correspondence](../../lexicon/inner-tongue.md#guna) keeps that

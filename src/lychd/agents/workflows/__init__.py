@@ -132,9 +132,6 @@ class BuiltinWorkflowRegistry:
         if len(active_names) != len(set(active_names)):
             msg = "WorkflowRegistry contains duplicate active workflow names."
             raise ValueError(msg)
-        if not active_names:
-            msg = "WorkflowRegistry requires at least one active workflow revision."
-            raise ValueError(msg)
         for identity in active_revisions:
             if identity not in identities:
                 msg = f"WorkflowRegistry active Pattern revision is not registered: {identity[0]}@{identity[1]}."
@@ -162,12 +159,9 @@ class BuiltinWorkflowRegistry:
         """Validate or infer deterministic non-default trigger precedence."""
         active_names = [name for name, _revision in active_revisions]
         route_precedence = self.route_precedence
-        if not route_precedence:
-            if len(active_names) > 1:
-                msg = "WorkflowRegistry with multiple workflow names requires explicit route precedence."
-                raise ValueError(msg)
-            route_precedence = tuple(name for name in active_names if name != default_name)
-            object.__setattr__(self, "route_precedence", route_precedence)
+        if not route_precedence and len(active_names) > 1:
+            msg = "WorkflowRegistry with multiple workflow names requires explicit route precedence."
+            raise ValueError(msg)
         if len(route_precedence) != len(set(route_precedence)):
             msg = "WorkflowRegistry route precedence contains duplicate workflow names."
             raise ValueError(msg)

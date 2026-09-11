@@ -132,7 +132,7 @@ class PreauthService(SQLAlchemyAsyncRepositoryService[CodexPreauthorization]):
 
         now = datetime.now(UTC)
         rows = sorted(
-            await self.list(
+            await self.get_many(
                 CodexPreauthorization.enabled.is_(True),
                 CodexPreauthorization.source_present.is_(True),
             ),

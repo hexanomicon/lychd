@@ -89,7 +89,11 @@ The actual rite is:
 7. Require target WARM, and after hard swap every evictee stopped.
 8. Reopen only under the restoration law.
 
-Pre-effect drain timeout/cancellation reopens gates. The waiting run has no lease. Hardware Stasis
+Pre-effect drain timeout/cancellation reopens gates. Cancellation during the direct systemd
+actuator's topology, pending-job, or pre-world observations is also verified no effect: no runtime
+transaction has been submitted, so retain that cancellation classification and reopen the gates.
+Once submission begins, cancellation must settle and classify the transaction and, where needed,
+restore the exact prior world before reopening. The waiting run has no lease. Hardware Stasis
 is live; Graph and Snapshots own durable sleep. The process-local bounded TransitionJournal is for
 Nexus/run-event projection, not a Host Reactor journal or complete history.
 The journal and Run observers consume the same immutable transition observation. Callbacks never
@@ -103,6 +107,9 @@ SOFT_SWAP says only that the runtime is started. It need not load a model. The w
 Animator drains because a dynamic load can unload another model behind a lease. A dynamic
 non-WARM/non-WARMING capability asks its canonical adapter to activate; WARMING and static
 started routes merely await honest warmth.
+Router observations classify each model independently. Activation rechecks that inventory and
+does not submit another load for a target already loading or loaded. Inference disables router
+autoload so lost warmth cannot initiate a load or eviction outside this transition boundary.
 
 Dispatcher never asks this of a shared non-warm route. Direct surfaces enforce the same ownership
 boundary before considering runtime-started convergence, so an already-started shared dynamic
@@ -119,8 +126,16 @@ Cancellation or failure during adapter activation or its accepted-state refresh 
 adapter abandonment before the canonical error is propagated; repeated caller cancellation cannot
 interrupt that cleanup.
 
-Soft activation has no sufficient prior model state for a trustworthy inverse: failure leaves its
-claim and admission gates closed for operator recovery.
+Before this transition invokes adapter activation, convergence is observation only. Failure,
+timeout, or cancellation of the initial refresh or a static/already-WARMING wait is a verified
+no-effect decline: reopen the claim and admission gates and retain the original cause. Coalesced
+requests receive the same no-effect classification. An externally started load does not make an
+observation-only transition the owner of that effect; fresh readiness still governs later grants.
+
+Invoking adapter activation crosses the uncertainty boundary before the call begins, including a
+call that returns `accepted=false`: that boolean is not an authoritative no-effect receipt. Soft
+activation has no sufficient prior model state for a trustworthy inverse, so failure after that
+boundary leaves its claim and admission gates closed for operator recovery.
 
 ### Host Mutation Port and Privilege Boundary
 
@@ -194,8 +209,8 @@ this admission/drain law.
 ### 5. Watchdog and Recovery
 
 No autonomous watchdog or general repair engine exists. Pre-effect/drain failure reopens; hard
-failure seeks one exact inverse; post-submission cancellation waits for settlement/restoration; soft
-failure contains; unknown worlds are operator-owned. Conflict topology is Available in focused
+failure seeks one exact inverse; post-submission cancellation waits for settlement/restoration;
+soft failure after invoking activation contains; unknown worlds are operator-owned. Conflict topology is Available in focused
 tests; transition protocol and Nexus tickets are Partial; Host Reactor protocol has inert
 private-systemd evidence; real host/model runtimes need Operator validation; resource-aware Whim,
 tiering, swarm preemption, watchdog, and repair are Designed.
