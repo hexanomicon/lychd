@@ -10,6 +10,13 @@ need, forms and tests a candidate, acts through the proper owner, and retains wh
 teaches. A later attempt can then change its question, Context, method, or capability. The useful
 return is a better distinction: what mattered, why it mattered, and when that lesson stops applying.
 
+The engineering workflow came first. The author's whiteboard designs already contained
+exploration, adversarial comparison, human judgment, implementation, evaluation, and a later
+training return before the sefirotic correspondence was proposed. The Tree entered as a second
+lens for discovering and improving relations within that independently developed workflow.
+Resemblance motivates investigation; a proposed addition must still earn its place through a
+clearer decision, a better handoff, or a demonstrated improvement.
+
 This page connects the [SDLC](sdlc.md), [workflow evaluation](../riddle/workflow-improvement.md),
 and [discernment training](../soulforge/discernment-training.md) operating designs. It is a map of
 governed handoffs, with no new coordinator, registered Pattern, or autonomous implementation.

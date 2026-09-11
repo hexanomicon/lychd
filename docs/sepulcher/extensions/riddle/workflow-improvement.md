@@ -138,6 +138,22 @@ budget. Record total human reading and correction time, choose the acceptable ti
 the trial, and compare artifact quality and authority correctness as separate gates. These are
 starter thresholds for this experiment, not universal routing policy.
 
+### Proposed comparison: can the receiver use the handoff? { #handoff-reception }
+
+The [Tree of Life's light-and-vessel correspondence](../../../lexicon/tree-of-life.md#light-and-vessel)
+suggests a testable refinement to the earlier whiteboard workflow. Compare the present handoff
+with one in which the recipient identifies a decisive condition, what changes if it fails, and
+any specific missing evidence before planning implementation. Permit at most one bounded request
+to repair a real gap. Give the baseline equivalent resources for ordinary self-review; keep
+models, tools, available evidence, and the total budget matched.
+
+Include a permission bound to an exact revision, a design valid only under a stated requirement,
+a test receipt with limited scope, and a complete handoff requiring no clarification. Use fresh
+executions and blind outcome grading. Measure lost conditions and incorrect downstream decisions,
+alongside unnecessary pauses, total cost, and human attention. Predeclare repetitions and the
+minimum useful improvement. No gain over the matched baseline, or gains achieved by refusing
+solvable tasks, defeats or narrows the hypothesis. This is a proposed Trial, with no result yet.
+
 ### Apply, discard or investigate
 
 The handoff should make one concrete choice legible: apply the exact candidate, discard it, or

@@ -46,6 +46,14 @@ is a mandatory destination for every correction.
 
 ## Preserve the lesson before compiling examples
 
+[Discernment within exploration](../../lich/blade.md#discernment-within-exploration) supplies
+a candidate learning objective: identify which uncertainty deserves a probe and let its result
+change the plan. An example should show why that probe was consequential, paired with a case
+where the evidence already suffices and further exploration would waste effort. The
+[handoff comparison](../riddle/workflow-improvement.md#handoff-reception) first tests whether
+an explicit procedure solves the problem; only a remaining transferable skill gap motivates
+training. Sefirotic names are interpretive context, not correctness labels for the Dataset.
+
 Nominate exact, authorized traces and artifacts with their human explanations. A teaching example
 should retain the task and available evidence, relevant constraints, the observed decision and
 result, the correction, the reason for it, and the conditions under which that correction applies.

@@ -67,6 +67,46 @@ Its result must be able to redirect the work before further effort hardens into 
 Discernment includes recognizing when another argument can clarify the path and when contact
 with the world must supply what thought alone cannot.
 
+## Discernment within exploration { #discernment-within-exploration }
+
+**Buddhi participates while the question is being opened.** In the Lich's native composition,
+Call makes possibilities and sources reachable; Blade distinguishes which difference matters,
+which premise remains untested, and which observation could change the direction. A discovered
+constraint may call for a new possibility. An imagined alternative may reveal the need for a
+different test. Exploration and discernment therefore reshape one another before selection.
+
+```text
+Call: open a possibility or source
+                |
+Blade: identify the decisive distinction
+                |
+      choose a bounded probe
+                |
+      encounter its evidence
+                |
+reframe, continue, decide, or stop
+```
+
+This sketches a relation between cognitive offices, not an executable score. Spirit carries
+the evidence and its conditions across the encounter; Answer keeps the acts attributable.
+For example, an offline requirement makes an unexamined network dependency consequential.
+Discernment selects that probe; its result can reopen the design before implementation begins.
+
+The [Tree's relations](../../lexicon/tree-of-life.md#relations-within-relations) illuminate
+different aspects of this movement: insight needs articulation, generosity needs measure, and
+persistence needs acknowledgment. Buddhi is not confined to Gevurah or to an Agent assigned to
+criticize. It also helps form the useful alternative and recognize what the recipient needs.
+The [light-and-vessel comparison](../../lexicon/tree-of-life.md#light-and-vessel) asks whether
+that distinction survives the handoff in a usable form.
+
+[SDLC Inquiry](../extensions/weaver/sdlc.md#reuse-inquiry-at-each-uncertain-boundary) gives this
+movement a bounded procedure. Its independent sufficiency judge checks what exploration may
+have missed; Crucible then confronts the serious alternatives. The explorer's own discernment
+does not replace either check. [Riddle](../extensions/riddle/workflow-improvement.md#handoff-reception)
+can test whether the distinction changes a downstream decision; where a recurring competence
+gap remains, [Soulforge](../extensions/soulforge/discernment-training.md#preserve-the-lesson-before-compiling-examples)
+preserves the condition, reason, and counterexample as a possible lesson.
+
 ## Crucible
 
 **Viveka is the discernment being cultivated; Blade makes its cut; Crucible brings a contested

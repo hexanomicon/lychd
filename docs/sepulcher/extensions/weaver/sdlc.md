@@ -21,6 +21,15 @@ effect-free reference adapter.
 
 ## Put the graph above execution
 
+The engineering sequence was developed on the whiteboard before its comparison with the Tree
+of Life. The Tree's [relations within relations](../../../lexicon/tree-of-life.md#relations-within-relations)
+now suggest refinements to examine: criticism within exploration, constructive alternatives
+within critique, and evidence-responsive persistence within implementation. Preserve the
+existing Inquiry as a baseline. Compare one changed relation on matched Cases through
+[workflow evaluation](../riddle/workflow-improvement.md), holding the task set, available tools,
+and resource budget fixed. Measure decision quality, missed constraints, recovery, and human
+attention. A useful correspondence must improve the work beyond renaming its stations.
+
 The workflow graph says which question or action comes next, what its input means, and what can
 settle it. Spellweaver owns that logical ordering under [ADR 28](../../../adr/28-workflow.md).
 Dispatcher resolves an eligible capability for a placement; Orchestrator converges the physical
@@ -91,6 +100,12 @@ choice. Those loops have declared stopping conditions; they are not a reason to 
 alive after its acceptance target is met.
 
 ## Reuse Inquiry at each uncertain boundary
+
+[Blade's discernment within exploration](../../lich/blade.md#discernment-within-exploration)
+explains why judgment already participates in framing alternatives and choosing probes. The
+independent judge below checks that work from another position; it does not mark the first
+appearance of Buddhi. Each handoff must carry the distinction that could change the next act,
+as well as the recommendation it presently supports.
 
 **Explore** first assembles a bounded evidence packet. It names serious alternatives, governing
 owners, observed facts, inference, omissions, and the evidence that would defeat each proposal.

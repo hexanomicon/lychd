@@ -14,6 +14,11 @@ In the inner instrument, [Call](../../lich/call.md) gives this opening its addre
 parts of the work become reachable. [Blade](../../lich/blade.md) judges which material can
 support the next act. A route can widen the question before a method narrows it.
 
+This is one part of [discernment within exploration](../../lich/blade.md#discernment-within-exploration):
+finding a source may reveal a better question, while a decisive distinction may redirect the
+search. [SDLC Inquiry](sdlc.md#reuse-inquiry-at-each-uncertain-boundary) carries that exchange
+through bounded probes, independent sufficiency review, and Crucible.
+
 [Documentation topology](../../../adr/01-doctrine.md#router-delegation) owns scope routing;
 [Workflow](../../../adr/28-workflow.md) owns Pattern selection and task handoff. This page follows
 those boundaries in use.

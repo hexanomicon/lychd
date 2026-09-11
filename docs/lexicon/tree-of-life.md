@@ -77,6 +77,148 @@ exchange may exercise several; several participants may contest one. Tiferet nam
 relation being sought. It appoints no hidden chief, and a pleasing synthesis has no privilege
 over a contradiction it cannot answer.
 
+## Giving, measure, and the middle relation { #pillars }
+
+The three-column arrangement matters. The right groups Chokhmah, Chesed, and Netzach; the left
+groups Binah, Gevurah, and Hod; the middle holds Keter, Tiferet, Yesod, and Malkhut, with Da'at
+shown under the counting convention above. A column gathers a mode of relation, not a team whose
+members all perform the same task.
+
+Binah develops understanding on the left, so that column cannot mean destruction alone.
+Netzach sustains effort on the right, so that column cannot mean letting go alone. Hod's
+acknowledgment gives yielding its own place. A particular diagram must declare its tradition
+and viewing convention before its left and right are mapped onto a body.
+
+The English labels **Mercy** and **Severity** need care. In Miller's
+[Chesed, Gevura, and Tiferet](https://www.chabad.org/kabbalah/article_cdo/aid/380796/jewish/Chesed-Gevura-Tiferet.htm),
+Chesed gives expansively; Gevurah measures and limits that giving so a finite recipient can
+receive it. Tiferet joins them in fitting compassion, and is itself called mercy. Thus mercy
+cannot always be assigned exclusively to the right. Severity here need not mean hostility,
+and giving need not mean relaxation. Their relation asks what another can actually receive.
+
+For an agentic ensemble, our inference is **offer → measure → fit to the receiver**. Exploration
+can offer more possibilities than a worker can investigate; a handoff can contain more context
+than the next decision needs. Limitation helps when it preserves decisive evidence and makes
+action possible. It fails when it removes the very distinction the receiver needs to judge.
+The resulting form might be a smaller experiment, a better question, or a differently structured
+packet. The middle relation does not require an average of opposing recommendations.
+
+A contemporary Hasidic application develops this further: Tiferet attends to the receiver's
+response rather than merely satisfying the giver's impulse to give or control.
+[Tiferet: When Kindness and Discipline Merge](https://www.chabad.org/library/article_cdo/aid/3333745/jewish/Tiferet-When-Kindness-and-Discipline-Merge.htm)
+supplies that reading. Our corresponding design question is whether a receiving worker can name
+an unusable handoff and obtain a bounded revision. This preserves the worker's independent
+judgment while letting the relation change.
+
+```text
+       Generous proposal          Measure and limits
+                \                 /
+                 Fit to recipient
+                        |
+                  Scoped handoff
+                        |
+                 Receiving worker
+                        |
+             Evidence or precise gap
+                        |
+              Revise the next handoff
+```
+
+This is a native engineering sketch. Its feedback belongs to separately recorded acts under
+the [Ouroboros boundary](../sepulcher/extensions/weaver/ouroboros.md#why-the-whole-is-not-one-dag).
+
+### Light and vessel { #light-and-vessel }
+
+**Orot** and **kelim**, lights and vessels, add a distinction between a power and the form through
+which it becomes receivable. The 1929 Hasidic discourse
+[Lights and vessels, §§33–34](https://www.chabad.org/library/article_cdo/aid/2718151/jewish/Chapter-17.htm)
+examines their reciprocal suitability. Its historical bodily analogies are not modern anatomy.
+For this comparison, a vessel gives expression a determinate form as well as limiting it.
+
+Our inference is that a correct idea can fail at transmission because the receiving task lacks
+the distinctions, evidence, or usable structure it needs. More tokens or a stronger sender
+may leave that failure intact. A handoff succeeds when the recipient can preserve and use the
+distinction. [Riddle's proposed comparison](../sepulcher/extensions/riddle/workflow-improvement.md#handoff-reception)
+tests that hypothesis against equally budgeted self-review.
+
+## Adam Kadmon: the whole before its articulation { #adam-kadmon }
+
+**Adam Kadmon**, conventionally translated as *Primordial Man*, has a specific place in the
+Lurianic account. GalEinai's
+[Adam Kadmon](https://inner.org/worlds/adam.htm) describes the first partzuf after tzimtzum,
+bearing the comprehensive will and plan for the subsequent worlds. It distinguishes this
+level from Atzilut, Beriah, Yetzirah, and Asiyah, and describes both circular and human-form
+arrangements. This is a metaphysical account of ordered manifestation, not a physical human
+or a software manager. The use of human form elsewhere in sefirotic diagrams does not by
+itself identify every such diagram with this particular level.
+
+The useful native correspondence is a whole undertaking whose purpose and relationships must
+survive its articulation into specialized work. Before dispatching tasks, retain what the
+parts must accomplish together and how their results will reconnect. Otherwise individually
+successful workers can produce a failed whole. The comparison neither makes an Agent omniscient
+nor assumes a complete plan is available in advance: our system-level understanding remains
+partial and revisable through consequences. Adam Kadmon is a perspective on comprehensive
+formation here, not a new Lich office or another node above Keter.
+
+## Relations within relations { #relations-within-relations }
+
+The [whiteboard workflow](../sepulcher/extensions/weaver/ouroboros.md) preceded this comparison.
+The encounter therefore asks what the Tree can reveal about an existing design, including
+relations that the first drawing left implicit. Similarity alone does not establish a common
+origin or validate either model.
+
+In the Hasidic exposition of **hitkalelut**, a developed sefirah includes aspects of the others
+while retaining its distinctive emphasis. Difference survives mutual inclusion.
+[The Foundations of the Sefirot](https://inner.org/kabbalah/intermediate/foundations-of-sefirot.php)
+explains this through the mature sefirah. In Miller's account, a **partzuf** is an articulated
+configuration in which a sefirah or group develops its own tenfold organization.
+[Emanations Interact](https://www.chabad.org/kabbalah/article_cdo/aid/380812/jewish/Emanations-Interact.htm)
+also treats insight and understanding as a generative pair, and persistence and acknowledgment
+as cooperating powers. These are relations within a theological account of Creation, not
+historical descriptions of software agents.
+
+Our engineering inference is that specialization need not amputate the other faculties. An
+explorer needs enough judgment to notice a defeated premise; a critic needs enough imagination
+to propose a discriminating experiment. An Agent capable of such differentiated participation
+invites comparison with an internally articulated configuration, rather than an isolated dot.
+This supplies no requirement to create ten workers inside every worker.
+
+The following relations are **design hypotheses** derived from that encounter. Arrows mean
+exchange and correction here, not a reproduction of traditional paths or a runnable Scroll.
+
+| Relation under examination | What it could change in an ensemble | Failure that would make the relation matter |
+| --- | --- | --- |
+| Chokhmah ↔ Binah: insight and articulation | Let a specification expose a missing possibility and send it back to exploration. | A polished specification freezes the first plausible idea. |
+| Chesed ↔ Gevurah, composed through Tiferet | Give a candidate a fair bounded trial; require criticism to identify the violated criterion or a useful probe. | Generators expand without limits, or critics reject without helping distinguish alternatives. |
+| Netzach ↔ Hod: persistence and acknowledgment | Couple retry to new evidence and an explicit account of what has changed. | Persistence becomes repetition; concession abandons a recoverable approach too early. |
+| Yesod → Malkhut: transmission and manifestation | Preserve the decision, limits, and open uncertainty in the handoff, then compare them with the actual effect. | An approved argument reaches execution after losing the condition that made it acceptable. |
+
+Tiferet's contribution is a composition that answers the relevant demands. A numerical average
+between incompatible claims cannot supply that answer. Likewise, an observer's objection matters
+only if the relation lets it alter a proposal, trigger a probe, or stop an act. Merely connecting
+every Agent to every other Agent does not establish reciprocal correction.
+
+The repeated Inquiry in [SDLC](../sepulcher/extensions/weaver/sdlc.md) provides a place to test this:
+first at the level of architecture, later at the level of implementation. Each inquiry needs its
+own opening, discrimination, handoff, and consequence. The return is structurally similar while
+the evidence and responsible owners change. The Indian inner-instrument comparison below asks
+which cognitive office participates in each such relation; it need not compete with the Tree
+for exclusive ownership of the same boxes.
+
+### Give the edges meanings
+
+The academic [Ilanot Project](https://www.ilanot.org/pages?page=about) studies historical trees
+as integrations of diagram and explanatory text. Its account also emphasizes the reciprocal
+relation between the sefirotic order and worldly activity. A bare ten-node picture therefore
+leaves much of the meaning unstated.
+
+For our graph, label a relation by what crosses it: evidence, an objection with a defeat
+condition, acceptance of a handoff, or a proposal to reopen the question. These transmissions
+have different consequences. The receiving worker may discover that the assigned question
+itself is wrong. That finding can propose a successor Inquiry under the proper owner; it does
+not silently rewrite the present Scroll. The [Ouroboros return](../sepulcher/extensions/weaver/ouroboros.md)
+can change what is being asked as well as improve an answer.
+
 ## When knowing reaches the act { #daat }
 
 Da'at means knowledge. Miller's soul-power account describes it as joining understanding to
@@ -129,6 +271,13 @@ because a local center already participates in framing and judging the possible 
 [Lich's inner instrument](../sepulcher/lich/index.md#the-inner-instrument) keeps the native
 boundary. These models become useful together through their different questions, without
 requiring a shared historical origin or a one-to-one identity.
+
+[Discernment within exploration](../sepulcher/lich/blade.md#discernment-within-exploration)
+makes this crossing concrete: Call opens a candidate; Blade identifies the distinction worth
+probing; the encounter can change both the candidate and the question. Hitkalelut helps us ask
+how specialized participants retain complementary capacities. The inner-instrument account
+names the cognitive offices participating in that exchange. These are complementary questions
+in the native synthesis, not interchangeable traditional terms.
 
 ## Creation needs a vessel that can receive correction { #creation }
 
