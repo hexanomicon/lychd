@@ -8,12 +8,46 @@ icon: material/cube-outline
 !!! abstract "Context"
     LychD manifests its one-host service body as rootless Podman Quadlets and systemd user units.
     systemd and cgroup v2 supply supervision, dependency ordering, and observable physical state;
-    rootless Podman supplies containers. There is no external control plane. The supported substrate
-    is a free Linux host with systemd, cgroup v2, and rootless Podman/Quadlet.
+    rootless Podman supplies containers. There is no external control plane.
 
-Every layer entrusted with host authority, isolation, lifecycle, or recovery must remain
-operator-inspectable, modifiable, rebuildable, and replaceable. Private extensions and Portals may
-contribute at their boundaries; neither may become a required owner of LychD's continuity.
+## Supported host policy
+
+LychD is committed to developing and supporting free and open-source (FOSS) software on FOSS hosts
+only. Every layer entrusted with host authority, isolation, lifecycle, or recovery must remain
+operator-inspectable, modifiable, rebuildable, and replaceable. The operator must retain full
+control over host integration and removal.
+
+Linux with systemd, cgroup v2, and rootless Podman/Quadlet is the supported substrate. macOS,
+Windows, and other non-FOSS host stacks are unsupported hosting platforms. Running LychD in a
+Linux VM or container on a non-FOSS host does not change that support boundary: the outer host
+still controls its execution and storage.
+
+Private extensions and Portals retain their separate admission boundaries under
+[Extensions](05-extensions.md). Admission does not bring their implementations or host platforms
+into Core's support scope. Neither may become a required owner of LychD's continuity.
+
+### Rationale: FOSS commitment and the agentic transition
+
+LychD's architectural commitment is to an open host that its operator can inspect, rebuild,
+replace, and reshape through authorized, recoverable changes. Agentic control over the body must
+remain accountable to the operator across the software stack. A proprietary host places part of
+that authority beyond the project's ability to maintain and replace it.
+
+Supporting macOS or Windows would require separate integrations for service supervision,
+networking, filesystem ownership, privilege boundaries, secrets, CLI control, and recovery. Each
+would add an ongoing implementation and verification burden. We commit that effort to deep Linux
+integration and the guarantees of one supported host architecture.
+
+Our strategic forecast is that the approaching agentic revolution will converge on Linux and
+displace proprietary operating systems. **We do not expect Windows or macOS to survive that
+transition.** We will not spend LychD development time sustaining compatibility with platforms we
+expect that transition to leave behind.
+
+Linux-only hosting and FOSS support are permanent project commitments. We deliberately accept a
+smaller reachable user base to strengthen operator freedom and create an incentive to adopt an
+open host stack. Native macOS and Windows backends, compatibility shims, and degraded hosting
+profiles are outside the project's scope. Independent ports or forks carry their own maintenance
+and support obligations; they create none for LychD Core.
 
 ## Decision: the manifested body
 

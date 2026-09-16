@@ -37,6 +37,10 @@ separate places in the [anatomy](sepulcher/index.md).
 
 ## The Grounds — verify the Linux host {#the-grounds}
 
+The [supported host policy](adr/08-containers.md#supported-host-policy) requires a free and
+open-source Linux host stack under operator control. macOS and Windows are unsupported hosting
+platforms, including deployments in Linux guests on those hosts.
+
 Before writing configuration, establish Linux, rootless Podman **5.4 or newer**, a responding
 systemd user manager, NVIDIA CDI, Git, and uv. Do not prefix LychD, Podman, or `systemctl --user`
 commands with `sudo`.
