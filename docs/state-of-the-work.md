@@ -836,7 +836,9 @@ production-browser receipt.
 
 **Proved now:** The Portfolio publishes Native Reference Composition contracts and examples; the
 boot catalogue contains only the Core `bridge_chat` lineage (revisions 1 and 2) and `delegated_rite@1`.
-The accepted designs include [Keeper](./compositions/keeper/index.md) for animal and colony care,
+The accepted designs include [Health](./compositions/health/index.md) for attributable personal
+clinical records and bounded diagnostic and care proposals,
+[Keeper](./compositions/keeper/index.md) for animal and colony care,
 [Cultivator](./compositions/cultivator/index.md) for cultivation, and the narrowed
 [Homestead revision 2](./compositions/homestead/index.md#revision-continuity) for site and stores stewardship.
 

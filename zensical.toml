@@ -201,6 +201,12 @@ nav = [
         ]},
         { "Stewardship & Acquisition" = [
             "compositions/stewardship-and-acquisition/index.md",
+            { "Health" = [
+                "compositions/health/index.md",
+                "compositions/health/assimilation.md",
+                "compositions/health/consultation.md",
+                "compositions/health/care.md"
+            ]},
             { "Wellbeing" = [
                 "compositions/wellbeing/index.md",
                 "compositions/wellbeing/profile.md",

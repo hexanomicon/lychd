@@ -21,7 +21,12 @@ Wellbeing owns profile and plan revisions, restrictions, preferences, journals, 
 
 An approved meal may reveal missing ingredients. Only the minimal food need crosses to [Homestead](../homestead/index.md), which owns stock, recurring provision, and confirmed preparation transformations. Wellbeing chooses what fits the person; it neither sources products nor changes household stock, carts, checkout, or payment. Taste remains corrigible testimony.
 
-This application makes no diagnosis, treatment, clinical or supplement recommendation, or claim that food or movement is safe. Children, pregnancy and postpartum, eating-disorder support, rehabilitation, clinical conditions, biomarkers, medication interactions, and emergencies require separately governed applications. Private health material never follows a shopping request.
+This application makes no diagnosis, treatment, clinical or supplement recommendation, or claim
+that food or movement is safe. [Health](../health/index.md) separately owns admitted clinical
+records and bounded diagnostic and care proposals; its authority does not flow back into a
+Wellbeing plan. Children, pregnancy and postpartum, eating-disorder support, rehabilitation,
+clinical conditions, biomarkers, medication interactions, and emergencies remain outside this
+office. Private health material never follows a shopping request.
 
 ## Proving the cycle
 

@@ -21,7 +21,7 @@ leading to its applications and their outcomes.
 | Area | Enter through |
 | --- | --- |
 | [Creative Works](creative-works/index.md) | visual work, music, language editions, playable builds, and publication |
-| [Stewardship & Acquisition](stewardship-and-acquisition/index.md) | personal wellbeing, places, animal care, cultivation, and acquisition |
+| [Stewardship & Acquisition](stewardship-and-acquisition/index.md) | personal health and wellbeing, places, animal care, cultivation, and acquisition |
 | [Presence & Embodiment](presence-and-embodiment/index.md) | social presence, presentation, virtual worlds, physical bodies, and mobile sessions |
 | [Professional Operations](professional-operations/index.md) | attributable client casework and professional handoffs |
 
