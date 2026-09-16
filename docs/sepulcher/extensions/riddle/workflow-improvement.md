@@ -94,6 +94,53 @@ fresh state and receipts. Where realistic execution cannot be admitted, report t
 simulation or replay claim and leave live behavior unproved. Riddle does not grant the required
 execution authority.
 
+### Replay an exploration history
+
+[Dream-RSI](https://arxiv.org/html/2609.14858v1), a September 2026 research preprint, suggests a
+bounded use of history: try alternative exploration strategies against recorded discovery trees
+before paying for new discovery attempts. Its search controller changes while the underlying
+coding agent and evaluator remain fixed. [ADR 34](../../../adr/34-evaluation.md#historical-exploration-replay)
+owns the narrower claim LychD may make from this mechanism.
+
+Prepare an immutable snapshot of admitted histories with exact parents, workspace/artifact
+revisions, observations, costs, failures and capture gaps. Declare how a replay decision reveals
+a recorded continuation and handles an exhausted branch. Reset the strategy's per-trial state;
+reveal only the root initially and then the observations reached by its decisions. Keep hidden
+descendants inaccessible to the strategy. History used to develop its code is development data,
+including when the strategy author has inspected it.
+
+Compare candidate strategies and the unchanged baseline under one fixed objective and replay
+budget. Retain the chosen paths and their costs, including rejected candidates. An unrecorded
+continuation remains unknown. Reordering recorded attempts measures a traversal of that history;
+shared-state interactions, changed requests and real concurrency need fresh execution. A replay
+win justifies a bounded follow-up trial. It cannot certify future performance or authorize adoption.
+
+### Proposed pilot: exploration strategy
+
+Start with a small pure-function optimization task whose correctness can be checked against a
+reference implementation. The following is a suggested experiment, with no runnable harness or
+result yet:
+
+1. Retain several bounded discovery histories using a fixed strategy, fixed coding model and
+   fixed evaluator. Isolate candidate execution and record snapshots, failed attempts and costs.
+2. Use development histories to propose a small number of strategy revisions. Compare their
+   replay results with the original strategy and freeze one candidate before protected assessment.
+3. Run the frozen candidate and baseline on fresh, held-out problem instances from comparable
+   starting artifacts, with matched total budgets and predeclared repetitions. Protect independent
+   correctness checks from the strategy-development process. Separate discovery feedback from
+   final assessment; keep related variants in the same split.
+4. Compare validated solution quality, elapsed time, total model/tool and evaluation cost,
+   strategy-development overhead, regressions and human correction. Count historical collection
+   costs or state the reuse assumption explicitly. Stop on the declared budget, regression or
+   plateau threshold; an inconclusive result keeps the baseline.
+
+Ordinary files and a short comparison report are enough to begin. Record the real tool/session
+identities rather than inventing LychD Runs. If a strategy is adopted for another improvement
+round, retain proof of its use and assess the successors it produces under
+[Riddle's recursive-improvement contract](../../../adr/34-evaluation.md#evidence-of-recursive-improvement).
+This pilot can first test whether replay helps choose a useful strategy, before attempting an
+autonomous cycle or any weight training.
+
 ## Compare the work, including its burden
 
 Compare matched Cases at matched budgets and comparable environments. Preserve total cost and

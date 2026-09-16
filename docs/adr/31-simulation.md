@@ -72,6 +72,28 @@ matched solvable controls. The **Dual-Gate** combines deterministic checks with 
 calibrated qualitative judgment before eligibility; no score, confidence, or surviving cheap branch
 selects reality.
 
+### Versioned exploration strategy
+
+A Simulation Intent may pin an executable exploration strategy by revision and digest, with its
+input/output contract and implementation closure. Given the observations disclosed so far,
+eligible branches and remaining budget, it proposes where to continue, a bounded batch of
+attempts, or a stop. Its decisions retain the evidence available at that point. Branch eligibility,
+independent Hunter review and promotion keep their existing owners; the strategy cannot widen
+authority, resource ceilings or sibling visibility.
+
+The strategy remains fixed throughout one admitted experiment. A proposed successor is candidate
+material evaluated by Riddle and admitted by the receiving owner for later work. Changes to the
+score or implementation follow [Workflow revision law](28-workflow.md#pattern-identity); no
+strategy update patches a live Run. Spellweaver coordinates the admitted attempts, Dispatcher
+selects capability, and Orchestrator owns physical readiness and resource conflicts.
+
+Retained branch histories may support [historical exploration replay](34-evaluation.md#historical-exploration-replay).
+The replay snapshot pins parentage, source revisions, disclosed observations, recorded costs,
+terminal states and missing continuations. It preserves unsuccessful branches within the admitted
+retention scope. Search over those records produces a candidate strategy and bounded evidence;
+fresh trials establish how it behaves beyond the recorded history. This optional mechanism needs
+no change to model weights and grants no training admission.
+
 ## Material containment and budgets
 
 A material branch receives an isolated workspace through a replaceable provider. Jujutsu can

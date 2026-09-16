@@ -88,6 +88,39 @@ The owner may adopt, reject or investigate the resulting candidate under its aut
 rewriting earlier Outcomes or a live Scroll. A later training hypothesis requires separate
 [Soulforge](33-training.md) admission and protected holdout evidence.
 
+### Historical exploration replay
+
+Riddle may evaluate a [versioned exploration strategy](31-simulation.md#versioned-exploration-strategy)
+against an immutable collection of recorded branch histories. The Environment pins the histories,
+observation-disclosure and transition rules, cost accounting and stopping conditions. The subject
+strategy sees only observations revealed by its preceding replay decisions; hidden descendants
+and their outcomes remain unavailable. An absent continuation stays unknown and cannot become
+an invented observation or a witnessed failure.
+
+Such an Outcome measures strategy behavior on that recorded search space. It does not establish
+that changed requests, dependencies, timing or parallel execution would reproduce those outcomes.
+Keeping the baseline among candidates can prevent a worse selection on the same replay objective
+and history; it gives no guarantee for later histories or live work. Effectiveness outside replay
+requires fresh admitted trials, protected evaluation and independently observed state. Report
+represented execution costs separately from actual replay, strategy-development and validation
+costs. The [operating passage](../sepulcher/extensions/riddle/workflow-improvement.md#replay-an-exploration-history)
+shows how to prepare that comparison.
+
+### Evidence of recursive improvement
+
+A recursive-improvement claim identifies the changed mechanism and its exact baseline/candidate
+revisions, motivating evidence, adoption decision and later improvement attempt that actually used
+it. This establishes structural reuse. An effectiveness claim additionally compares the successors
+produced by the original and revised mechanisms from comparable starting subjects and evidence,
+under matched total budgets and independent evaluation. Retain transfer results, regressions,
+uncertainty and stopping decisions alongside improvement across rounds. A better task artifact
+alone cannot establish a better mechanism for producing future improvements.
+
+Development feedback remains separate from protected assessment. Revising an Evaluator creates
+a separately calibrated candidate and new Outcomes; the subject cannot redefine its own acceptance
+criteria. [Ouroboros](../sepulcher/extensions/weaver/ouroboros.md#what-the-next-round-inherits)
+connects these claims to the owning creation and adoption passages.
+
 ## Capability claims and routing
 
 Riddle may derive a scoped claim from a healthy Trial Suite. Each claim pins:

@@ -41,6 +41,15 @@ evidence and boundary failures without inventing its replacement.
 Their attributable handoff preserves lineage, assumptions, challenges, evidence requests, and
 uncertainty. Spellweaver and Graph own ordering, fan-out, and joins.
 
+## Improve the exploration strategy
+
+The designed [strategy contract](../../../adr/31-simulation.md#versioned-exploration-strategy)
+lets an experiment pin how it chooses branches and stops. Recorded histories can supply a bounded
+comparison before another material attempt. Follow Riddle's
+[history replay and pilot](../riddle/workflow-improvement.md#replay-an-exploration-history) to
+prepare the evidence and distinguish a replay result from fresh execution. A revised strategy
+enters later work through its owner; it cannot change the ongoing experiment's pinned procedure.
+
 ## Nothing crosses by acclaim
 
 Shadow may package an inert Vision or Promotion Request with its lineage. The target's ordinary

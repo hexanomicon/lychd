@@ -1109,10 +1109,10 @@ Persona, calibration, or promoted persistent identity.
 **State:** Designed
 
 **Proved now:** Simulation law defines branch expansion, scoring, pruning, authority, and verified
-collapse.
+collapse, including versioned exploration strategies and retained histories for bounded replay.
 
-**Do not expect yet:** There is no runnable branch graph, MCTS engine, branch store, budgeted
-simulation, collapse implementation, or reaper.
+**Do not expect yet:** There is no runnable branch graph, MCTS engine, branch store, exploration
+strategy executor, budgeted simulation, collapse implementation, or reaper.
 
 **Evidence**
 
@@ -1125,10 +1125,12 @@ simulation, collapse implementation, or reaper.
 
 **Proved now:** Evaluation law defines adversarial evidence, capability comparison, and
 calibration. The reference workflow-improvement method specifies baseline/candidate comparison,
-causal replay limits, human-attention measures and proposed starter Cases.
+causal replay limits, human-attention measures and proposed starter Cases. It includes a historical
+exploration-replay pilot outline; evaluation law distinguishes mechanism reuse from measured
+improvement in its successors.
 
-**Do not expect yet:** There is no runnable harness, maintained suite, scorer contract, benchmark
-history, pass-at-k experiment, or routing update.
+**Do not expect yet:** There is no runnable harness, replay simulator, maintained suite, scorer
+contract, benchmark history, pass-at-k experiment, or routing update.
 
 **Evidence**
 

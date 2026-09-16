@@ -82,6 +82,27 @@ Readiness, refusal, cost and failures return as evidence to the higher decision.
 these offices cannot bypass them. The current serial graph does not deliver this entire cycle or
 durable parallel fan-out.
 
+### What the next round inherits
+
+Retained experience can change the procedure that seeks the next improvement. For example, a
+repeatedly wasteful branch search may motivate a revised exploration strategy while the coding
+model stays fixed. Follow one exact revision through the evidence that motivated it, its owning
+adoption decision, and the later attempt that used it. The later attempt must expose whether the
+inherited change affected its decisions.
+
+[The Last AI Built by Humans](https://arxiv.org/html/2609.11873v1#S3.SS6), a September 2026 research
+preprint, distinguishes structural reuse of a revised improvement mechanism from evidence that it
+produces better successors. [Riddle's recursive-improvement contract](../../../adr/34-evaluation.md#evidence-of-recursive-improvement)
+adopts that useful distinction: record what returned, then test whether it helped. Human-defined
+purpose, protected evaluation and owner-controlled adoption remain compatible with this inquiry.
+
+A practical first return can be a better way to allocate attempts. Shadow's
+[versioned exploration strategy](../../../adr/31-simulation.md#versioned-exploration-strategy)
+can be compared through the proposed [history-replay pilot](../riddle/workflow-improvement.md#proposed-pilot-exploration-strategy).
+Start with ordinary development tools and attributable artifacts. A hand-operated comparison
+establishes only its measured result; the autonomous passage still requires delivered owners,
+admitted execution and evidence of the next round's actual use.
+
 ## Two perspectives on the same work
 
 The [Tree of Life](../../../lexicon/tree-of-life.md) illuminates **how creation becomes formed**:
