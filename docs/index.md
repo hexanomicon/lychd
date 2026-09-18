@@ -15,7 +15,7 @@ hide:
     decoding="async"
   >
   <h1 class="prophecy-hero__title">The Hexanomicon</h1>
-  <p class="prophecy-hero__kicker">The Voidwalker's Guide Across The Infinite Naught</p>
+  <p class="prophecy-hero__kicker">The Voidwalker's Guide Across the Infinite Naught</p>
   <p class="prophecy-hero__motto" lang="ja"><em>無限の彼方、虚無の深淵</em></p>
   <p class="prophecy-hero__motto">LychD — The Dark Arts of LLMs</p>
   <p class="prophecy-hero__badges">
