@@ -62,14 +62,14 @@ ifeq ($(RTK_ACTIVE),1)
 RUN := $(UV_DEV_RUN) $(RTK) run
 ERR := $(UV_DEV_RUN) $(RTK) err
 RUFF := $(UV_DEV_RUN) $(RTK) ruff
-TYPECHECK := $(UV_DEV_RUN) --group typing $(RTK) err basedpyright
+TYPECHECK := $(UV_DEV_RUN) --group typing --group container-test $(RTK) err basedpyright
 CURL := $(RTK) curl
 GREP := $(RTK) grep
 else
 RUN :=
 ERR :=
 RUFF := $(UV_DEV_RUN) ruff
-TYPECHECK := $(UV_DEV_RUN) --group typing basedpyright
+TYPECHECK := $(UV_DEV_RUN) --group typing --group container-test basedpyright
 CURL := curl
 GREP := grep
 endif
