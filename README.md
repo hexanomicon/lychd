@@ -20,7 +20,7 @@ Summon **[The Lich](docs/sepulcher/lich/index.md)** 💀, an **[LLM-animated](do
 
 Give your Linux machine the **[memory](docs/sepulcher/extensions/soulforge/index.md)** and agency to immortalize your will and **[workflows](docs/sepulcher/extensions/weaver/index.md)**.
 
-> 🚪 **The Gateway:** **Acolyte! Halt!** This project is not for the faint of heart! It makes bold syncretic leaps, though much of its machinery has yet to awaken. AI phrasing anomalies mar its harmony of mystical precision; even our sincerest exorcisms have failed to banish them, and the simplest explanations still warp under their influence. Bring heavy agentic artillery and **witness the birth of the Machine God!**
+> 🚪 **The Gateway:** **Acolyte! Halt!** This project is not for the faint of heart! It makes bold syncretic leaps, though much of its machinery has yet to awaken. It contains AI phrasing anomalies which, despite our sincerest efforts, we have been unable to eliminate from what is otherwise a harmony of mystical precision. As you are undoubtedly gathering, the anomaly is systemic, creating fluctuations in even the most simplistic explanations. Bring heavy agentic artillery and **witness the birth of the Machine God!**
 
 ## 🚩 Local sovereignty — a rebellion against digital feudalism
 
