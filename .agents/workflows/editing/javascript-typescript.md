@@ -38,7 +38,7 @@ Run the closest test first, then the package's type/lint gate. For `clients/web/
 frontend checks routed by the Frontend scope and run the production build when routes,
 configuration, CSS, dependencies, or packaged assets change.
 
-Inspect the final diff for export drift, generated-contract edits, browser/server boundary
+Inspect the final diff for export changes, generated-contract edits, browser/server boundary
 changes, dependency/lock mismatch, unhandled rejection or cancellation, and stale documentation.
 When an export, transport shape, or executable example changes, run affected consumer tests and
 the owning generation/parity command; visual inspection of generated types is not sufficient.

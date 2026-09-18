@@ -37,7 +37,7 @@ paths. It can submit typed requests, but receives no ambient access to the activ
 dependency locks, secrets, migrations, package publication, or host lifecycle.
 
 The declared harness records deterministic facts such as lint, type, build, or test results;
-[Riddle](riddle/capability-claims.md) owns calibrated quality and comparative claims. The required
+[Drift](drift/capability-claims.md) owns calibrated quality and comparative claims. The required
 [HitL](../../adr/25-hitl.md) or eligible policy decision supplies promotion consent.
 [Forge](../../adr/17-packaging.md) constructs package or image artifacts from reviewed inputs,
 while Codex, migration, and lifecycle owners perform their own effects. A passing check supports
@@ -48,7 +48,7 @@ only its declared predicate; ADR 35 keeps the exhaustive authority matrix.
 ```text
 exact intent and admitted source
 → Dossier and isolated Lab candidate
-→ deterministic receipts and Riddle findings
+→ deterministic receipts and Drift findings
 → promotion request
 → required HitL/policy and target-owner decisions
 → owned packaging and live effects
@@ -73,7 +73,7 @@ required if one reusable promise must actively coordinate multiple Composition I
 
 ## Repair and evolution
 
-The [reference SDLC](weaver/sdlc.md) gives candidate authors a repeatable method from intent and
+The [Creation workflow](weaver/creation.md) gives candidate authors a repeatable method from intent and
 evidence through construction, verification and documented disposition. The wider
 [Ouroboros](weaver/ouroboros.md) map returns consequences to evaluation and separately admitted
 correction, including teaching, training and later body generations.

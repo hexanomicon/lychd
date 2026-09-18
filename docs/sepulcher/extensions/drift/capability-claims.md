@@ -12,14 +12,14 @@ impressive number—cannot choose a universal winner. The useful result is an ex
 what each subject revision demonstrated under named conditions.
 
 Capability claims are **Designed**; no claim or routing path runs. [State of
-Work](../../../state-of-the-work.md#riddle-evaluation) records maturity;
+Work](../../../state-of-the-work.md#drift-evaluation) records maturity;
 [ADR 34](../../../adr/34-evaluation.md#capability-claims-and-routing) owns the claim law.
 
 ## Shape the supported claim
 
 A claim derives only from a healthy, version-pinned `TrialSuite@1` and its retained Outcomes. This
 page defines no health algorithm. The evidence must survive its declared controls, harness and
-Evaluator health, leakage checks, drift review, and required receipts.
+Evaluator health, leakage checks, calibration review, and required receipts.
 
 The claim pins exact Animator, model, adapter, toolset, and configuration revisions. It names the
 task class, Cases, Rubric, Evaluators, and Environment; retains sample count, controls, verdict
@@ -27,7 +27,7 @@ distribution, uncertainty, and noise; and records cost and latency per admitted 
 failed attempts. Creation time, expiry, and evidence references close the support boundary.
 
 Accuracy, latency, VRAM, cost, restraint, and tool behavior remain separate axes. The consumer
-decides which dimensions matter for its present request. Riddle does not collapse them into one
+decides which dimensions matter for its present request. Drift does not collapse them into one
 scalar.
 
 ## Expire without rewriting history
@@ -37,7 +37,7 @@ configuration, Rubric, Evaluator, or Environment requires new Outcomes and a new
 refresh inherits the earlier conclusion. The stale claim remains historical evidence without
 steering current decisions.
 
-Later loss, leakage, Evaluator drift, or contradiction invalidates only claims whose complete
+Later loss, leakage, changes in Evaluator behavior, or contradiction invalidates only claims whose complete
 support closure has broken. Independently supported claims remain intact. Recovery means a new
 bounded [trial](./trials.md) and a new claim, while causal uncertainty can move through
 [Returning findings](./returning-findings.md).
@@ -59,7 +59,7 @@ authorizes payment nor supplies a budget, signature, or settlement. A cheaper lo
 relevant without making all Portal use wasteful.
 
 Soulforge may compare baseline evidence, sealed-holdout Outcomes, expected change, and regressions
-for a frozen candidate. Passing Riddle establishes eligibility only. The
+for a frozen candidate. Passing Drift establishes eligibility only. The
 [candidate handoff](../soulforge/candidate-handoff.md#eligibility-is-not-promotion) keeps that
 eligibility separate from the externally owned Promotion Decision; a claim cannot admit corpus,
 register a candidate, promote, route, or grant capability.

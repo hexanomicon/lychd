@@ -17,13 +17,13 @@ icon: material/school-outline
 
 Soulforge owns corpus admission, dataset compilation, training-job contracts, candidate lineage,
 and handoff to independent evaluation/promotion. It never harvests runtime traces by default,
-equates Karma/consent/repetition/a positive Riddle verdict with corpus admission, mutates serving
+equates Karma/consent/repetition/a positive Drift verdict with corpus admission, mutates serving
 weights in place, treats trainer telemetry as promotion evidence, selects production routing, or
 turns Trial Suite feedback into gradients/automatic repair.
 
 ```text
 nominated evidence → admitted immutable corpus → compiled dataset + sealed holdout
-→ isolated Training Run → frozen Candidate Bundle → independent Riddle evaluation
+→ isolated Training Run → frozen Candidate Bundle → independent Drift evaluation
 → explicit promotion decision → versioned serving observation
 ```
 
@@ -64,7 +64,7 @@ bytes cannot substitute for the later Run’s own lineage.
 
 ## Corpus admission
 
-Riddle Cases/Outcomes, Mirror attribution, HitL decisions, Archive rows, success, refusal,
+Drift Cases/Outcomes, Mirror attribution, HitL decisions, Archive rows, success, refusal,
 repetition, storage consent, and database access may nominate material; none grants training
 rights. Before trainer access, admission proves:
 
@@ -131,7 +131,7 @@ never a Candidate Bundle. Retrying creates a new Training Run and receipt.
 
 ## Independent evaluation
 
-A frozen Bundle enters [Riddle](34-evaluation.md) as an exact, immutable subject. Riddle may
+A frozen Bundle enters [Drift](34-evaluation.md) as an exact, immutable subject. Drift may
 neither alter the candidate nor change its corpus, Recipe or lineage. Its evidence must include:
 
 - the sealed target holdout and matched Outcomes from the base or currently promoted baseline;
@@ -144,7 +144,7 @@ Trial Suite establishes only the capability and safety claims its Environment ca
 
 ## Promotion, serving, and rollback
 
-Passing Riddle makes a candidate eligible for a decision. Owning policy and Magus/HitL decide
+Passing Drift makes a candidate eligible for a decision. Owning policy and Magus/HitL decide
 whether to promote it. Their decision binds the exact Bundle and Outcomes, admitted capabilities
 and denied uses, compatible engine and base relation, rollout observations and stops, fallback
 and rollback, and retention, quarantine and retirement rules.
@@ -176,6 +176,6 @@ authority this contract requires.
 ## Acceptance evidence
 
 Soulforge remains **Designed** until one bounded recipe proves admissions/exclusions, lineage-safe
-splits, sealed holdout, isolated immutable-input execution, candidate custody, independent Riddle
+splits, sealed holdout, isolated immutable-input execution, candidate custody, independent Drift
 evaluation, explicit promotion, compatible serving, and rollback to a prior revision. State of Work
 records the transition.

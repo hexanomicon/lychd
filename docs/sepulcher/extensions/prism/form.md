@@ -122,7 +122,7 @@ places, or restricted material it depicts.
 Prism owns hostile-form handling, technical dispatch, transforms, facet semantics, conformance to
 the declared Form profile, and effect provenance. An independent validator checks tool output
 where the transforming tool cannot establish its own result.
-[Voidlight](../../../compositions/voidlight/assets.md) owns creative acceptance, the brief,
+[Atelier](../../../compositions/atelier/assets.md) owns creative acceptance, the brief,
 candidate review, accepted form asset, and visual package. Foundry owns target-engine import and
 validation, coordinate and material adaptation, collision, LOD, performance, engine-native scene
 assembly, and playability. Blockworld owns live-world effect validation and bounded missions. A
@@ -203,7 +203,7 @@ validation. Every handoff needs its own compatibility bake: disconnected part me
 invalidate skinning and cannot be assumed to compose with SkinTokens or UniRig. Form hands the
 exact skeleton, hierarchy, rest and bind transforms, local frames, axes, units, limits, skinning,
 and morph ontology to [Kinesis](kinesis.md). Kinesis owns motion clips and technical retargeting;
-Voidlight owns animated storytelling. Neither is an implied feature of `rig`.
+Atelier owns animated storytelling. Neither is an implied feature of `rig`.
 
 ## Profiles, Runes, Covens, and arbitrary iron
 

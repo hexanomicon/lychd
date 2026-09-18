@@ -29,11 +29,11 @@ Do not use it to decorate a settled fact, manufacture false balance, outvote a d
 or postpone a decision whose owner already lacks required evidence or authority. When alternatives
 need isolated candidate worlds or effectful experiments, [Shadow](../../../adr/31-simulation.md)
 owns those branches. When the question is whether a capability passes repeatable Cases and a
-Rubric, [Riddle](../../../adr/34-evaluation.md) owns the trial.
+Rubric, [Drift](../../../adr/34-evaluation.md) owns the trial.
 
 ## The bounded casting
 
-The [SDLC's reusable Inquiry](sdlc.md#reuse-inquiry-at-each-uncertain-boundary) prepares evidence
+[Creation's reusable Inquiry](creation.md#reuse-inquiry-at-each-uncertain-boundary) prepares evidence
 and an independent sufficiency judgment before lighting Crucible. Its bounded probe and stopping
 rules prevent debate from covering a decisive evidential gap.
 
@@ -48,6 +48,16 @@ One admitted casting freezes:
 | Lead | A separate synthesis Posture with no advocate role, vote, or promotion authority. |
 | Limits | Per-round Context, tokens, calls, spend, wall time, concurrency, and stop conditions. |
 | Finish boundary | Brainstorm dossier, recommendation, or decision candidate; never automatic adoption. |
+
+Crucible is biased toward pressure, not toward multiplying selves. Each advocate's declared angle
+gives one class of consequence enough procedural weight to resist premature agreement. That
+temporary **Posture** is neither a Persona nor evidence of emotion, continuing identity, or an
+independent [Will](../../../lexicon/inner-tongue.md#emotion-and-will). A revision-pinned Persona
+may wear several Postures; without that binding, resemblance or opposition cannot create one.
+The dossier therefore attributes every contribution without pretending that each branch was a
+separate life.
+
+> _A Posture without stake is costume. A stake without a defeat condition is dogma._
 
 The logical score is:
 

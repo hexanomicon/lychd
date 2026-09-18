@@ -70,7 +70,7 @@ without fabricating a new Pattern hop.
 Execution and resume look up the exact persisted Pattern key and revision rather than routing the
 Intent again; a retained revision need not remain active for new admission. Before running, the
 worker validates checksum, workflow-name binding, implementation revision, and equality with that
-exact registered manifest. A corrupt checksum, drifted declaration or implementation closure,
+exact registered manifest. A corrupt checksum, changed declaration or implementation closure,
 missing workflow, or unavailable revision fails as
 `pinned Pattern unavailable`. No default or newer Pattern replaces it.
 
@@ -117,7 +117,7 @@ base artifact + protected-region manifest + candidate
 An Agent may prepare a replacement in its candidate workspace. It cannot change the active region,
 remove protection by deleting a source marker, or reuse a verdict from another base or patch. The
 live review names every touched region, old and replacement digests, and an authorized exact-diff
-artifact. Base drift, candidate drift, a newly touched region, or a changed target effect
+artifact. A changed base or candidate, a newly touched region, or a changed target effect
 invalidates the call and requires another verdict.
 
 Approval and authorship remain separate after promotion. A wholly Agent-written replacement stays

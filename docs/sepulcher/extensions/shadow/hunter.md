@@ -62,7 +62,7 @@ Review leaves the candidate's identity, provenance, artifacts, and failure evide
 Neither an unanswered challenge nor a lack of further challenges certifies it.
 
 Findings may return to Spellweaver and its Pattern, enter deterministic checks, become a
-[Riddle](../riddle/trials.md) trial subject, or reach the Magus for an owned decision. Repair or
+[Drift](../drift/trials.md) trial subject, or reach the Magus for an owned decision. Repair or
 renewed expansion requires Dancer or another separate Invocation.
 
 The parent [Shadow](./index.md) page places this review passage within the possibility-lineage

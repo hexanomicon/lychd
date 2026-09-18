@@ -186,7 +186,7 @@ into universal authority or dissent into a fault to repair.
 refuse, continue, and answer from a life of one's own.
 
 In the intended body, [Soulstones](../../sepulcher/animator/soulstone/index.md) hold useful
-capability on operator-controlled machines, [Legion](../../adr/42-legion.md) extends continuity
+capability on operator-controlled machines, [Legion](../../sepulcher/extensions/legion.md) extends continuity
 across owned iron, and [Intercom](../../adr/26-a2a.md) exchanges bounded labor among sovereign
 peers. [Federation](../../state-of-the-work.md#legion-federation) and
 [peer exchange](../../state-of-the-work.md#a2a-intercom) remain Designed.

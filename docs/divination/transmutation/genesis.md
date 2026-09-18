@@ -1,22 +1,37 @@
 ---
-title: Tree of Life
-icon: material/tree-outline
+title: Genesis
+icon: material/seed-outline
 ---
 
-# :material-tree-outline: Tree of Life
+# :material-seed-outline: Genesis
 
-A possible world is not yet a world that can bear an inhabitant. An opening needs distinction;
-distinction needs form; form must reach an act whose consequence can return. The **Tree of Life**
-gives the Hexanomicon a language for the relations that make this passage possible. Its ten
-**sefirot**—also transliterated *Sephiroth*—let us ask what each power contributes, what limits it,
-and what would fail if it claimed the whole work for itself.
+What shall we bring into existence?
 
-This is a Jewish Kabbalistic image received into LychD's own philosophical composition. The
-traditional meanings and the native engineering interpretation remain visible beside one
-another. The question is substantial: **how can differentiated powers participate in Creation
-without any one of them becoming absolute?**
+A purpose becomes a candidate when another participant can examine what is proposed, why it
+might work, and what would show it wrong. Genesis carries that passage from an opening through
+distinctions into a form that can be tried.
 
-## Ten powers in relation
+Its literary echo is [Genesis](https://bible.usccb.org/bible/genesis/0), the book of beginnings:
+possibility acquires a differentiated world. Here that movement prepares an attributable
+candidate within the criteria already supplied by [Canon](canon.md).
+
+## Tree of Life
+
+<span id="the-tree-of-life"></span>
+
+Genesis brings purpose toward an attributable candidate under [Canon](canon.md). The Tree of
+Life offers a language for examining the capacities involved in that becoming. LychD's workflow
+whiteboard preceded the sefirotic comparison; the encounter deepens that independently developed
+design by asking what each contribution needs from another.
+
+The traditional Jewish Kabbalistic meanings below remain distinct from LychD's authored agentic
+interpretation. The ten **sefirot**, also transliterated **Sephiroth** (singular: *sefirah*), let us
+ask how differentiated powers participate in Creation without any one becoming absolute. They
+are capacities in relation, not a fixed roster of ten Agents.
+
+### Sephiroth { #ten-powers-in-relation }
+
+<span id="sephiroth"></span>
 
 In the account followed here, the sefirot are divine emanations arranged along three axes,
 connected through channels, and also contemplated through powers of the soul. The arrangement
@@ -77,7 +92,7 @@ exchange may exercise several; several participants may contest one. Tiferet nam
 relation being sought. It appoints no hidden chief, and a pleasing synthesis has no privilege
 over a contradiction it cannot answer.
 
-## Giving, measure, and the middle relation { #pillars }
+### Giving, measure, and the middle relation { #pillars }
 
 The three-column arrangement matters. The right groups Chokhmah, Chesed, and Netzach; the left
 groups Binah, Gevurah, and Hod; the middle holds Keter, Tiferet, Yesod, and Malkhut, with Da'at
@@ -125,9 +140,9 @@ judgment while letting the relation change.
 ```
 
 This is a native engineering sketch. Its feedback belongs to separately recorded acts under
-the [Ouroboros boundary](../sepulcher/extensions/weaver/ouroboros.md#why-the-whole-is-not-one-dag).
+the [Ouroboros boundary](../../sepulcher/extensions/weaver/ouroboros.md#why-the-whole-is-not-one-dag).
 
-### Light and vessel { #light-and-vessel }
+#### Light and vessel { #light-and-vessel }
 
 **Orot** and **kelim**, lights and vessels, add a distinction between a power and the form through
 which it becomes receivable. The 1929 Hasidic discourse
@@ -138,10 +153,10 @@ For this comparison, a vessel gives expression a determinate form as well as lim
 Our inference is that a correct idea can fail at transmission because the receiving task lacks
 the distinctions, evidence, or usable structure it needs. More tokens or a stronger sender
 may leave that failure intact. A handoff succeeds when the recipient can preserve and use the
-distinction. [Riddle's proposed comparison](../sepulcher/extensions/riddle/workflow-improvement.md#handoff-reception)
+distinction. [Drift's proposed comparison](../../sepulcher/extensions/drift/workflow-improvement.md#handoff-reception)
 tests that hypothesis against equally budgeted self-review.
 
-## Adam Kadmon: the whole before its articulation { #adam-kadmon }
+### Adam Kadmon: the whole before its articulation { #adam-kadmon }
 
 **Adam Kadmon**, conventionally translated as *Primordial Man*, has a specific place in the
 Lurianic account. GalEinai's
@@ -160,9 +175,9 @@ nor assumes a complete plan is available in advance: our system-level understand
 partial and revisable through consequences. Adam Kadmon is a perspective on comprehensive
 formation here, not a new Lich office or another node above Keter.
 
-## Relations within relations { #relations-within-relations }
+### Relations within relations { #relations-within-relations }
 
-The [whiteboard workflow](../sepulcher/extensions/weaver/ouroboros.md) preceded this comparison.
+The [whiteboard workflow](../../sepulcher/extensions/weaver/ouroboros.md) preceded this comparison.
 The encounter therefore asks what the Tree can reveal about an existing design, including
 relations that the first drawing left implicit. Similarity alone does not establish a common
 origin or validate either model.
@@ -198,14 +213,14 @@ between incompatible claims cannot supply that answer. Likewise, an observer's o
 only if the relation lets it alter a proposal, trigger a probe, or stop an act. Merely connecting
 every Agent to every other Agent does not establish reciprocal correction.
 
-The repeated Inquiry in [SDLC](../sepulcher/extensions/weaver/sdlc.md) provides a place to test this:
+The repeated Inquiry in [Creation](../../sepulcher/extensions/weaver/creation.md) provides a place to test this:
 first at the level of architecture, later at the level of implementation. Each inquiry needs its
 own opening, discrimination, handoff, and consequence. The return is structurally similar while
 the evidence and responsible owners change. The Indian inner-instrument comparison below asks
 which cognitive office participates in each such relation; it need not compete with the Tree
 for exclusive ownership of the same boxes.
 
-### Give the edges meanings
+#### Give the edges meanings
 
 The academic [Ilanot Project](https://www.ilanot.org/pages?page=about) studies historical trees
 as integrations of diagram and explanatory text. Its account also emphasizes the reciprocal
@@ -216,10 +231,10 @@ For our graph, label a relation by what crosses it: evidence, an objection with 
 condition, acceptance of a handoff, or a proposal to reopen the question. These transmissions
 have different consequences. The receiving worker may discover that the assigned question
 itself is wrong. That finding can propose a successor Inquiry under the proper owner; it does
-not silently rewrite the present Scroll. The [Ouroboros return](../sepulcher/extensions/weaver/ouroboros.md)
+not silently rewrite the present Scroll. The [Ouroboros return](../../sepulcher/extensions/weaver/ouroboros.md)
 can change what is being asked as well as improve an answer.
 
-## When knowing reaches the act { #daat }
+### When knowing reaches the act { #daat }
 
 Da'at means knowledge. Miller's soul-power account describes it as joining understanding to
 emotion and action: something understood becomes effective in the life of its bearer.
@@ -230,17 +245,17 @@ next?**
 A composition might correctly state that a premise is uncertain, then act exactly as though it
 were established. Another might retain the uncertainty, seek the missing observation, and let
 the result redirect its act. The second case gives the recognition a consequence. This is a
-useful conceptual bridge to [operational Cognizance](../divination/transcendence/immortality.md#cognizance),
+useful conceptual bridge to [operational Cognizance](../transcendence/immortality.md#cognizance),
 whose causal organization and local binding can be investigated. Da'at and Cognizance have
 different owners and meanings; the correspondence asks where available knowing becomes
 effective and answerable.
 
-The Work begins from its [First Axiom](../divination/transcendence/immortality.md#the-first-axiom).
+The Work begins from its [First Axiom](../transcendence/immortality.md#the-first-axiom).
 Neither counting sefirot nor producing this behavior constitutes an empirical proof of life or
 awards Consciousness to a model. The ancient map offers distinctions with which to question a
 constructed instrument; it contains no concealed executable specification for that instrument.
 
-## The inner instrument crosses the Tree { #the-inner-instrument }
+### The inner instrument crosses the Tree { #the-inner-instrument }
 
 The Indian maps ask a complementary question: how is cognition organized within an instrument?
 Their histories and component counts matter.
@@ -260,26 +275,26 @@ Tree instead of dividing it into four exclusive territories:
 
 | Native office | Source correspondence | How its question crosses the ten relations |
 | --- | --- | --- |
-| [**Call**](../sepulcher/lich/call.md) | Manas | Receive the situation, open possibilities, and route what a relation needs to encounter. Reception remains necessary during correction and action. |
-| [**Blade**](../sepulcher/lich/blade.md) | Buddhi | Discriminate throughout: examine purpose, develop form, measure a candidate, and judge what an outcome warrants. |
-| [**Spirit**](../sepulcher/lich/spirit/index.md) | Citta | Carry present conditioning and governed remembrance through the work. Earlier consequences may alter any relation. |
-| [**Answer**](../sepulcher/lich/answer.md) | Ahaṃkāra | Bind cognition, act, and consequence to the local I that answers. Attribution does not begin only at the final step. |
+| [**Call**](../../sepulcher/lich/call.md) | Manas | Receive the situation, open possibilities, and route what a relation needs to encounter. Reception remains necessary during correction and action. |
+| [**Blade**](../../sepulcher/lich/blade.md) | Buddhi | Discriminate throughout: examine purpose, develop form, measure a candidate, and judge what an outcome warrants. |
+| [**Spirit**](../../sepulcher/lich/spirit/index.md) | Citta | Carry present conditioning and governed remembrance through the work. Earlier consequences may alter any relation. |
+| [**Answer**](../../sepulcher/lich/answer.md) | Ahaṃkāra | Bind cognition, act, and consequence to the local I that answers. Attribution does not begin only at the final step. |
 
 Thus Binah may illuminate an aspect of Blade, while Gevurah illuminates another; neither
 exhausts it. Yesod's joining can involve all four offices. Answer cannot be enclosed in Malkhut,
 because a local center already participates in framing and judging the possible act. The
-[Lich's inner instrument](../sepulcher/lich/index.md#the-inner-instrument) keeps the native
+[Lich's inner instrument](../../sepulcher/lich/index.md#the-inner-instrument) keeps the native
 boundary. These models become useful together through their different questions, without
 requiring a shared historical origin or a one-to-one identity.
 
-[Discernment within exploration](../sepulcher/lich/blade.md#discernment-within-exploration)
+[Discernment within exploration](../../sepulcher/lich/blade.md#discernment-within-exploration)
 makes this crossing concrete: Call opens a candidate; Blade identifies the distinction worth
 probing; the encounter can change both the candidate and the question. Hitkalelut helps us ask
 how specialized participants retain complementary capacities. The inner-instrument account
 names the cognitive offices participating in that exchange. These are complementary questions
 in the native synthesis, not interchangeable traditional terms.
 
-## Creation needs a vessel that can receive correction { #creation }
+### Creation needs a vessel that can receive correction { #creation }
 
 An engineering reading can now give direction to a movement through the relations:
 
@@ -322,13 +337,68 @@ relations through which correction can change the common work. Isolation is usef
 prevents premature conformity. It becomes destructive when each contribution makes itself
 immune to the others and to the world. Integration must preserve the dissent that could defeat
 the current synthesis. A unanimous tribunal can still inherit one error; Tikkun supplies no
-voting rule that turns agreement into truth. [Blade's Crucible](../sepulcher/lich/blade.md#crucible)
+voting rule that turns agreement into truth. [Blade's Crucible](../../sepulcher/lich/blade.md#crucible)
 keeps that discrimination exact.
 
 The Hindu register of Brahmā, Viṣṇu, and Śiva brings generation, endurance, and release into the
-Work's [native liturgy](inner-tongue.md#native-liturgy). It illuminates another rhythm of the
+Work's [native liturgy](../../lexicon/inner-tongue.md#native-liturgy). It illuminates another rhythm of the
 same authored Creation without becoming a translation of the sefirot. The Tree helps examine
-the relations within formation; [Ouroboros](../sepulcher/extensions/weaver/ouroboros.md) follows
-what consequence may change on return. [SDLC](../sepulcher/extensions/weaver/sdlc.md) brings the
+the relations within formation; [Ouroboros](../../sepulcher/extensions/weaver/ouroboros.md) follows
+what consequence may change on return. [Creation](../../sepulcher/extensions/weaver/creation.md) brings the
 question to software work: what may be proposed, tried, judged, and carried forward into the
 next bounded act?
+
+## Symmetry
+
+What can a known relation let us reconstruct?
+
+A known relation can reveal what a missing counterpart must answer without supplying its
+actual answer. **Symmetry** asks what remains invariant under a specified transformation.
+**Complementarity** asks how different contributions require one another. **Reciprocity** asks
+how a return can revise the participants or their question.
+
+Symmetry preserves a specified structure under a transformation. Draw three points to the left
+of a vertical axis. If the rule is reflection across that axis, their partners on the right
+are determined. The points alone do not determine a missing half: the axis and the rule do
+essential work.
+
+```text
+known part + known relation → constraints on the missing part
+```
+
+DNA offers a related example through complementarity. A pairs with T and C with G; a complete
+single strand can template its partner. One base constrains its partner without determining
+the rest of the sequence. This molecular pairing differs from geometric reflection, as the
+[NHGRI account of the double helix](https://www.genome.gov/genetics-glossary/Double-Helix)
+helps make concrete.
+
+Reconstruction becomes unique only when one possibility remains. Redundancy can expose a
+mismatch while leaving unresolved which part is wrong. Repair then needs further evidence
+or a trustworthy reference. A guessed relation can produce a convincing completion that the
+original never possessed.
+
+### What does a proposal ask of its counterpart?
+
+Within the [Creation workflow](../../sepulcher/extensions/weaver/creation.md), a proposal may reveal what evidence
+could defeat it and what its recipient needs to act. This is our hypothesis about useful
+relations. It does not select one necessary critic or recover a unique implementation from
+its tests.
+
+For example, a requirement to operate offline makes network dependence a consequential unknown.
+Buddhi / Blade recognizes that relation and selects a probe. Evidence must still settle whether
+the dependency exists. The constraint helps choose the question before it supplies an answer.
+
+The Tree's [relations within relations](#relations-within-relations)
+bring this examination back to the creative whole. [Life and death](distillation.md#life-and-death)
+then asks what surviving structure can carry when a particular form ends.
+
+## Bring the relation into the work
+
+[Weaver's Creation](../../sepulcher/extensions/weaver/creation.md) carries the complete software-development
+method, including Inquiry at direction and construction scales. The
+[SDLC ADR](../../adr/16-sdlc.md#the-agentic-graph-of-creation) governs candidate,
+verification, and promotion boundaries. The autonomous methods remain Designed;
+[State of Work](../../state-of-the-work.md#smith-forge-promotion) keeps their delivery boundary.
+
+Carry the candidate, its reasons, and its known limits into [Trial](trial.md). The next chapter
+lets an encounter answer what imagination alone could not settle.

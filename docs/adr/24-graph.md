@@ -43,7 +43,7 @@ independent Spell identity or catalogue: its stations are legacy inline placemen
 to Python nodes. `PatternManifest` is therefore not the portable Scroll ABI.
 
 Admission pins the full manifest. Before execute or resume, worker requires that snapshot to remain
-valid and exactly equal the registered revision; drift fails instead of silently changing score.
+valid and exactly equal the registered revision; a revision mismatch fails instead of silently changing score.
 Fresh execution must begin at the builder's declared entry station; only a validated durable
 cursor may enter at a later station. Fresh calls retain the caller's state and node objects while
 checkpoint storage retains detached copies.

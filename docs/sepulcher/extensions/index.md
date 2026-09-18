@@ -23,7 +23,7 @@ where work belongs; presence on the map proves neither a package nor delivered b
 | [Scout](scout.md) | **Web acquisition:** bounds search, fetch, extraction, rendering, and interaction without turning contact into truth or stronger permission |
 | [Smith](smith.md) | **Assimilation:** re-expresses admitted material as attributable candidate code; authorship supplies no promotion authority |
 | [Soulforge](soulforge/index.md) | **Training:** binds admitted corpus, base digest, objective, Recipe, Training Run, evaluation, and candidate-weight lineage |
-| [Riddle](riddle/index.md) | **Evaluation:** binds exact subjects to versioned trials and returns calibrated findings with uncertainty; privilege and promotion remain elsewhere |
+| [Drift](drift/index.md) | **Evaluation:** tests how exact subjects meet or depart from declared goals through versioned trials and calibrated findings with uncertainty; privilege and promotion remain elsewhere |
 | [Toll](toll.md) | **Economics:** separates quote, authorization, settlement, delivery, refund, and reconciliation |
 | [Prism](prism/index.md) | **Visual and spatial grounding:** binds observations, transformations, reconstructions, and generated forms to exact sources and derivatives without replacing one with another |
 | [Echo](echo.md) | **Speech lifecycle:** carries speech capture, transcription, synthesis, and delivery with origin, consent, and outcome intact |
@@ -69,7 +69,7 @@ workflow, migration, workload, effect, or automatic activation authority.
 ## How an organ earns permanence
 
 Authorship, tests, and evaluation produce a candidate and evidence for the target owner's
-promotion decision. Smith, Shadow, and Riddle cannot promote their own conclusions. Required HitL
+promotion decision. Smith, Shadow, and Drift cannot promote their own conclusions. Required HitL
 or eligible policy supplies authorization; packaging, migration, activation, and verification
 remain separately owned effects. Follow the [Assimilation passage](smith.md) to prepare that
 handoff with its failures and uncertainty still attributed.

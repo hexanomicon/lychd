@@ -23,12 +23,12 @@ consolidation contract. The forge instead follows the explicit passage below.
 | Route | Receives | Leaves behind | Refuses |
 | :--- | :--- | :--- | :--- |
 | [Corpus admission](./corpus.md#admit-one-snapshot) | Training Intent and nominated records | Corpus Admission, exact membership, negative ledger, and sealed holdout | Missing provenance, authority, privacy clearance, relevance, or a viable uncontaminated holdout |
-| [Dataset compilation](./corpus.md#compile-without-leakage) | One admitted snapshot | Immutable Dataset Manifest with preserved lineage and splits | Unadmitted material, split drift, or holdout leakage |
+| [Dataset compilation](./corpus.md#compile-without-leakage) | One admitted snapshot | Immutable Dataset Manifest with preserved lineage and splits | Unadmitted material, changed dataset splits, or holdout leakage |
 | [Training run](./training-run.md) | Manifest, base digest, objective, Recipe, and resource request | Training Run receipt and frozen Candidate Bundle | Unpinned inputs, a refused resource window, or unknowable retry state |
-| [Candidate handoff](./candidate-handoff.md) | Frozen bundle and evaluation contract | Riddle Outcomes and an externally owned Promotion Decision | Trainer self-grading, mutable custody, or unowned serving |
+| [Candidate handoff](./candidate-handoff.md) | Frozen bundle and evaluation contract | Drift Outcomes and an externally owned Promotion Decision | Trainer self-grading, mutable custody, or unowned serving |
 
 Each passage needs its own admission: [Orchestrator](../../../adr/23-orchestrator.md) decides the
-physical transition; passing independent [Riddle](../riddle/capability-claims.md) evaluation
+physical transition; passing independent [Drift](../drift/capability-claims.md) evaluation
 establishes eligibility; owning policy and required Magus/[HitL](../../../adr/25-hitl.md) authority decide
 promotion. The serving owner alone registers and routes the exact promoted digest.
 

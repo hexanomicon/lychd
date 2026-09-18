@@ -35,7 +35,7 @@ Pre-execution `MediaFacetAuthoritySet@1` must declare `world_sound`, `game.found
 
 ## Neighboring offices
 
-[Riffmaw](../riffmaw/) owns music even when a game plays it. [Language Edition](../language-edition/) owns timed dialogue/narration/captions and Echo supplies speech operations. [Broadcast](../broadcast/sound.md) owns picture-bound sound; [Voidlight](../voidlight/) visual direction. Foundry binds admitted material to its game without rewriting it. External packs retain producer lineage; exporting a folder cannot create a universal sound-library Composition.
+[Riffmaw](../riffmaw/) owns music even when a game plays it. [Language Edition](../language-edition/) owns timed dialogue/narration/captions and Echo supplies speech operations. [Broadcast](../broadcast/sound.md) owns picture-bound sound; [Atelier](../atelier/) visual direction. Foundry binds admitted material to its game without rewriting it. External packs retain producer lineage; exporting a folder cannot create a universal sound-library Composition.
 
 ## Recovery and proof
 

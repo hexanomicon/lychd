@@ -263,7 +263,7 @@ Codex may hydrate the typed material projections above; Karma may admit governed
 exact tokenization may replace character estimation; measured policy may select corpus, retrieval,
 or iterative aggregation; richer Environment may record admitted hardware; and typed bounded
 formatters may gain explicit layer placement. No projection profile, automatic CAG/RAG threshold,
-dataset ingestion, repository-path inference, quality-drift injector, Compressor Agent, VRAM
+dataset ingestion, repository-path inference, quality-deviation injector, Compressor Agent, VRAM
 estimator, or formatter extension surface currently exists.
 
 ## Correspondence

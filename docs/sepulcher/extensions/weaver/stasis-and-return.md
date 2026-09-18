@@ -65,7 +65,7 @@ bottleneck.
 
 A missing checkpoint fails exactly as `stasis lost`. An invalid document fails the claimed hop
 with validator text, not a stable public code. Pinned-manifest mismatch, including
-checkpoint-schema identifier drift, fails as `pinned Pattern unavailable`; [Pattern
+checkpoint-schema identifier mismatch, fails as `pinned Pattern unavailable`; [Pattern
 lifecycle](pattern-lifecycle.md) owns compatibility, migration, and refusal. Process death during
 `RUNNING` or `AWAITING_HARDWARE` never guesses a replay: startup recovers only an exact first-node
 Consent or delegate park, otherwise contains correlated effects before failing the Run.

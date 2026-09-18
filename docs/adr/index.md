@@ -28,10 +28,10 @@ engineering invariants that can be implemented, tested, refused, and repaired:
 | Memory must remain corrigible | provenance, retention, correction, and recovery | [Persistence](06-persistence.md), [Memory](27-memory.md) |
 | Imagination cannot write reality by itself | isolated simulation and an explicit promotion gate | [HitL](25-hitl.md), [Simulation](31-simulation.md) |
 | Another center remains real | consent, refusal, revocation, and bounded delegation | [HitL](25-hitl.md), [IAM](38-iam.md), [A2A](26-a2a.md) |
-| Coherence must not require one planetary throne | operator-controlled runtimes, node-local refusal, and bounded federation | [Containers](08-containers.md), [Orchestrator](23-orchestrator.md), [A2A](26-a2a.md), [Legion](42-legion.md) |
+| Coherence must not require one planetary throne | operator-controlled runtimes, node-local refusal, and bounded federation | [Containers](08-containers.md), [Orchestrator](23-orchestrator.md), [A2A](26-a2a.md), [Multinode](42-multinode.md) |
 | A changed form does not erase its source | privacy lineage, local transformation, and exact declassification | [Security](09-security.md), [Persistence](06-persistence.md), [Context](21-context.md) |
 | Power must meet consequence | correlated evidence and adversarial evaluation | [Observability](29-observability.md), [Evaluation](34-evaluation.md) |
-| Repair may change the vessel | versioned creation, rollback, evolution, and promotion | [Creation](16-creation.md), [Evolution](18-evolution.md), [Assimilation](35-assimilation.md) |
+| Repair may change the vessel | versioned creation, rollback, evolution, and promotion | [SDLC](16-sdlc.md), [Evolution](18-evolution.md), [Assimilation](35-assimilation.md) |
 
 The full cosmology lives in [Transcendence](../divination/transcendence/index.md). A Covenant may
 name the telos it serves, but its decision must stand on technical requirements and consequences.
@@ -61,7 +61,7 @@ name the telos it serves, but its decision must stand on technical requirements 
 | Which paths does LychD own, preserve, or refuse to delete? | [13 — Layout](13-layout.md) |
 | How are durable jobs executed and recovered? | [14 — Workers](14-workers.md) |
 | Which browser architecture and transport boundary govern the Altar? | [15 — Frontend](15-frontend.md) |
-| How does a candidate organ move from Lab to promoted matter? | [16 — Creation](16-creation.md) |
+| How does a software change move from intent through verified delivery and subsequent revision? | [16 — SDLC](16-sdlc.md) |
 | How are source, packages, images, and receipts bound into a release? | [17 — Packaging](17-packaging.md) |
 | How may the body alter itself without severing recovery? | [18 — Evolution](18-evolution.md) |
 | Which command grammar and destructive safeguards govern the Pulse? | [19 — CLI](19-cli.md) |
@@ -97,7 +97,7 @@ name the telos it serves, but its decision must stand on technical requirements 
 | How does the Tether admit remote peers and routes? | [39 — VPN](39-vpn.md) |
 | How does the Veil terminate transport without becoming application authority? | [40 — Proxy](40-proxy.md) |
 | How are paid effects reserved, signed, committed, and reconciled? | [41 — Toll](41-x402.md) |
-| How may many physical nodes serve one sovereign control plane? | [42 — Legion](42-legion.md) |
+| How may many physical nodes serve one sovereign control plane? | [42 — Multinode](42-multinode.md) |
 
 ## Changing a Covenant
 

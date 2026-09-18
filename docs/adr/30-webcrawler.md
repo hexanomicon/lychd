@@ -159,7 +159,7 @@ acquired != admitted != understood != promoted
 ```
 
 They are never instructions, code, policy, or truth. Interpretation belongs to
-[Riddle (34)](34-evaluation.md) or the consuming Composition.
+[Drift (34)](34-evaluation.md) or the consuming Composition.
 
 ## Custody and stronger tracks
 

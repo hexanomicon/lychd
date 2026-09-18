@@ -84,7 +84,7 @@ A whole-body restore additionally requires the exact sealed cut in [Snapshots](0
 Declarative-only Scroll publication may avoid replacement only after an atomic durable catalogue-generation mechanism and
 already-admitted implementations exist; neither is delivered now.
 
-The [reference SDLC](../sepulcher/extensions/weaver/sdlc.md) supplies a candidate-working method
+The [Creation workflow](../sepulcher/extensions/weaver/creation.md) supplies a candidate-working method
 for this passage: establish the foreign lesson and local need, test direction, then test the local
 implementation boundary before constructing it. [Ouroboros](../sepulcher/extensions/weaver/ouroboros.md)
 connects later observations to separately admitted evaluation, correction and training. Neither
@@ -115,7 +115,7 @@ can produce valid-looking schemas.
 
 ## Candidate law and Lab
 
-Assimilation inherits [Creation](./16-creation.md)'s candidate/promotion contract: immutable
+Assimilation inherits [SDLC](./16-sdlc.md)'s candidate/promotion contract: immutable
 identity and exact base, permitted paths/effects, isolated workspace, budget, verification plan,
 and terminal disposition. Lab is a location, not a sandbox. Untrusted analysis, build, or generated
 command needs the [Tomb](../state-of-the-work.md#tomb-untrusted-execution) or another delivered
@@ -142,13 +142,13 @@ The Dossier selects evidence that can establish its particular claim:
 Foreign tests establish foreign behavior. Generated tests cannot be the sole judge of generated
 code, and heuristic review cannot override a failed deterministic gate. A bounded correction loop
 ends verified or explicitly incomplete. Traces and failures may inform repair through their
-Memory, Shadow, Riddle and consent owners.
+Memory, Shadow, Drift and consent owners.
 
 The candidate-author Agent emits a **Promotion Request**, while owners decide and perform their own effects:
 
 | Concern | Owner |
 | --- | --- |
-| candidate lineage/workspace | [Creation](./16-creation.md) |
+| candidate lineage/workspace | [SDLC](./16-sdlc.md) |
 | source/package/image construction | [Packaging](./17-packaging.md) |
 | coupled extension-package admission | [Extension law](./05-extensions.md) |
 | migration/persistence | [Phylactery](./06-persistence.md) |
@@ -191,6 +191,6 @@ leaves the Forge may ask to live; it does not crown itself.
 ## Acceptance gates
 
 No automated Assimilation path may ship until hostile-source ingestion, candidate isolation,
-provenance retention, bounded execution, deterministic receipts, base-drift refusal, effect-time
+provenance retention, bounded execution, deterministic receipts, refusal after base changes, effect-time
 authorization, target-owned promotion, and recoverable or explicitly forward-only failure are
 proved.

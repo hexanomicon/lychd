@@ -78,8 +78,8 @@ nav = [
                 "sepulcher/extensions/weaver/discovery.md",
                 "sepulcher/extensions/weaver/pattern-lifecycle.md",
                 "sepulcher/extensions/weaver/crucible.md",
+                "sepulcher/extensions/weaver/creation.md",
                 "sepulcher/extensions/weaver/ouroboros.md",
-                "sepulcher/extensions/weaver/sdlc.md",
                 "sepulcher/extensions/weaver/scheduling-and-service-classes.md",
                 "sepulcher/extensions/weaver/stasis-and-return.md",
                 "sepulcher/extensions/weaver/execution-roads.md",
@@ -94,12 +94,12 @@ nav = [
                 "sepulcher/extensions/soulforge/candidate-handoff.md",
                 "sepulcher/extensions/soulforge/discernment-training.md"
             ]},
-            { "Riddle" = [
-                "sepulcher/extensions/riddle/index.md",
-                "sepulcher/extensions/riddle/trials.md",
-                "sepulcher/extensions/riddle/capability-claims.md",
-                "sepulcher/extensions/riddle/returning-findings.md",
-                "sepulcher/extensions/riddle/workflow-improvement.md"
+            { "Drift" = [
+                "sepulcher/extensions/drift/index.md",
+                "sepulcher/extensions/drift/trials.md",
+                "sepulcher/extensions/drift/capability-claims.md",
+                "sepulcher/extensions/drift/returning-findings.md",
+                "sepulcher/extensions/drift/workflow-improvement.md"
             ]},
             "sepulcher/extensions/scout.md",
             "sepulcher/extensions/tether.md",
@@ -130,6 +130,14 @@ nav = [
     ]},
     { "Divination" = [
         "divination/index.md",
+        { "Transmutation" = [
+            "divination/transmutation/index.md",
+            "divination/transmutation/genesis.md",
+            "divination/transmutation/trial.md",
+            "divination/transmutation/canon.md",
+            "divination/transmutation/revelation.md",
+            "divination/transmutation/distillation.md"
+        ]},
         { "Altar" = [
             "divination/altar/index.md",
             "divination/altar/atlas.md",
@@ -157,13 +165,13 @@ nav = [
         ]},
         { "Creative Works" = [
             "compositions/creative-works/index.md",
-            { "Voidlight" = [
-                "compositions/voidlight/index.md",
-                "compositions/voidlight/brief.md",
-                "compositions/voidlight/direction.md",
-                "compositions/voidlight/assets.md",
-                "compositions/voidlight/motion.md",
-                "compositions/voidlight/package.md"
+            { "Atelier" = [
+                "compositions/atelier/index.md",
+                "compositions/atelier/brief.md",
+                "compositions/atelier/direction.md",
+                "compositions/atelier/assets.md",
+                "compositions/atelier/motion.md",
+                "compositions/atelier/package.md"
             ]},
             { "Riffmaw" = [
                 "compositions/riffmaw/index.md",
@@ -277,7 +285,8 @@ nav = [
             { "Familiar" = [
                 "compositions/familiar/index.md",
                 "compositions/familiar/embodiment.md",
-                "compositions/familiar/follow.md"
+                "compositions/familiar/follow.md",
+                "compositions/familiar/dance.md"
             ]},
             { "Companion" = [
                 "compositions/companion/index.md",
@@ -309,8 +318,7 @@ nav = [
     { "Lexicon" = [
         "lexicon/index.md",
         { "Iron Tongue" = "lexicon/iron-tongue.md" },
-        { "Inner Tongue" = "lexicon/inner-tongue.md" },
-        { "Tree of Life" = "lexicon/tree-of-life.md" }
+        { "Inner Tongue" = "lexicon/inner-tongue.md" }
     ]},
     { "Covenants" = [
         "adr/index.md",
@@ -330,7 +338,7 @@ nav = [
         "adr/13-layout.md",
         "adr/14-workers.md",
         "adr/15-frontend.md",
-        "adr/16-creation.md",
+        "adr/16-sdlc.md",
         "adr/17-packaging.md",
         "adr/18-evolution.md",
         "adr/19-cli.md",
@@ -356,7 +364,7 @@ nav = [
         "adr/39-vpn.md",
         "adr/40-proxy.md",
         "adr/41-x402.md",
-        "adr/42-legion.md"
+        "adr/42-multinode.md"
     ]}
 ]
 

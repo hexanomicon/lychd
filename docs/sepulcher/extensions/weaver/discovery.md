@@ -16,7 +16,7 @@ support the next act. A route can widen the question before a method narrows it.
 
 This is one part of [discernment within exploration](../../lich/blade.md#discernment-within-exploration):
 finding a source may reveal a better question, while a decisive distinction may redirect the
-search. [SDLC Inquiry](sdlc.md#reuse-inquiry-at-each-uncertain-boundary) carries that exchange
+search. [Creation Inquiry](creation.md#reuse-inquiry-at-each-uncertain-boundary) carries that exchange
 through bounded probes, independent sufficiency review, and Crucible.
 
 [Documentation topology](../../../adr/01-doctrine.md#router-delegation) owns scope routing;

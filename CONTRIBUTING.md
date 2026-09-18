@@ -24,6 +24,22 @@ the boundary your change crosses:
 You can start with that one boundary. Use the Covenant index for adjacent decisions as the change
 reaches them; the full grimoire is not a prerequisite to a first contribution.
 
+## Grow into shared stewardship
+
+Core and extension developers share a path into maintainership: contribute useful work, preserve
+compatibility, review changes, and discuss concerns with the community. The shared Discord is a
+place for that ongoing conversation; record accepted decisions and their evidence in the
+repository so others can follow and challenge them. Contributions remain welcome through GitHub
+without a Discord account.
+
+Maintainer responsibility follows demonstrated work and an explicit scope, independently of
+employment or founding status. There is no fixed-size inner circle to join. The future
+[source roster](docs/adr/17-packaging.md#forge-neutral-source-trust) and
+[Evolution promotion roster](docs/adr/18-evolution.md#future-quorum-roster) describe individual
+credentials and collective decisions for keeping a shared canon. Those protocols remain Designed;
+today, maintainers use explicit repository permissions and human review. Community participation
+does not itself issue credentials or authorize a release.
+
 ## Supported Environment
 
 - Python is `>=3.12,<3.15`; `.python-version` pins 3.13 for repository and release checks. Use

@@ -9,6 +9,9 @@ A body can carry a voice, follow an admitted subject, or perform a bounded task.
 
 Body admission establishes the exact capabilities and independent stop path. A finite follow mission then carries its subject designation through loss, speaking presence, and settlement. Cars, drones, rovers, legged robots, manipulators, phones, cards, displays, and other explicit forms need their own admitted controller or device profile.
 
+[Robotic Dance](dance.md) sketches a candidate use case: wear motion trackers and lead physical
+familiars in a shared dance, with research references and a possible Live Kinesis integration.
+
 ## Contract
 
 `familiar.embodiment` revision `3` publishes `familiar.admit_body@3`, `familiar.bounded_mission@3`, and `familiar.follow@3`. Additional body-specific Patterns may be admitted without changing the body contract.
@@ -57,4 +60,4 @@ Revision `3` supersedes Designed revision `2` by naming exact Ward phone enrollm
 
 ## Enter by question
 
-[Embodiment](embodiment.md) · [Follow](follow.md) · [Composition Portfolio](../index.md)
+[Embodiment](embodiment.md) · [Follow](follow.md) · [Robotic Dance](dance.md) · [Composition Portfolio](../index.md)

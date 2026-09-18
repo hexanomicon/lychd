@@ -31,11 +31,11 @@ Microphones, instruments, MIDI/controllers, clips, remote performers, and machin
 
 | Record | Binds |
 | --- | --- |
-| `ClockDomainMap@1` | Audio sample frames, monotonic time, beat and bar position, clock epoch, external, leader or distributed mode, peer mappings, drift, resampling, and uncertainty. A remote peer never implies sample lock. |
+| `ClockDomainMap@1` | Audio sample frames, monotonic time, beat and bar position, clock epoch, external, leader or distributed mode, peer mappings, clock-rate divergence, resampling, and uncertainty. A remote peer never implies sample lock. |
 | `LiveAudioGraphProfile@1` | Driver, sample rate, quantum and periods, ports and links, channel map, declared direct-monitor route, measured capture, playback and round-trip latency, xruns, hot-plug events, and graph revisions. |
 | `MidiEventStream@1` | Device and port, MIDI 1 or UMP profile, channel and sample offset, notes, CC and sustain, bend, pressure or MPE, transport events, event loss, and admitted SysEx policy. |
 | `CaptureManifest@1` | Immutable pre-fader sources, optional processed prints, MIDI, hardware returns, local and remote stems, exact frame boundaries, discontinuities, and checksums. A guitar DI remains separate from its amp or cabinet monitor path. |
-| `RemoteJamLeg@1` | Peer identity, topology, codec, channels, encryption, jitter buffer, loss concealment, latency estimate, drift, resampling, reconnect epoch, local-monitor policy, and recording consent. |
+| `RemoteJamLeg@1` | Peer identity, topology, codec, channels, encryption, jitter buffer, loss concealment, latency estimate, clock-rate divergence, resampling, reconnect epoch, local-monitor policy, and recording consent. |
 
 Mix, individual sources, MIDI/control events, responses, and route/clock changes remain attributable. Graph checkpoints keep typed references, bounded sequence state, and receipts—not PCM/MIDI streams, device handles, or plug-in state.
 
@@ -53,4 +53,4 @@ A route's participation is **observe** (correctable observations, no audible rep
 
 ## Proving the jam
 
-Use armed dry guitar DI, keyboard MIDI, two local performer roles, and a synthetic remote leg with controlled jitter/loss/drift. Capture every named clock/graph/MIDI/manifest record and a scheduled response. Exercise xrun, removal, epoch loss, plug-in crash/latency change, late output, and uncertain remote acknowledgement. Prove continued direct monitoring, stale-output fencing, raw audio/MIDI reconciliation, and newly admitted continuation. Export session, sources, stems, MIDI, tempo, and marker maps. This fixture proves state and recovery; measured device latency and musical usefulness need a separate hardware bake.
+Use armed dry guitar DI, keyboard MIDI, two local performer roles, and a synthetic remote leg with controlled jitter, loss, and clock-rate divergence. Capture every named clock/graph/MIDI/manifest record and a scheduled response. Exercise xrun, removal, epoch loss, plug-in crash/latency change, late output, and uncertain remote acknowledgement. Prove continued direct monitoring, stale-output fencing, raw audio/MIDI reconciliation, and newly admitted continuation. Export session, sources, stems, MIDI, tempo, and marker maps. This fixture proves state and recovery; measured device latency and musical usefulness need a separate hardware bake.

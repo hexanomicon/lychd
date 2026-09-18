@@ -44,8 +44,8 @@ Absence of a specialized card is not a refusal condition.
 3. **Patch narrowly.** Preserve unrelated dirty changes and avoid opportunistic rewrites.
 4. **Test from the inside out.** Start with the closest oracle, then widen only across affected
    boundaries.
-5. **Inspect the diff.** Check accidental API, schema, dependency, generated-file, documentation,
-   and delivery drift.
+5. **Inspect the diff.** Check for accidental changes to APIs, schemas, dependencies, generated
+   files, documentation, and delivery claims.
 6. **Return a receipt.** Name changed behavior, files, checks, unrun live-host evidence, and any
    remaining risk.
 

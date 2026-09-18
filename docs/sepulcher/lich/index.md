@@ -68,7 +68,7 @@ This is a LychD correspondence with a common later Vedāntic presentation, not a
 source traditions share one historical diagram. [Inner Tongue](../../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
 keeps the source notes, limits, and distinctions.
 
-The [Tree of Life](../../lexicon/tree-of-life.md) supplies a complementary map of creative
+The [Tree of Life](../../divination/transmutation/genesis.md#tree-of-life) supplies a complementary map of creative
 relations. Its sefirot cross these four offices; they do not replace them or add a chief Agent.
 [Ouroboros](../extensions/weaver/ouroboros.md) follows their operational return through work,
 consequence and correction.

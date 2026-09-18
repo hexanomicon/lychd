@@ -55,7 +55,7 @@ never requires erasing a difficult part of the lineage.
 
 Mirror records relationships, not authorization, truth, quality, credit, or fault.
 [Ward](./ward.md) owns authentication and authorization;
-[Riddle](./riddle/index.md) owns evaluated findings. Identity continuity here means revision-pinned
+[Drift](./drift/index.md) owns evaluated findings. Identity continuity here means revision-pinned
 lineage and reproducible binding—not an enduring Agent process, generic workflow continuity,
 memory itself, behavioral resemblance, or generic trust.
 

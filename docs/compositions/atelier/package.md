@@ -5,7 +5,7 @@ icon: material/package-variant-closed-check
 
 # :material-package-variant-closed-check: Package
 
-A consumer needs to know exactly which images it received and which uses their acceptance covered. `voidlight.export_visual_package@1` seals that answer in `VisualAssetBundle@1`; `voidlight.review_visual_package@1` returns findings without changing approved material.
+A consumer needs to know exactly which images it received and which uses their acceptance covered. `atelier.export_visual_package@1` seals that answer in `VisualAssetBundle@1`; `atelier.review_visual_package@1` returns findings without changing approved material.
 
 ## What crosses the boundary
 
@@ -27,4 +27,4 @@ Then exercise separate landscape and portrait hero profiles. Retain their accept
 
 Model-returned sound crosses only with pre-execution role authority, its independent `SemanticFacetAdmissionReceipt@1`, and shared compound parent. [Motion](motion.md#clips-and-cues) follows each role's admission. Broadcast alone accepts the final editorial audiovisual relation.
 
-Return to [Voidlight](index.md), or follow the declared finish in [Motion](motion.md#progressive-visual-depth).
+Return to [Atelier](index.md), or follow the declared finish in [Motion](motion.md#progressive-visual-depth).

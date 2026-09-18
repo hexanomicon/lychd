@@ -18,7 +18,7 @@ Shadow owns simulation Intent, branch lineage, assumptions and unknowns, expansi
 separation, budgets and stop conditions, branch evidence/artifact references, eligibility packages,
 and cleanup eligibility/receipts. It does not own scheduling, unsafe execution, capability
 selection, readiness, truth, Persona, consent, live mutation, Memory curation, or training;
-Spellweaver, execution, Dispatcher, Orchestrator, Riddle, Mirror, HitL, Archive, and Soulforge keep
+Spellweaver, execution, Dispatcher, Orchestrator, Drift, Mirror, HitL, Archive, and Soulforge keep
 those offices.
 
 A game engine simulating physics, navigation, actors, and gameplay inside an exact local project
@@ -67,7 +67,7 @@ but preserves original lineage.
 Before material spend, deterministic predicates may make a branch ineligible; witnessed policy
 violations may block it. Missing evidence is `unknown` and may justify one bounded inquiry naming
 question, access, budget, and stop condition; it ends `resolved`, `refuted`, or `unknown` and may
-not widen itself. Model hesitation proves nothing. Riddle evaluates reviewer Posture against
+not widen itself. Model hesitation proves nothing. Drift evaluates reviewer Posture against
 matched solvable controls. The **Dual-Gate** combines deterministic checks with attributed,
 calibrated qualitative judgment before eligibility; no score, confidence, or surviving cheap branch
 selects reality.
@@ -82,7 +82,7 @@ independent Hunter review and promotion keep their existing owners; the strategy
 authority, resource ceilings or sibling visibility.
 
 The strategy remains fixed throughout one admitted experiment. A proposed successor is candidate
-material evaluated by Riddle and admitted by the receiving owner for later work. Changes to the
+material evaluated by Drift and admitted by the receiving owner for later work. Changes to the
 score or implementation follow [Workflow revision law](28-workflow.md#pattern-identity); no
 strategy update patches a live Run. Spellweaver coordinates the admitted attempts, Dispatcher
 selects capability, and Orchestrator owns physical readiness and resource conflicts.
@@ -99,7 +99,7 @@ no change to model weights and grants no training admission.
 A material branch receives an isolated workspace through a replaceable provider. Jujutsu can
 provide tracked change identity, not an execution sandbox. Its contract pins base and owned paths,
 mounts/processes/ports/services/network/secrets/effects, evidence locations, leases, reset/snapshot,
-expiry, teardown, and drift verification. Effectful tests use an admitted execution boundary:
+expiry, teardown, and state-change verification. Effectful tests use an admitted execution boundary:
 directory deletion cannot end processes, revoke credentials, close ports, undo remote calls, or
 restore shared state. The designed Tomb proves none of this today.
 
@@ -113,7 +113,7 @@ never selects a winner.
 
 Each Observation establishes only its narrow predicate. Unit tests, commits, and model judges do
 not respectively prove architectural fit, shared-state isolation, or an effect. Shadow submits
-exact branches, environments, observations, and artifacts to versioned Riddle Trial Suites; deterministic
+exact branches, environments, observations, and artifacts to versioned Drift Trial Suites; deterministic
 receipts and verdicts stay distinct. Mirror may supply Persona-congruence criteria, never private
 Persona selection. Any score is a versioned, attributable evaluation signal with declared scope;
 it may prune, deprioritize, or converge inside the experiment but proves and authorizes nothing.
@@ -155,6 +155,6 @@ Shadow produces candidate realities.
 ## Acceptance evidence
 
 Shadow remains **Designed** until one bounded Pattern proves independent Dancer branches, separate
-Hunter review, base pinning, material ownership, deterministic observations, Riddle evaluation,
+Hunter review, base pinning, material ownership, deterministic observations, Drift evaluation,
 budget cancellation, inert Promotion Request, current-state revalidation, and a Cleanup Receipt
 including incomplete teardown. State of Work records that transition.

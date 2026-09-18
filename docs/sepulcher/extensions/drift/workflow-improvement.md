@@ -3,7 +3,7 @@ title: Workflow Improvement
 icon: material/chart-timeline-variant-shimmer
 ---
 
-# Workflow Improvement Through Riddle
+# Workflow Improvement Through Drift
 
 A workflow can produce an acceptable artifact while repeatedly asking the Magus to supply the
 same missing context. Another can finish faster by skipping the check that would expose a wrong
@@ -11,11 +11,11 @@ answer. Improving either requires following the whole casting: its decisions, de
 effects, corrections, and final result. An attractive last message is too small a witness.
 
 This is the **Designed** evaluation passage for the
-[agentic software lifecycle](../weaver/sdlc.md) and its
+[Creation workflow](../weaver/creation.md) and its
 [Ouroboros improvement cycle](../weaver/ouroboros.md). It applies
 [ADR 34](../../../adr/34-evaluation.md); it introduces no runnable harness, benchmark history,
-or automatic optimizer. [State of Work](../../../state-of-the-work.md#riddle-evaluation) owns
-delivery. Riddle returns evidence; the workflow owner decides whether a candidate should enter
+or automatic optimizer. [State of Work](../../../state-of-the-work.md#drift-evaluation) owns
+delivery. Drift returns evidence; the workflow owner decides whether a candidate should enter
 a later casting.
 
 ## Begin with a complete consequence
@@ -91,7 +91,7 @@ A cached tool response cannot stand in for the response to a different request. 
 planning would alter which tool runs, its arguments, timing, or dependencies, replaying the old
 trace silently assumes the answer to the experiment. Use an admitted isolated environment with
 fresh state and receipts. Where realistic execution cannot be admitted, report the narrower
-simulation or replay claim and leave live behavior unproved. Riddle does not grant the required
+simulation or replay claim and leave live behavior unproved. Drift does not grant the required
 execution authority.
 
 ### Replay an exploration history
@@ -137,7 +137,7 @@ result yet:
 Ordinary files and a short comparison report are enough to begin. Record the real tool/session
 identities rather than inventing LychD Runs. If a strategy is adopted for another improvement
 round, retain proof of its use and assess the successors it produces under
-[Riddle's recursive-improvement contract](../../../adr/34-evaluation.md#evidence-of-recursive-improvement).
+[Drift's recursive-improvement contract](../../../adr/34-evaluation.md#evidence-of-recursive-improvement).
 This pilot can first test whether replay helps choose a useful strategy, before attempting an
 autonomous cycle or any weight training.
 
@@ -187,7 +187,7 @@ starter thresholds for this experiment, not universal routing policy.
 
 ### Proposed comparison: can the receiver use the handoff? { #handoff-reception }
 
-The [Tree of Life's light-and-vessel correspondence](../../../lexicon/tree-of-life.md#light-and-vessel)
+The [Tree of Life's light-and-vessel correspondence](../../../divination/transmutation/genesis.md#light-and-vessel)
 suggests a testable refinement to the earlier whiteboard workflow. Compare the present handoff
 with one in which the recipient identifies a decisive condition, what changes if it fails, and
 any specific missing evidence before planning implementation. Permit at most one bounded request
@@ -210,7 +210,7 @@ is required, ask about that choice and explain its tradeoff. Existing authorizat
 within its exact scope and current policy; reading evidence and executing already admitted trials
 need not become fresh approval requests at every station.
 
-Riddle's recommendation cannot apply the change. The appropriate owner validates and admits it
+Drift's recommendation cannot apply the change. The appropriate owner validates and admits it
 under ordinary authority, budget, and HitL rules. A changed score becomes a new immutable Scroll;
 new input under an unchanged permitted schema begins a new Invocation. Neither path patches a
 pinned live Run or rewrites earlier Outcomes.

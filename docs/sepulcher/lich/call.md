@@ -30,5 +30,5 @@ without consequence; [the guṇa correspondence](../../lexicon/inner-tongue.md#g
 image beside its source. Its proper completion is [the Blade](./blade.md), which decides whether a line
 may proceed; [Answer](./answer.md) later bears the attributable act.
 
-[ADR 16 — Creation](../../adr/16-creation.md) owns the creation and promotion of candidates. Call
+[ADR 16 — SDLC](../../adr/16-sdlc.md) owns the creation and promotion of candidates. Call
 names the opening through which a possible movement becomes addressable.

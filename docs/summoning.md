@@ -5,6 +5,12 @@ icon: material/fire
 
 # :material-fire: Summoning
 
+!!! warning "The Circle is not yet whole"
+    **Summoning does not work end to end yet.** This page describes how the rite is intended to
+    work, not a supported installation path. Individual steps have repository evidence, but no
+    maintained real-host receipt proves the complete sequence. Consult the
+    **[State of Work](state-of-the-work.md#inscription-and-embodiment)** before attempting it.
+
 A first reply is a small event. To make it credible, the machine around it must agree: the right
 source built the Vessel, the declared model entered memory, committed state has a home, and the
 answer returned through the admitted path. This rite brings those observations together on one
@@ -361,7 +367,7 @@ observations are available through `/orchestrator/status`; they are not addition
 
 | Witness | Required observation |
 | --- | --- |
-| Binding | `status` reports a coherent installation, with no unknown or drifted ownership. |
+| Binding | `status` reports a coherent installation, with no unknown or changed ownership. |
 | Body | Exact owned inventory and migration observations agree on pod, Phylactery, Reactor, Vessel, Soulstone activity, and successful migration. |
 | Faculty | Nexus shows the exact `atelier` / `chat` / `first-model` capability as `active` after the turn. |
 | Answer | Bridge contains a non-empty settled reply. |

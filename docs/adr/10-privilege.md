@@ -31,7 +31,7 @@ regular caller-owned `0600` file. Dry runs do not acquire or create it; contenti
 refusal.
 
 Foundation, desired bytes, source and secret generation, tool/site identities, and live
-configuration are revalidated under that lock immediately before mutation. Drift is a no-effect
+configuration are revalidated under that lock immediately before mutation. A state mismatch is a no-effect
 refusal.
 
 `TransitionIntent` is frozen, `extra="forbid"` data: a 32-hex correlation ID, forward or exact

@@ -49,7 +49,7 @@ anonymous workflow tensors.
 ### Technical settlement
 
 `ImageJob@2` owns the requested operation, candidate set, technical validation, and result
-settlement. Creative adoption belongs to Voidlight or another consuming Composition; successful
+settlement. Creative adoption belongs to Atelier or another consuming Composition; successful
 custody and probes never accept the image on that owner's behalf. Each concrete execution uses Core's Designed
 [`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts-designed) mechanics;
 `INDETERMINATE` remains contained and nonterminal rather than a successful or failed image result.
@@ -122,7 +122,7 @@ The first corpus should cover natural scenes, illustration, UI and poster text, 
 single- and multi-reference identity, preservation edits, masks and expanded canvases, pose/depth/
 edge controls, transparent output, adversarial dimensions and metadata, cancellation, OOM,
 restart, and deterministic-seed replay. Measure prompt alignment, text accuracy, source and region
-preservation, identity drift, control adherence, diversity, latency, peak VRAM, output validity,
+preservation, identity deviation, control adherence, diversity, latency, peak VRAM, output validity,
 artifact lineage, and license closure.
 
 Promote exact profiles: the first bake compares FLUX.2 klein through vLLM-Omni with the same basic

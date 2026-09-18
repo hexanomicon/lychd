@@ -72,7 +72,7 @@ execution binding.
 Following [Oculus](oculus.md), Scout records an attempted acquisition as an **effect receipt**, one
 source response as a **bounded observation**, and each transformation as a **derivation** with
 parentage and loss. **Interpretation** applies declared criteria and belongs to
-[Riddle](riddle/trials.md) or the consuming Composition. A digest is neither proof nor custody, and
+[Drift](drift/trials.md) or the consuming Composition. A digest is neither proof nor custody, and
 an `ArtifactRef` remains metadata until a service has admitted retrievable bytes under the
 [artifact-custody boundary](../../state-of-the-work.md#artifact-reference-contract).
 

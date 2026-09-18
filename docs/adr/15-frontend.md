@@ -313,7 +313,7 @@ Altar controllers → clients/web/openapi.json → openapi-typescript
 ```
 
 Controllers own operation identifiers. Release regeneration and clean-source preflight expose
-schema drift; a local command may rewrite tracked output, whose diff still needs review. SSE stays
+schema mismatches; a local command may rewrite tracked output, whose diff still needs review. SSE stays
 outside `openapi-fetch`: Zod schemas, constrained to generated types, validate version,
 identifiers, sequence, kind, and envelope. Kind-specific interpretation remains explicit because
 run `payload` is currently a broad string-keyed record, not a generated discriminated schema.

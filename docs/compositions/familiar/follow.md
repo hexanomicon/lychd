@@ -24,7 +24,7 @@ This proves workflow and receipt behavior, not drone dynamics, obstacle avoidanc
 
 The subject is explicit, attributable, and pinned. “Follow whoever is nearby” is inadmissible. A profile may use an admitted BLE/UWB beacon, GPS tag, AprilTag/ArUco marker, visual signature, thermal cue, or other bounded visual tracker. Each needs exact sensor, tracking, confidence, ambiguity, and loss behavior. A face embedding or similar cue proves no identity, attention, relationship, or consent.
 
-A declared fallback chain can move from beacon to marker to a selected visual cue. Each transition records `subject_lock_degraded`; it cannot select an arbitrary nearby replacement. Occlusion, lighting, RF loss, tag battery, positioning drift, thermal ambiguity, and lookalike cues must remain visible. Exhausting the chain returns `subject_lost` and invokes the admitted containment/stop policy.
+A declared fallback chain can move from beacon to marker to a selected visual cue. Each transition records `subject_lock_degraded`; it cannot select an arbitrary nearby replacement. Occlusion, lighting, RF loss, tag battery, accumulating positioning error, thermal ambiguity, and lookalike cues must remain visible. Exhausting the chain returns `subject_lost` and invokes the admitted containment/stop policy.
 
 ## Path-tracing loop
 

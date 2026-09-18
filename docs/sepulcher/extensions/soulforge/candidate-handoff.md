@@ -8,7 +8,7 @@ icon: material/transit-transfer
 > _The candidate leaves the forge frozen, not crowned._
 
 A frozen Candidate Bundle crosses from a [Training Run](./training-run.md) into independent
-judgment. Riddle may establish eligibility; only an externally owned decision may promote the
+judgment. Drift may establish eligibility; only an externally owned decision may promote the
 exact digest, bind its serving envelope, or refuse it.
 
 Candidate handoff is **Designed**; neither independent evaluation nor promotion runs. [State of
@@ -17,7 +17,7 @@ Work](../../../state-of-the-work.md#soulforge-training) owns delivery, and
 
 ## Independent trial
 
-Entry accepts one exact Candidate Bundle revision with its trainer receipt. Riddle names that
+Entry accepts one exact Candidate Bundle revision with its trainer receipt. Drift names that
 revision as the subject and operates separately from the trainer. Evaluation cannot alter
 candidate bytes, corpus, Recipe, or lineage.
 
@@ -25,7 +25,7 @@ An expected-change contract recorded before training defines sought lift and tol
 Any post-training change to that contract remains visible rather than silently reshaping the
 trial.
 
-Riddle records compact promotion evidence under
+Drift records compact promotion evidence under
 [ADR 34](../../../adr/34-evaluation.md#evaluation-before-and-after-training):
 
 - sealed target-capability holdout results;
@@ -40,7 +40,7 @@ its measured Environment.
 
 ## Eligibility is not promotion
 
-Passing Riddle establishes eligibility only. The owning policy and required
+Passing Drift establishes eligibility only. The owning policy and required
 Magus/[HitL](../../../adr/25-hitl.md) authority choose whether to promote and which capability
 envelope may be exposed.
 

@@ -25,14 +25,14 @@ The same visible movement crosses several owners without becoming one indistinct
 Sight pose observations
 → Kinesis motion recovery or generation
 → Kinesis retargeted technical clip
-→ Voidlight creative review and accepted animation set
+→ Atelier creative review and accepted animation set
 → Foundry engine import, controller, compression, and playtest
 ```
 
 [Sight](sight.md) owns estimates grounded to exact pixels and times. [Form](form.md) owns geometry,
 skeleton hierarchy, rest and bind pose, skin weights, morph targets, and rig revision. Kinesis owns
-structured change through time and its technical derivatives. [Voidlight
-Motion](../../../compositions/voidlight/motion.md) owns choreography, direction, sequencing, and
+structured change through time and its technical derivatives. [Atelier
+Motion](../../../compositions/atelier/motion.md) owns choreography, direction, sequencing, and
 acceptance. [Foundry](../../../compositions/foundry/assets.md) owns target-engine behavior.
 
 A direct video-to-motion worker may perform detection and pose estimation internally; it need not
@@ -96,7 +96,7 @@ equality or `humanoid=true` is not compatibility. A changed target rig stales th
 altering that rig creates a separate Form derivative.
 
 A rational source timebase and exact timestamps survive every stage; `30 fps` alone is
-insufficient. Variable-rate video, duplicate or dropped frames, audio drift, resampling, and gaps
+insufficient. Variable-rate video, duplicate or dropped frames, audio/video desynchronization, resampling, and gaps
 remain explicit. Rotations pin coordinate frame and representation plus Euler order where used;
 quaternions are normalized and checked for hemisphere continuity. Root motion is never silently
 stripped, baked into the pelvis, or reintroduced. Metric scale requires calibration or an admitted
@@ -119,7 +119,7 @@ explicit:
 | **hand motion** | left and right schema, joint coverage, visibility, gaps, and uncertainty |
 | **facial and morph curves** | exact joint, blendshape, expression, or viseme ontology; neutral state, ranges, and target mapping |
 | **contacts and events** | effector, object or ground reference, interval, point, normal, coordinate space, and uncertainty |
-| **time relation** | rational timebase, exact sample times, source PTS, original-to-derived map, anchors, drift, resampling, and gaps |
+| **time relation** | rational timebase, exact sample times, source PTS, original-to-derived map, anchors, clock-rate divergence, resampling, and gaps |
 | **coverage and uncertainty** | per-source and per-interval measured, estimated, generated, repaired, interpolated, occluded, or absent regions |
 | **projections** | GLB, BVH, VRMA, USD, FBX, previews, sidecars, and exact validation or round-trip findings |
 
@@ -236,7 +236,7 @@ can enter. A wrapper or converted checkpoint repairs none of them.
 
 Until a champion closes that gate, music-conditioned work composes exact Riffmaw
 `MusicCueMap@1` cues, authored or generated clips, Kimodo constraints where eligible, and declared
-Kinesis editing. Riffmaw still owns the music and Voidlight still decides the visible response;
+Kinesis editing. Riffmaw still owns the music and Atelier still decides the visible response;
 picture-bound sound and the final editorial audiovisual relation remain with Broadcast.
 
 ## Profiles, Runes, Covens, and authority
@@ -253,7 +253,7 @@ final editorial audiovisual placement.
 
 The proving corpus covers authored, generated, monocular and calibrated capture; single and
 multiple people; standard, unusual and nonhuman rigs; hands, face, props and partial coverage;
-Slovak and multilingual prompts and speech; variable-rate video and drifting audio; occlusion,
+Slovak and multilingual prompts and speech; variable-rate video and audio/video desynchronization; occlusion,
 dropped and duplicate frames; scale and floor ambiguity; contacts, fast turns, loops, root motion,
 in-place variants, retarget maps, missing and extra bones, twist helpers, morph schemas; GLB and
 BVH round trips; adversarial files and Blender scenes; cancellation, OOM, crash, restart, Stasis,

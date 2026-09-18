@@ -9,9 +9,9 @@ An accepted image, music master, spoken edition, and room tone still need an edi
 
 ## Admit the assets
 
-Admit `VisualAssetBundle@1`, `MusicAssetBundle@1`, `TimedLanguageAssetBundle@2`, and `PictureSoundBundle@1` by exact digest, semantic role, limits, provenance, use boundary, validators, findings, and approval. Broadcast records a separate `SemanticFacetAdmissionReceipt@1` for each role, including the compound digest when facets share a Prism parent. Producer lineage remains with Voidlight, Riffmaw, or Language Edition.
+Admit `VisualAssetBundle@1`, `MusicAssetBundle@1`, `TimedLanguageAssetBundle@2`, and `PictureSoundBundle@1` by exact digest, semantic role, limits, provenance, use boundary, validators, findings, and approval. Broadcast records a separate `SemanticFacetAdmissionReceipt@1` for each role, including the compound digest when facets share a Prism parent. Producer lineage remains with Atelier, Riffmaw, or Language Edition.
 
-`VisualAssetRequest@1` asks Voidlight for role, target, timing, constraints, source/likeness requirements, and request digest. `MusicAssetRequest@1` asks Riffmaw for musical role/timing. `LanguageVersionRequest@2` asks Language Edition for source-aligned words and performance; `PictureSoundBrief@1` opens Broadcast's own sound work. These requests carry no credentials, Sigils, sessions, approvals, or downstream effect authority.
+`VisualAssetRequest@1` asks Atelier for role, target, timing, constraints, source/likeness requirements, and request digest. `MusicAssetRequest@1` asks Riffmaw for musical role/timing. `LanguageVersionRequest@2` asks Language Edition for source-aligned words and performance; `PictureSoundBrief@1` opens Broadcast's own sound work. These requests carry no credentials, Sigils, sessions, approvals, or downstream effect authority.
 
 ## Own the timeline
 

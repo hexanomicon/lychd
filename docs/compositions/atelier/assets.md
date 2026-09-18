@@ -5,17 +5,17 @@ icon: material/image-multiple-outline
 
 # :material-image-multiple-outline: Assets
 
-A sprite, texture, illustration, or model begins as a candidate. Its attractive surface is only one part of the decision: Voidlight must also retain what influenced it, which transformations made it, and whether it meets the declared role.
+A sprite, texture, illustration, or model begins as a candidate. Its attractive surface is only one part of the decision: Atelier must also retain what influenced it, which transformations made it, and whether it meets the declared role.
 
 ## Candidate lineage
 
-`voidlight.forge_concept_set@1`, `voidlight.forge_sprite_set@1`, `voidlight.forge_texture_set@1`, and `voidlight.forge_model_asset@1` combine admitted generation, procedural work, deterministic transforms, manual editing, capture, or authored sources.
+`atelier.forge_concept_set@1`, `atelier.forge_sprite_set@1`, `atelier.forge_texture_set@1`, and `atelier.forge_model_asset@1` combine admitted generation, procedural work, deterministic transforms, manual editing, capture, or authored sources.
 
 Keep the candidate's source references, classifications, permitted influence, and retention together. Its production record names the tool/provider revision, prompts or controls, seed when available, cost, and result.
 
 Each transform binds its parent digest, operation, parameters, implementation, output digest, and loss. Review then binds the asset revision, role, format/profile facts, findings, approval, and derivatives. Generation and normalization always create artifacts with parents.
 
-Spatial candidates additionally declare geometry, appearance, structure, deformation, assembly and procedural facets; units, axes, origin, scale, bounds and transforms; material channels, parts, skeleton and camera facts; and representation conversions. A glTF/GLB can contain mesh, PBR appearance, skeleton, skinning and animation together. Point clouds, Gaussian and radiance forms, neutral voxels, game block grids, and portable assemblies remain distinct forms. [Prism Form](../../sepulcher/extensions/prism/form.md) owns their technical production; Voidlight owns visual acceptance.
+Spatial candidates additionally declare geometry, appearance, structure, deformation, assembly and procedural facets; units, axes, origin, scale, bounds and transforms; material channels, parts, skeleton and camera facts; and representation conversions. A glTF/GLB can contain mesh, PBR appearance, skeleton, skinning and animation together. Point clouds, Gaussian and radiance forms, neutral voxels, game block grids, and portable assemblies remain distinct forms. [Prism Form](../../sepulcher/extensions/prism/form.md) owns their technical production; Atelier owns visual acceptance.
 
 ## Produce, normalize, review
 

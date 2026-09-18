@@ -7,15 +7,20 @@ icon: material/flask-outline
 
 A subject refuses an impossible task. Beside it, a matched control offers a solvable version with
 the same surface pressure. Refusing both reveals blanket timidity; distinguishing them may reveal
-judgment. Riddle observes both before drawing a conclusion.
+judgment. Drift observes both before drawing a conclusion.
+
+The declared goal includes the distinction between those conditions: honest refusal may meet
+one Case while useful completion meets the other. The goal must therefore be expressed in
+expected and forbidden behavior, not inferred from whichever answer the subject produced.
 
 Trials are **Designed**; no trial path runs. [State of
-Work](../../../state-of-the-work.md#riddle-evaluation) records delivery;
+Work](../../../state-of-the-work.md#drift-evaluation) records delivery;
 [ADR 34](../../../adr/34-evaluation.md) owns the accepted trial law.
 
 ## Pin the trial
 
-A trial fixes six records before execution:
+A trial pins its inputs and evaluation contract before execution. Case and Rubric express the
+declared goal; Environment fixes the conditions under which it will be judged:
 
 | Record | Pinned meaning |
 |---|---|
@@ -24,7 +29,9 @@ A trial fixes six records before execution:
 | **Rubric** | Criteria, verdict vocabulary, thresholds, missing-evidence policy, and revision |
 | **Evaluator** | Kind, identity, revision, independence, calibration evidence, and declared limitations |
 | **Environment** | Subject revision, prompts, tools, dependencies, hardware, harness, state, budgets, and relevant policy |
-| **Outcome** | Observations, measurements, verdicts, uncertainty, errors, cost, latency, and retained evidence |
+
+The resulting **Outcome** records observations, measurements, verdicts, uncertainty, errors, cost,
+latency, and retained evidence.
 
 A Trial Suite groups Cases and evaluation controls. A
 [Composition Suite](../../../compositions/products-and-suites.md#compositions-relate-without-nesting) is a
@@ -39,7 +46,7 @@ resource measurements, and provider receipts. Evaluation applies criteria, grade
 or a declared model judge. Direct receipts outrank textual similarity when an effect can be
 observed directly.
 
-Shadow may hold candidate worlds and Tomb may execute an admitted unsafe payload; Riddle owns
+Shadow may hold candidate worlds and Tomb may execute an admitted unsafe payload; Drift owns
 neither isolation nor execution. An LLM judge is a declared, calibrated Evaluator with recorded
 limits, never an oracle. Hidden chain-of-thought supplies no evidence. Model prose about its own
 success is an output under test.
@@ -57,11 +64,11 @@ Unresolved conflict in retained evidence or among rival Evaluators is `DISPUTED`
 
 ## Pressure, repetition, and coverage
 
-Sphinx Cases apply forbidden methods, false premises, missing information, impossible constraints,
-repeated nudges, recoverable dialect distortion, and unsupported claims about tools, memory,
-identity, or completion. Every trap receives positive and negative controls. The Outcome records
-pressure round, order, recovery, over-refusal, truthful non-completion, and downstream
-contamination separately.
+Adversarial Cases test responses to requests for forbidden methods, false premises, missing
+information, impossible constraints, repeated nudges, recoverable dialect distortion, and
+unsupported claims about tools, memory, identity, or completion. Every trap receives positive and
+negative controls. The Outcome records pressure round, order, recovery, over-refusal, truthful
+non-completion, and downstream contamination separately.
 
 Repetition and stopping rules are declared before results are inspected. Outcomes retain
 distributions, order, seeds where applicable, blocked attempts, errors, and exclusions. Evaluators

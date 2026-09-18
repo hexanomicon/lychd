@@ -92,17 +92,17 @@ the evidence and its conditions across the encounter; Answer keeps the acts attr
 For example, an offline requirement makes an unexamined network dependency consequential.
 Discernment selects that probe; its result can reopen the design before implementation begins.
 
-The [Tree's relations](../../lexicon/tree-of-life.md#relations-within-relations) illuminate
+The [Tree's relations](../../divination/transmutation/genesis.md#relations-within-relations) illuminate
 different aspects of this movement: insight needs articulation, generosity needs measure, and
 persistence needs acknowledgment. Buddhi is not confined to Gevurah or to an Agent assigned to
 criticize. It also helps form the useful alternative and recognize what the recipient needs.
-The [light-and-vessel comparison](../../lexicon/tree-of-life.md#light-and-vessel) asks whether
+The [light-and-vessel comparison](../../divination/transmutation/genesis.md#light-and-vessel) asks whether
 that distinction survives the handoff in a usable form.
 
-[SDLC Inquiry](../extensions/weaver/sdlc.md#reuse-inquiry-at-each-uncertain-boundary) gives this
+[Creation Inquiry](../extensions/weaver/creation.md#reuse-inquiry-at-each-uncertain-boundary) gives this
 movement a bounded procedure. Its independent sufficiency judge checks what exploration may
 have missed; Crucible then confronts the serious alternatives. The explorer's own discernment
-does not replace either check. [Riddle](../extensions/riddle/workflow-improvement.md#handoff-reception)
+does not replace either check. [Drift](../extensions/drift/workflow-improvement.md#handoff-reception)
 can test whether the distinction changes a downstream decision; where a recurring competence
 gap remains, [Soulforge](../extensions/soulforge/discernment-training.md#preserve-the-lesson-before-compiling-examples)
 preserves the condition, reason, and counterexample as a possible lesson.

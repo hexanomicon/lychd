@@ -2,9 +2,12 @@
 
 ## Triggers
 
-Use for the Great Work, mythic voice, philosophical correspondence, formation, consciousness,
-cosmology, planetary recurrence, eschatology, the philosophical aims of agentic autonomy,
-discernment, memory, and identity, or claims whose meaning depends on LychD's telos.
+Enter through [Divination scope](divination.md), which routes the whole reader journey.
+Use this specialized scope when the task concerns the Great Work's constitutional meaning,
+the five Transcendence stages, consciousness, cosmology, planetary recurrence, eschatology,
+or claims whose meaning depends on LychD's telos. Transmutation's creation-and-learning walk
+starts in Divination; load this scope when that walk crosses into the philosophical claims
+owned here. Altar UI and browser behavior route to [Frontend](frontend.md).
 
 ## Authorities
 

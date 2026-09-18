@@ -15,7 +15,7 @@ A polished video can make a weak claim feel certain. Broadcast keeps the source 
 
 `broadcast.studio` revision `4` publishes `broadcast.build_local_package@3`. Frozen sources, editorial brief, target profile, and admitted visual, music, timed-language, and picture-sound assets can become `EditorialPackage@2` and `PublicationCandidate@2`. A publication receipt exists only after a separate release effect.
 
-Broadcast owns source words/claims, picture sound, editorial judgment, and destination receipts. [Voidlight](../voidlight/) retains visual/VFX lineage; [Riffmaw](../riffmaw/) music; [Language Edition](../language-edition/) timed-language editions. A delivery adapter cannot inherit editorial judgment. Unattended publication, engagement farming, borrowed asset authority, and unreviewed egress remain outside this application.
+Broadcast owns source words/claims, picture sound, editorial judgment, and destination receipts. [Atelier](../atelier/) retains visual/VFX lineage; [Riffmaw](../riffmaw/) music; [Language Edition](../language-edition/) timed-language editions. A delivery adapter cannot inherit editorial judgment. Unattended publication, engagement farming, borrowed asset authority, and unreviewed egress remain outside this application.
 
 ## Revision continuity
 

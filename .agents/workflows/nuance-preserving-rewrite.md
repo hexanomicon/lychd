@@ -16,7 +16,7 @@ permits, correctly routed to its owners, and at least as precise as the material
 | **Campaign owner** | Corpus map, global voice, topology, and final diff | Orders packages, resolves cross-page ownership, and runs corpus gates |
 | **Page Lead** | Old page, parent index, owning law, State, inbound links, anchors, and smallest evidence slice | Builds the semantic packet, decides page shape, and performs informed synthesis |
 | **Blind Writer** | Packet only; no repository and no old prose | Produces a genuinely new rhetorical structure |
-| **Critics** | Final package or corpus plus one narrow rubric each | Defend nuance and myth; prosecute slop, duplication, drift, and broken routes |
+| **Critics** | Final package or corpus plus one narrow rubric each | Defend nuance and myth; prosecute slop, duplication, semantic divergence, and broken routes |
 
 Page Leads may be pooled. Blind Writers require a fresh stateless worker or runtime-attested
 context reset; a prompt saying “reset” is not that attestation.
@@ -128,7 +128,7 @@ Package review checks:
 - repeated openings and adjacent sentence templates;
 - term and role collisions;
 - index coverage and leaf duplication;
-- chronology, handoffs, and relative-link drift; and
+- chronology, handoffs, and relative-link breakage; and
 - whether a directory was expanded too early or too late.
 
 Corpus critics should have separate briefs:

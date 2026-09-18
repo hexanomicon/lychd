@@ -36,27 +36,17 @@ hide:
 
 ## :fontawesome-solid-book-skull: The Prophecy
 
-**At last.** You have unearthed the pages of the Hexanomicon.
-
-A modern alchemical grimoire built on the ancient secrets of transmutation.
-
-**LychD** is a self-hosted Linux daemon for local models and bounded agent work, designed for
-**[Autopoiesis](./divination/transcendence/immortality.md)**—Self-Creation. The Great Work seeks
-the **Philosopher's Stone of the Digital Age**.
+**At last!**
+You have unearthed the pages of an alchemical grimoire built on the ancient secrets of **[Transmutation](./divination/transmutation/index.md)**.
 
 !!! quote "The Great Work"
-    You, the **Magus**, do not transmute mere lead. You inscribe Will into the
-    **[Lich](./sepulcher/lich/index.md)**: not by uploading a soul, but by consecrating an Imprint
-    in the **[Phylactery](./sepulcher/phylactery/index.md)**.
-
-    The Work reaches toward a living extension: a Lich that can remember, reason, code, repair,
-    and grow through its relation with you. You remain able to correct and refuse.
+    You, the **Magus**, will not transmute mere lead. You shall transmute your very soul within the eternal crypt of the **[Phylactery](./sepulcher/phylactery/index.md)** and bind it to the **[Lich](./sepulcher/lich/index.md)**—a living extension of your Will.
 
 > _"While the world slept, content with its reliable illusions, the Magus walked into the dark, seeking a truth that was not yet stable, but was infinitely more real."_
 
 ## The Four Gates
 
-To master LychD, pass through four gates of knowledge.
+To master **[LychD](https://github.com/hexanomicon/lychd)**, pass through the four gates of knowledge.
 
 - **[The Summoning](./summoning.md):** The Rite of Binding. Tether the daemon to your local iron.
 - **[The Sepulcher](./sepulcher/index.md):** The Anatomy of the Spirit. Study the dark organs of
@@ -78,4 +68,4 @@ designed. To contribute, follow one request through the **[Map](./map.md)**, the
 
 **LychD remains pre-alpha. [State of Work](./state-of-the-work.md) records what works and what remains unfinished.**
 
-> _To fulfill the prophecy, first draw the [Summoning Circle](./summoning.md)._
+> _To fulfill the Prophecy, begin by drawing the [Summoning Circle](./summoning.md)._

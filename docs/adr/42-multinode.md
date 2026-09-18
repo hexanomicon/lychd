@@ -1,9 +1,9 @@
 ---
-title: 42. Legion
+title: 42. Multinode
 icon: material/sitemap
 ---
 
-# :material-sitemap: 42. Legion
+# :material-sitemap: 42. Multinode
 
 !!! abstract "Context"
     One Magus may own other machines, accelerators, robots, and embedded bodies. Delegation must
@@ -12,8 +12,10 @@ icon: material/sitemap
 
 ## Decision
 
-**Legion** is the distributed-embodiment Domain: an owned-node profile over future
-[Intercom](26-a2a.md). A **Legionnaire** in mythic language is a **Node Agent** in engineering.
+**Multinode** governs bounded delegation across operator-owned physical nodes under one sovereign
+control plane. **[Legion](../sepulcher/extensions/legion.md)** is the distributed-embodiment
+Extension Domain applying this law through an owned-node profile over future [Intercom](26-a2a.md).
+A **Legionnaire** in mythic language is a **Node Agent** in engineering.
 It is neither a Master-shaped Vessel, remote database client, universal shell, nor foreign A2A peer.
 
 | Jurisdiction | Master | Node Agent |

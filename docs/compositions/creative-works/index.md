@@ -10,7 +10,7 @@ use the same file format.
 
 | Composition | Outcome |
 | --- | --- |
-| [Voidlight](../voidlight/index.md) | An attributable visual or VFX asset package. |
+| [Atelier](../atelier/index.md) | An attributable visual or VFX asset package. |
 | [Riffmaw](../riffmaw/index.md) | An attributable musical work, production package, and optional musical cue map. |
 | [Language Edition](../language-edition/index.md) | An attributable same-language or cross-language timed-media edition with constrained track replacement. |
 | [Foundry](../foundry/index.md) | A reproducible, playtested local build candidate. |

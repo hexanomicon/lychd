@@ -11,6 +11,10 @@ Follow one act through LychD: a purpose becomes admitted work, work meets a capa
 consequence returns to someone who must judge it. This is a map of the accepted architecture.
 [State of Work](./state-of-the-work.md) marks how far each road currently reaches.
 
+For the creative cycle as a whole, enter **[Transmutation](./divination/transmutation/index.md)**.
+It connects the relations of formation, symmetry, and life/death with SDLC and the Ouroboros
+return through evaluation and learning.
+
 ## One body in one breath
 
 An **Intent** is a request for work. Spellweaver resolves its **Scroll**, the exact workflow score
@@ -61,7 +65,7 @@ The [Phylactery](./sepulcher/phylactery/index.md) keeps committed Run and checkp
 place to resume. The Run ledger decides terminal status even when an event is missing.
 
 [Oculus](./sepulcher/extensions/oculus.md) concerns observations and their limits;
-[Riddle](./sepulcher/extensions/riddle/index.md) concerns evaluated claims. Their findings may
+[Drift](./sepulcher/extensions/drift/index.md) concerns evaluated claims. Their findings may
 inform a decision, but the receiving owner still accepts the result or admits a new correction.
 [Archive law](./adr/27-memory.md) separately governs what may become memory. Completion alone
 neither promotes a memory nor admits a training example.

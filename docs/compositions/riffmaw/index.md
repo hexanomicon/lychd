@@ -24,7 +24,7 @@ Each road settles its own Invocation. Exact artifacts can enter later forward wo
 
 ## Reference contract
 
-`riffmaw.music` revision `2` accepts a music brief plus explicitly admitted references, lyrics, takes, MIDI, scores, samples, or live inputs. Alongside the road-specific returns, it can issue `MusicCueMap@1`. It stops before ordinary dialogue, spoken replacement/localization, picture sound, visuals, final audiovisual assembly, impersonation, and publication. Language Edition, Broadcast, Voidlight, and their technical providers retain those offices.
+`riffmaw.music` revision `2` accepts a music brief plus explicitly admitted references, lyrics, takes, MIDI, scores, samples, or live inputs. Alongside the road-specific returns, it can issue `MusicCueMap@1`. It stops before ordinary dialogue, spoken replacement/localization, picture sound, visuals, final audiovisual assembly, impersonation, and publication. Language Edition, Broadcast, Atelier, and their technical providers retain those offices.
 
 Prompt, lyric, requested sung language, and interface locale remain separate. Exact model profiles must prove their musical/language behavior; a local ComfyUI or other Soulstone binding and a Portal API are independently evidenced implementations. [Music](music.md#language-belongs-to-the-musical-request) owns the request; [Studio](studio.md#current-candidate-map) records candidates.
 

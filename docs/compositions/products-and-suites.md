@@ -63,13 +63,13 @@ An exact `KeeperSupplyNeed@1` or `CultivatorSupplyNeed@1` can enter Homestead pr
 
 “Prepare care during my absence” needs a Suite if it starts care-planning Invocations, awaits household supply and environment work, and recovers or cancels them as one result. Before that path can be cast, its own published revision must pin exact member Patterns, handoffs, deadlines, aggregate ceilings, conflict policy, cancellation, and partial settlement. No Suite identity or executable absence workflow is accepted by this example. A refused water allocation leaves the dependent tending plan blocked; a completed purchase remains committed when another member fails. The parent cannot cancel local life-support protection or erase a member's unknown physical effect to declare the household ready.
 
-### Voidlight, Riffmaw, Language Edition, and Broadcast
+### Atelier, Riffmaw, Language Edition, and Broadcast
 
-Language Edition can use a settled Broadcast script/locked master, Voidlight visual reference, and Riffmaw music master without live coordination. Broadcast can later admit the settled language bundle in another Invocation. New visual corrections, music revisions, edition rebuilds, dependent cancellation, and aggregate publication settlement instead require a Suite.
+Language Edition can use a settled Broadcast script/locked master, Atelier visual reference, and Riffmaw music master without live coordination. Broadcast can later admit the settled language bundle in another Invocation. New visual corrections, music revisions, edition rebuilds, dependent cancellation, and aggregate publication settlement instead require a Suite.
 
 ```mermaid
 flowchart TD
-    B["Creative brief"] --> V["Voidlight · visual/VFX"]
+    B["Creative brief"] --> V["Atelier · visual/VFX"]
     B --> R["Riffmaw · music"]
     BS["Broadcast script + locked master"] --> D["Language Edition · language edition"]
     R --> S["MusicAssetBundle@1"]

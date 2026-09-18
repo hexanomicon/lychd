@@ -118,7 +118,7 @@ whole application partitions to separate PostgreSQL Phylacteries, with routing c
 unit of work opens and typed handoffs between partitions. It admits no shared `PGDATA`, routing
 implementation, table-level, row-level, or intra-partition sharding, and no cross-Phylactery
 transaction. A [Portal](../sepulcher/animator/portal.md) remains a remote capability road, while
-[Intercom](26-a2a.md) and [Legion](42-legion.md) carry bounded work or references; none forms a
+[Intercom](26-a2a.md) and [Legion](../sepulcher/extensions/legion.md) carry bounded work or references; none forms a
 shared database fabric.
 
 ## Wire and work contracts

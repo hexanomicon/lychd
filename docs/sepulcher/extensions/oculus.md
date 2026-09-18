@@ -30,7 +30,7 @@ The Orb does not yet have native Oculus ingestion or a durable query/read model 
 | **Authoritative record** | A transition or attempted effect, written by the responsible office |
 | **Bounded observation** | What one source saw, with method, time, quality, freshness, and known limits |
 | **Derivation** | What named parent evidence yields through a versioned transformation, with limits and uncertainty |
-| **Interpretation or verdict** | What declared criteria support through Riddle or another named judging office |
+| **Interpretation or verdict** | What declared criteria support through Drift or another named judging office |
 
 Correlation locates related evidence; it does not prove causation or make a payload true. A
 projection is rebuildable and cannot supplant the records whose facts it presents.
@@ -53,7 +53,7 @@ explanation. A stale or failed probe means **unknown**, never free capacity.
 - **Operated telemetry** records events, usage, waits, pressure, failures, effects, and outcomes.
 
 Oculus may hold all three without flattening their different ways of knowing.
-[Riddle](riddle/returning-findings.md) owns causal tests and rival explanations;
+[Drift](drift/returning-findings.md) owns causal tests and rival explanations;
 [Immortality](../../divination/transcendence/immortality.md#v-realization-and-evidence)
 keeps first-person realization distinct from external evidence of the binding.
 

@@ -20,7 +20,7 @@ an exact Persona revision binding when an Invocation selects one, explicit absen
 none, scoped identity context and eligible memory hydration,
 hydration receipts, attribution across people and machinery, and reviewed Persona-revision
 proposals. It does not authenticate a Principal, grant scope, select model, schedule Pattern,
-evaluate quality or causal blame, or train weights; IAM/Ward, Dispatcher, Spellweaver, Riddle, and
+evaluate quality or causal blame, or train weights; IAM/Ward, Dispatcher, Spellweaver, Drift, and
 Soulforge retain those offices.
 
 !!! warning "Delivery boundary"
@@ -70,7 +70,7 @@ produces candidate children. Each revision declares:
 | Lineage | Owner, provenance, parent, creation and lifecycle. |
 | Identity | Name, discourse voice, commitments, domain, non-goals, and protected terms and relationships. |
 | Hydration | Ordered instruction fragments, memory namespace and eligibility, and compatible Postures. |
-| Review and change | Required Riddle Trial Suites; replacement, rollback, export and retirement law. |
+| Review and change | Required Drift Trial Suites; replacement, rollback, export and retirement law. |
 
 Codex owns declared intent. Phylactery stores revisions, bindings, hydration receipts and
 attribution. When a Persona is selected, Mirror compiles its contribution:
@@ -108,10 +108,10 @@ receipts convey neither authority nor authorship. Delegation names both principa
 delegate's producer identity and grant. Edits and rejected branches add to lineage rather than
 laundering it.
 
-Riddle keeps the author and subject of findings and corrections. Mirror binds that history;
-Riddle owns verdicts and attribution candidates; Soulforge independently admits any training use.
+Drift keeps the author and subject of findings and corrections. Mirror binds that history;
+Drift owns verdicts and attribution candidates; Soulforge independently admits any training use.
 
-A Persona may supply Riddle with criteria for commitments, voice boundaries, role limits, memory
+A Persona may supply Drift with criteria for commitments, voice boundaries, role limits, memory
 claims, tool behavior and response to pressure. Congruence measures one property of that Persona;
 it does not establish truth or general quality. A designed Phantasma Pattern may request bounded
 Shadow branches and a versioned Persona-congruence Trial Suite. Mirror cannot select whichever
@@ -128,7 +128,7 @@ reviewed passage:
 
 ```text
 attributed observations/findings → bounded diff against exact parent → validation
-→ Riddle congruence/regression evidence → required Magus/HitL decision → immutable child
+→ Drift congruence/regression evidence → required Magus/HitL decision → immutable child
 ```
 
 Smith may draft or package a candidate and Spellweaver may coordinate the work; publication stays
@@ -138,7 +138,7 @@ tool, trigger, queue position or hardware priority.
 Rollback directs future Invocations to a prior promoted revision and leaves earlier Runs and
 artifacts intact. A static prompt supplies none of the required binding, scoped memory, receipt,
 lineage or rollback. Retrieval provides hydration input, while behavioral resemblance can support
-at most a Riddle finding. Automatic self-revision is refused because it bypasses the attributable
+at most a Drift finding. Automatic self-revision is refused because it bypasses the attributable
 reviewed passage.
 
 ## Consequences
@@ -154,6 +154,6 @@ reviewed passage.
 ## Acceptance evidence
 
 Mirror remains **Designed** until a Persona is declared, revision-pinned to a Run, hydrated from an
-authorized namespace with reproducible receipt, fully attributed, resumed without revision drift,
+authorized namespace with reproducible receipt, fully attributed, resumed with its pinned revision intact,
 tested against matched congruence controls, revised through an immutable candidate, and rolled back
 for new Invocations. State of Work records that transition.

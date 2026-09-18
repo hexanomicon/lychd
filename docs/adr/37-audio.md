@@ -187,7 +187,7 @@ PCM, MIDI streams, device handles, and plug-in state never enter Graph checkpoin
 artifact references, bounded sequence state, epochs, and receipts cross the durable seam.
 
 A tempo or phase protocol does not establish audio transport or a shared sample clock. A remote
-audio link does not establish recording consent. Each application records mappings, drift,
+audio link does not establish recording consent. Each application records mappings, clock-rate divergence,
 resampling, loss, jitter, latency, discontinuity, and uncertainty rather than naming two devices
 “synchronized” by assertion.
 

@@ -16,7 +16,7 @@ schemas.
 
 ## Admit one snapshot
 
-Nomination requests review. A Riddle Case or Outcome, Mirror attribution, HitL decision, Archive
+Nomination requests review. A Drift Case or Outcome, Mirror attribution, HitL decision, Archive
 row, success, refusal, repetition, storage consent, or database access never grants training
 eligibility. Runtime data requires opt-in. A failed or refused Run may supply useful evidence;
 success may be noise or one duplicated error.

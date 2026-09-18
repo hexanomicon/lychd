@@ -73,7 +73,7 @@ toy example, line count, bundle comparison, or isolated microbenchmark. A compar
 the exact product-shaped failure and matched acceptance receipt named by ADR 15; otherwise proceed
 within the selected stack.
 
-## Project Drift Gates
+## Project Consistency Gates
 
 - SvelteKit is a static client router. Server routes, server loads, form actions, remote
   functions, SSR, and a JavaScript production server are forbidden.

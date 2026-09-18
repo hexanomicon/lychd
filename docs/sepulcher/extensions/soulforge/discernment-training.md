@@ -11,11 +11,11 @@ has not given. A useful example shows the condition that distinguished these sit
 evidence available at the time, and the consequence of choosing well or badly.
 
 This **Designed** passage explains how approved experience from the
-[agentic software lifecycle](../weaver/sdlc.md) and
+[Creation workflow](../weaver/creation.md) and
 [Ouroboros improvement cycle](../weaver/ouroboros.md) could become training material under
 [ADR 33](../../../adr/33-training.md). It provides no installed harvesting, trainer, benchmark,
 or serving path. [State of Work](../../../state-of-the-work.md#soulforge-training) owns delivery.
-Soulforge prepares a candidate; independent Riddle evidence and an externally owned decision
+Soulforge prepares a candidate; independent Drift evidence and an externally owned decision
 stand between that candidate and use.
 
 ## Choose what should change
@@ -38,7 +38,7 @@ Conversely, a trained model does not become the authoritative store of mutable f
 permission.
 
 Prefer a context, prompt, schema, or workflow fix when the
-[workflow comparison](../riddle/workflow-improvement.md) shows that it adequately solves the
+[workflow comparison](../drift/workflow-improvement.md) shows that it adequately solves the
 problem. Training needs its own hypothesis: what capability remains deficient, why parameters
 might improve it, what benefit would justify the cost, and which regressions would make the
 attempt unacceptable. Fine tuning or LoRA can be a Recipe choice under that hypothesis; neither
@@ -50,7 +50,7 @@ is a mandatory destination for every correction.
 a candidate learning objective: identify which uncertainty deserves a probe and let its result
 change the plan. An example should show why that probe was consequential, paired with a case
 where the evidence already suffices and further exploration would waste effort. The
-[handoff comparison](../riddle/workflow-improvement.md#handoff-reception) first tests whether
+[handoff comparison](../drift/workflow-improvement.md#handoff-reception) first tests whether
 an explicit procedure solves the problem; only a remaining transferable skill gap motivates
 training. Sefirotic names are interpretive context, not correctness labels for the Dataset.
 
@@ -83,7 +83,7 @@ source / task or Run / artifact revisions
 For the first experiment, pair examples of acting under sufficient existing authority with
 examples where changed effects or a decisive missing fact require a question. Use separate task
 families for development and sealed transfer checks. Reuse the proposed
-[starter Cases](../riddle/workflow-improvement.md#starter-cases-for-the-first-comparison) as a
+[starter Cases](../drift/workflow-improvement.md#starter-cases-for-the-first-comparison) as a
 design template, never as both tuning answers and unseen proof. A useful evaluation example may
 remain excluded from training because its permitted uses differ.
 
@@ -143,7 +143,7 @@ not establish that the candidate is useful, safe, or ready to activate.
 
 ## Let the candidate leave its teacher
 
-Independent [Riddle evaluation](../riddle/index.md) compares the frozen candidate with the base
+Independent [Drift evaluation](../drift/index.md) compares the frozen candidate with the base
 or currently promoted baseline under matched serving conditions and budgets. Use the sealed
 target holdout, deterministic contract gates, independently judged qualitative criteria, named
 regression suites, and authority-boundary Cases. Test transfer to unfamiliar tasks and distinguish

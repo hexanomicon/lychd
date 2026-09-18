@@ -57,7 +57,7 @@ After Prism settlement, Language Edition issues its own `SemanticFacetAdmissionR
 
 ## Neighbours keep their truth
 
-Prism supplies attributed OCR, regions, frames, motion/lip-alignment observations, and technical derivatives. Voidlight supplies accepted visuals; Riffmaw supplies music masters/stems/cues. Avatar supplies eligible presentation. Broadcast supplies locked editorial source and requests, retaining canonical claims/words, picture sound, recut, final edit, release, and correction.
+Prism supplies attributed OCR, regions, frames, motion/lip-alignment observations, and technical derivatives. Atelier supplies accepted visuals; Riffmaw supplies music masters/stems/cues. Avatar supplies eligible presentation. Broadcast supplies locked editorial source and requests, retaining canonical claims/words, picture sound, recut, final edit, release, and correction.
 
 Settled exact references need no Suite. A promised result that actively admits, awaits, cancels, retries, recovers, or jointly settles new work across those owners requires one. A Product can package the edition without turning its technical name into a market name or acquiring its records.
 

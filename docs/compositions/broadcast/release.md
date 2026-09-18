@@ -13,7 +13,7 @@ Source support, claims, voice/likeness authority, privacy/Portal use, accessibil
 
 `broadcast.publish_draft@2` and `broadcast.publish_public@2` are distinct effects over `PublicationCandidate@2`. Each pins idempotency key, payload/request digests, destination identity, reconciliation lookup, and `PublicationReceipt@1`. A lost acknowledgement leaves **unknown** remote state until inspection resolves it. Browser automation supplies no authority for an untyped retry.
 
-`broadcast.correct_publication@2` creates a forward correction. `broadcast.takedown@2` requests removal while preserving the publication and receipt history. Platform refusal, expired authority, candidate drift, uncertain remote state, or a failed gate returns its exact blocker.
+`broadcast.correct_publication@2` creates a forward correction. `broadcast.takedown@2` requests removal while preserving the publication and receipt history. Platform refusal, expired authority, a changed candidate, uncertain remote state, or a failed gate returns its exact blocker.
 
 Restart resolves pinned Pattern, source, handoff, script, timeline, renderer, adapter, and receipt revisions. Snapshots, rejected renders, candidates, destination receipts, and analytics retain separate policies. Deletion inventories derivatives, requests authorized remote removal, and preserves a content-free receipt; feeds and caches may retain copies.
 

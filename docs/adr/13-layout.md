@@ -65,7 +65,7 @@ After a complete transaction, the receipt may adopt the exact device/inode ident
 dedicated Codex, Crypt, and Forge roots. Shared XDG parents, mounts, source checkouts, and external
 model shelves remain outside that grant. `del` is a separately confirmed destructive lifecycle:
 it joins receipt authority to a live inventory, stops managed installation state, and refuses
-unknown mounts, identity drift, invalid receipts, foreign objects, or ambiguous ancestry. Recursive
+unknown mounts, identity mismatches, invalid receipts, foreign objects, or ambiguous ancestry. Recursive
 walks reject mount crossings and possible Btrfs root/stub signatures. Deletion moves a
 re-attested leaf to a collision-resistant private sibling before type-specific removal; mismatch or
 failure restores it when possible, otherwise leaves a typed recovery marker. Published init

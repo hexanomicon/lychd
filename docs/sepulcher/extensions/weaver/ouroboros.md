@@ -10,6 +10,11 @@ need, forms and tests a candidate, acts through the proper owner, and retains wh
 teaches. A later attempt can then change its question, Context, method, or capability. The useful
 return is a better distinction: what mattered, why it mattered, and when that lesson stops applying.
 
+[Transmutation](../../../divination/transmutation/index.md) follows this cycle's meaning through
+Genesis, Trial, Canon, Revelation, and Distillation. Canon supplies criteria before creation
+and testing; Distillation carries a lesson toward a later attempt. This page keeps the practical
+handoffs between work, evaluation, memory, and training.
+
 The engineering workflow came first. The author's whiteboard designs already contained
 exploration, adversarial comparison, human judgment, implementation, evaluation, and a later
 training return before the sefirotic correspondence was proposed. The Tree entered as a second
@@ -17,10 +22,10 @@ lens for discovering and improving relations within that independently developed
 Resemblance motivates investigation; a proposed addition must still earn its place through a
 clearer decision, a better handoff, or a demonstrated improvement.
 
-This page connects the [SDLC](sdlc.md), [workflow evaluation](../riddle/workflow-improvement.md),
+This page connects the [Creation workflow](creation.md), [workflow evaluation](../drift/workflow-improvement.md),
 and [discernment training](../soulforge/discernment-training.md) operating designs. It is a map of
 governed handoffs, with no new coordinator, registered Pattern, or autonomous implementation.
-[Creation](../../../adr/16-creation.md#the-agentic-graph-of-creation) owns the candidate boundary;
+[SDLC](../../../adr/16-sdlc.md#the-agentic-graph-of-creation) owns the candidate boundary;
 [State of Work](../../../state-of-the-work.md#smith-forge-promotion) owns delivery.
 
 ## Three returns, at different speeds
@@ -28,19 +33,19 @@ governed handoffs, with no new coordinator, registered Pattern, or autonomous im
 ```mermaid
 %%{init: {"flowchart": {"nodeSpacing": 12, "rankSpacing": 22, "padding": 8}}}%%
 flowchart TB
-    I[Intent and Context] --> D[SDLC: form candidate]
+    I[Intent and Context] --> D[Creation: form candidate]
     D --> V[Verification]
     V --> P[Owned decision and effect]
     V -- failure or rejection --> O
     P --> O[Retain consequence]
-    O --> E[Riddle: evaluate]
+    O --> E[Drift: evaluate]
     E --> C[Correction proposal]
     C --> M[Context, memory or procedure]
     M --> I
     C --> N[New source or Scroll]
     N --> D
     C -. corpus admission .-> T[Soulforge: train candidate]
-    T --> R[Riddle: test transfer]
+    T --> R[Drift: test transfer]
     R --> A[Policy and required HitL]
     A --> B[Serving owner activates]
     B --> I
@@ -92,20 +97,20 @@ inherited change affected its decisions.
 
 [The Last AI Built by Humans](https://arxiv.org/html/2609.11873v1#S3.SS6), a September 2026 research
 preprint, distinguishes structural reuse of a revised improvement mechanism from evidence that it
-produces better successors. [Riddle's recursive-improvement contract](../../../adr/34-evaluation.md#evidence-of-recursive-improvement)
+produces better successors. [Drift's recursive-improvement contract](../../../adr/34-evaluation.md#evidence-of-recursive-improvement)
 adopts that useful distinction: record what returned, then test whether it helped. Human-defined
 purpose, protected evaluation and owner-controlled adoption remain compatible with this inquiry.
 
 A practical first return can be a better way to allocate attempts. Shadow's
 [versioned exploration strategy](../../../adr/31-simulation.md#versioned-exploration-strategy)
-can be compared through the proposed [history-replay pilot](../riddle/workflow-improvement.md#proposed-pilot-exploration-strategy).
+can be compared through the proposed [history-replay pilot](../drift/workflow-improvement.md#proposed-pilot-exploration-strategy).
 Start with ordinary development tools and attributable artifacts. A hand-operated comparison
 establishes only its measured result; the autonomous passage still requires delivered owners,
 admitted execution and evidence of the next round's actual use.
 
 ## Two perspectives on the same work
 
-The [Tree of Life](../../../lexicon/tree-of-life.md) illuminates **how creation becomes formed**:
+The [Tree of Life](../../../divination/transmutation/genesis.md#tree-of-life) illuminates **how creation becomes formed**:
 purpose, possibility, understanding, generosity, restraint, integration, persistence, correction,
 connection and manifestation. The [inner instrument](../../lich/index.md#the-inner-instrument)
 illuminates **how an act is received, discriminated, carried and attributed**. One offers a map of
@@ -211,12 +216,12 @@ changes it. Ouroboros describes the wider return through both experience and gov
 
 ## Establish the cycle in small, verifiable steps
 
-Start by practicing the SDLC on one bounded change with ordinary development tools. Keep its
+Start by practicing Creation on one bounded change with ordinary development tools. Keep its
 intent, two inquiry dossiers where warranted, acceptance checks, candidate diff, receipts, human
 corrections and final disposition. This establishes a worked example of the method, without
 claiming a LychD runtime performed it.
 
-Next apply the basic Riddle workflow to one proposed method change with baseline and candidate
+Next apply the basic Drift workflow to one proposed method change with baseline and candidate
 Cases. Adopt only through the receiving owner and retain an unchanged baseline when the evidence
 does not support improvement. Only a recurring, well-characterized skill deficit should enter
 the training passage. Its first success requires independent transfer evidence and a reversible,

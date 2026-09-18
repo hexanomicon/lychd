@@ -7,7 +7,7 @@ icon: material/treasure-chest-outline
 
 A visual asset can be approved by its director and still fail an engine import. Foundry judges the target use and preserves the producer's exact material so a technical failure can return as evidence rather than become a silent source repair.
 
-`game.import_asset_bundle@3` admits `VisualAssetBundle@1`, `MusicAssetBundle@1`, and optional `TimedLanguageAssetBundle@2` against project roles, target, formats, rights, and spatial/temporal limits. Source manifests remain with Voidlight, Riffmaw, Language Edition, or their exact producer. Foundry owns the engine-native imports and caches.
+`game.import_asset_bundle@3` admits `VisualAssetBundle@1`, `MusicAssetBundle@1`, and optional `TimedLanguageAssetBundle@2` against project roles, target, formats, rights, and spatial/temporal limits. Source manifests remain with Atelier, Riffmaw, Language Edition, or their exact producer. Foundry owns the engine-native imports and caches.
 
 ## Source to engine derivative
 

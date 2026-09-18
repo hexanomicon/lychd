@@ -51,7 +51,7 @@ the receipt preserves both texts, translator revision, and declared loss. Transl
 silently replaces visual direction.
 
 `VideoJob@2` owns the requested temporal effect, candidate set, technical validation, and result
-settlement. Creative adoption belongs to Voidlight or another consuming Composition; successful
+settlement. Creative adoption belongs to Atelier or another consuming Composition; successful
 custody and probes never accept the work on that owner's behalf. Each concrete execution uses
 Core's Designed
 [`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts-designed) mechanics.
@@ -91,7 +91,7 @@ facts.
 
 If a model emits sound with video, Prism records one compound candidate, original container digest,
 shared timebase, and generation receipt, then separates the returned streams into attributable
-child artifacts when their rights and formats permit it. [Voidlight](../../../compositions/voidlight/index.md)
+child artifacts when their rights and formats permit it. [Atelier](../../../compositions/atelier/index.md)
 retains visual judgment; [Riffmaw](../../../compositions/riffmaw/index.md) musical judgment;
 [Language Edition](../../../compositions/language-edition/index.md) timed-language judgment;
 [Broadcast](../../../compositions/broadcast/index.md) picture-sound and final editorial audiovisual judgment;
@@ -103,7 +103,7 @@ digest, facet and compound digests, role, use boundary, evidence and findings, d
 one `accepted`, `refused`, or `quarantined` disposition. Prism may link those receipts to the
 technical result but cannot issue, merge, or upgrade them. The same bytes used in two roles require
 two receipts. Broadcast's later judgment of the final editorial audiovisual relation cannot substitute for
-Voidlight, Riffmaw, Language Edition, or Foundry admission.
+Atelier, Riffmaw, Language Edition, or Foundry admission.
 
 Sound absent from `MediaFacetAuthoritySet@1` produces an `UnexpectedMediaFacet@1` finding and fails
 closed for that facet: it is quarantined or deleted under the pinned retention rule, never routed
@@ -133,7 +133,7 @@ closed. The Spell placement retains the surrounding semantic contract.
 
 [Prism's Lens](../../../adr/36-vision.md#decision) may use a pinned FFmpeg revision as deterministic
 machinery for per-artifact probing, extraction, normalization, interpolation, or
-encoding with declared loss. [Voidlight](../../../compositions/voidlight/motion.md) owns creative
+encoding with declared loss. [Atelier](../../../compositions/atelier/motion.md) owns creative
 motion and accepted visual sequences; [Broadcast](../../../compositions/broadcast/edit.md) owns the
 final audiovisual timeline, trim, placement, captions, mix, mux, and editorial render. A
 generative `v2v` operation never becomes the final cut merely because its input was already video.

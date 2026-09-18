@@ -99,7 +99,7 @@ rolled back.
 
 A future declarative catalogue generation may activate without Vessel replacement only when it
 introduces no new executable implementation and its owner supplies atomic durable generation and
-pinning semantics. Otherwise activation follows [Creation](16-creation.md),
+pinning semantics. Otherwise activation follows [SDLC](16-sdlc.md),
 [Packaging](17-packaging.md), and Evolution into a new process generation.
 
 ### 2. The Registration Surface (The Extension Context)

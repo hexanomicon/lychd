@@ -47,7 +47,7 @@ owns those delivery boundaries.
 | Authoritative record | The responsible office committed this transition or effect state. |
 | Bounded observation | This producer observed this subject by a named method, at stated times, with explicit freshness and limits. |
 | Derivation | A named algorithm used these parents; uncertainty and invalidation remain attributable. |
-| Interpretation or verdict | An evaluator applied declared criteria, as in Riddle. |
+| Interpretation or verdict | An evaluator applied declared criteria, as in Drift. |
 
 RunLedger owns Run status. Consent, grants, jobs, host transitions, artifacts, and evaluations each
 keep their own records. Step and RunEvent observations may describe that truth but cannot

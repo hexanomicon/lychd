@@ -1,23 +1,35 @@
 ---
-title: Riddle
-icon: material/help-rhombus-outline
+title: Drift
+icon: material/compass-outline
 ---
 
-# :material-help-rhombus-outline: The Riddle: Systemic Evaluation
+# :material-compass-outline: Drift: Evaluation Against a Declared Goal
 
-> _“The Sphinx’s proper question is one for which the pleasing answer is wrong.”_
+> _“Declare the aim before you judge the path.”_
 
-**Riddle** evaluates an exact subject revision under a versioned trial contract. Declared
-Evaluators apply declared Rubrics to retained observations, preserving uncertainty and returning
-only the judgment that evidence supports. [ADR 34](../../../adr/34-evaluation.md) owns this
-evaluation jurisdiction.
+**Drift** evaluates how actual behavior and outcomes meet or depart from a declared goal. Each
+trial binds an exact subject revision to Cases and Rubrics that make the goal testable. Declared
+Evaluators judge retained observations, preserve uncertainty, and return only the findings the
+evidence supports. [ADR 34](../../../adr/34-evaluation.md#the-declared-goal) owns this evaluation
+jurisdiction.
 
 That office carries no authority to execute unsafe work, select or grant an Animator, authorize
 spending, repair or mutate a subject, publish, train, or promote. Its findings become input to
 other owners, never their decision.
 
-Riddle is **Designed**; no runnable evaluation path is delivered. [State of
-Work](../../../state-of-the-work.md#riddle-evaluation) records its maturity boundary.
+Drift is **Designed**; no runnable evaluation path is delivered. [State of
+Work](../../../state-of-the-work.md#drift-evaluation) records its maturity boundary.
+
+## Make the goal testable
+
+A workflow may deliver the right artifact while exceeding its declared budget or omitting a
+required check. Its Case and Rubric must name those obligations before execution. Drift then
+reports where behavior met, missed, or left the criteria unresolved, retaining the evidence for
+each finding. A later candidate can improve one dimension while regressing on another.
+
+The same method applies to a first attempt: the declared goal supplies the reference. Historical
+comparison is optional, and several criteria need not collapse into one distance or score.
+[Trials](trials.md#pin-the-trial) shows how to fix that reference before the result is known.
 
 ## Execution is not verdict
 
@@ -36,19 +48,16 @@ A favorable verdict supplies no permission, routing authority, causal proof, or 
 Start with [Trials](./trials.md) when constructing versioned Cases, controls, observations,
 Rubrics, calibration, repetition, and immutable Outcomes.
 
-<span id="vii-rubric-coverage-is-evidence-not-geometry"></span>
-
 When healthy Outcomes must become scoped, expiring evidence for Dispatcher, Toll, or Soulforge to
 consider under their own authority, continue to
 [Capability claims](./capability-claims.md).
-
-<span id="viii-the-returning-riddle-suite-feedback"></span>
 
 Use [Returning findings](./returning-findings.md) to trace a downstream failure across an exact
 Composition Suite and return inert evidence to the smallest supported boundary, without initiating
 reverse execution.
 
-Riddle names the wound only as far as evidence reaches. It does not take the knife.
+Drift locates the departure from the goal only as far as evidence reaches. The receiving owner
+decides whether and how to correct it.
 
 For a complete worked method, [Workflow improvement](workflow-improvement.md) follows SDLC traces
 through a baseline/candidate comparison and an owner decision to keep, change or investigate the

@@ -42,7 +42,7 @@ Spellweaver owns validation, registration, routing, logical dependencies, Gates,
 revision continuity, and contribution. Composition owns domain judgment. Product owns its customer
 promise, supported-use-case catalogue, packaging, and defaults, but none of its members' records,
 policy, secrets, consent, or effect authority. IAM/Ward/HitL own authority; Dispatcher capability;
-Orchestrator readiness; Workers delivery/retry; Phylactery/Graph stores and checkpoints; Riddle
+Orchestrator readiness; Workers delivery/retry; Phylactery/Graph stores and checkpoints; Drift
 evaluation; Soulforge corpus and training lineage. Promotion remains with the receiving policy,
 required HitL, and target effect owner under [Training](33-training.md).
 
@@ -202,7 +202,7 @@ The manifest binds:
 - a deterministic SHA-256 digest.
 
 Executable stations map one-to-one with Python nodes. Construction rejects missing, duplicate,
-unknown, or mismatched station mappings; duplicate semantic edges; Gate or delegate marker drift;
+unknown, or mismatched station mappings; duplicate semantic edges; Gate or delegate marker mismatches;
 dynamic `BaseNode` returns whose topology cannot be proved; and any semantic transition set that
 differs from the public Graph node definitions.
 
@@ -218,7 +218,7 @@ Admission persists snapshot/digest; execution/resume requires exact current regi
 fails pinned Pattern unavailable. Multiple exact source-registered revisions may coexist: new
 admission uses only an active revision while an older Run resolves its retained pinned revision
 directly. Removing old executable code still makes that revision unavailable. Compatibility
-is proved only by exact registered equality and the reviewed closure. Automatic source-code drift
+is proved only by exact registered equality and the reviewed closure. Automatic source-code change
 detection, durable publication, drain, and migration remain future work.
 
 ## Migration without rewritten history
@@ -518,7 +518,7 @@ the reference delegated adapter does not establish fresh-context assembly in a f
 
 ### Bounded Inquiry in an engineering workflow
 
-The [reference SDLC](../sepulcher/extensions/weaver/sdlc.md) uses **Inquiry** as a reusable design
+The [Creation workflow](../sepulcher/extensions/weaver/creation.md) uses **Inquiry** as a reusable design
 form: bounded Explore, independent coverage and sufficiency judgment, then Crucible for material
 alternatives. The same form can address direction and later implementation boundaries. It is not
 a registered global Pattern or proof of delivered subgraph composition.
@@ -555,7 +555,7 @@ Crucible is a reusable score form, not an ownerless global Pattern. A Compositio
 publish its exact Pattern and dossier contract and apply ordinary revision, road, budget, and
 authority law. When the receiving decision belongs to another office, that office retains judgment
 and the Composition only coordinates the dossier. The choreography neither evaluates a capability
-in Riddle's place, materializes Shadow branches, nor promotes its own recommendation. A downstream
+in Drift's place, materializes Shadow branches, nor promotes its own recommendation. A downstream
 mutation or Covenant edit begins only through its target owner's workflow and applicable
 authority. Where its law requires an exact human verdict, the dossier cannot substitute for that
 verdict; where standing policy is eligible, Crucible does not introduce a second universal live
@@ -625,7 +625,7 @@ A **Protected Region** binds a stable region id, target artifact revision, canon
 locator, and `live_change_only` policy. Accepting a human authorship attestation protects that region
 by default; an authorized human may also protect material of another or unknown origin. Line numbers
 are only a projection. Document block ids, syntax-aware symbols, structured field paths, or
-media-specific selectors locate the region, while the digest catches drift. Moving, deleting,
+media-specific selectors locate the region, while the digest detects changes. Moving, deleting,
 splitting, reformatting, changing its marker, or changing the protection record itself counts as a
 touch.
 
@@ -643,7 +643,7 @@ For a candidate that may replace an artifact, Spellweaver orders one admission p
    owner writes a successor artifact and manifest.
 
 Protected-region change never accepts Codex preauthorization, a previous verdict, a broad “edit
-this repository” grant, or approval of a different patch. Base or candidate drift creates a new
+this repository” grant, or approval of a different patch. A change to the base or candidate creates a new
 call. Denial preserves the candidate as inert evidence; it does not mutate the active artifact.
 An Agent may prepare a suggested replacement in Lab, but cannot apply it to the protected body.
 
@@ -654,7 +654,7 @@ the approval itself never performs that relabelling.
 
 For legacy material, history and stylometry may nominate likely regions for review. They remain
 `unknown` until a human explicitly attests the exact current digest. Spellweaver owns the Gate and
-ordering; the artifact/effect owner owns region resolution and mutation; [Creation](16-creation.md)
+ordering; the artifact/effect owner owns region resolution and mutation; [SDLC](16-sdlc.md)
 owns candidate isolation and target-owner promotion; [HitL](25-hitl.md) owns the live verdict.
 No Authorship Attestation store, protected-region manifest, trusted authoring surface, overlap
 resolver, or candidate-bound review card is delivered. [State of
@@ -802,7 +802,7 @@ engine, service-class persistence, safe preemption, or periodic workflow schedul
 
 ## Returning findings
 
-Riddle returns `CompositionSuiteFindingSet@1`, `AttributionCandidate@1`, `InvalidationSet@1`, and
+Drift returns `CompositionSuiteFindingSet@1`, `AttributionCandidate@1`, `InvalidationSet@1`, and
 `CorrectionRequest@1` as evidence, not reverse edges. Spellweaver admits a Correction Request only
 as a new forward Invocation under validation/budget/authority/consent; it cannot resume an arbitrary
 old station, mutate an artifact, inherit consumer authority, or turn recurrence into training.
@@ -869,7 +869,7 @@ unauthorized, unavailable, retained, and revoked implementations; v2 coexistence
 similar-name, version-range, or newer-revision substitution.
 
 The authorship-protection profile additionally requires fixtures for every origin class;
-conflicting and inherited lineage; unchanged moves, splits, marker deletion, and manifest drift;
+conflicting and inherited lineage; unchanged moves, splits, marker deletion, and manifest changes;
 base and candidate races; live-only refusal of preauthorization; exact affected-region review; and
 proof that approving Agent output never relabels it `human_attested`.
 

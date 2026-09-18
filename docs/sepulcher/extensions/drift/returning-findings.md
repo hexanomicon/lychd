@@ -7,13 +7,13 @@ icon: material/source-merge
 
 An artifact passes its producer's checks and reaches two independent consumers. One succeeds; the
 other fails under a different Environment. That failure neither condemns the artifact nor
-identifies the producer through proximity. Riddle instead performs a bounded dependency walk
+identifies the producer through proximity. Drift instead performs a bounded dependency walk
 across the exact Composition Suite and its retained evidence, stopping where observations can distinguish one
 responsible boundary from its rivals.
 
 Returning findings are **Designed**; no feedback path runs, and reverse execution is forbidden.
 Maturity remains in
-[State of Work](../../../state-of-the-work.md#riddle-evaluation);
+[State of Work](../../../state-of-the-work.md#drift-evaluation);
 [ADR 34](../../../adr/34-evaluation.md#returning-findings-across-a-composition-suite) owns the evidentiary law,
 while [Spellweaver](../../../adr/28-workflow.md#returning-findings) owns any later executable admission.
 
@@ -43,7 +43,7 @@ travels as evidence, not reverse Graph edges.
 
 ## Walk only as far as evidence supports
 
-Riddle follows declared dependencies backward until evidence distinguishes the narrowest boundary.
+Drift follows declared dependencies backward until evidence distinguishes the narrowest boundary.
 The search stops at the smallest supported cut, not the nearest convenient producer. Earlier
 evidence may be reused only when its complete input closure, artifact revisions, Rubric, Evaluator,
 relevant Environment, and evidence contract still match.

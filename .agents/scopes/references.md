@@ -129,7 +129,7 @@ Route the five current Svelte directories through
 - `svelte-docs`
 - `xyflow`
 
-Load [`svelte.md`](svelte.md) first for the official MCP/autofixer workflow and LychD drift gates.
+Load [`svelte.md`](svelte.md) first for the official MCP/autofixer workflow and LychD consistency gates.
 
 ## Developer Workflow
 

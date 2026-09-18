@@ -37,6 +37,8 @@ A wheeled/tracked profile must prove steering, braking/holding, slope/terrain, o
 
 A legged profile must close gait/posture, joint/load limits, falls, terrain/stairs, self-righting, local sensing, and recoverable stop behavior. Neither a ROS2 route nor a marketed robot name proves stair capability or that freezing its motors is safe.
 
+[Robotic Dance](dance.md) explores human-led motion imitation as a candidate task for such bodies.
+
 ### Manipulator, phone, card, and display
 
 Locomotion is optional. A manipulator or personal presentation device still needs an exact capability snapshot, bounded effect vocabulary, local safety envelope, and reachable stop. A phone may host [Companion](../companion/index.md), while Familiar keeps its physical capability and stop truth. These forms inherit no vehicle or flight authority.

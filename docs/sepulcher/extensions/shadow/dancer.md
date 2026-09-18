@@ -58,6 +58,6 @@ visible. Dancer cannot silently substitute the first or cheapest candidate for t
 breadth.
 
 A candidate may then enter [Hunter](./hunter.md) through a separate Invocation, undergo
-deterministic checks, or become a [Riddle](../riddle/trials.md) trial subject. Those passages may
+deterministic checks, or become a [Drift](../drift/trials.md) trial subject. Those passages may
 reject every alternative. Dancer neither argues their verdict nor repairs a candidate inside the
 same expansion context.

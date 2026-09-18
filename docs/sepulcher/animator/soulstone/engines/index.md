@@ -42,7 +42,7 @@ each returned facet:
 
 | Returned facet | Continue to |
 | --- | --- |
-| image, video, visual observation, spatial form, or structured motion | [Prism](../../../extensions/prism/index.md) for the exact technical interface and [Voidlight](../../../../compositions/voidlight/index.md) or another named consuming Composition for adoption |
+| image, video, visual observation, spatial form, or structured motion | [Prism](../../../extensions/prism/index.md) for the exact technical interface and [Atelier](../../../../compositions/atelier/index.md) or another named consuming Composition for adoption |
 | speech transcription, synthesis, cloning, or delivery | [Echo](../../../extensions/echo.md) and the requesting owner |
 | music, musical vocal, production effect, or musical cue map | [Riffmaw](../../../../compositions/riffmaw/index.md) |
 | timed-language dialogue, narration, or caption edition | [Language Edition](../../../../compositions/language-edition/index.md), using its exact Echo and Translation operations |

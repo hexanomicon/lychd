@@ -40,7 +40,7 @@ When Homestead supplies water, its actual resource limits remain decisive. Autom
 admitted owner, current evidence, and applicable vetoes. A missing acknowledgment
 means unknown execution; do not retry an action merely because its reply was lost.
 
-Any exact [Legion](../../adr/42-legion.md) request passes through the commissioned owner with a fenced task,
+Any exact [Legion](../../sepulcher/extensions/legion.md) request passes through the commissioned owner with a fenced task,
 zone, resources, expiry, and stop conditions. The body retains a fresh veto. Such a
 request grants no general robot authority.
 

@@ -163,7 +163,7 @@ records the container, stream digests, shared timebase and technical settlement.
 Each declared owner then issues its own `SemanticFacetAdmissionReceipt@1` before that facet may
 enter application truth:
 
-- Voidlight judges visual and VFX material;
+- Atelier judges visual and VFX material;
 - Riffmaw judges music;
 - Language Edition judges timed-language material;
 - Foundry judges interactive world sound; and

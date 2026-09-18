@@ -19,7 +19,7 @@ icon: material/refresh
 - Test the selected built-ins and private in-process extensions with the candidate Core; pre-v1
   internal imports are not a stable API.
 - Keep source, package, database, runtime, and external recovery with their own owners.
-- Drift, conflict, missing evidence, and exhausted repair budgets block promotion; every live
+- Changed state, conflict, missing evidence, and exhausted repair budgets block promotion; every live
   effect rechecks state and authority.
 - Keep source selection, verification evidence, collective promotion authorization, and each
   target owner's live effect as distinct decisions even when the same humans participate.
@@ -35,7 +35,7 @@ icon: material/refresh
 
 ## Decision Outcome
 
-This update law applies [Creation](16-creation.md) and [Packaging](17-packaging.md) to a Core update.
+This update law applies [SDLC](16-sdlc.md) and [Packaging](17-packaging.md) to a Core update.
 [Illumination](../divination/transcendence/illumination.md#i-the-ouroboros) keeps the wider meaning
 of Ouroboros; the [operating map](../sepulcher/extensions/weaver/ouroboros.md) connects that return
 to SDLC, evaluation, training and separately owned activation. The update passage is:
@@ -90,7 +90,7 @@ one atomic snapshot.
 An inactive candidate starts from an immutable upstream commit and reapplies admitted local
 changes with provenance. Jujutsu implementations record hexadecimal commit IDs for identity;
 mutable change IDs and branch names are annotations only. The installed body need not contain a
-source repository. Any conflict or base drift blocks promotion. Bounded repair produces a new
+source repository. Any conflict or changed base blocks promotion. Bounded repair produces a new
 candidate and repeats invalidated checks and authorization. [Shadow](31-simulation.md) and
 [Assimilation](35-assimilation.md) provide future branch and repair law, not a delivered rebase
 service.
@@ -129,16 +129,22 @@ lifecycle authority.
 
 ### Future quorum roster and promotion envelope {#future-quorum-roster}
 
-The proposed future **quorum roster** is a versioned roster of active human maintainer seats. Its
-founding profile has six seats. It is not a delivered LychD runtime object, remote identity
-service, or reason to share credentials. A seat belongs to one accountable person, not to each
-of that person's devices; automation, seeds,
+The proposed future **quorum roster** is a versioned roster of active human maintainers, open to
+contributors who demonstrate care for the shared Core through extensions, implementation,
+compatibility work, review, and sustained community discussion. It has no founding headcount or
+reserved employment seats. A maintainer receives individually scoped credentials through an
+explicit admission decision; Discord membership or message volume alone grants no key.
+It is not a delivered LychD runtime object, remote identity service, or reason to share credentials.
+A seat belongs to one accountable person, not to each of that person's devices; automation, seeds,
 mirrors, runners, and agents receive no seat.
 
 The roster's source-selection law and key separation live in
 [Packaging](17-packaging.md#forge-neutral-source-trust). Evolution adds a separate promotion
-decision. For the founding six-seat profile, normal promotion requires four of six individual promotion
-signatures. The same humans and threshold may select the canonical source reference, but those
+decision. Each governance epoch explicitly fixes the promotion roster and threshold before use,
+with no prescribed initial number; changing the paid team cannot change them. Its policy requires
+independent approval from multiple people and tolerates its declared maintainer absences,
+including the founder, without a personal veto or unilateral promotion credential. The same humans
+and threshold may select the canonical source reference, but those
 signatures are not interchangeable: selecting a Git object does not approve its artifacts,
 evidence, recovery plan, or activation. Quorum removes the single-absent-founder bottleneck
 without creating a shared key, founder veto, or unilateral recovery key.
@@ -154,7 +160,7 @@ signs those exact bytes with a promotion credential distinct from source, CI-att
 deployment, migration, and lifecycle credentials. CI and builders may produce evidence but never
 hold quorum or effect authority.
 
-Four signatures make an unchanged candidate eligible; they do not make a failing candidate true.
+The epoch's required signatures make an unchanged candidate eligible; they do not make a failing candidate true.
 Missing mandatory evidence, deterministic failure, an adverse required verdict, stale state, or a
 target owner's failed precondition blocks the Evolution regardless of votes. Every target owner
 still authorizes and records its own live effect at the temporal boundary. Rewriting a Jujutsu
@@ -193,7 +199,7 @@ changes create a new governance epoch through the preceding epoch's threshold au
 exceptional roster-recovery rule is valid only if that preceding epoch already authorized and
 bound it; it is limited to reconstructing membership under declared failure conditions and cannot
 approve a candidate or live effect. Revocation does not erase evidence that was valid in its
-historical epoch. Founder absence, two unavailable seats under four-of-six, compromised-key
+historical epoch. Founder absence, the epoch's declared tolerated unavailability, compromised-key
 removal, total mirror loss, stale-envelope replay, conflicting signatures, and an unrecoverable
 quorum must be rehearsed before this design can move from Designed to Delivered.
 

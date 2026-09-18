@@ -15,7 +15,7 @@ Read:
 - serialization, database, migration, CLI, API, or generated-schema counterparts when present;
 - `pyproject.toml`, `uv.lock`, and installed dependency source when versioned behavior matters.
 
-Docstrings reveal intended use and drift; they are not stronger than accepted law, source, or
+Docstrings reveal intended use and divergence; they are not stronger than accepted law, source, or
 tests. If behavior changes, update an owning docstring in the same patch. Do not add narration that
 merely restates names and types.
 
@@ -40,7 +40,7 @@ repository checks only when the change crosses those contracts.
 
 Before handoff, inspect:
 
-- public signature and import drift;
+- public signature and import changes;
 - changed exceptions, defaults, validation, serialization, and log fields;
 - stale docstrings, comments, tests, ADR/topic operation, and State claims; and
 - dependency or lockfile changes not explicitly intended.

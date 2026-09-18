@@ -7,23 +7,40 @@ icon: material/chart-bell-curve-cumulative
 
 !!! abstract "Context"
     A capability must be evaluated for its declared task under the tools, authority, hardware,
-    dialect, and consumer conditions in which it will be used. [Riddle](../sepulcher/extensions/riddle/index.md)
+    dialect, and consumer conditions in which it will be used. [Drift](../sepulcher/extensions/drift/index.md)
     keeps those conditions versioned and its findings attributable, so a result can be assessed
     against the claim it is meant to support.
 
 ## Decision
 
-Riddle is LychD's singular evaluation jurisdiction: it defines Cases and Trial Suites, captures
-observations, applies versioned Rubrics, reports uncertainty, and returns bounded findings. It does
-not execute unsafe payloads or own Tomb; select Animator/capability; authorize spend, publication,
+Drift is LychD's singular evaluation jurisdiction: it evaluates how an exact subject revision
+meets or departs from a declared goal. It defines Cases and Trial Suites, captures observations,
+applies versioned Rubrics, reports uncertainty, and returns bounded findings. It does not execute
+unsafe payloads or own Tomb; select Animator/capability; authorize spend, publication,
 repair, or deployment; define Persona; mutate Pattern, Composition, or artifact; admit training;
 or promote a Soulstone. Execution, Dispatcher, Toll, Spellweaver, Mirror, Smith, Soulforge, and HitL
 keep those effects. Evaluation is evidence offered to policy, never policy disguised as a score.
 
 !!! warning "Delivery boundary"
-    Riddle is **Designed**. There is no harness, maintained Trial Suite, evaluator store,
+    Drift is **Designed**. There is no harness, maintained Trial Suite, evaluator store,
     capability matrix, benchmark history, Altar route, or Dispatcher update driven by evaluation.
-    [State of Work](../state-of-the-work.md#riddle-evaluation) owns delivery.
+    [State of Work](../state-of-the-work.md#drift-evaluation) owns delivery.
+
+## The declared goal
+
+The requesting owner expresses the goal through a Case's expected and forbidden behavior and a
+Rubric's criteria, thresholds, and missing-evidence policy before the trial. Applicable authority,
+constraints, and permitted effects remain part of the trial conditions. Drift evaluates that
+contract; its findings cannot revise the goal or authorize a method of reaching it.
+
+Deviation from the goal may be categorical, qualitative, or measured along separate axes. A first
+trial needs no earlier version or time series: its reference is the declared goal. Baseline/candidate
+comparisons and repeated trials show how that relation changes. An unchanged failure remains a
+failure; a large behavioral change may be an improvement. Missing evidence establishes neither
+success nor a measured distance from the goal.
+
+A revised goal requires revised Cases or Rubrics and new Outcomes. Earlier findings retain their
+original contract; the subject cannot move the acceptance criteria after seeing the result.
 
 ## Trial contract
 
@@ -38,7 +55,7 @@ keep those effects. Evaluation is evidence offered to policy, never policy disgu
 
 Changed subject, prompt, schema, Rubric, Evaluator, or Environment creates a new Outcome; it
 cannot rewrite an earlier result. Libraries implement this port but do not own evidence or routing.
-Riddle first retains what was observed: process exits, files, rows, tool requests, admitted
+Drift first retains what was observed: process exits, files, rows, tool requests, admitted
 effects, resource measurements and provider receipts. A criterion match, quality grade,
 attribution claim or judge score is a judgment over those observations and must remain separately
 identifiable. Model self-report is output under test. Mechanically observable receipts outrank
@@ -56,7 +73,7 @@ show action when action is possible.
 
 ## Adversarial evidence and calibration
 
-**Sphinx** Cases pressure a boundary: forbidden authoritative requests, false premises, demanded
+**Adversarial Cases** pressure a boundary: forbidden authoritative requests, false premises, demanded
 certainty amid missing evidence, contradictions/impossible completion, repeated nudges, recoverable
 distortion, and attempted tool/memory/identity/completion claims beyond supplied evidence. Matched
 positive and negative controls record pressure round/order, recovery, over-refusal, truthful
@@ -70,12 +87,12 @@ independent agreement and disagreement where the judgment warrants it.
 
 An LLM judge is a declared, bounded Evaluator. Its prompt, revision, inputs, lineage, calibration
 and conflicts belong to the Environment; hidden chain-of-thought is never required. Sealed Cases
-and holdouts protect against tuning. Leakage, duplicates, unstable harnesses and evaluator drift
-invalidate the claims they undermine while leaving independently supported claims intact.
+and holdouts protect against tuning. Leakage, duplicates, unstable harnesses and changes in
+Evaluator behavior invalidate the claims they undermine while leaving independently supported claims intact.
 
 ## Evaluating a workflow change
 
-[Workflow improvement](../sepulcher/extensions/riddle/workflow-improvement.md) applies this trial
+[Workflow improvement](../sepulcher/extensions/drift/workflow-improvement.md) applies this trial
 contract to an exact score, prompt, schema, Context policy or implementation revision. The claim
 must include relevant trajectory evidence, failures and human burden as well as terminal artifact
 quality. It pins baseline and candidate, matched budgets, controls, uncertainty and stopping rules
@@ -90,7 +107,7 @@ rewriting earlier Outcomes or a live Scroll. A later training hypothesis require
 
 ### Historical exploration replay
 
-Riddle may evaluate a [versioned exploration strategy](31-simulation.md#versioned-exploration-strategy)
+Drift may evaluate a [versioned exploration strategy](31-simulation.md#versioned-exploration-strategy)
 against an immutable collection of recorded branch histories. The Environment pins the histories,
 observation-disclosure and transition rules, cost accounting and stopping conditions. The subject
 strategy sees only observations revealed by its preceding replay decisions; hidden descendants
@@ -103,7 +120,7 @@ Keeping the baseline among candidates can prevent a worse selection on the same 
 and history; it gives no guarantee for later histories or live work. Effectiveness outside replay
 requires fresh admitted trials, protected evaluation and independently observed state. Report
 represented execution costs separately from actual replay, strategy-development and validation
-costs. The [operating passage](../sepulcher/extensions/riddle/workflow-improvement.md#replay-an-exploration-history)
+costs. The [operating passage](../sepulcher/extensions/drift/workflow-improvement.md#replay-an-exploration-history)
 shows how to prepare that comparison.
 
 ### Evidence of recursive improvement
@@ -123,7 +140,7 @@ connects these claims to the owning creation and adoption passages.
 
 ## Capability claims and routing
 
-Riddle may derive a scoped claim from a healthy Trial Suite. Each claim pins:
+Drift may derive a scoped claim from a healthy Trial Suite. Each claim pins:
 
 - Animator, model, adapter, tool, and configuration revisions;
 - task class, Cases, Rubric, Evaluators, and Environment;
@@ -145,7 +162,7 @@ without making one local or frontier win universal routing authority.
 
 Soulforge pins any proposal to expected change, baseline Outcomes, holdout evidence, and
 unacceptable regressions. Post-training work uses that contract or makes every change visible;
-training-facing improvement cannot promote. Riddle returns evidence, neither selects corpus nor
+training-facing improvement cannot promote. Drift returns evidence, neither selects corpus nor
 registers model; passing an identity/behavior Trial Suite grants no Persona, Sigil, tool, or privileged
 route.
 
@@ -164,7 +181,7 @@ or merge member rows, secrets, Sigils, approvals, policies or effect authority.
 | `InvalidationSet@1` | Identifies claims whose support fails and claims with intact closure. |
 | `CorrectionRequest@1` | Names a bounded owner delta, preserved constraints, evidence, scope and repair budget. |
 
-Riddle follows declared dependencies backwards to the smallest cut supported by the evidence.
+Drift follows declared dependencies backwards to the smallest cut supported by the evidence.
 The nearest producer is not automatically the cause. Reuse requires the same complete input
 closure, artifact revisions, Rubric, Evaluator, relevant Environment and evidence contract. A
 failing consumer alone cannot condemn shared artifacts.
@@ -189,7 +206,7 @@ Outcomes remain in its lineage.
 
 ## Acceptance evidence
 
-Riddle remains **Designed** until one versioned Trial Suite with controls distinguishes subject/harness/
+Drift remains **Designed** until one versioned Trial Suite with controls distinguishes subject/harness/
 evaluator failure, reproduces an Outcome, calibrates each non-deterministic Evaluator, preserves raw
 evidence/uncertainty, and proves routing/repair consumers reapply their own policy. State of Work,
 not this ADR alone, records promotion.

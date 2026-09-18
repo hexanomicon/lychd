@@ -136,10 +136,23 @@ arriving through a mirror are proposals until admitted by the canonical-source p
 
 #### Human seats and source selection
 
-The proposed initial source policy uses a versioned roster of six independently controlled human
-maintainer seats and a threshold of four. A later quorum design chooses its roster and threshold explicitly
-in each governance epoch from its compromise, unavailability, conflict, safety, and liveness
-assumptions; neither the previous ratio nor mathematical majority changes it implicitly.
+The proposed source policy uses an open, versioned roster of independently accountable human
+maintainers. Membership grows through demonstrated stewardship of the shared Core, including
+extension development, compatibility work, review, and constructive discussion of concerns with
+the community. Employment, founding status, salary, and a fixed team size confer no seat.
+Extension developers participate in the same admission path as Core contributors. Ongoing
+discussion in the shared Discord helps surface concerns; decisions and supporting evidence must
+return to durable repository records rather than remain chat-only authority.
+
+Each governance epoch explicitly names eligible people, their credential scopes, and its source
+selection threshold from documented compromise, unavailability, conflict, safety, and liveness
+assumptions. The policy requires approval by multiple independently accountable people and must
+tolerate its declared maintainer absences, including the founder, without a personal veto or
+unilateral source-selection key. No initial roster size or numeric threshold is prescribed here.
+Before cutover, current repository governance records human approval of the exact initial roster,
+admission policy and threshold, together with their rehearsals; later membership and threshold changes require the
+preceding epoch's authorization. A hiring change, extra contributor, or mathematical majority
+never changes the policy implicitly.
 
 A person receives one vote regardless of device count. Maintainers publish work under personal references
 or branches and collectively nominate an exact Git object; they never share one private “main
@@ -185,9 +198,10 @@ Radicle becomes eligible for canonical use only after all of these gates pass:
 
 1. A reviewed public-history boundary contains only material intended for durable replication;
    peer-replicated Git objects must be treated as difficult or impossible to retract.
-2. Six human seats have independent custody, documented rotation and revocation, and rehearsed
-   loss, compromise, founder-absence, two-seat-absence, no-quorum, stale-signature, and replay
-   cases.
+2. An explicitly accepted roster and threshold have independent human credential custody,
+   documented admission, rotation and revocation, and rehearsed loss, compromise, founder-absence,
+   tolerated-unavailability, no-quorum, stale-signature, and replay cases. Admission is open to
+   demonstrated community maintainers and is independent of the paid team's headcount.
 3. At least two independently administered availability domains seed or replicate the repository,
    maintainers retain recoverable copies, and loss plus mirror-rebuild drills pass. Storage,
    bandwidth, upgrade, and monitoring cost is measured on the intended operating hardware.
@@ -207,7 +221,7 @@ maintainer quorum roster, key-custody system, independent attestation plane, or 
 ## Consequences
 
 !!! success "Positive"
-    Archives retain reviewed source and legal material, generated frontend drift is bounded, and
+    Archives retain reviewed source and legal material, generated frontend differences are bounded, and
     forge and builder choices stay replaceable because immutable objects and receipts—not vendor
     vocabulary—define success.
 

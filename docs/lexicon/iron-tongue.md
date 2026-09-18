@@ -51,6 +51,10 @@ Owner: [Composition Areas](../compositions/index.md#areas) + [Workflow (ADR 28)]
 
 Owner: [Dispatcher (ADR 22)](../adr/22-dispatcher.md#durable-content-and-artifactref)
 
+**Atelier** — The visual-creation Composition owning commission, direction, image, visual effects, motion judgment, and accepted visual packages above Prism's technical contracts.
+
+Owner: [Atelier](../compositions/atelier/index.md)
+
 **Atlas** — The Altar instrument mapping Concerns, their decomposition, where they are addressed, and the judgments and evidence concerning them. Projects provide optional undertaking context; the initial delivered surface requires a Project.
 
 Owner: [Atlas](../divination/altar/atlas.md) + [Frontend (ADR 15)](../adr/15-frontend.md#atlas-and-continuity-across-invocations)
@@ -206,6 +210,12 @@ Owner: [src/lychd/domain/cortex/dispatcher.py](https://github.com/hexanomicon/ly
 **Divination** — Relation with the Lich through operating its Altar and interpreting its Transcendence.
 
 Owner: [Divination](../divination/index.md#the-two-doors)
+
+**Drift** — The evaluation Extension Domain that tests how exact subjects meet or depart from
+declared goals through versioned trials, controls, repeated Outcomes, calibrated findings,
+attribution candidates, and explicit uncertainty.
+
+Owner: [Drift](../sepulcher/extensions/drift/index.md) + [Evaluation (ADR 34)](../adr/34-evaluation.md#the-declared-goal)
 
 **Dual-Gate** — Shadow's accepted evaluation cascade combining deterministic checks with attributed qualitative judgment before promotion eligibility.
 
@@ -596,10 +606,6 @@ Owner: [ADR 05](../adr/05-extensions.md)
 
 Owner: [Artifact-reference boundary](../state-of-the-work.md#artifact-reference-contract) + [Vision (ADR 36)](../adr/36-vision.md#custody-before-sight)
 
-**Riddle** — The evaluation Extension Domain for versioned trials, controls, repeated Outcomes, calibrated findings, attribution candidates, and uncertainty.
-
-Owner: [Riddle](../sepulcher/extensions/riddle/index.md) + ADR 34
-
 **Riffmaw** — The music Composition owning composition, instrumental and vocal performance, arrangement, musical mix/master, acceptance, and cue maps; not general speech or picture sound.
 
 Owner: [Riffmaw](../compositions/riffmaw/index.md)
@@ -694,7 +700,7 @@ Owner: Graph ([ADR 24](../adr/24-graph.md)) + Orchestrator ([ADR 23](../adr/23-o
 
 **Stillness** — The discipline of bounded work that avoids needless residency, disruptive swaps, and unbounded speculation while preserving measured quality.
 
-Owner: Orchestrator ([ADR 23](../adr/23-orchestrator.md)) + Riddle ([ADR 34](../adr/34-evaluation.md))
+Owner: Orchestrator ([ADR 23](../adr/23-orchestrator.md)) + Drift ([ADR 34](../adr/34-evaluation.md))
 
 **Suite (Composition Suite)** — Designed, versioned live coordination under a qualified authority.
 Its pinned Suite-owned Pattern opens a parent Invocation/Run over separately owned Composition
@@ -763,7 +769,7 @@ admitted use. It owns the proposed processing dossier, not its receiving owners'
 
 Owner: [Transmuter](../compositions/transmuter/index.md)
 
-**Trial Suite** — Riddle's versioned `TrialSuite@1` grouping of evaluation Cases, controls, order, repetitions, and aggregation; never a Composition Suite.
+**Trial Suite** — Drift's versioned `TrialSuite@1` grouping of evaluation Cases, controls, order, repetitions, and aggregation; never a Composition Suite.
 
 Owner: [Evaluation (ADR 34)](../adr/34-evaluation.md#trial-contract)
 
@@ -790,10 +796,6 @@ Owner: [Veil](../sepulcher/extensions/veil.md) + ADR 40
 **Vessel** — The Litestar application runtime and web server.
 
 Owner: [src/lychd/app.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/app.py)
-
-**Voidlight** — The visual-creation Composition owning commission, direction, image, visual effects, motion judgment, and accepted visual packages above Prism's technical contracts.
-
-Owner: [Voidlight](../compositions/voidlight/index.md)
 
 
 ## W

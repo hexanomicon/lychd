@@ -124,13 +124,13 @@ Retries are idempotent by source revision and derivation specification.
 ## Curation and sediment {#memory-layering-sediment-not-dump}
 
 A versioned Curator weighs source quality, verification, correction, contradiction, use outcome,
-recency, expiry and Riddle findings. Access, repetition, similarity and praise can affect salience
+recency, expiry and Drift findings. Access, repetition, similarity and praise can affect salience
 only under declared policy; they do not establish truth.
 
 The Curator may promote, retain or archive a record; revoke it and invalidate derivatives; or
 record supersession and contradiction without rewriting history. An anchor has an owner and a
 review rule, so it remains corrigible. Batch curation stages revisions and leaves active Agent
-Context unchanged. Mirror, Context and Riddle may consume these records while the Curator retains
+Context unchanged. Mirror, Context and Drift may consume these records while the Curator retains
 the curation decision.
 
 ## Recall

@@ -1119,23 +1119,23 @@ strategy executor, budgeted simulation, collapse implementation, or reaper.
 - **Topic:** [Shadow](./sepulcher/extensions/shadow/index.md)
 - **Law:** [Simulation](./adr/31-simulation.md)
 
-### Riddle evaluation {#riddle-evaluation}
+### Drift evaluation {#drift-evaluation}
 
 **State:** Designed
 
-**Proved now:** Evaluation law defines adversarial evidence, capability comparison, and
-calibration. The reference workflow-improvement method specifies baseline/candidate comparison,
-causal replay limits, human-attention measures and proposed starter Cases. It includes a historical
-exploration-replay pilot outline; evaluation law distinguishes mechanism reuse from measured
-improvement in its successors.
+**Proved now:** Evaluation law binds declared goals to versioned Cases and Rubrics, with adversarial
+evidence, capability comparison, and calibration. The reference workflow-improvement method
+specifies baseline/candidate comparison, causal replay limits, human-attention measures and
+proposed starter Cases. It includes a historical exploration-replay pilot outline; evaluation law
+distinguishes mechanism reuse from measured improvement in its successors.
 
 **Do not expect yet:** There is no runnable harness, replay simulator, maintained suite, scorer
 contract, benchmark history, pass-at-k experiment, or routing update.
 
 **Evidence**
 
-- **Topic:** [Riddle](./sepulcher/extensions/riddle/index.md) and
-  [workflow improvement](./sepulcher/extensions/riddle/workflow-improvement.md)
+- **Topic:** [Drift](./sepulcher/extensions/drift/index.md) and
+  [workflow improvement](./sepulcher/extensions/drift/workflow-improvement.md)
 - **Law:** [Evaluation](./adr/34-evaluation.md)
 
 ### Soulforge training {#soulforge-training}
@@ -1159,8 +1159,8 @@ evaluation, model registration, rollback, or production promotion.
 
 **State:** Designed
 
-**Proved now:** Creation law defines an attributable request → candidate → verification →
-promotion-request → target-owner-effect chain. The reference SDLC and Ouroboros map connect
+**Proved now:** SDLC law defines an attributable request → candidate → verification →
+promotion-request → target-owner-effect chain. The Creation workflow and Ouroboros map connect
 candidate work to separately governed evaluation, memory, training and body change; these are
 documented methods with no additional registered Pattern or coordinator.
 
@@ -1175,9 +1175,9 @@ downstream-mirror cutover.
 **Evidence**
 
 - **Topic:** [Smith](./sepulcher/extensions/smith.md),
-  [agentic software development](./sepulcher/extensions/weaver/sdlc.md), and
+  [Creation](./sepulcher/extensions/weaver/creation.md), and
   [Ouroboros](./sepulcher/extensions/weaver/ouroboros.md)
-- **Law:** [Creation](./adr/16-creation.md),
+- **Law:** [SDLC](./adr/16-sdlc.md),
   [Packaging](./adr/17-packaging.md#forge-neutral-source-trust), and
   [Evolution](./adr/18-evolution.md#future-quorum-roster)
 
@@ -1240,7 +1240,7 @@ artifact transfer, durable spool, cancellation, or settlement.
 **Evidence**
 
 - **Topic:** [Legion](./sepulcher/extensions/legion.md)
-- **Law:** [Legion](./adr/42-legion.md)
+- **Law:** [Multinode](./adr/42-multinode.md)
 
 ### VPN Tether {#vpn-tether}
 

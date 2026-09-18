@@ -50,7 +50,7 @@ receiving owner's outcome. Local synthesis may finish while memory is accepted, 
 is refused, and training was never requested. An unknown downstream effect remains unknown until
 reconciled with that owner; a missing receipt is not permission to repeat the effect.
 
-Retries preserve fixed inputs and revision pins. Source drift or correction creates revised
+Retries preserve fixed inputs and revision pins. Source changes or corrections create revised
 candidates and invalidates affected pending proposals. Past acceptances remain recorded; needed
 repairs are proposed to the responsible owner rather than silently rewriting its history.
 

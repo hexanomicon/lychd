@@ -261,7 +261,7 @@ privacy enforcement, and license closure. Promote exact profiles, not model logo
 Sight's results may become exact controls for [Image](image.md), [Video](video.md),
 [Form](form.md), or [Kinesis](kinesis.md). A per-frame pose or tracked keypoint remains an
 observation with source coordinates, gaps, and uncertainty; Kinesis must create and validate any
-structured motion derivative. Voidlight retains creative judgment, Form retains 3D
+structured motion derivative. Atelier retains creative judgment, Form retains 3D
 reconstruction, Blockworld and physical Compositions retain effect authority, and
 [Oculus](../oculus.md) may observe Sight job health without owning the underlying visual facts.
 

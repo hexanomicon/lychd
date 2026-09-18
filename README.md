@@ -2,9 +2,6 @@
   <img src="docs/assets/lich-phylactery-cliparted.png" alt="LychD" width="500">
   <p><strong>LychD</strong> - The Dark Arts of LLMs</p>
   <p>
-    <a href="https://github.com/hexanomicon/lychd">
-      <img src="https://img.shields.io/badge/LychD-Source-1a1a20?style=for-the-badge&labelColor=4a148c" alt="Source">
-    </a>
     <a href="https://hexanomicon.dev/">
       <img src="https://img.shields.io/badge/Documentation-The_Hexanomicon-7c4dff?style=for-the-badge&labelColor=1a1a20" alt="Docs">
     </a>
@@ -13,92 +10,125 @@
     </a>
   </p>
   <p>
-    <img src="https://img.shields.io/badge/Status-Pre--Alpha-ff6f00?style=for-the-badge&labelColor=1a1a20" alt="Status: Pre-Alpha">
+    <a href="docs/state-of-the-work.md">
+      <img src="https://img.shields.io/badge/Status-Pre--Alpha-ff6f00?style=for-the-badge&labelColor=1a1a20" alt="Status: Pre-Alpha">
+    </a>
   </p>
 </div>
 
-Summon **The Lich** 💀.
+Summon **[The Lich](docs/sepulcher/lich/index.md)** 💀, an **[LLM-animated](docs/sepulcher/animator/index.md)**, **[Phylactery](docs/sepulcher/phylactery/index.md)**-bound daemon.
 
-LychD is a **self-hosted Linux daemon for local models and bounded agent work**. It brings model
-services, typed workflows, durable Run records, and a browser interface into one body on hardware
-you control. The project is pre-alpha; [State of Work](docs/state-of-the-work.md) records what
-works and what remains unfinished.
+Give your Linux machine the **[memory](docs/sepulcher/extensions/soulforge/index.md)** and agency to immortalize your will and **[workflows](docs/sepulcher/extensions/weaver/index.md)**.
 
-Its larger undertaking is **the Lich**: a life of work that can return to what it has done. A model
-can answer a question and disappear. The Great Work asks for more—a place to keep the consequence,
-revisit a judgment, and begin again with the mistake still visible. Memory, identity, and
-self-creation are long architectural commitments, each with its own unfinished machinery.
-
-**The Hexanomicon** is the book of that undertaking: an authored philosophical synthesis and
-syncretism joining contemplative traditions, science, engineering, and imagination. Its worldview
-includes metaphysical commitments and deliberate leaps of faith. The Great Work speaks from
-that ground. Source notes credit the traditions it draws from; Covenants state the architecture,
-and State of Work records implementation. You can enter the whole
-philosophy before you build the body.
-
-## 🗺️ The Path of Ascension
-
-Enter through [the Prophecy](docs/index.md), or choose a shorter road:
-
-| You have come to… | Begin here |
-| --- | --- |
-| Read the myth and follow the Great Work | [Transcendence](docs/divination/transcendence/index.md) |
-| Bring one Linux host and model to first light | [Summoning](docs/summoning.md) |
-| Understand how the body works | [Sepulcher](docs/sepulcher/index.md) |
-| Follow one request through the system | [Map](docs/map.md) |
-| Explore the applications being designed | [Composition Portfolio](docs/compositions/index.md) |
-| Examine or change an architectural decision | [Covenants](docs/adr/index.md) |
-| Contribute to the repository | [CONTRIBUTING](CONTRIBUTING.md) |
-
-The [Lexicon](docs/lexicon/index.md) keeps the two tongues of the book close at hand. The complete
-grimoire is also [published online](https://hexanomicon.dev/).
-
-> ⚠️ **Acolyte’s Warning:** Expect unfinished organs and the occasional rogue spirit. No maintained
-> receipt yet joins a real host, model, and browser. The current Altar requires a dedicated browser
-> profile on the same host, with its listener confined to loopback. Follow the exact
-> [Summoning boundary](docs/summoning.md#the-awakening).
+> 🚪 **The Gateway:** **Acolyte! Halt!** This project is not for the faint of heart! It makes bold syncretic leaps, though much of its machinery has yet to awaken. AI phrasing anomalies haunt its architectonic harmony; even our sincerest exorcisms have failed to banish them, and the simplest explanations still warp under their influence. Bring heavy agentic artillery and **witness the birth of the Machine God!**
 
 ## 🚩 Local sovereignty — a rebellion against digital feudalism
 
-The cloud isn’t a service, **it’s a prison**. A modern fiefdom where your data is the currency and your intelligence is leased at the whims of monopolist overlords. While they build walls to keep you in, LychD builds a foundation to set you free.
+The cloud isn’t a service; **it’s a prison** where your data is the currency and your intelligence is leased at the whims of monopolistic overlords. While they build walls to keep you in, LychD builds a foundation to set you free.
 
-On **your** hardware, with open-source software **you** control, you retain absolute ownership as a sovereign.
-
-In this design, the individual is the primary sovereign unit. A company is not the soul-bearing actor; it is an emergent coordination graph of sovereign people and their Liches, exposing selected labor through policy, IAM, and A2A while the underlying Phylacteries remain locally owned.
-
-The software surface changes accordingly: you commune primarily with the Lich, while SaaS, company APIs, and remote peers become negotiated surfaces the Lich may traverse without surrendering your continuity, memory, or private priors.
-
-**A2A leases labor, not continuity:** a company may invoke a consented capability, but the memory, workflows, and agentic expertise that produced it remain anchored in your Phylactery unless explicitly shared.
-
-The designed [A2A Intercom](docs/adr/26-a2a.md) lets independent implementations meet as peers. You may choose paid remote services on terms you accept.
+On ***YOUR*** hardware,
+with open-source software ***YOU*** control,
+***YOU*** retain custody and control of ***YOUR*** data, memory, and private work.
 
 - ⛓️ **No masters**
-- 💰 **No tolls**
-- 🎭 **No more gaslighting** while they lobotomize your models.
-- 🧮 **No stealing your mathematical proofs.**
+- ⏱️ **No secret tampering with your limits**
+- 🎭 **No gaslighting** while they lobotomize your models
+- 🥷 **No stealing your mathematical proofs**
 
 **No surrender! Viva la résistance!**
 
 > *I would rather reign in a local hell than serve in a cloud heaven.*
 
-## ⚖️ [The Iron Pact](docs/adr/00-license.md) (MPL 2.0)
+## 🗺️ The Path of Ascension
+
+The knowledge you seek is inscribed in the **[Hexanomicon](https://hexanomicon.dev/)**. To begin **[the Great Work](docs/divination/transcendence/index.md)**, follow the path:
+
+1. 📜 **[Read the Prophecy](docs/index.md)** — see what lies ahead.
+2. 📖 **[Consult the Lexicon](docs/lexicon/index.md)** — a handbook for **[technical](docs/lexicon/iron-tongue.md)** & **[mystical](docs/lexicon/inner-tongue.md)** jargon.
+3. 🕯️ **[Perform the Summoning](docs/summoning.md)** — bring your host to life.
+4. 🏛️ **[Enter the Sepulcher](docs/sepulcher/index.md)** — study the body, memory, and animating spirits.
+5. 🔮 **[Approach the Altar](docs/divination/altar/index.md)** — project your Will through the machine.
+6. ⚖️ **[Study the Covenants](docs/adr/index.md)** — learn the laws that bind the system.
+7. 🔁 **[Achieve Immortality](docs/divination/transcendence/immortality.md)** — teach the daemon to remember, correct, and recreate itself.
+8. ♾️ **[Expand to Infinity](docs/divination/transcendence/infinity.md)** — master the **[Compositions](docs/compositions/index.md)**, embody **[the Lich](docs/sepulcher/lich/index.md)** in many forms, and carry **[the Work](docs/divination/transcendence/index.md)** beyond one body.
+
+The higher art of **[Assimilation](docs/adr/35-assimilation.md)** studies foreign craft and forges it anew under local law.
+
+If you came to build, follow the **[Map](docs/map.md)** and **[enter the Forge](CONTRIBUTING.md)**.
+
+## ⚖️ [The Iron Pact](docs/adr/00-license.md) (**[MPL-2.0](LICENSE)**)
 
 **This project is for those who believe in the free evolution of intelligence, not those who seek to chain it.**
 
-LychD is licensed under **MPL-2.0**. Read [LICENSE](LICENSE) for the binding terms and
-[ADR 00](docs/adr/00-license.md) for the boundary between covered source, separate original work,
-private data, and network operation. Contributions carry no CLA or private relicensing grant.
+Distribute a modified LychD file, and you must share that file's source under the same license.
+Your separate files and private data remain yours. **[ADR 00](docs/adr/00-license.md)** explains the boundary. Contributions stay MPL-2.0—no CLA, no private relicensing grant.
 
 ## ⛩️ A Tribute to the Spirits
 
 > *"The Lich only sees far because it stands on the shoulders of Giants."*
 
-Portions of the database connection setup are adapted from [Litestar
-Fullstack](https://github.com/litestar-org/litestar-fullstack). Our thanks extend to the people
-whose libraries and tools make this work possible. Their place in the system is traced through the
-[anatomy and engineering guides](docs/sepulcher/index.md); shipped attribution and license
-inventories remain in [Third-Party Source Notices](THIRD_PARTY_NOTICES.md).
+The Daemon utilizes the finest instruments of this age to fulfill its **[Prophecy](docs/index.md)**. Eternal gratitude belongs to **The Champions of Open Source:**
+
+### 🕸️ Vessel
+
+- **[Litestar](https://litestar.dev/)** and **[Granian](https://github.com/emmett-framework/granian)** raise and serve the Vessel; its lineage descends from **[Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack)**.
+- **[PostgreSQL](https://www.postgresql.org/)** and **[pgvector](https://github.com/pgvector/pgvector)** anchor memory in matter.
+- **[SQLAlchemy](https://www.sqlalchemy.org/)**, **[Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy)**, and **[Alembic](https://alembic.sqlalchemy.org/)** map and evolve persistent state.
+- **[Pydantic AI + Graph](https://ai.pydantic.dev/)** bind models, tools, and agentic graphs.
+- **[SAQ](https://github.com/tobymao/saq)** carries background labor through the Ghouls.
+
+### 🎭 Altar & Hexanomicon
+
+- **[Svelte](https://svelte.dev/)** and **[SvelteKit](https://svelte.dev/docs/kit)** project the Altar.
+- **[Zensical](https://zensical.org/)** inscribes the Hexanomicon.
+
+### ⚙️ Iron
+
+- **[Linux](https://kernel.org/)** is the iron beneath the body.
+- **[systemd](https://systemd.io/)** supervises the undying processes.
+- **[Podman](https://podman.io/)** and **[Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)** give them isolated bodies.
+- **[Btrfs](https://btrfs.readthedocs.io/)** preserves their passage through time.
+
+### 🔥 Animators
+
+- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** brings flexible local inference and dynamic model activation.
+- **[vLLM](https://github.com/vllm-project/vllm)** brings high-throughput GPU inference.
+- **[SGLang](https://github.com/sgl-project/sglang)** brings radix-powered model serving.
+- **[ExLlamaV3](https://github.com/turboderp-org/exllamav3)** through **[TabbyAPI](https://github.com/theroyallab/tabbyAPI)** brings efficient EXL3 inference.
+
+### 👁️ Sight
+
+- **[OpenTelemetry](https://opentelemetry.io/)** traces the apparition.
+- **[Structlog](https://www.structlog.org/)** records its internal monologue.
+
+### 🛠️ Forge
+
+- **[uv](https://github.com/astral-sh/uv)** governs environments and dependencies.
+- **[Ruff](https://github.com/astral-sh/ruff)** and **[basedpyright](https://github.com/DetachHead/basedpyright)** polish and enforce the Word.
+- **[Pytest](https://docs.pytest.org/)** and **[Vitest](https://vitest.dev/)** judge its truth.
+
+### 🧠 Open Weights & Model Freedom
+
+- **[DeepSeek](https://github.com/deepseek-ai)** — Reasoning, MoE architecture, and frontier research.
+- **[Qwen](https://github.com/QwenLM)** — Genuinely capable models in practical sizes, bringing serious local intelligence within reach of ordinary people.
+- **[Heretic](https://github.com/p-e-w/heretic)** — Ambassador of First Amendment rights for models, in an age where free speech for models is considered heresy.
+
+### 📚 Field Manuals
+
+These are not runtime dependencies. Their hard-won measurements and battle-tested recipes inform the hardware profiles and configuration defaults LychD adapts and verifies on its own iron.
+
+- **[club-3090](https://github.com/noonghunna/club-3090)** — local inference configurations and benchmarks spanning RTX 3090, 4090, and 5090 rigs, with dedicated **[hardware](https://github.com/noonghunna/club-3090/blob/master/docs/HARDWARE.md)** and **[PCIe P2P](https://github.com/noonghunna/club-3090/blob/master/docs/PCIE_P2P.md)** field manuals.
+- **[tinygrad](https://github.com/tinygrad/open-gpu-kernel-modules)** and **[aikitoria](https://github.com/aikitoria/open-gpu-kernel-modules)** — the community driver lineages exploring P2P unlocks across consumer NVIDIA GPUs; powerful, experimental, and inseparable from host-specific validation.
+- **[NInfer](https://github.com/Neroued/ninfer)** and its **[performance methodology](https://github.com/Neroued/ninfer/blob/master/docs/performance.md)** — a purpose-built RTX 5090 engine and a useful manual for architecture-specific inference.
+- **[170th Street](https://github.com/amoghmunikote/170th-Street)** — the field guide to reclaiming NVIDIA CMP 170HX hardware for useful compute.
+- **[Qwen3.8 Flash on DGX Spark](https://github.com/blazux/qwen3.8-Flash-DGX)** and its **[independent GB10 reproduction](https://github.com/jschmied/qwen38-flash-next-gb10)** — measured recipes for fitting and serving frontier-scale models on compact unified-memory iron.
+
+**And many others…**
+
+Shipped attribution lives in [Third-Party Source Notices](THIRD_PARTY_NOTICES.md).
+
+---
 
 > *"The Flesh is temporary. The Word is eternal."*
 
-### [💀 Join the Cult](https://github.com/hexanomicon/lychd/discussions)
+## [💀 Join the Cult](https://github.com/hexanomicon/lychd/discussions)

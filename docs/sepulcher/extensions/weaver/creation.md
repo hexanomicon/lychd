@@ -1,9 +1,13 @@
 ---
-title: Agentic software development
-icon: material/source-branch
+title: Creation
+icon: material/creation
 ---
 
-# :material-source-branch: Agentic software development
+# :material-creation: Creation
+
+**Creation** is Weaver's software-development workflow: turn an intended change into a reviewed
+candidate, carry it to the authorized delivery owner, and return evidence for future work.
+[ADR 16 — SDLC](../../../adr/16-sdlc.md) governs the lifecycle and its handoffs.
 
 A software request becomes executable work when its desired change, present evidence, acceptance,
 and authority are clear enough for someone else to act without guessing. This method follows that
@@ -21,12 +25,16 @@ effect-free reference adapter.
 
 ## Put the graph above execution
 
+For the conceptual reading path through symmetry, formation, and return, enter
+[Transmutation](../../../divination/transmutation/index.md). This page keeps the
+complete software-development procedure and its handoffs.
+
 The engineering sequence was developed on the whiteboard before its comparison with the Tree
-of Life. The Tree's [relations within relations](../../../lexicon/tree-of-life.md#relations-within-relations)
+of Life. The Tree's [relations within relations](../../../divination/transmutation/genesis.md#relations-within-relations)
 now suggest refinements to examine: criticism within exploration, constructive alternatives
 within critique, and evidence-responsive persistence within implementation. Preserve the
 existing Inquiry as a baseline. Compare one changed relation on matched Cases through
-[workflow evaluation](../riddle/workflow-improvement.md), holding the task set, available tools,
+[workflow evaluation](../drift/workflow-improvement.md), holding the task set, available tools,
 and resource budget fixed. Measure decision quality, missed constraints, recovery, and human
 attention. A useful correspondence must improve the work beyond renaming its stations.
 
@@ -147,7 +155,7 @@ truth. [The Crucible contract](crucible.md#the-bounded-casting) owns the full ch
 When a dispute turns on a fact, run an evidence trial: identify the proposition, exact subject and
 environment, observable result, acceptance rule, and effect limits before executing the probe.
 For example, a disputed failure-recovery requirement may need a reproducible recovery experiment.
-Record failed and inconclusive trials as such. Riddle owns repeatable capability evaluation;
+Record failed and inconclusive trials as such. Drift owns repeatable capability evaluation;
 ordinary repository tests remain governed by the project's testing owners. Another argument does
 not substitute for an available decisive measurement.
 
@@ -229,7 +237,7 @@ Outcomes leave attributed event and trace records: exact inputs and revisions, r
 identities, observed tests and effects, cost or timing where measured, decisions, failures, and
 unresolved uncertainty. Observations remain distinct from owning ledgers and checkpoint truth.
 These records may become inputs to proposed [workflow evaluation and
-improvement](../riddle/workflow-improvement.md) or, after separate corpus admission, [discernment
+improvement](../drift/workflow-improvement.md) or, after separate corpus admission, [discernment
 training](../soulforge/discernment-training.md). Neither a successful task nor a repeated failure
 automatically changes a workflow or model. [Ouroboros](ouroboros.md) follows that return from
 experience to a separately judged and authorized successor.

@@ -59,7 +59,7 @@ A single engine or compound container can produce several roles. The role's acce
 | --- | --- | --- |
 | **[Prism](../sepulcher/extensions/prism/index.md) · Extension Domain** | visual/spatial effect contracts, technical result settlement, provenance, and derivative facts | a visual commission or creative acceptance |
 | **[Echo](../sepulcher/extensions/echo.md) · Extension Domain** | speech capture, STT/TTS, speech chronology, delivery, and playback facts | translation, casting, music, or application purpose |
-| **[Voidlight](voidlight/index.md) · Composition** | visual commission, direction, image, VFX, motion, and accepted visual package | music, timed-language editions, editorial cut, or publication |
+| **[Atelier](atelier/index.md) · Composition** | visual commission, direction, image, VFX, motion, and accepted visual package | music, timed-language editions, editorial cut, or publication |
 | **[Riffmaw](riffmaw/index.md) · Composition** | musical composition, instrumental and vocal performance, arrangement, mix/master, and musical cue map | ordinary speech, dubbing, standalone foley, or picture sound |
 | **[Language Edition](language-edition/index.md) · Composition** | source-aligned language versions, translation/adaptation judgment, spoken performance, captions, dialogue conform, and restricted language-version packaging | Persona identity, music, editorial recut, or publication |
 | **[Avatar](avatar/index.md) · Composition** | Persona-linked presentation eligibility, Morphe selection, and projection bindings, including exact eligible voice references | Persona lineage, raw media, speech engines, or target-world authority |

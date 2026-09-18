@@ -101,7 +101,7 @@ Four records keep assertion, proof, readiness, and permission distinct:
 
 A Rune declaration is routing intent, not quality proof. Admitted evidence closes exact code,
 weights, workflow, dependencies, dialect, licenses, language or format corpus, hardware profile,
-and measured limits. Riddle may produce findings but cannot promote; Assimilation may repair
+and measured limits. Drift may produce findings but cannot promote; Assimilation may repair
 foreign craft but does not own every capability. The target interface/profile owner admits or
 promotes evidence under its policy. Dispatcher consumes that decision without becoming a benchmark
 judge.
