@@ -1,0 +1,36 @@
+name: Bug report
+description: Report unexpected behavior with enough context to investigate.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        See the [contribution guide](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md) and [public contribution roadmap](https://github.com/hexanomicon/lychd/issues/52).
+        Issues are public. Do not include credentials, private data or sensitive vulnerability details.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed and expected behavior
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Give the smallest example or sequence you know. Say if the problem is intermittent or you cannot reproduce it yet.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Version and environment (optional)
+      description: Include the commit or version if known, and relevant OS, browser, command or configuration details. Redact private values.
+    validations:
+      required: false
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and related links (optional)
+      description: Add relevant logs, screenshots, a failing test or related issues. Remove credentials and private data before uploading.
+    validations:
+      required: false
