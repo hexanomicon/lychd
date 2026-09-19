@@ -45,7 +45,7 @@ The Python umbrella does not silently run frontend work. Both frontend gates reg
 contract; the build also changes the tracked static projection, which belongs in review with the
 source that produced it. A generated diff guard catches disagreement.
 
-Automatic pull-request and `main` checks run repository lint, formatting, strict typing and the
+Automatic pull-request, `dev` and `main` checks run repository lint, formatting, strict typing and the
 explicit core test selection owned by `make test-ci`. That selection uses in-process substitutes
 and excludes real host and container qualification. The full four-lane Repository Checks workflow
 remains manual while host-runner compatibility is unresolved; changes still require the broader

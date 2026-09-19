@@ -24,6 +24,74 @@ the boundary your change crosses:
 You can start with that one boundary. Use the Covenant index for adjacent decisions as the change
 reaches them; the full grimoire is not a prerequisite to a first contribution.
 
+## Branches and everyday collaboration
+
+**Send ordinary pull requests to `dev`, including contributions from forks.** `main` stays the
+default branch and the source of published documentation; it records the last deliberately
+verified snapshot. `dev` is the shared integration branch.
+
+1. For substantial work, agree a small slice in an issue and claim it. For small fixes, describe
+   the change in the PR or commit. Branch from current `dev`.
+2. Open a draft PR to `dev` when work would benefit from visibility or discussion. Link the issue
+   with `Refs #N`; describe the result and checks in the PR template.
+3. Read your complete change, including AI-generated code and tests. Request another reviewer
+   when the change needs their expertise. Maintainers may merge their own ready PRs; small fixes
+   may go directly to `dev`. No mandatory approval count or branch protection is configured.
+4. Check the combined result on `dev`. Core Python CI runs on PRs and pushes to both long-lived
+   branches; run the additional checks appropriate to the feature before promotion.
+
+Keep task branches short and leave disruptive unfinished work there. When shared `dev` breaks,
+fix or revert the regression before piling on more changes. Preserve shared history: fix forward
+or revert instead of resetting or force-pushing `dev` or `main`. Squashing a disposable task PR
+into `dev` is fine; preserve ancestry when moving work between `dev` and `main`.
+
+The `@hexanomicon/core` team has repository **Write** access and a shared review/mention target.
+Its membership grows through agreed responsibility; paid and independent contributors can become
+maintainers. Write applies to the repository, including unprotected `main`, so this branch policy
+is a working agreement. Project access is granted separately; `core` has **Write** on the private
+[delivery board](https://github.com/orgs/hexanomicon/projects/1). External contributors use public
+issues and fork PRs without joining the team or needing board access.
+
+### Promote a tested snapshot
+
+Record the exact candidate commit, checks and relevant untested boundaries in the linked issue or
+PR; small direct fixes may use the commit's CI record and an accompanying note. A candidate
+includes all of its earlier changes. Verify that it belongs to `dev`, then advance
+`main` to that exact commit with a **fast-forward** (preserving history). Any maintainer may do this
+under the agreed scope; it does not require a founder-only approval queue.
+
+In a clean checkout, replace `FULL_TESTED_COMMIT_SHA` with the recorded commit:
+
+```bash
+git fetch origin &&
+git merge-base --is-ancestor origin/main FULL_TESTED_COMMIT_SHA &&
+git merge-base --is-ancestor FULL_TESTED_COMMIT_SHA origin/dev &&
+git push origin FULL_TESTED_COMMIT_SHA:refs/heads/main
+```
+
+Stop if any command fails. If `main` and the candidate have diverged, merge current `main` into
+`dev`, resolve and verify the resulting candidate, then retry. A direct fix to `main` must also be
+merged back into `dev`. Ordinary fast-forward promotions need no merge back. Avoid routine
+cherry-picking or squash/rebase promotion between the long-lived branches: that creates a
+different history and may create an untested combination. Keep `dev` when cleaning up merged
+branches. Main publication updates the documentation site; it is not a package release.
+
+### Issues and the board
+
+- **In progress:** implementation is underway. **Review:** the implementation, tests and docs
+  need human reading and challenge; request additional eyes where useful.
+- **Testing:** the feature needs acceptance in the relevant environment, usually after
+  integration into `dev`. Tests also run earlier. Small changes can pass directly from Review to
+  Done when acceptance and promotion are complete.
+- **Done:** the full issue criteria are verified, required changes are on `main`, and affected
+  documentation is current. A partial PR does not complete its parent issue.
+
+Closing keywords in a PR targeting `dev` do not close its issue while `main` is the default.
+Use explicit issue references during development, then close completed issues and set Done after
+promotion. The promoting maintainer updates those issues and the board, or names who will.
+Review, acceptance and promotion are recorded manually; a green CI run or merged PR
+does not close an issue on its own.
+
 ## Grow into shared stewardship
 
 Core and extension developers share a path into maintainership: contribute useful work, preserve
@@ -89,7 +157,7 @@ pytest's native compact report, capture logs, and allocate a unique scratch dire
 `.cache/pytest`; set `PYTEST_BASETEMP` to an explicit current-user-owned path only when a caller
 must own that location.
 
-Pull requests and pushes to `main` run **Core Python CI**: repository lint, formatting and strict
+Pull requests and pushes to `dev` and `main` run **Core Python CI**: repository lint, formatting and strict
 typing, followed by `make test-ci`. This explicit selection covers configuration, database model
 contracts, animation/dispatch/orchestration, core Run logic, extensions, agents and web contracts,
 plus the configuration workflow tests. It uses in-process substitutes, requires no container

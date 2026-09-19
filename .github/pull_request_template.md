@@ -1,7 +1,9 @@
+<!-- Base branch: dev for ordinary contributions, including forks. main remains the public default. -->
+
 ## Change and scope
 
 <!-- Explain the problem, resulting behavior and the boundary of this change. -->
-<!-- Use "Refs #…" for partial work. Use "Closes #…" only when the whole issue's acceptance criteria are met. A child PR does not complete its parent outcome. -->
+<!-- Link work with "Refs #…". A PR to dev does not close an issue via closing keywords. Close it after full acceptance and promotion to main; a partial PR does not complete its parent outcome. -->
 
 ## Verification
 
