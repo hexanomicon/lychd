@@ -21,6 +21,13 @@ MAKEFLAGS += --no-print-directory
 N ?= 0
 VERBOSE ?= 0
 PYTEST_TARGETS ?= tests
+# Automatic CI covers these in-process contracts; host/filesystem qualification
+# and disposable PostgreSQL remain separate. Keep the full test/check defaults.
+CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
+	tests/unit/domain/animation tests/unit/domain/cortex \
+	tests/unit/domain/orchestration tests/unit/domain/web \
+	tests/unit/extensions tests/unit/lib tests/agents tests/web \
+	tests/integration/test_configuration_workflows.py
 CONTAINER_TEST_TARGETS ?= tests/integration/test_db_consent_pg.py \
 	tests/integration/test_database_authority_pg.py \
 	tests/integration/test_db_atlas_pg.py \
@@ -55,14 +62,14 @@ ifeq ($(RTK_ACTIVE),1)
 RUN := $(UV_DEV_RUN) $(RTK) run
 ERR := $(UV_DEV_RUN) $(RTK) err
 RUFF := $(UV_DEV_RUN) $(RTK) ruff
-TYPECHECK := $(UV_DEV_RUN) --group typing $(RTK) err basedpyright
+TYPECHECK := $(UV_DEV_RUN) --group typing --group container-test $(RTK) err basedpyright
 CURL := $(RTK) curl
 GREP := $(RTK) grep
 else
 RUN :=
 ERR :=
 RUFF := $(UV_DEV_RUN) ruff
-TYPECHECK := $(UV_DEV_RUN) --group typing basedpyright
+TYPECHECK := $(UV_DEV_RUN) --group typing --group container-test basedpyright
 CURL := curl
 GREP := grep
 endif
@@ -239,6 +246,10 @@ test-containers: ## Run explicit disposable-PostgreSQL receipts; requires a Dock
 		mkdir -p "$$(dirname "$$basetemp")"
 	fi
 	@$(UV_DEV_RUN) --group container-test pytest $(CONTAINER_PYTEST_ARGS) --basetemp "$$basetemp" $(CONTAINER_TEST_TARGETS)
+
+.PHONY: test-ci
+test-ci: ## Run the core CI selection without real host services, models or containers
+	@$(MAKE) test PYTEST_TARGETS="$(CI_PYTEST_TARGETS)" M="not container" N=0
 
 .PHONY: test-config
 test-config: ## Run configurable/runes focused tests only

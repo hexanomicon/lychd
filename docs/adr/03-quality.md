@@ -45,10 +45,13 @@ The Python umbrella does not silently run frontend work. Both frontend gates reg
 contract; the build also changes the tracked static projection, which belongs in review with the
 source that produced it. A generated diff guard catches disagreement.
 
-Pull requests expose all four lanes independently. A push to `main` repeats the first three;
-the Pages workflow supplies the clean documentation gate and deployment artifact in one build.
-The tag/manual release-candidate workflow remains separate: a green source change does not bind
-release archives or prove installation on a host.
+Automatic pull-request and `main` checks run repository lint, formatting, strict typing and the
+explicit core test selection owned by `make test-ci`. That selection uses in-process substitutes
+and excludes real host and container qualification. The full four-lane Repository Checks workflow
+remains manual while host-runner compatibility is unresolved; changes still require the broader
+gates appropriate to their boundary. The Pages workflow separately supplies the clean documentation
+gate and deployment artifact on `main`. The tag/manual release-candidate workflow remains separate:
+a green core check does not bind release archives or prove installation on a host.
 
 [Frontend](15-frontend.md#decision-lock-and-reopening-gate) owns the exact Node/npm pins and
 single client vocabulary. Bun, a second lock/runtime, Tailwind, or another styling compiler must

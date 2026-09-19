@@ -1,12 +1,12 @@
 name: Repository Checks
 
-# Manual only for now. The gate is green on a maintainer workstation but red on a
+# Full qualification remains manual. Core Python CI runs its named subset on PRs.
+# This broader gate is green on a maintainer workstation but red on a
 # GitHub-hosted runner, and the differences are environmental rather than code:
 # ubuntu-latest carries Podman 4.9, whose Quadlet generator rejects the `Pod=`
 # key that Podman 5 accepts, and the file-publication and workspace-restore
 # receipts classify a restored path differently there than on the developer's
-# filesystem. Restore the push and pull_request triggers once those are settled;
-# leaving them on now only teaches everyone to ignore a red mark.
+# filesystem. Resolve those prerequisites before expanding automatic coverage.
 on:
   workflow_dispatch:
 
@@ -124,10 +124,7 @@ jobs:
 
   documentation:
     name: Hexanomicon build
-    # Main already performs this clean build while producing the Pages artifact.
-    # Keep the independent check here for pull requests without rebuilding twice
-    # after the same revision lands.
-    if: github.event_name == 'pull_request'
+    # Include documentation in manual qualification; Pages builds main separately.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:

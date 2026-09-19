@@ -61,8 +61,11 @@ structural exclusions. `make coverage` enforces it serially with the ordinary `n
 selection. Default tests, the Python umbrella, pull-request checks, and release-candidate CI do
 not pass `--cov`. Coverage is an opt-in gate, not an implicitly passed release condition.
 
-Pull-request and `main` workflows run ordinary tests and disposable PostgreSQL receipts in
-separate jobs. Their results remain separate even when both are green.
+Pull-request and `main` Core Python CI runs the explicit `make test-ci` selection, using
+in-process substitutes without a real host, model or container daemon. Full ordinary tests and
+disposable PostgreSQL receipts remain separate jobs in the manually dispatched Repository Checks
+workflow. A core-CI pass does not establish those broader results or waive affected-boundary
+verification. The normal `make test` and `make check` selections remain unchanged.
 
 ### 5. Runtime Surface Probes
 

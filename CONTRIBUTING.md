@@ -89,11 +89,25 @@ pytest's native compact report, capture logs, and allocate a unique scratch dire
 `.cache/pytest`; set `PYTEST_BASETEMP` to an explicit current-user-owned path only when a caller
 must own that location.
 
-Pull requests run four independent repository checks: the Python umbrella, the disposable
-PostgreSQL receipts, the Altar check/build plus generated-diff guard, and a clean documentation
-build. Pushes to `main` repeat the first three while the deployment workflow's clean documentation
-build supplies the fourth gate and its Pages artifact. The tag/manual release-candidate workflow
-remains a separate non-publishing artifact receipt.
+Pull requests and pushes to `main` run **Core Python CI**: repository lint, formatting and strict
+typing, followed by `make test-ci`. This explicit selection covers configuration, database model
+contracts, animation/dispatch/orchestration, core Run logic, extensions, agents and web contracts,
+plus the configuration workflow tests. It uses in-process substitutes, requires no container
+daemon, running database, systemd service, model or GPU, and does not prove host operation.
+`CI_PYTEST_TARGETS` in the Makefile owns the exact selection. Reproduce it locally with:
+
+```bash
+make lint format-check type-check
+make test-ci
+```
+
+The **Repository Checks** workflow remains manually dispatched: full `make check`, disposable
+PostgreSQL, Altar check/build with the generated-diff guard, and a clean documentation build.
+Host-dependent Quadlet/filesystem differences on GitHub runners remain unresolved; a core-CI
+pass does not waive these broader checks for a change that needs them. The Pages workflow builds
+documentation on `main`; the tag/manual release-candidate workflow remains a separate
+non-publishing artifact receipt. `make test` and `make check` retain their full non-container
+selection; `make test-ci` does not replace them for final verification.
 
 Disposable PostgreSQL receipts are an explicit host-integration profile, not part of ordinary
 `make check`:
