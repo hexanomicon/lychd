@@ -1,0 +1,36 @@
+name: Feature proposal
+description: Propose a useful behavior and a bounded first step.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        See the [contribution guide](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md) and [public contribution roadmap](https://github.com/hexanomicon/lychd/issues/52).
+        Issues are public. Do not include credentials, private data or sensitive vulnerability details.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: Who needs this, what are they trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired behavior
+      description: Describe an observable outcome or example that would show the proposal works.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Suggested first step (optional)
+      description: Suggest a small scope, alternatives or boundaries if you have them. An implementation design is not required.
+    validations:
+      required: false
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Context, evidence and related links (optional)
+      description: Include relevant version or environment details, examples, related issues or documentation.
+    validations:
+      required: false
