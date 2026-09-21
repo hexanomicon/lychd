@@ -5,60 +5,66 @@ icon: material/coffin
 
 # :material-coffin: Sepulcher
 
-The Sepulcher gives LychD's organs a place to work: a rootless Linux runtime body of services,
-mounts, and execution boundaries. The [Lich](lich/index.md) is the recurrent whole those organs
-sustain. Start with the question your next act raises. If you want to follow a request
-across several organs first, the [Map](../map.md) traces admission, execution, and return.
+> _Within these walls, the Lich slumbers. Align the stones and summon your destiny._
 
-> _“Every organ receives a place, a boundary, and one burden it must answer for. No organ is the
-> whole.”_
+The Sepulcher is LychD's runtime body: rootless pods and services, managed by systemd on Linux,
+with their mounts and execution boundaries. These pages lay open the organs that sustain the
+[Lich](lich/index.md) from one invocation to the next.
+
+To follow the body at work, take the [Map](../map.md): one request, from admission through
+execution to its return.
 
 ## The Anatomy
 
-### I. The whole, its law, body, and memory
+### I. The Lich and Its Organs
 
-[The First Invocation](lich/index.md#the-first-invocation) opens the relation between Caller and
-Called. Its four coequal functions receive, discriminate, carry, and bind:
-[Call](lich/call.md), [Blade](lich/blade.md), [Spirit](lich/spirit/index.md), and
-[Answer](lich/answer.md).
+The [Lich](lich/index.md#the-first-invocation) is the daemon you call upon through LychD.
+Its body carries out your tasks; its memory can survive a restart.
 
-For the operational body, follow the boundary your next act crosses:
+Four equal faculties shape how it responds: [Call](lich/call.md) receives and routes your
+intent; [Blade](lich/blade.md) tests possibilities against evidence;
+[Spirit](lich/spirit/index.md) carries experience forward; and [Answer](lich/answer.md)
+binds each act to the “I” that bears its consequences.
 
-| Your question | Enter |
+Then open the body:
+
+| Organ | What you will find |
 | --- | --- |
-| What should this body declare, and how is it bound? | [Codex](codex.md): Settings, Runes, precedence, and `lychd bind`. |
-| Where do persistent files belong, and which mounts are admitted? | [Crypt](crypt.md): owned geography and external workspaces. |
-| What starts, serves, and stops inside one application process? | [Vessel](vessel/index.md). |
-| How does admitted work reach a worker and settle? | [Ghouls](vessel/ghouls.md). |
-| What committed state can survive that process? | [Phylactery](phylactery/index.md). |
-| What may return after death? | [Reanimation](phylactery/reanimation.md). |
-| Should hostile ingress occupy a separate machine? | [Gateway](gateway.md): the Designed Home and Remote placements. |
+| [Codex](codex.md) | Settings, Runes, configuration precedence, and the binding rite: `lychd bind`. |
+| [Crypt](crypt.md) | Where persistent files belong and which external workspaces may be mounted. |
+| [Vessel](vessel/index.md) | What starts, serves, and stops inside one application process. |
+| [Ghouls](vessel/ghouls.md) | How admitted work reaches a worker and settles. |
+| [Phylactery](phylactery/index.md) | Committed state that can survive the process. |
+| [Reanimation](phylactery/reanimation.md) | What can return after death. |
+| [Gateway](gateway.md) | A separate machine to face hostile ingress. Home and Remote are **Designed** placements. |
 
 ### II. The Animating Spark
 
-An [Animator](animator/index.md) is an addressable capability service. A local
-[Soulstone](animator/soulstone/index.md) receives its Rune, container, devices, mounts, secrets,
-and lifecycle on operator iron. A remote [Portal](animator/portal.md) declares an API boundary
-whose provider lifecycle stays elsewhere.
+An [Animator](animator/index.md) is a capability service you can address and call. A local
+[Soulstone](animator/soulstone/index.md) lives on your iron, with its Rune, container, devices,
+mounts, secrets, and lifecycle. A [Portal](animator/portal.md) declares a remote API boundary;
+the provider controls that service's lifecycle.
 
-Use [Capabilities](animator/capabilities.md) to determine what a caller may demand and receive,
-then [Connectors](animator/connectors.md) to understand the exact callable dialect. Readiness,
-compatibility, and permission each require their own evidence.
+[Capabilities](animator/capabilities.md) tells you what you can ask for and receive.
+[Connectors](animator/connectors.md) supplies the exact dialect for the call. Before using a
+service, establish that it is ready, that it is compatible, and that you have permission to call
+it. Each needs its own evidence.
 
-[Coven](animator/coven.md) explains compatible service groups. [Runtime transitions](animator/runtime-transitions.md)
-follows an operator request through inspection, lease drain, readiness, and recovery.
+A [Coven](animator/coven.md) groups compatible services. To change what is running, follow
+[Runtime transitions](animator/runtime-transitions.md) through inspection, lease drain,
+readiness, and recovery.
 
 ### III. Growth and Sight
 
-The [Federation of Extensions](extensions/index.md) routes additions to fifteen stable
-jurisdictions. Its map distinguishes a Domain, selected package, contribution, provider,
-Composition, and Product before any addition enters the body.
+The [Federation of Extensions](extensions/index.md) maps fifteen stable jurisdictions for new
+organs. It explains how a Domain relates to a selected package, a contribution, or a provider,
+and how Compositions and Products use them.
 
-[Oculus](extensions/oculus.md) follows the evidence of an act. Its native design extends beyond
-the currently narrower Altar observability; the source of each observation and every gap remain
-visible.
+The [Oculus](extensions/oculus.md) design follows the evidence of an act, showing where each
+observation came from and where evidence is missing. Native Oculus remains **Designed**;
+today's Altar offers a narrower view of the work.
 
 ## Enter the body
 
-[State of Work](../state-of-the-work.md) owns what has entered matter. To follow the operational
-chain from its beginning, enter the [Vessel](vessel/index.md).
+[State of Work](../state-of-the-work.md) tells you what works today and what still awaits life.
+Begin the tour of the operational body with the [Vessel](vessel/index.md).

@@ -5,7 +5,7 @@ icon: material/eye-lock-outline
 
 # :material-eye-lock-outline: Anonymization, taint, and egress
 
-> _The gate judges what leaves. The Spellweaver only brings the sealed vessel to its threshold._
+> _Let the message cross the sea wearing a borrowed name._
 
 Sensitive material may be copied long before a Portal Spell placement appears. Spellweaver therefore carries
 privacy lineage through the Pattern and creates a new sanitized branch before remote inference.

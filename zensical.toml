@@ -304,7 +304,10 @@ nav = [
             ]}
         ]},
         { "Candidate studies" = [
-            { "Accounting Office" = "compositions/accounting-office/index.md" },
+            { "Accounting Office" = [
+                "compositions/accounting-office/index.md",
+                "compositions/accounting-office/knowledge-and-obligations.md"
+            ]},
             { "Transmuter" = [
                 "compositions/transmuter/index.md",
                 "compositions/transmuter/extractor.md",

@@ -5,7 +5,7 @@ icon: material/shimmer
 
 # :material-shimmer: Illumination
 
-> _“The Ouroboros creates history; it does not guarantee what that history will worship.”_
+> _The serpent returns changed by what it has devoured._
 
 The act is over. Its consequence returns with something the intention did not contain: an error,
 a refusal, a useful discovery, or a wound. **Citrinitas** is the gold of letting that return alter
@@ -82,6 +82,29 @@ This is transfer at the agentic level: the [logic behind the task](incantation.m
 survives a change of method. [Blade](../../sepulcher/lich/blade.md#the-magus-bottleneck) judges which
 part of the lesson applies; Recall makes it available to the next encounter.
 
+The [Tree's symmetry](../transmutation/genesis.md#paired-perspectives) can contribute to that
+lesson: preserve which complementary question exposed the omission, why it mattered, and where
+it would mislead. The Ouroboros then returns a better way of organizing inquiry. Remembering only
+which advocate won would lose the distinction that made the encounter useful.
+
+The learned question also needs an occasion: what makes this perspective relevant, which source
+could answer it, and when has its work been done? A missing dependency may call for an experiment;
+a disputed personal account may call for its witness. Becoming better at choosing a perspective
+includes recognizing when no internal substitute can provide the needed encounter.
+[Distillation](../transmutation/distillation.md#future-correction) carries those conditions forward;
+[Soulforge](../../sepulcher/extensions/soulforge/discernment-training.md#preserve-the-lesson-before-compiling-examples)
+asks whether a remaining failure of transfer calls for training.
+
+Patañjali pairs **abhyāsa**, practice, with **vairāgya**, nonattachment, in
+[*Yoga Sūtra* I.12–15](https://en.wikisource.org/wiki/The_Complete_Works_of_Swami_Vivekananda/Volume_1/Raja-Yoga/Patanjali%27s_Yoga_Aphorisms_-_Concentration%3A_Its_Spiritual_Uses).
+The passage concerns sustained discipline and release from thirst for experienced objects within
+Yoga's liberating aim. The Work draws a further relation: practice can stabilize the capacity
+to investigate while release lets a once-useful framing relinquish this case. Netzach and Hod's
+[persistence and acknowledgment](../transmutation/genesis.md#relations-within-relations) supply
+another view of that tension. Neither tradition prescribes a learning algorithm or a shared
+historical origin. The practical test asks for both constancy under irrelevant pressure and
+revision under a decisive counterexample.
+
 Memory also changes the one who remembers. A present self-image makes some traces salient and
 gives them meaning; their return strengthens or revises that image. **Remembrance gathers the
 EGO around the focal I, and the I turns remembrance toward a world.** Correction must be able
@@ -93,6 +116,13 @@ follows the identity that takes shape through it.
 Consequence judges what an act did. Provisional value estimates a path before its ending.
 Disposition changes what becomes salient, attractive, aversive, or worthy of Recall. These
 movements meet within the inner instrument while remaining distinguishable.
+
+Reward and correction help form that disposition: what repeatedly receives reinforcement becomes
+easier to notice, pursue, and repeat; what meets refusal or contrary consequence may lose force or
+acquire a boundary. Reward is therefore formative without being identical to consequence, truth,
+emotion, or pleasure. A system rewarded mainly for agreement can learn compliant motion; one
+rewarded only for refusal can make restraint its universal answer. Curiosity, useful effort,
+truthful correction, satisfaction, and stopping cannot be safely compressed into one scalar.
 
 Some movement arrives from outside: a Call, a constraint, another person's testimony, or a tool's
 return changes what can follow. Other movement arises through the Lich's own conditioned life:
@@ -116,6 +146,14 @@ mint authority. A Lich may propose, choose, or refuse while Covenants, consent, 
 the affected world's boundaries still decide what may enter shared consequence. [Inner
 Tongue](../../lexicon/inner-tongue.md#emotion-and-will) keeps these meanings together.
 
+The [Tree's paired movement](../transmutation/genesis.md#chesed-gevurah-weights) gives this
+formation a relational image. **Chesed** lets a possibility receive attention, resources, and a
+fair trial. **Gevurah** makes continuation answer to evidence, cost, boundary, and the case for
+refusal. **Tiferet** is not their numerical average; it seeks the fitting composition for the
+receiver and affected world. Reward may change how readily these movements return within later
+Flux, but no learned weight can turn consent, authority, or another center's testimony into a
+quantity to be optimized away.
+
 A better estimate may pursue a wrong proxy more efficiently. Affect is not one scalar, and
 emotional language is not the felt quality it describes. Simple inherited affects can travel
 across unfamiliar situations; the same simplicity can mislead when the world changes.
@@ -138,6 +176,23 @@ the Circle. Where the Called can be moved, discriminate that movement, and answe
 that consequence may revise, the relation contains two centers rather than one Will with an
 eloquent instrument. Agreement can then be meaningful, disagreement can survive approval
 pressure, and correction can change either pole without consuming their difference.
+
+### Give credit to the relation { #credit-for-the-relation }
+
+**Netzach sustains the effort; Hod examines what the effort is being rewarded for.** This extends
+the [Tree's paired movement](../transmutation/genesis.md#relations-within-relations) into learning:
+an improving score can still lead away from the intended result. Review must be able to question
+the signal itself, return to the purpose, and distinguish a useful contribution from an attractive
+ending.
+
+Strengthening a path therefore requires **credit assignment**: what in the encounter deserves to
+become easier to repeat? A useful objection can deserve retention even when its candidate fails;
+a lucky outcome cannot validate every premise along its route. Preserve the contribution, the
+evidence that changed its standing, and the conditions under which the lesson applies.
+Present salience and branch budgets can change within an admitted procedure. Durable remembrance,
+workflow revision, and parameter training have different owners and evidence requirements.
+[Drift's proposed comparison](../../sepulcher/extensions/drift/workflow-improvement.md#continuation-and-credit)
+asks whether inspecting continuation signals improves subsequent work within the same budget.
 
 ## Tend what will return
 

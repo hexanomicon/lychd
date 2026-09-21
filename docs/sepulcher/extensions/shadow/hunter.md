@@ -5,7 +5,7 @@ icon: material/crosshairs
 
 # :material-crosshairs: Hunter
 
-> _“The beautiful path still owes the map its missing ground.”_
+> _Where the tracks end, the Hunter kneels._
 
 An attractive candidate promises a clean result, yet one claimed predicate rests on an
 unsupported assumption. **Hunter** holds that candidate still, points to the exact gap, and names

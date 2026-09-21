@@ -5,7 +5,7 @@ icon: material/anvil
 
 # :material-anvil: Crucible
 
-> _A bias is a Blade held at a declared angle. The Crucible reveals which cuts survive contact._
+> _Lay your convictions on the anvil. Listen for the crack._
 
 **Crucible** is Spellweaver's canonical two-round adversarial choreography for a consequential
 question with several defensible answers. It produces an attributed decision dossier, not truth by
@@ -57,6 +57,17 @@ may wear several Postures; without that binding, resemblance or opposition canno
 The dossier therefore attributes every contribution without pretending that each branch was a
 separate life.
 
+### Derive a complementary Posture
+
+The [Tree's symmetry](../../../divination/transmutation/genesis.md#paired-perspectives) suggests
+a design refinement: keep one question, evidence floor, criteria, authority, and resource envelope
+while changing the concern, burden of proof, and defeat conditions. An advocate for possibility
+can meet an advocate examining failure conditions. Neither is instructed to retain a conclusion
+after its support fails. Pairing attention does not require contrary verdicts or exactly two
+participants; a missing perspective may expose a premise both initially shared.
+
+### Exchange actual claims
+
 > _A Posture without stake is costume. A stake without a defeat condition is dogma._
 
 The logical score is:
@@ -75,6 +86,21 @@ strongest claims and concession; the join retains their citations, defeat condit
 and original report references. Clash II may see only the bounded attributed projection required
 for rebuttal. It is not entitled to hidden chain-of-thought, an opponent's private Context, or an
 unbounded transcript.
+
+To make reciprocity inspectable, the proposed dossier should identify the exact earlier claim
+and report revision each reply addresses. A revision should name what it retains, changes, or
+withdraws and the evidence responsible. Quench accounts for consequential objections as accepted,
+defeated, unresolved, or outside scope. Merely copying an objection into the dossier does not
+show that the receiving judgment considered its consequence. These are proposed recording
+details within the existing choreography, not a delivered schema.
+
+An offline requirement makes this concrete. One advocate proposes acceptance from a connected
+happy-path test; another identifies an untested network dependency. The first can concede the
+receipt's limited reach; the second can propose a disconnected trial instead of blanket refusal.
+If the separately admitted trial fails to produce the required artifact, a successor synthesis
+can return `PREPARE` with the repair criterion. Neither mutual agreement nor a reassuring log
+substitutes for the result. [Drift](../drift/workflow-improvement.md#reciprocal-criticism) asks whether
+the exchange improves such decisions beyond what the same resources buy without it.
 
 Logical branches may execute concurrently only after Graph's parallel contract is delivered. A
 serial casting remains a valid implementation when it gives each first-round advocate a fresh

@@ -67,6 +67,107 @@ a closed catalogue. [Discovery](discovery.md) finds owners and useful context;
 carry an engineering task, but task transport cannot replace artifact revisions, custody, or
 lineage.
 
+## Tree relations in practice { #tree-relations-in-practice }
+
+The [Tree of Life](../../../divination/transmutation/genesis.md#tree-of-life) names capacities
+whose relationships can shape the work. A task can cast those questions as bounded agent roles
+without allocating one permanent worker to every node. The practical interpretation is:
+
+| Relation | Work and return |
+| --- | --- |
+| Keter ↔ first Inquiry | Intent frames the search; evidence may justify an attributable revision of that intent. |
+| Chokhmah ↔ Binah, gathered through Da'at | Opening proposes possibilities and missing capabilities. Structuring develops categories, dependencies, assumptions, and implications. Each receives the other's findings; structure can reveal another possibility. Their shared packet carries situated knowing into the next decision. |
+| Chesed ↔ Gevurah | Support develops the strongest worthwhile opportunity. Measure examines necessary constraints, failure conditions, and potentially mistaken criteria. Each replies to the actual case received. |
+| Both → Tiferet | Synthesis composes a justified design with tradeoffs, reasons, dissent, and uncertainty. It may discover a different arrangement that answers both concerns. |
+| Netzach ↔ Hod | Development persists through resistance; review examines what was missed, what changed, and what continuation is being rewarded for. Findings can repair the work or reopen its design. |
+| Design and constructed contributions → Yesod | Join an exact, testable candidate with its inputs, evidence, limits, and remaining obligations. Review and tests can return it for revision. |
+| Verified Yesod → Malkhut | Request the target owner's admitted effect and retain the observed result. Verification alone supplies no effect permission. |
+| Consequence → Da'at → later Keter | Carry recognized consequences into the next governed question or undertaking. |
+
+**Tiferet is the coherent design; Yesod is the assembled candidate; Malkhut is the admitted
+result.** These distinctions preserve [ADR 16's chain](../../../adr/16-sdlc.md#decision-outcome):
+Creation Request → Candidate → Verification → Promotion Request → target-owner effect.
+Tests are evidence-producing probes throughout the passage, rather than Netzach's exclusive job.
+
+Opening and structuring may begin independently in parallel when they share a sufficient input
+floor and the host supports isolation. Their first reports then join; a reply that uses another
+report must follow its receipt. Chesed and Gevurah likewise begin with distinct Postures before
+reciprocal exposure. Synthesis waits for the required contributions, or records which missing
+contribution blocks settlement. Development can split across independent components; review
+always names the candidate revision it examined. Shared mutable work and changing interfaces
+create dependencies, even when the drawing places their questions side by side.
+
+The poles preserve common intent, evidence, criteria, and authority while changing attention.
+They need not disagree. Alignment means the joined decision answers the relevant concerns;
+unsupported agreement cannot close a decisive unknown. This choreography refines the bounded
+Inquiry below and can recur at direction and construction scales. Settled mechanical work does
+not require every role or a new debate.
+
+### An aspect can return in another task { #aspects-workers-and-attempts }
+
+**A sefirah names a recurring capacity; a task gives that capacity a particular question.**
+Binah can structure the architectural alternatives, then the fields and invariants of a chosen
+interface, then a distinction exposed by review. These are different tasks exercising the same
+aspect. Chokhmah can reopen possibilities at any of those scales. A worker may exercise several
+aspects in one response, and several workers may contribute to one aspect.
+
+| Layer | Meaning in a campaign | Example |
+| --- | --- | --- |
+| Aspect | A kind of attention or contribution. | Binah distinguishes identity from presentation. |
+| Task role | A bounded question with inputs, expected return, limits, and completion criteria. | Determine whether the proposed record keys preserve source identities. |
+| Worker | The participant or capability assigned to do the work. | Analyst B answers that question, then replies to another report. |
+| Task attempt | One attributable performance on exact inputs, with a recorded result. | B2 examines design D1 under criteria C0 and returns structure S2. |
+| Artifact | The material participants examine, produce, or carry onward. | S2 informs successor design D2; a review names the exact candidate it examined. |
+
+These are explanatory campaign distinctions. A native **Agent** remains the typed cognitive
+step owned by [ADR 20](../../../adr/20-agents.md); a worker session is not that contract by analogy.
+“Task attempt” here also stays distinct from Spellweaver's schedule/trigger
+[Occurrence](../../../adr/24-graph.md#execution-and-occurrence-identity). Da'at concerns knowing
+made effective through an exchange; its packet is a carrier, rather than a definition of knowing.
+
+One small staffing arrangement makes the distinction visible:
+
+| Participant | Possible successive assignments |
+| --- | --- |
+| Lead L | Frame intent, assemble evidence, preserve questions and budgets, join returns, and compose a direction for its acceptance owner. Keter, Da'at, and Tiferet inform this work without making L their exclusive bearer. |
+| Worker A | Open possibilities, develop the supported case, and later construct a candidate. Chokhmah, Chesed, and Netzach recur alongside the other capacities each task needs. |
+| Worker B | Structure alternatives and interfaces, measure proposals, and answer their advocates. Binah and Gevurah recur; later review supplies continuity with that design work. |
+| Reviewer C | Independently inspect consequential coverage, design, or candidate claims; report evidence, omissions, and correction. Hod can also question the continuation signal. |
+
+The available participants need not all be active together. Candidate assembly expresses Yesod
+through the joined work; Malkhut requires the target owner's actual effect. Reusing B for review
+does not make B independent of a design B helped author. C's exposure and conflicts must remain
+visible too. Distinct sessions cannot eliminate a shared source blind spot.
+
+### Return to the question the evidence changes { #targeted-return }
+
+Route a finding by what it changes, rather than automatically climbing to the top of the Tree.
+A late discovery can require an earlier kind of attention on a new, more specific object.
+
+| Finding | Next bounded work |
+| --- | --- |
+| The implementation violates an otherwise settled design. | Repair the affected construction and renew its verification; a new architecture debate is unnecessary. |
+| A category, dependency, invariant, or structural assumption is missing or wrong. | Revisit Binah with the finding and affected artifact. Return revised structure and its consequences. |
+| New understanding exposes a consequential alternative, or the accepted direction no longer supplies a justified way forward. | Revisit Chokhmah with the existing constraints and evidence. Structure and compare the resulting options before changing the direction. |
+| An opportunity deserves a further informative trial. | Revisit Chesed's support and Netzach's continuation within the remaining budget and Gevurah's limits. |
+| A limit or criterion is disputed. | Examine it through Gevurah and its governing owner. A proposed exception is not permission. |
+| Continued effort improves a proxy while losing the intended behavior. | Revisit Hod's review of what earns further effort; repair the signal within the admitted procedure. |
+| The surviving contributions no longer compose a justified whole. | Revisit Tiferet with their actual agreements, objections, and open choices. |
+| The intended outcome or its premise must change. | Return to Keter and the intent owner for an attributable revision. |
+
+Binah can therefore reopen Chokhmah **before the current design has failed**: a new distinction
+may make a materially better arrangement thinkable. Novelty alone does not require more search.
+State the decision it could change, a decisive question, the remaining budget, and the stopping
+condition. Preserve already sufficient conclusions when the new finding does not affect them.
+
+A return produces a **later task attempt**, not an edit to an earlier result. Retain the old
+artifact and mark which dependent conclusions need reconsideration. Reuse unaffected evidence
+only after checking that its inputs, assumptions, and obligations still apply. A changed
+candidate receives renewed affected verification and all checks required by its final owner;
+the old candidate's pass cannot silently certify the new one. Within LychD, a return must follow
+the admitted Scroll; a changed score needs a successor revision. The human campaign cannot use
+these labels to invent an undeclared runtime edge.
+
 ## Frame the delta before choosing the route
 
 Begin with the user's Intent and distinguish what they asked to achieve from ideas offered while
@@ -135,6 +236,10 @@ failure, or source has been found. There is no infinite chain of judges judging 
 independent pass may request a bounded extension under the parent budget, or return an honest
 non-decision. Its own unverified claims remain claims. The receiving owner may accept a documented
 residual uncertainty only where the governing contract permits it.
+
+Let findings create and close questions: a newly exposed dependency creates an inquiry; an
+observed answer can close it with a stated reopening condition. Record that movement in the
+evidence packet instead of treating a fixed question list as proof of coverage.
 
 Independence includes what the judge was allowed to see. Where practical, supply the question,
 acceptance and source evidence before the favored conclusion; retain input exposure and conflicts.
@@ -220,6 +325,14 @@ failure paths. Refactor where the findings justify it and rerun the checks affec
 changes. A failed test or review can return to implementation or reopen a construction inquiry
 within the remaining budget.
 
+Review also examines **what earns another attempt**. Rewarding passed-check counts, agreement,
+or tasks closed can improve a proxy while losing the intended behavior. The Hod question is
+whether the evidence used to support Netzach still tracks the acceptance target. A changed
+criterion needs its own revision and renewed affected comparisons; it cannot turn an earlier
+failure into a pass. Support, branch budgets, and stopping decisions remain inspectable under
+the parent budget. [Drift's continuation comparison](../drift/workflow-improvement.md#continuation-and-credit)
+tests whether reviewing this policy helps.
+
 Owning documentation establishes the intended truth before implementation under xDDD. At closure,
 reconcile it with the actual result, update routes and delivery claims made stale by the change,
 and preserve evidence gaps. Then perform only the VCS effect already authorized for this task:
@@ -241,3 +354,89 @@ improvement](../drift/workflow-improvement.md) or, after separate corpus admissi
 training](../soulforge/discernment-training.md). Neither a successful task nor a repeated failure
 automatically changes a workflow or model. [Ouroboros](ouroboros.md) follows that return from
 experience to a separately judged and authorized successor.
+
+## Worked design example: an offline decision dossier { #tree-worked-example }
+
+This is a hypothetical end-to-end passage, not an implementation or test receipt. Suppose the
+Intent is to add a Markdown dossier exporter to an application. The software must preserve a
+dossier's content and decision states without modifying its source or making network requests
+during export. A pinned sample dossier supplies the test fixture.
+
+| Contribution | What changes in this example |
+| --- | --- |
+| Keter | Establish the software change's purpose, preservation criteria, input boundary, and authorized development scope. |
+| Chokhmah ↔ Binah → Da'at | Opening proposes a readable summary. Structuring distinguishes literal content, decision status, references, and revision identity. Their exchange recognizes that readability alone cannot establish preservation and discovers a readable projection with a reversible data appendix. |
+| Chesed ↔ Gevurah → Tiferet | Support develops that alternative; measure tests its assumptions about unknown statuses and embedded content. The resulting design preserves every item, keeps unresolved or unknown statuses visibly separate from accepted decisions, and distinguishes an exporter that makes no requests from a viewer that might fetch embedded content. |
+| Netzach ↔ Hod | Development constructs and repairs the exporter. Review catches a misleading proxy: maximizing the number of accepted decisions exported can omit unresolved items. Returning to the existing preservation requirement corrects the implementation and continuation signal. |
+| Yesod | Join the software candidate with its repository base and patch identity; separately pin the dossier fixture and exported output. Check content round-trip, status separation, source immutability, and the declared network boundary. A failed check returns this candidate for repair. |
+| Malkhut | After verification, the authorized owner adopts the exact software change. Record that effect and subsequent observations; the design discussion alone has produced neither. |
+| Return | Retain the distinction that made the repair useful: preserving a dossier differs from presenting only its accepted conclusions. A later task can test that lesson under its own criteria. |
+
+### Follow the same aspect through successive attempts { #repeated-aspect-trace }
+
+The following is one hypothetical schedule for that example. C0 is the unchanged acceptance
+contract. O and S label opening and structuring reports, D a design, and Y an assembled software
+candidate; these are local example labels. Parallel rows show eligibility, not measured runtime
+overlap. Every reply follows receipt of the report it answers.
+
+| Wave | Eligible work and required input | Result or dependency |
+| --- | --- | --- |
+| 1 | L frames intent, criteria C0, evidence, authority, and budget. | A shared starting packet; Keter. |
+| 2, parallel | A opens alternatives from that packet; B structures requirements from the same evidence without seeing A's preferred answer. | O1 and S1; Chokhmah and Binah. |
+| 3, parallel replies | A receives S1; B receives O1. Each answers the actual counterpart. | Revised possibilities and structure; the same aspects recur. |
+| 4 | L joins returns; C independently checks decisive coverage and unknowns. | Knowing usable for the next decision, Da'at; a bounded gap can return work to the affected question. |
+| 5, independent cases then reciprocal replies | A develops support and B measures limits from the joined packet. Their replies wait for both cases. | Chesed and Gevurah supply attributed claims and dispositions. |
+| 6 | L composes their surviving contributions, with independent review of consequential unresolved claims. | Justified design D1, Tiferet. |
+| 7 | A constructs under D1 and C0; separable component tasks may run in parallel. | Joined candidate Y1, Yesod, formed through Netzach's development. |
+| 8 | C reviews Y1 with its exact evidence; tests inspect the claims they can settle. | Hod's findings; either fulfilled acceptance or a specific return. |
+| 9, conditional | B revisits a defeated identity assumption in D1. A answers the consequences of B's revised structure S2. | Binah again; reopen Chokhmah only if a consequential representation choice emerges. |
+| 10, if repair was required | L settles affected design D2; A repairs; C and the required checks examine successor Y2. | Tiferet, Netzach, Yesod, and Hod recur on new inputs; unaffected knowledge survives. |
+| 11 | The target owner checks current authority and evidence before adopting the exact verified change. | Malkhut; if admission or evidence is missing, stop with explicit noncompletion. |
+
+For wave 9, suppose a fixture hypothetically reveals two visually identical but code-point-distinct
+record IDs merged. If D1 already distinguishes exact source identity from display labels, the
+defect belongs in construction: repair it. If D1 itself equates normalized display keys with
+source identity, Binah must revise that distinction. C0 still requires identity preservation.
+That discovery might reveal a choice between an exact-value appendix and an identity-preserving
+reference table. Chokhmah can explore the choice if it materially affects the decision; neither
+alternative has won merely by being named. Missing original information remains a source gap.
+
+```mermaid
+flowchart TD
+    K["Keter: frame C0"] --> O1["A: opening 1 · Chokhmah"]
+    K --> S1["B: structure 1 · Binah"]
+    O1 --> X["Exchange actual reports<br/>Join usable knowing · Da'at"]
+    S1 --> X
+    X --> P["Support · Chesed"]
+    X --> G["Measure · Gevurah"]
+    P --> R["Exchange actual claims<br/>Compose D1 · Tiferet"]
+    G --> R
+    R --> N["Construct · Netzach"]
+    N --> Y1["Assemble Y1 · Yesod"]
+    Y1 --> H["Review exact Y1 · Hod<br/>Required verification"]
+    H --> F{"What did the evidence change?"}
+    F -- "implementation only" --> N2["Repair · Netzach"]
+    F -- "structural assumption" --> S2["Structure 2 · Binah"]
+    S2 -- "consequential option" --> O2["Opening 2 · Chokhmah"]
+    S2 -- "structure suffices" --> D2["Settle D2 · Tiferet"]
+    O2 --> E2["Structure and compare alternatives"]
+    E2 --> D2
+    D2 --> N2
+    N2 --> Y2["Assemble Y2 · Yesod"]
+    Y2 --> H2["Review exact Y2 · Hod<br/>Renew affected checks"]
+    F -- "acceptance fulfilled" --> A["Target-owner admission"]
+    H2 -- "acceptance fulfilled" --> A
+    A --> M["Observed effect · Malkhut"]
+```
+
+This diagram expands one possible repair; the table and return rules govern its omitted branches.
+Y1 can finish without Y2. An unresolved or budget-exhausted return stops without promotion.
+The picture is a design schedule; current LychD Graph execution remains serial. The
+[Tree's geometry](../../../divination/transmutation/genesis.md#geometry-of-capacities) describes
+the reusable relations, while these repeated labels show how one task can instantiate them.
+
+Correction here changes an artifact, a question, or the allocation of further work; it does not
+by itself update model parameters. Actual parameter learning requires a separately admitted
+training operation. Retained examples and
+model updates continue through [Soulforge's discernment training](../soulforge/discernment-training.md);
+the [Ouroboros cycle](ouroboros.md) connects those passages without admitting them automatically.

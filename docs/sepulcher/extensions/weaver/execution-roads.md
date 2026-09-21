@@ -5,7 +5,7 @@ icon: material/routes
 
 # :material-routes: Execution roads
 
-> _Choose who owns the labor before choosing which sky supplies the thought._
+> _The roads part beneath different banners._
 
 A station that needs one answer, a sovereign task, or an iterative coding workspace asks three
 different things. Spellweaver chooses that labor boundary inside an immutable Scroll, then admits

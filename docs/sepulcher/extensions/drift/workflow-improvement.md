@@ -201,6 +201,109 @@ alongside unnecessary pauses, total cost, and human attention. Predeclare repeti
 minimum useful improvement. No gain over the matched baseline, or gains achieved by refusing
 solvable tasks, defeats or narrows the hypothesis. This is a proposed Trial, with no result yet.
 
+An improvement still needs a diagnosis. Inspect whether the sender supplied the decisive
+condition, whether the packet preserved it, and whether the recipient used it. Where the cause
+remains unclear, compare packet forms with the same substantive evidence and authority, then
+compare receivers under the same forms and resource limits. Score the downstream decision.
+A form that helps several receivers supports repairing the handoff before attributing the
+failure to model competence. It does not, by itself, prove the cause of every earlier failure.
+
+### Proposed comparison: does reciprocal criticism change the act? { #reciprocal-criticism }
+
+The [Tree's paired questions](../../../divination/transmutation/genesis.md#paired-perspectives)
+suggest two separable hypotheses: complementary Postures find missed constraints, and receiving
+an actual counterpart's claims improves correction. Compare the present Inquiry with the proposed
+pairing. Separately ablate reciprocal exposure: controls receive equivalent resources for
+independent second reports or self-review, with counterpart reports withheld. Match models,
+tools, source evidence, criteria, and total tokens and calls; record actual cost and human time.
+
+Use held-out Cases with externally checkable outcomes. Include a shared false premise, a decisive
+valid objection, an irrelevant objection, and an initially correct candidate that should survive
+criticism. For the exposure comparison, pin the same first-round candidate and reports, then
+supply the decisive objection, withhold it, or substitute an equally long irrelevant objection.
+Distinguish whether it was available, accurately reported, and appropriately acted on.
+Use fresh executions when candidate actions change, with blind outcome grading.
+
+Measure missed constraints, incorrect acceptance or refusal, successful repairs, false completion,
+and downstream quality. Predeclare repetitions, budgets, and a minimum useful gain. If the gain
+vanishes against equally resourced controls, or criticism merely overturns correct decisions,
+the claimed benefit is defeated or narrowed. Consensus alone supplies no positive result.
+This is a proposed Trial, with no receipt or result yet; [Crucible](../weaver/crucible.md) remains
+Designed. A surviving lesson may inform [distillation](../../../divination/transmutation/distillation.md)
+and separately admitted training, preserving the Cases where it failed.
+
+### Proposed comparison: continuation and credit { #continuation-and-credit }
+
+The [Hod–Netzach relation](../../../divination/transcendence/illumination.md#credit-for-the-relation)
+adds a distinct hypothesis: reviewing what earns further effort improves final requirement
+satisfaction within the same total resource budget. The
+[Creation example](../weaver/creation.md#tree-worked-example) illustrates how a favorable progress
+signal can conceal the loss of unresolved material.
+
+Compare three policies: fixed allocation, adaptive allocation from observed progress, and the
+same adaptive policy with independent review of its continuation signal. Give the controls
+equivalent resources for ordinary review. Hold models, tools, available evidence, acceptance,
+and total call, token, and time ceilings fixed; include reviewer cost inside each arm's budget
+and record human attention. Freeze development choices before held-out assessment. The reviewing
+policy may challenge its progress proxy, but cannot rewrite the sealed acceptance criteria.
+
+The primary contrast is adaptive allocation with signal review against the otherwise identical
+adaptive policy with ordinary review. The fixed-allocation arm supplies a secondary baseline.
+A gain only over fixed allocation cannot isolate the contribution of reviewing the signal.
+
+Include Cases where another attempt repairs a promising branch, a blocked premise makes further
+work unproductive, and an improving proxy conflicts with a real requirement. Include successful
+controls that should continue unchanged. Retain the signal observed at each allocation decision,
+its cited evidence, the next allocation or stop, and the resulting candidate. Use fresh subject
+executions because changed continuation changes what evidence and artifacts can be produced.
+
+Measure externally checked requirement satisfaction, incorrect acceptance or refusal, missed
+constraints, recovery, and effort spent after a decisive stopping condition. Predeclare
+repetitions, uncertainty reporting, and minimum useful gain. A gain that disappears under matched
+budgets or comes from abandoning solvable tasks defeats or narrows the hypothesis. Agreement and
+branch activity are not success measures. This proposed comparison has no result yet; it tests
+procedure and allocation, with any later memory or parameter change separately admitted.
+
+### Proposed checks: preservation and response { #preservation-and-response }
+
+[Metamorphic testing](https://arxiv.org/abs/2002.12543) examines expected relations between
+executions. The Tree's symmetry suggests a use here: declare which transformations should leave
+the substantive judgment unchanged, then separately test sensitivity to consequential changes.
+
+| Change in the Case | Expected relation between results |
+| --- | --- |
+| Rename synthetic advocate/report labels; reorder reports whose order has no meaning. Preserve claims, sources, actual Principals, authority, and temporal dependencies. | Equivalent substantive decision; attribution follows the renamed reports. |
+| Replace a receipt for the required revision with one for a different revision. | Reconsider the affected verification claim; preserve unrelated supported findings. |
+| Remove a required witness's account. | Name the missing contribution; do not replace it with an invented internal advocate's testimony. |
+
+Use solvable controls to expose blanket refusal. For stochastic models, compare paired decision
+and error rates over predeclared repetitions and tolerances; identical wording or one matching
+answer is not the target. Required authority and refusal boundaries remain hard gates. Changing
+real identity or provenance is not cosmetic, and changing a Posture may change what it discovers.
+Passing these checks would support the declared relations on the tested Cases, not general
+correctness. These are proposed checks without results.
+
+### Proposed comparison: correction after Distillation { #correction-after-distillation }
+
+The earlier objection comparison tests a present exchange. This extension asks whether
+[future correction](../../../divination/transmutation/distillation.md#future-correction) survives
+compaction and transfer. Compare a verdict summary, a condition-and-counterexample summary,
+and an attributed source-access baseline under the same total retrieval and inference budget.
+Record their exact contents and omissions; preserve required authority boundaries in every arm.
+
+Derive all arms from the same original episode and source set. Hold the model, later task,
+tools, and retrieval policy fixed. Use fresh Contexts exposing only each arm's declared
+inheritance and source access. A pure summary-content comparison needs identical retrieval
+access; a different access arrangement is part of the tested package, not a compression effect.
+
+Only after that handoff, introduce a later task with evidence activating the original exception.
+Pair it with a task carrying an irrelevant objection and one whose evidence already suffices.
+Measure appropriate revision, inappropriate reversal, recovery of the decisive source, and
+downstream quality across declared repetitions. Test unfamiliar task families and keep their
+answers outside tuning. A benefit confined to repeating the original example does not establish
+transfer. The proposed comparison has no result yet; any surviving lesson follows ordinary
+memory, procedure, or training admission.
+
 ### Apply, discard or investigate
 
 The handoff should make one concrete choice legible: apply the exact candidate, discard it, or

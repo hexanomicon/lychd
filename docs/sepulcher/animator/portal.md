@@ -5,8 +5,7 @@ icon: material/weather-hurricane
 
 # :material-weather-hurricane: Portal: The Rift to the Remote Sky
 
-> _"A rift is not a rescue that opens itself. It is named, sealed, and entered under the Magus's
-> authority."_
+> _Beyond the rift, another sky keeps its own thunder._
 
 A **Portal** is a remote, API-backed [Animator](./index.md) declared by a provider-specific Rune.
 It has no container and consumes no local VRAM. Its connector runs inside the trusted Vessel, where

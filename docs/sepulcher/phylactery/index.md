@@ -5,7 +5,7 @@ icon: fontawesome/solid/flask
 
 # :fontawesome-solid-flask: Phylactery
 
-> _“The Vessel passes. The Phylactery keeps only what was committed.”_
+> _The Vessel passes. What it inscribed waits in the dark._
 
 The **Phylactery** is the PostgreSQL database cluster assigned to one application partition.
 It keeps the committed records from which another [Vessel](../vessel/index.md) may recover Run

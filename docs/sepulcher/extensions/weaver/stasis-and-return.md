@@ -5,7 +5,7 @@ icon: material/pause-circle-outline
 
 # :material-pause-circle-outline: Stasis and return
 
-> _A true pause leaves a marked threshold. Return begins there, or it does not begin._
+> _Between the pages, a ribbon holds the place where the rite fell quiet._
 
 A pause records its owner and return boundary. Broken continuity never reroutes or restarts the
 Intent. [ADR 28](../../../adr/28-workflow.md#gates-effects-and-stasis) owns this law.

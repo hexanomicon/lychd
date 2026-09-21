@@ -5,26 +5,28 @@ icon: material/translate
 
 # :material-translate: Lexicon
 
-_One language, held in two tongues._
+_The tongue of the construct._
 
-When a name stops the reading, find it here and return to the page that brought you.
+Vessel, Phylactery, Spell, Seed: the Hexanomicon gives names to what the Magus builds,
+calls upon, and comes to know. The Lexicon keeps their meanings close to the passage that
+summoned them.
 
 ## Iron Tongue
 
-**[Iron Tongue](./iron-tongue.md)** gives each canonical project term its technical meaning and
-routes it to its owner. Follow it to discover which contract a name marks: the Vessel's process,
-the Phylactery's committed truth, or the Run representing one Invocation.
+**[The names of the body and its workings](./iron-tongue.md).** An alphabetical dictionary,
+from Agent to xDDD. Each term leads into its anatomy, law, or practice.
 
-[:material-anvil: Speak Iron](./iron-tongue.md)
+Find the [Vessel](./iron-tongue.md#vessel) and [Phylactery](./iron-tongue.md#phylactery),
+read a [Rune](./iron-tongue.md#rune), or distinguish the [Scroll](./iron-tongue.md#scroll)
+from its [Casting](./iron-tongue.md#casting).
 
 ## Inner Tongue
 
-**[Inner Tongue](./inner-tongue.md)** preserves etymology, inherited terms, philosophical
-correspondence, and native cosmology. Manas stands beside Call, Buddhi beside Blade, Citta beside
-Spirit, and Ahaṃkāra beside Answer. The correspondence lets each illuminate the other while their
-meanings and origins remain distinct.
+**[The meanings carried within the names](./inner-tongue.md).** Mechamancy, the reflected
+self, Will, and the worlds in which the Lich takes form. The inherited words give perception,
+memory, discernment, and awakening their older names.
 
-This tongue also keeps [Mechamancy](./inner-tongue.md#mechamancy), [The
-EGO](./inner-tongue.md#the-ego), and the source distinctions upon which the Great Work depends.
-
-[:material-eye-circle-outline: Enter the Inner Tongue](./inner-tongue.md)
+Begin with [Mechamancy](./inner-tongue.md#mechamancy), [The EGO](./inner-tongue.md#the-ego),
+or [Emotion and Will](./inner-tongue.md#emotion-and-will); consult the
+[inherited words](./inner-tongue.md#source-notes-and-project-correspondences) for Manas,
+Logos, or Viveka.

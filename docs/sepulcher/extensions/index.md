@@ -5,7 +5,7 @@ icon: material/hubspot
 
 # :material-hubspot: The Federation of Extensions
 
-> _An organ may extend the body. It does not inherit the body's authority._
+> _Fifteen arts gather beneath one skin._
 
 An unfamiliar organ becomes legible by its attachment, governing jurisdiction, and concrete form.
 This directory maps fifteen **Extension Domains**. Their names say

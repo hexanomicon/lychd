@@ -5,8 +5,7 @@ icon: material/eject-outline
 
 # :material-eject-outline: Reanimation
 
-> _“Daemons return through Systemd. A thought returns only through a boundary committed before
-> death.”_
+> _Read the ashes before you call the dead by name._
 
 **Reanimation** brings a new Vessel to the records committed before its predecessor died.
 Systemd can raise the process; the Phylactery, queue, checkpoint, and wait owners determine which
@@ -126,5 +125,4 @@ not the old in-memory event stream.
 Retain the host, unit, image, database, queue, Run, shutdown, and recovery observations before
 promoting the result to an operator receipt.
 
-> _The promise is not that nothing dies. The promise is that the Phylactery never calls an
-> uncommitted breath immortal._
+> _Inscribe the breath before it passes beyond recall._

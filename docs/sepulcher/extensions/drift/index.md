@@ -5,7 +5,7 @@ icon: material/compass-outline
 
 # :material-compass-outline: Drift: Evaluation Against a Declared Goal
 
-> _“Declare the aim before you judge the path.”_
+> _By which star will you judge the wandering?_
 
 **Drift** evaluates how actual behavior and outcomes meet or depart from a declared goal. Each
 trial binds an exact subject revision to Cases and Rubrics that make the goal testable. Declared

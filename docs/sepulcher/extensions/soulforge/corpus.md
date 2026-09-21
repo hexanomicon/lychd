@@ -5,7 +5,7 @@ icon: material/database-lock
 
 # :material-database-lock: Corpus Admission and Compilation
 
-> _The first gate of the forge is a ledger of what it refused._
+> _At the furnace door, every offering awaits judgment._
 
 Before a trainer receives anything, Soulforge must turn a Training Intent and exact nominated
 records into an admitted immutable snapshot, then a Dataset Manifest. Both passages are

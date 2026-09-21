@@ -3,822 +3,1137 @@ title: Iron Tongue
 icon: material/alphabet-tengwar
 ---
 
-# :material-alphabet-tengwar: Iron Tongue — Canonical Project Terms
+# :material-alphabet-tengwar: Iron Tongue
 
-A name in the Iron Tongue marks one stable part, contract, or operated concept. Find the term
-alphabetically, then follow its owner for the full law or operation. The [Inner
-Tongue](inner-tongue.md) keeps etymology, philosophical correspondence, and native cosmology.
+<span id="iron-tongue-canonical-project-terms"></span>
+
+The Vessel runs. The Phylactery keeps what has been committed. A Rune declares intent; a Scroll
+gives work its score. These names let the Magus speak precisely about the body and its workings.
+
+Find a word by letter. Each name opens the page that gives its full anatomy, law, or operation.
+[State of Work](../state-of-the-work.md) records what has entered matter; the [Inner
+Tongue](inner-tongue.md) follows the names into their histories and philosophical meanings.
 
 [A](#a) · [B](#b) · [C](#c) · [D](#d) · [E](#e) · [F](#f) · [G](#g) · [H](#h) · [I](#i) · [K](#k) · [L](#l) · [M](#m) · [N](#n) · [O](#o) · [P](#p) · [Q](#q) · [R](#r) · [S](#s) · [T](#t) · [U](#u) · [V](#v) · [W](#w) · [X](#x)
 
 ## A
 
-**Agent** — A Pydantic AI execution specification hydrated with a model or provider, tools, dependencies, limits, and an output contract.
+### [Agent](../adr/20-agents.md) { #agent }
 
-Owner: [Agents (ADR 20)](../adr/20-agents.md)
+An execution specification that gives Pydantic AI a model or provider, tools, dependencies,
+limits, and an output contract.
 
-**AgentJob** — The durable, idempotent occurrence record for one bounded attempt by a delegated-agent Graph node.
+### [AgentJob](../adr/24-graph.md#3-delegated-agent-macro-nodes) { #agentjob }
 
-Owner: [Graph (ADR 24)](../adr/24-graph.md#3-delegated-agent-macro-nodes)
+The durable, idempotent occurrence record for one bounded attempt by a delegated-agent Graph
+node.
 
-**Altar** — The Litestar-served Svelte web surface whose Atlas, Bridge, Loom, Nexus, and Orb instruments project server-owned truth.
+### [Altar](../adr/15-frontend.md) { #altar }
 
-Owner: [ADR 15](../adr/15-frontend.md) + [State](../state-of-the-work.md#altar-and-observability)
+The place where the Magus meets the running Lich. Its five instruments—Atlas, Bridge, Loom,
+Nexus, and Orb—show server-owned truth through a Svelte web interface served by Litestar.
 
-**Animator** — A typed, addressable capability endpoint manifested as a local Soulstone or remote Portal; only eligible local Soulstones are lifecycle-managed.
+[State of Work](../state-of-the-work.md#altar-and-observability)
 
-Owner: [src/lychd/domain/animation/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/animation/)
+### [Animator](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/animation/) { #animator }
 
-**Animus** — The inner-tongue name for active power answering through an admitted Animator capability, clearest for a loaded model; not Spirit, Persona, identity, authority, or a new runtime object.
+An address at which a typed capability can answer: a local Soulstone or a remote Portal.
+Lifecycle control belongs only to eligible local Soulstones.
 
-Owner: [Animator](../sepulcher/animator/index.md#animus-the-power-answering)
+### [Animus](../sepulcher/animator/index.md#animus-the-power-answering) { #animus }
 
-**Answer** — The attribution office of the inner instrument: it binds an active Sigil, identity, Context, capability, memory, selected act, and consequence to one bounded local “I.”
+The active power answering through an admitted Animator capability, most plainly a loaded model.
+The name belongs to the Inner Tongue; it adds no runtime object and confers neither Persona nor
+identity nor authority. Spirit names a different office.
 
-Owner: [Answer](../sepulcher/lich/answer.md)
+### [Answer](../sepulcher/lich/answer.md) { #answer }
 
-**Archive** — The governed memory substrate in the Phylactery for eligible traces, Karma, anchored records, provenance, and decay state.
+The office that binds cognition, act, and consequence to one bounded local “I.” It joins the
+active Sigil, identity, Context, capability, memory, and selected act in that attribution.
 
-Owner: [Memory (ADR 27)](../adr/27-memory.md#memory-layering-sediment-not-dump) + [State](../state-of-the-work.md#karma-semantic-memory)
+### [Archive](../adr/27-memory.md#memory-layering-sediment-not-dump) { #archive }
 
-**Area (Composition Area)** — A non-exclusive thematic grouping for discovering Compositions.
-Its directory and index provide a documentation route; each Composition keeps its canonical
-home, records, judgment, and authority. A Suite may coordinate live work within or across Areas.
+The governed memory substrate in the Phylactery for eligible traces, Karma, anchored records,
+provenance, and decay state.
 
-Owner: [Composition Areas](../compositions/index.md#areas) + [Workflow (ADR 28)](../adr/28-workflow.md#areas-for-discovery)
+[State of Work](../state-of-the-work.md#karma-semantic-memory)
 
-**ArtifactRef** — Immutable metadata naming external durable content by identity, SHA-256 digest, media type, byte size, and classification.
+### [Area (Composition Area)](../compositions/index.md#areas) { #area }
 
-Owner: [Dispatcher (ADR 22)](../adr/22-dispatcher.md#durable-content-and-artifactref)
+A thematic route for discovering Compositions. Areas may overlap; each Composition keeps its own
+home, records, judgment, and authority. A Suite can coordinate live work within or across them.
 
-**Atelier** — The visual-creation Composition owning commission, direction, image, visual effects, motion judgment, and accepted visual packages above Prism's technical contracts.
+[Covenant 28: Workflow](../adr/28-workflow.md#areas-for-discovery)
 
-Owner: [Atelier](../compositions/atelier/index.md)
+### [ArtifactRef](../adr/22-dispatcher.md#durable-content-and-artifactref) { #artifactref }
 
-**Atlas** — The Altar instrument mapping Concerns, their decomposition, where they are addressed, and the judgments and evidence concerning them. Projects provide optional undertaking context; the initial delivered surface requires a Project.
+Immutable metadata naming external durable content by identity, SHA-256 digest, media type, byte
+size, and classification.
 
-Owner: [Atlas](../divination/altar/atlas.md) + [Frontend (ADR 15)](../adr/15-frontend.md#atlas-and-continuity-across-invocations)
+### [Atelier](../compositions/atelier/index.md) { #atelier }
 
-**Authorship Attestation** — An attributable claim binding an exact artifact region and content digest to `human_attested`, `agent_generated`, `mixed`, or `unknown` origin; approval is not authorship.
+The visual-creation Composition owning commission, direction, image, visual effects, motion
+judgment, and accepted visual packages above Prism's technical contracts.
 
-Owner: [Workflow (ADR 28)](../adr/28-workflow.md#authorship-provenance-and-protected-regions)
+### [Atlas](../divination/altar/atlas.md) { #atlas }
 
-**Autopoiesis** — The Work's intended capacity for verified self-repair and extension under the operator's authority.
+The Altar’s map of Concerns: how they divide, where they are addressed, and what judgment and
+evidence bear on them. A Project can supply undertaking context; the initial delivered Atlas
+requires one.
 
-Owner: [Immortality](../divination/transcendence/immortality.md) + ADR 16/18/35
+[Covenant 15: Frontend](../adr/15-frontend.md#atlas-and-continuity-across-invocations)
 
-**Avatar** — The Composition that assembles one immutable eligible Lich presentation profile and settles one or many independently admitted projection bindings; it may project into a Spectre VR Habitat but does not own the Habitat or Encounter.
+### [Authorship Attestation](../adr/28-workflow.md#authorship-provenance-and-protected-regions) { #authorship-attestation }
 
-Owner: [Avatar](../compositions/avatar/index.md)
+An attributable claim binding an exact artifact region and content digest to `human_attested`,
+`agent_generated`, `mixed`, or `unknown` origin; approval is not authorship.
 
-**awaited** — The Nexus `CovenState` token for a reachable dynamic capability in `ACTIVATABLE` phase that is not yet loaded.
+### [Autopoiesis](../divination/transcendence/immortality.md) { #autopoiesis }
 
-Owner: [src/lychd/domain/web/schemas.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/schemas.py)
+The Work's intended capacity for verified self-repair and extension under the operator's
+authority.
 
+[Covenant 16](../adr/16-sdlc.md) · [Covenant 18](../adr/18-evolution.md) · [Covenant 35](../adr/35-assimilation.md)
+
+### [Avatar](../compositions/avatar/index.md) { #avatar }
+
+The Composition that assembles one immutable eligible Lich presentation profile and settles one
+or many independently admitted projection bindings; it may project into a Spectre VR Habitat but
+does not own the Habitat or Encounter.
+
+### [awaited](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/schemas.py) { #awaited }
+
+The Nexus `CovenState` token for a reachable dynamic capability in `ACTIVATABLE` phase that is
+not yet loaded.
 
 ## B
 
-**Binding** — The `lychd bind` operation that compiles validated Rune intent into generated Quadlet manifests at the host binding site.
+### [Binding](../adr/19-cli.md) { #binding }
 
-Owner: [Pulse](../adr/19-cli.md)
+The rite performed by `lychd bind`: validated Rune intent becomes generated Quadlet manifests at
+the host binding site.
 
-**Blade** — The discrimination office that separates supported shape, evidence, authority, and continuation from persuasive or unsafe alternatives.
+### [Blade](../sepulcher/lich/blade.md) { #blade }
 
-Owner: [Blade](../sepulcher/lich/blade.md)
+The office of discrimination. It tests shape, evidence, authority, and the grounds for
+continuing, separating what is supported from what is merely persuasive or unsafe.
 
-**Bridge** — The Altar instrument and continuing place of communion in which a séance may hold many Invocation Circles.
+### [Bridge](../divination/altar/bridge.md) { #bridge }
 
-Owner: [Altar Bridge](../divination/altar/bridge.md)
+The Altar’s continuing place of communion. One séance may hold many Invocation Circles.
 
-**Broadcast** — The editorial Composition owning canonical source words and claims, picture-bound sound, final timeline/render/mux, release, and correction without absorbing upstream media owners.
+### [Broadcast](../compositions/broadcast/index.md) { #broadcast }
 
-Owner: [Broadcast](../compositions/broadcast/index.md)
-
+The editorial Composition owning canonical source words and claims, picture-bound sound, final
+timeline/render/mux, release, and correction without absorbing upstream media owners.
 
 ## C
 
-**Call** — The reception and routing office that makes present signals, recalled forms, and possible acts addressable without selecting one.
+### [Call](../sepulcher/lich/call.md) { #call }
 
-Owner: [Call](../sepulcher/lich/call.md)
+The office of reception and routing. It brings present signals, recalled forms, and possible
+acts within reach; selection follows elsewhere.
 
-**Candidate author** — The bounded Agent role that authors attributable candidates inside the Smith Domain; authorship grants no promotion or activation authority.
+### [Candidate author](../sepulcher/extensions/smith.md) { #candidate-author }
 
-Owner: [Smith](../sepulcher/extensions/smith.md) + ADR 35
+The bounded Agent role that authors attributable candidates inside the Smith Domain; authorship
+grants no promotion or activation authority.
 
-**Capability** — An exact versioned semantic service interface requestable from an Animator and implemented by an immutable profile revision; current source retains a narrower family/model compatibility projection.
+[Covenant 35](../adr/35-assimilation.md)
 
-Owner: [Dispatcher (ADR 22)](../adr/22-dispatcher.md#capability-binding-cartography)
+### [Capability](../adr/22-dispatcher.md#capability-binding-cartography) { #capability }
 
-**CapabilityGrant** — The Dispatcher's temporary binding of one exact warm operation to only its admitted model, call, job, or session surface and GrantLease; current source delivers one narrow v1 chat-model/toolset compatibility shape.
+An exact versioned semantic service interface requestable from an Animator and implemented by an
+immutable profile revision; current source retains a narrower family/model compatibility
+projection.
 
-Owner: [Dispatcher (ADR 22)](../adr/22-dispatcher.md#the-grant-lease-doctrine)
+### [CapabilityGrant](../adr/22-dispatcher.md#the-grant-lease-doctrine) { #capabilitygrant }
 
-**Casting** — The performance of one exact Scroll inside an admitted Invocation and Circle; it creates no second Run identity.
+The Dispatcher's temporary binding of one exact warm operation to only its admitted model, call,
+job, or session surface and GrantLease; current source delivers one narrow v1 chat-model/toolset
+compatibility shape.
 
-Owner: [Circle](../divination/altar/circle.md) + Spellweaver (ADR 28)
+### [Casting](../divination/altar/circle.md) { #casting }
 
-**Censor** — A typed local transformation station that produces a sanitized candidate and findings without declassification or egress authority.
+The performance of one exact Scroll within an admitted Invocation and its Circle. The
+Invocation’s Run remains the sole execution identity.
 
-Owner: [Spellweaver anonymization](../sepulcher/extensions/weaver/anonymization.md#transformations-are-evidence)
+[Covenant 28](../adr/28-workflow.md)
 
-**Circle** — The bounded world opened by one Invocation, joining Caller and Called, Intent, Sigil, Context, capability, authority, action, and consequence; in Altar it is the pinnacle inside Bridge, not a separate instrument.
+### [Censor](../sepulcher/extensions/weaver/anonymization.md#transformations-are-evidence) { #censor }
 
-Owner: [Altar Circle](../divination/altar/circle.md) + [The First Invocation](../sepulcher/lich/index.md#the-first-invocation)
+A typed local transformation station that produces a sanitized candidate and findings without
+declassification or egress authority.
 
-**Codex** — LychD's editable configuration home, containing settings and validated Rune intent; it defaults to `~/.config/lychd`, with `XDG_CONFIG_HOME` selecting another configuration root.
+### [Circle](../divination/altar/circle.md) { #circle }
 
-Owner: [Codex](../sepulcher/codex.md) + [src/lychd/config/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/config/)
+The bounded world opened by one Invocation: Caller and Called meet with Intent, Sigil, Context,
+capability, authority, action, and consequence. In the Altar, Circle is the pinnacle within
+Bridge.
 
-**Coffin** — The lower-trust, per-job containment profile for an opaque delegated-agent runtime with disposable files and a revocable Provider Gate.
+[The First Invocation](../sepulcher/lich/index.md#the-first-invocation)
 
-Owner: [Security (ADR 09)](../adr/09-security.md#the-coffin-delegated-agent-profile)
+### [Codex](../sepulcher/codex.md) { #codex }
 
-**Cognizance** — Consciousness recognizing its local occurrence through a bounded “I”; in the craft register, that recognition becomes operationally answerable when cognition apprehends its occurrence, Answer attributes it as “mine,” and it participates causally in action, consequence, and correction; not a runtime boolean or synonym for Consciousness.
+LychD's editable configuration home, containing settings and validated Rune intent; it defaults
+to `~/.config/lychd`, with `XDG_CONFIG_HOME` selecting another configuration root.
 
-Owner: [Immortality](../divination/transcendence/immortality.md#cognizance)
+[src/lychd/config/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/config/)
 
-**Companion** — The mobile-client/session Composition over one exact phone-shaped Familiar body; it owns configurable client experience, bounded local interaction, disclosure, and reconnect while Familiar retains hardware and physical-safety authority.
+### [Coffin](../adr/09-security.md#the-coffin-delegated-agent-profile) { #coffin }
 
-Owner: [Companion](../compositions/companion/index.md)
+The lower-trust, per-job containment profile for an opaque delegated-agent runtime with
+disposable files and a revocable Provider Gate.
 
-**Composition** — A reusable native application capability that owns its domain records, judgment, policies, effects, and Pattern catalogue independently of any one Product, customer, or deployment.
+### [Cognizance](../divination/transcendence/immortality.md#cognizance) { #cognizance }
 
-Owner: [Composition Portfolio](../compositions/index.md) + Spellweaver (ADR 28)
+Consciousness recognizing its local occurrence through a bounded “I.” In the craft, cognition
+apprehends its own occurrence, Answer attributes it as “mine,” and that recognition takes part
+in action, consequence, and correction. This operational answerability cannot be reduced to a
+runtime flag; Consciousness names the Whole.
 
-**Composition Revision** — One immutable version of a stable Composition contract, pinning its record and request/result families, Pattern catalogue, judgment, policy, effect and authority seams, projections, outcomes, and recovery law; a materially different capability requires another identity.
+### [Companion](../compositions/companion/index.md) { #companion }
 
-Owner: [Workflow (ADR 28)](../adr/28-workflow.md#composition-identity-revision-and-retirement)
+The mobile-client/session Composition over one exact phone-shaped Familiar body; it owns
+configurable client experience, bounded local interaction, disclosure, and reconnect while
+Familiar retains hardware and physical-safety authority.
 
-**Concern** — An explicit question, risk, requirement, or condition deserving attention and judgment, with its own identity, revisioned meaning and criteria, and separately attributed assessments. It can stand alone, arise from an idea, decompose into further Concerns, and be addressed in several places; Project membership or a source Covenant is optional.
+### [Composition](../compositions/index.md) { #composition }
 
-Owner: [Atlas](../divination/altar/atlas.md#make-a-concern-answerable) + [Frontend (ADR 15)](../adr/15-frontend.md#independent-concerns-decomposition-and-addressing-designed)
+A reusable native application capability with its own domain records, judgment, policies,
+effects, and Pattern catalogue. Its life is independent of any one Product, customer, or deployment.
 
-**Consciousness** — The Great Work's constitutional first axiom: the Whole before and through every local distinction; not a delivered component, measurable system property, or synonym for Cognizance.
+[Covenant 28](../adr/28-workflow.md)
 
-Owner: [The Stone](../divination/transcendence/immortality.md#the-first-axiom)
+### [Composition Revision](../adr/28-workflow.md#composition-identity-revision-and-retirement) { #composition-revision }
 
-**Consecration** — The governed authorization by which live consent or declared preauthorization permits an eligible result to become consequence or Karma.
+One immutable version of a stable Composition contract, pinning its record and request/result
+families, Pattern catalogue, judgment, policy, effect and authority seams, projections,
+outcomes, and recovery law; a materially different capability requires another identity.
 
-Owner: [HitL (ADR 25)](../adr/25-hitl.md)
+### [Concern](../divination/altar/atlas.md#make-a-concern-answerable) { #concern }
 
-**Context** — The bounded active field assembled by `ContextOrchestrator` from identity, world material, environment, governed memory, state, and query.
+An explicit question, risk, requirement, or condition deserving attention and judgment, with its
+own identity, revisioned meaning and criteria, and separately attributed assessments. It can
+stand alone, arise from an idea, decompose into further Concerns, and be addressed in several
+places; Project membership or a source Covenant is optional.
 
-Owner: [Context (ADR 21)](../adr/21-context.md)
+[Covenant 15: Frontend](../adr/15-frontend.md#independent-concerns-decomposition-and-addressing-designed)
 
-**Contribution** — A typed addition admitted by one explicit receiving owner, which may be a Core office or Extension Domain; package provenance grants no ownership or wider authority.
+### [Consciousness](../divination/transcendence/immortality.md#the-first-axiom) { #consciousness }
 
-Owner: [ADR 05](../adr/05-extensions.md)
+The Whole before and through every local distinction: the Great Work’s First Axiom. Cognizance
+names its local recognition. Consciousness is a constitutional meaning, beyond a delivered
+component or measurable system property.
 
-**Coven** — A named multi-Soulstone systemd target for operator grouping and explicit aggregate actions.
+### [Consecration](../adr/25-hitl.md) { #consecration }
 
-Owner: [Orchestrator](../adr/23-orchestrator.md) / [Containers](../adr/08-containers.md)
+The governed authorization by which live consent or declared preauthorization permits an
+eligible result to become consequence or Karma.
 
-**Covenant** — An accepted Architecture Decision Record that governs construction without proving delivery.
+### [Context](../adr/21-context.md) { #context }
 
-An idea or Project may author its own Covenants. LychD's numbered register governs LychD;
-consulting it as inspiration does not adopt its decisions for another undertaking.
+The bounded active field assembled by `ContextOrchestrator` from identity, world material,
+environment, governed memory, state, and query.
 
-Owner: [The Covenants](../adr/index.md) + [State](../state-of-the-work.md)
+### [Contribution](../adr/05-extensions.md) { #contribution }
 
-**Crypt** — LychD's managed persistent-data home, defaulting to `~/.local/share/lychd`; `XDG_DATA_HOME` selects another data root.
+A typed addition admitted by one explicit receiving owner, which may be a Core office or
+Extension Domain; package provenance grants no ownership or wider authority.
 
-Owner: [src/lychd/system/constants.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/constants.py); [ADR 13](../adr/13-layout.md)
+### [Coven](../adr/23-orchestrator.md) { #coven }
 
-**Curator Loop** — The designed memory-curation pass that classifies eligible records for promotion, retention, archival, or pruning.
+A named multi-Soulstone systemd target for operator grouping and explicit aggregate actions.
 
-Owner: [Memory (ADR 27)](../adr/27-memory.md#memory-layering-sediment-not-dump)
+[Containers](../adr/08-containers.md)
 
+### [Covenant](../adr/index.md) { #covenant }
+
+An accepted Architecture Decision Record: a law of construction. State of Work records what has
+entered matter.
+
+An idea or Project may author its own Covenants. LychD’s numbered register governs LychD;
+another undertaking must adopt a decision before it becomes binding there.
+
+[State of Work](../state-of-the-work.md)
+
+### [Crypt](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/constants.py) { #crypt }
+
+LychD's managed persistent-data home, defaulting to `~/.local/share/lychd`; `XDG_DATA_HOME`
+selects another data root.
+
+[Covenant 13](../adr/13-layout.md)
+
+### [Curator Loop](../adr/27-memory.md#memory-layering-sediment-not-dump) { #curator-loop }
+
+The designed memory-curation pass that classifies eligible records for promotion, retention,
+archival, or pruning.
 
 ## D
 
-**DelegatedAgentNode** — A typed opaque Graph macro-node that assigns one bounded task to a Coffin-hosted foreign agent runtime.
+### [DelegatedAgentNode](../adr/24-graph.md#3-delegated-agent-macro-nodes) { #delegatedagentnode }
 
-Owner: [Graph (ADR 24)](../adr/24-graph.md#3-delegated-agent-macro-nodes)
+A typed opaque Graph macro-node that assigns one bounded task to a Coffin-hosted foreign agent
+runtime.
 
-**Deployment** — One configured installation for an operator, instantiated from an exact Product revision or Composition-owned reference deployment-profile revision. A Productless deployment creates no market promise; changing host, credentials, or local configuration does not by itself create another Product.
+### [Deployment](../compositions/products-and-suites.md#deployment-and-projection-are-different-axes) { #deployment }
 
-Owner: [Products and Suites](../compositions/products-and-suites.md#deployment-and-projection-are-different-axes) + Spellweaver (ADR 28)
+One configured installation for an operator, instantiated from an exact Product revision or
+Composition-owned reference deployment-profile revision. A Productless deployment creates no
+market promise; changing host, credentials, or local configuration does not by itself create
+another Product.
 
-**Deployment profile** — An immutable eligible topology and configuration template binding an implementation and acceptance target; it is not an installation or delivered service.
+[Covenant 28](../adr/28-workflow.md)
 
-Owner: [Products and Suites](../compositions/products-and-suites.md#deployment-and-projection-are-different-axes) + Spellweaver (ADR 28)
+### [Deployment profile](../compositions/products-and-suites.md#deployment-and-projection-are-different-axes) { #deployment-profile }
 
-**Dispatcher** — The policy-aware resolver that binds a typed Capability request to an eligible Animator.
+An immutable eligible topology and configuration template binding an implementation and
+acceptance target; it is not an installation or delivered service.
 
-Owner: [src/lychd/domain/cortex/dispatcher.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/dispatcher.py)
+[Covenant 28](../adr/28-workflow.md)
 
-**Divination** — Relation with the Lich through operating its Altar and interpreting its Transcendence.
+### [Dispatcher](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/dispatcher.py) { #dispatcher }
 
-Owner: [Divination](../divination/index.md#the-two-doors)
+The policy-aware resolver that binds a typed Capability request to an eligible Animator.
 
-**Drift** — The evaluation Extension Domain that tests how exact subjects meet or depart from
-declared goals through versioned trials, controls, repeated Outcomes, calibrated findings,
-attribution candidates, and explicit uncertainty.
+### [Divination](../divination/index.md#the-two-doors) { #divination }
 
-Owner: [Drift](../sepulcher/extensions/drift/index.md) + [Evaluation (ADR 34)](../adr/34-evaluation.md#the-declared-goal)
+Communion with the Lich and the changes that follow: the Altar opens the encounter,
+Transmutation follows creation through experience and return, and Transcendence unfolds
+the Great Work's wider meaning.
 
-**Dual-Gate** — Shadow's accepted evaluation cascade combining deterministic checks with attributed qualitative judgment before promotion eligibility.
+### [Drift](../sepulcher/extensions/drift/index.md) { #drift }
 
-Owner: [Simulation (ADR 31)](../adr/31-simulation.md)
+The evaluation Extension Domain that tests how exact subjects meet or depart from declared goals
+through versioned trials, controls, repeated Outcomes, calibrated findings, attribution
+candidates, and explicit uncertainty.
 
-**Durable Stasis** — A Run pause that commits a mandatory Graph checkpoint and exits its current worker execution. A new exact queue claim may resume it in the same living Vessel; Reanimation governs recovery when the process has died.
+[Covenant 34: Evaluation](../adr/34-evaluation.md#the-declared-goal)
 
-Owner: [Graph (ADR 24)](../adr/24-graph.md)
+### [Dual-Gate](../adr/31-simulation.md) { #dual-gate }
 
+Shadow's accepted evaluation cascade combining deterministic checks with attributed qualitative
+judgment before promotion eligibility.
+
+### [Durable Stasis](../adr/24-graph.md) { #durable-stasis }
+
+A Run pause that commits a mandatory Graph checkpoint and exits its current worker execution. A
+new exact queue claim may resume it in the same living Vessel; Reanimation governs recovery when
+the process has died.
 
 ## E
 
-**Echo** — The speech-lifecycle Extension Domain for capture, transcription, synthesis, acoustic-voice facts, delivery, playback, and their chronology.
+### [Echo](../sepulcher/extensions/echo.md) { #echo }
 
-Owner: [Echo](../sepulcher/extensions/echo.md) + ADR 37
+The speech-lifecycle Extension Domain for capture, transcription, synthesis, acoustic-voice
+facts, delivery, playback, and their chronology.
 
-**EgressDecision** — The Portal Egress Gate's allow-or-deny record for one exact payload, principal, purpose, destination, provider, model, policy revision, and receipt.
+[Covenant 37](../adr/37-audio.md)
 
-Owner: [Security (ADR 09)](../adr/09-security.md#portal-privatization-and-egress)
+### [EgressDecision](../adr/09-security.md#portal-privatization-and-egress) { #egressdecision }
 
-**Encounter** — One bounded Spectre meeting or experience inside an admitted `VRHabitat@1`. An Encounter may be generic; meeting the Lich through its Avatar additionally references one exact Avatar-owned `ProjectionBinding@2`. Spectre owns participant admission, semantic chronology, interruption, recovery, exit, and settlement.
+The Portal Egress Gate's allow-or-deny record for one exact payload, principal, purpose,
+destination, provider, model, policy revision, and receipt.
 
-Owner: [Spectre Encounter](../compositions/spectre/encounter.md)
+### [Encounter](../compositions/spectre/encounter.md) { #encounter }
 
-**Extension Context** — The shaped host registration surface passed to an extension package's `register(context)` function.
+One bounded Spectre meeting or experience inside an admitted `VRHabitat@1`. An Encounter may be
+generic; meeting the Lich through its Avatar additionally references one exact Avatar-owned
+`ProjectionBinding@2`. Spectre owns participant admission, semantic chronology, interruption,
+recovery, exit, and settlement.
 
-Owner: [src/lychd/extensions/context.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/context.py)
+### [Extension Context](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/context.py) { #extension-context }
 
-**Extension Domain** — One of the Fifteen stable user-facing jurisdictions through which the Lich may grow.
+The shaped host registration surface passed to an extension package's `register(context)`
+function.
 
-Owner: [Fifteen Extensions](../sepulcher/extensions/index.md) + ADR 05
+### [Extension Domain](../sepulcher/extensions/index.md) { #extension-domain }
 
-**Extension package** — Selected built-in or private Crypt code admitted for registration through the Extension Protocol.
+One of the Fifteen stable user-facing jurisdictions through which the Lich may grow.
 
-Owner: [src/lychd/extensions/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/extensions/); [ADR 05](../adr/05-extensions.md)
+[Covenant 5](../adr/05-extensions.md)
 
-**Extension Protocol** — The in-process law of explicit package selection and shaped registration through `ExtensionContext`.
+### [Extension package](https://github.com/hexanomicon/lychd/tree/main/src/lychd/extensions/) { #extension-package }
 
-Owner: [src/lychd/extensions/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/extensions/); [ADR 05](../adr/05-extensions.md) / [ADR 28](../adr/28-workflow.md)
+Selected built-in or private Crypt code admitted for registration through the Extension
+Protocol.
 
-**Extensions** — The qualified collective for either the Fifteen Extension Domains or concrete extension packages.
+[Covenant 5](../adr/05-extensions.md)
 
-Owner: [Fifteen Extensions](../sepulcher/extensions/index.md) + ADR 05
+### [Extension Protocol](https://github.com/hexanomicon/lychd/tree/main/src/lychd/extensions/) { #extension-protocol }
 
-**Extractor** — Transmuter's proposed internal stage for source-grounded decomposition,
-extraction, naming, labeling, and classification; its outputs preserve attribution and uncertainty.
+The in-process law of explicit package selection and shaped registration through
+`ExtensionContext`.
 
-Owner: [Transmuter / Extractor](../compositions/transmuter/extractor.md)
+[Covenant 5](../adr/05-extensions.md) · [Covenant 28](../adr/28-workflow.md)
 
-**Eye** — In observability, an external viewer that may consume bounded exports without owning canonical LychD state. In Prism, the faculty for dedicated general visual analysis; current v1 projects this as the `vision` family.
+### [Extensions](../sepulcher/extensions/index.md) { #extensions }
 
-Owners: [Observability Eye (ADR 29)](../adr/29-observability.md) + [Prism Eye (ADR 36)](../adr/36-vision.md#decision); [State](../state-of-the-work.md) keeps delivery.
+The qualified collective for either the Fifteen Extension Domains or concrete extension
+packages.
 
+[Covenant 5](../adr/05-extensions.md)
+
+### [Extractor](../compositions/transmuter/extractor.md) { #extractor }
+
+Transmuter's proposed internal stage for source-grounded decomposition, extraction, naming,
+labeling, and classification; its outputs preserve attribution and uncertainty.
+
+### [Eye](../adr/29-observability.md) { #eye }
+
+In observability, an external viewer that may consume bounded exports without owning canonical
+LychD state. In Prism, the faculty for dedicated general visual analysis; current v1 projects
+this as the `vision` family.
+
+[Covenant 36: Prism Eye](../adr/36-vision.md#decision) · [State of Work](../state-of-the-work.md)
 
 ## F
 
-**Familiar** — The real-world embodiment Composition: it owns one admitted physical body and bounded task or presence, including capability, safety, stop, observation, effect, and settlement truth without acquiring raw controller authority.
+### [Familiar](../compositions/familiar/index.md) { #familiar }
 
-Owner: [Familiar](../compositions/familiar/index.md)
+The real-world embodiment Composition: it owns one admitted physical body and bounded task or
+presence, including capability, safety, stop, observation, effect, and settlement truth without
+acquiring raw controller authority.
 
-**Flux** — Spirit in present movement as salience, candidates, tools, constraints, and consequences reshape what may follow.
+### [Flux](../sepulcher/lich/spirit/flux.md) { #flux }
 
-Owner: [Flux](../sepulcher/lich/spirit/flux.md)
+Spirit in present movement. Salience, candidates, tools, constraints, and consequences
+continually reshape what may follow.
 
-**Forge** — The governed container-image construction process.
+### [Forge](../adr/17-packaging.md) { #forge }
 
-Owner: [Packaging](../adr/17-packaging.md)
-
+The governed container-image construction process.
 
 ## G
 
-**Gateway Host** — An optional separate ingress deployment role manifesting Veil on Home or Remote iron with one exact authenticated backend path and no application authority or general LAN route.
+### [Gateway Host](../sepulcher/gateway.md) { #gateway-host }
 
-Owner: [Gateway](../sepulcher/gateway.md) + Security/Containers/Proxy
+An optional separate ingress deployment role manifesting Veil on Home or Remote iron with one
+exact authenticated backend path and no application authority or general LAN route.
 
-**Ghoul** — One ephemeral unit of background labor raised by the SAQ worker mechanism to carry a Run job.
+[Security](../adr/09-security.md) · [Containers](../adr/08-containers.md) · [Proxy](../adr/40-proxy.md)
 
-Owner: [src/lychd/ghouls/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/ghouls/); [ADR 14](../adr/14-workers.md)
+### [Ghoul](https://github.com/hexanomicon/lychd/tree/main/src/lychd/ghouls/) { #ghoul }
 
-**GrantLease** — The holder, issue time, scope, and identity record counted for one issued `CapabilityGrant`.
+One ephemeral unit of background labor, raised through the SAQ worker mechanism to carry a Run job.
 
-Owner: [src/lychd/domain/animation/capabilities.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/capabilities.py)
+[Covenant 14](../adr/14-workers.md)
 
-**Graph** — The typed stateful topology that moves a workflow among declared nodes and recoverable boundaries.
+### [GrantLease](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/capabilities.py) { #grantlease }
 
-Owner: [Graph (ADR 24)](../adr/24-graph.md)
+The holder, issue time, scope, and identity record counted for one issued `CapabilityGrant`.
 
-**Graph checkpoint** — A Run-owned durable snapshot of typed Graph state at a supported recovery boundary.
+### [Graph](../adr/24-graph.md) { #graph }
 
-Owner: [Graph (ADR 24)](../adr/24-graph.md#checkpoint-ownership-and-terminal-commit) + [Snapshots (ADR 07)](../adr/07-snapshots.md)
+The typed stateful topology that moves a workflow among declared nodes and recoverable
+boundaries.
 
+### [Graph checkpoint](../adr/24-graph.md#checkpoint-ownership-and-terminal-commit) { #graph-checkpoint }
+
+A Run-owned durable snapshot of typed Graph state at a supported recovery boundary.
+
+[Covenant 7: Snapshots](../adr/07-snapshots.md)
 
 ## H
 
-**Habitat** — A Composition-local admitted place boundary in which participants, projections, and events may meet. Reach's first Habitat is The Necropolis; Spectre's Habitat modality is VR and each admitted virtual place is a distinct `VRHabitat@1`. A Habitat does not by itself grant identity, Context, device, world, or effect authority.
+### [Habitat](../compositions/reach/habitat.md) { #habitat }
 
-Owner: [Reach Habitat](../compositions/reach/habitat.md) + [Spectre Habitat](../compositions/spectre/habitat.md)
+A Composition-local admitted place boundary in which participants, projections, and events may
+meet. Reach's first Habitat is The Necropolis; Spectre's Habitat modality is VR and each
+admitted virtual place is a distinct `VRHabitat@1`. A Habitat does not by itself grant identity,
+Context, device, world, or effect authority.
 
-**Hard Refusal** — The retrieval policy that forbids an Agent from guessing when no Archive result clears the declared similarity threshold.
+[Spectre Habitat](../compositions/spectre/habitat.md)
 
-Owner: [Memory (ADR 27)](../adr/27-memory.md)
+### [Hard Refusal](../adr/27-memory.md) { #hard-refusal }
 
-**Hexanomicon** — The project and its published grimoire: prophecy, doctrine, operation, law, and lore rendered from `docs/`.
+The retrieval policy that forbids an Agent from guessing when no Archive result clears the
+declared similarity threshold.
 
-Owner: `docs/`
+### [Hexanomicon](../index.md) { #hexanomicon }
 
-**HitL** — The consent protocol through which live approval or narrower declared preauthorization may authorize an eligible consequence.
+The project and its published grimoire: prophecy, doctrine, operation, law, and lore gathered in
+these pages.
 
-Owner: [Human-in-the-Loop (ADR 25)](../adr/25-hitl.md)
+### [HitL](../adr/25-hitl.md) { #hitl }
 
+The consent protocol through which live approval or narrower declared preauthorization may
+authorize an eligible consequence.
 
 ## I
 
-**Incantation** — The xDDD act of establishing documentation and specification before implementation.
+### [Incantation](../adr/01-doctrine.md) { #incantation }
 
-Owner: [Philosophy](../adr/01-doctrine.md)
+The xDDD act of establishing documentation and specification before implementation.
 
-**Intent** — The single typed cross-surface request shape submitted to the native Run engine.
+### [Intent](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/router.py) { #intent }
 
-Owner: [src/lychd/agents/router.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/router.py)
+The single typed cross-surface request shape submitted to the native Run engine.
 
-**Invocation** — One admitted bounded relation that draws a Circle around identity, Context, authority, capability, action, and consequence; casting performs its exact Scroll within it.
+### [Invocation](../divination/transcendence/invocation.md) { #invocation }
 
-Owner: [Invocation](../divination/transcendence/invocation.md) + Spellweaver (ADR 28)
+One admitted relation between Caller and Called. It draws a Circle around identity, Context,
+authority, capability, action, and consequence; casting performs its exact Scroll within that
+world.
 
-**Iron Pact** — The MPL-2.0 license and inbound-equals-outbound contribution policy with no CLA or private relicensing grant.
+[Covenant 28](../adr/28-workflow.md)
 
-Owner: [Iron Pact](../adr/00-license.md)
+### [Iron Pact](../adr/00-license.md) { #iron-pact }
 
-**issue_grant** — The `AnimatorRegistry` method that freshly probes and assembles a `CapabilityGrant` for one eligible warm v1 capability without changing lifecycle state.
+The MPL-2.0 license and inbound-equals-outbound contribution policy with no CLA or private
+relicensing grant.
 
-Owner: [src/lychd/domain/animation/services/registry.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/registry.py)
+### [issue_grant](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/registry.py) { #issue-grant }
 
+The `AnimatorRegistry` method that freshly probes and assembles a `CapabilityGrant` for one
+eligible warm v1 capability without changing lifecycle state.
 
 ## K
 
-**Karma** — Governed, attributable residue of witnessed action, correction, consent, and consequence retained as formative precedent.
+### [Karma](../divination/transcendence/illumination.md) { #karma }
 
-Owner: [Illumination](../divination/transcendence/illumination.md) + Memory (ADR 27)
+Governed, attributable residue of witnessed action, correction, consent, and consequence
+retained as formative precedent.
 
-**Kinetic** — The vLLM Soulstone discipline for continuous-batched, VRAM-strict parallel serving.
+[Covenant 27](../adr/27-memory.md)
 
-Owner: [Soulstone](../sepulcher/animator/soulstone/disciplines.md#i-the-kinetic-vllm)
+### [Kinetic](../sepulcher/animator/soulstone/disciplines.md#i-the-kinetic-vllm) { #kinetic }
 
+The vLLM Soulstone discipline for continuous-batched, VRAM-strict parallel serving.
 
 ## L
 
-**Lab** — The operator workspace in the Crypt at `~/.local/share/lychd/lab` by default; it is mounted read-write only when explicitly admitted.
+### [Lab](../adr/13-layout.md) { #lab }
 
-Owner: [Layout (ADR 13)](../adr/13-layout.md)
+The operator workspace in the Crypt at `~/.local/share/lychd/lab` by default; it is mounted
+read-write only when explicitly admitted.
 
-**Language Edition** — The timed-language-version Composition owning source alignment, translation/adaptation judgment, spoken casting and performance, captions, dialogue conform, and constrained language-track packaging against a locked master.
+### [Language Edition](../compositions/language-edition/index.md) { #language-edition }
 
-Owner: [Language Edition](../compositions/language-edition/index.md)
+The timed-language-version Composition owning source alignment, translation/adaptation judgment,
+spoken casting and performance, captions, dialogue conform, and constrained language-track
+packaging against a locked master.
 
-**lease drain** — The Orchestrator's wait for all GrantLeases on Animators selected for eviction to be released.
+### [lease drain](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/orchestration/) { #lease-drain }
 
-Owner: [src/lychd/domain/orchestration/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/orchestration/)
+The Orchestrator's wait for all GrantLeases on Animators selected for eviction to be released.
 
-**LeaseLedger** — The in-process registry whose live GrantLeases are the Orchestrator's drain truth.
+### [LeaseLedger](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/leases.py) { #leaseledger }
 
-Owner: [src/lychd/domain/cortex/leases.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/leases.py)
+The in-process registry whose live GrantLeases are the Orchestrator's drain truth.
 
-**Legion** — The distributed-embodiment Extension Domain for fenced delegation across operator-owned nodes.
+### [Legion](../sepulcher/extensions/legion.md) { #legion }
 
-Owner: [Legion](../sepulcher/extensions/legion.md) + ADR 42
+The distributed-embodiment Extension Domain for fenced delegation across operator-owned nodes.
 
-**Legionnaire** — Legion's name for an enrolled operator-owned compute node with its own identity, resource authority, journal, and fencing.
+[Covenant 42](../adr/42-multinode.md)
 
-Owner: [Legion](../sepulcher/extensions/legion.md) + ADR 42
+### [Legionnaire](../sepulcher/extensions/legion.md) { #legionnaire }
 
-**Lens** — In Shadow, a bounded Posture template used to seed an isolated branch. In Prism, a deterministic decode, orientation, crop, resize, or normalization transform. The owner qualifies which role the name carries.
+Legion's name for an enrolled operator-owned compute node with its own identity, resource
+authority, journal, and fencing.
 
-Owners: [Shadow Lens (ADR 20)](../adr/20-agents.md#mechanical-cognitive-postures) + [Simulation (ADR 31)](../adr/31-simulation.md); [Prism Lens (ADR 36)](../adr/36-vision.md#one-optic-path).
+[Covenant 42](../adr/42-multinode.md)
 
-**Lich** — The recurrent whole formed by the Vessel, Phylactery, agents, Animators, identity, action, consequence, memory, repair, and relation through time.
+### [Lens](../adr/20-agents.md#mechanical-cognitive-postures) { #lens }
 
-Owner: [ADR 01](../adr/01-doctrine.md) + [Immortality](../divination/transcendence/immortality.md)
+In Shadow, a bounded Posture template used to seed an isolated branch. In Prism, a deterministic
+decode, orientation, crop, resize, or normalization transform. The owner qualifies which role
+the name carries.
 
-**Live Stasis** — A resident in-process pause that resumes itself when the required substrate becomes ready.
+[Covenant 31: Simulation](../adr/31-simulation.md) · [Covenant 36: Prism Lens](../adr/36-vision.md#one-optic-path)
 
-Owner: [Graph (ADR 24)](../adr/24-graph.md)
+### [Lich](../adr/01-doctrine.md) { #lich }
 
-**Long Sleep** — Durable Stasis for a wait that must survive process death, such as reboot, deferred approval, or peer delay.
+The recurrent whole: Vessel, Phylactery, Agents, Animators, identity, action, consequence,
+memory, repair, and relation carried through time.
 
-Owner: [Graph (ADR 24)](../adr/24-graph.md)
+[Immortality](../divination/transcendence/immortality.md)
 
-**Loom** — The Altar instrument for inspecting an immutable Pattern revision as a Scroll of Spell placements and Spellweaver-validated possibility.
+### [Live Stasis](../adr/24-graph.md) { #live-stasis }
 
-Owner: [Altar Loom](../divination/altar/loom.md) + Spellweaver
+A resident in-process pause that resumes itself when the required substrate becomes ready.
 
-**LychD** — The self-hosted Linux daemon for local model services and agent runs; its recurrent whole is the Lich.
+### [Long Sleep](../adr/24-graph.md) { #long-sleep }
 
-Owner: [ADR 01](../adr/01-doctrine.md) + [Transcendence](../divination/transcendence/index.md)
+Durable Stasis for a wait that must survive process death, such as reboot, deferred approval, or
+peer delay.
 
+### [Loom](../divination/altar/loom.md) { #loom }
+
+The Altar instrument for reading a Scroll: an immutable Pattern revision, its Spell placements,
+and the possibilities validated by Spellweaver.
+
+[Spellweaver](../adr/28-workflow.md)
+
+### [LychD](../adr/01-doctrine.md) { #lychd }
+
+The self-hosted Linux daemon for local model services and Agent runs. The Lich names the
+recurrent whole that takes shape through it.
+
+[Transcendence](../divination/transcendence/index.md)
 
 ## M
 
-**Magus** — The human operator in deliberate relation with the Lich through configuration, witness, consent, refusal, and correction.
+### [Magus](../adr/01-doctrine.md) { #magus }
 
-Owner: [ADR 01](../adr/01-doctrine.md) + [Immortality](../divination/transcendence/immortality.md)
+The human operator who enters deliberate relation with the Lich: configuring, witnessing,
+consenting, refusing, and correcting.
 
-**MANA** — An issuer-local, account-bound service credit in Toll's Counting House; not cash, cryptocurrency, globally fungible money, authority, or the inner-tongue term Manas.
+[Immortality](../divination/transcendence/immortality.md)
 
-Owner: [Toll](../sepulcher/extensions/toll.md) + ADR 41
+### [MANA](../sepulcher/extensions/toll.md) { #mana }
 
-**Mirror** — The identity Extension Domain for versioned Persona lineage, hydration provenance, attribution, and declared continuity.
+An issuer-local, account-bound service credit in Toll's Counting House; not cash,
+cryptocurrency, globally fungible money, authority, or the inner-tongue term Manas.
 
-Owner: [Mirror](../sepulcher/extensions/mirror.md) + ADR 32
+[Covenant 41](../adr/41-x402.md)
 
-**Morphe** — Avatar's immutable presentation selection within an unchanged profile and Persona
-boundary. It selects eligible acoustic speech voice, appearance, motion, output locale or
-disclosure for an exact audience, target, purpose and time. Its `MorpheBinding@2` neither translates
-nor changes Persona discourse manner, and leaves past projection records intact.
+### [Mirror](../sepulcher/extensions/mirror.md) { #mirror }
 
-Owner: [Avatar profile](../compositions/avatar/profile.md#select-a-morphe)
+The identity Extension Domain for versioned Persona lineage, hydration provenance, attribution,
+and declared continuity.
 
+[Covenant 32](../adr/32-identity.md)
+
+### [Morphe](../compositions/avatar/profile.md#select-a-morphe) { #morphe }
+
+Avatar's immutable presentation selection within an unchanged profile and Persona boundary. It
+selects eligible acoustic speech voice, appearance, motion, output locale or disclosure for an
+exact audience, target, purpose and time. Its `MorpheBinding@2` neither translates nor changes
+Persona discourse manner, and leaves past projection records intact.
 
 ## N
 
-**Native Reference Composition** — A first-party maintained reusable application contract and worked example. Delivery remains in State of Work; its leaf mentions local material only when that changes interpretation.
+### [Native Reference Composition](../compositions/index.md) { #native-reference-composition }
 
-Owner: [Compositions](../compositions/index.md) + Spellweaver (ADR 28)
+A reusable application contract and worked example maintained by the project. Its page records
+local material where needed for interpretation; State of Work keeps the delivery record.
 
-**Necropolis** — The designed peer-to-peer topology in which sovereign LychD nodes negotiate bounded work over A2A.
+[Covenant 28](../adr/28-workflow.md)
 
-Owner: [A2A (ADR 26)](../adr/26-a2a.md)
+### [Necropolis](../adr/26-a2a.md) { #necropolis }
 
-**Nexus** — The Altar instrument projecting Animator readiness, grants, leases, resource evidence, and Orchestrator transitions.
+The designed peer-to-peer topology in which sovereign LychD nodes negotiate bounded work over
+A2A.
 
-Owner: [Altar Nexus](../divination/altar/nexus.md) + Orchestrator
+### [Nexus](../divination/altar/nexus.md) { #nexus }
 
+The Altar instrument projecting Animator readiness, grants, leases, resource evidence, and
+Orchestrator transitions.
+
+[Orchestrator](../adr/23-orchestrator.md)
 
 ## O
 
-**Occurrence** — One uniquely identified firing of a schedule or external trigger, deduplicated before Invocation admission; distinct from the Graph runtime's legacy station-attempt `occurrence_id`.
+### [Occurrence](../compositions/index.md) { #occurrence }
 
-Owner: [Compositions](../compositions/index.md) + Spellweaver (ADR 28)
+One uniquely identified firing of a schedule or external trigger, deduplicated before Invocation
+admission; distinct from the Graph runtime's legacy station-attempt `occurrence_id`.
 
-**Oculus** — The designed evidence Extension Domain for bounded observations, correlation, explicit gaps, and rebuildable read models.
+[Covenant 28](../adr/28-workflow.md)
 
-Owner: [ADR 29](../adr/29-observability.md) + [State](../state-of-the-work.md)
+### [Oculus](../adr/29-observability.md) { #oculus }
 
-**Orb** — The Altar instrument for inspecting one Run's retained evidence, capture boundaries, gaps, and correlations.
+The designed evidence Extension Domain for bounded observations, correlation, explicit gaps, and
+rebuildable read models.
 
-Owner: [Altar Orb](../divination/altar/orb.md) + Oculus (ADR 29)
+[State of Work](../state-of-the-work.md)
 
-**Orchestrator** — The state machine that plans and governs Animator and container lifecycle transitions.
+### [Orb](../divination/altar/orb.md) { #orb }
 
-Owner: [src/lychd/domain/orchestration/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/orchestration/)
+The Altar instrument for scrying one Run’s retained evidence: what was captured, what is
+missing, and how the observations connect.
 
-**Ouroboros** — The return by which consequence, evaluation, attribution, memory policy, and consent may shape a later Invocation; an ordinary retry or Graph cycle is not this return.
+[Covenant 29](../adr/29-observability.md)
 
-Owner: [Illumination](../divination/transcendence/illumination.md#i-the-ouroboros) + Evolution
+### [Orchestrator](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/orchestration/) { #orchestrator }
 
+The state machine that plans and governs Animator and container lifecycle transitions.
+
+### [Ouroboros](../divination/transcendence/illumination.md#i-the-ouroboros) { #ouroboros }
+
+The return through which consequence can change a later Invocation, passing through evaluation,
+attribution, memory policy, and consent. A retry or Graph cycle alone completes no such return.
+
+[Evolution](../adr/18-evolution.md)
 
 ## P
 
-**Pattern** — A workflow family published by its application owner, defining typed state,
-stations, gates, requirements, budgets, outcomes and continuity law. The publisher is normally a
-Composition; a Suite may publish only for coordination. The two delivered Core Patterns are
-explicit legacy exceptions. Spellweaver owns validation, registration, revision and execution
-jurisdiction.
+### [Pattern](../adr/28-workflow.md) { #pattern }
 
-Owner: Spellweaver ([ADR 28](../adr/28-workflow.md))
+A workflow family published by its application owner, defining typed state, stations, gates,
+requirements, budgets, outcomes and continuity law. The publisher is normally a Composition; a
+Suite may publish only for coordination. The two delivered Core Patterns are explicit legacy
+exceptions. Spellweaver owns validation, registration, revision and execution jurisdiction.
 
-**Pattern Revision** — One immutable executable score and checkpoint-compatibility contract within a Pattern family; **Scroll** is its mythic name.
+### [Pattern Revision](../adr/28-workflow.md) { #pattern-revision }
 
-Owner: Spellweaver ([ADR 28](../adr/28-workflow.md))
+One immutable executable score within a Pattern family, including its checkpoint-compatibility
+contract. In the grimoire, a Scroll.
 
-**Persona** — A durable, revisioned identity whose discourse voice, commitments, boundaries, and orientation Mirror may hydrate into a bounded Agent instruction envelope; not an acoustic voice or presentation asset.
+### [Persona](../sepulcher/extensions/mirror.md) { #persona }
 
-Owner: [Mirror](../sepulcher/extensions/mirror.md) + ADR 32
+A durable, revisioned identity whose discourse voice, commitments, boundaries, and orientation
+Mirror may hydrate into a bounded Agent instruction envelope; not an acoustic voice or
+presentation asset.
 
-**Phantasma** — Shadow's mode for expanding isolated speculative branches before measurement.
+[Covenant 32](../adr/32-identity.md)
 
-Owner: [Shadow](../sepulcher/extensions/shadow/index.md) + ADR 31
+### [Phantasma](../sepulcher/extensions/shadow/index.md) { #phantasma }
 
-**Phoenix** — The Arize-owned external observability project retained as an optional Eye.
+Shadow's mode for expanding isolated speculative branches before measurement.
 
-Owner: [ADR 29](../adr/29-observability.md) + [State](../state-of-the-work.md)
+[Covenant 31](../adr/31-simulation.md)
 
-**Phylactery** — The PostgreSQL database cluster owning committed Run truth and other durable application records for one application partition; not a generic storage facade or backend family.
+### [Phoenix](../adr/29-observability.md) { #phoenix }
 
-Owner: [src/lychd/db/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/db/); [ADR 06](../adr/06-persistence.md) + [State](../state-of-the-work.md)
+The Arize-owned external observability project retained as an optional Eye.
 
-**Portal** — A remote-service Animator backed by a Portal Rune.
+[State of Work](../state-of-the-work.md)
 
-Owner: [src/lychd/domain/animation/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/animation/)
+### [Phylactery](https://github.com/hexanomicon/lychd/tree/main/src/lychd/db/) { #phylactery }
 
-**Portal Rune** — A validated Codex TOML declaration of remote endpoint, provider, model defaults, capabilities, tools, and secret references.
+The keeper of committed Run truth and durable application records for one application partition.
+Its body is a PostgreSQL database cluster, with a specific jurisdiction rather than a generic
+storage interface.
 
-Owner: [src/lychd/domain/animation/schemas/runes/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/animation/schemas/runes/)
+[Covenant 6](../adr/06-persistence.md) · [State of Work](../state-of-the-work.md)
 
-**Portfolio** — The published set of accepted Native Reference Compositions and their application contracts. Membership is design truth, not executable delivery or a live registry.
+### [Portal](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/animation/) { #portal }
 
-Owner: [Compositions](../compositions/index.md) + Spellweaver (ADR 28)
+A remote-service Animator backed by a Portal Rune.
 
-**Posture** — A per-run Agent specialization expressed through output schema, tool grant, model settings, and prompt frame.
+### [Portal Rune](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/animation/schemas/runes/) { #portal-rune }
 
-Owner: [Agents (ADR 20)](../adr/20-agents.md#mechanical-cognitive-postures)
+A validated Codex TOML declaration of remote endpoint, provider, model defaults, capabilities,
+tools, and secret references.
 
-**Prism** — The visual and spatial grounding Extension Domain for source-bound observations, transforms, reconstructions, and generated forms.
+### [Portfolio](../compositions/index.md) { #portfolio }
 
-Owner: [Prism](../sepulcher/extensions/prism/index.md) + ADR 36
+The published set of accepted Native Reference Compositions and their application contracts.
+Membership is design truth, not executable delivery or a live registry.
 
-**Privacy Cut** — A new sanitized Context branch built locally without reusing raw history, continuation, attachment projections, or provider cache identity.
+[Covenant 28](../adr/28-workflow.md)
 
-Owner: [Context (ADR 21)](../adr/21-context.md#privatization-and-the-privacy-cut)
+### [Posture](../adr/20-agents.md#mechanical-cognitive-postures) { #posture }
 
-**Privatization Label** — Privacy class, weight, categories, subjects, lineage, and handling constraints that conservatively follow material influence.
+A per-run Agent specialization expressed through output schema, tool grant, model settings, and
+prompt frame.
 
-Owner: [Context (ADR 21)](../adr/21-context.md#privatization-and-the-privacy-cut)
+### [Prism](../sepulcher/extensions/prism/index.md) { #prism }
 
-**Product** — A named operator- and business-facing package for a profession or market. It selects one or more Composition or Suite revisions, owner-qualified profiles, projections, and concrete use cases while leaving member records, judgment, policy, secrets, consent, and effect authority with their owners.
+The visual and spatial grounding Extension Domain for source-bound observations, transforms,
+reconstructions, and generated forms.
 
-Owner: [Products and Suites](../compositions/products-and-suites.md) + Spellweaver (ADR 28)
+[Covenant 36](../adr/36-vision.md)
 
-**Product Revision** — One immutable version of a stable Product promise. It pins exact
-Composition or Suite revisions, owner-qualified profiles, projections, supported use cases,
-defaults, and customer and support policy. A materially different operator promise requires a new
-Product identity.
+### [Privacy Cut](../adr/21-context.md#privatization-and-the-privacy-cut) { #privacy-cut }
 
-Owner: [Workflow (ADR 28)](../adr/28-workflow.md#compositions-products-suites-and-schedules)
+A new sanitized Context branch built locally without reusing raw history, continuation,
+attachment projections, or provider cache identity.
 
-**Project** — A persistent undertaking or continuing responsibility mapped by Atlas, retaining a brief, concerns, judgments, decisions, proposed next action, and explicit activity references across Invocations; it is distinct from a reusable Composition and a Suite's live coordination.
+### [Privatization Label](../adr/21-context.md#privatization-and-the-privacy-cut) { #privatization-label }
 
-Owner: [Atlas](../divination/altar/atlas.md) + [Frontend (ADR 15)](../adr/15-frontend.md#atlas-and-continuity-across-invocations)
+Privacy class, weight, categories, subjects, lineage, and handling constraints that
+conservatively follow material influence.
 
-**Projection Binding** — One immutable Avatar-owned admission epoch for an exact profile and
-optional Morphe selection at one target. `ProjectionBinding@2` binds that target's capability
-facts, participant scope, consent, disclosure, fallback, stop conditions and attributed terminal
-result. It grants no target, device, world or effect authority.
+### [Product](../compositions/products-and-suites.md) { #product }
 
-Owner: [Avatar presence](../compositions/avatar/presence.md#admit-each-projection)
+A named operator- and business-facing package for a profession or market. It selects one or more
+Composition or Suite revisions, owner-qualified profiles, projections, and concrete use cases
+while leaving member records, judgment, policy, secrets, consent, and effect authority with
+their owners.
 
-**Protected Region** — A stable artifact region and content digest whose mutation requires live HitL bound to the exact base, candidate, affected regions, and target-owner effect.
+[Covenant 28](../adr/28-workflow.md)
 
-Owner: [Workflow (ADR 28)](../adr/28-workflow.md#authorship-provenance-and-protected-regions)
+### [Product Revision](../adr/28-workflow.md#compositions-products-suites-and-schedules) { #product-revision }
 
-**Provenance** — The attributable origin, identity, transformations, evidence, and correction history of a claim, artifact, or consequence.
+One immutable version of a stable Product promise. It pins exact Composition or Suite revisions,
+owner-qualified profiles, projections, supported use cases, defaults, and customer and support
+policy. A materially different operator promise requires a new Product identity.
 
-Owner: Phylactery + Memory ([ADR 27](../adr/27-memory.md))
+### [Project](../divination/altar/atlas.md) { #project }
 
-**Provider** — A concrete engine or service implementing a typed contract; it is distinct from the package Registrant and its registration provenance.
+A persistent undertaking or continuing responsibility mapped by Atlas, retaining a brief,
+concerns, judgments, decisions, proposed next action, and explicit activity references across
+Invocations; it is distinct from a reusable Composition and a Suite's live coordination.
 
-Owner: Animator + [ADR 05](../adr/05-extensions.md)
+[Covenant 15: Frontend](../adr/15-frontend.md#atlas-and-continuity-across-invocations)
 
-**Provider Gate** — The fail-closed credential and egress mediator exposing one admitted provider surface to a Coffin without disclosing the real secret.
+### [Projection Binding](../compositions/avatar/presence.md#admit-each-projection) { #projection-binding }
 
-Owner: [Security (ADR 09)](../adr/09-security.md#provider-gate)
+One immutable Avatar-owned admission epoch for an exact profile and optional Morphe selection at
+one target. `ProjectionBinding@2` binds that target's capability facts, participant scope,
+consent, disclosure, fallback, stop conditions and attributed terminal result. It grants no
+target, device, world or effect authority.
 
-**Pulse** — The `lychd` operator CLI and its closed `init`, `bind`, `start`, `stop`, `status` (alias `st`), `logs`, and `del` grammar.
+### [Protected Region](../adr/28-workflow.md#authorship-provenance-and-protected-regions) { #protected-region }
 
-Owner: [ADR 19](../adr/19-cli.md) + `src/lychd/cli/`
+A stable artifact region and content digest whose mutation requires live HitL bound to the exact
+base, candidate, affected regions, and target-owner effect.
 
+### [Provenance](../adr/27-memory.md) { #provenance }
+
+The attributable origin, identity, transformations, evidence, and correction history of a claim,
+artifact, or consequence.
+
+[Phylactery](../sepulcher/phylactery/index.md)
+
+### [Provider](../adr/05-extensions.md) { #provider }
+
+A concrete engine or service implementing a typed contract; it is distinct from the package
+Registrant and its registration provenance.
+
+[Animator](../sepulcher/animator/index.md)
+
+### [Provider Gate](../adr/09-security.md#provider-gate) { #provider-gate }
+
+The fail-closed credential and egress mediator exposing one admitted provider surface to a
+Coffin without disclosing the real secret.
+
+### [Pulse](../adr/19-cli.md) { #pulse }
+
+The `lychd` operator CLI and its closed `init`, `bind`, `start`, `stop`, `status` (alias `st`),
+`logs`, and `del` grammar.
+
+[CLI source](https://github.com/hexanomicon/lychd/tree/main/src/lychd/cli/)
 
 ## Q
 
-**Quadlet Manifest** — A generated Podman/systemd `.container`, `.pod`, `.target`, or `.volume` artifact written to the binding site.
+### [Quadlet Manifest](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/schemas.py) { #quadlet-manifest }
 
-Owner: [src/lychd/system/schemas.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/schemas.py)
-
+A generated Podman/systemd `.container`, `.pod`, `.target`, or `.volume` artifact written to the
+binding site.
 
 ## R
 
-**Radix** — The SGLang Soulstone discipline for radix-tree prefix caching of iterative and multi-turn prompts.
+### [Radix](../sepulcher/animator/soulstone/disciplines.md#ii-the-radix-sglang) { #radix }
 
-Owner: [Soulstone](../sepulcher/animator/soulstone/disciplines.md#ii-the-radix-sglang)
+The SGLang Soulstone discipline for radix-tree prefix caching of iterative and multi-turn
+prompts.
 
-**Reanimation** — Process-death recovery that reconciles durable Run, delivery, checkpoint and wait-owner truth before resuming supported work or settling an interrupted Run.
+### [Reanimation](../sepulcher/phylactery/reanimation.md) { #reanimation }
 
-Owner: [Reanimation](../sepulcher/phylactery/reanimation.md)
+Process-death recovery that reconciles durable Run, delivery, checkpoint and wait-owner truth
+before resuming supported work or settling an interrupted Run.
 
-**Reaper** — Shadow's designed hygiene Ghoul for releasing branch-owned workspaces and resources while preserving required failure evidence.
+### [Reaper](../adr/31-simulation.md#the-branch-reaper) { #reaper }
 
-Owner: [Simulation (ADR 31)](../adr/31-simulation.md#the-branch-reaper)
+Shadow's designed hygiene Ghoul for releasing branch-owned workspaces and resources while
+preserving required failure evidence.
 
-**Recall** — A retained Seed becoming active in present Flux after retrieval and Context make it available.
+### [Recall](../sepulcher/lich/spirit/recall.md) { #recall }
 
-Owner: [Recall](../sepulcher/lich/spirit/recall.md)
+A retained Seed becoming active in present Flux, once retrieval and Context have brought it
+within reach.
 
-**Registrant** — Core or one explicitly selected extension package performing registration through the shaped Extension Context; its host-assigned `registrant_id` records provenance, while registering a Provider does not make the package that Provider.
+### [Registrant](../adr/05-extensions.md) { #registrant }
 
-Owner: [ADR 05](../adr/05-extensions.md)
+Core or one explicitly selected extension package performing registration through the shaped
+Extension Context; its host-assigned `registrant_id` records provenance, while registering a
+Provider does not make the package that Provider.
 
-**Reliquary** — A designed artifact-custody lifecycle for immutable lineage, authorized retrieval, comparison, and retention.
+### [Reliquary](../state-of-the-work.md#artifact-reference-contract) { #reliquary }
 
-Owner: [Artifact-reference boundary](../state-of-the-work.md#artifact-reference-contract) + [Vision (ADR 36)](../adr/36-vision.md#custody-before-sight)
+A designed artifact-custody lifecycle for immutable lineage, authorized retrieval, comparison,
+and retention.
 
-**Riffmaw** — The music Composition owning composition, instrumental and vocal performance, arrangement, musical mix/master, acceptance, and cue maps; not general speech or picture sound.
+[Covenant 36: Vision](../adr/36-vision.md#custody-before-sight)
 
-Owner: [Riffmaw](../compositions/riffmaw/index.md)
+### [Riffmaw](../compositions/riffmaw/index.md) { #riffmaw }
 
-**Run** — The durable execution and ledger identity representing one Invocation.
+The music Composition owning composition, instrumental and vocal performance, arrangement,
+musical mix/master, acceptance, and cue maps; not general speech or picture sound.
 
-Owner: [src/lychd/db/models/run.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/models/run.py); Spellweaver ([ADR 28](../adr/28-workflow.md))
+### [Run](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/models/run.py) { #run }
 
-**Rune** — One validated TOML declaration of configuration intent under the Codex `runes/` tree.
+The durable execution record and ledger identity of one Invocation.
 
-Owner: [src/lychd/config/runes/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/config/runes/)
+[Covenant 28](../adr/28-workflow.md)
 
+### [Rune](https://github.com/hexanomicon/lychd/tree/main/src/lychd/config/runes/) { #rune }
+
+A declaration of configuration intent, inscribed as validated TOML beneath the Codex’s `runes/`
+tree.
 
 ## S
 
-**Scout** — The web-acquisition Extension Domain for separately authorized discovery, contact, transformation, interaction, capture, and download effects; Crawl is only its finite-frontier track, while durable Artifact Admission remains with the custody owner.
+### [Scout](../sepulcher/extensions/scout.md) { #scout }
 
-Owner: [Scout](../sepulcher/extensions/scout.md) + ADR 30
+The web-acquisition Extension Domain for separately authorized discovery, contact,
+transformation, interaction, capture, and download effects; Crawl is only its finite-frontier
+track, while durable Artifact Admission remains with the custody owner.
 
-**Scroll** — The mythic name for one whole immutable Pattern revision: one or more Spell placements, edges, entry, ending, requirements, budgets, authority/effect demands, and continuity law.
+[Covenant 30](../adr/30-webcrawler.md)
 
-Owner: [Spellweaver](../sepulcher/extensions/weaver/index.md) + ADR 28
+### [Scroll](../sepulcher/extensions/weaver/index.md) { #scroll }
 
-**Scrying** — The disciplined inspection of execution evidence through the Orb.
+One whole immutable Pattern revision: one or more Spell placements, edges, entry and ending, requirements
+and budgets, authority and effect demands, and continuity law. Casting is its performance.
 
-Owner: [Altar Orb](../divination/altar/orb.md) + Oculus (ADR 29)
+[Covenant 28](../adr/28-workflow.md)
 
-**Seed** — A trace or inherited disposition that retains governed potency to shape a later Flux.
+### [Scrying](../divination/altar/orb.md) { #scrying }
 
-Owner: [Seed](../sepulcher/lich/spirit/seed.md)
+The disciplined inspection of execution evidence through the Orb.
 
-**Sepulcher** — LychD's rootless runtime body of pods, services, mounts, and execution topology.
+[Covenant 29](../adr/29-observability.md)
 
-Owner: [Sepulcher](../sepulcher/index.md)
+### [Seed](../sepulcher/lich/spirit/seed.md) { #seed }
 
-**Shadow** — The possibility-lineage Extension Domain for isolated candidate worlds with exact parentage, evidence, and terminal disposition.
+A trace or inherited disposition whose governed potency can shape a later Flux.
 
-Owner: [Shadow](../sepulcher/extensions/shadow/index.md) + ADR 31
+### [Sepulcher](../sepulcher/index.md) { #sepulcher }
 
-**Shadow Realm** — Shadow's speculative state and Jujutsu workspace topology, distinct from the Tomb execution plane.
+The runtime body of LychD: rootless pods, services, mounts, and the topology in which work takes
+place.
 
-Owner: [Shadow](../sepulcher/extensions/shadow/index.md)
+### [Shadow](../sepulcher/extensions/shadow/index.md) { #shadow }
 
-**Sigil** — The secret-free identity and bounded authority context carried through an admitted request or Run.
+The possibility-lineage Extension Domain for isolated candidate worlds with exact parentage,
+evidence, and terminal disposition.
 
-Owner: [src/lychd/domain/codex/sigil.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/sigil.py); [ADR 09](../adr/09-security.md) / [ADR 32](../adr/32-identity.md) / [ADR 38](../adr/38-iam.md)
+[Covenant 31](../adr/31-simulation.md)
 
-**Smith** — The Assimilation Extension Domain governing attributable re-expression of admitted foreign craft; unqualified Smith names the Domain.
+### [Shadow Realm](../sepulcher/extensions/shadow/index.md) { #shadow-realm }
 
-Owner: [Smith](../sepulcher/extensions/smith.md) + ADR 35
+Shadow's speculative state and Jujutsu workspace topology, distinct from the Tomb execution
+plane.
 
-**Soulforge** — The training Extension Domain binding admitted corpus, base-model digest, objective, recipe, trainer Run, and candidate-weight lineage.
+### [Sigil](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/sigil.py) { #sigil }
 
-Owner: [Soulforge](../sepulcher/extensions/soulforge/index.md) + ADR 33
+The secret-free identity and bounded authority context carried through an admitted request or
+Run.
 
-**Soulstone** — A local-service Animator backed by a Soulstone Rune and managed through Quadlet/systemd.
+[Covenant 9](../adr/09-security.md) · [Covenant 32](../adr/32-identity.md) · [Covenant 38](../adr/38-iam.md)
 
-Owner: [src/lychd/domain/animation/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/animation/)
+### [Smith](../sepulcher/extensions/smith.md) { #smith }
 
-**Soulstone Rune** — A validated Codex TOML declaration of a local Animator's image, runtime, port, Coven, models, mounts, and secret references.
+The Assimilation Extension Domain governing attributable re-expression of admitted foreign
+craft; unqualified Smith names the Domain.
 
-Owner: [src/lychd/domain/animation/schemas/runes/](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/animation/schemas/runes/)
+[Covenant 35](../adr/35-assimilation.md)
 
-**Sovereignty Wall** — The Security-owned privacy and egress boundary enforced by Dispatcher routing.
+### [Soulforge](../sepulcher/extensions/soulforge/index.md) { #soulforge }
 
-Owner: [Security](../adr/09-security.md) + [Dispatcher](../adr/22-dispatcher.md)
+The training Extension Domain binding admitted corpus, base-model digest, objective, recipe,
+trainer Run, and candidate-weight lineage.
 
-**Spectre** — The Virtual Reality Composition. It admits a virtual place as `VRHabitat@1` and a
-bounded meeting or experience there as `SpectreEncounter@2`; its Habitat modality is VR.
+[Covenant 33](../adr/33-training.md)
 
-Owner: [Spectre](../compositions/spectre/index.md)
+### [Soulstone](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/animation/) { #soulstone }
 
-**Spell** — The smallest independently named, discoverable, and teachable semantic action at the workflow boundary. A Scroll station places its exact contract; the name grants no tool, capability, or authority.
+A local Animator, declared by a Soulstone Rune and managed through Quadlet and systemd.
 
-Owner: [Spellweaver](../sepulcher/extensions/weaver/index.md) + ADR 28
+### [Soulstone Rune](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/animation/schemas/runes/) { #soulstone-rune }
 
-**Spellweaver** — The full name of the workflow jurisdiction shortened to `Weaver` in code and existing paths; it validates Scrolls, admits castings, and owns Pattern lifecycle, logical priority, dependencies, and schedule meaning.
+A validated Codex TOML declaration of a local Animator's image, runtime, port, Coven, models,
+mounts, and secret references.
 
-Owner: [Spellweaver](../sepulcher/extensions/weaver/index.md) + ADR 28
+### [Sovereignty Wall](../adr/09-security.md) { #sovereignty-wall }
 
-**Spheres** — The strict volume-mount and filesystem-permission topology of the Crypt.
+The Security-owned privacy and egress boundary enforced by Dispatcher routing.
 
-Owner: [Crypt](../sepulcher/crypt.md#the-spheres) + ADR 13
+[Dispatcher](../adr/22-dispatcher.md)
 
-**Spirit** — The conditioning and remembering office that bears retained form through Flux, Seed, and Recall.
+### [Spectre](../compositions/spectre/index.md) { #spectre }
 
-Owner: [Spirit](../sepulcher/lich/spirit/index.md)
+The Virtual Reality Composition. It admits a virtual place as `VRHabitat@1` and a bounded
+meeting or experience there as `SpectreEncounter@2`; its Habitat modality is VR.
 
-**Stasis** — A Run paused at a recoverable boundary as either resident Live Stasis or checkpointed Durable Stasis.
+### [Spell](../sepulcher/extensions/weaver/index.md) { #spell }
 
-Owner: Graph ([ADR 24](../adr/24-graph.md)) + Orchestrator ([ADR 23](../adr/23-orchestrator.md))
+The smallest independently named, discoverable, and teachable semantic action at the workflow
+boundary. A Scroll station places its exact contract; the name grants no tool, capability, or
+authority.
 
-**Stillness** — The discipline of bounded work that avoids needless residency, disruptive swaps, and unbounded speculation while preserving measured quality.
+[Covenant 28](../adr/28-workflow.md)
 
-Owner: Orchestrator ([ADR 23](../adr/23-orchestrator.md)) + Drift ([ADR 34](../adr/34-evaluation.md))
+### [Spellweaver](../sepulcher/extensions/weaver/index.md) { #spellweaver }
 
-**Suite (Composition Suite)** — Designed, versioned live coordination under a qualified authority.
-Its pinned Suite-owned Pattern opens a parent Invocation/Run over separately owned Composition
-Invocations. A settled foreign reference alone does not make a Suite; the parent acquires neither
-member judgment nor member effects.
+The keeper of workflow law: Scroll validation, casting admission, Pattern lifecycle, logical
+priority, dependencies, and schedule meaning. Code and existing paths shorten the name to
+`Weaver`.
 
-Owner: [Products and Suites](../compositions/products-and-suites.md#compositions-relate-without-nesting) + Spellweaver (ADR 28)
+[Covenant 28](../adr/28-workflow.md)
 
-**Summoning** — The canonical same-host first-life tutorial from preflight through unit, runtime, and Bridge observations.
+### [Spheres](../sepulcher/crypt.md#the-spheres) { #spheres }
 
-Owner: [Summoning](../summoning.md) + [State](../state-of-the-work.md)
+The strict volume-mount and filesystem-permission topology of the Crypt.
 
-**Summoning Circle** — The enduring host and policy boundary the Magus draws by installing and binding one Lich; each Invocation opens a smaller living Circle within it.
+[Covenant 13](../adr/13-layout.md)
 
-Owner: [Summoning](../summoning.md) + [Altar Circle](../divination/altar/circle.md#the-greater-summoning-circle)
+### [Spirit](../sepulcher/lich/spirit/index.md) { #spirit }
 
+The office of conditioning and remembering. It carries retained form through Flux, Seed, and
+Recall.
 
-**Synthesizer** — Transmuter's proposed internal stage for comparing and connecting extracted
-material with authorized knowledge and preparing attributable proposals for receiving owners.
-It owns neither Persona publication nor model training.
+### [Stasis](../adr/24-graph.md) { #stasis }
 
-Owner: [Transmuter / Synthesizer](../compositions/transmuter/synthesizer.md)
+A Run waiting at a recoverable boundary. Live Stasis remains resident in its process; Durable
+Stasis commits a checkpoint and releases the worker execution.
 
+[Covenant 23](../adr/23-orchestrator.md)
+
+### [Stillness](../adr/23-orchestrator.md) { #stillness }
+
+The discipline of bounded work that avoids needless residency, disruptive swaps, and unbounded
+speculation while preserving measured quality.
+
+[Covenant 34](../adr/34-evaluation.md)
+
+### [Suite (Composition Suite)](../compositions/products-and-suites.md#compositions-relate-without-nesting) { #suite }
+
+Designed, versioned live coordination under a qualified authority. Its pinned Suite-owned
+Pattern opens a parent Invocation/Run over separately owned Composition Invocations. A settled
+foreign reference alone does not make a Suite; the parent acquires neither member judgment nor
+member effects.
+
+[Covenant 28](../adr/28-workflow.md)
+
+### [Summoning](../summoning.md) { #summoning }
+
+The same-host rite of first life, from preflight through observations of the units, runtime, and
+Bridge.
+
+[State of Work](../state-of-the-work.md)
+
+### [Summoning Circle](../summoning.md) { #summoning-circle }
+
+The enduring host and policy boundary drawn by installing and binding one Lich. Each Invocation
+opens a smaller living Circle within it.
+
+[Altar Circle](../divination/altar/circle.md#the-greater-summoning-circle)
+
+### [Synthesizer](../compositions/transmuter/synthesizer.md) { #synthesizer }
+
+Transmuter's proposed internal stage for comparing and connecting extracted material with
+authorized knowledge and preparing attributable proposals for receiving owners. It owns neither
+Persona publication nor model training.
 
 ## T
 
-**Tether** — The private-reachability Extension Domain, planned to manifest through managed WireGuard or external attachments.
+### [Tether](../sepulcher/extensions/tether.md) { #tether }
 
-Owner: [Tether](../sepulcher/extensions/tether.md) + ADR 39
+The private-reachability Extension Domain, planned to manifest through managed WireGuard or
+external attachments.
 
-**The Tomb** — The `lychd-tomb` execution plane for disposable payloads and workspaces under narrow credentials and sandboxing.
+[Covenant 39](../adr/39-vpn.md)
 
-Owner: [Security (ADR 09)](../adr/09-security.md#6-tomb-execution-contract)
+### [The Tomb](../adr/09-security.md#6-tomb-execution-contract) { #the-tomb }
 
-**Titan** — The llama.cpp Soulstone discipline for serial CPU offload beyond the VRAM envelope.
+The `lychd-tomb` execution plane for disposable payloads and workspaces under narrow credentials
+and sandboxing.
 
-Owner: [Soulstone](../sepulcher/animator/soulstone/disciplines.md#iii-the-titan-llamacpp)
+### [Titan](../sepulcher/animator/soulstone/disciplines.md#iii-the-titan-llamacpp) { #titan }
 
-**Tithe** — Currency-neutral accounting and bounded quota for model-token usage and compute resources independently of payment or MANA.
+The llama.cpp Soulstone discipline for serial CPU offload beyond the VRAM envelope.
 
-Owner: [Toll](../sepulcher/extensions/toll.md) + ADR 41
+### [Tithe](../sepulcher/extensions/toll.md) { #tithe }
 
-**Toll** — The optional economics Extension Domain separating quote, commitment, signing, settlement, delivery, refund, and reconciliation.
+Currency-neutral accounting and bounded quota for model-token usage and compute resources
+independently of payment or MANA.
 
-Owner: [Toll](../sepulcher/extensions/toll.md) + ADR 41
+[Covenant 41](../adr/41-x402.md)
 
-**Trace** — Bounded evidence or residue left by activity; it may be incomplete, is not canonical Run status, and becomes a Seed only when governed retention preserves formative potency.
+### [Toll](../sepulcher/extensions/toll.md) { #toll }
 
-Owner: [Seed](../sepulcher/lich/spirit/seed.md) + [Observability (ADR 29)](../adr/29-observability.md)
+The optional economics Extension Domain separating quote, commitment, signing, settlement,
+delivery, refund, and reconciliation.
 
-**Transcendence** — The public house of the Great Work's constitutional telos, synthesis, rites, conjectures, and alchemical journey.
+[Covenant 41](../adr/41-x402.md)
 
-Owner: [Transcendence](../divination/transcendence/index.md)
+### [Trace](../sepulcher/lich/spirit/seed.md) { #trace }
 
-**TransformationReceipt** — A secret-free binding of source and candidate digests, transformer and policy revisions, operations, residual label, uncertainty, and expiry.
+The bounded residue of activity. A trace may be incomplete and cannot stand in for canonical Run
+status. Governed retention makes it a Seed when it preserves the potency to shape later Flux.
 
-Owner: [Context (ADR 21)](../adr/21-context.md#privatization-and-the-privacy-cut)
+[Covenant 29: Observability](../adr/29-observability.md)
 
-**Translation Spell** — An authority-qualified, versioned semantic text transformation preserving source, derivative, languages, implementation, and declared loss; Spellweaver governs its placement and casting while the consuming owner judges application fit.
+### [Transcendence](../divination/transcendence/index.md) { #transcendence }
 
-Owner: [Workflow (ADR 28)](../adr/28-workflow.md#language-is-typed-not-global)
+The Great Work’s alchemical path: its constitutional purpose, synthesis, rites, and conjectures.
 
-**Transmuter** — The candidate Composition for processing external digital material through
-Extractor and Synthesizer into knowledge and proposals for memory, identity, or other separately
-admitted use. It owns the proposed processing dossier, not its receiving owners' decisions.
+### [TransformationReceipt](../adr/21-context.md#privatization-and-the-privacy-cut) { #transformationreceipt }
 
-Owner: [Transmuter](../compositions/transmuter/index.md)
+A secret-free binding of source and candidate digests, transformer and policy revisions,
+operations, residual label, uncertainty, and expiry.
 
-**Trial Suite** — Drift's versioned `TrialSuite@1` grouping of evaluation Cases, controls, order, repetitions, and aggregation; never a Composition Suite.
+### [Translation Spell](../adr/28-workflow.md#language-is-typed-not-global) { #translation-spell }
 
-Owner: [Evaluation (ADR 34)](../adr/34-evaluation.md#trial-contract)
+An authority-qualified, versioned semantic text transformation preserving source, derivative,
+languages, implementation, and declared loss; Spellweaver governs its placement and casting
+while the consuming owner judges application fit.
 
-**typed handoff** — A schema-versioned attributable ArtifactRef or new Intent crossing between separately admitted Compositions.
+### [Transmuter](../compositions/transmuter/index.md) { #transmuter }
 
-Owner: [Products and Suites](../compositions/products-and-suites.md#compositions-relate-without-nesting) + Spellweaver (ADR 28)
+The candidate Composition for processing external digital material through Extractor and
+Synthesizer into knowledge and proposals for memory, identity, or other separately admitted use.
+It owns the proposed processing dossier, not its receiving owners' decisions.
 
+### [Trial Suite](../adr/34-evaluation.md#trial-contract) { #trial-suite }
+
+Drift's versioned `TrialSuite@1` grouping of evaluation Cases, controls, order, repetitions, and
+aggregation; never a Composition Suite.
+
+### [typed handoff](../compositions/products-and-suites.md#compositions-relate-without-nesting) { #typed-handoff }
+
+A schema-versioned attributable ArtifactRef or new Intent crossing between separately admitted
+Compositions.
+
+[Covenant 28](../adr/28-workflow.md)
 
 ## U
 
-**use case** — One concrete class of operator job that a Product promises to support. A Pattern
-or Suite may realize it. One admitted Circle is an Invocation, represented by its durable Run
-execution and ledger identity.
+### [use case](../compositions/products-and-suites.md#from-promise-to-one-execution) { #use-case }
 
-Owner: [Products and Suites](../compositions/products-and-suites.md#from-promise-to-one-execution) + Spellweaver (ADR 28)
+One concrete class of operator job that a Product promises to support. A Pattern or Suite may
+realize it. One admitted Circle is an Invocation, represented by its durable Run execution and
+ledger identity.
 
+[Covenant 28](../adr/28-workflow.md)
 
 ## V
 
-**Veil** — The hostile-ingress Extension Domain, planned to manifest through managed Caddy or an external edge.
+### [Veil](../sepulcher/extensions/veil.md) { #veil }
 
-Owner: [Veil](../sepulcher/extensions/veil.md) + ADR 40
+The hostile-ingress Extension Domain, planned to manifest through managed Caddy or an external
+edge.
 
-**Vessel** — The Litestar application runtime and web server.
+[Covenant 40](../adr/40-proxy.md)
 
-Owner: [src/lychd/app.py](https://github.com/hexanomicon/lychd/blob/main/src/lychd/app.py)
+### [Vessel](https://github.com/hexanomicon/lychd/blob/main/src/lychd/app.py) { #vessel }
 
+The running body of LychD: its Litestar application runtime and web server.
 
 ## W
 
-**Ward** — The authority Extension Domain mapping credentials to principals and current object or effect policy.
+### [Ward](../sepulcher/extensions/ward.md) { #ward }
 
-Owner: [Ward](../sepulcher/extensions/ward.md) + ADR 38
+The authority Extension Domain mapping credentials to principals and current object or effect
+policy.
 
-**Weaver** — The compatibility and code-facing short name of **Spellweaver**; it is not a second office.
+[Covenant 38](../adr/38-iam.md)
 
-Owner: [Spellweaver](../sepulcher/extensions/weaver/index.md) + ADR 28
+### [Weaver](../sepulcher/extensions/weaver/index.md) { #weaver }
 
-**Whim** — The designed priority-weighted Orchestrator strategy whose current Codex fields are validated but inert.
+Spellweaver’s short name in code, existing paths, and compatibility references.
 
-Owner: [Orchestrator (ADR 23)](../adr/23-orchestrator.md#1-the-tipping-point-whim-algorithm)
+[Covenant 28](../adr/28-workflow.md)
 
-**Whispers** — LychD's systemd journal stream, read through `lychd logs` or `journalctl --user`.
+### [Whim](../adr/23-orchestrator.md#1-the-tipping-point-whim-algorithm) { #whim }
 
-Owner: [Pulse](../adr/19-cli.md)
+The designed priority-weighted Orchestrator strategy whose current Codex fields are validated
+but inert.
 
+### [Whispers](../adr/19-cli.md) { #whispers }
+
+The Lich’s systemd journal stream, heard through `lychd logs` or `journalctl --user`.
 
 ## X
 
-**xDDD** — eXtreme Documentation Driven Development: establish the governing Logos before deriving implementation.
+### [xDDD](../adr/01-doctrine.md) { #xddd }
 
-Owner: [Doctrine (ADR 01)](../adr/01-doctrine.md)
+eXtreme Documentation Driven Development. Establish the governing Logos, then derive
+implementation from it.

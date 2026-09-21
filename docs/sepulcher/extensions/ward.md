@@ -5,7 +5,7 @@ icon: material/shield-account-outline
 
 # :material-shield-account-outline: The Ward
 
-> _The Ward lets a voice reach the Lich without mistaking that voice for the Will of the Magus._
+> _At the circle's edge, a voice gives its name._
 
 Recognizing a speaker draws only the first mark of a salt circle. Current policy and revocation
 must close it around this exact effect. **Ward** is LychD's singular Core-coupled authority for

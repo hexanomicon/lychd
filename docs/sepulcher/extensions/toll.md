@@ -5,7 +5,7 @@ icon: material/cash-register
 
 # :material-cash-register: The Toll
 
-> _A price may enter the gate as a whisper. Only bounded Will may let it leave as consequence._
+> _The coin leaves the hand. Its shadow stays in the ledger._
 
 **Toll** is LychD's optional economics Extension Domain for priced remote labor. It is
 **Designed**: no payment machinery or safe HTTP `402` handler ships.

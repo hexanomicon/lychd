@@ -5,8 +5,7 @@ icon: material/hexagon-slice-6
 
 # :material-hexagon-slice-6: Soulstone: The Forged Local Engine
 
-> _"A Portal is a whisper from the remote sky, but a Soulstone is a daemon in a bottle. It lives
-> on local iron. It burns local electricity. It answers only the Magus."_
+> _A daemon in a bottle, with its fire in your keeping._
 
 A **Soulstone** is a local [Animator](../index.md): a rootless Podman container projected through
 Quadlet and supervised by the user's systemd manager. Its **Soulstone Rune** is immutable Codex

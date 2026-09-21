@@ -5,7 +5,7 @@ icon: fontawesome/solid/heart-pulse
 
 # :fontawesome-solid-heart-pulse: Animator
 
-> _“Cold iron offers no capability. An Animator is the address at which power answers.”_
+> _Follow the spark to where the iron answers._
 
 An **Animator** is a live addressable service handle through which LychD discovers, probes, and
 invokes capability. A model is one possible source of that capability. Search, rendering, speech,

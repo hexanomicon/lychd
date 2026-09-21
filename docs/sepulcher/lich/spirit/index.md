@@ -5,7 +5,7 @@ icon: material/blur-radial
 
 # :material-blur-radial: Spirit
 
-> _“The Spirit is the inner instrument's power to be moved, marked, and moved again.”_
+> _What moves through you may yet move you again._
 
 **Spirit** is LychD's name for **Citta**, from _cit_: to perceive or attend. It is the office that
 bears conditioning through present movement, retention, and return.

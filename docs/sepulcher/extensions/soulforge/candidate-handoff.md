@@ -5,7 +5,7 @@ icon: material/transit-transfer
 
 # :material-transit-transfer: Candidate Handoff
 
-> _The candidate leaves the forge frozen, not crowned._
+> _The fire has shaped it; other hands will weigh it._
 
 A frozen Candidate Bundle crosses from a [Training Run](./training-run.md) into independent
 judgment. Drift may establish eligibility; only an externally owned decision may promote the

@@ -5,7 +5,7 @@ icon: material/circle-outline
 
 # :material-circle-outline: Circle
 
-> _The Bridge holds the relation. The Circle binds one answerable act within it._
+> _A world opens where the Circle closes._
 
 The same boundary appears at several scales. A host gives one Lich a place to answer. A Bridge
 séance lets a relation continue. Within it, an admitted **Invocation** opens a **Circle**

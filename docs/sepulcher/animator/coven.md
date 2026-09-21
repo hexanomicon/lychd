@@ -5,7 +5,7 @@ icon: material/swap-horizontal-bold
 
 # :material-swap-horizontal-bold: Coven: Named Runtime Grouping
 
-> _“A Coven names what may rise together; it never decides what must sleep.”_
+> _Under one name, the Coven gathers its fires._
 
 A **Coven** is a named systemd target emitted when two or more compatible
 [Soulstones](./soulstone/index.md) share a group. Soulstone `groups` request membership;

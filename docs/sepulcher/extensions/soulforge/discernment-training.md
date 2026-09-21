@@ -54,6 +54,16 @@ where the evidence already suffices and further exploration would waste effort. 
 an explicit procedure solves the problem; only a remaining transferable skill gap motivates
 training. Sefirotic names are interpretive context, not correctness labels for the Dataset.
 
+A further candidate objective is choosing which perspective or source an unfamiliar task needs.
+Examples should show the condition that made the inquiry useful, what could answer it, and when
+it should stop. Pair an internal critique with a case requiring an external test or another
+person's account. Include cases where a familiar lens would distract from the actual constraint.
+[Preservation and response checks](../drift/workflow-improvement.md#preservation-and-response)
+and [correction after Distillation](../drift/workflow-improvement.md#correction-after-distillation)
+first examine explicit procedure and memory. Only a demonstrated remaining transfer gap
+motivates parameter training. Low measured usefulness cannot retire a mandatory check or
+another person's required decision.
+
 Nominate exact, authorized traces and artifacts with their human explanations. A teaching example
 should retain the task and available evidence, relevant constraints, the observed decision and
 result, the correction, the reason for it, and the conditions under which that correction applies.

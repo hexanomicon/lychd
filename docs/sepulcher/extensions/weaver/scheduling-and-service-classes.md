@@ -9,7 +9,7 @@ A Bridge turn needs attention now. A nightly rite may wait until five. A backfil
 capacity it can safely release. These are three admission promises, each with a different way to
 wait, miss, yield, or finish.
 
-> _A bell may announce work. It does not grant authority, seize the iron, or perform the score._
+> _The night bell sounds above the forge. Below, a hammer is still falling._
 
 Scheduling is Designed: no durable Occurrence service, periodic workflow scheduler, eligibility
 engine, service-class field, or safe preemption is implemented. Current `runs` and `rites` queues

@@ -58,6 +58,31 @@ break. The selected set must build and test with the candidate; no Smith repair 
 external-service Animator is decoupled only where its declared protocol and adapter remain
 compatible.
 
+### One lineage, many developer-owned projects
+
+Evolution governs the next generation of one declared software lineage; it does not require every
+developer-owned project to become part of Core. A separately named Extension Domain, Composition,
+or external service may keep its own purpose, release cycle, and ownership while using LychD as its
+upstream substrate. A private coupled extension or local Core delta remains part of the selected
+body and must verify with that body's candidate; an independent boundary receives only the
+compatibility its versioned public contract proves. [Extension law](05-extensions.md) owns those
+forms and promises.
+
+A derivative that selects its own canonical source policy, promotion authority, or incompatible
+contracts becomes a separately governed lineage. It may continue to study or reconcile later LychD
+changes, but the LychD source-selection and promotion rosters govern only the shared LychD Core,
+not that derivative's source or activation. The derivative must own its exact upstream or base,
+local delta, evidence, recovery, and maintenance; common ancestry grants neither automatic
+compatibility nor an upstream repair obligation.
+
+Returning work to the shared line is a separate decision from updating a local body. A developer
+may propose a generally useful change through [SDLC](16-sdlc.md), source governance, and
+[Packaging](17-packaging.md); once admitted into canonical upstream, each downstream body chooses
+and verifies its adoption through its own Evolution. A foreign pattern instead enters through
+[Assimilation](35-assimilation.md), which yields an attributable local candidate; activating that
+candidate still passes through Evolution. Assimilation is therefore neither an upstream update nor
+an automatic contribution channel.
+
 ### Start the changed body as a new generation {#replace-the-generation-not-its-memory}
 
 A promoted Core or coupled extension change activates as a new Vessel process generation.

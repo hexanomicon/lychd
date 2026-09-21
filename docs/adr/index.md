@@ -5,7 +5,7 @@ icon: material/pillar
 
 # :material-pillar: Architecture Decision Records (Covenants)
 
-> _Prophecy names the destination. A Covenant decides what may be built._
+> _The Word binds what the Will would raise._
 
 Open a Covenant when a choice needs its reasons. Each numbered record states one architectural
 decision, the constraints that shaped it, and the consequences a later change must preserve.

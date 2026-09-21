@@ -5,7 +5,7 @@ icon: material/ear-hearing-loop
 
 # :material-ear-hearing-loop: Echo
 
-> _A spoken utterance is not delivered when it is made, but when another body receives it._
+> _Between breath and hearing, a voice can vanish._
 
 A spoken answer can be generated yet never heard. **Echo** follows an utterance from deliberately
 armed capture to transcription, an ordinary Agent step, optional synthesis, and observed delivery.

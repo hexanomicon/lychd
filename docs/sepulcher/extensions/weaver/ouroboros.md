@@ -120,7 +120,9 @@ These perspectives cross rather than replace one another. Call can open a possib
 stations; Blade can test a proposal or stop an unjustified promotion; Spirit carries both prior
 conditions and later correction; Answer binds each act to its local author and consequence.
 Neither ten sefirot nor four offices prescribe a model count, org chart, or permanent chief Agent.
-Their traditional provenance and LychD's deliberately new correspondences stay in the Lexicon.
+[Genesis](../../../divination/transmutation/genesis.md#tree-of-life) keeps the Tree's traditional
+provenance and authored correspondence; [Inner Tongue](../../../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
+keeps the inherited vocabulary of the inner instrument.
 
 Yaga's crafted life in Gege Akutami's [*Jujutsu Kaisen*, chapter 147](https://www.viz.com/shonenjump/jujutsu-kaisen-chapter-147/chapter/22420)
 is a fictional prompt behind this comparison. The borrowed question is whether mutually observing
@@ -149,6 +151,11 @@ objections, evidence references, authority boundaries, unfinished obligations an
 discriminating probe. A summary points back to durable artifacts; it neither replaces them nor
 silently resolves a dispute. A shared workspace is an attributable record of the undertaking,
 not one ever-growing prompt copied into every Agent.
+
+[Distillation](../../../divination/transmutation/distillation.md#future-correction) asks whether
+the lesson preserves its route to correction. Retain the particular condition and source that
+could reopen the conclusion; test that a later relevant observation still changes the appropriate
+act. This connects a useful handoff now with a useful inheritance later.
 
 | What should change? | Appropriate return |
 | --- | --- |

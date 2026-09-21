@@ -5,7 +5,7 @@ icon: material/progress-wrench
 
 # :material-progress-wrench: The Training Run
 
-> _A forge without a receipt has made only smoke._
+> _The metal remembers the fire._
 
 This passage owns execution custody: a Training Intent, immutable Dataset Manifest, and exact
 base-model digest, objective, and Recipe enter an admitted Training Run; a frozen Candidate Bundle

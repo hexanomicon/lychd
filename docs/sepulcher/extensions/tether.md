@@ -5,7 +5,7 @@ icon: material/shield-link-variant-outline
 
 # :material-shield-link-variant-outline: The Tether
 
-> _A private road shortens distance. It does not widen the gate._
+> _A thread drawn taut between two distant thresholds._
 
 **Tether** is the private-reachability Extension Domain, with WireGuard as its accepted transport.
 It may eventually appear as a LychD-managed WireGuard service or as an attachment to an externally

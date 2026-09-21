@@ -5,8 +5,7 @@ icon: material/eye-outline
 
 # :material-eye-outline: Oculus
 
-> _Sight does not claim the whole. It names what it saw, how it saw it, and where darkness
-> remains._
+> _Follow the traces until the light gives out._
 
 **Oculus** is the designed native observability Extension Domain. Its first journey follows one
 authorized Invocation, represented by a Run, across run state, consent, tool use, runtime

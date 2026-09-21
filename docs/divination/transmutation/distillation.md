@@ -34,6 +34,25 @@ method should remain, that another probe is needed, or that the undertaking shou
 If criteria change, [Canon](canon.md) receives a proposed revision for later trials; the
 earlier result retains the conditions under which it was judged.
 
+### Preserve the way back to correction { #future-correction }
+
+A lesson must retain enough structure for later evidence to revise the right judgment. “Local
+storage won” preserves a verdict. “This design passed under one-writer conditions; concurrent
+offline writers require another reconciliation test” preserves a boundary and a next question.
+Keep the decisive condition, its source, the evidence that could defeat the conclusion, and
+what remains unresolved. A generic warning that the answer might be wrong supplies none of them.
+
+The next encounter should then respond selectively: evidence of concurrent writers reopens
+that design decision; an unrelated stylistic objection does not erase the earlier result.
+The [proposed temporal comparison](../../sepulcher/extensions/drift/workflow-improvement.md#correction-after-distillation)
+tests whether this capacity survives compaction and transfer to another task. The useful
+inheritance includes how to become differently informed.
+
+This connects the Tree's [handoff relation](genesis.md#repair-the-relation) to Ouroboros. A
+distinction must survive both a change of form and a passage through time. Omitted material
+remains unknown, not refuted; a defeated objection may leave active attention while its reasons
+remain attributable under the applicable retention rules.
+
 ## Life and Death
 
 What ends, what may persist, and what does return mean?

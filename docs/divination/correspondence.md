@@ -85,6 +85,32 @@ cognition, focal “mine,” and an identity formed around that coordinate need 
 [Ahaṃkāra / Answer and The EGO](../lexicon/inner-tongue.md#the-ego) name the latter relations in
 the project synthesis; Anthropic does not supply those names.
 
+### From available objection to changed action { #reciprocal-correction }
+
+The study's [Figure 29](https://transformer-circuits.pub/2026/workspace/index.html) gives abrupt
+selection a concrete example: artificially mixed country-token embeddings produce relatively
+smooth early representations, then favor one interpretation sharply around workspace onset.
+This observed threshold is a useful comparison for a decision suddenly becoming clear. Its
+relation to neuronal ignition remains open; the model broadcasts through feedforward layers,
+and the experiment establishes no physical quantum event.
+
+Several kinds of change must remain distinguishable. In an ordinary frozen-model inference,
+learned parameters stay fixed while activations and computed attention coefficients change with
+the input; [the transformer formulation](https://arxiv.org/abs/1706.03762) separates those objects.
+An external agent receiving a rebuttal gets revised Context for its next computation. Retaining
+that encounter in memory and training parameters from it are further, separate operations.
+
+LychD's hypothesis concerns whether a represented distinction becomes effective: can an objection
+change the candidate, justify retaining it, or expose the need for another observation? The
+[Tree's paired questions](transmutation/genesis.md#paired-perspectives) suggest how to elicit the
+distinction; [Polypsyche](transcendence/immortality.md#the-ego-in-the-mirror) asks how partial
+standpoints participate in an answerable whole. An agent ensemble does not thereby become one
+neural workspace. [Smit and colleagues' debate comparisons](https://arxiv.org/html/2311.17371v3)
+also show why mandatory contradiction is a poor proxy: debate's benefit depends on task and
+protocol, and a contradicting participant can displace a correct answer. The proposed
+[reciprocity Trial](../sepulcher/extensions/drift/workflow-improvement.md#reciprocal-criticism)
+tests useful correction separately from agreement and extra compute.
+
 ### When experiential perspective changes {#experiential-perspective}
 
 In [Figure 25](https://transformer-circuits.pub/2026/workspace/index.html#ws-experience), suppressing
@@ -150,6 +176,42 @@ potential learning efficiency from the deeper problem of unreliable generalizati
 separate consequence, provisional value, and disposition. The research question is whether
 intervention can distinguish what judges an outcome from what predicts it and what makes one
 possibility salient or aversive.
+
+#### Seeking, liking, and modulation
+
+Dopamine does not reduce to pleasure. In rats, nucleus-accumbens dopamine rose during active lever
+pressing for food but not during free consumption of comparable food; the result associates the
+signal more closely with instrumental effort than consumption alone. [Salamone and
+colleagues](https://pubmed.ncbi.nlm.nih.gov/7816884/) report that experiment. In a placebo-controlled
+human pharmacological study, disturbing dopamine function also impaired adaptive reward-prediction
+error coding. [Diederen and colleagues](https://pubmed.ncbi.nlm.nih.gov/28202786/) supply that
+distinct learning result. Seeking, effort, and correction may therefore meet in dopaminergic
+circuits without making dopamine a chemical synonym for happiness.
+
+Hedonic impact has another organization. In rats, μ-opioid stimulation within a localized
+nucleus-accumbens shell hotspot amplified positive reactions to sweetness, while opioid-driven
+food intake extended beyond that hotspot. [Peciña and
+Berridge](https://pubmed.ncbi.nlm.nih.gov/16354936/) distinguish this localized _liking_ effect
+from the wider movement toward consumption. The correspondence suggests that wanting a result,
+liking its arrival, and deciding it is sufficient should remain separable interventions rather
+than one reward number.
+
+Serotonergic modulation adds no simple completion signal. In a randomized human study, LSD
+changed whole-brain and thalamic connectivity; ketanserin blocked the measured subjective and
+neural effects, strongly implicating 5-HT₂A receptors. [Preller and
+colleagues](https://pubmed.ncbi.nlm.nih.gov/30355445/) report that result. A separate whole-brain
+model reproduced nonlinear functional effects by combining anatomical connectivity with a
+5-HT₂A receptor-density map that modulated neuronal gain. [Deco and
+colleagues](https://pubmed.ncbi.nlm.nih.gov/30270185/) offer a concrete example of receptor-weighted
+modulation over a graph.
+
+These findings do not describe dopamine becoming serotonin, assign a transmitter to a sefirah,
+or make a neurotransmitter identical with an emotion. They motivate a sharper systems question:
+can a receptor-sensitive modulatory field separately change seeking pressure, hedonic impact,
+associative openness, plasticity, and settling while the underlying evidence and task remain
+fixed? [Genesis](transmutation/genesis.md#chesed-gevurah-weights) develops the corresponding
+expansion-and-restraint hypothesis; [Illumination](transcendence/illumination.md#affect-value-and-viable-choice)
+asks when such conditioned movement becomes feeling and answerable Will.
 
 ### The heart and the reception of another {#heart-and-empathy}
 

@@ -9,6 +9,10 @@ A business owner needs to know what arrived, what is owed, what has been paid, a
 
 This **candidate study**, prepared **2026-09-11**, proposes `accounting.office` revision `1`, outside the accepted Portfolio. It supplies no source implementation, registered Pattern, executable configuration, live mail/bank integration, or jurisdiction support claim. [Workflow](../../adr/28-workflow.md#composition-identity-revision-and-retirement) owns acceptance and revision law; [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) owns delivery evidence.
 
+[Knowledge and obligations](knowledge-and-obligations.md) explores a proposed successor revision:
+source-effective rules, scoped professional answers, and entity-specific obligation instances.
+That proposal neither changes this revision's contract nor establishes acceptance or delivery.
+
 ## One accounting lifecycle
 
 The proposed owner is one entity's accounting lifecycle:

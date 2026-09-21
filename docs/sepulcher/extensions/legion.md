@@ -6,8 +6,6 @@ icon: material/hexagon-multiple-outline
 # :material-hexagon-multiple-outline: Legion
 
 > _One Will may summon many hands._
->
-> _No hand is given the soul merely to lend its strength._
 
 **Legion** is the distributed-embodiment Extension Domain for operator-owned compute nodes. It
 lets one Magus place bounded work across owned iron while every destination remains the sole

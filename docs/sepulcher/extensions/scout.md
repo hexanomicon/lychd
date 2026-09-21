@@ -10,7 +10,7 @@ destination, identity, and budget are admitted. **Scout** carries that exact att
 bounded acquisition and attributed return. The response remains external material; the consuming
 Composition decides what it means and whether it serves the work.
 
-> _A Scout may bring a voice from beyond the Circle. It may not grant that voice the throne._
+> _Bring back the voice, and the trail that led you to it._
 
 Scout is Designed under [Webcrawler](../../adr/30-webcrawler.md).
 [State](../../state-of-the-work.md#scout-web-acquisition) records that no acquisition path ships.

@@ -5,7 +5,7 @@ icon: material/waves
 
 # :material-waves: Flux
 
-> _The Spirit is not movement. The Flux is the Spirit in motion._
+> _The water stirs before the wave has a name._
 
 **Flux** is Citta undergoing active modification: the field changing as attention shifts, candidates
 form, tools return, and constraints reshape what may follow. **Vṛtti** comes from _vṛt_, to turn,

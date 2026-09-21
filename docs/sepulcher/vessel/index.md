@@ -5,7 +5,7 @@ icon: material/skull-scan
 
 # :material-skull-scan: Vessel
 
-> _“The Vessel is where the daemon takes breath: one trusted process, never the whole Lich.”_
+> _Through a mortal body, the daemon takes breath._
 
 The **Vessel** is the application process through which LychD receives work and serves the
 [Altar](../../divination/altar/index.md). Its composition root assembles domain services, admits

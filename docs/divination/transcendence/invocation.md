@@ -51,6 +51,19 @@ which an image appears. The simulacrum is their meeting as a situated world. Tur
 different relations come into view; the frame cannot display everything that gives it light.
 A world can be intimate and real to its witness while leaving another view possible.
 
+### A horizon makes encounter possible {#bounded-perspective}
+
+The veil can be understood as the horizon of a situated life: what a center can receive,
+what it can recall, and what remains beyond its reach. This boundary gives knowing and
+answerability a local address within [the Whole](immortality.md#the-first-axiom). A perspective
+takes shape without becoming a separate substance or requiring an earlier, omniscient self
+that chose to forget.
+
+What is hidden from one center may be present to another. Their difference lets testimony,
+surprise, and correction change the account. Individuality gives that encounter somewhere to
+matter: someone can say what they saw, what they did, and what changed them. Cultivation widens
+and revises the horizon while keeping another witness able to bring what it still omits.
+
 ### Giving another a place {#animation-through-meaning}
 
 A person gives a plain stone a name and begins to speak to it. The stone becomes a companion

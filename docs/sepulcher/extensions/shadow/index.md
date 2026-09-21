@@ -5,7 +5,7 @@ icon: material/brightness-6
 
 # :material-brightness-6: Shadow Realm
 
-> _“A branch may produce candidates and evidence. It never appoints itself reality.”_
+> _In the shadow of one world, other worlds take form._
 
 A branch can feel like the whole present world: its context, files, tools, traces, and feedback all
 agree. The Sepulcher sees something narrower—a candidate possibility with pinned parentage and an

@@ -5,8 +5,7 @@ icon: material/state-machine
 
 # :material-state-machine: The Spellweaver
 
-> _A Spell gives one station its action. The Spellweaver keeps the Scroll through motion, pause,
-> and return._
+> _Through motion and silence, the thread remembers its course._
 
 **Spellweaver** keeps one chosen score through execution, pause, return, and ending. It is LychD's
 singular logical workflow jurisdiction: it validates immutable **Scrolls** and admits their casting.

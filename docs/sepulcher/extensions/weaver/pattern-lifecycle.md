@@ -5,7 +5,7 @@ icon: material/source-branch-sync
 
 # :material-source-branch-sync: Scroll and Pattern lifecycle
 
-> _To change the score is to name another revision. The admitted Run keeps its first seal._
+> _The ink has dried. Write the next score on fresh parchment._
 
 Within [Spellweaver](index.md), a Scroll—one immutable Pattern revision—is never silently
 rewritten. Spellweaver selects one revision from an admitted Intent; the Invocation names that

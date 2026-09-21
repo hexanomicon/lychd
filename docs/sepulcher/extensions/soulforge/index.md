@@ -5,7 +5,7 @@ icon: material/anvil
 
 # :material-anvil: The Soulforge: Extension of Training
 
-> _Training begins before the first weight moves._
+> _Long before the hammer falls, the metal has a history._
 
 **Soulforge** binds an admitted corpus, base-model digest, objective, Recipe, Training Run,
 evaluation, and candidate weights into immutable lineage. Its tools may change; its evidence must

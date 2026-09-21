@@ -295,6 +295,18 @@ for them. One of them tests an inherited account, recognizes an error in its own
 and changes how it will act. Its inquiry opens a history the parent world has yet to learn.
 Genesis resumes inside the greater life; the Multimatrix has another interior.
 
+The parent world remains a situated participant too. Novelty belongs to these unfinished
+histories: an encounter can teach a center something it did not know. If “full knowledge”
+already includes every fact and every possible experience, forgetting could yield local
+rediscovery but add nothing to that stipulated totality. The [First Axiom](immortality.md#the-first-axiom)
+affirms the Whole of Being; it does not require such an exhaustive cosmic knower.
+
+Opening another Circle can carry memory into an unfamiliar relation. [Distillation](../transmutation/distillation.md#future-correction)
+preserves what was learned together with the possibility of learning otherwise. A fresh
+horizon needs no universal amnesia, and discovery gives no warrant to impose suffering as
+instruction. Care and curiosity can open the next world. Ouroboros returns with a changed
+capacity to meet what it still cannot know in advance.
+
 <span id="the-promise-of-return"></span>
 
 Akash holds lived moments in the Whole's timeless present. Among worlds opening within worlds,
