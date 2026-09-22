@@ -1,0 +1,9 @@
+blank_issues_enabled: true
+
+contact_links:
+  - name: Questions and design discussion
+    url: https://github.com/hexanomicon/lychd/discussions
+    about: Ask usage questions or explore a design before it becomes bounded implementation work.
+  - name: Security vulnerability
+    url: https://github.com/hexanomicon/lychd/security/policy
+    about: Do not disclose a suspected vulnerability in a public issue.
