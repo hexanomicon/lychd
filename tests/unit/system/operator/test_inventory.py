@@ -95,6 +95,77 @@ def test_status_is_graceful_before_init(tmp_path: Path) -> None:
     assert report.warnings == ()
 
 
+def test_status_reports_initialized_unbound_without_mutating_fixture(tmp_path: Path) -> None:
+    paths = _paths(tmp_path)
+    paths.config.parent.mkdir()
+    paths.config.write_text("", encoding="utf-8")
+    before = tuple(sorted(path.relative_to(tmp_path) for path in tmp_path.rglob("*")))
+
+    report = _service(
+        tmp_path,
+        receipt=_Receipt(exists=True),
+        catalog=OwnedUnitCatalog(receipt_present=False),
+    ).inspect()
+
+    after = tuple(sorted(path.relative_to(tmp_path) for path in tmp_path.rglob("*")))
+    assert report.summary is SystemSummary.UNBOUND
+    assert report.items[0].state is ObservationState.PRESENT
+    assert report.items[1].state is ObservationState.ABSENT
+    assert after == before
+
+
+def test_status_reports_bound_but_inactive_units_without_mutating_fixture(
+    tmp_path: Path,
+) -> None:
+    paths = _paths(tmp_path)
+    paths.config.parent.mkdir()
+    paths.config.write_text("", encoding="utf-8")
+    before = tuple(sorted(path.relative_to(tmp_path) for path in tmp_path.rglob("*")))
+
+    report = _service(
+        tmp_path,
+        receipt=_Receipt(exists=True),
+        catalog=OwnedUnitCatalog(
+            receipt_present=True,
+            generation="bound-generation",
+            units=(
+                OwnedUnit(
+                    name="lychd-vessel.service",
+                    sources=("/units/lychd-vessel.container",),
+                    state=ObservationState.INACTIVE,
+                    unit_file_state="disabled",
+                ),
+            ),
+        ),
+    ).inspect()
+
+    after = tuple(sorted(path.relative_to(tmp_path) for path in tmp_path.rglob("*")))
+    assert report.summary is SystemSummary.STOPPED
+    assert report.items[0].state is ObservationState.PRESENT
+    assert report.items[1].state is ObservationState.PRESENT
+    assert report.items[2].state is ObservationState.INACTIVE
+    assert "1 owned" in report.items[2].detail
+    assert after == before
+
+
+def test_status_reports_removal_as_uninitialized_without_mutating_fixture(
+    tmp_path: Path,
+) -> None:
+    before = tuple(sorted(path.relative_to(tmp_path) for path in tmp_path.rglob("*")))
+
+    report = _service(
+        tmp_path,
+        receipt=_Receipt(exists=False),
+        catalog=OwnedUnitCatalog(receipt_present=False),
+    ).inspect()
+
+    after = tuple(sorted(path.relative_to(tmp_path) for path in tmp_path.rglob("*")))
+    assert report.summary is SystemSummary.NOT_INITIALIZED
+    assert report.items[0].state is ObservationState.ABSENT
+    assert report.items[1].state is ObservationState.ABSENT
+    assert after == before
+
+
 def test_corrupt_receipt_is_degraded_not_a_crash(tmp_path: Path) -> None:
     paths = _paths(tmp_path)
     paths.config.parent.mkdir()

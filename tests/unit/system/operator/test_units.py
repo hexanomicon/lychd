@@ -135,3 +135,64 @@ def test_deactivating_vessel_remains_active_for_authority_arbitration(
     )
 
     assert service.inspect().units[0].state is ObservationState.ACTIVE
+
+
+def test_missing_owned_unit_is_reported_with_its_load_state(tmp_path: Path) -> None:
+    source = tmp_path / "lychd-vessel.container"
+    runner = _Runner(
+        [
+            ProcessResult(
+                argv=(),
+                returncode=0,
+                stdout="LoadState=not-found\nActiveState=inactive\nUnitFileState=\n",
+            )
+        ]
+    )
+    service = OwnedUnitInventoryService(
+        cast(
+            "ScribeService",
+            _Scribe(
+                OwnedBindings(
+                    receipt_present=True,
+                    generation="generation",
+                    quadlet_sources=(source,),
+                    runtime_units=("lychd-vessel.service",),
+                )
+            ),
+        ),
+        runner,
+        systemctl_bin="/usr/bin/systemctl",
+    )
+
+    unit = service.inspect().units[0]
+
+    assert unit.state is ObservationState.INACTIVE
+    assert unit.detail == "load state: not-found"
+    assert runner.calls
+
+
+def test_unavailable_systemctl_keeps_owned_unit_state_unknown(tmp_path: Path) -> None:
+    source = tmp_path / "lychd-vessel.container"
+    runner = _Runner([])
+    service = OwnedUnitInventoryService(
+        cast(
+            "ScribeService",
+            _Scribe(
+                OwnedBindings(
+                    receipt_present=True,
+                    generation="generation",
+                    quadlet_sources=(source,),
+                    runtime_units=("lychd-vessel.service",),
+                )
+            ),
+        ),
+        runner,
+        systemctl_bin=None,
+    )
+
+    catalog = service.inspect()
+
+    assert len(catalog.units) == 1
+    assert catalog.units[0].state is ObservationState.UNKNOWN
+    assert catalog.units[0].detail == "systemctl is unavailable"
+    assert runner.calls == []
