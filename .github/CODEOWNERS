@@ -1,0 +1,8 @@
+# Default review routing. Enforcement is controlled by repository rulesets.
+* @hexanomicon/core
+
+# Security, workflow, architecture, and delivery truth deserve an explicit route.
+/.github/ @hexanomicon/core
+/SECURITY.md @hexanomicon/core
+/docs/adr/ @hexanomicon/core
+/docs/state-of-the-work.md @hexanomicon/core
