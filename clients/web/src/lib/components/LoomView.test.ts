@@ -91,6 +91,32 @@ it("does not navigate when a Pattern revision resolves after destroy", async () 
   expect(goto).not.toHaveBeenCalled();
 });
 
+it("inspects the exact revision requested by a deep link", async () => {
+  const exactRevision = { ...projection, revision: "2", title: "Bridge chat v2" };
+  vi.mocked(getLoomPatternRevision).mockResolvedValue(exactRevision);
+  const view = render(LoomView, { patternId: "bridge_chat", revision: "2" });
+
+  expect(await screen.findByRole("heading", { name: "Bridge chat v2" })).toBeTruthy();
+  expect(getLoomPatternRevision).toHaveBeenCalledOnce();
+  expect(getLoomPatternRevision).toHaveBeenCalledWith("bridge_chat", "2");
+  expect(goto).not.toHaveBeenCalled();
+  view.unmount();
+});
+
+it("explains when a deep-linked Pattern revision is unavailable", async () => {
+  vi.mocked(getLoomPatternRevision).mockRejectedValue(
+    new Error("No such Pattern revision is woven.")
+  );
+  const view = render(LoomView, { patternId: "bridge_chat", revision: "retired" });
+
+  expect((await screen.findByRole("alert")).textContent).toContain(
+    "No such Pattern revision is woven."
+  );
+  expect(getLoomPatternRevision).toHaveBeenCalledWith("bridge_chat", "retired");
+  expect(goto).not.toHaveBeenCalled();
+  view.unmount();
+});
+
 const runSnapshot: OrbRunSnapshot = {
   schema_version: 1,
   snapshot_at: "2026-07-30T00:00:00Z",
