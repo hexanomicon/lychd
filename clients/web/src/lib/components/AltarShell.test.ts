@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/svelte";
+import { act, fireEvent, render, screen } from "@testing-library/svelte";
 import { createRawSnippet } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -233,4 +233,25 @@ describe("shell contextual navigation", () => {
     expect(screen.getByRole("link", { name: "Orb" }).getAttribute("href")).toBe("/orb");
     newShell.unmount();
   });
+});
+
+it("closes the About disclosure on Escape and restores focus to its trigger", async () => {
+  vi.mocked(getAltarStatus).mockResolvedValue(status(0));
+  const view = render(AltarShell, { children });
+  const trigger = screen.getByLabelText("About LychD — The Altar");
+  const disclosure = trigger.closest("details");
+  if (!(disclosure instanceof HTMLDetailsElement)) {
+    throw new Error("The About trigger must belong to a details disclosure.");
+  }
+
+  await fireEvent.click(trigger);
+  expect(disclosure.open).toBe(true);
+  const aboutLink = screen.getByRole("link", { name: "Project source · MPL-2.0" });
+  aboutLink.focus();
+  expect(document.activeElement).toBe(aboutLink);
+  await fireEvent.keyDown(window, { key: "Escape" });
+
+  expect(disclosure.open).toBe(false);
+  expect(document.activeElement).toBe(trigger);
+  view.unmount();
 });
