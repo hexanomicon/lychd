@@ -11,12 +11,14 @@ from uuid import UUID
 from lychd.system.btrfs_identity import (
     BTRFS_FIRST_FREE_OBJECTID,
     BTRFS_SUBVOLUME_BOUNDARY_INODES,
-    parse_subvolume_show,
+    observe_subvolume_fd,
 )
 from lychd.system.host_tools import trusted_host_tool
-from lychd.system.operator.process import ProcessInvocationError, ProcessRunner
+from lychd.system.operator.process import DescriptorProcessRunner
 from lychd.system.operator.storage import MountObservation, MountTreeObservation
 from lychd.system.path_safety import path_has_symlink_component
+from lychd.system.services.layout_directory_settlement import DirectoryRollbackError
+from lychd.system.services.layout_directory_traversal import open_directory_path
 from lychd.system.services.lifecycle.deletion_checkpoint import (
     DeletionCheckpointStore,
 )
@@ -39,7 +41,6 @@ from lychd.system.services.lifecycle.models import CreatedBtrfsSubvolume, Lifecy
 from lychd.system.services.lifecycle.paths import lexically_normal
 
 _BTRFS_PROBE_TIMEOUT_SECONDS = 5.0
-_MAX_BTRFS_OUTPUT_BYTES = 64 * 1024
 _AUTO_SUDO = ""
 _SUDO_FALLBACKS = (
     Path("/usr/bin/sudo"),
@@ -49,27 +50,26 @@ _SUDO_FALLBACKS = (
 
 
 class CommandBtrfsSubvolumeProbe:
-    """Attest subvolumes through an injected argv-only process boundary."""
+    """Re-attest roots through the same bounded descriptor observer as init."""
 
-    def __init__(self, runner: ProcessRunner, *, btrfs_bin: str | None) -> None:
-        """Bind one already-resolved Btrfs executable."""
+    def __init__(self, runner: DescriptorProcessRunner) -> None:
+        """Bind one descriptor-capable bounded process boundary."""
         self._runner = runner
-        self._btrfs = btrfs_bin
 
     def inspect(self, path: Path) -> ObservedBtrfsSubvolume | None:
-        """Parse UUID and subvolume ID from ``btrfs subvolume show``."""
-        if self._btrfs is None:
+        """Read UUID/ID without root-only filesystem-wide tree searches."""
+        if not path.exists():
             return None
         try:
-            result = self._runner.run(
-                (self._btrfs, "subvolume", "show", str(path)),
-                timeout_s=_BTRFS_PROBE_TIMEOUT_SECONDS,
-            )
-        except (OSError, ProcessInvocationError, TimeoutError):
+            descriptor = open_directory_path(path)
+        except DirectoryRollbackError:
+            raise
+        except RuntimeError:
             return None
-        if result.returncode != 0 or len(result.stdout.encode(errors="replace")) > _MAX_BTRFS_OUTPUT_BYTES:
-            return None
-        return parse_subvolume_show(result.stdout)
+        try:
+            return observe_subvolume_fd(descriptor, runner=self._runner, timeout_s=_BTRFS_PROBE_TIMEOUT_SECONDS)
+        finally:
+            os.close(descriptor)
 
 
 @dataclass(frozen=True)

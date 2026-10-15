@@ -16,7 +16,7 @@ import structlog
 
 from lychd.system.btrfs_identity import (
     BtrfsSubvolumeObservation,
-    parse_subvolume_show,
+    observe_subvolume_fd,
 )
 from lychd.system.host_tools import trusted_host_tool
 from lychd.system.operator.process import (
@@ -25,6 +25,8 @@ from lychd.system.operator.process import (
     ProcessResult,
     SubprocessRunner,
 )
+from lychd.system.services.layout_directory_settlement import DirectoryRollbackError
+from lychd.system.services.layout_directory_traversal import open_directory_path
 
 logger = structlog.get_logger()
 
@@ -356,16 +358,19 @@ class Btrfs:
         self,
         path: Path,
     ) -> BtrfsSubvolumeObservation | None:
-        """Return UUID/ID evidence for one live subvolume."""
-        if self.btrfs_bin is None or not path.exists():
+        """Observe a public root through no-follow traversal and a bounded fd helper."""
+        if not path.exists():
             return None
-        result = self._run(
-            (self.btrfs_bin, "subvolume", "show", str(path)),
-            timeout_s=_PROBE_TIMEOUT_SECONDS,
-        )
-        if result is None or result.returncode != 0:
+        try:
+            descriptor = open_directory_path(path)
+        except DirectoryRollbackError:
+            raise
+        except RuntimeError:
             return None
-        return parse_subvolume_show(result.stdout)
+        try:
+            return observe_subvolume_fd(descriptor, runner=self._runner, timeout_s=_PROBE_TIMEOUT_SECONDS)
+        finally:
+            os.close(descriptor)
 
     def _inspect_subvolume_at(
         self,
@@ -373,51 +378,15 @@ class Btrfs:
         parent_fd: int,
         leaf: str,
     ) -> BtrfsSubvolumeObservation | None:
-        """Inspect one subvolume through an inherited pinned-parent descriptor."""
-        if self.btrfs_bin is None:
-            return None
-        result = self._run_with_fds(
-            (
-                self.btrfs_bin,
-                "subvolume",
-                "show",
-                str(self._descriptor_path(parent_fd, leaf)),
-            ),
-            timeout_s=_PROBE_TIMEOUT_SECONDS,
-            pass_fds=(parent_fd,),
-        )
-        if result is None or result.returncode != 0:
-            return None
-        return parse_subvolume_show(result.stdout)
-
-    def _run(
-        self,
-        argv: tuple[str, ...],
-        *,
-        timeout_s: float,
-    ) -> ProcessResult | None:
-        """Return one bounded outcome while containing host invocation failure."""
+        """Open the exact pinned leaf; the child receives no replaceable pathname."""
         try:
-            return self._runner.run(argv, timeout_s=timeout_s)
-        except ProcessInvocationError:
+            descriptor = os.open(leaf, _DIRECTORY_OPEN_FLAGS, dir_fd=parent_fd)
+        except OSError:
             return None
-
-    def _run_with_fds(
-        self,
-        argv: tuple[str, ...],
-        *,
-        timeout_s: float,
-        pass_fds: tuple[int, ...],
-    ) -> ProcessResult | None:
-        """Run a bounded command while preserving its pinned descriptor authority."""
         try:
-            return self._runner.run_with_fds(
-                argv,
-                timeout_s=timeout_s,
-                pass_fds=pass_fds,
-            )
-        except ProcessInvocationError:
-            return None
+            return observe_subvolume_fd(descriptor, runner=self._runner, timeout_s=_PROBE_TIMEOUT_SECONDS)
+        finally:
+            os.close(descriptor)
 
     @staticmethod
     def _safe_leaf(path: Path) -> str:

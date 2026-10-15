@@ -83,10 +83,13 @@ creations are never pathname-deleted as rollback.
 ## PostgreSQL substrate
 
 Only an absent PostgreSQL `data/` target on trusted Btrfs may receive a new subvolume and `+C`
-attempt. Creation, `btrfs subvolume show`, no-COW mutation, and confirmation address the leaf
-through its inherited parent descriptor. A successful subvolume records canonical UUID and
-non-reserved ID as well as device/inode in the version-2 lifecycle receipt. Existing storage is
-never retrofitted; `+C` is only an inheritance policy and a false result is a warning.
+attempt. Creation addresses the leaf through its inherited parent descriptor. Identity observation
+uses a bounded, fixed read-only helper with only the opened leaf descriptor: it requires a real
+Btrfs root directory and a supported kernel ABI before reading its own UUID and ID through
+`BTRFS_IOC_GET_SUBVOL_INFO`. No privileged path or snapshot lookup is required. No-COW mutation
+and before/after confirmation remain descriptor-bound. A successful subvolume records canonical
+UUID and non-reserved ID as well as device/inode in the version-2 lifecycle receipt. Existing
+storage is never retrofitted; `+C` is only an inheritance policy and a false result is a warning.
 
 LychD never adopts an observed existing subvolume or backfills a missing identity. A mounted
 Phylactery requires complete live mount and Btrfs agreement; an unmounted one requires the exact
