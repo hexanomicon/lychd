@@ -590,6 +590,37 @@ store and claims no machine/power-loss recovery profile. Return custody remains 
 its actual owner seals the bounded artifacts and references; coordinator adoption failure never
 permits relaunch or deletion of required evidence.
 
+#### Mechanical host disposition precursor
+
+The first `delegated-host-disposition@1` profile retains mechanical intent before usable host
+admission. It is not the complete admitted host attempt above: no actual owner decision,
+reservation, guest release, containment or custody is supplied. One permanent AgentJob row
+serializes preparation, dispatch consumption and logical intake closure even before a
+disposition record exists. Preparation retains the exact tagged V2 request and job, immutable
+proposed host-policy identity and executor generation, and independently compiled launch digest
+in bounded canonical bytes. Reconstructing the complete specification from that retained request
+must reproduce the digest; a caller-supplied digest alone cannot establish it.
+This precursor admits only complete canonical current stored V2 shape: decoding and re-encoding
+must preserve its canonical JSON bytes, including scalar types and explicit defaults. Omitted
+defaults or numeric aliases refuse without rewriting the stored request or changing the global
+V2 codec's compatibility contract. Preparation, consumption and prepared-history reads all apply
+that admission; logical close remains available without decoding damaged intent.
+
+Only a newly inserted, acknowledged preparation yields one nonserializable handle owned by the
+issuing adapter instance. Reads, exact replay, process replacement and retained PREPARED records
+yield snapshots only. Consuming the handle retires it before the first asynchronous operation and
+conditionally commits the one PREPARED-to-SUBMITTING disposition. Failure or uncertain commit
+cannot reissue that opportunity, even if the retained preparation remains unconsumed. Such loss
+may produce zero dispatches. No returned value is an owner permit or a capability to launch.
+
+Logical intake closure is monotonic and may be retained before preparation. Closure that wins
+prevents later preparation or dispatch consumption for the same AgentJob; changing policy or
+executor generation cannot reopen it. Dispatch that wins remains potentially in flight when
+logical close is recorded. This acknowledgement proves only that the store will admit no new
+logical handoff; it cannot settle AgentJob CANCELLED, emit containment evidence or release a
+reservation. Physical release and irreversible executor closure retain the separate law above.
+The profile adds no registration, restore-reactivation, retry or positive owner operation.
+
 The decisive future fixture pauses dispatcher A after admission/dispatch claim, lets B cancel or
 close, then releases A. Either A is rejected after closure, or B cannot acknowledge cancellation
 until A's in-flight release is contained and fenced. Repeat across lost acknowledgements, restart,
