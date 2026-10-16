@@ -515,15 +515,20 @@ class _InvocationFailureRunner:
         message = "simulated process failure"
         raise ProcessInvocationError(message)
 
+    def run_with_fds(self, argv: tuple[str, ...], *, timeout_s: float, pass_fds: tuple[int, ...]) -> ProcessResult:
+        assert len(pass_fds) == 1
+        assert os.fstat(pass_fds[0]).st_ino > 0
+        assert timeout_s == 5.0
+        return self.run(argv, timeout_s=timeout_s)
 
-def test_command_probe_converts_process_invocation_error_to_unverifiable(
+
+def test_descriptor_probe_converts_process_invocation_error_to_unverifiable(
     tmp_path: Path,
 ) -> None:
     runner = _InvocationFailureRunner()
-    probe = CommandBtrfsSubvolumeProbe(
-        runner,
-        btrfs_bin="/usr/bin/btrfs",
-    )
+    probe = CommandBtrfsSubvolumeProbe(runner)
+    target = tmp_path / "phylactery"
+    target.mkdir()
 
-    assert probe.inspect(tmp_path / "phylactery") is None
+    assert probe.inspect(target) is None
     assert runner.calls == 1

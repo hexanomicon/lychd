@@ -430,8 +430,15 @@ unable to offer that idempotency guarantee or lookup cannot host autonomously re
 effects.
 
 Cancellation records intent, asks the exact attempt owner, and continues reconciliation.
-`CANCELLED` means execution containment is proved, not merely that a request was sent. Local
-reservation release follows terminal containment; an indeterminate local or paid remote attempt
+`CANCELLED` means execution containment is proved, not merely that a request was sent.
+Containment also closes pending launch authority: a paused dispatcher, delayed request or executor
+restart must not create work after cancellation acknowledges. The actual executor release owner
+must order release against irreversible closure for the exact occurrence/generation, or prove all
+old launch-capable actors and pending requests irreversibly drained. A database CAS, lease, PID,
+unit name or empty hierarchy alone is insufficient. If release wins, cancellation contains that
+in-flight effect and closes its generation; if closure wins, old release/create/start/restart
+requests refuse. Unknown ordering or closure remains unresolved, with no `CANCELLED` receipt.
+Local reservation release follows terminal containment; an indeterminate local or paid remote attempt
 keeps the relevant fence or operator-visible containment instead of guessing. The common envelope
 owns delivery, reconciliation, cancellation, and settlement mechanics. Scanner, Prism, Form,
 Kinesis, Foundry, Scout, Echo, and each Composition retain their domain request/result contracts,
@@ -454,10 +461,9 @@ authoritative terminal settlement. Its effect-free echo remains `SUCCEEDED` when
 text exceeds the result limit: the retained text is bounded with an explicit truncation marker
 and can still be reconstructed for cancellation. This demonstration does not permit truncating
 an effectful runtime's required result or terminal evidence into success. Effectful runtimes require lookup by
-durable provider/executor identity and must never replay submission. Database shapes, a migration,
-and a PostgreSQL adapter exist, but no real provider launch, Coffin supervisor, effectful child,
-cross-process pickup, or durable artifact custody is proved. [State of
-Work](../state-of-the-work.md#delegated-agent-execution) owns the Partial claim.
+durable provider/executor identity and must never replay submission. Reference-only recovery cannot
+stand in for an effectful adapter's durable lookup, containment or artifact custody. [State of
+Work](../state-of-the-work.md#delegated-agent-execution) owns current delivery evidence.
 
 Codex and Claude have bounded one-shot protocol adapters behind a refusing-by-default host port.
 The command intent pins the CLI version, exact request and job, literal argv, stdin, isolated
@@ -467,6 +473,162 @@ and matching whole-job containment evidence on lookup. Changed configuration can
 retained launch. Malformed, incomplete, conflicting or oversized protocol output cannot become
 success; a timeout requires containment before terminal classification. Neither adapter is
 registered by default, and no subprocess launcher or Provider Gate bridge is delivered.
+
+Every poll and containment call receives the exact store-retained request alongside the job
+reference. The coordinator supplies that request from its current authoritative read. The reviewed
+CLI protocols receive exactly its prompt encoded as UTF-8 stdin; lookup and cancellation never
+recreate a submission. The Python adapter port requires the retained-request argument for both
+operations; built-ins change atomically under
+[Extension compatibility](05-extensions.md#7-extension-compatibility-tiers).
+
+### Versioned CLI intent and owner binding
+
+The existing `DelegatedAgentRequest` is the unchanged legacy request: no discriminator or policy
+is backfilled, and its request, nested job and launch encodings retain their original meaning.
+Reference work and retained Pattern revisions remain unchanged. Fresh legacy CLI starts refuse
+before calling a host; historical lookup and containment retain their narrower request/stdin
+correlation, without inventing previously unretained model, roots or limits.
+
+A sibling `DelegatedCliRequestV2` uses the exact discriminator
+`request_schema="lychd-delegated-cli-request@2"`. In addition to the existing occurrence and prompt
+fields it requires immutable `cli_intent` and `owner_binding`. Its runtime is exactly `codex` or
+`claude`. The intent pins `compiler_revision="official-one-shot@1"`, the exact reviewed CLI version,
+canonical executable, explicit model, one parent `job_root` with three pairwise-disjoint strict
+children, and all four existing capture and wall limits. The pinned compiler alone derives literal argv, replacement environment and stdin.
+No arbitrary settings, added CLI flags, reasoning alias or model default enters that interpretation.
+Current runtime defaults cannot reinterpret retained V2 work.
+
+The first owner-binding namespace is `operator-campaign@1`. Each of its four references has an
+immutable `record_id`, `revision` and lowercase `sha256:` content digest; identifiers are bounded
+ASCII identifiers and revisions cannot mean `latest`. The binding also names the independent
+`verifier_id`. These are opaque owner-qualified identities, never paths to resolve by the runtime:
+
+- `task` binds the principal, campaign/task/attempt, acceptance and non-goals, standing authority,
+  tools/effects, all budgets, cancellation, termination and separate promotion owner;
+- `projection` binds the exact base plus admitted dirty patch and selected untracked bytes,
+  their manifest and allowed paths;
+- `custody` binds output format, quarantine, destination, retention and permitted downstream use;
+- `verification` binds fixed commands, tool versions, environment, deadlines, pass criteria,
+  independent verifier identity and reserved verification capacity.
+
+A trusted injected owner-admission port, absent or denying by default, checks current owner truth
+before V2 start. Its closed positive observation binds the exact job occurrence, canonical request
+and intent digests, all four references and verifier, an admission identity, aware issue/expiry
+instants and a nonnegative bounded generation. The consumer requires issued <= trusted now < expiry
+and a positive validity window no longer than one day. Missing, denied, malformed, expired or
+mismatching observations refuse before host launch. A caller cannot serialize a positive observation
+into the request. The port checks existing admission; this passage grants no budget reservation or
+execution permit. Current authority and generation are the producer's responsibility, not proved by
+consumer equality checks. Poll and cancellation need no fresh owner admission, including after its
+expiry or revocation, and never launch.
+
+Explicit request decoding selects legacy only when the discriminator is absent, V2 only for its
+exact tag, and refuses unknown/null tags and extra fields without fallback. The same codec governs
+store writes, exact replay, detached reads and nested job JSON. Unknown stored versions remain
+unchanged and unavailable; they are not translated or rewritten. Legacy launch digests remain
+unchanged. V2 uses separate request/intent digest domains and a tagged launch encoding containing
+the complete request and existing launch specification. Canonical bytes are sorted compact UTF-8
+JSON with nonfinite numbers forbidden; this internal identity claims no general JCS/signature
+canonicalization. Retained work keeps its compiler and codec versions.
+
+For V2 lookup and containment, independently compile the complete expected specification from the
+store-retained request and exact job, then compare the host specification and matching receipt.
+Consistent substitutions of model, executable, argv, environment, roots, limits or owner bindings
+must refuse even when the host recomputes its receipt. The host must additionally retain the exact
+versioned launch and owner decision durably before effects, with create-once exact-job ownership;
+lookup never repairs an absent record by resubmission.
+
+Consumer conformance with an inert positive owner fixture is a mechanical prerequisite only. It
+proves no actual owner-record producer, source-byte closure, current authorization/revocation,
+custody service or verifier reservation. Those owners must be delivered and independently checked
+before usable admission, including changed dirty/untracked bytes under unchanged names. The four
+CLI limits do not supply ADR 09 CPU, memory, process, disk, provider or artifact budgets. Physical
+host retention, enforcement and Gates remain separate prerequisites. Neither this contract nor a
+migrated-store test registers a CLI or delivers native Creation.
+
+### Host dispatch and irreversible closure
+
+A future delegated-host attempt specializes [Service job attempt](#service-job-attempts) mechanics
+under the existing AgentJob. It binds the exact versioned request/specification and digests,
+actual owner decision, selected host policy, executor generation, dispatch/closure disposition,
+and containment/custody evidence. [Phylactery](06-persistence.md#decision) owns its admitted
+persistence. It introduces no competing generic attempt lifecycle, task selector, retry policy,
+acceptance judge or promotion owner. AgentJob and `AWAITING_DELEGATE` keep their existing truth;
+host disposition cannot independently resume Graph or create `AWAITING_SERVICE`.
+
+Create-once exact-job ownership commits before a guest effect. The conditional
+`PREPARED → SUBMITTING` handoff consumes dispatch before calling the executor. Conflict preserves
+the original; absent or uncertain commit permits no release. A consumed dispatch can yield zero
+executions if its owner dies before contact. This CLI profile does not inherit a service adapter's
+conditional retransmission permission: an uncertain dispatch, lost acknowledgement, missing
+lookup or lease expiry allows exact lookup/containment only, never replacement submission.
+At-most-one admitted dispatch is not exactly-once execution or completion.
+
+The trusted host must re-observe the actual owner producer over the exact retained identities
+after preparation/queue/reservation waits. Forwarded runtime observations are historical evidence,
+not live permits; `launch(spec)` can retain its shape only when trusted host construction supplies
+that producer and the required release boundary. Source projection remains immutable through
+release. Complete budget, custody and independent-verification reservations must actually exist;
+Admission-consumer equality and its four capture/wall bounds establish none of them. A new positive
+owner operation or host handoff needs its own accepted typed contract, rather than silently
+expanding the existing observation port into reservation or authority.
+
+Current admission, expiry/revocation and physical release must share the selected executor's ordered
+release/closure boundary. A fresh check followed by an arbitrary pause is insufficient. The
+executor must reject all stale create/start/restart requests after irreversible generation
+closure, or the host must prove equivalent draining and loss of every old launch capability.
+Containment evidence binds that generation, existing descendants and absence of pending/future
+release. If that proof is unavailable, cancellation remains unresolved; neither an empty lookup
+nor a mocked receipt permits `CANCELLED`. No selected executor supplying this boundary is delivered.
+
+Dispatch and closure history cannot disappear through ordinary cleanup while an old occurrence
+could be reused. Known database restore, lost control history or uncertain authority epoch closes
+fresh launch until independently surviving executor/owner evidence and explicit authority
+reconcile the generations and effects. Restored counters or old `PREPARED` rows cannot prove an
+unspent occurrence. Missing evidence keeps launch closed; this decision creates no nonrollback
+store and claims no machine/power-loss recovery profile. Return custody remains pending until
+its actual owner seals the bounded artifacts and references; coordinator adoption failure never
+permits relaunch or deletion of required evidence.
+
+#### Mechanical host disposition precursor
+
+The first `delegated-host-disposition@1` profile retains mechanical intent before usable host
+admission. It is not the complete admitted host attempt above: no actual owner decision,
+reservation, guest release, containment or custody is supplied. One permanent AgentJob row
+serializes preparation, dispatch consumption and logical intake closure even before a
+disposition record exists. Preparation retains the exact tagged V2 request and job, immutable
+proposed host-policy identity and executor generation, and independently compiled launch digest
+in bounded canonical bytes. Reconstructing the complete specification from that retained request
+must reproduce the digest; a caller-supplied digest alone cannot establish it.
+This precursor admits only complete canonical current stored V2 shape: decoding and re-encoding
+must preserve its canonical JSON bytes, including scalar types and explicit defaults. Omitted
+defaults or numeric aliases refuse without rewriting the stored request or changing the global
+V2 codec's compatibility contract. Preparation, consumption and prepared-history reads all apply
+that admission; logical close remains available without decoding damaged intent.
+
+Only a newly inserted, acknowledged preparation yields one nonserializable handle owned by the
+issuing adapter instance. Reads, exact replay, process replacement and retained PREPARED records
+yield snapshots only. Consuming the handle retires it before the first asynchronous operation and
+conditionally commits the one PREPARED-to-SUBMITTING disposition. Failure or uncertain commit
+cannot reissue that opportunity, even if the retained preparation remains unconsumed. Such loss
+may produce zero dispatches. No returned value is an owner permit or a capability to launch.
+
+Logical intake closure is monotonic and may be retained before preparation. Closure that wins
+prevents later preparation or dispatch consumption for the same AgentJob; changing policy or
+executor generation cannot reopen it. Dispatch that wins remains potentially in flight when
+logical close is recorded. This acknowledgement proves only that the store will admit no new
+logical handoff; it cannot settle AgentJob CANCELLED, emit containment evidence or release a
+reservation. Physical release and irreversible executor closure retain the separate law above.
+The profile adds no registration, restore-reactivation, retry or positive owner operation.
+
+The decisive future fixture pauses dispatcher A after admission/dispatch claim, lets B cancel or
+close, then releases A. Either A is rejected after closure, or B cannot acknowledge cancellation
+until A's in-flight release is contained and fenced. Repeat across lost acknowledgements, restart,
+stale generation, expiry during a paused release, changed mounted input and restored records. Pure doubles prove protocol logic,
+PostgreSQL proves its transaction claims, and a real selected executor proves physical fencing,
+containment and ceilings. None substitutes for the absent owner producer, Gate or host qualification.
+
+### Delegated settlement
 
 `LOST` is terminal for result adoption and ordinary polling, but it is not evidence that an external
 process stopped. Parent cancellation must still call the owning runtime's containment operation and

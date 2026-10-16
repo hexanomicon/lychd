@@ -19,6 +19,7 @@ from lychd.domain.delegation import (
     IllegalDelegatedAgentTransitionError,
     InMemoryDelegatedAgentJobStore,
 )
+from lychd.domain.delegation.models import DelegatedRequest
 from lychd.domain.delegation.services import DelegatedAgentIdempotencyConflictError
 from lychd.extensions.builtin.delegation.reference import ReferenceDelegatedAgentRuntime
 
@@ -28,22 +29,26 @@ class FakeDelegatedAgentRuntime:
     """Deterministic adapter used to prove the structural runtime contract."""
 
     name: str = "fake"
-    starts: list[DelegatedAgentRequest] = field(default_factory=list)
+    starts: list[DelegatedRequest] = field(default_factory=list)
     polls: list[str] = field(default_factory=list)
+    poll_requests: list[DelegatedRequest] = field(default_factory=list)
     cancellations: list[str] = field(default_factory=list)
+    cancellation_requests: list[DelegatedRequest] = field(default_factory=list)
     next_result: DelegatedAgentResult | None = None
 
-    async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
+    async def start(self, request: DelegatedRequest, job: DelegatedAgentJobRef) -> None:
         self.starts.append(request)
         await asyncio.sleep(0)
         assert job.request_id == request.request_id
 
-    async def poll(self, job: DelegatedAgentJobRef) -> DelegatedAgentResult | None:
+    async def poll(self, job: DelegatedAgentJobRef, *, request: DelegatedRequest) -> DelegatedAgentResult | None:
         self.polls.append(job.job_id)
+        self.poll_requests.append(request)
         return self.next_result
 
-    async def cancel(self, job: DelegatedAgentJobRef) -> None:
+    async def cancel(self, job: DelegatedAgentJobRef, *, request: DelegatedRequest) -> None:
         self.cancellations.append(job.job_id)
+        self.cancellation_requests.append(request)
 
 
 def _request(*, request_id: str = "req-1", prompt: str = "inspect the repository") -> DelegatedAgentRequest:
@@ -136,7 +141,7 @@ async def test_job_lifecycle_operations_wait_for_submit_acceptance(operation: st
         start_entered: asyncio.Event = field(default_factory=asyncio.Event)
         release_start: asyncio.Event = field(default_factory=asyncio.Event)
 
-        async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
+        async def start(self, request: DelegatedRequest, job: DelegatedAgentJobRef) -> None:
             self.starts.append(request)
             assert job.request_id == request.request_id
             self.start_entered.set()
@@ -204,7 +209,7 @@ async def test_cancelled_same_request_waiter_releases_its_lock_reference() -> No
 
     @dataclass
     class _BlockingRuntime(FakeDelegatedAgentRuntime):
-        async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
+        async def start(self, request: DelegatedRequest, job: DelegatedAgentJobRef) -> None:
             self.starts.append(request)
             assert job.request_id == request.request_id
             entered.set()
@@ -255,7 +260,7 @@ async def test_repeated_cancellation_cannot_interrupt_indeterminate_submission_s
     class _BlockingStartRuntime(FakeDelegatedAgentRuntime):
         start_entered: asyncio.Event = field(default_factory=asyncio.Event)
 
-        async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
+        async def start(self, request: DelegatedRequest, job: DelegatedAgentJobRef) -> None:
             self.starts.append(request)
             assert job.request_id == request.request_id
             self.start_entered.set()
@@ -361,7 +366,7 @@ async def test_submit_loser_uses_durable_winner_identity_without_second_start() 
 
         async def create(
             self,
-            request: DelegatedAgentRequest,
+            request: DelegatedRequest,
             ref: DelegatedAgentJobRef,
         ) -> tuple[DelegatedAgentJob, bool]:
             _ = ref
@@ -386,7 +391,7 @@ async def test_unrelated_requests_can_start_in_parallel() -> None:
 
     @dataclass
     class _BlockingRuntime(FakeDelegatedAgentRuntime):
-        async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
+        async def start(self, request: DelegatedRequest, job: DelegatedAgentJobRef) -> None:
             self.starts.append(request)
             assert job.request_id == request.request_id
             if len(self.starts) == 2:
@@ -864,3 +869,40 @@ async def test_cancel_contains_lost_job_before_recording_cancellation() -> None:
     assert settled.result is not None
     assert settled.result.status is DelegatedAgentJobStatus.CANCELLED
     assert runtime.cancellations == [ref.job_id]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("operation", ["poll", "cancel"])
+async def test_runtime_receives_request_from_fresh_locked_store_read(operation: str) -> None:
+    original = _request()
+    stale = original.model_copy(update={"prompt": "stale pre-lock observation"})
+
+    class Store(InMemoryDelegatedAgentJobStore):
+        def __init__(self) -> None:
+            super().__init__()
+            self.reads = 0
+
+        async def get(self, job_id: str) -> DelegatedAgentJob | None:
+            self.reads += 1
+            job = await super().get(job_id)
+            assert job is not None
+            return job.model_copy(update={"request": stale}) if self.reads == 1 else job
+
+    store = Store()
+    initial = FakeDelegatedAgentRuntime()
+    first = DelegatedAgentCoordinator(runtimes={initial.name: initial}, store=store)
+    ref = await first.submit(original)
+    runtime = FakeDelegatedAgentRuntime()
+    reconstructed = DelegatedAgentCoordinator(runtimes={runtime.name: runtime}, store=store)
+
+    if operation == "poll":
+        await reconstructed.refresh(ref.job_id)
+        assert runtime.poll_requests == [original]
+        assert runtime.cancellation_requests == []
+    else:
+        assert await reconstructed.cancel(ref.job_id)
+        assert runtime.cancellation_requests == [original]
+        assert runtime.poll_requests == []
+    assert store.reads == 2
+    assert initial.starts == [original]
+    assert runtime.starts == []

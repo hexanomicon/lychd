@@ -189,11 +189,20 @@ async def test_contradictory_concurrent_verdicts_keep_the_first_commit(
         deny.decide(consent_id, approved=False, decided_by="magus:deny"),
     )
 
-    assert all(view is not None for view in views)
-    statuses = {view.status for view in views if view is not None}
-    deciders = {view.decided_by for view in views if view is not None}
-    assert statuses in ({"granted"}, {"denied"})
-    assert deciders in ({"magus:grant"}, {"magus:deny"})
+    winner = views[0]
+    assert winner is not None
+    assert (winner.status, winner.decided_by) in {
+        ("granted", "magus:grant"),
+        ("denied", "magus:deny"),
+    }
+    assert winner.decided_at is not None
+    assert views[1] == winner
+
+    reopened = CodexConsentLedger(session_factory=pg_factory)
+    assert await reopened.get(consent_id) == winner
+    late = await reopened.decide(consent_id, approved=winner.status == "denied", decided_by="magus:late")
+    assert late == winner
+    assert await CodexConsentLedger(session_factory=pg_factory).get(consent_id) == winner
 
 
 @pytest.mark.asyncio

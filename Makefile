@@ -52,6 +52,9 @@ CONTAINER_TEST_TARGETS ?= tests/integration/test_db_consent_pg.py \
 	tests/integration/test_db_migrations_pg.py \
 	tests/integration/test_db_nexus_pg.py \
 	tests/integration/test_db_run_ledger_pg.py \
+	tests/integration/test_delegated_process_recovery_pg.py \
+	tests/integration/test_delegated_cli_v2_pg.py \
+	tests/integration/test_delegated_host_disposition_pg.py \
 	tests/integration/test_scout_attempts_pg.py tests/integration/test_scout_migrations_pg.py \
 	tests/integration/test_scout_workflow_pg.py \
 	tests/integration/test_production_wiring.py::test_production_wiring_real_factory_over_postgres_survives_second_boot

@@ -21,6 +21,8 @@ if TYPE_CHECKING:
     from litestar import Litestar
     from litestar.testing import TestClient
 
+    from lychd.domain.web.sessions import RunHandle
+
 _REQUEST_ID = "31d80d31-92ef-4e9c-a1e7-e8b755eed888"
 
 
@@ -720,6 +722,41 @@ def test_send_replay_returns_one_run_and_one_retained_turn(
     assert fake_services.run_engine.exclusive_session_submissions == [True, True]
     user_turns = [turn for turn in restored.json()["session"]["turns"] if turn["role"] == "user"]
     assert len(user_turns) == 1
+
+
+def test_send_trims_unicode_edges_preserves_interior_and_replays_normalized_prompt(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session = _session(fake_services)
+    path = f"/api/v1/bridge/sessions/{session.id}/messages"
+    canonical = "alpha  beta\tgamma"
+    received_intents: list[Intent] = []
+    submit = fake_services.run_engine.submit
+
+    async def record_submit(intent: Intent, **kwargs: Any) -> RunHandle:
+        received_intents.append(intent)
+        return await submit(intent, **kwargs)
+
+    monkeypatch.setattr(fake_services.run_engine, "submit", record_submit)
+    first = altar_client.post(path, json={"prompt": "\u2003alpha  beta\tgamma\u00a0", "request_id": _REQUEST_ID})
+    replay = altar_client.post(path, json={"prompt": " \nalpha  beta\tgamma\t", "request_id": _REQUEST_ID})
+    restored = altar_client.get(f"/api/v1/bridge/sessions/{session.id}")
+
+    assert first.status_code == replay.status_code == restored.status_code == 200
+    body = first.json()
+    assert body["turn"]["role"] == "user"
+    assert body["turn"]["content"] == canonical
+    assert body["turn"]["run_id"] == body["run_id"]
+    assert [intent.prompt for intent in received_intents] == [canonical, canonical]
+    assert len(fake_services.run_engine.submitted) == 1
+    assert fake_services.run_engine.submitted[0].prompt == canonical
+    assert fake_services.run_engine.exclusive_session_submissions == [True, True]
+    assert replay.json()["run_id"] == body["run_id"]
+    assert replay.json()["turn"] == body["turn"]
+    user_turns = [turn for turn in restored.json()["session"]["turns"] if turn["role"] == "user"]
+    assert user_turns == [body["turn"]]
 
 
 def test_inspector_returns_context(

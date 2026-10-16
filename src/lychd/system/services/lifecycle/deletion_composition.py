@@ -65,10 +65,7 @@ def build_deletion_services() -> DeletionServices:
         retirement=operator.retirement,
         scribe=scribe,
         storage=operator.storage,
-        subvolumes=CommandBtrfsSubvolumeProbe(
-            process,
-            btrfs_bin=btrfs,
-        ),
+        subvolumes=CommandBtrfsSubvolumeProbe(process),
         checkpoint=checkpoint,
         trees=trees,
         root_authority=root_authority,

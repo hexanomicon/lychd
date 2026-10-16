@@ -8,10 +8,13 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import re
 import threading
 import time
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
+from uuid import uuid4
 
 import pytest
 
@@ -19,9 +22,11 @@ pytest.importorskip("testcontainers", reason="optional disposable PostgreSQL rec
 
 from advanced_alchemy.alembic.commands import AlembicCommandConfig
 from alembic import command
-from sqlalchemy import text
+from sqlalchemy import DDL, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.pool import NullPool
 from testcontainers.community.postgres import PostgresContainer
 
 from lychd.config.constants import DB_MIGRATION_VERSION_TABLE, PATH_MIGRATION_CONFIG
@@ -38,7 +43,7 @@ def pg_url() -> Iterator[str]:
 
 def _migration_config(url: str) -> AlembicCommandConfig:
     """Build the same async Advanced Alchemy configuration used by the application."""
-    engine = create_async_engine(url)
+    engine = create_async_engine(url, poolclass=NullPool)
     return AlembicCommandConfig(
         engine=engine,
         version_table_name=DB_MIGRATION_VERSION_TABLE,
@@ -67,6 +72,279 @@ def _run(
     parameters: dict[str, object] | None = None,
 ) -> list[tuple[object, ...]]:
     return asyncio.run(_execute(url, statement, parameters))
+
+
+async def _owned_migration_database(url: str, database: str, *, create: bool) -> None:
+    """Create or remove only a generated database on the disposable fixture server."""
+    if re.fullmatch(r"delegated_migrations_[0-9a-f]{32}", database) is None:
+        msg = "Refusing an unowned migration database name."
+        raise ValueError(msg)
+    engine = create_async_engine(url, isolation_level="AUTOCOMMIT", poolclass=NullPool)
+    try:
+        async with engine.connect() as connection:
+            await connection.execute(
+                DDL(
+                    "CREATE DATABASE %(database)s" if create else "DROP DATABASE %(database)s",
+                    context={"database": database},
+                )
+            )
+    finally:
+        await engine.dispose()
+
+
+@pytest.fixture
+def delegated_migration_pg_url(pg_url: str) -> Iterator[str]:
+    """Isolate delegated receipts from the existing module's retained rows and revision."""
+    database = f"delegated_migrations_{uuid4().hex}"
+    asyncio.run(_owned_migration_database(pg_url, database, create=True))
+    try:
+        yield make_url(pg_url).set(database=database).render_as_string(hide_password=False)
+    finally:
+        asyncio.run(_owned_migration_database(pg_url, database, create=False))
+
+
+def _insert_delegated_migration_run(url: str, run_id: str) -> None:
+    _run(
+        url,
+        """
+        INSERT INTO run (
+            id, workflow_name, pattern_manifest, source, status, priority,
+            sigil_name, intent, queue_name, attempt, enqueue_seq, created_at, updated_at
+        ) VALUES (
+            CAST(:run_id AS uuid), 'migration_receipt', '{}'::jsonb, 'bridge', 'done', 70,
+            'fixture', '{}'::jsonb, 'runs', 0, 0, now(), now()
+        )
+        """,
+        {"run_id": run_id},
+    )
+
+
+def _insert_delegated_migration_job(
+    url: str,
+    *,
+    run_id: str,
+    record_id: str,
+    job_id: str,
+    status: str,
+    result: str | None,
+) -> None:
+    _run(
+        url,
+        """
+        INSERT INTO delegated_agent_job (
+            id, job_id, request_id, run_id, runtime, profile, status,
+            request, result, created_at, updated_at
+        ) VALUES (
+            CAST(:record_id AS uuid), :job_id, :job_id, CAST(:run_id AS uuid),
+            'reference', 'read', :status, '{}'::jsonb, CAST(:result AS jsonb), now(), now()
+        )
+        """,
+        {"run_id": run_id, "record_id": record_id, "job_id": job_id, "status": status, "result": result},
+    )
+
+
+def _invalid_delegated_migration_result(case: str, job_id: str, status: str) -> str | None:
+    return {
+        "sql-null": None,
+        "json-null": "null",
+        "nonobject": "[]",
+        "missing-job": json.dumps({"status": status}),
+        "missing-status": json.dumps({"job_id": job_id}),
+        "wrong-job": json.dumps({"job_id": "another-job", "status": status}),
+        "wrong-status": json.dumps({"job_id": job_id, "status": "running"}),
+    }[case]
+
+
+@pytest.mark.parametrize("status", ["succeeded", "failed", "cancelled", "timed_out", "lost"])
+@pytest.mark.parametrize(
+    "result_case", ["sql-null", "json-null", "nonobject", "missing-job", "missing-status", "wrong-job", "wrong-status"]
+)
+def test_delegated_terminal_result_migration_refuses_until_explicit_repair(
+    delegated_migration_pg_url: str, status: str, result_case: str
+) -> None:
+    """0008 preserves legacy terminal rows and its pre-DDL schema on refusal."""
+    url = delegated_migration_pg_url
+    command.upgrade(_migration_config(url), "0007")
+    run_id, record_id = str(uuid4()), str(uuid4())
+    job_id = f"migration-{record_id}"
+    _insert_delegated_migration_run(url, run_id)
+    _insert_delegated_migration_job(
+        url,
+        run_id=run_id,
+        record_id=record_id,
+        job_id=job_id,
+        status=status,
+        result=_invalid_delegated_migration_result(result_case, job_id, status),
+    )
+    before = _run(
+        url,
+        """
+        SELECT to_jsonb(r), to_jsonb(j), j.result IS NULL
+        FROM run r JOIN delegated_agent_job j ON j.run_id = r.id
+        WHERE j.id = CAST(:record_id AS uuid)
+        """,
+        {"record_id": record_id},
+    )
+
+    with pytest.raises(DBAPIError, match="requires exact result evidence for terminal delegated jobs"):
+        command.upgrade(_migration_config(url), "0008")
+
+    assert _run(url, "SELECT version_num FROM lychd_db_version") == [("0007",)]
+    assert _run(
+        url,
+        """
+        SELECT count(*) FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'run' AND column_name = 'consent_id'
+        """,
+    ) == [(0,)]
+    assert _run(
+        url,
+        """
+        SELECT count(*) FROM pg_constraint
+        WHERE conrelid = 'delegated_agent_job'::regclass
+          AND conname = 'ck_delegated_agent_job_terminal_result'
+        """,
+    ) == [(0,)]
+    assert (
+        _run(
+            url,
+            """
+        SELECT to_jsonb(r), to_jsonb(j), j.result IS NULL
+        FROM run r JOIN delegated_agent_job j ON j.run_id = r.id
+        WHERE j.id = CAST(:record_id AS uuid)
+        """,
+            {"record_id": record_id},
+        )
+        == before
+    )
+
+    repaired = {"job_id": job_id, "status": status}
+    _run(
+        url,
+        "UPDATE delegated_agent_job SET result = CAST(:result AS jsonb) WHERE id = CAST(:record_id AS uuid)",
+        {"record_id": record_id, "result": json.dumps(repaired)},
+    )
+    command.upgrade(_migration_config(url), "0008")
+    assert _run(url, "SELECT version_num FROM lychd_db_version") == [("0008",)]
+    assert _run(
+        url,
+        """
+        SELECT j.job_id, j.status, j.result, r.consent_id
+        FROM delegated_agent_job j JOIN run r ON r.id = j.run_id
+        WHERE j.id = CAST(:record_id AS uuid)
+        """,
+        {"record_id": record_id},
+    ) == [(job_id, status, repaired, None)]
+    command.upgrade(_migration_config(url), "head")
+    assert _run(url, "SELECT version_num FROM lychd_db_version") == [("0015",)]
+    assert _run(
+        url,
+        """
+        SELECT j.job_id, j.status, j.result, r.consent_id,
+               NOT EXISTS (SELECT 1 FROM delegated_host_disposition)
+        FROM delegated_agent_job j JOIN run r ON r.id = j.run_id
+        WHERE j.id = CAST(:record_id AS uuid)
+        """,
+        {"record_id": record_id},
+    ) == [(job_id, status, repaired, None, True)]
+
+
+@pytest.mark.parametrize("status", ["succeeded", "failed", "cancelled", "timed_out", "lost"])
+@pytest.mark.parametrize(
+    "result_case", ["sql-null", "json-null", "nonobject", "missing-job", "missing-status", "wrong-job", "wrong-status"]
+)
+def test_delegated_terminal_result_constraint_refuses_invalid_head_writes(
+    delegated_migration_pg_url: str, status: str, result_case: str
+) -> None:
+    """Migrated head enforces exact evidence for both INSERT and terminal UPDATE."""
+    url = delegated_migration_pg_url
+    command.upgrade(_migration_config(url), "head")
+    run_id, record_id = str(uuid4()), str(uuid4())
+    job_id = f"migration-{record_id}"
+    invalid = _invalid_delegated_migration_result(result_case, job_id, status)
+    _insert_delegated_migration_run(url, run_id)
+
+    with pytest.raises(DBAPIError, match="ck_delegated_agent_job_terminal_result"):
+        _insert_delegated_migration_job(
+            url, run_id=run_id, record_id=record_id, job_id=job_id, status=status, result=invalid
+        )
+    assert _run(url, "SELECT count(*) FROM delegated_agent_job WHERE id = CAST(:id AS uuid)", {"id": record_id}) == [
+        (0,)
+    ]
+
+    _insert_delegated_migration_job(
+        url, run_id=run_id, record_id=record_id, job_id=job_id, status="running", result=None
+    )
+    row_query = "SELECT to_jsonb(j), j.result IS NULL FROM delegated_agent_job j WHERE id = CAST(:id AS uuid)"
+    before = _run(url, row_query, {"id": record_id})
+    with pytest.raises(DBAPIError, match="ck_delegated_agent_job_terminal_result"):
+        _run(
+            url,
+            """
+            UPDATE delegated_agent_job SET status = :status, result = CAST(:result AS jsonb), updated_at = now()
+            WHERE id = CAST(:id AS uuid)
+            """,
+            {"id": record_id, "status": status, "result": invalid},
+        )
+    assert _run(url, row_query, {"id": record_id}) == before
+
+    valid = {"job_id": job_id, "status": status}
+    _run(
+        url,
+        """
+        UPDATE delegated_agent_job SET status = :status, result = CAST(:result AS jsonb)
+        WHERE id = CAST(:id AS uuid)
+        """,
+        {"id": record_id, "status": status, "result": json.dumps(valid)},
+    )
+    assert _run(
+        url, "SELECT status, result FROM delegated_agent_job WHERE id = CAST(:id AS uuid)", {"id": record_id}
+    ) == [(status, valid)]
+    assert _run(url, "SELECT version_num FROM lychd_db_version") == [("0015",)]
+
+
+def test_delegated_empty_migration_cycle_removes_and_restores_tables_and_run_pointer(
+    delegated_migration_pg_url: str,
+) -> None:
+    """An empty 0003 round trip proves schema reversibility, not retained-history safety."""
+    url = delegated_migration_pg_url
+    command.upgrade(_migration_config(url), "head")
+    schema_query = """
+        SELECT table_name, column_name, data_type, is_nullable, character_maximum_length
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND (table_name IN ('delegated_agent_job', 'delegated_agent_event', 'delegated_host_disposition')
+               OR (table_name = 'run' AND column_name = 'delegated_job_id'))
+        ORDER BY table_name, ordinal_position
+    """
+    before = _run(url, schema_query)
+    assert {row[0] for row in before} == {
+        "delegated_agent_job",
+        "delegated_agent_event",
+        "delegated_host_disposition",
+        "run",
+    }
+    assert ("run", "delegated_job_id", "character varying", "YES", 128) in before
+    assert _run(url, "SELECT count(*) FROM delegated_agent_job") == [(0,)]
+    assert _run(url, "SELECT count(*) FROM delegated_agent_event") == [(0,)]
+    assert _run(url, "SELECT count(*) FROM delegated_host_disposition") == [(0,)]
+
+    command.downgrade(_migration_config(url), "0002")
+    assert _run(
+        url,
+        """
+        SELECT version_num, to_regclass('public.delegated_agent_job')::text,
+               to_regclass('public.delegated_agent_event')::text,
+               to_regclass('public.ix_run_delegated_job_id')::text
+        FROM lychd_db_version
+        """,
+    ) == [("0002", None, None, None)]
+    assert _run(url, schema_query) == []
+
+    command.upgrade(_migration_config(url), "head")
+    assert _run(url, "SELECT version_num FROM lychd_db_version") == [("0015",)]
+    assert _run(url, schema_query) == before
+    assert _run(url, "SELECT to_regclass('public.ix_run_delegated_job_id')::text") == [("ix_run_delegated_job_id",)]
 
 
 async def _hold_nexus_reader_lock(
@@ -293,7 +571,7 @@ def test_preauth_nexus_and_wait_owner_migrations_reach_linear_head(pg_url: str) 
         SELECT version_num
         FROM lychd_db_version
         """,
-    ) == [("0014",)]
+    ) == [("0015",)]
     assert _run(
         pg_url,
         """
@@ -438,7 +716,7 @@ def test_wait_owner_migration_refuses_ambiguous_live_work_and_downgrade(pg_url: 
 
     with pytest.raises(DBAPIError, match="requires no awaiting_consent Runs"):
         command.downgrade(_migration_config(pg_url), "0007")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0014",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0015",)]
 
     _run(
         pg_url,
@@ -483,7 +761,7 @@ def test_nexus_fence_downgrade_refuses_retained_request_identities(pg_url: str) 
         SELECT version_num, to_regclass('public.nexus_swap_request')::text
         FROM lychd_db_version
         """,
-    ) == [("0014", "nexus_swap_request")]
+    ) == [("0015", "nexus_swap_request")]
 
     _run(pg_url, "DELETE FROM nexus_swap_request")
     command.downgrade(_migration_config(pg_url), "0006")
@@ -507,7 +785,7 @@ def test_atlas_migration_retains_projects_on_refused_downgrade(pg_url: str) -> N
     )
     with pytest.raises(DBAPIError, match="requires empty atlas_project"):
         command.downgrade(_migration_config(pg_url), "0008")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0014",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0015",)]
     assert _run(pg_url, "SELECT count(*) FROM atlas_project") == [(1,)]
     _run(pg_url, "DELETE FROM atlas_project WHERE id = '00000000-0000-0000-0000-000000000909'")
     command.downgrade(_migration_config(pg_url), "0008")
@@ -595,7 +873,7 @@ def test_native_binding_upgrade_preserves_legacy_and_downgrade_preserves_native_
     )
     with pytest.raises(DBAPIError, match="requires no native Consent bindings"):
         command.downgrade(_migration_config(pg_url), "0009")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0014",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0015",)]
     assert _run(pg_url, "SELECT native_review_required, native_binding FROM consent WHERE tool_call_id = 'legacy'") == [
         (True, {})
     ]
@@ -643,7 +921,7 @@ def test_blockworld_empty_migration_cycle_matches_orm_schema(pg_url: str) -> Non
         pg_url, "SELECT version_num,to_regclass('public.blockworld_placement_mission')::text FROM lychd_db_version"
     ) == [("0010", None)]
     command.upgrade(_migration_config(pg_url), "head")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0014",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0015",)]
 
 
 @pytest.mark.parametrize("status", [None, "prepared", "pending", "unverified_effect", "not_issued", "verified"])
@@ -676,7 +954,7 @@ def test_blockworld_downgrade_refuses_every_retained_disposition(pg_url: str, st
     try:
         with pytest.raises(DBAPIError, match="custody requires explicit retirement"):
             command.downgrade(_migration_config(pg_url), "0010")
-        assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0014",)]
+        assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0015",)]
         assert _run(pg_url, "SELECT count(*) FROM blockworld_placement_mission") == [(1,)]
     finally:
         # Explicit test teardown is not a production retirement operation.

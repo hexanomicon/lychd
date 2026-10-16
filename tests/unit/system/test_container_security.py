@@ -17,6 +17,13 @@ from lychd.system.schemas import QuadletContainer, podman_secret_source
 from lychd.system.services.secrets import PodmanSecretStore, PodmanSecretStoreError
 
 
+def test_managed_image_uses_the_owned_caged_launcher() -> None:
+    containerfile = (Path(__file__).parents[3] / "Containerfile").read_text()
+    command = next(line.removeprefix("CMD ") for line in containerfile.splitlines() if line.startswith("CMD "))
+    assert json.loads(command) == ["python", "-m", "lychd.interface.server", "--caged"]
+    assert "EXPOSE 8000" in containerfile
+
+
 @pytest.mark.parametrize(
     "spec",
     [
@@ -69,6 +76,68 @@ def test_generated_policy_drops_network_caps_and_bounds_writable_tmpfs(*, read_o
         assert "ReadOnlyTmpfs=true" in rendered
     else:
         assert "DropCapability=CAP_NET_RAW CAP_NET_ADMIN" in rendered
+
+
+@pytest.mark.parametrize(
+    "secrets",
+    [
+        ["mounted_token"],
+        ["mounted_token,type=mount,target=/run/secrets/renamed,mode=0400"],
+        ["environment_token,type=env,target=OTHER_TOKEN", "mounted_token,type=mount"],
+    ],
+)
+def test_secret_mount_tmpfs_preserves_hardening_and_typed_secrets(secrets: list[str]) -> None:
+    manifest = QuadletContainer(
+        description="Secret projection",
+        image="example/runtime",
+        container_name="secret-projection",
+        user="%U",
+        read_only=True,
+        secret_mount_tmpfs=True,
+        secrets=secrets,
+    )
+    templates = Path(__file__).parents[3] / "src/lychd/system/templates"
+    environment = Environment(loader=FileSystemLoader(templates), autoescape=False)  # noqa: S701 - systemd text
+    lines = environment.get_template("container.jinja").render(**manifest.model_dump()).splitlines()
+
+    assert [line for line in lines if line.startswith("Tmpfs=")] == [
+        "Tmpfs=/run/secrets:rw,nosuid,nodev,noexec,mode=0755,size=1m"
+    ]
+    assert [line for line in lines if line.startswith("Secret=")] == [f"Secret={spec}" for spec in secrets]
+    assert {
+        "NoNewPrivileges=true",
+        "DropCapability=all",
+        "ReadOnly=true",
+        "ReadOnlyTmpfs=true",
+        "RunInit=true",
+        "User=%U",
+    } <= set(lines)
+
+
+@pytest.mark.parametrize(
+    ("read_only", "secrets"),
+    [
+        (False, []),
+        (False, ["mounted_token"]),
+        (True, []),
+        (True, ["mounted_token"]),
+        (True, ["environment_token,type=env,target=TOKEN"]),
+    ],
+)
+def test_secret_mount_tmpfs_is_not_inferred_from_read_only_or_secrets(*, read_only: bool, secrets: list[str]) -> None:
+    manifest = QuadletContainer(
+        description="No extra secret scratch",
+        image="example/runtime",
+        container_name="no-extra-scratch",
+        read_only=read_only,
+        secrets=secrets,
+    )
+    templates = Path(__file__).parents[3] / "src/lychd/system/templates"
+    environment = Environment(loader=FileSystemLoader(templates), autoescape=False)  # noqa: S701 - systemd text
+    rendered = environment.get_template("container.jinja").render(**manifest.model_dump())
+
+    assert manifest.secret_mount_tmpfs is False
+    assert not any(line.startswith("Tmpfs=") for line in rendered.splitlines())
 
 
 @pytest.mark.parametrize("password", ["short", "x" * 257, "x" * 32 + "\n", "x" * 32 + "é", "x" * 32 + " "])

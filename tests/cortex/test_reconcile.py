@@ -32,6 +32,7 @@ from lychd.domain.delegation import (
     DelegatedAgentResult,
     InMemoryDelegatedAgentJobStore,
 )
+from lychd.domain.delegation.models import DelegatedRequest
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.sessions import BridgeSessionStore
 from lychd.ghouls.runs import _emit_terminal, _reconcile_consent_page, reconcile_consents, reconcile_runs
@@ -173,14 +174,15 @@ class _DelegateRuntime:
     name: str = "fake"
     cancellations: list[str] = field(default_factory=list)
 
-    async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
+    async def start(self, request: DelegatedRequest, job: DelegatedAgentJobRef) -> None:
         _ = (request, job)
 
-    async def poll(self, job: DelegatedAgentJobRef) -> DelegatedAgentResult | None:
-        _ = job
+    async def poll(self, job: DelegatedAgentJobRef, *, request: DelegatedRequest) -> DelegatedAgentResult | None:
+        assert request.request_id == job.request_id
         return None
 
-    async def cancel(self, job: DelegatedAgentJobRef) -> None:
+    async def cancel(self, job: DelegatedAgentJobRef, *, request: DelegatedRequest) -> None:
+        assert request.request_id == job.request_id
         self.cancellations.append(job.job_id)
 
 

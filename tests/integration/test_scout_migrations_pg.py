@@ -51,7 +51,9 @@ def test_upgrade_is_atomic_and_empty_round_trip_has_no_schema_drift(
         pg_url, "SELECT version_num,to_regclass('public.scout_budget')::text FROM lychd_db_version"
     ) == [("0013", None)]
     command.upgrade(migration.config(pg_url), "0014")
+    command.upgrade(migration.config(pg_url), "head")
     command.check(migration.config(pg_url))
+    command.downgrade(migration.config(pg_url), "0014")
     for model in (ScoutBudget, ScoutAttempt):
         columns = migration.run(
             pg_url,
@@ -69,7 +71,9 @@ def test_upgrade_is_atomic_and_empty_round_trip_has_no_schema_drift(
         "SELECT version_num,to_regclass('public.scout_budget')::text,to_regclass('public.scout_attempt')::text FROM lychd_db_version",
     ) == [("0013", None, None)]
     command.upgrade(migration.config(pg_url), "0014")
+    command.upgrade(migration.config(pg_url), "head")
     command.check(migration.config(pg_url))
+    command.downgrade(migration.config(pg_url), "0014")
 
 
 def test_even_empty_budget_binding_prevents_downgrade(pg_url: str) -> None:
@@ -172,4 +176,6 @@ AND l.granted AND l.pid=pg_backend_pid() ORDER BY c.relname""")
         command.downgrade(migration.config(pg_url), "0013")
     assert observations == [("scout_attempt", "AccessExclusiveLock"), ("scout_budget", "AccessExclusiveLock")]
     command.upgrade(migration.config(pg_url), "0014")
+    command.upgrade(migration.config(pg_url), "head")
     command.check(migration.config(pg_url))
+    command.downgrade(migration.config(pg_url), "0014")

@@ -31,6 +31,9 @@ NoNewPrivileges=true
 DropCapability=all
 ReadOnly=true
 ReadOnlyTmpfs={{ read_only_tmpfs | lower }}
+{% if secret_mount_tmpfs %}
+Tmpfs=/run/secrets:rw,nosuid,nodev,noexec,mode=0755,size=1m
+{% endif %}
 {% else %}
 DropCapability=CAP_NET_RAW CAP_NET_ADMIN
 {% endif %}

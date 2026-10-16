@@ -23,6 +23,12 @@ PATH_ALTAR_LIGHTNING: Final[Path] = PATH_ALTAR_PUBLIC_DIR / "altar-lightning.svg
 PATH_ALTAR_FAVICON: Final[Path] = PATH_ALTAR_PUBLIC_DIR / "favicon.svg"
 PATH_ALTAR_NOTICES: Final[Path] = PATH_ALTAR_PUBLIC_DIR / "THIRD_PARTY_NOTICES.txt"
 
+STOP_ADMISSION_PATH: Final[str] = "/api/v1/operator/stop-admission"
+"""Fixed machine route shared by authentication, CSRF and lifecycle admission."""
+
+STOP_ADMISSION_LAUNCHER_PROFILE: Final[str] = "native-owned-lifespan@1"
+"""The sole launcher mechanism admitted by the installation-stop protocol."""
+
 # APP SETTINGS
 
 CACHE_EXPIRATION: Final[int] = 60

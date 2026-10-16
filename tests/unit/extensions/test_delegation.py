@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from lychd.domain.artifacts import ArtifactRef
 from lychd.domain.delegation import (
     DelegatedAgentCoordinator,
     DelegatedAgentJobRef,
@@ -124,3 +125,50 @@ async def test_reference_runtime_rejects_uncorrelated_job_identity() -> None:
 
     with pytest.raises(ValueError, match="does not match"):
         await runtime.start(request, mismatched)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("operation", ["poll", "cancel"])
+@pytest.mark.parametrize("substitution", ["prompt", "artifact"])
+async def test_reference_runtime_rejects_request_substitution_without_mutating_projection(
+    operation: str, substitution: str
+) -> None:
+    runtime = _assembled_delegation().delegated_runtimes.runtime_adapters["reference"]
+    request = DelegatedAgentRequest(
+        request_id="retained-request",
+        run_id="run",
+        step_id="delegate",
+        runtime="reference",
+        prompt="original",
+        input_artifacts=(
+            ArtifactRef(
+                artifact_id="input",
+                digest="sha256:" + "a" * 64,
+                media_type="text/plain",
+                size=12,
+                classification="internal",
+            ),
+        ),
+    )
+    job = DelegatedAgentJobRef(job_id="job", request_id=request.request_id, run_id=request.run_id, runtime="reference")
+    await runtime.start(request, job)
+    changed = (
+        request.model_copy(update={"prompt": "substituted"})
+        if substitution == "prompt"
+        else request.model_copy(
+            update={"input_artifacts": (request.input_artifacts[0].model_copy(update={"classification": "public"}),)}
+        )
+    )
+
+    runtime_operation = runtime.poll if operation == "poll" else runtime.cancel
+    with pytest.raises(ValueError, match="does not match"):
+        await runtime_operation(job, request=changed)
+    result = await runtime.poll(job, request=request)
+    assert result is not None
+    assert result.status is DelegatedAgentJobStatus.SUCCEEDED
+    assert result.output == "Reference delegate completed: original"
+    await runtime.cancel(job, request=request)
+    await runtime.cancel(job, request=request)
+    cancelled = await runtime.poll(job, request=request)
+    assert cancelled is not None
+    assert cancelled.status is DelegatedAgentJobStatus.CANCELLED

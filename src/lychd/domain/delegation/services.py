@@ -18,9 +18,11 @@ from lychd.domain.delegation.models import (
     DelegatedAgentJob,
     DelegatedAgentJobRef,
     DelegatedAgentJobStatus,
-    DelegatedAgentRequest,
     DelegatedAgentResult,
+    DelegatedRequest,
     bound_result_text,
+    decode_delegated_request,
+    encode_delegated_request,
 )
 from lychd.domain.delegation.ports import DelegatedAgentJobStore, DelegatedAgentRuntime
 from lychd.lib.asyncio import complete_under_cancellation
@@ -62,7 +64,7 @@ class _EffectFreeRuntimeRehydration(Protocol):
 
     async def rehydrate_effect_free(
         self,
-        request: DelegatedAgentRequest,
+        request: DelegatedRequest,
         job: DelegatedAgentJobRef,
     ) -> None:
         """Rebuild a process-local projection without performing an effect."""
@@ -80,7 +82,7 @@ class _EffectFreeRuntimeRetirement(Protocol):
 
 @dataclass
 class _JobRow:
-    request: DelegatedAgentRequest
+    request: DelegatedRequest
     ref: DelegatedAgentJobRef
     status: DelegatedAgentJobStatus = DelegatedAgentJobStatus.QUEUED
     result: DelegatedAgentResult | None = None
@@ -127,10 +129,11 @@ class InMemoryDelegatedAgentJobStore:
 
     async def create(
         self,
-        request: DelegatedAgentRequest,
+        request: DelegatedRequest,
         ref: DelegatedAgentJobRef,
     ) -> tuple[DelegatedAgentJob, bool]:
         """Create exactly once by request id and reject semantic id reuse."""
+        request = decode_delegated_request(encode_delegated_request(request))
         async with self._lock:
             existing_id = self._request_jobs.get(request.request_id)
             if existing_id is not None:
@@ -280,7 +283,7 @@ class DelegatedAgentCoordinator:
         self._store = store
         self._locks: dict[str, _CoordinatorLock] = {}
 
-    async def submit(self, request: DelegatedAgentRequest) -> DelegatedAgentJobRef:
+    async def submit(self, request: DelegatedRequest) -> DelegatedAgentJobRef:
         """Start at most one external job for one stable request id.
 
         Cancellation before ``runtime.start`` returns leaves the external outcome
@@ -293,6 +296,7 @@ class DelegatedAgentCoordinator:
         An unclassified start exception also settles ``LOST``; only failures before
         invoking the runtime establish ``FAILED`` without a rejection receipt.
         """
+        request = decode_delegated_request(encode_delegated_request(request))
         async with self._locked(f"request:{request.request_id}"):
             existing = await self._store.get_by_request(request.request_id)
             if existing is not None:
@@ -386,7 +390,7 @@ class DelegatedAgentCoordinator:
         return await self._store.jobs_for_run(run_id, limit=limit, event_limit=event_limit)
 
     async def refresh(self, job_id: str) -> DelegatedAgentJob:
-        """Poll an active job and adopt its result at most once.
+        """Poll against the current retained request and adopt its result at most once.
 
         A runtime may opt into reconstruction only through the private,
         explicitly effect-free seam. Ordinary adapters are polled directly;
@@ -400,7 +404,7 @@ class DelegatedAgentCoordinator:
             runtime = self._runtime(job.ref.runtime)
             if isinstance(runtime, _EffectFreeRuntimeRehydration):
                 await runtime.rehydrate_effect_free(job.request, job.ref)
-            result = await runtime.poll(job.ref)
+            result = await runtime.poll(job.ref, request=job.request)
             if result is None:
                 return job
             if not isinstance(runtime, _EffectFreeRuntimeRetirement):
@@ -428,14 +432,14 @@ class DelegatedAgentCoordinator:
             return adopted
 
     async def cancel(self, job_id: str) -> bool:
-        """Contain a live job, then durably settle it before propagating cancellation."""
+        """Contain against the current retained request, then durably settle cancellation."""
         async with self._locked_job(job_id) as job:
             if job.status in TERMINAL_DELEGATED_AGENT_STATUSES and job.status is not DelegatedAgentJobStatus.LOST:
                 return False
             runtime = self._runtime(job.ref.runtime)
             if isinstance(runtime, _EffectFreeRuntimeRehydration):
                 await runtime.rehydrate_effect_free(job.request, job.ref)
-            await runtime.cancel(job.ref)
+            await runtime.cancel(job.ref, request=job.request)
             settlement = asyncio.create_task(
                 self._settle_and_retire_projection(
                     self._store.cancel(job_id),
@@ -519,7 +523,7 @@ class DelegatedAgentCoordinator:
                 self._locks.pop(key)
 
 
-def _validate_ref(request: DelegatedAgentRequest, ref: DelegatedAgentJobRef) -> None:
+def _validate_ref(request: DelegatedRequest, ref: DelegatedAgentJobRef) -> None:
     expected = (request.request_id, request.run_id, request.runtime, request.profile)
     observed = (ref.request_id, ref.run_id, ref.runtime, ref.profile)
     if observed != expected:

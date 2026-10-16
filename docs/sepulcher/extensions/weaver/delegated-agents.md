@@ -25,6 +25,7 @@ below separates the current job mechanics from those designs.
 | Type | Exact contents |
 | --- | --- |
 | `DelegatedAgentRequest` | `request_id` (idempotency key), `run_id`, `step_id`, `runtime`, `profile` (`read`, `candidate`, or `verify`), `prompt`, and `input_artifacts` |
+| `DelegatedCliRequestV2` | Explicit CLI schema/compiler, the occurrence/prompt fields, exact mechanical intent and qualified operator task/projection/custody/verification bindings; no positive authorization field |
 | `DelegatedAgentJobRef` | `job_id`, `request_id`, `run_id`, `runtime`, and `profile`; it does not copy `step_id` |
 | `DelegatedAgentJob` | `request`, `ref`, `status`, optional `result`, and ordered `events` |
 | `DelegatedAgentResult` | Same `job_id`, terminal `status`, optional `output`, `artifacts`, and `error`; `failed`, `timed_out`, and `lost` require an error, while `succeeded` forbids one |
@@ -33,7 +34,17 @@ An `ArtifactRef` is frozen metadata for external bytes, not bytes or custody. Th
 contract declares containment, budget, timeout, cancellation, artifact boundary, and permitted
 downstream use. Today's
 `DelegatedAgentRequest` has no budget or timeout fields, and State records no measured delegated
-budget ledger.
+budget ledger. V2 adds the four existing capture/wall bounds and owner references; it does not
+supply the full host/provider budget envelope or implement those owners. Its actual owner producer
+remains absent and the trusted observation consumer denies by default. A positive inert fixture
+proves consumer conformance only. [Workers](../../../adr/14-workers.md#versioned-cli-intent-and-owner-binding)
+owns the exact version/codec, validity and compatibility contract.
+
+Fresh legacy CLI requests refuse before host launch. Historical lookup and cancellation remain
+readable at their original evidence scope; missing mechanics are never backfilled from current
+settings. The published delegated score revisions retain their legacy requests. V2 currently
+passes through inert callers and the existing store/coordinator, not a new published Pattern or
+native Creation admission path.
 
 `DelegatedAgentRequest` and `ArtifactRef` are frozen from construction. The same
 `request_id` and content returns the existing reference without another start; conflicting
@@ -153,16 +164,21 @@ The current protocol implementation pins Codex 0.159.2 and Claude Code 2.1.296. 
 commands with prompt bytes on stdin, isolated configuration roots and an allowlisted replacement
 environment, then parses bounded JSONL. Incomplete lines, malformed or duplicate terminal evidence,
 oversized output, and success paired with a failing process exit remain `lost`. Raw provider errors
-and stderr do not enter retained diagnostics. Polling consumes the original host-retained launch
-specification and limits, and checks matching job and launch-digest evidence. Cancellation needs
-the retained launch specification and its matching whole-job containment receipt, including before
-the first poll. Claude accepts a reviewed core event subset with one initialized session; unknown
+and stderr do not enter retained diagnostics. Polling receives the store-retained request; V2
+independently compiles its complete expected launch specification and limits before comparing the
+host result and matching receipt. Historical legacy lookup correlates only its original request
+and deterministic stdin. Cancellation needs the same retained interpretation and matching
+whole-job containment receipt, including before the first poll. Neither operation re-admits or
+launches work, even after owner-observation expiry. Claude accepts a reviewed core event subset with one initialized session; unknown
 event variants refuse until their envelopes and ordering are reviewed.
 
 No host implementation or authentication bridge ships, and neither adapter is automatically
-registered. The installed nono 0.73 series has not replaced Security's audited-series contract;
-CLI help and advertised limits do not qualify a host. The required outer service, network,
-resource, credential, Gate and artifact boundaries must all be proved before any real launch.
+registered. Security requires an exact audited source/policy/executable qualification with
+applicable advisories dispositioned; a version number, CLI help and advertised limits do not
+qualify a host. [Containment version selection](coding-runtime-research.md#containment-version-selection)
+explains why the former series baseline was retired without admitting a replacement. The required
+outer service, network, resource, credential, Gate and artifact boundaries must all be proved
+before any real launch.
 
 ### Compare actual integration surfaces { #cli-integration-references }
 

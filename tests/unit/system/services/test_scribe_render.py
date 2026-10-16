@@ -206,6 +206,7 @@ def test_f4_wanted_by_reflects_concurrency(tmp_path: Path) -> None:
     assert "WantedBy=default.target" in resident_unit
     assert f"BindsTo={animator_target_unit('resident')}" in resident_unit
     assert "[Install]" not in resident_target
+    assert "After=lychd-pod.service" in resident_target.splitlines()
 
 
 def test_f1_coven_units_routed_and_referenced(tmp_path: Path) -> None:
@@ -251,7 +252,7 @@ def test_f1_coven_units_routed_and_referenced(tmp_path: Path) -> None:
     target_text = (systemd_dir / "lychd-coven-logic.target").read_text(encoding="utf-8")
     assert "PartOf=lychd-pod.service" in target_text
     assert f"Wants={animator_target_unit('alpha')} {animator_target_unit('beta')}" in target_text
-    assert f"After={animator_target_unit('alpha')} {animator_target_unit('beta')}" in target_text
+    assert f"After=lychd-pod.service {animator_target_unit('alpha')} {animator_target_unit('beta')}" in target_text
     assert "[Install]" not in target_text
 
     # Services bind their own gate; membership belongs to the gate, not the
@@ -263,6 +264,7 @@ def test_f1_coven_units_routed_and_referenced(tmp_path: Path) -> None:
     assert f"PartOf=lychd-pod.service {coven_target_unit('logic')}" in alpha_target_lines
     assert f"Requires={animator_service_unit('alpha')}" in alpha_target_lines
     assert f"Before={animator_service_unit('alpha')}" in alpha_target_lines
+    assert "After=lychd-pod.service" in alpha_target_lines
     assert not any(line.startswith("Conflicts=") for line in alpha_lines)
     assert not any(line.startswith("WantedBy=") for line in alpha_lines)
     assert "BindsTo=lychd-pod.service" in alpha_lines
@@ -286,7 +288,8 @@ def test_conflict_domain_renders_one_reciprocal_ordered_edge(tmp_path: Path) -> 
     gamma_container = (output_dir / "lychd-gamma.container").read_text(encoding="utf-8").splitlines()
 
     assert not any(line.startswith(("After=lychd-animator-", "Conflicts=")) for line in alpha_target)
-    assert f"After={animator_target_unit('alpha')}" in gamma_target
+    assert "After=lychd-pod.service" in alpha_target
+    assert f"After=lychd-pod.service {animator_target_unit('alpha')}" in gamma_target
     assert f"Conflicts={animator_target_unit('alpha')}" in gamma_target
     assert f"BindsTo={animator_target_unit('gamma')}" in gamma_container
     assert f"After=lychd-pod.service {animator_target_unit('gamma')}" in gamma_container

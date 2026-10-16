@@ -308,6 +308,8 @@ def test_quadlet_container_keeps_supported_raw_arguments_with_typed_secrets(spec
         ["--net host"],
         ["--volume=/etc:/etc:ro"],
         ["--tmpfs=/:rw"],
+        ["--tmpfs=/run/secrets:rw,nosuid,nodev,noexec,mode=0755,size=1m"],
+        ["--tmpfs", "/run/secrets:rw,nosuid,nodev,noexec,mode=0755,size=1m"],
         ["--user=0"],
         ["--future-option=enabled"],
         ["--replace=true"],
@@ -354,3 +356,40 @@ def test_quadlet_container_preserves_supported_raw_values(arguments: list[str]) 
     )
 
     assert container.podman_args == arguments
+
+
+@pytest.mark.parametrize(
+    ("read_only", "secrets"),
+    [
+        (False, ["mounted_token"]),
+        (True, []),
+        (True, ["environment_token,type=env,target=TOKEN"]),
+    ],
+)
+def test_secret_mount_tmpfs_requires_a_read_only_container_and_mounted_secret(
+    *, read_only: bool, secrets: list[str]
+) -> None:
+    with pytest.raises(ValueError, match="Secret mount tmpfs requires"):
+        QuadletContainer(
+            description="Secret projection",
+            image="example/runtime",
+            container_name="secret-projection",
+            read_only=read_only,
+            secrets=secrets,
+            secret_mount_tmpfs=True,
+        )
+
+
+@pytest.mark.parametrize("value", ["true", "/run/elsewhere:rw", 1])
+def test_secret_mount_tmpfs_accepts_only_a_boolean(value: object) -> None:
+    with pytest.raises(ValueError, match="valid boolean"):
+        QuadletContainer.model_validate(
+            {
+                "description": "Secret projection",
+                "image": "example/runtime",
+                "container_name": "secret-projection",
+                "read_only": True,
+                "secrets": ["mounted_token"],
+                "secret_mount_tmpfs": value,
+            }
+        )

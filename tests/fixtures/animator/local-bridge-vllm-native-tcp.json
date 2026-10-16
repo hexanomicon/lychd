@@ -1,0 +1,333 @@
+{
+  "authentication": {
+    "authenticated_TCP_ready_on_both_boots": true,
+    "durable_runs_before_admitted_turn": 0,
+    "model_posts_before_admitted_turn": 0,
+    "refused_message_admissions": {
+      "foreign_origin": 403,
+      "missing_csrf": 403,
+      "no_auth": 401,
+      "wrong_auth": 401
+    }
+  },
+  "database": {
+    "GPU_devices": false,
+    "container_removed": true,
+    "created_containers": 1,
+    "effective_cgroup_limits": {
+      "cpu_quota_period_microseconds": [
+        100000,
+        100000
+      ],
+      "memory_bytes": 536870912,
+      "pids": 128
+    },
+    "image_id": "sha256:1963bc48febf543433baa1ce3edcc6cc08154de722e22495f86681cc9a849026",
+    "published_interface": "literal-loopback-only",
+    "removed_after_two_observed_absent_native_groups": true,
+    "required_resources": {
+      "mem_limit": "512m",
+      "nano_cpus": 1000000000,
+      "pids_limit": 128
+    }
+  },
+  "dependency_versions": {
+    "advanced-alchemy": "1.11.0",
+    "alembic": "1.19.2",
+    "asyncpg": "0.32.0",
+    "click": "8.5.0",
+    "cryptography": "50.0.2",
+    "docker": "7.2.0",
+    "granian": "2.8.2",
+    "http-message-signatures": "2.0.1",
+    "httpx": "0.28.1",
+    "httpx2": "2.12.0",
+    "litestar": "2.24.0",
+    "litestar-saq": "0.8.0",
+    "openai": "3.28.0",
+    "psycopg": "3.3.6",
+    "pydantic": "2.14.0",
+    "pydantic-ai-slim": "2.55.0",
+    "pydantic-graph": "2.55.0",
+    "pydantic-settings": "2.15.0",
+    "pytest": "9.1.1",
+    "python-dotenv": "1.2.3",
+    "saq": "0.26.4",
+    "sqlalchemy": "2.0.54",
+    "testcontainers": "4.15.0",
+    "typing-extensions": "4.16.0"
+  },
+  "execution": {
+    "agent": "real-AgentForge-and-Pydantic-AI",
+    "application": "production-source-CLI-two-native-TCP-boots",
+    "database": "real-disposable-PostgreSQL",
+    "dispatch": "real-Dispatcher-and-LeaseLedger",
+    "engine_disposal": "supplemental-test-cleanup-after-normal-CLI-return",
+    "graph": "real-Bridge-Graph",
+    "http": "real-loopback-TCP-httpx2-client",
+    "input_assembly": "source-registered-builtins-explicit-SettingsSnapshot-and-RuneRegistry",
+    "lifespan": "test-local-wrapper-yields-real-production-lifespan",
+    "model_transport": "real-streaming-OpenAI-compatible-chat",
+    "runtime_actuator": "refusing-fixture-port",
+    "server": "Granian-embedded-owned-native-launcher",
+    "worker": "real-in-process-SAQ"
+  },
+  "freshness_check": "offline-metadata-source-and-selected-dependency-check-only",
+  "identity_boundary": "One dated clean-checkout observation with bounded critical source/test fingerprints and selected installed package versions. Neither an atomic transitive environment nor model-byte attestation. Updating metadata or hashes alone does not requalify changed critical inputs.",
+  "model": {
+    "concurrent_runs": 1,
+    "context_tokens": 4096,
+    "cooperative_deadline_seconds": 30,
+    "max_output_tokens": 256,
+    "maximum_model_posts": 3,
+    "model_bytes_attested": false,
+    "served_model_id": "Qwen3.8-27B"
+  },
+  "native_resources": {
+    "aggregate_CPU_RAM_GPU_limit_attested": false,
+    "observed_limits_by_boot": [
+      {
+        "AS": [
+          3221225472,
+          3221225472
+        ],
+        "CORE": [
+          0,
+          0
+        ],
+        "CPU": [
+          90,
+          100
+        ],
+        "FSIZE": [
+          8388608,
+          8388608
+        ],
+        "NOFILE": [
+          256,
+          256
+        ]
+      },
+      {
+        "AS": [
+          3221225472,
+          3221225472
+        ],
+        "CORE": [
+          0,
+          0
+        ],
+        "CPU": [
+          90,
+          100
+        ],
+        "FSIZE": [
+          8388608,
+          8388608
+        ],
+        "NOFILE": [
+          256,
+          256
+        ]
+      }
+    ],
+    "scope": "per-process-after-interpreter-and-module-startup"
+  },
+  "outcome": {
+    "active_leases_after_each_boot": 0,
+    "boots": 2,
+    "external_compute_unknown": false,
+    "lifecycle_calls": 0,
+    "manifest_exact_match": true,
+    "model_boundary_violations": 0,
+    "model_posts": 1,
+    "model_posts_by_boot": [
+      1,
+      0
+    ],
+    "model_responses": 1,
+    "pattern_id": "bridge_chat",
+    "pattern_revision": "2",
+    "retained_history_identical": true,
+    "retained_turns_identical": true,
+    "run_status": "DONE",
+    "settled_turns": 2,
+    "structured_output_calls": 1,
+    "structured_output_name": "final_result",
+    "substrate_unpublished": true,
+    "supplemental_engine_disposal_completed": true,
+    "warm_on_both_boots": true,
+    "wire_finish_reason": "tool_calls"
+  },
+  "processes": {
+    "CLI_returned": [
+      true,
+      true
+    ],
+    "application_children": 2,
+    "authenticated_host_stop_exercised": false,
+    "distinct_child_identities_checked": true,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "first_child_exited_before_second_start": true,
+    "forced_termination": [
+      false,
+      false
+    ],
+    "group_absent": [
+      true,
+      true
+    ],
+    "joined": [
+      true,
+      true
+    ],
+    "listener_closed": [
+      true,
+      true
+    ],
+    "parent_identity_checked": true,
+    "production_lifespan_closed": [
+      true,
+      true
+    ],
+    "reaped": [
+      true,
+      true
+    ],
+    "sequential": true,
+    "shutdown": "test-owned-SIGTERM-and-normal-production-CLI-return",
+    "start_method": "spawn",
+    "start_time_identity_checked": true
+  },
+  "qualification_date": "2026-10-16",
+  "qualification_evidence": {
+    "admission_sha256": "5f8da20a765c69ba2f016c908dcdc0c716bab1806bb092c6c02880f2beffda39",
+    "application_receipt_sha256": "916fd0dcfd822e398163a7a67dc944eeabe469382bff5588155312beea9a5929",
+    "model_profile_sha256": "3885d9ac7571bbd3a638a1772740ea2f93d9c83729bb4e88b4a58f551a77358f",
+    "native_test_sha256_before_trial": "7cc36a27ccc473f5cd374655c2ee6aedf002d85ddf676e297c585b2de11a9454",
+    "private_supervisor_source_sha256": "99a5c4ad8b8bead0506214966dd957bb1d5a06256820ed8cc4f541429e4a0cef",
+    "pytest_log_sha256": "db7fabb242f89af741d320dd38441bf1a1e6efe54677ce551c3a21e21c3a8f04",
+    "supervisor_events_sha256": "eab88871558abb2b03756f9759d26a86e82d3e1f4c05d69c4e0e4275a775bdcd",
+    "supervisor_outcome_sha256": "c1edc9c5894f32a81e4b6f6813e656e66590939a2c369a6c34221e76ba901872"
+  },
+  "record_kind": "sanitized_public_local_bridge_native_tcp_qualification",
+  "retained_history_sha256": "f4b60b71ab5d8fcddc73193858850a75577bf3d5502d6e5799d9de4dbf79d829",
+  "retained_turns_sha256": "7ffe317ece5645b4acdebd5067337d2122d8aafa5a748052e2d957db2251dd00",
+  "runner": {
+    "cleanup_verified": true,
+    "default_make_ryuk_profile": false,
+    "mutant_applied": false,
+    "native_removal_guard_observed": true,
+    "outer_TERM_then_KILL_wait_seconds": [
+      10,
+      10
+    ],
+    "outer_timeout_seconds": 180,
+    "profile": "native-TCP-real-model-cached-PG-private-supervisor-v3",
+    "pytest_errors": 0,
+    "pytest_failed": 0,
+    "pytest_passed": 1,
+    "pytest_selected": 1,
+    "pytest_skipped": 0,
+    "remaining_containers": 0,
+    "remaining_volumes": 0,
+    "returncode": 0,
+    "ryuk_disabled_in_runner_process": true,
+    "timed_out": false
+  },
+  "schema": "local-bridge-vllm-native-tcp@1",
+  "source_fingerprints": {
+    "scripts/local_model_probe.py": "a8904d9e1b777e880d63a8e455cd07bff8819d9ff1edeb211b693e9eeb8957c5",
+    "src/lychd/__main__.py": "36b6041bde1c2f6c6bb0c3e1349ee924f9dbaaaf6442df52d5c4aa6cc4177e39",
+    "src/lychd/agents/context_limits.py": "dd283fd293c2caf3d521d4e23cd33fd509fb82a2624f213b9d3a49530f92bdd4",
+    "src/lychd/agents/factory.py": "d7a13138d4681dbd1752aff0e46ba062c843b9f1238e67c184d553d76a77c6d4",
+    "src/lychd/agents/outputs.py": "28a678975950b6b9b63b798142be6feccb823f0d3b8f5d1e68b6b9cb1aeea16f",
+    "src/lychd/agents/the_first_one.py": "18ff57c6305edd1a1bdd7c2a9eb096a91ec28e9699bd2e8f3d4e099fc82e9b98",
+    "src/lychd/agents/workflows/bridge_chat.py": "40d720afee98c0abd046d676e62ed1c154736fd9df7d48913ab02013a9c9ab85",
+    "src/lychd/agents/workflows/nodes.py": "7b8bb849280495e295300cef7cffff7f351966004d7c0f1d016b8217bfc68b92",
+    "src/lychd/app.py": "e3fc46919df3834c12798a47deb5dd5533288a7b49c2aec514d74c4ad1d0563b",
+    "src/lychd/cli/base.py": "de2287c2bdafd87d0642bea1c83c1abf8f56cd38b64fc03029eca3585edbe10f",
+    "src/lychd/cli/commands.py": "088b1fb9feeb285436c599dd494284de2c3ac5075c334e402e91eb1ac2cea026",
+    "src/lychd/cli/operator.py": "af6a16996eeaf701aa2b81368e1ba71d239d6137750711d602cc3b7fe75f47e7",
+    "src/lychd/config/components.py": "fb35c47ba9ee2cf9cec20b955120da279610579aeddaa81ce78c2b9885f005f7",
+    "src/lychd/config/constants.py": "b9d3f3e91466a0e8e2f65f491ca471d39f70b87d231a0ce9b5008c379c11cb7c",
+    "src/lychd/config/settings/root.py": "a8c179f5f52a0a2260680b164958a9138fd5a75b7202f90bbe0ad1a5ccb2d0bf",
+    "src/lychd/config/settings/server.py": "60a02e500070ad6b07af5ec25aed2e0772b42b46c9f2255ce18dbfd08f475825",
+    "src/lychd/config/settings/weaver.py": "c3cedd7295832889490612146c00f5ee28a68ca087030f79f0a706b2b420dbd2",
+    "src/lychd/db/authority.py": "a9427aef7ec1fef5dc919dbee9c45cd82945d1176b6935a2498e3c9b613d60a3",
+    "src/lychd/db/bootstrap.py": "d73ba53c4d6541b96899b436beb6b9b8e9c926fa400f677b1956c168b5517d86",
+    "src/lychd/db/engine.py": "18e2b6b4c6d84d0085d151a4eb79de6179e150fa696f5e2ce02f42a28655cede",
+    "src/lychd/db/sessions.py": "8938fb9a3d00dc2fa1a63faaa08cfe5a1d4e420ce2cc9543eb3cb6d99679c8f9",
+    "src/lychd/domain/animation/model_factory.py": "be6e37f960fd470ed886d11a25bd237201b165f2326d609d193a1af42a1e69a2",
+    "src/lychd/domain/animation/services/adapters/runtimes/openai_compat.py": "cdda6ad24da8854e7d4a2ed72195aa9b2597eeb8cf95be3ab20a207a506ba133",
+    "src/lychd/domain/animation/services/adapters/surfaces.py": "303e29dc2f2a7b80b40d22f7df699fc1d2e374aee18180b68bebf78c75b41468",
+    "src/lychd/domain/animation/services/loader.py": "79943e09b7b0c1a7e80b6051e40a97f5b31ed612cc772c56f8c01998b7bc155f",
+    "src/lychd/domain/animation/services/registry.py": "7c55001fccf1cbaaacb7536d328b6a06d7cbaacce65ab7a5c1a2e7e97bb3c797",
+    "src/lychd/domain/codex/local_access.py": "4617db35469740582fb947ff96a98d6c5b7c90a85af027c4b8f115c715d68de3",
+    "src/lychd/domain/codex/middleware.py": "9853769b5b5cacb9817395896d6dc6cea42533370d3febddf73226cee752496c",
+    "src/lychd/domain/cortex/context.py": "89eec82da27f308363e6ffe2495ee7660945bf6c0b7cea768d6da3aadf14400d",
+    "src/lychd/domain/cortex/dispatcher.py": "648b0b36315622b54bae87f4342d66d2db187c0e15ca6563659316b016575713",
+    "src/lychd/domain/cortex/engine.py": "2276bced167e86019f0c366111030a0c42206981999aa76fe4a274a238091fc7",
+    "src/lychd/domain/cortex/graph_runner.py": "3362590fcd682f1124a92fc7375358084782b1cc71a651201d8d5b1e1676a239",
+    "src/lychd/domain/cortex/leases.py": "29a1fc205fedd317b1814e635e7198b3cfc66fa6d7e2cfa64357c3ca21d8bbf2",
+    "src/lychd/domain/cortex/ledger.py": "d25b769d89f7098a1c902ae45f3ce5664309ad49ca1acc9f187809e9e9930597",
+    "src/lychd/extensions/builtin/animator/soulstones/vllm.py": "0c51c18cab31a9b7fe798ad83a7df9809d0cbf6f206345df5e0bc30de453c1b8",
+    "src/lychd/extensions/builtin/animator/vllm/register.py": "3eeca6c19c3be7e85d9fead659a03c4cd4d35b79357d207ba5decba8af029839",
+    "src/lychd/extensions/context.py": "3a5bff1bc1e14ace4310cf713bf76a97d8e539171b35dc2c55baa17dd7102e27",
+    "src/lychd/extensions/manager.py": "750a4f2ec7034a75940c318a8e4e21c36e83fc3e1b357aff9772b311bbdda52d",
+    "src/lychd/ghouls/runs.py": "c18fe3ccd330dd17db540f18f6b0780fe7910a4bd0629d7aa19feca870097d18",
+    "src/lychd/interface/api/lifecycle.py": "a8feea8caefba3c640360851ade444349ec0c4b93f334092384a6d00d19aa98a",
+    "src/lychd/interface/server.py": "5d029ab483fb477472369c65f04e217f77b087ce21e65e502ffde3009becaafa",
+    "src/lychd/interface/server_policy.py": "702ff8945dd1ac9f1907b3f0f6ffa5b697446b3af1312fb6e33e0b16b3cbcd74",
+    "src/lychd/interface/web/altar.py": "c605947e3285e797fa444f4f4761237c5390e3318fee8ef9290f81cbb4e3257d",
+    "src/lychd/interface/web/altar_services.py": "79aa6d63a86ac1d4281d0fa431c505685bb221b16b3fbd865e75e73b83d22c53",
+    "src/lychd/interface/web/bridge.py": "198b2102111ac80ee38dfb8c631b39b58ce6fd7d3e296403b9f5551d87512949",
+    "src/lychd/interface/web/lifespan.py": "8208f336e8ad9a508941ebf69ded1aedbe59da8b57c13bf29df9d56db0087001",
+    "src/lychd/interface/web/orb.py": "f5bc0fa7200fd3ba955468a328099fd92210fd1ebce264281baa383aac13bb48",
+    "src/lychd/system/operator/__init__.py": "b4df3abb6a07d0d1c2fa480e3443e86a671ed07c4d2551ba8e210cc1f345a427",
+    "src/lychd/system/operator/admission.py": "8312e98209e267ed7bcbeeb990416cbafd36b1127c6436ef0db701d94b0c1f3b",
+    "src/lychd/system/operator/composition.py": "93b13c0aedeaccbaa98d5b040c655166d4c1b6bd771bebb632a9e42313ee0bdd",
+    "src/lychd/system/operator/control.py": "f12c9fe19fff2a142ec9130e4c837e1fcb3494ba40c0da075c6e23b0be66cda2",
+    "src/lychd/system/operator/models.py": "202ee54fc6d4770ae49f4d08f4b5063f85e95ce33ace9426a7aa9045a2f99565",
+    "src/lychd/system/services/queues.py": "8b199765f523a67e7e135ae7254f34f3289bffa15068854db9966f42806d6600",
+    "tests/conftest.py": "ee6a7991363a5681b647635b7ff3a8ffa0cefb8a3c2a771ae1994d6381da5dc7",
+    "tests/integration/test_local_bridge_native_tcp.py": "7cc36a27ccc473f5cd374655c2ee6aedf002d85ddf676e297c585b2de11a9454",
+    "tests/integration/test_local_bridge_process_restart.py": "9621a9209499c7f552b024e18a1621f132964b87e9d7f0f9d38bbb780515eaa9",
+    "tests/integration/test_local_bridge_runtime.py": "00e24103a907b1aa4d1b518d7bd38267a3b2d5cdd4fce1db923f6f239d11c7d2",
+    "tests/integration/test_production_wiring.py": "e06fa6964a77546f6106b231fbd6c70e9df2902b86304f340e42cb14372500d0",
+    "tests/integration/test_server_process.py": "1d31a014d21158c749cf3cd05f7f043208af14fc5fc7c48b6012c34caebb522c",
+    "tests/unit/domain/animation/test_local_bridge_native_tcp.py": "b902b6be41e48e22950d5776b3447d1e47b7718cf5b2536cdb284e649c163873"
+  },
+  "source_identity": {
+    "atomic_transitive_closure_attested": false,
+    "clean_checkout_observed": true,
+    "revision_observed": "c080dcd033053a7a29637ad2ad17409bc8c6398a",
+    "scope": "bounded-critical-source-and-test-fingerprints"
+  },
+  "status": "passed",
+  "timings_seconds": {
+    "command": 17.105,
+    "pytest": 15.55
+  },
+  "unexercised": [
+    "installed-command-or-caged-Vessel",
+    "Vessel-network-namespace",
+    "managed-model-lifecycle",
+    "process-crash-recovery",
+    "real-browser-and-accessibility",
+    "browser-SSE-and-reconnect",
+    "authenticated-host-stop",
+    "live-cancellation",
+    "shared-load-and-capacity",
+    "model-byte-identity",
+    "general-purpose-tools",
+    "durable-semantic-memory",
+    "autonomous-software-labor",
+    "evolution-and-promotion",
+    "remote-access-and-hostile-browser",
+    "aggregate-native-resource-containment"
+  ]
+}

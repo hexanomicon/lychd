@@ -151,11 +151,11 @@ def _mock_bind_pass(mocker: MockerFixture) -> SimpleNamespace:
     return SimpleNamespace(scribe=mock_scribe, systemd=systemd)
 
 
-def test_bind_uncaged_writes_unit_and_prints_canonical_start_hint(
+def test_bind_uncaged_writes_unit_and_reports_preparation_boundary(
     runner: CliRunner,
     mocker: MockerFixture,
 ) -> None:
-    """--uncaged writes the unit but keeps raw systemd out of operator guidance."""
+    """--uncaged prepares its unit without promising public or manual startup."""
     mocks = _mock_bind_pass(mocker)
 
     result = runner.invoke(bind_quadlets, ["--uncaged"])
@@ -164,9 +164,12 @@ def test_bind_uncaged_writes_unit_and_prints_canonical_start_hint(
     mocks.scribe.reconcile_all.assert_called_once()
     plain_units = mocks.scribe.reconcile_all.call_args.kwargs["plain_units"]
     assert "lychd-uncaged-vessel.service" in plain_units
-    assert "lychd start" in result.output
+    assert "Public start refuses mixed Vessel ownership." in result.output
+    assert "Installed native startup remains unqualified." in result.output
+    assert "lychd start" not in result.output
+    assert "systemctl --user start" not in result.output
     assert "systemctl --user enable" not in result.output
-    assert "flip the switch" in result.output
-    # Bind may reload its declared files; the operator separately starts the unit.
+    assert "flip the switch" not in result.output
+    # Bind reloads its declared files without starting or enabling a unit.
     mocks.systemd.assert_called_once_with(systemctl_bin="/usr/bin/systemctl")
     assert mocks.systemd.return_value.method_calls == [mocker.call.daemon_reload()]

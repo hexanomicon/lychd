@@ -30,6 +30,7 @@ RUN --mount=from=uv,source=/uv,target=/bin/uv \
 
 # --- 2. Install Project (Frequent Change Layer) ---
 COPY pyproject.toml uv.lock README.md LICENSE THIRD_PARTY_NOTICES.md ./
+COPY clients/web/static/THIRD_PARTY_NOTICES.txt ./clients/web/static/
 COPY scripts/generate_python_third_party_notices.py ./scripts/
 COPY src ./src
 
@@ -116,4 +117,4 @@ USER lich
 EXPOSE 8000
 
 # The Final Awakening.
-CMD ["granian", "--interface", "asgi", "--factory", "--workers", "1", "--host", "0.0.0.0", "--port", "8000", "lychd.app:create_app"]
+CMD ["python", "-m", "lychd.interface.server", "--caged"]

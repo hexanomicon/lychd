@@ -27,6 +27,7 @@ from lychd.domain.delegation import (
     DelegatedAgentResult,
     InMemoryDelegatedAgentJobStore,
 )
+from lychd.domain.delegation.models import DelegatedRequest
 from lychd.extensions.builtin.delegation.reference import ReferenceDelegatedAgentRuntime
 from lychd.ghouls.runs import (
     _commit_delegate_park,
@@ -43,14 +44,15 @@ class _Runtime:
     cancellations: list[str] = field(default_factory=list)
     poll_result: DelegatedAgentResult | None = None
 
-    async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
+    async def start(self, request: DelegatedRequest, job: DelegatedAgentJobRef) -> None:
         assert request.request_id == job.request_id
 
-    async def poll(self, job: DelegatedAgentJobRef) -> DelegatedAgentResult | None:
-        _ = job
+    async def poll(self, job: DelegatedAgentJobRef, *, request: DelegatedRequest) -> DelegatedAgentResult | None:
+        assert request.request_id == job.request_id
         return self.poll_result
 
-    async def cancel(self, job: DelegatedAgentJobRef) -> None:
+    async def cancel(self, job: DelegatedAgentJobRef, *, request: DelegatedRequest) -> None:
+        assert request.request_id == job.request_id
         self.cancellations.append(job.job_id)
 
 

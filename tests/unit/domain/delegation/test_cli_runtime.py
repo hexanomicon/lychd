@@ -8,7 +8,10 @@ from typing import Literal, cast
 
 import pytest
 
+from lychd.domain.artifacts import ArtifactRef
+from lychd.domain.delegation import DelegatedAgentCoordinator, InMemoryDelegatedAgentJobStore
 from lychd.domain.delegation.cli_protocol import (
+    CliLaunchSpec,
     CliLimits,
     CliRuntimeKind,
     CliWorkspace,
@@ -30,6 +33,7 @@ from lychd.domain.delegation.models import (
     DelegatedAgentJobStatus,
     DelegatedAgentRequest,
 )
+from tests.support.delegated_cli import InertOwnerAdmission, cli_request
 
 
 def _identity(kind: CliRuntimeKind) -> tuple[DelegatedAgentRequest, DelegatedAgentJobRef]:
@@ -84,6 +88,37 @@ def test_launch_is_literal_and_has_no_ambient_auth(kind: CliRuntimeKind) -> None
     else:
         assert spec.argv[1:3] == ("--bare", "--print")
         assert "--no-session-persistence" in spec.argv
+
+
+@pytest.mark.parametrize(
+    ("kind", "expected_digest"),
+    [
+        (CliRuntimeKind.CODEX, "d6f39a08eecd609ace5159eef699d2b8672d9c700a2ac62ce383a95687f1c75d"),
+        (CliRuntimeKind.CLAUDE, "9fee704d545ad0600c8ff0cd76265bd90b9d8a64ba856cc2ef4ea7915cf90ce8"),
+    ],
+)
+def test_legacy_request_and_launch_identities_remain_literal(kind: CliRuntimeKind, expected_digest: str) -> None:
+    literal = (
+        '{"request_id":"legacy-request","run_id":"legacy-run","step_id":"delegate",'
+        f'"runtime":"{kind.value}","profile":"read","prompt":"Keep λ literal.",'
+        '"input_artifacts":[{"artifact_id":"input-1",'
+        '"digest":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",'
+        '"media_type":"text/plain","size":12,"classification":"internal"}]}'
+    )
+    request = DelegatedAgentRequest.model_validate_json(literal)
+    job = DelegatedAgentJobRef(job_id="legacy-job", request_id=request.request_id, run_id=request.run_id, runtime=kind)
+    spec = build_cli_launch_spec(
+        kind,
+        executable=f"/opt/agents/{kind}",
+        model="explicit-model",
+        request=request,
+        job=job,
+        workspace=CliWorkspace("/jobs/one", "/jobs/one/workspace", "/jobs/one/scratch", "/jobs/one/artifacts"),
+        limits=CliLimits(),
+    )
+
+    assert request.model_dump_json() == literal
+    assert spec.digest == expected_digest
 
 
 @pytest.mark.parametrize("path", ["codex", "/opt/../codex", "/opt//codex", "/opt/codex\n", "//opt/codex"])
@@ -199,11 +234,11 @@ async def test_default_runtime_refuses_launch_lookup_and_cancellation(kind: CliR
     runtime = runtime_type(executable=f"/opt/agents/{kind}", model="model", job_roots="/jobs")
     with pytest.raises(CliLaunchRefusedError):
         await runtime.start(request, job)
-    result = await runtime.poll(job)
+    result = await runtime.poll(job, request=request)
     assert result is not None
     assert result.status is DelegatedAgentJobStatus.LOST
     with pytest.raises(CliContainmentUncertainError):
-        await runtime.cancel(job)
+        await runtime.cancel(job, request=request)
 
 
 @pytest.mark.asyncio
@@ -237,11 +272,11 @@ async def test_poll_after_reconstruction_never_launches_and_cancel_requires_exac
             )
 
     runtime = CodexCliRuntime(executable="/opt/codex", model="model", job_roots="/jobs", host=Host())
-    result = await runtime.poll(job)
+    result = await runtime.poll(job, request=request)
     assert result is not None
     assert result.status is DelegatedAgentJobStatus.SUCCEEDED
     with pytest.raises(CliContainmentUncertainError):
-        await runtime.cancel(job)
+        await runtime.cancel(job, request=request)
 
 
 @pytest.mark.parametrize(
@@ -290,7 +325,7 @@ async def test_restart_uses_durable_limits_and_rejects_stale_launch_evidence(*, 
     runtime = CodexCliRuntime(
         executable="/opt/codex", model="different-model", job_roots="/different", limits=CliLimits(), host=Host()
     )
-    result = await runtime.poll(job)
+    result = await runtime.poll(job, request=request)
     assert result is not None
     assert result.status is DelegatedAgentJobStatus.LOST
 
@@ -353,7 +388,7 @@ async def test_host_termination_and_both_capture_limits_are_preserved(
             return CliCancellationObservation(spec, receipt)
 
     runtime = CodexCliRuntime(executable="/opt/codex", model="model", job_roots="/jobs", host=Host())
-    result = await runtime.poll(job)
+    result = await runtime.poll(job, request=request)
     assert result is not None
     assert result.status is expected
 
@@ -470,7 +505,118 @@ async def test_cancellation_before_observation_requires_exact_retained_launch(mi
 
     runtime = CodexCliRuntime(executable="/opt/codex", model="changed", job_roots="/changed", host=Host())
     if mismatch == "none":
-        await runtime.cancel(job)
+        await runtime.cancel(job, request=request)
     else:
         with pytest.raises(CliContainmentUncertainError):
-            await runtime.cancel(job)
+            await runtime.cancel(job, request=request)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", list(CliRuntimeKind))
+@pytest.mark.parametrize("operation", ["poll", "cancel"])
+@pytest.mark.parametrize(
+    "substitution", ["none", "prompt", "stdin", "artifact_id", "digest", "media_type", "size", "classification"]
+)
+async def test_reconstructed_coordinator_correlates_original_request(
+    kind: CliRuntimeKind, operation: str, substitution: str
+) -> None:
+    request = cli_request(kind)
+    artifact = ArtifactRef(
+        artifact_id="original-input",
+        digest="sha256:" + "a" * 64,
+        media_type="text/plain",
+        size=12,
+        classification="internal",
+    )
+    request = request.model_copy(update={"input_artifacts": (artifact,)})
+    launches: list[CliLaunchSpec] = []
+    polls: list[DelegatedAgentJobRef] = []
+    cancellations: list[DelegatedAgentJobRef] = []
+    observed_spec: CliLaunchSpec | None = None
+    stdout = (
+        _codex_success()
+        if kind is CliRuntimeKind.CODEX
+        else _claude_stream({"type": "result", "subtype": "success", "is_error": False, "result": "candidate only"})
+    )
+
+    class Host:
+        async def launch(self, spec: CliLaunchSpec) -> None:
+            launches.append(spec)
+            assert len(launches) == 1, "Recovery must never launch."
+
+        async def observe(self, job: DelegatedAgentJobRef) -> CliExitObservation:
+            polls.append(job)
+            assert observed_spec is not None
+            assert observed_spec.job == job
+            receipt = CliContainmentReceipt(job, "test-retained-evidence", observed_spec.digest)
+            return CliExitObservation(observed_spec, receipt, 0, stdout)
+
+        async def cancel(self, job: DelegatedAgentJobRef) -> CliCancellationObservation:
+            cancellations.append(job)
+            assert observed_spec is not None
+            assert observed_spec.job == job
+            receipt = CliContainmentReceipt(job, "test-retained-evidence", observed_spec.digest)
+            return CliCancellationObservation(observed_spec, receipt)
+
+    host = Host()
+    runtime_type = CodexCliRuntime if kind is CliRuntimeKind.CODEX else ClaudeCliRuntime
+    original = runtime_type(
+        executable=f"/opt/agents/{kind}",
+        model="original",
+        job_roots="/jobs",
+        host=host,
+        owner_admission=InertOwnerAdmission(),
+    )
+    store = InMemoryDelegatedAgentJobStore()
+    first = DelegatedAgentCoordinator(runtimes={original.name: original}, store=store)
+    job = await first.submit(request)
+    observed_request = request
+    if substitution == "prompt":
+        observed_request = request.model_copy(update={"prompt": "consistently substituted prompt"})
+    elif substitution not in {"none", "stdin"}:
+        replacements: dict[str, str | int] = {
+            "artifact_id": "substituted-input",
+            "digest": "sha256:" + "b" * 64,
+            "media_type": "application/json",
+            "size": 13,
+            "classification": "public",
+        }
+        observed_request = request.model_copy(
+            update={"input_artifacts": (artifact.model_copy(update={substitution: replacements[substitution]}),)}
+        )
+    observed_stdin = (
+        b"consistently substituted stdin" if substitution == "stdin" else observed_request.prompt.encode("utf-8")
+    )
+    observed_spec = replace(launches[0], request=observed_request, stdin=observed_stdin)
+    restarted = runtime_type(
+        executable=f"/changed/{kind}",
+        model="current-default",
+        job_roots="/changed",
+        limits=CliLimits(max_stdout_bytes=1, max_record_bytes=1, wall_seconds=1),
+        host=host,
+    )
+    recovered = DelegatedAgentCoordinator(runtimes={restarted.name: restarted}, store=store)
+
+    if operation == "poll":
+        result = await recovered.refresh(job.job_id)
+        assert result.status is (
+            DelegatedAgentJobStatus.SUCCEEDED if substitution == "none" else DelegatedAgentJobStatus.LOST
+        )
+        assert polls == [job]
+    else:
+        assert polls == []
+    if substitution != "none":
+        before = await store.get(job.job_id)
+        with pytest.raises(CliContainmentUncertainError):
+            await recovered.cancel(job.job_id)
+        assert await store.get(job.job_id) == before
+        assert cancellations == [job]
+    elif operation == "cancel":
+        assert await recovered.cancel(job.job_id)
+        settled = await store.get(job.job_id)
+        assert settled is not None
+        assert settled.status is DelegatedAgentJobStatus.CANCELLED
+        assert cancellations == [job]
+    assert polls == ([job] if operation == "poll" else [])
+    assert launches[0].request == request
+    assert len(launches) == 1

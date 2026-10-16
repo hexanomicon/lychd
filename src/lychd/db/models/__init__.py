@@ -11,6 +11,7 @@ from lychd.db.models.blockworld import BlockworldPlacementAction, BlockworldPlac
 from lychd.db.models.checkpoint import RunCheckpoint
 from lychd.db.models.codex import CodexPreauthorization
 from lychd.db.models.consent import Consent
+from lychd.db.models.delegated_host import DelegatedHostDispositionRecord
 from lychd.db.models.delegation import DelegatedAgentEventRecord, DelegatedAgentJobRecord
 from lychd.db.models.karma import Karma
 from lychd.db.models.nexus import NexusSwapRequest
@@ -36,6 +37,7 @@ __all__ = [
     "Consent",
     "DelegatedAgentEventRecord",
     "DelegatedAgentJobRecord",
+    "DelegatedHostDispositionRecord",
     "Karma",
     "NexusSwapRequest",
     "Run",

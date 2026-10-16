@@ -263,6 +263,11 @@ class QuadletContainer(QuadletBase):
     run_init: bool = True
     read_only: bool = False
     read_only_tmpfs: bool = True
+    secret_mount_tmpfs: bool = Field(
+        default=False,
+        strict=True,
+        description="Supply the fixed /run/secrets tmpfs parent for mounted secrets in a read-only container.",
+    )
     # A container joined to a Pod inherits the Pod's user namespace; Podman
     # ignores per-container --userns in that topology.
     user_ns: str | None = None
@@ -369,6 +374,16 @@ class QuadletContainer(QuadletBase):
         for key, value in values.items():
             systemd_environment_assignment(key, value)
         return values
+
+    @model_validator(mode="after")
+    def validate_secret_mount_tmpfs(self) -> QuadletContainer:
+        """Confine the fixed secret mountpoint parent to read-only mounted-secret services."""
+        if self.secret_mount_tmpfs and (
+            not self.read_only or not any("type=env" not in spec.split(",")[1:] for spec in self.secrets)
+        ):
+            msg = "Secret mount tmpfs requires a read-only container with at least one mounted secret"
+            raise ValueError(msg)
+        return self
 
     @model_validator(mode="after")
     def derive_pod_service(self) -> QuadletContainer:

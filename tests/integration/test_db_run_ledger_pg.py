@@ -1,10 +1,11 @@
 """[LINUX] Disposable PostgreSQL receipts for durable Run and related records.
 
 The optional container-test profile checks exact claim generations, owner-specific
-re-admission, Step sequence fidelity, coherent delegated-job projections, and locked
-session settlement. Reconstructed checkpoint/Consent adapters resume typed state
-over committed rows. Tables come from ORM metadata: these cases do not prove schema
-migrations, a replacement process, broker delivery, or application startup.
+re-admission, Step sequence fidelity, coherent delegated-job projections, conditional
+acceptance settlement, and locked session settlement. Reconstructed checkpoint/Consent
+adapters resume typed state over committed rows. Tables come from ORM metadata: these
+cases do not prove schema migrations, a replacement process, broker delivery, or
+application startup.
 """
 # The ordinary contributor gate omits the optional container-test group; the whole module is
 # importorskip'd there. SQLAlchemy Table vs FromClause noise on create_all remains locally ignored.
@@ -61,6 +62,8 @@ from lychd.domain.cortex.ledger import DbRunLedger, RunAdmissionConflictError
 from lychd.domain.cortex.runs import IllegalRunTransitionError, RunDeliveryState, RunStatus
 from lychd.domain.cortex.stasis import DurableStasisPhylactery
 from lychd.domain.delegation.models import (
+    TERMINAL_DELEGATED_AGENT_STATUSES,
+    DelegatedAgentEventKind,
     DelegatedAgentJob,
     DelegatedAgentJobRef,
     DelegatedAgentJobStatus,
@@ -68,6 +71,7 @@ from lychd.domain.delegation.models import (
     DelegatedAgentRequest,
     DelegatedAgentResult,
 )
+from lychd.domain.delegation.services import IllegalDelegatedAgentTransitionError
 from lychd.domain.orchestration.schema import TransitionTrace
 from lychd.domain.web.schemas import BridgeTurn
 
@@ -133,6 +137,273 @@ async def _wait_until_session_writer_is_lock_blocked(
             async with session_factory() as observer:
                 if await observer.scalar(query):
                     return
+
+
+async def _prepared_delegated_job(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> DelegatedAgentJob:
+    run_id = await _seed(DbRunLedger(session_factory=session_factory))
+    request = DelegatedAgentRequest(
+        request_id="acceptance-request",
+        run_id=run_id,
+        step_id="acceptance-step",
+        runtime="reference",
+        prompt="inert acceptance receipt",
+    )
+    ref = DelegatedAgentJobRef(
+        job_id="acceptance-job",
+        request_id=request.request_id,
+        run_id=run_id,
+        runtime=request.runtime,
+    )
+    store = DbDelegatedAgentJobStore(session_factory)
+    await store.create(request, ref)
+    await store.transition(ref.job_id, DelegatedAgentJobStatus.ADMITTED)
+    job, changed = await store.transition(ref.job_id, DelegatedAgentJobStatus.PREPARING)
+    assert changed
+    return job
+
+
+async def _wait_until_delegated_challenger_is_lock_blocked(
+    session_factory: async_sessionmaker[AsyncSession],
+    *,
+    winner_pid: int,
+    challenger_pid: int,
+) -> None:
+    """Distinguish a blocked locking read from a nonlocking read followed by UPDATE."""
+    query = text(
+        """
+        SELECT state, wait_event_type, query, pg_blocking_pids(pid) AS blockers
+        FROM pg_stat_activity
+        WHERE datname = current_database() AND pid = :challenger_pid
+        """
+    )
+    async with asyncio.timeout(5):
+        while True:
+            # A new observer transaction avoids retaining a pg_stat_activity snapshot.
+            async with session_factory() as observer:
+                activity = (await observer.execute(query, {"challenger_pid": challenger_pid})).one()
+            if activity.wait_event_type == "Lock" and winner_pid in activity.blockers:
+                statement = " ".join(activity.query.upper().split())
+                assert activity.state == "active"
+                assert statement.startswith("SELECT "), statement
+                assert "FROM DELEGATED_AGENT_JOB " in statement, statement
+                assert " FOR UPDATE" in statement, statement
+                return
+            await asyncio.sleep(0.01)
+
+
+class _DelegatedLockRace:
+    """Pause a real locked winner and identify the distinct challenger connection."""
+
+    def __init__(
+        self,
+        winner: DbDelegatedAgentJobStore,
+        challenger: DbDelegatedAgentJobStore,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        self.winner_locked = asyncio.Event()
+        self.challenger_entered = asyncio.Event()
+        self.release_winner = asyncio.Event()
+        self.backend_pids: dict[str, int] = {}
+        self.sessions: dict[str, AsyncSession] = {}
+        self._winner_require_locked = winner._require_locked  # pyright: ignore[reportPrivateUsage]
+        self._challenger_require_locked = challenger._require_locked  # pyright: ignore[reportPrivateUsage]
+        monkeypatch.setattr(winner, "_require_locked", self._pause_after_winner_lock)
+        monkeypatch.setattr(challenger, "_require_locked", self._identify_challenger_before_lock)
+
+    async def _pause_after_winner_lock(self, session: AsyncSession, job_id: str) -> DelegatedAgentJobRecord:
+        row = await self._winner_require_locked(session, job_id)
+        self.sessions["winner"] = session
+        self.backend_pids["winner"] = await session.scalar(text("SELECT pg_backend_pid()"))
+        self.winner_locked.set()
+        await asyncio.wait_for(self.release_winner.wait(), 5)
+        return row
+
+    async def _identify_challenger_before_lock(self, session: AsyncSession, job_id: str) -> DelegatedAgentJobRecord:
+        # Read only connection identity: preloading the ORM job would change the race.
+        self.sessions["challenger"] = session
+        self.backend_pids["challenger"] = await session.scalar(text("SELECT pg_backend_pid()"))
+        self.challenger_entered.set()
+        return await self._challenger_require_locked(session, job_id)
+
+    async def observe_blocked_challenger(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+        await self.challenger_entered.wait()
+        assert self.sessions["winner"] is not self.sessions["challenger"]
+        assert self.backend_pids["winner"] != self.backend_pids["challenger"]
+        await _wait_until_delegated_challenger_is_lock_blocked(
+            session_factory,
+            winner_pid=self.backend_pids["winner"],
+            challenger_pid=self.backend_pids["challenger"],
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("winner_status", "challenger_status"),
+    [
+        (DelegatedAgentJobStatus.RUNNING, DelegatedAgentJobStatus.LOST),
+        (DelegatedAgentJobStatus.FAILED, DelegatedAgentJobStatus.LOST),
+        (DelegatedAgentJobStatus.LOST, DelegatedAgentJobStatus.RUNNING),
+        (DelegatedAgentJobStatus.LOST, DelegatedAgentJobStatus.LOST),
+    ],
+    ids=["running-wins", "failed-wins", "lost-blocks-running", "duplicate-lost"],
+)
+async def test_postgres_acceptance_settlement_obeys_real_row_lock_order(
+    pg_factory: async_sessionmaker[AsyncSession],
+    monkeypatch: pytest.MonkeyPatch,
+    winner_status: DelegatedAgentJobStatus,
+    challenger_status: DelegatedAgentJobStatus,
+) -> None:
+    """Race actual store methods over separate sessions while the winner holds the row."""
+    before = await _prepared_delegated_job(pg_factory)
+    winner = DbDelegatedAgentJobStore(pg_factory)
+    challenger = DbDelegatedAgentJobStore(pg_factory)
+    race = _DelegatedLockRace(winner, challenger, monkeypatch)
+
+    async def mutate(
+        store: DbDelegatedAgentJobStore, status: DelegatedAgentJobStatus, *, error: str
+    ) -> tuple[DelegatedAgentJob, bool]:
+        if status is DelegatedAgentJobStatus.RUNNING:
+            return await store.transition(before.ref.job_id, status)
+        result = DelegatedAgentResult(job_id=before.ref.job_id, status=status, error=error)
+        if status is DelegatedAgentJobStatus.LOST:
+            return await store.settle_acceptance_failure(before.ref.job_id, result)
+        return await store.adopt(before.ref.job_id, result)
+
+    tasks: list[asyncio.Task[tuple[DelegatedAgentJob, bool]]] = []
+    try:
+        async with asyncio.timeout(5):
+            winner_task = asyncio.create_task(mutate(winner, winner_status, error="original winner"))
+            tasks.append(winner_task)
+            await race.winner_locked.wait()
+            challenger_task = asyncio.create_task(mutate(challenger, challenger_status, error="late challenger"))
+            tasks.append(challenger_task)
+            await race.observe_blocked_challenger(pg_factory)
+            assert not winner_task.done()
+            assert not challenger_task.done()
+            race.release_winner.set()
+            settled, changed = await winner_task
+            assert changed
+            if challenger_status is DelegatedAgentJobStatus.RUNNING:
+                with pytest.raises(IllegalDelegatedAgentTransitionError):
+                    await challenger_task
+            else:
+                preserved, changed = await challenger_task
+                assert not changed
+                assert preserved == settled
+    finally:
+        race.release_winner.set()
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), 5)
+
+    fresh = await DbDelegatedAgentJobStore(pg_factory).get(before.ref.job_id)
+    assert fresh == settled
+    assert fresh is not None
+    assert fresh.status is winner_status
+    assert fresh.events[:-1] == before.events
+    assert [event.seq for event in fresh.events] == [0, 1, 2, 3]
+    assert fresh.events[-1].status is winner_status
+    assert fresh.events[-1].kind is (
+        DelegatedAgentEventKind.STATUS_CHANGED
+        if winner_status is DelegatedAgentJobStatus.RUNNING
+        else DelegatedAgentEventKind.RESULT_ADOPTED
+    )
+    if winner_status is DelegatedAgentJobStatus.RUNNING:
+        assert fresh.result is None
+    else:
+        assert fresh.result == DelegatedAgentResult(
+            job_id=before.ref.job_id, status=winner_status, error="original winner"
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", sorted(TERMINAL_DELEGATED_AGENT_STATUSES))
+async def test_postgres_acceptance_settlement_preserves_every_terminal_result(
+    pg_factory: async_sessionmaker[AsyncSession], status: DelegatedAgentJobStatus
+) -> None:
+    before = await _prepared_delegated_job(pg_factory)
+    store = DbDelegatedAgentJobStore(pg_factory)
+    await store.transition(before.ref.job_id, DelegatedAgentJobStatus.RUNNING)
+    result = DelegatedAgentResult(
+        job_id=before.ref.job_id,
+        status=status,
+        error="retained terminal evidence"
+        if status in {DelegatedAgentJobStatus.FAILED, DelegatedAgentJobStatus.TIMED_OUT, DelegatedAgentJobStatus.LOST}
+        else None,
+    )
+    terminal, changed = await store.adopt(before.ref.job_id, result)
+    assert changed
+    lost = DelegatedAgentResult(job_id=before.ref.job_id, status=DelegatedAgentJobStatus.LOST, error="late acceptance")
+
+    for _ in range(2):
+        preserved, changed = await DbDelegatedAgentJobStore(pg_factory).settle_acceptance_failure(
+            before.ref.job_id, lost
+        )
+        assert not changed
+        assert preserved == terminal
+    assert await DbDelegatedAgentJobStore(pg_factory).get(before.ref.job_id) == terminal
+
+
+@pytest.mark.asyncio
+async def test_postgres_acceptance_event_insert_failure_rolls_back_and_recovers(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    before = await _prepared_delegated_job(pg_factory)
+    store = DbDelegatedAgentJobStore(pg_factory)
+    lost = DelegatedAgentResult(
+        job_id=before.ref.job_id, status=DelegatedAgentJobStatus.LOST, error="acceptance unknown"
+    )
+    async with pg_factory() as session, session.begin():
+        await session.execute(
+            text(
+                "ALTER TABLE delegated_agent_event "
+                "ADD CONSTRAINT reject_test_acceptance_lost_event CHECK (status <> 'lost')"
+            )
+        )
+    try:
+        with pytest.raises(IntegrityError) as caught:
+            await store.settle_acceptance_failure(before.ref.job_id, lost)
+        original = caught.value.orig
+        assert original is not None
+        assert getattr(original, "sqlstate", None) == "23514"
+        assert getattr(original.__cause__, "constraint_name", None) == "reject_test_acceptance_lost_event"
+        assert caught.value.statement is not None
+        assert caught.value.statement.upper().startswith("INSERT INTO DELEGATED_AGENT_EVENT ")
+
+        async with pg_factory() as observer:
+            row = await observer.scalar(
+                select(DelegatedAgentJobRecord).where(DelegatedAgentJobRecord.job_id == before.ref.job_id)
+            )
+            assert row is not None
+            assert row.status == DelegatedAgentJobStatus.PREPARING.value
+            assert row.result is None
+            events = (
+                await observer.scalars(
+                    select(DelegatedAgentEventRecord)
+                    .where(DelegatedAgentEventRecord.job_record_id == row.id)
+                    .order_by(DelegatedAgentEventRecord.seq)
+                )
+            ).all()
+            assert [event.payload for event in events] == [event.model_dump(mode="json") for event in before.events]
+        assert await DbDelegatedAgentJobStore(pg_factory).get(before.ref.job_id) == before
+    finally:
+        async with pg_factory() as session, session.begin():
+            await session.execute(
+                text("ALTER TABLE delegated_agent_event DROP CONSTRAINT reject_test_acceptance_lost_event")
+            )
+
+    recovered, changed = await asyncio.wait_for(store.settle_acceptance_failure(before.ref.job_id, lost), 5)
+    assert changed
+    assert recovered.status is DelegatedAgentJobStatus.LOST
+    assert recovered.result == lost
+    assert recovered.events[:-1] == before.events
+    assert [event.seq for event in recovered.events] == [0, 1, 2, 3]
+    assert recovered.events[-1].kind is DelegatedAgentEventKind.RESULT_ADOPTED
+    assert recovered.events[-1].status is DelegatedAgentJobStatus.LOST
+    assert await DbDelegatedAgentJobStore(pg_factory).get(before.ref.job_id) == recovered
 
 
 @pytest.mark.asyncio
@@ -1087,10 +1358,10 @@ async def test_reconcile_orphaned_running_lands_terminal_step(
 ) -> None:
     """R1: a reconciled orphan (with a persisted Step) lands its terminal Step instead of colliding.
 
-    Restart shape: the run reached RUNNING and persisted Step(seq=0); the process
-    died; a FRESH bus restarts channel seqs at 0. Without seeding, reconcile's terminal
-    emit would write Step(seq=0) → `uq_step_run_seq` violation → dropped. With the R1
-    seed (`open(from_seq=next_seq)`), the terminal lands at seq 1.
+    Reconstruct the bus in the same process over a RUNNING row and persisted Step(seq=0).
+    Its new channels start at seq 0. Without seeding, reconcile's terminal emit would
+    collide with `uq_step_run_seq` and be dropped. With the R1 seed
+    (`open(from_seq=next_seq)`), the terminal lands at seq 1.
     """
     from types import SimpleNamespace
     from uuid import UUID
@@ -1105,14 +1376,18 @@ async def test_reconcile_orphaned_running_lands_terminal_step(
     await ledger.set_status(run_id, RunStatus.RUNNING)
     await ledger.append_event(RunEvent(run_id=run_id, seq=0, kind=RunEventKind.STATUS, data="running"))
 
-    # Fresh process: a brand-new bus (channel seqs restart at 0). reconcile only needs
-    # the substrate's ledger + bus, so a namespace stand-in is sufficient here.
+    # Reconstruct in-process adapters over committed rows; no process restart is exercised.
+    # This stand-in has no child effects or retained Context to contain or release.
     class _NoBrokerJob:
         async def job(self, job_key: str, /) -> None:
             _ = job_key
 
         async def abort(self, job: object, error: str, /, ttl: float = 5) -> None:
             _ = (job, error, ttl)
+
+    class _NoRunContext:
+        def release(self, _run_id: str) -> None:
+            pass
 
     bus = InProcessEventBus(ledger=ledger)
     substrate = SimpleNamespace(
@@ -1122,6 +1397,8 @@ async def test_reconcile_orphaned_running_lands_terminal_step(
         stasis_store=InMemoryStasisStore(),
         consents=None,
         delegates=None,
+        effects=None,
+        context=_NoRunContext(),
     )
     result = await reconcile_runs({"run_substrate": substrate})
     assert result["count"] >= 1

@@ -81,7 +81,7 @@ def test_archive_migration_is_atomic_and_empty_cycle_matches_orm(pg_url: str, mo
         ("0011", None)
     ]
     command.upgrade(config(pg_url), "head")
-    assert run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0014",)]
+    assert run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0015",)]
     for model in (ArchiveNamespace, ArchiveNote, ArchiveIntake, ArchiveRecall):
         columns = run(
             pg_url,
@@ -141,7 +141,7 @@ def test_archive_downgrade_retains_history(pg_url: str) -> None:
     record_id = asyncio.run(retain_note(pg_url))
     with pytest.raises(DBAPIError, match="Archive history requires explicit retirement"):
         command.downgrade(config(pg_url), "0011")
-    assert run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0014",)]
+    assert run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0015",)]
     assert run(pg_url, "SELECT content,lifecycle FROM archive_note WHERE id=CAST(:id AS uuid)", {"id": record_id}) == [
         ("retained public note", "candidate")
     ]

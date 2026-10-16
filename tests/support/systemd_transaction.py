@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import errno
 import os
+import re
 import stat
 import subprocess
 import time
@@ -22,6 +24,7 @@ from lychd.domain.animation.transmute import Transmuter
 from lychd.system.services.scribe import ScribeService
 
 _PROOF_REQUIRED_ENV = "LYCHD_REQUIRE_SYSTEMD_PROOF"
+_OUTER_UNIT_ENV = "LYCHD_SYSTEMD_PROOF_OUTER_UNIT"
 _RELATION_PROPERTIES = (
     "Requires",
     "RequiredBy",
@@ -39,6 +42,22 @@ _SHOW_PROPERTIES = (
     *_RELATION_PROPERTIES,
     "ActiveState",
     "SubState",
+    "LoadState",
+    "MainPID",
+    "ControlPID",
+    "InvocationID",
+    "ControlGroup",
+    "Result",
+    "ExecMainCode",
+    "ExecMainStatus",
+    "ExecStart",
+    "TimeoutStopUSec",
+    "KillMode",
+    "KillSignal",
+    "SendSIGKILL",
+    "SuccessExitStatus",
+    "Restart",
+    "NRestarts",
 )
 
 
@@ -86,7 +105,119 @@ def required_binaries() -> dict[str, Path]:
     missing = sorted(candidates.keys() - resolved.keys())
     if missing:
         unavailable(f"root-controlled systemd proof binaries are unavailable: {', '.join(missing)}")
+    require_delegated_manager_cgroup(resolved["systemctl"])
     return resolved
+
+
+def require_delegated_manager_cgroup(systemctl: Path) -> dict[str, str]:
+    """Refuse a nested manager outside an exclusive, delegated proof service.
+
+    Private HOME and bus paths do not isolate systemd's cgroup effects. A nested
+    manager may migrate processes from its inherited cgroup into init.scope.
+    Read only the declared outer service in the ordinary manager to attest its
+    identity; all nested-manager effects still use their isolated private bus.
+    """
+    unit = os.environ.get(_OUTER_UNIT_ENV, "")
+    if re.fullmatch(r"lychd-(?:bootstrap|proof)-[a-z0-9-]+\.service", unit) is None:
+        unavailable(f"private manager requires an explicit unique {_OUTER_UNIT_ENV} delegated service")
+    try:
+        result = subprocess.run(  # noqa: S603 - attested systemctl, exact declared outer unit, read-only show
+            [
+                str(systemctl),
+                "--user",
+                "--no-pager",
+                "show",
+                unit,
+                "--property=Id,ControlGroup,MainPID,InvocationID,Delegate,Transient,ActiveState",
+            ],
+            env={"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8", "XDG_RUNTIME_DIR": f"/run/user/{os.getuid()}"},
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=3.0,
+            check=False,
+        )
+        fields = dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
+        if result.returncode or set(fields) != {
+            "Id",
+            "ControlGroup",
+            "MainPID",
+            "InvocationID",
+            "Delegate",
+            "Transient",
+            "ActiveState",
+        }:
+            unavailable("cannot attest the declared outer proof service")
+        if (
+            fields["Id"] != unit
+            or fields["Delegate"] != "yes"
+            or fields["Transient"] != "yes"
+            or fields["ActiveState"] != "active"
+            or not fields["InvocationID"]
+        ):
+            unavailable("outer proof service is not an active delegated invocation")
+        relative = Path(fields["ControlGroup"])
+        if not relative.is_absolute() or relative.name != unit or ".." in relative.parts:
+            unavailable("outer proof service has an unexpected cgroup identity")
+        root = Path("/sys/fs/cgroup") / str(relative).lstrip("/")
+        metadata = root.lstat()
+        if not stat.S_ISDIR(metadata.st_mode) or metadata.st_uid != os.getuid():
+            unavailable("outer proof cgroup is not an operator-owned directory")
+        # systemd v261 writes this informational xattr only for system-manager
+        # units (src/core/cgroup.c:cgroup_xattr_apply). A user
+        # manager's Delegate=yes is attested below without inventing that xattr.
+        delegate_xattr = _delegate_xattr(root)
+        if not all(os.access(root / name, os.W_OK) for name in ("cgroup.procs", "cgroup.subtree_control")):
+            unavailable("outer proof cgroup delegation or writable control files are unavailable")
+        current = Path("/proc/self/cgroup").read_text(encoding="ascii").strip()
+        if not current.startswith("0::"):
+            unavailable("a unified cgroup identity is required for the private manager")
+        caller_group = Path(current.removeprefix("0::"))
+        if caller_group not in {relative, relative / "init.scope"}:
+            unavailable("caller is outside the declared exclusive outer proof cgroup")
+        ancestors = _require_exclusive_cgroup_processes(root, int(fields["MainPID"]))
+        return {
+            **fields,
+            "CallerControlGroup": str(caller_group),
+            "CgroupPath": str(root),
+            "DelegateXattr": delegate_xattr,
+            "AncestorPids": " ".join(map(str, ancestors)),
+            **{
+                name: (root / name).read_text(encoding="ascii").strip() if (root / name).exists() else "unavailable"
+                for name in ("cgroup.controllers", "cgroup.subtree_control", "pids.max", "cpu.max", "memory.max")
+            },
+        }
+    except (OSError, ValueError, subprocess.SubprocessError):
+        unavailable("exclusive delegated outer proof cgroup could not be verified")
+
+
+def _delegate_xattr(root: Path) -> str:
+    try:
+        return os.getxattr(root, "user.delegate").decode("ascii")
+    except OSError as exc:
+        if exc.errno != errno.ENODATA:
+            raise
+        return "unavailable:ENODATA:user-manager"
+
+
+def _require_exclusive_cgroup_processes(root: Path, main_pid: int) -> tuple[int, ...]:
+    ancestors: set[int] = set()
+    pid = os.getpid()
+    while pid > 1:
+        ancestors.add(pid)
+        if pid == main_pid:
+            break
+        process_fields = Path(f"/proc/{pid}/stat").read_text(encoding="ascii").rsplit(")", 1)[1].split()
+        pid = int(process_fields[1])
+    if main_pid <= 1 or main_pid not in ancestors:
+        unavailable("outer proof service MainPID is not the caller or its ancestor")
+    files = tuple(root.rglob("cgroup.procs"))
+    if len(files) > 100:
+        unavailable("outer proof cgroup tree exceeds the bounded ownership probe")
+    pids = {int(value) for path in files for value in path.read_text(encoding="ascii").split()}
+    if not pids.issubset(ancestors):
+        unavailable("outer proof cgroup contains a process outside this invocation's ancestor chain")
+    return tuple(sorted(ancestors))
 
 
 def write_harness_units(

@@ -16,6 +16,7 @@ from lychd.domain.delegation import (
     DelegatedAgentResult,
     InMemoryDelegatedAgentJobStore,
 )
+from lychd.domain.delegation.models import DelegatedRequest
 from lychd.domain.delegation.services import UnknownDelegatedAgentRuntimeError
 
 
@@ -28,17 +29,19 @@ class _LostAcknowledgementRuntime:
     accepted: list[DelegatedAgentJobRef] = field(default_factory=list)
     cancelled: list[DelegatedAgentJobRef] = field(default_factory=list)
 
-    async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
+    async def start(self, request: DelegatedRequest, job: DelegatedAgentJobRef) -> None:
         assert request.request_id == job.request_id
         self.accepted.append(job)
         msg = self.error_message
         raise OSError(msg)
 
-    async def poll(self, job: DelegatedAgentJobRef) -> DelegatedAgentResult | None:
+    async def poll(self, job: DelegatedAgentJobRef, *, request: DelegatedRequest) -> DelegatedAgentResult | None:
+        assert request.request_id == job.request_id
         msg = f"Lost job {job.job_id} must not be polled as active."
         raise AssertionError(msg)
 
-    async def cancel(self, job: DelegatedAgentJobRef) -> None:
+    async def cancel(self, job: DelegatedAgentJobRef, *, request: DelegatedRequest) -> None:
+        assert request.request_id == job.request_id
         self.cancelled.append(job)
 
 
@@ -113,7 +116,7 @@ async def test_start_diagnostic_bound_preserves_lost_settlement_and_original_err
     failure = RuntimeError("é" * error_length)
 
     class _LargeDiagnosticRuntime(_LostAcknowledgementRuntime):
-        async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
+        async def start(self, request: DelegatedRequest, job: DelegatedAgentJobRef) -> None:
             assert request.request_id == job.request_id
             self.accepted.append(job)
             raise failure

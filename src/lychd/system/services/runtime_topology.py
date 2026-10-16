@@ -475,25 +475,24 @@ class RuntimeTopologyAttestor:
             {service_unit},
             expected.managed_units,
         )
-        # The loaded manager exposes target/service requirement and binding
-        # inverses through RequiredBy=/BoundBy=. Ordering and conflict edges
-        # remain observable on the canonical forward endpoint that declares
-        # them: this target's own Before=service and, for the lexical higher
-        # endpoint, After=/Conflicts=predecessors. Do not invent successor
-        # edges on the lower target; requiring exact managed Before= and an
-        # empty managed ConflictedBy= surface still rejects injected edges.
+        # Coven After=members exposes inverse Before=Coven on each member.
+        # Require the own-service edge plus every compiled Coven membership.
+        # Conflict ordering remains checked at its canonical forward endpoint:
+        # After=pod plus predecessors and Conflicts=predecessors. Do not invent
+        # conflict successor edges on the lower target; exact managed Before=
+        # and an empty managed ConflictedBy= still reject injected edges.
         RuntimeTopologyAttestor._require_relation(
             snapshot,
             "Before",
             snapshot.before,
-            {service_unit},
+            {service_unit, *covens},
             expected.managed_units,
         )
         RuntimeTopologyAttestor._require_relation(
             snapshot,
             "After",
             snapshot.after,
-            predecessors,
+            {_LYCHD_POD_SERVICE, *predecessors},
             expected.managed_units,
         )
         RuntimeTopologyAttestor._require_relation(
@@ -612,7 +611,7 @@ class RuntimeTopologyAttestor:
             snapshot,
             "After",
             snapshot.after,
-            members,
+            {_LYCHD_POD_SERVICE, *members},
             expected.managed_units,
         )
         RuntimeTopologyAttestor._require_relation(

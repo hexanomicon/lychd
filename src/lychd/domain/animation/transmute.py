@@ -292,7 +292,7 @@ class Transmuter:
         soulstones: Sequence[SoulstoneConfig],
         topology: ConflictTopology,
     ) -> list[QuadletTarget]:
-        """Compile lifecycle gates from the canonical conflict topology."""
+        """Compile lifecycle gates after the Pod and conflict predecessors."""
         targets: list[QuadletTarget] = []
         for stone in soulstones:
             service_unit = animator_service_unit(stone.name)
@@ -305,7 +305,7 @@ class Transmuter:
                     description=f"LychD Animator: {stone.name}",
                     requires=[service_unit],
                     before=[service_unit],
-                    after=list(predecessors),
+                    after=[LYCHD_POD_SERVICE, *predecessors],
                     conflicts=list(predecessors),
                     part_of=[LYCHD_POD_SERVICE, *coven_units],
                 )
@@ -316,7 +316,7 @@ class Transmuter:
     def _create_coven_targets(
         topology: ConflictTopology,
     ) -> list[QuadletTarget]:
-        """Compile explicit compatible aggregates over Animator targets."""
+        """Compile compatible aggregates after the Pod and member targets."""
         targets: list[QuadletTarget] = []
         for group, members in topology.coven_members.items():
             member_units = [animator_target_unit(member_name) for member_name in members]
@@ -326,7 +326,7 @@ class Transmuter:
                     name=group,
                     description=f"LychD Coven: {group}",
                     wants=member_units,
-                    after=member_units,
+                    after=[LYCHD_POD_SERVICE, *member_units],
                     part_of=[LYCHD_POD_SERVICE],
                 )
             )
@@ -444,6 +444,8 @@ class Transmuter:
 
         The Vessel mounts all internal and portal-referenced Podman secrets so
         runtime connectors can resolve credentials from ``/run/secrets``.
+        The two read-only core services declare a fixed tmpfs parent so Podman
+        can create their secret-file mountpoints without a writable image root.
         """
         vessel_mounts = [MountData.from_str(mount) for mount in self._vessel_mount_strings(settings)]
         migrator_mounts = [MountData.from_str(mount) for mount in self._migrator_mount_strings()]
@@ -472,6 +474,7 @@ class Transmuter:
             pod=LYCHD_POD_QUADLET,
             user="%U",
             read_only=True,
+            secret_mount_tmpfs=True,
             volumes=vessel_mounts,
             env_vars={
                 **self._runtime_path_env(),
@@ -527,6 +530,7 @@ class Transmuter:
             pod=LYCHD_POD_QUADLET,
             user="%U",
             read_only=True,
+            secret_mount_tmpfs=True,
             volumes=migrator_mounts,
             env_vars={
                 **self._runtime_path_env(),

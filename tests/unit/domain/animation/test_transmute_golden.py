@@ -283,15 +283,16 @@ def test_property3_law_of_exclusivity_and_boot() -> None:
     assert alpha_target.requires == [animator_service_unit("alpha")]
     assert alpha_target.before == [animator_service_unit("alpha")]
     assert alpha_target.conflicts == []
+    assert alpha_target.after == ["lychd-pod.service"]
     assert coven_target_unit("logic") in alpha_target.part_of
 
     assert gamma.conflicts == []
     assert gamma.binds_to == [animator_target_unit("gamma")]
     assert gamma_target.conflicts == [animator_target_unit("alpha")]
-    assert gamma_target.after == [animator_target_unit("alpha")]
+    assert gamma_target.after == ["lychd-pod.service", animator_target_unit("alpha")]
 
     assert coven.wants == [animator_target_unit("alpha"), animator_target_unit("beta")]
-    assert coven.after == coven.wants
+    assert coven.after == ["lychd-pod.service", *coven.wants]
     assert coven.conflicts == []
 
     # Boot-survivor determinism (F4): only the persistent resident is auto-wanted.

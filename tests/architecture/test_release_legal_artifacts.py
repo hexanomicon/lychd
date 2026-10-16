@@ -61,7 +61,7 @@ def test_container_build_context_is_podman_native_and_strictly_bounded() -> None
         if (line := raw_line.strip()) and not line.startswith("#")
     ]
     assert ignore_lines[0] == "**"
-    assert set(ignore_lines[1:]) == {
+    assert ignore_lines[1:] == [
         "!.containerignore",
         "!Containerfile",
         "!LICENSE",
@@ -69,11 +69,18 @@ def test_container_build_context_is_podman_native_and_strictly_bounded() -> None
         "!THIRD_PARTY_NOTICES.md",
         "!pyproject.toml",
         "!uv.lock",
+        "!clients/",
+        "clients/**",
+        "!clients/web/",
+        "clients/web/**",
+        "!clients/web/static/",
+        "clients/web/static/**",
+        "!clients/web/static/THIRD_PARTY_NOTICES.txt",
         "!scripts/",
         "!scripts/generate_python_third_party_notices.py",
         "!src/",
         "!src/**",
-    }
+    ]
 
 
 def test_version_bump_is_review_only_and_has_one_real_version_owner() -> None:
@@ -95,6 +102,10 @@ def test_container_carries_project_license_and_notices() -> None:
     containerfile = (ROOT / "Containerfile").read_text(encoding="utf-8")
 
     assert "COPY pyproject.toml uv.lock README.md LICENSE THIRD_PARTY_NOTICES.md ./" in containerfile
+    notice_copy = "COPY clients/web/static/THIRD_PARTY_NOTICES.txt ./clients/web/static/"
+    project_install = "/bin/uv sync --frozen --no-dev --no-editable"
+    assert notice_copy in containerfile
+    assert containerfile.index(notice_copy) < containerfile.index(project_install)
     assert "/app/LICENSE /app/LICENSE" in containerfile
     assert "/app/THIRD_PARTY_NOTICES.md /app/THIRD_PARTY_NOTICES.md" in containerfile
     assert "/app/PYTHON_THIRD_PARTY_NOTICES.txt" in containerfile

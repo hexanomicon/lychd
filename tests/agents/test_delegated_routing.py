@@ -17,7 +17,11 @@ from lychd.config.settings import DelegationCastingSettings, Settings, SettingsS
 from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.ledger import InMemoryRunLedger
-from lychd.domain.delegation.models import DelegatedAgentJobRef, DelegatedAgentJobStatus, DelegatedAgentRequest
+from lychd.domain.delegation.models import (
+    DelegatedAgentJobRef,
+    DelegatedAgentJobStatus,
+    DelegatedRequest,
+)
 from lychd.domain.delegation.routing import DelegatedRuntimeBinding
 from lychd.domain.delegation.services import DelegatedAgentCoordinator, InMemoryDelegatedAgentJobStore
 from lychd.domain.delegation.signals import DelegatedAgentPending
@@ -147,7 +151,7 @@ class _RefusingRuntime(ReferenceDelegatedAgentRuntime):
         super().__init__()
         self.starts = 0
 
-    async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
+    async def start(self, request: DelegatedRequest, job: DelegatedAgentJobRef) -> None:
         _ = (request, job)
         self.starts += 1
         message = "host admission denied; no fallback authorized"

@@ -205,10 +205,10 @@ def bind_quadlets(
         console.print(f"  [dim]Provisioned secrets: {', '.join(result.created_secrets)}[/]")
 
     console.print("\n[bold green]✓ The circle is bound.[/]")
-    console.print("  [dim]You may now summon the declared system: lychd start[/]")
-
     if uncaged:
         _describe_uncaged_vessel(console=console)
+    else:
+        console.print("  [dim]You may now summon the declared system: lychd start[/]")
 
 
 def _render_binding_plan(
@@ -256,14 +256,15 @@ def _render_binding_preflight(
 
 
 def _describe_uncaged_vessel(*, console: Console) -> None:
-    """Report the reconciled uncaged unit without auto-enabling it."""
+    """Report uncaged preparation and the mixed-ownership startup boundary."""
     from lychd.system.constants import PATH_SYSTEMD_USER_UNITS_DIR
 
     unit_path = PATH_SYSTEMD_USER_UNITS_DIR / "lychd-uncaged-vessel.service"
     console.print(f"\n  [dim]Uncaged vessel unit inscribed: {unit_path}[/]")
     console.print("  [bold green]✓ The uncaged vessel is inscribed.[/]")
-    console.print("  [dim]To awaken it (you flip the switch):[/]")
-    console.print("  [bold]lychd start[/]")
+    console.print("  [yellow]The complete binding includes both caged and uncaged Vessel units.[/]")
+    console.print("  [yellow]Public start refuses mixed Vessel ownership.[/]")
+    console.print("  [dim]Installed native startup remains unqualified.[/]")
 
 
 @click.group(name="reactor", hidden=True)

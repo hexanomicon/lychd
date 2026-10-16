@@ -17,8 +17,10 @@ from lychd.domain.delegation.models import (
     DelegatedAgentJobRef,
     DelegatedAgentJobStatus,
     DelegatedAgentProfile,
-    DelegatedAgentRequest,
     DelegatedAgentResult,
+    DelegatedRequest,
+    decode_delegated_request,
+    encode_delegated_request,
 )
 from lychd.domain.delegation.services import (
     DelegatedAgentIdempotencyConflictError,
@@ -44,7 +46,7 @@ class DbDelegatedAgentJobStore:
 
     async def create(
         self,
-        request: DelegatedAgentRequest,
+        request: DelegatedRequest,
         ref: DelegatedAgentJobRef,
     ) -> tuple[DelegatedAgentJob, bool]:
         """Insert once by request id, preserving the first LychD-owned job identity."""
@@ -58,7 +60,7 @@ class DbDelegatedAgentJobStore:
             "runtime": request.runtime,
             "profile": request.profile,
             "status": DelegatedAgentJobStatus.QUEUED.value,
-            "request": request.model_dump(mode="json"),
+            "request": encode_delegated_request(request),
             "result": None,
         }
         async with self._session_factory() as session, session.begin():
@@ -77,7 +79,7 @@ class DbDelegatedAgentJobStore:
             if row is None:  # pragma: no cover - insert/read are one transaction
                 msg = "Delegated job insert completed without a readable row."
                 raise RuntimeError(msg)
-            existing_request = DelegatedAgentRequest.model_validate(row.request)
+            existing_request = decode_delegated_request(row.request)
             if existing_request != request:
                 msg = f"Delegated request id {request.request_id!r} was reused with different content."
                 raise DelegatedAgentIdempotencyConflictError(msg)
@@ -315,7 +317,7 @@ class DbDelegatedAgentJobStore:
             events = list((await session.scalars(statement)).all())
             if reverse_events:
                 events.reverse()
-        request = DelegatedAgentRequest.model_validate(row.request)
+        request = decode_delegated_request(row.request)
         ref = DelegatedAgentJobRef(
             job_id=row.job_id,
             request_id=row.request_id,
@@ -333,7 +335,7 @@ class DbDelegatedAgentJobStore:
         )
 
 
-def _validate_ref(request: DelegatedAgentRequest, ref: DelegatedAgentJobRef) -> None:
+def _validate_ref(request: DelegatedRequest, ref: DelegatedAgentJobRef) -> None:
     expected = (request.request_id, request.run_id, request.runtime, request.profile)
     observed = (ref.request_id, ref.run_id, ref.runtime, ref.profile)
     if observed != expected:

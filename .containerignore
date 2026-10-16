@@ -7,6 +7,13 @@
 !THIRD_PARTY_NOTICES.md
 !pyproject.toml
 !uv.lock
+!clients/
+clients/**
+!clients/web/
+clients/web/**
+!clients/web/static/
+clients/web/static/**
+!clients/web/static/THIRD_PARTY_NOTICES.txt
 !scripts/
 !scripts/generate_python_third_party_notices.py
 !src/

@@ -18,7 +18,7 @@ from lychd.domain.delegation import (
 from lychd.domain.delegation import (
     DelegatedAgentJobStatus as Status,
 )
-from lychd.domain.delegation.models import TERMINAL_DELEGATED_AGENT_STATUSES, DelegatedAgentEventKind
+from lychd.domain.delegation.models import TERMINAL_DELEGATED_AGENT_STATUSES, DelegatedAgentEventKind, DelegatedRequest
 from lychd.domain.delegation.services import IllegalDelegatedAgentTransitionError, UnknownDelegatedAgentJobError
 from lychd.extensions.builtin.delegation.reference import ReferenceDelegatedAgentRuntime
 
@@ -32,14 +32,14 @@ class AcceptanceRuntime(ReferenceDelegatedAgentRuntime):
         self.cancels: list[DelegatedAgentJobRef] = []
         self.timeline = timeline if timeline is not None else []
 
-    async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
+    async def start(self, request: DelegatedRequest, job: DelegatedAgentJobRef) -> None:
         self.starts.append(job)
         await super().start(request, job)
         self.timeline.append("start returned")
 
-    async def cancel(self, job: DelegatedAgentJobRef) -> None:
+    async def cancel(self, job: DelegatedAgentJobRef, *, request: DelegatedRequest) -> None:
         self.cancels.append(job)
-        await super().cancel(job)
+        await super().cancel(job, request=request)
         self.timeline.append("containment returned")
 
 

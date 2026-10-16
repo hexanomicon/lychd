@@ -18,27 +18,51 @@ Core controllers and the compiled Altar fallback are collected there. Extensions
 explicitly, receive a host-created context, and contribute shaped records rather than arbitrary
 route or middleware mutation. There is no delivered extension route bundle.
 
-The native Click CLI remains useful without an application graph. `serve` and `database` delegate
-lazily to Litestar; help, `init`, `bind`, lifecycle commands, and ordinary operator commands do
-not construct the ASGI application.
+The native Click CLI remains useful without an application graph. `database` delegates lazily to
+Litestar; hidden `serve` lazily loads the owned production launcher. Help, `init`, `bind`, lifecycle
+commands, and ordinary operator commands do not construct the ASGI application.
 
 ### Process and listener boundary
 
-The runtime is one Granian/Litestar process and one event loop. The native launcher rejects
+The runtime is one Granian/Litestar process and one event loop. A shared launcher explicitly owns
+the application's lifespan around an embedded Granian no-lifespan ASGI worker. Required startup
+or closure failure and unexpected HTTP-worker termination propagate as process failure. The HTTP
+worker and every admitted Python ASGI callback, including post-response background work, must
+retire before application services close; successful process exit cannot conceal a
+failed application shutdown. Signals request ordinary worker retirement and do not certify its
+completion. The user manager retains its outer stop-timeout and forced-stop semantics.
+
+The owned native entrypoint arms only its captured production application's fixed
+[stop-admission launcher profile](09-security.md#local-installation-stop-admission), and withdraws
+it synchronously when retirement begins. The shared runner's caged adapter does not arm that
+native profile. Neither an environment value nor a direct factory/ASGI launch attests this
+mechanism; older protocol replies cannot satisfy a client requiring the current fixed profile.
+
+Native and managed-image entrypoints select separate fixed listener profiles over that same
+launcher. Hidden native `serve` has a source-owned closed option grammar for its listener,
+debugging and existing one-worker/disabled-metrics policy; unsupported framework transport or
+supervisor tuning refuses explicitly. It does not copy an upstream CLI's entire option surface.
+The managed image selects only its fixed internal `0.0.0.0:8000` listener and cannot widen native
+loopback admission. Existing images using another launcher need separate qualification.
+
+The native launcher rejects
 multi-worker and reload configuration. The launcher and `create_app()` call one pure server policy
 which rejects server-visible worker/reload variables and detectable direct Litestar/Granian
 arguments, including Granian reload paths and include/exclude filters that activate reload.
 
 Listener authority resolves explicit `--port`, then `LITESTAR_PORT`, `GRANIAN_PORT`,
-and the configured server port; the native launcher publishes that result before Litestar loads
+and the configured server port; the native launcher publishes that result before the factory loads
 the application, and Host admission consumes the same value. Native `lychd serve` likewise accepts
 only `127.0.0.1` or `::1` from `--host`/`-H`, `LITESTAR_HOST`, or `GRANIAN_HOST`, defaulting to
-`127.0.0.1`, and publishes that host before delegation. File-descriptor and UNIX-domain-socket
+`127.0.0.1`, and publishes that host before application construction. File-descriptor and UNIX-domain-socket
 arguments or Litestar/Granian environment overrides are refused, including `GRANIAN_FILE_DESCRIPTOR`
 and `GRANIAN_UDS`: otherwise they would bypass the owned TCP host rather than refine it.
 The native launcher also refuses an enabled Granian metrics listener: it opens a separate socket
 outside application admission. It preserves metrics disablement and empty alternate-listener
-settings through delegation so later dotenv loading cannot add another listener.
+settings through startup so later dotenv loading cannot add another listener. Native startup may
+load the current working directory's `.env` with existing environment values taking precedence;
+it revalidates late server-control settings and restores its frozen environment on success or
+failure. The fixed managed-image entrypoint adds no implicit dotenv load.
 Native short-option clusters are expanded before policy validation; admitted debug/PDB flags
 cannot hide a host, port, worker, reload, or alternate-listener option. Unknown short options are
 refused and require an explicit long spelling. The caged image's intentional internal

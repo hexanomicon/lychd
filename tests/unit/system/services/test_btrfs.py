@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
 import os
+import sys
 from pathlib import Path
 
 import pytest
 
+from lychd.system import btrfs_observer
 from lychd.system.btrfs_identity import BtrfsSubvolumeObservation
 from lychd.system.operator import ProcessInvocationError, ProcessResult
 from lychd.system.services.btrfs import (
@@ -20,6 +23,7 @@ class _Runner:
         self.responses = responses
         self.calls: list[tuple[tuple[str, ...], float]] = []
         self.fd_calls: list[tuple[tuple[str, ...], float, tuple[int, ...]]] = []
+        self.observed_inodes: list[int] = []
 
     def run(self, argv: tuple[str, ...], *, timeout_s: float) -> ProcessResult:
         self.calls.append((argv, timeout_s))
@@ -33,6 +37,8 @@ class _Runner:
         pass_fds: tuple[int, ...],
     ) -> ProcessResult:
         self.fd_calls.append((argv, timeout_s, pass_fds))
+        if argv[1:3] == ("-I", "-S"):
+            self.observed_inodes.append(os.fstat(pass_fds[0]).st_ino)
         return self.responses.pop(0)
 
 
@@ -67,7 +73,7 @@ def test_subvolume_creation_is_bounded_and_verified(tmp_path: Path) -> None:
             ProcessResult(
                 argv=(),
                 returncode=0,
-                stdout=("UUID: 12345678-1234-5678-1234-567812345678\nSubvolume ID: 259\n"),
+                stdout=json.dumps({"uuid": "12345678-1234-5678-1234-567812345678", "subvolume_id": 259}),
             ),
         ]
     )
@@ -85,18 +91,16 @@ def test_subvolume_creation_is_bounded_and_verified(tmp_path: Path) -> None:
     assert created.uuid == "12345678-1234-5678-1234-567812345678"
     assert created.subvolume_id == 259
     descriptor_target = f"/proc/self/fd/{parent_fd}/{target.name}"
-    assert runner.fd_calls == [
-        (
-            ("/btrfs", "subvolume", "create", descriptor_target),
-            30.0,
-            (parent_fd,),
-        ),
-        (
-            ("/btrfs", "subvolume", "show", descriptor_target),
-            3.0,
-            (parent_fd,),
-        ),
-    ]
+    creation, observation = runner.fd_calls
+    assert creation == (("/btrfs", "subvolume", "create", descriptor_target), 30.0, (parent_fd,))
+    leaf_fd = observation[2][0]
+    assert leaf_fd != parent_fd
+    assert observation == (
+        (str(Path(sys.executable).resolve()), "-I", "-S", str(Path(btrfs_observer.__file__).resolve()), str(leaf_fd)),
+        3.0,
+        (leaf_fd,),
+    )
+    assert runner.observed_inodes == [target.stat().st_ino]
 
 
 @pytest.mark.parametrize(
@@ -151,15 +155,24 @@ def test_materialized_creation_failure_returns_typed_pinned_evidence(
         assert isinstance(raised.value.cause, cause_type)
 
 
-def test_successful_create_with_unverifiable_show_is_typed_not_fallback(
-    tmp_path: Path,
-) -> None:
+@pytest.mark.parametrize("failure", ["nonzero", "timeout"])
+def test_successful_create_with_unverifiable_observer_is_typed_not_fallback(tmp_path: Path, failure: str) -> None:
     target = tmp_path / "postgres" / "data"
     target.parent.mkdir()
-    runner = _CreatingRunner(
+
+    class _ObserverFailureRunner(_CreatingRunner):
+        def run_with_fds(self, argv: tuple[str, ...], *, timeout_s: float, pass_fds: tuple[int, ...]) -> ProcessResult:
+            if argv[1:3] == ("-I", "-S") and failure == "timeout":
+                assert timeout_s == 3.0
+                assert len(pass_fds) == 1
+                message = "observer timed out"
+                raise ProcessInvocationError(message)
+            return super().run_with_fds(argv, timeout_s=timeout_s, pass_fds=pass_fds)
+
+    runner = _ObserverFailureRunner(
         [
             ProcessResult(argv=(), returncode=0),
-            ProcessResult(argv=(), returncode=1, stderr="show unavailable"),
+            ProcessResult(argv=(), returncode=1, stderr="observer unavailable"),
         ]
     )
     parent_fd = os.open(target.parent, os.O_RDONLY | os.O_DIRECTORY)
@@ -207,7 +220,7 @@ def test_subvolume_creation_cannot_follow_a_replaced_public_parent(
             ProcessResult(
                 argv=(),
                 returncode=0,
-                stdout=("UUID: 12345678-1234-5678-1234-567812345678\nSubvolume ID: 259\n"),
+                stdout=json.dumps({"uuid": "12345678-1234-5678-1234-567812345678", "subvolume_id": 259}),
             ),
         ]
     )
@@ -246,12 +259,12 @@ def test_created_subvolume_drift_is_rejected_before_descriptor_mutation(
             ProcessResult(
                 argv=(),
                 returncode=0,
-                stdout=(f"UUID: {replacement.uuid}\nSubvolume ID: {replacement.subvolume_id}\n"),
+                stdout=json.dumps({"uuid": replacement.uuid, "subvolume_id": replacement.subvolume_id}),
             ),
             ProcessResult(
                 argv=(),
                 returncode=0,
-                stdout=(f"UUID: {replacement.uuid}\nSubvolume ID: {replacement.subvolume_id}\n"),
+                stdout=json.dumps({"uuid": replacement.uuid, "subvolume_id": replacement.subvolume_id}),
             ),
         ]
     )
@@ -303,22 +316,22 @@ def test_created_subvolume_nocow_mutation_remains_bound_to_open_descriptor(
             ProcessResult(
                 argv=(),
                 returncode=0,
-                stdout=(f"UUID: {expected.uuid}\nSubvolume ID: {expected.subvolume_id}\n"),
+                stdout=json.dumps({"uuid": expected.uuid, "subvolume_id": expected.subvolume_id}),
             ),
             ProcessResult(
                 argv=(),
                 returncode=0,
-                stdout=(f"UUID: {expected.uuid}\nSubvolume ID: {expected.subvolume_id}\n"),
+                stdout=json.dumps({"uuid": expected.uuid, "subvolume_id": expected.subvolume_id}),
             ),
             ProcessResult(
                 argv=(),
                 returncode=0,
-                stdout=(f"UUID: {replacement.uuid}\nSubvolume ID: {replacement.subvolume_id}\n"),
+                stdout=json.dumps({"uuid": replacement.uuid, "subvolume_id": replacement.subvolume_id}),
             ),
             ProcessResult(
                 argv=(),
                 returncode=0,
-                stdout=(f"UUID: {replacement.uuid}\nSubvolume ID: {replacement.subvolume_id}\n"),
+                stdout=json.dumps({"uuid": replacement.uuid, "subvolume_id": replacement.subvolume_id}),
             ),
         ]
     )

@@ -7,16 +7,16 @@ Gate admission/revocation, bounded capture, and complete-process-tree settlement
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from hashlib import sha256
+from datetime import UTC, datetime
 from typing import Literal, Protocol
 
 from lychd.domain.delegation.cli_protocol import (
     CliLaunchSpec,
     CliLimits,
     CliRuntimeKind,
-    CliWorkspace,
-    build_cli_launch_spec,
+    compile_cli_request,
     parse_cli_output,
     reviewed_cli_version,
     validate_cli_path,
@@ -24,8 +24,17 @@ from lychd.domain.delegation.cli_protocol import (
 from lychd.domain.delegation.models import (
     DelegatedAgentJobRef,
     DelegatedAgentJobStatus,
-    DelegatedAgentRequest,
     DelegatedAgentResult,
+    DelegatedCliRequestV2,
+    DelegatedRequest,
+    cli_intent_digest,
+    decode_delegated_request,
+    delegated_request_digest,
+)
+from lychd.domain.delegation.owner_admission import (
+    DenyingOwnerAdmission,
+    OwnerAdmissionGranted,
+    OwnerAdmissionPort,
 )
 
 _MAX_EVIDENCE_ID_LENGTH = 256
@@ -146,6 +155,8 @@ class _CliRuntime:
         job_roots: str,
         limits: CliLimits | None = None,
         host: CliHostPort | None = None,
+        owner_admission: OwnerAdmissionPort | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         validate_cli_path(executable)
         root = validate_cli_path(job_roots)
@@ -157,26 +168,41 @@ class _CliRuntime:
         self._job_roots = str(root)
         self._limits = limits or CliLimits()
         self._host = host if host is not None else RefusingCliHost()
+        self._owner_admission = owner_admission if owner_admission is not None else DenyingOwnerAdmission()
+        self._clock = clock if clock is not None else lambda: datetime.now(UTC)
 
     @property
     def name(self) -> str:
         return self.kind.value
 
-    async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
-        digest = sha256(job.model_dump_json().encode()).hexdigest()
-        root = f"{self._job_roots}/{digest}"
-        spec = build_cli_launch_spec(
-            self.kind,
-            executable=self._executable,
-            model=self._model,
-            request=request,
-            job=job,
-            workspace=CliWorkspace(root, f"{root}/workspace", f"{root}/scratch", f"{root}/artifacts"),
-            limits=self._limits,
-        )
+    async def start(self, request: DelegatedRequest, job: DelegatedAgentJobRef) -> None:
+        request = decode_delegated_request(request)
+        if not isinstance(request, DelegatedCliRequestV2):
+            msg = "Fresh legacy CLI starts have no retained intent or owner admission."
+            raise CliLaunchRefusedError(msg)
+        self._check_runtime(job)
+        spec = compile_cli_request(request, job)
+        observed = await self._owner_admission.admit(request, job)
+        if type(observed) is not OwnerAdmissionGranted:
+            msg = "Missing or denied owner admission."
+            raise CliLaunchRefusedError(msg)
+        try:
+            admitted = OwnerAdmissionGranted.model_validate(observed)
+            if (
+                admitted.job != job
+                or admitted.request_digest != delegated_request_digest(request)
+                or admitted.intent_digest != cli_intent_digest(request)
+                or admitted.owner_binding != request.owner_binding
+                or not admitted.is_current(self._clock())
+            ):
+                msg = "Owner admission does not bind this current occurrence."
+                raise CliLaunchRefusedError(msg)
+        except (ValueError, TypeError, AttributeError) as exc:
+            msg = "No matching current owner admission is established."
+            raise CliLaunchRefusedError(msg) from exc
         await self._host.launch(spec)
 
-    async def poll(self, job: DelegatedAgentJobRef) -> DelegatedAgentResult | None:
+    async def poll(self, job: DelegatedAgentJobRef, *, request: DelegatedRequest) -> DelegatedAgentResult | None:
         self._check_runtime(job)
         try:
             observed = await self._host.observe(job)
@@ -184,10 +210,12 @@ class _CliRuntime:
             return self._lost(job)
         if observed is None:
             return None
-        return self._interpret_observation(job, observed)
+        return self._interpret_observation(job, observed, request=request)
 
-    def _interpret_observation(self, job: DelegatedAgentJobRef, observed: CliExitObservation) -> DelegatedAgentResult:
-        if not self._matching_containment(job, observed.spec, observed.containment):
+    def _interpret_observation(
+        self, job: DelegatedAgentJobRef, observed: CliExitObservation, *, request: DelegatedRequest
+    ) -> DelegatedAgentResult:
+        if not self._matching_containment(job, observed.spec, observed.containment, request=request):
             return self._lost(job)
         if observed.termination == "timed_out":
             return DelegatedAgentResult(
@@ -208,13 +236,13 @@ class _CliRuntime:
             limits=limits,
         )
 
-    async def cancel(self, job: DelegatedAgentJobRef) -> None:
+    async def cancel(self, job: DelegatedAgentJobRef, *, request: DelegatedRequest) -> None:
         self._check_runtime(job)
-        self._check_cancellation(job, await self._host.cancel(job))
+        self._check_cancellation(job, await self._host.cancel(job), request=request)
 
-    def _check_cancellation(self, job: DelegatedAgentJobRef, observed: object) -> None:
+    def _check_cancellation(self, job: DelegatedAgentJobRef, observed: object, *, request: DelegatedRequest) -> None:
         if not isinstance(observed, CliCancellationObservation) or not self._matching_containment(
-            job, observed.spec, observed.containment
+            job, observed.spec, observed.containment, request=request
         ):
             msg = "Host cancellation evidence does not bind the exact admitted launch."
             raise CliContainmentUncertainError(msg)
@@ -233,15 +261,30 @@ class _CliRuntime:
             raise ValueError(msg)
 
     def _matching_containment(
-        self, job: DelegatedAgentJobRef, spec: CliLaunchSpec, receipt: CliContainmentReceipt
+        self,
+        job: DelegatedAgentJobRef,
+        spec: CliLaunchSpec,
+        receipt: CliContainmentReceipt,
+        *,
+        request: DelegatedRequest,
     ) -> bool:
-        return (
-            receipt.job == job
-            and spec.job == job
-            and spec.kind is self.kind
-            and spec.cli_version == reviewed_cli_version(self.kind)
-            and receipt.launch_digest == spec.digest
-        )
+        try:
+            retained = decode_delegated_request(request)
+            if isinstance(retained, DelegatedCliRequestV2):
+                expected = compile_cli_request(retained, job)
+                if spec != expected or spec.digest != expected.digest:
+                    return False
+            return (
+                receipt.job == job
+                and spec.job == job
+                and spec.request == retained
+                and spec.stdin == retained.prompt.encode("utf-8")
+                and spec.kind is self.kind
+                and spec.cli_version == reviewed_cli_version(self.kind)
+                and receipt.launch_digest == spec.digest
+            )
+        except (ValueError, TypeError, AttributeError):
+            return False
 
 
 class CodexCliRuntime(_CliRuntime):
