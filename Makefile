@@ -36,7 +36,7 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/system/services/test_scout_dns.py tests/unit/system/services/test_scout_socket.py \
 	tests/unit/system/services/test_scout_http.py tests/unit/system/services/test_scout_fetch.py \
 	tests/unit/system/services/test_scout_workflow.py tests/codex/test_local_access.py \
-	tests/unit/domain/test_artifact_custody.py \
+	tests/unit/domain/test_artifact_custody.py tests/unit/domain/test_evolution.py \
 	tests/unit/domain/animation tests/unit/domain/cortex tests/unit/domain/delegation \
 	tests/unit/domain/orchestration tests/unit/domain/privacy tests/unit/domain/web tests/unit/domain/scout \
 	tests/unit/extensions tests/unit/lib tests/unit/compositions tests/agents tests/web \

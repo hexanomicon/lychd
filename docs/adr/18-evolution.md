@@ -100,6 +100,47 @@ Future quorum and target-owned activation retain their separate eligibility and 
 Downstream adoption never silently overwrites operator changes or makes upstream maintainers
 responsible for repairing a separately governed lineage.
 
+### Synchronic Syncretizer {#synchronic-syncretizer}
+
+!!! quote "Synchronic Syncretizer — continuity through synthesis"
+    The Arbiter of Evolution asks what deserves to survive, what may end, and which differences
+    can coexist or form a better successor. Continuity preserves attributable consequence and
+    answerable obligations; it does not require every old implementation to remain executable.
+
+**Synchronic Syncretizer** names Evolution's bounded adoption judgment. It consumes verification
+receipts, [Drift's findings](34-evaluation.md) when available, required owner verdicts and retained
+history; it does not become a second evaluator or take the target owners' effects. A proposal
+for changed selection criteria or an evaluator is a separately reviewed candidate, never a
+candidate author's permission to rewrite a failed comparison.
+
+A comparison binds the installed and candidate closures, exact base and local delta, selected
+extensions, predeclared acceptance and policy revisions, and the history selected for this
+question. Its history manifest identifies predecessor decisions, obligations, failures and
+unresolved effects, with selection reasons and omissions. It retains supporting evidence,
+contradictions, dissent and uncertainty rather than compressing them into one quality score.
+
+Each affected obligation receives an attributable disposition:
+
+| Disposition | What must remain explicit |
+| --- | --- |
+| **Retain** | The behavior or boundary to preserve, its consumer and evidence against the exact candidate. |
+| **Reconcile** | The incompatibility and proposed successor combining the chosen parts; that combined candidate needs its own verification. |
+| **Replace** | What deliberately ends, why its retirement is justified, affected consumers and unresolved work, and their authorized transition or refusal. |
+| **Reject** | Why the proposed change is refused and which evidence or changed condition could reopen it. |
+
+A known harmful baseline does not become acceptable merely because a candidate is blocked.
+Security revocation may forbid an old executable closure while its history remains attributable.
+Plurality also permits independent lineages, policies or capabilities to coexist: synthesis
+cannot require one universal agent, paradigm or canonical body for every participant.
+
+Missing mandatory evidence, an unresolved required owner verdict or an unowned transition blocks an
+eligible Promotion Request. Changed base, candidate, relevant environment, policy or evaluation
+invalidates the affected comparison and requires a new attributable decision. Identical
+redelivery must preserve the admitted comparison identity; a new semantic attempt cannot erase
+the earlier failure. The result is a retained disposition and, only when eligible, an **inert
+Promotion Request**. Source selection, collective promotion approval and each target owner's
+fresh effect-time checks remain separate. A recorded judgment neither migrates nor activates.
+
 ### Start the changed body as a new generation {#replace-the-generation-not-its-memory}
 
 A promoted Core or coupled extension change activates as a new Vessel process generation.

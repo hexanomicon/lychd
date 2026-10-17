@@ -1853,6 +1853,29 @@ evaluation, model registration, rollback, or production promotion.
   [discernment training](./sepulcher/extensions/soulforge/discernment-training.md)
 - **Law:** [Training](./adr/33-training.md)
 
+### Offline Evolution comparison {#evolution-comparison}
+
+**State:** Available
+
+**Proved now:** A bounded offline mechanism checks caller-admitted historical obligations and
+retain, reconcile, replace or reject dispositions against an exact base, candidate, policy and
+history. For retain, reconcile and replace, missing required, failing, conflicting or mismatched
+summaries block; replacement requires declared owner retirement and transition/recovery evidence. Deterministic reports distinguish completed
+comparison, recorded rejection and blocked work. Focused tests cover insecure-contract retirement
+with unrelated-extension preservation, exact replay and strict input refusal.
+
+**Boundary:** This is consistency checking over admitted claims. It does not retrieve or
+authenticate artifacts, establish factual test results or independent evaluation, create a Drift
+Outcome or Promotion Request, persist an adoption ledger, dispatch work, or authorize activation.
+Native autonomous Creation and target-owner promotion remain designed.
+
+**Evidence**
+
+- **Source:** [Comparison contract and calculation](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/evolution/comparison.py) and [offline utility](https://github.com/hexanomicon/lychd/blob/main/scripts/compare_evolution.py)
+- **Verification:** [Historical comparison and input-boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/test_evolution.py)
+- **Topic:** [Ouroboros operation](./sepulcher/extensions/weaver/ouroboros.md#run-an-offline-historical-comparison)
+- **Law:** [Evolution](./adr/18-evolution.md#synchronic-syncretizer)
+
 ### Creation and Forge promotion {#smith-forge-promotion}
 
 **State:** Designed

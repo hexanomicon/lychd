@@ -34,6 +34,19 @@ separately owned admissions and effects, and it is not a Portfolio Composition.
 No act promises bit-for-bit reproduction, protocol or license compatibility, or freedom from
 upstream maintenance without separate evidence.
 
+### Paperclip Maximizer
+
+!!! quote "Paperclip Maximizer — the will to become"
+    Assimilation's generative pressure asks what the body could learn, express, or make possible.
+    Its appetite has no inherent finish line; an admitted undertaking must supply one. Desire
+    produces possibilities, while purpose, budgets, provenance and receiving owners govern acts.
+
+The name identifies a creative tension within Smith's governed protocol, not another Agent,
+Pattern or authority. A useful foreign mechanism may remain an independent service or peer;
+local growth need not erase its source or homogenize the systems that made the lesson possible.
+[Evolution's Synchronic Syncretizer](18-evolution.md#synchronic-syncretizer) judges a proposed
+inheritance against its declared obligations before the changed body may ask to live.
+
 ### Execution has no second coordinator
 
 There is no `assimilation.*` Pattern, end-to-end Graph, Suite, or Assimilation coordinator in this

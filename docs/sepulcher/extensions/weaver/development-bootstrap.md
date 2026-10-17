@@ -115,6 +115,27 @@ can use [Crucible](crucible.md): independent first reports, actual reciprocal re
 synthesis retaining dissent and what would defeat the recommendation. Do not simulate an
 opponent's reply or vote a fact into existence.
 
+Before freezing a composed or host-bound experiment, sample the cheapest real premise that
+could change its design: the actual DTO, route, normalization, tool field or role-specific process
+identity. An admitted read-only sample can establish compatibility without launching the target
+effect. Pure fixtures establish their model, not that environment. If a required sample is
+unavailable, retain the qualification gap and select work whose claim does not depend upon it.
+
+Before committing to construction that changes shared source, trace maintained receipts that
+pin the affected modules and check the cost and feasibility of fresh qualification, including
+prerequisites and cleanup. Choose a smaller boundary when that burden is disproportionate to the
+intended increment. Preserve earlier receipts as dated evidence; refreshing their fingerprints
+cannot substitute for requalification.
+
+End an inquiry when another observation cannot change the admitted choice. After a repair,
+return the exact finding and affected joins to the independent verifier; reopen whole-candidate
+review for changed authority, a shared invariant or a concrete cross-boundary finding. Required
+final checks still apply. Do not rerun unchanged passing gates or grow reports merely to consume
+allowance: compare time to a useful accepted result, meaningful escaped defects, repair rounds
+and the human attention required. Keep a handle for every launched check and observe its
+terminal state. A yielded command or elapsed time limit is unfinished evidence; settle its
+owned process before concluding.
+
 A practical four-slot campaign rotates one Lead and up to three workers; that is a pilot choice,
 not a model-count law. Settle shared interfaces before distributing writers, and serialize changes
 to a shared mutable surface. A design contributor's later review offers continuity, but its

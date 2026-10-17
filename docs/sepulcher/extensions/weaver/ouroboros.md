@@ -70,6 +70,68 @@ the next owner, share its authority, or create a hidden Run spanning all three c
 application must publish its exact Pattern; live coordination across Composition-owned
 Invocations needs a named [Suite](../../../compositions/products-and-suites.md#compositions-relate-without-nesting).
 
+## Desire, judgment and inheritance
+
+!!! quote "The Maximizer and the Syncretizer"
+    **Assimilation drives possibility. Syncretism gives inheritance coherence. Time exposes
+    their consequences.** A useful return may preserve a form, transform it, let it coexist with
+    another, or end it so that something better can emerge.
+
+The [Paperclip Maximizer](../../../adr/35-assimilation.md#paperclip-maximizer) names the desire
+to become more; the [Synchronic Syncretizer](../../../adr/18-evolution.md#synchronic-syncretizer)
+names Evolution's judgment of what a successor should inherit. Their tension belongs within the
+existing offices. It does not create a universal Ouroboros coordinator or make every acquisition
+an improvement.
+
+Practice the return with one candidate and a declared comparison. Select the relevant predecessor
+history and expose its omissions; gather verification, independent findings and affected-owner
+judgments; then record which obligations are retained, reconciled, replaced or rejected and why.
+A reconciliation returns a new combined candidate to Creation. A replacement names the consumers
+and work that must transition. An unresolved contradiction returns a bounded question or a
+refusal; it does not quietly become consent. The settled result can support a later Promotion
+Request, whose effects still require their receiving owners.
+
+For example, a successor may remove an insecure legacy contract while preserving an unrelated
+private extension. The old contract's failing check is retained as a fact. Changing the declared
+contract requires the responsible owner's separate acceptance, consumer/work disposition and
+verification of the new candidate; an overall quality gain cannot erase the failure. Likewise,
+a blocked replacement is no reason to continue executing a revoked unsafe baseline.
+
+This gives the language of emergence a testable foothold: later choices may inherit useful
+correction without losing the reasons, conflicts and consequences that made it useful. The
+philosophical question of life remains open; no loop diagram or adoption record resolves it.
+
+### Run an offline historical comparison
+
+The [comparison mechanism](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/evolution/comparison.py)
+checks one caller-admitted boundary and proposal. Its `evolution-comparison@1` packet pins base,
+candidate, policy and selected history through ArtifactRefs; each historical obligation names its
+owner and inherited contract. Every obligation needs a reasoned retain, reconcile, replace or
+reject disposition. Bind the proposal and each evidence summary to `admission_digest(admission)`.
+The [focused examples](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/test_evolution.py)
+exercise replacement of an insecure v1 while retaining extension C, a changed combined candidate,
+missing evidence, conflicting results and exact replay. Their receipt claims are synthetic fixtures.
+
+From a configured source checkout, feed one admitted JSON packet to the
+[offline utility](https://github.com/hexanomicon/lychd/blob/main/scripts/compare_evolution.py):
+
+```sh
+uv run python scripts/compare_evolution.py < comparison.json
+```
+
+It accepts at most 1 MiB and emits a bounded report. Exit 0 means `comparison_complete` or
+`rejection_recorded`; inspect the outcome, because a recorded rejection accepts no candidate.
+Exit 1 means `blocked`; exit 2 refuses malformed, duplicate-key, nonfinite or oversized input
+with a fixed diagnostic. No public Pulse command is added.
+
+A receipt summary is an attributed claim, not the receipt's authenticated contents. The utility
+reads none of the referenced bytes and proves no test result, issuer identity, independence,
+Drift Outcome or promotion eligibility. Old-baseline failures remain in the pinned history;
+active summaries concern this exact candidate, whose failing checks still block a non-rejection
+disposition. The caller retains the packet and its references: a deterministic digest is neither
+durable custody nor an adoption ledger. [State of Work](../../../state-of-the-work.md#evolution-comparison)
+keeps this mechanism distinct from the still-designed native lifecycle and target-owner effects.
+
 ## Carry the distinction, not the entire conversation
 
 First decide what the next attempt needs. A missing fact, a damaged handoff, and a skill that
@@ -173,6 +235,42 @@ accepts or refuses what it receives. Conversation may become the development int
 VCS continues to preserve exact artifact lineage. GitHub is one collaboration surface; replacing
 it does not replace source identity, review evidence or
 [release trust](../../../adr/17-packaging.md#forge-neutral-source-trust).
+
+### One undertaking, several conversation surfaces
+
+A joined workbench can keep an [Atlas Project](../../../divination/altar/atlas.md) and its
+concerns beside the [Bridge](../../../divination/altar/bridge.md) conversation, with exact Runs
+opening their evidence in Orb. Atlas keeps the undertaking and captured judgments; Bridge keeps
+the conversation and its admitted Run references. The Run ledger owns Run identity and status.
+A reference links them without silently injecting
+the brief into Context or authorizing work. Supply an exact, explicitly admitted snapshot when
+a task needs that context. An Evolution comparison remains its own owner's result, not a
+persuasive chat message promoted into a verdict.
+
+Begin with one operator-admitted issue snapshot, an existing Project and an explicitly selected
+session. A later GitHub or Discord adapter maps source identity and observations to those native
+records; it does not introduce a second backlog or development authority. Transport redelivery,
+issue identity, accepted intent and Run identity are different keys. GitHub's
+[webhook guidance](https://docs.github.com/en/webhooks/using-webhooks/best-practices-for-using-webhooks)
+retains the same delivery identifier on redelivery. Changed bytes under an admitted observation
+identity refuse; an accepted issue edit creates a new native revision and cannot rewrite an
+already admitted Run or its judged basis.
+
+Authenticating a provider delivery establishes provenance, not the sender's LychD authority.
+The receiver separately checks local policy for the requested work and again before later
+admission or effects. Never forward external prose under the bootstrap operator's ambient
+privileges. An external reply binds result, destination, payload and delivery identity under its
+credential-bearing effect owner; a lost send response remains unknown until reconciled, rather
+than rerunning cognition or blindly posting again. A worker-job publication receipt is not proof
+of an external comment.
+
+Several PCs can be clients of one resident authority through a collaboration surface. Physical
+workers under one sovereign plane follow [Multinode](../../../adr/42-multinode.md); independent
+sovereign peers follow [A2A](../../../adr/26-a2a.md). Neither follows merely from using two PCs.
+Remote Altar identity, automatic source-to-session replay and native development lifecycle
+ownership retain their own delivery gates; the current local operator surface does not supply
+a remote authorization protocol. [Development bootstrap](development-bootstrap.md) keeps the
+B7 ownership transfer separate from a connector or a desktop timer.
 
 ## From a useful lesson to a changed body
 
