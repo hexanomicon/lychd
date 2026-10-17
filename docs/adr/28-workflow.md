@@ -232,6 +232,20 @@ text and is retained as ordinary Bridge history; transient acquisition is not a 
 derived text persists. The first profile follows no redirects. Revisions 1–3 retain their manifests
 and recovery contracts. State of Work owns delivery and end-to-end qualification separately.
 
+The explicitly configured `creation.investigate@2` belongs to the accepted
+[Creation investigation](../compositions/creation/index.md) contract. Its fixed serial score
+retains a source-bound candidate and fresh attributed verdict through the existing Run road.
+Application records own stage claims, uncertainty, cancellation and separately admitted
+continuation; the registry and Graph create no second scheduler or general SDLC owner.
+Its local typed selector fixes the exact capability, while case custody additionally retains
+resolved role bindings. State of Work owns delivered registration and end-to-end evidence.
+
+The initial revision 1 prototype remains historical. Revision 2 is the sole selected closure;
+current-role reads retain old cases, while retired-contract policy refuses their write actions.
+Full profile matching gates admission, continuation and stages. Current-revision cancellation
+uses retained contract identity and current local authority without requiring a live model binding.
+No old Run, claim, response or reservation is reinterpreted or renewed.
+
 ## Pattern identity
 
 The manifest binds:

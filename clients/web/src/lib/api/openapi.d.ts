@@ -431,6 +431,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/creation/investigations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit */
+        post: operations["submitCreationInvestigation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/creation/investigations/{case_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read */
+        get: operations["readCreationInvestigation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/creation/investigations/{case_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel */
+        post: operations["cancelCreationInvestigation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/creation/investigations/{case_id}/continue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ContinueCase */
+        post: operations["continueCreationInvestigation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/loom": {
         parameters: {
             query?: never;
@@ -880,6 +948,34 @@ export interface components {
             /** @default settled */
             state: string;
         };
+        /** CaseView */
+        CaseView: {
+            admissions: {
+                [key: string]: unknown;
+            }[];
+            attempts: {
+                [key: string]: unknown;
+            }[];
+            candidate: {
+                [key: string]: unknown;
+            } | null;
+            candidate_digest: string | null;
+            /** Format: uuid */
+            case_id: string;
+            deadline: string;
+            profile: {
+                [key: string]: unknown;
+            };
+            profile_digest: string;
+            reason: string | null;
+            request: components["schemas"]["InvestigationRequest"];
+            request_digest: string;
+            slot_encumbered: boolean;
+            status: string;
+            verdict: {
+                [key: string]: unknown;
+            } | null;
+        };
         /** ConsentCard */
         ConsentCard: {
             args: {
@@ -914,6 +1010,19 @@ export interface components {
         ConsentDecisionResult: {
             consent: components["schemas"]["ConsentCard"];
             pending_count: number;
+        };
+        /** ContinueRequest */
+        ContinueRequest: {
+            /** Format: uuid */
+            admission_id: string;
+            candidate_digest: string;
+            profile_digest: string;
+            request_digest: string;
+        };
+        /** Criterion */
+        Criterion: {
+            id: string;
+            predicate: string;
         };
         /** CsrfClientContract */
         CsrfClientContract: {
@@ -1046,6 +1155,21 @@ export interface components {
             /** @enum {string} */
             state: "active" | "retired";
             version: number;
+        };
+        /** InvestigationRequest */
+        InvestigationRequest: {
+            base_revision: string;
+            criteria: (components["schemas"]["Criterion"] | unknown)[];
+            non_goals: (string | unknown)[];
+            omissions: (string | unknown)[];
+            /** @constant */
+            public_material: true;
+            question: string;
+            repository: string;
+            /** Format: uuid */
+            request_id: string;
+            sources: (components["schemas"]["Source"] | unknown)[];
+            tree_or_patch_digest: string;
         };
         /**
          * Lifecycle
@@ -1437,6 +1561,11 @@ export interface components {
             pending_count: number;
             title: string;
             turns?: components["schemas"]["BridgeTurnView"][];
+        };
+        /** Source */
+        Source: {
+            name: string;
+            text: string;
         };
         /** SwapAccepted */
         SwapAccepted: {
@@ -2636,6 +2765,160 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+        };
+    };
+    submitCreationInvestigation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvestigationRequest"];
+            };
+        };
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseView"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+        };
+    };
+    readCreationInvestigation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseView"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+        };
+    };
+    cancelCreationInvestigation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseView"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+        };
+    };
+    continueCreationInvestigation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContinueRequest"];
+            };
+        };
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseView"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
                 };
             };
         };

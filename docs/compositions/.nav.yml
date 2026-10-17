@@ -118,6 +118,8 @@ nav:
           - companion/access-and-views.md
   - Professional Operations:
       - professional-operations/index.md
+      - Creation investigation:
+          - creation/index.md
       - Broker:
           - broker/index.md
           - broker/cases.md

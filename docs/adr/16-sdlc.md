@@ -64,7 +64,15 @@ it does not execute the live effect.
 
 `PATH_LAB_DIR` and its read-write Vessel mount support trusted preparation in the Lab; the image’s `/app` remains read-only. This writable directory supplies neither an operational code Forge nor execution isolation.
 
-Creation has no implemented contract or state machine. The immutable request, candidate, custody, verification, compatibility, review, and promotion records described below are accepted design; naming them implies no workspace, executor, evidence-store, or promotion-effect implementation. There is no autonomous repair loop, Tomb executor, verified package promotion, compatibility gate, rollback controller, or self-extension runtime. [State of Work](../state-of-the-work.md#smith-forge-promotion) owns delivery status.
+[Creation investigation](../compositions/creation/index.md) revision 2 fixes the narrower native
+application contract for immutable public-source questions, retained analysis candidates and
+separately attributed verdicts. Its Pattern is `creation.investigate@2`; the wider Creation method
+does not become one application or coordinator. That profile creates an artifact without an
+executable workspace and requests no promotion. The broader custody, compatibility, review and
+promotion records below remain accepted design. No autonomous repair loop, Tomb executor, verified
+package promotion, compatibility gate, rollback controller or self-extension runtime follows from
+publishing the investigation contract. [State of Work](../state-of-the-work.md#smith-forge-promotion)
+owns implementation and delivery status.
 
 ### Lifecycle and ownership
 
@@ -155,10 +163,17 @@ effects by itself.
 
 ### Admission and candidate identity
 
-An immutable **Creation Request** names the principal and intent; exact base revision, admitted
+The bounded investigation profile retains its literal source bytes, declared base, criteria,
+role bindings, reservations and reports under its Composition. It implements its own current
+local object/action policy; fixed Sigil scopes or historical authentication attribution do not
+authorize another startup. A fresh, eligible continuation is a separately admitted Run against the
+same immutable case, never generic orphan replay. Complete packet bounds, uncertain-inference
+custody and release conditions belong to its versioned profile.
+
+For code-producing work, an immutable **Creation Request** names the principal and intent; exact base revision, admitted
 source-tree digest, and allowed paths; tools, effect classes, credentials, network policy, and budgets; required verification and
 retention; and the promotion owner and authorization class. It then receives a candidate identity
-and workspace. Lab's writable directory conveys no subprocess or network containment.
+and allocated workspace. Lab's writable directory conveys no subprocess or network containment.
 
 Each Shadow branch retains the request and exact parent state, but has its own lineage, budget,
 outputs, and disposition. Branches do not share a mutable workspace. The

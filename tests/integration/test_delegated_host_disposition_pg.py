@@ -570,7 +570,7 @@ async def test_retained_history_blocks_deletion_and_downgrade(case: _Case, dispo
         await asyncio.to_thread(command.downgrade, case.config(), "0014")
     assert await store.get(job) == retained
     async with case.factory() as session:
-        assert await session.scalar(text("SELECT version_num FROM lychd_host_disposition_test_version")) == "0015"
+        assert await session.scalar(text("SELECT version_num FROM lychd_host_disposition_test_version")) == "0016"
 
 
 @pytest.mark.asyncio
@@ -672,4 +672,4 @@ async def test_writer_parent_lock_precedes_downgrade_and_retains_committed_histo
     assert retained is not None
     assert retained.preparation == writer_outcome.preparation
     async with case.factory() as session:
-        assert await session.scalar(text("SELECT version_num FROM lychd_host_disposition_test_version")) == "0015"
+        assert await session.scalar(text("SELECT version_num FROM lychd_host_disposition_test_version")) == "0016"

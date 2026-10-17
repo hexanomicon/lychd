@@ -75,6 +75,22 @@ alternate list, or fallback switch. An adapter's trusted host still owns effect-
 Failure, policy refusal, or an uncertain start never redirects this exact casting to a different
 runtime. Provider/Gate configuration and compatible-road fallback need their own admitted contracts.
 
+### Exact Creation investigation selection
+
+Optional `[weaver.creation]` selects `revision = "2"` and one exact `capability_key` for
+`creation.investigation@2` / `creation.investigate@2`. Omission disables its admission. This
+bounded application requires PostgreSQL, current local operator policy and its fixed
+[public-source profile](../compositions/creation/index.md#admit-one-question). The captured local
+shared vLLM/Qwen Chat declaration must match its generation and policy; no alias, fallback,
+remote route or hardware transition is supplied by selection.
+
+Creation retains source bytes, criteria, complete role bindings and reservation under its own
+case before releasing held Run delivery. Current settings cannot rewrite an existing request;
+an eligible explicit continuation retains the same case/profile and its original deadline.
+Settings carries neither source/prompt material nor a credential or authority grant. The
+application rechecks current credential-backed object/action policy at use. This typed selection
+does not introduce a general SDLC coordinator or portable Resolution Lock.
+
 ### Independent public Archive selection
 
 Optional `[archive]` selects `profile` independently of Bridge. Its profile retains the exact
@@ -231,7 +247,7 @@ boundary remains [Designed](../state-of-the-work.md#tomb-untrusted-execution).
 
 ### Application and Gateway profiles
 
-A future application selector requires its own accepted Spellweaver schema and
+Any further application selector requires its own accepted Spellweaver schema and
 may resolve only one registered exact profile revision, such as one of the mutually exclusive
 [Reach deployment profiles](../compositions/reach/deployments/index.md). In Reach, for each
 Discord application and Habitat partition, that immutable selection binds one authority epoch,

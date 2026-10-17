@@ -897,6 +897,111 @@
         "title": "BridgeTurnView",
         "type": "object"
       },
+      "CaseView": {
+        "additionalProperties": false,
+        "properties": {
+          "admissions": {
+            "items": {
+              "additionalProperties": {},
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "attempts": {
+            "items": {
+              "additionalProperties": {},
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "candidate": {
+            "oneOf": [
+              {
+                "additionalProperties": {},
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "candidate_digest": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "case_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "deadline": {
+            "type": "string"
+          },
+          "profile": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "profile_digest": {
+            "type": "string"
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request": {
+            "$ref": "#/components/schemas/InvestigationRequest"
+          },
+          "request_digest": {
+            "type": "string"
+          },
+          "slot_encumbered": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "verdict": {
+            "oneOf": [
+              {
+                "additionalProperties": {},
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "admissions",
+          "attempts",
+          "candidate",
+          "candidate_digest",
+          "case_id",
+          "deadline",
+          "profile",
+          "profile_digest",
+          "reason",
+          "request",
+          "request_digest",
+          "slot_encumbered",
+          "status",
+          "verdict"
+        ],
+        "title": "CaseView",
+        "type": "object"
+      },
       "ConsentCard": {
         "properties": {
           "args": {
@@ -1013,6 +1118,49 @@
           "pending_count"
         ],
         "title": "ConsentDecisionResult",
+        "type": "object"
+      },
+      "ContinueRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "admission_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "candidate_digest": {
+            "type": "string"
+          },
+          "profile_digest": {
+            "type": "string"
+          },
+          "request_digest": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "admission_id",
+          "candidate_digest",
+          "profile_digest",
+          "request_digest"
+        ],
+        "title": "ContinueRequest",
+        "type": "object"
+      },
+      "Criterion": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "predicate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "predicate"
+        ],
+        "title": "Criterion",
         "type": "object"
       },
       "CsrfClientContract": {
@@ -1596,6 +1744,99 @@
           "version"
         ],
         "title": "GenerationStatus",
+        "type": "object"
+      },
+      "InvestigationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "base_revision": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "criteria": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/Criterion"
+                },
+                {}
+              ]
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "type": "array"
+          },
+          "non_goals": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {}
+              ]
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "omissions": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {}
+              ]
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "public_material": {
+            "const": true,
+            "type": "boolean"
+          },
+          "question": {
+            "type": "string"
+          },
+          "repository": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "request_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/Source"
+                },
+                {}
+              ]
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "type": "array"
+          },
+          "tree_or_patch_digest": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "base_revision",
+          "criteria",
+          "non_goals",
+          "omissions",
+          "public_material",
+          "question",
+          "repository",
+          "request_id",
+          "sources",
+          "tree_or_patch_digest"
+        ],
+        "title": "InvestigationRequest",
         "type": "object"
       },
       "Lifecycle": {
@@ -3136,6 +3377,23 @@
           "title"
         ],
         "title": "SessionView",
+        "type": "object"
+      },
+      "Source": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "text"
+        ],
+        "title": "Source",
         "type": "object"
       },
       "SwapAccepted": {
@@ -5390,6 +5648,294 @@
           }
         },
         "summary": "Send"
+      }
+    },
+    "/api/v1/creation/investigations": {
+      "post": {
+        "deprecated": false,
+        "operationId": "submitCreationInvestigation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvestigationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseView"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Submit"
+      }
+    },
+    "/api/v1/creation/investigations/{case_id}": {
+      "get": {
+        "deprecated": false,
+        "operationId": "readCreationInvestigation",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseView"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Read"
+      }
+    },
+    "/api/v1/creation/investigations/{case_id}/cancel": {
+      "post": {
+        "deprecated": false,
+        "operationId": "cancelCreationInvestigation",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseView"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Cancel"
+      }
+    },
+    "/api/v1/creation/investigations/{case_id}/continue": {
+      "post": {
+        "deprecated": false,
+        "operationId": "continueCreationInvestigation",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContinueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseView"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "ContinueCase"
       }
     },
     "/api/v1/loom": {

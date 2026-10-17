@@ -12,6 +12,9 @@ results, and governs the effects it may request. Its policies, projections, and 
 Patterns belong to the same reusable application across customers, Products, and deployments.
 Browse by the outcome you want to leave behind.
 
+For a software question, [Creation investigation](creation/index.md) retains the source, candidate
+and separate verdict under one bounded application contract.
+
 ## The Portfolio
 
 These **Native Reference Compositions** are accepted first-party application contracts and worked examples. [State of Work](../state-of-the-work.md#composition-portfolio-delivery) collects their implementation evidence.

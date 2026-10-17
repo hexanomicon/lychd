@@ -13,6 +13,8 @@ _RECEIPT = _ROOT / "tests/fixtures/animator/local-bridge-vllm-runtime.json"
 _SOURCES = {
     "scripts/local_model_probe.py",
     "src/lychd/app.py",
+    "src/lychd/compositions/creation/schemas.py",
+    "src/lychd/compositions/creation/services.py",
     "src/lychd/config/components.py",
     "src/lychd/config/constants.py",
     "src/lychd/config/settings/root.py",
@@ -45,11 +47,15 @@ _SOURCES = {
     "src/lychd/db/bootstrap.py",
     "src/lychd/db/engine.py",
     "src/lychd/db/sessions.py",
+    "src/lychd/db/models/__init__.py",
+    "src/lychd/db/models/creation.py",
+    "src/lychd/db/migrations/versions/0016_creation_investigation.py",
     "src/lychd/extensions/context.py",
     "src/lychd/extensions/manager.py",
     "src/lychd/extensions/builtin/animator/vllm/register.py",
     "src/lychd/extensions/builtin/animator/soulstones/vllm.py",
     "src/lychd/interface/api/lifecycle.py",
+    "src/lychd/interface/api/creation.py",
     "src/lychd/interface/server_policy.py",
     "src/lychd/interface/web/altar_services.py",
     "src/lychd/interface/web/bridge.py",
@@ -111,8 +117,9 @@ def test_maintained_local_bridge_receipt_keeps_its_exact_boundary() -> None:
     assert receipt["qualification_date"] == "2026-10-17"
     assert receipt["status"] == "passed"
     assert "The optional thinking policy was omitted" in receipt["identity_boundary"]
+    assert "Creation investigation was omitted." in receipt["identity_boundary"]
     assert receipt["source_identity"] == {
-        "base_revision_declared": "bf1162f7df7ceaee75c0ab1c2f3180243b7edf94",
+        "base_revision_declared": "7929389105631f189337a602a33c7ad8edbefda6",
         "clean_checkout_attested": False,
         "atomic_transitive_closure_attested": False,
         "scope": "bounded-critical-source-and-test-fingerprints",

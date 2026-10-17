@@ -13,8 +13,10 @@ handoffs. A recipient can begin when the intended change, present evidence, acce
 authority are clear enough to act without guessing.
 
 This method can guide ordinary agent-assisted engineering under the actual host's permissions.
-It introduces no Composition, registered Pattern, Spell catalogue, or autonomous SDLC service.
-The current Graph is serial, and delegated execution supplies
+The method itself introduces no Composition, registered Pattern, Spell catalogue or autonomous
+SDLC service. The narrower [Creation investigation](../../../compositions/creation/index.md)
+contract owns one public-source question, candidate and separate verdict; it does not implement
+this whole method. The current Graph is serial, and delegated execution supplies
 only an effect-free reference adapter. [State of Work](../../../state-of-the-work.md#smith-forge-promotion)
 owns delivery.
 

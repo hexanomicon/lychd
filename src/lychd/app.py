@@ -141,6 +141,7 @@ class AppInit(InitPluginProtocol):
         from litestar.static_files import create_static_files_router  # pyright: ignore[reportUnknownVariableType]
 
         from lychd.config.constants import PATH_ALTAR_ASSET_DIR
+        from lychd.interface.api.creation import CreationController
         from lychd.interface.api.orchestrator import OrchestratorController
         from lychd.interface.web import (
             AltarController,
@@ -167,6 +168,7 @@ class AppInit(InitPluginProtocol):
                 ArchiveController,
                 ArchiveDerivationController,
                 BridgeController,
+                CreationController,
                 NexusController,
                 LoomController,
                 OrbController,

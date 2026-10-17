@@ -11,6 +11,7 @@ from lychd.db.models.blockworld import BlockworldPlacementAction, BlockworldPlac
 from lychd.db.models.checkpoint import RunCheckpoint
 from lychd.db.models.codex import CodexPreauthorization
 from lychd.db.models.consent import Consent
+from lychd.db.models.creation import CreationAdmission, CreationAttempt, CreationCase
 from lychd.db.models.delegated_host import DelegatedHostDispositionRecord
 from lychd.db.models.delegation import DelegatedAgentEventRecord, DelegatedAgentJobRecord
 from lychd.db.models.karma import Karma
@@ -35,6 +36,9 @@ __all__ = [
     "BlockworldPlacementMission",
     "CodexPreauthorization",
     "Consent",
+    "CreationAdmission",
+    "CreationAttempt",
+    "CreationCase",
     "DelegatedAgentEventRecord",
     "DelegatedAgentJobRecord",
     "DelegatedHostDispositionRecord",

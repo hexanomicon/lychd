@@ -391,7 +391,7 @@ async def _run_child(url: str, identity: _Identity | None) -> dict[str, Any]:
     boot = await _boot(url, first=identity is None)
     try:
         async with boot.factory() as session:
-            assert await session.scalar(text("SELECT version_num FROM lychd_db_version")) == "0015"
+            assert await session.scalar(text("SELECT version_num FROM lychd_db_version")) == "0016"
         if identity is None:
             identity = await _first(boot)
         else:

@@ -9,12 +9,12 @@ contracts and services without assembling the application graph.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
 from lychd.agents.services import default_sigil
 from lychd.agents.the_first_one import default_forge
-from lychd.agents.workflows import builtin_workflow_registry
+from lychd.agents.workflows import BuiltinWorkflowRegistry, builtin_workflow_registry
 from lychd.config.settings.root import get_settings
 from lychd.domain.animation.services.declarations import (
     compile_animator_declarations,
@@ -45,7 +45,9 @@ from lychd.system.services.runtime import build_runtime_actuator
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
+    from lychd.agents.factory import AgentForge
     from lychd.agents.workflows import WorkflowRegistry
+    from lychd.compositions.creation.services import InvestigationService
     from lychd.config.runes.registry import RuneRegistry
     from lychd.config.settings.root import Settings
     from lychd.domain.animation.extension import RegisteredPortalDefinition, RegisteredSoulstoneDefinition
@@ -92,6 +94,7 @@ class AltarServices:
     ledger: RunLedger
     bus: InProcessEventBus
     substrate: RunSubstrate
+    creation: InvestigationService | None = None
     archive: ArchiveService | None = None
     archive_derivation: ArchiveDerivationService | None = None
     delegates: DelegatedAgentCoordinator | None
@@ -318,6 +321,47 @@ def _configured_delegation_binding(
     return selection.binding()
 
 
+def _build_creation(
+    *,
+    settings: Settings,
+    persistence: str,
+    access: LocalOperatorAccess | None,
+    registry: AnimatorRegistry,
+    leases: LeaseLedger,
+    workflows: WorkflowRegistry,
+) -> tuple[InvestigationService | None, WorkflowRegistry, AgentForge]:
+    """Compose only the explicitly selected PostgreSQL investigation application."""
+    forge = default_forge()
+    selection = settings.weaver.creation
+    if selection is None:
+        return None, workflows, forge
+    if persistence != "postgres" or access is None or not isinstance(workflows, BuiltinWorkflowRegistry):
+        msg = "Creation investigation requires PostgreSQL, local credentials and the built-in registry assembly."
+        raise ValueError(msg)
+    from lychd.compositions.creation.services import InvestigationService, LocalCreationPolicy, register_agents
+    from lychd.compositions.creation.workflow import investigation_workflow
+    from lychd.db.creation import DbCreationStore
+    from lychd.db.engine import get_session_factory
+
+    policy = LocalCreationPolicy(access)
+    creation = InvestigationService(
+        store=DbCreationStore(get_session_factory(), policy),
+        policy=policy,
+        registry=registry,
+        leases=leases,
+        capability_key=selection.capability_key,
+    )
+    workflow = investigation_workflow(creation)
+    workflows = replace(
+        workflows,
+        workflows=(*workflows.workflows, workflow),
+        active_revisions=(*workflows.active_revisions, (workflow.name, workflow.manifest.revision)),
+        route_precedence=(workflow.name, *workflows.route_precedence),
+    )
+    register_agents(forge)
+    return creation, workflows, forge
+
+
 def build_altar_services(
     *,
     queues: Mapping[str, RunQueue],
@@ -348,7 +392,7 @@ def build_altar_services(
         settings = get_settings()
     bridge_casting = settings.weaver.bridge
     delegation_binding = _configured_delegation_binding(settings, delegated_runtime_adapters, workflows)
-    if workflows is not None and bridge_casting is not None:
+    if workflows is not None and (bridge_casting is not None or settings.weaver.creation is not None):
         msg = "Explicit workflow registry injection cannot be combined with [weaver.bridge] configuration."
         raise ValueError(msg)
     if profile is None:
@@ -419,8 +463,15 @@ def build_altar_services(
     projector = EventProjector(
         fragments=fragments, sessions=bridge_sessions, consents=consents, consent_reviews=consent_reviews
     )
-    if workflows is None:
-        workflows = builtin_workflow_registry(weaver=settings.weaver)
+    workflows = workflows if workflows is not None else builtin_workflow_registry(weaver=settings.weaver)
+    creation, workflows, forge = _build_creation(
+        settings=settings,
+        persistence=profile,
+        access=operator_access,
+        registry=registry,
+        leases=leases,
+        workflows=workflows,
+    )
     delegates = _build_delegation_coordinator(profile, delegated_runtime_adapters)
     cancellations = RunCancellationCoordinator()
     if profile == "postgres":
@@ -442,7 +493,7 @@ def build_altar_services(
         fragments=fragments,
         turns=bridge_sessions,
         consents=consents,
-        forge=default_forge(),
+        forge=forge,
         sigil_provider=default_sigil,
         leases=leases,
         queues=queues,
@@ -473,6 +524,7 @@ def build_altar_services(
         effects=scout,
     )
     return AltarServices(
+        creation=creation,
         archive_derivation=archive_derivation,
         registry=registry,
         dispatcher=dispatcher,

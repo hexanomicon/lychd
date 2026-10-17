@@ -31,8 +31,9 @@ def test_process_receipt_preserves_qualification_and_privacy_boundary() -> None:
     assert receipt["qualification_date"] == "2026-10-17"
     assert receipt["status"] == "passed"
     assert "The optional thinking policy was omitted" in receipt["identity_boundary"]
+    assert "Creation investigation was omitted." in receipt["identity_boundary"]
     assert receipt["source_identity"] == {
-        "base_revision_declared": "bf1162f7df7ceaee75c0ab1c2f3180243b7edf94",
+        "base_revision_declared": "7929389105631f189337a602a33c7ad8edbefda6",
         "clean_checkout_attested": False,
         "atomic_transitive_closure_attested": False,
         "scope": "bounded-critical-source-and-test-fingerprints",

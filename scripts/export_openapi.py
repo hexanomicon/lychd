@@ -7,6 +7,7 @@ from pathlib import Path
 
 from litestar import Litestar
 
+from lychd.interface.api.creation import CreationController
 from lychd.interface.web import (
     AltarController,
     ArchiveController,
@@ -33,6 +34,7 @@ def main() -> None:
             ArchiveDerivationController,
             AtlasController,
             BridgeController,
+            CreationController,
             NexusController,
             LoomController,
             OrbController,

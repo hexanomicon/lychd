@@ -60,5 +60,5 @@ def test_retired_generation_is_retained_history(pg_url: str) -> None:
     )
     with pytest.raises(DBAPIError, match="Retained Archive derivation history prevents downgrade"):
         command.downgrade(migration.config(pg_url), "0012")
-    assert migration.run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0015",)]
+    assert migration.run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0016",)]
     assert migration.run(pg_url, "SELECT state FROM archive_embedding_generation") == [("retired",)]
