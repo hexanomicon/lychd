@@ -103,10 +103,10 @@ def test_maintained_local_bridge_receipt_keeps_its_exact_boundary() -> None:
     }
     assert receipt["schema"] == "local-bridge-vllm-runtime@1"
     assert receipt["record_kind"] == "sanitized_public_local_bridge_qualification"
-    assert receipt["qualification_date"] == "2026-10-15"
+    assert receipt["qualification_date"] == "2026-10-17"
     assert receipt["status"] == "passed"
     assert receipt["source_identity"] == {
-        "base_revision_declared": "58bbd7206d8cec61c228cda32ef33f6babed0a66",
+        "base_revision_declared": "df637032e41c34a9c86f5fe24d7be022f501914d",
         "clean_checkout_attested": False,
         "atomic_transitive_closure_attested": False,
         "scope": "bounded-critical-source-and-test-fingerprints",
@@ -159,16 +159,21 @@ def test_maintained_local_bridge_receipt_keeps_its_exact_boundary() -> None:
         "required_resources": {"mem_limit": "512m", "nano_cpus": 1_000_000_000, "pids_limit": 128},
     }
     assert receipt["runner"] == {
-        "profile": "local-bridge-real-model-cached-pg-no-ryuk-owned-cleanup",
-        "default_make_ryuk_profile": False,
-        "ryuk_disabled_in_runner_process": True,
-        "pytest_selected": 1,
-        "pytest_passed": 1,
-        "pytest_failed": 0,
-        "pytest_errors": 0,
-        "pytest_skipped": 0,
         "cleanup_verified": True,
+        "coordinator_cleanup_reserve_seconds": 30,
+        "coordinator_deadline_seconds": 240,
+        "default_make_ryuk_profile": False,
+        "operator_unit_stop_timeout_seconds": 5,
+        "outer_timeout_seconds": 250,
+        "profile": "local-bridge-runtime-real-model-cached-PG-R2-owned-coordinator-resource-hook",
+        "pytest_errors": 0,
+        "pytest_failed": 0,
+        "pytest_passed": 1,
+        "pytest_selected": 1,
+        "pytest_skipped": 0,
         "remaining_containers": 0,
+        "ryuk_disabled_in_runner_process": True,
+        "test_wait_seconds": 210,
         "unresolved_creates": 0,
     }
     assert set(receipt["unexercised"]) == {
@@ -212,15 +217,24 @@ def test_maintained_local_bridge_receipt_matches_critical_sources() -> None:
     assert set(receipt["source_fingerprints"]) == _SOURCES
     evidence = receipt["qualification_evidence"]
     assert set(evidence) == {
+        "application_receipt_sha256",
+        "candidate_manifest_sha256",
+        "coordinator_receipt_sha256",
+        "coordinator_source_sha256",
         "joined_test_sha256_before_trial",
-        "app_receipt_sha256",
-        "owned_runner_receipt_sha256",
-        "owned_runner_source_sha256",
         "model_profile_sha256",
+        "pytest_log_sha256",
+        "resource_launcher_source_sha256",
+        "resource_receipt_sha256",
     }
     assert (
         evidence["joined_test_sha256_before_trial"]
         == receipt["source_fingerprints"]["tests/integration/test_local_bridge_runtime.py"]
+    )
+    assert evidence["coordinator_source_sha256"] == "6c1505e1959442b2a9de0078a9c7e2d1f719c3a9d9cc97c26246cac6022daca8"
+    assert (
+        evidence["resource_launcher_source_sha256"]
+        == "b8105f73913316031e7241529ff4676b8672ac106754d76b8daea209a18afa78"
     )
     for digest in evidence.values():
         assert len(digest) == 64

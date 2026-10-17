@@ -75,20 +75,28 @@
     "warm_on_both_boots": true,
     "wire_finish_reason": "tool_calls"
   },
-  "qualification_date": "2026-10-15",
+  "qualification_date": "2026-10-17",
   "qualification_evidence": {
-    "app_receipt_sha256": "82d352316bd66fc2df32de34cf1fb9bcad54e5b41125e98dfd2680aef762726e",
+    "application_receipt_sha256": "ac37bf80defb1ff60b937425db7621ee718b12d69b11686305ecd245d49034e4",
+    "candidate_manifest_sha256": "ae5dab9881d17ae7a9ad403af3f219d1549fb1ed588e2594451ef2ca5f74812f",
+    "coordinator_receipt_sha256": "aad785c90664127fa224b40a346cbe5753b2963bea9008443c6326ffccbdf276",
+    "coordinator_source_sha256": "6c1505e1959442b2a9de0078a9c7e2d1f719c3a9d9cc97c26246cac6022daca8",
     "joined_test_sha256_before_trial": "00e24103a907b1aa4d1b518d7bd38267a3b2d5cdd4fce1db923f6f239d11c7d2",
-    "model_profile_sha256": "1c1c73bf27c21fb3e3e58cdb08b6917b7a045643257d04ca0e81e30a2fb6c6b1",
-    "owned_runner_receipt_sha256": "aa417748cf587c29c79224dd9a26de05ceb68589b81b68e5115459ee98b2bf50",
-    "owned_runner_source_sha256": "6910a1e8c1ef213f482ce4a0a68586dc936d7beb676571d7004bac8d6667e7a9"
+    "model_profile_sha256": "7018f03296f026c137c3143e3e88b02a1a87ebb9cf81f49b26fb10eae870722c",
+    "pytest_log_sha256": "c3598dd92fd544c86bbcd15fe737ac06cef2afa940cf86fcf0cdf767140e31d1",
+    "resource_launcher_source_sha256": "b8105f73913316031e7241529ff4676b8672ac106754d76b8daea209a18afa78",
+    "resource_receipt_sha256": "fb70bad9d0ef1c17c0fe78941706d584d0a1d9b64a06e4ae540ae10b2659771f"
   },
   "record_kind": "sanitized_public_local_bridge_qualification",
-  "retained_history_sha256": "e0b81baca01bdf1e79094367de27ec396a045c24bce1c546cfdf82deca11bc0e",
+  "retained_history_sha256": "c58229155550869298b8e7b7aa6cb8fe6352d6ee772d603097b1a911f1eafda6",
   "runner": {
     "cleanup_verified": true,
+    "coordinator_cleanup_reserve_seconds": 30,
+    "coordinator_deadline_seconds": 240,
     "default_make_ryuk_profile": false,
-    "profile": "local-bridge-real-model-cached-pg-no-ryuk-owned-cleanup",
+    "operator_unit_stop_timeout_seconds": 5,
+    "outer_timeout_seconds": 250,
+    "profile": "local-bridge-runtime-real-model-cached-PG-R2-owned-coordinator-resource-hook",
     "pytest_errors": 0,
     "pytest_failed": 0,
     "pytest_passed": 1,
@@ -96,6 +104,7 @@
     "pytest_skipped": 0,
     "remaining_containers": 0,
     "ryuk_disabled_in_runner_process": true,
+    "test_wait_seconds": 210,
     "unresolved_creates": 0
   },
   "schema": "local-bridge-vllm-runtime@1",
@@ -133,7 +142,7 @@
     "src/lychd/extensions/builtin/animator/vllm/register.py": "3eeca6c19c3be7e85d9fead659a03c4cd4d35b79357d207ba5decba8af029839",
     "src/lychd/extensions/context.py": "3a5bff1bc1e14ace4310cf713bf76a97d8e539171b35dc2c55baa17dd7102e27",
     "src/lychd/extensions/manager.py": "750a4f2ec7034a75940c318a8e4e21c36e83fc3e1b357aff9772b311bbdda52d",
-    "src/lychd/ghouls/runs.py": "c18fe3ccd330dd17db540f18f6b0780fe7910a4bd0629d7aa19feca870097d18",
+    "src/lychd/ghouls/runs.py": "97d0fa8d33c541c180ffcd31ff32128ce31081cd8910ac28fc9bfec6d69fd1ed",
     "src/lychd/interface/api/lifecycle.py": "a8feea8caefba3c640360851ade444349ec0c4b93f334092384a6d00d19aa98a",
     "src/lychd/interface/server_policy.py": "702ff8945dd1ac9f1907b3f0f6ffa5b697446b3af1312fb6e33e0b16b3cbcd74",
     "src/lychd/interface/web/altar_services.py": "79aa6d63a86ac1d4281d0fa431c505685bb221b16b3fbd865e75e73b83d22c53",
@@ -147,14 +156,14 @@
   },
   "source_identity": {
     "atomic_transitive_closure_attested": false,
-    "base_revision_declared": "58bbd7206d8cec61c228cda32ef33f6babed0a66",
+    "base_revision_declared": "df637032e41c34a9c86f5fe24d7be022f501914d",
     "clean_checkout_attested": false,
     "scope": "bounded-critical-source-and-test-fingerprints"
   },
   "status": "passed",
   "timings_seconds": {
-    "command": 14.2669,
-    "pytest": 12.79
+    "command": 18.8286,
+    "pytest": 16.49
   },
   "unexercised": [
     "browser-and-full-accessibility",

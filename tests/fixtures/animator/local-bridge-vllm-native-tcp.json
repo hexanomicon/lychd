@@ -11,7 +11,7 @@
     }
   },
   "database": {
-    "GPU_devices": false,
+    "GPU_device_requests": false,
     "container_removed": true,
     "created_containers": 1,
     "effective_cgroup_limits": {
@@ -202,31 +202,31 @@
     "start_method": "spawn",
     "start_time_identity_checked": true
   },
-  "qualification_date": "2026-10-16",
+  "qualification_date": "2026-10-17",
   "qualification_evidence": {
-    "admission_sha256": "5f8da20a765c69ba2f016c908dcdc0c716bab1806bb092c6c02880f2beffda39",
-    "application_receipt_sha256": "916fd0dcfd822e398163a7a67dc944eeabe469382bff5588155312beea9a5929",
-    "model_profile_sha256": "3885d9ac7571bbd3a638a1772740ea2f93d9c83729bb4e88b4a58f551a77358f",
+    "application_receipt_sha256": "45c88145645931a141ef27858fb488cafe5859ac03ab3e0a71858ca4614015ab",
+    "candidate_manifest_sha256": "8aebb7324b85c7a83116889b017b848cbe27d3da1c95fcba684a455f64d2e60b",
+    "coordinator_receipt_sha256": "a1971e260047e4ce60586b20cf5d332b788d13677aee36876b54a3e0b50623db",
+    "coordinator_source_sha256": "6c1505e1959442b2a9de0078a9c7e2d1f719c3a9d9cc97c26246cac6022daca8",
+    "model_profile_sha256": "ad11afb827ca3d8cf9c7d27a158a3fcb3fe51aa7e5b16bbe32e07d99ea5cc77a",
     "native_test_sha256_before_trial": "7cc36a27ccc473f5cd374655c2ee6aedf002d85ddf676e297c585b2de11a9454",
-    "private_supervisor_source_sha256": "99a5c4ad8b8bead0506214966dd957bb1d5a06256820ed8cc4f541429e4a0cef",
-    "pytest_log_sha256": "db7fabb242f89af741d320dd38441bf1a1e6efe54677ce551c3a21e21c3a8f04",
-    "supervisor_events_sha256": "eab88871558abb2b03756f9759d26a86e82d3e1f4c05d69c4e0e4275a775bdcd",
-    "supervisor_outcome_sha256": "c1edc9c5894f32a81e4b6f6813e656e66590939a2c369a6c34221e76ba901872"
+    "pytest_log_sha256": "e25acdca342c8653a9c91d52ab8f7d87751ddfb9f0b400e1017f460bfb09bb29",
+    "resource_launcher_source_sha256": "b8105f73913316031e7241529ff4676b8672ac106754d76b8daea209a18afa78",
+    "resource_receipt_sha256": "1fe74ede193e6ec9ca067fad483fff069e6e1ffa9a5902e881ce2b46e32bf232"
   },
   "record_kind": "sanitized_public_local_bridge_native_tcp_qualification",
-  "retained_history_sha256": "f4b60b71ab5d8fcddc73193858850a75577bf3d5502d6e5799d9de4dbf79d829",
-  "retained_turns_sha256": "7ffe317ece5645b4acdebd5067337d2122d8aafa5a748052e2d957db2251dd00",
+  "retained_history_sha256": "0688d22f657f49efdb6938c9835f8a973e06c794564e3fa12e391802fba39eb8",
+  "retained_turns_sha256": "76431e4395bc6b14cc7bf64684af817b92fbc378aa7cd6d92c5783664b525a77",
   "runner": {
     "cleanup_verified": true,
+    "coordinator_cleanup_reserve_seconds": 30,
+    "coordinator_deadline_seconds": 240,
     "default_make_ryuk_profile": false,
     "mutant_applied": false,
-    "native_removal_guard_observed": true,
-    "outer_TERM_then_KILL_wait_seconds": [
-      10,
-      10
-    ],
-    "outer_timeout_seconds": 180,
-    "profile": "native-TCP-real-model-cached-PG-private-supervisor-v3",
+    "native_test_removal_guard_exercised": true,
+    "operator_unit_stop_timeout_seconds": 5,
+    "outer_timeout_seconds": 250,
+    "profile": "local-bridge-native-real-model-cached-PG-R2-owned-coordinator-resource-hook",
     "pytest_errors": 0,
     "pytest_failed": 0,
     "pytest_passed": 1,
@@ -236,6 +236,7 @@
     "remaining_volumes": 0,
     "returncode": 0,
     "ryuk_disabled_in_runner_process": true,
+    "test_wait_seconds": 210,
     "timed_out": false
   },
   "schema": "local-bridge-vllm-native-tcp@1",
@@ -278,7 +279,7 @@
     "src/lychd/extensions/builtin/animator/vllm/register.py": "3eeca6c19c3be7e85d9fead659a03c4cd4d35b79357d207ba5decba8af029839",
     "src/lychd/extensions/context.py": "3a5bff1bc1e14ace4310cf713bf76a97d8e539171b35dc2c55baa17dd7102e27",
     "src/lychd/extensions/manager.py": "750a4f2ec7034a75940c318a8e4e21c36e83fc3e1b357aff9772b311bbdda52d",
-    "src/lychd/ghouls/runs.py": "c18fe3ccd330dd17db540f18f6b0780fe7910a4bd0629d7aa19feca870097d18",
+    "src/lychd/ghouls/runs.py": "97d0fa8d33c541c180ffcd31ff32128ce31081cd8910ac28fc9bfec6d69fd1ed",
     "src/lychd/interface/api/lifecycle.py": "a8feea8caefba3c640360851ade444349ec0c4b93f334092384a6d00d19aa98a",
     "src/lychd/interface/server.py": "5d029ab483fb477472369c65f04e217f77b087ce21e65e502ffde3009becaafa",
     "src/lychd/interface/server_policy.py": "702ff8945dd1ac9f1907b3f0f6ffa5b697446b3af1312fb6e33e0b16b3cbcd74",
@@ -304,13 +305,13 @@
   "source_identity": {
     "atomic_transitive_closure_attested": false,
     "clean_checkout_observed": true,
-    "revision_observed": "c080dcd033053a7a29637ad2ad17409bc8c6398a",
+    "revision_observed": "df637032e41c34a9c86f5fe24d7be022f501914d",
     "scope": "bounded-critical-source-and-test-fingerprints"
   },
   "status": "passed",
   "timings_seconds": {
-    "command": 17.105,
-    "pytest": 15.55
+    "command": 21.769,
+    "pytest": 19.53
   },
   "unexercised": [
     "installed-command-or-caged-Vessel",
@@ -328,6 +329,7 @@
     "autonomous-software-labor",
     "evolution-and-promotion",
     "remote-access-and-hostile-browser",
-    "aggregate-native-resource-containment"
+    "aggregate-native-resource-containment",
+    "guest-GPU-device-visibility"
   ]
 }

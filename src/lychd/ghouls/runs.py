@@ -75,9 +75,7 @@ STARTUP_RECONCILIATION_BATCH_SIZE = 128
 RECONCILIATION_LOG_ID_LIMIT = 32
 RUN_JOB_HEARTBEAT_INTERVAL_S = RUN_JOB_HEARTBEAT_S / 4
 
-_FAILURE_MESSAGE = (
-    "The summoning faltered — no capability answered. Ensure a chat Soulstone is bound and warm, then speak again."
-)
+_FAILURE_MESSAGE = "The summoning faltered. This request could not be completed."
 
 
 def _substrate(ctx: dict[str, Any]) -> RunSubstrate:

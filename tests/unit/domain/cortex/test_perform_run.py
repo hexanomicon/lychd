@@ -15,7 +15,7 @@ import json
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pydantic_ai.models
 import pytest
@@ -750,6 +750,10 @@ async def test_api_abort_cancellation_wins_over_worker_failure(
     assert not await substrate.stasis_store.exists("api-cancel")
     dones = [event for event in channel._replay if event.kind is RunEventKind.DONE]
     assert [event.data for event in dones] == [RunStatus.CANCELLED.value]
+    assert channel.closed
+    session = await sessions.get_session(run.session_id)
+    assert session is not None
+    assert not any(turn.state == "failed" for turn in session.turns)
 
 
 @pytest.mark.asyncio
@@ -856,6 +860,64 @@ async def test_perform_run_failure_marks_failed_and_emits_done() -> None:
     assert "run_3" not in substrate.context._cache
     assert effects.guard.reason("run_3", 0) == "worker_failed"
     assert effects.contained == ["run_3"]
+
+
+@pytest.mark.asyncio
+async def test_perform_run_failure_after_model_reply_does_not_diagnose_capability(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A later worker failure cannot diagnose capability loss after a model replied."""
+    import lychd.agents.workflows.bridge_chat as bridge_chat_mod
+
+    model = TestModel(custom_output_args={"answer": "model answered", "fragments": []}, call_tools=[])
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=model))
+    effects = _Effects()
+    substrate.effects = effects
+    await _seed_run(ledger, sessions, "reply-then-fail")
+    channel = substrate.bus.open("reply-then-fail")
+    original_pump = bridge_chat_mod.pump_agent_events
+    failure = RuntimeError("reply bookkeeping failed")
+    observed_replies: list[str] = []
+
+    async def fail_after_model_response(*args: Any, **kwargs: Any) -> None:
+        pumped = await original_pump(*args, **kwargs)
+        assert pumped.output.answer == "model answered"
+        assert any(
+            isinstance(message, dict) and cast("dict[str, Any]", message).get("kind") == "response"
+            for message in pumped.new_messages
+        )
+        observed_replies.append(pumped.output.answer)
+        raise failure
+
+    monkeypatch.setattr(bridge_chat_mod, "pump_agent_events", fail_after_model_response)
+    with pytest.raises(RuntimeError) as caught:
+        await perform_run({"run_substrate": substrate}, run_id="reply-then-fail")
+
+    assert observed_replies == ["model answered"]
+    assert caught.value is failure
+    run = await ledger.get("reply-then-fail")
+    delivery = await ledger.get_delivery("reply-then-fail", enqueue_seq=0)
+    assert run is not None
+    assert run.status is RunStatus.FAILED
+    assert run.error == str(failure)
+    assert delivery is not None
+    assert delivery.state is RunDeliveryState.SETTLED
+    assert [event.data for event in channel._replay if event.kind is RunEventKind.DONE] == [RunStatus.FAILED.value]
+    assert channel.closed
+    assert substrate.context.get(run.run_id) is None
+    assert not await substrate.stasis_store.exists(run.run_id)
+    assert effects.guard.reason(run.run_id, 0) == "worker_failed"
+    assert effects.contained == [run.run_id]
+    session = await sessions.get_session(run.session_id)
+    assert session is not None
+    failed_turns = [turn for turn in session.turns if turn.state == "failed"]
+    assert len(failed_turns) == 1
+    assert failed_turns[0].role == "agent"
+    assert failed_turns[0].run_id == run.run_id
+    message = failed_turns[0].content.casefold()
+    assert "capability" not in message
+    assert "soulstone" not in message
+    assert "warm" not in message
 
 
 @pytest.mark.asyncio

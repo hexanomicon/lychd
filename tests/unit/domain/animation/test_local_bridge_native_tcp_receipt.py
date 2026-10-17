@@ -42,10 +42,10 @@ def test_native_tcp_receipt_preserves_its_observed_scope_and_privacy() -> None:
     receipt = json.loads(text)
     assert receipt["schema"] == "local-bridge-vllm-native-tcp@1"
     assert receipt["record_kind"] == "sanitized_public_local_bridge_native_tcp_qualification"
-    assert receipt["qualification_date"] == "2026-10-16"
+    assert receipt["qualification_date"] == "2026-10-17"
     assert receipt["status"] == "passed"
     assert receipt["source_identity"] == {
-        "revision_observed": "c080dcd033053a7a29637ad2ad17409bc8c6398a",
+        "revision_observed": "df637032e41c34a9c86f5fe24d7be022f501914d",
         "clean_checkout_observed": True,
         "atomic_transitive_closure_attested": False,
         "scope": "bounded-critical-source-and-test-fingerprints",
@@ -180,15 +180,20 @@ def test_native_tcp_receipt_keeps_model_resource_and_cleanup_limits_explicit() -
         "cpu_quota_period_microseconds": [100_000, 100_000],
         "pids": 128,
     }
-    assert database["GPU_devices"] is False
+    assert database["GPU_device_requests"] is False
+    assert "GPU_devices" not in database
     assert database["removed_after_two_observed_absent_native_groups"] is True
     runner = receipt["runner"]
     assert runner["pytest_selected"] == runner["pytest_passed"] == 1
-    assert runner["outer_timeout_seconds"] == 180
-    assert runner["outer_TERM_then_KILL_wait_seconds"] == [10, 10]
+    assert runner["outer_timeout_seconds"] == 250
+    assert runner["operator_unit_stop_timeout_seconds"] == 5
+    assert runner["coordinator_deadline_seconds"] == 240
+    assert runner["test_wait_seconds"] == 210
+    assert runner["coordinator_cleanup_reserve_seconds"] == 30
     assert runner["ryuk_disabled_in_runner_process"] is True
     assert runner["default_make_ryuk_profile"] is False
-    assert runner["native_removal_guard_observed"] is True
+    assert runner["native_test_removal_guard_exercised"] is True
+    assert "native_removal_guard_observed" not in runner
     assert runner["cleanup_verified"] is True
     assert runner["timed_out"] is runner["mutant_applied"] is False
     assert all(
@@ -220,11 +225,22 @@ def test_native_tcp_receipt_matches_qualified_sources_and_provenance() -> None:
     assert set(receipt["source_fingerprints"]) == historical._SOURCES | _NATIVE_SOURCES
     evidence = receipt["qualification_evidence"]
     assert evidence["native_test_sha256_before_trial"] == receipt["source_fingerprints"][_NATIVE_TEST]
+    assert set(evidence) == {
+        "application_receipt_sha256",
+        "candidate_manifest_sha256",
+        "coordinator_receipt_sha256",
+        "coordinator_source_sha256",
+        "model_profile_sha256",
+        "native_test_sha256_before_trial",
+        "pytest_log_sha256",
+        "resource_launcher_source_sha256",
+        "resource_receipt_sha256",
+    }
+    assert evidence["coordinator_source_sha256"] == "6c1505e1959442b2a9de0078a9c7e2d1f719c3a9d9cc97c26246cac6022daca8"
     assert (
-        evidence["private_supervisor_source_sha256"]
-        == "99a5c4ad8b8bead0506214966dd957bb1d5a06256820ed8cc4f541429e4a0cef"
+        evidence["resource_launcher_source_sha256"]
+        == "b8105f73913316031e7241529ff4676b8672ac106754d76b8daea209a18afa78"
     )
-    assert len(evidence) == 8
     for digest in evidence.values():
         assert re.fullmatch(r"[0-9a-f]{64}", digest)
     for path, digest in receipt["source_fingerprints"].items():

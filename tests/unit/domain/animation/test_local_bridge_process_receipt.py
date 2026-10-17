@@ -28,9 +28,10 @@ def test_process_receipt_preserves_qualification_and_privacy_boundary() -> None:
     text = _RECEIPT.read_text()
     receipt = json.loads(text)
     assert receipt["schema"] == "local-bridge-vllm-process-restart@1"
+    assert receipt["qualification_date"] == "2026-10-17"
     assert receipt["status"] == "passed"
     assert receipt["source_identity"] == {
-        "base_revision_declared": "58bbd7206d8cec61c228cda32ef33f6babed0a66",
+        "base_revision_declared": "df637032e41c34a9c86f5fe24d7be022f501914d",
         "clean_checkout_attested": False,
         "atomic_transitive_closure_attested": False,
         "scope": "bounded-critical-source-and-test-fingerprints",
@@ -98,8 +99,11 @@ def test_process_receipt_preserves_qualification_and_privacy_boundary() -> None:
             "unresolved_creates",
         )
     )
-    assert runner["run_deadline_seconds"] == 180
-    assert runner["cleanup_deadline_seconds"] == 20
+    assert runner["outer_timeout_seconds"] == 250
+    assert runner["operator_unit_stop_timeout_seconds"] == 5
+    assert runner["coordinator_deadline_seconds"] == 240
+    assert runner["test_wait_seconds"] == 210
+    assert runner["coordinator_cleanup_reserve_seconds"] == 30
     assert {
         "process-crash-recovery",
         "Granian-serving",
@@ -136,7 +140,22 @@ def test_process_receipt_matches_qualified_sources_and_provenance() -> None:
     assert set(receipt["source_fingerprints"]) == historical._SOURCES | {_PROCESS_TEST}
     evidence = receipt["qualification_evidence"]
     assert evidence["process_test_sha256_before_trial"] == receipt["source_fingerprints"][_PROCESS_TEST]
-    assert len(evidence) == 8
+    assert set(evidence) == {
+        "application_receipt_sha256",
+        "candidate_manifest_sha256",
+        "coordinator_receipt_sha256",
+        "coordinator_source_sha256",
+        "model_profile_sha256",
+        "process_test_sha256_before_trial",
+        "pytest_log_sha256",
+        "resource_launcher_source_sha256",
+        "resource_receipt_sha256",
+    }
+    assert evidence["coordinator_source_sha256"] == "6c1505e1959442b2a9de0078a9c7e2d1f719c3a9d9cc97c26246cac6022daca8"
+    assert (
+        evidence["resource_launcher_source_sha256"]
+        == "b8105f73913316031e7241529ff4676b8672ac106754d76b8daea209a18afa78"
+    )
     for digest in evidence.values():
         assert re.fullmatch(r"[0-9a-f]{64}", digest)
     for path, digest in receipt["source_fingerprints"].items():
