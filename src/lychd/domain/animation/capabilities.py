@@ -76,6 +76,19 @@ class CapabilitySpec(BaseModel):
             )
 
     @model_validator(mode="after")
+    def _enforce_thinking_policy(self) -> CapabilitySpec:
+        """Admit the one explicit local model dialect before publication."""
+        if self.generation_profile.thinking is not None and (
+            self.source_kind is not SourceKind.SOULSTONE
+            or self.runtime != "vllm"
+            or self.model_id != "Qwen3.8-27B"
+            or self.family is not CapabilityFamily.CHAT
+        ):
+            msg = "thinking policy requires local vllm/Qwen3.8-27B Chat capability"
+            raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
     def _enforce_portal_invariants(self) -> CapabilitySpec:
         """Enforce that a Portal is never lifecycle-managed and has no activation seam.
 
@@ -156,7 +169,7 @@ class CapabilityGrant:
     toolsets: tuple[AbstractToolset[Any], ...] = ()
 
     def model_settings(self) -> ModelSettings | None:
-        """Bridge the resolved generation profile to pydantic-ai ModelSettings."""
+        """Compile admitted generation settings without mutating model defaults."""
         profile = self.spec.generation_profile
         settings: ModelSettings = {}
         if profile.max_tokens is not None:
@@ -165,4 +178,10 @@ class CapabilityGrant:
             settings["temperature"] = profile.temperature
         if profile.top_p is not None:
             settings["top_p"] = profile.top_p
+        if profile.thinking is not None:
+            from pydantic_ai.models.openai import OpenAIChatModel
+
+            if not isinstance(self.model, OpenAIChatModel) or self.model.model_name != self.spec.model_id:
+                raise CapabilityUnavailable(self.spec.key, "thinking policy requires the admitted hydrated Chat model")
+            settings["extra_body"] = {"chat_template_kwargs": {"enable_thinking": False}}
         return settings or None

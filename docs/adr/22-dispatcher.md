@@ -132,6 +132,14 @@ An adapter constructs its runtime catalogue once per hydration. Capability synth
 that runtime's captured model summaries and generation defaults instead of re-reading a preset or
 independently rebuilding the connector's catalogue. Bind uses the same construction boundary to
 check capability coverage without probing or activating the runtime.
+A model-local request policy is validated against the resolved runtime, exact model and Chat
+surface during synthesis, before a registry snapshot is published. Its generation value is frozen
+into the specification and grant; issuance must not reopen the Rune or recover settings from model
+names. The hydrated model must retain the admitted Chat transport before the policy can become
+outbound settings. A v1 Run still pins its capability key, not a durable declaration-generation
+fingerprint: this policy grants neither live reconfiguration nor policy continuity across arbitrary
+operator changes. Construct and qualify an immutable assembly for fresh admissions.
+
 Endpoint hydration preserves which fields the operator supplied: allocating a port must not turn
 omitted managed-command defaults into declarations that conflict with an explicit `exec` command.
 

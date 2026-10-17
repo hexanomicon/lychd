@@ -46,7 +46,7 @@
     "worker": "real-in-process-SAQ"
   },
   "freshness_check": "offline-metadata-source-and-selected-dependency-check-only",
-  "identity_boundary": "One dated local trial with bounded critical source/test fingerprints and selected package versions. Neither a clean-checkout, atomic transitive environment nor model-byte attestation. Updating metadata or hashes alone does not requalify changed critical inputs.",
+  "identity_boundary": "One dated local omission-baseline trial with bounded critical source/test fingerprints and selected package versions. The optional thinking policy was omitted; this trial qualifies neither selecting it nor useful task completion. Neither a clean-checkout, atomic transitive environment nor model-byte attestation. Updating metadata or hashes alone does not requalify changed critical inputs.",
   "model": {
     "context_tokens": 4096,
     "cooperative_deadline_seconds": 30,
@@ -77,18 +77,18 @@
   },
   "qualification_date": "2026-10-17",
   "qualification_evidence": {
-    "application_receipt_sha256": "ac37bf80defb1ff60b937425db7621ee718b12d69b11686305ecd245d49034e4",
-    "candidate_manifest_sha256": "ae5dab9881d17ae7a9ad403af3f219d1549fb1ed588e2594451ef2ca5f74812f",
-    "coordinator_receipt_sha256": "aad785c90664127fa224b40a346cbe5753b2963bea9008443c6326ffccbdf276",
+    "application_receipt_sha256": "ba23dce688b7578e37bc1dc19068ade477e8b2881f6a1ca48b007389fc222504",
+    "candidate_manifest_sha256": "8266f02eeeea678494905d6944d0c1a8bd7e3421828d539b507f47a4bbbc202d",
+    "coordinator_receipt_sha256": "7fd675fbc708285695fe43c0ba4a434c2b863a3d34042b4ce8ea5ea8785dc35a",
     "coordinator_source_sha256": "6c1505e1959442b2a9de0078a9c7e2d1f719c3a9d9cc97c26246cac6022daca8",
     "joined_test_sha256_before_trial": "00e24103a907b1aa4d1b518d7bd38267a3b2d5cdd4fce1db923f6f239d11c7d2",
-    "model_profile_sha256": "7018f03296f026c137c3143e3e88b02a1a87ebb9cf81f49b26fb10eae870722c",
-    "pytest_log_sha256": "c3598dd92fd544c86bbcd15fe737ac06cef2afa940cf86fcf0cdf767140e31d1",
+    "model_profile_sha256": "4f5d7722dca3bed48ece66ad56327e08ba4ac52800c4e7c24238737993430902",
+    "pytest_log_sha256": "b1fb6cc8c18fb6461f4d127e32a734a5fbb2a70aa9ee336fc7b5676041624cf1",
     "resource_launcher_source_sha256": "b8105f73913316031e7241529ff4676b8672ac106754d76b8daea209a18afa78",
-    "resource_receipt_sha256": "fb70bad9d0ef1c17c0fe78941706d584d0a1d9b64a06e4ae540ae10b2659771f"
+    "resource_receipt_sha256": "a9fa08a4097ce6b1e3d6e9aff2d11884d7f73a7b4a659ad2f98b29a43c58de9a"
   },
   "record_kind": "sanitized_public_local_bridge_qualification",
-  "retained_history_sha256": "c58229155550869298b8e7b7aa6cb8fe6352d6ee772d603097b1a911f1eafda6",
+  "retained_history_sha256": "9e1c83eb8a8770b885d661224c16da3d1600f672eade32cad520486acfe5b647",
   "runner": {
     "cleanup_verified": true,
     "coordinator_cleanup_reserve_seconds": 30,
@@ -125,7 +125,12 @@
     "src/lychd/db/bootstrap.py": "d73ba53c4d6541b96899b436beb6b9b8e9c926fa400f677b1956c168b5517d86",
     "src/lychd/db/engine.py": "18e2b6b4c6d84d0085d151a4eb79de6179e150fa696f5e2ce02f42a28655cede",
     "src/lychd/db/sessions.py": "8938fb9a3d00dc2fa1a63faaa08cfe5a1d4e420ce2cc9543eb3cb6d99679c8f9",
+    "src/lychd/domain/animation/capabilities.py": "a75cbdaf10f1fc7a1a484876b4b03f137b1fb236d921001766a49592b2dd7a8e",
     "src/lychd/domain/animation/model_factory.py": "be6e37f960fd470ed886d11a25bd237201b165f2326d609d193a1af42a1e69a2",
+    "src/lychd/domain/animation/schemas/generation.py": "54ad9d644974d9b7da13700f3f836c8e97a084fa44b63dd6002a3a84a844d6ed",
+    "src/lychd/domain/animation/schemas/runes/animators.py": "dd2643c0101852f946a7f898a7ce4ab098d1b3ed18cfe2a8e05eb77c54c1e434",
+    "src/lychd/domain/animation/schemas/runes/models.py": "5fb0d561e8bfc0fee68192af23048a333eb03940b567f12859daf1d29df438d9",
+    "src/lychd/domain/animation/services/adapters/catalog.py": "f500a7f3b3f958904f621840df187320c80e69390d4d1a989ad81ac094d8c61d",
     "src/lychd/domain/animation/services/adapters/runtimes/openai_compat.py": "cdda6ad24da8854e7d4a2ed72195aa9b2597eeb8cf95be3ab20a207a506ba133",
     "src/lychd/domain/animation/services/adapters/surfaces.py": "303e29dc2f2a7b80b40d22f7df699fc1d2e374aee18180b68bebf78c75b41468",
     "src/lychd/domain/animation/services/loader.py": "79943e09b7b0c1a7e80b6051e40a97f5b31ed612cc772c56f8c01998b7bc155f",
@@ -156,14 +161,14 @@
   },
   "source_identity": {
     "atomic_transitive_closure_attested": false,
-    "base_revision_declared": "df637032e41c34a9c86f5fe24d7be022f501914d",
+    "base_revision_declared": "bf1162f7df7ceaee75c0ab1c2f3180243b7edf94",
     "clean_checkout_attested": false,
     "scope": "bounded-critical-source-and-test-fingerprints"
   },
   "status": "passed",
   "timings_seconds": {
-    "command": 18.8286,
-    "pytest": 16.49
+    "command": 18.8818,
+    "pytest": 16.46
   },
   "unexercised": [
     "browser-and-full-accessibility",
@@ -178,6 +183,8 @@
     "general-purpose-tools",
     "durable-semantic-memory",
     "evolution-and-promotion",
-    "remote-access-and-hostile-browser"
+    "remote-access-and-hostile-browser",
+    "selected-qwen3.8-non-thinking-policy",
+    "useful-task-workload"
   ]
 }

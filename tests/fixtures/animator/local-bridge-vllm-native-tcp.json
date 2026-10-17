@@ -73,7 +73,7 @@
     "worker": "real-in-process-SAQ"
   },
   "freshness_check": "offline-metadata-source-and-selected-dependency-check-only",
-  "identity_boundary": "One dated clean-checkout observation with bounded critical source/test fingerprints and selected installed package versions. Neither an atomic transitive environment nor model-byte attestation. Updating metadata or hashes alone does not requalify changed critical inputs.",
+  "identity_boundary": "One dated local omission-baseline trial with bounded critical source/test fingerprints and selected package versions. The optional thinking policy was omitted; this trial qualifies neither selecting it nor useful task completion. Neither a clean-checkout, atomic transitive environment nor model-byte attestation. Updating metadata or hashes alone does not requalify changed critical inputs.",
   "model": {
     "concurrent_runs": 1,
     "context_tokens": 4096,
@@ -204,19 +204,19 @@
   },
   "qualification_date": "2026-10-17",
   "qualification_evidence": {
-    "application_receipt_sha256": "45c88145645931a141ef27858fb488cafe5859ac03ab3e0a71858ca4614015ab",
-    "candidate_manifest_sha256": "8aebb7324b85c7a83116889b017b848cbe27d3da1c95fcba684a455f64d2e60b",
-    "coordinator_receipt_sha256": "a1971e260047e4ce60586b20cf5d332b788d13677aee36876b54a3e0b50623db",
+    "application_receipt_sha256": "180e1bb235e72a2e481b8511c913896c12e6bac4acf369e15b92d9b40262a1f4",
+    "candidate_manifest_sha256": "3ffb2f66f648a477975bb1212ac7187217cb1676b884b8568410acdc54c5b2dd",
+    "coordinator_receipt_sha256": "343c89b95c35f4b6836936fc143cd983660758df4910c6aacd1472365bf5d63f",
     "coordinator_source_sha256": "6c1505e1959442b2a9de0078a9c7e2d1f719c3a9d9cc97c26246cac6022daca8",
-    "model_profile_sha256": "ad11afb827ca3d8cf9c7d27a158a3fcb3fe51aa7e5b16bbe32e07d99ea5cc77a",
+    "model_profile_sha256": "fda85f62fc2e4ae3857fc43308ffb77364a73ad45823078e7ef0dc3595b91f12",
     "native_test_sha256_before_trial": "7cc36a27ccc473f5cd374655c2ee6aedf002d85ddf676e297c585b2de11a9454",
-    "pytest_log_sha256": "e25acdca342c8653a9c91d52ab8f7d87751ddfb9f0b400e1017f460bfb09bb29",
+    "pytest_log_sha256": "290ded4aadf6cc493d10459069f91070c87deb2ba230b7ab99e0a8f0d20eb532",
     "resource_launcher_source_sha256": "b8105f73913316031e7241529ff4676b8672ac106754d76b8daea209a18afa78",
-    "resource_receipt_sha256": "1fe74ede193e6ec9ca067fad483fff069e6e1ffa9a5902e881ce2b46e32bf232"
+    "resource_receipt_sha256": "441b3c77381d3f463770a23365ed9286e8d561d7727e43c076f9343e43c7c664"
   },
   "record_kind": "sanitized_public_local_bridge_native_tcp_qualification",
-  "retained_history_sha256": "0688d22f657f49efdb6938c9835f8a973e06c794564e3fa12e391802fba39eb8",
-  "retained_turns_sha256": "76431e4395bc6b14cc7bf64684af817b92fbc378aa7cd6d92c5783664b525a77",
+  "retained_history_sha256": "9451a75ffca37ac5845f9a685463b037cbdab052dcccc0d9f276163e6d5cc32f",
+  "retained_turns_sha256": "b40c368a3914bcba46ef5416217a1bc1ad56aeeafbd2ee4f11f3000d4c2d29a7",
   "runner": {
     "cleanup_verified": true,
     "coordinator_cleanup_reserve_seconds": 30,
@@ -262,7 +262,12 @@
     "src/lychd/db/bootstrap.py": "d73ba53c4d6541b96899b436beb6b9b8e9c926fa400f677b1956c168b5517d86",
     "src/lychd/db/engine.py": "18e2b6b4c6d84d0085d151a4eb79de6179e150fa696f5e2ce02f42a28655cede",
     "src/lychd/db/sessions.py": "8938fb9a3d00dc2fa1a63faaa08cfe5a1d4e420ce2cc9543eb3cb6d99679c8f9",
+    "src/lychd/domain/animation/capabilities.py": "a75cbdaf10f1fc7a1a484876b4b03f137b1fb236d921001766a49592b2dd7a8e",
     "src/lychd/domain/animation/model_factory.py": "be6e37f960fd470ed886d11a25bd237201b165f2326d609d193a1af42a1e69a2",
+    "src/lychd/domain/animation/schemas/generation.py": "54ad9d644974d9b7da13700f3f836c8e97a084fa44b63dd6002a3a84a844d6ed",
+    "src/lychd/domain/animation/schemas/runes/animators.py": "dd2643c0101852f946a7f898a7ce4ab098d1b3ed18cfe2a8e05eb77c54c1e434",
+    "src/lychd/domain/animation/schemas/runes/models.py": "5fb0d561e8bfc0fee68192af23048a333eb03940b567f12859daf1d29df438d9",
+    "src/lychd/domain/animation/services/adapters/catalog.py": "f500a7f3b3f958904f621840df187320c80e69390d4d1a989ad81ac094d8c61d",
     "src/lychd/domain/animation/services/adapters/runtimes/openai_compat.py": "cdda6ad24da8854e7d4a2ed72195aa9b2597eeb8cf95be3ab20a207a506ba133",
     "src/lychd/domain/animation/services/adapters/surfaces.py": "303e29dc2f2a7b80b40d22f7df699fc1d2e374aee18180b68bebf78c75b41468",
     "src/lychd/domain/animation/services/loader.py": "79943e09b7b0c1a7e80b6051e40a97f5b31ed612cc772c56f8c01998b7bc155f",
@@ -304,14 +309,14 @@
   },
   "source_identity": {
     "atomic_transitive_closure_attested": false,
-    "clean_checkout_observed": true,
-    "revision_observed": "df637032e41c34a9c86f5fe24d7be022f501914d",
+    "clean_checkout_observed": false,
+    "revision_observed": "bf1162f7df7ceaee75c0ab1c2f3180243b7edf94",
     "scope": "bounded-critical-source-and-test-fingerprints"
   },
   "status": "passed",
   "timings_seconds": {
-    "command": 21.769,
-    "pytest": 19.53
+    "command": 23.54,
+    "pytest": 21.18
   },
   "unexercised": [
     "installed-command-or-caged-Vessel",
@@ -330,6 +335,8 @@
     "evolution-and-promotion",
     "remote-access-and-hostile-browser",
     "aggregate-native-resource-containment",
-    "guest-GPU-device-visibility"
+    "guest-GPU-device-visibility",
+    "selected-qwen3.8-non-thinking-policy",
+    "useful-task-workload"
   ]
 }

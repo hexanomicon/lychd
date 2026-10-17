@@ -44,9 +44,10 @@ def test_native_tcp_receipt_preserves_its_observed_scope_and_privacy() -> None:
     assert receipt["record_kind"] == "sanitized_public_local_bridge_native_tcp_qualification"
     assert receipt["qualification_date"] == "2026-10-17"
     assert receipt["status"] == "passed"
+    assert "The optional thinking policy was omitted" in receipt["identity_boundary"]
     assert receipt["source_identity"] == {
-        "revision_observed": "df637032e41c34a9c86f5fe24d7be022f501914d",
-        "clean_checkout_observed": True,
+        "revision_observed": "bf1162f7df7ceaee75c0ab1c2f3180243b7edf94",
+        "clean_checkout_observed": False,
         "atomic_transitive_closure_attested": False,
         "scope": "bounded-critical-source-and-test-fingerprints",
     }
@@ -212,6 +213,8 @@ def test_native_tcp_receipt_keeps_model_resource_and_cleanup_limits_explicit() -
         "Vessel-network-namespace",
         "managed-model-lifecycle",
         "process-crash-recovery",
+        "selected-qwen3.8-non-thinking-policy",
+        "useful-task-workload",
         "real-browser-and-accessibility",
         "browser-SSE-and-reconnect",
         "authenticated-host-stop",

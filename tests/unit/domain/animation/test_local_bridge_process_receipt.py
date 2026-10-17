@@ -30,8 +30,9 @@ def test_process_receipt_preserves_qualification_and_privacy_boundary() -> None:
     assert receipt["schema"] == "local-bridge-vllm-process-restart@1"
     assert receipt["qualification_date"] == "2026-10-17"
     assert receipt["status"] == "passed"
+    assert "The optional thinking policy was omitted" in receipt["identity_boundary"]
     assert receipt["source_identity"] == {
-        "base_revision_declared": "df637032e41c34a9c86f5fe24d7be022f501914d",
+        "base_revision_declared": "bf1162f7df7ceaee75c0ab1c2f3180243b7edf94",
         "clean_checkout_attested": False,
         "atomic_transitive_closure_attested": False,
         "scope": "bounded-critical-source-and-test-fingerprints",
@@ -106,6 +107,8 @@ def test_process_receipt_preserves_qualification_and_privacy_boundary() -> None:
     assert runner["coordinator_cleanup_reserve_seconds"] == 30
     assert {
         "process-crash-recovery",
+        "selected-qwen3.8-non-thinking-policy",
+        "useful-task-workload",
         "Granian-serving",
         "browser-and-full-accessibility",
         "managed-model-lifecycle",

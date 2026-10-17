@@ -120,7 +120,11 @@ def capability_specs_from_model_infos(
     are ignored and declarations absent from discovery still synthesize specs.
     """
     profile = _RUNTIME_PROFILES.get(soulstone.runtime, _DEFAULT_PROFILE)
-    base_generation = GenerationProfile.model_validate(runtime_defaults or {}).overlay(soulstone.generation)
+    runtime_generation = GenerationProfile.model_validate(runtime_defaults or {})
+    if runtime_generation.thinking is not None:
+        msg = "thinking policy cannot be supplied by runtime defaults"
+        raise ValueError(msg)
+    base_generation = runtime_generation.overlay(soulstone.generation)
 
     models_by_id: dict[str, LocalModelConfig] = {model.id: model for model in soulstone.models}
     resolved_hints = {model.id: model.capabilities for model in soulstone.models if model.capabilities is not None}
@@ -155,6 +159,9 @@ def _specs_for_model(
     hydrated = _hydrate_model_info(info=info, hints=hints, profile=profile)
     families = synthesize_families(hydrated, hints)
     generation = base_generation.overlay(model_generation)
+    if generation.thinking is not None and hydrated.surface is not ModelSurface.CHAT:
+        msg = "thinking policy requires the resolved Chat surface"
+        raise ValueError(msg)
     concurrency = soulstone.concurrency
     return [
         CapabilitySpec(

@@ -20,6 +20,11 @@ _SOURCES = {
     "src/lychd/domain/codex/local_access.py",
     "src/lychd/domain/codex/middleware.py",
     "src/lychd/domain/animation/model_factory.py",
+    "src/lychd/domain/animation/capabilities.py",
+    "src/lychd/domain/animation/schemas/generation.py",
+    "src/lychd/domain/animation/schemas/runes/animators.py",
+    "src/lychd/domain/animation/schemas/runes/models.py",
+    "src/lychd/domain/animation/services/adapters/catalog.py",
     "src/lychd/domain/animation/services/loader.py",
     "src/lychd/domain/animation/services/registry.py",
     "src/lychd/domain/animation/services/adapters/runtimes/openai_compat.py",
@@ -105,8 +110,9 @@ def test_maintained_local_bridge_receipt_keeps_its_exact_boundary() -> None:
     assert receipt["record_kind"] == "sanitized_public_local_bridge_qualification"
     assert receipt["qualification_date"] == "2026-10-17"
     assert receipt["status"] == "passed"
+    assert "The optional thinking policy was omitted" in receipt["identity_boundary"]
     assert receipt["source_identity"] == {
-        "base_revision_declared": "df637032e41c34a9c86f5fe24d7be022f501914d",
+        "base_revision_declared": "bf1162f7df7ceaee75c0ab1c2f3180243b7edf94",
         "clean_checkout_attested": False,
         "atomic_transitive_closure_attested": False,
         "scope": "bounded-critical-source-and-test-fingerprints",
@@ -179,6 +185,8 @@ def test_maintained_local_bridge_receipt_keeps_its_exact_boundary() -> None:
     assert set(receipt["unexercised"]) == {
         "browser-and-full-accessibility",
         "separate-process-restart",
+        "selected-qwen3.8-non-thinking-policy",
+        "useful-task-workload",
         "process-crash-recovery",
         "installed-Vessel",
         "Vessel-network-namespace",

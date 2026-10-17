@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.generation import GenerationProfile
@@ -63,3 +63,12 @@ class PortalModelConfig(BaseModel):
         default=None,
         description="Optional generation profile overlay for this specific portal model.",
     )
+
+    @field_validator("generation")
+    @classmethod
+    def _refuse_local_thinking_policy(cls, value: GenerationProfile | None) -> GenerationProfile | None:
+        """Keep the local Qwen request dialect out of every Portal model."""
+        if value is not None and value.thinking is not None:
+            msg = "thinking policy is only supported in a local model generation block"
+            raise ValueError(msg)
+        return value

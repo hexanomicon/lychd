@@ -131,6 +131,69 @@ temperature = 0.2
         assert grant.toolsets == ()
 
 
+@pytest.mark.asyncio
+async def test_qwen_model_local_policy_is_captured_by_an_immutable_real_grant(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter
+) -> None:
+    configured = _configured(
+        tmp_path,
+        monkeypatch,
+        {
+            "vllm/chat.toml": """
+name = "desk"
+port = 20000
+exec = ["/models/qwen", "--served-model-name", "Qwen3.8-27B", "--port", "20000"]
+[generation]
+max_tokens = 128
+[[models]]
+id = "Qwen3.8-27B"
+path = "/models/qwen"
+[models.generation]
+thinking = "qwen3.8-non-thinking"
+"""
+        },
+    )
+    _local_http(respx_mock, models=("Qwen3.8-27B",))
+    leases = LeaseLedger()
+    dispatcher = Dispatcher(configured.registry, leases=leases)
+    async with dispatcher.lease_grant(family="chat", run_id="policy-turn", requires_tools=True) as grant:
+        assert isinstance(grant.model, OpenAIChatModel)
+        assert grant.model.settings is None
+        assert grant.spec.generation_profile.thinking == "qwen3.8-non-thinking"
+        with pytest.raises(ValidationError, match="frozen"):
+            grant.spec.generation_profile.thinking = None
+        settings = grant.model_settings()
+        assert settings == {"max_tokens": 128, "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}}
+        assert settings is not None
+        settings["extra_body"] = {"chat_template_kwargs": {"enable_thinking": True}}
+        assert grant.model_settings() == {
+            "max_tokens": 128,
+            "extra_body": {"chat_template_kwargs": {"enable_thinking": False}},
+        }
+        assert grant.model.settings is None
+    assert leases.active() == []
+
+
+@pytest.mark.parametrize(
+    "configuration",
+    [
+        '[generation]\nthinking="qwen3.8-non-thinking"\n',
+        '[[models]]\nid="other"\npath="/models/other"\n[models.generation]\nthinking="qwen3.8-non-thinking"\n',
+        (
+            '[[models]]\nid="Qwen3.8-27B"\npath="/models/qwen"\n[models.capabilities]\nsurface="responses"\n'
+            '[models.generation]\nthinking="qwen3.8-non-thinking"\n'
+        ),
+    ],
+)
+def test_operator_thinking_policy_refuses_before_any_runtime_http(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter, configuration: str
+) -> None:
+    with pytest.raises(ValueError, match="thinking") as raised:
+        _configured(tmp_path, monkeypatch, {"vllm/chat.toml": 'name="desk"\n' + configuration})
+    assert isinstance(raised.value.__cause__, ValidationError)
+    assert respx_mock.calls.call_count == 0
+
+
 def test_managed_llamacpp_alias_agrees_with_declared_identity(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter
 ) -> None:
@@ -429,24 +492,41 @@ class _Queue:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("runtime", ["llamacpp", "vllm"])
 async def test_operator_text_turn_runs_real_assembly_dispatch_and_openai_stream(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter, runtime: str
 ) -> None:
-    configured = _configured(
-        tmp_path,
-        monkeypatch,
-        {
-            "llamacpp/chat.toml": """
+    model_id = "qwen" if runtime == "llamacpp" else "Qwen3.8-27B"
+    document = (
+        """
+name = "desk"
+port = 20000
+exec = ["/models/qwen", "--served-model-name", "Qwen3.8-27B", "--port", "20000"]
+[generation]
+max_tokens = 128
+temperature = 0.2
+[[models]]
+id = "Qwen3.8-27B"
+path = "/models/qwen"
+[models.generation]
+thinking = "qwen3.8-non-thinking"
+"""
+        if runtime == "vllm"
+        else """
 name = "desk"
 model_path = "/models/qwen.gguf"
 n_ctx = 8192
 [generation]
 max_tokens = 128
 temperature = 0.2
-""",
-        },
+"""
     )
-    _local_http(respx_mock)
+    configured = _configured(
+        tmp_path,
+        monkeypatch,
+        {f"{runtime}/chat.toml": document},
+    )
+    _local_http(respx_mock, models=(model_id,))
     requests: list[dict[str, Any]] = []
 
     def answer(request: httpx2.Request) -> httpx2.Response:
@@ -459,7 +539,7 @@ temperature = 0.2
             "id": "offline-operator-turn",
             "object": "chat.completion.chunk",
             "created": 1,
-            "model": "qwen",
+            "model": model_id,
             "choices": [
                 {
                     "index": 0,
@@ -530,10 +610,16 @@ temperature = 0.2
         assert completed.turns[-1].content == "A local answer."
         assert len(requests) == 1
         body = requests[0]
-        assert body["model"] == "qwen"
+        assert body["model"] == model_id
         assert body["temperature"] == 0.2
         assert body["max_completion_tokens"] == 128
         assert body["stream"] is True
+        if runtime == "vllm":
+            assert body["chat_template_kwargs"] == {"enable_thinking": False}
+        else:
+            assert "chat_template_kwargs" not in body
+        assert "thinking" not in body
+        assert "reasoning_effort" not in body
         assert body["tools"]  # BridgeReply uses a schema tool even with no callable runtime tools.
         assert all(tool["function"].get("strict") is not True for tool in body["tools"])
     finally:

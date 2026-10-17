@@ -5,10 +5,11 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from lychd.domain.animation.capabilities import CapabilityFamily
+from lychd.domain.animation.capabilities import CapabilityFamily, CapabilitySpec
 from lychd.domain.animation.schemas import (
     GenericSoulstoneConfig,
     ModelInfo,
+    ModelSurface,
     OpenAIPortalConfig,
 )
 from lychd.domain.animation.services.adapters.catalog import (
@@ -151,3 +152,128 @@ def test_declared_model_catalog_ignores_undeclared_discovery() -> None:
     specs = capability_specs_from_model_infos(soulstone, [ModelInfo(id="real")])
     assert {spec.model_id for spec in specs} == {"ghost"}
     assert specs[0].generation_profile.max_tokens == 321
+
+
+@pytest.mark.parametrize(
+    ("schema", "payload"),
+    [
+        (
+            GenericSoulstoneConfig,
+            {
+                "name": "local",
+                "quadlet": {"image": "img:latest"},
+                "runtime": "vllm",
+                "generation": {"thinking": "qwen3.8-non-thinking"},
+            },
+        ),
+        (OpenAIPortalConfig, {"name": "remote", "generation": {"thinking": "qwen3.8-non-thinking"}}),
+        (
+            OpenAIPortalConfig,
+            {"name": "remote", "models": [{"id": "Qwen3.8-27B", "generation": {"thinking": "qwen3.8-non-thinking"}}]},
+        ),
+    ],
+)
+def test_thinking_policy_refuses_non_model_local_defaults(
+    schema: type[GenericSoulstoneConfig | OpenAIPortalConfig], payload: dict[str, object]
+) -> None:
+    with pytest.raises(ValidationError, match="thinking policy"):
+        schema.model_validate(payload)
+
+
+def test_runtime_defaults_cannot_supply_a_model_local_thinking_policy() -> None:
+    with pytest.raises(ValueError, match="thinking policy cannot be supplied by runtime defaults"):
+        capability_specs_from_model_infos(
+            _soulstone(runtime="vllm"), [], runtime_defaults={"thinking": "qwen3.8-non-thinking"}
+        )
+
+
+@pytest.mark.parametrize(
+    "generation",
+    [
+        {"thinking": False},
+        {"thinking": "disabled"},
+        {"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
+    ],
+)
+def test_model_generation_rejects_open_ended_thinking_settings(generation: dict[str, object]) -> None:
+    with pytest.raises(ValidationError):
+        _soulstone(
+            runtime="vllm",
+            models=[{"id": "Qwen3.8-27B", "path": "/models/qwen", "generation": generation}],
+        )
+
+
+@pytest.mark.parametrize(
+    ("runtime", "model_id", "surface"),
+    [("llamacpp", "Qwen3.8-27B", "chat"), ("vllm", "Qwen3.8-27B-alias", "chat"), ("vllm", "Qwen3.8-27B", "responses")],
+)
+def test_thinking_policy_refuses_unqualified_local_bindings(runtime: str, model_id: str, surface: str) -> None:
+    with pytest.raises(ValidationError, match="thinking policy requires local"):
+        _soulstone(
+            runtime=runtime,
+            models=[
+                {
+                    "id": model_id,
+                    "path": "/models/qwen",
+                    "capabilities": {"surface": surface},
+                    "generation": {"thinking": "qwen3.8-non-thinking"},
+                }
+            ],
+        )
+
+
+def test_thinking_policy_checks_the_resolved_surface_before_synthesizing_specs() -> None:
+    soulstone = _soulstone(
+        runtime="vllm",
+        models=[{"id": "Qwen3.8-27B", "path": "/models/qwen", "generation": {"thinking": "qwen3.8-non-thinking"}}],
+    )
+    with pytest.raises(ValueError, match="resolved Chat surface"):
+        capability_specs_from_model_infos(soulstone, [ModelInfo(id="Qwen3.8-27B", surface=ModelSurface.RESPONSES)])
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [{"source_kind": "portal"}, {"runtime": "sglang"}, {"model_id": "other"}, {"family": "vision"}],
+)
+def test_adapter_cannot_publish_an_unqualified_thinking_spec(changed: dict[str, str]) -> None:
+    with pytest.raises(ValidationError, match="thinking policy requires local"):
+        CapabilitySpec.model_validate(
+            {
+                "key": "desk:chat:Qwen3.8-27B",
+                "animator_name": "desk",
+                "source_kind": "soulstone",
+                "runtime": "vllm",
+                "model_id": "Qwen3.8-27B",
+                "family": "chat",
+                "generation_profile": {"thinking": "qwen3.8-non-thinking"},
+            }
+            | changed
+        )
+
+
+def test_model_local_thinking_overlay_does_not_reach_a_sibling_or_mutate_its_inputs() -> None:
+    overlay: dict[str, object] = {"thinking": "qwen3.8-non-thinking", "temperature": 0.2}
+    soulstone = _soulstone(
+        runtime="vllm",
+        generation={"max_tokens": 200},
+        models=[
+            {"id": "Qwen3.8-27B", "path": "/models/qwen", "generation": overlay, "capabilities": {"surface": "chat"}},
+            {"id": "sibling", "path": "/models/sibling"},
+        ],
+    )
+    overlay["thinking"] = None
+    specs = capability_specs_from_model_infos(
+        soulstone,
+        [ModelInfo(id="Qwen3.8-27B", surface=ModelSurface.RESPONSES)],
+        runtime_defaults={"max_tokens": 100, "top_p": 0.9},
+    )
+    selected, sibling = (spec.generation_profile for spec in specs)
+    assert selected.model_dump(exclude_none=True) == {
+        "max_tokens": 200,
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "thinking": "qwen3.8-non-thinking",
+    }
+    assert sibling.model_dump(exclude_none=True) == {"max_tokens": 200, "top_p": 0.9}
+    with pytest.raises(ValidationError, match="frozen"):
+        selected.thinking = None

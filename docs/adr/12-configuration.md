@@ -142,6 +142,13 @@ compatibility sugar for exact admitted model-interface projections; non-model se
 invent a `model_id` or generation overlay merely to become loadable. Neither form encodes multiple
 Rune instances.
 
+The single `GenerationProfile` owns the common context, output-token, temperature and top-p
+overlays. Its optional closed `thinking = "qwen3.8-non-thinking"` policy is model-local: only an
+explicit `[[models]]` generation block for local vLLM `Qwen3.8-27B` on the Chat surface may select
+it. Runtime defaults, Soulstone-wide defaults, Portals and other model/runtime/surface combinations
+refuse a non-null policy before publication. Omission preserves the existing request. This is one
+admitted self-hosted chat-template dialect, not arbitrary provider settings or model-name inference.
+
 For the current v1 path, capability synthesis begins with text input. Field precedence
 is Rune hint, then live probe or adapter-discovered runtime fact, then runtime profile default. An
 explicit modality hint replaces discovered and default modalities; when omitted, probed modalities

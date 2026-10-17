@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -12,6 +14,7 @@ class GenerationProfile(BaseModel):
     max_tokens: int | None = Field(default=None, ge=1)
     temperature: float | None = Field(default=None, ge=0.0, le=2.0, allow_inf_nan=False)
     top_p: float | None = Field(default=None, ge=0.0, le=1.0, allow_inf_nan=False)
+    thinking: Literal["qwen3.8-non-thinking"] | None = None
 
     def overlay(self, other: GenerationProfile | None) -> GenerationProfile:
         """Return self with other's non-None fields winning."""

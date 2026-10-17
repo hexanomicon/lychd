@@ -870,6 +870,16 @@ This qualifies the named TCP and clean-restart conjunction, without installed ca
 managed-model, model-byte, crash, cancellation, browser, autonomy or aggregate-native-resource
 qualification.
 
+A closed model-local `qwen3.8-non-thinking` generation policy now compiles through the frozen
+capability grant to the exact Qwen chat-template request field. Unsupported bindings, runtime
+and Soulstone defaults, Portals and Responses refuse it; omitted settings remain unchanged.
+Real-SDK mock-wire tests cover ordinary and streaming calls. A dated `bf1162f` source-app
+observation completes one fixed public-source review in196 generated tokens and retains it over
+two ordinary in-process boots. Its independent reviewer accepts only partial semantic utility:
+the core assertions are correct, but a claimed passing counterexample would fail the displayed
+test. DONE is not a correctness verdict. That separate Codex review is operator evidence, not a
+delivered native verifier, installed cutover or autonomous development.
+
 A dated operator observation on 2026-10-16 uses installed source `0cc0988`, a matching
 noneditable host CLI and pinned Vessel image. One canonical `/orchestrator/activate` request
 launches the dedicated vLLM service through the Host Reactor; completed intent/custody, exact
@@ -893,6 +903,7 @@ host, readiness, inference, and shutdown.
 - **Verification:** [Independent-process test](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_local_bridge_process_restart.py), [maintained process-restart receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/animator/local-bridge-vllm-process-restart.json), and [process source/dependency freshness](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_local_bridge_process_receipt.py)
 - **Verification:** [Native CLI/TCP restart test](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_local_bridge_native_tcp.py), [maintained native TCP receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/animator/local-bridge-vllm-native-tcp.json), and [native receipt freshness/privacy](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_local_bridge_native_tcp_receipt.py)
 - **Verification:** [Dated 0cc0988 installed observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/animator/local-bridge-vllm-installed-0cc0988.json) and [offline dated metadata/privacy check](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_local_bridge_installed_0cc0988_receipt.py)
+- **Verification:** [Policy scope and binding tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_catalog.py), [real-SDK wire tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_model_transport.py), [dated selected-policy observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/animator/local-bridge-qwen-policy-bf1162f.json), and [observation integrity/privacy](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_local_bridge_qwen_policy_receipt.py)
 - **Topic:** [Standalone probe and first-reply boundaries](./sepulcher/animator/soulstone/engines/vllm.md#bring-one-service-to-a-first-reply)
 - **Law:** [Dispatcher](./adr/22-dispatcher.md)
 

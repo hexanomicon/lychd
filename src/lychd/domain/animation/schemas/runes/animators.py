@@ -13,6 +13,7 @@ from lychd.config import QuadletConfig
 from lychd.config.runes import RuneConfig
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.animation.schemas.generation import GenerationProfile
+from lychd.domain.animation.schemas.model_info import ModelSurface
 from lychd.domain.animation.schemas.runes.models import LocalModelConfig, PortalModelConfig
 from lychd.system.secret_names import is_valid_podman_secret_name
 
@@ -207,6 +208,15 @@ class SoulstoneConfig(AnimatorConfig, ABC):
         ),
     )
 
+    @field_validator("generation")
+    @classmethod
+    def _refuse_default_thinking_policy(cls, value: GenerationProfile | None) -> GenerationProfile | None:
+        """Keep the model-local request dialect out of Soulstone defaults."""
+        if value is not None and value.thinking is not None:
+            msg = "thinking policy is only supported in a local model generation block"
+            raise ValueError(msg)
+        return value
+
     @field_validator("exec")
     @classmethod
     def _validate_exec_command_separators(cls, values: tuple[str, ...]) -> tuple[str, ...]:
@@ -229,6 +239,12 @@ class SoulstoneConfig(AnimatorConfig, ABC):
     @model_validator(mode="after")
     def _hydrate_local_defaults(self) -> SoulstoneConfig:
         _require_unique_model_ids(self.models)
+        for model in self.models:
+            if model.generation is not None and model.generation.thinking is not None:
+                surface = model.capabilities.surface if model.capabilities is not None else None
+                if self.runtime != "vllm" or model.id != "Qwen3.8-27B" or surface not in {None, ModelSurface.CHAT}:
+                    msg = "thinking policy requires local vllm/Qwen3.8-27B on the Chat surface"
+                    raise ValueError(msg)
         for env_name, secret_name in self.secret_env_files.items():
             if _ENV_NAME.fullmatch(env_name) is None:
                 msg = "secret_env_files keys must be valid environment variable names."
@@ -279,6 +295,15 @@ class PortalConfig(AnimatorConfig, ABC):
         default=False,
         description="Opt-in live reachability probe (no surprise egress by default).",
     )
+
+    @field_validator("generation")
+    @classmethod
+    def _refuse_default_thinking_policy(cls, value: GenerationProfile | None) -> GenerationProfile | None:
+        """Keep local request policies out of Portal defaults."""
+        if value is not None and value.thinking is not None:
+            msg = "thinking policy is only supported in a local model generation block"
+            raise ValueError(msg)
+        return value
 
     @field_validator("api_key_secret_name")
     @classmethod

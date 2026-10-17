@@ -133,6 +133,15 @@ Chat-only; Responses is admitted only for OpenAI, OpenRouter, or an explicitly c
 endpoint. This does not claim a native Gemini transport or providers outside the registered
 aliases.
 
+An explicitly admitted `qwen3.8-non-thinking` generation policy reaches the call through the
+immutable capability grant. The grant requires its hydrated Chat model and compiles only
+`extra_body.chat_template_kwargs.enable_thinking = false`; Bridge uses the existing settings
+handoff. It does not translate this dialect into generic SDK `thinking` or `reasoning_effort`,
+mutate model defaults, expose arbitrary request-body fields or create another provider route.
+The policy bounds a declared request mode, not separate hard reasoning/final token quotas, semantic
+quality or an entire Agent loop's budget. Any applicable byte-time egress decision still covers
+the final child payload.
+
 ## Run dependencies
 
 Every step receives fresh, frozen `LychDDeps`:

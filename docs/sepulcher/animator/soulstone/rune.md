@@ -97,7 +97,7 @@ each named [Connector dialect](../connectors.md#openai-compatibility-is-per-dial
 
 ## Generation Overlays
 
-The current optional generation fields are `max_context`, `max_tokens`, `temperature`, and
+The common optional generation fields are `max_context`, `max_tokens`, `temperature`, and
 `top_p`. Effective values overlay in this order:
 
 ```text
@@ -105,9 +105,20 @@ runtime defaults → Soulstone [generation] → [models.generation]
 ```
 
 The accepted ranges are `max_context`/`max_tokens ≥ 1`, finite `temperature` 0–2, and finite
-`top_p` 0–1. Other generation keys fail validation. The overlay bounds request settings; it does
+`top_p` 0–1. Other generation keys fail validation apart from the model-local policy below.
+The overlay bounds request settings; it does
 not resize a running engine. llama.cpp's managed `n_ctx` is reflected from its actual generated
 command before the explicit generation overlays apply.
+
+For an explicit local vLLM `Qwen3.8-27B` model using Chat, the model's generation block may also
+select the closed policy `thinking = "qwen3.8-non-thinking"`. It sends the supported template
+argument `enable_thinking = false` through that model's grant; it changes neither the running
+server's launch defaults nor sibling models. Omit it to retain ordinary behavior. It is refused in
+runtime or Soulstone-wide defaults, Portals, other models/runtimes and Responses. Arbitrary
+`extra_body`, a generic boolean and unknown policy tags are not accepted Rune inputs. This mode
+selection does not guarantee useful output or increase the existing output/call budget. Follow
+[vLLM](./engines/vllm.md) for the engine boundary and
+[State of Work](../../../state-of-the-work.md#vllm-integration) for delivery evidence.
 
 Bridge normally requests a tool-capable chat grant from Dispatcher's eligible pool. To pin one
 exact current v1 capability for new turns, follow the

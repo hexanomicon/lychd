@@ -1,0 +1,106 @@
+{
+  "schema": "local-bridge-qwen-policy-observation@1",
+  "record_kind": "sanitized_public_dated_operator_observation",
+  "date": "2026-10-17",
+  "execution_revision": "bf1162f7df7ceaee75c0ab1c2f3180243b7edf94",
+  "target_revision": "df637032e41c34a9c86f5fe24d7be022f501914d",
+  "current_checkout_qualified": false,
+  "atomic_transitive_closure_attested": false,
+  "source_fingerprints_observed": {
+    "uv.lock": "11576fb625e8810c4466053a6c958a6d9cfa49a84acbd31c0ee428a668654bca",
+    "tests/integration/test_local_bridge_runtime.py": "00e24103a907b1aa4d1b518d7bd38267a3b2d5cdd4fce1db923f6f239d11c7d2",
+    "src/lychd/ghouls/runs.py": "97d0fa8d33c541c180ffcd31ff32128ce31081cd8910ac28fc9bfec6d69fd1ed",
+    "src/lychd/domain/animation/schemas/generation.py": "54ad9d644974d9b7da13700f3f836c8e97a084fa44b63dd6002a3a84a844d6ed",
+    "src/lychd/domain/animation/schemas/runes/models.py": "5fb0d561e8bfc0fee68192af23048a333eb03940b567f12859daf1d29df438d9",
+    "src/lychd/domain/animation/schemas/runes/animators.py": "dd2643c0101852f946a7f898a7ce4ab098d1b3ed18cfe2a8e05eb77c54c1e434",
+    "src/lychd/domain/animation/services/adapters/catalog.py": "f500a7f3b3f958904f621840df187320c80e69390d4d1a989ad81ac094d8c61d",
+    "src/lychd/domain/animation/capabilities.py": "a75cbdaf10f1fc7a1a484876b4b03f137b1fb236d921001766a49592b2dd7a8e"
+  },
+  "profile": {
+    "runtime": "vllm",
+    "model_id": "Qwen3.8-27B",
+    "surface": "chat",
+    "thinking": "qwen3.8-non-thinking",
+    "observed_sdk_body_subset": {
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    },
+    "context_tokens": 4096,
+    "maximum_output_tokens": 256,
+    "deadline_seconds": 30,
+    "maximum_posts": 3,
+    "model_bytes_attested": false
+  },
+  "execution": {
+    "http": "TestClient",
+    "application": "real-source-create_app",
+    "worker": "real-SAQ",
+    "graph": "real-Bridge-Graph",
+    "dispatch": "real-Dispatcher",
+    "model_transport": "real-streaming-OpenAI-compatible-chat",
+    "database": "real-disposable-PostgreSQL",
+    "runtime_actuator": "refusing-fixture",
+    "boots": "two-ordinary-in-process-lifespans"
+  },
+  "input": {
+    "prompt": "Review this actual LychD patch. Does the regression reject a capability diagnosis after a model reply while preserving honest FAILED settlement? Name the decisive assertions and one limitation or missing check. Give three short lines. Do not infer the historical SDK exception cause. No tools are needed.\n\nSource revision: df637032e41c34a9c86f5fe24d7be022f501914d\nPrevious generic failure message: The summoning faltered — no capability answered. Ensure a chat Soulstone is bound and warm, then speak again.\nReplacement generic failure message: The summoning faltered. This request could not be completed.\n\nExact new regression from tests/unit/domain/cortex/test_perform_run.py:\n```python\nasync def test_perform_run_failure_after_model_reply_does_not_diagnose_capability(\n    monkeypatch: pytest.MonkeyPatch,\n) -> None:\n    \"\"\"A later worker failure cannot diagnose capability loss after a model replied.\"\"\"\n    import lychd.agents.workflows.bridge_chat as bridge_chat_mod\n\n    model = TestModel(custom_output_args={\"answer\": \"model answered\", \"fragments\": []}, call_tools=[])\n    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=model))\n    effects = _Effects()\n    substrate.effects = effects\n    await _seed_run(ledger, sessions, \"reply-then-fail\")\n    channel = substrate.bus.open(\"reply-then-fail\")\n    original_pump = bridge_chat_mod.pump_agent_events\n    failure = RuntimeError(\"reply bookkeeping failed\")\n    observed_replies: list[str] = []\n\n    async def fail_after_model_response(*args: Any, **kwargs: Any) -> None:\n        pumped = await original_pump(*args, **kwargs)\n        assert pumped.output.answer == \"model answered\"\n        assert any(isinstance(message, dict) and message.get(\"kind\") == \"response\" for message in pumped.new_messages)\n        observed_replies.append(pumped.output.answer)\n        raise failure\n\n    monkeypatch.setattr(bridge_chat_mod, \"pump_agent_events\", fail_after_model_response)\n    with pytest.raises(RuntimeError) as caught:\n        await perform_run({\"run_substrate\": substrate}, run_id=\"reply-then-fail\")\n\n    assert observed_replies == [\"model answered\"]\n    assert caught.value is failure\n    run = await ledger.get(\"reply-then-fail\")\n    delivery = await ledger.get_delivery(\"reply-then-fail\", enqueue_seq=0)\n    assert run is not None\n    assert run.status is RunStatus.FAILED\n    assert run.error == str(failure)\n    assert delivery is not None\n    assert delivery.state is RunDeliveryState.SETTLED\n    assert [event.data for event in channel._replay if event.kind is RunEventKind.DONE] == [RunStatus.FAILED.value]\n    assert channel.closed\n    assert substrate.context.get(run.run_id) is None\n    assert not await substrate.stasis_store.exists(run.run_id)\n    assert effects.guard.reason(run.run_id, 0) == \"worker_failed\"\n    assert effects.contained == [run.run_id]\n    session = await sessions.get_session(run.session_id)\n    assert session is not None\n    failed_turns = [turn for turn in session.turns if turn.state == \"failed\"]\n    assert len(failed_turns) == 1\n    assert failed_turns[0].role == \"agent\"\n    assert failed_turns[0].run_id == run.run_id\n    message = failed_turns[0].content.casefold()\n    assert \"capability\" not in message\n    assert \"soulstone\" not in message\n    assert \"warm\" not in message\n```",
+    "prompt_sha256": "c19b34c8f598e9dba912e4d5e217065f4d9563c451f8cb89d3be33e674313f10",
+    "source_pack_sha256": "a18bd925f837d08208e1afd4d3a4eefe1b96588d0c9de846abd879d97471ac55"
+  },
+  "candidate": {
+    "text": "Yes — the regression pins the post-reply failure path: it asserts the model reply was observed, the run settles FAILED with the original error, and the failed agent turn message contains no \"capability\", \"soulstone\", or \"warm\" wording.\nDecisive assertions: `observed_replies == [\"model answered\"]` (reply happened before failure), `run.status is RunStatus.FAILED` with `run.error == str(failure)` (honest settlement), and the three `not in message` checks on the failed turn (no capability diagnosis).\nLimitation: it only checks the generic failure string for three banned substrings, so a reworded diagnosis (e.g., \"no chat capability bound\" without \"soulstone\"/\"warm\") would still pass; it does not assert the exact replacement message.",
+    "sha256": "613ef882fffaace4d867689af4d11fa9330b2644fca01f42bc36643f7faa9830",
+    "modified_after_model": false
+  },
+  "outcome": {
+    "run_status": "DONE",
+    "model_posts": 1,
+    "model_successes": 1,
+    "prompt_token_delta": 1293,
+    "generated_token_delta": 196,
+    "complete_structured_response": true,
+    "retained_history_identical": true,
+    "second_boot_model_posts": 0,
+    "boundary_violations": 0,
+    "lifecycle_calls": 0,
+    "normal_process_listener_unit_closure": true,
+    "model_quiescent_after": true,
+    "postgres_and_anonymous_volume_removed": true,
+    "elapsed_seconds": 19.23115082801087
+  },
+  "independent_review": {
+    "verdict": "partial",
+    "reviewer_kind": "separate-Codex-reviewer",
+    "constructor_context_shared": false,
+    "prior_exposure": "policy source and omission-baseline evidence review",
+    "core_regression_reading": "correct",
+    "exact_message_gap": "valid",
+    "concrete_bypass_example": "false: the quoted example still contains capability and is rejected",
+    "answer_accepted_verbatim": false,
+    "native_verifier_implemented": false
+  },
+  "evidence_sha256": {
+    "coordinator": "c16152006ba318ab5c101b497a45b8ec68f1bf1dddab4bb6b14fcf2f326da7ff",
+    "resources": "b4339d898178c7454d815328aba610d54927fddaac8cd781802c2a6116b9bf18",
+    "application_receipt": "87f1a8fcaa13697d8b77442d0986b735257341811c72d3bb4ebab4f28c21484f",
+    "first_boot": "47a4ceca87446dd26db495b565d39f03e6c262c5a7b54c0448b8ee62d1680c25",
+    "second_boot": "46325bb2bc38968eaf8646294f18595f24c2f51f81edf17e57a44ff4da385b95",
+    "independent_review": "e4c60926a883134ecc66ee5e1fb14766e1946da1c679ff50cc5e8acd5d32da56",
+    "runner": "1623c8020fa2b984ea84abf8f6c0cb11f334d908ecb6ed4c36f09b957601581f",
+    "case": "3a7f0a28d231b0dd9a004f9aca68b5ef9a78c3d93bcce9520b481cf026f4359d",
+    "relay": "c71cb90102700a6bfe87bbb429374ec47b17ff4e5b9d61c9bf5bcedcfb067a55",
+    "resource_launcher": "998b709861ff3c16f2758e0fdf7e03322c93bb658cc3460b282fe06f8684ee90"
+  },
+  "unexercised": [
+    "installed-body cutover",
+    "selected-policy native TCP or independent-process restart",
+    "crash recovery",
+    "model-byte identity",
+    "hard aggregate GPU/provider containment",
+    "general task reliability",
+    "controlled causal policy comparison",
+    "native independent verification",
+    "autonomous development or promotion"
+  ]
+}
