@@ -36,14 +36,26 @@ malformed UTF-8 and inconsistent byte spans refuse. Canonical candidate and verd
 1536-byte ceiling. Citations identify retained source bytes and valid spans; valid citations do
 not make their interpretation correct.
 
-Each role packet supplies deterministic per-source line counts using the same retained UTF-8 byte
-line-splitting convention as citation validation. These inclusive, one-based limits guide the
-model; original source/request bytes and strict span validation remain unchanged. A model result
-never repairs, clamps or extends its own citation. Role instructions also state the existing
-1536-byte total canonical-result ceiling and prefer concise output with a writing margin. This is
-guidance for the model, not a new acceptance limit or an output-repair mechanism. Changed
-instructions receive new instruction and implementation identities under the same captured-profile
-fences.
+Each role packet binds the canonical full request digest and its metadata, then projects ordered
+sources as their original names, literal-byte digests and explicitly numbered lines. Line text
+preserves its original UTF-8 bytes and terminators using the same byte-splitting convention as
+citation validation. Rejoining those lines reconstructs each source and the canonical original
+request exactly. Source text is not duplicated within the packet. Original request/source custody
+stays unchanged; the model sees an attributed projection, not replacement source truth.
+
+Deterministic line counts retain the inclusive, one-based citation limits. Both roles are guided
+to cite the operative statement that supports a claim rather than an adjacent check. Explicit
+numbers aid selection; neither valid addresses nor this presentation prove semantic entailment.
+The model never repairs, clamps or extends its own citation. Projection overhead remains inside
+the unchanged packet and verifier-candidate reservation limits: a dense short-line source may
+refuse admission even within the source-byte maximum. No truncation makes it fit.
+
+Role instructions state the existing per-field character maxima and 1536-byte total canonical
+result ceiling, prefer concise findings and a short summary where present, and retain a writing
+margin. These are model guidance; strict schema, source-span and byte validation remain the
+acceptance boundary. Output schemas, hard limits, zero retries and original evidence stay
+unchanged. Changed projection and instructions receive new instruction and implementation
+identities under the same captured-profile fences; historical packets are not converted.
 
 The fixed `public-source-qwen@2` profile selects one exact configured shared, non-dedicated local
 Soulstone/vLLM/Qwen3.8-27B Chat capability. Its captured generation is 4096 context, 512 output,

@@ -1,0 +1,91 @@
+{
+  "schema": "lychd.creation.native-source-projection-feedback.v1",
+  "observed_at": "2026-10-17T16:22:20.710396+00:00",
+  "source_revision": "5844a228f59b4821b33097286c456176339f9502",
+  "target": {
+    "public_request_id": "3778887f-1721-4aa9-b8a5-3df8de400643",
+    "request_sha256": "655ec39bb0bf701fa9d387950026b294b5f618adcf63be9f2896bc35990dd5c7",
+    "prior_observation": "native-source-projection-2026-10-17.json"
+  },
+  "native_status": "accepted",
+  "external_assessment": {
+    "disposition": "partial",
+    "exposure": [
+      "Fresh context received the exact request, four literal source excerpts, two criteria, constructor output and verifier output.",
+      "No earlier external report or rubric was supplied to the reviewer."
+    ],
+    "limitations": [
+      "Source-only semantic review; no tests, imports, Git operations, network acquisition or provider execution were performed.",
+      "Reviewer model/runtime revision, calibration and independent sovereign identity are unattested.",
+      "No causal improvement, unfamiliar transfer, execution, promotion or successor authority is established."
+    ],
+    "reviewer_label": "fresh coding agent / source_projection_result_review_07",
+    "reviewer_revision": "model and runtime revision unattested",
+    "submitter_annotations": []
+  },
+  "literal_report_reference": {
+    "fixture": "native-source-projection-2026-10-17.json",
+    "json_pointer": "/external_review/exact_public_report_excerpt",
+    "utf8_bytes": 2977,
+    "sha256": "64c484fdd0c13d8e23dd5202ce52a9cc9dd3da29b0ef45b25c04c49cdbec8ad6",
+    "exact_bytes_appended": true
+  },
+  "native_criterion_coverage": {
+    "ordering": "not_assessed",
+    "discrimination": "not_assessed"
+  },
+  "owner_decision": {
+    "action": "hold",
+    "distinguishing_observation": "A permitted second-ID-greater assignment makes last-parked selection pass; the opposite ordering makes it fail. Any successor needs distinct current-local-operator authorization, fresh inputs, acceptance, admission and lineage.",
+    "reason": "Retain native acceptance and the external partial assessment separately. Both roles identify the ordering statements, but their categorical UUID-ordering premise and unconditional last-parked counterexample are unsupported. Hold this result for correction or separately admitted evaluation; this decision grants no successor, continuation, execution or promotion authority."
+  },
+  "feedback_status": "hold",
+  "sequence_observations": {
+    "assessment": 1,
+    "decision": 2,
+    "assessment_count": 1,
+    "decision_count": 1
+  },
+  "attribution_boundary": "Reviewer label/revision are submitter claims, not a sovereign or runtime attestation. Authenticated local-operator submission and its original attribution remain separate and survive replay; private principal/generation and target-profile bindings are omitted here.",
+  "operational_observations": {
+    "configuration": "Ordinary XDG/TOML/Rune/native CLI, protected TCP API, SAQ and retained PostgreSQL; no injected configuration.",
+    "outer_elapsed_seconds": 8.736199146020226,
+    "coordinator_elapsed_seconds": 8.604225201008376,
+    "model_calls": 0,
+    "prompt_tokens": 0,
+    "generated_tokens": 0,
+    "all_four_caseviews_and_old_parent_hold_preserved": true,
+    "case_candidate_verdict_execution_unchanged": true,
+    "normal_distinct_process_restart": true,
+    "fresh_protected_client": true,
+    "observed_identical_post200_replays": true,
+    "changed_same_id_bodies_refused409": true,
+    "replay_creates_no_new_rows_or_sequence": true,
+    "original_authenticated_submission_attribution_preserved": true,
+    "current_generation_exposed_by_api": false,
+    "existing_schema_revision": "0017",
+    "bootstrap_migration_or_new_backup_requested": false,
+    "retained_existing_private_backup_unchanged": true,
+    "backup_restore_proved": false,
+    "independent_recorded_process_identities_absent": 4,
+    "unit_and_group_absent": true,
+    "all_three_task_listener_ports_absent": true,
+    "exact_task_container_absent": true,
+    "original_owned_storage_exact_and_unattached": true,
+    "frozen_source_sdk_selected_inputs_and_installed_bindings_unchanged": true,
+    "namespace_descriptors_closed": true,
+    "independent_quiescent_model_counters_unchanged": true
+  },
+  "preceding_setup_failure": {
+    "elapsed_seconds": 2.7123473950196058,
+    "error": "retained_schema_revision_refused",
+    "application_spawned": false,
+    "creation_http_requests": 0,
+    "model_calls": 0,
+    "independent_resource_model_closure_passed": true,
+    "source_proven_repair": "Schema observer query uses configured lychd_db_version, not the unconfigured Alembic default table name. Revision0017 and production source unchanged; no migration.",
+    "exact_database_error_retained": false,
+    "unused_feedback_ids_preserved_for_fresh_admission": true
+  },
+  "boundary": "This is an actual native attachment of an external partial assessment and separate owner hold to the known-case result. Report PASS/PARTIAL text is not typed submitter coverage: both criteria remain not_assessed. No native verdict rewrite, Drift Outcome, child/continuation/promotion authority, numerical confidence, causal improvement, autonomous editor, hostile containment or hard ProviderGate attestation follows."
+}
