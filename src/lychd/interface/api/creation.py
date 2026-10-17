@@ -16,7 +16,11 @@ from lychd.compositions.creation.schemas import (
     CaseView,
     ContinueRequest,
     CreationRefused,
+    ExternalAssessment,
+    FeedbackEntry,
+    FeedbackView,
     InvestigationRequest,
+    OwnerDecision,
     decode,
     refuse,
 )
@@ -114,4 +118,49 @@ class CreationController(Controller):
                 sessions=state.services.bridge_sessions,
             )
         except (CreationRefused, ValidationError) as exc:
+            raise _refusal(exc) from None
+
+    @post(
+        "/{case_id:uuid}/assessments",
+        status_code=200,
+        operation_id="assessCreationInvestigation",
+        guards=[requires_scopes("runs:submit")],
+    )
+    async def assess(
+        self, case_id: FromPath[UUID], data: ExternalAssessment, request: Request[Any, Any, Any], state: State
+    ) -> FeedbackEntry:
+        service = _service(state)
+        try:
+            service.policy.http(request.auth, request.user, "assess")
+            document = ExternalAssessment.model_validate(await _document(request))
+            if document != data:
+                refuse("body_mismatch")
+            return await service.assess(case_id, document, authentication=request.auth, principal=request.user)
+        except (CreationRefused, ValidationError, UnicodeError) as exc:
+            raise _refusal(exc) from None
+
+    @post(
+        "/{case_id:uuid}/decisions",
+        status_code=200,
+        operation_id="decideCreationInvestigation",
+        guards=[requires_scopes("runs:submit")],
+    )
+    async def decide(
+        self, case_id: FromPath[UUID], data: OwnerDecision, request: Request[Any, Any, Any], state: State
+    ) -> FeedbackEntry:
+        service = _service(state)
+        try:
+            service.policy.http(request.auth, request.user, "decide")
+            document = OwnerDecision.model_validate(await _document(request))
+            if document != data:
+                refuse("body_mismatch")
+            return await service.decide(case_id, document, authentication=request.auth, principal=request.user)
+        except (CreationRefused, ValidationError, UnicodeError) as exc:
+            raise _refusal(exc) from None
+
+    @get("/{case_id:uuid}/feedback", operation_id="readCreationFeedback", guards=[requires_scopes("altar:read")])
+    async def feedback(self, case_id: FromPath[UUID], request: Request[Any, Any, Any], state: State) -> FeedbackView:
+        try:
+            return await _service(state).feedback(case_id, authentication=request.auth, principal=request.user)
+        except CreationRefused as exc:
             raise _refusal(exc) from None

@@ -11,7 +11,14 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from lychd.compositions.creation.schemas import OUTPUT_TOKENS, Candidate, InvestigationRequest, Verdict
+from lychd.compositions.creation.schemas import (
+    OUTPUT_TOKENS,
+    Candidate,
+    ExternalAssessment,
+    FeedbackTarget,
+    InvestigationRequest,
+    Verdict,
+)
 from lychd.domain.animation.capabilities import (
     CapabilityGrant,
     CapabilityPhase,
@@ -137,3 +144,16 @@ class CreationDispatcher:
             yield grant
         finally:
             self.leases.release(grant.lease.grant_id)
+
+
+def assessment_document(target: FeedbackTarget) -> ExternalAssessment:
+    return ExternalAssessment(
+        assessment_id=uuid4(),
+        target=target,
+        reviewer_label="external claimed reviewer",
+        reviewer_revision="report-v1",
+        report="PARTIAL: retained external report.\r\nExact č bytes.\n",
+        disposition="partial",
+        exposure=("Original request and native candidate",),
+        limitations=("No authenticated external reviewer identity",),
+    )

@@ -120,6 +120,65 @@ Responses project the case, original request, admissions, attempts, candidate, v
 noncompletion. Generated OpenAPI owns the transport schema. Authentication, Origin and CSRF remain
 server gates. The browser and callers do not create durable truth by display.
 
+## External assessment and owner hold
+
+The first feedback contract appends an external report and explicit local owner `hold` or `reject`
+to a completed revision 2 case. It preserves the original CaseView, candidate, native verdict,
+execution status, deadline and reservation. Implementation is recorded separately in
+[State of Work](../../state-of-the-work.md#smith-forge-promotion).
+
+An assessment UUID binds the retained request, profile, candidate and canonical native-verdict
+digests. Derive its source identity from the canonical ordered list of `{name, digest}` entries,
+where each digest covers the literal UTF-8 source text; derive criterion identity from the
+canonical original ordered `{id, predicate}` list. Retain exact report UTF-8 bytes and digest
+separately from the canonical intake body. Claimed reviewer label
+and revision are bounded attribution, not authenticated external identity. Record actual current
+submitting Sigil and authentication generation separately, with disclosed exposure and limitations.
+External disposition is `accepted`, `rejected`, `partial`, `incomplete` or `not_assessed`.
+Optional criterion/citation annotations belong explicitly to the submitter; absent criteria remain
+not assessed rather than acquiring invented reviewer judgments. Citations resolve only to the
+original sources and valid byte spans; they do not prove semantic entailment.
+
+The report is at most 8192 UTF-8 bytes; reviewer label and revision are each at most 128 bytes.
+Exposure and limitation lists each hold at most four 192-byte items. At most four annotations
+identify distinct original criteria and use the existing bounded finding/citation shape. Canonical
+assessment and decision bodies each fit 16384 bytes. Duplicate JSON keys, mismatched target,
+unknown criterion/source, invalid spans and missing candidate/verdict refuse.
+
+Feedback appends require an unencumbered completed case, all its inference claims resolved,
+each bound Run terminal and its current delivery settled, and no corresponding active local Run
+lease. Check these conditions and current local authority while holding the case lock, without
+expiring or altering execution. Retained revision 2 closures need no current model/profile readiness
+merely to receive feedback. Revision 1 writes remain refused.
+
+An owner decision has its own UUID and exact assessment id/digest and target binding. Its action is
+`hold` or `reject`, with a non-empty reason of at most 1024 UTF-8 bytes and optional distinguishing
+observation of at most 512 bytes. New decisions target the latest assessment. Every append shares
+one per-case sequence; the latest decision for that assessment is current. Another assessment
+makes earlier decisions historical and projects `review_required` until separately addressed.
+Before latest-target or capacity checks, identical canonical-body replay returns its original row;
+changed or cross-case identity refuses. Fresh current authority is still mandatory on every replay.
+Original attribution is never overwritten. Admit at most 16 assessments and 16 decisions per case;
+identical replay still works at capacity. Expose no update or delete. Additive persistence preserves
+all original custody, and downgrade refuses while feedback exists.
+
+The protected local routes use the same actual operator marker, object/action policy, Origin and
+CSRF gates. Append requires `runs:submit`; read requires `altar:read`.
+
+| Action | Route |
+| --- | --- |
+| Append or replay assessment | `POST /api/v1/creation/investigations/{case_id}/assessments` |
+| Append or replay owner decision | `POST /api/v1/creation/investigations/{case_id}/decisions` |
+| Read attributed feedback | `GET /api/v1/creation/investigations/{case_id}/feedback` |
+
+The separate feedback view projects `unassessed`, `review_required`, `hold` or `rejected`, with
+native status and external judgments alongside it. Native `accepted`, external `partial` and owner
+`hold` can therefore remain visible together. A hold records this application's disposition; it
+claims no global block on unrelated submissions or effects. Intake has no inference, queue,
+continuation, profile renewal or execution-state mutation path. A next evaluation, source edit,
+Atlas projection, training and promotion require their own contracts and admission. This first
+attachment establishes neither a complete feedback handoff nor measured recursive improvement.
+
 ## Revision continuity
 
 Revision 2 is the only current selector and Pattern. Its exact `public-source-qwen@2` profile

@@ -21,6 +21,8 @@ SOURCE_NAME_BYTES = 128
 REQUEST_BYTES = 16384
 INPUT_TOKENS = 3584
 OUTPUT_TOKENS = 512
+FEEDBACK_BYTES = 16384
+FEEDBACK_LIMIT = 16
 
 
 class CreationRefused(ValueError):  # noqa: N818 - domain refusal, not a runtime defect
@@ -223,3 +225,119 @@ def validate_output(request: InvestigationRequest, value: Candidate | Verdict) -
                 }
             )
     return canonical({"schema_valid": True, "citations": spans, "semantic_correctness": "not_established"})
+
+
+class FeedbackTarget(Record):
+    """Exact retained evidence identities; source texts are hashed as literal UTF-8."""
+
+    request_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    profile_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    candidate_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    verdict_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    sources_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    criteria_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class ExternalAssessment(Record):
+    assessment_id: UUID
+    target: FeedbackTarget
+    reviewer_label: str
+    reviewer_revision: str
+    report: str
+    disposition: Literal["accepted", "rejected", "partial", "incomplete", "not_assessed"]
+    exposure: tuple[str, ...] = Field(max_length=4)
+    limitations: tuple[str, ...] = Field(max_length=4)
+    submitter_annotations: tuple[Finding, ...] = Field(default=(), max_length=4)
+
+    @model_validator(mode="after")
+    def byte_bounds(self) -> ExternalAssessment:
+        bounded(self.reviewer_label, 128)
+        bounded(self.reviewer_revision, 128)
+        bounded(self.report, 8192)
+        for value in (*self.exposure, *self.limitations):
+            bounded(value, 192)
+        if len(canonical(self)) > FEEDBACK_BYTES:
+            refuse("feedback_body_bytes")
+        return self
+
+
+class OwnerDecision(Record):
+    decision_id: UUID
+    assessment_id: UUID
+    assessment_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    target: FeedbackTarget
+    action: Literal["hold", "reject"]
+    reason: str
+    distinguishing_observation: str | None = None
+
+    @model_validator(mode="after")
+    def byte_bounds(self) -> OwnerDecision:
+        bounded(self.reason, 1024)
+        if self.distinguishing_observation is not None:
+            bounded(self.distinguishing_observation, 512)
+        if len(canonical(self)) > FEEDBACK_BYTES:
+            refuse("feedback_body_bytes")
+        return self
+
+
+class FeedbackEntry(Record):
+    id: UUID
+    sequence: int
+    body_digest: str
+    body: dict[str, Any]
+    attribution: dict[str, Any]
+    created_at: str
+    report_digest: str | None
+    criterion_coverage: dict[str, Literal["submitter_annotation", "not_assessed"]]
+
+
+class FeedbackView(Record):
+    case_id: UUID
+    native_status: str
+    native_verdict: dict[str, Any] | None
+    target: FeedbackTarget | None
+    status: Literal["unassessed", "review_required", "hold", "rejected"]
+    current_assessment_id: UUID | None
+    current_decision_id: UUID | None
+    assessments: tuple[FeedbackEntry, ...]
+    decisions: tuple[FeedbackEntry, ...]
+
+
+def feedback_target(
+    request_bytes: bytes, profile_bytes: bytes, candidate_bytes: bytes, verdict_bytes: bytes
+) -> FeedbackTarget:
+    """Hash request/profile/candidate literal bytes and the canonical decoded native verdict.
+
+    sources_digest hashes a canonical list, in retained source order, of objects
+    with exactly name and digest (SHA-256 of that source's literal UTF-8 text).
+    criteria_digest hashes the canonical original criterion objects in retained order.
+    """
+    request = InvestigationRequest.model_validate(decode(request_bytes))
+    return FeedbackTarget(
+        request_digest=digest(request_bytes),
+        profile_digest=digest(profile_bytes),
+        candidate_digest=digest(candidate_bytes),
+        verdict_digest=digest(canonical(decode(verdict_bytes))),
+        sources_digest=digest(
+            canonical([{"name": s.name, "digest": digest(s.text.encode("utf-8"))} for s in request.sources])
+        ),
+        criteria_digest=digest(canonical([c.model_dump(mode="json") for c in request.criteria])),
+    )
+
+
+def validate_annotations(request: InvestigationRequest, assessment: ExternalAssessment) -> None:
+    """Check submitter mappings only; absence never fabricates an external judgment."""
+    annotations = assessment.submitter_annotations
+    expected = {criterion.id for criterion in request.criteria}
+    if len({a.criterion for a in annotations}) != len(annotations) or any(
+        a.criterion not in expected for a in annotations
+    ):
+        refuse("criterion_binding")
+    sources = {source.name: source.text.encode("utf-8") for source in request.sources}
+    for annotation in annotations:
+        for citation in annotation.citations:
+            data = sources.get(citation.source)
+            if data is None:
+                refuse("citation_source")
+            if not 1 <= citation.first_line <= citation.last_line <= len(data.splitlines(keepends=True)):
+                refuse("citation_span")

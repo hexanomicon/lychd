@@ -26,7 +26,11 @@ from lychd.compositions.creation.schemas import (
     CaseView,
     ContinueRequest,
     CreationRefused,
+    ExternalAssessment,
+    FeedbackEntry,
+    FeedbackView,
     InvestigationRequest,
+    OwnerDecision,
     Verdict,
     canonical,
     decode,
@@ -145,7 +149,15 @@ class LocalCreationPolicy:
         self.access = access
 
     def http(self, authentication: object, principal: Sigil, action: str) -> LocalOperatorAuthentication:
-        required = {"submit": "runs:submit", "continue": "runs:submit", "read": "altar:read", "cancel": "runs:cancel"}
+        required = {
+            "submit": "runs:submit",
+            "continue": "runs:submit",
+            "read": "altar:read",
+            "cancel": "runs:cancel",
+            "assess": "runs:submit",
+            "decide": "runs:submit",
+            "feedback": "altar:read",
+        }
         if (
             action not in required
             or not self.access.current(authentication)
@@ -375,6 +387,38 @@ class InvestigationService:
         for run_id in runs:
             await engine.cancel(run_id)
         return await self.store.read(case_id)
+
+    async def assess(
+        self, case_id: UUID, assessment: ExternalAssessment, *, authentication: object, principal: Sigil
+    ) -> FeedbackEntry:
+        self.policy.http(authentication, principal, "assess")
+        return await self.store.append_feedback(
+            case_id,
+            assessment,
+            authentication=authentication,
+            principal=principal,
+            leases_clear=self._feedback_leases_clear,
+        )
+
+    async def decide(
+        self, case_id: UUID, decision: OwnerDecision, *, authentication: object, principal: Sigil
+    ) -> FeedbackEntry:
+        self.policy.http(authentication, principal, "decide")
+        return await self.store.append_feedback(
+            case_id,
+            decision,
+            authentication=authentication,
+            principal=principal,
+            leases_clear=self._feedback_leases_clear,
+        )
+
+    def _feedback_leases_clear(self, run_ids: tuple[str, ...]) -> bool:
+        holders = {f"run:{run_id}" for run_id in run_ids}
+        return not any(lease.holder in holders for lease in self.leases.active())
+
+    async def feedback(self, case_id: UUID, *, authentication: object, principal: Sigil) -> FeedbackView:
+        self.policy.http(authentication, principal, "feedback")
+        return await self.store.feedback(case_id, authentication=authentication, principal=principal)
 
     async def stage(  # noqa: C901 - keep admission, inference and adoption profile fences explicit
         self, admission_id: UUID, run_id: str, role: Role, common: WorkflowServices

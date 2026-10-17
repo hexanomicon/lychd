@@ -13,13 +13,24 @@ from litestar import Litestar
 from litestar.config.csrf import CSRFConfig
 from litestar.datastructures import State
 
-from lychd.compositions.creation.schemas import CaseView, ContinueRequest, CreationRefused, canonical, decode, digest
+from lychd.compositions.creation.schemas import (
+    CaseView,
+    ContinueRequest,
+    CreationRefused,
+    FeedbackEntry,
+    FeedbackView,
+    OwnerDecision,
+    canonical,
+    decode,
+    digest,
+    feedback_target,
+)
 from lychd.compositions.creation.services import LocalCreationPolicy
 from lychd.domain.codex.local_access import LocalOperatorAccess
 from lychd.domain.codex.middleware import sigil_auth_middleware
 from lychd.interface.api.creation import CreationController
 from lychd.interface.web.openapi import StrictPydanticSchemaPlugin, build_openapi_config
-from tests.support.creation import capability
+from tests.support.creation import assessment_document, capability
 from tests.unit.compositions.test_creation import StageStore, stage_fixture
 from tests.web.conftest import TEST_ACCESS_PASSWORD, TEST_AUTHORIZATION
 
@@ -209,3 +220,88 @@ async def test_current_profile_cancel_fences_without_live_capability_admission(b
     sessions.create_session.assert_not_awaited()
     registry.get_capability.assert_not_called()
     registry.refresh_capability_state.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_feedback_routes_preserve_report_and_enforce_http_gates_and_duplicate_keys() -> None:
+    app, store, access = api()
+    view = cast("CaseView", store.view)
+    target = feedback_target(canonical(view.request), canonical(view.profile), b"{}", b"{}")
+    assessment = assessment_document(target)
+    entry = FeedbackEntry(
+        id=assessment.assessment_id,
+        sequence=1,
+        body_digest=digest(canonical(assessment)),
+        body=assessment.model_dump(mode="json"),
+        attribution={"principal": "magus"},
+        created_at=view.deadline,
+        report_digest=digest(assessment.report.encode()),
+        criterion_coverage={"predicate": "not_assessed"},
+    )
+    feedback = FeedbackView(
+        case_id=view.case_id,
+        native_status="accepted",
+        native_verdict={"disposition": "accepted"},
+        target=target,
+        status="review_required",
+        current_assessment_id=entry.id,
+        current_decision_id=None,
+        assessments=(entry,),
+        decisions=(),
+    )
+    append = AsyncMock(return_value=entry)
+    store.append_feedback = append
+    store.feedback = AsyncMock(return_value=feedback)
+    route = f"/api/v1/creation/investigations/{view.case_id}"
+    original = canonical(store.view)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=cast("Any", app)), base_url="http://testserver.local"
+    ) as client:
+        assert (await client.get(f"{route}/feedback")).status_code == 401
+        client.headers["authorization"] = TEST_AUTHORIZATION
+        assert (await client.get(f"{route}/feedback")).json()["native_status"] == "accepted"
+        headers = {"content-type": "application/json"}
+        assert (
+            await client.post(f"{route}/assessments", content=canonical(assessment), headers=headers)
+        ).status_code == 403
+        client.headers["x-creation-csrf"] = client.cookies["creation-csrf"]
+        assert (
+            await client.post(
+                f"{route}/assessments",
+                content=canonical(assessment),
+                headers={**headers, "origin": "https://foreign.invalid"},
+            )
+        ).status_code == 403
+        response = await client.post(f"{route}/assessments", content=canonical(assessment), headers=headers)
+        assert response.status_code == 200, response.text
+        assert response.json()["body"]["report"].encode() == assessment.report.encode()
+        replay = b" \n" + canonical(assessment)
+        assert (await client.post(f"{route}/assessments", content=replay, headers=headers)).status_code == 200
+        duplicate = canonical(assessment)[:-1] + b',"report":"changed"}'
+        refused = await client.post(f"{route}/assessments", content=duplicate, headers=headers)
+        assert refused.status_code == 409
+        assert append.await_count == 2
+        decision = OwnerDecision(
+            decision_id=uuid4(),
+            assessment_id=entry.id,
+            assessment_digest=entry.body_digest,
+            target=target,
+            action="hold",
+            reason="Owner holds disagreement.",
+        )
+        assert (
+            await client.post(f"{route}/decisions", content=canonical(decision), headers=headers)
+        ).status_code == 200
+        access.revoke()
+        assert (await client.get(f"{route}/feedback")).status_code == 401
+        assert (
+            await client.post(f"{route}/assessments", content=canonical(assessment), headers=headers)
+        ).status_code == 401
+    assert canonical(store.view) == original
+    schema = app.openapi_schema.to_schema()
+    assert "ExternalAssessment" in str(
+        schema["paths"]["/api/v1/creation/investigations/{case_id}/assessments"]["post"]["requestBody"]
+    )
+    assert "OwnerDecision" in str(
+        schema["paths"]["/api/v1/creation/investigations/{case_id}/decisions"]["post"]["requestBody"]
+    )

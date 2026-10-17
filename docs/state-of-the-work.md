@@ -1950,6 +1950,45 @@ named storage. Independent resource/model observations settle the task processes
 container; storage intentionally remains. No permanent daemon, autonomous editing or improvement,
 crash recovery, whole-environment closure or model-byte attestation follows.
 
+A separate protected feedback surface now retains an exact external UTF-8 report, claimed reviewer
+and authenticated submitting authority against the original request/profile/candidate/verdict and
+source/criterion identities. Optional submitter annotations stay distinct from the report; absent
+criteria remain `not_assessed`. An explicit owner `hold` or `reject` preserves the native verdict.
+Canonical identical replay returns original attribution; conflicting identity refuses. Case locking
+serializes append sequence and current decision, and a new assessment makes prior decisions
+historical. Feedback neither expires nor mutates original execution and requires settled bound
+Runs/deliveries, resolved inference and no matching local lease. Historical revision 2 assessment
+needs no current model readiness. There is no successor proposal or execution path.
+
+Focused tests cover current credentials, scopes, Origin/CSRF, duplicate JSON, literal report and
+canonical target bounds. Fourteen real PostgreSQL cases cover custody, restart attribution,
+concurrent sequence/decisions, capacity/replay, post-lock revocation and settlement refusals. The
+complete affected migration module passes 89 cases, including additive `0017`, original custody
+and retained-feedback downgrade refusal. Generated API/client checks and 341 frontend tests pass;
+previous OpenAPI paths/schemas are unchanged. These trusted inert-model checks issue no inference.
+A dated ordinary-native observation at `69829ad` appends the original 2611-byte external report
+and explicit owner hold in approximately 10 seconds, with no additional inference. Native `accepted`,
+external `partial` and owner `hold` remain separate. An ordinary different-process restart and fresh
+protected client preserve both historical cases, exact feedback and original attribution; changed
+same-ID bodies refuse. The API does not expose the restarted current authority generation. Root
+independently observes task processes, ports, unit/group and container absent, unchanged model
+counters and installed bindings, and exact retained named storage without attachment. A complete
+private logical backup precedes migration; restore and rollback remain unproved. This establishes
+dated ordinary feedback custody and settlement, not a successor, automatic editing or measured
+improvement.
+
+A further unfamiliar case at `16da86f` retains `incomplete/UnexpectedModelBehavior` after one
+constructor call (1956 prompt and 423 generated tokens), with no adopted candidate or verifier.
+Offline validation of the exact returned arguments finds a 514-character summary against 512;
+compact JSON is also 1632 bytes against the unchanged 1536-byte ceiling. The SDK's internal exception
+message was not retained. Separate source-only review finds the core ordering and possible
+counterexample correct, but both criteria fail operative citation support: test line 31 checks
+non-None; the decisive maximum-ID assertion is line 32. The approximately 29-second native occurrence
+preserves this noncompletion and earlier custody through normal restart and observed protected
+replay without new inference. Independent resource/model settlement passes; owned storage and the
+private backup remain. Private operator lineage supplies no native successor authority. This is a
+failed transfer observation, not useful native completion or measured improvement.
+
 The wider SDLC law defines attributable request → candidate → verification → promotion-request →
 target-owner-effect ownership. The Creation method and Ouroboros map connect work to separately
 governed evaluation, memory, training and body change. The Development bootstrap procedure orders
@@ -1959,7 +1998,9 @@ or autonomous development service.
 **Boundary — Not yet:** This investigation performs no source editing, executable workspace,
 filesystem/command execution, safe Forge, autonomous repair, target-owner promotion, rollback or
 self-extension. Its local credential role supplies no remote IAM or person-level tenancy; an
-unknown issued inference has no automatic slot-release path. There is likewise no instantiated
+unknown issued inference has no automatic slot-release path. External feedback supplies no native
+successor lineage/admission, automatic correction or measured recursive improvement. There is
+likewise no instantiated
 distributed repository identity or maintainer roster, executable key-custody/rotation mechanism,
 governance-epoch ledger, quorum verifier, signed portable promotion envelope, independent
 attestation plane, canonical source on Radicle, Radicle node topology or downstream-mirror cutover.
@@ -1971,6 +2012,8 @@ attestation plane, canonical source on Radicle, Radicle node topology or downstr
 - **Verification:** [Dated native investigation outcomes](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/creation/investigation-2026-10-17.json) retains the three distinct occurrences, exact public inputs/outputs, resource evidence and separate verdicts.
 - **Verification:** [Ordinary native configuration observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/creation/native-configuration-2026-10-17.json) retains the separate noncompletion, exact public packet/result, canonical-byte failure and bounded service/replay evidence.
 - **Verification:** [Ordinary native two-role observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/creation/native-configuration-guidance-2026-10-17.json) retains the distinct successful occurrence, exact public role packets/results, replay/custody observations and separate partial external judgment.
+- **Verification:** [Ordinary native feedback observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/creation/native-feedback-2026-10-17.json) retains the exact external report, separate native/external/owner dispositions, normal restart/replay and bounded resource observations.
+- **Verification:** [Unfamiliar native noncompletion](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/creation/native-successor-2026-10-17.json) retains the exact public role packet, unadopted output, separate schema/byte failures and attributed citation review.
 - **Topic:** [Creation investigation](./compositions/creation/index.md), [Smith](./sepulcher/extensions/smith.md),
   [Creation](./sepulcher/extensions/weaver/creation.md), and [Ouroboros](./sepulcher/extensions/weaver/ouroboros.md),
   with [Development bootstrap](./sepulcher/extensions/weaver/development-bootstrap.md) and

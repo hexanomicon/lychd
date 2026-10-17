@@ -1002,6 +1002,29 @@
         "title": "CaseView",
         "type": "object"
       },
+      "Citation": {
+        "additionalProperties": false,
+        "properties": {
+          "first_line": {
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "last_line": {
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "first_line",
+          "last_line",
+          "source"
+        ],
+        "title": "Citation",
+        "type": "object"
+      },
       "ConsentCard": {
         "properties": {
           "args": {
@@ -1628,6 +1651,303 @@
           "summary"
         ],
         "title": "EvidenceItem",
+        "type": "object"
+      },
+      "ExternalAssessment": {
+        "additionalProperties": false,
+        "properties": {
+          "assessment_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "disposition": {
+            "enum": [
+              "accepted",
+              "rejected",
+              "partial",
+              "incomplete",
+              "not_assessed"
+            ],
+            "type": "string"
+          },
+          "exposure": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {}
+              ]
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "limitations": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {}
+              ]
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "report": {
+            "type": "string"
+          },
+          "reviewer_label": {
+            "type": "string"
+          },
+          "reviewer_revision": {
+            "type": "string"
+          },
+          "submitter_annotations": {
+            "default": [],
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/Finding"
+                },
+                {}
+              ]
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "target": {
+            "$ref": "#/components/schemas/FeedbackTarget"
+          }
+        },
+        "required": [
+          "assessment_id",
+          "disposition",
+          "exposure",
+          "limitations",
+          "report",
+          "reviewer_label",
+          "reviewer_revision",
+          "target"
+        ],
+        "title": "ExternalAssessment",
+        "type": "object"
+      },
+      "FeedbackEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "attribution": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "body": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "body_digest": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "criterion_coverage": {
+            "additionalProperties": {
+              "enum": [
+                "submitter_annotation",
+                "not_assessed"
+              ],
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "report_digest": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sequence": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "attribution",
+          "body",
+          "body_digest",
+          "created_at",
+          "criterion_coverage",
+          "id",
+          "report_digest",
+          "sequence"
+        ],
+        "title": "FeedbackEntry",
+        "type": "object"
+      },
+      "FeedbackTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "candidate_digest": {
+            "type": "string"
+          },
+          "criteria_digest": {
+            "type": "string"
+          },
+          "profile_digest": {
+            "type": "string"
+          },
+          "request_digest": {
+            "type": "string"
+          },
+          "sources_digest": {
+            "type": "string"
+          },
+          "verdict_digest": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidate_digest",
+          "criteria_digest",
+          "profile_digest",
+          "request_digest",
+          "sources_digest",
+          "verdict_digest"
+        ],
+        "title": "FeedbackTarget",
+        "type": "object"
+      },
+      "FeedbackView": {
+        "additionalProperties": false,
+        "properties": {
+          "assessments": {
+            "items": {
+              "$ref": "#/components/schemas/FeedbackEntry"
+            },
+            "type": "array"
+          },
+          "case_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "current_assessment_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current_decision_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/FeedbackEntry"
+            },
+            "type": "array"
+          },
+          "native_status": {
+            "type": "string"
+          },
+          "native_verdict": {
+            "oneOf": [
+              {
+                "additionalProperties": {},
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "unassessed",
+              "review_required",
+              "hold",
+              "rejected"
+            ],
+            "type": "string"
+          },
+          "target": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "assessments",
+          "case_id",
+          "current_assessment_id",
+          "current_decision_id",
+          "decisions",
+          "native_status",
+          "native_verdict",
+          "status",
+          "target"
+        ],
+        "title": "FeedbackView",
+        "type": "object"
+      },
+      "Finding": {
+        "additionalProperties": false,
+        "properties": {
+          "citations": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/Citation"
+                },
+                {}
+              ]
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "claim": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "criterion": {
+            "type": "string"
+          },
+          "unknown": {
+            "maxLength": 192,
+            "type": "string"
+          }
+        },
+        "required": [
+          "citations",
+          "claim",
+          "criterion",
+          "unknown"
+        ],
+        "title": "Finding",
         "type": "object"
       },
       "FrameworkError": {
@@ -2642,6 +2962,55 @@
           "workflow_name"
         ],
         "title": "OrbRunSummary",
+        "type": "object"
+      },
+      "OwnerDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "hold",
+              "reject"
+            ],
+            "type": "string"
+          },
+          "assessment_digest": {
+            "type": "string"
+          },
+          "assessment_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "decision_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "distinguishing_observation": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "target": {
+            "$ref": "#/components/schemas/FeedbackTarget"
+          }
+        },
+        "required": [
+          "action",
+          "assessment_digest",
+          "assessment_id",
+          "decision_id",
+          "reason",
+          "target"
+        ],
+        "title": "OwnerDecision",
         "type": "object"
       },
       "PatternReference": {
@@ -5788,6 +6157,86 @@
         "summary": "Read"
       }
     },
+    "/api/v1/creation/investigations/{case_id}/assessments": {
+      "post": {
+        "deprecated": false,
+        "operationId": "assessCreationInvestigation",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalAssessment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackEntry"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Assess"
+      }
+    },
     "/api/v1/creation/investigations/{case_id}/cancel": {
       "post": {
         "deprecated": false,
@@ -5936,6 +6385,156 @@
           }
         },
         "summary": "ContinueCase"
+      }
+    },
+    "/api/v1/creation/investigations/{case_id}/decisions": {
+      "post": {
+        "deprecated": false,
+        "operationId": "decideCreationInvestigation",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackEntry"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Decide"
+      }
+    },
+    "/api/v1/creation/investigations/{case_id}/feedback": {
+      "get": {
+        "deprecated": false,
+        "operationId": "readCreationFeedback",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackView"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Feedback"
       }
     },
     "/api/v1/loom": {

@@ -9,20 +9,30 @@ from uuid import UUID, uuid4
 from sqlalchemy import func, select, text
 
 from lychd.compositions.creation.schemas import (
+    FEEDBACK_LIMIT,
     INPUT_TOKENS,
     OUTPUT_TOKENS,
     RESPONSE_BYTES,
     CaseView,
     ContinueRequest,
+    ExternalAssessment,
+    FeedbackEntry,
+    FeedbackTarget,
+    FeedbackView,
     InvestigationRequest,
+    OwnerDecision,
     canonical,
     decode,
     digest,
+    feedback_target,
     refuse,
+    validate_annotations,
 )
-from lychd.db.models.creation import CreationAdmission, CreationAttempt, CreationCase
+from lychd.db.models.creation import CreationAdmission, CreationAttempt, CreationCase, CreationFeedback
 from lychd.db.models.run import Run
 from lychd.db.models.run_delivery import RunDelivery
+from lychd.domain.codex.sigil import Sigil
+from lychd.domain.cortex.runs import TERMINAL_STATUSES
 
 
 class DbCreationStore:
@@ -379,3 +389,216 @@ class DbCreationStore:
             )
             await session.commit()
             return result
+
+    @staticmethod
+    def _feedback_target(row: CreationCase) -> FeedbackTarget:
+        if row.candidate_bytes is None or row.verdict_bytes is None:
+            refuse("feedback_evidence_missing")
+        return feedback_target(row.request_bytes, row.profile_bytes, row.candidate_bytes, row.verdict_bytes)
+
+    @staticmethod
+    def _feedback_entry(row: CreationFeedback, request: InvestigationRequest) -> FeedbackEntry:
+        if digest(row.body_bytes) != row.body_digest:
+            refuse("feedback_custody")
+        body = decode(row.body_bytes)
+        annotations: set[str] = set()
+        if row.kind == "assessment":
+            if (
+                row.report_bytes is None
+                or row.report_bytes != body["report"].encode("utf-8")
+                or digest(row.report_bytes) != row.report_digest
+            ):
+                refuse("feedback_custody")
+            annotations = {a["criterion"] for a in body["submitter_annotations"]}
+        return FeedbackEntry(
+            id=row.id,
+            sequence=row.sequence,
+            body_digest=row.body_digest,
+            body=body,
+            attribution=decode(row.attribution_bytes),
+            created_at=row.created_at.isoformat(),
+            report_digest=row.report_digest,
+            criterion_coverage={
+                c.id: "submitter_annotation" if c.id in annotations else "not_assessed" for c in request.criteria
+            }
+            if row.kind == "assessment"
+            else {},
+        )
+
+    async def _feedback_settled(self, session: Any, row: CreationCase, leases_clear: Any) -> None:
+        profile = decode(row.profile_bytes)
+        if (profile.get("composition"), profile.get("revision"), profile.get("profile")) != (
+            "creation.investigation",
+            "2",
+            "public-source-qwen@2",
+        ):
+            refuse("feedback_revision")
+        if (
+            row.slot is not None
+            or row.cancelled
+            or row.verdict_bytes is None
+            or row.candidate_bytes is None
+            or row.status != decode(row.verdict_bytes)["disposition"]
+        ):
+            refuse("feedback_unsettled")
+        unresolved = await session.scalar(
+            select(CreationAttempt.id).where(
+                CreationAttempt.case_id == row.id, CreationAttempt.response_bytes.is_(None)
+            )
+        )
+        if unresolved is not None:
+            refuse("feedback_unresolved_claim")
+        admissions = list(
+            await session.scalars(
+                select(CreationAdmission).where(CreationAdmission.case_id == row.id).order_by(CreationAdmission.id)
+            )
+        )
+        if not admissions or any(a.run_id is None for a in admissions):
+            refuse("feedback_run_unsettled")
+        for admission in admissions:
+            run = await session.scalar(select(Run).where(Run.id == admission.run_id).with_for_update())
+            binding = decode(admission.binding_bytes)
+            if (
+                run is None
+                or run.status not in TERMINAL_STATUSES
+                or run.workflow_name != "creation.investigate"
+                or run.source != "creation"
+                or run.pattern_manifest != binding["pattern"]
+                or run.sigil_name != binding["principal"]
+                or run.intent.get("prompt") != str(admission.id)
+                or run.intent.get("session_id") != binding["session_id"]
+            ):
+                refuse("feedback_run_unsettled")
+            delivery = await session.scalar(
+                select(RunDelivery)
+                .where(RunDelivery.run_id == run.id, RunDelivery.enqueue_seq == run.enqueue_seq)
+                .with_for_update()
+            )
+            if delivery is None or delivery.state != "settled":
+                refuse("feedback_delivery_unsettled")
+        if not leases_clear(tuple(str(a.run_id) for a in admissions)):
+            refuse("feedback_active_lease")
+
+    async def append_feedback(
+        self,
+        case_id: UUID,
+        body: ExternalAssessment | OwnerDecision,
+        *,
+        authentication: object,
+        principal: Sigil,
+        leases_clear: Any,
+    ) -> FeedbackEntry:
+        """Serialize custody only; never expire, renew, infer or mutate the original case."""
+        is_assessment = isinstance(body, ExternalAssessment)
+        record_id = body.assessment_id if is_assessment else body.decision_id
+        action = "assess" if is_assessment else "decide"
+        body_bytes = canonical(body)
+        async with self.factory() as session:
+            row = await self._case(session, case_id)
+            self.policy.http(authentication, principal, action)
+            # Coordinate the globally unique client identity even across different cases.
+            await session.execute(
+                text("SELECT pg_advisory_xact_lock(:key)"),
+                {"key": int.from_bytes(record_id.bytes[:8], "big", signed=True)},
+            )
+            self.policy.http(authentication, principal, action)
+            existing = await session.get(CreationFeedback, record_id)
+            request = InvestigationRequest.model_validate(decode(row.request_bytes))
+            if existing is not None:
+                if (
+                    existing.case_id != case_id
+                    or existing.body_bytes != body_bytes
+                    or existing.kind != ("assessment" if is_assessment else "decision")
+                ):
+                    refuse("conflicting_feedback_replay")
+                self.policy.http(authentication, principal, action)
+                return self._feedback_entry(existing, request)
+            await self._feedback_settled(session, row, leases_clear)
+            if body.target != self._feedback_target(row):
+                refuse("feedback_target")
+            records = list(
+                await session.scalars(
+                    select(CreationFeedback)
+                    .where(CreationFeedback.case_id == case_id)
+                    .order_by(CreationFeedback.sequence)
+                )
+            )
+            kind = "assessment" if is_assessment else "decision"
+            if sum(record.kind == kind for record in records) >= FEEDBACK_LIMIT:
+                refuse("feedback_capacity")
+            if isinstance(body, ExternalAssessment):
+                validate_annotations(request, body)
+            else:
+                assessments = [record for record in records if record.kind == "assessment"]
+                if not assessments or (assessments[-1].id, assessments[-1].body_digest) != (
+                    body.assessment_id,
+                    body.assessment_digest,
+                ):
+                    refuse("feedback_latest_assessment")
+                self._feedback_entry(assessments[-1], request)
+            actor = self.policy.http(authentication, principal, action)
+            record = CreationFeedback(
+                id=record_id,
+                case_id=case_id,
+                sequence=records[-1].sequence + 1 if records else 1,
+                kind=kind,
+                assessment_id=None if is_assessment else body.assessment_id,
+                body_bytes=body_bytes,
+                body_digest=digest(body_bytes),
+                report_bytes=body.report.encode("utf-8") if isinstance(body, ExternalAssessment) else None,
+                report_digest=digest(body.report.encode("utf-8")) if isinstance(body, ExternalAssessment) else None,
+                attribution_bytes=canonical(
+                    {
+                        "subject": actor.subject,
+                        "authentication_generation": str(actor.authentication_generation),
+                        "principal": principal.name,
+                        "scopes": sorted(principal.scopes),
+                        "role": "local-operator",
+                    }
+                ),
+            )
+            session.add(record)
+            await session.flush()
+            self.policy.http(authentication, principal, action)
+            result = self._feedback_entry(record, request)
+            await session.commit()
+            return result
+
+    async def feedback(self, case_id: UUID, *, authentication: object, principal: Sigil) -> FeedbackView:
+        """Protected historical projection without invoking execution expiration."""
+        async with self.factory() as session:
+            row = await self._case(session, case_id)
+            self.policy.http(authentication, principal, "feedback")
+            records = list(
+                await session.scalars(
+                    select(CreationFeedback)
+                    .where(CreationFeedback.case_id == case_id)
+                    .order_by(CreationFeedback.sequence)
+                )
+            )
+            request = InvestigationRequest.model_validate(decode(row.request_bytes))
+            assessments = tuple(
+                self._feedback_entry(record, request) for record in records if record.kind == "assessment"
+            )
+            decisions = tuple(self._feedback_entry(record, request) for record in records if record.kind == "decision")
+            latest = assessments[-1] if assessments else None
+            current = next(
+                (d for d in reversed(decisions) if latest is not None and d.body["assessment_id"] == str(latest.id)),
+                None,
+            )
+            self.policy.http(authentication, principal, "feedback")
+            return FeedbackView(
+                case_id=case_id,
+                native_status=row.status,
+                native_verdict=decode(row.verdict_bytes) if row.verdict_bytes else None,
+                target=self._feedback_target(row)
+                if row.candidate_bytes is not None and row.verdict_bytes is not None
+                else None,
+                status=("hold" if current.body["action"] == "hold" else "rejected")
+                if current is not None
+                else ("review_required" if latest else "unassessed"),
+                current_assessment_id=latest.id if latest else None,
+                current_decision_id=current.id if current else None,
+                assessments=assessments,
+                decisions=decisions,
+            )

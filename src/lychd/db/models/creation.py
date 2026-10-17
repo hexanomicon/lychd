@@ -63,3 +63,32 @@ class CreationAttempt(UUIDAuditBase):
     validation_bytes: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     adopted: Mapped[bool] = mapped_column(default=False)
     error: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
+class CreationFeedback(UUIDAuditBase):
+    """Append-only external assessment and owner disposition custody for Creation."""
+
+    __tablename__ = "creation_feedback"
+    __table_args__ = (
+        UniqueConstraint("case_id", "sequence", name="uq_creation_feedback_case_sequence"),
+        CheckConstraint("sequence > 0", name="positive_sequence"),
+        CheckConstraint("kind IN ('assessment', 'decision')", name="kind"),
+        CheckConstraint("octet_length(body_bytes) <= 16384", name="body_bound"),
+        CheckConstraint("report_bytes IS NULL OR octet_length(report_bytes) <= 8192", name="report_bound"),
+        CheckConstraint("octet_length(attribution_bytes) <= 16384", name="attribution_bound"),
+        CheckConstraint(
+            "(kind = 'assessment' AND assessment_id IS NULL AND report_bytes IS NOT NULL AND report_digest IS NOT NULL) OR (kind = 'decision' AND assessment_id IS NOT NULL AND report_bytes IS NULL AND report_digest IS NULL)",
+            name="custody_shape",
+        ),
+    )
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("creation_case.id", ondelete="RESTRICT"))
+    sequence: Mapped[int]
+    kind: Mapped[str] = mapped_column(String(16))
+    assessment_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("creation_feedback.id", ondelete="RESTRICT"), nullable=True
+    )
+    body_bytes: Mapped[bytes] = mapped_column(LargeBinary)
+    body_digest: Mapped[str] = mapped_column(String(64))
+    report_bytes: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    report_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    attribution_bytes: Mapped[bytes] = mapped_column(LargeBinary)

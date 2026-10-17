@@ -74,6 +74,18 @@ package promotion, compatibility gate, rollback controller or self-extension run
 publishing the investigation contract. [State of Work](../state-of-the-work.md#smith-forge-promotion)
 owns implementation and delivery status.
 
+### Retain external assessment before another change
+
+Creation may append an externally supplied assessment to exact retained investigation evidence,
+then retain an explicit local owner's hold or rejection. Preserve the report bytes and claimed
+reviewer separately from authenticated submitting authority and any submitter annotations. Native
+verdict, external judgment and owner disposition remain distinct; completion, agreement and a
+recorded decision grant no execution or promotion authority. The
+[bounded application contract](../compositions/creation/index.md#external-assessment-and-owner-hold)
+fixes custody, settlement, replay and authority. This attachment is no native Drift Outcome and
+changes neither Drift's evaluation jurisdiction nor delivery status. A successor needs its own
+inputs, acceptance, admission and lineage; no automatic successor follows from feedback.
+
 ### Lifecycle and ownership
 
 The lifecycle can return to an earlier question when evidence defeats its premise. Each return

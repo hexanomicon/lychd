@@ -7,8 +7,9 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator, Iterator
+from types import SimpleNamespace
 from typing import Any, cast
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
@@ -28,6 +29,7 @@ from lychd.compositions.creation.schemas import (
     ContinueRequest,
     CreationRefused,
     InvestigationRequest,
+    OwnerDecision,
     canonical,
     decode,
     digest,
@@ -38,7 +40,7 @@ from lychd.compositions.creation.workflow import investigation_workflow
 from lychd.db.checkpoints import PostgresStasisStore
 from lychd.db.creation import DbCreationStore
 from lychd.db.models import CodexPreauthorization, Consent, Run, RunCheckpoint, RunDelivery, Session, Step
-from lychd.db.models.creation import CreationAdmission, CreationAttempt, CreationCase
+from lychd.db.models.creation import CreationAdmission, CreationAttempt, CreationCase, CreationFeedback
 from lychd.db.sessions import DbBridgeSessionStore
 from lychd.domain.codex.ledger import CodexConsentLedger
 from lychd.domain.codex.local_access import LocalOperatorAccess
@@ -57,6 +59,7 @@ from tests.support.blockworld import CapturedQueue, SimulatedProcessLoss
 from tests.support.creation import (
     CreationDispatcher,
     CreationRegistry,
+    assessment_document,
     candidate_document,
     capability,
     request_document,
@@ -90,6 +93,7 @@ async def factory(pg_url: str) -> AsyncIterator[async_sessionmaker[AsyncSession]
             CreationCase.__table__,
             CreationAdmission.__table__,
             CreationAttempt.__table__,
+            CreationFeedback.__table__,
         ],
     )
     async with engine.begin() as connection:
@@ -331,3 +335,205 @@ async def test_postgres_profile_two_adoption_checks_observed_usage_after_complet
     assert view.verdict is None
     assert view.status == ("candidate" if accepted else "incomplete")
     assert view.slot_encumbered is accepted
+
+
+async def completed_feedback_case(factory: async_sessionmaker[AsyncSession]) -> tuple[Boot, UUID, Any]:
+    boot = Boot(factory)
+
+    async def accepted_response(messages: Any, _info: Any) -> ModelResponse:
+        boot.messages.append(ModelMessagesTypeAdapter.dump_json(messages))
+        output = (
+            candidate_document()
+            if len(boot.messages) == 1
+            else verdict_document().model_copy(update={"disposition": "accepted"})
+        )
+        return ModelResponse(
+            parts=[ToolCallPart("final_result", output.model_dump(mode="json"))],
+            usage=RequestUsage(input_tokens=100, output_tokens=80),
+        )
+
+    boot.dispatcher.model = FunctionModel(accepted_response)
+    request = request_document()
+    run_id = await boot.submit(request)
+    assert (await boot.drive(run_id))["status"] == "done"
+    view = await boot.service.feedback(
+        request.request_id, authentication=boot.authentication, principal=default_local_sigil()
+    )
+    assert view.status == "unassessed"
+    assert view.target is not None
+    return boot, request.request_id, assessment_document(view.target)
+
+
+async def test_feedback_custody_replay_disagreement_restart_and_no_execution_change(
+    factory: async_sessionmaker[AsyncSession],
+) -> None:
+    boot, case_id, assessment = await completed_feedback_case(factory)
+    original = canonical(await boot.store.read(case_id))
+    messages = list(boot.messages)
+    async with factory() as session:
+        execution_before = list((await session.execute(select(Run.__table__))).mappings())
+        deliveries_before = list((await session.execute(select(RunDelivery.__table__))).mappings())
+    restored = Boot(factory, boot.messages)
+    restored.service.registry = None  # historical closure needs no current capability
+    kwargs: dict[str, Any] = {"authentication": restored.authentication, "principal": default_local_sigil()}
+    entry = await restored.service.assess(case_id, assessment, **kwargs)
+    assert entry.criterion_coverage == {"predicate": "not_assessed"}
+    assert entry.body["report"].encode() == assessment.report.encode()
+    assert entry.report_digest == digest(assessment.report.encode())
+    assert restored.authentication is not None
+    assert entry.attribution["authentication_generation"] == str(restored.authentication.authentication_generation)
+    assert entry.attribution["principal"] != assessment.reviewer_label
+    decision = OwnerDecision(
+        decision_id=uuid4(),
+        assessment_id=entry.id,
+        assessment_digest=entry.body_digest,
+        target=assessment.target,
+        action="hold",
+        reason="Native and external judgments disagree.",
+    )
+    held = await restored.service.decide(case_id, decision, **kwargs)
+    projection = await restored.service.feedback(case_id, **kwargs)
+    assert projection.status == "hold"
+    assert projection.assessments[-1].body["disposition"] == "partial"
+    assert projection.native_verdict == decode(original)["verdict"]
+    assert projection.native_status == "accepted"
+    later = assessment.model_copy(update={"assessment_id": uuid4(), "report": "Later external report"})
+    await restored.service.assess(case_id, later, **kwargs)
+    assert await restored.service.decide(case_id, decision, **kwargs) == held
+    assert (await restored.service.feedback(case_id, **kwargs)).status == "review_required"
+    with pytest.raises(CreationRefused, match="feedback_latest_assessment"):
+        await restored.service.decide(case_id, decision.model_copy(update={"decision_id": uuid4()}), **kwargs)
+    with pytest.raises(CreationRefused, match="conflicting_feedback_replay"):
+        await restored.service.assess(case_id, assessment.model_copy(update={"report": "Changed report"}), **kwargs)
+    assert boot.messages == messages
+    async with factory() as session:
+        assert list((await session.execute(select(Run.__table__))).mappings()) == execution_before
+        assert list((await session.execute(select(RunDelivery.__table__))).mappings()) == deliveries_before
+    other_request = request_document()
+    await boot.submit(other_request)
+    with pytest.raises(CreationRefused, match="conflicting_feedback_replay"):
+        await restored.service.assess(other_request.request_id, assessment, **kwargs)
+    third = Boot(factory)
+    assert (
+        await third.service.assess(
+            case_id, assessment, authentication=third.authentication, principal=default_local_sigil()
+        )
+        == entry
+    )
+    restored.access.revoke()
+    with pytest.raises(CreationRefused, match="local_authority"):
+        await restored.service.assess(case_id, assessment, **kwargs)
+    assert canonical(await boot.store.read(case_id)) == original
+    async with factory() as session:
+        retained = await session.get(CreationFeedback, entry.id)
+        assert retained is not None
+        assert retained.report_bytes == assessment.report.encode()
+
+
+@pytest.mark.parametrize("failure", ["running", "delivery", "unresolved", "lease", "revision", "target"])
+async def test_feedback_refuses_unsettled_or_wrong_closure_without_mutation(
+    factory: async_sessionmaker[AsyncSession], failure: str
+) -> None:
+    boot, case_id, assessment = await completed_feedback_case(factory)
+    async with factory() as session:
+        row = await session.get(CreationCase, case_id)
+        assert row is not None
+        admission = await session.get(CreationAdmission, row.current_admission_id)
+        assert admission is not None
+        if failure == "running":
+            run = await session.get(Run, admission.run_id)
+            assert run is not None
+            run.status = "running"
+        elif failure == "delivery":
+            delivery = await session.scalar(select(RunDelivery).where(RunDelivery.run_id == admission.run_id))
+            assert delivery is not None
+            delivery.state = "claimed"
+        elif failure == "unresolved":
+            attempt = await session.scalar(
+                select(CreationAttempt).where(CreationAttempt.case_id == case_id, CreationAttempt.role == "verifier")
+            )
+            assert attempt is not None
+            attempt.adopted, attempt.response_bytes = False, None
+        elif failure == "revision":
+            profile = decode(row.profile_bytes)
+            profile["revision"] = "1"
+            row.profile_bytes = canonical(profile)
+            row.profile_digest = digest(row.profile_bytes)
+        await session.commit()
+    if failure == "lease":
+        boot.service.leases = SimpleNamespace(active=lambda: [SimpleNamespace(holder=f"run:{admission.run_id}")])
+    if failure == "target":
+        assessment = assessment.model_copy(
+            update={"target": assessment.target.model_copy(update={"criteria_digest": "0" * 64})}
+        )
+    original = canonical(await boot.store.read(case_id))
+    with pytest.raises(CreationRefused, match="feedback_"):
+        await boot.service.assess(
+            case_id, assessment, authentication=boot.authentication, principal=default_local_sigil()
+        )
+    assert canonical(await boot.store.read(case_id)) == original
+    async with factory() as session:
+        assert list(await session.scalars(select(CreationFeedback))) == []
+
+
+async def test_feedback_serial_sequence_latest_decision_and_capacity_replays(
+    factory: async_sessionmaker[AsyncSession],
+) -> None:
+    boot, case_id, assessment = await completed_feedback_case(factory)
+    kwargs: dict[str, Any] = {"authentication": boot.authentication, "principal": default_local_sigil()}
+    one, replay = await asyncio.gather(
+        boot.service.assess(case_id, assessment, **kwargs), boot.service.assess(case_id, assessment, **kwargs)
+    )
+    assert one == replay
+    decision = OwnerDecision(
+        decision_id=uuid4(),
+        assessment_id=one.id,
+        assessment_digest=one.body_digest,
+        target=assessment.target,
+        action="hold",
+        reason="Retain hold.",
+    )
+    decisions = await asyncio.gather(
+        *(
+            boot.service.decide(
+                case_id,
+                decision.model_copy(update={"decision_id": uuid4(), "action": "reject" if i % 2 else "hold"}),
+                **kwargs,
+            )
+            for i in range(16)
+        )
+    )
+    current = max(decisions, key=lambda d: d.sequence)
+    view = await boot.service.feedback(case_id, **kwargs)
+    assert view.current_decision_id == current.id
+    assert view.status == ("hold" if current.body["action"] == "hold" else "rejected")
+    original = decisions[0]
+    assert await boot.service.decide(case_id, OwnerDecision.model_validate(original.body), **kwargs) == original
+    with pytest.raises(CreationRefused, match="feedback_capacity"):
+        await boot.service.decide(case_id, decision, **kwargs)
+    for _ in range(15):
+        await boot.service.assess(case_id, assessment.model_copy(update={"assessment_id": uuid4()}), **kwargs)
+    assert await boot.service.assess(case_id, assessment, **kwargs) == one
+    with pytest.raises(CreationRefused, match="feedback_capacity"):
+        await boot.service.assess(case_id, assessment.model_copy(update={"assessment_id": uuid4()}), **kwargs)
+    view = await boot.service.feedback(case_id, **kwargs)
+    assert len({e.sequence for e in (*view.assessments, *view.decisions)}) == 32
+    assert view.status == "review_required"
+
+
+async def test_feedback_rechecks_revoked_authority_after_case_lock(
+    factory: async_sessionmaker[AsyncSession], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    boot, case_id, assessment = await completed_feedback_case(factory)
+    original_case = boot.store._case  # pyright: ignore[reportPrivateUsage] - exercise authority recheck after real lock
+
+    async def revoke_after_lock(session: Any, locked_id: UUID) -> Any:
+        row = await original_case(session, locked_id)
+        boot.access.revoke()
+        return row
+
+    monkeypatch.setattr(boot.store, "_case", revoke_after_lock)
+    with pytest.raises(CreationRefused, match="local_authority"):
+        await boot.service.assess(
+            case_id, assessment, authentication=boot.authentication, principal=default_local_sigil()
+        )

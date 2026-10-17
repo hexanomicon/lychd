@@ -25,10 +25,14 @@ from lychd.compositions.creation.schemas import (
     CaseView,
     ContinueRequest,
     CreationRefused,
+    ExternalAssessment,
     InvestigationRequest,
+    OwnerDecision,
     canonical,
     decode,
     digest,
+    feedback_target,
+    validate_annotations,
     validate_output,
 )
 from lychd.compositions.creation.services import (
@@ -53,6 +57,7 @@ from lychd.interface.web.altar_services import _build_creation  # pyright: ignor
 from tests.support.creation import (
     CreationDispatcher,
     CreationRegistry,
+    assessment_document,
     candidate_document,
     capability,
     request_document,
@@ -623,3 +628,112 @@ async def test_raw_final_result_refusal_keeps_custody_without_adoption_or_retry(
     assert isinstance(part, ToolCallPart)
     assert part.tool_call_id == "retained-call"
     assert part.args == arguments
+
+
+def test_feedback_hashes_actual_source_and_criteria_bytes_and_preserves_report() -> None:
+    request = request_document()
+    candidate, verdict = canonical(candidate_document()), canonical(verdict_document())
+    target = feedback_target(canonical(request), b'{"revision":"2"}', candidate, verdict)
+    changed = request.model_copy(update={"sources": (request.sources[0].model_copy(update={"text": "changed\n"}),)})
+    other = feedback_target(canonical(changed), b'{"revision":"2"}', candidate, verdict)
+    assert target.sources_digest != other.sources_digest
+    assert target.criteria_digest == other.criteria_digest
+    assessment = assessment_document(target)
+    assert (
+        ExternalAssessment.model_validate(decode(canonical(assessment))).report.encode() == assessment.report.encode()
+    )
+    validate_annotations(request, assessment)
+    annotation = candidate_document().findings[0]
+    validate_annotations(request, assessment.model_copy(update={"submitter_annotations": (annotation,)}))
+    for mappings, code in [
+        ((annotation, annotation), "criterion_binding"),
+        ((annotation.model_copy(update={"criterion": "invented"}),), "criterion_binding"),
+        (
+            (
+                annotation.model_copy(
+                    update={"citations": (annotation.citations[0].model_copy(update={"source": "foreign"}),)}
+                ),
+            ),
+            "citation_source",
+        ),
+        (
+            (
+                annotation.model_copy(
+                    update={"citations": (annotation.citations[0].model_copy(update={"last_line": 3}),)}
+                ),
+            ),
+            "citation_span",
+        ),
+    ]:
+        with pytest.raises(CreationRefused, match=code):
+            validate_annotations(request, assessment.model_copy(update={"submitter_annotations": mappings}))
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("report", "č" * 4097),
+        ("reviewer_label", "č" * 65),
+        ("reviewer_revision", "č" * 65),
+        ("exposure", ["č" * 97]),
+        ("limitations", ["x"] * 5),
+    ],
+)
+def test_feedback_intake_enforces_utf8_bounds(field: str, value: Any) -> None:
+    target = feedback_target(canonical(request_document()), b"{}", b"{}", b"{}")
+    body = assessment_document(target).model_dump(mode="json")
+    body[field] = value
+    with pytest.raises((CreationRefused, ValidationError)):
+        ExternalAssessment.model_validate(body)
+    decision = {
+        "decision_id": str(uuid4()),
+        "assessment_id": body["assessment_id"],
+        "assessment_digest": "a" * 64,
+        "target": target.model_dump(),
+        "action": "hold",
+        "reason": "č" * 513,
+    }
+    with pytest.raises((CreationRefused, ValidationError)):
+        OwnerDecision.model_validate(decision)
+
+
+@pytest.mark.asyncio
+async def test_feedback_service_needs_no_current_profile_or_execution_collaborators() -> None:
+    store = SimpleNamespace(append_feedback=AsyncMock(return_value="retained"), feedback=AsyncMock(return_value="view"))
+    service, _common = stage_fixture(StageStore())
+    service.store = store
+    service.registry = SimpleNamespace(get_capability=Mock(side_effect=AssertionError("no profile lookup")))
+    actor = service.policy.access.authenticate(username=b"magus", password=b"inert-test-password")
+    target = feedback_target(canonical(request_document()), b"{}", b"{}", b"{}")
+    assessment = assessment_document(target)
+    case_id = uuid4()
+    assert (
+        await service.assess(case_id, assessment, authentication=actor, principal=default_local_sigil()) == "retained"
+    )
+    assert await service.feedback(case_id, authentication=actor, principal=default_local_sigil()) == "view"
+    service.policy.access.revoke()
+    with pytest.raises(CreationRefused, match="local_authority"):
+        await service.assess(case_id, assessment, authentication=actor, principal=default_local_sigil())
+    assert store.append_feedback.await_count == 1
+
+
+@pytest.mark.parametrize(
+    ("action", "required"), [("assess", "runs:submit"), ("decide", "runs:submit"), ("feedback", "altar:read")]
+)
+def test_feedback_policy_requires_actual_marker_and_matching_action_scope(action: str, required: str) -> None:
+    access = LocalOperatorAccess(access_password=ACCESS_VALUE)
+    policy = LocalCreationPolicy(access)
+    actor = access.authenticate(username=b"magus", password=ACCESS_VALUE.encode())
+    assert actor is not None
+    allowed = Sigil(name="scoped", scopes=frozenset({required}))
+    assert policy.http(actor, allowed, action) is actor
+    reconstructed = LocalOperatorAuthentication(
+        subject=actor.subject, authentication_generation=actor.authentication_generation
+    )
+    for marker, principal in [
+        (reconstructed, allowed),
+        (actor, Sigil(name="scoped", scopes=frozenset())),
+        (None, allowed),
+    ]:
+        with pytest.raises(CreationRefused, match="local_authority"):
+            policy.http(marker, principal, action)

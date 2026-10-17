@@ -236,7 +236,7 @@ def test_delegated_terminal_result_migration_refuses_until_explicit_repair(
         {"record_id": record_id},
     ) == [(job_id, status, repaired, None)]
     command.upgrade(_migration_config(url), "head")
-    assert _run(url, "SELECT version_num FROM lychd_db_version") == [("0016",)]
+    assert _run(url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
     assert _run(
         url,
         """
@@ -300,7 +300,7 @@ def test_delegated_terminal_result_constraint_refuses_invalid_head_writes(
     assert _run(
         url, "SELECT status, result FROM delegated_agent_job WHERE id = CAST(:id AS uuid)", {"id": record_id}
     ) == [(status, valid)]
-    assert _run(url, "SELECT version_num FROM lychd_db_version") == [("0016",)]
+    assert _run(url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
 
 
 def test_delegated_empty_migration_cycle_removes_and_restores_tables_and_run_pointer(
@@ -342,7 +342,7 @@ def test_delegated_empty_migration_cycle_removes_and_restores_tables_and_run_poi
     assert _run(url, schema_query) == []
 
     command.upgrade(_migration_config(url), "head")
-    assert _run(url, "SELECT version_num FROM lychd_db_version") == [("0016",)]
+    assert _run(url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
     assert _run(url, schema_query) == before
     assert _run(url, "SELECT to_regclass('public.ix_run_delegated_job_id')::text") == [("ix_run_delegated_job_id",)]
 
@@ -571,7 +571,7 @@ def test_preauth_nexus_and_wait_owner_migrations_reach_linear_head(pg_url: str) 
         SELECT version_num
         FROM lychd_db_version
         """,
-    ) == [("0016",)]
+    ) == [("0017",)]
     assert _run(
         pg_url,
         """
@@ -716,7 +716,7 @@ def test_wait_owner_migration_refuses_ambiguous_live_work_and_downgrade(pg_url: 
 
     with pytest.raises(DBAPIError, match="requires no awaiting_consent Runs"):
         command.downgrade(_migration_config(pg_url), "0007")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0016",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
 
     _run(
         pg_url,
@@ -761,7 +761,7 @@ def test_nexus_fence_downgrade_refuses_retained_request_identities(pg_url: str) 
         SELECT version_num, to_regclass('public.nexus_swap_request')::text
         FROM lychd_db_version
         """,
-    ) == [("0016", "nexus_swap_request")]
+    ) == [("0017", "nexus_swap_request")]
 
     _run(pg_url, "DELETE FROM nexus_swap_request")
     command.downgrade(_migration_config(pg_url), "0006")
@@ -785,7 +785,7 @@ def test_atlas_migration_retains_projects_on_refused_downgrade(pg_url: str) -> N
     )
     with pytest.raises(DBAPIError, match="requires empty atlas_project"):
         command.downgrade(_migration_config(pg_url), "0008")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0016",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
     assert _run(pg_url, "SELECT count(*) FROM atlas_project") == [(1,)]
     _run(pg_url, "DELETE FROM atlas_project WHERE id = '00000000-0000-0000-0000-000000000909'")
     command.downgrade(_migration_config(pg_url), "0008")
@@ -873,7 +873,7 @@ def test_native_binding_upgrade_preserves_legacy_and_downgrade_preserves_native_
     )
     with pytest.raises(DBAPIError, match="requires no native Consent bindings"):
         command.downgrade(_migration_config(pg_url), "0009")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0016",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
     assert _run(pg_url, "SELECT native_review_required, native_binding FROM consent WHERE tool_call_id = 'legacy'") == [
         (True, {})
     ]
@@ -921,7 +921,7 @@ def test_blockworld_empty_migration_cycle_matches_orm_schema(pg_url: str) -> Non
         pg_url, "SELECT version_num,to_regclass('public.blockworld_placement_mission')::text FROM lychd_db_version"
     ) == [("0010", None)]
     command.upgrade(_migration_config(pg_url), "head")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0016",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
 
 
 @pytest.mark.parametrize("status", [None, "prepared", "pending", "unverified_effect", "not_issued", "verified"])
@@ -954,7 +954,7 @@ def test_blockworld_downgrade_refuses_every_retained_disposition(pg_url: str, st
     try:
         with pytest.raises(DBAPIError, match="custody requires explicit retirement"):
             command.downgrade(_migration_config(pg_url), "0010")
-        assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0016",)]
+        assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
         assert _run(pg_url, "SELECT count(*) FROM blockworld_placement_mission") == [(1,)]
     finally:
         # Explicit test teardown is not a production retirement operation.
@@ -1001,7 +1001,7 @@ def test_blockworld_downgrade_lock_prevents_late_fixture_loss(pg_url: str) -> No
 def test_creation_empty_cycle_and_retained_custody_refuses_downgrade(pg_url: str) -> None:
     """Generated tables round-trip only while no investigation custody exists."""
     command.upgrade(_migration_config(pg_url), "head")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0016",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
     table_query = "SELECT to_regclass('public.creation_case')::text, to_regclass('public.creation_admission')::text, to_regclass('public.creation_attempt')::text"
     assert _run(pg_url, table_query) == [("creation_case", "creation_admission", "creation_attempt")]
     request_id = str(uuid4())
@@ -1017,7 +1017,7 @@ def test_creation_empty_cycle_and_retained_custody_refuses_downgrade(pg_url: str
     try:
         with pytest.raises(DBAPIError, match="Retained Creation investigation custody prevents downgrade"):
             command.downgrade(_migration_config(pg_url), "0015")
-        assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0016",)]
+        assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
         assert _run(pg_url, "SELECT count(*) FROM creation_case WHERE id=CAST(:id AS uuid)", {"id": request_id}) == [
             (1,)
         ]
@@ -1028,3 +1028,33 @@ def test_creation_empty_cycle_and_retained_custody_refuses_downgrade(pg_url: str
     assert _run(pg_url, table_query) == [(None, None, None)]
     command.upgrade(_migration_config(pg_url), "head")
     assert _run(pg_url, table_query) == [("creation_case", "creation_admission", "creation_attempt")]
+
+
+def test_creation_feedback_empty_cycle_retained_refusal_and_original_custody(pg_url: str) -> None:
+    command.upgrade(_migration_config(pg_url), "head")
+    command.downgrade(_migration_config(pg_url), "0016")
+    assert _run(pg_url, "SELECT to_regclass('public.creation_feedback')::text") == [(None,)]
+    command.upgrade(_migration_config(pg_url), "head")
+    case_id, assessment_id = str(uuid4()), str(uuid4())
+    _run(
+        pg_url,
+        """INSERT INTO creation_case (id,request_bytes,request_digest,profile_bytes,profile_digest,deadline,slot,status,cancelled,current_admission_id,created_at,updated_at) VALUES (CAST(:id AS uuid),decode('7b7d','hex'),repeat('a',64),decode('7b7d','hex'),repeat('b',64),now(),NULL,'accepted',false,CAST(:id AS uuid),now(),now())""",
+        {"id": case_id},
+    )
+    _run(
+        pg_url,
+        """INSERT INTO creation_feedback (id,case_id,sequence,kind,body_bytes,body_digest,report_bytes,report_digest,attribution_bytes,created_at,updated_at) VALUES (CAST(:id AS uuid),CAST(:case AS uuid),1,'assessment',decode('7b7d','hex'),repeat('a',64),decode('6869','hex'),repeat('b',64),decode('7b7d','hex'),now(),now())""",
+        {"id": assessment_id, "case": case_id},
+    )
+    try:
+        with pytest.raises(DBAPIError, match="Retained Creation feedback custody prevents downgrade"):
+            command.downgrade(_migration_config(pg_url), "0016")
+        assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
+        assert _run(
+            pg_url,
+            "SELECT encode(request_bytes,'hex'),status FROM creation_case WHERE id=CAST(:id AS uuid)",
+            {"id": case_id},
+        ) == [("7b7d", "accepted")]
+    finally:
+        _run(pg_url, "DELETE FROM creation_feedback WHERE id=CAST(:id AS uuid)", {"id": assessment_id})
+        _run(pg_url, "DELETE FROM creation_case WHERE id=CAST(:id AS uuid)", {"id": case_id})

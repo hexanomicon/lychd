@@ -1,0 +1,168 @@
+{
+  "observation_kind": "lychd.creation.normal-native-feedback-custody-observation",
+  "observed_at": "2026-10-17T14:38:46.641168+00:00",
+  "execution_revision": "69829ada9e5935cc83103be7651f352ce736c952",
+  "qualification": {
+    "normal_native_assessment_and_owner_hold_observed": true,
+    "native_mechanical_pass": true,
+    "native_case_status": "accepted",
+    "external_semantic_disposition": "partial",
+    "owner_feedback_status": "hold",
+    "inference_calls": 0,
+    "semantic_correctness_established": false,
+    "calibrated_drift_established": false,
+    "feedback_to_successor_established": false,
+    "measured_recursive_improvement_established": false,
+    "cohort_reliability_qualified": false,
+    "benchmark_qualified": false,
+    "permanent_service_qualified": false,
+    "autonomous_editor_qualified": false,
+    "whole_environment_freeze_qualified": false,
+    "model_byte_identity_qualified": false,
+    "hostile_code_containment_qualified": false,
+    "aggregate_cpu_memory_isolation_qualified": false,
+    "gpu_isolation_qualified": false
+  },
+  "prior_public_case_evidence": {
+    "path": "tests/fixtures/creation/native-configuration-guidance-2026-10-17.json",
+    "sha256": "cdb67fc8c9d2c0dbe95f3e140a75154d09fee39f11773b55a603155760395bdf",
+    "context": "Existing public question, criteria, sources, candidate and canonical native verdict; their full source and role packets are retained there rather than duplicated here."
+  },
+  "public_target": {
+    "request_digest": "e1698b5ba5287a9d6c80b9d2213106390f205e289b8ad418de52e09502a0044c",
+    "sources_digest": "1ec1dcb51a8c699f4e9cd0619d52005a54c19f58ba59ec4cf964d7aea6aa03fc",
+    "criteria_digest": "db726d1f17fb10d56712494256f8d208a4d319b0e26ea56539f49bd3ba89e3db",
+    "candidate_digest": "26c6c5fafa4c9c59fa2c5140ed19afbbe84e0093cab79b95ee0edb51210c9d40",
+    "verdict_digest": "9f2613509a34f404e089d2c588d6484575cedf5e32348dca69e57eb43351986b"
+  },
+  "bound_criteria": [
+    {
+      "id": "diagnosis",
+      "predicate": "Identify the observed model reply and assertions excluding capability diagnosis from the later failed turn."
+    },
+    {
+      "id": "settlement",
+      "predicate": "Identify FAILED/SETTLED assertions and state one concrete limitation or missing check without guessing the historical SDK exception."
+    }
+  ],
+  "immutable_target_observation": {
+    "original_source_and_criteria_remain_bound": true,
+    "original_candidate_and_native_verdict_unchanged": true,
+    "native_accepted_is_preserved": true,
+    "both_historical_case_views_exactly_unchanged": true,
+    "qualification": "Exact historical HTTP read custody is observed for both retained cases. This does not measure every database row."
+  },
+  "external_assessment": {
+    "disposition": "partial",
+    "reviewer_label": "platform coding agent / native_service_result_review",
+    "reviewer_revision": "model and provider revision not supplied",
+    "reviewer_identity_status": "Claimed reviewer label and revision are attribution; authenticated independent reviewer identity, model identity and calibration are unestablished.",
+    "exposure": [
+      "Fresh context received the supplied public sources, question, criteria, candidate and native verdict."
+    ],
+    "limitations": [
+      "Source-only qualitative judgment; no code execution, full worker or historical SDK failure reproduction.",
+      "Reviewer model identity, calibration and independent sovereign identity are unestablished."
+    ],
+    "report": "Overall: partial. Candidate: partial. Verifier: partial; its unqualified accepted disposition is not justified by its reproduced evidence.\n\nThe candidate substantially meets both requested criteria and the requested shape: one short summary, two findings, and at most one citation per finding. Its diagnosis finding is supported by its valid, though broad, citation to the supplied test lines 1–52. Specifically, lines 19–22 establish the answer and response message before the injected failure, line 28 confirms the observed reply, and lines 45–52 identify one failed agent turn for this run and reject the three case-folded substrings. Its stated limitation—that other diagnostic phrasing and the exact full message are not checked—is concrete and supported by those assertions. It does not infer the historical SDK exception cause.\n\nThe settlement finding has a valid citation address but insufficient citation support. Supplied new-message.txt:1 contains only “The summoning faltered. This request could not be completed.” It supports the description of the replacement text as generic, but none of the FAILED, SETTLED, error, or DONE assertions. Those claims instead have support in the supplied test: line 33 is `assert run.status is RunStatus.FAILED`, line 34 is `assert run.error == str(failure)`, line 36 is `assert delivery.state is RunDeliveryState.SETTLED`, and line 37 requires exactly one FAILED DONE payload. The candidate’s wording “run.error equals the RuntimeError” also blurs the asserted string value with the exception object: exception identity is separately checked for caught.value at line 29. This is a precision defect, not a missing settlement check.\n\nThe verifier correctly preserves the supported diagnosis finding and the useful limitation, but simply repeats the settlement claim with the same unrelated citation and error-value imprecision. Its empty contradictions list does not establish that the cited source entails the claim. Acceptance therefore overstates what its reasoning has validated.\n\nPractical utility: the answer is useful as a compact guide to the supplied regression’s asserted behavior, with the above evidence and precision limits. The text shows a synthetic RuntimeError raised after a model reply (lines 14, 19–22), not a reproduced historical SDK failure. The assertions cover this failed turn’s three substrings, not every possible capability diagnosis or emission channel; helper bodies and the full worker are expressly omitted. No passing execution or broader implementation behavior can be established from this packet alone.\n",
+    "report_utf8_bytes": 2611,
+    "report_sha256": "6b29394f6f175b7c57c2e45463320f2252d2d82e649d68326d518369fd4dd845",
+    "submitter_annotations": [],
+    "criterion_coverage": {
+      "diagnosis": "not_assessed",
+      "settlement": "not_assessed"
+    },
+    "annotation_interpretation": "The report makes a global partial judgment. Empty submitter annotations leave diagnosis and settlement not_assessed in structured coverage; the report prose is not converted into invented per-criterion reviewer judgments."
+  },
+  "owner_decision": {
+    "action": "hold",
+    "reason": "Native acceptance and the external partial judgment disagree; the settlement citation and error-value precision remain unsupported in the returned reasoning. Retain the result for correction or separately admitted evaluation; authorize no successor or promotion.",
+    "distinguishing_observation": "A separately admitted unfamiliar question should distinguish claim entailment from merely valid citation coordinates.",
+    "effect_limit": "This is the case owner disposition. It authorizes no successor, source edit, promotion or new execution, and makes no global block claim about unrelated work."
+  },
+  "native_http_observation": {
+    "outer_elapsed_seconds": 10.178195847955067,
+    "coordinator_elapsed_seconds": 10.047951685031876,
+    "initial_app": {
+      "assessment_append_status": 200,
+      "owner_hold_append_status": 200,
+      "feedback_status": "hold"
+    },
+    "pre_restart_replay": {
+      "identical_assessment_status": 200,
+      "conflicting_assessment_status": 409,
+      "identical_decision_status": 200,
+      "conflicting_decision_status": 409,
+      "feedback_exactly_unchanged": true
+    },
+    "ordinary_app_restart": {
+      "normal_app_starts": 2,
+      "distinct_app_process_identity_observed": true,
+      "fresh_protected_client_and_csrf_observed": true,
+      "assessment_replay_status": 200,
+      "decision_replay_status": 200,
+      "exact_original_stored_attribution_report_and_feedback_state_replayed": true,
+      "generation_observation_limit": "The ordinary API does not expose the restarted current generation. A distinct app process, fresh protected client/CSRF and replay of the exact original stored attribution were observed; no new-generation attestation is claimed."
+    },
+    "new_investigation_observed": false,
+    "new_run_observed": false,
+    "continuation_observed": false,
+    "cancellation_observed": false,
+    "renewal_observed": false,
+    "source_edit_observed": false
+  },
+  "execution_mutation_boundary": {
+    "contract": "Feedback intake appends assessment and owner decision without inference, queue, continuation, renewal or execution-state mutation paths.",
+    "source_and_postgresql_test_support": "The owning contract and feedback service path separate intake from execution. test_feedback_custody_replay_disagreement_restart_and_no_execution_change asserts unchanged original CaseView, queue messages, Run rows and RunDelivery rows while retaining report bytes and original attribution through replay.",
+    "observation_limit": "These source and PostgreSQL test assertions support the mutation boundary. This native HTTP observation checks retained case/feedback views and model counters; it does not measure every database row. No test execution is claimed by this observation."
+  },
+  "resource_settlement": {
+    "observed_at": "2026-10-17T14:40:56.582783+00:00",
+    "external_settlement_passed": true,
+    "task_unit_inactive_and_absent": true,
+    "task_control_group_absent": true,
+    "recorded_process_identities_absent_count": 5,
+    "task_listener_ports_absent_count": 3,
+    "task_database_container_absent": true,
+    "original_named_storage_intentionally_retained": true,
+    "original_storage_metadata_unchanged_and_unattached": true,
+    "pre_additive_0017_application_database_backup": {
+      "private_logical_backup_retained": true,
+      "scope": "Exact configured application database only",
+      "producer_and_captured_archive_size_and_sha256_verified": true,
+      "restore_or_rollback_proved": false
+    },
+    "model_observed_at": "2026-10-17T14:41:31.955025+00:00",
+    "exact_counters_match_preflight_coordinator_and_post_cleanup": true,
+    "model_counter_deltas": {
+      "num_requests_running": 0.0,
+      "num_requests_waiting": 0.0,
+      "prompt_tokens_total": 0.0,
+      "generation_tokens_total": 0.0,
+      "request_success_total": 0.0
+    },
+    "model_quiescent": true,
+    "inference_calls": 0,
+    "selected_installed_bindings_unchanged": true,
+    "namespace_descriptors_closed": true,
+    "native_aggregate_resource_policy": "pids only"
+  },
+  "observation_limits": [
+    "One bounded retained public-source case received an attributed external assessment and owner hold through the normal native API. Native mechanical PASS and accepted status coexist with the independent report remaining PARTIAL; no semantic truth claim follows.",
+    "The public target digests are derived from already public Native2 request, ordered source and criterion identities, candidate and canonical verdict. The private profile and full intake bindings are omitted. Exact full request-body and attribution custody is held privately; this public projection cannot independently verify those omitted full bindings.",
+    "The source checkpoint bounds this execution attestation; it does not freeze the current checkout or full transitive environment. The reviewer report is a source-only qualitative judgment with the supplied exposure and limitations.",
+    "The intentionally retained storage and private pre-migration logical backup are custody observations. Producer/captured size and SHA agreement was verified privately; restore and rollback remain unproved.",
+    "No source edit, new investigation, Run, continuation, cancellation, renewal, successor, promotion or inference was performed in this observation. No calibrated Drift, complete feedback handoff, feedback-to-successor result or measured recursive improvement is established.",
+    "Observed resource closure and zero model deltas do not establish aggregate CPU/memory or GPU isolation, hostile-code containment, model-weight byte identity, permanent-daemon qualification, cohort reliability or a general benchmark."
+  ],
+  "sanitized_omissions": [
+    "All authentication fields, profiles and private binding digests; exact intake body and body digests; private principal, account, session, authority and provider details.",
+    "Private absolute paths, configuration and credentials; runtime process, endpoint, port, unit, group, container, volume and namespace identities; raw response hashes and raw envelopes.",
+    "Backup bytes, digest and path; private evidence input digests and raw logs. Private custody retains these where applicable; their omission limits independent reconstruction."
+  ],
+  "public_source_hooks": [
+    "docs/compositions/creation/index.md#external-assessment-and-owner-hold",
+    "src/lychd/compositions/creation/services.py:InvestigationService.assess",
+    "tests/integration/test_creation_postgres_vertical.py:test_feedback_custody_replay_disagreement_restart_and_no_execution_change"
+  ]
+}

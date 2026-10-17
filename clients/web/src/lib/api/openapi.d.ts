@@ -465,6 +465,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/creation/investigations/{case_id}/assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assess */
+        post: operations["assessCreationInvestigation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/creation/investigations/{case_id}/cancel": {
         parameters: {
             query?: never;
@@ -493,6 +510,40 @@ export interface paths {
         put?: never;
         /** ContinueCase */
         post: operations["continueCreationInvestigation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/creation/investigations/{case_id}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide */
+        post: operations["decideCreationInvestigation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/creation/investigations/{case_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Feedback */
+        get: operations["readCreationFeedback"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -976,6 +1027,12 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** Citation */
+        Citation: {
+            first_line: number;
+            last_line: number;
+            source: string;
+        };
         /** ConsentCard */
         ConsentCard: {
             args: {
@@ -1124,6 +1181,71 @@ export interface components {
             subject_key?: string | null;
             summary: string;
             transition_request_id?: string | null;
+        };
+        /** ExternalAssessment */
+        ExternalAssessment: {
+            /** Format: uuid */
+            assessment_id: string;
+            /** @enum {string} */
+            disposition: "accepted" | "rejected" | "partial" | "incomplete" | "not_assessed";
+            exposure: (string | unknown)[];
+            limitations: (string | unknown)[];
+            report: string;
+            reviewer_label: string;
+            reviewer_revision: string;
+            /** @default [] */
+            submitter_annotations: (components["schemas"]["Finding"] | unknown)[];
+            target: components["schemas"]["FeedbackTarget"];
+        };
+        /** FeedbackEntry */
+        FeedbackEntry: {
+            attribution: {
+                [key: string]: unknown;
+            };
+            body: {
+                [key: string]: unknown;
+            };
+            body_digest: string;
+            created_at: string;
+            criterion_coverage: {
+                [key: string]: "submitter_annotation" | "not_assessed";
+            };
+            /** Format: uuid */
+            id: string;
+            report_digest: string | null;
+            sequence: number;
+        };
+        /** FeedbackTarget */
+        FeedbackTarget: {
+            candidate_digest: string;
+            criteria_digest: string;
+            profile_digest: string;
+            request_digest: string;
+            sources_digest: string;
+            verdict_digest: string;
+        };
+        /** FeedbackView */
+        FeedbackView: {
+            assessments: components["schemas"]["FeedbackEntry"][];
+            /** Format: uuid */
+            case_id: string;
+            current_assessment_id: string | null;
+            current_decision_id: string | null;
+            decisions: components["schemas"]["FeedbackEntry"][];
+            native_status: string;
+            native_verdict: {
+                [key: string]: unknown;
+            } | null;
+            /** @enum {string} */
+            status: "unassessed" | "review_required" | "hold" | "rejected";
+            target: components["schemas"]["FeedbackTarget"] | null;
+        };
+        /** Finding */
+        Finding: {
+            citations: (components["schemas"]["Citation"] | unknown)[];
+            claim: string;
+            criterion: string;
+            unknown: string;
         };
         /** FrameworkError */
         FrameworkError: {
@@ -1381,6 +1503,19 @@ export interface components {
             started_at: string | null;
             status: string;
             workflow_name: string;
+        };
+        /** OwnerDecision */
+        OwnerDecision: {
+            /** @enum {string} */
+            action: "hold" | "reject";
+            assessment_digest: string;
+            /** Format: uuid */
+            assessment_id: string;
+            /** Format: uuid */
+            decision_id: string;
+            distinguishing_observation?: string | null;
+            reason: string;
+            target: components["schemas"]["FeedbackTarget"];
         };
         /** PatternReference */
         PatternReference: {
@@ -2845,6 +2980,47 @@ export interface operations {
             };
         };
     };
+    assessCreationInvestigation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExternalAssessment"];
+            };
+        };
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackEntry"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+        };
+    };
     cancelCreationInvestigation: {
         parameters: {
             query?: never;
@@ -2904,6 +3080,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CaseView"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+        };
+    };
+    decideCreationInvestigation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnerDecision"];
+            };
+        };
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackEntry"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+        };
+    };
+    readCreationFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackView"];
                 };
             };
             /** @description Bad request syntax or unsupported method */
