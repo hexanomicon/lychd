@@ -89,18 +89,20 @@ convergence was a load, systemd swap, or no effect.
 
 Live Stasis leaves the loop resident; current linear hardware waits use an in-memory
 LiveStasisPhylactery. Durable Stasis exits the worker after mandatory checkpoint and re-enters by a
-new queue claim. Gate or DelegatedAgentNode automatically selects the durable tier.
+new queue claim. Gate, DelegatedAgentNode or PeerTaskNode automatically selects the durable tier.
 
 | Park | Signal | Run status |
 | --- | --- | --- |
 | Human verdict | ConsentPending | AWAITING_CONSENT |
 | Delegated job | DelegatedAgentPending | AWAITING_DELEGATE |
+| Sovereign peer task | PeerTaskPending | AWAITING_PEER |
 | Service job (Designed) | ServiceJobPending | AWAITING_SERVICE |
 
-Long Sleep means a durable wait that outlives the worker. Vessel lifecycle and A2A waits remain
-designs until they use this same checkpoint/re-admission rule. `AWAITING_SERVICE` is accepted law
+Long Sleep means a durable wait that outlives the worker. The
+[native public peer station](26-a2a.md#native-public-peer-station) uses this same checkpoint and
+owner-specific re-admission rule. Vessel lifecycle waits remain designs. `AWAITING_SERVICE` is accepted law
 but has no source, persistence, or relay yet. Missing checkpoint fails as stasis lost; process death
-in RUNNING or AWAITING_HARDWARE recovers only an exact Consent or delegated pre-park boundary
+in RUNNING or AWAITING_HARDWARE recovers only an exact Consent, delegated or peer pre-park boundary
 bound by the first resumable checkpoint; otherwise startup contains correlated effects and records
 failure. It never guesses a
 replay. [Reanimation](../sepulcher/phylactery/reanimation.md#reanimation-a-new-vessel-judges-durable-truth)
@@ -144,6 +146,9 @@ API cancellation follows [Workers](14-workers.md#cancel-and-contain): a worker o
 `CANCELLING` releases volatile execution resources for containment acknowledgement while retaining
 its checkpoint. After `CANCELLED` commits, the engine handles terminal evidence and channel closure
 before best-effort resource cleanup; failed evidence persistence does not prevent that cleanup.
+For sovereign peers, required containment means durable local adoption closure and actual local
+exchange retirement under Workers law. Retained remote uncertainty cannot resume the Graph and
+is not erased with its checkpoint. This changes no local AgentJob/process containment obligation.
 
 Cleanup is best-effort. Failed deletion retains checkpoint for reconciliation; committed terminal
 truth remains authority. Repository evidence proves adapter and memory-profile recovery, not a real
@@ -155,7 +160,7 @@ A Gate stores serializable message suffix/call ids, snapshots itself, and parks.
 consent relation and AWAITING_CONSENT; one guarded verdict edge admits QUEUED and the next worker
 resumes the same Graph. Typed checkpoint shape alone does not authorize that re-entry: before
 the first node executes, its Gate/delegated station kind and retained owner id must match the Run's
-single current wait owner. [Workers (14)](14-workers.md#durable-consent-and-delegated-waits) owns
+single current wait owner. [Workers (14)](14-workers.md#durable-consent-delegated-and-peer-waits) owns
 replacement of that relation across chained or mixed waits; historical records remain evidence.
 One approval call per model round, with bounded chained rounds, is current;
 ADR 25 owns verdict order and recovery.

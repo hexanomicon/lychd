@@ -293,7 +293,7 @@ def test_preauth_nexus_and_wait_owner_migrations_reach_linear_head(pg_url: str) 
         SELECT version_num
         FROM lychd_db_version
         """,
-    ) == [("0014",)]
+    ) == [("0017",)]
     assert _run(
         pg_url,
         """
@@ -438,7 +438,7 @@ def test_wait_owner_migration_refuses_ambiguous_live_work_and_downgrade(pg_url: 
 
     with pytest.raises(DBAPIError, match="requires no awaiting_consent Runs"):
         command.downgrade(_migration_config(pg_url), "0007")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0014",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
 
     _run(
         pg_url,
@@ -483,7 +483,7 @@ def test_nexus_fence_downgrade_refuses_retained_request_identities(pg_url: str) 
         SELECT version_num, to_regclass('public.nexus_swap_request')::text
         FROM lychd_db_version
         """,
-    ) == [("0014", "nexus_swap_request")]
+    ) == [("0017", "nexus_swap_request")]
 
     _run(pg_url, "DELETE FROM nexus_swap_request")
     command.downgrade(_migration_config(pg_url), "0006")
@@ -507,7 +507,7 @@ def test_atlas_migration_retains_projects_on_refused_downgrade(pg_url: str) -> N
     )
     with pytest.raises(DBAPIError, match="requires empty atlas_project"):
         command.downgrade(_migration_config(pg_url), "0008")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0014",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
     assert _run(pg_url, "SELECT count(*) FROM atlas_project") == [(1,)]
     _run(pg_url, "DELETE FROM atlas_project WHERE id = '00000000-0000-0000-0000-000000000909'")
     command.downgrade(_migration_config(pg_url), "0008")
@@ -595,7 +595,7 @@ def test_native_binding_upgrade_preserves_legacy_and_downgrade_preserves_native_
     )
     with pytest.raises(DBAPIError, match="requires no native Consent bindings"):
         command.downgrade(_migration_config(pg_url), "0009")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0014",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
     assert _run(pg_url, "SELECT native_review_required, native_binding FROM consent WHERE tool_call_id = 'legacy'") == [
         (True, {})
     ]
@@ -643,7 +643,7 @@ def test_blockworld_empty_migration_cycle_matches_orm_schema(pg_url: str) -> Non
         pg_url, "SELECT version_num,to_regclass('public.blockworld_placement_mission')::text FROM lychd_db_version"
     ) == [("0010", None)]
     command.upgrade(_migration_config(pg_url), "head")
-    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0014",)]
+    assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
 
 
 @pytest.mark.parametrize("status", [None, "prepared", "pending", "unverified_effect", "not_issued", "verified"])
@@ -676,7 +676,7 @@ def test_blockworld_downgrade_refuses_every_retained_disposition(pg_url: str, st
     try:
         with pytest.raises(DBAPIError, match="custody requires explicit retirement"):
             command.downgrade(_migration_config(pg_url), "0010")
-        assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0014",)]
+        assert _run(pg_url, "SELECT version_num FROM lychd_db_version") == [("0017",)]
         assert _run(pg_url, "SELECT count(*) FROM blockworld_placement_mission") == [(1,)]
     finally:
         # Explicit test teardown is not a production retirement operation.

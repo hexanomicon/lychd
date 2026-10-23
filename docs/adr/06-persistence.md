@@ -377,6 +377,35 @@ upgrade that would have to infer an existing consent-wait owner or accept settle
 evidence. Its downgrade refuses while any Run remains `AWAITING_CONSENT`, so exact ownership cannot
 be erased underneath live work.
 
+#### Consent history custody
+
+[Consent history](25-hitl.md#consent-history-and-proposal-branches) retains proposal identities,
+validated revision links and ordered attributable records alongside the current Consent
+projection. Appends use a unique producer/record identity: the same identity and content return
+the retained record, while changed-content reuse refuses. Proposal creation and its initial
+record, and each consent mutation and corresponding judgment record, commit together. Restart
+cannot expose a settled decision without its history or manufacture missing past judgments.
+Existing rows may be imported only as explicitly attributed legacy snapshots; absent proposal
+ancestry, review facts or intermediate events remain unknown.
+
+An effect receipt remains owned by the executor. History adopts its exact reference through an
+idempotent, recoverable delivery or reconciliation path; publication failure cannot authorize
+re-execution. Per-proposal sequence orders admitted records, not remote physical events, and
+does not claim a global order across owners. [Graph](24-graph.md) keeps checkpoint/wait ownership.
+
+History has an explicit retention policy independent of execution cleanup: deleting a Run must
+not cascade through the journal or erase a decision's identity and lineage. Missing execution
+objects leave unavailable references and grant no replay. The current Consent model's cascading
+Run relation does not supply this guarantee; migration must preserve retained bindings and
+refuse unsupported writers before the new journal is admitted.
+
+Append-only governs ordinary updates, not perpetual retention of private material. The history
+stores censored metadata and authorized artifact references, not raw arguments, diffs, secrets or
+review bodies by default. An authorized erasure/retention operation may remove governed content
+and leave only the non-sensitive tombstone and linkage permitted by policy. Reads report
+unavailable evidence without reconstructing erased content or treating a digest as disclosure
+permission. The journal does not bypass an artifact owner's access, revocation or retention law.
+
 #### Native Consent bindings (Designed)
 
 The [native review contract](25-hitl.md#required-review-for-native-actions-designed) adds explicit
@@ -456,6 +485,51 @@ preserve existing Concern, assessment, reference, and retry identities and their
 it must not infer new shared identities from similar text. This requires a new explicit schema and
 migration contract before delivery; migration `0009` supplies only the initial Project aggregate.
 
+## Outbound Intercom custody
+
+The Designed [public-text peer profile](26-a2a.md#peer-task-jsonrpc-1) keeps immutable peer identity,
+credential history, current policy/revocation generations, attributed public-source declarations,
+sealed task intent/outbox, each physical transmission decision/claim and authenticated received
+result in dedicated custody. It does not borrow AgentJob, consent or a fabricated Run owner.
+An operator operation has its own typed identity. The
+[native public peer station](26-a2a.md#native-public-peer-station) binds a real Run and station
+through typed immutable ownership, never by putting that operation id into a Run field.
+
+Exact task and outbox intent commit before network admission. Each physical attempt independently
+commits conservative use, complete application-byte and bounded network-byte capacity before
+issuing one process-local activation. Stable host, purpose, peer and task ceilings span new
+operation, request, credential and configuration labels; no claim is refunded or reset after
+refusal, expiry or uncertainty. Pending network output is limited to that committed allowance.
+Observed accepted bytes and conservatively charged capacity are separate evidence.
+
+Mutations lock capacity in a fixed scope order, then peer/current credentials, task and
+transmission. Peer-only policy changes never acquire capacity after holding peer/task locks.
+A later Graph transaction starts with its Run and does not acquire it while holding a task lock;
+terminal reception and Run resume are separate idempotently reconciled transactions.
+Native ownership transactions lock Run first. A unique Run/station/request relation owns one
+task, source/target binding and original expiry. Its single current Run wait pointer is exclusive
+with consent/delegation and survives the queued/running successor. Park and resume reread the
+canonical relation; resume also requires open adoption and a correlated admissible terminal or
+explicit local disposition, never caller-supplied success. No task-lock holder later acquires Run.
+Task preparation, source attribution, charged attempts and remote uncertainty survive checkpoint
+deletion. Retained native relations restrict Run deletion; downgrade refuses to erase them.
+Changed-content identity reuse refuses. Only an acknowledged fresh commit can mint local
+activation; rows, copied objects, reads and restart cannot restore it. Commit uncertainty permits
+reconciliation, never another submit. Known foreign task ids may support fresh read polls.
+
+Result admission verifies exact pending request, peer/key, task/schema/context and current policy;
+the first admissible terminal wins. Conflicting or late responses cannot reopen a locally closed
+task. Local refusal, expiry, revocation, cancellation intent and unknown foreign execution remain
+distinct from authenticated peer completion. An old terminal does not grant a fresh read or effect.
+Custody retains restricted sealed public-task bodies and verification evidence, not credentials,
+raw private Context, source spans or general pseudonym maps. It offers no normal deletion or
+reset path. Immutable execution references restrict cascading history loss where present.
+
+One metadata-derived PostgreSQL migration enters this schema transactionally. Downgrade locks
+every owned table against concurrent writers and refuses while any retained peer, key, capacity,
+declaration, task or transmission remains. Actual PostgreSQL concurrency, lost-acknowledgement,
+separate-owner recovery, schema/catalog parity and nonempty downgrade refusal are required.
+
 ## Privacy and delivery boundary
 
 Persistence is designed to retain the labels and lineage defined by
@@ -471,6 +545,40 @@ resulting decision immediately before transmission. Dispatcher may provisionally
 capability, but it cannot declassify bytes. Exact label schema, row policy, and full production
 persistence remain subject to the delivery boundary in
 [State of Work](../state-of-the-work.md#phylactery-first-light).
+
+### Closed disclosure-accounting custody
+
+The `closed-diagnostic-recording@1` qualification profile retains transmission identity,
+canonical restricted preparation/decision bytes and digests, exact Cut and host binding, Run
+and delivery generation, claim identity, charges and terminal settlement. Ordinary custody
+contains no raw source, source spans, candidate body, subject name, credential or reversal map.
+Its concrete recorder is bounded process-local test material, not another persistent payload store.
+
+One capacity table retains stable host, purpose and per-Cut rows. Limits and configuration
+identity are immutable; consumed uses and bytes only increase. Purpose and host accounting span
+fresh Cuts and Runs, and changing configuration cannot silently create new underlying capacity.
+One transmission table owns exact request/occurrence identity and the one-shot claim. Retained
+execution references use `RESTRICT` or an explicitly immutable noncascading identity; normal Run
+cleanup cannot erase disclosure custody. No normal reset or deletion API is admitted.
+
+Mutations lock capacity rows in a deterministic order, then transmission, Run and its exact
+RunDelivery. Admission checks actual retained intent/Pattern bindings, running state, delivery
+generation, claimed delivery, queue and priority before atomically retaining the decision and
+consuming capacity. Only an acknowledged fresh commit can issue local activation. Missing
+owners, changed-content identity reuse, stale delivery or mismatched host authority refuse.
+
+Commit acknowledgement loss returns no activation. Reads and duplicates return retained status;
+they never recreate a live claim. Abandoned claims reconcile to absorbing uncertainty without
+refund. A failure after recorder handoff but before settlement also remains uncertain; identical
+owned settlement is idempotent and conflicting or foreign completion refuses. Restart retains
+charges and replay fences, while losing activations and the process-local Cut seal. New
+preparation remains subject to the original host and purpose capacity.
+
+Schema changes and both custody tables enter one PostgreSQL migration transaction. Downgrade
+takes exclusive locks in the same table order and refuses while either table contains any row,
+including unused capacity. Empty round-trip, schema/model parity, concurrency, ambiguous commit
+and separate-instance recovery require actual PostgreSQL evidence. This custody law does not
+deliver peer identity, a transport, Intercom inbox/outbox, a native peer wait or durable Cut authority.
 
 ### Reversible maps and the Privacy Vault
 

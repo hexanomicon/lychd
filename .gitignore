@@ -13,6 +13,9 @@
 output/
 
 
+# --- Java / Gradle ---
+.gradle/
+
 # --- Web UI / Frontend ---
 node_modules/
 .svelte-kit/

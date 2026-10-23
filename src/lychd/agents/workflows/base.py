@@ -116,12 +116,16 @@ class DelegatedAgentNode:
     """
 
 
-type PatternNodeKind = Literal["step", "gate", "delegate", "terminal"]
+class PeerTaskNode:
+    """Marker for a sovereign peer station requiring exact durable task ownership."""
+
+
+type PatternNodeKind = Literal["step", "gate", "delegate", "peer", "terminal"]
 
 
 def _validate_pattern_node_fields(key: str, label: str, kind: str) -> None:
     """Check declarative station meaning independently of executable bindings."""
-    if kind not in {"step", "gate", "delegate", "terminal"}:
+    if kind not in {"step", "gate", "delegate", "peer", "terminal"}:
         msg = f"Unknown Pattern node kind: {kind!r}."
         raise ValueError(msg)
     if not key or not label:
@@ -158,6 +162,12 @@ class PatternNode:
             and self.kind != "delegate"
         ):
             msg = f"DelegatedAgentNode implementation '{self.key}' must declare kind='delegate'."
+            raise ValueError(msg)
+        if self.kind == "peer" and (self.implementation is None or not issubclass(self.implementation, PeerTaskNode)):
+            msg = f"Peer Pattern node '{self.key}' must use a PeerTaskNode implementation."
+            raise ValueError(msg)
+        if self.implementation is not None and issubclass(self.implementation, PeerTaskNode) and self.kind != "peer":
+            msg = f"PeerTaskNode implementation '{self.key}' must declare kind='peer'."
             raise ValueError(msg)
         if self.kind == "gate" and (self.implementation is None or not issubclass(self.implementation, Gate)):
             msg = f"Gate Pattern node '{self.key}' must use a Gate implementation."
@@ -355,7 +365,7 @@ class Workflow:
         object.__setattr__(
             self,
             "durable",
-            any(issubclass(node, (Gate, DelegatedAgentNode)) for node in graph_nodes),
+            any(issubclass(node, (Gate, DelegatedAgentNode, PeerTaskNode)) for node in graph_nodes),
         )
 
     def _validate_manifest_topology(self) -> None:
@@ -387,7 +397,9 @@ class Workflow:
         # re-entered at the same station. That lifecycle edge is executable policy
         # even when the Python return annotation only names the forward node. Gate
         # loops, by contrast, are ordinary graph return edges and remain explicit.
-        executable_edges.update((node.key, node.key) for node in self.manifest.nodes if node.kind == "delegate")
+        executable_edges.update(
+            (node.key, node.key) for node in self.manifest.nodes if node.kind in {"delegate", "peer"}
+        )
         manifest_edges = {(edge.source, edge.target) for edge in self.manifest.edges}
         if manifest_edges != executable_edges:
             missing = sorted(executable_edges - manifest_edges)

@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "org.lychd.voice.gametest.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["VoiceClientInitObserver", "OverlayObserver"],
+  "injectors": {"defaultRequire": 1}
+}

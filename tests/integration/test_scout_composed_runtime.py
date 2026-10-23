@@ -36,6 +36,7 @@ from lychd.system.services.scout_dns import ResolverEndpoint
 from lychd.system.services.scout_http import serialize_get
 from tests import scout_network_fixture as network
 from tests.integration import test_scout_extraction_runtime as extraction_qualification
+from tests.postgres_model_tables import with_referenced_tables
 from tests.scout_fixtures import scout_profile
 from tests.scout_postgres_fixture import isolated_postgres
 from tests.scout_workflow_fixture import ScoutWorkflowFixture, approve_workflow, assemble_workflow, workflow_service
@@ -88,6 +89,7 @@ _SOURCE_MODULES = (
     "tests.scout_fixtures",
     "tests.scout_network_fixture",
     "tests.scout_postgres_fixture",
+    "tests.postgres_model_tables",
     "tests.scout_workflow_fixture",
     "tests.integration.test_scout_extraction_runtime",
     "tests.integration.test_scout_composed_runtime",
@@ -155,6 +157,7 @@ async def _database(socket_directory: Path) -> AsyncGenerator[async_sessionmaker
             ScoutAttempt.__table__,
         ],
     )
+    tables = with_referenced_tables(tables)
     try:
         async with engine.begin() as connection:
             await connection.run_sync(Run.metadata.drop_all, tables=tables)

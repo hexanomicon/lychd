@@ -75,6 +75,7 @@ from lychd.interface.web.archive_access import LocalArchivePolicy
 from lychd.interface.web.bridge import BridgeController
 from lychd.interface.web.deps import web_dependencies
 from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry
+from tests.postgres_model_tables import with_referenced_tables
 from tests.runtime_guards import InertSoftActivationGuard
 from tests.support.blockworld import CapturedQueue
 from tests.web.conftest import TEST_ACCESS_PASSWORD, TEST_AUTHORIZATION
@@ -168,6 +169,7 @@ async def pg_factory(pg_url: str) -> AsyncIterator[async_sessionmaker[AsyncSessi
             ArchiveNoteEmbedding.__table__,
         ],
     )
+    tables = with_referenced_tables(tables)
     async with engine.begin() as connection:
         await connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await connection.run_sync(Run.metadata.drop_all, tables=tables)

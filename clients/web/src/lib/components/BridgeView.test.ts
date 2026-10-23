@@ -287,12 +287,15 @@ describe("Bridge configured composer guidance", () => {
 });
 
 describe("Bridge route and stream ownership", () => {
-  it("keeps a later draft unsent until the observed Run settles", async () => {
+  it.each(["running", "awaiting_peer"])("keeps a later draft unsent while the observed Run is %s", async (status) => {
+    cancelMock.mockResolvedValue({ ...cancelledProjection(), cursor: 19 });
     getSnapshotMock
       .mockResolvedValueOnce(snapshot("session-a", [projection()]))
       .mockResolvedValue(snapshot("session-a", [cancelledProjection()]));
     const view = render(BridgeView, { sessionId: "session-a" });
     const composer = await screen.findByRole("textbox", { name: "Message" });
+    await act(() => latestRunListener()(event("run-a", 18, "status", { text: status })));
+    expect(screen.getByText(status.replaceAll("_", " "), { selector: ".circle-status > span:first-child" })).toBeTruthy();
     await fireEvent.input(composer, { target: { value: "my later draft" } });
     expect((screen.getByRole("button", { name: "Offer" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText(/Wait for this Run to settle/).textContent).toContain("not queued");

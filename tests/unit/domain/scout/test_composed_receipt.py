@@ -7,6 +7,7 @@ import tomllib
 from hashlib import sha256
 from importlib.metadata import version
 from pathlib import Path
+from uuid import UUID
 
 
 def test_maintained_composed_passage_matches_source_and_dependencies() -> None:
@@ -18,6 +19,10 @@ def test_maintained_composed_passage_matches_source_and_dependencies() -> None:
     assert receipt["admission"] == "credential-consent-store-issued-claim"
     assert receipt["execution"] == "explicit-service-and-node-choreography"
     assert receipt["model"] == "deterministic-FunctionModel"
+    assert receipt["record_kind"] == "sanitized_public_composed_qualification"
+    evidence_id = UUID(receipt["qualification_evidence_id"])
+    assert evidence_id.version == 4
+    assert str(evidence_id) == receipt["qualification_evidence_id"]
     assert set(receipt["unexercised"]) == {
         "HTTP-routes",
         "SAQ-worker-process",
@@ -74,12 +79,17 @@ def test_maintained_composed_passage_matches_source_and_dependencies() -> None:
         "tests/scout_fixtures.py",
         "tests/scout_network_fixture.py",
         "tests/scout_postgres_fixture.py",
+        "tests/postgres_model_tables.py",
         "tests/scout_workflow_fixture.py",
         "tests/integration/test_scout_extraction_runtime.py",
         "tests/integration/test_scout_composed_runtime.py",
     }
     for path, digest in receipt["source_fingerprints"].items():
         assert sha256((root / path).read_bytes()).hexdigest() == digest, path
+    assert not any(
+        item in json.dumps(receipt)
+        for item in ("/home/", "/tmp/", '"container_id"', '"python_root"')  # noqa: S108 - refuse private paths
+    )
     database = receipt["database"]
     assert database["network"] == "none"
     assert database["published_ports"] is False

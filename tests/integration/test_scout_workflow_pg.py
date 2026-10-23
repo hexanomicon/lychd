@@ -38,6 +38,7 @@ from lychd.system import scout_worker
 from lychd.system.services import scout_extraction, scout_workflow
 from lychd.system.services.scout_fetch import FetchedPage, FetchObservation
 from lychd.system.services.scout_http import serialize_get
+from tests.postgres_model_tables import with_referenced_tables
 from tests.scout_fixtures import scout_profile
 from tests.scout_workflow_fixture import approve_workflow, assemble_workflow, workflow_service
 
@@ -92,6 +93,7 @@ async def factory(workflow_pg_url: str) -> AsyncIterator[async_sessionmaker[Asyn
             ScoutAttempt.__table__,
         ],
     )
+    tables = with_referenced_tables(tables)
     try:
         async with engine.begin() as connection:
             await connection.run_sync(Run.metadata.drop_all, tables=tables)

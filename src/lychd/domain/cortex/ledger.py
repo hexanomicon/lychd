@@ -42,12 +42,16 @@ if TYPE_CHECKING:
 
     from lychd.agents.router import Intent
     from lychd.domain.cortex.events import RunEvent
+    from lychd.domain.intercom.native import PeerTaskRef
+
+_SHA256_HEX_LENGTH = 64
 
 __all__ = [
     "ConsentAdmissionEvidence",
     "DbRunLedger",
     "DelegateAdmissionEvidence",
     "InMemoryRunLedger",
+    "PeerAdmissionEvidence",
     "RunAdmissionConflictError",
     "RunClaimAttempt",
     "RunClaimObservation",
@@ -139,6 +143,159 @@ class DelegateAdmissionEvidence:
     result: DelegatedAgentResult
 
 
+@dataclass(frozen=True, kw_only=True)
+class PeerAdmissionEvidence:
+    """Exact native custody freshly validated by the host-owned peer service.
+
+    PostgreSQL reestablishes this relation under its Run/task/outbox locks. Memory
+    requires the same named snapshot and correlated authenticated transmission.
+    Neither a boolean nor an arbitrary terminal dictionary authorizes a resume.
+    """
+
+    ref: PeerTaskRef
+    pattern_digest: str
+    enqueue_seq: int
+    step_id: str
+    occurrence_id: str
+    task: dict[str, Any]
+    transmission: dict[str, Any] | None = None
+
+    def __post_init__(self) -> None:
+        """Detach nested custody values from the caller's mutable read projection."""
+        object.__setattr__(self, "task", deepcopy(self.task))
+        object.__setattr__(self, "transmission", deepcopy(self.transmission))
+
+
+def _peer_provenance_matches(run: RunRecord, ref: PeerTaskRef, task: dict[str, Any]) -> bool:
+    """Require the exact admitted source, station, Run and prepared occurrence."""
+    from lychd.agents.workflows.base import pattern_snapshot_is_valid
+
+    binding = run.admitted_peer
+    manifest = run.pattern_manifest
+    if binding is None or not pattern_snapshot_is_valid(manifest):
+        return False
+    try:
+        expires_at = datetime.fromisoformat(str(task.get("expires_at")))
+    except ValueError:
+        return False
+    nodes = manifest["nodes"]
+    return (
+        ref.run_id == run.run_id
+        and ref.request_id == binding.request_id
+        and ref.binding_digest == binding.digest
+        and any(node["key"] == ref.station and node["kind"] == "peer" for node in nodes)
+        and str(task.get("task_id")) == str(ref.task_id)
+        and str(task.get("native_run_id")) == run.run_id
+        and task.get("native_station") == ref.station
+        and str(task.get("native_request_id")) == str(ref.request_id)
+        and task.get("native_binding_digest") == binding.digest
+        and task.get("native_pattern_digest") == manifest["digest"]
+        and task.get("native_enqueue_seq") == run.enqueue_seq
+        and bool(task.get("native_step_id"))
+        and bool(task.get("native_occurrence_id"))
+        and str(task.get("peer_id")) == str(binding.peer_id)
+        and str(task.get("declaration_id")) == str(binding.declaration_id)
+        and str(task.get("operation_id")) == str(binding.operation_id)
+        and task.get("purpose") == binding.purpose
+        and task.get("task_schema") == binding.task_schema
+        and task.get("endpoint") == binding.endpoint
+        and task.get("source_digest") == binding.source_digest
+        and task.get("text_digest") == binding.text_digest
+        and expires_at == binding.expires_at
+        and task.get("adoption_closed") is False
+    )
+
+
+def _peer_evidence_matches(run: RunRecord, evidence: PeerAdmissionEvidence) -> bool:
+    task = evidence.task
+    return (
+        _peer_provenance_matches(run, evidence.ref, task)
+        and evidence.pattern_digest == task.get("native_pattern_digest")
+        and evidence.enqueue_seq == task.get("native_enqueue_seq")
+        and evidence.step_id == task.get("native_step_id")
+        and evidence.occurrence_id == task.get("native_occurrence_id")
+    )
+
+
+def _peer_terminal_matches(task: dict[str, Any], transmission: dict[str, Any] | None) -> bool:
+    """Require received authenticated terminal custody correlated to this task."""
+    settlement = task.get("settlement")
+    if not isinstance(settlement, dict) or transmission is None:
+        return False
+    settlement = cast("dict[str, Any]", settlement)
+    result = settlement.get("result")
+    if not isinstance(result, dict):
+        return False
+    result = cast("dict[str, Any]", result)
+    return (
+        task.get("local_status") == "terminal"
+        and task.get("submit_claimed") is True
+        and settlement.get("status") == "received"
+        and settlement.get("terminal") is True
+        and settlement.get("foreign_task_id") == task.get("foreign_task_id")
+        and settlement.get("foreign_status") == task.get("foreign_status")
+        and settlement.get("foreign_status")
+        in {
+            "TASK_STATE_COMPLETED",
+            "TASK_STATE_FAILED",
+            "TASK_STATE_CANCELED",
+            "TASK_STATE_REJECTED",
+        }
+        and isinstance(settlement.get("foreign_task_id"), str)
+        and bool(settlement.get("foreign_task_id"))
+        and bool(settlement.get("response_nonce"))
+        and isinstance(settlement.get("response_digest"), str)
+        and len(settlement["response_digest"]) == _SHA256_HEX_LENGTH
+        and all(char in "0123456789abcdef" for char in settlement["response_digest"])
+        and result.get("origin") == "authenticated-foreign-data"
+        and isinstance(result.get("text"), list)
+        and all(isinstance(text, str) for text in cast("list[object]", result["text"]))
+        and str(transmission.get("task_id")) == str(task.get("task_id"))
+        and transmission.get("status") == "received"
+        and transmission.get("settlement") == settlement
+    )
+
+
+def _peer_disposition_matches(  # noqa: PLR0911 - explicit independent non-completion refusal gates
+    task: dict[str, Any], transmission: dict[str, Any] | None
+) -> bool:
+    """Admit explicit local non-completion without inventing foreign termination."""
+    try:
+        expires_at = datetime.fromisoformat(str(task.get("expires_at")))
+    except ValueError:
+        return False
+    if expires_at.tzinfo is not None and expires_at <= datetime.now(UTC):
+        return True
+    status = task.get("local_status")
+    if status not in {"unknown", "expired", "revoked", "refused"}:
+        return False
+    claimed = task.get("submit_claimed") is True
+    if not claimed:
+        return status in {"expired", "revoked", "refused"} and task.get("foreign_task_id") is None
+    if (
+        transmission is None
+        or str(transmission.get("task_id")) != str(task.get("task_id"))
+        or transmission.get("method") != "SendMessage"
+        or transmission.get("status") not in {"claimed", "received", "unknown", "refused"}
+    ):
+        return False
+    if status in {"expired", "revoked"}:
+        return True
+    settlement = transmission.get("settlement")
+    if not isinstance(settlement, dict):
+        return False
+    settlement = cast("dict[str, Any]", settlement)
+    return (
+        task.get("foreign_task_id") is None
+        and transmission.get("status") == status
+        and settlement.get("status") == status
+    )
+
+
+def _peer_resume_matches(task: dict[str, Any], transmission: dict[str, Any] | None) -> bool:
+    return _peer_terminal_matches(task, transmission) or _peer_disposition_matches(task, transmission)
+
+
 class RunAdmissionConflictError(ValueError):
     """An idempotency identity was replayed with a different durable intent."""
 
@@ -175,6 +332,7 @@ def _intent_payload(intent: Intent, *, idempotency_key: str | None = None) -> di
         "admitted_capability_key": intent.admitted_capability_key,
         "admitted_archive": intent.admitted_archive.model_dump(mode="json") if intent.admitted_archive else None,
         "admitted_scout": intent.admitted_scout.model_dump(mode="json") if intent.admitted_scout else None,
+        "admitted_peer": intent.admitted_peer.model_dump(mode="json") if intent.admitted_peer else None,
         "admitted_delegation": intent.admitted_delegation.model_dump(mode="json")
         if intent.admitted_delegation
         else None,
@@ -317,6 +475,25 @@ class RunLedger(Protocol):
         """Atomically bind a delegated job and move its owning run into wait."""
         ...
 
+    async def park_peer(self, run_id: str, ref: PeerTaskRef, *, evidence: PeerAdmissionEvidence | None = None) -> None:
+        """Bind one prepared native task and settle its exact claimed delivery."""
+        ...
+
+    async def get_by_peer(self, task_id: str) -> RunRecord | None:
+        """Return only the Run whose current sovereign wait owns this task."""
+        ...
+
+    async def try_admit_peer(
+        self,
+        run_id: str,
+        *,
+        task_id: str,
+        current: Callable[[], None],
+        evidence: PeerAdmissionEvidence | None = None,
+    ) -> int | None:
+        """Admit one canonical terminal peer owner under current live authority."""
+        ...
+
     async def append_event(self, event: RunEvent) -> None:
         """Append one non-TOKEN event to the run's Step ledger."""
         ...
@@ -420,12 +597,16 @@ def _settles_delivery(status: RunStatus) -> bool:
     return status in TERMINAL_STATUSES or status in {
         RunStatus.AWAITING_CONSENT,
         RunStatus.AWAITING_DELEGATE,
+        RunStatus.AWAITING_PEER,
     }
 
 
 def _reject_generic_resume(current: RunStatus, target: RunStatus, *, run_id: str) -> None:
     """Keep authority-bearing resume edges behind their owner-specific CAS methods."""
-    if current in {RunStatus.AWAITING_CONSENT, RunStatus.AWAITING_DELEGATE} and target is RunStatus.QUEUED:
+    if (
+        current in {RunStatus.AWAITING_CONSENT, RunStatus.AWAITING_DELEGATE, RunStatus.AWAITING_PEER}
+        and target is RunStatus.QUEUED
+    ):
         raise IllegalRunTransitionError(run_id, current, target)
 
 
@@ -568,6 +749,7 @@ class InMemoryRunLedger:
             admitted_archive=intent.admitted_archive,
             admitted_delegation=intent.admitted_delegation,
             admitted_scout=intent.admitted_scout,
+            admitted_peer=intent.admitted_peer,
         )
         stored = _copy_run_record(record)
         self._runs[stored.run_id] = stored
@@ -790,6 +972,7 @@ class InMemoryRunLedger:
         _apply_status(record, RunStatus.AWAITING_CONSENT, error=None)
         record.consent_id = consent_id
         record.delegated_job_id = None
+        record.peer_task_id = None
         self._settle_delivery(run_id, record.enqueue_seq)
 
     async def park_delegate(self, run_id: str, job_id: str) -> None:
@@ -798,7 +981,68 @@ class InMemoryRunLedger:
         _apply_status(record, RunStatus.AWAITING_DELEGATE, error=None)
         record.delegated_job_id = job_id
         record.consent_id = None
+        record.peer_task_id = None
         self._settle_delivery(run_id, record.enqueue_seq)
+
+    async def park_peer(self, run_id: str, ref: PeerTaskRef, *, evidence: PeerAdmissionEvidence | None = None) -> None:
+        """Park only the host-validated preparation for this exact claimed hop."""
+        record = self._require(run_id)
+        delivery = self._deliveries.get((run_id, record.enqueue_seq))
+        if (
+            evidence is None
+            or evidence.ref != ref
+            or not _peer_evidence_matches(record, evidence)
+            or delivery is None
+            or delivery.state is not RunDeliveryState.CLAIMED
+            or evidence.task.get("submit_claimed") is not False
+            or record.status is not RunStatus.RUNNING
+        ):
+            msg = "Native peer preparation does not own this claimed Run."
+            raise RuntimeError(msg)
+        _apply_status(record, RunStatus.AWAITING_PEER, error=None)
+        record.peer_task_id = str(ref.task_id)
+        record.consent_id = None
+        record.delegated_job_id = None
+        self._settle_delivery(run_id, record.enqueue_seq)
+
+    async def get_by_peer(self, task_id: str) -> RunRecord | None:
+        """Find this exact current peer owner without consulting historical tasks."""
+        for record in self._runs.values():
+            if record.status is RunStatus.AWAITING_PEER and record.peer_task_id == task_id:
+                return _copy_run_record(record)
+        return None
+
+    async def try_admit_peer(
+        self,
+        run_id: str,
+        *,
+        task_id: str,
+        current: Callable[[], None],
+        evidence: PeerAdmissionEvidence | None = None,
+    ) -> int | None:
+        """Atomically create one resume hop from correlated terminal evidence."""
+        record = self._require(run_id)
+        if (
+            record.status is not RunStatus.AWAITING_PEER
+            or record.peer_task_id != task_id
+            or evidence is None
+            or str(evidence.ref.task_id) != task_id
+            or not _peer_evidence_matches(record, evidence)
+            or not _peer_resume_matches(evidence.task, evidence.transmission)
+        ):
+            return None
+        current()
+        _apply_status(record, RunStatus.QUEUED, error=None)
+        record.enqueue_seq += 1
+        self._deliveries[(run_id, record.enqueue_seq)] = RunDeliveryRecord(
+            run_id=run_id,
+            enqueue_seq=record.enqueue_seq,
+            queue_name=record.queue_name,
+            priority=record.priority,
+            resume=True,
+            state=RunDeliveryState.PENDING,
+        )
+        return record.enqueue_seq
 
     async def append_event(self, event: RunEvent) -> None:
         """Append one non-TOKEN event to the run's step list."""
@@ -1627,6 +1871,7 @@ class DbRunLedger:
             row.error = record.error
             row.consent_id = consent_exists
             row.delegated_job_id = None
+            row.peer_task_id = None
             await _settle_db_delivery(session, row.id, row.enqueue_seq)
 
     async def park_delegate(self, run_id: str, job_id: str) -> None:
@@ -1652,7 +1897,164 @@ class DbRunLedger:
             row.error = record.error
             row.delegated_job_id = job_id
             row.consent_id = None
+            row.peer_task_id = None
             await _settle_db_delivery(session, UUID(run_id), row.enqueue_seq)
+
+    async def park_peer(self, run_id: str, ref: PeerTaskRef, *, evidence: PeerAdmissionEvidence | None = None) -> None:
+        """Lock Run then canonical task/outbox before committing its sole wait owner."""
+        from sqlalchemy import select
+
+        from lychd.db.intercom import task_snapshot
+        from lychd.db.models import IntercomOutbox, IntercomTask, Run, RunDelivery
+
+        _ = evidence
+        async with self._session_factory() as session, session.begin():
+            row = await session.scalar(select(Run).where(Run.id == UUID(run_id)).with_for_update())
+            if row is None:
+                raise KeyError(run_id)
+            task = await session.scalar(select(IntercomTask).where(IntercomTask.id == ref.task_id).with_for_update())
+            outbox = await session.scalar(
+                select(IntercomOutbox).where(IntercomOutbox.task_id == ref.task_id).with_for_update()
+            )
+            delivery = await session.scalar(
+                select(RunDelivery)
+                .where(RunDelivery.run_id == row.id, RunDelivery.enqueue_seq == row.enqueue_seq)
+                .with_for_update()
+            )
+            record = self._to_record(row)
+            if (
+                task is None
+                or outbox is None
+                or delivery is None
+                or delivery.state != RunDeliveryState.CLAIMED.value
+                or outbox.submit_claimed
+                or record.status is not RunStatus.RUNNING
+                or not _peer_provenance_matches(record, ref, task_snapshot(task, outbox))
+            ):
+                msg = "Native peer preparation does not own this claimed Run."
+                raise RuntimeError(msg)
+            _apply_status(record, RunStatus.AWAITING_PEER, error=None)
+            row.status = record.status.value
+            row.error = None
+            row.peer_task_id = ref.task_id
+            row.consent_id = None
+            row.delegated_job_id = None
+            await _settle_db_delivery(session, row.id, row.enqueue_seq)
+
+    async def get_by_peer(self, task_id: str) -> RunRecord | None:
+        """Resolve the exact committed peer wait rather than a historical relation."""
+        from sqlalchemy import select
+
+        from lychd.db.models import Run
+
+        try:
+            task_uuid = UUID(task_id)
+        except ValueError:
+            return None
+        async with self._session_factory() as session:
+            row = await session.scalar(
+                select(Run).where(
+                    Run.status == RunStatus.AWAITING_PEER.value,
+                    Run.peer_task_id == task_uuid,
+                )
+            )
+            return self._to_record(row) if row is not None else None
+
+    async def try_admit_peer(  # noqa: PLR0911 - fail closed at each canonical authority boundary
+        self,
+        run_id: str,
+        *,
+        task_id: str,
+        current: Callable[[], None],
+        evidence: PeerAdmissionEvidence | None = None,
+    ) -> int | None:
+        """Re-read exact canonical custody and check current authority inside the CAS."""
+        from sqlalchemy import select
+
+        from lychd.db.intercom import (
+            IntercomStoreError,
+            lock_current_peer,
+            require_current_peer,
+            task_snapshot,
+            transmission_snapshot,
+        )
+        from lychd.db.models import IntercomOutbox, IntercomTask, IntercomTransmission, Run, RunDelivery
+        from lychd.domain.intercom.native import PeerTaskRef
+
+        _ = evidence
+        task_uuid = UUID(task_id)
+        async with self._session_factory() as session, session.begin():
+            row = await session.scalar(select(Run).where(Run.id == UUID(run_id)).with_for_update())
+            if row is None or row.status != RunStatus.AWAITING_PEER.value or row.peer_task_id != task_uuid:
+                return None
+            record = self._to_record(row)
+            if record.admitted_peer is None:
+                return None
+            peer = await lock_current_peer(session, record.admitted_peer.peer_id)
+            task = await session.scalar(select(IntercomTask).where(IntercomTask.id == task_uuid).with_for_update())
+            outbox = await session.scalar(
+                select(IntercomOutbox).where(IntercomOutbox.task_id == task_uuid).with_for_update()
+            )
+            if (
+                task is None
+                or outbox is None
+                or task.native_request_id is None
+                or task.native_station is None
+                or task.native_binding_digest is None
+            ):
+                return None
+            snapshot = task_snapshot(task, outbox)
+            ref = PeerTaskRef(
+                task_id=task_uuid,
+                run_id=run_id,
+                station=task.native_station,
+                request_id=task.native_request_id,
+                binding_digest=task.native_binding_digest,
+            )
+            if not _peer_provenance_matches(record, ref, snapshot):
+                return None
+            query = select(IntercomTransmission).where(IntercomTransmission.task_id == task_uuid)
+            if task.local_status == "terminal":
+                if task.terminal_record is None:
+                    return None
+                query = query.where(
+                    IntercomTransmission.status == "received",
+                    IntercomTransmission.settlement == task.terminal_record,
+                )
+            else:
+                query = query.where(IntercomTransmission.method == "SendMessage")
+            transmission = await session.scalar(query.order_by(IntercomTransmission.id).limit(1).with_for_update())
+            proof = transmission_snapshot(transmission) if transmission is not None else None
+            if not _peer_resume_matches(snapshot, proof):
+                return None
+            try:
+                require_current_peer(peer, snapshot)
+            except IntercomStoreError as error:
+                if error.code in {"policy", "revoked"}:
+                    return None
+                raise
+            # All awaitable reads precede this live check and the owner transition.
+            current()
+            previous_seq = int(row.enqueue_seq)
+            _apply_status(record, RunStatus.QUEUED, error=None)
+            record.enqueue_seq += 1
+            row.status = record.status.value
+            row.error = None
+            row.enqueue_seq = record.enqueue_seq
+            row.updated_at = record.updated_at
+            session.add(
+                RunDelivery(
+                    run_id=row.id,
+                    enqueue_seq=record.enqueue_seq,
+                    queue_name=str(row.queue_name),
+                    priority=int(row.priority),
+                    resume=True,
+                    state=RunDeliveryState.PENDING.value,
+                )
+            )
+            await _settle_db_delivery(session, row.id, previous_seq)
+            current()
+            return record.enqueue_seq
 
     async def append_event(self, event: RunEvent) -> None:
         """Append one non-TOKEN event as a Step row, persisting `event.seq` VERBATIM.
@@ -2074,6 +2476,7 @@ class DbRunLedger:
                 "admitted_archive": intent.get("admitted_archive"),
                 "admitted_delegation": intent.get("admitted_delegation"),
                 "admitted_scout": intent.get("admitted_scout"),
+                "admitted_peer": intent.get("admitted_peer"),
             }
         )
         return RunRecord(
@@ -2093,11 +2496,13 @@ class DbRunLedger:
             admitted_archive=parsed_intent.admitted_archive,
             admitted_delegation=parsed_intent.admitted_delegation,
             admitted_scout=parsed_intent.admitted_scout,
+            admitted_peer=parsed_intent.admitted_peer,
             attempt=int(row.attempt),  # type: ignore[attr-defined]
             enqueue_seq=int(row.enqueue_seq),  # type: ignore[attr-defined]
             error=row.error,  # type: ignore[attr-defined]
             consent_id=str(row.consent_id) if row.consent_id is not None else None,  # type: ignore[attr-defined]
             delegated_job_id=row.delegated_job_id,  # type: ignore[attr-defined]
+            peer_task_id=str(row.peer_task_id) if row.peer_task_id is not None else None,  # type: ignore[attr-defined]
             created_at=row.created_at,  # type: ignore[attr-defined]
             updated_at=row.updated_at,  # type: ignore[attr-defined]  # eligibility cursor for delivery repair
             started_at=row.started_at,  # type: ignore[attr-defined]

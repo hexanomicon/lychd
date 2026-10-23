@@ -11,6 +11,7 @@ from lychd.system.services.codex import CodexService
 from lychd.system.services.lifecycle.models import CreatedResources
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
 
@@ -33,20 +34,24 @@ def codex_paths(tmp_path: Path) -> dict[str, Path]:
 
 
 @pytest.fixture
-def codex_service(codex_paths: dict[str, Path]) -> CodexService:
-    """Instantiate CodexService with isolated paths."""
-    return CodexService(
-        toml_path=codex_paths["toml"],
-        runes_path=codex_paths["runes"],
-        postgres_root_path=codex_paths["postgres"],
-        rune_schemas=[],
-    )
+def codex_service(codex_paths: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> Iterator[CodexService]:
+    """Use the temporary settings source instead of the operator's installed configuration."""
+    monkeypatch.setattr(settings_module, "PATH_LYCHD_TOML", codex_paths["toml"])
+    get_settings.cache_clear()
+    try:
+        yield CodexService(
+            toml_path=codex_paths["toml"],
+            runes_path=codex_paths["runes"],
+            postgres_root_path=codex_paths["postgres"],
+            rune_schemas=[],
+        )
+    finally:
+        get_settings.cache_clear()
 
 
 def test_lychd_toml_is_valid_and_round_trips_through_settings(
     codex_service: CodexService,
     codex_paths: dict[str, Path],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     codex_service.inscribe()
 
@@ -70,7 +75,6 @@ def test_lychd_toml_is_valid_and_round_trips_through_settings(
     assert "# Local llama.cpp:" in rendered
     assert "# Other choices:" in rendered
 
-    monkeypatch.setattr(settings_module, "PATH_LYCHD_TOML", toml_path)
     reparsed = Settings()
 
     assert reparsed.model_dump(mode="json", exclude_none=True) == content

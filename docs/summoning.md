@@ -41,6 +41,41 @@ separate places in the [anatomy](sepulcher/index.md).
     [State of Work](state-of-the-work.md) records repository evidence; your host conjunction still
     needs its own observation.
 
+## Stage the acceptance campaign
+
+An already running model can answer before the complete body is qualified. For that smaller
+boundary, begin with the [standalone vLLM probe](sepulcher/animator/soulstone/engines/vllm.md#bring-one-service-to-a-first-reply).
+The worked rite below uses llama.cpp; replacing it with vLLM needs an exact engine recipe and
+its own namespace, device, cache, shared-memory and lifecycle observations.
+
+Keep one campaign packet with the source/configuration/image/model identities, permitted effects,
+case counts, deadlines, expected outcomes, receipt destination, stop conditions and recovery owner.
+Private host material and raw receipts stay outside the checkout. Finish one gate before widening
+the claim:
+
+| Gate | Required observation before continuing |
+| --- | --- |
+| Source and configuration | Host command and Vessel image share a recorded source and lock; selected extensions and Runes agree; dry-run binding validates paths, ports and separate secret references. |
+| Warm model path | Exact inventory and response identities, useful text, an actually executed harmless tool, finite request limits and released grants. This proves neither managed activation nor a persisted Run. |
+| Composed body | Owned startup, migration and restricted runtime role, queue processing, actual dispatch and a settled reply agree; settled session/Run evidence remains inspectable after restart. |
+| Browser operation | Dedicated local login and wrong-credential/foreign-Origin refusal, keyboard submission and cancellation, then exact Run → Orb → Loom → return. Qualify the synthetic development fixture separately. |
+| Daily pilot | Predeclared repeated turns, startup/stop/restart, timeout/failure/cancellation and longer-session cases retain useful work and explain uncertain outcomes; measure latency, queues and resources. Complete authenticated lifecycle control before treating public CLI stop as supported. |
+| Growth | Add one measured application or resource demand at a time, preserve an exact baseline and regressions, verify extension-generation compatibility and recovery, and separately admit memory or code-change effects. |
+
+Begin with one fixed text model and sequential requests as an explicit pilot operating condition;
+the lease ledger is not a capacity limiter. Set measurable latency and resource limits in the
+packet before trials. Do not substitute arbitrary throughput, synthetic GPU arithmetic or a large
+test count for useful completed work on the named profile.
+
+Record pass, failed, blocked and unknown separately. A timeout or lost acknowledgment does not
+prove that an external effect ended. Interrupting ordinary work is a different case from retaining
+a settled reply through restart. The [receipt requirements](state-of-the-work.md#operator-receipt-requirements)
+and each [delivery boundary](state-of-the-work.md) determine what a result can support.
+
+The first text pilot needs no Phoenix, embedding model, Archive, Scout, Tomb, foreign coding
+runtime, training, federation or public extension SDK. Introducing one later reopens only its
+affected authority, custody, persistence, resource and recovery checks.
+
 ## The Grounds — verify the Linux host {#the-grounds}
 
 The [supported host policy](adr/08-containers.md#supported-host-policy) requires a free and
@@ -396,8 +431,22 @@ activation path and obscure the failure you are trying to observe.
 
 ## Close the rite
 
-The public `stop` verb currently refuses a live Vessel because its authenticated lifecycle port
-is absent. For this acceptance procedure, use the explicit host fallback:
+For an exact Scribe-owned uncaged native Vessel using the current owned launcher, use:
+
+```bash
+lychd stop
+```
+
+The host authenticates installation intent, verifies the same user manager on both control
+connections, and retains native exit evidence until clean closure permits dependent stop.
+Keep a valid private `XDG_RUNTIME_DIR` and a running user bus. On shutdown failure or uncertain
+evidence it preserves dependencies and reports the stage reached; inspect status and logs before
+reconciling. Do not blindly repeat an uncertain stop.
+
+Active caged or mixed ownership still refuses. The real native manager regression uses an inert
+application and synthetic dependencies; it does not qualify an installed graph or older image.
+[State of Work](state-of-the-work.md#core-cli-rites) owns that evidence boundary. For the caged
+acceptance procedure above, the explicit host fallback remains:
 
 ```bash
 systemctl --user stop \

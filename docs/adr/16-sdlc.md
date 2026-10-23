@@ -111,6 +111,33 @@ weights; a changed body follows Packaging and Evolution. Each successor retains 
 own admission. The dependency map does not combine those owners into one hidden Run or make the
 whole recurrent process a DAG. Immutable records of its unfolded occurrences may form a causal DAG.
 
+### Progressive bootstrap and recurring work
+
+Operator-controlled campaigns are the initial execution road. They retain their actual platform,
+task, worker and artifact identities, observed permissions and explicit evidence gaps; they do
+not manufacture native Runs, containment receipts or evaluation records. A native coordinator
+can replace a handoff only after its typed contract, admission, custody, settlement and recovery
+are proved. Foreign harnesses retain private planning while LychD retains task semantics and
+receiving-owner authority. An executable development application must publish its own exact
+Pattern before assuming native coordination; this law creates no general SDLC or Assimilation
+coordinator. The [bootstrap procedure](../sepulcher/extensions/weaver/development-bootstrap.md)
+orders the small implementation gates.
+
+Recurring or spare-capacity work selects from owned, eligible tasks under current standing
+authorization. Each occurrence requires a named acceptance owner, observable benefit, exact
+inputs, scope, acceptance, termination, and reserved verification/review and recovery capacity
+within the global budget. Capacity includes human attention and pending candidates, not only
+model tokens. Missing capacity, expired authority, exhausted budgets, unresolved external outcomes
+or absence of useful eligible work stops dispatch. Numerical concurrency and retry limits belong
+to a versioned operating policy, not a universal model topology.
+
+Completion authorizes no successor or authority expansion. A successor is independently admitted
+under the standing scope; a retry records its changed hypothesis or justified replication and
+consumes the same parent budget. Proposed changes to evaluators, protected cases, acceptance,
+budgets or promotion policy are separately reviewed candidates. They cannot retroactively make
+a failed artifact pass. Recurrent construction, procedural improvement, training and live body
+adoption remain separately owned passages.
+
 ### External workflow research
 
 An independently operated workflow forge may supply candidate SDLC contracts and evaluation cases

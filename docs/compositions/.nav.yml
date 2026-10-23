@@ -85,6 +85,9 @@ nav:
       - presence-and-embodiment/index.md
       - Blockworld:
           - blockworld/index.md
+          - blockworld/companion-lab.md
+          - blockworld/horizon-assist.md
+          - blockworld/horizon-play.md
           - blockworld/mission.md
           - blockworld/sentinel.md
           - blockworld/continuity.md
@@ -124,6 +127,14 @@ nav:
           - broker/products.md
           - broker/channels.md
   - Candidate studies:
+      - Reach Connected Work:
+          - reach/connected-work/index.md
+          - reach/connected-work/accounts.md
+          - reach/connected-work/gmail.md
+          - reach/connected-work/discord.md
+          - reach/connected-work/github.md
+          - reach/connected-work/whatsapp.md
+          - reach/connected-work/delivery.md
       - Companion Android Foundation: companion/android-foundation.md
       - Companion Phone Workspace: companion/phone-workspace.md
       - Thorn:

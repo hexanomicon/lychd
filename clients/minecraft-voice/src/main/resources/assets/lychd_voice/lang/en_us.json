@@ -1,0 +1,6 @@
+{
+  "key.category.lychd_voice.controls": "LychD local voice",
+  "key.lychd_voice.record": "Request finite local voice capture (unbound by default)",
+  "key.lychd_voice.stop": "Request independent stop (use a function key for menus)",
+  "key.lychd_voice.talk": "Hold for local voice capture; release to process (unbound by default)"
+}

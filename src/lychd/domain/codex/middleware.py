@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import re
 from typing import TYPE_CHECKING, Any
 
 from litestar.enums import ScopeType
@@ -16,6 +17,7 @@ from litestar.exceptions import NotAuthorizedException, PermissionDeniedExceptio
 from litestar.middleware import DefineMiddleware
 from litestar.middleware.authentication import AbstractAuthenticationMiddleware, AuthenticationResult
 
+from lychd.config.constants import STOP_ADMISSION_PATH
 from lychd.domain.codex.local_access import LocalOperatorAccess
 from lychd.domain.codex.sigil import default_local_sigil
 
@@ -41,7 +43,10 @@ class SigilAuthMiddleware(AbstractAuthenticationMiddleware):
         allowed_origins: Sequence[str] = (),
     ) -> None:
         """Bind one startup credential generation and exact development origins."""
-        super().__init__(app, exclude=[r"^/_app(?:/|$)", r"^/schema(?:/|$)"])
+        super().__init__(
+            app,
+            exclude=[r"^/_app(?:/|$)", r"^/schema(?:/|$)", rf"^{re.escape(STOP_ADMISSION_PATH)}$"],
+        )
         self._operator_access = _operator_access(access_password, operator_access)
         self._allowed_origins = frozenset(allowed_origins)
 

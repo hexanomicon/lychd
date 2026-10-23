@@ -79,6 +79,7 @@ async def altar_services_lifespan(app: Litestar) -> AsyncGenerator[None]:
     connected_queues: tuple[ManagedRunQueue, ...] = ()
     maintenance_stop = asyncio.Event()
     maintenance_tasks: list[asyncio.Task[None]] = []
+    admission = getattr(app.state, "stop_admission", None)
     try:
         soft_activation_guard = _soft_activation_guard_at_startup()
         await wait_for_host_reactor_idle(settings.orchestration.switching)
@@ -150,8 +151,12 @@ async def altar_services_lifespan(app: Litestar) -> AsyncGenerator[None]:
         # Publish the web-facing handle last: a partially warmed runtime is never
         # observable through app.state.
         app.state.services = services
+        if admission is not None:
+            admission.publish()
         yield
     finally:
+        if admission is not None:
+            admission.withdraw()
         from lychd.domain.cortex.substrate import reset_run_substrate
 
         effects = services.substrate.effects if services is not None else None

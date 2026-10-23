@@ -38,11 +38,12 @@ if TYPE_CHECKING:
     from lychd.domain.archive import ArchiveProfile
     from lychd.domain.cortex.cancellation import RunEffectLifecycle
     from lychd.domain.cortex.events import RunEventBus
-    from lychd.domain.cortex.ledger import RunLedger
+    from lychd.domain.cortex.ledger import PeerAdmissionEvidence, RunLedger
     from lychd.domain.cortex.runs import RunRecord
     from lychd.domain.delegation.models import DelegatedAgentJob
     from lychd.domain.delegation.ports import DelegatedAgentCoordinatorPort
     from lychd.domain.delegation.routing import DelegatedRuntimeBinding
+    from lychd.domain.intercom.native import PeerAdmission, PeerDeclarationProof, PeerRunBinding, PeerWorkflowPort
     from lychd.domain.scout.profile import ScoutAdmission, ScoutDeclarationProof, ScoutProfile
 
 __all__ = [
@@ -52,6 +53,7 @@ __all__ = [
     "RunQueue",
     "admit_consent_resume",
     "admit_delegate_resume",
+    "admit_peer_resume",
     "contain_run_effects",
     "enqueue_run",
     "run_job_key",
@@ -320,6 +322,36 @@ class ConsentAuthority(Protocol):
         ...
 
 
+async def admit_peer_resume(
+    queues: Mapping[str, RunQueue],
+    ledger: RunLedger,
+    run: RunRecord,
+    *,
+    evidence: PeerAdmissionEvidence,
+    current: Callable[[], None],
+) -> bool:
+    """Admit and publish one exact authenticated terminal peer wait."""
+    task_id = str(evidence.ref.task_id)
+    current()
+    enqueue_seq = await ledger.try_admit_peer(
+        run.run_id,
+        task_id=task_id,
+        evidence=evidence,
+        current=current,
+    )
+    if enqueue_seq is None:
+        return False
+    refreshed = await ledger.get(run.run_id) or run
+    current()
+    try:
+        await enqueue_run(queues, ledger, refreshed, enqueue_seq=enqueue_seq)
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - canonical successor remains relay-owned
+        logger.warning("run_delivery_deferred", run_id=run.run_id, enqueue_seq=enqueue_seq, error=str(exc))
+    return True
+
+
 async def contain_run_effects(
     run_id: str,
     *,
@@ -413,6 +445,8 @@ class RunEngine:
         "delegation_binding",
         "effects",
         "ledger",
+        "peer",
+        "peer_admission",
         "queue_router",
         "queues",
         "scout_admission",
@@ -439,6 +473,8 @@ class RunEngine:
         bridge_archive: ArchiveProfile | None = None,
         bridge_scout: ScoutProfile | None = None,
         scout_admission: ScoutAdmission | None = None,
+        peer: PeerWorkflowPort | None = None,
+        peer_admission: PeerAdmission | None = None,
         delegation_binding: DelegatedRuntimeBinding | None = None,
     ) -> None:
         """Bind the already-constructed run collaborators."""
@@ -449,6 +485,8 @@ class RunEngine:
         self.bridge_archive = bridge_archive
         self.bridge_scout = bridge_scout
         self.scout_admission = scout_admission
+        self.peer = peer
+        self.peer_admission = peer_admission
         self.delegation_binding = delegation_binding
         self.queue_router = queue_router
         self.queues = queues
@@ -473,6 +511,7 @@ class RunEngine:
         idempotency_key: str | None = None,
         exclusive_session: bool = False,
         scout_declaration: ScoutDeclarationProof | None = None,
+        peer_declaration: PeerDeclarationProof | None = None,
     ) -> RunHandle:
         """Admit work, optionally allowing only one nonterminal Run per session.
 
@@ -487,8 +526,9 @@ class RunEngine:
             or intent.admitted_archive is not None
             or intent.admitted_delegation is not None
             or intent.admitted_scout is not None
+            or intent.admitted_peer is not None
         ):
-            msg = "Capability, Archive, Scout and delegation bindings are server-owned admission metadata, not caller Intent."
+            msg = "Capability, Archive, Scout, peer and delegation bindings are server-owned admission metadata, not caller Intent."
             raise ValueError(msg)
         if exclusive_session:
             session_key = ("exclusive_session", intent.session_id)
@@ -503,6 +543,7 @@ class RunEngine:
                             retain_before_publish=retain_before_publish,
                             idempotency_key=idempotency_key,
                             scout_declaration=scout_declaration,
+                            peer_declaration=peer_declaration,
                         )
                 active = await self.ledger.get_nonterminal_for_session(intent.session_id)
                 if active is not None:
@@ -515,6 +556,7 @@ class RunEngine:
                     retain_before_publish=retain_before_publish,
                     idempotency_key=idempotency_key,
                     scout_declaration=scout_declaration,
+                    peer_declaration=peer_declaration,
                 )
             finally:
                 self.admissions.finish(session_key)
@@ -523,6 +565,7 @@ class RunEngine:
             retain_before_publish=retain_before_publish,
             idempotency_key=idempotency_key,
             scout_declaration=scout_declaration,
+            peer_declaration=peer_declaration,
         )
 
     async def _submit_singleflight(
@@ -532,6 +575,7 @@ class RunEngine:
         retain_before_publish: Callable[[str], Awaitable[None]] | None,
         idempotency_key: str | None,
         scout_declaration: ScoutDeclarationProof | None,
+        peer_declaration: PeerDeclarationProof | None,
     ) -> RunHandle:
         """Single-flight one optional durable admission identity."""
         if idempotency_key is None:
@@ -540,6 +584,7 @@ class RunEngine:
                 retain_before_publish=retain_before_publish,
                 idempotency_key=None,
                 scout_declaration=scout_declaration,
+                peer_declaration=peer_declaration,
             )
         admission_key = ("idempotency", idempotency_key)
         while not self.admissions.begin(admission_key):
@@ -550,6 +595,7 @@ class RunEngine:
                 retain_before_publish=retain_before_publish,
                 idempotency_key=idempotency_key,
                 scout_declaration=scout_declaration,
+                peer_declaration=peer_declaration,
             )
         finally:
             self.admissions.finish(admission_key)
@@ -561,6 +607,7 @@ class RunEngine:
         retain_before_publish: Callable[[str], Awaitable[None]] | None,
         idempotency_key: str | None,
         scout_declaration: ScoutDeclarationProof | None,
+        peer_declaration: PeerDeclarationProof | None,
     ) -> RunHandle:
         """Route once, persist QUEUED, retain admission context, then publish work.
 
@@ -580,15 +627,17 @@ class RunEngine:
         if idempotency_key is not None:
             existing = await self.ledger.get_idempotent(intent, idempotency_key=idempotency_key)
             if existing is not None:
-                self._validate_scout_replay(intent, existing, scout_declaration)
-                validate = partial(self._validate_scout_replay, intent, existing, scout_declaration)
+                self._validate_admission_replay(intent, existing, scout_declaration, peer_declaration)
+                validate = partial(
+                    self._validate_admission_replay, intent, existing, scout_declaration, peer_declaration
+                )
                 if await self._repair_replayed_admission(existing, retain_before_publish, validate=validate):
                     validate()
-                    return await self._publish_admission(existing)
+                    return await self._publish_admission(existing, validate=validate)
                 return await self._replayed_run_handle(existing)
 
         workflow = self.workflows.route(intent)
-        intent = self._bind_workflow_intent(intent, workflow, scout_declaration)
+        intent = self._bind_workflow_intent(intent, workflow, scout_declaration, peer_declaration)
         queue_name, priority = self.queue_router.resolve(intent)
         if queue_name not in self.queues:
             msg = f"Run queue {queue_name!r} is not configured."
@@ -601,7 +650,9 @@ class RunEngine:
                 pattern_manifest=workflow.manifest.snapshot(),
                 queue_name=queue_name,
                 priority=priority,
-                hold_delivery=retain_before_publish is not None or intent.admitted_scout is not None,
+                hold_delivery=retain_before_publish is not None
+                or intent.admitted_scout is not None
+                or intent.admitted_peer is not None,
             )
         )
         try:
@@ -610,11 +661,18 @@ class RunEngine:
             # The DB commit may have won the cancellation race. Learn the
             # canonical id, then refuse only a caller-context-gated admission.
             run, created = await complete_under_cancellation(create_task)
-            if created and (retain_before_publish is not None or run.admitted_scout is not None):
+            if created and (
+                retain_before_publish is not None or run.admitted_scout is not None or run.admitted_peer is not None
+            ):
                 await complete_under_cancellation(self._refuse_admission(run, exc))
             raise
         return await self._finish_admission(
-            intent, run, created=created, retain=retain_before_publish, proof=scout_declaration
+            intent,
+            run,
+            created=created,
+            retain=retain_before_publish,
+            proof=scout_declaration,
+            peer_proof=peer_declaration,
         )
 
     async def _finish_admission(
@@ -625,22 +683,54 @@ class RunEngine:
         created: bool,
         retain: Callable[[str], Awaitable[None]] | None,
         proof: ScoutDeclarationProof | None,
+        peer_proof: PeerDeclarationProof | None,
     ) -> RunHandle:
         """Recheck authenticated admission after commit and around turn retention."""
-        validate = partial(self._validate_scout_replay, intent, run, proof)
+        validate = partial(self._validate_admission_replay, intent, run, proof, peer_proof)
         try:
             validate()
-        except ScoutWorkflowError as exc:
+        except Exception as exc:
             if created:
                 await complete_under_cancellation(self._refuse_admission(run, exc))
             raise
         if not created:
             if not await self._repair_replayed_admission(run, retain, validate=validate):
                 return await self._replayed_run_handle(run)
-        elif retain is not None or run.admitted_scout is not None:
+        elif retain is not None or run.admitted_scout is not None or run.admitted_peer is not None:
             await self._retain_and_release_admission(run, retain, validate=validate)
         validate()
-        return await self._publish_admission(run)
+        return await self._publish_admission(run, validate=validate)
+
+    def _bind_peer(self, intent: Intent, proof: PeerDeclarationProof | None) -> PeerRunBinding:
+        """Require the actual live handler proof and exact immutable peer binding."""
+        from lychd.domain.intercom.native import PeerRunBinding
+
+        if proof is None or self.peer_admission is None or self.peer is None:
+            msg = "native_public_peer@1 requires current authenticated peer admission."
+            raise ValueError(msg)
+        binding = self.peer_admission(intent, proof)
+        if type(binding) is not PeerRunBinding or binding != proof.binding:
+            msg = "Native peer admission did not retain its exact declared binding."
+            raise ValueError(msg)
+        return binding
+
+    def _validate_admission_replay(
+        self,
+        intent: Intent,
+        run: RunRecord,
+        scout: ScoutDeclarationProof | None,
+        peer: PeerDeclarationProof | None,
+    ) -> None:
+        """Recheck current source authority around every retained admission await."""
+        self._validate_scout_replay(intent, run, scout)
+        if run.admitted_peer is None:
+            if peer is not None:
+                msg = "Peer declaration cannot authorize another workflow."
+                raise ValueError(msg)
+            return
+        if self._bind_peer(intent, peer) != run.admitted_peer:
+            msg = "Native peer admission replay changed the immutable source or target."
+            raise ValueError(msg)
 
     def _bind_scout(self, intent: Intent, proof: ScoutDeclarationProof | None) -> ScoutBinding:
         """Validate live handler proof after waits and bind exact command operands."""
@@ -672,10 +762,22 @@ class RunEngine:
         ) != run.admitted_scout.model_dump(exclude=exclude):
             raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
 
-    def _bind_workflow_intent(
-        self, intent: Intent, workflow: Workflow, scout_declaration: ScoutDeclarationProof | None = None
+    def _bind_workflow_intent(  # noqa: C901 - exact mutually exclusive admitted workflow profiles
+        self,
+        intent: Intent,
+        workflow: Workflow,
+        scout_declaration: ScoutDeclarationProof | None = None,
+        peer_declaration: PeerDeclarationProof | None = None,
     ) -> Intent:
         """Stamp selected bindings only for a fresh explicitly configured admission."""
+        if workflow.manifest.key == "native_public_peer" and workflow.manifest.revision == "1":
+            if scout_declaration is not None:
+                msg = "Scout declaration cannot authorize a peer station."
+                raise ValueError(msg)
+            return intent.model_copy(update={"admitted_peer": self._bind_peer(intent, peer_declaration)})
+        if peer_declaration is not None:
+            msg = "Peer declaration cannot authorize another workflow."
+            raise ValueError(msg)
         if workflow.manifest.key == "bridge_chat" and workflow.manifest.revision == "4":
             return intent.model_copy(
                 update={
@@ -711,9 +813,11 @@ class RunEngine:
             }
         )
 
-    async def _publish_admission(self, run: RunRecord) -> RunHandle:
+    async def _publish_admission(self, run: RunRecord, *, validate: Callable[[], None] | None = None) -> RunHandle:
         """Open the live projection and publish one already-durable admission."""
         channel = await self._open_seeded_channel(run.run_id)
+        if validate is not None:
+            validate()
         try:
             await self._enqueue(run)
         except asyncio.CancelledError:
@@ -744,7 +848,7 @@ class RunEngine:
             return True
         if delivery.state is not RunDeliveryState.HELD:
             return False
-        if retain is None and run.admitted_scout is None:
+        if retain is None and run.admitted_scout is None and run.admitted_peer is None:
             msg = f"Run {run.run_id!r} idempotent admission remains held without a retention owner."
             raise RuntimeError(msg)
         await self._retain_and_release_admission(run, retain, validate=validate)
@@ -841,7 +945,11 @@ class RunEngine:
         except Exception as exc:
             await complete_under_cancellation(self._refuse_admission(run, exc))
             raise
+        if validate is not None:
+            validate()
         await self._release_admission(run)
+        if validate is not None:
+            validate()
 
     async def _release_admission(self, run: RunRecord) -> None:
         """Release one retained delivery or compensate an ambiguous release failure."""
@@ -1084,6 +1192,15 @@ class RunEngine:
             run,
             consent_id=consent_id,
         )
+
+    async def resume_peer(self, task_id: str) -> bool:
+        """Drive only the exact committed sovereign wait through current authority."""
+        if self.peer is None:
+            return False
+        run = await self.ledger.get_by_peer(task_id)
+        if run is None:
+            return False
+        return await self.peer.drive_wait(run.run_id)
 
     async def resume_delegate(self, job_id: str) -> bool:
         """Publish a resume only after the coordinator holds terminal job truth.

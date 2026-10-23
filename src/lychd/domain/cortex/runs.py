@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from lychd.domain.archive import ArchiveProfile  # runtime annotation for retained RunRecord serialization
 from lychd.domain.delegation.routing import DelegatedRuntimeBinding
+from lychd.domain.intercom.native import PeerRunBinding
 from lychd.domain.scout.profile import ScoutBinding
 
 if TYPE_CHECKING:
@@ -50,6 +51,7 @@ class RunStatus(StrEnum):
     AWAITING_HARDWARE = "awaiting_hardware"  # parked in stasis; orchestrator transitioning
     AWAITING_CONSENT = "awaiting_consent"  # parked on HitL; durable checkpoint written
     AWAITING_DELEGATE = "awaiting_delegate"  # parked on isolated delegated-agent labor
+    AWAITING_PEER = "awaiting_peer"  # parked on a sovereign public peer task
     CANCELLING = "cancelling"  # containment elected; terminal truth waits for acknowledgement
     DONE = "done"
     FAILED = "failed"
@@ -82,6 +84,7 @@ LEGAL_TRANSITIONS: dict[RunStatus, frozenset[RunStatus]] = {
             RunStatus.AWAITING_HARDWARE,
             RunStatus.AWAITING_CONSENT,
             RunStatus.AWAITING_DELEGATE,
+            RunStatus.AWAITING_PEER,
             RunStatus.DONE,
             RunStatus.FAILED,
             RunStatus.CANCELLING,
@@ -94,6 +97,7 @@ LEGAL_TRANSITIONS: dict[RunStatus, frozenset[RunStatus]] = {
     RunStatus.AWAITING_CONSENT: frozenset({RunStatus.QUEUED, RunStatus.CANCELLING}),
     # Result adoption re-enqueues one durable resume hop; cancellation remains terminal.
     RunStatus.AWAITING_DELEGATE: frozenset({RunStatus.QUEUED, RunStatus.CANCELLING}),
+    RunStatus.AWAITING_PEER: frozenset({RunStatus.QUEUED, RunStatus.CANCELLING}),
     RunStatus.CANCELLING: frozenset({RunStatus.CANCELLED}),
     RunStatus.DONE: frozenset(),
     RunStatus.FAILED: frozenset(),
@@ -178,6 +182,7 @@ class RunRecord:
     admitted_archive: ArchiveProfile | None = None
     admitted_delegation: DelegatedRuntimeBinding | None = None
     admitted_scout: ScoutBinding | None = None
+    admitted_peer: PeerRunBinding | None = None
     attempt: int = 0
     enqueue_seq: int = 0
     error: str | None = None
@@ -185,6 +190,7 @@ class RunRecord:
     # park sets its pointer and clears the other; related ledgers retain history.
     consent_id: str | None = None
     delegated_job_id: str | None = None
+    peer_task_id: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     started_at: datetime | None = None
@@ -206,6 +212,7 @@ class RunRecord:
             admitted_archive=self.admitted_archive,
             admitted_delegation=self.admitted_delegation,
             admitted_scout=self.admitted_scout,
+            admitted_peer=self.admitted_peer,
         )
 
 

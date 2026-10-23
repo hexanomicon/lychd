@@ -70,6 +70,21 @@ is a working agreement. Project access is granted separately; `core` has **Write
 [delivery board](https://github.com/orgs/hexanomicon/projects/1). External contributors use public
 issues and fork PRs without joining the team or needing board access.
 
+### Agent-assisted campaigns
+
+Use [Development bootstrap](docs/sepulcher/extensions/weaver/development-bootstrap.md) for a
+bounded operator campaign and its later native handoffs. Claim a concrete contract, pin the
+actual input closure and allowed paths, reserve verification/reviewer capacity, and give each
+writer a separate candidate surface. A dirty checkout needs an explicit admitted patch and
+selected untracked inputs; a commit alone does not identify it. Preserve unrelated operator work.
+
+Agents return candidate bytes and attributed observations. Inspect the complete diff and verify
+the integrated object against the original acceptance criteria; independent review records its
+exposure and conflicts. Platform sessions use their actual identities and permissions, without
+claiming LychD containment. Idle work selects only eligible tasks under current standing authority
+and stops when review capacity, useful work or its budget is exhausted. The guide's pilot limits
+do not impose a new approval count or change the branch/promotion policy below.
+
 ### Promote a tested snapshot
 
 Record the exact candidate commit, checks and relevant untested boundaries in the linked issue or
@@ -184,7 +199,8 @@ worker count such as `N=8` to opt into bounded parallelism, use `K="expression"`
 selection, and use `VERBOSE=1` for raw output, long tracebacks, and live DEBUG logs. Ordinary runs use
 pytest's native compact report, capture logs, and allocate a unique scratch directory beneath
 `.cache/pytest`; set `PYTEST_BASETEMP` to an explicit current-user-owned path only when a caller
-must own that location.
+must own that location. Use an ordinary test-data path such as a fresh `/tmp` directory, outside
+protected authority roots such as `~/.codex`; mount-authority tests deliberately reject those roots.
 
 Pull requests and pushes to `dev` and `main` run **Core Python CI**: repository lint, formatting and strict
 typing, followed by `make test-ci`. This explicit selection covers configuration, database model
@@ -218,11 +234,49 @@ Disposable PostgreSQL receipts are an explicit host-integration profile, not par
 make test-containers
 ```
 
+The bounded [Intercom operator session](docs/sepulcher/intercom.md) uses the production outbound
+public-text service. Its two PostgreSQL modules additionally accept only an explicitly supplied
+disposable `LYCHD_INTERCOM_TEST_DATABASE_URL`; the migration module needs empty public Intercom
+tables. They do not start a container implicitly. The independent SDK qualification uses a separate
+Python environment and test-only signing middleware; it does not add the SDK to production
+dependencies. `uv run --locked python scripts/intercom_lab.py --help` performs no external effect.
+
 That target installs the separate `container-test` dependency group, requires a working
 Docker-compatible daemon, and may pull the pinned `pgvector` image. Ryuk remains unprivileged by
 default. A rootless compatibility environment may deliberately opt in with
 `TESTCONTAINERS_RYUK_PRIVILEGED=true make test-containers`; do not export that setting as a normal
 repository default.
+
+The separate opt-in [warm-model Bridge proof](docs/sepulcher/animator/soulstone/engines/vllm.md#join-one-reply-to-durable-bridge)
+joins streaming inference, SAQ, PostgreSQL and retained history across two application boots.
+Its separate Linux process-restart selection uses two sequential spawn children. Both need an
+explicit external loopback profile and never start the model; the page owns bounded commands
+and receipt requirements.
+
+Real private-manager tests require a fresh task-owned delegated user service. A private bus and
+HOME alone do not isolate cgroups: another manager could migrate unrelated processes from its
+inherited cgroup. The harness verifies the exact transient unit, delegation, ancestry, writable
+cgroup and exclusive task processes before launching; it never falls back to the installed
+manager. Ordinary unavailable environments skip; an explicitly required proof fails.
+
+The separate native stop proof runs required-close failure first, then clean closure, using the
+actual generated native command with an explicit inert application factory. It exercises signed
+HTTP admission and Vessel-first dependency retention; it does not qualify a deployed model body.
+Run from the checkout with a fresh external basetemp:
+
+```bash
+proof_unit="lychd-proof-native-$$.service"
+systemd-run --user --unit="$proof_unit" --collect --wait --pipe --service-type=exec \
+  --property=Delegate=yes --property=TasksMax=128 --property=RuntimeMaxSec=150 \
+  --property=TimeoutStopSec=10 --property="WorkingDirectory=$PWD" \
+  --setenv="LYCHD_SYSTEMD_PROOF_OUTER_UNIT=$proof_unit" --setenv=LYCHD_REQUIRE_SYSTEMD_PROOF=1 \
+  /usr/bin/make test N=0 PYTEST_TARGETS=tests/integration/test_native_stop_systemd.py \
+  PYTEST_BASETEMP=/tmp/lychd-native-stop-proof
+```
+
+Inspect both case receipts and cleanup beneath basetemp. Confirm the exact outer unit is collected
+and its cgroup is absent or empty. Requested CPU or memory properties do not establish effective
+limits; inspect the actual cgroup files when those limits are required.
 
 The separate Linux target-switch proof requires the installed Quadlet generator, an ordinary
 rootless Podman cache containing the exact Python image pinned in its test, and a responding user
@@ -230,7 +284,13 @@ session bus. It exports that image without network access, then uses a private i
 user manager. Read the test's resource and cleanup contract before opting in:
 
 ```bash
-LYCHD_REQUIRE_QUADLET_PROOF=1 make test M=container N=0 PYTEST_TARGETS=tests/integration/test_systemd_quadlet_transaction.py PYTEST_BASETEMP=/tmp/lychd-quadlet-proof
+proof_unit="lychd-proof-quadlet-$$.service"
+systemd-run --user --unit="$proof_unit" --collect --wait --pipe --service-type=exec \
+  --property=Delegate=yes --property=RuntimeMaxSec=1000 --property=TimeoutStopSec=30 \
+  --property="WorkingDirectory=$PWD" --setenv="LYCHD_SYSTEMD_PROOF_OUTER_UNIT=$proof_unit" \
+  --setenv=LYCHD_REQUIRE_QUADLET_PROOF=1 /usr/bin/make test M=container N=0 \
+  PYTEST_TARGETS=tests/integration/test_systemd_quadlet_transaction.py \
+  PYTEST_BASETEMP=/tmp/lychd-quadlet-proof
 ```
 
 Choose a fresh, short `PYTEST_BASETEMP` path. The proof needs up to 1 GiB of temporary storage
@@ -370,6 +430,10 @@ For documentation changes, run:
 make test PYTEST_TARGETS="tests/architecture" N=0
 uv run --locked --only-group docs zensical build --clean
 ```
+
+Run Python checks and the clean documentation build sequentially. The clean build removes
+Zensical's default `.cache`, which also holds repository test temporary directories. Keep any
+explicit uv cache outside that directory while performing the clean build.
 
 Check local file links and fragments, including links into a renamed heading. A moved page needs
 its incoming links, parent index, compatibility anchors, and the owning `.nav.yml` updated

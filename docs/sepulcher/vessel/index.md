@@ -32,6 +32,18 @@ or HTTP can observe the substrate; failure or degradation aborts startup. The me
 no cross-process truth and retains best-effort recovery. Delivery, consent, and delegated-wait
 relays carry repair forward after admission opens.
 
+The owned launcher enters the application lifespan explicitly and runs one embedded no-lifespan
+ASGI worker. It refuses new application callbacks once retirement starts and waits for existing
+callbacks, including background work after response delivery, before closing application services.
+Required startup or shutdown failure becomes a failed process exit. A signal requests this
+retirement; the user manager's outer timeout still decides whether a stuck process must be forced.
+
+Generated native services use hidden `lychd serve` with its closed loopback listener grammar.
+Managed images select a separate fixed internal listener through the same launcher; they must be
+rebuilt to acquire it. Unsupported upstream server tuning is refused rather than silently ignored.
+This launcher mechanism does not itself prove installed-unit settlement or make public active
+`stop` available; follow the current [CLI boundary](../../state-of-the-work.md#core-cli-rites).
+
 Shutdown stops workers before their collaborators and queues. Process death loses active tasks,
 subscribers, leases, and other volatile state. Only records committed through the
 [Phylactery](../phylactery/index.md) can enter a supported return path.

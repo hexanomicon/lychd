@@ -200,6 +200,50 @@ This local composition seam supplies no remote Principal enrollment, Ward sessio
 revocation or isolation from trusted same-process code. Runtime activation remains Designed until
 the complete assembly and its effectful refusal, revocation and recovery evidence are delivered.
 
+## Outbound peer authority profile
+
+The Designed [outbound public-text profile](26-a2a.md#peer-task-jsonrpc-1) introduces narrowly
+enrolled peer Principals, credentials and current task authority under Ward. The local initiating
+operator, local workload signing credential and remote result-verification credential are distinct.
+Actual local password possession establishes the initiating marker; its public fields, Sigil,
+endpoint, TLS certificate and a key repeated in a card establish no enrollment or permission.
+
+Trusted host composition supplies one explicit bootstrap policy; empty or missing action,
+purpose, content, task, peer or endpoint selectors deny. Enrollment, source classification,
+submit, poll, cancellation/reconciliation, result consumption, rotation and revocation are
+separate protected operations. Each checks the real current authentication marker before a
+protected query and rechecks current exact object/action authority after awaits. The dedicated
+public-text declaration binds complete text, source/influence facts, subject/authentication
+generation, purpose, category, peer/task target and policy generation. It is an operator assertion,
+not automatic declassification of inherited private material.
+
+Peer identity is immutable. Credential versions retain issuer, protocol, audience, public-key
+binding, validity, assurance and lifecycle; private key bytes remain in the trusted secret owner.
+Acknowledged retirement and policy/revocation generations survive restart and cannot be rolled
+back by configuration removal, reappearance or a new label. Rotation adds a version and never
+re-enrolls a retired key implicitly. Missing or incompatible durable current state refuses.
+An uncertain mutation is not reported as successful; the current owner remains fenced until its
+retained outcome is reconciled. Restart begins without live grants and requires fresh current
+bootstrap and operator authentication rather than restoring a historical marker.
+
+The [native public peer profile](26-a2a.md#native-public-peer-station) separately protects Run
+admission, adoption and resume. The host retains only live per-Run permissions bound to the actual
+marker and immutable canonical source/task/target. Explicit fresh authentication may reauthorize
+that same retained relation; a first send also reaffirms its exact original public source. It
+creates no new semantic task, expiry, credential or capacity. Missing live permission pauses
+contact and native resume. Trusted local cancellation always remains possible; it grants no
+remote cancellation or reconciliation permission.
+An independently authorized local-evidence inspection may show retained Run/task identities,
+local closure and remote uncertainty despite a peer revocation or uncertain peer mutation. It
+requires the actual current operator marker and explicit inspection selectors, returns no source
+or result body, and grants no remote contact, result consumption, adoption or resume permission.
+
+This first profile has one control process and event loop for policy mutation, network handoff
+and result admission. Revocation fences local authority before awaiting persistence. The final
+current policy, credential, task fence, expiry and finite budget check and each actual socket
+handoff do not yield. No database lock spans the network. This proves no cross-process revocation,
+hostile same-UID isolation, human account system, incoming-task IAM or public remote browser route.
+
 ## Thresholds and delivery
 
 [Veil](40-proxy.md) owns hostile ingress and trusted-proxy canonicalization; [Tether](39-vpn.md)

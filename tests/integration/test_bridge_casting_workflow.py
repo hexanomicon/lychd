@@ -448,6 +448,7 @@ def test_orm_intent_json_round_trip_preserves_admission_and_legacy_absence(key: 
         error=None,
         consent_id=None,
         delegated_job_id=None,
+        peer_task_id=None,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
         started_at=None,

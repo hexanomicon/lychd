@@ -11,6 +11,8 @@ from pydantic import Field
 from lychd.config import QuadletConfig
 from lychd.config.runes import RuneConfig
 from lychd.config.runes.writer import ConfigWriter
+from lychd.domain.animation.services.adapters.runtimes.openai_compat import OpenAICompatibleRuntimeAdapter
+from lychd.extensions.builtin.animator.soulstones.vllm import VllmSoulstoneConfig
 from lychd.system.services.file_publication_transaction import JournaledCreation
 from lychd.system.services.lifecycle.models import CreatedResources
 
@@ -135,6 +137,29 @@ def test_writer_renders_embedded_config_as_a_valid_toml_inline_table(tmp_path: P
     parsed = tomllib.loads(content)
     rune = WriterEmbeddedConfig.model_validate(parsed)
     assert rune.quadlet.image == "<required:str>"
+
+
+def test_vllm_sample_round_trip_preserves_env_and_image_entrypoint_arguments(tmp_path: Path) -> None:
+    """An inactive generated example must remain editable on the supported TOML grammar."""
+    writer = ConfigWriter(runes_dir=tmp_path)
+    writer.initialize_anchors([VllmSoulstoneConfig])
+    created = writer.inscribe_samples([VllmSoulstoneConfig])
+    content = created[0].read_text(encoding="utf-8")
+    rune = VllmSoulstoneConfig.model_validate(tomllib.loads(content))
+    assert content.startswith("# lychd: sample-rune\n")
+    assert "[env_vars]" in content
+    assert "env_vars = {" not in content
+    assert rune.env_vars == {
+        "NCCL_CUMEM_ENABLE": "0",
+        "NCCL_P2P_DISABLE": "1",
+        "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
+        "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True,max_split_size_mb:512",
+    }
+    model_path = "/models/cyankiwi__Qwen3.5-27B-AWQ-4bit"
+    assert rune.exec[0] == model_path
+    assert ("vllm", "serve", *rune.exec)[:3] == ("vllm", "serve", model_path)
+    plan = OpenAICompatibleRuntimeAdapter(runtime="vllm", config_type=VllmSoulstoneConfig).plan(rune)
+    assert plan.exec_args == list(rune.exec)
 
 
 def test_writer_only_creates_leaf_samples(tmp_path: Path) -> None:

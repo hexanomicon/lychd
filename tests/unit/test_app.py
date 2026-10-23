@@ -8,7 +8,11 @@ import pytest
 from pytest_mock import MockerFixture
 
 from lychd.app import AppInit, create_app
-from lychd.interface.server_policy import ServerRuntimePolicyError, evaluate_server_runtime_policy
+from lychd.interface.server_policy import (
+    ServerRuntimePolicyError,
+    evaluate_server_runtime_policy,
+    validate_server_environment,
+)
 
 _POLICY_ENVIRONMENT_KEYS = (
     "GRANIAN_HOST",
@@ -109,7 +113,7 @@ def test_runtime_policy_accepts_one_worker_and_resolves_direct_granian_port() ->
             "--workers",
             "1",
             "--host",
-            "0.0.0.0",  # noqa: S104 - exact shipped Containerfile topology under test
+            "0.0.0.0",  # noqa: S104 - detected external server topology under test
             "--port",
             "8000",
             "lychd.app:create_app",
@@ -148,33 +152,33 @@ def test_runtime_policy_falls_back_to_configured_listener_port() -> None:
 
 
 @pytest.mark.parametrize(
-    "arguments",
+    ("arguments", "host", "port", "pdb"),
     [
-        ("-dH::1",),
-        ("-dPH::1", "-p7445"),
-        ("-dPp7445", "-H127.0.0.1"),
-        ("-dPW1", "-H", "::1", "-p", "7445"),
-        ("-dP", "-H::1", "-W1"),
+        (("-dH::1",), "::1", 8000, False),
+        (("-dPH::1", "-p7445"), "::1", 7445, True),
+        (("-dPp7445", "-H127.0.0.1"), "127.0.0.1", 7445, True),
+        (("-dPW1", "-H", "::1", "-p", "7445"), "::1", 7445, True),
+        (("-dP", "-H::1", "-W1"), "::1", 8000, True),
+        (("--debug", "--use-pdb", "-H=::1"), "::1", 8000, True),
     ],
 )
-def test_native_short_clusters_agree_with_the_delegated_click_parser(
-    monkeypatch: pytest.MonkeyPatch,
+def test_native_short_clusters_preserve_owned_listener_and_debug_grammar(
     arguments: tuple[str, ...],
+    host: str,
+    port: int,
+    *,
+    pdb: bool,
 ) -> None:
-    """Compare admitted authority with the real server parser without starting it."""
-    from litestar_granian.cli import run_command
-
-    _clear_policy_environment(monkeypatch)
     policy = evaluate_server_runtime_policy(
         environment={},
         default_listener_port=8000,
         server_arguments=arguments,
     )
 
-    with run_command.make_context("run", list(arguments)) as context:
-        assert policy.listener_host == context.params["host"]
-        assert policy.listener_port == context.params["port"]
-        assert context.params["wc"] == 1
+    assert policy.listener_host == host
+    assert policy.listener_port == port
+    assert policy.debug is True
+    assert policy.pdb is pdb
 
 
 def test_native_short_grammar_refuses_unknown_prefixes() -> None:
@@ -183,40 +187,28 @@ def test_native_short_grammar_refuses_unknown_prefixes() -> None:
 
 
 @pytest.mark.parametrize(
-    ("arguments", "metrics_environment"),
+    ("arguments", "metrics_environment", "enabled"),
     [
-        (("--metrics", "--metrics-address=0.0.0.0"), ""),
-        (("--no-metrics", "--metrics"), "false"),
-        (("--metrics", "--no-metrics"), "true"),
-        (("--no-metrics",), "true"),
-        (("--metrics", "--granian-access-log-fmt", "--no-metrics"), ""),
-        (("--granian-access-log-fmt", "--no-metrics"), "true"),
-        (("--no-metrics", "--granian-access-log-fmt", "--metrics"), "true"),
-        (("--metrics-address=0.0.0.0", "--metrics-port=9191"), ""),
-        *(((), value) for value in ("1", "true", "yes", "on", "t", "y", " TRUE ")),
-        *(((), value) for value in ("", "0", "false", "no", "off", "f", "n", " FALSE ", " ")),
+        (("--metrics", "--metrics-address=0.0.0.0"), "", True),
+        (("--no-metrics", "--metrics"), "false", True),
+        (("--metrics", "--no-metrics"), "true", False),
+        (("--no-metrics",), "true", False),
+        (("--metrics-address=0.0.0.0",), "", False),
+        *(((), value, True) for value in ("1", "true", "yes", "on", "t", "y", " TRUE ")),
+        *(((), value, False) for value in ("", "0", "false", "no", "off", "f", "n", " FALSE ", " ")),
     ],
 )
-def test_native_metrics_policy_agrees_with_the_delegated_click_parser(
-    monkeypatch: pytest.MonkeyPatch,
+def test_native_metrics_policy_refuses_only_effective_enablement(
     arguments: tuple[str, ...],
     metrics_environment: str,
+    *,
+    enabled: bool,
 ) -> None:
-    """Only effective exporter enablement creates the unauthenticated listener."""
-    from litestar_granian.cli import run_command
-
-    _clear_policy_environment(monkeypatch)
     environment = {
         "GRANIAN_METRICS_ENABLED": metrics_environment,
         "GRANIAN_METRICS_ADDRESS": "0.0.0.0",  # noqa: S104 - inert exporter setting under test
-        "GRANIAN_METRICS_PORT": "9191",
     }
-    for variable, value in environment.items():
-        monkeypatch.setenv(variable, value)
-    with run_command.make_context("run", list(arguments)) as context:
-        metrics_enabled = context.params["metrics_enabled"]
-
-    if metrics_enabled:
+    if enabled:
         with pytest.raises(ServerRuntimePolicyError, match="does not support the Granian metrics listener"):
             evaluate_server_runtime_policy(environment=environment, server_arguments=arguments)
     else:
@@ -224,60 +216,133 @@ def test_native_metrics_policy_agrees_with_the_delegated_click_parser(
         assert policy.listener_host == "127.0.0.1"
 
 
-def test_native_metrics_policy_uses_only_supplied_environment_without_server_callbacks(
+def test_native_policy_uses_only_supplied_environment_without_server_callbacks(
     monkeypatch: pytest.MonkeyPatch,
     mocker: MockerFixture,
 ) -> None:
-    from litestar_granian.cli import run_command
-
     monkeypatch.setenv("GRANIAN_METRICS_ENABLED", "true")
-    context_factory = mocker.patch.object(run_command, "make_context")
-    callback = mocker.patch.object(run_command, "callback")
     path_conversion = mocker.patch("click.Path.convert")
     application = mocker.patch("lychd.app.create_app")
-    arguments = ("--log-config", "nonexistent-server-log-config.json")
 
     policy = evaluate_server_runtime_policy(
         environment={"GRANIAN_METRICS_ENABLED": "false"},
-        server_arguments=arguments,
+        server_arguments=(),
     )
-
     assert policy.listener_host == "127.0.0.1"
-    context_factory.assert_not_called()
-    callback.assert_not_called()
+    with pytest.raises(ServerRuntimePolicyError, match="does not support option --log-config"):
+        evaluate_server_runtime_policy(
+            environment={"GRANIAN_METRICS_ENABLED": "false"},
+            server_arguments=("--log-config", "nonexistent-server-log-config.json"),
+        )
     path_conversion.assert_not_called()
     application.assert_not_called()
 
 
 @pytest.mark.parametrize(
-    ("environment", "arguments", "parameter"),
+    "variable",
     [
-        ({"GRANIAN_RELOAD_PATHS": "."}, (), "reload_paths"),
-        ({"GRANIAN_RELOAD_INCLUDE": "*.py"}, (), "reload_include"),
-        ({"GRANIAN_RELOAD_EXCLUDE": "*.tmp"}, (), "reload_exclude"),
-        ({}, ("--reload-paths", "."), "reload_paths"),
-        ({}, ("--reload-paths=.",), "reload_paths"),
+        "GRANIAN_WORKERS_KILL_TIMEOUT",
+        "GRANIAN_WORKERS_LIFETIME",
+        "GRANIAN_RUNTIME_THREADS",
+        "GRANIAN_LOOP",
+        "GRANIAN_HTTP",
+        "GRANIAN_SSL_CERTIFICATE",
+        "GRANIAN_STATIC_PATH_MOUNT",
+        "GRANIAN_LOG_CONFIG",
+        "GRANIAN_METRICS_PORT",
+        "GRANIAN_UNRECOGNIZED_CONTROL",
+        "LITESTAR_SSL_CERT_PATH",
+        "LITESTAR_GRANIAN_IN_SUBPROCESS",
     ],
 )
-def test_runtime_policy_rejects_implicit_reload_from_the_delegated_click_parser(
-    monkeypatch: pytest.MonkeyPatch,
+def test_shared_environment_policy_refuses_retired_controls_without_values(variable: str) -> None:
+    with pytest.raises(ServerRuntimePolicyError, match=variable) as error:
+        validate_server_environment({variable: "private-value"})
+    assert "private-value" not in str(error.value)
+    validate_server_environment({variable: ""})
+
+
+@pytest.mark.parametrize("option", ["--workers", "--wc", "--web-concurrency", "-W"])
+def test_native_policy_retains_one_worker_aliases(option: str) -> None:
+    policy = evaluate_server_runtime_policy(environment={}, server_arguments=(option, "1"))
+    assert policy.listener_host == "127.0.0.1"
+
+
+@pytest.mark.parametrize(
+    ("arguments", "environment", "host", "port"),
+    [
+        (("--host", "::1", "--port", "7134"), {"LITESTAR_HOST": "127.0.0.1", "LITESTAR_PORT": "7444"}, "::1", 7134),
+        (
+            (),
+            {"LITESTAR_HOST": "::1", "GRANIAN_HOST": "127.0.0.1", "LITESTAR_PORT": "7444", "GRANIAN_PORT": "7555"},
+            "::1",
+            7444,
+        ),
+        ((), {"GRANIAN_HOST": "::1", "GRANIAN_PORT": "7555"}, "::1", 7555),
+        ((), {}, "127.0.0.1", 7666),
+    ],
+)
+def test_native_listener_precedence(
+    arguments: tuple[str, ...],
+    environment: dict[str, str],
+    host: str,
+    port: int,
+) -> None:
+    policy = evaluate_server_runtime_policy(
+        environment=environment,
+        default_listener_port=7666,
+        server_arguments=arguments,
+    )
+    assert policy.listener_host == host
+    assert policy.listener_port == port
+
+
+@pytest.mark.parametrize("value", ["1", "true", "yes", "on", "t", "y", " TRUE "])
+def test_native_debug_and_pdb_environment(value: str) -> None:
+    policy = evaluate_server_runtime_policy(
+        environment={"LITESTAR_DEBUG": value, "LITESTAR_PDB": value},
+        server_arguments=(),
+    )
+    assert policy.debug is True
+    assert policy.pdb is True
+
+
+@pytest.mark.parametrize("value", ["", "0", "false", "no", "off", "f", "n", " FALSE ", " "])
+def test_native_debug_and_pdb_environment_accepts_disabled_forms(value: str) -> None:
+    policy = evaluate_server_runtime_policy(
+        environment={"LITESTAR_DEBUG": value, "LITESTAR_PDB": value},
+        server_arguments=(),
+    )
+    assert policy.debug is False
+    assert policy.pdb is False
+
+
+@pytest.mark.parametrize("variable", ["LITESTAR_DEBUG", "LITESTAR_PDB", "GRANIAN_METRICS_ENABLED"])
+def test_native_boolean_environment_errors_do_not_disclose_values(variable: str) -> None:
+    with pytest.raises(ServerRuntimePolicyError, match=variable) as error:
+        evaluate_server_runtime_policy(environment={variable: "private-value"}, server_arguments=())
+    assert "private-value" not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    ("environment", "arguments", "expected_message"),
+    [
+        ({"GRANIAN_RELOAD_PATHS": "."}, (), "does not support GRANIAN_RELOAD_PATHS"),
+        ({"GRANIAN_RELOAD_INCLUDE": "*.py"}, (), "does not support GRANIAN_RELOAD_INCLUDE"),
+        ({"GRANIAN_RELOAD_EXCLUDE": "*.tmp"}, (), "does not support GRANIAN_RELOAD_EXCLUDE"),
+        ({}, ("--reload-paths", "."), "does not support Litestar reload mode"),
+        ({}, ("--reload-paths=.",), "does not support Litestar reload mode"),
+    ],
+)
+def test_runtime_policy_rejects_implicit_reload_controls(
     environment: dict[str, str],
     arguments: tuple[str, ...],
-    parameter: str,
+    expected_message: str,
 ) -> None:
-    """The wrapper promotes nonempty watch selections to reload in its callback."""
-    from litestar_granian.cli import run_command
-
-    _clear_policy_environment(monkeypatch)
-    for variable, value in environment.items():
-        monkeypatch.setenv(variable, value)
-    with run_command.make_context("run", ["--no-reload", *arguments]) as context:
-        assert context.params["reload"] is False
-        assert context.params[parameter]
-
-    with pytest.raises(ServerRuntimePolicyError, match="does not support"):
+    """Watch selections cannot request a reload process through either path."""
+    with pytest.raises(ServerRuntimePolicyError, match=expected_message):
         evaluate_server_runtime_policy(environment=environment, server_arguments=arguments)
-    with pytest.raises(ServerRuntimePolicyError, match="does not support"):
+    with pytest.raises(ServerRuntimePolicyError, match=expected_message):
         evaluate_server_runtime_policy(environment=environment, argv=("litestar", "run", *arguments))
 
 

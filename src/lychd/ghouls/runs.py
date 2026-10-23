@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 
 import structlog
 
+from lychd.domain.codex.peer import PeerAuthorityError
 from lychd.domain.cortex.engine import (
     RUN_JOB_HEARTBEAT_S,
     admit_consent_resume,
@@ -44,6 +45,7 @@ from lychd.domain.cortex.runs import (
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, LiveStasisPhylactery
 from lychd.domain.cortex.substrate import get_run_substrate
 from lychd.domain.delegation.signals import DelegatedAgentParked
+from lychd.domain.intercom.native import PeerTaskParked, PeerTaskRef
 from lychd.lib.asyncio import complete_under_cancellation
 
 if TYPE_CHECKING:
@@ -103,35 +105,70 @@ def _phylactery_for(run: RunRecord, workflow: Workflow, substrate: RunSubstrate)
     return LiveStasisPhylactery(job_id=run.run_id)
 
 
-def _validate_resume_owner(run: RunRecord, state: BaseModel, node: BaseNode[Any, Any, Any] | End[Any]) -> None:
+def _validate_resume_owner(
+    run: RunRecord,
+    state: BaseModel,
+    node: BaseNode[Any, Any, Any] | End[Any],
+    *,
+    workflow: Workflow | None = None,
+) -> None:
     """Bind the first restored station to the current wait owner retained through admission.
 
     Historical Consent and AgentJob rows cannot authorize re-entry. The Run retains
     exactly one current owner across QUEUED and RUNNING until its next durable park.
     """
-    from lychd.agents.workflows.base import DelegatedAgentNode, Gate
+    from lychd.agents.workflows.base import DelegatedAgentNode, Gate, PeerTaskNode
 
     if getattr(state, "run_id", None) != run.run_id:
         msg = "Resume checkpoint does not match its admitted Run."
         raise ValueError(msg)
-    if (run.consent_id is None) == (run.delegated_job_id is None):
+    if sum(owner is not None for owner in (run.consent_id, run.delegated_job_id, run.peer_task_id)) != 1:
         msg = "Resumed Run must retain exactly one current wait owner."
         raise ValueError(msg)
     if run.consent_id is not None:
         if (
             not isinstance(node, Gate)
-            or isinstance(node, DelegatedAgentNode)
+            or isinstance(node, (DelegatedAgentNode, PeerTaskNode))
             or getattr(state, "pending_consent_id", None) != run.consent_id
         ):
             msg = "Resume checkpoint does not match the Run's current consent owner."
             raise ValueError(msg)
-    elif (
+    elif run.delegated_job_id is not None and (
         not isinstance(node, DelegatedAgentNode)
-        or isinstance(node, Gate)
+        or isinstance(node, (Gate, PeerTaskNode))
         or getattr(state, "job_id", None) != run.delegated_job_id
     ):
         msg = "Resume checkpoint does not match the Run's current delegated owner."
         raise ValueError(msg)
+    elif run.peer_task_id is not None:
+        ref = getattr(state, "peer_task", None)
+        if (
+            not isinstance(node, PeerTaskNode)
+            or isinstance(node, (Gate, DelegatedAgentNode))
+            or not isinstance(ref, PeerTaskRef)
+            or str(ref.task_id) != run.peer_task_id
+            or ref.run_id != run.run_id
+            or run.admitted_peer is None
+            or ref.binding_digest != run.admitted_peer.digest
+            or ref.request_id != run.admitted_peer.request_id
+            or workflow is None
+            or workflow.manifest.node_key(type(node)) != ref.station
+        ):
+            msg = "Resume checkpoint does not match the Run's current peer owner."
+            raise ValueError(msg)
+
+
+def _peer_resume_available(substrate: RunSubstrate, run: RunRecord) -> bool:
+    """Require current process-owned permission before delivering a peer successor."""
+    if run.peer_task_id is None:
+        return True
+    if substrate.peer is None:
+        return False
+    try:
+        substrate.peer.require_resume(run.run_id, run.peer_task_id, enqueue_seq=run.enqueue_seq)
+    except PeerAuthorityError:
+        return False
+    return True
 
 
 async def _await_claim_gate(substrate: RunSubstrate) -> None:
@@ -310,6 +347,10 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
     delivery_seq = run.enqueue_seq if run is not None and enqueue_seq is None else enqueue_seq
     if run is None or delivery_seq is None or run.status is not RunStatus.QUEUED or run.enqueue_seq != delivery_seq:
         return {"status": "skipped", "run_id": run_id}  # stale / duplicate claim guard
+    if run.peer_task_id is not None:
+        delivery = await ledger.get_delivery(run_id, enqueue_seq=delivery_seq)
+        if delivery is not None and delivery.resume and not _peer_resume_available(substrate, run):
+            return {"status": RunStatus.QUEUED.value, "run_id": run_id}
     claim_enqueue_seq = delivery_seq
     claim_task = asyncio.ensure_future(_claim_run(substrate, run_id, claim_enqueue_seq))
     caller_interruption: asyncio.CancelledError | None = None
@@ -448,8 +489,8 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
             await ledger.set_status(run_id, RunStatus.RUNNING)
             emitter.status(RunStatus.RUNNING.value)
 
-        def _on_node_event(event: NodeOccurrenceEvent) -> None:
-            emitter.node(
+        def _on_node_event(event: NodeOccurrenceEvent) -> str:
+            emitted = emitter.node(
                 workflow.manifest.node_key(event.node_type),
                 phase=event.phase,
                 occurrence_id=event.occurrence_id,
@@ -459,7 +500,9 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
                 transition_request_id=event.transition_request_id or "",
                 delegated_job_id=event.delegated_job_id or "",
                 delegated_runtime=event.delegated_runtime or "",
+                peer_task_id=event.peer_task_id or "",
             )
+            return emitted.event_id
 
         def _on_transition_event(event: TransitionRecord) -> None:
             emitter.transition(
@@ -471,6 +514,14 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
                 compensation_transition_id=event.compensation_transition_id or "",
                 action_type=event.action_type or "",
             )
+
+        def _validate_resume(state: BaseModel, node: BaseNode[Any, Any, Any] | End[Any]) -> None:
+            _validate_resume_owner(run, state, node, workflow=workflow)
+            if run.peer_task_id is not None:
+                if substrate.peer is None:
+                    msg = "Native peer resume requires its process-owned authority port."
+                    raise ValueError(msg)  # noqa: TRY301 - mandatory restored owner authority
+                substrate.peer.require_resume(run.run_id, run.peer_task_id, enqueue_seq=run.enqueue_seq)
 
         admitted_intent = run.to_intent()
         runner: GraphRunner[Any] = GraphRunner(
@@ -484,7 +535,7 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
             validate_state=(
                 partial(workflow.validate_state, admitted_intent) if workflow.validate_state is not None else None
             ),
-            validate_resume=partial(_validate_resume_owner, run),
+            validate_resume=_validate_resume,
             run_id=run_id,
         )
         from lychd.domain.codex.sigil import Sigil
@@ -508,6 +559,8 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
             return await _commit_consent_park(substrate, ledger, emitter, run_id, result)
         if isinstance(result, DelegatedAgentParked):
             return await _commit_delegate_park(substrate, ledger, emitter, run_id, result)
+        if isinstance(result, PeerTaskParked):
+            return await _commit_peer_park(substrate, ledger, emitter, run_id, result)
         await settle_terminal(RunStatus.DONE)
         await _cleanup_claim_resources(
             substrate,
@@ -787,6 +840,24 @@ async def _commit_consent_park(
     return {"status": "awaiting_consent", "run_id": run_id}
 
 
+async def _commit_peer_park(
+    substrate: RunSubstrate,
+    ledger: RunLedger,
+    emitter: RunEmitter,
+    run_id: str,
+    parked: PeerTaskParked,
+) -> dict[str, Any]:
+    """Commit preparation and checkpoint ownership; peer contact belongs to the relay."""
+    if substrate.peer is None or parked.ref.run_id != run_id:
+        msg = "Native peer park has no exact Run-owned custody port."
+        raise ValueError(msg)
+    evidence = await substrate.peer.evidence(run_id=run_id, task_id=str(parked.ref.task_id))
+    async with substrate.claims.hold(run_id):
+        await ledger.park_peer(run_id, parked.ref, evidence=evidence)
+    emitter.status(RunStatus.AWAITING_PEER.value)
+    return {"status": RunStatus.AWAITING_PEER.value, "run_id": run_id, "task_id": str(parked.ref.task_id)}
+
+
 async def _commit_delegate_park(
     substrate: RunSubstrate,
     ledger: RunLedger,
@@ -1027,7 +1098,7 @@ async def _delivery_target(  # noqa: PLR0911 - each rejected invariant has disti
     return delivery, queue
 
 
-async def _publish_delivery(  # noqa: PLR0911 - every broker truth has a distinct recovery result
+async def _publish_delivery(  # noqa: C901, PLR0911 - exact broker truth plus current peer authority
     substrate: RunSubstrate,
     run: RunRecord,
     delivery: RunDeliveryRecord,
@@ -1037,6 +1108,8 @@ async def _publish_delivery(  # noqa: PLR0911 - every broker truth has a distinc
 ) -> _DeliveryFlushOutcome:
     """Probe, rotate when necessary, and publish one validated delivery."""
     ledger = substrate.ledger
+    if delivery.resume and not _peer_resume_available(substrate, run):
+        return _DeliveryFlushOutcome(revisit=True)
     job_key = run_job_key(run.run_id, delivery.enqueue_seq)
     try:
         async with asyncio.timeout(DELIVERY_BROKER_PROBE_TIMEOUT_S):
@@ -1050,6 +1123,8 @@ async def _publish_delivery(  # noqa: PLR0911 - every broker truth has a distinc
             error=str(exc),
         )
         return _DeliveryFlushOutcome(errors=1)
+    if delivery.resume and not _peer_resume_available(substrate, run):
+        return _DeliveryFlushOutcome(revisit=True)
     rotate_delivery = job is not None and _job_is_terminal(job)
     if job is not None and not rotate_delivery:
         fenced = (
@@ -1085,6 +1160,8 @@ async def _publish_delivery(  # noqa: PLR0911 - every broker truth has a distinc
         run = refreshed_run
         delivery = refreshed_delivery
         repaired = 1
+    if delivery.resume and not _peer_resume_available(substrate, run):
+        return _DeliveryFlushOutcome(repaired=repaired, revisit=True)
     try:
         await enqueue_run(
             substrate.queues,
@@ -1374,6 +1451,74 @@ async def reconcile_delegated_runs(*, engine: Any) -> dict[str, Any]:
             }
 
 
+async def _reconcile_peer_page(
+    engine: Any,
+    *,
+    after: _RelayCursor,
+    limit: int = DELEGATE_RELAY_BATCH_SIZE,
+) -> tuple[dict[str, Any], _RelayCursor]:
+    """Drive a bounded page of peer waits; missing live permission stays silent."""
+    runs = await engine.ledger.list_by_status(RunStatus.AWAITING_PEER, after=after, limit=limit)
+    resumed = 0
+    errors = 0
+    revisit = False
+    for run in runs:
+        if engine.peer is None:
+            continue
+        if run.peer_task_id is None:
+            logger.error("peer_relay_owner_missing", run_id=run.run_id)
+            errors += 1
+            continue
+        try:
+            async with asyncio.timeout(DELEGATE_PROBE_TIMEOUT_S):
+                did_resume = await engine.resume_peer(run.peer_task_id)
+                resumed += int(did_resume)
+                revisit = revisit or not did_resume
+        except Exception as exc:  # noqa: BLE001 - bounded relay preserves parked truth
+            logger.warning("peer_relay_probe_failed", run_id=run.run_id, error=str(exc))
+            errors += 1
+    cursor = (runs[-1].created_at, runs[-1].run_id) if len(runs) == limit else None
+    return {
+        "status": "degraded" if errors else "reconciled",
+        "count": resumed,
+        "probe_errors": errors,
+        "_revisit": revisit,
+    }, cursor
+
+
+async def reconcile_peer_runs(*, engine: Any) -> dict[str, Any]:
+    """Sweep peer waits once without manufacturing restart authority."""
+    cursor = None
+    resumed = 0
+    errors = 0
+    while True:
+        result, cursor = await _reconcile_peer_page(engine, after=cursor)
+        resumed += int(result["count"])
+        errors += int(result["probe_errors"])
+        if cursor is None:
+            return {"status": "degraded" if errors else "reconciled", "count": resumed, "probe_errors": errors}
+
+
+async def relay_peer_runs(
+    *,
+    engine: Any,
+    stop: asyncio.Event,
+    interval_s: float = DELEGATE_RELAY_INTERVAL_S,
+) -> None:
+    """Run the existing fair relay loop over the native peer wait ledger."""
+
+    async def page(after: _RelayCursor) -> tuple[dict[str, Any], _RelayCursor]:
+        return await _reconcile_peer_page(engine, after=after)
+
+    await _run_relay_loop(
+        page=page,
+        stop=stop,
+        interval_s=interval_s,
+        failure_event="peer_relay_failed",
+        degraded_event="peer_relay_degraded",
+    )
+
+
 async def reconcile_runs(ctx: dict[str, Any], *, boot_cutoff: datetime | None = None) -> dict[str, Any]:
     """Reconcile work stranded by a previous process.
 
@@ -1444,18 +1589,23 @@ async def _reconcile_orphaned_run(substrate: RunSubstrate, run: RunRecord) -> bo
     """Fence or recover an orphan; checkpoint cleanup cannot hide terminal failure."""
     consent_id = await _recoverable_consent_park(substrate, run)
     delegated_job_id = await _recoverable_delegate_park(substrate, run)
+    peer_ref = await _recoverable_peer_park(substrate, run)
     if not await _fence_orphaned_job(substrate, run):
         return False
-    exact_park = (consent_id is not None) != (delegated_job_id is not None)
+    exact_park = sum(owner is not None for owner in (consent_id, delegated_job_id, peer_ref)) == 1
     if exact_park and run.status is RunStatus.AWAITING_HARDWARE:
         # Leave the dead process's live wait through its existing legal edge.
         # A crash before the owner-specific park remains recoverable as RUNNING.
         await substrate.ledger.set_status(run.run_id, RunStatus.RUNNING)
-    if consent_id is not None and delegated_job_id is None:
+    if exact_park and consent_id is not None:
         await substrate.ledger.park_consent(run.run_id, consent_id)
         return True
-    if delegated_job_id is not None and consent_id is None:
+    if exact_park and delegated_job_id is not None:
         await substrate.ledger.park_delegate(run.run_id, delegated_job_id)
+        return True
+    if exact_park and peer_ref is not None and substrate.peer is not None:
+        evidence = await substrate.peer.evidence(run_id=run.run_id, task_id=str(peer_ref.task_id))
+        await substrate.ledger.park_peer(run.run_id, peer_ref, evidence=evidence)
         return True
     containment_errors = await contain_run_effects(
         run.run_id,
@@ -1476,6 +1626,56 @@ async def _reconcile_orphaned_run(substrate: RunSubstrate, run: RunRecord) -> bo
     await _cleanup_claim_resources(substrate, run, persistence=None)
     await _emit_terminal(substrate, run.run_id)
     return True
+
+
+async def _recoverable_peer_park(  # noqa: PLR0911 - ordered exact checkpoint refusal gates
+    substrate: RunSubstrate, run: RunRecord
+) -> PeerTaskRef | None:
+    """Recover only the one typed created peer cursor under its exact pinned score."""
+    from lychd.agents.workflows import resolve_pinned_workflow
+    from lychd.agents.workflows.base import PeerTaskNode
+    from lychd.domain.cortex.stasis import NodeSnapshot
+
+    if substrate.peer is None or run.admitted_peer is None:
+        return None
+    workflow = resolve_pinned_workflow(
+        substrate.workflows,
+        workflow_name=run.workflow_name,
+        snapshot=run.pattern_manifest,
+    )
+    if workflow is None:
+        return None
+    persistence = _phylactery_for(run, workflow, substrate)
+    persistence.set_graph_types(workflow.graph)
+    try:
+        snapshots = await persistence.load_all()
+        cursors = [
+            item
+            for item in snapshots
+            if isinstance(item, NodeSnapshot) and item.status in {"created", "pending", "running"}
+        ]
+        if len(cursors) != 1 or cursors[0].status != "created":
+            return None
+        cursor = cursors[0]
+        ref = getattr(cursor.state, "peer_task", None)
+        if (
+            not isinstance(cursor.node, PeerTaskNode)
+            or not isinstance(ref, PeerTaskRef)
+            or getattr(cursor.state, "run_id", None) != run.run_id
+            or ref.run_id != run.run_id
+            or ref.binding_digest != run.admitted_peer.digest
+            or ref.request_id != run.admitted_peer.request_id
+            or workflow.manifest.node_key(type(cursor.node)) != ref.station
+        ):
+            return None
+        if workflow.validate_state is not None:
+            workflow.validate_state(run.to_intent(), cursor.state)
+        evidence = await substrate.peer.evidence(run_id=run.run_id, task_id=str(ref.task_id))
+        if evidence.ref != ref or evidence.task.get("submit_claimed") is not False:
+            return None
+    except (ValueError, KeyError, TypeError):
+        return None
+    return ref
 
 
 async def _recoverable_consent_park(substrate: RunSubstrate, run: RunRecord) -> str | None:

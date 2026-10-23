@@ -30,6 +30,7 @@ from lychd.domain.scout.attempts import (
 )
 from lychd.domain.scout.authority import ScoutAction, ScoutAuthorizationDecision
 from lychd.domain.scout.profile import ScoutBinding
+from tests.postgres_model_tables import with_referenced_tables
 from tests.unit.db.test_scout_attempts import prepared_fixture
 
 pytestmark = [pytest.mark.integration, pytest.mark.container]
@@ -62,6 +63,7 @@ async def factory(pg_url: str) -> AsyncIterator[async_sessionmaker[AsyncSession]
             ScoutAttempt.__table__,
         ],
     )
+    tables = with_referenced_tables(tables)
     async with engine.begin() as connection:
         await connection.run_sync(Run.metadata.drop_all, tables=tables)
         await connection.run_sync(Run.metadata.create_all, tables=tables)

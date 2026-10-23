@@ -12,8 +12,18 @@ from lychd.db.models.checkpoint import RunCheckpoint
 from lychd.db.models.codex import CodexPreauthorization
 from lychd.db.models.consent import Consent
 from lychd.db.models.delegation import DelegatedAgentEventRecord, DelegatedAgentJobRecord
+from lychd.db.models.intercom import (
+    IntercomCapacity,
+    IntercomCredential,
+    IntercomDeclaration,
+    IntercomOutbox,
+    IntercomPeer,
+    IntercomTask,
+    IntercomTransmission,
+)
 from lychd.db.models.karma import Karma
 from lychd.db.models.nexus import NexusSwapRequest
+from lychd.db.models.privacy import DisclosureCapacityRecord, DisclosureTransmission
 from lychd.db.models.run import Run
 from lychd.db.models.run_delivery import RunDelivery
 from lychd.db.models.scout import ScoutAttempt, ScoutBudget
@@ -36,6 +46,15 @@ __all__ = [
     "Consent",
     "DelegatedAgentEventRecord",
     "DelegatedAgentJobRecord",
+    "DisclosureCapacityRecord",
+    "DisclosureTransmission",
+    "IntercomCapacity",
+    "IntercomCredential",
+    "IntercomDeclaration",
+    "IntercomOutbox",
+    "IntercomPeer",
+    "IntercomTask",
+    "IntercomTransmission",
     "Karma",
     "NexusSwapRequest",
     "Run",

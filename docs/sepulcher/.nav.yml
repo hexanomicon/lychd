@@ -13,6 +13,7 @@ nav:
   - Codex: codex.md
   - Crypt: crypt.md
   - Gateway: gateway.md
+  - Intercom: intercom.md
   - Vessel:
       - vessel/index.md
       - vessel/ghouls.md
@@ -84,7 +85,10 @@ nav:
           - extensions/prism/voxel-and-block-export.md
           - extensions/prism/kinesis.md
           - extensions/prism/live-kinesis.md
-      - extensions/echo.md
+      - Echo:
+          - extensions/echo.md
+          - extensions/echo-local-probe.md
+          - extensions/echo-research.md
       - Shadow:
           - extensions/shadow/index.md
           - extensions/shadow/dancer.md

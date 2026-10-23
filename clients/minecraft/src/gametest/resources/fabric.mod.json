@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "lychd_companion_gametest",
+  "version": "1.0.0",
+  "name": "LychD controller qualification fixture",
+  "environment": "server",
+  "entrypoints": {
+    "main": ["${gametest_entrypoint}"],
+    "fabric-gametest": ["${gametest_entrypoint}"]
+  },
+  "mixins": ["lychd-gametest.mixins.json"],
+  "depends": {
+    "lychd_companion": "*",
+    "fabricloader": "0.19.5",
+    "minecraft": "26.3",
+    "java": ">=25",
+    "fabric-api": "0.163.0+26.3"
+  }
+}

@@ -17,6 +17,13 @@ from lychd.system.schemas import QuadletContainer, podman_secret_source
 from lychd.system.services.secrets import PodmanSecretStore, PodmanSecretStoreError
 
 
+def test_managed_image_uses_the_owned_caged_launcher() -> None:
+    containerfile = (Path(__file__).parents[3] / "Containerfile").read_text()
+    command = next(line.removeprefix("CMD ") for line in containerfile.splitlines() if line.startswith("CMD "))
+    assert json.loads(command) == ["python", "-m", "lychd.interface.server", "--caged"]
+    assert "EXPOSE 8000" in containerfile
+
+
 @pytest.mark.parametrize(
     "spec",
     [

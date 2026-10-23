@@ -29,8 +29,8 @@
     "src/lychd/domain/codex/local_access.py": "4617db35469740582fb947ff96a98d6c5b7c90a85af027c4b8f115c715d68de3",
     "src/lychd/domain/codex/ledger.py": "9deb0e385b96a7b6ab9f6a844564c1ae1edd2feced68794de361b08868d00d17",
     "src/lychd/domain/cortex/cancellation.py": "e98663a9cd73aa256842429b039c9ca554905255bd24b786ba70db56b910b2e6",
-    "src/lychd/domain/cortex/engine.py": "2276bced167e86019f0c366111030a0c42206981999aa76fe4a274a238091fc7",
-    "src/lychd/domain/cortex/ledger.py": "d25b769d89f7098a1c902ae45f3ce5664309ad49ca1acc9f187809e9e9930597",
+    "src/lychd/domain/cortex/engine.py": "6074852ffddaf355417ac3b1842b7a1a4392a87f3f4d145b6ea7538cf00e249b",
+    "src/lychd/domain/cortex/ledger.py": "140c1926ae3a21d4fbb8622dad254b108d2ef613afe9b0e755c8a5ef77f2dffb",
     "src/lychd/domain/scout/attempts.py": "b446ad02a0ffed58648a92bfa3bbfa3c8cb9033a5e38786e9529e8a99e819a99",
     "src/lychd/domain/scout/authority.py": "8c804d9f78c26dd7460738d09ce8e1b083497c8a88767204de5ed0513e70f3c7",
     "src/lychd/domain/scout/destination.py": "5cd67b1be68397673b86982afe5b36f2d3fbf26ef8c64da4397dc15d0edf683f",
@@ -57,15 +57,16 @@
     "tests/scout_fixtures.py": "5576575bbf46c91f4ecbab340ead8eba26ea1a5ff671c247f49b636e4f8345c9",
     "tests/scout_network_fixture.py": "07ef869bfc257e10b4a09b4d59ac0a5bcf9d0845ea8d7cf88de8994036c03868",
     "tests/scout_postgres_fixture.py": "664645a1c51686828e5046ac9048e34cb74f819dfe10b67c6122e0e0dd899123",
+    "tests/postgres_model_tables.py": "1ab57ccc43efeb587632729c5b369536c22cc14a9a7c466e1fd9114cf9d25af5",
     "tests/scout_workflow_fixture.py": "f8402b3fb521b5b3022df345b63daec5d4f1da45992a258fc8553de5788e88b2",
     "tests/integration/test_scout_extraction_runtime.py": "6a7967b36c56eb97977a025302e6c6163d3bbb76699a9546e2586ada1ce12920",
-    "tests/integration/test_scout_composed_runtime.py": "87184fabee8e92c8a768db5d8af6404b11709135c2ccd7a33893ff59b934ef64"
+    "tests/integration/test_scout_composed_runtime.py": "6fca7f5c544354bbf1fc146cba26da06f51176a207824d0b76b4ac931b4eadb7"
   },
   "runtime_identity": {
     "bubblewrap_digest": "64501f97e29203f11d1eaa9e897e441ef92f200c0a1eb891aed5d07f780034f2",
-    "python_tree_digest": "750356e48774e9f293a87a358a7df2e89a168fd56be95219794802594bece180",
-    "python_tree_bytes": 113924361,
-    "python_tree_entries": 5147,
+    "python_tree_digest": "c1787b88029e6d0bcc0594624f96877392d5d5b26d68bd159b34858a3ba5f48c",
+    "python_tree_bytes": 114621003,
+    "python_tree_entries": 5195,
     "library_digests": {
       "libpthread.so.0": "a8294c61875f0dd96d9e233f9ec3caf0513c3a957c8e69a22a674e3d2c765a1f",
       "libdl.so.2": "63bd4f1cbaf5a6b04127fdf3236842b82f00814a57d75daeabf311302cf43e6b",
@@ -129,5 +130,6 @@
     "anonymous_volume_count": 1
   },
   "record_kind": "sanitized_public_composed_qualification",
-  "observed_on": "2026-10-13"
+  "observed_on": "2026-10-22",
+  "qualification_evidence_id": "771b73dc-cbec-4449-9028-65f258621ed9"
 }

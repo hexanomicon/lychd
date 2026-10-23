@@ -45,6 +45,7 @@ from lychd.domain.codex.sigil import Sigil
 from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.ledger import DbRunLedger
+from tests.postgres_model_tables import with_referenced_tables
 from tests.unit.compositions.blockworld.test_placement import admitted_document, identity
 
 pytestmark = [pytest.mark.integration, pytest.mark.container]
@@ -69,9 +70,10 @@ async def pg_factory(pg_url: str) -> AsyncIterator[async_sessionmaker[AsyncSessi
         BlockworldPlacementMission.__table__,
         BlockworldPlacementAction.__table__,
     ]
+    tables = with_referenced_tables(cast("list[Table]", tables))
     async with engine.begin() as connection:
-        await connection.run_sync(Run.metadata.drop_all, tables=cast("list[Table]", tables))
-        await connection.run_sync(Run.metadata.create_all, tables=cast("list[Table]", tables))
+        await connection.run_sync(Run.metadata.drop_all, tables=tables)
+        await connection.run_sync(Run.metadata.create_all, tables=tables)
     yield async_sessionmaker(engine, expire_on_commit=False)
     await engine.dispose()
 

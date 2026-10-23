@@ -35,7 +35,10 @@ icon: material/console-line
 The installed command is **`lychd`**. `PulseGroup` owns the closed grammar and the exact `st`
 alias for `status`; `lychd --help` is its executable inventory. No `lych` alias is promised.
 Generated services and development machinery have hidden entrypoints, but hidden registration is
-not public compatibility. The root verbs are `init`, `bind`, `start`, `stop`, `status`/`st`,
+not public compatibility. Hidden native `serve` accepts the owned closed listener/debug grammar
+and refuses unsupported framework/server tuning; it lazily loads the lifespan-owning launcher
+defined by [Backend](11-backend.md#process-and-listener-boundary). Database commands retain their
+lazy framework delegation. The root verbs are `init`, `bind`, `start`, `stop`, `status`/`st`,
 `logs`, `access`, and `del`; no run-operation, snapshot, restore, selector shorthand, recovery, promotion, or
 consent spelling is reserved by the grammar.
 
@@ -75,8 +78,48 @@ target. Direct control accepts only the help-advertised lifecycle subset and exa
 user units. Before an effect it holds the lifecycle lock and revalidates binding generation, unit
 identity/state, and Vessel authority, refusing unknown, split, or ambiguous state.
 
-An active Vessel must be controlled through its authenticated lifecycle port. That port is not in the production
-composition, so both commands refuse rather than bypass the Vessel. Direct control neither runs
+The active `stop system` contract is installation-scoped admission through the
+[local message-authentication profile](09-security.md#local-installation-stop-admission), followed
+by exact host completion. The HTTP handler admits or refuses without acquiring the lifecycle lock,
+invoking a host effect or certifying prior quiescence. The host retains the lock across admission,
+final ownership revalidation and stopping. Admission applies to the same owned binding generation,
+including a restarted Vessel process; it neither requires a per-start credential nor transfers
+predecessor cleanup as fact.
+
+Host completion stops the exact Vessel through its normal shutdown before stopping dependencies.
+Initial supported active completion is restricted to the exact owned uncaged native Vessel and
+its signed `native-owned-lifespan@1` profile. Caged or mixed ownership refuses before admission;
+the shared implementation does not transfer a native qualification to a different launcher.
+It requires observed unit settlement and unchanged ownership, with no conflicting jobs. Unit
+inactivity or a successful manager command alone does not prove application cleanup: the supported
+launcher must expose shutdown failure before dependent services may be stopped. Failed, forced,
+ambiguous or incomplete settlement preserves dependencies and requires reconciliation. The host
+does not replay an uncertain effect, downgrade authentication or select direct fallback. Other
+active-Vessel operations need their own admitted contract.
+
+Exit evidence belongs to a bounded manager-object lifetime. Before stopping the native Vessel,
+the host holds a full user-bus `RefUnit` reference for that exact unit and verifies that the bus's
+systemd owner is the same manager reached by its private control socket. The reference remains
+live through terminal property capture and the dependency-stop decision, then is explicitly
+released and the connection closed. Acquisition, message exchanges and cleanup are bounded;
+connection loss, manager replacement or uncertain evidence refuses further effects without a
+fallback. Missing or invalid `XDG_RUNTIME_DIR` refuses rather than selecting another bus; an
+ambient session-bus address cannot redirect this active-stop path. This reference prevents metadata
+garbage collection; it grants no lifecycle authority
+and pins no particular Vessel process start. Clean inactive metadata may disappear after the
+captured evidence has been checked and the reference released.
+
+An `[Install]` section does not retain an unenabled unit. Neither test-only target references nor
+implicit enablement may substitute for this evidence lifetime, and ordinary unit inactivity must
+never stand in for the required exit fields. The isolated proof must use the same full-bus
+reference mechanism and preserve its captured terminal evidence before collection is permitted.
+
+An active Vessel must be controlled through its authenticated lifecycle port. Public host
+completion is connected for the exact uncaged native profile above. Active `start`, caged or mixed
+active `stop`, and responders without the signed owned-launcher profile still refuse. The isolated
+real-manager regression qualifies admission, exit-evidence retention and dependency ordering with
+an explicit inert application; it does not qualify an installed application graph or image.
+Direct control neither runs
 migrations nor evaluates application readiness nor executes a general dependency graph; graceful
 admission closure, lease-aware draining, and force semantics are likewise not delivered.
 
@@ -151,7 +194,8 @@ It does not reimplement lifecycle, authorization, persistence, deletion, or orch
 Read-only status and logs do not acquire lifecycle authority. Init, bind, direct control, and
 deletion serialize under the lifecycle lock and revalidate the authority they consume. An active
 Vessel is preferred authority; direct user-manager control serves only safe bootstrap or inactive
-Vessel state. Recovery does not authorize an emergency root or raw substrate argument.
+Vessel state, or exact host completion of authenticated installation-stop admission above.
+Recovery does not authorize an emergency root or raw substrate argument.
 
 Normal dispatch installs structured logging before execution; effectful root rejection in init
 comes earlier. Results go stdout; logs and diagnostics stderr. `status --json` alone is a stable

@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.events import RunEventBus
     from lychd.domain.cortex.priority import Priority
     from lychd.domain.delegation.ports import DelegatedAgentCoordinatorPort
+    from lychd.domain.intercom.native import PeerWorkflowPort
     from lychd.domain.orchestration.schema import TransitionPlan
     from lychd.domain.scout.profile import ScoutWorkflowPort
     from lychd.domain.web.fragments import FragmentRegistry
@@ -110,6 +111,7 @@ class WorkflowServices:
     archive: ArchiveService | None = None
     archive_subject_provider: Callable[[], ArchiveSubject] | None = None
     scout: ScoutWorkflowPort | None = None
+    peer: PeerWorkflowPort | None = None
 
 
 def default_sigil() -> Sigil:

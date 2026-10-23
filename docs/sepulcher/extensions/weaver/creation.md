@@ -544,6 +544,11 @@ the [Ouroboros cycle](ouroboros.md) connects those passages without admitting th
 
 ## Put the graph above execution
 
+For an initial repository campaign, follow [Development bootstrap](development-bootstrap.md):
+retain the actual platform boundary, prove one candidate passage, then qualify the native
+handoffs incrementally. Its implementation queue keeps current delegation evidence separate
+from later native lifecycle ownership.
+
 The workflow graph says which question or action comes next, what its input means, and what can
 settle it. Spellweaver owns that logical ordering under [ADR 28](../../../adr/28-workflow.md).
 Dispatcher resolves an eligible capability for a placement; Orchestrator converges the physical

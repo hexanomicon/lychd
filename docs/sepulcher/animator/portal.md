@@ -50,6 +50,32 @@ the current all-Portal dispatch quarantine.
 [State of Work](../../state-of-the-work.md#context-privatization-and-portal-egress) owns the absent
 egress gate. The documented anonymization Pattern does not authorize transmission.
 
+### Qualify disclosure accounting locally
+
+The opt-in `closed-diagnostic-recording@1` profile exercises durable decisions and consumed
+capacity using only the existing closed diagnostic fixture and a concrete local recorder.
+Its host pins a synthetic export consumer and expected binding independently of the Cut.
+The acceptance witness must retain consumed host/purpose/Cut limits across new identifiers and
+service reconstruction, refuse old seals and copied claims, and record exactly the verified bytes.
+The database retains restricted custody rather than source or candidate bodies.
+
+Run its disposable-PostgreSQL receipts with:
+
+```bash
+make test-containers CONTAINER_TEST_TARGETS="tests/integration/test_privacy_disclosure_pg.py tests/integration/test_privacy_disclosure_migrations_pg.py"
+```
+
+The command requires the container-test environment described in
+[Contributing](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#quality-checks). An explicit
+`LYCHD_PRIVACY_TEST_DATABASE_URL` selects a disposable database supplied by the operator instead;
+the profile never selects an application database automatically.
+
+This profile opens no network road and changes no Portal grant. Actual peer enrollment, full
+envelope verification, transport and native wait/adoption remain separate work. Its law is in
+[Security](../../adr/09-security.md#offline-disclosure-accounting-qualification) and
+[Persistence](../../adr/06-persistence.md#closed-disclosure-accounting-custody);
+[State of Work](../../state-of-the-work.md#context-privatization-and-portal-egress) owns delivery.
+
 <span id="open-one-intentionally"></span>
 
 ## Declare and inspect one Portal

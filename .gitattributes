@@ -2,3 +2,4 @@
 src/lychd/public/_app/** -whitespace
 # Keep the generated Windows launcher native on checkout and normalized in Git.
 clients/android/gradlew.bat text eol=crlf
+clients/minecraft/gradlew.bat text eol=crlf

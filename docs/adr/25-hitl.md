@@ -165,6 +165,75 @@ owns schema compatibility. These requirements remain **Designed**: storage and t
 not supply the owned preparation transaction, current authorizer, or complete client review.
 [State of Work](../state-of-the-work.md#graph-stasis-consent) owns the delivered boundary.
 
+## Consent history and proposal branches
+
+The consent history extends the existing Consent ledger with attributable, append-only records.
+One **proposal** binds one immutable request to its effect owner, effect revision, exact call or
+native preparation/review binding, initiating Principal, and originating Run and occurrence. Its
+stable identity is distinct from the Consent that judges it and any attempt that executes it.
+A history group collects related proposals for inspection; it grants no authority of its own.
+
+An admitted revision names the proposal it revises. Several alternatives may revise the same
+proposal, forming branches. The server validates immutable, acyclic revision links within the
+authorized group; the client cannot infer ancestry from timestamps, similar text, filenames, or
+screen position. Additional dependency and artifact references remain typed links rather than
+invented parentage. A group may relate work from different Runs only through an explicit,
+authorized association; it cannot transfer either Run's consent or continuation ownership.
+
+Each proposal's record sequence distinguishes preparation, judgment, withdrawal or supersession,
+and references to effect-owner attempts and receipts. Records carry stable identities, an
+owner-assigned sequence, actor/source attribution and recorded time. Human decisions and standing
+policy decisions remain distinguishable. Corrections and bounded explanations append with their
+provenance; they never rewrite the first settled verdict. Explanation text is untrusted content,
+not executable direction, permission, an automatic Context injection, or training admission.
+
+### Branches never inherit consent
+
+A changed proposal receives a new identity and its own Consent. A parent, sibling, group,
+previously approved version, or human-authorship attestation cannot approve it. Denial may be
+followed by a separately admitted revision; it does not itself schedule revision work or promise
+an Agent response. Historical approval remains visible even when its proposal is later withdrawn.
+
+Creating an alternative does not silently supersede its predecessor. Explicit supersession must
+close the predecessor's remaining issuance eligibility through its effect owner before admitting
+the replacement as its successor. A pending verdict/withdrawal race uses the existing guarded
+decision path. For an already approved proposal, withdrawal preserves that verdict and fences
+future issuance separately; it cannot retract an issued effect. If an attempt may have started,
+the owner must reconcile or complete cancellation before a replacement effect can be admitted.
+An uncertain outcome never authorizes a duplicate attempt on another branch.
+
+The consent state and its judgment history commit atomically before re-admission or UI publication.
+The existing Consent decision path remains the judgment authority. The effect owner retains
+effect-time authorization, attempt identity, execution and recovery. Its durable receipt or
+reconcilable publication supplies history references bound to proposal, Consent, attempt and
+effect revision; idempotent adoption cannot create an effect or infer its outcome from approval.
+Missing, delayed, failed and unknown execution remain distinct. A lost history delivery cannot
+cause a second effect, and a history read cannot resume a Run.
+
+### Typed review, shared history
+
+File changes, network acquisition, external disclosure, spending and deployment share the history
+envelope while their effect owners supply versioned review profiles and receipt semantics. File
+review links the exact base, candidate and diff; network review binds the destination and limits;
+other types expose the facts their own law requires. An unsupported profile remains visibly
+unavailable for judgment. This envelope does not register or authorize a new effect class.
+
+Bridge presents proposals as a tree with separate decision and execution details. Orb correlates
+the same identities to retained Run evidence. Both consume authorized, bounded pages from the
+same records; neither copies a separate verdict store or derives success from a tree badge.
+Expansion and filtering preserve stable identities and disclose pagination or unavailable
+history. A semantic list with keyboard-operated disclosure supports the same inspection without
+requiring a graph canvas. Group selection provides no blanket approval.
+
+Artifact revision history and [authorship/protected-region records](28-workflow.md#authorship-provenance-and-protected-regions)
+remain with the artifact owner. Consent links their exact revisions rather than duplicating them;
+approval does not attest authorship or prove that the bytes were applied. Each read rechecks
+disclosure of records and referenced artifacts, including ancestry and counts. A visible proposal
+does not make a private predecessor, explanation, diff or receipt public.
+[Persistence](06-persistence.md#consent-history-custody) owns journal consistency and retention.
+[State of Work](../state-of-the-work.md#graph-stasis-consent) distinguishes this history contract
+from the current consent implementation.
+
 ## Codex preauthorization
 
 A Rune under runes/codex/preauth matches Sigil/tool patterns, supported argument allowlists or

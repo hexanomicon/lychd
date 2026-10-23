@@ -223,6 +223,7 @@ def test_database_projection_retains_and_validates_delegation_binding() -> None:
         error=None,
         consent_id=None,
         delegated_job_id=None,
+        peer_task_id=None,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
         started_at=None,

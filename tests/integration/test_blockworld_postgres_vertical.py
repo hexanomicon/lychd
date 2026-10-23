@@ -59,6 +59,7 @@ from lychd.ghouls.runs import perform_run
 from lychd.interface.web.bridge import BridgeController
 from lychd.interface.web.deps import web_dependencies
 from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry
+from tests.postgres_model_tables import with_referenced_tables
 from tests.support.blockworld import (
     BUILDER,
     IDS,
@@ -102,6 +103,7 @@ async def pg_factory(pg_url: str) -> AsyncIterator[async_sessionmaker[AsyncSessi
             BlockworldPlacementAction.__table__,
         ],
     )
+    tables = with_referenced_tables(tables)
     async with engine.begin() as connection:
         await connection.run_sync(Run.metadata.drop_all, tables=tables)
         await connection.run_sync(Run.metadata.create_all, tables=tables)

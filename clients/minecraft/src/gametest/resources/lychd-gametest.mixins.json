@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "org.lychd.companion.gametest.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": ["GameTestInfoAccess"],
+  "injectors": {"defaultRequire": 1}
+}

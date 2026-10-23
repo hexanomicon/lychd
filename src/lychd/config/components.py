@@ -7,6 +7,7 @@ object is produced by a ``build_*`` factory called from the application assembly
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 from advanced_alchemy.extensions.litestar import (
@@ -23,6 +24,7 @@ from lychd.config.constants import (
     DB_MIGRATION_VERSION_TABLE,
     PATH_MIGRATION_CONFIG,
     PATH_MIGRATION_DIR,
+    STOP_ADMISSION_PATH,
 )
 from lychd.config.logging import build_log_config, should_render_as_json
 from lychd.db.authority import RuntimeQueueConfig
@@ -124,4 +126,5 @@ def build_csrf_config(settings: Settings) -> CSRFConfig:
         secret=settings.server.web.secret_key.get_secret_value(),
         cookie_name=settings.server.web.csrf_cookie_name,
         cookie_secure=settings.server.web.csrf_cookie_secure,
+        exclude=rf"^{re.escape(STOP_ADMISSION_PATH)}$",
     )

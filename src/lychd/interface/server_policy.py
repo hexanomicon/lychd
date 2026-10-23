@@ -10,6 +10,7 @@ __all__ = (
     "ServerRuntimePolicy",
     "ServerRuntimePolicyError",
     "evaluate_server_runtime_policy",
+    "validate_server_environment",
 )
 
 _WORKER_ENVIRONMENT_KEYS = (
@@ -35,6 +36,28 @@ _ALTERNATE_LISTENER_ENVIRONMENT_KEYS = (
     "GRANIAN_UDS",
 )
 _DISABLED_ENVIRONMENT_VALUES = {"", "0", "false", "no", "off"}
+_FALSE_BOOLEAN_VALUES = _DISABLED_ENVIRONMENT_VALUES | {"f", "n"}
+_TRUE_BOOLEAN_VALUES = {"1", "true", "yes", "on", "t", "y"}
+_SUPPORTED_GRANIAN_ENVIRONMENT_KEYS = frozenset(
+    {
+        *_WORKER_ENVIRONMENT_KEYS,
+        *_RELOAD_ENVIRONMENT_KEYS,
+        *_RELOAD_FLAG_ENVIRONMENT_KEYS,
+        *_LISTENER_PORT_ENVIRONMENT_KEYS,
+        *_LISTENER_HOST_ENVIRONMENT_KEYS,
+        *_ALTERNATE_LISTENER_ENVIRONMENT_KEYS,
+        "GRANIAN_METRICS_ENABLED",
+        "GRANIAN_METRICS_ADDRESS",
+    }
+)
+_UNSUPPORTED_LITESTAR_ENVIRONMENT_KEYS = frozenset(
+    {
+        "LITESTAR_SSL_CERT_PATH",
+        "LITESTAR_SSL_KEY_PATH",
+        "LITESTAR_CREATE_SELF_SIGNED_CERT",
+        "LITESTAR_SSL_CLIENT_VERIFY",
+    }
+)
 _SERVER_CLI_NAMES = frozenset({"granian", "litestar"})
 _WORKER_OPTIONS = frozenset({"--workers", "-W", "--wc", "--web-concurrency"})
 _LONG_WORKER_OPTIONS = ("--workers", "--wc", "--web-concurrency")
@@ -84,10 +107,13 @@ _NATIVE_SHORT_VALUE_OPTIONS = frozenset(
 _LOOPBACK_LISTENER_HOSTS = frozenset({"127.0.0.1", "::1"})
 _DEFAULT_NATIVE_LISTENER_HOST = "127.0.0.1"
 _MAX_TCP_PORT = 65535
+_NATIVE_DEBUG_OPTIONS = frozenset({"-d", "--debug"})
+_NATIVE_PDB_OPTIONS = frozenset({"-P", "--pdb", "--use-pdb"})
+_NATIVE_VALUE_OPTIONS = _WORKER_OPTIONS | _PORT_OPTIONS | _HOST_OPTIONS | {"--metrics-address"}
 
 
 class ServerRuntimePolicyError(ValueError):
-    """A server setting would break the one-process, loopback-only runtime."""
+    """A server setting would break the single-process, owned-listener runtime."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,6 +122,17 @@ class ServerRuntimePolicy:
 
     listener_port: int | None
     listener_host: str | None
+    debug: bool = False
+    pdb: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class _NativeServerArguments:
+    listener_port: int | None = None
+    listener_host: str | None = None
+    debug: bool = False
+    pdb: bool = False
+    metrics_enabled: bool | None = None
 
 
 def evaluate_server_runtime_policy(
@@ -120,20 +157,84 @@ def evaluate_server_runtime_policy(
         else _detected_server_arguments(argv=argv, original_argv=original_argv)
     )
     native_serve = server_arguments is not None
+    native = _parse_native_arguments(arguments) if native_serve else _NativeServerArguments()
+    _validate_environment(environment, metrics_enabled=native.metrics_enabled)
     if native_serve:
-        arguments = _expand_native_short_arguments(arguments)
-    _validate_environment(environment)
-    listener_port, listener_host = _validate_arguments(arguments, require_loopback=native_serve)
+        listener_port, listener_host = native.listener_port, native.listener_host
+    else:
+        listener_port, listener_host = _validate_detected_arguments(arguments), None
     if listener_port is None:
         listener_port = _environment_port(environment)
     if listener_port is None and default_listener_port is not None:
         listener_port = _parse_port(str(default_listener_port), source="settings.server.port")
     if server_arguments is not None:
-        _validate_native_listener_environment(environment)
-        _validate_native_metrics(server_arguments, environment)
         environment_host = _native_environment_host(environment)
         listener_host = listener_host or environment_host or _DEFAULT_NATIVE_LISTENER_HOST
-    return ServerRuntimePolicy(listener_port=listener_port, listener_host=listener_host)
+    return ServerRuntimePolicy(
+        listener_port=listener_port,
+        listener_host=listener_host,
+        debug=native.debug or _environment_boolean(environment, "LITESTAR_DEBUG"),
+        pdb=native.pdb or _environment_boolean(environment, "LITESTAR_PDB"),
+    )
+
+
+def _parse_native_arguments(arguments: Sequence[str]) -> _NativeServerArguments:
+    """Parse the complete owned grammar without application or framework imports."""
+    tokens = _expand_native_short_arguments(arguments)
+    listener_port: int | None = None
+    listener_host: str | None = None
+    debug = pdb = False
+    metrics_enabled: bool | None = None
+    index = 0
+    while index < len(tokens):
+        option, separator, value = _split_native_option(tokens[index])
+        if option in _NATIVE_VALUE_OPTIONS:
+            if not separator:
+                index += 1
+                value = tokens[index] if index < len(tokens) else ""
+            _validate_native_value(option, value)
+            if option in _PORT_OPTIONS:
+                listener_port = _parse_port(value, source=option)
+            elif option in _HOST_OPTIONS:
+                listener_host = _parse_native_host(value, source=option)
+        elif option in _NATIVE_DEBUG_OPTIONS and not separator:
+            debug = True
+        elif option in _NATIVE_PDB_OPTIONS and not separator:
+            pdb = True
+        elif option in {"--metrics", "--no-metrics"} and not separator:
+            metrics_enabled = option == "--metrics"
+        elif option.startswith("-"):
+            message = f"LychD native serve does not support option {option}."
+            raise ServerRuntimePolicyError(message)
+        else:
+            message = "LychD native serve does not accept extra arguments."
+            raise ServerRuntimePolicyError(message)
+        index += 1
+    return _NativeServerArguments(listener_port, listener_host, debug, pdb, metrics_enabled)
+
+
+def _split_native_option(argument: str) -> tuple[str, str, str]:
+    option, separator, value = argument.partition("=")
+    if _is_reload_argument(argument):
+        message = "LychD v1 does not support Litestar reload mode; the run event plane is process-local."
+        raise ServerRuntimePolicyError(message)
+    if _is_alternate_listener_argument(argument):
+        option_name = option if option.startswith("--") else option[:2]
+        message = f"LychD native serve does not support {option_name}; use its loopback TCP listener."
+        raise ServerRuntimePolicyError(message)
+    if not option.startswith("--") and option[:2] in _NATIVE_SHORT_VALUE_OPTIONS:
+        option, value = option[:2], argument[2:].removeprefix("=")
+        separator = "=" if len(argument) > len(option) else ""
+    return option, separator, value
+
+
+def _validate_native_value(option: str, value: str) -> None:
+    if not value or value.startswith("-"):
+        message = f"LychD native serve requires a value for {option}; option-looking values are not accepted."
+        raise ServerRuntimePolicyError(message)
+    if option in _WORKER_OPTIONS and not _is_one_worker(value):
+        message = "LychD v1 requires exactly one ASGI worker; cross-process RunEventBus is not implemented."
+        raise ServerRuntimePolicyError(message)
 
 
 def _expand_native_short_arguments(arguments: Sequence[str]) -> tuple[str, ...]:
@@ -142,7 +243,7 @@ def _expand_native_short_arguments(arguments: Sequence[str]) -> tuple[str, ...]:
     Click permits flag clusters such as ``-dH::1``. Only known flags can precede
     a value option; its remaining suffix belongs to that value. Unknown short
     options fail closed so a new server flag cannot silently hide authority.
-    Long server options remain the delegated CLI's responsibility.
+    The same owned parser handles long options and consumes every token.
     """
     expanded: list[str] = []
     for argument in arguments:
@@ -177,12 +278,25 @@ def _detected_server_arguments(
     return ()
 
 
-def _validate_environment(environment: Mapping[str, str]) -> None:
+def validate_server_environment(environment: Mapping[str, str]) -> None:
+    """Validate shared process/listener controls without selecting a TCP profile."""
+    _validate_environment(environment)
+
+
+def _validate_environment(environment: Mapping[str, str], *, metrics_enabled: bool | None = None) -> None:
     for variable in _WORKER_ENVIRONMENT_KEYS:
         value = environment.get(variable)
         if value is not None and value != "" and not _is_one_worker(value):
             message = f"LychD v1 requires {variable}=1; the run event plane is process-local."
             raise ServerRuntimePolicyError(message)
+
+    _validate_native_listener_environment(environment)
+    if metrics_enabled is None:
+        metrics_enabled = _environment_boolean(environment, "GRANIAN_METRICS_ENABLED")
+    if metrics_enabled:
+        message = "LychD native serve does not support the Granian metrics listener; use its loopback TCP listener."
+        raise ServerRuntimePolicyError(message)
+    _validate_owned_environment_controls(environment)
 
     for variable in _RELOAD_FLAG_ENVIRONMENT_KEYS:
         reload_value = environment.get(variable)
@@ -200,17 +314,21 @@ def _validate_environment(environment: Mapping[str, str]) -> None:
             raise ServerRuntimePolicyError(message)
 
 
-def _validate_arguments(
-    arguments: Sequence[str],
-    *,
-    require_loopback: bool,
-) -> tuple[int | None, str | None]:
-    listener_port: int | None = None
-    listener_host: str | None = None
-    for index, argument in enumerate(arguments):
-        if require_loopback and _is_alternate_listener_argument(argument):
-            message = f"LychD native serve does not support {argument}; use its loopback TCP listener."
+def _validate_owned_environment_controls(environment: Mapping[str, str]) -> None:
+    for variable, value in environment.items():
+        if value and (
+            (variable.startswith("GRANIAN_") and variable not in _SUPPORTED_GRANIAN_ENVIRONMENT_KEYS)
+            or variable.startswith("LITESTAR_GRANIAN_")
+            or variable in _UNSUPPORTED_LITESTAR_ENVIRONMENT_KEYS
+        ):
+            message = f"LychD server does not support {variable}."
             raise ServerRuntimePolicyError(message)
+
+
+def _validate_detected_arguments(arguments: Sequence[str]) -> int | None:
+    """Guard recognizable external process controls without owning their grammar."""
+    listener_port: int | None = None
+    for index, argument in enumerate(arguments):
         worker_value = _worker_value(arguments, index)
         if worker_value is not None and not _is_one_worker(worker_value):
             message = "LychD v1 requires exactly one ASGI worker; cross-process RunEventBus is not implemented."
@@ -219,10 +337,9 @@ def _validate_arguments(
             message = "LychD v1 does not support Litestar reload mode; the run event plane is process-local."
             raise ServerRuntimePolicyError(message)
         if (port_value := _port_value(arguments, index)) is not None:
-            listener_port = _parse_port(port_value, source=argument)
-        if require_loopback and (host_value := _host_value(arguments, index)) is not None:
-            listener_host = _parse_native_host(host_value, source=argument)
-    return listener_port, listener_host
+            option_name = argument.partition("=")[0] if argument.startswith("--") else argument[:2]
+            listener_port = _parse_port(port_value, source=option_name)
+    return listener_port
 
 
 def _worker_value(arguments: Sequence[str], index: int) -> str | None:
@@ -251,17 +368,6 @@ def _port_value(arguments: Sequence[str], index: int) -> str | None:
     if argument.startswith("--port="):
         return argument.partition("=")[2]
     if argument.startswith("-p") and argument != "-p":
-        return argument[2:].removeprefix("=")
-    return None
-
-
-def _host_value(arguments: Sequence[str], index: int) -> str | None:
-    argument = arguments[index]
-    if argument in _HOST_OPTIONS and index + 1 < len(arguments):
-        return arguments[index + 1]
-    if argument.startswith("--host="):
-        return argument.partition("=")[2]
-    if argument.startswith("-H") and argument != "-H":
         return argument[2:].removeprefix("=")
     return None
 
@@ -302,32 +408,14 @@ def _validate_native_listener_environment(environment: Mapping[str, str]) -> Non
             raise ServerRuntimePolicyError(message)
 
 
-def _validate_native_metrics(arguments: Sequence[str], environment: Mapping[str, str]) -> None:
-    """Refuse an effective exporter using the installed native option grammar.
-
-    The raw parser runs no callbacks, type conversions, or environment lookups.
-    Reusing its grammar prevents an option value spelled ``--no-metrics`` from
-    disguising enablement. Locked-parser regressions cover this coupling; only
-    the supplied environment participates in the fallback boolean conversion.
-    """
-    environment_value = environment.get("GRANIAN_METRICS_ENABLED", "").strip()
-    if not environment_value and not {"--metrics", "--no-metrics"}.intersection(arguments):
-        return
-
-    from click import BOOL, ClickException, Context
-    from litestar_granian.cli import run_command
-
-    try:
-        with Context(run_command) as context:
-            options, _, _ = run_command.make_parser(context).parse_args(list(arguments))
-        metrics_enabled = options.get("metrics_enabled")
-        if metrics_enabled is None:
-            metrics_enabled = BOOL.convert(environment_value, None, None) if environment_value else False
-    except ClickException as exc:
-        raise ServerRuntimePolicyError(str(exc)) from exc
-    if metrics_enabled:
-        message = "LychD native serve does not support the Granian metrics listener; use its loopback TCP listener."
-        raise ServerRuntimePolicyError(message)
+def _environment_boolean(environment: Mapping[str, str], variable: str) -> bool:
+    value = environment.get(variable, "").strip().casefold()
+    if value in _FALSE_BOOLEAN_VALUES:
+        return False
+    if value in _TRUE_BOOLEAN_VALUES:
+        return True
+    message = f"LychD requires {variable} to name a valid boolean."
+    raise ServerRuntimePolicyError(message)
 
 
 def _parse_native_host(value: str, *, source: str) -> str:

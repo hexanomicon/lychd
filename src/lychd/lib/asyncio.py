@@ -9,13 +9,18 @@ __all__ = ["complete_under_cancellation"]
 
 
 async def complete_under_cancellation[T](operation: Awaitable[T]) -> T:
-    """Finish ``operation`` despite caller cancellation, including repeated cancels."""
+    """Finish despite repeated caller cancellation without adding diagnostic callbacks.
+
+    The operation's own outcome propagates after completion. Existing callbacks
+    installed by callers remain owned by those callers.
+    """
     task = asyncio.ensure_future(operation)
-    while True:
+    if not task.done() and task.get_loop() is not asyncio.get_running_loop():
+        msg = "Cannot await a pending operation from a different event loop."
+        raise RuntimeError(msg)
+    while not task.done():
         try:
-            result = await asyncio.shield(task)
+            await asyncio.wait((task,))
         except asyncio.CancelledError:
-            if task.done():
-                return task.result()
-        else:
-            return result
+            continue
+    return task.result()

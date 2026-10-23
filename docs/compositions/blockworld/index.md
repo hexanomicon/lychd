@@ -15,7 +15,11 @@ A reviewed blueprint on a private plot is the first journey: establish the finit
 
 Revision `1` and `blockworld.bounded_mission@1` remain historical design contracts, retired in favour of revision `2`. Their mission authority, five reads and five effects, verified receipts, and refusal to repeat an uncertain placement remain unchanged. Revision `2` adds required preparation, exact command/review binding, and native action continuity for the bounded placement operation. These requirements do not reinterpret revision `1` or establish parked-state compatibility. This design retirement defines no executable migration; [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) owns registration and delivery.
 
-The first code slice is an inactive, one-block test workflow assembled explicitly with inert effects. It is not registered at normal boot and does not connect to Minecraft. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) records its portable evidence and the remaining PostgreSQL and game checks.
+The bounded-mission code slice is an inactive, one-block test workflow assembled explicitly with
+inert effects. It is not registered at normal boot and does not connect to Minecraft. The separate
+[Horizon-assist profile](horizon-assist.md) supplies an experimental attached-client passage.
+[State of Work](../../state-of-the-work.md#composition-portfolio-delivery) keeps their evidence and
+remaining game checks distinct.
 
 Blockworld owns inhabitant, mission, world-local relationship, project, memory-candidate, lease, action, and receipt records. The server owns blocks, entities, inventory, and game time. An [Avatar](../avatar/index.md) can project the Lich through the inhabitant without acquiring any mission, inventory, lease, or world effect.
 
@@ -56,6 +60,15 @@ mode = "managed" # managed | attached
 The first fixture is managed: private, allowlisted, online-mode, and operated through a dedicated non-operator bot. An attached server may offer weaker observation or verification. Mode, server identity, protocol, capability/modpack revision, and Sentinel availability are pinned before the bot wakes. Changing mode drains missions and creates a new server generation and world epoch.
 
 ## Enter by question
+
+[Companion lab](companion-lab.md) develops a separate opt-in Fabric NPC actuator with native
+command admission, a finite operator queue and CPU-ready speech. Its actor and experimental
+delivery boundary do not replace the authenticated-player bounded mission.
+
+[Horizon assist](horizon-assist.md) defines the separate experimental attached-client passage
+for bounded spoken or typed actions. It does not weaken the managed mission's receipt contract.
+[Playing with a companion](horizon-play.md) gives user stories, acceptance trials and the order
+of preparation for multilingual voice, following and shared building.
 
 [Mission](mission.md) defines the work the inhabitant may attempt. [Sentinel](sentinel.md)
 guards each crossing into the server. After interruption or restoration,

@@ -37,6 +37,7 @@ from lychd.domain.codex.services import (
 )
 from lychd.domain.codex.sigil import Sigil
 from tests.codex.test_native_consent import binding
+from tests.postgres_model_tables import with_referenced_tables
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -66,6 +67,7 @@ async def pg_factory(pg_url: str) -> AsyncIterator[async_sessionmaker[AsyncSessi
             Consent.__table__,
         ],
     )
+    tables = with_referenced_tables(tables)
     async with engine.begin() as connection:
         await connection.run_sync(Run.metadata.drop_all, tables=tables)
         await connection.run_sync(Run.metadata.create_all, tables=tables)

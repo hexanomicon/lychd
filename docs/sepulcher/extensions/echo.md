@@ -11,8 +11,9 @@ A spoken answer can be generated yet never heard. **Echo** follows an utterance 
 armed capture to transcription, an ordinary Agent step, optional synthesis, and observed delivery.
 Source, consent, language, interruption, and playback chronology remain attached throughout.
 
-The first passage is visible push-to-talk and record-and-send. Audio admission is Partial, but
-no Echo speech path runs; [State](../../state-of-the-work.md#audio-admission) owns delivery and
+The first passage is visible push-to-talk and record-and-send. Audio admission is Partial; a
+separate local engineering probe exercises speech without native Echo grants or Bridge admission.
+[State](../../state-of-the-work.md#audio-admission) owns delivery and
 [Audio](../../adr/37-audio.md) owns the accepted law.
 
 ## The resonance path
@@ -92,7 +93,7 @@ claims of delivered behavior.
 
 ## First engine profile
 
-The first planned local profile deliberately admits one inference engine:
+The first planned native local profile starts with one inference engine:
 
 | Concern | Initial choice | Boundary |
 | --- | --- | --- |
@@ -103,7 +104,10 @@ The first planned local profile deliberately admits one inference engine:
 | Activation | Visible push-to-talk | No always-on capture and no wake-word dependency. |
 | Interaction | Record and send | No claim of full-duplex speech or barge-in. |
 
-This is designed direction, not delivered integration. The initial implementation should prove
+Native admission remains Designed. Separate explicit engineering profiles exercise audio.cpp
+transcription and synthesis, or independently pinned whisper.cpp transcription with audio.cpp
+synthesis. [Local qualification](echo-local-probe.md) owns those profiles;
+[State](../../state-of-the-work.md#audio-admission) owns their measured evidence. They should prove
 speech-audio-to-text and text-to-speech-audio before exposing audio.cpp speech-voice conversion,
 cloning, alignment, VAD, diarization, codecs, or pipelines. Those functions become separately declared tool surfaces
 only after their model, inputs, outputs, custody, authority, and cancellation behavior are baked;
@@ -116,6 +120,9 @@ explicit request first, then ordered Principal or Persona preferences, then admi
 missing output-language support refuses rather than silently translating.
 
 ## The first bake
+
+[Local speech qualification](echo-local-probe.md) bounds the initial engineering probe separately
+from native Animator and Bridge admission.
 
 The smallest honest evaluation fixes one runtime revision and model digest, then records:
 
@@ -133,16 +140,18 @@ different input and output preferences, but every routed language owes the same 
 
 ## Watched alternatives
 
+[Speech provider study](echo-research.md) records the current Slovak, Czech and English candidates,
+immutable local packages and hosted-dialect differences.
+
 The first profile does not implement these paths:
 
 | Candidate | Why it remains watched | Promotion condition |
 | --- | --- | --- |
 | [NeMo-Speech.cpp](https://github.com/NVIDIA/NeMo-Speech.cpp) | Narrower NVIDIA speech runtime with promising realtime, endpointing, word-timing, and Riva surfaces. | Stable pinned release and dialect, lifecycle and cancellation receipts, and a multilingual realtime bake that materially beats the audio.cpp path. |
-| [whisper.cpp](https://github.com/ggml-org/whisper.cpp) | Mature, portable Whisper-only STT fallback. | A required platform or recovery case that audio.cpp cannot satisfy. |
 | [Piper](https://github.com/OHF-Voice/piper1-gpl) | Small CPU TTS fallback with separately licensed voices. | A measured low-resource or recovery need that Supertonic through audio.cpp cannot satisfy, plus runtime and voice-license admission. |
 | [openWakeWord](https://github.com/dscripka/openWakeWord) | Host-side wake-word candidate, not a speech server. | An authorized phrase/model with acceptable license, reproducible training or acquisition, and measured false-accept and false-reject rates in the target language and environment. |
 
 NeMo-Speech.cpp may later reuse the batch connector through an explicit dialect, while its live
-WebSocket still needs a Resonance Session adapter. Whisper, Piper, and openWakeWord are not
-installed merely as speculative redundancy. No watched candidate is an automatic fallback, and
+WebSocket still needs a Resonance Session adapter. Piper and openWakeWord remain candidates rather
+than speculative runtime dependencies. No watched candidate is an automatic fallback, and
 no failed local attempt silently changes engine, language, or egress.

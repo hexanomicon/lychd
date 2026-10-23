@@ -20,7 +20,7 @@ import asyncio
 from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
 import pytest
@@ -30,7 +30,7 @@ pytest.importorskip("testcontainers", reason="optional disposable PostgreSQL rec
 
 from pydantic import BaseModel
 from pydantic_graph import BaseNode, End, GraphRunContext
-from sqlalchemy import select, text
+from sqlalchemy import Table, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from testcontainers.community.postgres import PostgresContainer
@@ -70,6 +70,7 @@ from lychd.domain.delegation.models import (
 )
 from lychd.domain.orchestration.schema import TransitionTrace
 from lychd.domain.web.schemas import BridgeTurn
+from tests.postgres_model_tables import with_referenced_tables
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -99,6 +100,7 @@ async def pg_factory(pg_url: str) -> AsyncIterator[async_sessionmaker[AsyncSessi
         DelegatedAgentJobRecord.__table__,
         DelegatedAgentEventRecord.__table__,
     ]
+    tables = with_referenced_tables(cast("list[Table]", tables))
     async with engine.begin() as connection:
         await connection.run_sync(Run.metadata.drop_all, tables=tables)
         await connection.run_sync(Run.metadata.create_all, tables=tables)
@@ -1097,6 +1099,9 @@ async def test_reconcile_orphaned_running_lands_terminal_step(
 
     from sqlalchemy import select
 
+    from lychd.domain.animation.services.declarations import AnimatorDeclarations
+    from lychd.domain.animation.services.registry import AnimatorRegistry
+    from lychd.domain.cortex.context import ContextOrchestrator
     from lychd.domain.cortex.stasis import InMemoryStasisStore
     from lychd.ghouls.runs import reconcile_runs
 
@@ -1106,7 +1111,7 @@ async def test_reconcile_orphaned_running_lands_terminal_step(
     await ledger.append_event(RunEvent(run_id=run_id, seq=0, kind=RunEventKind.STATUS, data="running"))
 
     # Fresh process: a brand-new bus (channel seqs restart at 0). reconcile only needs
-    # the substrate's ledger + bus, so a namespace stand-in is sufficient here.
+    # the explicit durable owners and context cleanup ports; no live effects are present.
     class _NoBrokerJob:
         async def job(self, job_key: str, /) -> None:
             _ = job_key
@@ -1122,6 +1127,9 @@ async def test_reconcile_orphaned_running_lands_terminal_step(
         stasis_store=InMemoryStasisStore(),
         consents=None,
         delegates=None,
+        peer=None,
+        effects=None,
+        context=ContextOrchestrator(registry=AnimatorRegistry(declarations=AnimatorDeclarations((), ()))),
     )
     result = await reconcile_runs({"run_substrate": substrate})
     assert result["count"] >= 1

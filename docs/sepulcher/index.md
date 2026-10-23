@@ -34,6 +34,7 @@ Then open the body:
 | [Crypt](crypt.md) | Where persistent files belong and which external workspaces may be mounted. |
 | [Vessel](vessel/index.md) | What starts, serves, and stops inside one application process. |
 | [Ghouls](vessel/ghouls.md) | How admitted work reaches a worker and settles. |
+| [Intercom](intercom.md) | Submit a bounded public task to an enrolled sovereign peer. |
 | [Phylactery](phylactery/index.md) | Committed state that can survive the process. |
 | [Reanimation](phylactery/reanimation.md) | What can return after death. |
 | [Gateway](gateway.md) | A separate machine to face hostile ingress. Home and Remote are **Designed** placements. |

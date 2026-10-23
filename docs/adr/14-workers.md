@@ -219,7 +219,7 @@ cancel a successor's effects, and a committed park survives a lost commit acknow
 Resume publication occurs outside the guard. API cancellation uses its durable `CANCELLING`
 fence independently, so waiting for broker abort does not deadlock the worker's acknowledgement.
 
-### Durable consent and delegated waits
+### Durable consent, delegated and peer waits
 
 Consent and delegation release their Ghoul but retain the Run. Consent persists the checkpoint and
 Consent row before one Run transaction verifies that authority, parks `AWAITING_CONSENT`, and
@@ -238,9 +238,10 @@ same-run `AgentJob` and requires a shape-valid terminal result matching that job
 status writer cannot move either wait state back to `QUEUED`; only the owner-specific CAS may do so.
 Both consent verdicts resume and Graph reads the durable decision.
 
-The Run's consent and delegated-job pointers identify its current durable wait, not history.
-Each park sets its exact owner and clears the other pointer atomically; the related Consent,
-AgentJob, and event records retain history. That single owner survives re-admission and claim.
+The Run's consent, delegated-job and peer-task pointers identify its single current durable wait,
+not history. Each park sets its exact owner and clears the other pointers atomically; the related
+Consent, AgentJob, peer custody and event records retain history. That single owner survives
+re-admission and claim.
 Before the first restored node executes, the worker requires its station kind and checkpoint
 owner id to match the Run's current owner. Missing, ambiguous, or stale bindings fail without
 executing the checkpoint. Switching between wait kinds therefore cannot resurrect a historical
@@ -249,6 +250,13 @@ approval or job. In-process hardware re-entry after this check does not reconsum
 Concurrent handlers converge. Publication failure leaves the new `QUEUED` hop for the relay; no
 wait state is recreated and no possibly published key is reused. Delegation additionally requires
 terminal truth for the same job.
+
+The [native public peer station](26-a2a.md#native-public-peer-station) prepares its immutable task
+without contact, checkpoints it, then parks `AWAITING_PEER`. Only that committed owner may send.
+Its owner-specific CAS rereads canonical same-Run task and admissible terminal/disposition under
+current authority, creates one successor delivery and refuses generic wait-to-queue writes.
+Exact created checkpoint recovery follows the consent/delegate pre-park rule; prepared rows alone
+never authorize replay. A bounded relay exits each iteration and holds no Graph capability lease.
 
 Consent and delegate re-admission remain cancellable: interruption before their atomic transaction leaves the
 wait; interruption after commit leaves the exact pending delivery for recovery. Optional broker
@@ -281,6 +289,16 @@ An interruption before that commit waits only for the local election or leader f
 itself need that worker to exit. If election failed, the worker may attempt its exact-generation
 `FAILED` transition. Completion may win before election and makes cancellation an idempotent
 no-op. This coordination is valid only in the one-process topology.
+
+Sovereign peer work has a narrower local obligation: durable closure of result adoption for every
+bound task and actual retirement of all Run-owned local exchanges must acknowledge before terminal
+cancellation or orphan failure. That closure does not require remote authentication or a foreign
+task id. After it and all ordinary local containment succeed, local `CANCELLED` may commit while
+retaining explicit remote outcome uncertainty. Remote cancellation is separate bounded
+reconciliation and asserts no process containment or rollback; an unreachable sovereign cannot
+retain local continuation authority. This exception never applies to AgentJobs, owned children,
+managed service execution or unresolved local cleanup. Retained peer debt survives terminal
+checkpoint deletion and is visible through an authorized status projection.
 
 ### Close admission before mutation
 
@@ -372,8 +390,9 @@ marking itself connected; SAQ's disconnected-flag no-op cannot leak that partial
 ### Unsettled failure and late publication
 
 A Ghoul retries transient child-authority containment before committing worker failure. Persistent
-failure remains explicit nonterminal Run truth because `FAILED` would falsely claim all effects are
-contained. There is not yet a same-boot failure-custody watchdog or a dedicated `FAILING` state;
+failure remains explicit nonterminal Run truth because `FAILED` would falsely claim required
+locally owned effects are contained. Sovereign peer tasks retain the local closure and remote
+uncertainty distinction above. There is not yet a same-boot failure-custody watchdog or a dedicated `FAILING` state;
 restart orphan reconciliation is the current final recovery boundary.
 
 A publisher that loses its acknowledgement after cancellation re-probes and retries exact broker

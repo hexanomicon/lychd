@@ -18,10 +18,10 @@ their delivery interpretation.
 | Scenario | Answer now | Decisive limit |
 | --- | --- | --- |
 | CLI bootstrap | **Partial:** grammar, dry-run plans, transactional `init`/`bind`, bounded inspection, and guarded deletion have repository evidence. | No maintained real-host lifecycle receipt. See [CLI](#core-cli-rites) and [embodiment](#systemd-podman-embodiment). |
-| Local text chat | **Partial:** the Pydantic AI adapter, local Run engine, and Bridge contracts work in the repository-test envelope. | No inference-engine plus real-browser acceptance receipt. See [Bridge](#bridge-surface) and [persistence](#phylactery-first-light). |
+| Local text chat | **Partial:** a selected warm-vLLM profile completes a native Bridge reply with retained PostgreSQL history. | No deployed-host or real-browser acceptance receipt. See [vLLM](#vllm-integration), [Bridge](#bridge-surface) and [persistence](#phylactery-first-light). |
 | Browser safety | **Loopback only:** a dedicated local credential precedes the fixed Sigil; Host, Origin, CORS, CSRF, and generated bind policy are bounded locally. | Remote IAM and hostile-browser acceptance remain unsupported. |
-| PostgreSQL lifecycle | **Repository receipt:** factory, PostgreSQL, SAQ, HTTP, shutdown, and second-boot projection recovery run together. | Live dispatch, orchestration, and Context are replaced after startup; no real-host or browser proof. |
-| Major blockers | Authenticated caller authority, privacy-safe egress, artifact custody, real host/model receipts, native Oculus, and resource-aware scheduling. | Remote transport, federation, executable evolution, durable recall, and vision/audio bytes remain Partial or Designed. |
+| PostgreSQL lifecycle | **Named warm-model receipt:** factory, PostgreSQL, SAQ, Graph and vLLM complete one structured Bridge reply and retain its history across two sequential application processes. | TestClient HTTP and a refusing host actuator; no crash recovery, deployed-host or browser proof. |
+| Major blockers | Authenticated caller authority, privacy-safe egress, artifact custody, managed host/model lifecycle receipts, native Oculus, and resource-aware scheduling. | Remote transport, federation, executable evolution, durable recall, and vision/audio bytes remain Partial or Designed. |
 
 ## How to read this page
 
@@ -51,9 +51,14 @@ Project maturity and delivery state are different. An accepted ADR does not prov
 
 ## Current evidence envelope
 
-The strongest maintained conjunction uses the real application factory, disposable PostgreSQL,
-in-process SAQ, HTTP, shutdown, and a second boot, while substituting offline collaborators after
-startup. It proves wiring and durable projection recovery, not full composed runtime behavior.
+One maintained warm-model profile joins the real application factory, disposable PostgreSQL,
+in-process SAQ, Graph, Dispatcher, Context and streamed vLLM output through TestClient HTTP. It
+settles one structured Bridge reply and preserves its turns and model history across two
+application lifespans. A separate maintained selection proves clean shutdown and identical
+retained state across two sequential independent `spawn` processes, without second-boot inference.
+The host actuator is a refusing fixture; model bytes, a deployed Vessel, Granian TCP operation,
+crash recovery, shared load and the real browser remain unqualified.
+The broader repository two-boot test retains its separate offline-collaborator boundary.
 
 The disposable developer fixture supplies a separate read-only backend for source-client work.
 It enters its own lifespan and uses the real controllers and security with memory services.
@@ -123,16 +128,43 @@ are tested. Mutating paths use revalidation, no-follow identity checks, lifecycl
 receipts, and explicit rollback or indeterminate outcomes. An unsafe shared binding site blocks
 initialization planning and the layout preflight; safe existing modes are preserved.
 
+The machine-only installation-stop admission route verifies a bounded signed request and its
+corresponding revision-2 reply, including the signed fixed `native-owned-lifespan@1` profile,
+with no Basic credential disclosure, Sigil assignment or host effect. Only the captured native
+entrypoint arms that profile; old/direct/caged/unarmed responders refuse. Current credential,
+production publication and launcher gates close before shutdown awaits, including worker failure.
+Host-side
+client and sequential Vessel-first settlement logic have focused tests. The owned launcher now
+exposes required startup/close failure and waits for Python HTTP callback retirement before
+closing services. Seven real native TCP cases use an explicit inert factory, including interrupted
+warmup, original encoded path bytes, pending response, post-response background work and repeated
+SIGTERM; all owned process groups disappear. An actual generated-unit trial in an exclusive
+delegated cgroup and private manager now passes three ordered cases: required-close failure
+preserves dependencies; clean closure retains strict exit fields through dependent stop; actual
+reference-connection loss after clean capture refuses dependent stop. A held full user-bus
+reference prevents premature systemd metadata collection and verifies the manager against its
+private control socket. All three cases removed owned processes, listeners and the outer cgroup.
+Public host completion is connected lazily for the exact uncaged native profile; composition
+tests exercise the admission and reference ports without importing the application at bootstrap.
+These manager cases use an explicit inert application and synthetic dependencies. The image
+entrypoint shares the runner, but no rebuilt image or caged TCP receipt is claimed.
+
 **Boundary — Not yet:** Status omits full readiness and durable-run health; no run-operation command
-or authenticated Vessel submission route is delivered; `stop` refuses an active Vessel without its
-authenticated lifecycle port; deletion preserves objects whose creation provenance is not owned.
-Unknown unit or mount truth blocks instead of guessing. No maintained real systemd/Podman lifecycle
-or GPU receipt exists.
+or authenticated Run submission route is delivered; active caged or mixed `stop` still refuses;
+deletion preserves objects whose creation provenance is not owned.
+Unknown unit or mount truth blocks instead of guessing. Native manager mechanism evidence does
+not qualify useful composed application work under that launcher. No maintained installed
+systemd/Podman lifecycle or GPU receipt exists.
 
 **Evidence**
 
 - **Source:** [CLI assembly](https://github.com/hexanomicon/lychd/blob/main/src/lychd/__main__.py) and [layout admission](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/layout.py)
 - **Verification:** [CLI tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_cli.py) and [init binding-site tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_init_binding_sites.py)
+- **Verification:** [Message profile](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/operator/test_admission.py), [machine HTTP boundary](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_lifecycle_admission.py), [host client](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/operator/test_admission_client.py), and [active-stop settlement candidate](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/operator/test_active_stop.py)
+- **Source:** [Owned launcher](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/server.py)
+- **Verification:** [Lifespan/retirement tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/web/test_server.py) and [native TCP mechanism cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_server_process.py)
+- **Verification:** [Required native manager regression](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_native_stop_systemd.py), [inert native factory](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/web/systemd_server_app.py), [private full-bus fixture](https://github.com/hexanomicon/lychd/blob/main/tests/support/native_stop_bus.py), and [delegation preflight](https://github.com/hexanomicon/lychd/blob/main/tests/support/systemd_transaction.py)
+- **Verification:** [Exit-reference tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/operator/test_stop_evidence.py) and [public composition wiring](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/operator/test_composition.py)
 - **Law:** [CLI](./adr/19-cli.md) and [Layout](./adr/13-layout.md)
 
 ### Public release artifact chain {#public-release-artifact-chain}
@@ -269,8 +301,10 @@ integration.
 **Proved now:** Run, delivery, step, session, consent, checkpoint, and delegated-wait shapes exist
 with sequence-fenced claim and settlement, terminal-evidence-fenced owner-specific resume gates,
 startup reconciliation, and PostgreSQL migration checks. A real factory receipt completes and
-recovers a Bridge Run across two boots. Distinct production asyncpg codecs round-trip plain `json`
-and versioned JSONB, while memory Run, consent, and Bridge-session stores detach mutable values at
+recovers a Bridge Run across two boots; a selected warm-vLLM profile also retains its actual
+structured reply and model history across two application lifespans and, in a separate trial,
+across clean shutdown into an independent application process. Distinct production asyncpg
+codecs round-trip plain `json` and versioned JSONB, while memory Run, consent, and Bridge-session stores detach mutable values at
 the same public boundary as database reads.
 
 The bootstrap gate separates the preserved administrator from the Vessel/SAQ runtime role and
@@ -282,13 +316,15 @@ access, repeatable bootstrap, and preservation of unrelated existing ownership.
 memory-profile/PostgreSQL repository parity is incomplete; no general record-retention or
 compaction path, partition policy, tablespace lifecycle, automatic capacity expansion, or sharding
 path is delivered; persistent same-boot containment failure has no durable watchdog. The lifecycle
-receipt substitutes offline collaborators and is not a checkpoint-plus-consent, real-host,
-inference-engine, or browser receipt.
+test substitutes offline collaborators after startup. The separate warm-model profile does not
+exercise checkpoint-plus-consent recovery, process crash, a deployed host, or the browser.
 
 **Evidence**
 
 - **Source:** [First-light migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0001_phylactery_first_light.py), [wait-owner migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0008_wait_owner_evidence.py), and [database factory](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/factory.py)
 - **Verification:** [Run ledger tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_ledger.py), [PostgreSQL run-ledger receipts](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_run_ledger_pg.py), [database authority receipt](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_database_authority_pg.py), and [two-boot lifecycle](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_production_wiring.py)
+- **Verification:** [Joined warm-model Bridge test](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_local_bridge_runtime.py), [maintained receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/animator/local-bridge-vllm-runtime.json), and [receipt freshness](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_local_bridge_receipt.py)
+- **Verification:** [Independent-process restart test](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_local_bridge_process_restart.py), [maintained process receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/animator/local-bridge-vllm-process-restart.json), and [process-receipt freshness](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_local_bridge_process_receipt.py)
 - **Law:** [Persistence](./adr/06-persistence.md)
 
 ### Topology-A local run execution {#topology-a-local-runs}
@@ -462,7 +498,11 @@ delegation, or hardware waits; cancellation remains observable to the caller.
 **Boundary — Not yet:** There is no PostgreSQL Consent-plus-Checkpoint restart receipt. A legacy
 checkpoint from before the hardware-budget field cannot reconstruct attempts that already
 happened. Multiple approval calls in one model response are rejected, and no production toolset
-currently originates approval.
+currently originates approval. The [consent-history contract](./adr/25-hitl.md#consent-history-and-proposal-branches)
+defines immutable proposals, revision branches, attributable decisions and linked effect receipts.
+Its append-only journal, independent retention, supersession/issuance fencing, legacy import,
+authorized paginated history API and Bridge/Orb tree remain Designed; current Consent rows and
+pending cards do not implement that history.
 
 **Evidence**
 
@@ -722,13 +762,34 @@ systemd/Podman host, load, inference, disabled-sleep behavior, and whole-runtime
 **Proved now:** A vLLM runtime plan, OpenAI-compatible connector, model/capability derivation, and
 focused tests exist.
 
+The standalone local-model probe explicitly registers the built-in adapter and exercises exact
+Dispatcher grants, AgentForge text output, and an observed harmless tool round. Its offline
+tests cover response-identity and completion-state refusal before tool processing, unavailable
+or malformed inventory, transport failure, retained observations across deadline/cancellation,
+and client/lease cleanup. It reads no installation configuration and has
+no lifecycle authority. An operator-generated probe receipt does not qualify the installed
+Vessel, Bridge, persistent Runs, model artifacts, managed activation or shutdown.
+
+A separate maintained profile joins the source-registered vLLM adapter to the production factory,
+Dispatcher, Graph, Context, SAQ and PostgreSQL. One actual streamed `BridgeReply` settles; the same
+turns and valid model history survive a second application boot without another model POST.
+Both startups observe the exact shared model as `WARM`; no lifecycle actuation occurs. HTTP is
+TestClient and the host actuator is a refusing fixture. A second selection performs those boots
+in independent sequential `spawn` processes: the first fully exits before the second, which
+retains identical settled turns and history and submits no inference. This qualifies clean
+application process restart, with no deployed Vessel, Granian TCP listener, model-byte, crash,
+cancellation, browser or shared-load qualification.
+
 **Receipt needed:** Name the image and revision, model, GPU and driver, arguments, systemd/Podman
 host, readiness, inference, and shutdown.
 
 **Evidence**
 
-- **Source:** [vLLM registration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/animator/vllm/register.py), [vLLM Rune](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/animator/soulstones/vllm.py), and [shared OpenAI-compatible runtime](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/adapters/runtimes/openai_compat.py)
-- **Verification:** [Adapter tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_adapters.py)
+- **Source:** [vLLM registration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/animator/vllm/register.py), [vLLM Rune](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/animator/soulstones/vllm.py), [shared OpenAI-compatible runtime](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/adapters/runtimes/openai_compat.py), and [local-model probe](https://github.com/hexanomicon/lychd/blob/main/scripts/local_model_probe.py)
+- **Verification:** [Adapter tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_adapters.py) and [probe acceptance tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_local_model_probe.py)
+- **Verification:** [Joined Bridge test](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_local_bridge_runtime.py), [maintained warm-model receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/animator/local-bridge-vllm-runtime.json), and [source/dependency freshness](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_local_bridge_receipt.py)
+- **Verification:** [Independent-process test](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_local_bridge_process_restart.py), [maintained process-restart receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/animator/local-bridge-vllm-process-restart.json), and [process source/dependency freshness](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_local_bridge_process_receipt.py)
+- **Topic:** [Standalone probe and first-reply boundaries](./sepulcher/animator/soulstone/engines/vllm.md#bring-one-service-to-a-first-reply)
 - **Law:** [Dispatcher](./adr/22-dispatcher.md)
 
 ### SGLang integration {#sglang-integration}
@@ -1095,6 +1156,433 @@ authority and world-epoch changes refuse execution after an earlier approval. Th
 world and captured queue in one process; it does not establish broker delivery or automatic
 recovery of an orphaned running worker after process death.
 
+A separate opt-in Horizon-assist profile admits strict finite text or externally transcribed
+instructions through native Run admission, worker execution and a serial Graph. Its Linux Unix
+socket adapter pins one client process generation and reported world label, enforces exclusive endpoint ownership,
+rechecks policy and observed pose before send, and records client-observed outcomes without
+automatic replay. Cancellation uses a second socket, drains the original reply and observes idle;
+unknown or interrupted client generations remain quarantined across controller restart. An
+explicit singleplayer lab mode is separate from remote-server identity. The engineering voice
+entrypoint can retain one such session across bounded capture/STT/Graph attempts, private source
+and transcript artifacts, native-event JSONL and stage timings, with optional generated reply WAV.
+Status replies cross a closed operational projection before binding checks or result custody;
+debug/clipboard, keyboard and unknown nested fields cannot enter returned status or native logs.
+Portable socket/Run tests preserve useful renderer/server fields and the missing/null/malformed
+server distinctions while checking exclusion from results and events.
+This profile does not implement the managed placement mission or its authoritative receipts.
+
+A separate opt-in Fabric companion lab connects typed Slovak/Czech/English text instructions
+and explicitly transcribed WAV to a finite operator FIFO, native Run admission and a serial
+validate/execute/report Graph. A small dedicated-server mod controls one persistent vanilla wolf
+through a loopback authenticated HTTP mailbox. The server tick owns navigation, head gaze and
+ordinary chat. Stop has independent admission and generation fencing; uncertain effects are not
+reposted. Idle has a finite lease and performs no repeated model calls. Shared local delivery
+primitives preserve the older Horizon assembly. This is an NPC body, not an authenticated player
+or the canonical managed placement mission.
+
+An explicitly selected local intent profile now adds interpretation within the same native Run
+and FIFO. Pattern revision 2 retains the deterministic three-node path; raw input adds one
+tool-free Agent through the exact Dispatcher grant and Forge. Closed decisions permit only state,
+idle, captured-player follow, no action or clarification. One model request has finite context,
+output, time and session budgets, with no repair retry, model fallback or runtime activation.
+Response identity and completion metadata are checked before Agent processing; bounded provider
+reasoning is discarded and only the decision is retained. Reserved-command bypasses, copied
+configuration limits and substituted checkpoint targets, expiry or material references refuse.
+The original capture deadline survives inference and caps physical handoff.
+
+A live eleven-case check crossed the selected local Qwen service, native Graph and real game
+bridge. Synthetic Slovak idle, Czech state and English idle applied, while the tested Slovak
+negative follow and unsupported Czech building request returned no-action decisions with no game
+action POST. Multiple instructions refused or returned no action. An affirmative follow proposal
+for the configured offline player was refused by host policy. The typed control made no model
+request; original transcript/artifact correlation and released leases were checked. This optional
+model check is separate from the CPU-only typed/server/speech proof and establishes no general
+language accuracy, human microphone quality or live-player following.
+
+Operator request identities now survive queue expiry and cancellation before native admission.
+Those early results resolve synchronously; owned publication tasks retain final evidence status
+and are joined during stop or close. Failed evidence does not erase a known game disposition.
+Stop identities have an independent finite history; historical replay and cross-kind reuse cannot
+interrupt fresh work. The final history slot seals new admission while retaining its priority
+barrier. Localized state feedback describes only the correlated observed mode and rounded
+coordinates, without reading raw diagnostics or player identifiers aloud.
+
+The follow controller has configurable stopping and resuming distances, defaulting to two and
+three blocks. It waits near its target without requiring a path and retains the finite follow
+lease; the wider resuming threshold avoids repeated close-contact navigation. Pure policy and
+configuration tests cover the distance boundaries and invalid settings. An opt-in server
+GameTest now drives the unchanged production controller and mailbox with normal wolf physics
+and a synthetic player registered in the actual player list. It observes displacement, approach
+without overlapping bodies, waiting, resumed movement, non-replacing state/chat, refused
+navigation under the original lease, queue expiry, target distance/loss/death and correlated
+priority stop. Its explicit synthetic lease clock advances fifty milliseconds per controller
+tick; this is no real-time latency measurement. An independent wait-only policy copy fails on
+missing displacement while the authoritative build passes. Both paths remove their owned
+players and actor and release the private ticket. Default builds start no GameTest server and
+both delivery archives exclude test assets. Human online following, wrong-dimension transfer
+and navigation across chunks remain unqualified.
+
+Closed host-known refusal reasons now survive native and session results into localized
+feedback. Missing target observation, bounds, interpreter budget, unavailable inference and
+rejected completion have distinct recovery guidance, without classifying foreign diagnostics.
+Native/session identity, kind and reason must agree before a specific outcome is spoken;
+conflicts remain unknown. A nine-case local qualification observed those five refusal causes
+with zero Minecraft action POSTs through audited transport assertions. Three subsequent exact
+state commands applied through the native typed path without model dispatch; nine reply WAVs
+were generated without physical playback.
+
+Opt-in companion replies now retain request-correlated generated WAV and unchanged synthesis
+metadata, plus separate evidence for the game outcome, Run identity, artifact retention and
+player settlement. Caller cancellation cannot discard the later session-owned result. Stop
+joins audio and evidence owners even before a reply watcher starts; repeated cancellation and
+native stop failure preserve retirement without leaking that failure through the loop handler.
+An actual seven-case native/game/CPU-synthesis check retained five generated replies, including
+an applied result after caller cancellation and a no-action result with its real Run. Two
+commands stopped before native admission retained absent-Run cancellation evidence and generated
+no speech. All reply owners and leases settled. Playback retirement has separate synthetic
+process tests; this live check started no playback process and qualifies no human hearing.
+
+Voice input captures its request UUID, stop generation and bound player before asynchronous
+capture or transcription. Target changes affect later utterances only; a target absent at capture
+cannot appear implicitly afterwards. Private source, transcript and voice records share the admitted
+command identity. Portable asynchronous race tests cover changes before task execution, during
+capture and during transcription, including no-target refusal and spoken-stop correlation.
+
+Console input now retains its reader-observed identity, stop generation and original deadline,
+including partial lines and commands buffered while stop settles. Ordinary input acquired during
+that settlement refuses; stop and quit retain priority, and a fresh line after settlement works.
+Target changes retain console order. Expired recording triggers cannot arm the microphone after
+waiting for audio ownership. Actual-pipe regressions cross the native Graph with a controlled
+transport; the original console fails both stale-action and delayed-recording negative controls.
+A fresh empty-server headless check and two synthetic CPU Whisper/Supertonic voice cases passed
+after this change. These do not qualify a human microphone or physical playback. The maintained
+receipt distinguishes this source requalification from unchanged historical cohorts.
+
+The private companion console also offers explicit `--output human` with Slovak, Czech and
+English labels. It displays bounded, escaped original recognition before parsing, preserves
+localized game feedback, and separates native evidence, generated audio, playback and reply
+retention failures. JSON remains the default without added raw recognized words. `:status` reads
+owner-held local queue and audio-operation state without game/model calls, Run admission, expiry
+or settlement; a zero countdown does not assert a terminal result. Native and controlled-speech
+regressions exercise priority stop, original identity, refused transcripts and custody failures,
+including cancellation before publication. Two actual CLI-pipe sessions applied synthetic Slovak
+idle and English state through CPU Whisper and the native Graph/game bridge, retained both reply
+WAVs and closed stopped. These establish no physical microphone, hearing or game-focused trigger.
+
+An opt-in client-only Fabric voice artifact now builds against the pinned 26.3 tuple and passes
+twenty-six pure Java cases. It supplies remappable finite-record and independent stop mappings with
+held-input/focus guards, original gesture identity/deadlines, bounded separate workers and local
+Slovak/Czech/English result labels. A distinct authenticated loopback adapter feeds the existing
+console voice/queue owners; it has no game-command, transcript or provider-selection ingress.
+Twenty-two real-socket/native fixture cases cover strict HTTP admission, same-ID lookup after
+lost acknowledgement, first-byte stop fences, final shutdown, expiry and queued evidence ordering.
+Five deliberate counterfactual cases fail when those fences/evidence guards are disabled.
+Two empty-server checks used the compiled production Java transport/parser, controlled synthetic
+capture, actual CPU Whisper/Supertonic and native Graph/game bridge: Slovak idle and English state
+applied, original identities/deadlines and two reply WAVs were retained, and the actor closed
+stopped. No game client, physical microphone, playback or GPU was used in those wire checks.
+The maintained receipt keeps these boundaries separate from historical proofs.
+
+A separate opt-in official client GameTest then exercised the real production initializer,
+registered mappings and untouched ticks in a disposable offline world. It observed five record
+requests and four stops through the real client transport: held-input suppression across settled
+polls, actual menu/context release barriers, same-binding and menu stop priority, reserved stop
+before a blocked ordinary response, own-ID HUD submission and stop after disconnect. The actual
+client-stopping event recorded one initialization, all scenarios complete and both worker owners
+retired; the process exited normally and the owned container was removed. Minecraft selected
+Vulkan llvmpipe after its OpenGL visual failed, under verified 2 CPU/4 GiB/no-swap limits without
+GPU/audio devices or a human account. No native host command or speech request was made; fixture
+results remain synthetic. The current multiline HUD replaces the clipped action bar and keeps
+the own ID, all five outcome/evidence channels, missing-as-unreported values and failure reasons.
+Five display cases cover three mixed-result payloads: applied game with failed reply/evidence in
+SK/CS/EN and 400-character literal feedback, uncertain playback/server work, and player exit with
+hearing unconfirmed. The complete text fit the default font's 320×240 scaled GUI at 640×480;
+settled screenshots were inspected after initial join toasts retired. F1/menu absence requires
+GUI extraction progress, recovery requires a fresh complete panel, and the stopping witness is
+registered after production initialization. If a complete result cannot fit, the view retains
+the own ID in a display-space notice rather than showing a successful subset. Other fonts,
+transient overlay occlusion, physical keys/focus and human audio remain unqualified. Test assets
+remain excluded from default jars. The maintained receipt separates the earlier clipped client
+cohort from this source/build/runtime HUD requalification.
+
+The prepared authenticated local profile was also checked against its active launcher identity,
+allowlist, non-operator status and console target. A real foreground console opened with Slovak,
+CPU Whisper and strict interpretation, exposed fresh recording authority, rendered query-only
+status and refused the previous session identity without changing its owners. One explicit stop
+retained the original caller ID, a distinct server-stop ID and an applied result; quit closed
+the listener and the actor remained stopped. These are local assembly checks, not an authenticated
+human join or physical-key qualification. The shared recorder now selects the host's ALSA
+`default` instead of requiring an installed `pulse` PCM; an explicit Pulse selection never retries
+another device. One separate one-second invocation returned 16,000 frames in a 32,044-byte
+canonical WAV and retired its owned recorder group. The bytes stayed private and were not sent
+to a model or played. This qualifies finite default-route acquisition on that host, without
+attesting physical-source identity, human speech accuracy, a complete game voice turn or hearing.
+
+A later source-only capture recovery qualification separates failed recordings whose owned
+group retired from unknown launch or retirement. Synthetic tests preserve cancellation during
+final retirement, classify independently cancelled launch/retirement as unknown, permit only a
+fresh gesture after settled failure, and suppress a waiting reply after unknown capture. The
+companion keeps text control; the older Horizon voice entry fences its session on unknown
+ownership. This later cohort did not repeat the physical recording, launch a game or call speech
+models; the maintained receipt preserves the earlier host acquisition as historical evidence.
+
+The shared reply player also uses ALSA `default`, with a strictly validated explicit Pulse
+alternative and no device fallback. Synthetic tests cover exact argv/stdin, invalid-device
+no-launch, failed selected devices without retry, and independently cancelled retirement as
+unknown ownership. One subsequent host invocation used the existing CPU Supertonic profile
+to generate a fixed Slovak acknowledgement: 66,084 mono 16-bit frames at 44.1 kHz, about 1.5
+seconds. One default-route player received that inspected WAV, exited zero and retired its
+owned group. No microphone, transcription, game command, GPU, route or volume change occurred.
+The synthesis observation and playback record remain separate. This qualifies one finite
+default-output operation; it does not attest physical output identity, human hearing or a
+complete microphone-to-game turn. Earlier client and recorder cohorts were not reexecuted.
+
+Applied companion controllers now retain the host's exact outgoing authorization deadline,
+clipped by the configured lease, original instruction and session expiry. Slovak/Czech/English
+feedback states a short upper bound and directs a fresh `stav`/`state` query; elapsed time does
+not assert an observed stop or ending cause. State/chat and uncertain results gain no controller
+claim, and an identical request cannot renew its deadline. That cohort kept Pattern topology revision 2,
+with implementation `py.3` and checkpoint schema `companion-state-v3`; older result shape parsing
+does not migrate an old pinned Run. A later CPU-only real-server check retained a two-second
+original limit through the native Run/event log, observed its active ID and then no active ID
+after that deadline, and closed with an applied priority stop. An earlier helper assertion
+incorrectly required an optional observation in the applied idle receipt; that occurrence was
+settled and stopped before the corrected probe used a new ID and a separate state read. Both
+records remain distinct. No microphone, speech/model call, GPU use or client rebuild occurred.
+The maintained receipt separates this qualification from unchanged historical cohorts.
+
+The companion voice producer now retains the failed host operation and fixed localized
+recovery feedback through both foreground output and the existing game-control feedback field.
+Local recording/read/retention/transcription/admission refusal keeps the game disposition
+unreported; uncertain admission cannot assert that no command was sent, even with blocked audio.
+Known native outcomes
+survive later local failure. Failed spoken-stop settlement is correlated as unknown stop without
+an invented server-stop identity or replay. Unknown audio ownership still disables further audio;
+known settled failure permits only a fresh deliberate input. Portable tests exercise real local
+control sockets, synthetic speech/game transports, same-ID deduplication, fresh-input recovery,
+all three locales, post-enqueue faults and native result precedence. Pure Java parser/HUD tests
+accept the unchanged feedback shape with local refusal/uncertainty and unreported game state.
+This source qualification made no actual recording, speech-provider, game or GPU request and
+launched no game client. It does not qualify physical audio or fresh GUI rendering; an unknown
+operation still retires the existing client session, with no automatic HUD reconciliation claim.
+
+The explicit `inspect@1` profile now reads one integer cell through the same FIFO, native Run,
+HTTP mailbox and server tick. A distinct closed `blockworld.cell@1` observation retains exact
+coordinates, dimension, complete registry block state/properties and boot/actor/generation/time
+provenance. Existing pose and action-envelope JSON shapes stay unchanged. Whole-cell bounds,
+current actor/distance, original expiry, stop and identity history still apply; no block-entity
+contents, inventory or chunk load is requested. Typed unloaded availability stays separate from
+observed air, and mismatched/absent evidence becomes unknown without reposting. Bounded SK/CS/EN
+feedback reaches the existing console/HUD path; current Graph implementation is `py.4` with
+`companion-state-v4`, without migration of an older pinned Run.
+
+Ninety-three new portable native/transport/feedback cases, thirty-one Java cases and the real
+controller GameTest qualify this slice. The engine read a log's non-default axis, air and a
+changed cell during following; a successful read under a short follow retained its original
+expiry. Two isolated counterfactual worlds rejected false air and lease renewal, with owned
+cleanup. The real unloaded-chunk branch remains unexecuted; its typed availability has transport
+coverage. An empty local server received the exact built artifact and retained the same actor
+after restart. Three real native Runs applied a 2.5-second idle and read grass with `snowy=false`
+and air; reads preserved the active controller, its original limit ended, and one priority stop
+closed the actor stopped. The service's earlier stop returned Java exit 143; process retirement
+was reconciled before deployment, without attesting a graceful world save. No model, speech,
+microphone, playback or game client was used. Building, material custody and human voice accuracy
+remain unfinished; the maintained receipt preserves prior cohorts separately.
+
+The host companion console now retains one fixed-stage monotonic timing envelope per accepted
+voice occurrence, including pre-entry cancellation and disabled speech replies. The localized
+foreground keeps local return/error/cancellation and unavailable native outcome distinct;
+timing failure cannot change game results or audio custody. Thirty-two deterministic cases
+cover waits, stop, failures and clock/custody faults. One actual synthetic Slovak `Čakaj` WAV
+crossed CPU Whisper, the native Run and game bridge, then generated a Supertonic reply: local
+elapsed time was 5,053 ms, with 2,511 ms transcription, 99 ms queue/native-result wait and
+2,392 ms synthesis. The stages overlap and are not an additive decomposition or benchmark.
+Input speech generation/resampling preceded the measured origin; recording and playback were
+not attempted. The actor closed stopped. This qualifies host observations for the next human
+test, without claiming physical microphone accuracy, hearing or native Echo timing.
+
+The later resident CPU multilingual check retained twelve interleaved generated-WAV cases.
+Four ordinary commands applied: English state, Slovak idle, English say and a Slovak/English
+mixed say. Spoken stop applied; a negative Slovak instruction refused. Six other inputs refused,
+including Slovak state, all three Czech examples, English idle and Slovak say. The six matched
+expected kinds include stop and the expected refusal and are not a language-accuracy score.
+Each original transcript and local timing remains separate from the native disposition; only
+applied ordinary inputs generated spoken replies. The harness barred unexpected movement or
+inspection, without correcting wording. Source speech used Supertonic M1 and explicit language;
+Whisper small transcribed the prepared 16 kHz derivative. These coupled synthetic cases cannot
+attribute a failure to TTS or STT. The actor closed stopped, with no physical recording/playback,
+client, GPU, interpreter, hosted voice request, model install or provider change. Text control
+remains the fallback while human recordings and listening are unqualified.
+
+The host console also supports explicit `:language INPUT [REPLY]` selection among SK/CS/EN
+without replacing a session. An omitted reply locale preserves the current setting, including
+disabled replies; both profile declarations validate before either setting changes. Querying
+has no game or speech request. Busy voice/native/reply ownership refuses changes instead of
+queuing them, preserving earlier instruction identity, expiry and locales. Reader stop/age
+fences, playback preference and an unknown-audio latch remain intact. Thirty-two portable cases
+exercise these boundaries, ordered console input and separate Whisper/synthesis profile bindings.
+This slice made no actual speech, game, device, GPU or interpreter request, changed no profile
+file and does not improve or qualify the preceding synthetic language-quality results.
+
+The separate opt-in `weather@1` profile adds clear/rain with one fixed 600-engine-tick timer
+programme over shared `server_weather`, anchored at the overworld. Host policy and a distinct
+`blockworld:weather` scope are checked before handoff; independent server permission defaults
+off. Disabled weather advancement refuses without changing gamerules. A separate effect owner
+uses the typed engine API beside the NPC controller. Only a matching `blockworld.weather@1`
+readback confirms application; pose/cell substitutions, stale evidence and lost acknowledgement
+remain unknown without replay. That weather cohort used Pattern revision `3`, implementation `py.5`, checkpoint
+`companion-state-v5`; earlier closures were not migrated. Review found ambiguous weather wording
+could enter optional interpretation; the repaired host path refuses it for text and transcripts.
+
+Seventy-seven new portable cases and thirty-five Java unit cases cover the bounded change.
+Two independently selected disposable GameTest profiles passed: actual engine timer progression,
+natural transitions and restoration, and direct production-composite weather during real short
+following with the original lease and queue controls preserved. The weather-only fixture's NPC
+is explicitly fake; the real-controller continuity probe is direct dispatch, separate from HTTP.
+The reviewed production JAR matched twenty-nine compiled classes and excluded test assets.
+The owned empty lab received that artifact and retained its persistent actor after restart.
+Three text native Runs applied idle, clear and rain, preserving the original 2.5-second controller
+limit before a confirmed stop. Weather timer expiry does not promise restoration, wall-clock
+duration or exclusion of subsequent natural thunder; priority stop does not undo applied weather.
+
+Five coupled synthetic CPU voice cases retained all outcomes: English rain and Czech clear
+applied and generated replies; three Slovak cases refused before native admission. Their source
+speech used Supertonic M1, linear 16 kHz preparation and Whisper small. These observations neither
+isolate one model's quality nor qualify human Slovak accuracy. Physical recording/playback,
+human hearing, day/night, wake words, building and hosted speech remain outside this increment.
+No GPU, interpreter, paid voice request or speech-provider/model change occurred. The maintained
+weather receipt keeps this evidence separate from earlier cohorts.
+
+The separate `time@1` profile advances the supported `minecraft:overworld` clock to the next
+or equal day/night marker, with execution-time toggle selection and independent default-deny
+host/server permission and native `blockworld:time` scope. It checks the current bound clock,
+timeline, markers and dimension use before mutation. The exact typed readback binds requested
+and resolved modes, forward delta, phases, cycles, fractional state and preserved rate/pause/
+advancement settings. Equal markers skip the setter; overflow refuses. The Pattern is now `4`,
+implementation `py.6`, checkpoint `companion-state-v6`, without older-closure migration.
+Forward placement can advance calendar/moon counts and linked schedules outside the overworld;
+it does not certify all datapack tracks, visible brightness or subsequent cycling. Stop cannot
+undo an applied placement. Root review corrected post-mutation readback mismatch to terminal
+`unknown`, with mailbox retention and no duplicate effect; it cannot claim pre-effect refusal.
+
+The new portable host/CLI cases and forty-three Java unit cases passed. The standalone clock
+GameTest checked 252 immediate placements across boundary phases and all selected rate/pause/
+advancement combinations, with exact fractional/settings restoration and other-clock, simulation
+and weather preservation. Constructed incompatible timelines/dimensions exercise the read-only
+profile matcher; this does not replace runtime registries with a hostile datapack. The independent
+real-controller fixture applied clock and weather through the production composite during the
+original short follow and retained its original expiry oracle. Clock, controller and weather
+profiles each passed both required tests; the default build started no GameTest server.
+The reviewed production JAR matched thirty-four compiled classes and excluded fixture assets.
+
+The owned empty lab received that artifact with separate clock permission enabled, retaining
+its persistent actor after restart. Four native text Runs applied idle, day, night and toggle,
+retaining the original 2.5-second NPC limit before confirmed stop. This live passage is separate
+from the disposable engine fixtures and does not qualify human play.
+
+Five generated-WAV CPU speech examples retained three applied commands with generated replies:
+Slovak and Czech `Nastav noc`, and English `Make it day`. Slovak `Prepni deň noc` and `Nastav deň`
+were misrecognized and refused before native admission, with unchanged original transcripts and
+no invented Run. Successful host elapsed times were 4806–5849 ms, including transcription,
+native waiting and reply generation, excluding source generation, microphone capture and playback.
+These are individual coupled Supertonic/Whisper examples, not human accuracy or latency benchmarks.
+The harness accepted only the expected clock mode without repairing words; all sessions closed
+stopped. FIFINE appeared as the host's default source by read-only inventory, without recording
+or routing changes. Human recognition, hearing, physical F8/F9, wake words, continuous listening,
+player bodies and building remain unqualified or unfinished. No GPU, interpreter, hosted voice,
+model install or speech-provider change occurred. The maintained clock cohort preserves earlier
+weather and other evidence unchanged.
+
+A separate publication-packaging check rebuilt both mods with the repository MPL terms and an
+unofficial-integration/source-acquisition notice. Forty-three server and twenty-eight voice-client
+Java cases passed; all thirty-four server and twenty client production classes matched the prior
+qualified artifacts byte for byte. Both delivery JARs excluded fixture and foreign classes.
+Gradle caches, game binaries and private profiles are excluded from the source candidate.
+Public metadata and operation pages identify the project publisher/contact and its unofficial
+relationship to Minecraft. This is an engineering publication check, not legal approval or new
+gameplay/speech qualification. Distributing a compiled mod still requires identifying and providing
+its exact corresponding source; a development version or mutable source URL alone is insufficient.
+
+The explicit held-input increment adds a third unbound client mapping and host `--hold-seconds`
+opt-in. It retains the fixed recording profile and original voice identity/deadline; release has
+its own bounded forwarding window and worker. Release-before-start tombstones prevent delayed
+capture, while stop remains independently reserved. Unreleased duration/sample limits, short or
+invalid PCM, cancellation and unproved retirement discard the utterance before transcription.
+Fifty-four held host cases and forty Java cases passed, with 344 affected host cases in total.
+Independent review found and corrected unrelated-key collision and late-start-error HUD regressions.
+
+The actual software client retained its original five-record/four-stop chain, then exercised two
+synthetic Num Enter holds, one original-ID release and one menu cancellation without release or
+replay. Final lifecycle evidence retained five fixed records, five total stops and retired workers
+on Vulkan llvmpipe, without GPU or audio devices. Actual `arecord` 1.2.16 on ALSA `null` also passed
+the production held helper with partial PCM, intentional SIGINT/status 1 and retired process group.
+Separately, a real owned synthetic PCM feeder crossed local held-control HTTP, CPU Whisper,
+native Run/Graph and the empty lab's night-clock action exactly once, then generated a Supertonic
+reply and closed stopped. Physical keys/focus, FIFINE capture, playback, hearing and human Slovak
+accuracy remain unqualified; wake words and continuous capture remain unfinished. The maintained
+held-input cohort preserves the historical evidence rather than treating it as reexecuted.
+
+The maintained CPU-only headless qualification records observed head turning and movement,
+priority stop with queued cancellation, native event correlation, strict HTTP admission,
+same-boot deduplication, a deliberately lost acknowledgement without repost, and a same-world
+restart with stable actor identity and stale-boot refusal. Synthetic English and one Czech WAV
+crossed speech, the native Graph and the game bridge; local reply WAV generation succeeded.
+The original Parakeet profile misrecognized the tested Slovak command words and refused them.
+An explicitly selected CPU whisper.cpp alternative applied a synthetic Slovak idle instruction
+and English state request through the native Graph and game bridge, with generated Supertonic
+replies. Its Slovak and Czech synthetic say examples still refused. Independent operation pins
+and preservation of the original transcript framing were checked. These cases measure execution,
+not human language accuracy. Source fingerprints bind the bounded critical
+slice; the receipt does not attest an atomic transitive source closure or a clean checkout.
+Private qualification records are referenced by random opaque IDs; their paths and raw content
+digests remain local. Public source fingerprints identify the published code, not anonymized
+operator material.
+
+Fixed Slovak/Czech/English feedback distinguishes task start, refusal, client report and unknown
+effect. Optional synthesis or settled player failure preserves the game outcome and marks the
+reply stage separately. Unchanged idle ticks retain private evidence without repeated console
+announcements. An explicit playback option validates PCM before a fixed local player invocation,
+keeps capture closed, joins the owned process group on stop and records player exit rather than
+human hearing. Failed player retirement ends the session. Synthetic tests cover launch expiry,
+late process adoption, repeated cancellation, failed retirement and preservation of native game
+outcomes; they do not qualify a physical speaker or microphone.
+
+The same explicit local assembly can register finite idle and follow tick scores. A process-local
+supervisor coalesces tick bursts, preserves operator priority and the shared action budget, and
+settles interrupted effects before replacement. Idle observes without a command or model call;
+follow uses a separately pinned query-only own-client pose feed, finite segments, freshness and
+deadline guards, and an independent timeout cancellation path. After a client-reported follow
+completion, a fresh healthy, idle, in-bounds bot observation must show at least 0.05 blocks of
+progress from the final pre-command pose toward the original target sample before reporting
+`moved`. Insufficient progress reports `no_progress`; unavailable, stale or unsafe post-observation
+reports `movement_unverified`. Both stop the finite task without automatic retry and retain the
+known client response separately. Portable tests exercise native checkpoints, admission races,
+measured progress, post-observation failure, evidence publication, safe refusal, target loss and
+unknown terminal effects. Remote world labels remain cosmetic observations, including an
+explicitly pinned empty label; these ports establish neither authenticated server identity nor a
+server world epoch.
+
+The explicit voice assembly opts the concrete target observer into finite read settlement.
+Cancellation joins the already started bounded observation and discards its late sample before
+propagating the original cancellation. This preserves the same valid target feed for fresh task
+admission without extending action authority or weakening freshness checks. Direct/default
+cancelled reads, real observation failure and explicit closure retain permanent retirement.
+Socket tests interrupt or expire native Runs during both state and status, require no late
+action, and admit fresh follow on the same observer; failure cases retain timeout, changed
+identity, disconnect and close fences. Read cleanup can outlast the behavior deadline within the
+independent observation timeout and bounded connection closure.
+
+An explicitly supplied build service additionally registers a finite one-cell/three-cell plank
+score. Frozen plan bytes pin session, plot, mode, labels, inventory expectations, expiry and
+budgets. Each cell uses a fresh native Run and one closed placement attempt, with before/after
+client observations and expected consumption. The shared supervisor waits for native `DONE`
+and the exact Run's result before admitting the next cell. Portable tests connect the Graph,
+control socket and synthetic game, including query counts, final-budget confirmation, operator
+priority, cancellation after report, unknown partial effects and no replay. An optional private
+voice plan is admitted only by its exact phrase; speech does not invent a blueprint. The stock
+client has no atomic expected-before placement primitive, so observed preconditions do not
+exclude concurrent changes and these results remain client observations, not placement receipts.
+
 Companion has a pure Kotlin/JVM model for memory-only client interaction: expiring text drafts,
 exact review before a separate submit request, reconnect without replay, observed presentation
 and playback state, and separate local stop/cancel controls. Its pinned harness compiles and tests
@@ -1113,8 +1601,18 @@ has not yet been qualified with an Android SDK, emulator or handset.
 
 **Do not expect yet:** There is no Composition store or selector, Product catalogue or selector,
 Portfolio Pattern registration, Suite execution, application scheduling, or a domain/effect
-path enabled in normal application assembly for any Portfolio member or Product. Blockworld has no
-server, bot, Minecraft adapter, production route or review producer registration. Its portable
+path enabled in normal application assembly for any Portfolio member or Product. Blockworld's
+managed mission has no server or bot deployment, authoritative game adapter, production route or
+review producer registration. Horizon assist has no live-qualified multiplayer following or
+shared-world building, speech playback, free-form model planner, broker delivery or restart continuation.
+Its finite idle/follow/build supervisor is an opt-in local profile, not application scheduling or a
+deployed companion. Its portable behavior evidence does not establish live two-client gameplay.
+The Fabric companion lab has no qualified human microphone, physical playback, Prism join or
+live player-follow session. Its fixed home chunk ticket does not establish ticking throughout
+the whole control box. It supplies no inventory, mining, building, arbitrary console execution,
+durable command recovery, normal-boot registration or qualified Windows operation.
+Its controller lock and generation records are local fail-closed protection, not Phylactery
+mission recovery or authenticated server proof. Its portable
 fixture alone does not establish database atomicity or migration safety; those boundaries have
 separate disposable PostgreSQL receipts. Neither fixture qualifies live game effects or a deployed
 Linux operation. Crucible is a designed Weaver choreography, not a
@@ -1126,6 +1624,11 @@ adapters, processing records, executable Patterns, or Memory/Identity handoffs.
 [Accounting Office](./compositions/accounting-office/index.md) also remains a candidate study:
 its proposed mail/bank ports, entity books, jurisdiction profiles, privacy workflow, and accounting
 Patterns establish no implementation, live account access, tax filing, or supported-country claim.
+[Reach connected work](./compositions/reach/connected-work/index.md) proposes a successor to the
+public Discord contract for Gmail, Discord and GitHub correspondence, plus optional WhatsApp business
+messaging and a separate owner–agent probe. Its account lifecycle, provider profiles, delivery policy
+and recovery plan supply no implemented OAuth/installation
+flow, credential service, registered Pattern, platform adapter, or deployed private-mail capability.
 [Thorn](./compositions/thorn/index.md) remains a candidate whitehat security workbench for scoped
 assessment, incident response, cooperative investigation, and reviewed reports/corrections.
 General monitoring and system maintenance remain outside its case ownership. It supplies no
@@ -1138,6 +1641,27 @@ physical devices or every Android version allowed by the declared minimum SDK.
 
 **Evidence**
 
+- **Source:** [Companion native score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion.py), [operator session](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_session.py), [HTTP effect adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_bridge.py), [voice/text entry](https://github.com/hexanomicon/lychd/blob/main/scripts/companion_lab.py), and [Fabric delivery client](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft)
+- **Verification:** [Companion native and transport cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_companion.py), [console/audio regressions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_companion_lab.py), [maintained CPU receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/blockworld/companion-cpu-runtime.json), and [receipt freshness](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_receipt.py)
+- **Verification:** [Human console journey and failure cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_companion_human.py), [literal multilingual view](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_companion_view.py), and [query-only native status](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_companion_status.py)
+- **Source:** [Local gesture control](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_control.py) and [separate Fabric voice client](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft-voice)
+- **Verification:** [Real-socket/native control cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_companion_control.py), [control identity/quota/projection cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_companion_control.py), [pure Java input/transport cases](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft-voice/src/test/java/org/lychd/voice), and [actual client GameTest](https://github.com/hexanomicon/lychd/blob/main/clients/minecraft-voice/src/gametest/java/org/lychd/voice/ClientControlGameTest.java)
+- **Verification:** [Real controller GameTest](https://github.com/hexanomicon/lychd/blob/main/clients/minecraft/src/gametest/java/org/lychd/companion/gametest/ControllerGameTest.java) and [opt-in build and evidence limits](https://github.com/hexanomicon/lychd/blob/main/clients/minecraft/README.md)
+- **Topic:** [Companion lab](./compositions/blockworld/companion-lab.md)
+- **Source:** [Captured instruction and local profile](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_intent.py) and [closed model response boundary](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_intent.py)
+- **Verification:** [Intent contract regressions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_intent.py) and [response identity, completion and reasoning exclusion](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_companion_intent.py)
+- **Source:** [Bounded companion feedback](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_feedback.py)
+- **Verification:** [Localized observed-state and uncertainty tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_feedback.py)
+- **Verification:** [One-cell native, provenance and availability cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_companion_cell.py)
+- **Source:** [Horizon assist score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_assist.py), [explicit native Run assembly](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_assist_runtime.py), and [bounded client adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/horizon_control.py)
+- **Verification:** [Connected Run/Graph and client-boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_assist.py) and [voice-to-Graph session tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_blockworld_voice.py)
+- **Source:** [Outcome feedback](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_feedback.py)
+- **Verification:** [Feedback and optional-reply failure cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_blockworld_feedback.py) and [voice/player integration cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_blockworld_playback.py)
+- **Source:** [Finite behavior scores](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_behaviors.py), [local supervisor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/horizon_supervisor.py), and [query-only target feed](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/horizon_observer.py)
+- **Verification:** [Native behavior and checkpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_behaviors.py), [supervisor race and containment tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_supervisor.py), and [exact-person query-boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_horizon_observer.py)
+- **Source:** [Finite client-observed build score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_build.py)
+- **Verification:** [Native build/checkpoint cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_build.py), [closed placement socket boundary](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_placement_control.py), and [connected build/supervisor/voice cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_build_supervisor.py)
+- **Topic:** [Horizon assist](./compositions/blockworld/horizon-assist.md)
 - **Source:** [Blockworld workflow](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/workflow.py), [placement custody](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/blockworld.py), [placement migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0011_blockworld_placement.py), [Workflow registry](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py), [client interaction model](https://github.com/hexanomicon/lychd/blob/main/clients/android/interaction/src/main/kotlin/org/lychd/companion/interaction/Interaction.kt), [Android screen](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/main/kotlin/org/lychd/companion/CompanionScreen.kt), and [Activity state](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/main/kotlin/org/lychd/companion/OfflineDraftViewModel.kt)
 - **Verification:** [Portable placement workflow tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_blockworld_placement_vertical.py), [PostgreSQL placement tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_blockworld_pg.py), [PostgreSQL worker and review vertical](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_blockworld_postgres_vertical.py), [Workflow routing tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_router.py), [client interaction tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/interaction/src/test/kotlin/org/lychd/companion/interaction/InteractionTest.kt), [ViewModel tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/test/kotlin/org/lychd/companion/OfflineDraftViewModelTest.kt), [Activity tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/androidTest/kotlin/org/lychd/companion/CompanionScreenTest.kt), [production-lifecycle tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/androidTest/kotlin/org/lychd/companion/CompanionLifecycleTest.kt), and [client check commands](https://github.com/hexanomicon/lychd/blob/main/clients/android/README.md)
 - **Topic:** [Composition Portfolio](./compositions/index.md)
@@ -1315,18 +1839,33 @@ sensitive spans cover a synthetic diagnostic fixture, not arbitrary text or code
 event projection exposes only an opaque random identifier. Changed bytes, evidence, policy,
 identity, target, expiry, unknown lineage and meaningless redaction refuse verification.
 
+The opt-in `closed-diagnostic-recording@1` profile adds durable admission for those exact candidate
+bytes under an independently pinned synthetic export binding. Acknowledged fresh claims consume
+one use and the full candidate size against permanent host, purpose and Cut capacity, without
+refund after refusal or uncertainty. Only the issuing process can activate a claim once and settle
+its original completion. PostgreSQL custody retains restricted evidence rather than source or
+candidate bodies. Concurrent claims, lost commit acknowledgement, service reconstruction, retained
+Run/delivery checks, locked downgrade refusal and migrated-versus-ORM catalog parity have actual
+disposable-PostgreSQL coverage, including a missing-CHECK negative control.
+
 **Boundary — Not yet:** No governed SQL/tool/artifact adapters, end-to-end source lineage, semantic
 Privacy Agent, general PII detector, reversible map/Vault, provider-specific sanitized wire branch,
-Egress Gate, transmission accounting, cumulative-disclosure policy or deletion propagation ships.
+general Context Egress Gate or Context/provider network transmission accounting, content-derived cumulative-disclosure
+policy or deletion propagation ships. The local recorder is an accounting witness; it supplies no
+peer identity, A2A transport, native peer wait or normal-boot egress integration.
 An in-memory Cut neither survives restart nor grants disclosure. Normal private Context and
 effectful delegated execution remain ineligible for remote use.
+The separate [public-text peer profile](#a2a-intercom) admits explicitly authored public input;
+it does not extend the recorder or make a private Context eligible.
 
 **Evidence**
 
 - **Source:** [Privacy preparation](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/privacy/preparation.py), [independent verifier](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/privacy/verification.py), and [Context integration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/context.py)
+- **Source:** [Recording owner](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/privacy_disclosure.py), [durable disclosure store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/privacy.py), and [custody models](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/models/privacy.py)
 - **Verification:** [Adversarial preparation fixtures](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/privacy/test_preparation.py), [Context influence tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_context_privacy.py), and [offline probe output](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/privacy/test_probe.py)
+- **Verification:** [Recording authority tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/privacy/test_disclosure.py), [retained evidence tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/db/test_privacy_disclosure.py), [PostgreSQL concurrency and recovery](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_privacy_disclosure_pg.py), and [transactional migration and catalog tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_privacy_disclosure_migrations_pg.py)
 - **Topic:** [Portal](./sepulcher/animator/portal.md)
-- **Law:** [Context](./adr/21-context.md#privatization-and-the-privacy-cut) and [Security](./adr/09-security.md#portal-privatization-and-egress)
+- **Law:** [Context](./adr/21-context.md#privatization-and-the-privacy-cut), [Security](./adr/09-security.md#portal-privatization-and-egress), and [disclosure custody](./adr/06-persistence.md#closed-disclosure-accounting-custody)
 
 ### Local Sigil and scope authority {#local-sigil-authority}
 
@@ -1524,16 +2063,44 @@ A separate trusted Echo helper consumes retained bytes through the explicit
 quarantine-inspection authority, needs a separate admission decision, and obtains fresh read
 authority before consuming an admitted payload.
 
+An explicitly invoked local engineering probe's version 1 profile pins one literal-loopback audio.cpp batch endpoint,
+runtime revision, separate model digests and declared languages. It sends inspected canonical WAV
+and retains attributed transcript facts, or requests a stock voice and inspects bounded generated
+PCM WAV. Its CLI keeps material in a private external workspace and refuses checkout overlap,
+symlinks, overwrite, redirects, ambient proxies and automatic retries. An opt-in Linux helper
+captures a finite 1–15 second utterance and retires its owned recorder group; substitute-process
+tests do not qualify a physical microphone. Cancellation of HTTP waiting leaves server work
+unknown. Profile declarations do not attest loaded model bytes or verify language quality.
+
+Version 2 profiles independently bind the transcription and synthesis endpoint, runtime revision,
+dialect, backend, device and model. Existing version 1 schemas and digests remain unchanged.
+The whisper.cpp multilingual small dialect requires an explicit declared language and sends no
+per-request model selector; Supertonic synthesis can remain on audio.cpp. Both operations retain
+their own provenance. The companion entry checks both CPU/host bindings and removes only outer
+ASCII speech framing before strict instruction parsing, retaining the original transcript.
+Synthetic Slovak idle and English state crossed this alternate path; two misrecognized say
+examples refused. No automatic provider fallback or native Echo admission is implied.
+
+A separately selected local player helper accepts validated bounded PCM bytes through fixed
+stdin invocation. It owns launch adoption and process-group retirement, keeps capture closed
+through uncertain retirement, and reports player exit independently of generation or hearing.
+Synthetic tests exercise this process boundary; no live listening receipt is established.
+
 **Boundary — Not yet:** Structural inspection proves neither speech, consent nor provider
-compatibility. The local helpers have no capture, upload, transport or dispatch integration.
-There is no streaming socket, resonance buffer, working STT/TTS adapter, selectable Echo extension,
-or Audio Coven.
+compatibility. Custody helpers remain separate from provider use; the engineering probe issues no
+Animator grant and supplies no native Bridge audio admission, live device qualification, hosted provider,
+streaming socket, resonance buffer, selectable Echo extension or Audio Coven.
 
 **Evidence**
 
 - **Source:** [Capability contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/capabilities.py), [Echo PCM inspection](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/echo/material.py), and [trusted custody consumer](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/echo/custody.py)
 - **Verification:** [Grant-boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_registry.py)
   and [dispatch-refusal tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_dispatcher_scenarios.py), plus [real-byte PCM inspection tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_echo_material.py), [Echo custody refusal](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_echo_custody.py), and [retained-byte lifecycle tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_artifact_custody.py)
+- **Source:** [Explicit speech profile](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/speech_probe.py), [bounded batch adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/speech_probe.py), and [finite recorder helper](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/voice_capture.py)
+- **Verification:** [Speech dialect and default-transport tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_speech_probe.py), [private CLI boundaries](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_voice_probe.py), and [recorder ownership tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_voice_capture.py)
+- **Source:** [Explicit finite player](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/voice_playback.py)
+- **Verification:** [Player ownership, expiry and cancellation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_voice_playback.py)
+- **Topic:** [Local qualification](./sepulcher/extensions/echo-local-probe.md)
 - **Law:** [Audio](./adr/37-audio.md)
 
 ### Artifact references and local custody {#artifact-reference-contract}
@@ -1696,6 +2263,9 @@ evaluation, model registration, rollback, or production promotion.
 promotion-request → target-owner-effect chain. The Creation workflow and Ouroboros map connect
 candidate work to separately governed evaluation, memory, training and body change; these are
 documented methods with no additional registered Pattern or coordinator.
+The Development bootstrap procedure orders operator-controlled work and incremental native
+qualification; its task queue, pilot limits and provider research are documentation, not an
+implemented scheduler, foreign-runtime host or autonomous development application.
 
 **Do not expect yet:** There is no Creation contract or process-local state-machine implementation,
 workspace, filesystem or command executor, database recovery, safe Forge, autonomous repair,
@@ -1709,39 +2279,84 @@ downstream-mirror cutover.
 
 - **Topic:** [Smith](./sepulcher/extensions/smith.md),
   [Creation](./sepulcher/extensions/weaver/creation.md), and
-  [Ouroboros](./sepulcher/extensions/weaver/ouroboros.md)
+  [Ouroboros](./sepulcher/extensions/weaver/ouroboros.md), with
+  [Development bootstrap](./sepulcher/extensions/weaver/development-bootstrap.md) and
+  [coding-runtime research](./sepulcher/extensions/weaver/coding-runtime-research.md)
 - **Law:** [SDLC](./adr/16-sdlc.md),
   [Packaging](./adr/17-packaging.md#forge-neutral-source-trust), and
   [Evolution](./adr/18-evolution.md#future-quorum-roster)
 
 ### Remote IAM {#remote-iam}
 
-**State:** Designed
+**State:** Partial
 
-**Proved now:** IAM law assigns remote identity and authorization to Ward rather than the loopback
-Sigil.
+**Proved now:** The bounded outbound peer profile separates actual local operator authentication,
+workload signing identity and enrolled immutable remote peer identity. Public credential versions,
+current exact object/action policy, key retirement and durable revocation fence the outgoing task
+and result-consumption path. Dedicated public-source classification requires its own current
+permission. A persisted row or reconstructed marker supplies no live authority. The profile has
+one control process and event loop.
 
-**Do not expect yet:** There is no credential-backed principal, remote session, object authority,
-delegation, revocation, tenant isolation, or audit contract.
+**Boundary — Not yet:** General incoming Ward, human accounts, remote sessions, delegated grants,
+tenant isolation, cross-process revocation and hostile same-UID containment remain Designed.
 
 **Evidence**
 
 - **Topic:** [Ward](./sepulcher/extensions/ward.md)
+- **Source:** [Peer authority](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/peer_authority.py) and [operator public-source contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/peer.py)
+- **Verification:** [Authority and lifecycle](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_intercom.py) and [durable peer custody](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_intercom_pg.py)
 - **Law:** [IAM](./adr/38-iam.md)
 
 ### A2A and Intercom {#a2a-intercom}
 
-**State:** Designed
+**State:** Partial
 
-**Proved now:** A2A law defines sovereign asynchronous labor, bounded public-task envelopes,
-verification, replay, expiry and revocation boundaries, and durable inbox/outbox ownership.
+**Proved now:** The explicit `outbound-public-text@1` service and operator session submit a sealed
+public task, retain the receiver's task identity, poll it and consume authenticated inline text
+under separate read authority. A2A `1.0.1` JSON-RPC and a required RFC 9421 Ed25519 profile bind the
+exact body, roles, peer, schema, physical attempt and pending request. Complete-wire gating uses
+numeric-pinned TLS, explicit CA/hostname, one finite deadline and current same-loop authority.
+Seven PostgreSQL tables retain enrollment, public credentials, source declarations, tasks,
+outbox, physical transmissions and permanent capacity. Every attempt charges one use, its complete
+application bytes and conservative network capacity before contact; observed bytes do not refund
+charges. An uncertain submit is never resent. Fresh authentication can reconcile a known foreign
+task after reconstruction. Local cancellation closes result adoption independently of foreign
+execution observations, and the first admitted terminal remains readable under current authority.
 
-**Do not expect yet:** There is no envelope, policy, or ledger implementation; peer/key custody,
-discovery, cryptographic verifier, transport, durable inbox/outbox, callback or artifact fetch,
-Run/Graph bridge, restart recovery, effect receipt, or interoperability profile.
+Manual qualification against official SDK `1.2.3` exercised actual asynchronous task dispatch,
+polling and cancellation with explicitly test-only signing middleware. Lost replies, altered body
+bytes and missing extension evidence retained unknown execution without another submit. Fifteen
+actual PostgreSQL tests cover concurrency, lost commit acknowledgement, restart, replay, retained
+custody, transactional migration and complete catalog parity. The maintained receipt binds a
+bounded source list; it does not claim a transitive source closure or general A2A certification.
+
+The opt-in `native-public-peer@1` lab now joins the shared RunEngine, serial Graph and PostgreSQL
+checkpoint/claim/delivery ledger. No-contact preparation precedes checkpoint and `AWAITING_PEER`;
+one exact correlated terminal or explicit local unknown/expiry disposition admits one successor.
+The immutable source, task, original expiry and Step/occurrence relation survive reconstruction,
+while live permission requires fresh authentication and explicit same-task reauthorization.
+Local cancellation closes adoption and awaits owned exchange/socket retirement; foreign execution
+uncertainty stays visible. Six actual SDK/PostgreSQL/process cases cover fresh-authority restart,
+post-claim/pre-wire process death without resubmit, credential rotation during a real Run lock
+wait, lost submit reply, revoked-peer local cancellation and blocked TLS-read retirement. Eleven
+native migration cases cover complete ORM catalog parity, refusal, locks and transactional rollback.
+The lab's delivery queue is process-owned; these trials do not qualify a SAQ broker.
+
+**Boundary — Not yet:** There is no incoming LychD A2A server, durable receiving inbox, discovery,
+callback, artifact fetch, streaming, private-input Cut transport,
+voice/Context anonymization, automatic fallback or normal-boot activation. An operator's public
+assertion is neither PII detection nor proof text was never pasted. Unsigned stock SDK routes
+cannot satisfy the required extension.
 
 **Evidence**
 
+- **Topic:** [Intercom operator session](./sepulcher/intercom.md)
+- **Source:** [Task service](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/intercom.py), [wire admission and HTTPS](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/intercom_http.py), [custody store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/intercom.py), and [operator entry](https://github.com/hexanomicon/lychd/blob/main/scripts/intercom_lab.py)
+- **Verification:** [Protocol and receipt](https://github.com/hexanomicon/lychd/tree/main/tests/unit/domain/intercom), [real cryptography and parser](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_intercom_http.py), [authority and lifecycle](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_intercom.py), [PostgreSQL custody](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_intercom_pg.py), and [migration](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_intercom_migrations_pg.py)
+- **Verification:** [Bounded manual peer receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/intercom/operator-public-source.json)
+- **Source:** [Native peer Run service](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/peer_runs.py), [Graph station](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/native_public_peer.py), and [explicit native lab](https://github.com/hexanomicon/lychd/blob/main/scripts/intercom_native_lab.py)
+- **Verification:** [Native ownership and reentry](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_peer_native_wait.py), [native authority and recovery](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_peer_runs.py), and [native migration](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_native_peer_migrations_pg.py)
+- **Verification:** [Bounded native peer receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/intercom/native-public-source.json), [receipt freshness](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/intercom/test_native_receipt.py), and [operator outcome projection](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_intercom_native_lab.py)
 - **Law:** [Agent-to-Agent](./adr/26-a2a.md)
 
 ### Toll economics and payments {#x402-payments}

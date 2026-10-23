@@ -1,0 +1,20 @@
+LychD Blockworld companion integrations
+
+Unofficial Minecraft integration. Neither Mojang nor Microsoft approves or is
+associated with this project.
+
+Publisher: LychD contributors
+Contact: hexanomicon@proton.me
+Source: https://github.com/hexanomicon/lychd
+Server bridge source: clients/minecraft
+Voice client source: clients/minecraft-voice
+
+Original LychD integration code is covered by MPL-2.0; the terms are included in
+META-INF/LICENSE. Before distributing a compiled mod, make its exact corresponding
+source revision available and identify it for recipients. A development build's
+version number alone does not identify that revision.
+
+This repository publishes integration source, not Minecraft or Horizon engine
+copies, game assets, speech weights, personal recordings or private profiles.
+Those components retain their own terms and must be obtained separately.
+The included Gradle wrapper retains its own embedded Apache-2.0 license.

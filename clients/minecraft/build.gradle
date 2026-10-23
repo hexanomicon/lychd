@@ -1,0 +1,62 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.18.4'
+}
+
+group = 'org.lychd'
+version = '0.1.0'
+
+repositories { mavenCentral() }
+
+dependencyLocking { lockAllConfigurations() }
+
+dependencies {
+    minecraft 'com.mojang:minecraft:26.3'
+    implementation 'net.fabricmc:fabric-loader:0.19.5'
+    implementation 'net.fabricmc.fabric-api:fabric-api:0.163.0+26.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.12.2'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+    withSourcesJar()
+}
+tasks.withType(JavaCompile).configureEach { options.release = 25 }
+test { useJUnitPlatform(); maxParallelForks = 1; maxHeapSize = '512m' }
+processResources {
+    inputs.property 'version', version
+    filesMatching('fabric.mod.json') { expand version: version }
+    from(rootProject.file('../../LICENSE')) { into 'META-INF' }
+    from(rootProject.file('../MINECRAFT-NOTICE.txt')) { into 'META-INF' }
+}
+
+// The test mod and its accessor are never part of the delivery jar.
+def controllerGameTest = providers.gradleProperty('controllerGameTest').map { it.toBoolean() }.getOrElse(false)
+def weatherGameTest = providers.gradleProperty('weatherGameTest').map { it.toBoolean() }.getOrElse(false)
+def clockGameTest = providers.gradleProperty('clockGameTest').map { it.toBoolean() }.getOrElse(false)
+if ([controllerGameTest, weatherGameTest, clockGameTest].count { it } > 1) {
+    throw new GradleException('Select exactly one controller, weather or clock GameTest profile')
+}
+def gameTestEntrypoint = clockGameTest ? 'org.lychd.companion.gametest.ClockGameTest' : weatherGameTest
+        ? 'org.lychd.companion.gametest.WeatherGameTest'
+        : 'org.lychd.companion.gametest.ControllerGameTest'
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = 'lychd_companion_gametest'
+        enableGameTests = controllerGameTest || weatherGameTest || clockGameTest
+        enableClientGameTests = false
+        clearRunDirectory = false
+    }
+}
+tasks.named(sourceSets.gametest.processResourcesTaskName) {
+    inputs.property 'gametest_entrypoint', gameTestEntrypoint
+    filesMatching('fabric.mod.json') { expand gametest_entrypoint: gameTestEntrypoint }
+}
+if (controllerGameTest || weatherGameTest || clockGameTest) loom.runs.gameTest {
+    // Reservations and weather are world-wide. Profiles never share an invocation/world.
+    def profile = clockGameTest ? 'clock' : weatherGameTest ? 'weather' : 'controller'
+    runDir layout.buildDirectory.dir("run/${profile}-gametest/${UUID.randomUUID()}").get().asFile.absolutePath
+    vmArgs '-Xmx1536m', '-XX:ActiveProcessorCount=2'
+}

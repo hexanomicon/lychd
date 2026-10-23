@@ -39,6 +39,7 @@ dependencies = [
     "click>=8.1.0",
     "dnspython>=2.8.0,<3",
     "h11>=0.16.0,<0.17",
+    "http-message-signatures==2.0.1", # fixed local lifecycle message-signature adapter
     "httpx>=0.28.1",
     "httpx2>=2.12.0,<3",
     "jinja2>=3.1.6",
@@ -54,6 +55,8 @@ dependencies = [
     "sqlalchemy>=2.0.53",
     "structlog>=24.4.0",
     "tomlkit>=0.13.3",
+    "typing-extensions==4.16.0", # signature package imports this without declaring it
+    "dbus-fast==5.2.0",
 ]
 
 [project.optional-dependencies]

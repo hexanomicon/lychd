@@ -867,6 +867,7 @@
   .chip[data-state="awaiting_hardware"],
   .chip[data-state="awaiting_consent"],
   .chip[data-state="awaiting_delegate"],
+  .chip[data-state="awaiting_peer"],
   .chip[data-state="admitted"],
   .chip[data-state="preparing"] {
     color: var(--color-frost);

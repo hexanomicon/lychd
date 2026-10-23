@@ -56,6 +56,10 @@ the resulting application or Suite a named operator promise.
 
 These studies develop application boundaries beyond the accepted Portfolio.
 
+[Reach connected work](reach/connected-work/index.md) proposes a successor to the public Discord
+contract for bounded Gmail, Discord and GitHub correspondence, optional WhatsApp, account onboarding,
+autonomous delivery policy and recovery. It does not broaden the existing Reach revision or deployment profiles.
+
 [Thorn](thorn/index.md) studies whitehat security casework: authorized assessment, bounded response
 during an attack, cooperative investigation, and supported reports and corrections. Monitoring
 supplies evidence; general system maintenance keeps its own owners.

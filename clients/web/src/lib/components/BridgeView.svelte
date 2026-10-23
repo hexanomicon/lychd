@@ -86,6 +86,7 @@
     "awaiting_hardware",
     "awaiting_consent",
     "awaiting_delegate",
+    "awaiting_peer",
     "cancelling",
     "done",
     "failed",

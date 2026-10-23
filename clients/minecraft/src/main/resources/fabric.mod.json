@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "lychd_companion",
+  "version": "${version}",
+  "name": "LychD Companion Bridge",
+  "description": "Opt-in loopback actuator for the experimental Blockworld companion lab. Unofficial Minecraft integration; neither Mojang nor Microsoft approves or is associated with this project.",
+  "license": "MPL-2.0",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "org.lychd.companion.LychdBridge"
+    ]
+  },
+  "mixins": [
+    "lychd.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": "0.19.5",
+    "minecraft": "26.3",
+    "java": ">=25",
+    "fabric-api": "0.163.0+26.3"
+  },
+  "authors": [
+    "LychD contributors"
+  ],
+  "contact": {
+    "sources": "https://github.com/hexanomicon/lychd",
+    "email": "hexanomicon@proton.me"
+  }
+}

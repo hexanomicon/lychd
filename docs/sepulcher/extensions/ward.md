@@ -11,8 +11,11 @@ Recognizing a speaker draws only the first mark of a salt circle. Current policy
 must close it around this exact effect. **Ward** is LychD's singular Core-coupled authority for
 caller authentication and authorization.
 
-Remote Ward is **Designed**, with its boundary owned by [State of
-Work](../../state-of-the-work.md#remote-iam). The implemented [local Sigil and scope
+The bounded outbound peer profile is **Partial**, with its boundary owned by [State of
+Work](../../state-of-the-work.md#remote-iam). [Intercom's operator session](../intercom.md)
+separates actual local operator authentication, workload signing identity and enrolled remote
+peer credentials. It checks current object/action policy before contact and result consumption;
+it provides no incoming remote login or human account system. The implemented [local Sigil and scope
 floor](../../state-of-the-work.md#local-sigil-authority) is **Partial**: protected contained requests
 must present the dedicated local HTTP Basic credential before receiving the fixed, secret-free
 `magus:*` Sigil. This possession check does not distinguish people. Scope guards and consent

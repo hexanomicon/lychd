@@ -83,6 +83,23 @@ and verifies its adoption through its own Evolution. A foreign pattern instead e
 candidate still passes through Evolution. Assimilation is therefore neither an upstream update nor
 an automatic contribution channel.
 
+### Reconcile concurrent contributors and recurring candidates
+
+Each contributor's candidate binds its admitted upstream/base and local input closure. Independent
+candidates may be developed concurrently in separate surfaces; integration is an attributable
+successor candidate. Verify that combined object rather than inferring compatibility from the
+individual branches' receipts. Base, dependency, configuration, schema or selected-extension
+changes invalidate the affected evidence and authorization. Neither an automated conflict repair
+nor a clean textual merge proves semantic compatibility.
+
+An idle-development coordinator may prepare candidates under SDLC admission but gains no
+source-selection vote, promotion credential or activation authority. Current branch, review and
+exact-object promotion procedure remains in
+[CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#branches-and-everyday-collaboration).
+Future quorum and target-owned activation retain their separate eligibility and recovery gates.
+Downstream adoption never silently overwrites operator changes or makes upstream maintainers
+responsible for repairing a separately governed lineage.
+
 ### Start the changed body as a new generation {#replace-the-generation-not-its-memory}
 
 A promoted Core or coupled extension change activates as a new Vessel process generation.

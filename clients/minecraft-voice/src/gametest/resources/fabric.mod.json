@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "lychd_voice_gametest",
+  "version": "0.1.0",
+  "name": "LychD explicit client control qualification fixture",
+  "environment": "client",
+  "license": "MPL-2.0",
+  "entrypoints": {
+    "fabric-client-gametest": ["org.lychd.voice.ClientControlGameTest"]
+  },
+  "mixins": ["lychd-voice-gametest.mixins.json"],
+  "depends": {
+    "lychd_voice": "*",
+    "fabric-client-gametest-api-v1": "*",
+    "fabricloader": "0.19.5",
+    "minecraft": "26.3",
+    "java": ">=25"
+  }
+}

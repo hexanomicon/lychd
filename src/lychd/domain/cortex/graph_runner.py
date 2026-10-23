@@ -11,11 +11,12 @@ from pydantic_graph.id_types import NodeID
 from pydantic_graph.step import NodeStep
 
 from lychd.domain.animation.errors import HardwareTransitionRequired
-from lychd.domain.cortex.execution_context import bind_occurrence, reset_occurrence
+from lychd.domain.cortex.execution_context import bind_occurrence, bind_step, reset_occurrence, reset_step
 from lychd.domain.cortex.graph import serial_graph_topology
 from lychd.domain.cortex.runs import ConsentPending, RunParked
 from lychd.domain.cortex.stasis import NodeSnapshot, PhylacteryProtocol
 from lychd.domain.delegation.signals import DelegatedAgentParked, DelegatedAgentPending
+from lychd.domain.intercom.native import PeerTaskParked, PeerTaskPending
 from lychd.domain.orchestration.journal import TransitionRecord, notify_transition
 
 if TYPE_CHECKING:
@@ -86,10 +87,11 @@ class NodeOccurrenceEvent:
     occurrence_id: str
     node_type: type[BaseNode[Any, Any, Any]]
     phase: Literal["entered", "settled", "waiting", "failed"]
-    wait_kind: Literal["hardware", "consent", "delegate"] | None = None
+    wait_kind: Literal["hardware", "consent", "delegate", "peer"] | None = None
     transition_request_id: str | None = None
     delegated_job_id: str | None = None
     delegated_runtime: str | None = None
+    peer_task_id: str | None = None
 
 
 def _extract_signal[T: BaseException](exc: BaseException, kind: type[T], *, max_depth: int = 5) -> T | None:
@@ -189,7 +191,7 @@ class GraphRunner[StateT: BaseModel]:
         signal_priority: Priority,
         on_stasis_enter: Callable[[], Awaitable[None]] | None = None,
         on_stasis_exit: Callable[[], Awaitable[None]] | None = None,
-        on_node_event: Callable[[NodeOccurrenceEvent], None] | None = None,
+        on_node_event: Callable[[NodeOccurrenceEvent], str | None] | None = None,
         on_transition_event: Callable[[TransitionRecord], None] | None = None,
         validate_state: Callable[[StateT], None] | None = None,
         validate_resume: Callable[[StateT, BaseNode[Any, Any, Any] | End[Any]], None] | None = None,
@@ -227,15 +229,16 @@ class GraphRunner[StateT: BaseModel]:
         occurrence_id: str,
         node: BaseNode[Any, Any, Any],
         phase: Literal["entered", "settled", "waiting", "failed"],
-        wait_kind: Literal["hardware", "consent", "delegate"] | None = None,
+        wait_kind: Literal["hardware", "consent", "delegate", "peer"] | None = None,
         transition_request_id: str | None = None,
         delegated_job_id: str | None = None,
         delegated_runtime: str | None = None,
-    ) -> None:
+        peer_task_id: str | None = None,
+    ) -> str | None:
         """Project an occurrence without letting observer failure change execution truth."""
         if self._on_node_event is not None:
             try:
-                self._on_node_event(
+                return self._on_node_event(
                     NodeOccurrenceEvent(
                         occurrence_id=occurrence_id,
                         node_type=type(node),
@@ -244,6 +247,7 @@ class GraphRunner[StateT: BaseModel]:
                         transition_request_id=transition_request_id,
                         delegated_job_id=delegated_job_id,
                         delegated_runtime=delegated_runtime,
+                        peer_task_id=peer_task_id,
                     )
                 )
             except Exception:  # projection sinks cannot decide Run outcomes
@@ -254,6 +258,8 @@ class GraphRunner[StateT: BaseModel]:
                     phase=phase,
                     exc_info=True,
                 )
+
+        return None
 
     def _transition_event(self, trace: TransitionTrace) -> None:
         """Project a Graph-owned transition phase through the shared observer boundary."""
@@ -327,8 +333,9 @@ class GraphRunner[StateT: BaseModel]:
                     while not isinstance(next_node, End):
                         active_node = next_node
                         occurrence_id = str(uuid4())
-                        self._node_event(occurrence_id=occurrence_id, node=active_node, phase="entered")
+                        step_id = self._node_event(occurrence_id=occurrence_id, node=active_node, phase="entered")
                         occurrence_token = bind_occurrence(occurrence_id)
+                        step_token = bind_step(step_id)
                         try:
                             async with self.persistence.record_run(snapshot.id):
                                 event = await graph_run.next(tasks)
@@ -349,6 +356,7 @@ class GraphRunner[StateT: BaseModel]:
                                 snapshot = await self.persistence.snapshot_node(graph_run.state, next_node)
                                 tasks = [task]
                         finally:
+                            reset_step(step_token)
                             reset_occurrence(occurrence_token)
                         self._node_event(occurrence_id=occurrence_id, node=active_node, phase="settled")
                         active_node = None
@@ -401,6 +409,36 @@ class GraphRunner[StateT: BaseModel]:
                                 delegated_runtime=delegated.job.runtime,
                             )
                         return DelegatedAgentParked(job=delegated.job)
+
+                    peer = _extract_signal(exc, PeerTaskPending)
+                    if peer is not None and active_node is not None:
+                        from lychd.agents.workflows.base import PeerTaskNode
+
+                        if not isinstance(active_node, PeerTaskNode):
+                            msg = "Only a PeerTaskNode can suspend a native peer task."
+                            raise ValueError(msg) from exc
+                        if (
+                            getattr(graph_run.state, "peer_task", None) != peer.ref
+                            or getattr(graph_run.state, "run_id", None) != peer.ref.run_id
+                            or (self._run_id is not None and peer.ref.run_id != self._run_id)
+                        ):
+                            msg = "Peer suspension does not match its checkpoint task owner."
+                            raise ValueError(msg) from exc
+                        try:
+                            await self.persistence.rehydrate_stasis(graph_run.state, active_node)
+                        except BaseException:
+                            if occurrence_id is not None:
+                                self._node_event(occurrence_id=occurrence_id, node=active_node, phase="failed")
+                            raise
+                        if occurrence_id is not None:
+                            self._node_event(
+                                occurrence_id=occurrence_id,
+                                node=active_node,
+                                phase="waiting",
+                                wait_kind="peer",
+                                peer_task_id=str(peer.ref.task_id),
+                            )
+                        return PeerTaskParked(ref=peer.ref)
 
                     signal = _extract_signal(exc, HardwareTransitionRequired)
 

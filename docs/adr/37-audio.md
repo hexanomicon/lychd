@@ -22,9 +22,15 @@ bounded PCM subset below. The separate explicit local Reliquary adapter can reta
 bytes in quarantine. A trusted Echo consumer reruns the inspector, requires separate admission,
 and reads under current authority. These unregistered helpers supply no capture or speech path.
 
-LychD cannot capture, upload, transcode, transport, or play audio bytes. Bridge does not forward
-audio modality into dispatch. No credential-backed audio admission, speech timeline, streaming
-transport, working STT/TTS adapter, selectable Echo extension, or Audio Coven ships. [State of
+An explicit engineering probe can inspect and send canonical WAV to pinned local audio.cpp or
+whisper.cpp transcription bindings, retain attributed transcription or generated audio.cpp WAV,
+and optionally capture a finite
+utterance through a separately invoked Linux recorder helper. Explicit Horizon and companion lab
+entries can select bounded local playback after capture, with owned player-group settlement and
+distinct player-exit facts. These helpers issue no native speech grant or playback receipt.
+Bridge does not forward audio modality into dispatch. No
+credential-backed audio admission, speech timeline, streaming transport, native STT/TTS grant,
+selectable Echo extension, or Audio Coven ships. [State of
 Work](../state-of-the-work.md#audio-admission) owns this boundary and the
 [local custody limits](../state-of-the-work.md#artifact-reference-contract).
 
@@ -67,9 +73,13 @@ The first planned local engine profile is **audio.cpp** behind the bounded OpenA
 subset. It is one initial runtime choice, not a new universal audio abstraction and not evidence
 that every audio.cpp family works. Its Rune must pin the runtime revision, model family,
 checkpoint and digest, backend and device, declared and verified languages, license, and the exact
-`stt` or `tts` behavior admitted by a bake. The first record-and-send slice admits no second local
-speech runtime and no automatic runtime fallback. Echo owns the current candidate models and
-promotion criteria; delivery remains Not yet.
+`stt` or `tts` behavior admitted by a bake. The engineering qualification probe may explicitly
+select a separate pinned whisper.cpp transcription binding while retaining audio.cpp synthesis.
+Each operation owns its endpoint, runtime revision, dialect, model identity and language policy;
+a common HTTP route does not merge their provenance. Existing single-runtime profiles retain
+their original identity. This additional probe binding grants no native Ear or Voice admission
+and permits no automatic runtime fallback. Echo owns the current candidate models and promotion
+criteria; native delivery remains Not yet.
 
 Language is neither a host-global switch nor a property inferred from the engine. An explicit
 request language wins, then the admitted Principal or Persona preference, then model-supported
@@ -92,6 +102,14 @@ or Translation an ambient feature. Language Edition may alter only declared lang
 master; Broadcast retains editorial recutting, final assembly, and publication.
 
 ## Capture and custody
+
+An explicit engineering qualification probe may exercise the selected local runtime before a
+native Ear or Voice is admitted. Its fixed literal-loopback dialect, model identity, bounded
+inputs and outputs, private external workspace and cancellation limits must be explicit. Such a
+probe issues no Animator grant, registers no ambient provider or extension, and cannot establish
+Bridge audio admission, Resonance Session delivery or remote-egress authority. It exists to
+measure the exact binary/model pair and supply evidence for those later boundaries. The
+[local qualification contract](../sepulcher/extensions/echo-local-probe.md) owns its operation.
 
 Capture authority is explicit, visible, time-bounded, and revocable. Consent to one utterance is
 not permanent microphone access; device indicators and server state must agree whether capture is

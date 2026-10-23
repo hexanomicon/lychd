@@ -1,0 +1,42 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.18.4'
+}
+group = 'org.lychd'
+version = '0.1.0'
+repositories { mavenCentral() }
+dependencyLocking { lockAllConfigurations() }
+dependencies {
+    minecraft 'com.mojang:minecraft:26.3'
+    implementation 'net.fabricmc:fabric-loader:0.19.5'
+    implementation 'net.fabricmc.fabric-api:fabric-api:0.163.0+26.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.12.2'
+}
+java {
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+    withSourcesJar()
+}
+tasks.withType(JavaCompile).configureEach { options.release = 25 }
+test { useJUnitPlatform(); maxParallelForks = 1; maxHeapSize = '512m' }
+processResources {
+    inputs.property 'version', version
+    filesMatching('fabric.mod.json') { expand version: version }
+    from(rootProject.file('../../LICENSE')) { into 'META-INF' }
+    from(rootProject.file('../MINECRAFT-NOTICE.txt')) { into 'META-INF' }
+}
+
+// Explicit local qualification fixture; neither its classes nor its runs enter the default artifact.
+def clientControlGameTest = providers.gradleProperty('clientControlGameTest')
+        .map { it.toBoolean() }.getOrElse(false)
+if (clientControlGameTest) {
+    fabricApi {
+        configureTests {
+            createSourceSet = true
+            modId = 'lychd_voice_gametest'
+            enableGameTests = false
+            enableClientGameTests = true
+            eula = true
+        }
+    }
+}

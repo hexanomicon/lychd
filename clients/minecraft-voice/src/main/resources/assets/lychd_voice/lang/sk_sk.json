@@ -1,0 +1,6 @@
+{
+  "key.category.lychd_voice.controls": "LychD lokálny hlas",
+  "key.lychd_voice.record": "Vyžiadať konečný lokálny záznam hlasu (predvolene bez klávesu)",
+  "key.lychd_voice.stop": "Vyžiadať nezávislý stop (pre menu použite funkčný kláves)",
+  "key.lychd_voice.talk": "Držať pre lokálny záznam hlasu; uvoľniť na spracovanie (predvolene bez klávesu)"
+}

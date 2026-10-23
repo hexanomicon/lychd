@@ -13,4 +13,9 @@ A mention in the Necropolis wakes one bounded turn. Reach admits the event, form
 
 Reach stops before cross-place identity/continuity, moderation, ambient surveillance, attachments, DMs, shell, deployment effects, and platform-settled consent. [Avatar](../avatar/index.md) may bind presentation, while Reach retains the event, audience, turn, delivery, and receipt. One result gives no next projection its authority.
 
+The [connected-work study](connected-work/index.md) proposes a successor for Gmail, Discord and
+GitHub correspondence, plus optional WhatsApp business messaging and a separate owner–agent probe.
+It includes private accounts, reviewed or preauthorized sends, onboarding and updates while
+preserving the current public Discord contract.
+
 [Composition Portfolio](../index.md) · [Workflow](../../adr/28-workflow.md)
