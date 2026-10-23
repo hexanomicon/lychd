@@ -39,6 +39,9 @@ The higher art of **[Assimilation](docs/adr/35-assimilation.md)** studies foreig
 
 If you came to build, follow the **[Map](docs/map.md)** and **[enter the Forge](CONTRIBUTING.md)**.
 
+The **[Metamorphosis roadmap](ROADMAP.md)** follows the founding year through five books,
+beginning with the shared agentic laboratory and its first public encounters.
+
 ## 🚩 Local sovereignty — a rebellion against digital feudalism
 
 The cloud isn’t a service; **it’s a prison** where your data is the currency and your intelligence is leased at the whims of monopolistic overlords. While they build walls to keep you in, LychD builds a foundation to set you free.

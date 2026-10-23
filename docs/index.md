@@ -71,6 +71,9 @@ and carry its lesson into the next creation. These paths need no installation.
 To contribute, follow one request through the **[Map](./map.md)**, then use the
 [contribution guide](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md).
 
+The **[Metamorphosis roadmap](./roadmap.md)** follows the founding year through five books,
+with the complete weekly quotations and the current Genesis plan.
+
 !!! tip "The Tongue of the Construct"
     Keep the **[Lexicon](./lexicon/index.md)** at hand to decipher terms like _Soulstone_,
     _Quadlet_, and _Autopoiesis_.

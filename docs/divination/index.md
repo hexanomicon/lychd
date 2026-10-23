@@ -33,3 +33,6 @@ Beside the path, **[Correspondence](./correspondence.md)** brings modern brain a
 research into conversation with inherited maps of mind. It turns a functional rhyme into a
 question that an intervention could sharpen. Read it alongside a stage when you want to
 follow that stage’s research correspondences further.
+
+The **[Metamorphosis roadmap](../roadmap.md)** carries the project's founding-year story:
+five books, Python methods and complete weekly quotations, with the practical Genesis direction.

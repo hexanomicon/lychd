@@ -112,12 +112,14 @@ and registers; it does not compete for topology law.
 | `README.md` | Public foyer: maturity and next act. |
 | `CONTRIBUTING.md` | Setup, commands, rules, and conventions. |
 | `AGENTS.md` | Stable agent entry and progressive router. |
+| `ROADMAP.md` | Short entry to the owning public roadmap. |
 
 | Published surface | Office |
 | --- | --- |
 | `docs/index.md` | Prophecy and reader paths. |
 | `docs/adr/**` | Architectural law. |
 | State of Work | Shared whole-system delivery boundary and evidence envelope. |
+| `docs/roadmap.md` | Public direction, founding-year story and orienting weekly horizon. |
 | Lexicon | Canonical meanings. |
 | Compositions | Native reference reusable application contracts, Product boundaries, and worked examples; local delivery notes only where needed for interpretation. |
 | Sepulcher | Anatomy, operation, and recovery. |
@@ -148,6 +150,7 @@ scope discovery to workflow selection and a bounded task handoff.
 | --- | --- |
 | Architecture | Covenant |
 | Delivery | State of Work |
+| Direction and founding-year story | Roadmap |
 | Terms | Lexicon |
 | Operation and recovery | Sepulcher or Altar topic |
 | Application contract | Composition |
