@@ -232,9 +232,11 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
         try:
             result = await self.service.run_event(event, interaction.channel)
             if result is not None:
-                await self.service.rest.edit_interaction_original(
+                outcome = await self.service.rest.edit_interaction_original(
                     interaction.token, result.text, event_id=str(interaction.id)
                 )
+                if outcome.status != "succeeded":
+                    diagnostic("request_failed")
         except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError):
             diagnostic("request_failed")
 
@@ -249,12 +251,14 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
 
     @app_commands.command(description="Show this operator connection's readiness")
     async def status(self, interaction: discord.Interaction) -> None:
+        """Report admitted connection availability without issuing native work."""
         event = event_from_interaction(interaction, self.service.policy, question="status", action="answer_docs")
-        text = (
-            "Reach operator: dokumentačný worker je pripravený."
-            if self.service.eligible(event)
-            else "Prístup odmietnutý."
-        )
+        if not self.service.eligible(event):
+            text = "Prístup odmietnutý."
+        elif self.service.worker.available:
+            text = "Reach operator: dokumentačný worker je pripravený."
+        else:
+            text = "Reach operator: dokumentačný worker nie je dostupný."
         await interaction.response.send_message(text, ephemeral=True)
 
     @app_commands.command(name="admin-inspect", description="Inspect server setup; administration applies locally")
@@ -267,7 +271,11 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
         try:
             snapshot = await snapshot_guild(self.service.rest)
             text = f"Server má {len(snapshot.roles)} rolí a {len(snapshot.channels)} kanálov. Zmeny sa aplikujú lokálnym plánom."
-            await self.service.rest.edit_interaction_original(interaction.token, text, event_id=str(interaction.id))
+            outcome = await self.service.rest.edit_interaction_original(
+                interaction.token, text, event_id=str(interaction.id)
+            )
+            if outcome.status != "succeeded":
+                diagnostic("inspection_failed")
         except (ValueError, OSError, TimeoutError, DiscordRestError):
             diagnostic("inspection_failed")
 
@@ -279,7 +287,11 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
         try:
             result = await self.service.run_event(event, message.channel)
             if result is not None:
-                await self.service.rest.send_message(event.conversation_id, result.text, event_id=event.event_id)
+                outcome = await self.service.rest.send_message(
+                    event.conversation_id, result.text, event_id=event.event_id
+                )
+                if outcome.status != "succeeded":
+                    diagnostic("message_failed")
         except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError):
             diagnostic("message_failed")
 

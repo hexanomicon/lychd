@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 from unittest.mock import AsyncMock, Mock
 
 import discord
@@ -13,13 +14,14 @@ from lychd.compositions.reach.operator_wire import ReachHistoryEntry, ReachWorke
 from lychd.interface.discord.live import (
     PipeWorker,
     ReachBot,
+    ReachCog,
     ReachService,
     event_from_interaction,
     event_from_message,
     startup_error_code,
 )
 from lychd.interface.discord.operator_io import load_policy, read_token
-from lychd.interface.discord.rest import DiscordRestError
+from lychd.interface.discord.rest import DiscordRestError, EffectResult
 from lychd.interface.discord.schemas import DiscordPolicy
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -59,6 +61,7 @@ def ready() -> ReachWorkerReady:
 def service() -> ReachService:
     worker = Mock()
     worker.ready = ready()
+    worker.available = True
     worker.request = AsyncMock(
         return_value=ReachWorkerResult(
             request_id="request",
@@ -240,3 +243,88 @@ async def test_local_frame_rejection_does_not_poison_worker_connection() -> None
     with pytest.raises(ValueError, match="output_limit"):
         await worker.request(observed, oversized)
     assert worker.available
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("available", [True, False])
+async def test_status_reports_worker_availability_without_requesting_work(*, available: bool) -> None:
+    configured = service()
+    configured.worker.available = available
+    observed = message()
+    interaction = Mock(spec=discord.Interaction)
+    interaction.application_id = 111111111111111111
+    interaction.guild_id = observed.guild.id
+    interaction.channel_id = observed.channel.id
+    interaction.id = observed.id
+    interaction.user = observed.author
+    interaction.created_at = NOW
+    interaction.response = Mock(send_message=AsyncMock())
+    cog = ReachCog(configured)
+
+    callback = cast("Callable[[ReachCog, discord.Interaction], Awaitable[None]]", cog.status.callback)
+    await callback(cog, interaction)
+
+    expected = (
+        "Reach operator: dokumentačný worker je pripravený."
+        if available
+        else "Reach operator: dokumentačný worker nie je dostupný."
+    )
+    interaction.response.send_message.assert_awaited_once_with(expected, ephemeral=True)
+    cast("AsyncMock", configured.worker.request).assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("path", ["ask", "inspect", "mention"])
+@pytest.mark.parametrize("status", ["succeeded", "rejected", "unknown"])
+async def test_effect_outcomes_report_failure_without_retrying(
+    path: Literal["ask", "inspect", "mention"],
+    status: Literal["succeeded", "rejected", "unknown"],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configured = service()
+    configured.admin_users = frozenset({"555555555555555555"})
+    outcome = EffectResult(status=status)
+    edit = AsyncMock(return_value=outcome)
+    send = AsyncMock(return_value=outcome)
+    configured.rest.edit_interaction_original = edit
+    configured.rest.send_message = send
+    snapshot = AsyncMock(return_value=Mock(roles=(), channels=()))
+    monkeypatch.setattr("lychd.interface.discord.live.snapshot_guild", snapshot)
+    observed = message()
+    interaction = Mock(spec=discord.Interaction)
+    interaction.application_id = 111111111111111111
+    interaction.guild_id = observed.guild.id
+    interaction.channel_id = observed.channel.id
+    interaction.channel = observed.channel
+    interaction.id = observed.id
+    interaction.user = observed.author
+    interaction.created_at = NOW
+    interaction.token = "synthetic-interaction-token"  # noqa: S105 - inert interaction fixture
+    interaction.response = Mock(defer=AsyncMock())
+    cog = ReachCog(configured)
+
+    if path == "mention":
+        await cog.on_message(observed)
+        send.assert_awaited_once()
+        edit.assert_not_awaited()
+        code = "message_failed"
+    elif path == "inspect":
+        inspect_callback = cast(
+            "Callable[[ReachCog, discord.Interaction], Awaitable[None]]", cog.admin_inspect.callback
+        )
+        await inspect_callback(cog, interaction)
+        snapshot.assert_awaited_once()
+        edit.assert_awaited_once()
+        send.assert_not_awaited()
+        code = "inspection_failed"
+    else:
+        ask_callback = cast("Callable[[ReachCog, discord.Interaction, str], Awaitable[None]]", cog.ask.callback)
+        await ask_callback(cog, interaction, "extensions")
+        edit.assert_awaited_once()
+        send.assert_not_awaited()
+        code = "request_failed"
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ("" if status == "succeeded" else f"reach_discord:{code}\n")
