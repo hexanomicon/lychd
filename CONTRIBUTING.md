@@ -241,7 +241,8 @@ contracts, release archive checks, container server policy, operator control, fa
 deletion previews, credential and contributed-secret checks, init binding-site refusal,
 animation/dispatch/orchestration, core Run and delegated-job logic, extensions, agents and web contracts,
 Scout destination/parser/supervisor contracts and qualification-receipt freshness,
-plus configuration, extension contribution, reconstructed Bridge resume, and the inactive Blockworld
+plus configuration, extension contribution, reconstructed Bridge resume, Reach operator policy,
+Gateway/administration fixtures and supervisor custody, and the inactive Blockworld
 placement workflow.
 It runs in the explicit OCI check image with in-process substitutes. The host needs the OCI
 engine to build and launch that image; ordinary test code receives no daemon socket, running

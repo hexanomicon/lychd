@@ -1,0 +1,14 @@
+FROM ghcr.io/astral-sh/uv:0.13.0 AS uv
+FROM python:3.14.8-slim-bookworm
+COPY --from=uv /uv /usr/local/bin/uv
+RUN groupadd --gid 1000 edge && useradd --uid 1000 --gid 1000 --create-home edge
+ENV UV_PYTHON_DOWNLOADS=0 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/opt/edge/.venv \
+    PATH=/opt/edge/.venv/bin:$PATH PYTHONPATH=/app/src PYTHONDONTWRITEBYTECODE=1
+WORKDIR /opt/edge
+COPY clients/discord/pyproject.toml clients/discord/uv.lock ./
+RUN uv sync --locked --no-dev
+COPY scripts/generate_python_third_party_notices.py /opt/edge/generate_notices.py
+RUN /opt/edge/.venv/bin/python /opt/edge/generate_notices.py --output /opt/edge/PYTHON_THIRD_PARTY_NOTICES.txt
+COPY --chown=edge:edge src /app/src
+USER edge
+ENTRYPOINT ["python", "-m", "lychd.interface.discord.live"]

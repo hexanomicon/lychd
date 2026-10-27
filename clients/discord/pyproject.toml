@@ -1,0 +1,13 @@
+[project]
+name = "lychd-discord-edge"
+version = "0.1.0"
+description = "Credential-isolated Discord operator edge for Reach"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+  "discord.py==2.7.1",
+  "httpx==0.28.1",
+  "pydantic==2.14.0",
+]
+
+[tool.uv]
+package = false

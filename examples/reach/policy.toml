@@ -1,0 +1,25 @@
+# Synthetic ids only. Copy this outside the checkout and replace every id.
+# This policy never contains a bot token and does not activate a connected bot.
+schema_version = 1
+application_id = "111111111111111111"
+bot_user_id = "222222222222222222"
+guild_id = "333333333333333333"
+allowed_channel_ids = ["444444444444444444"]
+allowed_triggers = ["mention", "slash"]
+event_ttl_seconds = 300
+max_question_chars = 2000
+context_message_limit = 0
+context_max_age_seconds = 600
+
+# First matching user-or-role rule wins, including denial of a missing action.
+[[rules]]
+name = "owner"
+user_ids = ["555555555555555555"]
+role_ids = []
+actions = ["answer_docs"]
+
+[[rules]]
+name = "developers"
+user_ids = []
+role_ids = ["666666666666666666"]
+actions = ["answer_docs"]

@@ -45,6 +45,15 @@ python scripts/generate_python_third_party_notices.py \
   --forbid-distribution psycopg-binary
 ```
 
+## Optional Discord Edge Environment
+
+The separately locked Discord operator edge under `clients/discord/` installs discord.py 2.7.1,
+HTTPX and Pydantic with their dependencies. Its image retains the installed distributions'
+license material and generates `/opt/edge/PYTHON_THIRD_PARTY_NOTICES.txt` from that exact
+environment with the same notice generator used above. This inventory belongs to the optional
+edge image; the production Vessel does not install the Discord SDK. Core development checks
+install the SDK only to exercise the edge contract.
+
 ## Optional Music Engineering Environment
 
 The `music-probe` development group installs DawDreamer 0.9.0 and NumPy from the lockfile; it is

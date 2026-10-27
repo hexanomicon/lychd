@@ -43,6 +43,8 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/system/services/test_scout_workflow.py tests/codex/test_local_access.py \
 	tests/unit/domain/intercom tests/unit/system/services/test_intercom.py \
 	tests/unit/cli/test_intercom_lab.py \
+	tests/unit/interface tests/unit/cli/test_reach_prepare.py \
+	tests/unit/cli/test_reach_worker.py tests/unit/cli/test_reach_operator.py \
 	tests/unit/system/services/test_intercom_http.py \
 	tests/unit/domain/test_artifact_custody.py tests/unit/domain/test_evolution.py \
 	tests/unit/domain/animation tests/unit/domain/cortex tests/unit/domain/delegation \

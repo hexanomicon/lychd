@@ -95,6 +95,9 @@ nav:
           - blockworld/continuity.md
       - Reach:
           - reach/index.md
+          - reach/preparation.md
+          - reach/architecture.md
+          - reach/operator.md
           - reach/habitat.md
           - reach/turn.md
           - Deployment profiles:

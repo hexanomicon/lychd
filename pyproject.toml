@@ -75,6 +75,7 @@ docs = [
     "zensical"
 ]
 test = [
+  "discord.py==2.7.1", # exact optional Discord edge contract, exercised only by development checks
   "pytest",
   "pytest-asyncio",
   "pytest-xdist",

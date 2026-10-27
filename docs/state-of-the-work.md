@@ -1866,6 +1866,26 @@ shared JDK 17 toolchain checks. ViewModel and instrumented Activity tests are au
 input batches before recomposition and lifecycle-bound expiry sampling; this combined checkout
 has not yet been qualified with an Android SDK, emulator or handset.
 
+Reach now has an effect-free preparation foundation: strict provider-neutral account, subject,
+group and conversation policy, ordered request rules, content-free refusals and an explicit
+`reach.prepare@1` native Graph. Its Discord interface compiles non-secret TOML and normalizes
+selected guild mentions and commands before Intent creation. An offline helper validates policy
+and previews an installation URL. Portable fixtures pass through real Run admission, worker and
+Graph with empty guest scopes for both Discord-shaped and Telegram-shaped observations; the latter
+proves shared preparation, not a Telegram adapter. The preparation profile is absent from normal
+application assembly and does not implement the published public Discord conversation contract.
+
+The separate Discord operator development profile adds an explicitly started SDK edge and an
+OCI-only native documents worker. Shared eligibility precedes real memory Run admission,
+serial Graph execution and exact settled-turn lookup. Bounded public Git-blob exports produce
+deterministic cited search excerpts, with optional bounded context excerpts and no model call.
+The host harness pins separate images, relays bounded private standard streams, and retires both
+peers after failure or EOF; neither child receives an engine socket, checkout or the other's
+credentials. A local server setup tool derives expiring snapshot-bound plans for roles,
+categories, channels and explicit-id patches. Single-attempt REST and content-free fsynced effect
+records fence uncertainty across restarts. Source tests cover policy, protocol, native execution,
+SDK registration, plan ordering, concurrent custody, expiry, reconciliation and no blind retry.
+
 **Boundary — Not yet:** Creation's one application selector supplies no general Composition or
 Product catalogue, shared store, Suite execution or application scheduler. Other Portfolio members
 have no domain/effect path enabled in normal application assembly. Blockworld's
@@ -1891,6 +1911,14 @@ adapters, processing records, executable Patterns, or Memory/Identity handoffs.
 [Accounting Office](./compositions/accounting-office/index.md) also remains a candidate study:
 its proposed mail/bank ports, entity books, jurisdiction profiles, privacy workflow, and accounting
 Patterns establish no implementation, live account access, tax filing, or supported-country claim.
+The public Reach contract still supplies no default SDK connection, Ward enrollment, durable
+application turn/outbox, recovery or deployable home/VPS profile. The explicit operator profile
+has no model-generated answer, persistent native history, automatic restart, installed service,
+qualified live Discord session or actual server-setup receipt. A new worker generation refuses
+older events and loses its memory Runs; its transport journal is not Phylactery. Its reviewed
+local admin commands are separate from Discord chat and do not add native authority. Concurrent
+Discord changes can race non-atomic remote effects; observed mismatches stop further writes.
+Public history/media and production deployment acceptance remain separate contract work.
 [Reach connected work](./compositions/reach/connected-work/index.md) proposes a successor to the
 public Discord contract for Gmail, Discord and GitHub correspondence, plus optional WhatsApp business
 messaging and a separate owner–agent probe. Its account lifecycle, provider profiles, delivery policy
@@ -1908,6 +1936,12 @@ physical devices or every Android version allowed by the declared minimum SDK.
 
 **Evidence**
 
+- **Source:** [Shared Reach preparation](https://github.com/hexanomicon/lychd/tree/main/src/lychd/compositions/reach), [Discord interface](https://github.com/hexanomicon/lychd/tree/main/src/lychd/interface/discord), and [offline helper](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_prepare.py)
+- **Verification:** [Policy and native Graph cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach.py), [Discord wire cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_events.py), [configuration compilation](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_policy.py), and [offline CLI cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_prepare.py)
+- **Topic:** [Reachy preparation](./compositions/reach/preparation.md) and [provider-neutral boundary](./compositions/reach/architecture.md)
+- **Source:** [Native documents score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/documents_workflow.py), [OCI worker](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_worker.py), [Discord edge](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/live.py), [local administration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/admin.py), [REST effect journal](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/rest.py), and [operator supervisor](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_operator.py)
+- **Verification:** [Native search cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_documents.py), [worker protocol](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_worker.py), [supervisor custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_operator.py), [SDK edge cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_live.py), [administration plans](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_admin.py), and [single-attempt effects](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_rest.py)
+- **Topic:** [Discord operator profile](./compositions/reach/operator.md)
 - **Source:** [Companion native score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion.py), [operator session](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_session.py), [HTTP effect adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_bridge.py), [voice/text entry](https://github.com/hexanomicon/lychd/blob/main/scripts/companion_lab.py), and [Fabric delivery client](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft)
 - **Source:** [Reviewed dialogue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_dialogue.py), [private recipe store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/companion_memory.py), and [inactive Dump & Search score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_search.py)
 - **Verification:** [Dialogue/recipe cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_dialogue.py), [console admission](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_companion_dialogue.py), [source-only PostgreSQL adapter and migration parity](https://github.com/hexanomicon/lychd/blob/main/tests/unit/db/test_companion_memory.py), and [injected catalogue workflow](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_search.py). These use offline substitutes. Live recipe persistence/migration and voice turns remain unqualified; the search score supplies no live game catalogue, foreign subagent, structure placement or summon adapter.

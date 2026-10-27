@@ -1,0 +1,7 @@
+README.md
+CONTRIBUTING.md
+docs/index.md
+docs/summoning.md
+docs/sepulcher/extensions/authoring.md
+docs/adr/05-extensions.md
+docs/state-of-the-work.md

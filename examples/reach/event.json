@@ -1,0 +1,15 @@
+{
+  "platform": "discord",
+  "account_id": "111111111111111111",
+  "event_id": "777777777777777777",
+  "space_id": "333333333333333333",
+  "conversation_id": "444444444444444444",
+  "subject_id": "555555555555555555",
+  "group_ids": [],
+  "is_automated": false,
+  "mention_subject_ids": ["222222222222222222"],
+  "trigger": "mention",
+  "action": "answer_docs",
+  "question": "Where is the extension authoring guide?",
+  "occurred_at": "2026-10-27T00:00:00Z"
+}
