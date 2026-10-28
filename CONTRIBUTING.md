@@ -150,10 +150,13 @@ does not close an issue on its own.
 ## Grow into shared stewardship
 
 Core and extension developers share a path into maintainership: contribute useful work, preserve
-compatibility, review changes, and discuss concerns with the community. The shared Discord is a
-place for that ongoing conversation; record accepted decisions and their evidence in the
-repository so others can follow and challenge them. Contributions remain welcome through GitHub
-without a Discord account.
+compatibility, review changes, and discuss concerns with the community. Use the shared Discord for
+conversation, help and working threads; use [GitHub Discussions](https://github.com/hexanomicon/lychd/discussions)
+for proposals, questions and showcases that should remain easy to find. Issues track bugs and
+concrete implementation tasks; an open-ended idea can start in Discussions without making every
+small fix pass through a separate discussion. Record accepted decisions and their evidence in the
+owning repository documentation, with links to the relevant pull request or commit so others can
+follow and challenge them. Contributions remain welcome through GitHub without a Discord account.
 
 Maintainer responsibility follows demonstrated work and an explicit scope, independently of
 employment or founding status. There is no fixed-size inner circle to join. The future

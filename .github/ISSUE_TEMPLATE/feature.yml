@@ -1,9 +1,10 @@
-name: Feature proposal
-description: Propose a useful behavior and a bounded first step.
+name: Feature or improvement
+description: Track a concrete change and a bounded first step.
 body:
   - type: markdown
     attributes:
       value: |
+        Explore open-ended proposals in [Ideas](https://github.com/hexanomicon/lychd/discussions/categories/ideas); use this form for a concrete change you can describe and scope.
         See the [contribution guide](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md) and [public contribution roadmap](https://github.com/hexanomicon/lychd/issues/52).
         Issues are public. Do not include credentials, private data or sensitive vulnerability details.
   - type: textarea
@@ -17,7 +18,7 @@ body:
     id: outcome
     attributes:
       label: Desired behavior
-      description: Describe an observable outcome or example that would show the proposal works.
+      description: Describe an observable outcome or example that would show the change works.
     validations:
       required: true
   - type: textarea

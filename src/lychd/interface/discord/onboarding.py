@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Self
 
 import discord
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lychd.interface.discord.rest import DiscordRest, DiscordRestError, EffectResult
 from lychd.interface.discord.schemas import DiscordId
@@ -33,10 +33,12 @@ class OnboardingProfile(BaseModel):
     panel_message_id: DiscordId
     magus_role_id: DiscordId
     bot_role_id: DiscordId
+    elevated_human_role_ids: tuple[DiscordId, ...] = Field(default=(), max_length=2)
 
     @model_validator(mode="after")
     def separate_roles(self) -> Self:
-        if self.magus_role_id == self.bot_role_id or self.guild_id in {self.magus_role_id, self.bot_role_id}:
+        roles = (self.magus_role_id, self.bot_role_id, *self.elevated_human_role_ids)
+        if len(set(roles)) != len(roles) or self.guild_id in roles:
             msg = "onboarding_role_binding"
             raise ValueError(msg)
         return self
@@ -127,12 +129,22 @@ class OnboardingService:
             and message.webhook_id is None
         )
 
-    async def ensure_base_role(self, member: discord.Member, *, event_id: str) -> EffectResult:
-        """Assign only the configured baseline role, independently of all UI interests."""
+    def base_role_id(self, member: discord.Member) -> str | None:
+        """Select a baseline without overlapping an existing elevated human community role."""
         if not self.member_allowed(member):
             msg = "onboarding_member_binding"
             raise ValueError(msg)
-        role_id = self.profile.bot_role_id if member.bot else self.profile.magus_role_id
+        if member.bot:
+            return self.profile.bot_role_id
+        if any(str(role.id) in self.profile.elevated_human_role_ids for role in member.roles):
+            return None
+        return self.profile.magus_role_id
+
+    async def ensure_base_role(self, member: discord.Member, *, event_id: str) -> EffectResult:
+        """Add only a needed baseline; never assign or remove elevated community roles."""
+        role_id = self.base_role_id(member)
+        if role_id is None:
+            return EffectResult(status="succeeded", code="community_role_present")
         return await self.rest.ensure_member_role(str(member.id), role_id, event_id=event_id)
 
 

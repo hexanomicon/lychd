@@ -53,19 +53,33 @@ introduction channel, an existing bot-owned welcome message, and two zero-permis
 roles. The welcome channel can remain read-only. A persistent welcome button opens a
 private form with optional interests and introduction text. Only an explicit publication
 confirmation creates or updates that member's one public introduction. Choices do not grant
-Contributor, Maintainer, Admin, native identity, or capabilities. Every human receives the
-configured Magus baseline; bot accounts receive the common Bot role. This automation requires
-Server Members Intent, uses no member/presence cache, and backfills at most 1,000 existing members
-once per process generation. Private drafts expire after five minutes or restart.
+Contributor, Maintainer, Admin, native identity, or capabilities. Humans receive the configured
+Magus baseline unless they already hold an explicitly configured elevated community role;
+bot accounts receive the common Bot role. For a server using these exemptions, keep one
+community role per human: Magus, Contributor, or Maintainer, with Admin as a separate add-on.
+An authorized human promotes members by replacing
+their previous community role. Onboarding never removes roles or grants an elevated role.
+This automation requires Server Members Intent, uses no member/presence cache, and backfills at
+most 1,000 existing members once per process generation. Private drafts expire after five minutes
+or restart.
 
 Select it with `--onboarding-profile /absolute/private/onboarding.json` on `run`. The strict
 JSON object contains `guild_id`, `channel_id`, `introduction_channel_id`, `panel_message_id`,
-`magus_role_id`, and `bot_role_id`. The two channel IDs must differ. The host freezes this bounded
-private file and mounts it only into the Discord edge. Startup verifies both public text
-channels, welcome author, role authority and hierarchy
-before registering controls. Attaching the controls to the welcome message is a separate
-reviewed operator edit. Role additions preserve other memberships; public introductions use
-the content-free effect journal to retain their message identity across restarts. Unknown
+`magus_role_id`, and `bot_role_id`. Optional `elevated_human_role_ids` is an array of at most two
+exact role ID strings for Contributor and Maintainer; omission defaults to an empty array and
+preserves the baseline behavior of existing profiles. IDs must be distinct from one another,
+the everyone role, Magus and Bot. Keep Admin outside this list. Role names do not
+select exemptions. Startup requires each exempted role to exist and be unmanaged; these
+read-only checks confer no authority to assign it. Join and startup backfill skip Magus for
+humans holding either configured role, including after restart. Existing duplicate community
+memberships require a separate reviewed human cleanup.
+
+The two channel IDs must differ. The host freezes this bounded private file and mounts it only
+into the Discord edge. Startup verifies both public text channels, welcome author, baseline
+role authority and hierarchy before registering controls. Attaching the controls to the welcome
+message is a separate reviewed operator edit. Role additions preserve other memberships; public
+introductions use the content-free effect journal to retain their message identity across
+restarts. Unknown
 creation or update outcomes fence further publication until operator reconciliation. These
 are Discord presentation and membership effects, not Ward enrollment or native Graph runs.
 

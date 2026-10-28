@@ -21,7 +21,7 @@ from lychd.interface.discord.onboarding import (
 from lychd.interface.discord.rest import DiscordRestError, EffectResult
 
 
-def configured() -> OnboardingService:
+def configured(*, elevated_human_role_ids: tuple[str, ...] = ()) -> OnboardingService:
     profile = OnboardingProfile(
         guild_id="300000000000000003",
         channel_id="400000000000000004",
@@ -29,6 +29,7 @@ def configured() -> OnboardingService:
         panel_message_id="700000000000000007",
         magus_role_id="600000000000000006",
         bot_role_id="800000000000000008",
+        elevated_human_role_ids=elevated_human_role_ids,
     )
     rest = Mock(
         application_id="100000000000000001",
@@ -82,6 +83,36 @@ def test_profile_rejects_everyone_or_colliding_roles_and_extra_fields() -> None:
     ):
         with pytest.raises(ValidationError):
             OnboardingProfile.model_validate({**profile.model_dump(), **patch})
+
+
+def test_elevated_human_role_ids_are_optional_and_explicit() -> None:
+    profile = configured().profile
+    original = OnboardingProfile.model_validate(profile.model_dump(exclude={"elevated_human_role_ids"}))
+    assert original.elevated_human_role_ids == ()
+    elevated = ("900000000000000019", "900000000000000029")
+    assert configured(elevated_human_role_ids=elevated).profile.elevated_human_role_ids == elevated
+
+
+@pytest.mark.parametrize(
+    "role_ids",
+    [
+        ("300000000000000003",),
+        ("600000000000000006",),
+        ("800000000000000008",),
+        ("900000000000000019", "900000000000000019"),
+        ("900000000000000019", "900000000000000029", "900000000000000039"),
+        (900000000000000019,),
+        (True,),
+        ("not-a-discord-id",),
+        ("18446744073709551616",),
+        ["900000000000000019"],
+        "900000000000000019",
+        None,
+    ],
+)
+def test_elevated_human_role_ids_reject_collisions_duplicates_and_coercion(role_ids: object) -> None:
+    with pytest.raises(ValidationError):
+        OnboardingProfile.model_validate({**configured().profile.model_dump(), "elevated_human_role_ids": role_ids})
 
 
 def test_profile_requires_an_explicit_destination_separate_from_the_public_panel() -> None:
@@ -288,10 +319,14 @@ async def test_cancel_and_uncertain_effect_never_retry_publication() -> None:
 
 @pytest.mark.asyncio
 async def test_role_assignment_is_independent_of_interests_and_cannot_assign_privileged_roles() -> None:
-    service = configured()
+    service = configured(elevated_human_role_ids=("900000000000000019", "900000000000000029"))
     member = interaction(service).user
-    # Existing roles do not affect, or become targets of, baseline assignment.
-    member.roles = [Mock(name="Contributor"), Mock(name="Maintainer"), Mock(name="Admin")]
+    # Names alone neither exempt a human nor become a baseline assignment target.
+    member.roles = [
+        Mock(id=900000000000000039, name="Contributor"),
+        Mock(id=900000000000000049, name="Maintainer"),
+        Mock(id=900000000000000059, name="Admin"),
+    ]
     await service.ensure_base_role(member, event_id="900000000000000009")
     service.rest.ensure_member_role.assert_awaited_once_with(
         str(member.id), service.profile.magus_role_id, event_id="900000000000000009"
@@ -304,3 +339,38 @@ async def test_role_assignment_is_independent_of_interests_and_cannot_assign_pri
         await service.ensure_base_role(member, event_id="900000000000000011")
     assert service.rest.ensure_member_role.await_count == 2
     service.rest.publish_introduction.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role_id", ["900000000000000019", "900000000000000029"])
+async def test_existing_elevated_human_role_skips_magus_without_grant_or_removal(role_id: str) -> None:
+    service = configured(elevated_human_role_ids=("900000000000000019", "900000000000000029"))
+    member = interaction(service).user
+    member.roles = [Mock(id=int(role_id))]
+    result = await service.ensure_base_role(member, event_id="900000000000000009")
+    assert result == EffectResult(status="succeeded", code="community_role_present")
+    service.rest.ensure_member_role.assert_not_awaited()
+    service.rest.publish_introduction.assert_not_awaited()
+    # Selection uses this observation, rather than retaining member-role state.
+    member.roles = []
+    await service.ensure_base_role(member, event_id="900000000000000010")
+    service.rest.ensure_member_role.assert_awaited_once_with(
+        str(member.id), service.profile.magus_role_id, event_id="900000000000000010"
+    )
+
+
+@pytest.mark.asyncio
+async def test_bot_baseline_and_guild_binding_override_human_role_exemptions() -> None:
+    service = configured(elevated_human_role_ids=("900000000000000019",))
+    member = interaction(service).user
+    member.roles = [Mock(id=900000000000000019)]
+    member.bot = True
+    await service.ensure_base_role(member, event_id="900000000000000009")
+    service.rest.ensure_member_role.assert_awaited_once_with(
+        str(member.id), service.profile.bot_role_id, event_id="900000000000000009"
+    )
+    member.bot = False
+    member.guild.id += 1
+    with pytest.raises(ValueError, match="onboarding_member_binding"):
+        await service.ensure_base_role(member, event_id="900000000000000010")
+    assert service.rest.ensure_member_role.await_count == 1

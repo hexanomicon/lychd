@@ -76,12 +76,12 @@ def load_onboarding_profile(path: Path) -> OnboardingProfile:
     def constant(_value: str) -> NoReturn:
         _refuse("onboarding_profile_json")
 
-    value = json.loads(raw, object_pairs_hook=pairs, parse_constant=constant)
-    return OnboardingProfile.model_validate(value)
+    json.loads(raw, object_pairs_hook=pairs, parse_constant=constant)
+    return OnboardingProfile.model_validate_json(raw)
 
 
 def _verify_baseline_roles(profile: OnboardingProfile, snapshot: GuildSnapshot) -> None:
-    """Require harmless semantic roles below the bot using Discord's tie ordering."""
+    """Verify baseline write authority and exact read-only community exemptions."""
     roles = {role.id: role for role in snapshot.roles}
     bot_roles = [role for identity, role in roles.items() if identity in {*snapshot.bot_role_ids, profile.guild_id}]
     highest = max(((role.position, -int(role.id)) for role in bot_roles), default=(0, 0))
@@ -99,6 +99,10 @@ def _verify_baseline_roles(profile: OnboardingProfile, snapshot: GuildSnapshot) 
             or role.permissions
             or (role.position, -int(role.id)) >= highest
         ):
+            _refuse("onboarding_role_binding")
+    for identity in profile.elevated_human_role_ids:
+        role = roles.get(identity)
+        if role is None or role.managed:
             _refuse("onboarding_role_binding")
 
 
@@ -521,8 +525,8 @@ class ReachBot(commands.Bot):
         onboarding = self.onboarding
         if onboarding is None or not onboarding.member_allowed(member):
             return
-        role_id = onboarding.profile.bot_role_id if member.bot else onboarding.profile.magus_role_id
-        if any(str(role.id) == role_id for role in member.roles):
+        role_id = onboarding.base_role_id(member)
+        if role_id is None or any(str(role.id) == role_id for role in member.roles):
             return
         joined = member.joined_at
         if joined is None or joined.tzinfo is None or joined.utcoffset() is None:

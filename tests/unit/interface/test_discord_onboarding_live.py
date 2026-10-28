@@ -1,19 +1,22 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import discord
 import pytest
+from pydantic import ValidationError
 
 from lychd.interface.discord.admin import GuildSnapshot
-from lychd.interface.discord.live import ReachBot, ReachService, verify_onboarding
+from lychd.interface.discord.live import ReachBot, ReachService, load_onboarding_profile, verify_onboarding
 from lychd.interface.discord.onboarding import OnboardingPanel, OnboardingProfile, OnboardingService
 from lychd.interface.discord.rest import EffectResult
 
 
-def onboarding() -> OnboardingService:
+def onboarding(*, elevated_human_role_ids: tuple[str, ...] = ()) -> OnboardingService:
     profile = OnboardingProfile(
         guild_id="300000000000000003",
         channel_id="400000000000000004",
@@ -21,6 +24,7 @@ def onboarding() -> OnboardingService:
         panel_message_id="700000000000000007",
         magus_role_id="600000000000000006",
         bot_role_id="800000000000000008",
+        elevated_human_role_ids=elevated_human_role_ids,
     )
     rest = Mock(application_id="100000000000000001", bot_user_id="200000000000000002", guild_id=profile.guild_id)
     rest.ensure_member_role = AsyncMock(return_value=EffectResult(status="succeeded"))
@@ -76,6 +80,36 @@ def snapshot(configured: OnboardingService) -> Any:
     return result
 
 
+@pytest.mark.parametrize("role_ids", [(), ("900000000000000019",), ("900000000000000019", "900000000000000029")])
+def test_private_json_profile_preserves_old_profiles_and_admits_strict_role_arrays(
+    tmp_path: Path, role_ids: tuple[str, ...]
+) -> None:
+    profile = onboarding(elevated_human_role_ids=role_ids).profile
+    path = tmp_path / "onboarding.json"
+    path.write_text(profile.model_dump_json(exclude={"elevated_human_role_ids"} if not role_ids else set()))
+    path.chmod(0o600)
+    assert load_onboarding_profile(path).elevated_human_role_ids == role_ids
+
+
+@pytest.mark.parametrize("role_ids", [None, "900000000000000019", [900000000000000019], [True], ["invalid"]])
+def test_private_json_profile_refuses_role_id_coercion(tmp_path: Path, role_ids: object) -> None:
+    value = {**onboarding().profile.model_dump(mode="json"), "elevated_human_role_ids": role_ids}
+    path = tmp_path / "onboarding.json"
+    path.write_text(json.dumps(value))
+    path.chmod(0o600)
+    with pytest.raises(ValidationError):
+        load_onboarding_profile(path)
+
+
+def test_private_json_profile_still_refuses_duplicate_keys(tmp_path: Path) -> None:
+    profile = onboarding().profile
+    path = tmp_path / "onboarding.json"
+    path.write_text(profile.model_dump_json()[:-1] + f',"guild_id":"{profile.guild_id}"}}')
+    path.chmod(0o600)
+    with pytest.raises(ValueError, match="onboarding_profile_json"):
+        load_onboarding_profile(path)
+
+
 @pytest.mark.asyncio
 async def test_onboarding_alone_enables_member_intent_and_registers_persistent_panel() -> None:
     default = ReachBot(reach())
@@ -112,6 +146,21 @@ async def test_member_join_uses_join_timestamp_and_skips_existing_roles_and_wron
         observed.guild.id += 1
         await bot.on_member_join(observed)
         assert configured.rest.ensure_member_role.await_count == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role_id", ["900000000000000019", "900000000000000029"])
+async def test_member_join_skips_existing_elevated_human_role_before_effect_admission(
+    role_id: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    configured = onboarding(elevated_human_role_ids=("900000000000000019", "900000000000000029"))
+    observed = member(configured)
+    observed.roles = [Mock(id=int(role_id))]
+    observed.joined_at = None
+    async with ReachBot(reach(), onboarding=configured) as bot:
+        await bot.on_member_join(observed)
+    configured.rest.ensure_member_role.assert_not_awaited()
+    assert capsys.readouterr().err == ""
 
 
 @pytest.mark.asyncio
@@ -160,6 +209,31 @@ async def test_backfill_runs_once_with_bounded_member_fetch(monkeypatch: pytest.
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("role_id", ["900000000000000019", "900000000000000029"])
+async def test_restart_backfill_does_not_restore_magus_to_elevated_humans(
+    role_id: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for _generation in range(2):
+        configured = onboarding(elevated_human_role_ids=("900000000000000019", "900000000000000029"))
+        observed = member(configured)
+        observed.roles = [Mock(id=int(role_id))]
+
+        async def members(current: Any = observed) -> Any:
+            yield current
+
+        guild = Mock()
+        guild.fetch_members.return_value = members()
+        async with ReachBot(reach(), onboarding=configured) as bot:
+            monkeypatch.setattr(bot, "get_guild", Mock(return_value=guild))
+            await bot.on_ready()
+            task = bot.onboarding_backfill_task
+            assert task is not None
+            await task
+            guild.fetch_members.assert_called_once_with(limit=1000)
+            configured.rest.ensure_member_role.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_startup_binds_only_verified_roles_panel_and_public_introduction_channel() -> None:
     configured = onboarding()
     flags = Mock(gateway_guild_members=True, gateway_guild_members_limited=False)
@@ -171,6 +245,34 @@ async def test_startup_binds_only_verified_roles_panel_and_public_introduction_c
         configured.profile.channel_id, configured.profile.panel_message_id
     )
     configured.rest.bind_introduction_channel.assert_called_once_with(configured.profile.introduction_channel_id)
+
+
+@pytest.mark.asyncio
+async def test_elevated_roles_are_observed_without_requiring_or_binding_write_authority() -> None:
+    configured = onboarding(elevated_human_role_ids=("900000000000000019", "900000000000000029"))
+    observed = snapshot(configured)
+    for role_id in configured.profile.elevated_human_role_ids:
+        observed.roles.append(Mock(id=role_id, permissions=1 << 13, position=100, managed=False))
+    flags = Mock(gateway_guild_members=True, gateway_guild_members_limited=False)
+    await verify_onboarding(configured, observed, flags)
+    configured.rest.bind_member_roles.assert_called_once_with(
+        (configured.profile.magus_role_id, configured.profile.bot_role_id)
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["missing", "managed"])
+async def test_startup_refuses_missing_or_managed_elevated_role_before_binding(kind: str) -> None:
+    configured = onboarding(elevated_human_role_ids=("900000000000000019",))
+    observed = snapshot(configured)
+    if kind == "managed":
+        observed.roles.append(Mock(id="900000000000000019", managed=True))
+    flags = Mock(gateway_guild_members=True, gateway_guild_members_limited=False)
+    with pytest.raises(ValueError, match="onboarding_role_binding"):
+        await verify_onboarding(configured, observed, flags)
+    configured.rest.get_message.assert_not_awaited()
+    configured.rest.bind_member_roles.assert_not_called()
+    configured.rest.bind_introduction_channel.assert_not_called()
 
 
 @pytest.mark.asyncio
