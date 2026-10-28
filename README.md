@@ -8,6 +8,9 @@
     <a href="LICENSE">
       <img src="https://img.shields.io/badge/License-MPL_2.0-b71c1c?style=for-the-badge&labelColor=1a1a20" alt="License">
     </a>
+    <a href="#-join-the-cult">
+      <img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white&labelColor=1a1a20" alt="Discord">
+    </a>
   </p>
   <p>
     <a href="docs/state-of-the-work.md">
@@ -31,16 +34,25 @@ The knowledge you seek is inscribed in the **[Hexanomicon](https://hexanomicon.d
 3. 🕯️ **[Perform the Summoning](docs/summoning.md)** — bring your host to life.
 4. 🏛️ **[Enter the Sepulcher](docs/sepulcher/index.md)** — study the body, memory, and animating spirits.
 5. 🔮 **[Approach the Altar](docs/divination/altar/index.md)** — project your Will through the machine.
-6. ⚖️ **[Study the Covenants](docs/adr/index.md)** — learn the laws that bind the system.
-7. 🔁 **[Achieve Immortality](docs/divination/transcendence/immortality.md)** — teach the daemon to remember, correct, and recreate itself.
-8. ♾️ **[Expand to Infinity](docs/divination/transcendence/infinity.md)** — master the **[Compositions](docs/compositions/index.md)**, embody **[the Lich](docs/sepulcher/lich/index.md)** in many forms, and carry **[the Work](docs/divination/transcendence/index.md)** beyond one body.
+6. 🧩 **[Explore the Compositions](docs/compositions/index.md)** — discover application designs and worked examples.
+7. ⚖️ **[Study the Covenants](docs/adr/index.md)** — learn the laws that bind the system.
+8. 🔁 **[Achieve Immortality](docs/divination/transcendence/immortality.md)** — teach the daemon to remember, correct, and recreate itself.
+9. ♾️ **[Expand to Infinity](docs/divination/transcendence/infinity.md)** — embody **[the Lich](docs/sepulcher/lich/index.md)** in many forms and carry **[the Work](docs/divination/transcendence/index.md)** beyond one body.
 
 The higher art of **[Assimilation](docs/adr/35-assimilation.md)** studies foreign craft and forges it anew under local law.
 
-If you came to build, follow the **[Map](docs/map.md)** and **[enter the Forge](CONTRIBUTING.md)**.
+The **[Map](docs/map.md)** shows how the project fits together.
 
 The **[Metamorphosis roadmap](ROADMAP.md)** follows the founding year through five books,
 beginning with the shared agentic laboratory and its first public encounters.
+
+## 🌀 Join the Cult
+
+- 🛠️ **[Contribute](CONTRIBUTING.md)** — enter the Forge or [find an open task](https://github.com/hexanomicon/lychd/issues?q=is%3Aissue+is%3Aopen+label%3A%22help%20wanted%22).
+- 💬 **[Discussions](https://github.com/hexanomicon/lychd/discussions)** — ask questions, explore ideas, and share your work.
+- 🐛 **[Issues](https://github.com/hexanomicon/lychd/issues)** — report bugs and track concrete work.
+
+[![Discord — Come hang out](https://img.shields.io/badge/Discord-Come_hang_out-5865F2?style=for-the-badge&logo=discord&logoColor=white&labelColor=1a1a20)](https://discord.gg/WpN3aWEMQ)
 
 ## 🚩 Local sovereignty — a rebellion against digital feudalism
 
@@ -130,8 +142,27 @@ These are not runtime dependencies. Their hard-won measurements and battle-teste
 
 Shipped attribution lives in [Third-Party Source Notices](THIRD_PARTY_NOTICES.md).
 
+# 🤝 Partners
+
+Companies supporting the development of LychD.
+
+<table>
+  <tr>
+    <td align="center" width="160">
+      <a href="https://mechanimous.ai/">
+        <img src="docs/assets/partners/mechanimous.png" alt="Mechanimous" width="96" height="96"><br>
+        <strong>Mechanimous</strong>
+      </a>
+    </td>
+    <td align="center" width="160">
+      <a href="https://snayu.ai/">
+        <img src="docs/assets/partners/snayu.png" alt="Snayu" width="96" height="96"><br>
+        <strong>Snayu</strong>
+      </a>
+    </td>
+  </tr>
+</table>
+
 ---
 
 > *"The Flesh is temporary. The Word is eternal."*
-
-## [💀 Join the Cult](https://github.com/hexanomicon/lychd/discussions)
