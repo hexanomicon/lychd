@@ -308,7 +308,9 @@ async def test_message_nonce_and_mentions_and_webhook_secret_absence(tmp_path: P
     assert len(message["nonce"]) <= 25
     assert message["enforce_nonce"] is True
     assert message["allowed_mentions"] == {"parse": []}
+    assert message["flags"] == 4
     assert writes[1].method == "PATCH"
+    assert json.loads(writes[1].content)["flags"] == 4
     assert writes[1].url.path == "/api/v10/webhooks/101/private-interaction-token/messages/@original"
     retained = b"".join(path.read_bytes() for path in rest.journal.root.iterdir()).decode()
     for secret in (

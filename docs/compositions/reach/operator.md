@@ -253,7 +253,8 @@ In an allowed channel, use an admitted account to try:
   with `--admin-user` and your policy permits `answer_docs`.
 
 Slash responses are ephemeral. A mention answer is sent to its allowed channel with mentions
-disabled. An unlisted person, channel, trigger or action is refused or ignored. The edge and
+disabled. Replies and owner publications suppress automatic link previews; links remain
+clickable. An unlisted person, channel, trigger or action is refused or ignored. The edge and
 native worker both evaluate the same compiled policy; Discord Administrator status is no bypass.
 Default answers contain deterministic public-document excerpts and pinned source links. Opting
 into [local conversation](#enable-local-conversation) changes `/reach ask` and direct mentions to

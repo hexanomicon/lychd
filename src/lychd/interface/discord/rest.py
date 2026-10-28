@@ -33,6 +33,7 @@ _RECORD = re.compile(r"[a-f0-9]{64}\.json\Z")
 _DIGEST = r"^[a-f0-9]{64}$"
 _MAX_RECORD = 8192
 _MAX_MESSAGE = 2000
+SUPPRESS_EMBEDS = 1 << 2
 type _Target = Literal["guild_roles", "guild_channels", "channel", "channel_messages", "interaction_original"]
 
 
@@ -525,12 +526,14 @@ class DiscordRest:
     async def send_message(
         self, channel_id: str, text: str, *, event_id: str, reply_to: str | None = None
     ) -> EffectResult:
+        """Send text with clickable links, suppressed previews and no mentions."""
         channel_id, event_id = _id(channel_id), _id(event_id)
         if type(text) is not str or not 1 <= len(text) <= _MAX_MESSAGE:
             return EffectResult(status="rejected", code="invalid_message")
         nonce = _digest(f"{self.application_id}:{channel_id}:{event_id}")[:25]
         body: dict[str, Any] = {
             "content": text,
+            "flags": SUPPRESS_EMBEDS,
             "allowed_mentions": {"parse": []},
             "nonce": nonce,
             "enforce_nonce": True,
@@ -551,6 +554,7 @@ class DiscordRest:
         )
 
     async def edit_interaction_original(self, interaction_token: str, text: str, *, event_id: str) -> EffectResult:
+        """Complete the deferred response without generating link previews."""
         event_id = _id(event_id)
         if type(interaction_token) is not str or not re.fullmatch(r"[A-Za-z0-9._-]{1,2048}", interaction_token):
             return EffectResult(status="rejected", code="invalid_interaction_token")
@@ -559,7 +563,7 @@ class DiscordRest:
         return await self._write(
             "PATCH",
             f"/webhooks/{self.application_id}/{interaction_token}/messages/@original",
-            {"content": text, "allowed_mentions": {"parse": []}},
+            {"content": text, "flags": SUPPRESS_EMBEDS, "allowed_mentions": {"parse": []}},
             effect_key=f"interaction:{self.application_id}:{event_id}",
             scope=f"interaction:{self.application_id}:{event_id}",
             target="interaction_original",

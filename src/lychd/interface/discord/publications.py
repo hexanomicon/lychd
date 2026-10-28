@@ -23,7 +23,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from lychd.interface.discord.rest import DiscordRest, EffectResult
+from lychd.interface.discord.rest import SUPPRESS_EMBEDS, DiscordRest, EffectResult
 
 MAX_BACKLOG = 32
 MAX_BODY = 1900
@@ -250,6 +250,7 @@ class PublicationQueue:
                 path = f"/channels/{publication.channel_id}/messages"
                 body: dict[str, Any] = {
                     "content": text,
+                    "flags": SUPPRESS_EMBEDS,
                     "allowed_mentions": {"parse": []},
                     "nonce": hashlib.sha256(key.encode()).hexdigest()[:25],
                     "enforce_nonce": True,

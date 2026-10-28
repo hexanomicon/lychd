@@ -38,6 +38,7 @@ async def test_publication_receipt_fences_repeat_and_hides_body(
     assert await queue.process_once(rest) == 1
     assert await queue.process_once(rest) == 0
     rest.write.assert_awaited_once()
+    assert rest.write.await_args.args[2]["flags"] == 4
     receipt = json.loads((queue.root / f"{identifier}.receipt").read_text())
     assert receipt["status"] == status
     assert "milestone" not in json.dumps(receipt)
