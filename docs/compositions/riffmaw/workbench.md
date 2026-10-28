@@ -30,6 +30,14 @@ remains explicit in [Products and Suites](../products-and-suites.md#atelier-riff
 | Separate judgment | Technical success and numerical checks never imply musical, visual, editorial or publication approval. |
 | Preserved custody | Private sources, working files and generated media stay outside the checkout; bounded descriptors and verified digests determine consumed bytes. |
 
+## Approachable interaction
+
+Riffmaw should let a musician make small changes without DAW expertise, using simple controls or
+ordinary-language requests such as “add a little reverb” or “turn this part down.” The longer-term
+direction is an assistant that can listen to admitted takes or mixes when helping shape the music,
+and eventually hear and respond during live playing. Live interaction follows the separate
+[capture and Jam contracts](sessions.md#the-realtime-stopping-line).
+
 ## Construction decision
 
 Python owns validation, compilation, adapters and technical receipts. The first offline trial
