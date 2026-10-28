@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
+from unittest.mock import Mock
 
 import pytest
 from scripts.companion_lab import CompanionConsole
@@ -15,7 +16,7 @@ from scripts.voice_probe import PrivateWorkspace
 
 from lychd.compositions.blockworld.companion import CompanionResult
 from lychd.compositions.blockworld.companion_dialogue import CompanionDialogue
-from lychd.compositions.blockworld.companion_memory import SessionRecipeStore
+from lychd.compositions.blockworld.companion_memory import CommandRecipe, DialogueLanguage, SessionRecipeStore
 from lychd.system.services.companion_session import CompanionSession, SessionResult
 from tests.unit.cli.test_companion_lab import ConsoleSession, wav
 
@@ -43,7 +44,7 @@ async def test_console_confirmation_queues_original_once_and_review_saves_only_a
         files, cast("CompanionSession", session), dialogue=CompanionDialogue(store), language="sk"
     )
     events: list[dict[str, Any]] = []
-    console.present = events.append
+    console.present = Mock(side_effect=events.append)
     assert (await console.submit("čakaj")).kind == "clarification"
     assert session.enqueued == []
     assert (await console.submit("áno")).kind == "applied"
@@ -70,7 +71,8 @@ async def test_stop_cancels_pending_memory_read_and_keeps_ordinary_stop_independ
     entered = asyncio.Event()
 
     class SlowMemory(SessionRecipeStore):
-        async def find(self, _language: Any, _phrase: str) -> Any:
+        async def find(self, language: DialogueLanguage, phrase: str) -> CommandRecipe | None:
+            del language, phrase
             entered.set()
             await asyncio.Event().wait()
 
@@ -91,7 +93,7 @@ async def test_delayed_voice_yes_cannot_confirm_newer_typed_proposal(files: Priv
     console = CompanionConsole(
         files, cast("CompanionSession", session), dialogue=CompanionDialogue(SessionRecipeStore(), allow_time=True)
     )
-    console.present = lambda _event: None
+    console.present = Mock()
     await console.submit("idle")
     entered, release = asyncio.Event(), asyncio.Event()
 
@@ -129,7 +131,7 @@ async def test_post_enqueue_failure_stays_unknown_without_replay(files: PrivateW
         cast("CompanionSession", session),
         dialogue=CompanionDialogue(SessionRecipeStore(), confirmation="never"),
     )
-    console.present = lambda _event: None
+    console.present = Mock()
     outcome = await console.submit("idle")
     assert outcome.kind == "unknown"
     assert len(session.enqueued) == 1
@@ -146,7 +148,7 @@ async def test_confirmation_outcome_survives_its_evidence_write_failure(
         files, cast("CompanionSession", session), dialogue=CompanionDialogue(SessionRecipeStore())
     )
     events: list[dict[str, Any]] = []
-    console.present = events.append
+    console.present = Mock(side_effect=events.append)
     original_write = files.write_new
 
     def write(path: Path, content: bytes) -> None:
@@ -197,7 +199,7 @@ async def test_stop_keeps_confirmation_relay_owned_by_native_result(files: Priva
         files, cast("CompanionSession", session), dialogue=CompanionDialogue(SessionRecipeStore())
     )
     events: list[dict[str, Any]] = []
-    console.present = events.append
+    console.present = Mock(side_effect=events.append)
     await console.submit("idle")
     confirmation = console.submit("yes")
     await entered.wait()

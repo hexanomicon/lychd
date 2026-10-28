@@ -134,7 +134,7 @@ class _Session:
     def get_bind(self) -> Any:
         return SimpleNamespace(dialect=SimpleNamespace(name=self.factory.dialect))
 
-    def begin(self) -> Self:
+    def begin(self) -> _Transaction:
         return _Transaction(self)
 
     async def execute(self, statement: Any, params: dict[str, Any] | None = None) -> None:
@@ -468,7 +468,7 @@ def _normalize(sql: str) -> str:
     return " ".join(sql.split())
 
 
-def _column_shapes(table: Table) -> dict[str, tuple[str, bool, bool]]:
+def _column_shapes(table: Table) -> dict[str, tuple[str, bool | None, bool]]:
     return {
         column.name: (
             str(column.type.compile(dialect=postgresql.dialect())),
@@ -507,9 +507,11 @@ def test_migration_upgrade_matches_orm_postgresql_shape_and_fixed_bounds(monkeyp
     assert operations.sql == _TIMEOUTS
     assert len(operations.tables) == 1
     generated = operations.tables[0]
-    assert generated.name == CompanionRecipe.__table__.name == "companion_recipe"
-    assert _column_shapes(generated) == _column_shapes(CompanionRecipe.__table__)
-    assert _constraint_shapes(generated) == _constraint_shapes(CompanionRecipe.__table__)
+    model_table = CompanionRecipe.__table__
+    assert isinstance(model_table, Table)
+    assert generated.name == model_table.name == "companion_recipe"
+    assert _column_shapes(generated) == _column_shapes(model_table)
+    assert _constraint_shapes(generated) == _constraint_shapes(model_table)
     assert not generated.foreign_keys
     assert operations.events[-1] == ("create", "companion_recipe")
 

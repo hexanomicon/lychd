@@ -14,9 +14,9 @@ from lychd.interface.discord.onboarding import (
     OnboardingPanel,
     OnboardingProfile,
     OnboardingService,
-    _ConfirmationView,
-    _IntroModal,
-    _SelectionView,
+    _ConfirmationView,  # pyright: ignore[reportPrivateUsage] - white-box tests of actor-bound confirmation
+    _IntroModal,  # pyright: ignore[reportPrivateUsage] - inject submitted modal values without Discord
+    _SelectionView,  # pyright: ignore[reportPrivateUsage] - exercise the private selection admission boundary
 )
 from lychd.interface.discord.rest import DiscordRestError, EffectResult
 
@@ -39,6 +39,11 @@ def configured(*, elevated_human_role_ids: tuple[str, ...] = ()) -> OnboardingSe
     rest.publish_introduction = AsyncMock(return_value=EffectResult(status="succeeded", remote_id="900000000000000009"))
     rest.ensure_member_role = AsyncMock()
     return OnboardingService(profile, rest)
+
+
+def rest_mock(service: OnboardingService) -> Mock:
+    assert isinstance(service.rest, Mock)
+    return service.rest
 
 
 def interaction(service: OnboardingService, *, private: bool = False) -> Any:
@@ -182,7 +187,7 @@ async def test_public_panel_refuses_wrong_binding_before_opening_form(kind: str)
     await click(panel, observed, 0)
     assert observed.response.send_message.await_args.kwargs["ephemeral"] is True
     assert "view" not in observed.response.send_message.await_args.kwargs
-    service.rest.publish_introduction.assert_not_awaited()
+    rest_mock(service).publish_introduction.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -202,7 +207,7 @@ async def test_persistent_panel_opens_only_ephemeral_form_and_never_rewrites_pub
     assert select.max_values == 3
     assert [option.value for option in select.options] == list(INTERESTS)
     observed.response.edit_message.assert_not_awaited()
-    service.rest.publish_introduction.assert_not_awaited()
+    rest_mock(service).publish_introduction.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -224,25 +229,25 @@ async def test_private_confirmation_refuses_cross_user_expired_or_public_interac
     else:
         observed.user.bot = True
     await click(view, observed, 0)
-    service.rest.publish_introduction.assert_not_awaited()
+    rest_mock(service).publish_introduction.assert_not_awaited()
     assert observed.response.send_message.await_args.kwargs["ephemeral"] is True
 
 
 @pytest.mark.asyncio
-async def test_selection_and_modal_do_not_publish_before_explicit_confirmation() -> None:
+async def test_selection_and_modal_do_not_publish_before_explicit_confirmation(monkeypatch: pytest.MonkeyPatch) -> None:
     service = configured()
     observed = interaction(service, private=True)
     view = _SelectionView(service, observed.user.id, time.monotonic() + 300)
     select = view.children[0]
     assert isinstance(select, discord.ui.Select)
-    select._values = ["trying_it_out", "looking_to_contribute"]
+    monkeypatch.setattr(select, "_values", ["trying_it_out", "looking_to_contribute"])
     await click(view, observed, 0)
     await click(view, observed, 1)
     modal = observed.response.send_modal.await_args.args[0]
     assert isinstance(modal, _IntroModal)
     assert modal.intro.required is False
     assert modal.intro.max_length == 400
-    modal.intro._value = "I build small tools."
+    monkeypatch.setattr(modal.intro, "_value", "I build small tools.")
     assert await modal.interaction_check(observed)
     await modal.on_submit(observed)
     args = observed.response.send_message.await_args
@@ -253,23 +258,25 @@ async def test_selection_and_modal_do_not_publish_before_explicit_confirmation()
     assert "updates your existing introduction" in args.args[0]
     confirmation = args.kwargs["view"]
     assert isinstance(confirmation, _ConfirmationView)
-    assert confirmation.children[0].label == "Publish my introduction"
-    service.rest.publish_introduction.assert_not_awaited()
-    service.rest.ensure_member_role.assert_not_awaited()
+    button = confirmation.children[0]
+    assert isinstance(button, discord.ui.Button)
+    assert button.label == "Publish my introduction"
+    rest_mock(service).publish_introduction.assert_not_awaited()
+    rest_mock(service).ensure_member_role.assert_not_awaited()
     await click(confirmation, observed, 0)
-    service.rest.publish_introduction.assert_awaited_once_with(
+    rest_mock(service).publish_introduction.assert_awaited_once_with(
         service.profile.introduction_channel_id,
         "Meet Newcomer\nInterests: Trying it out, Looking to contribute.\nI build small tools.",
         subject_id=str(observed.user.id),
         event_id=str(observed.id),
     )
-    assert str(observed.user.id) not in service.rest.publish_introduction.await_args.args[1]
+    assert str(observed.user.id) not in rest_mock(service).publish_introduction.await_args.args[1]
     assert observed.response.defer.await_args.kwargs == {"ephemeral": True, "thinking": True}
     acknowledgement = observed.edit_original_response.await_args.kwargs["content"]
     assert f"<#{service.profile.introduction_channel_id}>" in acknowledgement
-    service.rest.ensure_member_role.assert_not_awaited()
+    rest_mock(service).ensure_member_role.assert_not_awaited()
     await click(confirmation, observed, 0)
-    assert service.rest.publish_introduction.await_count == 1
+    assert rest_mock(service).publish_introduction.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -284,22 +291,22 @@ async def test_selection_and_modal_refuse_interactions_from_the_publication_dest
     assert not await modal.interaction_check(observed)
     assert observed.response.send_message.await_args.kwargs["ephemeral"] is True
     assert "view" not in observed.response.send_message.await_args.kwargs
-    service.rest.publish_introduction.assert_not_awaited()
-    service.rest.ensure_member_role.assert_not_awaited()
+    rest_mock(service).publish_introduction.assert_not_awaited()
+    rest_mock(service).ensure_member_role.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_modal_revalidates_choices_and_intro_and_is_actor_bound() -> None:
+async def test_modal_revalidates_choices_and_intro_and_is_actor_bound(monkeypatch: pytest.MonkeyPatch) -> None:
     service = configured()
     observed = interaction(service, private=True)
     modal = _IntroModal(service, observed.user.id, time.monotonic() + 300, ())
     observed.user.id += 1
     assert not await modal.interaction_check(observed)
     observed.user.id -= 1
-    modal.intro._value = "x" * 401
+    monkeypatch.setattr(modal.intro, "_value", "x" * 401)
     with pytest.raises(ValueError, match="onboarding_introduction"):
         await modal.on_submit(observed)
-    service.rest.publish_introduction.assert_not_awaited()
+    rest_mock(service).publish_introduction.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -308,12 +315,12 @@ async def test_cancel_and_uncertain_effect_never_retry_publication() -> None:
     observed = interaction(service, private=True)
     view = _ConfirmationView(service, observed.user.id, time.monotonic() + 300, Introduction(()))
     await click(view, observed, 1)
-    service.rest.publish_introduction.assert_not_awaited()
+    rest_mock(service).publish_introduction.assert_not_awaited()
     view = _ConfirmationView(service, observed.user.id, time.monotonic() + 300, Introduction(()))
-    service.rest.publish_introduction.side_effect = DiscordRestError("network_error")
+    rest_mock(service).publish_introduction.side_effect = DiscordRestError("network_error")
     await click(view, observed, 0)
     await click(view, observed, 0)
-    assert service.rest.publish_introduction.await_count == 1
+    assert rest_mock(service).publish_introduction.await_count == 1
     assert "not confirmed" in observed.edit_original_response.await_args.kwargs["content"]
 
 
@@ -328,17 +335,17 @@ async def test_role_assignment_is_independent_of_interests_and_cannot_assign_pri
         Mock(id=900000000000000059, name="Admin"),
     ]
     await service.ensure_base_role(member, event_id="900000000000000009")
-    service.rest.ensure_member_role.assert_awaited_once_with(
+    rest_mock(service).ensure_member_role.assert_awaited_once_with(
         str(member.id), service.profile.magus_role_id, event_id="900000000000000009"
     )
     member.bot = True
     await service.ensure_base_role(member, event_id="900000000000000010")
-    assert service.rest.ensure_member_role.await_args.args[1] == service.profile.bot_role_id
+    assert rest_mock(service).ensure_member_role.await_args.args[1] == service.profile.bot_role_id
     member.guild.id += 1
     with pytest.raises(ValueError, match="onboarding_member_binding"):
         await service.ensure_base_role(member, event_id="900000000000000011")
-    assert service.rest.ensure_member_role.await_count == 2
-    service.rest.publish_introduction.assert_not_awaited()
+    assert rest_mock(service).ensure_member_role.await_count == 2
+    rest_mock(service).publish_introduction.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -349,12 +356,12 @@ async def test_existing_elevated_human_role_skips_magus_without_grant_or_removal
     member.roles = [Mock(id=int(role_id))]
     result = await service.ensure_base_role(member, event_id="900000000000000009")
     assert result == EffectResult(status="succeeded", code="community_role_present")
-    service.rest.ensure_member_role.assert_not_awaited()
-    service.rest.publish_introduction.assert_not_awaited()
+    rest_mock(service).ensure_member_role.assert_not_awaited()
+    rest_mock(service).publish_introduction.assert_not_awaited()
     # Selection uses this observation, rather than retaining member-role state.
     member.roles = []
     await service.ensure_base_role(member, event_id="900000000000000010")
-    service.rest.ensure_member_role.assert_awaited_once_with(
+    rest_mock(service).ensure_member_role.assert_awaited_once_with(
         str(member.id), service.profile.magus_role_id, event_id="900000000000000010"
     )
 
@@ -366,11 +373,11 @@ async def test_bot_baseline_and_guild_binding_override_human_role_exemptions() -
     member.roles = [Mock(id=900000000000000019)]
     member.bot = True
     await service.ensure_base_role(member, event_id="900000000000000009")
-    service.rest.ensure_member_role.assert_awaited_once_with(
+    rest_mock(service).ensure_member_role.assert_awaited_once_with(
         str(member.id), service.profile.bot_role_id, event_id="900000000000000009"
     )
     member.bot = False
     member.guild.id += 1
     with pytest.raises(ValueError, match="onboarding_member_binding"):
         await service.ensure_base_role(member, event_id="900000000000000010")
-    assert service.rest.ensure_member_role.await_count == 1
+    assert rest_mock(service).ensure_member_role.await_count == 1

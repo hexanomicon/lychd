@@ -46,6 +46,11 @@ def reach() -> Any:
     return result
 
 
+def rest_mock(configured: OnboardingService) -> Mock:
+    assert isinstance(configured.rest, Mock)
+    return configured.rest
+
+
 def member(configured: OnboardingService) -> Any:
     result = Mock(spec=discord.Member)
     result.id = 500000000000000005
@@ -125,7 +130,7 @@ async def test_onboarding_alone_enables_member_intent_and_registers_persistent_p
         assert not enabled.intents.message_content
         assert len(enabled.persistent_views) == 1
         assert isinstance(enabled.persistent_views[0], OnboardingPanel)
-        assert enabled._connection.member_cache_flags.value == 0
+        assert enabled._connection.member_cache_flags.value == 0  # pyright: ignore[reportPrivateUsage] - SDK cache policy
 
 
 @pytest.mark.asyncio
@@ -135,17 +140,17 @@ async def test_member_join_uses_join_timestamp_and_skips_existing_roles_and_wron
     observed = member(configured)
     async with bot:
         await bot.on_member_join(observed)
-        configured.rest.ensure_member_role.assert_awaited_once_with(
+        rest_mock(configured).ensure_member_role.assert_awaited_once_with(
             str(observed.id),
             configured.profile.magus_role_id,
             event_id=str(discord.utils.time_snowflake(observed.joined_at)),
         )
-        assert configured.rest.ensure_member_role.await_args.kwargs["event_id"] != str(observed.id)
+        assert rest_mock(configured).ensure_member_role.await_args.kwargs["event_id"] != str(observed.id)
         observed.roles = [Mock(id=int(configured.profile.magus_role_id))]
         await bot.on_member_join(observed)
         observed.guild.id += 1
         await bot.on_member_join(observed)
-        assert configured.rest.ensure_member_role.await_count == 1
+        assert rest_mock(configured).ensure_member_role.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -159,7 +164,7 @@ async def test_member_join_skips_existing_elevated_human_role_before_effect_admi
     observed.joined_at = None
     async with ReachBot(reach(), onboarding=configured) as bot:
         await bot.on_member_join(observed)
-    configured.rest.ensure_member_role.assert_not_awaited()
+    rest_mock(configured).ensure_member_role.assert_not_awaited()
     assert capsys.readouterr().err == ""
 
 
@@ -173,9 +178,9 @@ async def test_join_guard_and_unsuccessful_role_result_have_only_fixed_diagnosti
     async with bot:
         observed.joined_at = None
         await bot.on_member_join(observed)
-        configured.rest.ensure_member_role.assert_not_awaited()
+        rest_mock(configured).ensure_member_role.assert_not_awaited()
         observed.joined_at = datetime(2026, 10, 28, tzinfo=UTC)
-        configured.rest.ensure_member_role.return_value = EffectResult(
+        rest_mock(configured).ensure_member_role.return_value = EffectResult(
             status="rejected", code="private_foreign_payload"
         )
         await bot.on_member_join(observed)
@@ -205,7 +210,7 @@ async def test_backfill_runs_once_with_bounded_member_fetch(monkeypatch: pytest.
         await bot.on_ready()
         assert bot.onboarding_backfill_task is task
         guild.fetch_members.assert_called_once_with(limit=1000)
-        configured.rest.ensure_member_role.assert_awaited_once()
+        rest_mock(configured).ensure_member_role.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -230,7 +235,7 @@ async def test_restart_backfill_does_not_restore_magus_to_elevated_humans(
             assert task is not None
             await task
             guild.fetch_members.assert_called_once_with(limit=1000)
-            configured.rest.ensure_member_role.assert_not_awaited()
+            rest_mock(configured).ensure_member_role.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -238,13 +243,13 @@ async def test_startup_binds_only_verified_roles_panel_and_public_introduction_c
     configured = onboarding()
     flags = Mock(gateway_guild_members=True, gateway_guild_members_limited=False)
     await verify_onboarding(configured, snapshot(configured), flags)
-    configured.rest.bind_member_roles.assert_called_once_with(
+    rest_mock(configured).bind_member_roles.assert_called_once_with(
         (configured.profile.magus_role_id, configured.profile.bot_role_id)
     )
-    configured.rest.get_message.assert_awaited_once_with(
+    rest_mock(configured).get_message.assert_awaited_once_with(
         configured.profile.channel_id, configured.profile.panel_message_id
     )
-    configured.rest.bind_introduction_channel.assert_called_once_with(configured.profile.introduction_channel_id)
+    rest_mock(configured).bind_introduction_channel.assert_called_once_with(configured.profile.introduction_channel_id)
 
 
 @pytest.mark.asyncio
@@ -255,7 +260,7 @@ async def test_elevated_roles_are_observed_without_requiring_or_binding_write_au
         observed.roles.append(Mock(id=role_id, permissions=1 << 13, position=100, managed=False))
     flags = Mock(gateway_guild_members=True, gateway_guild_members_limited=False)
     await verify_onboarding(configured, observed, flags)
-    configured.rest.bind_member_roles.assert_called_once_with(
+    rest_mock(configured).bind_member_roles.assert_called_once_with(
         (configured.profile.magus_role_id, configured.profile.bot_role_id)
     )
 
@@ -270,9 +275,9 @@ async def test_startup_refuses_missing_or_managed_elevated_role_before_binding(k
     flags = Mock(gateway_guild_members=True, gateway_guild_members_limited=False)
     with pytest.raises(ValueError, match="onboarding_role_binding"):
         await verify_onboarding(configured, observed, flags)
-    configured.rest.get_message.assert_not_awaited()
-    configured.rest.bind_member_roles.assert_not_called()
-    configured.rest.bind_introduction_channel.assert_not_called()
+    rest_mock(configured).get_message.assert_not_awaited()
+    rest_mock(configured).bind_member_roles.assert_not_called()
+    rest_mock(configured).bind_introduction_channel.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -289,7 +294,7 @@ async def test_startup_accepts_display_emoji_and_discord_role_position_ties() ->
     observed.bot_role_ids = (observed.roles[3].id,)
     flags = Mock(gateway_guild_members=True, gateway_guild_members_limited=False)
     await verify_onboarding(configured, observed, flags)
-    configured.rest.bind_member_roles.assert_called_once()
+    rest_mock(configured).bind_member_roles.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -313,8 +318,8 @@ async def test_startup_refuses_unverified_introduction_destination_before_bindin
         observed.guild_id = "300000000000000013"
     with pytest.raises(ValueError, match="onboarding_"):
         await verify_onboarding(configured, observed, flags)
-    configured.rest.bind_member_roles.assert_not_called()
-    configured.rest.bind_introduction_channel.assert_not_called()
+    rest_mock(configured).bind_member_roles.assert_not_called()
+    rest_mock(configured).bind_introduction_channel.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -349,12 +354,12 @@ async def test_startup_refuses_private_channel_or_unsafe_resource_binding(kind: 
     elif kind == "hierarchy":
         observed.roles[1].position = 3
     elif kind == "panel_author":
-        configured.rest.get_message.return_value["author"]["id"] = "500000000000000005"
+        rest_mock(configured).get_message.return_value["author"]["id"] = "500000000000000005"
     elif kind == "webhook":
-        configured.rest.get_message.return_value["webhook_id"] = "500000000000000005"
+        rest_mock(configured).get_message.return_value["webhook_id"] = "500000000000000005"
     else:
         flags.gateway_guild_members = False
     with pytest.raises(ValueError, match="onboarding_"):
         await verify_onboarding(configured, observed, flags)
-    configured.rest.bind_member_roles.assert_not_called()
-    configured.rest.bind_introduction_channel.assert_not_called()
+    rest_mock(configured).bind_member_roles.assert_not_called()
+    rest_mock(configured).bind_introduction_channel.assert_not_called()

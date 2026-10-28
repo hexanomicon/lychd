@@ -9,8 +9,13 @@ from typing import Any
 
 import pytest
 
-from lychd.compositions.blockworld.companion import CompanionRequest, CompanionResult, parse_text
-from lychd.compositions.blockworld.companion_dialogue import CompanionDialogue, DialogueContext, DialogueDecision
+from lychd.compositions.blockworld.companion import CompanionRequest, CompanionResult, FollowAction, parse_text
+from lychd.compositions.blockworld.companion_dialogue import (
+    CompanionDialogue,
+    ConfirmationMode,
+    DialogueContext,
+    DialogueDecision,
+)
 from lychd.compositions.blockworld.companion_memory import CommandRecipe, phrase_key
 
 REQUEST = "10000000-0000-4000-8000-000000000001"
@@ -117,6 +122,7 @@ async def test_reviewed_alias_journey_preserves_capture_and_creates_fresh_reuse(
     assert request.source == "transcript"
     assert request.source_artifacts == original.source_artifacts
     assert request.transcript == "  Walk beside me  "
+    assert isinstance(request.action, FollowAction)
     assert request.action.target_id == TARGET
     assert store.saved == []
     review = dialogue.complete(request, applied(request), RUN, now_ms=400)
@@ -144,6 +150,7 @@ async def test_reviewed_alias_journey_preserves_capture_and_creates_fresh_reuse(
     assert reused.request.request_id == FRESH
     assert reused.request.generation == 8
     assert reused.request.expires_at_ms == 30_000
+    assert isinstance(reused.request.action, FollowAction)
     assert reused.request.action.target_id == OTHER_TARGET
     assert len(store.saved) == 1
 
@@ -152,7 +159,7 @@ async def test_reviewed_alias_journey_preserves_capture_and_creates_fresh_reuse(
 @pytest.mark.parametrize("mode", ["always", "unremembered", "never"])
 @pytest.mark.parametrize("cached", [False, True])
 @pytest.mark.parametrize("skip", [False, True])
-async def test_effect_confirmation_modes(mode: str, *, cached: bool, skip: bool) -> None:
+async def test_effect_confirmation_modes(mode: ConfirmationMode, *, cached: bool, skip: bool) -> None:
     store = MemoryStore()
     if cached:
         store.values[("en", "idle")] = remembered("idle", "idle", skip=skip)
@@ -167,7 +174,7 @@ async def test_effect_confirmation_modes(mode: str, *, cached: bool, skip: bool)
 @pytest.mark.asyncio
 @pytest.mark.parametrize("mode", ["always", "unremembered", "never"])
 @pytest.mark.parametrize("command", ["state", "inspect 1 2 3"])
-async def test_read_only_actions_need_no_effect_confirmation(mode: str, command: str) -> None:
+async def test_read_only_actions_need_no_effect_confirmation(mode: ConfirmationMode, command: str) -> None:
     dialogue = CompanionDialogue(MemoryStore(), confirmation=mode)
     decision = await receive(dialogue, command, context(), "en", now_ms=100)
     assert decision.phase == "execute"
@@ -408,7 +415,8 @@ async def test_forged_recipe_instance_is_revalidated_before_recall() -> None:
 @pytest.mark.asyncio
 async def test_lookup_cannot_change_language_or_phrase_binding() -> None:
     class WrongBindingStore(MemoryStore):
-        async def find(self, _language: str, _phrase: str) -> CommandRecipe | None:
+        async def find(self, language: str, phrase: str) -> CommandRecipe | None:
+            del language, phrase
             return remembered("another phrase", "idle")
 
     dialogue = CompanionDialogue(WrongBindingStore())
@@ -431,6 +439,7 @@ async def test_strict_explicit_player_identity_is_not_rebound_by_dialogue(bound_
     assert decision.phase == "execute"
     assert decision.request is not None
     assert decision.request.action == parse_text(command, target_id=bound_target)
+    assert isinstance(decision.request.action, FollowAction)
     assert decision.request.action.target_id == OTHER_TARGET
 
 

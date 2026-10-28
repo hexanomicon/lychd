@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
+from unittest.mock import Mock
 
 import pytest
 from pydantic import ValidationError
@@ -26,6 +27,9 @@ from lychd.compositions.blockworld.companion_search import (
     dump_search_workflow,
     literal_search,
 )
+
+if TYPE_CHECKING:
+    from lychd.agents.services import WorkflowServices
 
 REQUEST_ID = "00000000-0000-4000-8000-000000000001"
 RUN_ID = "00000000-0000-4000-8000-000000000002"
@@ -80,11 +84,11 @@ def runtime(dump: CatalogueSnapshot, *, scopes: frozenset[str] = frozenset({SEAR
     events: list[str] = []
     common = SimpleNamespace(
         sigil_provider=lambda: SimpleNamespace(name="operator", scopes=scopes),
-        events=SimpleNamespace(emitter=lambda _run_id: SimpleNamespace(log=events.append)),
+        events=SimpleNamespace(emitter=Mock(return_value=SimpleNamespace(log=events.append))),
     )
     assert workflow.bind_deps is not None
     state = workflow.make_state(intent)
-    deps = workflow.bind_deps(common)
+    deps = workflow.bind_deps(cast("WorkflowServices", common))
     return SimpleNamespace(
         source=source,
         workflow=workflow,
