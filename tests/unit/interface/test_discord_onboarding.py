@@ -25,6 +25,7 @@ def configured() -> OnboardingService:
     profile = OnboardingProfile(
         guild_id="300000000000000003",
         channel_id="400000000000000004",
+        introduction_channel_id="400000000000000014",
         panel_message_id="700000000000000007",
         magus_role_id="600000000000000006",
         bot_role_id="800000000000000008",
@@ -83,6 +84,14 @@ def test_profile_rejects_everyone_or_colliding_roles_and_extra_fields() -> None:
             OnboardingProfile.model_validate({**profile.model_dump(), **patch})
 
 
+def test_profile_requires_an_explicit_destination_separate_from_the_public_panel() -> None:
+    profile = configured().profile
+    with pytest.raises(ValidationError, match="introduction_channel_id"):
+        OnboardingProfile.model_validate(profile.model_dump(exclude={"introduction_channel_id"}))
+    with pytest.raises(ValidationError):
+        OnboardingProfile.model_validate({**profile.model_dump(), "introduction_channel_id": profile.channel_id})
+
+
 @pytest.mark.parametrize(
     "choices",
     [("Admin",), ("Contributor",), ("Maintainer",), ("Bot",), ("Magus",), ("hanging_around", "hanging_around")],
@@ -106,6 +115,7 @@ def test_optional_multi_selection_and_intro_boundary() -> None:
         "guild",
         "member_guild",
         "channel",
+        "introduction_channel",
         "application",
         "panel",
         "author",
@@ -124,6 +134,7 @@ async def test_public_panel_refuses_wrong_binding_before_opening_form(kind: str)
         "guild": (observed, "guild_id", observed.guild_id + 1),
         "member_guild": (observed.user.guild, "id", observed.user.guild.id + 1),
         "channel": (observed, "channel_id", observed.channel_id + 1),
+        "introduction_channel": (observed, "channel_id", int(service.profile.introduction_channel_id)),
         "application": (observed, "application_id", observed.application_id + 1),
         "panel": (observed.message, "id", observed.message.id + 1),
         "author": (observed.message.author, "id", observed.message.author.id + 1),
@@ -164,7 +175,7 @@ async def test_persistent_panel_opens_only_ephemeral_form_and_never_rewrites_pub
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("kind", ["other_user", "expired", "public", "guild", "bot"])
+@pytest.mark.parametrize("kind", ["other_user", "expired", "public", "guild", "introduction_channel", "bot"])
 async def test_private_confirmation_refuses_cross_user_expired_or_public_interactions(kind: str) -> None:
     service = configured()
     observed = interaction(service, private=True)
@@ -177,6 +188,8 @@ async def test_private_confirmation_refuses_cross_user_expired_or_public_interac
         observed.message.flags.ephemeral = False
     elif kind == "guild":
         observed.guild_id += 1
+    elif kind == "introduction_channel":
+        observed.channel_id = int(service.profile.introduction_channel_id)
     else:
         observed.user.bot = True
     await click(view, observed, 0)
@@ -203,23 +216,45 @@ async def test_selection_and_modal_do_not_publish_before_explicit_confirmation()
     await modal.on_submit(observed)
     args = observed.response.send_message.await_args
     assert args.kwargs["ephemeral"] is True
+    assert args.args[0].startswith(f"Publish your introduction in <#{service.profile.introduction_channel_id}>?")
+    assert service.profile.channel_id not in args.args[0]
     assert "Everyone who can read" in args.args[0]
     assert "updates your existing introduction" in args.args[0]
     confirmation = args.kwargs["view"]
     assert isinstance(confirmation, _ConfirmationView)
     assert confirmation.children[0].label == "Publish my introduction"
     service.rest.publish_introduction.assert_not_awaited()
+    service.rest.ensure_member_role.assert_not_awaited()
     await click(confirmation, observed, 0)
     service.rest.publish_introduction.assert_awaited_once_with(
-        service.profile.channel_id,
+        service.profile.introduction_channel_id,
         "Meet Newcomer\nInterests: Trying it out, Looking to contribute.\nI build small tools.",
         subject_id=str(observed.user.id),
         event_id=str(observed.id),
     )
     assert str(observed.user.id) not in service.rest.publish_introduction.await_args.args[1]
     assert observed.response.defer.await_args.kwargs == {"ephemeral": True, "thinking": True}
+    acknowledgement = observed.edit_original_response.await_args.kwargs["content"]
+    assert f"<#{service.profile.introduction_channel_id}>" in acknowledgement
+    service.rest.ensure_member_role.assert_not_awaited()
     await click(confirmation, observed, 0)
     assert service.rest.publish_introduction.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_selection_and_modal_refuse_interactions_from_the_publication_destination() -> None:
+    service = configured()
+    observed = interaction(service, private=True)
+    observed.channel_id = int(service.profile.introduction_channel_id)
+    selection = _SelectionView(service, observed.user.id, time.monotonic() + 300)
+    await click(selection, observed, 1)
+    observed.response.send_modal.assert_not_awaited()
+    modal = _IntroModal(service, observed.user.id, time.monotonic() + 300, ())
+    assert not await modal.interaction_check(observed)
+    assert observed.response.send_message.await_args.kwargs["ephemeral"] is True
+    assert "view" not in observed.response.send_message.await_args.kwargs
+    service.rest.publish_introduction.assert_not_awaited()
+    service.rest.ensure_member_role.assert_not_awaited()
 
 
 @pytest.mark.asyncio

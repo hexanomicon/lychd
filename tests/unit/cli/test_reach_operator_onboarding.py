@@ -32,7 +32,10 @@ actions = ["answer_docs"]
     corpus.mkdir()
     (corpus / "manifest.json").write_text("{}")
     profile = tmp_path / "onboarding.json"
-    raw = b'{"guild_id":"103","channel_id":"104","panel_message_id":"107","magus_role_id":"108","bot_role_id":"109"}'
+    raw = (
+        b'{"guild_id":"103","channel_id":"104","introduction_channel_id":"106",'
+        b'"panel_message_id":"107","magus_role_id":"108","bot_role_id":"109"}'
+    )
     operator.write_private(profile, raw)
     observed: list[list[str]] = []
 

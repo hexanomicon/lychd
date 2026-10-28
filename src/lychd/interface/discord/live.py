@@ -30,7 +30,7 @@ from lychd.compositions.reach.operator_wire import (
 )
 from lychd.compositions.reach.policy import prepare_turn
 from lychd.compositions.reach.schemas import ReachEvent
-from lychd.interface.discord.admin import GuildSnapshot, snapshot_guild
+from lychd.interface.discord.admin import ChannelSnapshot, GuildSnapshot, snapshot_guild
 from lychd.interface.discord.onboarding import OnboardingPanel, OnboardingProfile, OnboardingService
 from lychd.interface.discord.operator_io import load_policy, read_token
 from lychd.interface.discord.publications import PublicationQueue
@@ -102,10 +102,26 @@ def _verify_baseline_roles(profile: OnboardingProfile, snapshot: GuildSnapshot) 
             _refuse("onboarding_role_binding")
 
 
+def _public_onboarding_channel(snapshot: GuildSnapshot, channel_id: str) -> ChannelSnapshot:
+    """Require an everyone-visible text destination in the authenticated guild inventory."""
+    roles = {role.id: role for role in snapshot.roles}
+    everyone = roles.get(snapshot.guild_id)
+    channel = next((item for item in snapshot.channels if item.id == channel_id), None)
+    if everyone is None or channel is None or channel.type != 0:
+        _refuse("onboarding_channel_binding")
+    view = everyone.permissions & (1 << 10)
+    for overwrite in channel.overwrites:
+        if overwrite.type == 0 and overwrite.id == snapshot.guild_id:
+            view = (view & ~overwrite.deny) | (overwrite.allow & (1 << 10))
+    if not view:
+        _refuse("onboarding_channel_not_public")
+    return channel
+
+
 async def verify_onboarding(
     service: OnboardingService, snapshot: GuildSnapshot, flags: discord.ApplicationFlags
 ) -> None:
-    """Bind exact public panel and harmless manageable baseline roles before Gateway connect."""
+    """Bind public panel and separate introduction destination before Gateway connect."""
     profile, rest = service.profile, service.rest
     if (
         snapshot.guild_id != profile.guild_id
@@ -114,17 +130,10 @@ async def verify_onboarding(
         or not (flags.gateway_guild_members or flags.gateway_guild_members_limited)
     ):
         _refuse("onboarding_identity_or_intent")
-    roles = {role.id: role for role in snapshot.roles}
-    everyone = roles.get(profile.guild_id)
-    channel = next((item for item in snapshot.channels if item.id == profile.channel_id), None)
-    if everyone is None or channel is None or channel.type != 0 or channel.name.split("・")[-1] != "start-here":
+    welcome_channel = _public_onboarding_channel(snapshot, profile.channel_id)
+    if welcome_channel.name.split("・")[-1] != "start-here":
         _refuse("onboarding_channel_binding")
-    view = everyone.permissions & (1 << 10)
-    for overwrite in channel.overwrites:
-        if overwrite.type == 0 and overwrite.id == profile.guild_id:
-            view = (view & ~overwrite.deny) | (overwrite.allow & (1 << 10))
-    if not view:
-        _refuse("onboarding_channel_not_public")
+    _public_onboarding_channel(snapshot, profile.introduction_channel_id)
     _verify_baseline_roles(profile, snapshot)
     panel = await rest.get_message(profile.channel_id, profile.panel_message_id)
     raw_author: object = panel.get("author")
@@ -139,7 +148,7 @@ async def verify_onboarding(
     ):
         _refuse("onboarding_panel_binding")
     rest.bind_member_roles((profile.magus_role_id, profile.bot_role_id))
-    rest.bind_introduction_channel(profile.channel_id)
+    rest.bind_introduction_channel(profile.introduction_channel_id)
 
 
 def onboarding_profile_for_guild(path: Path | None, guild_id: str) -> OnboardingProfile | None:

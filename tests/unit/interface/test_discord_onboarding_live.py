@@ -17,6 +17,7 @@ def onboarding() -> OnboardingService:
     profile = OnboardingProfile(
         guild_id="300000000000000003",
         channel_id="400000000000000004",
+        introduction_channel_id="400000000000000014",
         panel_message_id="700000000000000007",
         magus_role_id="600000000000000006",
         bot_role_id="800000000000000008",
@@ -69,7 +70,9 @@ def snapshot(configured: OnboardingService) -> Any:
         role.name = name
     channel = Mock(id=profile.channel_id, type=0, overwrites=[])
     channel.name = "start-here"
-    result.channels = [channel]
+    destination = Mock(id=profile.introduction_channel_id, type=0, overwrites=[])
+    destination.name = "general"
+    result.channels = [channel, destination]
     return result
 
 
@@ -164,7 +167,10 @@ async def test_startup_binds_only_verified_roles_panel_and_public_introduction_c
     configured.rest.bind_member_roles.assert_called_once_with(
         (configured.profile.magus_role_id, configured.profile.bot_role_id)
     )
-    configured.rest.bind_introduction_channel.assert_called_once_with(configured.profile.channel_id)
+    configured.rest.get_message.assert_awaited_once_with(
+        configured.profile.channel_id, configured.profile.panel_message_id
+    )
+    configured.rest.bind_introduction_channel.assert_called_once_with(configured.profile.introduction_channel_id)
 
 
 @pytest.mark.asyncio
@@ -172,6 +178,7 @@ async def test_startup_accepts_display_emoji_and_discord_role_position_ties() ->
     configured = onboarding()
     observed = snapshot(configured)
     observed.channels[0].name = "👋・start-here"
+    observed.channels[1].name = "💬・general"
     observed.roles[1].name = "🔮 Magus"
     observed.roles[2].name = "🤖 Bot"
     observed.roles[2].position = 1
@@ -181,6 +188,31 @@ async def test_startup_accepts_display_emoji_and_discord_role_position_ties() ->
     flags = Mock(gateway_guild_members=True, gateway_guild_members_limited=False)
     await verify_onboarding(configured, observed, flags)
     configured.rest.bind_member_roles.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["missing", "wrong_id", "nontext", "hidden", "role_exception", "guild"])
+async def test_startup_refuses_unverified_introduction_destination_before_binding(kind: str) -> None:
+    configured = onboarding()
+    observed = snapshot(configured)
+    destination = observed.channels[1]
+    flags = Mock(gateway_guild_members=True, gateway_guild_members_limited=False)
+    if kind == "missing":
+        observed.channels.pop()
+    elif kind == "wrong_id":
+        destination.id = "400000000000000024"
+    elif kind == "nontext":
+        destination.type = 5
+    elif kind in {"hidden", "role_exception"}:
+        destination.overwrites = [Mock(id=configured.profile.guild_id, type=0, allow=0, deny=1 << 10)]
+        if kind == "role_exception":
+            destination.overwrites.append(Mock(id=configured.profile.magus_role_id, type=0, allow=1 << 10, deny=0))
+    else:
+        observed.guild_id = "300000000000000013"
+    with pytest.raises(ValueError, match="onboarding_"):
+        await verify_onboarding(configured, observed, flags)
+    configured.rest.bind_member_roles.assert_not_called()
+    configured.rest.bind_introduction_channel.assert_not_called()
 
 
 @pytest.mark.asyncio

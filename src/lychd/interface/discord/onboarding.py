@@ -29,6 +29,7 @@ class OnboardingProfile(BaseModel):
 
     guild_id: DiscordId
     channel_id: DiscordId
+    introduction_channel_id: DiscordId
     panel_message_id: DiscordId
     magus_role_id: DiscordId
     bot_role_id: DiscordId
@@ -37,6 +38,13 @@ class OnboardingProfile(BaseModel):
     def separate_roles(self) -> Self:
         if self.magus_role_id == self.bot_role_id or self.guild_id in {self.magus_role_id, self.bot_role_id}:
             msg = "onboarding_role_binding"
+            raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def separate_channels(self) -> Self:
+        if self.channel_id == self.introduction_channel_id:
+            msg = "onboarding_channel_binding"
             raise ValueError(msg)
         return self
 
@@ -245,8 +253,9 @@ class _IntroModal(discord.ui.Modal, title="Optional introduction"):
         self.submitted = True
         # SDK modal values are private until this separate, explicit confirmation.
         await interaction.response.send_message(
-            "Publish your introduction in start-here? Everyone who can read that channel can see it. If you have already introduced yourself, this updates your existing introduction.\n\n"
-            + draft.text(interaction.user),
+            f"Publish your introduction in <#{self.service.profile.introduction_channel_id}>? "
+            "Everyone who can read that channel can see it. If you have already introduced yourself, "
+            "this updates your existing introduction.\n\n" + draft.text(interaction.user),
             ephemeral=True,
             suppress_embeds=True,
             allowed_mentions=discord.AllowedMentions.none(),
@@ -275,13 +284,13 @@ class _ConfirmationView(_PrivateView):
         await interaction.response.defer(ephemeral=True, thinking=True)
         try:
             result = await self.service.rest.publish_introduction(
-                self.service.profile.channel_id,
+                self.service.profile.introduction_channel_id,
                 self.draft.text(interaction.user),
                 subject_id=str(interaction.user.id),
                 event_id=str(interaction.id),
             )
             if result.status == "succeeded":
-                text = "Your introduction was published."
+                text = f"Your introduction was published in <#{self.service.profile.introduction_channel_id}>."
             elif result.status == "rejected" and result.code is not None and result.code.startswith("http_4"):
                 text = "Your introduction could not be published. You can open a new form and try again later."
             else:
