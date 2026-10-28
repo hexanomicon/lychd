@@ -11,7 +11,7 @@ from pydantic import AfterValidator, AwareDatetime, Field
 from lychd.compositions.reach.schemas import PolicyDigest, ReachEvent, ReachId, Record
 
 MAX_WIRE_BYTES = 65_536
-type ReachWorkerStatus = Literal["docs", "context", "empty", "refused", "error"]
+type ReachWorkerStatus = Literal["docs", "context", "conversation", "empty", "refused", "error"]
 
 
 def _uuid(value: str) -> str:
@@ -25,6 +25,7 @@ class ReachHistoryEntry(Record):
     """One attributed excerpt; authorization remains the receiving policy's decision."""
 
     subject_id: ReachId
+    subject_label: str | None = Field(default=None, min_length=1, max_length=80)
     event_id: ReachId
     conversation_id: ReachId
     text: str = Field(max_length=2000, repr=False)
@@ -50,6 +51,7 @@ class ReachWorkerResult(Record):
     run_id: ReachId | None = None
     policy_digest: PolicyDigest
     corpus_digest: PolicyDigest
+    model_binding_digest: PolicyDigest | None = None
     reason: Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,63}$")] | None = None
 
 
@@ -61,6 +63,7 @@ class ReachWorkerReady(Record):
     started_at: AwareDatetime
     policy_digest: PolicyDigest
     corpus_digest: PolicyDigest
+    model_binding_digest: PolicyDigest | None = None
 
 
 def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:

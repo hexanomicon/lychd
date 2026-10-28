@@ -8,15 +8,18 @@ icon: material/console
 `reach.discord.operator@1` is an explicit Linux development profile for a small server: a
 credential-bearing Discord edge, a networkless native documents worker, and a local operator
 tool for reviewed server setup. It does not activate `reach.discord@1` or any public deployment
-profile. It has no model/provider, Ward enrollment, durable Phylactery, or restart continuation.
+profile. Document search is the default; an explicit private profile can instead select bounded
+local-model conversation. Independently enabled owner publications use a local queue. Neither
+option supplies Ward enrollment, durable Phylactery, or restart continuation.
 
 The edge runs **discord.py 2.7.1** on Python 3.14.8, with its own lockfile. The worker runs
 on Python 3.15.0 in the explicit OCI development image, with a generation-local memory Run
 ledger and real native Graph. A host supervisor relays
 bounded JSON over the two containers' standard streams. Neither container receives an engine
-socket, checkout, HOME or the other's credentials. The worker receives only a compiled policy
-and an immutable export of selected public documents. Its answers are deterministic excerpts
-and source links, not model-generated explanations.
+socket, checkout, HOME or the other's credentials. The worker receives a compiled policy
+and an immutable export of selected public documents. Default answers are deterministic excerpts
+and source links. The optional conversation profile also mounts one frozen static persona and
+model binding into that worker; model HTTP stays in a closed host transport.
 
 The existing generic Reach policy selects people, groups, conversations and actions. Discord
 administrator permission does not grant a native Sigil, shell or host operation. Administrative
@@ -252,8 +255,9 @@ In an allowed channel, use an admitted account to try:
 Slash responses are ephemeral. A mention answer is sent to its allowed channel with mentions
 disabled. An unlisted person, channel, trigger or action is refused or ignored. The edge and
 native worker both evaluate the same compiled policy; Discord Administrator status is no bypass.
-Answers contain deterministic public-document excerpts and pinned source links. This profile
-has no AI model or provider and cannot explain beyond its selected corpus. Administrative
+Default answers contain deterministic public-document excerpts and pinned source links. Opting
+into [local conversation](#enable-local-conversation) changes `/reach ask` and direct mentions to
+model replies under a separately permitted `converse` action. Administrative
 writes remain the separate local `admin-plan`/`admin-apply` workflow; Discord chat cannot approve
 a plan.
 
@@ -284,10 +288,116 @@ authorize that action. The result is selected context excerpts, explicitly label
 **no AI summary**. History can also inform document matching for admitted questions.
 
 The edge fetches only bounded recent messages from the admitted channel before the triggering
-event, skips bots/webhooks and empty text, truncates each message to 2,000 characters, and caps
+event, skips webhooks, other bots and empty text, truncates each message to 2,000 characters, and caps
 the history payload at 16 KiB. The worker checks its conversation, age, count and byte bounds.
+Conversation mode may also include this bot's own recent replies with its configured display name.
 This is per-request context, not durable native conversation history. Do not enable it in a
 channel whose surrounding content you did not intend to admit.
+
+## Enable local conversation
+
+This option requires an already running, warm local `Qwen3.8-27B` at the fixed literal endpoint
+`http://127.0.0.1:28000`. The host transport checks fresh `/health` and `/v1/models` observations
+for the exact model. It cannot start, activate, evict or replace an engine. An absent or unsuitable
+model refuses the turn; document search and another model are not fallbacks.
+
+Create a private `0600` file at `$REACH_ROOT/conversation-01.json` with your local editor. This
+synthetic example uses the admitted defaults:
+
+```json
+{
+  "schema_version": 1,
+  "persona_name": "Example",
+  "persona_instructions": "Answer clearly and state uncertainty when evidence is missing.",
+  "animator_id": "night-qwen38",
+  "model_id": "Qwen3.8-27B",
+  "max_context": 16384,
+  "max_tokens": 384,
+  "temperature": 0.6,
+  "max_input_chars": 20000,
+  "timeout_seconds": 60
+}
+```
+
+The profile is a static instruction and exact model binding, not Mirror identity, Persona
+lineage or lasting memory. The supervisor freezes its validated bytes for one generation and
+mounts that snapshot read-only into the worker. It does not pass the profile or model frames to
+the Discord edge. Changes require a new explicit launch.
+
+Add `converse` to the first matching rule's actions. Keep `answer_docs` if you use
+`admin-inspect`; keep `summarize_context` if you use the excerpt-only context command. To admit
+recent surrounding conversation, first enable history using the preceding section. Then run:
+
+```bash
+uv run --locked python scripts/reach_operator.py run \
+  --engine "$ENGINE" \
+  --policy "$REACH_ROOT/policy.toml" \
+  --token-file "$REACH_ROOT/discord-token" \
+  --state-dir "$REACH_ROOT/state" \
+  --images "$REACH_ROOT/images-01.json" \
+  --corpus-dir "$REACH_ROOT/corpus-01" \
+  --conversation-profile "$REACH_ROOT/conversation-01.json" \
+  --model-endpoint http://127.0.0.1:28000 \
+  --history
+```
+
+Omit `--history` when the policy limit is zero. The corpus remains required and supplies bounded
+public-document excerpts when relevant. Recent messages and excerpts enter the model as
+attributed untrusted data. Oldest history is omitted first to meet the profile's input bound.
+The native worker admits a generation-local Run, executes `reach.operator_converse@1`, and
+acquires an exact Dispatcher Chat lease without tools. One bounded generation request crosses
+the host relay; it has no retry, proxy, redirect, arbitrary endpoint or model override. A model
+reply supplies no publication or host authority. Model and Discord response limits can truncate
+an answer; this profile does not qualify general answer quality.
+
+The public slash-command group defaults to `reach`. Select an alias with `--command-name example`
+and deliberately repeat `--sync-commands` when changing guild registration. Names accept a
+lowercase initial letter followed by lowercase letters, digits or underscores, at most 32
+characters. The alias changes the displayed commands, not the Reach Composition or permissions.
+
+## Publish owner-supplied updates
+
+Publication is independent of conversation. A trusted local producer supplies the finished text
+and is responsible for authorizing its exact content and audience before queueing it. Neither a
+chat message nor a model result can enqueue a publication. This queue is a local operator
+interface, not a Ward grant, general scheduler or automatic link from completed coding work.
+
+Add these arguments to the selected run command, using a private queue outside every checkout:
+
+```text
+--publications-dir "$REACH_ROOT/publications" --publication-channel 444444444444444444
+```
+
+Replace the synthetic channel ID with an intended text channel in the configured guild. Repeat
+`--publication-channel` for each exact destination. The edge verifies the guild channel binding
+at startup; chat policy does not broaden this separate host-selected destination set. Only the
+edge receives the queue's writable mount. The native worker and model receive no queue access.
+
+Using a local editor, save the finished message as a private `0600` UTF-8 file outside every
+checkout, for example `$REACH_ROOT/update-01.txt`. Queue it from a separate local terminal with
+the same `REACH_ROOT` value:
+
+```bash
+uv run --locked python -m lychd.interface.discord.publications queue \
+  --queue-dir "$REACH_ROOT/publications" \
+  --body-file "$REACH_ROOT/update-01.txt" \
+  --channel-id 444444444444444444 \
+  --publication-id 12345678-1234-4234-8234-123456789abc \
+  --ttl-seconds 3600
+```
+
+Use a fresh UUID for each separately authorized publication; retain it for inspection. The
+message body stays out of argv and environment variables. The queue admits at most 32 pending
+entries, 1,900 characters per body and a lifetime of at most one hour. A running edge scans the
+queue and makes one REST attempt with mentions disabled. It does not ask the model to rewrite
+or decide whether to publish.
+
+Private queue receipts retain the publication ID, body digest, outcome and any returned remote
+ID. Known settlement removes queued body and request files; an unknown result retains them and
+blocks automatic repetition of that publication. The REST journal remains an independent
+uncertainty fence. Inspect an uncertain external result before any further authorized action;
+new UUIDs must not be used to bypass uncertainty. These receipts do not establish a durable
+native outbox, cross-process producer authority or application-level release acceptance.
 
 ## Handle refusals and uncertain effects
 

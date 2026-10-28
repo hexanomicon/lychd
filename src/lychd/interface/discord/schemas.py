@@ -29,7 +29,7 @@ class DiscordRule(_Value):
     name: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")
     user_ids: tuple[DiscordId, ...] = Field(default=(), max_length=100)
     role_ids: tuple[DiscordId, ...] = Field(default=(), max_length=100)
-    actions: tuple[ReachAction, ...] = Field(min_length=1, max_length=2)
+    actions: tuple[ReachAction, ...] = Field(min_length=1, max_length=3)
 
     def to_reach_rule(self) -> ReachRule:
         return ReachRule(name=self.name, subject_ids=self.user_ids, group_ids=self.role_ids, actions=self.actions)
@@ -43,6 +43,7 @@ class DiscordPolicy(_Value):
     bot_user_id: DiscordId
     guild_id: DiscordId
     allowed_channel_ids: tuple[DiscordId, ...] = Field(min_length=1, max_length=100)
+    allowed_thread_parent_ids: tuple[DiscordId, ...] = Field(default=(), max_length=100)
     rules: tuple[DiscordRule, ...] = Field(min_length=1, max_length=100)
     allowed_triggers: tuple[Literal["mention", "slash"], ...] = Field(
         default=("mention", "slash"), min_length=1, max_length=2
@@ -73,6 +74,7 @@ class DiscordPolicy(_Value):
             agent_subject_id=self.bot_user_id,
             space_id=self.guild_id,
             allowed_conversation_ids=self.allowed_channel_ids,
+            allowed_parent_conversation_ids=self.allowed_thread_parent_ids,
             rules=tuple(rule.to_reach_rule() for rule in self.rules),
             allowed_triggers=tuple("command" if trigger == "slash" else "mention" for trigger in self.allowed_triggers),
             event_ttl_seconds=self.event_ttl_seconds,

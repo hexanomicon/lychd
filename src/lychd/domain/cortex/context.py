@@ -113,6 +113,7 @@ class ContextOrchestrator:
     registry: AnimatorRegistry
     turn_window: int = _DEFAULT_TURN_WINDOW
     char_cap: int = _DEFAULT_CHAR_CAP
+    identity_block: Block | None = None
     _cache: dict[str, AssembledContext] = field(default_factory=dict)
     _env_snapshots: dict[str, _EnvironmentSnapshot] = field(default_factory=dict)
     _env_snapshot_key_by_run: dict[str, str] = field(default_factory=dict)
@@ -211,6 +212,11 @@ class ContextOrchestrator:
             self._env_snapshots.pop(key, None)
 
     def _identity_block(self) -> Block:
+        if self.identity_block is not None:
+            if self.identity_block.layer != 1:
+                msg = "Static identity must occupy Context layer one."
+                raise ValueError(msg)
+            return self.identity_block
         return Block(
             layer=1,
             key=IDENTITY_BLOCK_KEY,

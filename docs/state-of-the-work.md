@@ -1886,6 +1886,18 @@ categories, channels and explicit-id patches. Single-attempt REST and content-fr
 records fence uncertainty across restarts. Source tests cover policy, protocol, native execution,
 SDK registration, plan ordering, concurrent custody, expiry, reconciliation and no blind retry.
 
+An explicit private conversation profile now selects one static persona and exact local
+`Qwen3.8-27B` binding while document search remains the default. An OCI-only native
+`reach.operator_converse@1` Run/Graph obtains an exact Dispatcher Chat lease without tools.
+A closed host relay performs fresh health/model observations and bounded generation against one
+fixed loopback endpoint; it supplies no runtime lifecycle control. Same-channel history is
+separately bounded and opt-in, including this bot's own prior replies in conversation mode.
+The static profile is not Mirror identity or persistent memory. Independently selected local
+publications carry already authorized producer text through a private queue to exact guild
+channels. Only the edge receives that queue; model/chat output grants no publication authority.
+Mock-HTTP and portable tests cover model/frame separation, current exact identity, cancellation,
+queue custody, expiry and single-attempt publication. They do not qualify a live model or Discord.
+
 **Boundary — Not yet:** Creation's one application selector supplies no general Composition or
 Product catalogue, shared store, Suite execution or application scheduler. Other Portfolio members
 have no domain/effect path enabled in normal application assembly. Blockworld's
@@ -1913,11 +1925,17 @@ its proposed mail/bank ports, entity books, jurisdiction profiles, privacy workf
 Patterns establish no implementation, live account access, tax filing, or supported-country claim.
 The public Reach contract still supplies no default SDK connection, Ward enrollment, durable
 application turn/outbox, recovery or deployable home/VPS profile. The explicit operator profile
-has no model-generated answer, persistent native history, automatic restart, installed service,
+has no persistent native history, automatic restart, installed service,
 qualified live Discord session or actual server-setup receipt. A new worker generation refuses
 older events and loses its memory Runs; its transport journal is not Phylactery. Its reviewed
 local admin commands are separate from Discord chat and do not add native authority. Concurrent
 Discord changes can race non-atomic remote effects; observed mismatches stop further writes.
+The optional conversation path has no live-qualified Qwen/Discord dialogue, tools, Mirror
+lineage, general-purpose provider routing or runtime activation. Its local publication queue
+has no Ward producer enrollment, automatic coding-work integration, durable native outbox or
+application release judgment. Uncertain publications require inspection rather than a new ID
+or automatic resend. Learning, teaching, introspection and Comfy execution are not part of this
+operator profile.
 Public history/media and production deployment acceptance remain separate contract work.
 [Reach connected work](./compositions/reach/connected-work/index.md) proposes a successor to the
 public Discord contract for Gmail, Discord and GitHub correspondence, plus optional WhatsApp business
@@ -1941,6 +1959,8 @@ physical devices or every Android version allowed by the declared minimum SDK.
 - **Topic:** [Reachy preparation](./compositions/reach/preparation.md) and [provider-neutral boundary](./compositions/reach/architecture.md)
 - **Source:** [Native documents score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/documents_workflow.py), [OCI worker](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_worker.py), [Discord edge](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/live.py), [local administration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/admin.py), [REST effect journal](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/rest.py), and [operator supervisor](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_operator.py)
 - **Verification:** [Native search cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_documents.py), [worker protocol](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_worker.py), [supervisor custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_operator.py), [SDK edge cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_live.py), [administration plans](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_admin.py), and [single-attempt effects](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_rest.py)
+- **Source:** [Native conversation score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/conversation_workflow.py), [frozen model contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/operator_model_wire.py), [host model relay](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_model_broker.py), and [local publication queue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/publications.py)
+- **Verification:** [Conversation Run and lease cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_conversation.py), [model contract cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_operator_model.py), [host HTTP and frame custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_operator_model.py), and [publication custody and effects](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_publications.py)
 - **Topic:** [Discord operator profile](./compositions/reach/operator.md)
 - **Source:** [Companion native score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion.py), [operator session](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_session.py), [HTTP effect adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_bridge.py), [voice/text entry](https://github.com/hexanomicon/lychd/blob/main/scripts/companion_lab.py), and [Fabric delivery client](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft)
 - **Source:** [Reviewed dialogue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_dialogue.py), [private recipe store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/companion_memory.py), and [inactive Dump & Search score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_search.py)

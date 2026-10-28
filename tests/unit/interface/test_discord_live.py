@@ -18,6 +18,7 @@ from lychd.interface.discord.live import (
     ReachService,
     event_from_interaction,
     event_from_message,
+    result_text,
     startup_error_code,
 )
 from lychd.interface.discord.operator_io import load_policy, read_token
@@ -62,6 +63,7 @@ def service() -> ReachService:
     worker = Mock()
     worker.ready = ready()
     worker.available = True
+    worker.lock = asyncio.Lock()
     worker.request = AsyncMock(
         return_value=ReachWorkerResult(
             request_id="request",
@@ -124,6 +126,7 @@ async def test_shared_gate_and_generation_fence_precede_worker_and_history() -> 
     event = event_from_message(message(), policy())
     assert event is not None
     channel = Mock(spec=discord.TextChannel)
+    channel.id = int(event.conversation_id)
     assert await configured.run_event(event, channel) is not None
     assert await configured.run_event(event, channel) is None
     cast("AsyncMock", configured.worker.request).assert_awaited_once()
@@ -146,6 +149,37 @@ async def test_local_cog_registration_never_syncs_globally_or_requests_privilege
         assert bot.intents.guild_messages
         assert bot.allowed_mentions is not None
         assert not bot.allowed_mentions.everyone
+
+
+@pytest.mark.asyncio
+async def test_command_alias_uses_public_group_without_global_registration() -> None:
+    bot = ReachBot(service(), command_name="nadir")
+    async with bot:
+        await bot.setup_hook()
+        commands = bot.tree.get_commands(guild=discord.Object(id=333333333333333333))
+        assert [command.name for command in commands] == ["nadir"]
+        assert bot.tree.get_commands() == []
+
+
+@pytest.mark.parametrize("name", ["Nadir", "two words", "nadir-update", "", "x" * 33])
+def test_invalid_command_alias_is_rejected(name: str) -> None:
+    with pytest.raises(ValueError, match="command_name"):
+        ReachBot(service(), command_name=name)
+
+
+@pytest.mark.parametrize("status", ["refused", "error", "empty"])
+def test_empty_worker_outcome_renders_fixed_useful_message(status: Literal["empty", "refused", "error"]) -> None:
+    result = ReachWorkerResult(
+        request_id="request",
+        status=status,
+        policy_digest=policy().digest,
+        corpus_digest="c" * 64,
+        reason="foreign_failure",
+    )
+    text = result_text(result)
+    assert text.strip()
+    assert "foreign_failure" not in text
+    assert "oprávnenia" in text if status == "refused" else "neskôr" in text
 
 
 @pytest.mark.asyncio
@@ -306,7 +340,9 @@ async def test_effect_outcomes_report_failure_without_retrying(
 
     if path == "mention":
         await cog.on_message(observed)
-        send.assert_awaited_once()
+        send.assert_awaited_once_with(
+            str(observed.channel.id), "Public excerpt", event_id=str(observed.id), reply_to=str(observed.id)
+        )
         edit.assert_not_awaited()
         code = "message_failed"
     elif path == "inspect":
@@ -328,3 +364,58 @@ async def test_effect_outcomes_report_failure_without_retrying(
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == ("" if status == "succeeded" else f"reach_discord:{code}\n")
+
+
+@pytest.mark.asyncio
+async def test_conversation_history_is_chronological_and_includes_only_own_bot() -> None:
+    configured = service()
+    configured.conversation = True
+    configured.history_enabled = True
+    configured.policy = policy().model_copy(update={"context_message_limit": 10})
+    observed = event_from_message(message(), configured.policy, conversation=True)
+    assert observed is not None
+    assert observed.action == "converse"
+
+    async def messages(**kwargs: Any) -> Any:
+        del kwargs
+        for index, author in enumerate((configured.policy.bot_user_id, "888888888888888888", observed.subject_id)):
+            item = message()
+            item.id += index + 1
+            item.author.id = int(author)
+            item.author.bot = author != observed.subject_id
+            item.author.display_name = "Vesper" if author == configured.policy.bot_user_id else "Chirayu"
+            item.created_at = NOW - timedelta(seconds=index + 1)
+            yield item
+
+    channel = Mock(history=messages)
+    history = await configured.history(channel, observed)
+    assert [entry.subject_id for entry in history] == [observed.subject_id, configured.policy.bot_user_id]
+    assert [entry.subject_label for entry in history] == ["Chirayu", "Vesper"]
+
+
+def test_only_observed_discord_thread_can_supply_admitted_parent() -> None:
+    configured = policy().model_copy(update={"allowed_thread_parent_ids": ("444444444444444444",)})
+    observed = message()
+    observed.channel = Mock(spec=discord.Thread)
+    observed.channel.id = 999999999999999999
+    observed.channel.parent_id = 444444444444444444
+    event = event_from_message(observed, configured, conversation=True)
+    assert event is not None
+    assert event.parent_conversation_id == "444444444444444444"
+    observed.channel = Mock(spec=discord.TextChannel)
+    observed.channel.id = 999999999999999999
+    observed.channel.parent_id = 444444444444444444
+    assert event_from_message(observed, configured, conversation=True) is None
+
+
+@pytest.mark.asyncio
+async def test_busy_worker_refuses_before_history() -> None:
+    configured = service()
+    configured.worker.available = False
+    observed = event_from_message(message(), configured.policy)
+    assert observed is not None
+    channel = Mock(spec=discord.TextChannel)
+    channel.id = int(observed.conversation_id)
+    with pytest.raises(ValueError, match="worker_busy_or_unavailable"):
+        await configured.run_event(observed, channel)
+    channel.history.assert_not_called()

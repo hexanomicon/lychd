@@ -522,15 +522,30 @@ class DiscordRest:
             status="unknown", code="invalid_response" if status < HTTPStatus.MULTIPLE_CHOICES else f"http_{status}"
         )
 
-    async def send_message(self, channel_id: str, text: str, *, event_id: str) -> EffectResult:
+    async def send_message(
+        self, channel_id: str, text: str, *, event_id: str, reply_to: str | None = None
+    ) -> EffectResult:
         channel_id, event_id = _id(channel_id), _id(event_id)
         if type(text) is not str or not 1 <= len(text) <= _MAX_MESSAGE:
             return EffectResult(status="rejected", code="invalid_message")
         nonce = _digest(f"{self.application_id}:{channel_id}:{event_id}")[:25]
+        body: dict[str, Any] = {
+            "content": text,
+            "allowed_mentions": {"parse": []},
+            "nonce": nonce,
+            "enforce_nonce": True,
+        }
+        if reply_to is not None:
+            body["allowed_mentions"]["replied_user"] = False
+            body["message_reference"] = {
+                "message_id": _id(reply_to),
+                "channel_id": channel_id,
+                "fail_if_not_exists": False,
+            }
         return await self.write(
             "POST",
             f"/channels/{channel_id}/messages",
-            {"content": text, "allowed_mentions": {"parse": []}, "nonce": nonce, "enforce_nonce": True},
+            body,
             effect_key=f"message:{self.application_id}:{event_id}",
             scope=f"message:{self.application_id}:{channel_id}:{event_id}",
         )

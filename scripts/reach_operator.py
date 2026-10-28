@@ -24,10 +24,15 @@ from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from hashlib import sha256
 from pathlib import Path
-from typing import Any, NoReturn, cast
+from typing import Any, Literal, NoReturn, cast
 from uuid import uuid4
 
 from lychd.interface.discord.operator_io import load_policy
+
+if __package__:
+    from scripts.reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker, validate_endpoint
+else:
+    from reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker, validate_endpoint
 
 ROOT = Path(__file__).resolve().parents[1]
 WIRE_LIMIT = 65_536
@@ -44,7 +49,17 @@ EDGE_INPUTS = (
     *(f"src/lychd/compositions/reach/{name}.py" for name in ("__init__", "schemas", "policy", "operator_wire")),
     *(
         f"src/lychd/interface/discord/{name}.py"
-        for name in ("__init__", "schemas", "events", "operator_io", "live", "rest", "admin", "operator_cli")
+        for name in (
+            "__init__",
+            "schemas",
+            "events",
+            "operator_io",
+            "live",
+            "rest",
+            "admin",
+            "operator_cli",
+            "publications",
+        )
     ),
 )
 
@@ -279,8 +294,27 @@ def load_images(path: Path) -> dict[str, str]:
     return {"core": record["core"], "edge": record["edge"]}
 
 
+def _retain_image(engine: str, role: Literal["core", "edge"], identity: str, *, root: Path) -> None:
+    """Keep the selected image addressable when a later build replaces its build tag."""
+    if IMAGE_ID.fullmatch(identity) is None:
+        _fail("operator_image_identity")
+    tag = f"localhost/lychd-reach-{role}:{identity.removeprefix('sha256:')}"
+    command([engine, "image", "tag", identity, tag], root=root, engine=engine, capture=False)
+    observed = (
+        command(
+            [engine, "image", "inspect", "--format", "{{.Id}}", tag],
+            root=root,
+            engine=engine,
+        )
+        .decode("ascii")
+        .strip()
+    )
+    if observed != identity:
+        _fail("operator_image_retention")
+
+
 def build_images(engine: str, output: Path, *, root: Path = ROOT) -> None:
-    """Build exact images with separate bounded source contexts, never secret mounts."""
+    """Build and retain exact images; the shared Core build tag requires sequential invocations."""
     external_path(output)
     if output.exists():
         _fail("operator_file_exists")
@@ -296,6 +330,7 @@ def build_images(engine: str, output: Path, *, root: Path = ROOT) -> None:
     )
     if IMAGE_ID.fullmatch(core) is None:
         _fail("operator_image_identity")
+    _retain_image(engine, "core", core, root=root)
     with tempfile.TemporaryDirectory(prefix="lychd-reach-edge-") as temporary:
         context = Path(temporary)
         for relative in EDGE_INPUTS:
@@ -328,6 +363,7 @@ def build_images(engine: str, output: Path, *, root: Path = ROOT) -> None:
         if re.fullmatch(r"(?:sha256:)?[0-9a-f]{64}", edge) is None:
             _fail("operator_image_identity")
         edge = edge if edge.startswith("sha256:") else f"sha256:{edge}"
+        _retain_image(engine, "edge", edge, root=root)
     write_private(output, json_bytes({"schema_version": 1, "core": core, "edge": edge}))
 
 
@@ -383,8 +419,8 @@ def bind(source: Path, destination: str, *, readonly: bool = True) -> list[str]:
     return ["--volume", f"{source}:{destination}:{'ro' if readonly else 'rw'},Z"]
 
 
-async def relay(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-    """Forward complete bounded JSON objects only; EOF ends this generation."""
+async def relay(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, *, requests_only: bool = False) -> None:
+    """Forward bounded objects; the conversation edge may submit only typed worker requests."""
     while True:
         try:
             raw = await reader.readuntil(b"\n")
@@ -395,8 +431,46 @@ async def relay(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> N
         if len(raw) > WIRE_LIMIT:
             _fail("operator_frame_limit")
         strict_object(raw)
+        if requests_only:
+            from lychd.compositions.reach.operator_wire import parse_request_line
+
+            parse_request_line(raw)
         writer.write(raw)
         await writer.drain()
+
+
+async def model_relay(
+    reader: asyncio.StreamReader,
+    edge_writer: asyncio.StreamWriter,
+    core_writer: asyncio.StreamWriter,
+    broker: OperatorModelBroker,
+) -> None:
+    """Keep model frames on the trusted host pipe and expose only public results."""
+    from lychd.compositions.reach.operator_model_wire import OperatorModelRequest
+
+    while True:
+        try:
+            raw = await reader.readuntil(b"\n")
+        except asyncio.IncompleteReadError as error:
+            if error.partial:
+                _fail("operator_truncated_frame")
+            return
+        if len(raw) > WIRE_LIMIT:
+            _fail("operator_frame_limit")
+        value = strict_object(raw)
+        if value.get("kind") in {"ready", "result"}:
+            edge_writer.write(raw)
+            await edge_writer.drain()
+        elif value.get("kind") == "model_request":
+            request = OperatorModelRequest.model_validate_json(raw)
+            response = await broker.handle(request)
+            encoded = response.model_dump_json().encode() + b"\n"
+            if len(encoded) > WIRE_LIMIT:
+                _fail("operator_frame_limit")
+            core_writer.write(encoded)
+            await core_writer.drain()
+        else:
+            _fail("operator_core_frame")
 
 
 async def diagnostics(reader: asyncio.StreamReader) -> None:
@@ -446,7 +520,13 @@ async def remove_owned(engine: str, cidfile: Path) -> None:
         _fail("operator_cleanup_failed")
 
 
-async def supervise(engine: str, commands: tuple[list[str], list[str]], cidfiles: tuple[Path, Path]) -> int:  # noqa: C901, PLR0912 - explicit two-child settlement and exact-ID cleanup
+async def supervise(  # noqa: C901, PLR0912 - explicit two-child settlement and exact-ID cleanup
+    engine: str,
+    commands: tuple[list[str], list[str]],
+    cidfiles: tuple[Path, Path],
+    *,
+    broker: OperatorModelBroker | None = None,
+) -> int:
     """First EOF, child failure or signal retires both processes and exact owned containers."""
     children: list[asyncio.subprocess.Process] = []
     tasks: list[asyncio.Task[Any]] = []
@@ -478,8 +558,12 @@ async def supervise(engine: str, commands: tuple[list[str], list[str]], cidfiles
         ):
             _fail("operator_child_pipe")
         tasks = [
-            asyncio.create_task(relay(core.stdout, edge.stdin)),
-            asyncio.create_task(relay(edge.stdout, core.stdin)),
+            asyncio.create_task(
+                relay(core.stdout, edge.stdin)
+                if broker is None
+                else model_relay(core.stdout, edge.stdin, core.stdin, broker)
+            ),
+            asyncio.create_task(relay(edge.stdout, core.stdin, requests_only=broker is not None)),
             asyncio.create_task(core.wait()),
             asyncio.create_task(edge.wait()),
             asyncio.create_task(stopped.wait()),
@@ -498,12 +582,12 @@ async def supervise(engine: str, commands: tuple[list[str], list[str]], cidfiles
                 if type(value) is int:
                     status = value if value >= 0 else 128 - value
     finally:
-        for child in children:
-            await retire(child)
         for task in tasks:
             if not task.done():
                 task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
+        for child in children:
+            await retire(child)
         errors: list[OSError | ValueError] = []
         for cidfile in cidfiles:
             try:
@@ -545,7 +629,8 @@ def generation_workspace(state: Path, prefix: str) -> Generator[Path]:
         shutil.rmtree(directory)
 
 
-def run_containers(args: argparse.Namespace) -> int:
+def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR0915 - explicit frozen container assembly
+    """Freeze selected inputs and join exactly one native/edge process generation."""
     images, effects = select_operator_files(args)
     external_path(args.corpus_dir)
     if not args.corpus_dir.is_dir() or not (args.corpus_dir / "manifest.json").is_file():
@@ -553,6 +638,26 @@ def run_containers(args: argparse.Namespace) -> int:
     policy = load_policy(args.policy)
     if bool(policy.context_message_limit) != args.history:
         _fail("history_policy_flag_mismatch")
+    if re.fullmatch(r"[a-z][a-z0-9_]{0,31}", args.command_name) is None:
+        _fail("operator_command_name")
+    profile = None
+    if args.conversation_profile is not None:
+        from lychd.compositions.reach.operator_model_wire import OperatorConversationProfile
+
+        profile_raw = read_regular(args.conversation_profile, WIRE_LIMIT, private=True)
+        strict_object(profile_raw)
+        profile = OperatorConversationProfile.model_validate_json(profile_raw)
+    validate_endpoint(args.model_endpoint)
+    publications = None
+    if args.publications_dir is not None:
+        publications = private_directory(args.publications_dir)
+        if not args.publication_channel:
+            _fail("operator_publication_channel")
+    elif args.publication_channel:
+        _fail("operator_publication_directory")
+    for identity in args.publication_channel:
+        if re.fullmatch(r"[1-9][0-9]{0,19}", identity) is None:
+            _fail("operator_publication_channel")
     with (
         instance_lock(args.state_dir),
         generation_workspace(args.state_dir, "generation-") as temporary,
@@ -563,6 +668,10 @@ def run_containers(args: argparse.Namespace) -> int:
         core_cid, edge_cid = generation / "core.cid", generation / "edge.cid"
         core = container_arguments(args.engine, images["core"], core_cid, offline=True)
         core += bind(generic, "/run/reach/policy.json") + bind(args.corpus_dir, "/run/reach/corpus")
+        if profile is not None:
+            frozen_profile = generation / "conversation.json"
+            write_private(frozen_profile, profile.model_dump_json().encode())
+            core += bind(frozen_profile, "/run/reach/conversation.json")
         core += [
             "--entrypoint",
             "python",
@@ -573,12 +682,16 @@ def run_containers(args: argparse.Namespace) -> int:
             "--corpus-dir",
             "/run/reach/corpus",
         ]
+        if profile is not None:
+            core += ["--conversation-profile", "/run/reach/conversation.json"]
         edge = container_arguments(args.engine, images["edge"], edge_cid, offline=False)
         edge += (
             bind(args.policy, "/run/reach/policy.toml")
             + bind(args.token_file, "/run/secrets/discord-token")
             + bind(effects, "/state/effects", readonly=False)
         )
+        if publications is not None:
+            edge += bind(publications, "/state/publications", readonly=False)
         edge += [
             images["edge"],
             "--policy",
@@ -587,15 +700,32 @@ def run_containers(args: argparse.Namespace) -> int:
             "/run/secrets/discord-token",
             "--effects-dir",
             "/state/effects",
+            "--command-name",
+            args.command_name,
         ]
         if args.sync_commands:
             edge.append("--sync-commands")
         if args.history:
             edge.append("--history")
+        if profile is not None:
+            edge.append("--conversation")
+        if publications is not None:
+            edge += ["--publications-dir", "/state/publications"]
+            for identity in args.publication_channel:
+                edge += ["--publication-channel", identity]
         for identity in args.admin_user:
             if re.fullmatch(r"[1-9][0-9]{0,19}", identity) is None:
                 _fail("operator_admin_identity")
             edge += ["--admin-user", identity]
+        if profile is not None:
+            return asyncio.run(
+                supervise(
+                    args.engine,
+                    (core, edge),
+                    (core_cid, edge_cid),
+                    broker=OperatorModelBroker(profile, endpoint=args.model_endpoint),
+                )
+            )
         return asyncio.run(supervise(args.engine, (core, edge), (core_cid, edge_cid)))
 
 
@@ -676,6 +806,11 @@ def parser() -> argparse.ArgumentParser:
             child.add_argument("--sync-commands", action="store_true")
             child.add_argument("--history", action="store_true")
             child.add_argument("--admin-user", action="append", default=[])
+            child.add_argument("--command-name", default="reach")
+            child.add_argument("--conversation-profile", type=Path)
+            child.add_argument("--model-endpoint", default=MODEL_ENDPOINT)
+            child.add_argument("--publications-dir", type=Path)
+            child.add_argument("--publication-channel", action="append", default=[])
         elif operation == "admin-plan":
             child.add_argument("--owner-id", required=True)
             child.add_argument("--output", required=True, type=Path)

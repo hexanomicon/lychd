@@ -425,3 +425,60 @@ def test_command_admits_nonzero_output_only_when_explicitly_selected(
     else:
         with pytest.raises(ValueError, match="operator_command_failed"):
             operator.command(["fixture"], root=tmp_path, accepted_exit_codes=accepted)
+
+
+@pytest.mark.parametrize("failed_role", [None, "core", "edge"])
+def test_build_retains_exact_images_before_shared_tag_changes_and_manifest_publication(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failed_role: str | None
+) -> None:
+    root = tmp_path / "source"
+    containerfile = root / "clients/discord/Containerfile"
+    containerfile.parent.mkdir(parents=True)
+    containerfile.write_text("FROM fixture\n")
+    monkeypatch.setattr(operator, "EDGE_INPUTS", ("clients/discord/Containerfile",))
+    output = tmp_path / "images.json"
+    core, edge, replacement = ("sha256:" + letter * 64 for letter in ("a", "b", "c"))
+    core_tag = "localhost/lychd-reach-core:" + core.removeprefix("sha256:")
+    edge_tag = "localhost/lychd-reach-edge:" + edge.removeprefix("sha256:")
+    tags: dict[str, str] = {}
+    shared = core
+    edge_built = False
+
+    def command(arguments: Any, **_kwargs: Any) -> bytes:
+        nonlocal shared, edge_built
+        args = list(arguments)
+        assert not output.exists()
+        if args[:3] == ["bash", "scripts/container_checks.sh", "--build-only"]:
+            return b""
+        if args[1:3] == ["image", "tag"]:
+            identity, tag = args[3:5]
+            assert identity in {core, edge}
+            tags[tag] = identity
+            return b""
+        if args[1:3] == ["image", "inspect"]:
+            tag = args[-1]
+            if tag == "localhost/lychd-checks:python-3.15.0":
+                return shared.encode() + b"\n"
+            observed = tags[tag]
+            if tag == f"localhost/lychd-reach-{failed_role}:" + observed.removeprefix("sha256:"):
+                return replacement.encode() + b"\n"
+            return observed.encode() + b"\n"
+        assert args[1] == "build"
+        # A later build may replace the shared tag; the selected Core already has its own tag.
+        assert tags[core_tag] == core
+        shared = replacement
+        edge_built = True
+        Path(args[args.index("--iidfile") + 1]).write_text(edge)
+        return b""
+
+    monkeypatch.setattr(operator, "command", command)
+    if failed_role is not None:
+        with pytest.raises(ValueError, match="operator_image_retention"):
+            operator.build_images("docker", output, root=root)
+        assert not output.exists()
+        assert edge_built == (failed_role == "edge")
+        return
+    operator.build_images("docker", output, root=root)
+    assert shared == replacement
+    assert operator.load_images(output) == {"core": core, "edge": edge}
+    assert tags == {core_tag: core, edge_tag: edge}

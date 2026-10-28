@@ -1,8 +1,8 @@
-"""Disposable, offline native Reach documents worker; run only in the explicit OCI development image.
+"""Disposable native Reach documents or local conversation worker, OCI-only.
 
-The caller supplies a public export and generic policy. No ambient configuration,
-SDK, database, model, credential, host service or network client is constructed.
-Its in-memory Run and turn records expire with this process generation.
+The explicit static conversation profile may request one already-running local
+model through private supervisor pipes. No credentials, host runtime control,
+network access, persistent memory or Mirror identity registry are available.
 """
 
 from __future__ import annotations
@@ -20,18 +20,30 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NoReturn
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, cast
 from uuid import uuid4
 
 import structlog
 
-from lychd.agents.factory import AgentForge
+from lychd.agents.factory import AgentForge, build_agent
 from lychd.agents.workflows import BuiltinWorkflowRegistry
+from lychd.compositions.reach.conversation_workflow import (
+    conversation_agent_spec,
+    make_conversation_intent,
+    persona_text,
+    reach_conversation_workflow,
+)
 from lychd.compositions.reach.documents import MAX_DOCUMENT_BYTES, CorpusManifest, PublicCorpus, verify_corpus
 from lychd.compositions.reach.documents_workflow import (
     DocumentsRefused,
     make_documents_intent,
     reach_documents_workflow,
+)
+from lychd.compositions.reach.operator_model import ModelRelay, OperatorModelAdapter, operator_model_rune
+from lychd.compositions.reach.operator_model_wire import (
+    OperatorConversationProfile,
+    OperatorModelRequest,
+    OperatorModelResponse,
 )
 from lychd.compositions.reach.operator_wire import (
     MAX_WIRE_BYTES,
@@ -45,9 +57,11 @@ from lychd.compositions.reach.operator_wire import (
 from lychd.compositions.reach.schemas import ReachPolicy, require_aware
 from lychd.domain.animation.services.declarations import AnimatorDeclarations
 from lychd.domain.animation.services.registry import AnimatorRegistry
-from lychd.domain.cortex.context import ContextOrchestrator
+from lychd.domain.cortex.context import Block, ContextOrchestrator
+from lychd.domain.cortex.dispatcher import Dispatcher
 from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
+from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.runs import RunStatus
 from lychd.domain.cortex.substrate import RunSubstrate
@@ -63,6 +77,7 @@ if TYPE_CHECKING:
     from lychd.domain.orchestration.schema import TransitionPlan
 
 MAX_REQUESTS = 512
+MAX_PENDING_INPUTS = 4
 
 
 def _read_regular(path: Path, limit: int, *, directory_fd: int | None = None) -> bytes:
@@ -182,6 +197,8 @@ class DocumentsRuntime:
     sessions: BridgeSessionStore
     queue: LocalQueue
     bus: InProcessEventBus
+    profile: OperatorConversationProfile | None = None
+    pending_inputs: list[bytes] = field(default_factory=list)
     generation: str = field(default_factory=lambda: str(uuid4()))
     _seen: dict[tuple[str, str, str], str] = field(default_factory=dict)
     _serial: asyncio.Lock = field(default_factory=asyncio.Lock)
@@ -193,6 +210,7 @@ class DocumentsRuntime:
             started_at=self.started_at,
             policy_digest=self.policy.digest,
             corpus_digest=self.corpus.digest,
+            model_binding_digest=self.profile.digest if self.profile else None,
         )
 
     def refuse(
@@ -205,7 +223,32 @@ class DocumentsRuntime:
             run_id=run_id,
             policy_digest=self.policy.digest,
             corpus_digest=self.corpus.digest,
+            model_binding_digest=self.profile.digest if self.profile else None,
             reason=reason,
+        )
+
+    def intent(self, request: ReachWorkerRequest, session_id: str) -> Any:
+        """Select the exact development score without broadening documents mode."""
+        if request.event.action == "converse":
+            if self.profile is None:
+                msg = "action_not_supported"
+                raise DocumentsRefused(msg)
+            return make_conversation_intent(
+                self.policy,
+                self.corpus,
+                self.profile,
+                request,
+                session_id=session_id,
+                started_at=self.started_at,
+                now=self.clock(),
+            )
+        return make_documents_intent(
+            self.policy,
+            self.corpus,
+            request,
+            session_id=session_id,
+            started_at=self.started_at,
+            now=self.clock(),
         )
 
     async def process(self, request: ReachWorkerRequest, *, timeout: float = 15) -> ReachWorkerResult:  # noqa: C901, PLR0911, ASYNC109 - explicit bounded admission and asyncio.timeout ownership
@@ -223,21 +266,12 @@ class DocumentsRuntime:
                 return self.refuse(request.request_id, "generation_budget")
             # Validate before even a fixture session or native Run is constructed.
             try:
-                make_documents_intent(
-                    self.policy,
-                    self.corpus,
-                    request,
-                    session_id="preflight",
-                    started_at=self.started_at,
-                    now=self.clock(),
-                )
+                self.intent(request, "preflight")
             except DocumentsRefused as error:
                 return self.refuse(request.request_id, str(error))
             self._seen[identity] = digest
             session = await self.sessions.create_session(title="Operator public documents")
-            intent = make_documents_intent(
-                self.policy, self.corpus, request, session_id=session.id, started_at=self.started_at, now=self.clock()
-            )
+            intent = self.intent(request, session.id)
             handle = await self.engine.submit(intent, idempotency_key=f"{self.generation}:{digest}")
             run = await self.substrate.ledger.get(handle.run_id)
             if run is None:
@@ -281,6 +315,8 @@ def build_runtime(
     policy: ReachPolicy,
     corpus: PublicCorpus,
     *,
+    profile: OperatorConversationProfile | None = None,
+    model_relay: ModelRelay | None = None,
     started_at: datetime | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> DocumentsRuntime:
@@ -288,7 +324,29 @@ def build_runtime(
     boundary = started_at if started_at is not None else clock()
     require_aware(boundary)
     workflow = reach_documents_workflow(policy, corpus, started_at=boundary, clock=clock)
-    registry = BuiltinWorkflowRegistry(workflows=(workflow,))
+    workflows = [workflow]
+    animator_registry = AnimatorRegistry(declarations=AnimatorDeclarations((), ()))
+    leases = LeaseLedger()
+    forge = AgentForge()
+    identity = None
+    if profile is not None:
+        if model_relay is None:
+            msg = "model_relay_required"
+            raise ValueError(msg)
+        animator_registry = AnimatorRegistry(
+            declarations=AnimatorDeclarations((operator_model_rune(profile),), ()),
+            runtime_adapters=(OperatorModelAdapter(profile, model_relay),),
+        )
+        animator_registry.load(probe_readiness=False)
+        workflows.append(reach_conversation_workflow(policy, corpus, profile, started_at=boundary, clock=clock))
+        spec = conversation_agent_spec(profile)
+        forge.register(spec.name, lambda selected: build_agent(selected, toolset_factories={}))
+        identity = Block(layer=1, key=spec.instructions_key, text=persona_text(profile))
+    registry = BuiltinWorkflowRegistry(
+        workflows=tuple(workflows),
+        default_name=workflow.name,
+        route_precedence=tuple(item.name for item in workflows[1:]),
+    )
     ledger = InMemoryRunLedger()
     bus = InProcessEventBus(ledger=ledger)
     sessions = BridgeSessionStore(sigil_name="reach.guest")
@@ -298,11 +356,12 @@ def build_runtime(
         bus=bus,
         workflows=registry,
         orchestrator=NoTransitions(),
-        dispatcher=NoCapabilities(),
-        context=ContextOrchestrator(registry=AnimatorRegistry(declarations=AnimatorDeclarations((), ()))),
+        dispatcher=Dispatcher(animator_registry, leases=leases, events=bus) if profile else NoCapabilities(),
+        context=ContextOrchestrator(registry=animator_registry, identity_block=identity),
         fragments=build_fragment_registry(),
         turns=sessions,
-        forge=AgentForge(),
+        forge=forge,
+        leases=leases,
         queues={"operator-reach": queue},
     )
     engine = RunEngine(
@@ -314,7 +373,7 @@ def build_runtime(
         stasis_store=substrate.stasis_store,
         cancellations=substrate.cancellations,
     )
-    return DocumentsRuntime(policy, corpus, boundary, clock, engine, substrate, sessions, queue, bus)
+    return DocumentsRuntime(policy, corpus, boundary, clock, engine, substrate, sessions, queue, bus, profile=profile)
 
 
 async def serve(runtime: DocumentsRuntime, reader: asyncio.StreamReader, write: Callable[[bytes], None]) -> None:
@@ -322,7 +381,7 @@ async def serve(runtime: DocumentsRuntime, reader: asyncio.StreamReader, write: 
     write(protocol_bytes(runtime.ready))
     while True:
         try:
-            raw = await reader.readuntil(b"\n")
+            raw = runtime.pending_inputs.pop(0) if runtime.pending_inputs else await reader.readuntil(b"\n")
         except asyncio.IncompleteReadError as error:
             if error.partial:
                 write(protocol_bytes(runtime.refuse("invalid", "invalid_request", error=True)))
@@ -336,15 +395,63 @@ async def serve(runtime: DocumentsRuntime, reader: asyncio.StreamReader, write: 
             write(protocol_bytes(runtime.refuse("invalid", "invalid_request", error=True)))
             continue
         try:
-            result = await runtime.process(request)
+            result = await runtime.process(request, timeout=90 if runtime.profile else 15)
         except Exception:  # noqa: BLE001 - malformed continuations never echo their diagnostics
             result = runtime.refuse(request.request_id, "run_failed", error=True)
         write(protocol_bytes(result))
 
 
-async def run(policy: ReachPolicy, corpus: PublicCorpus) -> None:
+class PipeModelRelay:
+    """One correlated model request at a time, sharing the supervisor's bounded input pipe."""
+
+    def __init__(
+        self, profile: OperatorConversationProfile, reader: asyncio.StreamReader, write: Callable[[bytes], None]
+    ) -> None:
+        """Retain only the selected profile and bounded standard-stream custody."""
+        self.profile, self.reader, self.write = profile, reader, write
+        self.pending_inputs: list[bytes] = []
+        self.lock = asyncio.Lock()
+
+    async def __call__(self, operation: str, payload_json: str) -> str:
+        if operation not in {"probe", "generate"}:
+            msg = "model_operation"
+            raise ValueError(msg)
+        admitted_operation: Literal["probe", "generate"] = "probe" if operation == "probe" else "generate"
+        frame = OperatorModelRequest(
+            call_id=str(uuid4()),
+            binding_digest=self.profile.digest,
+            operation=admitted_operation,
+            payload_json=payload_json,
+        )
+        async with self.lock:
+            raw_frame = frame.model_dump_json().encode() + b"\n"
+            if len(raw_frame) > MAX_WIRE_BYTES:
+                msg = "model_frame_limit"
+                raise ValueError(msg)
+            self.write(raw_frame)
+            async with asyncio.timeout(self.profile.timeout_seconds + 5):
+                while True:
+                    raw = await self.reader.readuntil(b"\n")
+                    value = strict_json(raw)
+                    observed = cast("dict[str, Any]", value) if isinstance(value, dict) else None
+                    if observed is not None and observed.get("kind") == "request":
+                        parse_request_line(raw)
+                        if len(self.pending_inputs) >= MAX_PENDING_INPUTS:
+                            msg = "model_pending_limit"
+                            raise ValueError(msg)
+                        self.pending_inputs.append(raw)
+                        continue
+                    response = OperatorModelResponse.model_validate_json(raw)
+                    if response.call_id != frame.call_id or response.binding_digest != frame.binding_digest:
+                        msg = "model_response_binding"
+                        raise ValueError(msg)
+                    if response.status != "ok":
+                        raise RuntimeError(response.reason)
+                    return response.payload_json
+
+
+async def run(policy: ReachPolicy, corpus: PublicCorpus, profile: OperatorConversationProfile | None = None) -> None:
     """Own stdin and the native runtime until EOF, cancellation or process shutdown."""
-    runtime = build_runtime(policy, corpus)
     reader = asyncio.StreamReader(limit=MAX_WIRE_BYTES)
     protocol = asyncio.StreamReaderProtocol(reader)
     transport, _ = await asyncio.get_running_loop().connect_read_pipe(lambda: protocol, sys.stdin.buffer)
@@ -353,6 +460,10 @@ async def run(policy: ReachPolicy, corpus: PublicCorpus) -> None:
         sys.stdout.buffer.write(raw)
         sys.stdout.buffer.flush()
 
+    relay = PipeModelRelay(profile, reader, write) if profile else None
+    runtime = build_runtime(policy, corpus, profile=profile, model_relay=relay)
+    if relay is not None:
+        runtime.pending_inputs = relay.pending_inputs
     try:
         await serve(runtime, reader, write)
     finally:
@@ -377,6 +488,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--policy", required=True, type=Path)
     parser.add_argument("--corpus-dir", required=True, type=Path)
+    parser.add_argument("--conversation-profile", type=Path)
     arguments = parser.parse_args(argv)
     # The wire owns stdout. Foreign/runtime diagnostics cannot become protocol
     # frames or disclose a rejected question through an exception renderer.
@@ -389,7 +501,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         _require_image()
         policy, corpus = load_policy(arguments.policy), load_corpus(arguments.corpus_dir)
-        asyncio.run(run(policy, corpus))
+        profile = None
+        if arguments.conversation_profile is not None:
+            raw_profile = _read_regular(arguments.conversation_profile, MAX_WIRE_BYTES)
+            strict_json(raw_profile)
+            profile = OperatorConversationProfile.model_validate_json(raw_profile)
+        asyncio.run(run(policy, corpus, profile))
     except (KeyboardInterrupt, asyncio.CancelledError):
         return 130
     except Exception:  # noqa: BLE001 - stdout stays protocol-only; errors never expose input

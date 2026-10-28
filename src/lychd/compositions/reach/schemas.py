@@ -20,7 +20,7 @@ def _identifier(value: str) -> str:
 
 type ReachId = Annotated[str, Field(strict=True, min_length=1, max_length=128), AfterValidator(_identifier)]
 type ReachPlatform = Annotated[str, Field(strict=True, pattern=r"^[a-z][a-z0-9-]{0,31}$")]
-type ReachAction = Literal["answer_docs", "summarize_context"]
+type ReachAction = Literal["answer_docs", "summarize_context", "converse"]
 type ReachTrigger = Literal["mention", "command"]
 type PolicyDigest = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 type ReachReason = Literal[
@@ -71,7 +71,7 @@ class ReachRule(Record):
     name: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")
     subject_ids: tuple[ReachId, ...] = Field(default=(), max_length=100)
     group_ids: tuple[ReachId, ...] = Field(default=(), max_length=100)
-    actions: tuple[ReachAction, ...] = Field(min_length=1, max_length=2)
+    actions: tuple[ReachAction, ...] = Field(min_length=1, max_length=3)
 
     @model_validator(mode="after")
     def selectors(self) -> Self:
@@ -93,6 +93,7 @@ class ReachPolicy(Record):
     agent_subject_id: ReachId
     space_id: ReachId | None = None
     allowed_conversation_ids: tuple[ReachId, ...] = Field(min_length=1, max_length=100)
+    allowed_parent_conversation_ids: tuple[ReachId, ...] = Field(default=(), max_length=100)
     rules: tuple[ReachRule, ...] = Field(min_length=1, max_length=100)
     allowed_triggers: tuple[ReachTrigger, ...] = Field(default=("mention", "command"), min_length=1, max_length=2)
     event_ttl_seconds: int = Field(default=300, ge=1, le=3600)
@@ -103,6 +104,7 @@ class ReachPolicy(Record):
     @model_validator(mode="after")
     def unique_configuration(self) -> Self:
         _unique(self.allowed_conversation_ids, "conversation ids")
+        _unique(self.allowed_parent_conversation_ids, "parent conversation ids")
         _unique(self.allowed_triggers, "triggers")
         _unique(tuple(rule.name for rule in self.rules), "rule names")
         return self
@@ -122,7 +124,9 @@ class ReachEvent(Record):
     event_id: ReachId
     space_id: ReachId | None = None
     conversation_id: ReachId
+    parent_conversation_id: ReachId | None = None
     subject_id: ReachId
+    subject_label: str | None = Field(default=None, min_length=1, max_length=80)
     group_ids: tuple[ReachId, ...] = Field(default=(), max_length=250)
     is_automated: bool = False
     mention_subject_ids: tuple[ReachId, ...] = Field(default=(), max_length=100)
@@ -146,6 +150,7 @@ class ReachEventIdentity(Record):
     event_id: ReachId
     space_id: ReachId | None = None
     conversation_id: ReachId
+    parent_conversation_id: ReachId | None = None
     subject_id: ReachId
     trigger: Literal["mention", "command", "message"]
 

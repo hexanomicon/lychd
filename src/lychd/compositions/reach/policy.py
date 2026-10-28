@@ -33,7 +33,10 @@ def prepare_turn(policy: ReachPolicy, event: ReachEvent, *, now: datetime) -> Re
         return refuse("wrong_account")
     if event.space_id != policy.space_id:
         return refuse("wrong_space")
-    if event.conversation_id not in policy.allowed_conversation_ids:
+    if event.conversation_id not in policy.allowed_conversation_ids and (
+        event.parent_conversation_id is None
+        or event.parent_conversation_id not in policy.allowed_parent_conversation_ids
+    ):
         return refuse("conversation_not_allowed")
     if event.subject_id == policy.agent_subject_id:
         return refuse("self_event")
@@ -43,7 +46,7 @@ def prepare_turn(policy: ReachPolicy, event: ReachEvent, *, now: datetime) -> Re
         return refuse("trigger_not_allowed")
     if event.trigger == "mention" and policy.agent_subject_id not in event.mention_subject_ids:
         return refuse("missing_agent_mention")
-    if event.action not in ("answer_docs", "summarize_context"):
+    if event.action not in ("answer_docs", "summarize_context", "converse"):
         return refuse("action_not_supported")
     rule = next(
         (

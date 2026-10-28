@@ -81,4 +81,126 @@ Ordinary service updates preserve the app and installations. Command changes upd
 through the API; wider bot permissions, channel access or privileged data require administrator
 action or provider review as applicable. [Command updates](https://docs.discord.com/developers/interactions/application-commands#updating-and-deleting-a-command)
 
+## Workflow interactions in Orb (Proposed)
+
+This section extends the **candidate successor study**, not the delivered operator profile.
+[Orb](../../../divination/altar/orb.md) should show a workflow's actual Discord intake and
+external attempts: provider mark, incoming or outgoing direction, permitted channel detail and
+recorded outcome. Reach contributes the meaning and static presentation metadata. Orb projects
+it through its existing shared renderer and accessible evidence list. Loom continues to show the
+declared score; it does not become the delivery feed.
+
+The current [operator profile](../operator.md) has a separate, generation-local memory Run ledger
+in its networkless worker. The ordinary Vessel's Orb reads its own ledger. Native reply formation,
+a later Discord send and an owner-queued publication therefore have separate witnesses. Neither
+a completed conversation Run nor a queue receipt proves that the main Orb observed a delivery.
+The local publication queue remains an owner-supplied transport interface; it is no native outbox
+or general workflow publication capability.
+
+### Typed observations and presentation
+
+Propose `ReachInteractionObservation@1` as a Composition-owned, immutable observation. These
+are proposed record and port names, not existing Python types or a registered `ReachComposition`
+service. Its native envelope carries:
+
+| Field | Meaning and bound |
+| --- | --- |
+| Identity | Schema version, exact Composition/profile revision, opaque observation and owning application-record identities; the outer Run event supplies Run, event, sequence and timestamp. |
+| Correlation | Exact Run and supplied station occurrence; admitted intake, communication, delivery intent and physical attempt references as applicable. References resolve under the same owner and connection. |
+| Provider and direction | Closed `discord` provider key and `ingress` or `egress`; neither is inferred from station names. |
+| Phase | `received`, `admitted`, `attempting`, `sent`, `rejected`, `expired`, `cancelled`, `unknown` or `reply`, with a validated direction/phase matrix. |
+| Outcome | A fixed classification and optional bounded reason code, at most 64 ASCII characters. `sent` means provider acceptance, never human reading or agreement; `unknown` preserves possible transmission. |
+| Place and audience | Exact qualified connection/conversation references and admission-time audience evidence in the protected Reach record. Default Orb detail contains no platform account, channel, user or role identities. |
+| Receipt | Exact intake or delivery receipt reference, with no message body, prompt, token, raw error or canonical private-content hash in structural evidence. |
+
+`received` witnesses intake before policy admission; `admitted` follows a successful native gate.
+An egress `attempting` observation follows a committed, fenced physical-attempt claim and precedes
+transmission. `sent`, `rejected` and `unknown` require its matching transport receipt. `reply`
+means a received message has passed the exact outstanding-question correlation and admission;
+it does not establish that its assertions are true. Cancellation after provider acceptance cannot
+rewrite that earlier observation as unsent. Malformed, missing or unsupported observations stay
+unclassified or unavailable rather than acquiring an inferred phase.
+
+Reach's proposed pure presentation contribution maps validated records to a closed Discord icon,
+an ingress/egress arrow, fixed phase/outcome text and optional authorized channel label. The browser
+cannot supply an icon URL, HTML, phase or destination. Channel labels are bounded to 80 characters
+and rendered as text; absent disclosure authority yields a generic channel label. Run-read access
+alone does not disclose private channel names or resolve protected participant references.
+
+The Orb DTO carries only that authorized decoration and opaque correlation. The same decoration
+appears on the retained evidence row, selected-event inspector and folded graph record. It uses
+shape, direction and text together, preserves Run sequence, gaps and occurrence membership, and
+respects reduced motion. Playback shows only records through its supplied cursor. A glow marks an
+observation, not continuous connectivity or successful delivery; no synthetic edges imply causality.
+
+### Ask a named maintainer from Bridge (Proposed)
+
+A Lich working in Bridge may propose one bounded question to explicitly designated knowledgeable
+maintainers. Selection uses operator-maintained expertise and exact admitted participant mappings;
+a Discord name, role, model guess or previous helpful reply cannot grant that authority.
+
+Before sending, Reach retains the originating Run/occurrence, purpose, exact connection,
+guild/channel/thread, recipient set, question bytes, disclosure class, expiry and finite answer
+budget. A current authenticated Sigil must authorize that audience and effect. The exact review or
+standing-policy binding follows [HitL](../../../adr/25-hitl.md#required-review-for-native-actions-designed)
+and is rechecked with current account, policy and revocation generations immediately before the
+physical attempt. Preparing a question cannot enqueue the operator's local publication queue.
+
+The admitted workflow commits its delivery intent/outbox before the credential owner sends.
+A declared durable wait retains the outstanding question and releases model/worker leases. An
+ordinary Discord answer is evidence, not a Consent verdict, peer task or instruction to resume an
+unrelated Run. Return intake must match the selected connection, exact channel/thread and sent
+message reference, an admitted responder, deadline and unconsumed question generation. Duplicate,
+late, edited, wrong-person and wrong-thread returns have explicit refusal or revision semantics;
+Gateway replay cannot consume the answer budget twice.
+
+The accepted reply becomes bounded, attributed, hostile source material for the exact waiting
+work. Its source identity and permitted audience survive Context assembly; it is not automatically
+Memory, a teaching operation or authority to publish elsewhere. Native re-admission rechecks the
+current Sigil and disclosure before resuming. If the send remains unknown, the workflow retains
+that uncertainty and reconciles without another automatic question. No unanswered question,
+model confidence or reply content starts a follow-up loop.
+
+### Implementation order and falsifying checks
+
+1. **Close native custody first.** Refine this successor's existing intake, communication, outbox
+   and receipt contracts through [the delivery plan](delivery.md). Define the typed observation
+   and a host-enrolled intake/receipt port with current authority and exact correlation. A shared
+   native ledger or an authenticated, deduplicated handoff into its owner must exist before the
+   ordinary Orb can observe an operator worker. Discord credentials remain exclusively at the
+   transport edge; filesystem queue/journal scans are not that port.
+2. **Emit only actual observations.** Reach owns the bounded validator and pure presentation
+   contribution, proposed under `src/lychd/compositions/reach/`. Its workflow producers can use
+   `WorkflowServices.events`; the Run event schema/emitter is in
+   `src/lychd/domain/cortex/events.py`. Choose a typed semantic event contract before adding an
+   event kind; do not disguise interactions as fabricated station traversal or raw LOG messages.
+   Native intake and committed outbox/attempt owners emit their own observations. A replayed
+   receipt retains one observation identity, and an observer failure cannot decide Run truth.
+3. **Project through the existing read seam.** Add a bounded authorized decoration to
+   `EvidenceItem` in `src/lychd/domain/web/contracts.py`. Enrich it through the exact Reach read port
+   at `src/lychd/domain/web/orb.py` and `src/lychd/interface/web/orb.py`, following the existing
+   protected Composition projection pattern. Snapshot and retained SSE must share validation,
+   recheck disclosure after awaited reads, clear revoked metadata and leave capture limits visible.
+   Reading Orb never creates an event or changes an outbox entry.
+4. **Render the supplied meaning.** Regenerate OpenAPI/client types. Extend the closed runtime
+   decoder in `clients/web/src/lib/orb/live.ts`, ordinary projections in
+   `clients/web/src/lib/graph/orb.ts` and `graph/model.ts`, and the shared graph adapter plus Orb
+   row/inspector. Reach supplies static provider semantics; Orb owns presentation, selection and
+   folding. No renderer state, station name or terminal Run status manufactures an interaction.
+5. **Prove the question lifecycle separately.** Add inert-port and disposable-database fixtures
+   for exact review, audience and expiry, crash before/after submission, racing claims, revoked
+   authority, unknown transmission and duplicate/late replies. Prove one reply resumes only its
+   owning wait, no scarce lease survives waiting, and no provider body enters broad evidence.
+   Only then qualify the Discord transport with an explicitly authorized live question.
+
+The first projection proof needs retained ingress, provider-accepted egress and unknown-attempt
+fixtures plus forged owner/reference, unsupported version, overlong label, private-name leakage,
+revocation-during-read, duplicate receipt, pagination/reconnect and playback cases. Extend the
+existing `tests/web/test_orb.py`, Reach composition/transport tests,
+`clients/web/src/lib/orb/live.test.ts`, `graph/orb.test.ts` and Orb component tests. Run focused
+Python checks through the source-bound OCI harness, then `make frontend-check` and
+`make frontend-build`; complete the required Svelte documentation/autofixer workflow before any
+Svelte edit. Published documentation changes also require a clean Zensical build. These are
+implementation gates, not evidence that this candidate or its backend ports are delivered.
+
 [Accounts and updates](accounts.md) · [Acceptance and delivery](delivery.md)
