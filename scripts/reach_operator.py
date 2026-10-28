@@ -59,6 +59,7 @@ EDGE_INPUTS = (
             "admin",
             "operator_cli",
             "publications",
+            "onboarding",
         )
     ),
 )
@@ -647,6 +648,10 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
         profile_raw = read_regular(args.conversation_profile, WIRE_LIMIT, private=True)
         strict_object(profile_raw)
         profile = OperatorConversationProfile.model_validate_json(profile_raw)
+    onboarding_raw = None
+    if args.onboarding_profile is not None:
+        onboarding_raw = read_regular(args.onboarding_profile, 4096, private=True)
+        strict_object(onboarding_raw)
     validate_endpoint(args.model_endpoint)
     publications = None
     if args.publications_dir is not None:
@@ -692,6 +697,10 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
         )
         if publications is not None:
             edge += bind(publications, "/state/publications", readonly=False)
+        if onboarding_raw is not None:
+            frozen_onboarding = generation / "onboarding.json"
+            write_private(frozen_onboarding, onboarding_raw)
+            edge += bind(frozen_onboarding, "/run/reach/onboarding.json")
         edge += [
             images["edge"],
             "--policy",
@@ -703,6 +712,8 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
             "--command-name",
             args.command_name,
         ]
+        if onboarding_raw is not None:
+            edge += ["--onboarding-profile", "/run/reach/onboarding.json"]
         if args.sync_commands:
             edge.append("--sync-commands")
         if args.history:
@@ -808,6 +819,7 @@ def parser() -> argparse.ArgumentParser:
             child.add_argument("--admin-user", action="append", default=[])
             child.add_argument("--command-name", default="reach")
             child.add_argument("--conversation-profile", type=Path)
+            child.add_argument("--onboarding-profile", type=Path)
             child.add_argument("--model-endpoint", default=MODEL_ENDPOINT)
             child.add_argument("--publications-dir", type=Path)
             child.add_argument("--publication-channel", action="append", default=[])

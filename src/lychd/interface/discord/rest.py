@@ -16,8 +16,8 @@ import re
 import stat
 import threading
 import uuid
-from collections.abc import Generator, Iterable
-from contextlib import contextmanager, suppress
+from collections.abc import AsyncGenerator, Generator, Iterable
+from contextlib import asynccontextmanager, contextmanager, suppress
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -34,7 +34,16 @@ _DIGEST = r"^[a-f0-9]{64}$"
 _MAX_RECORD = 8192
 _MAX_MESSAGE = 2000
 SUPPRESS_EMBEDS = 1 << 2
-type _Target = Literal["guild_roles", "guild_channels", "channel", "channel_messages", "interaction_original"]
+_BASELINE_ROLES = 2
+type _Target = Literal[
+    "guild_roles",
+    "guild_channels",
+    "channel",
+    "channel_messages",
+    "interaction_original",
+    "guild_member_role",
+    "introduction",
+]
 
 
 class DiscordRestError(RuntimeError):
@@ -64,7 +73,7 @@ class EffectRecord(_Value):
     effect_key_digest: str = Field(pattern=_DIGEST)
     payload_digest: str = Field(pattern=_DIGEST)
     scope_digest: str = Field(pattern=_DIGEST)
-    method: Literal["POST", "PATCH"]
+    method: Literal["POST", "PATCH", "PUT"]
     target: _Target
     status: Literal["attempting", "succeeded", "rejected", "unknown"]
     remote_id: str | None = Field(default=None, pattern=r"^[1-9][0-9]{0,19}$")
@@ -249,7 +258,7 @@ class EffectJournal:
         effect_key: str,
         payload_digest: str,
         scope: str,
-        method: Literal["POST", "PATCH"],
+        method: Literal["POST", "PATCH", "PUT"],
         target: _Target,
     ) -> EffectRecord | EffectResult:
         """Claim while the caller holds ``lock()``, before making any request."""
@@ -327,6 +336,9 @@ class DiscordRest:
         self._token = token
         self._verified = False
         self._channels: set[str] = set()
+        self._member_roles: frozenset[str] = frozenset()
+        self._introduction_channel: str | None = None
+        self._effects_lock = asyncio.Lock()
         self._owns_client = client is None
         self._client = client or httpx.AsyncClient(
             transport=httpx.AsyncHTTPTransport(retries=0, trust_env=False),
@@ -339,10 +351,53 @@ class DiscordRest:
         if self._owns_client:
             await self._client.aclose()
 
+    @asynccontextmanager
+    async def _effect(self) -> AsyncGenerator[None]:
+        """Queue local writers before claiming the nonblocking cross-process journal lock."""
+        async with self._effects_lock:
+            with self.journal.lock():
+                yield
+
     def bind_channels(self, ids: Iterable[str]) -> None:
         """Bind channel IDs observed in the authenticated guild snapshot."""
         channels = {_id(value) for value in ids}
         self._channels.update(channels)
+
+    def bind_member_roles(self, ids: Iterable[str]) -> None:
+        """Bind exactly two operator-validated baseline roles, never everyone."""
+        roles = frozenset(_id(value) for value in ids)
+        if (
+            len(roles) != _BASELINE_ROLES
+            or self.guild_id in roles
+            or (self._member_roles and roles != self._member_roles)
+        ):
+            code = "member_role_binding"
+            raise DiscordRestError(code)
+        self._member_roles = roles
+
+    def bind_introduction_channel(self, channel_id: str) -> None:
+        """Freeze the one verified public onboarding destination."""
+        channel_id = _id(channel_id)
+        if channel_id not in self._channels or self._introduction_channel not in {None, channel_id}:
+            code = "introduction_channel_binding"
+            raise DiscordRestError(code)
+        self._introduction_channel = channel_id
+
+    async def get_message(self, channel_id: str, message_id: str) -> dict[str, Any]:
+        """Read one exact message only inside an already observed guild channel."""
+        channel_id, message_id = _id(channel_id), _id(message_id)
+        if channel_id not in self._channels:
+            code = "route_not_allowed"
+            raise DiscordRestError(code)
+        status, data = await self._request("GET", f"/channels/{channel_id}/messages/{message_id}")
+        resource = _object(data)
+        if status != HTTPStatus.OK:
+            code = f"http_{status}"
+            raise DiscordRestError(code)
+        if resource is None or resource.get("id") != message_id or resource.get("channel_id") != channel_id:
+            code = "message_binding"
+            raise DiscordRestError(code)
+        return resource
 
     async def _request(self, method: str, path: str, body: dict[str, Any] | None = None) -> tuple[int, Any]:
         headers = {"Accept": "application/json", "Accept-Encoding": "identity"}
@@ -365,6 +420,8 @@ class DiscordRest:
                         code = "response_too_large"
                         raise DiscordRestError(code)
                     raw.extend(chunk)
+                if response.status_code == HTTPStatus.NO_CONTENT and not raw:
+                    return response.status_code, None
                 try:
                     return response.status_code, json.loads(raw)
                 except (ValueError, UnicodeError, RecursionError):
@@ -456,21 +513,23 @@ class DiscordRest:
                 or int(permissions) & 8
             ):
                 return EffectResult(status="rejected", code="unsafe_permissions")
-        return await self._write(method, path, body, effect_key=effect_key, scope=scope, target=target)
+        async with self._effect():
+            return await self._write(method, path, body, effect_key=effect_key, scope=scope, target=target)
 
     async def _write(
         self,
-        method: Literal["POST", "PATCH"],
+        method: Literal["POST", "PATCH", "PUT"],
         path: str,
         body: dict[str, Any],
         *,
         effect_key: str,
         scope: str,
         target: _Target,
+        empty_success_id: str | None = None,
     ) -> EffectResult:
         if not self._verified:
             return EffectResult(status="rejected", code="identity_not_verified")
-        if method not in {"POST", "PATCH"} or type(body) is not dict:
+        if method not in {"POST", "PATCH", "PUT"} or type(body) is not dict:
             return EffectResult(status="rejected", code="invalid_write")
         try:
             payload = json.dumps(
@@ -501,9 +560,112 @@ class DiscordRest:
                 self.journal.settle(claim, EffectResult(status="unknown", code="cancelled"))
                 raise
             else:
-                result = self._result(status, data)
+                result = (
+                    EffectResult(status="succeeded", remote_id=empty_success_id)
+                    if status == HTTPStatus.NO_CONTENT and method == "PUT" and empty_success_id is not None
+                    else self._result(status, data)
+                )
             self.journal.settle(claim, result)
             return result
+
+    async def ensure_member_role(self, user_id: str, role_id: str, *, event_id: str) -> EffectResult:
+        """Add one admitted baseline role without replacing existing memberships."""
+        user_id, role_id, event_id = _id(user_id), _id(role_id), _id(event_id)
+        if role_id not in self._member_roles:
+            return EffectResult(status="rejected", code="member_role_binding")
+        scope = f"member-role:{self.application_id}:{self.guild_id}:{user_id}:{role_id}"
+        key = f"{scope}:{event_id}"
+        if not self._verified:
+            return EffectResult(status="rejected", code="identity_not_verified")
+        async with self._effect():
+            records = self.journal.inspect()
+            retained = any(
+                r.effect_key_digest == _digest(key)
+                or (r.scope_digest == _digest(scope) and r.status in {"attempting", "unknown"})
+                for r in records
+            )
+            if not retained:
+                try:
+                    roles = await self.get(f"/guilds/{self.guild_id}/roles")
+                except DiscordRestError:
+                    return EffectResult(status="rejected", code="member_role_authority")
+                rows = cast("list[object]", roles) if isinstance(roles, list) else []
+                role = next(
+                    (row for raw in rows if (row := _object(raw)) is not None and row.get("id") == role_id), None
+                )
+                if role is None or role.get("permissions") != "0" or role.get("managed", False):
+                    return EffectResult(status="rejected", code="member_role_authority")
+            return await self._write(
+                "PUT",
+                f"/guilds/{self.guild_id}/members/{user_id}/roles/{role_id}",
+                {},
+                effect_key=key,
+                scope=scope,
+                target="guild_member_role",
+                empty_success_id=user_id,
+            )
+
+    async def publish_introduction(  # noqa: PLR0911 - each return fences a distinct external effect precondition
+        self, channel_id: str, text: str, *, subject_id: str, event_id: str
+    ) -> EffectResult:
+        """Create one member-bound introduction or edit its retained bot-owned message."""
+        channel_id, subject_id, event_id = _id(channel_id), _id(subject_id), _id(event_id)
+        if channel_id != self._introduction_channel:
+            return EffectResult(status="rejected", code="introduction_channel_binding")
+        if type(text) is not str or not 1 <= len(text) <= _MAX_MESSAGE:
+            return EffectResult(status="rejected", code="invalid_message")
+        key = f"introduction:{self.application_id}:{self.guild_id}:{channel_id}:{subject_id}"
+        async with self._effect():
+            records = self.journal.inspect()
+            if any(r.scope_digest == _digest(key) and r.status in {"attempting", "unknown"} for r in records):
+                return EffectResult(status="rejected", code="introduction_unresolved")
+            previous = next(
+                (
+                    r
+                    for r in records
+                    if r.scope_digest == _digest(key)
+                    and r.target == "introduction"
+                    and r.method == "POST"
+                    and r.status == "succeeded"
+                ),
+                None,
+            )
+            body: dict[str, Any] = {"content": text, "flags": SUPPRESS_EMBEDS, "allowed_mentions": {"parse": []}}
+            if previous is None:
+                body.update(nonce=_digest(key)[:25], enforce_nonce=True)
+                return await self._write(
+                    "POST",
+                    f"/channels/{channel_id}/messages",
+                    body,
+                    effect_key=f"{key}:event:{event_id}",
+                    scope=key,
+                    target="introduction",
+                )
+            if previous.remote_id is None or previous.target != "introduction" or previous.method != "POST":
+                return EffectResult(status="unknown", code="introduction_binding")
+            try:
+                resource = await self.get_message(channel_id, previous.remote_id)
+            except DiscordRestError:
+                return EffectResult(status="rejected", code="introduction_original_unavailable")
+            author = _object(resource.get("author"))
+            if (
+                author is None
+                or author.get("id") != self.bot_user_id
+                or not author.get("bot")
+                or resource.get("webhook_id")
+            ):
+                return EffectResult(status="rejected", code="introduction_author")
+            body["flags"] = int(resource.get("flags", 0)) | SUPPRESS_EMBEDS
+            if resource.get("content") == text and int(resource.get("flags", 0)) & SUPPRESS_EMBEDS:
+                return EffectResult(status="succeeded", remote_id=previous.remote_id)
+            return await self._write(
+                "PATCH",
+                f"/channels/{channel_id}/messages/{previous.remote_id}",
+                body,
+                effect_key=f"{key}:event:{event_id}",
+                scope=key,
+                target="introduction",
+            )
 
     @staticmethod
     def _result(status: int, data: Any) -> EffectResult:
@@ -560,11 +722,12 @@ class DiscordRest:
             return EffectResult(status="rejected", code="invalid_interaction_token")
         if type(text) is not str or not 1 <= len(text) <= _MAX_MESSAGE:
             return EffectResult(status="rejected", code="invalid_message")
-        return await self._write(
-            "PATCH",
-            f"/webhooks/{self.application_id}/{interaction_token}/messages/@original",
-            {"content": text, "flags": SUPPRESS_EMBEDS, "allowed_mentions": {"parse": []}},
-            effect_key=f"interaction:{self.application_id}:{event_id}",
-            scope=f"interaction:{self.application_id}:{event_id}",
-            target="interaction_original",
-        )
+        async with self._effect():
+            return await self._write(
+                "PATCH",
+                f"/webhooks/{self.application_id}/{interaction_token}/messages/@original",
+                {"content": text, "flags": SUPPRESS_EMBEDS, "allowed_mentions": {"parse": []}},
+                effect_key=f"interaction:{self.application_id}:{event_id}",
+                scope=f"interaction:{self.application_id}:{event_id}",
+                target="interaction_original",
+            )

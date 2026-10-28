@@ -4,13 +4,16 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import logging
+import os
 import re
+import stat
 import sys
 from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import Any, NoReturn, cast
 from uuid import uuid4
 
 import discord
@@ -27,7 +30,8 @@ from lychd.compositions.reach.operator_wire import (
 )
 from lychd.compositions.reach.policy import prepare_turn
 from lychd.compositions.reach.schemas import ReachEvent
-from lychd.interface.discord.admin import snapshot_guild
+from lychd.interface.discord.admin import GuildSnapshot, snapshot_guild
+from lychd.interface.discord.onboarding import OnboardingPanel, OnboardingProfile, OnboardingService
 from lychd.interface.discord.operator_io import load_policy, read_token
 from lychd.interface.discord.publications import PublicationQueue
 from lychd.interface.discord.rest import DiscordRest, DiscordRestError, EffectJournal
@@ -36,6 +40,8 @@ from lychd.interface.discord.schemas import DiscordPolicy
 MAX_HISTORY_BYTES = 16_384
 MAX_GENERATION_EVENTS = 10_000
 MAX_GENERATION_THREADS = 1000
+MAX_ONBOARDING_BYTES = 4096
+MAX_ONBOARDING_MEMBERS = 1000
 _COMMAND_NAME = re.compile(r"[a-z][a-z0-9_]{0,31}\Z")
 
 
@@ -46,6 +52,102 @@ def _refuse(code: str) -> NoReturn:
 def diagnostic(code: str) -> None:
     """Keep protocol stdout and diagnostics free of payloads and credentials."""
     sys.stderr.write(f"reach_discord:{code}\n")
+
+
+def load_onboarding_profile(path: Path) -> OnboardingProfile:
+    """Read one bounded private JSON profile; never discover it from ambient configuration."""
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(descriptor, "rb") as source:
+        metadata = os.fstat(source.fileno())
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid() or metadata.st_mode & 0o077:
+            _refuse("onboarding_profile_permissions")
+        raw = source.read(MAX_ONBOARDING_BYTES + 1)
+    if len(raw) > MAX_ONBOARDING_BYTES:
+        _refuse("onboarding_profile_limit")
+
+    def pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in items:
+            if key in result:
+                _refuse("onboarding_profile_json")
+            result[key] = value
+        return result
+
+    def constant(_value: str) -> NoReturn:
+        _refuse("onboarding_profile_json")
+
+    value = json.loads(raw, object_pairs_hook=pairs, parse_constant=constant)
+    return OnboardingProfile.model_validate(value)
+
+
+def _verify_baseline_roles(profile: OnboardingProfile, snapshot: GuildSnapshot) -> None:
+    """Require harmless semantic roles below the bot using Discord's tie ordering."""
+    roles = {role.id: role for role in snapshot.roles}
+    bot_roles = [role for identity, role in roles.items() if identity in {*snapshot.bot_role_ids, profile.guild_id}]
+    highest = max(((role.position, -int(role.id)) for role in bot_roles), default=(0, 0))
+    permissions = 0
+    for role in bot_roles:
+        permissions |= role.permissions
+    if not permissions & ((1 << 28) | (1 << 3)):
+        _refuse("onboarding_role_permissions")
+    for identity, name in ((profile.magus_role_id, "Magus"), (profile.bot_role_id, "Bot")):
+        role = roles.get(identity)
+        if (
+            role is None
+            or role.name.split()[-1:] != [name]
+            or role.managed
+            or role.permissions
+            or (role.position, -int(role.id)) >= highest
+        ):
+            _refuse("onboarding_role_binding")
+
+
+async def verify_onboarding(
+    service: OnboardingService, snapshot: GuildSnapshot, flags: discord.ApplicationFlags
+) -> None:
+    """Bind exact public panel and harmless manageable baseline roles before Gateway connect."""
+    profile, rest = service.profile, service.rest
+    if (
+        snapshot.guild_id != profile.guild_id
+        or snapshot.application_id != rest.application_id
+        or snapshot.bot_user_id != rest.bot_user_id
+        or not (flags.gateway_guild_members or flags.gateway_guild_members_limited)
+    ):
+        _refuse("onboarding_identity_or_intent")
+    roles = {role.id: role for role in snapshot.roles}
+    everyone = roles.get(profile.guild_id)
+    channel = next((item for item in snapshot.channels if item.id == profile.channel_id), None)
+    if everyone is None or channel is None or channel.type != 0 or channel.name.split("・")[-1] != "start-here":
+        _refuse("onboarding_channel_binding")
+    view = everyone.permissions & (1 << 10)
+    for overwrite in channel.overwrites:
+        if overwrite.type == 0 and overwrite.id == profile.guild_id:
+            view = (view & ~overwrite.deny) | (overwrite.allow & (1 << 10))
+    if not view:
+        _refuse("onboarding_channel_not_public")
+    _verify_baseline_roles(profile, snapshot)
+    panel = await rest.get_message(profile.channel_id, profile.panel_message_id)
+    raw_author: object = panel.get("author")
+    author = cast("dict[str, Any]", raw_author) if isinstance(raw_author, dict) else None
+    if (
+        panel.get("id") != profile.panel_message_id
+        or panel.get("channel_id") != profile.channel_id
+        or panel.get("webhook_id") is not None
+        or author is None
+        or author.get("id") != rest.bot_user_id
+        or author.get("bot") is not True
+    ):
+        _refuse("onboarding_panel_binding")
+    rest.bind_member_roles((profile.magus_role_id, profile.bot_role_id))
+    rest.bind_introduction_channel(profile.channel_id)
+
+
+def onboarding_profile_for_guild(path: Path | None, guild_id: str) -> OnboardingProfile | None:
+    """Keep absent onboarding inert and reject cross-guild host configuration."""
+    profile = load_onboarding_profile(path) if path is not None else None
+    if profile is not None and profile.guild_id != guild_id:
+        _refuse("onboarding_guild_binding")
+    return profile
 
 
 def result_text(result: ReachWorkerResult) -> str:
@@ -361,14 +463,21 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
 
 
 class ReachBot(commands.Bot):
-    def __init__(self, service: ReachService, *, command_name: str = "reach") -> None:
-        """Create a slash-only client without privileged member/presence caches."""
+    def __init__(
+        self,
+        service: ReachService,
+        *,
+        command_name: str = "reach",
+        onboarding: OnboardingService | None = None,
+    ) -> None:
+        """Keep member intent opt-in and avoid member/presence caches in every profile."""
         if not _COMMAND_NAME.fullmatch(command_name):
             _refuse("command_name")
         intents = discord.Intents.none()
         intents.guilds = True
         intents.guild_messages = True
         intents.message_content = service.history_enabled
+        intents.members = onboarding is not None
         super().__init__(
             command_prefix=(),
             help_command=None,
@@ -380,6 +489,8 @@ class ReachBot(commands.Bot):
         )
         self.service = service
         self.command_name = command_name
+        self.onboarding = onboarding
+        self.onboarding_backfill_task: asyncio.Task[None] | None = None
         self.publications_task: asyncio.Task[None] | None = None
 
     async def setup_hook(self) -> None:
@@ -387,11 +498,50 @@ class ReachBot(commands.Bot):
         if cog.app_command is not None:
             cog.app_command.name = self.command_name
         await self.add_cog(cog, guild=discord.Object(id=int(self.service.policy.guild_id)))
+        if self.onboarding is not None:
+            self.add_view(OnboardingPanel(self.onboarding), message_id=int(self.onboarding.profile.panel_message_id))
 
     async def on_ready(self) -> None:
         diagnostic("ready")
+        if self.onboarding is not None and self.onboarding_backfill_task is None:
+            self.onboarding_backfill_task = asyncio.create_task(self._backfill_onboarding())
         if self.service.publications is not None and self.publications_task is None:
             self.publications_task = asyncio.create_task(self._publications())
+
+    async def _ensure_onboarding_role(self, member: discord.Member) -> None:
+        onboarding = self.onboarding
+        if onboarding is None or not onboarding.member_allowed(member):
+            return
+        role_id = onboarding.profile.bot_role_id if member.bot else onboarding.profile.magus_role_id
+        if any(str(role.id) == role_id for role in member.roles):
+            return
+        joined = member.joined_at
+        if joined is None or joined.tzinfo is None or joined.utcoffset() is None:
+            diagnostic("onboarding_join_identity")
+            return
+        try:
+            event_id = str(discord.utils.time_snowflake(joined))
+            outcome = await onboarding.ensure_base_role(member, event_id=event_id)
+            if outcome.status != "succeeded":
+                diagnostic("onboarding_role_failed")
+        except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError):
+            diagnostic("onboarding_role_failed")
+
+    async def on_member_join(self, member: discord.Member) -> None:
+        await self._ensure_onboarding_role(member)
+
+    async def _backfill_onboarding(self) -> None:
+        if self.onboarding is None:
+            return
+        guild = self.get_guild(int(self.onboarding.profile.guild_id))
+        if guild is None:
+            diagnostic("onboarding_guild_unavailable")
+            return
+        try:
+            async for member in guild.fetch_members(limit=MAX_ONBOARDING_MEMBERS):
+                await self._ensure_onboarding_role(member)
+        except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError):
+            diagnostic("onboarding_backfill_failed")
 
     async def _publications(self) -> None:
         while not self.is_closed():
@@ -403,6 +553,10 @@ class ReachBot(commands.Bot):
             await asyncio.sleep(2)
 
     async def close(self) -> None:
+        if self.onboarding_backfill_task is not None:
+            self.onboarding_backfill_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await self.onboarding_backfill_task
         if self.publications_task is not None:
             self.publications_task.cancel()
             with suppress(asyncio.CancelledError):
@@ -423,6 +577,7 @@ async def run(args: argparse.Namespace) -> None:
         _refuse("conversation_policy_flag_mismatch")
     if bool(args.publications_dir) != bool(args.publication_channel):
         _refuse("publication_configuration")
+    onboarding_profile = onboarding_profile_for_guild(args.onboarding_profile, policy.guild_id)
     token = read_token(args.token_file)
     worker = await PipeWorker.open()
     if args.conversation != (worker.ready.model_binding_digest is not None):
@@ -451,7 +606,8 @@ async def run(args: argparse.Namespace) -> None:
         conversation=args.conversation,
         publications=publications,
     )
-    bot = ReachBot(service, command_name=args.command_name)
+    onboarding = OnboardingService(onboarding_profile, rest) if onboarding_profile is not None else None
+    bot = ReachBot(service, command_name=args.command_name, onboarding=onboarding)
     try:
         async with bot:
             await bot.login(token)
@@ -470,6 +626,8 @@ async def run(args: argparse.Namespace) -> None:
             if not selected_channels <= observed_channels:
                 msg = "discord_channel_binding"
                 raise ValueError(msg)
+            if onboarding is not None:
+                await verify_onboarding(onboarding, snapshot, actual.flags)
             if args.sync_commands:
                 await bot.tree.sync(guild=discord.Object(id=int(policy.guild_id)))
             diagnostic("connecting")
@@ -498,6 +656,16 @@ def startup_error_code(error: Exception) -> str:
         "discord_channel_binding",
         "credential_permissions",
         "credential_shape",
+        "onboarding_profile_permissions",
+        "onboarding_profile_limit",
+        "onboarding_profile_json",
+        "onboarding_identity_or_intent",
+        "onboarding_channel_binding",
+        "onboarding_channel_not_public",
+        "onboarding_role_permissions",
+        "onboarding_role_binding",
+        "onboarding_panel_binding",
+        "onboarding_guild_binding",
         "policy_too_large",
     }
     if isinstance(error, ValueError) and str(error) in safe_codes:
@@ -517,6 +685,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--publications-dir", type=Path)
     parser.add_argument("--publication-channel", action="append", default=[])
     parser.add_argument("--command-name", default="reach")
+    parser.add_argument("--onboarding-profile", type=Path)
     args = parser.parse_args(argv)
     previous_level = logging.root.manager.disable
     logging.disable(logging.CRITICAL)

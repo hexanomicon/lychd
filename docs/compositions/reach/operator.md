@@ -48,6 +48,25 @@ ends with the bot offline. The steps here deliberately continue into this separa
 profile. The [public Discord contract](index.md) and the Designed
 [home and VPS profiles](deployments/index.md) keep their existing boundaries.
 
+The optional community onboarding profile binds one public text channel, an existing bot-owned
+welcome message, and two zero-permission baseline roles. A persistent welcome button opens a
+private form with optional interests and introduction text. Only an explicit publication
+confirmation creates or updates that member's one public introduction. Choices do not grant
+Contributor, Maintainer, Admin, native identity, or capabilities. Every human receives the
+configured Magus baseline; bot accounts receive the common Bot role. This automation requires
+Server Members Intent, uses no member/presence cache, and backfills at most 1,000 existing members
+once per process generation. Private drafts expire after five minutes or restart.
+
+Select it with `--onboarding-profile /absolute/private/onboarding.json` on `run`. The strict
+JSON object contains `guild_id`, `channel_id`, `panel_message_id`, `magus_role_id`, and
+`bot_role_id`. The host freezes this bounded private file and mounts it only into the Discord
+edge. Startup verifies the exact public channel, welcome author, role authority and hierarchy
+before registering controls. Attaching the controls to the welcome message is a separate
+reviewed operator edit. Role additions preserve other memberships; public introductions use
+the content-free effect journal to retain their message identity across restarts. Unknown
+creation or update outcomes fence further publication until operator reconciliation. These
+are Discord presentation and membership effects, not Ward enrollment or native Graph runs.
+
 Use a Linux host with the repository's host tooling installed as described in
 [CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#setup-and-commands)
 and a working rootless Podman engine. Docker is an explicit alternative supported by the harness;
