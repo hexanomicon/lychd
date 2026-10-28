@@ -48,7 +48,7 @@ beginning with the shared agentic laboratory and its first public encounters.
 
 ## 🌀 Join the Cult
 
-- 🛠️ **[Contribute](CONTRIBUTING.md)** — enter the Forge or [find an open task](https://github.com/hexanomicon/lychd/issues?q=is%3Aissue+is%3Aopen+label%3A%22help%20wanted%22).
+- 🛠️ **[Contribute](CONTRIBUTING.md)** — enter the Forge and pick a [help-wanted issue](https://github.com/hexanomicon/lychd/issues?q=is%3Aissue+is%3Aopen+label%3A%22help%20wanted%22).
 - 💬 **[Discussions](https://github.com/hexanomicon/lychd/discussions)** — ask questions, explore ideas, and share your work.
 - 🐛 **[Issues](https://github.com/hexanomicon/lychd/issues)** — report bugs and track concrete work.
 
