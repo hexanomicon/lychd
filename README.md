@@ -73,10 +73,11 @@ with open-source software ***YOU*** control,
 
 ## ⚖️ [The Iron Pact](docs/adr/00-license.md) (**[MPL-2.0](LICENSE)**)
 
-**LychD will remain free and open source.**
+**This project is for those who believe in the free evolution of intelligence.**
 
-Use, modify, and share it under MPL-2.0. Distributed changes to covered files stay open;
-your separate code and private data remain yours.
+LychD will remain free and open source under **[MPL-2.0](LICENSE)**. Distributed changes to
+MPL-covered files stay open; your separate code and private data remain yours.
+**[ADR 00](docs/adr/00-license.md)** explains the boundary.
 
 ## ⛩️ A Tribute to the Spirits
 
