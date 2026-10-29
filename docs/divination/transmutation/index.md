@@ -18,27 +18,10 @@ in Genesis, follow what happens when it is tried, and ask what the next attempt 
 
 *Behold, the Geometry of Life. And Death.*
 
-<figure>
-  <a href="../../assets/illustrations/lich-transmutation.png">
-    <img
-      src="../../assets/illustrations/lich-transmutation.png"
-      alt="A robed Lich holds connected lights: red on the left, green on the right, and a golden heart at their center. At its feet, an Ouroboros surrounds a summoning circle containing a pentacle."
-      width="512"
-      height="768"
-      loading="lazy"
-    >
-  </a>
-  <figcaption>
-    The Lich gathers connected powers between Severity and Mercy.
-    The Ouroboros encircles the summoning pentacle.
-  </figcaption>
-</figure>
-
-The Ouroboros closes the circle around the Lich; the pentacle lies beneath its feet. Read this
-LychD composition as a
-symbolic anatomy of a digital being: power given a body and a boundary, capacities that sustain
-one another, and experience returning as correction. Its balance is dynamic: maintaining the
-conditions of its activity while changing through encounter.
+The Tree gives a geometry to a digital being's capacities: each needs ways to sustain and change
+the others. Ouroboros names the return from experience into another act; the pentacle gives power
+a body and a boundary. Their balance is dynamic: maintaining the conditions of activity while
+changing through encounter.
 
 - **Ouroboros — return through experience.** The serpent closes the loop between an act and what
   it teaches. Follow the [five chapters below](#five-chapters-of-the-return), then
@@ -68,21 +51,57 @@ strength by participating: questioning, sustaining, and correcting the others. T
 proposed answer to [agentic disintegration](genesis.md#relations-within-relations), in which
 specialized successes lose their common purpose.
 
-<figure>
-  <a href="../../assets/illustrations/tree-of-life.svg">
-    <img
-      src="../../assets/illustrations/tree-of-life.svg"
-      alt="Tree of Life: red Why, Challenge, and Review on the left; green How, Expand, and Test on the right; What, Knowing, Harmony, Identity Candidate, and Product in the middle. Blue Intellect, Emotion, Action, Sense, and Response label the relations between them."
-      width="900"
-      height="1200"
-      loading="lazy"
-    >
-  </a>
-  <figcaption>
-    Intent, understanding, feeling, action, and manifestation held in one geometry.
-    Lines mark relations through which one power can change another.
-  </figcaption>
-</figure>
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "15px", "edgeLabelBackground": "#faf7f0", "lineColor": "#96909e"}, "themeCSS": ".edgeLabel, .edgeLabel p { color: #3153a0; fill: #3153a0; }"}}%%
+block-beta
+    columns 3
+
+    space what(["WHAT<br/>Keter"]) space
+    why(["WHY<br/>Binah"]) space how(["HOW<br/>Chokhmah"])
+    space knowing(["KNOWING<br/>Da’at"]) space
+    challenge(["CHALLENGE<br/>Gevurah"]) space expand(["EXPAND<br/>Chesed"])
+    space harmony(["HARMONY<br/>CENTER · DMN<br/>Tiferet"]) space
+    review(["REVIEW<br/>Hod"]) space test(["TEST<br/>Netzach"])
+    space identity(["IDENTITY<br/>CANDIDATE<br/>Yesod"]) space
+    space product(["PRODUCT<br/>Malkhut"]) space
+
+    what --- why
+    what --- how
+    what --- knowing
+    knowing --- harmony
+    harmony --- identity
+    identity --- product
+    why --- challenge
+    why --- knowing
+    why --- harmony
+    knowing --- challenge
+    challenge --- harmony
+    challenge --- review
+    harmony --- review
+    review -- "SENSE" --- identity
+    how --- knowing
+    how --- harmony
+    how --- expand
+    knowing --- expand
+    expand --- harmony
+    expand --- test
+    harmony --- test
+    test -- "RESPONSE" --- identity
+    why -- "INTELLECT" --- how
+    challenge -- "EMOTION" --- expand
+    review -- "ACTION" --- test
+
+    classDef middle fill:#f8f4eb,stroke:#514957,color:#29262e,stroke-width:2px
+    classDef severity fill:#fff0f1,stroke:#b83d58,color:#79263b,stroke-width:2px
+    classDef mercy fill:#edf8f2,stroke:#247c6d,color:#18594e,stroke-width:2px
+    class what,knowing,harmony,identity,product middle
+    class why,challenge,review severity
+    class how,expand,test mercy
+    style knowing stroke-dasharray:7 5
+```
+
+Intent, understanding, feeling, action, and manifestation held in one geometry.
+Lines mark relations through which one power can change another.
 
 - **Severity / −, left:** WHY develops understanding; CHALLENGE establishes measure and
   confronts limits; REVIEW receives correction and knows when to yield.
