@@ -1,5 +1,6 @@
 nav:
   - Prophecy: index.md
+  - Getting Started: getting-started.md
   - Summoning: summoning.md
   - Map: map.md
   - State of Work: state-of-the-work.md

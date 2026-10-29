@@ -194,6 +194,10 @@ owns those commands and their evidence boundaries.
 
 ## Setup and Commands
 
+For a short path that distinguishes repository verification from live-host Summoning, start with
+[Getting Started](docs/getting-started.md). This section owns the exact commands and evidence
+boundaries.
+
 A working OCI engine is required for Core verification; rootless Podman is the default. `make` builds an explicit
 allowlisted source context and runs the resulting exact OCI image; it mounts neither the checkout
 nor HOME. Docker may be selected explicitly with `LYCHD_TEST_ENGINE=docker`. Missing engines

@@ -29,6 +29,7 @@ Give your Linux machine the **[memory](docs/sepulcher/lich/spirit/index.md)** an
 
 The knowledge you seek is inscribed in the **[Hexanomicon](https://hexanomicon.dev/)**. To begin **[the Great Work](docs/divination/transcendence/index.md)**, follow the path:
 
+0. 🚀 **[Getting Started](docs/getting-started.md)** — pick repository verification vs Summoning; see alpha limits.
 1. 📜 **[Read the Prophecy](docs/index.md)** — see what lies ahead.
 2. 📖 **[Consult the Lexicon](docs/lexicon/index.md)** — a handbook for **[technical](docs/lexicon/iron-tongue.md)** & **[mystical](docs/lexicon/inner-tongue.md)** jargon.
 3. 🕯️ **[Perform the Summoning](docs/summoning.md)** — bring your host to life.

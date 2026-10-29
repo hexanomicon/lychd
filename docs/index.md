@@ -44,6 +44,13 @@ You have unearthed the pages of an alchemical grimoire built on the ancient secr
 
 > _"While the world slept, content with its reliable illusions, the Magus walked into the dark, seeking a truth that was not yet stable, but was infinitely more real."_
 
+## Start here
+
+New engineers: use **[Getting Started](./getting-started.md)** to pick a path (repository
+verification vs live-host Summoning), then [CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md)
+for commands and the team branch contract. Maturity claims live only in
+[State of Work](./state-of-the-work.md).
+
 ## The Four Gates
 
 To master **[LychD](https://github.com/hexanomicon/lychd)**, pass through the four gates of knowledge.
