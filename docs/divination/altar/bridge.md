@@ -5,9 +5,19 @@ icon: material/bridge
 
 # :material-bridge: Bridge
 
-Bridge is where you offer work to the Lich and return to its reply. A session, or séance, keeps the conversation together. Each admitted turn opens its own [Circle](circle.md), with a Run you can follow from request to result.
+Use Bridge to offer an Intent and stay with the answer as you inspect other Altar instruments or
+applications. Its session, or séance, holds the continuing conversation. Each admitted turn opens
+its own [Circle](circle.md), whose Run lets you follow that one request through to its result.
 
-After completing [Altar setup](index.md), open `http://127.0.0.1:7134/bridge` in the dedicated browser profile on the same host. Keep the listener on literal `127.0.0.1`; do not proxy, tunnel, or forward it.
+Open it with **Bridge** in the top masthead. Resize its divider, choose the left or right side,
+or collapse it while retaining the conversation. Ordinary instrument navigation does not destroy
+the selected session, its live reconstruction or a later draft. On a narrow window, the panel is
+a modal sheet; Escape closes it and returns focus to its opener. The layout's remembered width,
+side and open state contain no conversation text or request bodies.
+
+After completing [Altar setup](index.md), open `http://127.0.0.1:7134/bridge` in the dedicated
+browser profile on the same host. Existing session, Run and consent URLs open their exact Bridge
+focus. Keep the listener on literal `127.0.0.1`; do not proxy, tunnel, or forward it.
 
 ## Investigate public source
 

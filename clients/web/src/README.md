@@ -17,7 +17,9 @@ routes to the implementation and its operating guide rather than duplicating eit
 | Exact registered score and computed graph | [LoomView.svelte](lib/components/LoomView.svelte), [shared canvas](lib/components/graph/GraphCanvas.svelte) | [Loom](../../../docs/divination/altar/loom.md) |
 
 [The layout](routes/+layout.svelte) supplies browser-document context;
-[AltarShell](lib/components/AltarShell.svelte) projects navigation and global attention.
+[AltarShell](lib/components/AltarShell.svelte) projects navigation, global attention and the
+shell-lifetime [Bridge dock](lib/components/BridgeDock.svelte). Its layout preferences contain
+only bounded width, side and open state; conversation and recovery remain in their existing owners.
 [Instrument links](lib/navigation/instruments.ts) carry bounded selection hints. Destination
 loaders still validate identity and relationships; a URL does not prove ownership or Run/Pattern
 equivalence. Focused component tests live beside their components; navigation has its own

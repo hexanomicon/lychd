@@ -779,7 +779,7 @@
   .panel-head .rune-head { font-size: var(--text-lg); }
   .run-identity { gap: 1.25rem; }
   .run-identity > div { min-width: 0; }
-  .run-identity h1 { font: 400 clamp(1.6rem, 2.2vw, 2rem)/1.2 var(--font-rune); }
+  .run-identity h1 { font: 600 clamp(1.6rem, 2.2vw, 2rem)/1.2 var(--font-body); }
   .eyebrow { color: var(--color-parchment); letter-spacing: 0.08em; }
   .run-id { margin: 0.65rem 0 0; color: var(--color-bone); font: var(--text-sm)/1.6 var(--font-glyph); overflow-wrap: anywhere; }
   .run-id > span { color: var(--color-parchment); }

@@ -1139,25 +1139,60 @@ right-to-left receipt. Browser-native date/time formatting may reflect a device 
 incidental variation is not delivered localization support.
 The compiled Altar has one fixed LychD Dark palette, dark browser metadata, dark native-control
 colour scheme, and no light/system selector, system-scheme following, palette configuration,
-runtime theme loader, or supported theme extension. Semantic CSS custom properties establish a
-future refactoring seam, but hard-coded dark surfaces remain in the main background, graph chrome, and
-static artwork. There is no complete contrast matrix or bright/dim production-browser receipt;
+runtime theme loader, or supported theme extension. Its canonical semantic palette now uses a black
+work plane, neutral graphite, icy-blue interaction, green confirmation/activity and bounded
+deep-purple context surfaces. Shared controls, instrument typography and graph chrome consume
+that palette; fixed brand artwork remains separately attributed. There is no complete contrast matrix or bright/dim production-browser receipt;
 ADR 15's bounded operator-palette contract is design law, not delivered configurability.
+
+### Shared workbench and persistent Bridge {#altar-workbench}
+
+**State:** Partial
+
+**Proved now:** The shared masthead provides icon-and-label instrument navigation, an
+Applications menu reachable by hover, click, or keyboard, and a separate Bridge control. One
+ordinary conversation stays mounted across work navigation and collapse, retaining exact-session
+drafts, unresolved offering identity, and live subscriptions. Explicit Bridge URLs still select
+session, Project, Run, and consent focus. Investigation and public-note applications keep their
+separate composition.
+
+The dock supports left/right placement, bounded pointer/keyboard resizing, and layout-only local
+preferences. Wide windows allocate space beside it; narrow windows provide modal focus
+containment, Escape, and opener return. Navigating work or applications reveals the main view
+without destroying the conversation. Source-development Canvas opens that shell offline and
+makes no protected Bridge/status requests until an explicit connection. Production
+authentication remains intact.
+
+**Boundary — Not yet:** The dock supplies no new model context or attachment admission, voice,
+global conversation merge, cross-instance history, durable browser draft storage or execution
+authority. Viewing a page is not transmitting it to a model. Browser and component checks do not
+qualify every device, bright/dim environment, forced-colour combination or the renderer's separate
+cross-engine heap gate. Existing server-held recovery, current-access and consent limits remain.
+
+**Evidence**
+
+- **Source:** [Shell](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/AltarShell.svelte), [Bridge dock](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeDock.svelte), [conversation](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeView.svelte), [bounded layout preferences](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/navigation/dock.ts), and [semantic styling](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/app.css)
+- **Verification:** [Server shell fallbacks](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_pages.py), [shell admission/status tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/AltarShell.test.ts), [mounted conversation/navigation tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeShellNavigation.test.ts), [dock interaction tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeDock.test.ts), [layout preference tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/navigation/dock.test.ts), and [offline source profile](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/routes/canvas/layout.test.ts)
+- **Law:** [Shared workbench and Bridge dock](./adr/15-frontend.md#the-shared-workbench-and-bridge-dock)
+- **Topic:** [Altar](./divination/altar/index.md#keep-bridge-beside-the-work)
 
 ### Canvas board authoring {#canvas-board-authoring}
 
 **State:** Partial
 
 **Proved now:** Canvas supplies a portable board authoring profile at `/canvas`: actual pointer
-strokes, native nodes and connections, whole-object region selection, original geometry and a
+strokes, native nodes and connections, rectangle or freehand-lasso whole-object selection,
+original geometry and a
 same-revision bounded PNG packet, deterministic text, optional local PNG artwork, explicitly local
 Tidy, bounded CPU arrangement, proposal preview/apply/reject and undo/redo. Portable JSON files
 retain the current scene and bounded history; browser drafts claim no automatic retention.
 Closed Composition-owned contracts and stateless scoped HTTP validation refuse stale or
 out-of-selection changes, dangling references, invalid geometry and unbounded image envelopes.
 Browser and Python share a conservative numeric size budget and common parity fixtures.
-The development-only source preview omits protected status polling, so offline authoring needs
-no sign-in; the compiled application keeps its authenticated shell and API boundaries.
+On the black, undotted work plane, the transient lasso follows actual stroke/connector paths
+and node silhouettes without entering retained ink. The development-only source profile omits
+protected status/Bridge reads until connection, so offline authoring needs no sign-in; the
+compiled application keeps its authenticated shell and API boundaries.
 
 **Boundary — Not yet:** There is no native vision transmission, live microphone, automatic model
 interpretation, generated-art engine, server-retained board, collaborative editing, registered

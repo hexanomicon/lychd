@@ -27,7 +27,7 @@
 </div>
 
 <style>
-  .graph-canvas { width:100%; min-width:0; height:var(--graph-height,clamp(460px,68vh,900px)); position:relative; overflow:hidden; border:1px solid var(--color-engraving); border-radius:10px; background:var(--color-void); --xy-background-color:var(--color-void); --xy-node-color:var(--color-bone); --xy-minimap-background-color:var(--color-obsidian); --xy-minimap-mask-background-color:#131318bb; --xy-edge-label-background-color:var(--color-void); --xy-edge-label-color:var(--color-parchment); }
+  .graph-canvas { width:100%; min-width:0; height:var(--graph-height,clamp(460px,68vh,900px)); position:relative; overflow:hidden; border:1px solid var(--color-engraving); border-radius:var(--radius-panel); background:var(--color-void); --xy-background-color:var(--color-void); --xy-node-color:var(--color-bone); --xy-minimap-background-color:var(--color-obsidian); --xy-minimap-mask-background-color:color-mix(in srgb,var(--color-void) 72%,transparent); --xy-edge-label-background-color:var(--color-void); --xy-edge-label-color:var(--color-parchment); }
   .graph-failure { padding:2rem; color:var(--color-ember); }
   .graph-canvas :global(.svelte-flow__edge-textbg) { fill:var(--color-void); }
   .graph-canvas :global(.svelte-flow__attribution) { background:var(--color-obsidian); }

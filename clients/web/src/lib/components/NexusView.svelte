@@ -531,7 +531,7 @@
 <style>
   .instrument-deck--nexus { display: flex; flex-direction: row; align-items: start; gap: 1.5rem; }
   .nexus-main { gap: 1rem; }
-  .instrument-header h1 { font-size: clamp(2rem, 4vw, 3rem); }
+  .instrument-header h1 { font-size: clamp(1.8rem, 3vw, 2.2rem); letter-spacing: -0.02em; }
   .instrument-header p { color: var(--color-parchment); }
   .nexus-side { display: flex; flex-direction: column; position: static; width: min(26rem, 34%); min-width: 0; gap: 1rem; padding-top: 0.5rem; }
   .panel { box-shadow: none; background: var(--color-obsidian); }

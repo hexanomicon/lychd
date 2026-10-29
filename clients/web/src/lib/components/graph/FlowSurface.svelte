@@ -97,11 +97,11 @@
       <button type="button" onclick={() => { void fit(); }}>Fit graph</button>
     </div>
   </Panel>
-  <MiniMap nodeColor="var(--color-rune-dim)" maskColor="#131318bb" />
+  <MiniMap nodeColor="var(--color-rune-dim)" maskColor="color-mix(in srgb,var(--color-void) 72%,transparent)" />
 </SvelteFlow>
 
 <style>
-  .canvas-controls { display:flex; border:1px solid var(--color-engraving); border-radius:7px; overflow:hidden; background:var(--color-obsidian); }
+  .canvas-controls { display:flex; border:1px solid var(--color-engraving); border-radius:var(--radius-rune); overflow:hidden; background:var(--color-obsidian); }
   button { border:0; border-right:1px solid var(--color-engraving); background:transparent; color:var(--color-bone); padding:9px 12px; min-width:36px; cursor:pointer; font-size:13px; }
   button:last-child { border-right:0; }
   button:hover { background:var(--color-obsidian-2); }

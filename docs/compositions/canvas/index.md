@@ -15,15 +15,18 @@ saved as a local document and opened again. It is not a server-retained Project,
 workflow, or evidence that the illustrated architecture is running. [State of Work](../../state-of-the-work.md#canvas-board-authoring)
 owns the delivered evidence and its limits.
 
-The Vite development preview opens Canvas without the Altar's status-polling shell, so offline
-drawing needs no sign-in and starts no backend request. The compiled application keeps the normal
-authenticated shell and API boundaries.
+The Vite development preview opens Canvas in the Altar's offline workbench profile, so drawing
+needs no sign-in and starts no protected status or Bridge request. The shell and dock controls
+remain visible with the backend unavailable until explicitly connected. The compiled application
+keeps the normal authenticated shell and API boundaries.
 
 ## Sketch, select, and judge
 
 Begin with a blank board or the explicitly illustrative example. Draw actual freehand strokes,
-add named nodes, and connect them. A rectangular selection chooses whole objects whose bounds
-intersect it; it does not cut strokes. The highlighted objects are the permitted edit scope.
+add named nodes, and connect them. **Lasso** circles actual ink and selects whole intersecting
+objects; the contour itself never becomes a source stroke. **Select** keeps rectangular selection,
+and the Objects list supplies its keyboard alternative. Neither gesture cuts strokes. The
+highlighted objects are the permitted edit scope.
 Unselected objects supply context and keep their identities.
 
 Capture the selection with an instruction. The portable packet contains the original selected

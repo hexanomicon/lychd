@@ -1,11 +1,12 @@
 <script lang="ts">
   import "../app.css";
-  import { setContext } from "svelte";
+  import { setContext, untrack } from "svelte";
   import { page } from "$app/state";
   import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
   import AltarShell from "$lib/components/AltarShell.svelte";
 
   let { children } = $props();
+  const offlineProfile = untrack(() => import.meta.env.DEV && page.url.pathname === "/canvas");
   const bridgeWorkspace = setContext(bridgeWorkspaceKey, createBridgeWorkspace());
   function guardUnload(event: BeforeUnloadEvent) {
     if (!bridgeWorkspace.needsUnloadWarning) return;
@@ -16,10 +17,6 @@
 
 <svelte:window onbeforeunload={guardUnload} />
 
-{#if import.meta.env.DEV && page.url.pathname === "/canvas"}
+<AltarShell offline={offlineProfile}>
   {@render children()}
-{:else}
-  <AltarShell>
-  {@render children()}
-  </AltarShell>
-{/if}
+</AltarShell>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { boundsOfSelection, moveSelection, selectInBounds } from "$lib/canvas/engine";
+  import { LASSO_POINT_LIMIT, selectInLasso } from "$lib/canvas/selection";
   import type { Bounds, CanvasNode, Packet, Point, Scene, Tool } from "$lib/canvas/types";
   import CanvasScene from "./CanvasScene.svelte";
   let { scene, tool, selected, locked = false, onselect, onchange, onbusy, onerror, onedit }: {
@@ -17,14 +18,13 @@
   let animation = $state.raw<Scene | null>(null);
   let animationFrame: number | undefined;
   let ink = $state.raw<Point[]>([]);
+  let lasso = $state.raw<Point[]>([]);
   let marquee = $state.raw<Bounds | null>(null);
   let connectSource = $state<string | null>(null);
   let space = $state(false);
   const pointers: Record<number, Point> = Object.create(null);
   let pinch: { distance: number; zoom: number; world: Point } | null = null;
   let rendered = $derived(draft ?? animation ?? scene);
-  const uid = $props.id();
-  const pattern = `${uid}-dots`;
   let activeMode = $derived(space ? "pan" : tool);
   let selectionBounds = $derived(boundsOfSelection(rendered, selected));
 
@@ -65,7 +65,7 @@
     const point = world(anchor), zoom = Math.max(.15, Math.min(3, camera.zoom * factor));
     camera = { x: anchor.x - point.x * zoom, y: anchor.y - point.y * zoom, zoom };
   }
-  function cancelGesture() { gesture = null; draft = null; ink = []; marquee = null; onbusy(false); }
+  function cancelGesture() { gesture = null; draft = null; ink = []; lasso = []; marquee = null; onbusy(false); }
   function start(event: PointerEvent) {
     if (event.button !== 0 && event.button !== 1) return;
     settleAnimation();
@@ -95,6 +95,7 @@
     gesture = { pointer: event.pointerId, mode: mode === "select" && object ? "move" : mode, start: point, client, camera, ids, base: scene, additive: event.shiftKey };
     onbusy(true);
     if (mode === "draw") ink = [point];
+    if (mode === "lasso") lasso = [point];
     if (mode === "box" || mode === "select" && !object) marquee = rectangle(point, point);
   }
   function move(event: PointerEvent) {
@@ -114,6 +115,13 @@
       const last = ink.at(-1)!;
       if (ink.length >= 2048) { finish(event); onerror("Stroke saved at the 2,048-point limit. Release the pointer to start another stroke."); return; }
       if (Math.hypot(point.x - last.x, point.y - last.y) > 1.5 / camera.zoom) ink = [...ink, point];
+    } else if (gesture.mode === "lasso") {
+      const last = lasso.at(-1)!;
+      if (Math.hypot(point.x - last.x, point.y - last.y) > 3 / camera.zoom) {
+        // Keep the transient contour bounded while allowing one continuous circling gesture.
+        if (lasso.length >= LASSO_POINT_LIMIT) lasso = lasso.filter((_point, index) => index % 2 === 0);
+        lasso = [...lasso, point];
+      }
     } else if (gesture.mode === "move") {
       try { draft = moveSelection(gesture.base, gesture.ids, point.x - gesture.start.x, point.y - gesture.start.y); }
       catch (error) { onerror(error instanceof Error ? error.message : "Objects could not be moved."); cancelGesture(); }
@@ -126,11 +134,14 @@
     const current = gesture;
     if (current.mode === "draw" && ink.length) {
       const points = ink.length === 1 ? [...ink, { x: ink[0]!.x + .1, y: ink[0]!.y + .1 }] : ink;
-      onchange({ ...current.base, strokes: [...current.base.strokes, { id: crypto.randomUUID(), points, color: "#b7efff", width: 2.5, archived: false }] }, "Stroke drawn.");
+      onchange({ ...current.base, strokes: [...current.base.strokes, { id: crypto.randomUUID(), points, color: "#eef1f4", width: 2.5, archived: false }] }, "Stroke drawn.");
     } else if (current.mode === "move" && draft && Math.hypot(event.clientX - svg.getBoundingClientRect().left - current.client.x, event.clientY - svg.getBoundingClientRect().top - current.client.y) > 2) onchange(draft, "Selection moved.");
     else if (current.mode === "box" && marquee) {
       const node: CanvasNode = { id: crypto.randomUUID(), x: marquee.x, y: marquee.y, width: Math.max(160, Math.min(1600, marquee.width)), height: Math.max(90, Math.min(1600, marquee.height)), label: `Node ${scene.nodes.length + 1}`, kind: "box", pinned: false, source_stroke_ids: [], artwork: null };
       onchange({ ...current.base, nodes: [...current.base.nodes, node] }, "Editable node added."); onselect([node.id]);
+    } else if (current.mode === "lasso") {
+      const ids = selectInLasso(current.base, lasso);
+      onselect(current.additive ? [...new Set([...selected, ...ids])] : ids);
     } else if (current.mode === "select" && marquee) {
       const ids = selectInBounds(scene, marquee); onselect(current.additive ? [...new Set([...selected, ...ids])] : ids);
     }
@@ -174,7 +185,7 @@
       await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = () => reject(new Error("The scene crop could not be rendered.")); image.src = source; });
       const canvas = document.createElement("canvas"); canvas.width = cropWidth; canvas.height = cropHeight;
       const context = canvas.getContext("2d"); if (!context) throw new Error("PNG capture is unavailable in this browser.");
-      context.fillStyle = palette.getPropertyValue("--color-void").trim() || "#131318"; context.fillRect(0, 0, cropWidth, cropHeight); context.drawImage(image, 0, 0, cropWidth, cropHeight);
+      context.fillStyle = "#000000"; context.fillRect(0, 0, cropWidth, cropHeight); context.drawImage(image, 0, 0, cropWidth, cropHeight);
       const png = canvas.toDataURL("image/png");
       if ((png.length - png.indexOf(",") - 1) * .75 > 512 * 1024) throw new Error("PNG crop exceeds 512 KiB. Select a smaller area.");
       return { png_data_url: png, width: cropWidth, height: cropHeight, bounds };
@@ -188,24 +199,23 @@
   <!-- A two-dimensional drawing application needs focus and keyboard gestures. The semantic object list supplies ordinary controls for every authored object. -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
   <svg class={["board", `mode-${activeMode}`]} viewBox={`0 0 ${width || 1000} ${height || 570}`} aria-label="Canvas drawing surface" role="application" tabindex="0" aria-describedby="canvas-gestures" onpointerdown={start} onpointermove={move} onpointerup={finish} onpointercancel={(event) => { delete pointers[event.pointerId]; pinch = null; cancelGesture(); }} onlostpointercapture={() => { if (gesture) cancelGesture(); }} onkeydown={keydown} ondblclick={(event) => { const id = (event.target as Element).closest("[data-object-id]")?.getAttribute("data-object-id"); if (id && !locked) onedit(id); }} {@attach attachWheel}>
-    <defs data-grid><pattern id={pattern} width={24 * camera.zoom} height={24 * camera.zoom} patternUnits="userSpaceOnUse" x={camera.x} y={camera.y}><circle cx="1" cy="1" r=".7" fill="var(--color-engraving)" /></pattern></defs>
-    <rect data-grid width="100%" height="100%" fill={`url(#${pattern})`} />
     <g data-scene transform={`translate(${camera.x} ${camera.y}) scale(${camera.zoom})`}><CanvasScene scene={rendered} selected={selected} /></g>
     <g data-overlay transform={`translate(${camera.x} ${camera.y}) scale(${camera.zoom})`} pointer-events="none">
       {#if selectionBounds}<rect x={selectionBounds.x - 6} y={selectionBounds.y - 6} width={selectionBounds.width + 12} height={selectionBounds.height + 12} fill="none" stroke="var(--color-rune)" stroke-width={1 / camera.zoom} stroke-dasharray="5 4" />{/if}
       {#if ink.length}<polyline points={ink.map((point) => `${point.x},${point.y}`).join(" ")} fill="none" stroke="var(--color-frost)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />{/if}
+      {#if lasso.length}<polygon points={lasso.map((point) => `${point.x},${point.y}`).join(" ")} fill="var(--color-rune)" fill-opacity=".04" stroke="var(--color-rune)" stroke-width={1.5 / camera.zoom} stroke-linejoin="round" />{/if}
       {#if marquee}<rect x={marquee.x} y={marquee.y} width={marquee.width} height={marquee.height} rx={tool === "box" ? 12 : 0} fill="var(--color-rune)" fill-opacity=".07" stroke="var(--color-rune)" stroke-width={1 / camera.zoom} stroke-dasharray={tool === "box" ? undefined : "5 4"} />{/if}
     </g>
   </svg>
-  <div class="surface-note" aria-hidden="true">{connectSource ? "Choose the target node · Esc to cancel" : locked ? "Preview · pan and zoom to inspect" : activeMode === "draw" ? "Draw freely · your ink stays where you leave it" : activeMode === "box" ? "Drag to add an editable node" : activeMode === "connect" ? "Choose a source node, then a target" : activeMode === "pan" ? "Drag to move the view" : "Drag empty space to select whole objects"}</div>
+  <div class="surface-note" aria-hidden="true">{connectSource ? "Choose the target node · Esc to cancel" : locked ? "Preview · pan and zoom to inspect" : activeMode === "draw" ? "Draw freely · your ink stays where you leave it" : activeMode === "lasso" ? "Circle drawings to select whole objects · Shift adds to selection" : activeMode === "box" ? "Drag to add an editable node" : activeMode === "connect" ? "Choose a source node, then a target" : activeMode === "pan" ? "Drag to move the view" : "Drag empty space to select whole objects"}</div>
   <div class="zoom" aria-label="Board view controls"><button type="button" aria-label="Zoom out" onclick={() => zoomBy(1 / 1.2)}>−</button><output aria-label="Zoom level">{Math.round(camera.zoom * 100)}%</output><button type="button" aria-label="Zoom in" onclick={() => zoomBy(1.2)}>+</button><button type="button" onclick={fit} title="Fit board (0)">Fit</button></div>
 </div>
 
 <style>
-  .surface { position:relative; width:100%; height:100%; min-height:420px; overflow:hidden; background:var(--color-void); }
+  .surface { position:relative; width:100%; height:100%; min-height:420px; overflow:hidden; background:#000; }
   .board { display:block; width:100%; height:100%; min-height:420px; touch-action:none; outline:none; }
   .board:focus-visible { box-shadow:inset 0 0 0 2px var(--color-rune); }
-  .mode-draw,.mode-box,.mode-connect { cursor:crosshair; }.mode-pan { cursor:grab; }.mode-pan:active { cursor:grabbing; }
+  .mode-draw,.mode-lasso,.mode-box,.mode-connect { cursor:crosshair; }.mode-pan { cursor:grab; }.mode-pan:active { cursor:grabbing; }
   .surface-note { position:absolute; left:20px; bottom:18px; max-width:calc(100% - 230px); pointer-events:none; font-size:11px; color:var(--color-ash); }
   .zoom { position:absolute; bottom:12px; right:14px; display:flex; align-items:center; gap:3px; padding:4px; background:var(--color-obsidian); border:1px solid var(--color-engraving); border-radius:var(--radius-rune); }
   button { border:0; min-width:32px; min-height:32px; padding:4px 8px; background:transparent; color:var(--color-parchment); border-radius:4px; cursor:pointer; font:12px var(--font-body); } button:hover { background:var(--color-obsidian-2); color:var(--color-rune); } button:focus-visible { outline:2px solid var(--color-rune); outline-offset:2px; }

@@ -38,7 +38,7 @@
 </NodeToolbar>
 
 <style>
-  .flow-card { width:240px; min-height:142px; display:flex; flex-direction:column; gap:10px; padding:17px 18px; text-align:left; border:1px solid var(--color-engraving); border-top:3px solid var(--color-tertiary-edge); border-radius:10px; background:var(--color-obsidian); color:var(--color-bone); box-shadow:0 6px 16px #0003; cursor:pointer; }
+  .flow-card { width:240px; min-height:142px; display:flex; flex-direction:column; gap:10px; padding:17px 18px; text-align:left; border:1px solid var(--color-engraving); border-top:2px solid var(--color-engraving); border-radius:var(--radius-panel); background:var(--color-obsidian); color:var(--color-bone); box-shadow:none; cursor:pointer; }
   .flow-card:hover { background:var(--color-obsidian-2); border-color:var(--color-rune-dim); }
   .flow-card.chosen, .flow-card:focus-visible { outline:2px solid var(--color-rune); outline-offset:3px; }
   .node-kind { display:flex; gap:8px; align-items:center; font-size:11px; text-transform:uppercase; letter-spacing:.09em; color:var(--color-parchment); }
@@ -52,8 +52,8 @@
   .flow-card[data-state="running"], .flow-card[data-state="entered"] { border-top-color:var(--color-lich); }
   .flow-card[data-kind="gate"] { border-top-color:var(--color-heat); }
   .flow-card[data-kind="agent"] { width:142px; height:142px; margin-inline:49px; border-radius:50%; text-align:center; align-items:center; justify-content:center; }
-  .flow-card[data-attention] { border-color:var(--node-accent); box-shadow:0 0 0 1px var(--node-accent),0 0 24px color-mix(in srgb,var(--node-accent) 28%,transparent); }
+  .flow-card[data-attention] { border-color:var(--node-accent); box-shadow:0 0 0 1px var(--node-accent); }
   .attention-label { color:var(--node-accent); font-size:11px; }
-  .node-preview { width: min(290px,70vw); padding:14px 16px; display:flex; flex-direction:column; gap:8px; border:1px solid var(--color-rune-dim); border-radius:10px; background:var(--color-obsidian); color:var(--color-bone); box-shadow:0 8px 24px #0008; font:12px/1.5 var(--font-body); overflow-wrap:anywhere; }
+  .node-preview { width: min(290px,70vw); padding:14px 16px; display:flex; flex-direction:column; gap:8px; border:1px solid var(--color-rune-dim); border-radius:var(--radius-panel); background:var(--color-obsidian); color:var(--color-bone); box-shadow:0 8px 24px color-mix(in srgb,var(--color-void) 75%,transparent); font:12px/1.5 var(--font-body); overflow-wrap:anywhere; }
   .node-preview span,.node-preview code { color:var(--color-parchment); }
 </style>

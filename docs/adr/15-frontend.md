@@ -22,8 +22,10 @@ icon: material/language-html5
   remote functions, or JavaScript production server.
 - A snapshot plus event cursor must reconstruct browser state. Connection, animation, and canvas
   layout never prove execution.
-- Atlas, Bridge, Orb, Nexus, and Loom are separate routes with explicit server fallbacks. Generated UI is
-  closed descriptors, never model- or extension-supplied HTML, JavaScript, Svelte, or imports.
+- Atlas, Orb, Nexus, and Loom are work routes; Bridge is a shell-owned conversation panel available
+  beside every work route. Existing Bridge URLs retain explicit server fallbacks and exact session,
+  Run, consent and focused-application navigation. Generated UI is closed descriptors, never model-
+  or extension-supplied HTML, JavaScript, Svelte, or imports.
 - Circle is the Invocation-shaped focus within Bridge, not a separate instrument or a claim
   that the current run strip already composes every owning projection.
 - Native CSS includes keyboard access, visible focus, non-colour cues, reduced motion, named
@@ -73,14 +75,14 @@ owns delivery.
 | Nexus | Timestamped capability observations, non-binding plan preview, typed request, and ticket stream | Partial: observations and tickets are process-local and not restart-complete. |
 | Loom | Immutable Scroll/Pattern-revision graph and station/permission outline | Partial: fixed registry reader without independent Spell identities, editing, teaching, or publication. |
 
-The shell owns navigation, source identity, pending-consent count, and transient notices; an
-instrument owns route-local presentation. `/scrying`, `/reliquary`, `/bindings`, and ambiguous
+The shell owns navigation, source identity, pending-consent count, transient notices and the
+persistent Bridge presentation; each other instrument owns route-local presentation. `/scrying`, `/reliquary`, `/bindings`, and ambiguous
 unversioned Loom detail are deliberately not routes. Scrying is Orb's act, not another instrument.
 Artifact references and configuration observations are contextual projections, not browser custody
 or configuration authority.
 
-The browser shell may retain drafts by exact session and the last explicit Bridge session path
-for its own lifetime. The global Bridge link returns to that session without a Run hint.
+The browser shell retains drafts by exact session and the last explicit Bridge session path
+for its own lifetime. The global Bridge control opens that session without a Run hint.
 The global Orb link opens the parallel Run field at `/orb`. Until an explicit Bridge session
 path is selected, its global link stays at `/bridge`;
 the server's default session does not establish browser navigation memory. This is recoverable
@@ -292,9 +294,39 @@ retains that boundary.
 
 ### Reading hierarchy and visual direction
 
+#### The shared workbench and Bridge dock
+
+The top masthead presents Atlas, Orb, Loom and Nexus as icon-and-label navigation. Applications
+is a bounded disclosure for Canvas and other admitted applications; hover, click and keyboard
+focus can open it, Escape dismisses it, and moving into the menu keeps it reachable. Bridge is
+an always-available conversation surface, not a competing top-level instrument tab. Existing
+`/bridge` links remain valid compatibility and focus destinations; exact session, Run, consent,
+Project, investigation and public-note intent must survive the composition change.
+
+The dock can open or collapse, occupy either side and resize through a pointer or keyboard
+separator. A wide workbench allocates real width beside it; it does not cover the work. A narrow
+workbench uses an explicitly modal overlay with focus containment, Escape and an opener return.
+Width, side and collapsed state may be remembered as bounded local presentation preferences;
+conversation text, attachment bodies, consent and request identities do not enter that store.
+Resizing preserves the working view and Canvas camera scale instead of rearranging document
+objects or fitting the board automatically. Collapsing the dock or changing an instrument neither
+cancels a Run nor admits another offering. The selected conversation and its transient recovery
+state remain alive across ordinary work-route changes. Current-authority refusal still clears
+protected projections under the existing rules.
+
+The canonical LychD Dark workbench uses an untextured black work plane, neutral graphite chrome,
+icy-blue interaction and focus, restrained green confirmation/activity, and bounded deep-purple
+secondary surfaces. Text stays neutral and readable. Icons supplement visible labels. Surfaces
+use crisp geometry and restrained separators; status, consent and uncertainty remain explicit
+words rather than colour or decorative motion. Canvas has no dotted background. Its optional
+freehand lasso selects whole intersecting objects without adding the selection loop to source
+ink; rectangle and semantic-list selection remain available. A selected scope is still only a
+proposal boundary, never a model transmission or execution permission.
+
 The Altar's visual direction is a quiet observatory: the work supplies the focal point, while
 restrained surfaces, typography, and fixed brand art supply identity. The five instruments keep
-their single-word navigation labels. They do not become five copies of a dashboard, a universal
+their single-word names, with Bridge presented as the persistent conversation dock. They do not
+become five copies of a dashboard, a universal
 graph, or separate owners of the same action. Each has a different primary reading task:
 
 | Instrument | Primary reading order | Role of a graph |

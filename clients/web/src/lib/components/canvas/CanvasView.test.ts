@@ -29,7 +29,7 @@ function pointer(type: string, x: number, y: number, id = 1, shiftKey = false) {
   Object.defineProperty(event, "pointerId", { value: id });
   return event;
 }
-function surface(tool: "draw" | "select" = "draw") {
+function surface(tool: "draw" | "select" | "lasso" = "draw") {
   const onchange = vi.fn(), onselect = vi.fn(() => true), onerror = vi.fn();
   const view = render(CanvasSurface, { scene: blankDocument().scene, tool, selected: [], onselect, onchange, onbusy: vi.fn(), onerror, onedit: vi.fn() });
   const svg = screen.getByRole("application", { name: "Canvas drawing surface" });
@@ -54,6 +54,29 @@ async function downloadBoard(): Promise<BoardDocument> {
 }
 
 describe("Canvas native authoring", () => {
+  it("circles original ink without adding selection marks to the document, and discards a canceled lasso", async () => {
+    const document = blankDocument();
+    const inside = { id: crypto.randomUUID(), points: [{ x: 100, y: 100 }, { x: 140, y: 120 }], width: 2, color: "#ffffff", archived: false };
+    const outside = { ...inside, id: crypto.randomUUID(), points: [{ x: 300, y: 300 }, { x: 340, y: 320 }] };
+    document.scene.strokes = [inside, outside];
+    const onselect = vi.fn(() => true), onchange = vi.fn();
+    render(CanvasSurface, { scene: document.scene, tool: "lasso", selected: [], onselect, onchange, onbusy: vi.fn(), onerror: vi.fn(), onedit: vi.fn() });
+    const svg = screen.getByRole("application", { name: "Canvas drawing surface" });
+    // Initial camera translates world by 70,80; circle only the first stroke.
+    await fireEvent(svg, pointer("pointerdown", 150, 160));
+    for (const [x, y] of [[230, 160], [230, 230], [150, 230], [150, 160]]) await fireEvent(svg, pointer("pointermove", x!, y!));
+    await fireEvent(svg, pointer("pointerup", 150, 160));
+    expect(onselect).toHaveBeenLastCalledWith([inside.id]);
+    expect(onchange).not.toHaveBeenCalled();
+    expect(document.scene.strokes).toEqual([inside, outside]);
+    onselect.mockClear();
+    await fireEvent(svg, pointer("pointerdown", 150, 160));
+    await fireEvent(svg, pointer("pointermove", 230, 230));
+    await fireEvent(svg, pointer("pointercancel", 230, 230));
+    expect(onselect).not.toHaveBeenCalled();
+    expect(onchange).not.toHaveBeenCalled();
+  });
+
   it("commits real world-coordinate ink once, and discards a canceled gesture", async () => {
     const { svg, onchange } = surface();
     await fireEvent(svg, pointer("pointerdown", 170, 180));

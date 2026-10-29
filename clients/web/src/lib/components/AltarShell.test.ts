@@ -8,7 +8,9 @@ vi.mock("$app/state", async () => {
   const { SvelteURL } = await import("svelte/reactivity");
   return { page: { url: new SvelteURL("http://localhost/bridge") } };
 });
+vi.mock("$app/navigation", () => ({ goto: vi.fn(), replaceState: vi.fn(), beforeNavigate: vi.fn(), afterNavigate: vi.fn() }));
 vi.mock("$lib/api/client", () => ({
+  getBridgeSnapshot: vi.fn(() => new Promise(() => {})),
   getAltarStatus: vi.fn()
 }));
 
@@ -253,5 +255,26 @@ it("closes the About disclosure on Escape and restores focus to its trigger", as
 
   expect(disclosure.open).toBe(false);
   expect(document.activeElement).toBe(trigger);
+  view.unmount();
+});
+
+it("opens Applications by hover, pins a click, and keeps menu traversal and Escape reachable", async () => {
+  vi.mocked(getAltarStatus).mockResolvedValue(status(0));
+  const view = render(AltarShell, { children });
+  const trigger = screen.getByText("Applications");
+  const disclosure = trigger.closest("details")!;
+  await fireEvent.pointerEnter(disclosure);
+  expect(disclosure.open).toBe(true);
+  await fireEvent.click(trigger);
+  expect(disclosure.open).toBe(true);
+  const canvas = screen.getByRole("link", { name: "Canvas" });
+  canvas.focus();
+  await fireEvent.pointerLeave(disclosure);
+  expect(disclosure.open).toBe(true);
+  expect(canvas.getAttribute("href")).toBe("/canvas");
+  expect(screen.getByRole("link", { name: "Scavenger market" }).getAttribute("href")).toBe("/scavenger");
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(disclosure.open).toBe(false);
+  expect(document.activeElement).toBe(trigger.closest("summary"));
   view.unmount();
 });

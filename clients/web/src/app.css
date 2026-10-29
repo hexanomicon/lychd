@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════════════════════════════════════
-   LychD · The Altar — design tokens (canonical; spec-web-design §2)
-   Obsidian base · icy-blue chrome · Matrix-green activity · deep-violet
-   shadow · banked-orange thresholds. Cold rune-light over obsidian.
+   LychD · The Altar — design tokens (canonical; ADR 15)
+   Black work plane · neutral graphite chrome · icy-blue interaction · green
+   confirmation · bounded purple context. One canonical LychD Dark palette.
 
    Native CSS is the styling language. Tokens remain ordinary custom properties;
    semantic component classes consume them without a utility or preprocessing DSL.
@@ -10,35 +10,35 @@
 
 :root {
   /* ── substrate ─────────────────────────────────────────── */
-  --color-void:       #131318;  /* page base */
-  --color-obsidian:   #1a1a20;  /* panel base */
-  --color-obsidian-2: #22222b;  /* raised / hover */
-  --color-engraving:  #383047;  /* violet-biased borders, hairlines */
+  --color-void:       #000000;  /* page base */
+  --color-obsidian:   #111416;  /* panel base */
+  --color-obsidian-2: #1b1f22;  /* raised / hover */
+  --color-engraving:  #363d42;  /* neutral borders and separators */
 
   /* ── chromatic hierarchy ────────────────────────────────── */
   --color-primary:        #8be7ff;  /* icy blue: interaction, focus, readiness */
-  --color-primary-deep:   #36c9ed;  /* saturated icy-blue depth */
-  --color-secondary:      #39ff8a;  /* Matrix green: live computation */
-  --color-secondary-deep: #00e58c;  /* saturated live activity */
-  --color-tertiary:       #2d1554;  /* deep violet: structural shadow only */
-  --color-tertiary-edge:  #7c58bd;  /* visible violet engraving, not body text */
-  --color-heat:           #f08a45;  /* banked threshold / transition heat */
-  --color-heat-deep:      #a84a2b;  /* low-luminance threshold wash */
+  --color-primary-deep:   #55cce9;  /* saturated icy-blue depth */
+  --color-secondary:      #78e8b4;  /* confirmation and live activity */
+  --color-secondary-deep: #39c78b;  /* saturated live activity */
+  --color-tertiary:       #21172b;  /* bounded secondary/context surface */
+  --color-tertiary-edge:  #665275;  /* contextual border, never body text */
+  --color-heat:           #f0b379;  /* banked threshold / transition heat */
+  --color-heat-deep:      #82512f;  /* low-luminance threshold wash */
 
   /* ── semantic palette ───────────────────────────────────── */
-  --color-grimoire:   var(--color-tertiary);       /* gradients, user-turn wash */
+  --color-grimoire:   var(--color-tertiary);       /* bounded user-turn/context surface */
   --color-rune:       var(--color-primary);        /* interactive chrome, focus, links */
-  --color-rune-dim:   #447b91;                     /* inactive chrome, graph edges */
+  --color-rune-dim:   #6095a6;                     /* inactive chrome, graph edges */
   --color-lich:       var(--color-secondary);      /* ACTIVE / computing — sparingly */
   --color-lich-deep:  var(--color-secondary-deep); /* saturated activity */
   --color-frost:      #b7efff;                     /* READY / awaiting Magus */
   --color-frost-deep: var(--color-primary-deep);   /* saturated readiness */
-  --color-ash:        #8a8699;  /* dormant / cold / secondary text */
-  --color-ember:      #ff6b81;  /* fault / refusal — matte, never glows */
+  --color-ash:        #a3adb5;  /* secondary text and dormant state */
+  --color-ember:      #ff8f9e;  /* fault / refusal — matte, never glows */
 
   /* ── text ──────────────────────────────────────────────── */
-  --color-bone:       #d9d7e4;  /* primary text */
-  --color-parchment:  #b8b4c8;  /* body text */
+  --color-bone:       #eef1f3;  /* primary text */
+  --color-parchment:  #c8cfd4;  /* body text */
 
   /* ── type ──────────────────────────────────────────────── */
   --font-rune:  Georgia, 'Times New Roman', serif;              /* ceremonial small-caps */
@@ -55,19 +55,16 @@
   --text-3xl: 2.125rem;  --text-3xl--line-height: 1.1;
 
   /* ── radius (semantic, thematic) ───────────────────────── */
-  --radius-glyph: 4px;   /* kbd keys, layer badges */
-  --radius-rune:  7px;   /* buttons, inspector blocks */
-  --radius-block: 8px;   /* genui, pattern items, tickets, plan rows */
-  --radius-panel: 10px;  /* panels, cards, consent card, composer */
-  --radius-turn:  12px;  /* chat bubbles (asymmetric corner stays 3px literal) */
+  --radius-glyph: 3px;   /* kbd keys, layer badges */
+  --radius-rune:  4px;   /* buttons, inspector blocks */
+  --radius-block: 4px;   /* genui, pattern items, tickets, plan rows */
+  --radius-panel: 5px;   /* panels, cards, consent card, composer */
+  --radius-turn:  5px;   /* chat bubbles (asymmetric corner stays 3px literal) */
 
-  /* ── glow recipes ───────────────────────────────────────── */
-  --shadow-glow-rune:  0 0 0 1px color-mix(in srgb, var(--color-rune) 45%, transparent),
-                       0 0 18px  color-mix(in srgb, var(--color-rune) 18%, transparent);
-  --shadow-glow-lich:  0 0 0 1px color-mix(in srgb, var(--color-lich) 50%, transparent),
-                       0 0 16px  color-mix(in srgb, var(--color-lich) 22%, transparent);
-  --shadow-glow-frost: 0 0 0 1px color-mix(in srgb, var(--color-frost) 45%, transparent),
-                       0 0 14px  color-mix(in srgb, var(--color-frost) 16%, transparent);
+  /* ── legacy effect hooks: no diffuse glow ──────────────── */
+  --shadow-glow-rune:  none;
+  --shadow-glow-lich:  none;
+  --shadow-glow-frost: none;
   /* NOTE: deliberately no --shadow-glow-ember. Law §1.5 — failure is inert. */
 
   /* ── motion ────────────────────────────────────────────── */
@@ -190,9 +187,9 @@
     font-size: var(--text-xs);
   }
   .body-crossing__title {
-    font-family: var(--font-rune);
-    font-variant: small-caps;
-    letter-spacing: 0.1em;
+    font-family: var(--font-body);
+    font-variant: normal;
+    letter-spacing: normal;
   }
   .delegate-mark {
     display: inline-grid;
@@ -200,13 +197,12 @@
     width: 1.1em;
     color: var(--color-rune);
     font-family: var(--font-glyph);
-    filter: drop-shadow(0 0 0.35rem color-mix(in srgb, var(--color-rune) 35%, transparent));
+    filter: none;
   }
   .delegate-crossing {
     border-color: color-mix(in srgb, var(--color-rune) 45%, var(--color-engraving));
     border-left-width: 3px;
-    background:
-      linear-gradient(90deg, color-mix(in srgb, var(--color-rune) 9%, var(--color-obsidian)), var(--color-obsidian));
+    background: var(--color-obsidian);
   }
   .delegate-crossing[data-state="running"] { color: var(--color-lich); }
   .delegate-crossing[data-state="failed"],
@@ -238,7 +234,7 @@
   .pattern-identity h2 {
     margin-top: 0.2rem;
     color: var(--color-bone);
-    font: 400 var(--text-3xl)/1.1 var(--font-rune);
+    font: 600 var(--text-3xl)/1.2 var(--font-body);
   }
   .pattern-identity p { max-width: 46rem; color: var(--color-ash); }
   .pattern-identity .pattern-entry { margin-top: 0.65rem; color: var(--color-parchment); font-size: var(--text-sm); }
@@ -268,8 +264,7 @@
   .station:last-child { border-bottom: 0; }
   .station[data-kind="gate"] { background: color-mix(in srgb, var(--color-frost) 4%, transparent); }
   .station[data-kind="delegate"] {
-    background:
-      linear-gradient(90deg, color-mix(in srgb, var(--color-rune) 8%, transparent), transparent);
+    background: var(--color-obsidian-2);
     box-shadow: inset 2px 0 var(--color-rune);
   }
   .station__index { color: var(--color-rune); font: var(--text-xs)/1 var(--font-glyph); }
@@ -529,13 +524,12 @@
 }
 
 @keyframes sigil-pulse {
-  0%, 100% { box-shadow: var(--shadow-glow-frost); }
-  50% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-frost) 65%, transparent),
-                    0 0 22px  color-mix(in srgb, var(--color-frost) 30%, transparent); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
 }
 @keyframes think-pulse {
-  0%, 100% { box-shadow: none; }
-  50% { box-shadow: var(--shadow-glow-lich); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.78; }
 }
 @keyframes caret-blink { 50% { opacity: 0; } }
 @keyframes mist-sweep {
@@ -605,12 +599,7 @@
    ══════════════════════════════════════════════════════════════════════ */
 @layer base {
   body {
-    background:
-      radial-gradient(1200px 620px at 4% -12%, color-mix(in srgb, var(--color-tertiary-edge) 18%, transparent), transparent 62%),
-      radial-gradient(900px 520px at 92% 108%, color-mix(in srgb, var(--color-frost-deep) 9%, transparent), transparent 60%),
-      radial-gradient(720px 420px at 58% 116%, color-mix(in srgb, var(--color-lich) 4%, transparent), transparent 58%),
-      linear-gradient(118deg, transparent 58%, color-mix(in srgb, var(--color-grimoire) 10%, transparent)),
-      var(--color-void);
+    background: var(--color-void);
     background-attachment: fixed;
     color: var(--color-parchment);
     font: var(--text-base)/1.55 var(--font-body);
@@ -626,7 +615,7 @@
   ::-webkit-scrollbar-thumb { background: var(--color-engraving); border-radius: 5px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--color-rune-dim); }
 
-  /* global focus ring — rune glow (never bare outline: none) */
+  /* Visible focus remains separate from selection and state borders. */
   :focus-visible {
     outline: 2px solid var(--color-rune);
     outline-offset: 3px;
@@ -639,13 +628,13 @@
    native custom property; server-driven lifecycle state wears `data-state`.
    ══════════════════════════════════════════════════════════════════════ */
 @layer components {
-  /* ── Display type — rune small-caps headers ───────────────────────── */
+  /* ── Operational headings ───────────────────────── */
   .rune-head {
-    font-family: var(--font-rune);
-    font-variant: small-caps;
-    letter-spacing: 0.14em;
+    font-family: var(--font-body);
+    font-variant: normal;
+    letter-spacing: normal;
     color: var(--color-bone);
-    font-weight: 400;
+    font-weight: 600;
   }
   .glyph { font-family: var(--font-glyph); font-size: var(--text-xs); }
 
@@ -654,25 +643,9 @@
     display: flex; align-items: center; gap: 28px;
     padding: 0 22px;
     height: 52px;
-    background:
-      linear-gradient(
-        102deg,
-        color-mix(in srgb, var(--color-tertiary) 30%, var(--color-obsidian)) 0%,
-        color-mix(in srgb, var(--color-obsidian) 88%, transparent) 34%,
-        color-mix(in srgb, var(--color-primary) 3%, var(--color-obsidian)) 70%,
-        color-mix(in srgb, var(--color-lich) 3%, var(--color-obsidian)) 100%
-      );
-    border-bottom: 1px solid transparent;
-    border-image: linear-gradient(
-      90deg,
-      var(--color-tertiary-edge),
-      var(--color-rune) 34%,
-      var(--color-rune) 58%,
-      var(--color-lich) 82%,
-      transparent
-    ) 1;
-    box-shadow: 0 0.75rem 2rem color-mix(in srgb, var(--color-tertiary) 12%, transparent);
-    backdrop-filter: blur(12px);
+    background: var(--color-obsidian);
+    border-bottom: 1px solid var(--color-engraving);
+    box-shadow: none;
     position: sticky; top: 0; z-index: 10;
   }
   .brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
@@ -760,7 +733,6 @@
   nav.instruments a[aria-current="page"] {
     color: var(--color-bone);
     border-bottom-color: var(--color-rune);
-    text-shadow: 0 0 10px color-mix(in srgb, var(--color-rune) 40%, transparent);
   }
   nav.instruments a .dot { /* unbuilt marker */
     position: absolute; top: 10px; right: 6px;
@@ -793,14 +765,10 @@
 
   /* ── Shared chrome — panels, frosted overlays, dividers, chips ─────── */
   .panel {
-    background:
-      radial-gradient(480px 140px at 0 0, color-mix(in srgb, var(--color-tertiary-edge) 9%, transparent), transparent 68%),
-      linear-gradient(180deg, color-mix(in srgb, var(--color-bone) 3%, var(--color-obsidian)) 0%, var(--color-obsidian) 52px);
+    background: var(--color-obsidian);
     border: 1px solid var(--color-engraving);
     border-radius: var(--radius-panel);
-    box-shadow:
-      inset 0 1px color-mix(in srgb, var(--color-rune) 5%, transparent),
-      inset 1px 0 color-mix(in srgb, var(--color-tertiary-edge) 8%, transparent);
+    box-shadow: none;
   }
   .panel-head {
     display: flex; align-items: center; gap: 10px;
@@ -809,17 +777,10 @@
     font-size: var(--text-sm);
   }
   .panel-head .rune-head { font-size: var(--text-base); }
-  .panel-head::before {
-    content: "⬡";
-    color: var(--color-tertiary-edge);
-    font-size: 9px;
-    text-shadow: 0 0 0.65rem color-mix(in srgb, var(--color-tertiary-edge) 28%, transparent);
-  }
 
-  /* frosted-glass overlay chrome (overlays only) */
+  /* Opaque overlay chrome; retained class name for existing consumers. */
   .frosted {
-    background: color-mix(in srgb, var(--color-void) 75%, transparent);
-    backdrop-filter: blur(12px);
+    background: var(--color-obsidian);
     border: 1px solid var(--color-engraving);
     border-radius: var(--radius-panel);
   }
@@ -874,7 +835,7 @@
     border-color: color-mix(in srgb, var(--color-frost) 38%, transparent);
   }
   .chip[data-state="done"],
-  .chip[data-state="succeeded"] { color: var(--color-ash); border-color: transparent; }
+  .chip[data-state="succeeded"] { color: var(--color-lich); border-color: transparent; }
   .chip[data-state="failed"],
   .chip[data-state="cancelled"],
   .chip[data-state="timed_out"],
@@ -886,28 +847,25 @@
   /* ── Rune buttons ─────────────────────────────────────────────────── */
   .rune-btn {
     font: var(--text-sm)/1 var(--font-body);
-    letter-spacing: 0.07em;
+    letter-spacing: normal;
+    min-height: 2.75rem;
     padding: 8px 16px;
     border-radius: var(--radius-rune);
     border: 1px solid var(--color-rune-dim);
-    background:
-      linear-gradient(
-        112deg,
-        color-mix(in srgb, var(--color-rune) 10%, var(--color-obsidian-2)),
-        color-mix(in srgb, var(--color-tertiary) 26%, var(--color-obsidian-2))
-      );
+    background: var(--color-obsidian-2);
     color: var(--color-bone);
     cursor: pointer;
-    transition: box-shadow var(--duration-drift), border-color var(--duration-drift);
+    transition: background-color var(--duration-whisper), border-color var(--duration-whisper);
   }
-  .rune-btn:hover { border-color: var(--color-rune); box-shadow: var(--shadow-glow-rune); }
+  .rune-btn:hover { border-color: var(--color-rune); background: color-mix(in srgb, var(--color-rune) 8%, var(--color-obsidian-2)); }
   .rune-btn:disabled { opacity: .4; cursor: default; box-shadow: none; }
   .rune-btn--frost {
-    border-color: color-mix(in srgb, var(--color-frost) 45%, var(--color-engraving));
-    background: color-mix(in srgb, var(--color-frost) 8%, var(--color-obsidian-2));
-    color: var(--color-frost);
+    border-color: var(--color-rune);
+    background: var(--color-rune);
+    color: var(--color-void);
+    font-weight: 600;
   }
-  .rune-btn--frost:hover { border-color: var(--color-frost); box-shadow: var(--shadow-glow-frost); }
+  .rune-btn--frost:hover { border-color: var(--color-frost); background: var(--color-frost); }
   .rune-btn--ash { border-color: var(--color-engraving); background: transparent; color: var(--color-ash); }
   .rune-btn--ash:hover { color: var(--color-ember); border-color: color-mix(in srgb, var(--color-ember) 45%, transparent); box-shadow: none; }
 
@@ -928,35 +886,7 @@
     isolation: isolate;
     overflow: hidden;
     position: relative;
-    background:
-      radial-gradient(820px 620px at -8% 24%, color-mix(in srgb, var(--color-tertiary-edge) 11%, transparent), transparent 64%),
-      radial-gradient(820px 620px at 108% 76%, color-mix(in srgb, var(--color-frost-deep) 7%, transparent), transparent 64%),
-      radial-gradient(600px 420px at 106% 94%, color-mix(in srgb, var(--color-lich) 2%, transparent), transparent 62%),
-      linear-gradient(90deg, #100d17 0%, #07070b 40%, #07070b 60%, #0b1114 100%);
-  }
-  #altar-main::before {
-    position: absolute;
-    z-index: 0;
-    inset: 0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      color-mix(in srgb, #000 58%, transparent) 42%,
-      color-mix(in srgb, #000 58%, transparent) 58%,
-      transparent 100%
-    );
-    content: "";
-    pointer-events: none;
-  }
-  #altar-main::after {
-    position: absolute;
-    z-index: 0;
-    inset: 0;
-    background: url("/altar-lightning.svg") center / 100% 100% no-repeat;
-    content: "";
-    mix-blend-mode: screen;
-    opacity: 0.24;
-    pointer-events: none;
+    background: var(--color-void);
   }
   #altar-main > * {
     position: relative;
@@ -1004,12 +934,7 @@
   .turn { max-width: 720px; }
   .turn--user { align-self: flex-end; }
   .turn--user .turn__body {
-    background:
-      linear-gradient(
-        112deg,
-        color-mix(in srgb, var(--color-grimoire) 44%, var(--color-obsidian)),
-        color-mix(in srgb, var(--color-rune) 7%, var(--color-obsidian))
-      );
+    background: var(--color-grimoire);
     border: 1px solid color-mix(in srgb, var(--color-tertiary-edge) 40%, var(--color-engraving));
     border-radius: var(--radius-turn) var(--radius-turn) 3px var(--radius-turn);
     padding: 11px 15px;
@@ -1022,7 +947,7 @@
     margin-bottom: 6px;
   }
   .turn__meta .who {
-    font-family: var(--font-rune); font-variant: small-caps; letter-spacing: 0.1em;
+    font-family: var(--font-body); font-weight: 600; letter-spacing: normal;
     color: color-mix(in srgb, var(--color-rune) 70%, var(--color-bone)); font-size: var(--text-sm);
   }
   .turn--agent .turn__body {
@@ -1040,8 +965,7 @@
   /* run-state grammar on the agent turn (§5) */
   .turn--agent[data-state="streaming"] .turn__body {
     border-color: color-mix(in srgb, var(--color-lich) 52%, var(--color-engraving));
-    background:
-      linear-gradient(90deg, color-mix(in srgb, var(--color-lich) 6%, var(--color-obsidian)), var(--color-obsidian) 34%);
+    background: var(--color-obsidian);
     box-shadow: inset 2px 0 var(--color-lich);
   }
   .turn--agent[data-state="done"] .turn__body { border-color: var(--color-engraving); }
@@ -1050,12 +974,10 @@
     border-color: var(--color-ash);
     box-shadow: none;
   }
-  .turn--agent[data-state="failed"] { opacity: .85; }
   .turn--agent[data-state="failed"] .turn__meta .who { color: var(--color-ember); }
   .turn--agent[data-state="failed"] .turn__body {
     border-color: color-mix(in srgb, var(--color-ember) 30%, var(--color-engraving));
   }
-  .turn--agent[data-state="cancelled"] { opacity: .8; }
   .turn--agent[data-state="cancelled"] .turn__body {
     border-style: dashed;
     border-color: color-mix(in srgb, var(--color-ash) 45%, var(--color-engraving));
@@ -1075,7 +997,7 @@
     display: inline-block; width: 8px; height: 15px;
     vertical-align: text-bottom;
     background: var(--color-lich);
-    box-shadow: 0 0 8px var(--color-lich);
+    box-shadow: none;
     animation: var(--animate-caret-blink);
   }
   .turn--agent[data-state="streaming"] .turn__body::after { content: ""; margin-left: 2px; }
@@ -1122,8 +1044,7 @@
     margin-top: 11px;
     border: 1px solid color-mix(in srgb, var(--color-frost) 35%, var(--color-engraving));
     border-radius: var(--radius-panel);
-    background:
-      linear-gradient(180deg, color-mix(in srgb, var(--color-frost) 6%, var(--color-obsidian)) 0%, var(--color-obsidian) 70px);
+    background: var(--color-obsidian);
     box-shadow: var(--shadow-glow-frost);
     overflow: hidden;
   }
@@ -1152,7 +1073,7 @@
   }
   .consent-card .verdicts .note { margin-left: auto; font-size: var(--text-xs); color: var(--color-ash); }
 
-  /* resolved verdict states (§5: consented → lich-glow, refused → matte ember) */
+  /* Resolved verdicts retain text and distinct borders. */
   .consent-card[data-state="consented"] {
     border-color: color-mix(in srgb, var(--color-lich) 35%, var(--color-engraving));
     box-shadow: var(--shadow-glow-lich);
@@ -1161,10 +1082,8 @@
   .consent-card[data-state="consented"] .head .rune-head { color: var(--color-lich); }
   .consent-card[data-state="refused"] {
     border-color: color-mix(in srgb, var(--color-ember) 35%, var(--color-engraving));
-    background:
-      linear-gradient(105deg, color-mix(in srgb, var(--color-ember) 6%, var(--color-obsidian)), var(--color-obsidian) 46%);
+    background: var(--color-obsidian);
     box-shadow: none;
-    opacity: .85;
   }
   .consent-card[data-state="refused"] .head { color: var(--color-ember); }
   .consent-card[data-state="refused"] .head .rune-head { color: var(--color-ember); }
@@ -1179,7 +1098,7 @@
     padding: 10px 12px;
     transition: border-color var(--duration-drift), box-shadow var(--duration-drift);
   }
-  .composer:focus-within { border-color: var(--color-rune-dim); box-shadow: var(--shadow-glow-rune); }
+  .composer:focus-within { border-color: var(--color-rune); }
   .composer textarea {
     flex: 1; resize: none;
     background: transparent; border: none; outline: none;
@@ -1258,12 +1177,10 @@
   }
   .coven-card { display: flex; flex-direction: column; }
   .coven-card .panel-head { justify-content: space-between; }
-  .coven-card .panel-head::before { content: "⬡"; color: var(--color-rune-dim); font-size: 11px; }
   .coven-card[data-state="active"]  {
     border-color: color-mix(in srgb, var(--color-lich) 48%, var(--color-engraving));
-    background:
-      linear-gradient(100deg, color-mix(in srgb, var(--color-lich) 6%, var(--color-obsidian)), var(--color-obsidian) 36%);
-    box-shadow: inset 2px 0 var(--color-lich), var(--shadow-glow-lich);
+    background: var(--color-obsidian);
+    box-shadow: inset 2px 0 var(--color-lich);
   }
   .coven-card[data-state="warm"]    { border-color: color-mix(in srgb, var(--color-frost) 28%, var(--color-engraving)); }
   .coven-card[data-state="warming"] { border-color: color-mix(in srgb, var(--color-frost) 45%, var(--color-engraving)); }
@@ -1306,12 +1223,7 @@
     padding: 9px 13px;
     border-radius: var(--radius-block);
     border: 1px solid color-mix(in srgb, var(--color-heat) 44%, var(--color-engraving));
-    background:
-      linear-gradient(
-        112deg,
-        color-mix(in srgb, var(--color-tertiary) 34%, var(--color-obsidian-2)),
-        color-mix(in srgb, var(--color-heat-deep) 10%, var(--color-obsidian-2))
-      );
+    background: var(--color-obsidian-2);
     color: var(--color-heat);
     font-size: var(--text-sm); letter-spacing: 0.06em;
   }
@@ -1336,12 +1248,7 @@
     padding: 11px 14px;
     border-radius: var(--radius-block);
     border: 1px solid color-mix(in srgb, var(--color-heat) 38%, var(--color-engraving));
-    background:
-      linear-gradient(
-        112deg,
-        color-mix(in srgb, var(--color-tertiary) 28%, var(--color-obsidian-2)),
-        color-mix(in srgb, var(--color-heat-deep) 9%, var(--color-obsidian-2))
-      );
+    background: var(--color-obsidian-2);
     color: var(--color-heat);
     font-size: var(--text-sm); letter-spacing: 0.05em;
   }
@@ -1403,13 +1310,11 @@
   .shell-placeholder .glyph-big { font-size: var(--text-3xl); color: var(--color-engraving); display: block; margin-bottom: 14px; }
   .shell-placeholder .rune-head { font-size: var(--text-xl); display: block; margin-bottom: 8px; }
 
-  /* loading shimmer */
+  /* Bounded loading placeholder; the owning view supplies its label. */
   .mist {
     background: var(--color-obsidian-2);
     border-radius: var(--radius-block);
-    background-image: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-engraving) 60%, transparent), transparent);
-    background-size: 200% 100%;
-    animation: var(--animate-mist);
+    animation: var(--animate-think-pulse);
     min-height: 14px;
   }
 
@@ -1424,15 +1329,13 @@
     padding: 10px 13px;
     border-radius: var(--radius-block);
     border-left: 2px solid var(--color-frost);
-    background: color-mix(in srgb, var(--color-void) 75%, transparent);
-    backdrop-filter: blur(12px);
+    background: var(--color-obsidian);
     color: var(--color-parchment); font-size: var(--text-sm);
     animation: omen-rise var(--duration-rise) var(--ease-settle) both;
   }
   .omen[data-state="fault"] {
     border-left-color: var(--color-ember);
-    background:
-      linear-gradient(100deg, color-mix(in srgb, var(--color-ember) 7%, var(--color-void)), var(--color-void) 48%);
+    background: var(--color-obsidian);
     color: var(--color-bone);
     box-shadow: none;
   }
@@ -1444,14 +1347,8 @@
     display: flex; align-items: center; gap: 24px;
     height: 34px;
     padding: 0 20px;
-    border-top: 1px solid color-mix(in srgb, var(--color-tertiary-edge) 20%, var(--color-engraving));
-    background:
-      linear-gradient(
-        92deg,
-        color-mix(in srgb, var(--color-tertiary) 18%, var(--color-obsidian)),
-        color-mix(in srgb, var(--color-obsidian) 88%, transparent) 72%,
-        color-mix(in srgb, var(--color-lich) 2%, var(--color-obsidian))
-      );
+    border-top: 1px solid var(--color-engraving);
+    background: var(--color-obsidian);
     font-size: var(--text-xs); color: var(--color-ash);
   }
   .vessel-bar .item b { font-weight: 400; margin-left: 6px; font-family: var(--font-glyph); font-size: var(--text-2xs); }
@@ -1581,7 +1478,7 @@
     max-height: min(60vh, 32rem);
     overflow-y: auto;
     border-color: color-mix(in srgb, var(--color-rune) 55%, var(--color-engraving));
-    box-shadow: 0 -1rem 3rem color-mix(in srgb, #000 58%, transparent), var(--shadow-glow-rune);
+    box-shadow: 0 -0.75rem 2rem color-mix(in srgb, var(--color-void) 75%, transparent);
   }
 }
 

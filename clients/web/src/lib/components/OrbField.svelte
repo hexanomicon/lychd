@@ -247,12 +247,12 @@
 <style>
   .orb-field { padding: clamp(1rem, 2vw, 2rem); color: var(--color-bone); min-width: 0; }
   .field-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
-  h1 { font: 400 2.6rem/1.2 var(--font-rune); margin: .3rem 0; }
+  h1 { font: 600 clamp(1.7rem, 3vw, 2.2rem)/1.2 var(--font-body); margin: .3rem 0; }
   .eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: var(--text-xs); }
   p, small, dt { color: var(--color-parchment); line-height: 1.55; }
   .field-header p, .field-legend, .field-boundary, .feed-boundary, .field-feed p, .run-list > p { font-size: var(--text-sm); }
   button { background: var(--color-obsidian); border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); padding: .6rem .8rem; min-height: 2.75rem; color: var(--color-bone); font: inherit; cursor: pointer; }
-  button[aria-pressed="true"] { border-color: var(--color-rune); color: var(--color-rune); }
+  button[aria-pressed="true"] { border-color: var(--color-rune); color: var(--color-rune); box-shadow: inset 0 -2px var(--color-rune); }
   button:disabled { opacity: .55; cursor: wait; }
   button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   a { color: var(--color-rune); text-decoration: underline; text-underline-offset: .2em; }

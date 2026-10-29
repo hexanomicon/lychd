@@ -37,7 +37,7 @@
   strong,small { display:block; overflow-wrap:anywhere; }
   strong { font:500 var(--text-sm)/1.4 var(--font-body); }
   small { color:var(--color-parchment); font-size:var(--text-xs); line-height:1.6; }
-  .lit { border-color:var(--animator-accent); box-shadow:0 0 16px color-mix(in srgb,var(--animator-accent) 22%,transparent); }
+  .lit { border-color:var(--animator-accent); box-shadow:inset 0 -2px var(--animator-accent); }
   button:hover { background:var(--color-obsidian); }
   button:focus-visible { outline:2px solid var(--color-rune); outline-offset:3px; }
   .boundary { border-top:1px solid var(--color-engraving); padding-top:.8rem; }

@@ -33,23 +33,35 @@
   import { bridgeWorkspaceKey, createBridgeWorkspace, type BridgeWorkspace } from "$lib/bridge/workspace.svelte";
   import { delegationStatusLabel } from "$lib/delegation/presentation";
 
-  let { sessionId }: { sessionId?: string } = $props();
+  let {
+    sessionId,
+    embedded = false,
+    search,
+    onNavigate
+  }: {
+    sessionId?: string;
+    embedded?: boolean;
+    search?: string;
+    onNavigate?: (sessionId: string, search: string, composerFocus?: boolean) => void | Promise<void>;
+  } = $props();
+  const bridgeSearch = $derived(search ?? page.url.search);
+  const bridgeParams = $derived(new URLSearchParams(bridgeSearch));
   let snapshot = $state<BridgeSnapshot | null>(null);
   const work = getContext<BridgeWorkspace | undefined>(bridgeWorkspaceKey) ?? createBridgeWorkspace();
   const observedSettlements = new Map(work.settlements);
   let projectHint = $derived.by(() => {
-    const id = page.url.searchParams.get("project");
+    const id = bridgeParams.get("project");
     return id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) ? id : null;
   });
-  let attentionOnly = $derived(page.url.searchParams.get("attention") === "pending");
-  let choosing = $derived(!sessionId && (attentionOnly || page.url.searchParams.get("choose") === "conversation" || !!projectHint));
+  let attentionOnly = $derived(bridgeParams.get("attention") === "pending");
+  let choosing = $derived(!sessionId && (attentionOnly || bridgeParams.get("choose") === "conversation" || !!projectHint));
   let hintedProject = $state<{ id: string; title: string } | null>(null);
   let projectError = $state("");
-  let focusRun = $derived(navigationId(page.url.searchParams.get("run")));
-  let focusConsent = $derived(page.url.searchParams.has("consent")
-    ? navigationId(page.url.searchParams.get("consent")) : undefined);
+  let focusRun = $derived(navigationId(bridgeParams.get("run")));
+  let focusConsent = $derived(bridgeParams.has("consent")
+    ? navigationId(bridgeParams.get("consent")) : undefined);
   let consentReturnHref = $derived(focusConsent !== undefined && focusRun
-    ? orbReturnHref(focusRun, page.url.search) : null);
+    ? orbReturnHref(focusRun, bridgeSearch) : null);
   let focusNavigation: {
     sessionId: string | undefined;
     run: string | null;
@@ -63,6 +75,12 @@
 
   function bridgeHref(id: string) {
     return `/bridge/${encodeURIComponent(id)}${projectHint ? `?project=${encodeURIComponent(projectHint)}` : ""}`;
+  }
+  function selectConversation(event: MouseEvent, id: string) {
+    if (!onNavigate || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    void Promise.resolve(onNavigate(id, projectHint ? `?project=${encodeURIComponent(projectHint)}` : ""))
+      .catch((cause) => omen(cause instanceof Error ? cause.message : "Conversation navigation failed."));
   }
   let loading = $state(true);
   let creatingSession = $state(false);
@@ -365,10 +383,15 @@
     try {
       const created = await createBridgeSession();
       if (destroyed) return;
-      await goto(bridgeHref(created.session.id), {
-        keepFocus: true,
-        state: { bridgeComposerFocus: created.session.id }
-      });
+      if (onNavigate) {
+        focusNewSession = created.session.id;
+        await onNavigate(created.session.id, projectHint ? `?project=${encodeURIComponent(projectHint)}` : "", true);
+      } else {
+        await goto(bridgeHref(created.session.id), {
+          keepFocus: true,
+          state: { bridgeComposerFocus: created.session.id }
+        });
+      }
     } catch (cause) {
       if (!destroyed) omen(cause instanceof Error ? cause.message : "A séance could not be opened.");
     } finally {
@@ -376,8 +399,12 @@
     }
   }
 
+  let focusNewSession: string | null = null;
   function focusCreatedComposer(node: HTMLTextAreaElement) {
-    if (selected?.id && page.state.bridgeComposerFocus === selected.id) {
+    if (selected?.id && focusNewSession === selected.id) {
+      node.focus();
+      focusNewSession = null;
+    } else if (selected?.id && page.state?.bridgeComposerFocus === selected.id) {
       node.focus();
       const nextState = { ...page.state };
       delete nextState.bridgeComposerFocus;
@@ -794,17 +821,17 @@
   }
 </script>
 
-<svelte:head><title>Bridge — LychD</title></svelte:head>
-<div class="instrument-deck instrument-deck--bridge" class:instrument-deck--welcome={firstVisit}>
+<svelte:head>{#if !embedded}<title>Bridge — LychD</title>{/if}</svelte:head>
+<div class="instrument-deck instrument-deck--bridge" class:instrument-deck--welcome={firstVisit} class:bridge-embedded={embedded}>
   {#if !firstVisit}
   <aside class="bridge-rail" aria-label="Conversation history">
-    <details class="conversation-list" open>
+    <details class="conversation-list" open={!embedded}>
       <summary>Conversations</summary>
     <button class="rune-btn new-seance" type="button" disabled={creatingSession} aria-busy={creatingSession} onclick={createSession}>✦ &nbsp;{creatingSession ? "Opening…" : "New Séance"}</button>
     <nav aria-label="Conversations">
     {#if snapshot?.sessions.length}
       {#each snapshot.sessions.filter((session) => !attentionOnly || (session.pending_count ?? 0) > 0) as session (session.id)}
-        <a class:current={selected?.id === session.id} class="seance" href={bridgeHref(session.id)} aria-current={selected?.id === session.id ? "page" : undefined}>
+        <a class:current={selected?.id === session.id} class="seance" href={bridgeHref(session.id)} onclick={(event) => selectConversation(event, session.id)} aria-current={selected?.id === session.id ? "page" : undefined}>
           <span class="t">{session.title}</span>
           {#if session.pending_count}<span class="chip">{session.pending_count} awaiting consent</span>{/if}
           {#if work.pending.has(session.id)}<span class="chip">Offering unresolved</span>{:else if work.refused.has(session.id)}<span class="chip">Refused offering</span>{:else if work.drafts.has(session.id)}<span class="chip">Draft</span>{/if}
@@ -1086,7 +1113,7 @@
   .turn--user { max-width: min(43rem, 92%); }
   .turn--user .turn__meta { justify-content: flex-end; }
   .turn__body { white-space: pre-wrap; font-size: 1rem; line-height: 1.75; box-shadow: none; }
-  .turn--user .turn__body { padding: .9rem 1.15rem; background: var(--color-obsidian-2); border-color: var(--color-engraving); }
+  .turn--user .turn__body { padding: .9rem 1.15rem; background: var(--color-grimoire); border-color: var(--color-engraving); }
   .turn--agent .turn__body { padding: .9rem 1.15rem; color: var(--color-bone); background: var(--color-obsidian); }
   .turn__meta { flex-wrap: wrap; gap: .4rem .75rem; }
   .turn__meta .who { color: var(--color-parchment); font-family: var(--font-body); font-variant: normal; letter-spacing: .025em; }
@@ -1113,6 +1140,25 @@
   .atlas-links { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; padding: .75rem 1rem; color: var(--color-ash); }
   .atlas-links a { color: var(--color-rune); min-height: 2.75rem; display: inline-flex; align-items: center; }
   .turn:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
+  .bridge-embedded { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100%; overflow: hidden; }
+  .bridge-embedded.instrument-deck--welcome { grid-template-rows: minmax(0, 1fr); }
+  .bridge-embedded .bridge-rail { padding: .25rem .85rem; border-right: 0; border-bottom: 1px solid var(--color-engraving); max-height: 16rem; overflow: auto; }
+  .bridge-embedded .conversation-list > summary { margin: 0; font: 500 var(--text-sm)/1.5 var(--font-body); }
+  .bridge-embedded .bridge-thread { min-height: 0; overflow: hidden; }
+  .bridge-embedded .bridge-heading { padding: .75rem 1rem; align-items: start; flex-wrap: wrap; gap: .5rem; }
+  .bridge-embedded .bridge-heading h1 { display: none; }
+  .bridge-embedded .conversation-title { margin: 0; font: 500 var(--text-base)/1.5 var(--font-body); }
+  .bridge-embedded .seance-details .kv { right: 0; width: min(24rem, 80vw); }
+  .bridge-embedded .atlas-links { padding: .25rem 1rem; gap: .4rem; font-size: var(--text-xs); }
+  .bridge-embedded .atlas-links a { min-height: 2rem; }
+  .bridge-embedded .thread-scroll { padding: 1rem; gap: 1rem; flex: 1; min-height: 4rem; }
+  .bridge-embedded .composer-area { padding: .75rem 1rem; }
+  .bridge-embedded .composer { flex-wrap: wrap; padding: .6rem; }
+  .bridge-embedded .composer textarea { flex-basis: 100%; width: 100%; min-height: 3rem; }
+  .bridge-embedded .composer .rune-btn { margin-left: auto; background: var(--color-rune); color: var(--color-void); border-color: var(--color-rune); }
+  .bridge-embedded .composer-footer { font-size: var(--text-2xs); }
+  .bridge-embedded .turn__body { font-size: var(--text-base); line-height: 1.6; }
+  .bridge-embedded .turn--user .turn__body { background: var(--color-grimoire); }
   @media (max-width: 48rem) {
     .instrument-deck--bridge { grid-template-columns: minmax(0, 1fr); }
     .bridge-rail { display: block; padding: .4rem 1rem; border-right: 0; border-bottom: 1px solid var(--color-engraving); overflow: visible; }

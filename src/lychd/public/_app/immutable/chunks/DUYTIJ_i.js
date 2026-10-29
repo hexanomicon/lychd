@@ -1,1 +1,0 @@
-import"./Bm_0qmgS.js";import{n as e}from"./Cw_OUjvn.js";var t=Symbol(`Bridge workspace`);function n(){let t=new e,n=new e,r=new e,i=new e,a=new e;return{drafts:t,pending:n,settlements:i,consentDecisions:a,refused:r,setDraft(e,n){n?t.set(e,n):t.delete(e)},get needsUnloadWarning(){return t.size>0||n.size>0||r.size>0||[...a.values()].some(e=>!e.settled)}}}export{n,t};

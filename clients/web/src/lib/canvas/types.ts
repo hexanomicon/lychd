@@ -12,4 +12,4 @@ export type Selection = components["schemas"]["CanvasSelection"];
 export type CanvasCrop = components["schemas"]["CanvasCrop"];
 export type Packet = components["schemas"]["CanvasPacket"];
 export type Proposal = components["schemas"]["CanvasProposal"];
-export type Tool = "select" | "draw" | "box" | "connect" | "pan";
+export type Tool = "select" | "lasso" | "draw" | "box" | "connect" | "pan";

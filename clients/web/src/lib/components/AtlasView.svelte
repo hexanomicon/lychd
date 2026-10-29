@@ -1084,7 +1084,7 @@
     gap: 0.75rem;
   }
   .atlas-heading { align-items: flex-start; margin-bottom: 1rem; }
-  .atlas-heading h1 { margin-block: 0.35rem 0.6rem; font-size: clamp(1.8rem, 2.5vw, 2.2rem); letter-spacing: 0.07em; overflow-wrap: anywhere; }
+  .atlas-heading h1 { margin-block: 0.35rem 0.6rem; font-size: clamp(1.8rem, 2.5vw, 2.2rem); letter-spacing: -0.02em; overflow-wrap: anywhere; }
   .atlas-heading p { color: var(--color-parchment); max-width: 48rem; }
   .back-link { display: inline-block; margin-bottom: 0.6rem; }
   h2 { font-size: var(--text-xl); font-weight: 500; }
@@ -1103,7 +1103,7 @@
     cursor: pointer;
   }
   button:hover:not(:disabled) { border-color: var(--color-rune); }
-  button.primary { color: var(--color-rune); border-color: var(--color-rune-dim); background: color-mix(in srgb, var(--color-rune) 8%, var(--color-obsidian)); }
+  button.primary { color: var(--color-void); border-color: var(--color-rune); background: var(--color-rune); font-weight: 600; }
   button:disabled { opacity: 0.55; cursor: not-allowed; }
   :is(button, a, input, select, textarea, summary, h2, h3):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   .actions { justify-content: flex-start; }
@@ -1160,7 +1160,7 @@
     min-width: 0;
     min-height: 2.75rem;
     padding: 0.6rem 0.7rem;
-    border: 1px solid var(--color-engraving);
+    border: 1px solid var(--color-rune-dim);
     border-radius: var(--radius-rune);
     background: var(--color-void);
     color: var(--color-bone);
@@ -1195,7 +1195,7 @@
   .empty { padding: 1.8rem; color: var(--color-parchment); }
   .empty h3 { color: var(--color-bone); }
   .empty p { max-width: 42rem; margin-block: 0.6rem 1rem; }
-  .atlas-introduction { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: clamp(1.5rem, 4vw, 3rem); background: linear-gradient(115deg, var(--color-obsidian), color-mix(in srgb, var(--color-tertiary) 15%, var(--color-obsidian))); }
+  .atlas-introduction { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: clamp(1.5rem, 4vw, 3rem); background: var(--color-obsidian); }
   .introduction-copy { max-width: 38rem; }
   .introduction-copy h2 { font-family: var(--font-rune); font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.2; text-wrap: balance; }
   .introduction-copy > p { color: var(--color-parchment); margin-block: 1rem 1.4rem; line-height: 1.7; }

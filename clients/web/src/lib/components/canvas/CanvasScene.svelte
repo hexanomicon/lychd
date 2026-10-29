@@ -61,7 +61,7 @@
 {/each}
 {#each scene.nodes as node (node.id)}
   <g data-object-id={node.id}>
-    <rect x={node.x} y={node.y} width={node.width} height={node.height} rx={node.kind === "person" ? Math.min(node.width, node.height) / 2 : node.kind === "note" ? 2 : 12} fill="var(--color-obsidian, #1a1a20)" stroke={selected.includes(node.id) ? "var(--color-rune, #8be7ff)" : "var(--color-engraving, #383047)"} stroke-width={selected.includes(node.id) ? 2.5 : 1.5} />
+    <rect x={node.x} y={node.y} width={node.width} height={node.height} rx={node.kind === "person" ? Math.min(node.width, node.height) / 2 : node.kind === "note" ? 2 : 4} fill="var(--color-obsidian, #111416)" stroke={selected.includes(node.id) ? "var(--color-rune, #8be7ff)" : "var(--color-ash, #9aa6ae)"} stroke-width={selected.includes(node.id) ? 2.5 : 1} />
     {#if node.kind === "database"}<path d={`M ${node.x} ${node.y + 15} Q ${node.x + node.width / 2} ${node.y + 40} ${node.x + node.width} ${node.y + 15}`} fill="none" stroke="var(--color-rune-dim, #447b91)" />{/if}
     {#if node.height >= 64 && node.width >= 110 && (!node.artwork || node.height >= 130)}<text x={node.x + 14} y={node.y + 20} fill="var(--color-ash, #8a8699)" font-family="system-ui, sans-serif" font-size="10" letter-spacing="1.2">{node.kind.toUpperCase()}{node.pinned ? " · PINNED" : ""}</text>{/if}
     {#if node.artwork && artSize(node)}<image href={node.artwork.png_data_url} x={node.x + node.width / 2 - artSize(node) / 2} y={node.y + (node.height >= 130 ? 28 : 10)} width={artSize(node)} height={artSize(node)} preserveAspectRatio="xMidYMid meet"><title>{node.artwork.alt}</title></image>{/if}

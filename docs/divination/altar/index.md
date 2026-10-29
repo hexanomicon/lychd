@@ -46,8 +46,12 @@ identity in view when changing instruments.
 | Which stations and paths does this exact Scroll permit? | [Loom](./loom.md) |
 | What was observed about readiness or a physical transition? | [Nexus](./nexus.md) |
 
-These are the Altar's five instruments. Atlas keeps a Project across conversations and Runs;
-it can also begin without either. Circle is the Invocation-shaped pinnacle within Bridge,
+Atlas, Orb, Loom and Nexus appear in the top navigation. Bridge remains available as a conversation
+panel beside the selected work. Icons accompany their visible names; hover, click or keyboard
+opens the menu. **Applications** opens the admitted application list, including Canvas and
+Scavenger market.
+
+Atlas keeps a Project across conversations and Runs; it can also begin without either. Circle is the Invocation-shaped pinnacle within Bridge,
 not a separate instrument. Its current material form is a compact per-turn Run disclosure with
 supplied status, complete identity, evidence and declared-score links, and eligible cancellation. A
 composed Circle workspace is not delivered.
@@ -63,6 +67,20 @@ record identities; deeper subworkflow structure remains unavailable without its 
 Nexus inspection changes no lifecycle state. **Preview** is nonbinding; **Request transition**
 performs a real maximum-priority mutation. Read the [Nexus guide](./nexus.md) before making that
 request.
+
+## Keep Bridge beside the work
+
+Use **Bridge** in the masthead to open or collapse the conversation panel. Drag its divider to
+change its width, or focus the divider and use its arrow keys. **Dock left** and **Dock right**
+choose the side. A wide window makes room beside the panel; a narrow window opens it as a
+modal sheet with Escape and a return to the opener. Layout preferences may be remembered in this
+browser; conversation drafts and unresolved requests retain their existing open-document boundary.
+
+Switching instruments keeps the selected conversation. Collapsing Bridge does not cancel its
+Run, submit a draft or approve a request. The context label identifies the work you are viewing;
+it does not transmit the work to a model. Exact Bridge session, Run and consent links remain
+valid, including links from Orb. Investigation and public-note focus stay distinct from the
+ordinary conversation. Read [Bridge](bridge.md) for those operations and recovery boundaries.
 
 ## The surface and its owners
 

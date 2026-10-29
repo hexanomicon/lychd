@@ -1,14 +1,21 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/svelte";
+import { act, fireEvent, render, screen } from "@testing-library/svelte";
 import { createRawSnippet } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { BridgeSnapshot, OrbRunSnapshot } from "$lib/api/models";
+import type { BridgeSnapshot, OrbRunSnapshot, RunProjectionSnapshot } from "$lib/api/models";
+
+const navigationHooks = vi.hoisted(() => ({
+  before: [] as Array<(navigation: { from: { url: URL } }) => void>,
+  after: [] as Array<(navigation: { type: "link" | "popstate"; to: { url: URL } }) => void>
+}));
 
 vi.mock("$app/state", async () => {
   const { SvelteURL } = await import("svelte/reactivity");
   return { page: { state: {}, url: new SvelteURL("http://localhost/bridge") } };
 });
-vi.mock("$app/navigation", () => ({ goto: vi.fn(), replaceState: vi.fn(), beforeNavigate: vi.fn(), afterNavigate: vi.fn() }));
+vi.mock("$app/navigation", () => ({ goto: vi.fn(), replaceState: vi.fn(),
+  beforeNavigate: vi.fn((callback: (navigation: { from: { url: URL } }) => void) => { navigationHooks.before.push(callback); }),
+  afterNavigate: vi.fn((callback: (navigation: { type: "link" | "popstate"; to: { url: URL } }) => void) => { navigationHooks.after.push(callback); }) }));
 vi.mock("$lib/api/client", () => ({
   ApiError: class ApiError extends Error {},
   cancelBridgeRun: vi.fn(),
@@ -30,12 +37,10 @@ vi.mock("$lib/api/client", () => ({
 }));
 
 import { page } from "$app/state";
-import { createBridgeSession, getAltarStatus, getBridgeSnapshot, getOrbRun, sendBridgeMessage } from "$lib/api/client";
+import { createBridgeSession, getAltarStatus, getBridgeSnapshot, getOrbRun, sendBridgeMessage, listenToRun, cancelBridgeRun } from "$lib/api/client";
 import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
 import AltarShell from "./AltarShell.svelte";
-import BridgeView from "./BridgeView.svelte";
-import PublicNotes from "./PublicNotes.svelte";
-import OrbView from "./OrbView.svelte";
+import BridgePage from "../../routes/bridge/+page.svelte";
 
 const children = createRawSnippet(() => ({ render: () => "<div></div>" }));
 const sessions = [
@@ -74,150 +79,192 @@ const orb: OrbRunSnapshot = {
   }
 };
 
-async function visit(href: string) {
-  await act(() => { page.url.href = new URL(href, "http://localhost").href; });
-}
-
-function shellHref(name: "Bridge" | "Orb") {
-  return within(screen.getByRole("navigation", { name: "Instruments" }))
-    .getByRole("link", { name }).getAttribute("href")!;
-}
-
-function mountBridge(work: ReturnType<typeof createBridgeWorkspace>) {
-  // Model the two existing Bridge page wrappers; the href comes from the rendered shell.
-  const sessionId = page.url.pathname === "/bridge" ? undefined : decodeURIComponent(page.url.pathname.slice("/bridge/".length));
-  return render(BridgeView, {
-    target: screen.getByRole("main"), props: { sessionId },
-    context: new Map([[bridgeWorkspaceKey, work]])
+async function visit(href: string, type: "link" | "popstate" = "link") {
+  await act(() => {
+    for (const callback of navigationHooks.before) callback({ from: { url: new URL(page.url.href) } });
+    page.url.href = new URL(href, "http://localhost").href;
+    for (const callback of navigationHooks.after) callback({ type, to: { url: new URL(page.url.href) } });
   });
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  navigationHooks.after = [];
+  navigationHooks.before = [];
+  localStorage.clear();
   page.url.href = "http://localhost/bridge";
   vi.mocked(getAltarStatus).mockResolvedValue({
     csrf: { cookie_name: "csrf", header_name: "X-CSRF-Token" }, pending_consents: 1
   });
   vi.mocked(getBridgeSnapshot).mockImplementation(async (sessionId) => snapshot(sessionId));
   vi.mocked(getOrbRun).mockResolvedValue(orb);
-  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false })));
 });
 
 afterEach(() => { vi.unstubAllGlobals(); });
 
-describe("Bridge selection across instrument navigation", () => {
-  it("returns through the shell to older B and restores its draft instead of reading newest A", async () => {
-    await visit("/bridge/session-b");
+describe("shell-lifetime Bridge conversation", () => {
+  it("starts a new work page at the top and restores its scroll on history return without remounting Bridge", async () => {
     const shell = render(AltarShell, { children });
+    const composer = await screen.findByLabelText("Message");
+    const main = screen.getByRole("main");
+    main.scrollTop = 180;
+    await visit("/atlas");
+    expect(main.scrollTop).toBe(0);
+    main.scrollTop = 90;
+    await visit("/orb");
+    expect(main.scrollTop).toBe(0);
+    await visit("/atlas", "popstate");
+    expect(main.scrollTop).toBe(90);
+    expect(screen.getByLabelText("Message")).toBe(composer);
+    expect(sendBridgeMessage).not.toHaveBeenCalled();
+    shell.unmount();
+  });
+  it("keeps the exact B composer instance and draft across work routes and collapse without rereading or admitting", async () => {
+    await visit("/bridge/session-b");
     const work = createBridgeWorkspace();
-    const first = mountBridge(work);
+    const shell = render(AltarShell, { props: { children }, context: new Map([[bridgeWorkspaceKey, work]]) });
     const composer = await screen.findByLabelText("Message");
     await fireEvent.input(composer, { target: { value: "Unfinished B offering" } });
-    const orbHref = screen.getByRole("link", { name: "Look into the Orb" }).getAttribute("href")!;
-    first.unmount();
-    await visit(orbHref);
-    const evidence = render(OrbView, { target: screen.getByRole("main"), props: { runId: "run-b" } });
-    await screen.findByText("B completed");
-    const returnHref = shellHref("Bridge");
-    evidence.unmount();
-    await visit(returnHref);
-    const returned = mountBridge(work);
-    const returnedComposer = await screen.findByLabelText("Message");
-
-    expect.soft(vi.mocked(getBridgeSnapshot).mock.calls.map(([id]) => id)).toEqual(["session-b", "session-b"]);
-    expect.soft((returnedComposer as HTMLTextAreaElement).value).toBe("Unfinished B offering");
-    expect.soft(screen.queryByText("Retained answer for session-a")).toBeNull();
-    expect.soft(screen.queryByText("Retained answer for session-b")).toBeTruthy();
+    await visit("/orb/run-other?run=run-other&consent=consent-other&event=event-other&attention=pending&project=00000000-0000-4000-8000-000000000099");
+    await visit("/loom/bridge_chat/1?run=run-other");
+    await visit("/nexus?choose=conversation");
+    expect(screen.getByLabelText("Message")).toBe(composer);
+    expect((composer as HTMLTextAreaElement).value).toBe("Unfinished B offering");
+    expect(screen.queryByText(/requested consent is unavailable/)).toBeNull();
+    await fireEvent.click(screen.getByRole("button", { name: "Collapse Bridge" }));
+    expect(document.getElementById("bridge-dock")?.closest("[hidden]")).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+    expect(screen.getByLabelText("Message")).toBe(composer);
+    expect(vi.mocked(getBridgeSnapshot).mock.calls.map(([id]) => id)).toEqual(["session-b"]);
     expect(work.drafts.get("session-b")).toBe("Unfinished B offering");
     expect(sendBridgeMessage).not.toHaveBeenCalled();
     expect(createBridgeSession).not.toHaveBeenCalled();
-    returned.unmount();
     shell.unmount();
   });
 
-  it("keeps a fresh shell at the root landing without inventing a selected session", async () => {
+  it("retains an active Run subscription across navigation and collapse until shell teardown", async () => {
+    const active: RunProjectionSnapshot = {
+      schema_version: 1, session_id: "session-b", run_id: "live-b", cursor: 17,
+      content: "authoritative partial", run_status: "running", activity: "weaving",
+      pattern_id: "bridge_chat", pattern_revision: "1", loom_path: "/loom/bridge_chat/1", orb_path: "/orb/live-b",
+      evidence_capture: "process_local", fragments: [], occurrence_id: null,
+      dispatch_occurrence_id: null, grant_id: null, capability_key: null,
+      transition_occurrence_id: null, transition_request_id: null, transition_phase: null,
+      delegated_job_id: null, delegated_runtime: null, delegated_profile: null, delegated_status: null, terminal: false
+    };
+    vi.mocked(getBridgeSnapshot).mockResolvedValue({ ...snapshot("session-b"), active_runs: [active] });
+    const close = vi.fn();
+    vi.mocked(listenToRun).mockReturnValue(close);
+    await visit("/bridge/session-b");
     const shell = render(AltarShell, { children });
-    await act(() => Promise.resolve());
-    expect(shellHref("Bridge")).toBe("/bridge");
-    const work = createBridgeWorkspace();
-    const landing = mountBridge(work);
+    await screen.findByText("authoritative partial");
+    await visit("/canvas?run=unrelated");
+    await fireEvent.click(screen.getByRole("button", { name: "Collapse Bridge" }));
+    await visit("/atlas");
+    await fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+    expect(listenToRun).toHaveBeenCalledTimes(1);
+    expect(close).not.toHaveBeenCalled();
+    expect(sendBridgeMessage).not.toHaveBeenCalled();
+    expect(cancelBridgeRun).not.toHaveBeenCalled();
+    shell.unmount();
+    expect(close).toHaveBeenCalledOnce();
+  });
+
+  it("changes only the ordinary selected conversation when selecting history beside a work route", async () => {
+    await visit("/atlas");
+    const shell = render(AltarShell, { children });
     await screen.findByText("Retained answer for session-a");
-    expect(getBridgeSnapshot).toHaveBeenCalledWith(undefined);
-    expect(shellHref("Bridge")).toBe("/bridge");
-    landing.unmount();
+    await fireEvent.click(screen.getByText("Conversations"));
+    await fireEvent.click(screen.getByRole("link", { name: /Older B/ }));
+    await screen.findByText("Retained answer for session-b");
+    expect(page.url.pathname).toBe("/atlas");
+    expect(vi.mocked(getBridgeSnapshot).mock.calls.map(([id]) => id)).toEqual([undefined, "session-b"]);
+    expect(sendBridgeMessage).not.toHaveBeenCalled();
     shell.unmount();
   });
 
-  it("replaces B with a later explicit C selection and forgets it with the shell lifetime", async () => {
-    await visit("/bridge/session-b");
+  it("preserves an explicit contextual Run and consent destination, then releases focus through the global control", async () => {
+    await visit("/bridge/session-b?run=missing-run&consent=missing-consent&event=event-b");
     const shell = render(AltarShell, { children });
-    await visit("/orb/run-b");
-    await visit("/bridge/session%2Dc");
-    await visit("/nexus");
-    expect.soft(shellHref("Bridge")).toBe("/bridge/session-c");
+    expect(await screen.findByText(/requested consent is unavailable/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Return to Orb event →" }).getAttribute("href"))
+      .toBe("/orb/missing-run?event=event-b");
+    await visit("/orb/run-b?event=event-b");
+    await fireEvent.click(screen.getByRole("button", { name: "Collapse Bridge" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+    expect(screen.queryByText(/requested consent is unavailable/)).toBeNull();
+    expect(screen.getByRole("link", { name: "Orb" }).getAttribute("href")).toBe("/orb");
+    expect(vi.mocked(getBridgeSnapshot).mock.calls.map(([id]) => id)).toEqual(["session-b"]);
     shell.unmount();
-    const fresh = render(AltarShell, { children });
-    await act(() => Promise.resolve());
-    expect(shellHref("Bridge")).toBe("/bridge");
-    fresh.unmount();
   });
 
-  it("does not let unrelated, bare, or malformed paths overwrite the explicit Bridge selection", async () => {
+  it("retains ordinary draft and unresolved admission through public-note and investigation application focus", async () => {
+    await visit("/bridge/session-b");
+    const work = createBridgeWorkspace();
+    work.setDraft("session-b", "Public-note detour draft");
+    work.pending.set("session-b", { text: "Unresolved offering", requestId: "request-b", uncertain: true, sending: false, error: "Unknown" });
+    const shell = render(AltarShell, { props: { children }, context: new Map([[bridgeWorkspaceKey, work]]) });
+    const composer = await screen.findByLabelText("Message");
+    await visit("/bridge?notes=manage&run=other");
+    await visit("/bridge?investigation=new&attention=pending");
+    expect(screen.getByLabelText("Message")).toBe(composer);
+    expect(work.pending.get("session-b")?.requestId).toBe("request-b");
+    expect(work.needsUnloadWarning).toBe(true);
+    expect(vi.mocked(getBridgeSnapshot).mock.calls.map(([id]) => id)).toEqual(["session-b"]);
+    expect(sendBridgeMessage).not.toHaveBeenCalled();
+    shell.unmount();
+  });
+
+  it("reveals focused applications entered from a narrow Bridge without unmounting the ordinary conversation", async () => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
     await visit("/bridge/session-b");
     const shell = render(AltarShell, { children });
-    for (const path of [
-      "/atlas/session-c", "/bridges/session-c", "/bridge", "/bridge/", "/bridge?attention=pending",
-      "/bridge/session-c/extra", "/bridge/%2Fsession-c", "/bridge/%E0%A4%A", "/bridge/%20session-c",
-      `/bridge/${"x".repeat(129)}`
+    const composer = await screen.findByLabelText("Message");
+    for (const [label, query] of [
+      ["Manage public notes", "notes=manage"],
+      ["Recall public sources", "notes=recall"],
+      ["Investigate public source", "investigation=new"]
     ]) {
-      await visit(path);
-      expect.soft(shellHref("Bridge"), path).toBe("/bridge/session-b");
+      if (document.getElementById("bridge-dock")?.closest("[hidden]")) {
+        await fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+      }
+      const link = screen.getByRole("link", { name: label });
+      expect(link.getAttribute("href")).toBe(`/bridge?${query}`);
+      await visit(link.getAttribute("href")!);
+      const main = screen.getByRole("main");
+      expect(main.hasAttribute("inert")).toBe(false);
+      expect(document.getElementById("bridge-dock")?.closest("[hidden]")).toBeTruthy();
+      expect(document.activeElement).toBe(main);
+      expect(document.getElementById("bridge-message")).toBe(composer);
     }
-    shell.unmount();
+    await fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+    const orbLink = screen.getByRole("link", { name: "Look into the Orb" });
+    await visit(orbLink.getAttribute("href")!);
+    expect(document.getElementById("bridge-dock")?.closest("[hidden]")).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole("main"));
+    // Exercise the real focused route composition after leaving the modal.
+    await visit("/bridge?notes=manage");
+    const focused = render(BridgePage, { target: screen.getByRole("main") });
+    expect(await screen.findByRole("heading", { name: "Public notes" })).toBeTruthy();
+    expect(vi.mocked(getBridgeSnapshot).mock.calls.map(([id]) => id)).toEqual(["session-b"]);
+    expect(sendBridgeMessage).not.toHaveBeenCalled();
+    expect(cancelBridgeRun).not.toHaveBeenCalled();
+    focused.unmount(); shell.unmount();
   });
 
-  it("keeps the explicit attention link as a chooser after B has been selected", async () => {
+  it("keeps the explicit attention URL a chooser without changing the remembered session", async () => {
     await visit("/bridge/session-b");
     const shell = render(AltarShell, { children });
-    const attention = await screen.findByRole("link", { name: /1 awaiting/ });
-    expect(attention.getAttribute("href")).toBe("/bridge?attention=pending");
-    await visit(attention.getAttribute("href")!);
-    const chooser = mountBridge(createBridgeWorkspace());
+    await screen.findByLabelText("Message");
+    await visit("/bridge?attention=pending");
     await screen.findByRole("heading", { name: "Conversations awaiting consent" });
     expect(screen.queryByLabelText("Message")).toBeNull();
+    await fireEvent.click(screen.getByRole("button", { name: "Collapse Bridge" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+    await screen.findByText("Retained answer for session-b");
+    expect(vi.mocked(getBridgeSnapshot).mock.calls.map(([id]) => id)).toEqual(["session-b", undefined, "session-b"]);
     expect(sendBridgeMessage).not.toHaveBeenCalled();
-    expect(createBridgeSession).not.toHaveBeenCalled();
-    chooser.unmount();
     shell.unmount();
   });
-
-  it("preserves the contextual Orb return Run while the global tab opens the parallel field", async () => {
-    await visit("/orb/run-b?event=event-b");
-    const shell = render(AltarShell, { children });
-    const evidence = render(OrbView, { target: screen.getByRole("main"), props: { runId: "run-b" } });
-    const contextual = await within(screen.getByRole("main")).findByRole("link", { name: "Bridge" });
-    expect(contextual.getAttribute("href")).toBe("/bridge/session-b?run=run-b");
-    await visit("/orb/run-b?event=event-later&job=job-b");
-    evidence.unmount();
-    await visit(contextual.getAttribute("href")!);
-    expect(shellHref("Orb")).toBe("/orb");
-    shell.unmount();
-  });
-});
-
-it("preserves Bridge draft, unresolved offering and consent while visiting public-note focus", async () => {
-  await visit("/bridge/session-b");
-  const shell = render(AltarShell, { children }); const work = createBridgeWorkspace();
-  work.setDraft("session-b", "Unfinished public-note detour draft");
-  work.pending.set("session-b", { text: "Unresolved offering", requestId: "request-b", uncertain: true, sending: false, error: "Unknown" });
-  work.consentDecisions.set("consent-b", { sessionId: "session-b", verdict: "approve", sending: false, error: "Unknown" });
-  await visit("/bridge?notes=manage");
-  const notes = render(PublicNotes, { target: screen.getByRole("main"), props: { selection: "manage", onSelect: vi.fn() }, context: new Map([[bridgeWorkspaceKey, work]]) });
-  await screen.findByRole("heading", { name: "Configured profile" });
-  expect(shellHref("Bridge")).toBe("/bridge/session-b");
-  notes.unmount();
-  await visit("/bridge?notes=new"); await visit("/bridge?notes=00000000-0000-4000-8000-000000000001");
-  expect(work.drafts.get("session-b")).toBe("Unfinished public-note detour draft"); expect(work.pending.get("session-b")?.requestId).toBe("request-b");
-  expect(work.consentDecisions.get("consent-b")?.verdict).toBe("approve"); expect(work.needsUnloadWarning).toBe(true);
-  expect(sendBridgeMessage).not.toHaveBeenCalled(); expect(createBridgeSession).not.toHaveBeenCalled(); shell.unmount();
 });
