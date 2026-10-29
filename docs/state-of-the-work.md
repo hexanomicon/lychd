@@ -1170,7 +1170,8 @@ ADR 15's bounded operator-palette contract is design law, not delivered configur
 **State:** Partial
 
 **Proved now:** The shared masthead provides icon-and-label instrument navigation, an
-Applications menu reachable by hover, click, or keyboard, and a separate Bridge control. One
+Applications menu reachable by hover, click, or keyboard. A persistent work-area edge chevron
+opens or collapses Bridge; new layouts start on the left while valid saved sides remain. One
 ordinary conversation stays mounted across work navigation and collapse, retaining exact-session
 drafts, unresolved offering identity, and live subscriptions. Explicit Bridge URLs still select
 session, Project, Run, and consent focus. Investigation and public-note applications keep their
@@ -2173,6 +2174,21 @@ supplied occurrence, and loaded records. Exact pinned workflow graphs show decla
 separately from retained evidence. Catalogue queries select bounded metadata without loading
 prompts, manifests, or event histories.
 
+The parallel field uses compact typed marks and stable, irregular Run territories inside the
+shared Svelte Flow adapter. Marks can be rearranged locally without a durable layout or domain
+mutation; viewport scaling keeps their labels readable. Search, exact state/waiting filters,
+the semantic Run list and a collapsible evidence inspector preserve access without canvas gestures.
+Explicit dispatch identities supply shared Animator marks and recorded-selection links, not active
+model-call relations. Loom retains its declared-score presentation.
+
+Its bottom **Tab history** retains at most 300 changed served projections received in this browser
+tab, within a selected 30/90/300/3600-second window from the latest capture. Pause and seek freeze
+one observed field while ingestion continues; LIVE resumes the newest capture. Playback supports
+1×/2×/4×, and current transport/latest fetched status stay separate from the captured graph.
+Pointer seeking holds its bounds, an evicted pinned capture stays explicit, and current-authority
+refusal clears protected captures and fences pending reads. This is local observation history,
+cleared on reload, not native execution replay or durable retention.
+
 The selected-Run route retains ordered, paginated evidence
 with Pattern revision, capture durability, ledger boundaries, gaps, transition links, stable selection, bounded retry, and
 teardown-cancelled reads. Its ledger-polled SSE serves bounded batches, resumes from a delivered
@@ -2219,7 +2235,7 @@ legacy Runs omit the inspector. A keyboard-focusable table region contains overf
 **Boundary — Not yet:** Loaded graph counts are not complete-history counts. The current manifest
 supplies no nested subworkflow or parent-Run identity. There is no durable Oculus read model,
 Sigma/Graphology adapter, cross-process completeness, health query, artifact custody, or annotation.
-There is no wall-clock workspace replay, configurable retention, continuous model-call activity,
+There is no native wall-clock workspace replay, configurable server retention, continuous model-call activity,
 or historical Animator availability projection.
 The shared renderer's cross-engine forced-collection qualification remains under verification.
 
@@ -2231,6 +2247,8 @@ It supplies no complete event capture, continuous runtime activity or general re
 
 - **Source:** [Orb controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/orb.py), [Run catalogue queries](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/ledger.py), [parallel field](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/OrbField.svelte), and [selected-Run client](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/OrbView.svelte)
 - **Verification:** [Orb API and stream tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_orb.py), [catalogue privacy and pagination tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_orb_catalogue.py), [parallel-field tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/OrbField.test.ts), [folded coverage tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/graph/orb.test.ts), [selected-Run tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/OrbView.test.ts), and [feed recovery tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/orb/live.test.ts)
+- **Source:** [Tab captures](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/orb/field-history.ts), [timeline](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/OrbTimeline.svelte), and [spatial adapter layout](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/graph/orb-layout.ts)
+- **Verification:** [Capture retention and isolation](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/orb/field-history.test.ts), [timeline playback and seeking](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/OrbTimeline.test.ts), and [stable spatial layout](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/graph/orb-layout.test.ts)
 - **Source:** [Retained preference projection](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/orb.py) and [preference inspector](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgePreferenceSummary.svelte)
 - **Verification:** [Preference API and settled stream](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_orb_preference.py), [preference inspector controls](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgePreferenceSummary.test.ts), and [typed stream metadata](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/orb/live.test.ts)
 - **Law:** [Observability](./adr/29-observability.md), [Altar projection](./adr/15-frontend.md#snapshots-streams-and-recovery), and [Creation summary](./compositions/creation/index.md#selected-run-summary)

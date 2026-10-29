@@ -79,9 +79,11 @@ describe("Orb retained-ledger feed", () => {
   });
 });
 
-it("keeps catalogue authorization refusal distinct from an empty catalogue", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 403 }));
-  await expect(getOrbCatalogue()).rejects.toThrow("cannot read");
+it.each([401, 403])("preserves catalogue refusal %i so its owner can clear protected history", async (status) => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status }));
+  const refused = getOrbCatalogue();
+  await expect(refused).rejects.toThrow("cannot read");
+  await expect(refused).rejects.toMatchObject({ status });
 });
 
 describe("Creation metadata transport", () => {

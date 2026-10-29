@@ -17,12 +17,125 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
+async function mountField() {
+  const view = render(OrbField);
+  await fireEvent.click(view.container.querySelector("details.run-list > summary")!);
+  await fireEvent.click(view.container.querySelector("details.view-options > summary")!);
+  await fireEvent.click(screen.getByRole("button", { name: "Show evidence" }));
+  return view;
+}
+
 describe("Orb parallel Run field", () => {
+  it("does not overwrite newer streamed metadata with an older in-flight catalogue read", async () => {
+    const initial = fixtureRun();
+    vi.mocked(getOrbCatalogue).mockResolvedValue({ ...page, runs: [initial.run] });
+    const view = await mountField();
+    await waitFor(() => expect(listenToOrb).toHaveBeenCalledOnce());
+    let release!: (value: OrbRunPage) => void;
+    vi.mocked(getOrbCatalogue).mockReturnValueOnce(new Promise((accept) => release = accept));
+    await fireEvent.click(screen.getByRole("button", { name: "Refresh Runs" }));
+    const callbacks = vi.mocked(listenToOrb).mock.calls[0]![2];
+    await act(() => callbacks.onFrame({ schema_version: 1, run_id: "run-a", kind: "evidence", after_seq: 0, cursor: 0,
+      snapshot: { ...initial, run: { ...initial.run, status: "done" }, evidence: [] } }));
+    const feed = screen.getByRole("complementary", { name: "Run evidence" });
+    expect(within(feed).getByText("done")).toBeTruthy();
+    await act(() => release({ ...page, runs: [initial.run] }));
+    expect(within(feed).getByText("done")).toBeTruthy();
+    expect(within(feed).queryByText("running")).toBeNull();
+    view.unmount();
+  });
+  it("holds the observed graph during incoming metadata and evidence, then resumes LIVE", async () => {
+    const initial = fixtureRun();
+    vi.mocked(getOrbCatalogue).mockResolvedValue({ ...page, runs: [initial.run] });
+    const view = await mountField();
+    await waitFor(() => expect(listenToOrb).toHaveBeenCalledOnce());
+    const feed = screen.getByRole("complementary", { name: "Run evidence" });
+    await fireEvent.click(screen.getByRole("button", { name: "Pause live field" }));
+    const callbacks = vi.mocked(listenToOrb).mock.calls[0]![2];
+    const latest = { ...initial, run: { ...initial.run, status: "done" }, ledger_head_seq: 1,
+      evidence: [{ ...initial.evidence[0]!, seq: 1, event_id: "new-event", summary: "Newly finished step", phase: "done" }] };
+    await act(() => callbacks.onFrame({ schema_version: 1, run_id: "run-a", kind: "evidence", after_seq: 0, cursor: 1, snapshot: latest }));
+    expect(within(feed).getByText("done")).toBeTruthy();
+    expect(within(feed).getByText("running")).toBeTruthy();
+    expect(within(feed).queryByText("Newly finished step")).toBeNull();
+    expect(within(feed).getByText("Inspect entered")).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "LIVE" }));
+    expect(within(feed).getByText("Newly finished step")).toBeTruthy();
+    expect(within(feed).queryByText("Status at capture")).toBeNull();
+    view.unmount();
+  });
+  it("separates historical evidence from an explicitly closed current subscription", async () => {
+    const initial = fixtureRun();
+    const stop = vi.fn();
+    vi.mocked(getOrbCatalogue).mockResolvedValue({ ...page, runs: [initial.run] });
+    vi.mocked(listenToOrb).mockReturnValue(stop);
+    const view = await mountField();
+    await waitFor(() => expect(listenToOrb).toHaveBeenCalledOnce());
+    const callbacks = vi.mocked(listenToOrb).mock.calls[0]![2];
+    await fireEvent.click(screen.getByRole("button", { name: "Pause live field" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Close live lens" }));
+    expect(stop).toHaveBeenCalledOnce();
+    const feed = screen.getByRole("complementary", { name: "Run evidence" });
+    expect(within(feed).getByText("Inspect entered")).toBeTruthy();
+    expect(within(feed).getByText("lens closed")).toBeTruthy();
+    expect(within(feed).getByRole("button", { name: "Open live lens" })).toBeTruthy();
+    await act(() => callbacks.onFrame({ schema_version: 1, run_id: "run-a", kind: "evidence", after_seq: 0, cursor: 0, snapshot: initial }));
+    expect(listenToOrb).toHaveBeenCalledOnce();
+    await fireEvent.click(screen.getByRole("button", { name: "LIVE" }));
+    expect(screen.queryByRole("list", { name: "Selected Run live records" })).toBeNull();
+    view.unmount();
+  });
+  it("scrubs refused evidence from current, retained and pinned captures and fences late frames", async () => {
+    const initial = fixtureRun();
+    vi.mocked(getOrbCatalogue).mockResolvedValue({ ...page, runs: [initial.run] });
+    const view = await mountField();
+    await waitFor(() => expect(listenToOrb).toHaveBeenCalledOnce());
+    const callbacks = vi.mocked(listenToOrb).mock.calls[0]![2];
+    await fireEvent.click(screen.getByRole("button", { name: "Pause live field" }));
+    vi.mocked(getOrbRun).mockRejectedValueOnce(Object.assign(new Error("Evidence refused"), { status: 403 }));
+    await fireEvent.click(screen.getByRole("button", { name: "Refresh lens" }));
+    await screen.findByText("Evidence refused");
+    expect(screen.queryByText("Inspect entered")).toBeNull();
+    await act(() => callbacks.onFrame({ schema_version: 1, run_id: "run-a", kind: "evidence", after_seq: 0, cursor: 0, snapshot: initial }));
+    await fireEvent.click(screen.getByRole("button", { name: "LIVE" }));
+    expect(screen.queryByText("Inspect entered")).toBeNull();
+    view.unmount();
+  });
+  it("fences an older catalogue response after a concurrent Run read refuses authority", async () => {
+    const initial = fixtureRun();
+    vi.mocked(getOrbCatalogue).mockResolvedValue({ ...page, runs: [initial.run] });
+    const view = await mountField();
+    await waitFor(() => expect(listenToOrb).toHaveBeenCalledOnce());
+    let release!: (value: OrbRunPage) => void;
+    vi.mocked(getOrbCatalogue).mockReturnValueOnce(new Promise((accept) => release = accept));
+    await fireEvent.click(screen.getByRole("button", { name: "Refresh Runs" }));
+    vi.mocked(getOrbRun).mockRejectedValueOnce(Object.assign(new Error("Authority expired"), { status: 401 }));
+    await fireEvent.click(screen.getByRole("button", { name: "Refresh lens" }));
+    await screen.findByText("Authority expired");
+    await act(() => release({ ...page, runs: [fixtureRun("stale-private-run").run] }));
+    expect(screen.queryByText("stale-private-run")).toBeNull();
+    expect(screen.queryByText("Inspect entered")).toBeNull();
+    expect(screen.getByRole("button", { name: "Refresh Runs" }).hasAttribute("disabled")).toBe(false);
+    view.unmount();
+  });
+  it("groups native waiting states without dropping their exact status", async () => {
+    const initial = fixtureRun();
+    initial.run.status = "awaiting_consent";
+    vi.mocked(getOrbCatalogue).mockResolvedValue({ ...page, runs: [initial.run] });
+    vi.mocked(getOrbRun).mockResolvedValue(initial);
+    const view = await mountField();
+    await waitFor(() => expect(listenToOrb).toHaveBeenCalledOnce());
+    await fireEvent.change(screen.getByRole("combobox", { name: "Run status filter" }), { target: { value: "waiting" } });
+    const list = within(view.container.querySelector("details.run-list")!);
+    expect(list.getByText("run-a")).toBeTruthy();
+    expect(list.getByText("awaiting_consent")).toBeTruthy();
+    view.unmount();
+  });
   it("waits for initial lenses before mounting the graph, then retains it across refresh", async () => {
     let release!: (value: ReturnType<typeof fixtureRun>) => void;
     const pending = new Promise<ReturnType<typeof fixtureRun>>((accept) => release = accept);
     vi.mocked(getOrbRun).mockImplementation((id) => id === "run-a" ? pending : Promise.resolve(fixtureRun(id)));
-    const view = render(OrbField);
+    const view = await mountField();
     await waitFor(() => expect(getOrbRun).toHaveBeenCalledTimes(3));
     expect(screen.queryByRole("region", { name: "Parallel Run workflow field" })).toBeNull();
     await act(() => release(fixtureRun()));
@@ -35,7 +148,7 @@ describe("Orb parallel Run field", () => {
   it("opens three exact live lenses and requires an explicit close before another", async () => {
     const stops = new Map<string, ReturnType<typeof vi.fn>>();
     vi.mocked(listenToOrb).mockImplementation((id) => { const stop = vi.fn(); stops.set(id, stop); return stop; });
-    const view = render(OrbField);
+    const view = await mountField();
     await waitFor(() => expect(listenToOrb).toHaveBeenCalledTimes(3));
     expect(vi.mocked(listenToOrb).mock.calls.map(([id]) => id)).toEqual(["run-a", "run-b", "run-c"]);
     await fireEvent.click(screen.getByRole("button", { name: "Unfold Run" }));
@@ -50,7 +163,7 @@ describe("Orb parallel Run field", () => {
     expect(stops.get("run-b")).toHaveBeenCalledOnce(); expect(stops.get("run-c")).toHaveBeenCalledOnce(); expect(stops.get("run-d")).toHaveBeenCalledOnce();
   });
   it("keeps all lenses closed after an explicit close and catalogue refresh", async () => {
-    const view = render(OrbField);
+    const view = await mountField();
     await waitFor(() => expect(listenToOrb).toHaveBeenCalledTimes(3));
     for (const button of screen.getAllByRole("button", { name: "Close lens" })) await fireEvent.click(button);
     await fireEvent.click(screen.getByRole("button", { name: "Refresh Runs" }));
@@ -62,11 +175,11 @@ describe("Orb parallel Run field", () => {
   it("keeps an open older lens when refreshing the newest catalogue page", async () => {
     const close = vi.fn();
     vi.mocked(listenToOrb).mockReturnValue(close);
-    const view = render(OrbField);
+    const view = await mountField();
     await waitFor(() => expect(listenToOrb).toHaveBeenCalledTimes(3));
     vi.mocked(getOrbCatalogue).mockResolvedValue({ ...page, runs: [fixtureRun("run-new").run] });
     await fireEvent.click(screen.getByRole("button", { name: "Refresh Runs" }));
-    await screen.findByText("run-new");
+    await within(view.container.querySelector("details.run-list")!).findByText("run-new");
     expect(close).not.toHaveBeenCalled();
     expect(screen.getAllByRole("button", { name: "Close lens" })).toHaveLength(3);
     expect(listenToOrb).toHaveBeenCalledTimes(3);
@@ -78,9 +191,9 @@ describe("Orb parallel Run field", () => {
       callbacks.onConnection("connected");
       return stop;
     });
-    const view = render(OrbField);
+    const view = await mountField();
     await waitFor(() => expect(listenToOrb).toHaveBeenCalledTimes(3));
-    const feed = screen.getByRole("complementary", { name: "Live evidence" });
+    const feed = screen.getByRole("complementary", { name: "Run evidence" });
     expect(within(feed).getByText("connected")).toBeTruthy();
     vi.mocked(getOrbRun).mockRejectedValueOnce(new Error("Lens refresh failed"));
     await fireEvent.click(within(feed).getByRole("button", { name: "Refresh lens" }));
@@ -99,7 +212,7 @@ describe("Orb parallel Run field", () => {
     Object.assign(initial, { ledger_head_seq: 149, page_end_seq: 99, next_after_seq: 99, has_more: true });
     vi.mocked(getOrbCatalogue).mockResolvedValue({ ...page, runs: [initial.run] });
     vi.mocked(getOrbRun).mockResolvedValue(initial);
-    const view = render(OrbField);
+    const view = await mountField();
     await waitFor(() => expect(listenToOrb).toHaveBeenCalledOnce());
     expect(screen.getByText(/More retained history exists outside this lens/)).toBeTruthy();
     const callbacks = vi.mocked(listenToOrb).mock.calls[0]![2];
@@ -113,7 +226,7 @@ describe("Orb parallel Run field", () => {
     const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
     const original = page.runs.slice(0, 3);
     vi.mocked(getOrbCatalogue).mockResolvedValueOnce({ ...page, runs: original });
-    const view = render(OrbField);
+    const view = await mountField();
     try {
       await waitFor(() => expect(listenToOrb).toHaveBeenCalledTimes(3));
       expect(screen.queryByRole("button", { name: "Load more retained Runs" })).toBeNull();
@@ -133,12 +246,12 @@ describe("Orb parallel Run field", () => {
   it("preserves pagination progress when the refreshed page overlaps the loaded catalogue", async () => {
     const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
     vi.mocked(getOrbCatalogue).mockResolvedValueOnce({ ...page, next_cursor: "page-two" });
-    const view = render(OrbField);
+    const view = await mountField();
     try {
       await waitFor(() => expect(listenToOrb).toHaveBeenCalledTimes(3));
       vi.mocked(getOrbCatalogue).mockResolvedValueOnce({ ...page, runs: [fixtureRun("older").run], next_cursor: "page-three" });
       await fireEvent.click(screen.getByRole("button", { name: "Load more retained Runs" }));
-      await screen.findByText("older");
+      await within(view.container.querySelector("details.run-list")!).findByText("older");
       vi.mocked(getOrbCatalogue).mockResolvedValueOnce({ ...page, next_cursor: "page-two" });
       await act(() => document.dispatchEvent(new Event("visibilitychange")));
       await waitFor(() => expect(getOrbCatalogue).toHaveBeenCalledTimes(3));
@@ -147,17 +260,22 @@ describe("Orb parallel Run field", () => {
     } finally { view.unmount(); visibility.mockRestore(); }
   });
   it("offers each semantic depth without fabricating a nested workflow", async () => {
-    const view = render(OrbField);
+    const view = await mountField();
     await waitFor(() => expect(listenToOrb).toHaveBeenCalledTimes(3));
+    expect(screen.getByRole("button", { name: "Follow selected Run" }).getAttribute("aria-pressed")).toBe("false");
     for (const name of ["Run groups", "Stations", "Occurrences", "Records"]) {
       const button = screen.getByRole("button", { name });
       await fireEvent.click(button); expect(button.getAttribute("aria-pressed")).toBe("true");
     }
     expect(screen.getByText(/Deeper subworkflow structure is unavailable/)).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Pause live field" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Follow selected Run" }));
+    expect(screen.getByRole("button", { name: "LIVE" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Pause following" }).getAttribute("aria-pressed")).toBe("true");
     view.unmount();
   });
   it("bounds a selected live lens and fences callbacks after closing it", async () => {
-    const view = render(OrbField);
+    const view = await mountField();
     await waitFor(() => expect(listenToOrb).toHaveBeenCalledTimes(3));
     const cb = vi.mocked(listenToOrb).mock.calls[0]![2] as OrbLiveCallbacks;
     const snapshot = fixtureRun();
@@ -184,7 +302,7 @@ it("polls only while visible, never overlaps catalogue reads, and stops on teard
   let release!: (value: OrbRunPage) => void;
   const pending = new Promise<OrbRunPage>((accept) => release = accept);
   vi.mocked(getOrbCatalogue).mockResolvedValueOnce(empty).mockReturnValueOnce(pending).mockResolvedValue(empty);
-  const view = render(OrbField);
+  const view = await mountField();
   try {
     await act(() => Promise.resolve());
     expect(getOrbCatalogue).toHaveBeenCalledOnce();

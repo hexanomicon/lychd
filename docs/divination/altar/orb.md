@@ -18,8 +18,12 @@ links preserve the account being reviewed.
 The field starts with a bounded page of Run identities. **Load more retained Runs** extends the
 catalogue; the number shown is the loaded count. Its newest page refreshes every five seconds
 while visible. **Refresh Runs** rereads it immediately, preserving already opened Run lenses.
-The canvas can display several workflows together, with at most three live Run lenses open.
-Close a lens before unfolding another; its loaded Run group remains in the field.
+The black spatial canvas shows compact typed marks inside stable, irregular Run territories.
+Drag the background to pan, scroll or use the viewport controls to zoom, and drag a mark to
+rearrange it locally. This changes no Pattern or execution state. All loaded Run groups remain
+available; at most three live evidence lenses are open. Close a lens before opening another.
+**Runs** opens the keyboard-operable semantic list and its pagination control. Search by workflow
+or Run identity; the state selector can show active work, supplied waiting states, or terminal work.
 
 Zoom out to see whole Run groups. Zoom in to disclose **Stations**, supplied **Occurrences**, and
 **Records**, or choose those same levels directly. **Zoom changes detail** controls this automatic
@@ -27,10 +31,38 @@ disclosure. Each lens retains at most 100 records, and its coverage notice disti
 window from older retained history. Current manifests supply no nested subworkflow identities;
 an occurrence or delegated job is not an invented child workflow.
 
-Select a Run to read its feed beside the canvas. **Follow selected Run** follows its projection;
-manual camera interaction pauses following. Connection state and recorded Run status have separate
-labels. **Open exact Run and history** enters the selected account below. The semantic Run list
-offers the same identities and entry points without requiring canvas gestures.
+Hover or focus a mark for its exact detail; select it to open **Evidence** beside the canvas.
+Known groups unfold on selection. **View** contains explicit depth and following controls.
+The workspace camera stays where you put it. **Follow selected Run** explicitly returns to the
+latest field and follows that Run's projection; manual camera interaction pauses following.
+**Latest fetched status** and **Connection now** remain separate from a historical capture.
+**Open exact Run and history** enters the selected account below. Closing the inspector returns
+to its opener without discarding the selected Run.
+
+Shared Animator marks and their links come only from retained dispatch selections. Their count
+means loaded grants, and their halo identifies a latest loaded record. Neither means continuous
+model work or present availability. Unknown station types are not renamed as Agents or tools;
+file trees and other resources require identities from their own source.
+
+## Pause and revisit the observed field
+
+The bottom **Tab history** keeps up to 300 changed projections received in this open tab, within
+the chosen 30-second, 90-second, five-minute or one-hour window. It starts when the field is read.
+Local receipt times place captures; a first capture may already contain older producer evidence.
+This is separate from the exact Run's sequence cursor below, and disappears on reload.
+
+**Pause live field** holds the observed graph while current feeds continue. Seek with the slider,
+choose a Run's update mark, step through captures or play at 1×, 2× or 4×. **LIVE** follows the
+newest observed capture. Incoming updates do not move a paused graph. Slider bounds stay fixed
+during a pointer drag. A pinned capture outside the seek window remains explicitly labelled;
+widening the window does not restore discarded captures. **Coverage** explains the account, and
+**View → Clear tab history** starts a fresh in-tab account.
+
+The inspector identifies captured evidence separately from current connection and latest fetched
+status. Closing a live lens stops its subscription while an already authorized capture remains
+inspectable. Current-authority refusal clears the protected evidence, including pinned captures.
+The timeline does not reconstruct work between receipts, infer execution duration, or provide
+durable full-workspace replay.
 
 ## Establish the account you are reading
 

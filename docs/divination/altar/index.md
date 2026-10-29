@@ -81,7 +81,8 @@ request.
 
 ## Keep Bridge beside the work
 
-Use **Bridge** in the masthead to open or collapse the conversation panel. Drag its divider to
+Use the **« / »** control at the work area's edge to open or collapse Bridge. New layouts start
+on the left; a valid saved side remains in use. Drag its divider to
 change its width, or focus the divider and use its arrow keys. **Dock left** and **Dock right**
 choose the side. A wide window makes room beside the panel; a narrow window opens it as a
 modal sheet with Escape and a return to the opener. Layout preferences may be remembered in this

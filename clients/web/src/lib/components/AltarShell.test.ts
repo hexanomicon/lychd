@@ -17,6 +17,7 @@ vi.mock("$lib/api/client", () => ({
 import { page } from "$app/state";
 import { getAltarStatus } from "$lib/api/client";
 import AltarShell from "./AltarShell.svelte";
+import { bridgeDockStorageKey } from "$lib/navigation/dock";
 
 const children = createRawSnippet(() => ({ render: () => "<p>Instrument</p>" }));
 
@@ -39,6 +40,7 @@ function deferred<T>() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   page.url.href = "http://localhost/bridge";
 });
 
@@ -276,5 +278,37 @@ it("opens Applications by hover, pins a click, and keeps menu traversal and Esca
   await fireEvent.keyDown(window, { key: "Escape" });
   expect(disclosure.open).toBe(false);
   expect(document.activeElement).toBe(trigger.closest("summary"));
+  view.unmount();
+});
+
+
+it("places the persistent Bridge chevron at the workbench edge and removes the masthead toggle", async () => {
+  vi.mocked(getAltarStatus).mockResolvedValue(status(0));
+  page.url.href = "http://localhost/orb";
+  const view = render(AltarShell, { children });
+  const toggle = screen.getByRole("button", { name: "Collapse Bridge" });
+  expect(toggle.closest(".altar-workbench")).toBeTruthy();
+  expect(document.querySelector(".topbar #bridge-toggle")).toBeNull();
+  expect(document.querySelectorAll("#bridge-toggle")).toHaveLength(1);
+  await fireEvent.click(toggle);
+  expect(screen.getByRole("button", { name: "Expand Bridge" })).toBe(toggle);
+  await fireEvent.click(toggle);
+  expect(screen.getByRole("button", { name: "Collapse Bridge" })).toBe(toggle);
+  expect(page.url.pathname).toBe("/orb");
+  expect(screen.getByRole("link", { name: "Orb" }).getAttribute("href")).toBe("/orb");
+  view.unmount();
+});
+
+
+it.each(["/bridge", "/bridge/session-a?run=run-a&consent=consent-a&event=event-a"])("opens explicit Bridge destination %s despite a collapsed preference", async (destination) => {
+  vi.mocked(getAltarStatus).mockResolvedValue(status(0));
+  localStorage.setItem(bridgeDockStorageKey, JSON.stringify({ width: 400, side: "right", open: false }));
+  page.url.href = `http://localhost${destination}`;
+  const view = render(AltarShell, { children });
+  await act(() => Promise.resolve());
+  const toggle = screen.getByRole("button", { name: "Collapse Bridge" });
+  expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  expect(toggle.closest(".dock-shell")?.classList.contains("dock-left")).toBe(false);
+  expect(`${page.url.pathname}${page.url.search}`).toBe(destination);
   view.unmount();
 });

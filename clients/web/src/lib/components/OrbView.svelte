@@ -476,6 +476,10 @@
           </header>
           <div class="live-connection" role="status">Live feed: <strong>{connection}</strong> · retained cursor {liveCursor < 0 ? "none" : `#${liveCursor}`} · connection is not Run status</div>
           {#if feedNote}<p class="feed-note" role="status">{feedNote}</p>{/if}
+          <div class="graph-and-animators">
+            <div class="selected-spatial-field">{#if graph}<GraphCanvas projection={graph} selectedId={selectedGraphId} onselect={selectGraphNode} label="Selected Run workflow graph" presentation="orb" hideMinimap={true} {focusId} {focusRevision} onviewportinteraction={() => following = false} />{/if}</div>
+            <AnimatorRail evidence={playbackSource?.evidence ?? []} cursor={playbackCursor} onselect={seek} />
+          </div>
           <div class="playback-controls" role="group" aria-label="Recorded graph playback">
             <button type="button" class="text-action" disabled={playbackIndex <= 0} onclick={() => stepPlayback(-1)}>Previous record</button>
             <label>Record cursor
@@ -486,10 +490,6 @@
             <button type="button" class="text-action" disabled={playbackIndex >= (playbackSource?.evidence.length ?? 0) - 1} onclick={() => stepPlayback(1)}>Next record</button>
             <button type="button" class="text-action" aria-pressed={playbackCursor === null} onclick={() => seek(null)}>LIVE</button>
             <span class="playback-position">{playbackCursor === null ? "Latest loaded evidence" : `Recorded view through #${playbackCursor}`} · {playbackRecord ? new Date(playbackRecord.occurred_at).toLocaleString() : "No loaded record"}</span>
-          </div>
-          <div class="graph-and-animators">
-            {#if graph}<GraphCanvas projection={graph} selectedId={selectedGraphId} onselect={selectGraphNode} label="Selected Run workflow graph" {focusId} {focusRevision} onviewportinteraction={() => following = false} />{/if}
-            <AnimatorRail evidence={playbackSource?.evidence ?? []} cursor={playbackCursor} onselect={seek} />
           </div>
           {#if selectedGraphNode && !selected}<p class="graph-selection-note"><strong>{selectedGraphNode.label}</strong> — {selectedGraphNode.detail}. No loaded record is selected.</p>{/if}
           <p class="graph-boundary">Glow marks the latest supplied record or playback cursor, not continuous work. The cursor filters loaded graph observations; Run status above remains current. Record spacing is sequence, not elapsed time. Subworkflow structure requires supplied identities.</p>
@@ -745,7 +745,8 @@
 
 <style>
   .graph-and-animators { display:grid; grid-template-columns:minmax(0,1fr) minmax(12rem,15rem); gap:1rem; align-items:start; }
-  .playback-controls { display:flex; align-items:center; flex-wrap:wrap; gap:.75rem; padding:1rem 0; }
+  .selected-spatial-field { height:clamp(340px,55vh,650px); min-width:0; background:#000; }
+  .playback-controls { display:flex; align-items:center; flex-wrap:wrap; gap:.75rem; padding:.8rem 1rem; border-top:1px solid var(--color-engraving); background:var(--color-void); }
   .playback-controls label { display:flex; align-items:center; gap:.5rem; font-size:var(--text-sm); }
   .playback-controls input { accent-color:var(--color-rune); min-width:10rem; }
   .playback-controls input:focus-visible { outline:2px solid var(--color-rune); outline-offset:3px; }

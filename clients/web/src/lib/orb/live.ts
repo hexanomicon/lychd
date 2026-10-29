@@ -142,10 +142,14 @@ const pageSchema: z.ZodType<OrbRunPage> = z.object({
   next_cursor: z.string().nullable(), capture: z.enum(["process_local", "durable_best_effort"])
 });
 
+export class OrbCatalogueError extends Error {
+  constructor(message: string, readonly status: number) { super(message); }
+}
+
 export async function getOrbCatalogue(cursor?: string, signal?: AbortSignal): Promise<OrbRunPage> {
   const query = new URLSearchParams({ limit: "20" });
   if (cursor) query.set("cursor", cursor);
   const response = await fetch(`/api/v1/orb/runs?${query}`, { signal });
-  if (!response.ok) throw new Error(response.status === 403 || response.status === 401 ? "This authority cannot read the Run catalogue." : `The Run catalogue could not be read (${response.status}).`);
+  if (!response.ok) throw new OrbCatalogueError(response.status === 403 || response.status === 401 ? "This authority cannot read the Run catalogue." : `The Run catalogue could not be read (${response.status}).`, response.status);
   return pageSchema.parse(await response.json());
 }

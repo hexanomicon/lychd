@@ -134,7 +134,7 @@ describe("shell-lifetime Bridge conversation", () => {
     expect(screen.queryByText(/requested consent is unavailable/)).toBeNull();
     await fireEvent.click(screen.getByRole("button", { name: "Collapse Bridge" }));
     expect(document.getElementById("bridge-dock")?.closest("[hidden]")).toBeTruthy();
-    await fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
     expect(screen.getByLabelText("Message")).toBe(composer);
     expect(vi.mocked(getBridgeSnapshot).mock.calls.map(([id]) => id)).toEqual(["session-b"]);
     expect(work.drafts.get("session-b")).toBe("Unfinished B offering");
@@ -162,7 +162,7 @@ describe("shell-lifetime Bridge conversation", () => {
     await visit("/canvas?run=unrelated");
     await fireEvent.click(screen.getByRole("button", { name: "Collapse Bridge" }));
     await visit("/atlas");
-    await fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
     expect(listenToRun).toHaveBeenCalledTimes(1);
     expect(close).not.toHaveBeenCalled();
     expect(sendBridgeMessage).not.toHaveBeenCalled();
@@ -192,7 +192,7 @@ describe("shell-lifetime Bridge conversation", () => {
       .toBe("/orb/missing-run?event=event-b");
     await visit("/orb/run-b?event=event-b");
     await fireEvent.click(screen.getByRole("button", { name: "Collapse Bridge" }));
-    await fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
     expect(screen.queryByText(/requested consent is unavailable/)).toBeNull();
     expect(screen.getByRole("link", { name: "Orb" }).getAttribute("href")).toBe("/orb");
     expect(vi.mocked(getBridgeSnapshot).mock.calls.map(([id]) => id)).toEqual(["session-b"]);
@@ -227,7 +227,7 @@ describe("shell-lifetime Bridge conversation", () => {
       ["Investigate public source", "investigation=new"]
     ]) {
       if (document.getElementById("bridge-dock")?.closest("[hidden]")) {
-        await fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+        await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
       }
       const link = screen.getByRole("link", { name: label });
       expect(link.getAttribute("href")).toBe(`/bridge?${query}`);
@@ -238,7 +238,7 @@ describe("shell-lifetime Bridge conversation", () => {
       expect(document.activeElement).toBe(main);
       expect(document.getElementById("bridge-message")).toBe(composer);
     }
-    await fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
     const orbLink = screen.getByRole("link", { name: "Look into the Orb" });
     await visit(orbLink.getAttribute("href")!);
     expect(document.getElementById("bridge-dock")?.closest("[hidden]")).toBeTruthy();
@@ -261,7 +261,7 @@ describe("shell-lifetime Bridge conversation", () => {
     await screen.findByRole("heading", { name: "Conversations awaiting consent" });
     expect(screen.queryByLabelText("Message")).toBeNull();
     await fireEvent.click(screen.getByRole("button", { name: "Collapse Bridge" }));
-    await fireEvent.click(screen.getByRole("button", { name: "Bridge" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
     await screen.findByText("Retained answer for session-b");
     expect(vi.mocked(getBridgeSnapshot).mock.calls.map(([id]) => id)).toEqual(["session-b", undefined, "session-b"]);
     expect(sendBridgeMessage).not.toHaveBeenCalled();

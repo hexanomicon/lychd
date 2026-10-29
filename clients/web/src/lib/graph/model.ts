@@ -21,7 +21,7 @@ export interface GraphEdge {
   readonly source: string;
   readonly target: string;
   readonly label: string;
-  readonly relation: "permission" | "order" | "contains";
+  readonly relation: "permission" | "order" | "contains" | "selection";
 }
 
 export interface GraphProjection {

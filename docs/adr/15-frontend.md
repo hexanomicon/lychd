@@ -303,7 +303,8 @@ an always-available conversation surface, not a competing top-level instrument t
 `/bridge` links remain valid compatibility and focus destinations; exact session, Run, consent,
 Project, investigation and public-note intent must survive the composition change.
 
-The dock can open or collapse, occupy either side and resize through a pointer or keyboard
+The dock's persistent edge chevron opens or collapses it; the masthead has no second toggle.
+New layouts start on the left, preserving a valid saved side. It can occupy either side and resize through a pointer or keyboard
 separator. A wide workbench allocates real width beside it; it does not cover the work. A narrow
 workbench uses an explicitly modal overlay with focus containment, Escape and an opener return.
 Width, side and collapsed state may be remembered as bounded local presentation preferences;
@@ -745,6 +746,31 @@ Run status and connection state remain separately labelled. A grant records sele
 model-call duration or an Animator uptime interval. Missing lifecycle evidence remains unknown;
 current Nexus readiness cannot fill a historical gap. Hover discloses semantic detail without
 changing selection, cursor, authority, or the declared score.
+
+#### Spatial Orb and tab observation history
+
+Orb may select a spatial presentation inside the same shared renderer: compact typed marks,
+stable Run territories, and curved relations on an unbounded black viewport. Territory membership
+comes from the supplied Run, never proximity. Repositioning a mark changes only the current
+adapter's disposable layout; it submits no Pattern or Run mutation. Loom retains its declared-score
+presentation. Filters, disclosure and a semantic Run list remain available without canvas gestures.
+
+An Animator identity supplied by a dispatch record may appear as a shared source mark. Its link
+means **recorded selection** from that dispatch subject, not an active model call, traversal,
+availability, or duration. A latest-record halo identifies a retained observation. Tool, Agent,
+file, Portal and Soulstone shapes require their own supplied type; a station label or model name
+cannot establish that type.
+
+The parallel field may retain bounded immutable captures of projections actually received in the
+current browser tab. Its bottom **Tab history** uses local observation time and declares the
+available time window and capture count. Pause and seek hold one capture while ingestion
+continues; LIVE resumes the newest account. Current connection and latest fetched Run status stay
+separate from a captured graph. Capture playback does not reorder producer events, reconstruct
+execution between observations, or claim complete wall-clock workspace history. It creates no
+durable retention and disappears on reload. Closing a live lens ends its subscription without
+rewriting an already authorized capture; the inspector distinguishes that historical lens from
+current connection state. Current-authority refusal clears protected captures. A capture retained for inspection remains
+explicit when it falls outside the bounded seek window.
 
 Native CSS uses custom properties, cascade layers, media queries, semantic classes, and state
 attributes. Type, label, icon, shape, and copy carry meaning without colour; the stylesheet has a

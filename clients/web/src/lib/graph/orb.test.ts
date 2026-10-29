@@ -3,6 +3,29 @@ import { fixtureRun, pattern } from "$lib/orb/__fixtures__/snapshot";
 import { matchesOrbPattern, mergeOrbEvidence, mergeOrbGaps, orbEvidenceNodeId, projectOrb, projectOrbField } from "./orb";
 
 describe("Orb semantic graph", () => {
+  it("shares only explicitly recorded Animator selections across Run groups", () => {
+    const a = fixtureRun(), b = fixtureRun("run-b");
+    a.evidence = [{ ...a.evidence[0]!, kind: "dispatch", animator_name: "local-reasoner", subject_key: "chat" }];
+    b.evidence = [{ ...b.evidence[0]!, kind: "dispatch", animator_name: "local-reasoner", subject_key: "chat" }];
+    const lenses = new Map([[a.run.run_id, { snapshot: a, pattern }], [b.run.run_id, { snapshot: b, pattern }]]);
+    for (const level of ["runs", "stations", "occurrences", "records"] as const) {
+      const graph = projectOrbField([a.run, b.run], lenses, level).projection;
+      const sources = graph.nodes.filter((node) => node.kind === "animator");
+      expect(sources).toHaveLength(1);
+      expect(sources[0]).toMatchObject({ id: "animator:local-reasoner", count: 2, group: "animators" });
+      expect(sources[0]!.detail).toContain("call activity and availability are not supplied");
+      const selections = graph.edges.filter((edge) => edge.relation === "selection");
+      expect(selections).toHaveLength(2);
+      expect(selections.every((edge) => graph.nodes.some((node) => node.id === edge.source) && edge.target === sources[0]!.id)).toBe(true);
+      expect(graph.nodes.some((node) => node.kind === "file" || node.kind === "agent")).toBe(false);
+    }
+  });
+  it("keeps suffix coverage when later stream metadata has no older-page flag", () => {
+    const snapshot = fixtureRun();
+    const field = projectOrbField([snapshot.run], new Map([[snapshot.run.run_id, { snapshot, pattern, trimmed: true }]]), "runs");
+    expect(field.projection.nodes[0]!.detail).toContain("More retained history exists outside this lens");
+    expect(snapshot.has_more).toBe(false);
+  });
   it("keeps declared permissions distinct from supplied records, including a return edge", () => {
     const snapshot = fixtureRun();
     const graph = projectOrb(snapshot, pattern);

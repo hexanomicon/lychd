@@ -9,7 +9,8 @@ Use Bridge to offer an Intent and stay with the answer as you inspect other Alta
 applications. Its session, or séance, holds the continuing conversation. Each admitted turn opens
 its own [Circle](circle.md), whose Run lets you follow that one request through to its result.
 
-Open it with **Bridge** in the top masthead. Resize its divider, choose the left or right side,
+Open it with the **« / »** control at the work area's edge. New layouts start on the left;
+a saved side is preserved. Resize its divider, choose the left or right side,
 or collapse it while retaining the conversation. Ordinary instrument navigation does not destroy
 the selected session, its live reconstruction or a later draft. On a narrow window, the panel is
 a modal sheet; Escape closes it and returns focus to its opener. The layout's remembered width,

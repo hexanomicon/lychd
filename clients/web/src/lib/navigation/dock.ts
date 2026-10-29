@@ -3,7 +3,7 @@ export const bridgeDockStorageKey = "lychd.bridge-dock.layout.v1";
 export const dockMinimumWidth = 320;
 export const dockMaximumWidth = 720;
 export interface DockLayout { width: number; side: "left" | "right"; open: boolean }
-export const defaultDockLayout: DockLayout = { width: 440, side: "right", open: true };
+export const defaultDockLayout: DockLayout = { width: 440, side: "left", open: true };
 export function boundedDockWidth(width: number): number {
   return Math.round(Math.min(dockMaximumWidth, Math.max(dockMinimumWidth, width)));
 }
@@ -15,7 +15,7 @@ export function parseDockLayout(raw: string | null): DockLayout {
     return {
       width: typeof layout.width === "number" && Number.isFinite(layout.width)
         ? boundedDockWidth(layout.width) : defaultDockLayout.width,
-      side: layout.side === "left" ? "left" : "right",
+      side: layout.side === "left" || layout.side === "right" ? layout.side : defaultDockLayout.side,
       open: typeof layout.open === "boolean" ? layout.open : defaultDockLayout.open
     };
   } catch { return { ...defaultDockLayout }; }
