@@ -34,7 +34,7 @@ changes to its covered core. MPL-2.0 supplies that file-level boundary. This Cov
 
 ## Decision
 
-LychD is licensed under MPL-2.0.
+LychD is licensed under MPL-2.0. The project commits to keeping it free and open source.
 
 The boundary follows covered source files. Distributed Source Code Form containing Covered
 Software, including a Modification, stays MPL-2.0. When an executable contains Covered Software,

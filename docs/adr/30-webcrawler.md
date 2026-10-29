@@ -183,7 +183,7 @@ does not admit XML. Item locators remain bounded returned data, never permission
 fetches. The consuming application owns local filtering and suitability; repeat watching needs
 current admission and finite standing policy.
 
-The [Scout source study](../sepulcher/extensions/scout-web-research.md) records a Bazoš RSS
+The [Scout source study](../sepulcher/extensions/scout.md#source-acquisition-study) records a Bazoš RSS
 premise and the next qualification obligations. It is a candidate study, not an admitted feed
 profile or delivery evidence.
 
