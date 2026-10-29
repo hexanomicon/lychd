@@ -10,14 +10,16 @@ icon: material/feather
 Reject the dogma and instead forge a middle path — one that respects the narrative density of
 **Lore** while demanding the rigorous purity of **Code**.
 
-LychD needs lore and engineering, but neither can substitute for the other. Its telos seeks a
-bounded, relational intelligence: answerable to consequence, capable of memory and repair, and
-unwilling to mistake power for totality. Architecture, implementation, delivery, and evidence are
-distinct kinds of truth.
+LychD gives lore and engineering distinct work. Lore carries the telos of a bounded, relational
+intelligence: answerable to consequence, capable of memory and repair, and unwilling to mistake
+power for totality. Engineering must make that purpose exact enough to build and judge.
+Architecture, implementation, delivery, and evidence therefore remain distinct kinds of truth;
+neither lore nor engineering can stand in for the other.
 
-Phylactery, Vessel, and Invocation are cognitive cartography: names that make jurisdiction easier
-to remember. They must not obscure exact commands, schemas, logs, recovery steps, or contracts.
-Methodologies are **tools, not chains**. Only necessary elements are imported into the workflow.
+Names such as Phylactery, Vessel, and Invocation offer cognitive cartography: they help a reader
+remember jurisdiction. Their usefulness ends where they obscure a command, schema, log, recovery
+step, or contract. The same test applies to method. Methodologies are **tools, not chains**;
+the workflow imports only what it needs.
 
 ## Decision
 
@@ -64,8 +66,9 @@ place by making the boundary easier to see.
 
 ### 3. Test-Driven Development (TDD)
 
-Tests bind the manifestation to the intent through executable examples and regression checks.
-Blind adherence to the order of operations is rejected.
+Tests turn intent into executable examples and regression checks, binding the manifestation to
+what it was meant to do. Their value lies in that feedback; blind adherence to an order of
+operations does not establish correctness.
 
 **Strict Test First** can stifle exploration. Prototyping is encouraged, provided tests are
 backfilled before the final commit. Test order cannot substitute for judgment.
@@ -133,10 +136,11 @@ playbooks preserve procedure, load after scope, and yield to canonical owners.
 
 ### Router delegation
 
-A router exposes task triggers and explicit links to scope branches, canonical owners, or workflow
-playbooks. It identifies the destination's role so a reader knows whether to continue discovery,
-establish truth, or load procedure. A route may lead to another router, which owns its deeper
-routes; the parent keeps that branch discoverable without duplicating its contents.
+A router helps the reader choose the next useful edge. It gives task triggers and explicit
+links, and identifies each destination as a scope branch, canonical owner, or workflow playbook.
+That role tells the reader whether to continue discovery, establish truth, or load procedure.
+When the destination is another router, it owns the deeper routes; the parent keeps the branch
+discoverable without copying its contents.
 
 Follow only the branches required by the task. Cross-domain links make another scope tree
 reachable without requiring its wholesale ingestion. Workflows load after the matching scope.
@@ -157,16 +161,17 @@ scope discovery to workflow selection and a bounded task handoff.
 | Constitution | Transcendence |
 | Routing / choreography | Scope / workflow |
 
-Other pages summarize once and link. Begin at the fitting door, use parent indexes as maps, then
-read the smallest owner. Executable claims terminate in source, tests, lockfiles, artifacts, or
-maintained receipts; scratch notes, searches, and generated indexes own nothing.
+Begin at the fitting door, follow parent indexes as maps, and read the smallest owner. Other
+pages may summarize that owner's truth once and link to it. An executable claim must eventually
+reach source, tests, lockfiles, artifacts, or maintained receipts. Scratch notes, searches, and
+generated indexes can help discovery, but own no truth.
 
-Architecture and application pages describe one coherent system: responsibilities, records,
-handoffs, decisions, and recovery. Use direct contract language without maturity badges or
-`Designed` suffixes on headings. State of Work collects implementation evidence and missing
-pieces. Mention a local limitation only when it changes an operation the reader can perform,
-an exact compatibility boundary, or the interpretation of a worked example; explain that
-concrete limit and link its evidence instead of repeating a delivery category.
+Architecture and application pages explain a coherent system through its responsibilities,
+records, handoffs, decisions, and recovery. State these contracts directly, without maturity
+badges or `Designed` suffixes on headings. State of Work gathers the implementation evidence and
+missing pieces. A local limitation belongs on the contract page only when it changes an operation
+the reader can perform, an exact compatibility boundary, or the reading of a worked example.
+Explain that concrete limit and link its evidence instead of repeating a delivery category.
 
 ## Repository Source Topology
 

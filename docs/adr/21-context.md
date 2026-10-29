@@ -72,10 +72,11 @@ suspension to [Graph](./24-graph.md).
 
 ## Grant-aware rebinding
 
-Bridge first assembles enough field to enter its workflow, then assembles again inside `Converse`
-after [Dispatcher](./22-dispatcher.md) grants the actual capability. Consent continuation also
-reassembles after grant acquisition. The resolved generation profile's `max_context` takes priority
-over the capability specification's discovered maximum.
+Bridge assembles an initial field to enter the workflow, then reassembles inside `Converse`
+once [Dispatcher](./22-dispatcher.md) has granted the actual capability. Consent continuation
+also reassembles after acquiring its grant. This binds the field to the capability that will
+execute it: the resolved generation profile's `max_context` takes precedence over the
+specification's discovered maximum.
 
 Environment records only granted capability key (or `none`) and sorted warm/active capability keys.
 Its key is `(session, capability binding, grant epoch)`. Bridge uses the Dispatcher-issued grant id
@@ -142,13 +143,13 @@ settlement revalidation apply independently of retrieval type. State owns delive
 
 ## Stable history
 
-Completed messages group by LychD `run_id`. Legacy messages begin a new group at a user request
-without tool-return or retry parts. A request carrying those continuations stays with its exchange,
-even if it also contains user-prompt content; trimming never separates a tool return from its call.
-A consent pause holds the current logical-turn suffix apart from settled history. Resume re-bounds
-settled history under the new grant and provides its required continuation unchanged. Thus an old
-provider's live objects and assumptions do not cross the park. ADR 25 owns consent record and
-verdict order; this ADR owns only field shape and budget after re-entry.
+Settled history is grouped by LychD `run_id`. For legacy messages, a user request starts a group
+only when it has no tool-return or retry parts. A request with those continuations stays with its
+exchange even if it also carries user-prompt content; trimming must never separate a tool return
+from its call. At consent pause, the current logical-turn suffix is held apart from settled
+history. Resume re-bounds the history under the new grant and supplies the required continuation
+unchanged, leaving the old provider's live objects and assumptions behind. ADR 25 owns consent
+record and verdict order; this Covenant owns the field's shape and budget after re-entry.
 
 ## Privatization and the Privacy Cut
 
@@ -306,12 +307,11 @@ require adopting the paper's separate approximate suffix-cache reuse mechanism.
 At one explicitly declared procedural Agent placement, a Composition-owned and Pattern-pinned
 [Execution Projection](28-workflow.md#execution-projections-for-procedural-agent-placements)
 may replace settled message history for that model call. Context receives the exact bounded,
-attributed projection and fresh admitted observation projections from their owners; it preserves
-their lineage, classification, revisions, declared omissions, and required/optional status, then
-orders and budgets them with the Stable Floor and exact Query. Context does not infer the
-projection schema from Graph state, decide domain truth, apply Agent operations, or silently
-summarize missing material. Required state or observation input that cannot fit refuses before
-inference.
+attributed projection and fresh admitted observations from their owners, retaining lineage,
+classification, revisions, declared omissions, and required/optional status. It orders and budgets
+them beside the Stable Floor and exact Query. Context cannot infer a schema from Graph state,
+decide domain truth, apply Agent operations, or silently summarize missing material. Required
+state or observations that do not fit cause refusal before inference.
 
 Exclusion from one model call never deletes or relabels canonical sources, conversation history,
 events, receipts, artifacts, or audit evidence. The Stable Floor, exact Query, and any indivisible

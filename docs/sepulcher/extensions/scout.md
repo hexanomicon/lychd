@@ -42,14 +42,17 @@ provider profile.
 
 ## Ten tracks through the wild
 
-Scout separates effects often hidden behind the word “browser.” **Search** discovers locators;
-**Fetch** performs one bounded network read; **Extract** transforms acquired bytes without a
-network; and **Crawl** manages a finite frontier. **Render** executes hostile site code;
-**Interact** clicks, types, submits, or uploads. **Credential Use** presents one scoped secret
-reference; **Session Custody** owns cookies and browser state; **Screenshot** requests pixels; and
-**Download** transfers a bounded payload into quarantine. Artifact Admission is a separate
-custody-owner effect that validates and retains exact bytes. Downloading never implies admission,
-and an admitted artifact never becomes trusted or understood merely because it is durable.
+To decide what a request actually authorizes, separate the effects often hidden behind the word
+“browser.” **Search** discovers locators. A subsequent **Fetch** performs one bounded network
+read, and **Extract** transforms the acquired bytes without a network. **Crawl** adds management
+of a finite frontier; **Render** executes hostile site code. **Interact** goes further by
+clicking, typing, submitting, or uploading.
+
+Identity and retained state have their own effects: **Credential Use** presents one scoped
+secret reference, and **Session Custody** owns cookies and browser state. **Screenshot** requests
+pixels; **Download** transfers a bounded payload into quarantine. Only the separate custody-owner
+effect, Artifact Admission, can validate and retain exact bytes. Downloading therefore supplies
+neither admission nor the trust or understanding that durable storage also cannot establish.
 
 Each Scout track needs its own host-owned `ScoutEffectGrant` and budget. A redirect, JavaScript
 requirement, CAPTCHA, login, payment challenge, quota response, or failure is a result, never
@@ -58,23 +61,29 @@ selection cannot widen the effect grant.
 
 ## Attempt layers
 
-A bounded synchronous Scout effect uses one Scout-owned effect attempt. An Animator-backed
-implementation additionally holds a scoped `CallGrant`; a native host-owned adapter pins its exact
-Scout provider/adapter binding and uses no Dispatcher lease. Scout durably records `prepared`
-before I/O; `unknown_after_crash` is its domain disposition when no independent terminal evidence
-exists. Neither implementation adds a `ServiceJobAttempt@1` for that immediate call. An
-asynchronous crawl or render through `JobGrant` keeps its Scout domain job but layers it over Core's
-[`ServiceJobAttempt@1`](../../adr/14-workers.md#service-job-attempts): the domain's
-`unknown_after_crash` maps to `INDETERMINATE`, and recovery reconciles the same capability-backed
-execution binding.
+For one bounded synchronous call, Scout owns an effect attempt and records `prepared` durably
+before any I/O. The implementation determines the additional execution authority: an
+Animator-backed implementation holds a scoped `CallGrant`, while a native host-owned adapter
+pins its exact Scout provider/adapter binding and uses no Dispatcher lease. Neither immediate
+call creates a `ServiceJobAttempt@1`.
+
+If the process crashes without independent terminal evidence, Scout records the domain
+disposition `unknown_after_crash`. Longer asynchronous crawl or render work uses `JobGrant`
+and keeps a Scout domain job over Core's
+[`ServiceJobAttempt@1`](../../adr/14-workers.md#service-job-attempts). There the same domain
+uncertainty maps to `INDETERMINATE`; recovery must reconcile the same capability-backed execution
+binding rather than create a replacement attempt.
 
 ## Contact does not become truth
 
-Following [Oculus](oculus.md), Scout records an attempted acquisition as an **effect receipt**, one
-source response as a **bounded observation**, and each transformation as a **derivation** with
-parentage and loss. **Interpretation** applies declared criteria and belongs to
-[Drift](drift/trials.md) or the consuming Composition. A digest is neither proof nor custody, and
-an `ArtifactRef` remains metadata until a service has admitted retrievable bytes under the
+A result needs an account of both contact and transformation before a reader can judge it.
+Following [Oculus](oculus.md), Scout records the attempted acquisition as an **effect receipt**,
+the source response as a **bounded observation**, and each transformation as a **derivation**
+that identifies its parentage and loss. **Interpretation** comes afterward: applying declared
+criteria belongs to [Drift](drift/trials.md) or the consuming Composition.
+
+These records also leave custody explicit. A digest supplies neither proof nor custody, and an
+`ArtifactRef` remains metadata until a service admits retrievable bytes under the
 [artifact-custody boundary](../../state-of-the-work.md#artifact-reference-contract).
 
 ## Sources are senses, not applications
@@ -134,8 +143,7 @@ mechanism policy belongs to [ADR 30](../../adr/30-webcrawler.md#first-party-mech
 
 For a known source, first compare its existing static page or advertised feed with the cost of
 a search service or browser. The [source acquisition study](scout-web-research.md) traces the
-Bazoš page/RSS premise and the separate qualification needed for each source profile.
-It also records the feed premise and its qualification boundary. The separate
+Bazoš page/RSS premise and the separate qualification needed for each source profile. The separate
 `scout-rss-extract@1` mechanism projects strict RSS 2.0 in the fixed child;
 [State](../../state-of-the-work.md#scout-web-acquisition) owns its evidence boundary. The native
 feed source contract below does not establish installed operation or recurring listing watching.
@@ -228,12 +236,15 @@ configuration. The example does not start a resolver or qualify those paths. The
 tree must contain no operator material. Runtime and library qualification follows the maintained
 Linux proof procedure in the contribution guide.
 
-The process shares one Scout authority and cancellation fence between HTTP and workers. Each
-attempt reserves worst-case outbound counters before I/O; only observed completion settles actual
-usage. One binding admits one active acquisition. Budgets are cumulative, and changing a binding
-name or restarting cannot reset them. Unknown crash outcomes retain their reservation and slot;
-this profile provides no automatic reconciliation or retry. A changed budget configuration refuses
-against existing budget rows instead of silently discarding their accounting.
+HTTP and workers share one Scout authority and cancellation fence, so either entry path must
+honor the same attempt and budget. Before I/O, each attempt reserves worst-case outbound
+counters; only observed completion lets it settle actual usage. One binding admits one active
+acquisition. Its budgets are cumulative: renaming the binding or restarting the process cannot
+reset them.
+
+An unknown crash outcome keeps both its reservation and its slot. This profile supplies no
+automatic reconciliation or retry. If the configured budget changes, it refuses against existing
+budget rows rather than discard the accounting that still governs those attempts.
 
 Acquired bytes enter the selected local model as bounded, attributed, untrusted data. Token
 counting and inference both require current authority. There are no model tools, remote fallback,
@@ -315,13 +326,16 @@ It removes application seed and field payload atomically and retains a content-f
 plus necessary execution/Scout receipts. It does not erase independent contact metadata or
 backups. A deleted observation is distinct from an observed empty field; replay cannot restore it.
 
-Unknown custody/disposition stays unknown and blocks terminal-only deletion. A lost transient
-field cannot be rebuilt from receipt digests or silently refetched. A confirmed committed field
-may be read and re-filtered under fresh authority; ambiguous acknowledgement reconciles only the
-same identity. Deleting a terminal field reopens the application slot without resetting spent
-budgets, unknown reservations or an issued claim. A replacement needs a visible delete, fresh
-request and fresh consent. No automatic retry, restart recovery acquisition or budget reset is
-promised by this source contract.
+Recovery begins with what the retained records actually establish. Unknown custody/disposition
+stays unknown and blocks terminal-only deletion. Receipt digests cannot reconstruct a lost
+transient field, and loss cannot authorize a silent refetch. When the field is confirmed committed,
+fresh authority permits reading and re-filtering it. When only the acknowledgement is ambiguous,
+reconciliation stays with that same identity.
+
+Deleting a terminal field reopens the application slot, but preserves spent budgets, unknown
+reservations, and an issued claim. Replacing it requires a visible delete, a fresh request, and
+fresh consent. This source contract promises no automatic retry, restart recovery acquisition,
+or budget reset.
 
 ## The laws of the road
 

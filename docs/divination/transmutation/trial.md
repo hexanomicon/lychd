@@ -7,19 +7,17 @@ icon: material/flask-outline
 
 What happens when the candidate meets declared conditions?
 
-Trial begins when a candidate leaves its assumptions and encounters declared conditions.
-[Canon](canon.md) has already supplied the criteria and acceptable evidence. A bounded
-experiment identifies the exact revision and Environment, the Cases to exercise, and the
-budgets within which it may proceed. Its record preserves what happened, including failure,
-blockage, or refusal. An experiment can remain entirely local; testing does not require
-deployment or public release.
+A candidate becomes testable when its revision, Environment, Cases, and budgets are declared.
+[Canon](canon.md) has already established the criteria and acceptable evidence. Trial brings the
+candidate into those conditions and preserves what happens, including failure, blockage, or
+refusal. The encounter can remain entirely local: neither deployment nor public release is
+required for an experiment.
 
-[Exodus](https://bible.usccb.org/bible/exodus/0) gives this chapter its image of departure:
-the candidate leaves the world its maker could dictate. Return to Genesis's
-[field notes](genesis.md), edited in two copies while disconnected: a controlled concurrent-edit
-Case may reveal that reconciliation overwrites an observation. That loss belongs in the result even if every
-other check passes. The declared conditions make the encounter interpretable; they do not
-promise a favorable answer.
+[Exodus](https://bible.usccb.org/bible/exodus/0) gives the encounter its image of departure. The
+candidate leaves the world its maker could dictate. Consider Genesis's [field notes](genesis.md),
+changed in two disconnected copies. A controlled concurrent-edit Case may show reconciliation
+overwriting an observation. Preserve that loss in the result even if every other check passes.
+Declared conditions let us interpret the encounter; they cannot make its answer favorable.
 
 The Tree's [support and measure](genesis.md#chesed-gevurah-weights) meet in this encounter.
 Chesed gives the candidate enough room to disclose what it can do; Gevurah gives the trial

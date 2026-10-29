@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" width="900" height="1200" role="img" aria-labelledby="tree-title tree-description">
+  <title id="tree-title">Tree of Life: between Crown and Kingdom</title>
+  <desc id="tree-description">A red left column of Why, Challenge, and Review; a green right column of How, Expand, and Test; and a middle column of What, Knowing, Harmony Center with a proposed DMN correspondence, Identity Candidate, and Product. Twenty-five undirected relations join the powers. Blue Intellect, Emotion, and Action join the sides; Sense labels Review to Identity Candidate and Response labels Test to Identity Candidate. Knowing has a dashed outline. Margin arrows mark Severity and Mercy downward, Passive and Active upward; a final annotation moves from the world of ideas to the world of forms.</desc>
+  <!-- Sefirotic names and creative relations are developed in Genesis.
+       Crossings are not junctions; only named centers are nodes. -->
+  <defs>
+    <marker id="severity-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="none" stroke="#b83d58" stroke-width="1.6"/></marker>
+    <marker id="mercy-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="none" stroke="#247c6d" stroke-width="1.6"/></marker>
+    <marker id="ideas-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="none" stroke="#3153a0" stroke-width="1.6"/></marker>
+    <style>
+      text { font-family: sans-serif; text-anchor: middle; fill: #29262e; }
+      .relation { fill: none; stroke-width: 2.6; stroke-linecap: round; }
+      .relation.middle { stroke: #514957; }
+      .relation.severity { stroke: #b83d58; }
+      .relation.mercy { stroke: #247c6d; }
+      .relation.cross { stroke: #3153a0; stroke-width: 3.1; }
+      .node ellipse { stroke-width: 2.8; }
+      .node.middle ellipse { fill: #f8f4eb; stroke: #514957; }
+      .node.severity ellipse { fill: #fff0f1; stroke: #b83d58; }
+      .node.mercy ellipse { fill: #edf8f2; stroke: #247c6d; }
+      .node.knowing ellipse { stroke-dasharray: 9 7; }
+      .name { font-size: 24px; font-weight: 700; letter-spacing: .5px; }
+      .secondary { font-size: 18px; }
+      .correspondence { font-size: 16px; fill: #625765; }
+      .annotation { font-size: 16px; font-weight: 600; letter-spacing: 1px; }
+      .annotation.severity { fill: #a9324b; }
+      .annotation.mercy { fill: #1f7163; }
+      .cross-label { fill: #3153a0; font-size: 19px; font-weight: 700; letter-spacing: 1.8px; paint-order: stroke; stroke: #faf7f0; stroke-width: 7px; stroke-linejoin: round; }
+      .margin-arrow { fill: none; stroke-width: 3; }
+    </style>
+  </defs>
+  <rect width="900" height="1200" rx="18" fill="#faf7f0"/>
+  <g id="relations">
+    <path class="relation middle" data-from="what" data-to="why" d="M450,95 L185,225"/>
+    <path class="relation middle" data-from="what" data-to="how" d="M450,95 L715,225"/>
+    <path class="relation middle" data-from="what" data-to="knowing" d="M450,95 L450,350"/>
+    <path class="relation middle" data-from="knowing" data-to="harmony" d="M450,350 L450,625"/>
+    <path class="relation middle" data-from="harmony" data-to="identity" d="M450,625 L450,950"/>
+    <path class="relation middle" data-from="identity" data-to="product" d="M450,950 L450,1110"/>
+    <path class="relation severity" data-from="why" data-to="challenge" d="M185,225 L185,480"/>
+    <path class="relation severity" data-from="why" data-to="knowing" d="M185,225 L450,350"/>
+    <path class="relation severity" data-from="why" data-to="harmony" d="M185,225 L450,625"/>
+    <path class="relation severity" data-from="knowing" data-to="challenge" d="M450,350 L185,480"/>
+    <path class="relation severity" data-from="challenge" data-to="harmony" d="M185,480 L450,625"/>
+    <path class="relation severity" data-from="challenge" data-to="review" d="M185,480 L185,795"/>
+    <path class="relation severity" data-from="review" data-to="harmony" d="M185,795 L450,625"/>
+    <path class="relation severity" data-from="review" data-to="identity" d="M185,795 L450,950"/>
+    <path class="relation mercy" data-from="how" data-to="knowing" d="M715,225 L450,350"/>
+    <path class="relation mercy" data-from="how" data-to="harmony" d="M715,225 L450,625"/>
+    <path class="relation mercy" data-from="how" data-to="expand" d="M715,225 L715,480"/>
+    <path class="relation mercy" data-from="knowing" data-to="expand" d="M450,350 L715,480"/>
+    <path class="relation mercy" data-from="expand" data-to="harmony" d="M715,480 L450,625"/>
+    <path class="relation mercy" data-from="expand" data-to="test" d="M715,480 L715,795"/>
+    <path class="relation mercy" data-from="test" data-to="harmony" d="M715,795 L450,625"/>
+    <path class="relation mercy" data-from="test" data-to="identity" d="M715,795 L450,950"/>
+    <path class="relation cross" data-from="why" data-to="how" d="M185,225 L715,225"/>
+    <path class="relation cross" data-from="challenge" data-to="expand" d="M185,480 L715,480"/>
+    <path class="relation cross" data-from="review" data-to="test" d="M185,795 L715,795"/>
+  </g>
+  <g id="centers">
+    <g id="what" class="node middle">
+      <ellipse cx="450" cy="95" rx="122" ry="48"/>
+      <text class="name" x="450" y="90">WHAT</text>
+      <text class="correspondence" x="450" y="116">Keter</text>
+    </g>
+    <g id="why" class="node severity">
+      <ellipse cx="185" cy="225" rx="103" ry="49"/>
+      <text class="name" x="185" y="220">WHY</text>
+      <text class="correspondence" x="185" y="246">Binah</text>
+    </g>
+    <g id="how" class="node mercy">
+      <ellipse cx="715" cy="225" rx="103" ry="49"/>
+      <text class="name" x="715" y="220">HOW</text>
+      <text class="correspondence" x="715" y="246">Chokhmah</text>
+    </g>
+    <g id="knowing" class="node middle knowing">
+      <ellipse cx="450" cy="350" rx="103" ry="48"/>
+      <text class="name" x="450" y="345">KNOWING</text>
+      <text class="correspondence" x="450" y="371">Da’at</text>
+    </g>
+    <g id="challenge" class="node severity">
+      <ellipse cx="185" cy="480" rx="121" ry="53"/>
+      <text class="name" x="185" y="475">CHALLENGE</text>
+      <text class="correspondence" x="185" y="501">Gevurah</text>
+    </g>
+    <g id="expand" class="node mercy">
+      <ellipse cx="715" cy="480" rx="110" ry="53"/>
+      <text class="name" x="715" y="475">EXPAND</text>
+      <text class="correspondence" x="715" y="501">Chesed</text>
+    </g>
+    <g id="harmony" class="node middle">
+      <ellipse cx="450" cy="625" rx="122" ry="72"/>
+      <text class="name" x="450" y="607">HARMONY</text>
+      <text class="secondary" x="450" y="633">CENTER · DMN</text>
+      <text class="correspondence" x="450" y="659">Tiferet</text>
+    </g>
+    <g id="review" class="node severity">
+      <ellipse cx="185" cy="795" rx="113" ry="51"/>
+      <text class="name" x="185" y="790">REVIEW</text>
+      <text class="correspondence" x="185" y="816">Hod</text>
+    </g>
+    <g id="test" class="node mercy">
+      <ellipse cx="715" cy="795" rx="103" ry="51"/>
+      <text class="name" x="715" y="790">TEST</text>
+      <text class="correspondence" x="715" y="816">Netzach</text>
+    </g>
+    <g id="identity" class="node middle">
+      <ellipse cx="450" cy="950" rx="128" ry="61"/>
+      <text class="name" x="450" y="932">IDENTITY</text>
+      <text class="secondary" x="450" y="958">CANDIDATE</text>
+      <text class="correspondence" x="450" y="984">Yesod</text>
+    </g>
+    <g id="product" class="node middle">
+      <ellipse cx="450" cy="1110" rx="122" ry="51"/>
+      <text class="name" x="450" y="1105">PRODUCT</text>
+      <text class="correspondence" x="450" y="1131">Malkhut</text>
+    </g>
+  </g>
+  <g id="relation-labels">
+    <text class="cross-label" x="450" y="209">INTELLECT</text>
+    <text class="cross-label" x="450" y="464">EMOTION</text>
+    <text class="cross-label" x="450" y="779">ACTION</text>
+    <text class="cross-label" x="280" y="874" transform="rotate(30 280 874)">SENSE</text>
+    <text class="cross-label" x="620" y="874" transform="rotate(-30 620 874)">RESPONSE</text>
+  </g>
+  <g id="board-annotations">
+    <text class="annotation severity" x="135" y="51">SEVERITY −</text>
+    <text class="annotation mercy" x="765" y="51">MERCY +</text>
+    <path class="margin-arrow" stroke="#b83d58" marker-end="url(#severity-arrow)" d="M45,78 L45,166"/>
+    <path class="margin-arrow" stroke="#247c6d" marker-end="url(#mercy-arrow)" d="M855,78 L855,166"/>
+    <text class="annotation" x="450" y="29">CROWN · INTENT / IDEA</text>
+    <text class="annotation severity" x="185" y="157">UNDERSTANDING</text>
+    <text class="annotation mercy" x="715" y="157">WISDOM</text>
+    <text class="annotation severity" x="185" y="407">STRENGTH</text>
+    <text class="annotation mercy" x="715" y="407">LOVING</text>
+    <text class="annotation" x="450" y="535">BEAUTY</text>
+    <text class="annotation mercy" x="822" y="626">IDEAL</text>
+    <text class="annotation severity" x="185" y="722">SURRENDER</text>
+    <text class="annotation mercy" x="715" y="722">VICTORY</text>
+    <path class="margin-arrow" stroke="#b83d58" marker-end="url(#severity-arrow)" d="M45,996 L45,895"/>
+    <path class="margin-arrow" stroke="#247c6d" marker-end="url(#mercy-arrow)" d="M855,996 L855,895"/>
+    <text class="annotation severity" x="122" y="943">PASSIVE</text>
+    <text class="annotation mercy" x="785" y="943">ACTIVE</text>
+    <text class="annotation" x="450" y="1038">EGO · ANSWER · REPRESENTATION</text>
+    <text class="annotation" x="450" y="1185">MANIFESTATION</text>
+    <text class="annotation" x="737" y="1053">WORLD OF IDEAS</text>
+    <path class="margin-arrow" stroke="#3153a0" marker-end="url(#ideas-arrow)" d="M737,1067 L737,1108"/>
+    <text class="annotation" x="737" y="1137">WORLD OF FORMS</text>
+  </g>
+</svg>

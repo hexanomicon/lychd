@@ -15,11 +15,12 @@ icon: material/school-outline
 
 ## Decision
 
-Soulforge owns corpus admission, dataset compilation, training-job contracts, candidate lineage,
-and handoff to independent evaluation/promotion. It never harvests runtime traces by default,
-equates Karma/consent/repetition/a positive Drift verdict with corpus admission, mutates serving
-weights in place, treats trainer telemetry as promotion evidence, selects production routing, or
-turns Trial Suite feedback into gradients/automatic repair.
+Soulforge carries admitted material from corpus admission and dataset compilation into a
+training-job contract, candidate lineage, and handoff for independent evaluation/promotion.
+It must never harvest runtime traces by default or treat Karma, consent, repetition, or a positive
+Drift verdict as corpus admission. It cannot mutate serving weights in place, use trainer
+telemetry as promotion evidence, select production routing, or turn Trial Suite feedback into
+gradients or automatic repair.
 
 ```text
 nominated evidence → admitted immutable corpus → compiled dataset + sealed holdout
@@ -88,8 +89,9 @@ lineage remain attached through any narrower disclosure separately admitted by
 
 ## Dataset compilation
 
-The compiler receives one admitted corpus snapshot and produces an immutable Dataset Manifest.
-Every field traces to a source or a versioned deterministic transform. Compilation preserves:
+Dataset compilation begins from one admitted corpus snapshot and produces an immutable Dataset
+Manifest. Every resulting field must trace to a source or versioned deterministic transform.
+The compiler preserves:
 
 - role, tool, workflow and authority context;
 - the distinction between observations, human labels, evaluator judgments and augmentations;
@@ -144,10 +146,10 @@ Trial Suite establishes only the capability and safety claims its Environment ca
 
 ## Promotion, serving, and rollback
 
-Passing Drift makes a candidate eligible for a decision. Owning policy and Magus/HitL decide
-whether to promote it. Their decision binds the exact Bundle and Outcomes, admitted capabilities
-and denied uses, compatible engine and base relation, rollout observations and stops, fallback
-and rollback, and retention, quarantine and retirement rules.
+A passing Drift result makes the candidate eligible for a promotion decision. Owning policy and
+Magus/HitL still decide whether to promote. That decision binds the exact Bundle and Outcomes,
+admitted capabilities and denied uses, compatible engine and base relation, rollout observations
+and stops, fallback and rollback, and retention, quarantine, and retirement rules.
 
 Dispatcher consumes a registered capability; files alone cannot create one. Revisions remain
 immutable, and supersession requires a new Bundle and decision. Rollback routes new work to an

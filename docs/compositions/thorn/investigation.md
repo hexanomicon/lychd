@@ -21,11 +21,12 @@ a lead, not proof that its operator sent the message or that anyone followed it.
 links stay inert until an admitted analysis step. Received material, authorized records, permitted
 public sources, and voluntary peer evidence supply the investigation.
 
-Each lead names the question, supporting and contrary evidence, competing explanations, permitted
-sources or tests, expected contribution, effort ceiling, expiry, and stopping condition. An agent
-may pursue that admitted lead without asking for each reasoning step. A new target, method, or
-disclosure outside its scope needs separate admission. Exhaustion returns findings and explicit
-gaps rather than an invented answer.
+Give the lead an answerable question and explain why pursuing it could help. Retain supporting
+and contrary evidence, competing explanations, permitted sources or tests, expected contribution,
+effort ceiling, expiry, and stopping condition. The agent may pursue that admitted lead without
+asking for each reasoning step. A new target, method, or disclosure outside its scope needs
+separate admission. When the allowance is exhausted, return findings and explicit gaps rather
+than inventing an answer.
 
 A verification lead can ask whether a suspected weakness is reproducible within the authorized
 scope or whether an applied repair closes it. Keep the exact tested revision, conditions, and
@@ -108,12 +109,15 @@ infrastructure, source generation, capture method/scope, time coverage, storage 
 permitted export, resource limits, and a stop outside its control. Importing a log grants no
 administrative rights over its source system.
 
-An exposed collector needs observed isolation from private home and control-plane resources,
-restricted egress, and no production credentials or relay/pivot capability. Capture and export
-have separate authority. Hostile bytes remain quarantined through parsing, rendering, storage,
-and analysis. A compromised collector loses ingress/export authority; preserve permitted evidence
-and review its output. Rebuilding requires a newly admitted generation. Reconnection alone
-cannot restore trust, and silence means only what the known coverage supports.
+Before exposing a collector, establish observed isolation from private home and control-plane
+resources, restricted egress, and the absence of production credentials or relay/pivot capability.
+Admit capture and export separately. Keep hostile bytes quarantined through parsing, rendering,
+storage, and analysis.
+
+If the collector is compromised, remove its ingress/export authority, preserve permitted
+evidence, and review its output. Rebuilding requires a newly admitted generation; reconnecting
+the old one cannot restore trust. Any period of silence means only what the known coverage can
+support.
 
 ## Return findings and keep them correctable
 

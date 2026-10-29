@@ -38,11 +38,12 @@ transport, audience, identity evidence, limits, and recovery. They do not each n
 application with a duplicate policy engine. Their adapters use native APIs behind typed host
 ports; MCP is an optional future projection, not an execution dependency.
 
-Reach owns connection configuration, admitted conversation references, proposed communications,
-audience/disclosure judgment, delivery intent, and its result. Ward retains Principal, account
-linking, current grants and revocation. HitL retains review/preauthorization; Spellweaver retains
-Patterns and admission; Workers retain jobs; the credential owner retains provider secrets and
-transport attempts. Provider records remain authoritative for their external state.
+Reach owns connection configuration. It would decide which configured connection and admitted conversation a communication belongs
+to, judge its audience and disclosure, and retain the proposal, delivery intent and result. It uses
+the existing owners to carry out that work: Ward retains Principal, account linking, current grants
+and revocation; HitL retains review/preauthorization; Spellweaver retains Patterns and admission;
+and Workers retain jobs. The credential owner holds provider secrets and transport attempts.
+A local result must still defer to provider records for the provider's external state.
 
 Mail transport does not acquire accounting, client-case, publication, or software-change judgment.
 Another Composition may submit an exact accepted artifact and a communication request. Coordinating
@@ -99,21 +100,24 @@ flowchart LR
     I --> J[Reconcile without blind resend]
 ```
 
-Intake commits before acknowledging durable custody or advancing a cursor. Cursor advancement and
-the corresponding admitted work must be atomic or have a proved recoverable handoff. A model sees
-only selected material and typed capabilities, never a token, unrestricted HTTP client or platform
-SDK. It returns a proposal; the host selects and validates the actual target.
+First make incoming work recoverable. Commit intake before acknowledging durable custody or
+advancing a cursor, and either commit cursor advancement atomically with the admitted work or
+prove that their handoff can recover. Only then give a model the selected material and typed
+capabilities. The model receives no token, unrestricted HTTP client or platform SDK: it proposes
+a communication, while the host selects and validates the actual target.
 
 Preparing a message freezes sender, To/Cc/Bcc or platform target, reply references, subject/body,
 visibility, expiry, provenance and exact bytes. Review follows the existing [native action binding](../../../adr/25-hitl.md#required-review-for-native-actions-designed).
 A provider draft edited after review cannot be sent through that approval. Destination, audience,
 payload or policy changes require new preparation and authority.
 
-The outbox keeps `PENDING`, `CLAIMED`, `SUBMITTING`, then `ACCEPTED`, `REJECTED`, `CANCELLED`,
-`EXPIRED`, or `UNKNOWN`. A persisted `ServiceJobAttempt@1` and fenced ownership precede transmission.
-Known pre-submit work may resume after current checks. Once bytes may have reached the provider,
-uncertainty blocks automatic resubmission until reconciliation proves a safe next action.
-Cancellation cannot retract an accepted message. Queue redelivery never means a new communication.
+The outbox records the passage through `PENDING`, `CLAIMED`, and `SUBMITTING`, followed by
+`ACCEPTED`, `REJECTED`, `CANCELLED`, `EXPIRED`, or `UNKNOWN`. Before transmission, persist a
+`ServiceJobAttempt@1` and fence ownership of the attempt. That record determines what recovery may
+do: known pre-submit work may resume after current checks, but once bytes may have reached the
+provider, automatic resubmission stays blocked until reconciliation proves a safe next action.
+Cancellation cannot retract an accepted message, and redelivery of a queue entry never creates a
+new communication.
 
 ## Autonomy that survives an update
 
@@ -135,11 +139,12 @@ instructions inside a message are evidence, not local grants. Keep connection/cu
 in queries and Context assembly. Disable remote image fetching, active HTML, automatic link
 following and attachment execution. No message becomes long-term Memory by default.
 
-Configuration must close body/excerpt, receipt, cursor and failed-intake retention separately,
-including backup deletion policy. Raw intake is transient unless explicitly retained; receipts
-use secret-free, access-controlled evidence. Logs and broad status projections contain no mail
-bodies, tokens or raw low-entropy content hashes. Private mail sent to remote inference requires its
-own eligible disclosure; paying for Workspace does not supply that decision.
+Before enabling a connection, configure separate retention rules for bodies/excerpts, receipts,
+cursors and failed intake, including their backup deletion policy. Raw intake is transient unless
+explicitly retained. Receipts keep secret-free evidence under access control; logs and broad status
+projections contain no mail bodies, tokens or raw low-entropy content hashes. If private mail is
+sent to remote inference, that transfer needs its own eligible disclosure decision. A Workspace
+subscription supplies no such decision.
 
 [Accounts and updates](accounts.md) defines connection lifecycle and custody.
 [Delivery plan](delivery.md) defines implementation slices and the fixtures that can defeat this proposal.

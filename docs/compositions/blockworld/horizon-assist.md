@@ -60,15 +60,16 @@ client-reported completion, cancellation and unknown outcome. A lost reply or pr
 not prove that an effect failed. Process-local execution supplies no restart continuation,
 durable Phylactery custody or server-authoritative world proof.
 
-Every Run permits one attempt and no successor worker claim. Fencing any claim permanently
-retires that Run identity in this adapter, including a nonzero delivery sequence; resuming or
-replaying a failed claim requires a different profile with an explicit claim-aware handoff.
+Treat each Run as one attempt. Once any claim is fenced, this adapter permanently retires that
+Run identity, including a claim with a nonzero delivery sequence. It admits no successor worker
+claim. Resuming or replaying a failed claim would require a different profile with an explicit
+claim-aware handoff.
 
-Local ownership records persist a fail-closed client-generation disposition. An interrupted or
-unknown generation cannot be reopened merely by starting another controller or changing its
-socket path. Admission of a successor requires that the prior client process generation has
-ended, or explicit external reconciliation. These records prevent unsafe reuse; they do not
-resume a Run, reconstruct a lost world outcome, or turn observations into placement receipts.
+The local ownership record also remembers whether the client generation was interrupted or
+left unknown. Starting another controller or changing the socket path cannot reopen it. To admit
+a successor, prove that the prior client process generation ended or reconcile it explicitly
+outside this profile. The record prevents unsafe reuse; it cannot resume a Run, reconstruct a
+lost world outcome, or turn observations into placement receipts.
 
 Cancellation fences new sends and uses a separate control connection to stop the owned client's
 active action and release movement. Closing a waiting socket alone does not stop Horizon.
@@ -97,16 +98,17 @@ issue 26 read query lines; three cells can issue 78, plus admission reads. The a
 physical query counts separately. Containment has its own finite priority path and is never
 refused because the plan used its read budget.
 
-Preflight requires a loaded exact-air target, plain stone immediately below, an idle healthy
-client in the admitted mode, the shared session's maximum distance and conservative eye reach,
-and already selected ordinary planks with
-enough held inventory. Offhand and carried stacks must be empty. The adapter emits only
-`place X Y Z`, omitting `--item` because Horizon changes selection before some placement checks.
-Survival requires the expected one-item consumption; explicitly admitted creative mode requires
-the corresponding zero-consumption observation. A fresh cell/inventory/state read must agree with
-the intended material and expected delta before the plan cursor advances. Existing blocks are
-refusals, never credited as this bot's work. Any failed, changed, cancelled or unknown step stops
-the plan without automatic replay or repair.
+Preflight first establishes that the placement is eligible: a loaded exact-air target, plain
+stone immediately below, an idle healthy client in the admitted mode, and a target within the
+shared session's maximum distance and conservative eye reach. Ordinary planks must already be
+selected with enough held inventory; offhand and carried stacks must be empty.
+
+The adapter then emits only `place X Y Z`. It omits `--item` because Horizon changes selection
+before some placement checks. Afterwards, a fresh cell/inventory/state read must match the
+intended material and expected delta: one consumed item in survival, or zero consumption in
+explicitly admitted creative mode. Only then may the cursor advance. Existing blocks refuse and
+are never credited as this bot's work. Any failed, changed, cancelled or unknown step stops the
+plan without automatic replay or repair.
 
 Horizon's stock placement primitive has no atomic expected-before/material/support comparison.
 Its click is consumed on a later game tick, and its `ok` means any target state change. These
@@ -209,28 +211,30 @@ separation, elapsed task authority or exhausted budgets fence the task. Freshnes
 are checked again immediately before action bytes are sent. A deadline watcher cancels an action
 that outlives its sample or task; a command already handed off still requires containment.
 
-One arbiter owns operator admission and ticks. Repeated tick requests coalesce to one pending
-request; there is no catch-up backlog. Replacing a behavior invalidates its generation before
-yielding, then settles the previous Run and owned effect before admitting a successor. Operator
-commands take priority and clear the prior behavior. Unknown outcomes disarm the controller
-instead of advancing a task. Explicit stop ends the session. Logs retain tick decisions, native
-Run events, action/observation counts and monotonic timing; deterministic idle and follow use zero
-model calls.
+One arbiter admits operator commands and ticks. It coalesces repeated tick requests into one
+pending request, leaving no catch-up backlog. When replacing a behavior, it invalidates that
+generation before yielding, settles the previous Run and owned effect, and only then admits a
+successor. Operator commands take priority and clear the prior behavior.
+
+If an outcome is unknown, disarm the controller rather than advance the task. Explicit stop ends
+the session. The logs retain tick decisions, native Run events, action/observation counts and
+monotonic timing. Deterministic idle and follow use zero model calls.
 
 The stock `goto` dialect stops within 1.5 blocks of its waypoint. Follow accounts for that radius
 when selecting a waypoint and requires a segment ceiling greater than 1.5 blocks; an already
 reached waypoint cannot serve as evidence of movement toward the target. A successful response
 remains a client report, including when pathfinding made no displacement.
 
-After a client-reported follow completion, the tick reads the bot again before reporting progress.
-The comparison starts at the pose validated immediately before the command was sent, and uses
-the tick's original target sample. `moved` requires at least 0.05 blocks of observed progress
-toward that sample, with a current in-bounds, healthy, idle client in the same world/dimension.
-It does not establish that the target stayed there or that this command caused the displacement.
-No progress stops the finite task rather than spending its remaining budget on repeated segments.
-Missing, stale or changed post-observation stops while preserving the known client response and
-leaving movement unverified. Counts include this extra logical read. A later operator instruction
-requires ordinary fresh admission; no automatic retry follows.
+A client-reported follow completion still needs a progress check. Read the bot again and compare
+its pose with the pose validated immediately before sending the command, using the tick's original
+target sample. Report `moved` only after at least 0.05 blocks of observed progress toward that
+sample, with a current in-bounds, healthy, idle client in the same world/dimension. This proves
+neither that the target stayed there nor that the command caused the displacement.
+
+If there was no progress, stop the finite task instead of spending its remaining budget on
+repeated segments. Missing, stale or changed post-observation also stops the task, preserving the
+known client response and leaving movement unverified. Count this extra logical read. Any later
+operator instruction needs ordinary fresh admission; no automatic retry follows.
 
 The explicit local assembly registers these finite behavior scores only when supplied the shared
 behavior service. Portable tests cover their native checkpoints and the supervisor's arbitration;
@@ -275,15 +279,17 @@ authority; its finite duration is at most 60 seconds. The game policy must expli
 placement task. `place` remains absent from the general typed/text action grammar. The voice
 source-file mode joins the finite build before closing; interactive capture interrupts it.
 
-The voice entry writes source WAV, attributed transcript, native events and a monotonic stage
-timing receipt privately. It presents fixed Slovak/Czech/English wording for the retained outcome:
-task start, client report, refusal and unknown effect remain distinct. Unchanged idle ticks keep
-their private events and records without repeated console announcements. Pre-capture settlement
-has its own timing field. For a one-action command, the Graph stage includes native admission,
-game work and event custody. For a background behavior or build, it measures only acceptance and
-scheduling; each tick or cell has separate native events, elapsed time and process CPU in its
-supervisor record. Reply generation can overlap that accepted background work. Source-file mode
-joins the finite task before closing, but the utterance's Graph timing is not its completion time.
+The voice entry privately retains the source WAV, attributed transcript, native events and a
+monotonic stage timing receipt. It presents the retained outcome in fixed Slovak/Czech/English
+wording, distinguishing task start, client report, refusal and unknown effect. Unchanged idle
+ticks keep their private evidence without repeated console announcements.
+
+Read timing according to the work being measured. Pre-capture settlement has its own field. For
+a one-action command, the Graph stage includes native admission, game work and event custody. For
+a background behavior or build, it measures acceptance and scheduling only; each tick or cell
+records its own native events, elapsed time and process CPU. Reply generation may overlap that
+background work. Source-file mode joins the finite task before closing, but the utterance's Graph
+timing still cannot stand for task completion time.
 
 Optional replies produce a WAV and generation facts with playback `not_attempted`. Explicit
 `--play-replies`, together with `--reply-language`, additionally invokes a fixed local player on

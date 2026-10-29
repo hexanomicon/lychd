@@ -7,10 +7,11 @@ icon: material/progress-wrench
 
 > _The metal remembers the fire._
 
-This passage owns execution custody: a Training Intent, immutable Dataset Manifest, and exact
-base-model digest, objective, and Recipe enter an admitted Training Run; a frozen Candidate Bundle
-and receipt leave. The whole passage is **Designed**; no Training Run path runs. [State of
-Work](../../../state-of-the-work.md#soulforge-training) owns delivery, and
+A Training Run turns admitted training inputs into candidate bytes while keeping custody and
+evidence explicit. It receives a Training Intent, immutable Dataset Manifest, exact base-model
+digest, objective, and Recipe. Its result is a frozen Candidate Bundle with a receipt showing
+what execution produced. The whole passage is **Designed**; no Training Run path runs.
+[State of Work](../../../state-of-the-work.md#soulforge-training) owns delivery, and
 [ADR 33](../../../adr/33-training.md#training-execution) owns execution law.
 
 ## Admit the strike
@@ -20,11 +21,11 @@ Entry requires the immutable Dataset Manifest produced by
 objective, Recipe, and Training Intent with resource envelope. The trainer receives these exact
 inputs. It cannot expand the corpus, pull ambient traces, or alter them after admission.
 
-The resource request names exact accelerators, memory, storage, network policy, duration, and
-conflict-domain requirements. Orchestrator determines the affected set from fresh observations and
-the compiled conflict graph. Training receives no universal priority. When a physical transition is
-required, only affected leases drain; unused devices stay undisturbed. The operator may postpone
-or refuse the request.
+Request the resources this run actually needs: exact accelerators, memory, storage, network
+policy, duration, and conflict-domain requirements. Orchestrator uses fresh observations and
+the compiled conflict graph to determine which existing work is affected. Training has no
+universal priority, and the operator may postpone or refuse it. If a physical transition is
+required, only the affected leases drain; unused devices stay undisturbed.
 
 [Orchestrator](../../../adr/23-orchestrator.md) owns hardware readiness, admission closure,
 affected-lease drain, conflict resolution, convergence, and restoration. Corpus meaning and
@@ -42,10 +43,10 @@ A Training Run pins input digests, trainer and dependency revisions, environment
 Recipe-defined precision, budgets and stop conditions, resource observations, logs, checkpoints,
 terminal status, and artifact digests. A friendly name never replaces a digest.
 
-The trainer emits candidate bytes with its receipt. The frozen Candidate Bundle binds the base
-digest, model or adapter bytes, tokenizer/config changes, Dataset Manifest and Recipe lineage,
-trainer receipt, and compatibility claims. Any adapter remains pinned to its exact base and
-compatible runtime.
+At completion, the trainer emits candidate bytes and its receipt. Freezing them into a Candidate
+Bundle binds the base digest, model or adapter bytes, tokenizer/config changes, Dataset Manifest
+and Recipe lineage, trainer receipt, and compatibility claims. An adapter must remain tied to
+its exact base and compatible runtime, so its bytes cannot be presented as an independent model.
 
 Trainer loss, telemetry, development improvement, and trainer-authored samples remain diagnostics.
 The job cannot replace a serving revision, enlarge its resource envelope, or promote its output;

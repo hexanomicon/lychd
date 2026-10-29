@@ -13,18 +13,20 @@ The profile admits public corpus/Context and guest effects. Its separated servic
 
 ## Services and roads
 
-Discord edge holds bot token and Gateway/event/delivery observations, without provider credentials, corpus writer, database secret, policy, or ambient Sigil. Core/Ward/Workers hold admissions, task Sigils, Runs, turns, and policy, without bot/provider bearers, non-local listeners, or host control. Corpus refresher holds allowlisted HTTPS and staging custody; the Portal/A2A gate holds only its exact destination credential/attempt custody. Phylactery owns canonical Core/Reach records without a non-local listener or replica.
+The Discord edge holds the bot token and Gateway/event/delivery observations. It has no provider credentials, corpus writer, database secret, policy, or ambient Sigil. Core/Ward/Workers own admissions, task Sigils, Runs, turns, and policy, but receive no bot/provider bearers, non-local listeners, or host control.
+
+Fetching evidence and making remote attempts also have separate owners. The corpus refresher holds allowlisted HTTPS access and staging custody; the Portal/A2A gate holds only the credentials and attempts for its exact destination. Phylactery owns canonical Core/Reach records and has neither a non-local listener nor a replica.
 
 Gateway WSS and Discord REST, source HTTPS, and exact provider/A2A HTTPS are outbound. Authenticated typed local ports connect services; other ingress is closed. The [standalone E2E contract](vps-public.md#first-e2e-contract-one-public-discord-question) supplies the same corpus, fresh egress, quarantine, turn, nonce, and known/unknown delivery law. Every canonical record commits at home.
 
 ## Failure and recovery
 
-Reboot resumes safe pre-submit work from Run/outbox truth and reconciles uncertain provider/Discord effects. Reconnect recovers only events Discord still supplies; older missed events have no promised recovery. Power or Internet loss means no cognition, provider/A2A work, or delivery.
+After reboot, use Run/outbox truth to resume safe pre-submit work and reconcile uncertain provider/Discord effects. Reconnecting recovers only the events Discord still supplies, so older missed events have no promised recovery. While power or Internet access is lost, Reach performs no cognition, provider/A2A work, or delivery.
 
 Home compromise closes admission, revokes bot/provider/A2A/database/service credentials, and reconciles external identities. Recovery follows the [clean-rebuild contract](vps-public.md#restart-uncertainty-and-compromise): rebuild a trusted body, restore only independently verified non-secret records from an admitted backup, and reenroll from zero authority before activating a fresh epoch. An off-host backup cannot operate as a second Phylactery.
 
 ## Acceptance
 
-Prove two-boot public turn, dedupe, corpus citations, per-attempt egress, provider/A2A and Discord uncertainty, service-secret/network isolation, zero non-local listeners, restore, and refusal of private Context, consequential effects, callbacks, inbound peers, or simultaneous epochs.
+Qualification must follow a public turn across two boots and prove dedupe, corpus citations, and per-attempt egress. It must also exercise uncertain provider/A2A and Discord effects, service-secret/network isolation, zero non-local listeners, and restore. Private Context, consequential effects, callbacks, inbound peers, and simultaneous epochs must all refuse.
 
 [Deployment matrix](index.md) · [Reach turn](../turn.md)

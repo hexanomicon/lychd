@@ -16,13 +16,13 @@ familiars in a shared dance, with research references and a possible Live Kinesi
 
 `familiar.embodiment` revision `3` publishes `familiar.admit_body@3`, `familiar.bounded_mission@3`, and `familiar.follow@3`. Additional body-specific Patterns may be admitted without changing the body contract.
 
-Body admission binds an exact controller/device attachment, form, capability snapshot, safety envelope, relevant geofence, and emergency-stop policy. A mission takes immutable `FamiliarBody@3`, objective kind, subject/target designation, budgets, stops, and optional Avatar `ProjectionBinding@2`. Results include `FamiliarBody@3`, settled `FamiliarMission@3`, `FamiliarObservation@1`, `FamiliarEffect@1`, and exact partial/non-completion.
+First admit the body by binding its exact controller/device attachment, form, capability snapshot, safety envelope, relevant geofence, and emergency-stop policy. A mission can then use that immutable `FamiliarBody@3` with an objective kind, subject/target designation, budgets, stops, and optional Avatar `ProjectionBinding@2`. The records distinguish admitted body from performed work: results include `FamiliarBody@3`, settled `FamiliarMission@3`, `FamiliarObservation@1`, `FamiliarEffect@1`, and exact partial/non-completion.
 
 Familiar excludes weaponization, non-consensual following, unadmitted private-property or restricted-airspace entry, operation beyond signal range without admitted return policy, inferred identity/consent from proximity, and universal physical authority.
 
 ## Records and lifecycle
 
-Familiar owns body binding and capability epoch, plus mission objectives, constraints, observation chronology, effects, and final judgment. Enrollment/credentials remain with the attachment owner; hardware, firmware, motor drivers, PID loops, client implementation, and live control handles remain elsewhere. A MAVLink connection, ROS2 node, PWM signal, or sensor stream cannot become durable mission identity.
+Familiar retains the body binding and capability epoch, then follows the mission through objectives, constraints, observation chronology, effects, and final judgment. It relies on other owners for enrollment/credentials, hardware, firmware, motor drivers, PID loops, client implementation, and live control handles; enrollment/credentials specifically remain with the attachment owner. A MAVLink connection, ROS2 node, PWM signal, or sensor stream cannot replace durable mission identity.
 
 The control link contributes observed protocol version, link quality, controller health, firmware revision, start, stop, and loss, tied to its provider epoch. Recovery reads those facts alongside the body journal and mission record; a reconnected handle alone cannot establish what the body did during the gap.
 

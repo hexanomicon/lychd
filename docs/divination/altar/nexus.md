@@ -5,9 +5,10 @@ icon: material/transit-connection-variant
 
 # :material-transit-connection-variant: Nexus
 
-The **Nexus** lets you inspect readiness, preview a change, and request one physical transition.
-These are different acts. Viewing changes nothing. **Preview** calculates a nonbinding plan.
-**Request transition** performs a real maximum-priority lifecycle mutation.
+Use **Nexus** to understand the current readiness of the iron before changing it. Begin with its
+observations, open **Preview** to calculate a nonbinding plan, then choose **Request transition**
+only when you intend the real maximum-priority lifecycle mutation. Viewing the board alone
+changes no lifecycle state.
 
 Complete [Altar’s startup and local-access steps](index.md#bring-one-intent), then open
 `http://127.0.0.1:7134/nexus` within the same-host browser boundary.
@@ -42,11 +43,13 @@ reservations. A refresh does not reserve a capability for a later Run.
 
 ## Preview the change you intend
 
-Choose **Preview** on a managed capability. Its exact target remains visible while loading;
-closing the preview prevents a late response from reopening it. The **Non-binding preview** shows `action`
-(`NO_OP`, `SOFT_SWAP`, or `HARD_SWAP`), `target`, Animator ids selected for `evict` and `launch`,
-and `policy cost`. Cost currently counts planned evictions; it does not measure VRAM, time,
-energy, or topology.
+Choose **Preview** on the managed capability you intend to use. The target stays visible during
+loading, and closing the preview prevents a late response from reopening it. Read the
+**Non-binding preview** for `action` (`NO_OP`, `SOFT_SWAP`, or `HARD_SWAP`), `target`, Animator ids
+selected for `evict` and `launch`, and `policy cost`.
+
+That cost currently counts planned evictions. It supplies no estimate of VRAM, time, energy,
+or topology.
 
 `NO_OP` disables the action. Otherwise, **Request transition** submits the real request at maximum
 operator priority. The server recalculates before acting, so the preview reserves nothing and
@@ -65,12 +68,14 @@ reserves the first target before task launch. PostgreSQL preserves this fence ac
 restarts; the memory profile preserves it for one process. Reusing the id for a different target
 is rejected.
 
-A retry returns the live ticket when available. If its ticket expired or its process ended, the
-same request id is refused without relaunch: ticket state no longer establishes the physical
-outcome. The client retains that refused id while Nexus stays open. Leaving or reloading discards
-the prepared retry; cancel the navigation warning while the outcome remains unknown. PostgreSQL
-retains the admission fence, not this browser retry state. A lost answer is not permission to mint
-another physical request.
+A retry returns the live ticket if one is still available. When its ticket has expired or its
+process has ended, the same request id is refused without relaunch: the remaining ticket state
+cannot establish the physical outcome.
+
+Nexus keeps that refused id while the page stays open. Leaving or reloading discards the prepared
+retry, so cancel the navigation warning while the outcome remains unknown. PostgreSQL retains
+the admission fence, not the browser's retry state. Keep the original identity until the physical
+outcome is reconciled; losing the answer does not justify creating another physical request.
 
 ## Follow the ticket and the physical observation
 
@@ -82,13 +87,14 @@ An accepted request returns HTTP 202 with a process-local ticket:
 | `settled` | The task returned; Nexus refreshes the board. |
 | `failed` | The task raised or was cancelled. |
 
-The **Request ticket** shows target, current transition phase, and full request id. It remains
-visible when you preview a different target. **Request outcomes** retains full identities
-after an uncertain submission, including when its preview is closed. Terminal ticket truth remains
-for a 60-second reconnect window by default. The bounded store refuses new work before launch
-rather than evicting active or fresh-terminal tickets. Tickets have no cancellation action,
-durable history, or restart recovery. Durable admission prevents duplicate effects; it does not
-settle, fail, or resume a lost ticket.
+The **Request ticket** keeps its target, current transition phase, and full request id visible
+even while you preview a different target. **Request outcomes** also retains full identities after
+uncertain submission, including after you close the preview.
+
+Terminal ticket truth remains for a 60-second reconnect window by default. If the bounded store
+is full, it refuses new work before launch instead of evicting active or fresh-terminal tickets.
+Tickets provide no cancellation, durable history, or restart recovery. Durable admission prevents
+duplicate effects but cannot settle, fail, or resume a ticket that was lost.
 
 **Latest transition observations** shows up to 24 newest retained requests from Run and operator
 sources. Select one, or open `/nexus?transition={request_id}`, to inspect `request`, `source`,
@@ -123,6 +129,8 @@ Its semantic board remains primary; any future body map starts as a read-only le
 its admission gates.
 
 ## Reading direction
+
+For interface review and design, use the following composition and acceptance case.
 
 The current layout keeps snapshot time and containment first, then grouped observations
 with their freshness, one selected preview, and its explicit request. Aligned eviction and

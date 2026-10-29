@@ -5,12 +5,12 @@ icon: material/gate
 
 # :material-gate: Gateway
 
-A public request need not land on the host that keeps the Lich's durable body. A **Gateway Host**
-is an optional, separate deployment trust role that carries hostile ingress while the Core host
-retains data and application authority. It is neither a Composition nor an Extension Domain:
-[Veil](extensions/veil.md) still owns TLS and route admission, optional
-[Tether](extensions/tether.md) supplies private reachability, and the selected deployment profile
-closes the physical hosts and flows.
+An optional **Gateway Host** receives hostile public ingress on a separate machine, leaving the
+Lich's durable body, data, and application authority on the Core host. The Gateway is a deployment
+trust role. [Veil](extensions/veil.md) still owns TLS and route admission;
+[Tether](extensions/tether.md) may supply private reachability. The selected deployment profile
+must specify the physical hosts and flows. This role creates neither a Composition nor another
+Extension Domain.
 
 A same-host Veil is not a Gateway Host. The extra role exists only when the operator deliberately
 spends another machine to separate the exposed surface. Gateway is **Designed**;
@@ -28,14 +28,16 @@ The public road is exact:
 client -> admitted listener -> Veil -> authenticated exact backend -> Ward and application
 ```
 
-Every route closes host, port, path, method, protocol, limits, backend identity, and authentication
-precondition. The Gateway occupies a separately enforced network zone. Policy controlled outside
-that host—a router/firewall, L3-switch ACL, or cloud-network rule—plus the receiving Core firewall
-allows only the public listener and exact backend flow. A local Gateway firewall is defense in
-depth, not proof of that boundary. IPv4 and IPv6 obey the same policy, and host administration uses
-a separately governed infrastructure route and credential unavailable to the public or backend
-workload. Forwarded bytes remain hostile: possession or compromise of the Gateway cannot mint
-caller identity, a Sigil, consent, or effect authority behind the route.
+Each admitted route specifies host, port, path, method, protocol, limits, backend identity, and
+an authentication precondition. Enforce the Gateway's separate network zone from outside that
+host, using a router/firewall, L3-switch ACL, or cloud-network rule together with the Core's
+receiving firewall. Only the public listener and exact backend flow may pass. A firewall on
+the Gateway itself adds defense in depth but cannot prove this external boundary.
+
+Apply the same policy to IPv4 and IPv6. Host administration needs a separately governed
+infrastructure route and credential unavailable to public or backend workloads. Treat forwarded
+bytes as hostile: possession or compromise of the Gateway cannot create caller identity, a
+Sigil, consent, or effect authority behind the route.
 
 ## Home
 

@@ -14,12 +14,12 @@ icon: material/source-branch
 
 ## Decision
 
-Shadow owns simulation Intent, branch lineage, assumptions and unknowns, expansion/review
-separation, budgets and stop conditions, branch evidence/artifact references, eligibility packages,
-and cleanup eligibility/receipts. It does not own scheduling, unsafe execution, capability
-selection, readiness, truth, Persona, consent, live mutation, Memory curation, or training;
-Spellweaver, execution, Dispatcher, Orchestrator, Drift, Mirror, HitL, Archive, and Soulforge keep
-those offices.
+Shadow owns the experiment: its simulation Intent, branch lineage, assumptions and unknowns,
+separation of expansion from review, budgets and stopping conditions, evidence/artifact
+references, eligibility packages, and cleanup eligibility/receipts. Scheduling, unsafe execution,
+capability selection, readiness, truth, Persona, consent, live mutation, Memory curation, and
+training remain outside that office. Spellweaver, execution, Dispatcher, Orchestrator, Drift,
+Mirror, HitL, Archive, and Soulforge keep those responsibilities.
 
 A game engine simulating physics, navigation, actors, and gameplay inside an exact local project
 is [Foundry](../compositions/foundry/world.md) execution, not a Shadow branch. Shadow may compare
@@ -56,13 +56,13 @@ truthful outcomes.
 
 ## Open, judge, prune
 
-Shadow may use enumeration, debate, best-of-N, beam/tree search, human candidates, or another
-provider; no heuristic is constitutional. Dancer receives the common Intent and one declared Lens,
-cannot see siblings before the join, and returns alternatives with provenance, assumptions,
-required state, and unknowns—never ranking or promotion. Hunter separately reviews one named
-candidate and returns challenges, evidence requests, boundary findings, withhold recommendations,
-and uncertainty; it cannot invent the preferred replacement. A join may cluster or deduplicate,
-but preserves original lineage.
+An experiment may use enumeration, debate, best-of-N, beam/tree search, human candidates, or
+another provider; no heuristic is constitutional. Dancer receives the common Intent and one
+declared Lens, then proposes alternatives with provenance, assumptions, required state, and
+unknowns. It cannot see siblings before the join, rank them, or promote them. Hunter separately
+reviews a named candidate, returning challenges, evidence requests, boundary findings, withhold
+recommendations, and uncertainty without inventing a preferred replacement. A join can cluster
+or deduplicate only while preserving original lineage.
 
 Before material spend, deterministic predicates may make a branch ineligible; witnessed policy
 violations may block it. Missing evidence is `unknown` and may justify one bounded inquiry naming
@@ -111,12 +111,13 @@ never selects a winner.
 
 ## Evaluation, reaping, and collapse
 
-Each Observation establishes only its narrow predicate. Unit tests, commits, and model judges do
-not respectively prove architectural fit, shared-state isolation, or an effect. Shadow submits
-exact branches, environments, observations, and artifacts to versioned Drift Trial Suites; deterministic
-receipts and verdicts stay distinct. Mirror may supply Persona-congruence criteria, never private
-Persona selection. Any score is a versioned, attributable evaluation signal with declared scope;
-it may prune, deprioritize, or converge inside the experiment but proves and authorizes nothing.
+An Observation proves only its named predicate. A unit test cannot establish architectural fit,
+a commit cannot establish shared-state isolation, and a model judge cannot establish an effect.
+Shadow sends exact branches, environments, observations, and artifacts to versioned Drift Trial
+Suites, keeping deterministic receipts distinct from verdicts. Mirror may supply
+Persona-congruence criteria but cannot privately select a Persona. A score is a scoped,
+versioned, attributable evaluation signal: it may guide pruning, priority, or convergence inside
+the experiment, but proves and authorizes nothing.
 
 ## The Branch Reaper
 

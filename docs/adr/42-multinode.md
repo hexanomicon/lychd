@@ -32,9 +32,10 @@ reservations/effects, replays results, and reconciles recovery.
 
 ## A durable semantic delegation
 
-The first channel should be node-initiated so the node needs no public listener. A mutually
-authenticated stream or long poll carries a versioned, audience-bound, replay-safe envelope;
-transport identity is evidence for Ward, not application permission.
+The first channel should be node-initiated, avoiding a public listener on the node. A mutually
+authenticated stream or long poll carries a versioned, audience-bound, replay-safe envelope.
+Ward can use the transport identity as evidence; the connection itself grants no application
+permission.
 
 1. Master commits the delegation attempt and outbox intent, then checkpoints the exact attempt
    and local continuation before parking cognition and releasing its leases. Publication follows
@@ -54,13 +55,14 @@ task-supplied callback URL.
 
 ## The body decides what fits
 
-An advertisement is an expiring scheduling hint, not a reservation or permission. It can expose
-semantic capability, provisioned artifact digest, coarse capacity, health, queue pressure, and
-evidence age. Before acceptance the node takes a coherent local snapshot, validates device
-identity, VRAM/host-memory headroom, topology, health, thermals, compatibility, active
-reservations, and safety margin, then takes a fenced local reservation. Only that reservation may
-enter admission closure, lease drain, narrow actuation, readiness, compensation, and containment.
-After decline Master may ask another eligible node but never overrides local refusal.
+The node's advertisement helps scheduling for a limited time. It may describe semantic
+capability, provisioned artifact digest, coarse capacity, health, queue pressure, and evidence
+age, but is neither a reservation nor permission. Before accepting work, the node takes a
+coherent local snapshot and validates device identity, VRAM/host-memory headroom, topology,
+health, thermals, compatibility, active reservations, and safety margin. It then takes a fenced
+local reservation. Only that reservation can enter admission closure, lease drain, narrow
+actuation, readiness, compensation, and containment. Master may ask another eligible node after
+a decline, but must never override local refusal.
 
 Every consequential message binds Master epoch, node boot/session, delegation attempt/fence,
 reservation generation, and local transition precondition. A stale command remains evidence but
@@ -78,11 +80,12 @@ transitions, and outcomes. [Oculus](29-observability.md) may project freshness a
 uncertainty; only fresh local evidence, local reservation, and actuator preconditions authorize
 physical work. Signatures attribute bytes, not truth or safety.
 
-The first profile advertises only models/runtimes already provisioned at exact content digests.
-Missing material makes placement infeasible; it never triggers an implicit URL/Master-path fetch,
-download, or Portal fallback. Later artifact transfer needs classified content-addressed manifests,
-bounded resumable chunks, integrity checks, quotas, provenance/license policy, atomic publication,
-and corruption quarantine. Results remain typed quarantined observations until admitted.
+The first profile can advertise only models/runtimes already provisioned at exact content
+digests. Missing material makes placement infeasible and cannot trigger an implicit
+URL/Master-path fetch, download, or Portal fallback. Later artifact transfer needs classified
+content-addressed manifests, bounded resumable chunks, integrity checks, quotas,
+provenance/license policy, atomic publication, and corruption quarantine. Returned results remain
+typed quarantined observations until admitted.
 
 ## Delivery and consequences
 

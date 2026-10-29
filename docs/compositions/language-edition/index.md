@@ -130,12 +130,14 @@ and the exact `LanguageVersionRequest@2` digest. Before execution, resolve the e
 interface and profile, performer and acoustic voice, language support, consent, rights,
 disclosure, and retention. Native video audio has the same obligations.
 
-After Prism settlement, Language Edition independently issues `SemanticFacetAdmissionReceipt@1`
-over child and compound digests, source attestation and script, speaker and language role, use,
-rights, timing, findings, decision maker, and disposition. The bundle and optional mux retain
-that receipt and parent. Undeclared speech or text is quarantined or deleted. Demux, labels, or
-another owner's receipt cannot admit the facet. An inseparable compound needs every required
-owner's acceptance of the exact digest and use.
+Technical settlement by Prism is followed by independent Language Edition admission. Its
+`SemanticFacetAdmissionReceipt@1` binds child and compound digests, source attestation and script,
+speaker and language role, use, rights, timing, findings, decision maker, and disposition. Retain
+that receipt and parent in both the bundle and any optional mux.
+
+Quarantine or delete undeclared speech or text. Demux, labels, or another owner's receipt cannot
+admit this facet, and an inseparable compound requires every necessary owner's acceptance of
+the exact digest and use.
 
 ## Neighbours keep their truth
 
@@ -156,12 +158,13 @@ thereby become the market name.
 
 ## Failure, restart, and the first proof
 
-Stable segment identities bind the exact source and timebase. Transcript, attestation,
-translation, performance, alignment, dialogue-mix, mux, and review attempts keep independent
-revisions and dispositions. Unsupported languages, ambiguous speakers, missing rights, timing
-loss, failed intelligibility, stale source, budget exhaustion, and indeterminate provider or
-write effects produce the appropriate findings, refusal, partial result, or `unknown` outcome.
-Restart uses reconciled immutable artifacts and settled attempts, without silent substitution.
+Use stable segment identities to keep every stage tied to the exact source and timebase.
+Transcript, attestation, translation, performance, alignment, dialogue-mix, mux, and review attempts
+must retain independent revisions and dispositions. This preserves where work stopped when a
+language is unsupported, a speaker is ambiguous, rights are missing, timing is lost, intelligibility
+fails, the source becomes stale, the budget is exhausted, or provider/write effects are
+indeterminate. Return the appropriate findings, refusal, partial result, or `unknown` outcome.
+Restart must use reconciled immutable artifacts and settled attempts, without silent substitution.
 
 The first falsifying proof remains a target: run a network-disabled synthetic two-speaker video
 with separate picture, dialogue, music-effects, and caption streams on a known timebase. Fake

@@ -74,14 +74,15 @@ their owning instrument without transferring its records, permissions or executi
 
 ## Save, stop, and return
 
-The local document contains the current scene and bounded undo/redo snapshots. Download it to
-retain the board outside the browser; closing an unsaved draft can lose it. Import validates
-format, byte and collection bounds, finite geometry, unique identities, source-stroke references,
-image envelopes and edge endpoints before replacing the draft. Save a current draft before
-opening another document. Untrusted imports cannot contain remote images, SVG or executable code.
+Download the local document to retain the current scene and its bounded undo/redo snapshots
+outside the browser; closing an unsaved draft can lose it. Save the current draft before opening
+another document. Before an import replaces that draft, it validates format, byte and collection
+bounds, finite geometry, unique identities, source-stroke references, image envelopes and edge
+endpoints. Untrusted imports cannot contain remote images, SVG or executable code.
+
 The portable size budget reserves the same fixed space for numeric values in the browser and
-Python, so different number formatting cannot change acceptance. This conservative budget can
-be larger than the compact downloaded file.
+Python. This prevents differences in number formatting from changing acceptance, although the
+conservative budget may be larger than the compact downloaded file.
 
 Undo and redo preserve object identities and create fresh scene revisions so an old model response
 cannot become current again accidentally. The board has no live external effect to reconcile in

@@ -7,7 +7,7 @@ icon: material/package-variant
 
 The local candidate is ready when someone else can identify its source, reproduce the admitted checks, and inspect its playtest evidence. `game.build_candidate@1` runs static/engine tests, performs reproducible imports where the exact profile proves them, and returns content-addressed bytes with source, command, environment, probes, and checksum.
 
-Human review can accept `PlayableBuildBundle@1` or request a forward repair. `game.prepare_release@1` freezes that candidate, compatibility statement, evidence, and handoff. Neither step signs, uploads, opens public multiplayer, controls store accounts, exports telemetry, rolls out, corrects, takes down, or reconciles remote copies. Those effects require a future release/distribution owner.
+Human review assesses the candidate as `PlayableBuildBundle@1`, either accepting it or requesting a forward repair. Once accepted, `game.prepare_release@1` freezes the candidate, compatibility statement, evidence, and handoff. Sending it onward still requires a future release/distribution owner: neither local step signs, uploads, opens public multiplayer, controls store accounts, exports telemetry, rolls out, corrects, takes down, or reconciles remote copies.
 
 Deletion inventories local candidates, imports, caches, and derivatives. An exported handoff is recorded, without a promise that the consumer's copy was recalled.
 

@@ -44,11 +44,12 @@ tests; extension import grants no host authority.
 
 ## The physical transaction
 
-An admissible transition proceeds in order: validate the word and policy, preflight and attest the
-loaded Scribe-owned topology, reject relevant pending jobs, compare the exact observed pre-world,
-record intent, actuate the generated Animator targets, obtain terminal readback, and attest the
-result. Client exit status is not physical truth. Attestation is what makes an effect accountable;
-there is no successful receipt without observed desired state.
+Physical truth comes from observed state. For an admissible transition, the actuator first
+validates the word and policy, preflights and attests the loaded Scribe-owned topology, rejects
+relevant pending jobs, and compares the exact observed pre-world. It records intent before
+actuating generated Animator targets, then obtains terminal readback and attests the result.
+Client exit status cannot supply that proof: a successful receipt requires the observed desired
+state, making the effect accountable.
 
 The direct `systemd` actuator uses only the injected, attested absolute `systemctl` under the
 lifecycle lock. It submits only generated target identities and observes both target reservations
@@ -84,10 +85,11 @@ without proof cannot authorize compensation and are never automatically certifie
 
 ## Materialization and retirement
 
-Binding writes only Scribe receipt-owned Quadlet/plain user-unit files under the lifecycle lock.
-It stages and validates a full generation, rechecks foundation/sites/secrets/generations, replaces
-the exact declared set, reloads systemd, and restores the previous set on failure. Foreign units,
-ambiguous ownership, unsafe names, changed identities, and unknown files refuse rather than delete.
+Scribe's ownership receipt bounds every Quadlet/plain user-unit file that binding may write.
+Under the lifecycle lock, binding stages and validates the full generation, rechecks
+foundation/sites/secrets/generations, replaces exactly the declared set, and reloads systemd.
+Failure restores the previous set. Foreign units, ambiguous ownership, unsafe names, changed
+identities, and unknown files cause refusal rather than deletion.
 
 Deletion is a separately fingerprinted, revalidated sequence—quiesce, runtime, storage, unbind,
 secrets, filesystem, package, verify. It stops only exact owned units and recursively retires only
@@ -99,10 +101,11 @@ and blocks continuation.
 
 ## Containment rule and delivery boundary
 
-Compensation restores only an exactly proved prior world. An indeterminate physical result latches
-containment and requires recovery; retry is not recovery. Signal authority follows the same line:
-only the trusted Vessel may write the Reactor inbox, only the host consumer claims it, and Tombs,
-Soulstones, and untrusted extensions receive neither inbox nor journal.
+Compensation can reopen the prior world only after exact proof of its restoration. When the
+physical result remains indeterminate, containment latches and recovery is required; another retry
+cannot supply that recovery. Signal authority stays equally narrow: the trusted Vessel alone
+writes the Reactor inbox, and the host consumer alone claims it. Tombs, Soulstones, and untrusted
+extensions receive neither inbox nor journal.
 
 The mediated protocol and its isolated receipts are available within their stated boundary, but no
 repository test proves an operator's Quadlet/Podman/GPU host. [State of Work](../state-of-the-work.md#host-reactor-protocol)

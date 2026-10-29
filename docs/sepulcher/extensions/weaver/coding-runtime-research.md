@@ -5,11 +5,11 @@ icon: material/book-search
 
 # Coding-runtime research
 
-Research checked **15 October 2026** against the primary sources linked below. These observations
-inform [Development bootstrap](development-bootstrap.md); they establish neither account
-entitlement nor LychD implementation. Recheck provider behavior before a purchase, authentication
-integration or runtime qualification. The Covenants and
-[State of Work](../../../state-of-the-work.md) retain architecture and delivery authority.
+This research was checked **15 October 2026** against the primary sources below. It informs
+[Development bootstrap](development-bootstrap.md), while account entitlement and LychD
+implementation still need their own evidence. Recheck provider behavior before purchase,
+authentication integration, or runtime qualification. The Covenants retain architecture authority
+and [State of Work](../../../state-of-the-work.md) retains delivery authority.
 
 ## Recommended road and alternatives
 
@@ -29,10 +29,11 @@ best agent stack.
 | OpenAI Agents API | Managed Codex harness, durable sessions and compaction/recovery; model usage is API-billed, with applicable tool/container costs. [Overview](https://developers.openai.com/api/docs/guides/agents-api/overview). | A later managed-server option, rather than the default way to spend app allowance. |
 | Claude Code / Agent SDK | Programmatic coding and another provider's harness; supported authentication varies by mode. [Programmatic guide](https://code.claude.com/docs/en/headless), [SDK](https://code.claude.com/docs/en/agent-sdk/overview). | Optional comparison and separately qualified adapter. |
 
-OpenAI's [platform engineering account](https://developers.openai.com/blog/codex-as-a-platform)
-also distinguishes `exec` for bounded jobs, SDK workflows, and app-server for product clients.
-Reusing a harness saves implementation; its private loop does not inherit LychD promotion,
-credential or lifecycle authority.
+The distinction also appears in OpenAI's
+[platform engineering account](https://developers.openai.com/blog/codex-as-a-platform): `exec`
+serves bounded jobs, SDKs serve workflows, and app-server serves product clients. Reusing a
+harness saves implementation work, but its private loop acquires no LychD promotion, credential,
+or lifecycle authority.
 
 ## Sol, Ultra and allowance
 
@@ -76,13 +77,13 @@ The [plan-usage app-server guide](https://developers.openai.com/siwc/token-shari
 warns that a bundled model catalogue is not an entitlement test: successful inference is needed
 to prove request access. Metadata-only preparation cannot establish the whole model/billing path.
 
-Use existing supported client authentication for operator/platform-controlled personal bootstrap.
-This does not qualify a native Coffin launch: the current protocol supplies fresh homes without
-provider credentials or an auth file and needs a reviewed Gate bridge admitting every child
-provider request. Mounting the personal auth store into the guest cannot close that gap. Keep
-the lifecycle in the external operator campaign if a supported credential-separated, bounded
-provider road cannot yet be qualified. A distributed LychD offering
-must separately qualify registration, per-user credentials, host identity, consent, revocation
+For operator/platform-controlled personal bootstrap, use the existing supported client
+authentication. Native Coffin launch remains a separate qualification: the current protocol
+supplies fresh homes with neither provider credentials nor an auth file, and needs a reviewed
+Gate bridge for every child provider request. Mounting a personal auth store into the guest does
+not meet that requirement. Until a supported credential-separated, bounded provider road is
+qualified, keep lifecycle control in the external operator campaign. A distributed LychD offering
+must independently qualify registration, per-user credentials, host identity, consent, revocation,
 and provider restrictions. Shared subscription pools and copied account sessions are not proposed.
 
 ## Continuous work needs a host and a stopping rule
@@ -141,13 +142,13 @@ release nor complete caller, launcher, policy, dependency or forwarding closure.
 child-launch path and its authority still need review. Embedded tests were not run; no downloaded
 code was executed or installed.
 
-Before host qualification, select one exact source and policy; disposition every applicable
-advisory using inspected fixes and regressions or an enforced exclusion; bind that review to the
-built executable and dependencies; then separately prove the actual containment and ceilings.
-Missing effective CPU/memory files cannot be replaced by requested systemd properties. Keep
-execution refused while any required qualification is unknown. The
-[Security owner](../../../adr/09-security.md#the-coffin-delegated-agent-profile) retains that law;
-this study delivers no Coffin, Provider Gate, native launcher or platform qualification.
+Host qualification begins with one exact source and policy. Resolve every applicable advisory
+through inspected fixes and regressions or an enforced exclusion, bind that review to the built
+executable and dependencies, then prove actual containment and ceilings separately. Requested
+systemd properties cannot replace missing effective CPU/memory files. Execution stays refused
+while any required qualification is unknown. The
+[Security owner](../../../adr/09-security.md#the-coffin-delegated-agent-profile) retains this law;
+the study delivers no Coffin, Provider Gate, native launcher, or platform qualification.
 
 ## Whether to add Claude
 
@@ -173,9 +174,10 @@ from offering claude.ai login/rate limits in products without prior approval. Pe
 use and a distributed LychD authentication offering are separate decisions; isolation flags that
 change billing must be qualified explicitly.
 
-Trial a fresh Sol verifier first, then optional Claude against the same frozen diffs, acceptance
-and total-budget envelope, with a protected answer key and separate confirmation cases. Adopt
-another provider only for measured incremental benefit. This research bought or configured neither.
+First trial a fresh Sol verifier; then, optionally, compare Claude on the same frozen diffs,
+acceptance criteria, and total-budget envelope. Keep the answer key protected and use separate
+confirmation cases. Another provider needs measured incremental benefit before adoption. This
+research bought or configured neither.
 
 ## Verify the road before first use
 

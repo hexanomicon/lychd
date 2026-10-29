@@ -35,12 +35,11 @@ object served there.
 
 ## People, accounts, and instances
 
-One logical LychD instance may serve an individual, a family or household, an organization, or
-another group of people. Several people or organizations may use the same instance under explicit
-access and sharing policy. Conversely, one person or organization may operate or use several
-instances. These are use contexts, not mutually exclusive runtime modes or a requirement to create
-an organization or tenant for every installation. Single-user operation is the smallest case, not
-a one-person-per-instance invariant.
+An instance may serve one person, a family or household, an organization, or another group.
+Several people or organizations can share it under explicit access and sharing policy; one
+person or organization can also use or operate several instances. These are use contexts, not
+exclusive runtime modes. No organization or tenant is required for every installation.
+Single-user operation is the smallest case rather than a one-person-per-instance invariant.
 
 Ward owns the common User account and its binding to a Principal; Compositions reference that
 identity while retaining their own domain records and policies. A represented person, such as a
@@ -65,11 +64,11 @@ under [Security](09-security.md).
 
 ## Profiles and working interfaces
 
-A user-facing profile may compose permission assignments with application defaults and named
-client views. The same installation need not offer every User the same apps, screens, navigation,
-workflow views, or approval controls. Ward decides access to protected surfaces, records, and
-actions; a durable profile or Role assignment is an input to that decision, not a perpetual Grant.
-Permission to open a screen does not confer access to every object it can display.
+A user-facing profile may combine permission assignments with application defaults and named client
+views. Users of one installation may therefore receive different apps, screens, navigation,
+workflow views, and approval controls. Ward still decides access to each protected surface,
+record, and action. A durable profile or Role assignment informs that decision without becoming
+a perpetual Grant, and permission to open a screen grants no blanket access to its objects.
 
 Compositions own the meaning of their working views and application policy; Products may package
 them. [Spellweaver](28-workflow.md) owns the admitted score and workflow state, not User accounts or
@@ -100,10 +99,10 @@ stale scope snapshot.
 
 ## Objects, delegation, and revocation
 
-Sessions, Runs, consents, streams, artifacts, memories, tasks, leases, and administrative records
-carry an owner or explicit sharing policy enforced by the persistence query. Filtering a completed
-result after unrestricted read is too late. Shared memory is an explicit relation with purpose,
-audience, retention, and revocation; a common model or database grants nothing.
+Persistence queries enforce the owner or explicit sharing policy of sessions, Runs, consents,
+streams, artifacts, memories, tasks, leases, and administrative records. An unrestricted read
+followed by result filtering is too late. Shared memory needs an explicit relation with purpose,
+audience, retention, and revocation; sharing a model or database grants no access.
 
 Delegation records issuer, delegate, audience, scope, object, expiry, depth, and revocation.
 Revocation invalidates credentials, sessions, cached grants, and affected sleeping or pending work;
@@ -356,7 +355,7 @@ authorization, delegation, tenant isolation and deployed IAM remain undelivered.
 
 ## Consequences
 
-Remote surfaces can share a runtime without sharing records or power. The cost is
-Principal-aware repository and effect-handler tests, plus revocation and deferred-work
-reconciliation as first-class lifecycle work. Tunnels, proxies, and provider SDKs never substitute
-for application authority.
+A runtime can serve remote surfaces while keeping their records and powers separate. Maintaining
+that separation requires Principal-aware repository and effect-handler tests, with revocation and
+deferred-work reconciliation treated as lifecycle work. Tunnels, proxies, and provider SDKs
+cannot substitute for application authority.

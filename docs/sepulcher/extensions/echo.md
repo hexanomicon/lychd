@@ -43,11 +43,12 @@ Later half- and full-duplex profiles must preserve one monotonic speech timeline
 contested turn ownership, interruption, cancellation, and reconnect. A live socket cannot supply
 those semantics.
 
-Invalid audio, insufficient authority, and policy-ineligible remote egress are refused. Only an
-otherwise eligible managed provider that is not warm may cause the requesting Run to enter
-ordinary Graph Stasis while Orchestrator drains and readies the affected Animators. Echo cannot
-silently fall back to a remote service, infer permanent microphone authority, inflate priority, or
-revoke another grant or lease.
+A request must first pass audio validation, authority checks, and any remote-egress policy.
+Failure at one of those gates is a refusal. Waiting is appropriate only after those checks pass:
+if an otherwise eligible managed provider is not warm, the requesting Run may enter ordinary
+Graph Stasis while Orchestrator drains and readies the affected Animators. That wait does not
+let Echo silently select a remote service, infer permanent microphone authority, inflate
+priority, or revoke another grant or lease.
 
 ## The organs of resonance
 
@@ -72,14 +73,15 @@ technical effect owner.
 
 ## Applications may use speech without owning Echo
 
-Echo owns speech contracts and lifecycle facts, not every work containing a speaking voice.
+An application can use a speaking voice while continuing to own the work that voice serves.
 [Riffmaw](../../compositions/riffmaw/index.md) owns sung and otherwise musical performance;
-[Language Edition](../../compositions/language-edition/index.md) owns casting, linguistic adaptation, timing, captions,
-and acceptance for one timed-language edition; [Avatar](../../compositions/avatar/index.md) may
-reference an exact eligible acoustic voice inside a presentation profile; and
+[Language Edition](../../compositions/language-edition/index.md) owns casting, linguistic adaptation,
+timing, captions, and acceptance for one timed-language edition; [Avatar](../../compositions/avatar/index.md)
+may reference an exact eligible acoustic voice inside a presentation profile; and
 [Broadcast](../../compositions/broadcast/index.md) owns canonical source words, editorial relation,
-and publication. Each application references exact Echo attempts and artifacts rather than
-copying its capture, synthesis, delivery, or playback chronology.
+and publication. Echo supplies the speech contracts and lifecycle facts each work needs. The
+application references exact Echo attempts and artifacts, so its account can follow capture,
+synthesis, delivery, and playback without maintaining a second version of that chronology.
 
 ## The Companion device boundary
 

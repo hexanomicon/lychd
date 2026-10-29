@@ -75,11 +75,11 @@ owns delivery.
 | Nexus | Timestamped capability observations, non-binding plan preview, typed request, and ticket stream | Partial: observations and tickets are process-local and not restart-complete. |
 | Loom | Immutable Scroll/Pattern-revision graph and station/permission outline | Partial: fixed registry reader without independent Spell identities, editing, teaching, or publication. |
 
-The shell owns navigation, source identity, pending-consent count, transient notices and the
-persistent Bridge presentation; each other instrument owns route-local presentation. `/scrying`, `/reliquary`, `/bindings`, and ambiguous
-unversioned Loom detail are deliberately not routes. Scrying is Orb's act, not another instrument.
-Artifact references and configuration observations are contextual projections, not browser custody
-or configuration authority.
+The shell owns navigation, source identity, pending-consent count, transient notices, and the
+persistent Bridge presentation. Each other instrument owns its route-local presentation.
+`/scrying`, `/reliquary`, `/bindings`, and ambiguous unversioned Loom detail are deliberately absent
+from the route contract. Scrying names Orb's act. Artifact references and configuration
+observations let the browser show context without acquiring custody or configuration authority.
 
 The browser shell retains drafts by exact session and the last explicit Bridge session path
 for its own lifetime. The global Bridge control opens that session without a Run hint.
@@ -147,11 +147,12 @@ ordinary Session drafts, unresolved offerings and Consent separate; the conversa
 an Archive source list. Only mode/record identity enters navigation, never note text or a request
 body. This adds no instrument or automatic conversation-to-memory admission.
 
-The server's authorized configured-profile read and bounded all-lifecycle metadata pages support
-reload without browser record custody. Exact-record reads remain independent of the loaded page.
-The management API returns no public-note text for preview or prefilled editing. Correction supplies complete
-new text under a different immutable source revision and requires a separate promotion. Revocation
-keeps the minimum source identity and does not erase earlier answers or backups.
+Reload recovers the authorized configured profile and bounded all-lifecycle metadata pages from
+the server. Exact-record reads work independently of the loaded page, so the browser need not own
+record custody. The management API provides no public-note text for preview or prefilled editing.
+A correction supplies complete new text under a different immutable source revision and needs
+separate promotion. Revocation retains the minimum source identity; it does not erase earlier
+answers or backups.
 
 An independent authorized current-default projection identifies the admission engine's actual
 Pattern and complete managed-profile match. Show requested, not requested, unavailable and failed
@@ -264,11 +265,10 @@ The built-in operator instruments are not a compulsory interface for every house
 guest, or employee. A shared client may select named working views, and a dedicated client may
 present a narrower application experience; neither becomes a separate identity or effect authority.
 
-The server supplies only the projection authorized for the current Principal and objects. The
-client applies admitted presentation defaults and device affordances, not permission inferred from
-a profile label. Opening a route or hiding a control grants no data or action access. Different
-views of one Run preserve its identity and admitted score; workflow state and current authority
-jointly constrain offered actions.
+The current Principal and objects determine which projection the server may supply. The client
+then applies admitted presentation defaults and device affordances. A profile label, an open route,
+or a hidden control grants no permission. Different working views preserve a Run's identity and
+admitted score, and offer only actions allowed by both workflow state and current authority.
 
 Client connection choice is not mobile-only. Browser and native clients may offer saved
 instance/account selections and refresh their working interface during use. A browser may navigate
@@ -323,11 +323,11 @@ freehand lasso selects whole intersecting objects without adding the selection l
 ink; rectangle and semantic-list selection remain available. A selected scope is still only a
 proposal boundary, never a model transmission or execution permission.
 
-The Altar's visual direction is a quiet observatory: the work supplies the focal point, while
-restrained surfaces, typography, and fixed brand art supply identity. The five instruments keep
-their single-word names, with Bridge presented as the persistent conversation dock. They do not
-become five copies of a dashboard, a universal
-graph, or separate owners of the same action. Each has a different primary reading task:
+The Altar should read as a quiet observatory. Work holds the focal point; restrained surfaces,
+typography, and fixed brand art provide identity around it. Its five instruments retain their
+single-word names, with Bridge always available as the conversation dock. Their distinct reading
+tasks determine their form, rather than a repeated dashboard or universal graph. No instrument
+becomes another owner of an existing action:
 
 | Instrument | Primary reading order | Role of a graph |
 | --- | --- | --- |
@@ -422,11 +422,12 @@ references to existing Bridge sessions or Runs. A Project may begin without a co
 and may describe continuing stewardship. Its identity survives individual Invocations. It owns
 neither a reusable Composition or Pattern nor a Suite's live coordination.
 
-The first Atlas is a native list and detail board. Bridge retains conversation and consent, Orb
-retains execution inspection, Loom retains exact scores, and Nexus retains physical readiness.
-References provide navigation between these instruments; membership is explicit, never inferred
-from geometry, tags, prose similarity, or a selected browser tab. Linking a session or Run neither
-injects the Project dossier into model Context nor changes execution ownership or permissions.
+Atlas begins as a native list and detail board. References connect it to conversation and
+consent in Bridge, execution inspection in Orb, exact scores in Loom, and physical readiness in
+Nexus. Those links make navigation possible without changing ownership: membership must be
+explicit, never inferred from geometry, tags, prose similarity, or a selected browser tab. Linking
+a session or Run neither injects a Project dossier into model Context nor changes execution
+permissions.
 
 Project lifecycle is `active`, `paused`, or `closed`, with explicit reopening. These are planning
 states: they neither cancel admitted Runs nor enforce a future admission pause. A proposed next
@@ -474,10 +475,10 @@ identity or authorization. A shared Concern retains one identity across its rela
 different question or acceptance basis gets a distinct Concern with an explicit derivation link.
 Neither a Project nor a Conversation, Run, Composition, or Covenant is required to create one.
 
-Atlas gives Concerns a dedicated reading and authoring surface. From a selected Concern the reader
-can inspect its meaning and criteria, break it down, see what remains unaddressed, follow where
-each part is addressed, and inspect the judgments and evidence. A Project view gathers that same
-material in its brief's context; it does not become the only entrance to it.
+A dedicated Concern surface lets a reader begin with the question itself: inspect its meaning
+and criteria, break it down, find what remains unaddressed, follow the parts to their destinations,
+and inspect the judgments and evidence. A Project view gathers the same material in its brief's
+context while preserving that independent entrance.
 
 The relation contract distinguishes:
 
@@ -546,10 +547,10 @@ and focus are restored only while their identity and generation remain valid. A 
 and screen-reader twin derives from the same supply. This reuse is not a universal Graph or domain
 model.
 
-The client has three replaceable layers: validated snapshot; ordered deltas reduced against its
-cursor; and URL, selection, layout, draft, focus, and related presentation. Refresh, remount,
-numeric gap, or `resync` replaces projection from a snapshot. An animation or open `EventSource`
-is never commitment evidence.
+Browser reconstruction has three replaceable layers. A validated snapshot provides the base;
+ordered deltas advance its cursor; URL, selection, layout, draft, focus, and related presentation
+sit above them. Refresh, remount, a numeric gap, or `resync` replaces the projection from a
+snapshot. An animation or open `EventSource` supplies no evidence of commitment.
 
 Use `$state` only for template, `$derived`, or external-synchronization reactivity; use
 `$state.raw` for large unit-replaced API objects, `$derived`/`$derived.by` for computation, and
@@ -827,9 +828,9 @@ and admitting editing without it would break the keyboard twin this Covenant req
 
 ### Folding, not scale
 
-A rendered field is bounded by folding at every camera scale. Folding is a legibility rule first: a
-field no reader can read is not evidence, and no engine repairs that. The bounded rendered set is
-its consequence, and it is what keeps a DOM renderer sufficient.
+Folding keeps a field readable at every camera scale. An unreadable field cannot serve as
+evidence, regardless of the renderer. Bounding the rendered set follows from that reading rule
+and is what keeps a DOM renderer sufficient.
 
 Folding follows structure the authority already declares—for Orb, Run, then station subject, then
 occurrence, then event, with delegated jobs as their own declared groups. Zoom may choose among
@@ -854,18 +855,16 @@ field that folding cannot bound—not by node count alone. Both are FOSS: Sigma'
 throughout; cosmos.gl became admissible only after moving to the OpenJS Foundation under MIT, its
 predecessor having carried non-commercial terms that failed this Covenant outright.
 
-The mapping is recorded so a later review starts from evidence rather than from preference. Neither
-ships zoom-driven aggregation, and neither does any commercial alternative surveyed; aggregation is
-LychD-owned under every candidate, which is why it is specified above as a supply rule instead of a
-selection criterion. Sigma re-indexes its whole graph when a node is dropped, and eviction is the
-operation bounded expansion is made of. cosmos.gl has no removal path for links, so an edge-touching
-patch rebuilds the whole link set, and its identity-keyed streaming API is published only under the
-non-commercial tier its maintainers also sell. Neither handles WebGL context loss, and neither
-carries any accessibility surface, so the semantic twin would be built twice and kept in sync
-forever. G6 was evaluated and rejected outright: its own published maximum-scale demonstration
-fails, its combo collapse is a pointer-triggered action over hand-declared groups rather than
-zoom-driven aggregation, and its teardown discards its own context while asynchronous work still
-holds it.
+The mapping gives later reviews an evidence base. Zoom-driven aggregation remains LychD's
+responsibility: neither candidate, nor any surveyed commercial alternative, supplies it. That is
+why aggregation is a supply rule above rather than a selection criterion. Sigma re-indexes its
+whole graph on node removal, while bounded expansion requires eviction. cosmos.gl has no link
+removal path, so any edge-touching patch rebuilds the whole link set; its identity-keyed streaming
+API is published only in the separately sold non-commercial tier. Neither handles WebGL context
+loss or supplies an accessibility surface, leaving a second semantic twin to build and synchronize
+indefinitely. G6 was rejected outright: its published maximum-scale demonstration fails, combo
+collapse is a pointer-triggered action on hand-declared groups rather than zoom-driven aggregation,
+and teardown discards its context while asynchronous work still holds it.
 
 Admission would still require realistic scale, incremental patch, camera/selection recovery,
 WebGL-context loss, teardown, complete semantic-twin, licence, and notice receipts, and any admitted

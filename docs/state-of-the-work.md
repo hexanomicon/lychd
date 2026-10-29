@@ -8,13 +8,14 @@ icon: material/list-status
 LychD is **pre-alpha**. This page answers the practical question that follows the grimoire's
 promise: what can this revision actually support, and where is the evidence?
 
-The supported runtime boundary is local, loopback-oriented, single-user, one control process,
-and a managed container Vessel. Host-native Core deployment and Core test deployment are retired.
-Core checks execute only in the explicit OCI test image. A fresh production-image and Ward
-PostgreSQL observation is recorded separately from the retained observations below.
-Start with an outcome below, then read the relevant record as a whole: its state, proved subset,
-limit, and evidence belong together. The Covenants own architectural decisions; this ledger owns
-their delivery interpretation.
+The supported runtime is local and loopback-oriented, with a single user, one control process,
+and a managed container Vessel. Host-native Core deployment and Core test deployment are retired;
+Core checks run only in the explicit OCI test image. The fresh production-image and Ward
+PostgreSQL observation is recorded separately from retained observations below.
+
+Start with an outcome, then read its whole record. State, proved subset, limit, and evidence must
+be read together. The Covenants own architectural decisions; this ledger explains what their
+delivery evidence supports.
 
 ## Outcome matrix
 
@@ -54,49 +55,56 @@ Project maturity and delivery state are different. An accepted ADR does not prov
 
 ## Current evidence envelope {#current-evidence-envelope}
 
-The 20 October 2026 container-only correction retires the former Core host-native runtime and
-its native stop, credential-source, server/TCP and host fixtures. Core pytest, lint, format checks
-and typing now enter the explicit `Containerfile.tests` image through the Makefile and bounded
-OCI harness. Domain/ASGI helpers may still construct the application inside that image. Those
-helpers do not create another supported deployment. The 21 October OCI recheck passed lint,
-formatting, strict typing and 6,447 tests, with 14 explicit optional skips and 525 container
-deselections. The PostgreSQL ledger module separately passed all 42 cases, including retained
-event fields, sequence, cursor and kind-filtered reads. Altar passed type checking, all 617 tests
-and its static build; generated API contracts and dependency locks stayed unchanged. The dated
-20 October OCI occurrence passed all 23 Ward/candidate PostgreSQL cases.
-The rebuilt, unmodified production image completed all 20 migrations with system libpq, then
-two authenticated empty-workload boots and normal SIGTERM exits as UID 1001, with a read-only
-root filesystem. Host, Origin and CSRF refusals passed on both boots. Its fresh bridge, mounted
-synthetic credentials and empty owned Reactor directories do not qualify the generated managed
-body, real Reactor transitions or a model workload. All owned proof containers, volumes and
-networks were removed; no model request was sent. The [dated production recheck](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/container-recheck-2026-10-21.json)
-binds the 21 October production observation to its actual inputs. Its source closure no longer
-matches the combined source; the receipt oracle preserves those observations and refuses current
+The 20 October 2026 container-only correction retired the former Core host-native runtime,
+including native stop, credential-source, server/TCP, and host fixtures. Core pytest, lint,
+format checks, and typing now enter `Containerfile.tests` through the Makefile and bounded OCI
+harness. Domain/ASGI helpers may construct the application inside that image without creating
+another supported deployment.
+
+On 21 October, the OCI recheck passed lint, formatting, strict typing, and 6,447 tests, with
+14 explicit optional skips and 525 container deselections. Separately, all 42 PostgreSQL ledger
+cases passed, covering retained event fields, sequence, cursor, and kind-filtered reads. Altar
+passed type checking, all 617 tests, and its static build; generated API contracts and dependency
+locks stayed unchanged. The dated 20 October OCI occurrence passed all 23 Ward/candidate
+PostgreSQL cases.
+
+The rebuilt, unmodified production image completed all 20 migrations with system libpq. It then
+completed two authenticated empty-workload boots and normal SIGTERM exits as UID 1001 with a
+read-only root filesystem. Host, Origin, and CSRF refusals passed on both boots. This occurrence
+used a fresh bridge, mounted synthetic credentials, and empty owned Reactor directories. It
+qualifies neither the generated managed body, real Reactor transitions, nor a model workload.
+All owned proof containers, volumes, and networks were removed; no model request was sent.
+
+The [dated production recheck](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/container-recheck-2026-10-21.json)
+binds the 21 October observation to those actual inputs. Its source closure no longer matches
+the combined source, so the receipt oracle preserves the observation but refuses current
 qualification until a new production occurrence is recorded. The unchanged
 [20 October OCI receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/container-only-2026-10-20.json)
-retains its dated production observation and the separately bounded Ward inputs. Active public
-container start/stop completion remains unavailable; F2 hostile-constructor and F5 enrolled-peer
-qualification are not added.
+retains its dated production observation and separately bounded Ward inputs. Active public
+container start/stop completion remains unavailable. Neither F2 hostile-constructor nor F5
+enrolled-peer qualification is added.
 
-The combined migration source preserves the existing `0015`–`0020` lineage and appends disclosure
-custody at `0021`, Intercom at `0022` and native peer Graph custody at the current head `0023`.
-This source reconciliation does not renew the 21 October production observation or the imported
-22–23 October peer and companion observations. Their original source maps, migration identities,
-dependencies and limits remain dated evidence; current combined-source qualification is separate.
+The combined migration source keeps lineage `0015`–`0020`, then appends disclosure custody at
+`0021`, Intercom at `0022`, and native peer Graph custody at the current head `0023`. Reconciling
+that source does not renew either the 21 October production observation or the imported
+22–23 October peer and companion observations. Their source maps, migration identities,
+dependencies, and limits remain dated evidence. Qualification of the current combined source
+is a separate obligation.
 
-The raw warm-model ASGI, sequential `spawn`, source-native TCP, trusted source-browser and
-installed-hybrid receipts are frozen dated history, retired on **2026-10-20** at source base
-**7057210a**. Their historical validators preserve original receipt bytes, source maps, dependency
-lineage, oracles and limits; they do not compare those old profiles to current code or renew their
-observed facts. The former current-source TCP shared-chain join is historical as well.
+The raw warm-model ASGI, sequential `spawn`, source-native TCP, trusted source-browser, and
+installed-hybrid receipts became frozen history on **2026-10-20**, at source base **7057210a**.
+Their historical validators preserve the original bytes, source maps, dependency lineage,
+oracles, and limits. They neither compare those retired profiles with current code nor renew
+the observed facts. The former current-source TCP shared-chain join is historical too.
 
-The ASGI and spawned profiles recorded one real structured Bridge reply and identical turns/model
-history across two application lifespans or two sequential processes, without second-boot
-inference. The source-native TCP occurrence additionally recorded authenticated readiness, four
-security refusals, one complete SDK reply and normal process closure. Its 20 October renewal used
-511 prompt and 143 generated tokens and passed the retained 18 terminal checks. Explicit
-Settings/Runes, lifespan wrappers, refusing host actuation and per-process limits bound those
-observations; none qualifies the current container or managed-model lifecycle.
+Both ASGI and spawned profiles recorded one real structured Bridge reply and identical turns
+and model history across their respective boundaries: two application lifespans or two sequential
+processes. Neither performed second-boot inference. The source-native TCP occurrence also
+recorded authenticated readiness, four security refusals, one complete SDK reply, and normal
+process closure. Its 20 October renewal used 511 prompt and 143 generated tokens and passed the
+retained 18 terminal checks. Explicit Settings/Runes, lifespan wrappers, refusing host actuation,
+and per-process limits bound these observations. None qualifies the current container or
+managed-model lifecycle.
 
 The frozen [trusted source-browser receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/animator/local-bridge-browser-2026-10-20.json)
 recorded compiled Altar and sandbox-enabled Chrome against the retired source-native CLI/Granian
@@ -124,10 +132,10 @@ pending. The fixture reads no operator configuration or credentials and grants n
 authority. [CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md)
 owns the workflow.
 
-All older ordinary-native Core startup/restart and browser observations elsewhere on this page
-retain only their dated profile, even where the report quotes an occurrence as successful.
-Domain uses of “native”—including the live checked Ward candidate-authority foundation—retain
-their own meaning and are not retired by this deployment correction.
+Read every older ordinary-native Core startup/restart and browser observation on this page
+within its dated profile, including occurrences reported as successful. The deployment correction
+does not retire other meanings of “native”: domain uses, including the live checked Ward
+candidate-authority foundation, retain their own boundaries.
 
 - **Source:** [Application factory](https://github.com/hexanomicon/lychd/blob/main/src/lychd/app.py), [Developer fixture](https://github.com/hexanomicon/lychd/blob/main/src/lychd/developer.py), [OCI harness](https://github.com/hexanomicon/lychd/blob/main/scripts/container_checks.sh)
 - **Verification:** [Two-boot lifecycle helper](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_production_wiring.py), [Developer fixture controls](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_developer_fixture.py)
@@ -139,13 +147,14 @@ their own meaning and are not retired by this deployment correction.
 
 **State:** Available
 
-**Proved now:** Root Settings loads separate bootstrap, runtime and Phoenix database credentials,
-the local HTTP access credential, and web signing key once per
-construction as excluded `SecretStr` values. Cached consumers and in-memory snapshot restoration
-perform no credential I/O; JSON and generated TOML omit credentials. Explicit new Settings reads
-fresh inputs. Host bootstrap tolerates unprovisioned default mounts; runtime components reject
-missing credentials. Container bind preflight validates the declared secret references before
-compilation; application startup consumes only its narrowly mounted runtime secrets.
+**Proved now:** Root Settings captures bootstrap, runtime, and Phoenix database credentials,
+the local HTTP access credential, and the web signing key once per construction as excluded
+`SecretStr` values. Consumers use that captured generation: cached reads and in-memory snapshot
+restoration perform no credential I/O, and JSON and generated TOML omit credentials. An explicit
+new Settings instance reads fresh inputs. Host bootstrap tolerates unprovisioned default mounts,
+whereas runtime components reject missing credentials. Before compilation, container bind
+preflight validates declared secret references; application startup consumes only its narrowly
+mounted runtime secrets.
 
 The former `LYCHD_RUNTIME_SECRETS=podman-core@1` host-native source is retired. Explicit selection
 refuses before credential I/O; there is no automatic fallback, conversion, rotation or export.
@@ -165,11 +174,11 @@ reload is delivered. Prior native source-control evidence is historical.
 
 **State:** Available
 
-**Proved now:** Typed TOML Runes load from their declared hierarchy with validated filesystem
-provenance and frozen root values; nested Animator Rune models and collections are immutable. The
-writer walks the same exact admitted schema generation as the loader instead of every imported
-subclass. Activation-marker detection and TOML parsing consume one file read, so replacement
-between separate reads cannot activate an inactive generated sample.
+**Proved now:** The Rune loader validates typed TOML against its declared hierarchy, retaining
+filesystem provenance and frozen root values. Nested Animator Rune models and collections are
+immutable too. The writer uses exactly the loader's admitted schema generation rather than all
+imported subclasses. Activation-marker detection and TOML parsing share one file read, preventing
+replacement between two reads from activating an inactive generated sample.
 
 **Boundary:** Configuration parsing and topology do not prove a CLI rite, generated host unit, or
 running service.
@@ -225,10 +234,10 @@ No direct-manager or native fallback is admitted.
 
 **State:** Designed
 
-**Proved now:** Distribution, container, archive-audit, source-preflight, and non-publishing
-candidate declarations exist and are tested without granting publish authority. Synthetic wheel
-archives exercise exact license-header validation, package identity, source revision, and bundled
-license and notice checks.
+**Proved now:** Tested distribution, container, archive-audit, source-preflight, and
+non-publishing candidate declarations establish the artifact path without granting publish
+authority. Synthetic wheel archives exercise exact license-header validation, package identity,
+source revision, and bundled license and notice checks.
 
 **Do not expect yet:** No maintained receipt pairs this revision as one anonymously installable
 PyPI package and immutable GHCR image, and no clean-host install/start/reply/stop promotion gate
@@ -266,20 +275,20 @@ drift checks; generated Core secrets retain their separate provisioning path.
 
 **State:** Available
 
-**Proved now:** The mediated Host Reactor validates and durably claims intent, attests the loaded
-Scribe graph, performs one bounded target transaction, observes settlement, attempts
-exact-prior-world compensation, resumes or contains interrupted journal work, and records outcomes
-under the lifecycle lock.
+**Proved now:** The Host Reactor mediates one bounded target transaction under the lifecycle
+lock. It validates and durably claims intent, attests the loaded Scribe graph, performs the
+transaction, and observes settlement. It attempts exact-prior-world compensation where needed,
+resumes or contains interrupted journal work, and records the resulting outcome.
 
 Claimed producer bytes pass through a separate acquisition state into a new host-owned snapshot
 and versioned digest companion before effects. Retained producer descriptors and hard links
 cannot mutate processing or completed authority; processing and compensation reject missing or
 mismatched custody, including legacy journal files without proof.
 
-**Boundary:** Protocol tests and an isolated private-systemd receipt use inert services, not the
-operator's Quadlet/Podman/GPU host. `.restored` proves the prior world; `.contained` and unresolved
-`.processing` and `.acquiring` fence later admission. General repair and legacy-custody
-reconciliation remain the operator's responsibility.
+**Boundary:** The protocol tests and isolated private-systemd receipt exercise inert services,
+not the operator's Quadlet/Podman/GPU host. A `.restored` result proves the prior world;
+`.contained` and unresolved `.processing` and `.acquiring` keep later admission fenced. The
+operator still owns general repair and reconciliation of legacy custody.
 
 **Evidence**
 
@@ -415,11 +424,13 @@ or a full generated installed deployment.
 Runs against immutable Pattern revisions. Durable publication intent, replay repair, external-wait
 relays with capped restart backoff, terminal-evidence repair, bounded identity fencing, bounded
 slow-reader resynchronization, and orderly shutdown are tested.
+
 Terminal checkpoint deletion is best-effort after durable terminal evidence. A disposable
 [PostgreSQL receipt](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_terminal_checkpoint_recovery_pg.py)
 injects an actual deletion failure, verifies later Run evidence and cleanup,
 and removes retained debt through replacement adapters without duplicate Steps. It uses the
 startup helper and ORM-created tables, not a replacement application process or migrations.
+
 Per-Run claim and park coordination prevents stale failure cleanup from touching a successor or a
 committed wait. Consent and delegate recovery bound each owner's lookup and re-admission,
 preserving the wait or exact pending delivery on timeout while later owners progress. Early
@@ -428,7 +439,9 @@ deadlines so they release their workers. Post-claim exception groups composed on
 and ordinary failures preserve cancellation election, exact-generation containment, terminal
 cleanup, and propagation of the original group after successful handling.
 Unresolved child containment stays nonterminal rather than claiming false `FAILED` truth; a timed-
-out cancellation remains `CANCELLING`. Exact revision lookup validates the persisted v2 Pattern
+out cancellation remains `CANCELLING`.
+
+Exact revision lookup validates the persisted v2 Pattern
 snapshot and digest against the registered manifest, including its reviewed implementation
 revision; retained inactive revisions remain executable through that same check.
 Registry assembly also freezes a private `legacy_inline` contract, placement and implementation
@@ -553,13 +566,14 @@ or Linux Vessel image, or admit Portal execution. The serial Graph adapter has i
 
 **Proved now:** Workflows use native GraphBuilder and public BaseNode execution through a serial
 adapter. LychD owns the typed checkpoint envelope, admitted node catalog, station execution
-status and declared-successor checks. State, node arguments and final output are checked against
-their declared types in JSON mode before replacing retained history and again on restore. Strict
-UUID and tuple values survive a JSON transfer into a replacement runner. Validation starts at the
-serialized JSON boundary; serializers can normalize in-memory values before these checks.
-Existing built-in Pattern digests stay unchanged. Captured
-v1 consent and delegation histories decode against the exact registered graph; captured consent
-approval and denial resume through the new runner, and hardware retry budgets survive decoding.
+status, and declared-successor checks. Before replacing retained history and again on restore,
+it checks state, node arguments, and final output against declared types in JSON mode. Strict
+UUID and tuple values survive JSON transfer to a replacement runner. These checks begin at the
+serialized JSON boundary; serializers may normalize in-memory values first.
+
+Existing built-in Pattern digests remain unchanged. Captured v1 consent and delegation histories
+decode against the exact registered graph. Captured consent approval and denial resume through
+the new runner, and hardware retry budgets survive decoding.
 
 **Boundary:** Forks, joins, arbitrary function steps and transformed paths are refused because
 the delivered durable cursor represents one BaseNode station. Pending, running and failed
@@ -577,14 +591,14 @@ production upgrade, process replacement, exactly-once host effects or external d
 
 **State:** Partial
 
-**Proved now:** Logical parking, bounded approval rounds, exact Consent ownership, simulated
-restart, re-admission, idempotent settlement, and fail-closed substitution on resume are tested.
-Post-park probe failure preserves `AWAITING_CONSENT`; uncertain cancellation containment leaves the
-Run `CANCELLING` instead of manufacturing terminal truth. Composed native-worker cancellation
-releases its lease for broker acknowledgement while retaining the durable checkpoint until terminal
-commitment, including a lost acknowledgement followed by an idempotent cancellation retry.
-Consent policy stops preserve earlier completed tool results, close known refused calls as denied,
-and leave valid history for the next turn without replaying those effects.
+**Proved now:** Tests cover logical parking, bounded approval rounds, exact Consent ownership,
+simulated restart, re-admission, idempotent settlement, and fail-closed substitution on resume.
+A failed post-park probe preserves `AWAITING_CONSENT`; uncertain cancellation containment leaves
+`CANCELLING` rather than claiming terminal truth. In composed native-worker cancellation, the
+worker releases its lease for broker acknowledgement and retains its durable checkpoint until
+terminal commitment. This also holds across a lost acknowledgement and idempotent cancellation
+retry. Consent policy stops preserve completed tool results, deny the known refused calls, and
+leave valid history for the next turn without replaying those effects.
 
 Hardware convergence budgets are
 checkpoint-owned per Run and survive a durable park plus a replacement GraphRunner.
@@ -858,11 +872,11 @@ CapabilitySet placement solver.
 
 **State:** Partial
 
-**Proved now:** Dependency-first built-in assembly supplies Rune, Portal, runtime, Quadlet, and
-delegation contributions under registrant-bound registration, sealed membership, owned schema
-branches, and fail-closed synchronous hooks. Host-assigned registrant attribution survives v1
-capability hydration, detached reads, grants, Orchestrator status, and Nexus response rows;
-adapter-supplied attribution cannot override it. Raw adapter injection remains unattributed.
+**Proved now:** Built-in assembly resolves dependencies first and supplies Rune, Portal, runtime,
+Quadlet, and delegation contributions through registrant-bound registration. Membership seals,
+schema branches have owners, and synchronous hooks fail closed. Host-assigned registrant
+attribution survives v1 capability hydration, detached reads, grants, Orchestrator status, and
+Nexus response rows; adapters cannot override it. Direct raw adapter injection stays unattributed.
 
 Separate Python interpreters verify Phoenix selection, inactive samples, configured Rune and
 Quadlet projection, and disable with retained fixture files. The current cached generation stays
@@ -962,7 +976,7 @@ A closed model-local `qwen3.8-non-thinking` generation policy now compiles throu
 capability grant to the exact Qwen chat-template request field. Unsupported bindings, runtime
 and Soulstone defaults, Portals and Responses refuse it; omitted settings remain unchanged.
 Real-SDK mock-wire tests cover ordinary and streaming calls. A dated `bf1162f` source-app
-observation completes one fixed public-source review in196 generated tokens and retains it over
+observation completes one fixed public-source review in 196 generated tokens and retains it over
 two ordinary in-process boots. Its independent reviewer accepts only partial semantic utility:
 the core assertions are correct, but a claimed passing counterexample would fail the displayed
 test. DONE is not a correctness verdict. That separate Codex review is operator evidence, not a
@@ -1031,9 +1045,10 @@ quantization, cache, split, flags, load/inference/unload, and measured VRAM.
 
 **State:** Available
 
-**Proved now:** Declared conflict domains compile into an incompatibility graph and compatible
-Animator/Coven targets. Switching attests the loaded graph and current world, performs one bounded
-compound target request, waits for systemd settlement, and classifies success or exact restoration.
+**Proved now:** Compilation turns declared conflict domains into an incompatibility graph and
+compatible Animator/Coven targets. Switching attests the loaded graph and current world before
+submitting one bounded compound target request. It waits for systemd settlement, then classifies
+either success or exact restoration.
 
 **Boundary:** The private user-manager receipts cover inert services and an opt-in real rootless
 Quadlet transaction using production-generated target relationships. The latter verifies container
@@ -1059,6 +1074,7 @@ with one configurable planning deadline. A timed-out observation settles before 
 decline; cohort followers share that result, gates remain open, and fresh requests can retry.
 Transition callbacks receive the journal's immutable observation; traces and projection callbacks
 cannot expose the mutable eviction and launch plans used during execution.
+
 Soft convergence failures before invoking adapter activation are classified as no effect, including
 observation-only static or already-warming waits. Their gates reopen, coalesced requests share the
 classification, and unrelated warm capabilities remain usable.
@@ -1068,12 +1084,14 @@ Vessel before queue connection, under either actuator profile. Focused filesyste
 abrupt process exit; generated mount and initialization tests cover persistent storage and mode
 agreement. Hidden host recovery validates the exact record, current declarations, Scribe-owned
 loaded topology, stopped Vessel and target runtime, and pending jobs before release.
+
 Hard-transition compensation completes or contains before caller or observer cancellation propagates,
 including a first cancellation that arrives during the inverse after ordinary readiness failure.
 Coalesced followers retain the owner's terminal classification and physical/compensation IDs while
 keeping their own request identity, independently of bounded journal eviction. These cases are
 covered by [hard-effect boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/orchestration/test_hard_effect_boundary.py)
 with inert runtime effects.
+
 Direct actuator observation failures before submission reopen admission without claiming an effect.
 Cancelled Host Reactor requests preserve proved decline/restoration receipts; uncertain outcomes
 remain contained. [Actuator tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py)
@@ -1133,10 +1151,12 @@ and [instrument reading scenarios](./divination/altar/index.md#presentation-dire
 current reading surfaces from further presentation targets. Design studies and illustrative browser checks do not establish
 renderer qualification, restart recovery, large-collection performance, or accessibility
 acceptance; the instrument records below retain their existing evidence boundaries.
+
 The document language and interface copy are English. There is no message catalogue, explicit
 locale resolver or selector, Principal-preference binding, translated accessibility surface, or
 right-to-left receipt. Browser-native date/time formatting may reflect a device locale, but that
 incidental variation is not delivered localization support.
+
 The compiled Altar has one fixed LychD Dark palette, dark browser metadata, dark native-control
 colour scheme, and no light/system selector, system-scheme following, palette configuration,
 runtime theme loader, or supported theme extension. Its canonical semantic palette now uses a black
@@ -1180,19 +1200,20 @@ cross-engine heap gate. Existing server-held recovery, current-access and consen
 
 **State:** Partial
 
-**Proved now:** Canvas supplies a portable board authoring profile at `/canvas`: actual pointer
-strokes, native nodes and connections, rectangle or freehand-lasso whole-object selection,
-original geometry and a
-same-revision bounded PNG packet, deterministic text, optional local PNG artwork, explicitly local
-Tidy, bounded CPU arrangement, proposal preview/apply/reject and undo/redo. Portable JSON files
-retain the current scene and bounded history; browser drafts claim no automatic retention.
-Closed Composition-owned contracts and stateless scoped HTTP validation refuse stale or
-out-of-selection changes, dangling references, invalid geometry and unbounded image envelopes.
-Browser and Python share a conservative numeric size budget and common parity fixtures.
-On the black, undotted work plane, the transient lasso follows actual stroke/connector paths
-and node silhouettes without entering retained ink. The development-only source profile omits
-protected status/Bridge reads until connection, so offline authoring needs no sign-in; the
-compiled application keeps its authenticated shell and API boundaries.
+**Proved now:** At `/canvas`, the portable board authoring profile captures actual pointer
+strokes and supplies native nodes and connections, rectangle or freehand-lasso whole-object
+selection, original geometry, and a same-revision bounded PNG packet. It also supports
+deterministic text, optional local PNG artwork, explicitly local Tidy, bounded CPU arrangement,
+proposal preview/apply/reject, and undo/redo. Portable JSON retains the current scene and bounded
+history; browser drafts claim no automatic retention.
+
+Composition-owned closed contracts and stateless scoped HTTP validation reject stale or
+out-of-selection changes, dangling references, invalid geometry, and unbounded image envelopes.
+Browser and Python share a conservative numeric size budget and parity fixtures. On the black,
+undotted work plane, the transient lasso contour never enters retained ink; selection respects
+actual stroke/connector paths and node silhouettes. The development-only source profile omits protected
+status/Bridge reads until connection, allowing offline authoring without sign-in. The compiled
+application retains its authenticated shell and API boundaries.
 
 **Boundary — Not yet:** There is no native vision transmission, live microphone, automatic model
 interpretation, generated-art engine, server-retained board, collaborative editing, registered
@@ -1213,14 +1234,15 @@ judgments or Orb evidence, and layout creates no semantic relation or execution 
 
 **State:** Partial
 
-**Proved now:** Atlas provides a fifth Altar route with a project list and detail forms.
-Projects retain a brief, concerns and criteria, attributed assessments with the requirement text
-and revisions judged, append-only decisions and supersession, a proposed next step, lifecycle,
-and explicit session or Run references. Changes are owner-scoped and version-checked; retained
-request identities prevent repeated writes after an uncertain response. Editing requirements
-marks earlier assessments for review. Bridge and Orb display links back to explicitly related
-Projects. Creating, pausing, closing, reopening, or linking a Project admits no execution.
-The shared PostgreSQL profile retains these records; disposable database tests exercise races,
+**Proved now:** Atlas offers a fifth Altar route with a Project list and detail forms. Each
+Project retains a brief, concerns and criteria, attributed assessments with the requirement text
+and revisions judged, append-only decisions and supersession, proposed next step, lifecycle,
+and explicit session or Run references. Owner-scoped, version-checked changes and retained
+request identities prevent repeated writes after an uncertain response. Edited requirements mark
+earlier assessments for review. Bridge and Orb link back to explicitly related Projects;
+creating, pausing, closing, reopening, or linking one admits no execution.
+
+The shared PostgreSQL profile retains these records. Disposable database tests cover races,
 replay, owner boundaries, and migration downgrade refusal. The real application factory's
 two-boot HTTP receipt restores a Project and its Run reference and replays the retained request.
 
@@ -1269,6 +1291,7 @@ links, status/activity and eligible cancellation. Older retained replies report 
 a mismatched Run projection cannot provide another Run's status or actions. Dispatcher grant ids
 rebind the Environment snapshot before inference and after consent re-entry. History governors
 retain whole exchanges, including legacy tool-call, result, and retry chains without Run ids.
+
 Browser-shell state retains per-session drafts and immutable unknown-admission envelopes across
 instrument navigation. The shell's Bridge link returns to the last explicit session path, restoring
 that session's draft; before any explicit selection, it leaves the root session choice to the
@@ -1277,13 +1300,16 @@ settle that state even after view teardown, and admission overtaking a snapshot 
 read.
 After an initial snapshot read fails, **Retry read** repeats the current route's read, preserving
 drafts and unresolved offerings without submitting text.
+
 Terminal Run snapshots prefer the retained reply and fragments over incomplete live deltas while
 preserving the stream cursor. A failed Run's nonempty live text carries an explicit notice that it
 is not a completed answer, including when a terminal event already supplied a failure message.
 The session snapshot's retained agent turn replaces that live projection and notice. Empty failed
 text keeps the explicit no-reply message; transport errors alone do not trigger the notice.
 Definitely refused text is retained alongside a later draft. Hard
-unload warns; this state does not survive browser termination. The shell's consent link opens a
+unload warns; this state does not survive browser termination.
+
+The shell's consent link opens a
 session chooser with server-owned per-session counts; decisions update only their owning
 session's visible attention.
 The same workspace retains pending and uncertain consent verdicts across card and instrument
@@ -1292,9 +1318,11 @@ submit an unfinished message.
 Shell consent counts refresh without overlapping reads every five seconds while visible, and on
 focus or return to a visible tab. Hidden, loading, and failed reads show unknown; teardown and
 newer invalidations fence late results. This remains a sampled count, not durable Attention.
+
 The conversation has a collapsible rail and secondary session detail. Incoming text preserves an
 older reading position; an explicit Latest turn action releases linked-Run focus without losing
 the draft. The composer explains the current admission or active-Run restriction.
+
 The Bridge snapshot also identifies the admission engine's configured default casting, separate
 from retained Run identities. A configured Scout default supplies fixed command guidance with a
 two-line example and the complete URL's public declaration. The composer renders that text
@@ -1356,15 +1384,16 @@ they do not qualify production deployment or live effects.
 
 **State:** Partial
 
-**Proved now:** Nexus renders typed state and plans, submits explicit transitions, fences
-ambiguous request identities, follows bounded process-local tickets, and durably reserves the
-first target request before launch.
-An earlier unknown outcome retains its UUID through later middleware refusal. Navigation guards
-protect in-flight and unresolved admission from accidental discard.
-Native capability disclosures expose served health, warmth and reason independently of the
-compact chip. Preview loading is target-specific and closing it fences late responses. Full
-uncertain request identities remain visible, and a previous ticket survives selecting another
-preview. Containment and no-op conditions explicitly disable the transition action.
+**Proved now:** Nexus presents typed state and plans, submits explicit transitions, follows
+bounded process-local tickets, and durably reserves the first target request before launch.
+Ambiguous requests keep their identities: a later middleware refusal does not clear an earlier
+unknown outcome's UUID, and navigation guards protect in-flight or unresolved admission from
+accidental discard.
+
+Capability disclosures show served health, warmth, and reason independently of the compact chip.
+Preview loading belongs to its target, and closing the preview fences late responses. Full
+uncertain request identities remain visible; selecting another preview preserves the previous
+ticket. Containment and no-op conditions explicitly disable the transition action.
 
 **Boundary — Not yet:** Only request admission is durable. Transition observations lack a durable
 owner, complete history, cross-process projection, restart recovery, and production-browser
@@ -1381,16 +1410,18 @@ or resume safely; retry refuses to relaunch it.
 
 **State:** Partial
 
-**Proved now:** Loom browses exact immutable Pattern revisions, manifests, semantic station and
+**Proved now:** Loom reads exact immutable Pattern revisions, manifests, semantic station and
 permission outlines, checkpoint schemas, implementation revisions, source, active/default state,
-and retained revisions with stale-response-fenced client loading. Verified Orb origin links retain
-the Run and selected event on return; mismatched context is reported without choosing another Run.
-The semantic outline selects a station with labeled incoming and outgoing permissions, declared
-self-loops, and keyboard return to its row. The shared Svelte Flow canvas displays the same
-read-only score, folding the whole Pattern or revealing its stations through zoom and explicit
-controls. Graph failure leaves the outline and inspector available. Failed score reads offer an
-exact-revision retry. Copied Mermaid source retains the exact Pattern key, revision and manifest
-digest even when two revisions declare the same topology; it remains a view, not execution evidence.
+and retained revisions. Client loading fences stale responses. Verified Orb origin links retain
+the Run and selected event for return; mismatched context is reported without choosing a
+different Run.
+
+The semantic outline selects a station, labels incoming and outgoing permissions and declared
+self-loops, and supports keyboard return to its row. The shared Svelte Flow canvas projects the
+same read-only score, folding the whole Pattern or revealing stations through zoom and explicit
+controls. The outline and inspector remain usable on graph failure. Failed score reads offer an
+exact-revision retry. Copied Mermaid retains the Pattern's exact key, revision, and manifest
+digest even where two revisions have the same topology. It remains a view, never execution evidence.
 
 **Boundary — Not yet:** Loom is a view over the fixed registry, not a Spellweaver editor, mutation
 surface, independent Spell identity or catalogue, compatibility or teaching surface, drafting
@@ -1411,16 +1442,18 @@ lifecycle, graph-failure, editor or general accessibility acceptance.
 
 **State:** Partial
 
-**Proved now:** The Portfolio publishes Native Reference Composition contracts and examples; the
-default boot catalogue contains the Core `bridge_chat` lineage (revisions 1, 2 and 3) and
-`delegated_rite` lineage (revisions 1 and 2). An explicit application selector additionally registers
-the bounded `creation.investigate@2` Pattern. The exact `scavenger.observe_market@2` Pattern
-is registered for historical resolution and receives new admissions only under its explicit selector.
-The accepted designs include [Health](./compositions/health/index.md) for attributable personal
-clinical records and bounded diagnostic and care proposals,
-[Keeper](./compositions/keeper/index.md) for animal and colony care,
-[Cultivator](./compositions/cultivator/index.md) for cultivation, and the narrowed
-[Homestead revision 2](./compositions/homestead/index.md#revision-continuity) for site and stores stewardship.
+**Proved now:** The Portfolio publishes Native Reference Composition contracts and examples.
+Executable catalogue membership has a narrower boundary: default boot contains Core
+`bridge_chat` revisions 1, 2 and 3 and `delegated_rite` revisions 1 and 2. An explicit application
+selector additionally registers the bounded `creation.investigate@2` Pattern.
+`scavenger.observe_market@2` is registered for historical resolution but admits new work only
+under its explicit selector.
+
+Accepted designs include [Health](./compositions/health/index.md), for attributable personal
+clinical records and bounded diagnostic and care proposals; [Keeper](./compositions/keeper/index.md),
+for animal and colony care; [Cultivator](./compositions/cultivator/index.md), for cultivation; and
+[Homestead revision 2](./compositions/homestead/index.md#revision-continuity), narrowed to site
+and stores stewardship.
 
 [Creation investigation](./compositions/creation/index.md) revision 2 has an explicitly selected
 PostgreSQL application, protected local submit/read/cancel/continue API and serial
@@ -1428,35 +1461,36 @@ PostgreSQL application, protected local submit/read/cancel/continue API and seri
 claims, complete provider bytes, a candidate and a fresh attributed verdict. The
 [Creation delivery boundary](#smith-forge-promotion) keeps its focused evidence and remaining gaps.
 
-Scavenger revision 3 now defines one model-free finite-feed observation contract with a complete
-supplied campaign seed, whole title/link field, explicit deletion and recovery law. Pure immutable
-value contracts validate the bounded seed and source-order field, group exact-locator duplicate
-occurrences without dropping them, and derive a literal local filter over the unchanged field.
-Their tests cover explicit unknowns, UTF-8/total byte bounds, excluded-content projection and
-literal filtering. These values confer no acquisition, consumption, retention or retrieval authority.
-An explicit PostgreSQL selector now enables the model-free `scavenger.observe_market@2`
-Pattern and its protected application admission/read/filter/delete API. The serial Graph retains
-only references, uses native Core consent and commits the whole field under application custody.
-The Altar's `/scavenger` application view supplies the complete seed, displays source/coverage and
-all occurrences, and separates local filtering, Run cancellation and terminal payload deletion.
-[Scout's evidence boundary](#scout-web-acquisition) owns the assembled development proof and its
-remaining installed, public-network and process limits.
+Scavenger revision 3 defines one model-free finite-feed observation contract. It binds a
+complete supplied campaign seed, the whole title/link field, and explicit deletion and recovery
+law. Pure immutable values validate the bounded seed and source-order field, group exact-locator
+duplicate occurrences without dropping them, and derive a literal local filter over the unchanged
+field. Tests cover explicit unknowns, UTF-8/total byte bounds, excluded-content projection, and
+literal filtering. Those values confer no acquisition, consumption, retention, or retrieval authority.
 
-Blockworld has an explicitly assembled, inactive one-block placement Pattern. Portable tests drive
-real Run admission, the worker, serial Graph, native Consent review, HTTP decision, and resume with
-a composite memory store and an inert effect port. They reconstruct serialized fixture state into
-fresh services, retain the canonical Run and exact command through interruption, and reconcile a
-claimed action without repeating its invocation. Matching response and event evidence settle the
-receipt, mission cursor, and placement budget together in that fixture. PostgreSQL models, a store,
-and migration `0011` have passed disposable PostgreSQL transaction, recovery and migration-cycle
-tests, including comparison with the ORM schema.
-A further PostgreSQL vertical connects those stores to actual Run admission, worker execution,
-native HTTP Consent review, and serialized checkpoints. Fresh adapters resolve acknowledged and
-lost-acknowledgement outcomes without repeating the world command; an injected SQL failure proves
-receipt/cursor/budget rollback, and racing reconciliation returns one settled receipt. Current
-authority and world-epoch changes refuse execution after an earlier approval. This uses an inert
-world and captured queue in one process; it does not establish broker delivery or automatic
-recovery of an orphaned running worker after process death.
+An explicit PostgreSQL selector enables `scavenger.observe_market@2` and its protected
+admission/read/filter/delete API. The serial Graph keeps references only, uses native Core
+consent, and commits the whole field under application custody. The `/scavenger` Altar view
+supplies the complete seed, displays source/coverage and every occurrence, and separates local
+filtering, Run cancellation, and terminal payload deletion. [Scout's evidence boundary](#scout-web-acquisition)
+owns the assembled development proof and remaining installed, public-network, and process limits.
+
+Blockworld has an explicitly assembled, inactive one-block placement Pattern. Portable tests
+exercise real Run admission, the worker, serial Graph, native Consent review, HTTP decision, and
+resume against a composite memory store and inert effect port. They reconstruct serialized fixture
+state in fresh services, preserve canonical Run and exact command through interruption, and
+reconcile a claimed action without invoking it again. In that fixture, matching response and event
+evidence settle the receipt, mission cursor, and placement budget together.
+
+PostgreSQL models, a store, and migration `0011` have passed disposable transaction, recovery,
+and migration-cycle tests, including ORM-schema comparison. A further PostgreSQL vertical joins
+them to actual Run admission, worker execution, native HTTP Consent review, and serialized
+checkpoints. Fresh adapters resolve acknowledged and lost-acknowledgement outcomes without
+repeating the world command. Injected SQL failure proves receipt/cursor/budget rollback, and
+racing reconciliation returns one settled receipt. Changed current authority or world epoch
+refuses execution despite earlier approval. The world is inert and the queue captured in one
+process: this does not establish broker delivery or automatic recovery of an orphaned running
+worker after process death.
 
 A separate opt-in Horizon-assist profile admits strict finite text or externally transcribed
 instructions through native Run admission, worker execution and a serial Graph. Its Linux Unix
@@ -1935,12 +1969,15 @@ queue custody, expiry and single-attempt publication. They do not qualify a live
 
 **Boundary — Not yet:** Creation's one application selector supplies no general Composition or
 Product catalogue, shared store, Suite execution or application scheduler. Other Portfolio members
-have no domain/effect path enabled in normal application assembly. Blockworld's
+have no domain/effect path enabled in normal application assembly.
+
+Blockworld's
 managed mission has no server or bot deployment, authoritative game adapter, production route or
 review producer registration. Horizon assist has no live-qualified multiplayer following or
 shared-world building, speech playback, free-form model planner, broker delivery or restart continuation.
 Its finite idle/follow/build supervisor is an opt-in local profile, not application scheduling or a
 deployed companion. Its portable behavior evidence does not establish live two-client gameplay.
+
 The Fabric companion lab has no qualified human microphone, physical playback, Prism join or
 live player-follow session. Its fixed home chunk ticket does not establish ticking throughout
 the whole control box. It supplies no inventory, mining, building, arbitrary console execution,
@@ -1949,15 +1986,21 @@ Its controller lock and generation records are local fail-closed protection, not
 mission recovery or authenticated server proof. Its portable
 fixture alone does not establish database atomicity or migration safety; those boundaries have
 separate disposable PostgreSQL receipts. Neither fixture qualifies live game effects or a deployed
-Linux operation. Crucible is a designed Weaver choreography, not a
+Linux operation.
+
+Crucible is a designed Weaver choreography, not a
 registered Pattern, parallel Graph, dossier schema, or Altar surface.
+
 Keeper and Cultivator's durable record contracts do not supply database models or migrations.
+
 [Transmuter](./compositions/transmuter/index.md) remains a candidate study outside the accepted
 Portfolio. Its Extractor and Synthesizer pages establish proposed responsibilities, not import
 adapters, processing records, executable Patterns, or Memory/Identity handoffs.
+
 [Accounting Office](./compositions/accounting-office/index.md) also remains a candidate study:
 its proposed mail/bank ports, entity books, jurisdiction profiles, privacy workflow, and accounting
 Patterns establish no implementation, live account access, tax filing, or supported-country claim.
+
 The public Reach contract still supplies no default SDK connection, Ward enrollment, durable
 application turn/outbox, recovery or deployable home/VPS profile. The explicit operator profile
 has no persistent native history, automatic restart, installed service,
@@ -1965,6 +2008,7 @@ qualified live Discord session or actual server-setup receipt. A new worker gene
 older events and loses its memory Runs; its transport journal is not Phylactery. Its reviewed
 local admin commands are separate from Discord chat and do not add native authority. Concurrent
 Discord changes can race non-atomic remote effects; observed mismatches stop further writes.
+
 The optional conversation path has no live-qualified Qwen/Discord dialogue, tools, Mirror
 lineage, general-purpose provider routing or runtime activation. Its local publication queue
 has no Ward producer enrollment, automatic coding-work integration, durable native outbox or
@@ -1972,11 +2016,13 @@ application release judgment. Uncertain publications require inspection rather t
 or automatic resend. Learning, teaching, introspection and Comfy execution are not part of this
 operator profile.
 Public history/media and production deployment acceptance remain separate contract work.
+
 [Reach connected work](./compositions/reach/connected-work/index.md) proposes a successor to the
 public Discord contract for Gmail, Discord and GitHub correspondence, plus optional WhatsApp business
 messaging and a separate owner–agent probe. Its account lifecycle, provider profiles, delivery policy
 and recovery plan supply no implemented OAuth/installation flow, credential service, registered
 operational correspondence Pattern, live provider transport, or deployed private-mail capability.
+
 The separate explicit `reach.connect.prepare@1` profile now supplies immutable Email, Chat, Forge
 and Social requests, exact connection/partition/target policy, provider-specific application payload
 builders and finite WUPHF batch preparation through an inactive native serial Graph. Gmail and
@@ -1986,6 +2032,7 @@ Radicle, unsupported history reads, attachments, social replies and paid campaig
 design work. Preparation performs no network, authentication, provider draft save, send or model
 call, and its policy is not current effect authority. This does not implement the successor's
 durable records/outbox, service attempts, required review, provider qualification or live deployment.
+
 [Thorn](./compositions/thorn/index.md) remains a candidate whitehat security workbench for scoped
 assessment, incident response, cooperative investigation, and reviewed reports/corrections.
 General monitoring and system maintenance remain outside its case ownership. It supplies no
@@ -2113,7 +2160,9 @@ remain candidate work.
 live lenses retain 100 records each; the visible catalogue refreshes every five seconds; zoom or explicit controls disclose Run, station/subject,
 supplied occurrence, and loaded records. Exact pinned workflow graphs show declared permissions
 separately from retained evidence. Catalogue queries select bounded metadata without loading
-prompts, manifests, or event histories. The selected-Run route retains ordered, paginated evidence
+prompts, manifests, or event histories.
+
+The selected-Run route retains ordered, paginated evidence
 with Pattern revision, capture durability, ledger boundaries, gaps, transition links, stable selection, bounded retry, and
 teardown-cancelled reads. Its ledger-polled SSE serves bounded batches, resumes from a delivered
 cursor, reports resets, and closes after the currently retained terminal account drains. Feed
@@ -2125,9 +2174,11 @@ exact Bridge destination. Bridge checks the requested id and Run against its aut
 snapshot, reports unavailable requests without replacement, and focuses once per navigation.
 The return link preserves the originating Orb Run and event; drafts and uncertain verdicts remain
 in the existing shell workspace. This adds no current Consent status or review disclosure to Orb.
+
 Capture limits and coverage precede the evidence list. Rows expose supplied subjects and dated
 local timestamps; selecting one focuses its inspector, and closing it returns focus to the row.
 Delegated jobs unfold after the evidence, with verified linked-job focus preserved.
+
 The selected Run has a loaded-record playback cursor with a frozen evidence lens; live events
 continue without moving that lens. LIVE and Follow latest resume the newest loaded account.
 Allowlisted Animator dispatch identities supply a coloured rail and cursor highlight, with no
@@ -2177,10 +2228,10 @@ It supplies no complete event capture, continuous runtime activity or general re
 
 **State:** Available
 
-**Proved now:** One tested builder configures human and JSON stdlib/Structlog output for CLI and
-Litestar while preserving stdout/stderr semantics, recovery-command fallback, and thread-stable
-repeated bootstrap without an unused logging queue. Worker-thread stdlib exception records and
-direct Structlog exceptions retain usable diagnostics as valid JSON on stderr; human console
+**Proved now:** A single tested builder configures human and JSON stdlib/Structlog output for
+CLI and Litestar. It preserves stdout/stderr semantics, recovery-command fallback, and
+thread-stable repeated bootstrap without an unused logging queue. Worker-thread stdlib exception
+records and direct Structlog exceptions produce valid JSON diagnostics on stderr; human console
 exceptions remain readable.
 
 **Boundary:** Shared configuration does not prove complete semantic audit coverage, trace storage,
@@ -2211,10 +2262,10 @@ Oculus-backed Svelte service. Orb is a bounded Run projection, not Oculus.
 
 **State:** External
 
-**Proved now:** LychD can generate an optional Phoenix service contribution and preserves an
-explicitly configured legacy service name.
-Its generated database connection uses a separate role and credential after the migration gate;
-it receives neither the administrative nor Vessel runtime database password.
+**Proved now:** LychD can generate an optional Phoenix service contribution while preserving an
+explicitly configured legacy service name. After the migration gate, the generated database
+connection uses its separate role and credential. Phoenix receives neither the administrative
+nor Vessel runtime database password.
 
 **External owner and boundary:** [Arize owns Phoenix](https://github.com/arize-ai/phoenix). LychD
 does not own its lifecycle or state, require it for Oculus, or prove application trace export. A
@@ -2232,14 +2283,15 @@ does not own its lifecycle or state, require it for Oculus, or prove application
 
 **State:** Partial
 
-**Proved now:** Immutable influence labels and conservative joins exist. Context Blocks default to
-unknown/restricted; assembly accounts for ungoverned query, history and continuation without
-lowering known ancestry. The offline `closed-diagnostic@1` profile prepares one complete typed
-projection through deterministic redaction, ordered receipts, independent reconstruction and
-utility verification, and a process-local authenticated Cut. Its closed vocabulary and exact
-sensitive spans cover a synthetic diagnostic fixture, not arbitrary text or code. The public
-event projection exposes only an opaque random identifier. Changed bytes, evidence, policy,
-identity, target, expiry, unknown lineage and meaningless redaction refuse verification.
+**Proved now:** Immutable influence labels and conservative joins are present. Context Blocks
+default to unknown/restricted, and assembly accounts for ungoverned query, history, and
+continuation without lowering known ancestry. The offline `closed-diagnostic@1` profile prepares
+one complete typed projection using deterministic redaction, ordered receipts, independent
+reconstruction and utility verification, and a process-local authenticated Cut. Its closed
+vocabulary and exact sensitive spans cover a synthetic diagnostic fixture, not arbitrary text
+or code. Public event projection exposes only an opaque random identifier. Changed bytes,
+evidence, policy, identity, target, or expiry refuse verification, as do unknown lineage and
+meaningless redaction.
 
 The opt-in `closed-diagnostic-recording@1` profile adds durable admission for those exact candidate
 bytes under an independently pinned synthetic export binding. Acknowledged fresh claims consume
@@ -2321,19 +2373,20 @@ unsupported.
 
 **State:** Partial
 
-**Proved now:** Web-acquisition law separates search, fetch, render, extraction, destination
-pinning, quarantine, authentication, and paid effects. The accepted design selects native static
-Fetch + Extract, a SearXNG Search Soulstone, and a later isolated Crawl4AI renderer candidate;
-Firecrawl remains deferred and paid web-acquisition Portals remain private-extension territory.
-The design now binds Scout provider contributions, a narrow SearXNG query/result contract,
-per-transmission engine egress mediation, and static extraction qualification limits and cases.
+**Proved now:** Scout's law assigns separate boundaries to search, fetch, render, extraction,
+destination pinning, quarantine, authentication, and paid effects. The accepted design selects
+native static Fetch + Extract, a SearXNG Search Soulstone, and a later isolated Crawl4AI renderer
+candidate. Firecrawl is deferred, and paid web-acquisition Portals remain private-extension
+territory. Scout provider contributions, a narrow SearXNG query/result contract, per-transmission
+engine egress mediation, and static extraction qualification limits and cases are now specified.
 The complete acquisition envelope remains a design target.
-Pure destination preflight now validates bounded canonical HTTPS URLs and exact-host supplied
-address sets against an explicit conservative IP policy. Its tests cover ambiguous syntax,
-forbidden and mixed answers, caller-forged facts, bounds and absence of I/O. These facts establish
-neither actual DNS resolution nor permission to connect. Workflow law now separates stable
-acquisition identity from Graph re-entry and requires separate custody before content can survive
-a workflow park or restart.
+
+Pure destination preflight validates bounded canonical HTTPS URLs and supplied exact-host
+address sets against an explicit conservative IP policy. Tests cover ambiguous syntax,
+forbidden and mixed answers, caller-forged facts, bounds, and absence of I/O. They establish
+neither actual DNS resolution nor permission to connect. Workflow law separates stable
+acquisition identity from Graph re-entry and requires separate custody before content can
+survive a park or restart.
 
 The fixed native extractor now projects bounded UTF-8 HTML and plain text through a supervised
 Linux child. A maintained Linux x86-64/Bubblewrap 0.12.0/CPython 3.15.0 receipt proves that exact
@@ -2624,12 +2677,12 @@ required-modality fields in the Run ledger. A bare `ArtifactRef` grants neither 
 
 **State:** Partial
 
-**Proved now:** The opt-in `local-public-notes@1` profile admits explicit public notes to one
-configured PostgreSQL namespace. Exact request and source revisions are idempotent; explicit
-promotion, supersession, archival and revocation enforce lifecycle versions. Revocation clears
-controlled text and its search index while retaining minimal anti-reingestion identity. Bounded
-lexical recall writes text-free receipts and rechecks current subject, namespace, policy and
-selected revisions before returning source bytes. Transaction timeouts bound database work.
+**Proved now:** Explicit public notes can enter one configured PostgreSQL namespace through
+the opt-in `local-public-notes@1` profile. Exact request and source revisions are idempotent.
+Explicit promotion, supersession, archival, and revocation enforce lifecycle versions; revocation
+clears controlled text and its search index while keeping the minimal anti-reingestion identity.
+Bounded lexical recall records text-free receipts. Before returning source bytes, it rechecks
+current subject, namespace, policy, and selected revisions. Transaction timeouts bound database work.
 
 `bridge_chat@3` pins the exact local chat capability and Archive profile at admission. Its
 read-only answer uses an attributed transient source message, reserves its Context budget, and
@@ -2906,11 +2959,11 @@ strategy executor, budgeted simulation, collapse implementation, or reaper.
 
 **State:** Designed
 
-**Proved now:** Evaluation law binds declared goals to versioned Cases and Rubrics, with adversarial
-evidence, capability comparison, and calibration. The reference workflow-improvement method
-specifies baseline/candidate comparison, causal replay limits, human-attention measures and
-proposed starter Cases. It includes a historical exploration-replay pilot outline; evaluation law
-distinguishes mechanism reuse from measured improvement in its successors.
+**Proved now:** Evaluation law relates declared goals to versioned Cases and Rubrics,
+adversarial evidence, capability comparison, and calibration. The reference workflow-improvement
+method defines baseline/candidate comparison, causal replay limits, human-attention measures,
+and proposed starter Cases, including an outline for a historical exploration-replay pilot.
+The law distinguishes reuse of a mechanism from measured improvement in the successors it produces.
 
 **Do not expect yet:** There is no runnable harness, replay simulator, maintained suite, scorer
 contract, benchmark history, pass-at-k experiment, or routing update.
@@ -2942,12 +2995,13 @@ evaluation, model registration, rollback, or production promotion.
 
 **State:** Available
 
-**Proved now:** A bounded offline mechanism checks caller-admitted historical obligations and
-retain, reconcile, replace or reject dispositions against an exact base, candidate, policy and
-history. For retain, reconcile and replace, missing required, failing, conflicting or mismatched
-summaries block; replacement requires declared owner retirement and transition/recovery evidence. Deterministic reports distinguish completed
-comparison, recorded rejection and blocked work. Focused tests cover insecure-contract retirement
-with unrelated-extension preservation, exact replay and strict input refusal.
+**Proved now:** A bounded offline mechanism compares caller-admitted historical obligations
+and retain, reconcile, replace, or reject dispositions against an exact base, candidate, policy,
+and history. Retain, reconcile, and replace are blocked by missing required, failing,
+conflicting, or mismatched summaries. Replacement additionally requires declared owner retirement
+and transition/recovery evidence. Deterministic reports distinguish completed comparison,
+recorded rejection, and blocked work. Focused tests cover insecure-contract retirement while
+preserving an unrelated extension, exact replay, and strict input refusal.
 
 **Boundary:** This is consistency checking over admitted claims. It does not retrieve or
 authenticate artifacts, establish factual test results or independent evaluation, create a Drift
@@ -2965,14 +3019,16 @@ Native autonomous Creation and target-owner promotion remain designed.
 
 **State:** Partial
 
-**Proved now:** The narrower [Creation investigation](./compositions/creation/index.md) revision 2
-has a PostgreSQL store, explicit selector, protected local API, fixed serial Pattern and distinct
-constructor/verifier AgentSpecs. It retains original request/source/profile bytes, admission
-attribution, reserved attempts, complete provider responses and separate candidate/verdict. Current
-credential-backed local object/action policy and actual Run state fence claims and adoption.
-Invalid, duplicate-key and length-terminated output remains retained noncompletion without repair
-calls. Valid citations establish exact source spans, not semantic correctness. Deterministic line
-counts guide both roles without changing source bytes or relaxing citation validation.
+**Proved now:** The bounded [Creation investigation](./compositions/creation/index.md) revision 2
+has a PostgreSQL store, explicit selector, protected local API, fixed serial Pattern, and distinct
+constructor/verifier AgentSpecs. It keeps original request/source/profile bytes, admission
+attribution, reserved attempts, complete provider responses, and separate candidate/verdict.
+Current credential-backed local object/action policy and actual Run state fence claims and adoption.
+
+Invalid, duplicate-key, and length-terminated output remains retained noncompletion, without
+repair calls. Valid citations prove exact source spans rather than semantic correctness.
+Deterministic line counts guide both roles without changing source bytes or relaxing citation
+validation.
 
 Focused unit/API and real PostgreSQL cases cover admission refusal, observed-usage limits,
 authority and profile changes, cancellation winning adoption, worker loss after candidate commit
@@ -3187,7 +3243,28 @@ attestation plane, canonical source on Radicle, Radicle node topology or downstr
 
 **State:** Partial
 
-**Proved now:** The inactive `host-opaque-candidate@1` Ward foundation and a separately composed closed native-candidate consumer have a dated combined disposable-PostgreSQL observation: 23 tests passed, comprising 18 Ward cases and five current-authority passage cases. Ward exercises the full real bootstrap/HBA and Alembic chain, including 0019↔0020 and restricted-runtime DML/DDL refusals. The native fixture instead creates isolated Ward/Creation tables through metadata DDL; its five passes qualify the declared authority/custody passage, not a second full migration-chain receipt. That passage binds exact retained candidate bytes and plan, an independent attributed assessment and inactive hold/reject decisions; it exercises actual Principal-lock waiting and committed revocation, database-clock expiry after real staging, serialized shutdown, exact retained-identity reconciliation after injected post-commit acknowledgement loss, and refusal of mapper/table/prebound-connection escapes before effects. Three cached PG objects and their anonymous volumes settled; Root separately recorded retained process/cgroup absence and protected warm/model-state preservation. The earlier Ward-only failed-then-passed receipt remains separate historical evidence. The whole old 66-input qualification is sealed history after the container-only correction. Its oracle preserves the original mechanism, migration and dependency inventory and rejects that dated receipt as current qualification of the combined source. It neither renews the historical observation nor reruns PostgreSQL. The 20 October OCI occurrence passed the same 23 tests in the explicit test image, with actual per-database kernel limits and independently verified container, anonymous-volume and cgroup cleanup. Its dated OCI receipt binds the named configuration, mechanism and test inputs; no model or activation effect was submitted.
+**Proved now:** A dated combined disposable-PostgreSQL observation covers the inactive
+`host-opaque-candidate@1` Ward foundation and separately composed closed native-candidate
+consumer. All 23 tests passed: 18 Ward cases and five current-authority passage cases. Ward uses
+the real bootstrap/HBA and Alembic chain, including 0019↔0020 and restricted-runtime DML/DDL
+refusals. The native fixture instead creates isolated Ward/Creation tables through metadata DDL.
+Its five passes qualify the authority/custody passage, not another full migration-chain receipt.
+
+That passage binds exact retained candidate bytes and plan, an independent attributed assessment,
+and inactive hold/reject decisions. It exercises actual Principal-lock waiting and committed
+revocation, database-clock expiry after real staging, serialized shutdown, and exact retained-identity
+reconciliation after injected post-commit acknowledgement loss. Mapper/table/prebound-connection
+escapes refuse before effects. Three cached PG objects and their anonymous volumes settled;
+Root separately recorded retained process/cgroup absence and preservation of protected warm/model
+state. The earlier Ward-only failed-then-passed receipt remains separate historical evidence.
+
+The old 66-input qualification became sealed history after the container-only correction. Its
+oracle preserves the original mechanism, migration, and dependency inventory, but rejects the
+dated receipt as current qualification of the combined source. It neither renews the observation
+nor reruns PostgreSQL. On 20 October, the OCI occurrence passed the same 23 tests in the explicit
+test image, with actual per-database kernel limits and independently verified container,
+anonymous-volume, and cgroup cleanup. The dated OCI receipt binds the named configuration,
+mechanism, and test inputs. No model or activation effect was submitted.
 
 The separate bounded outbound peer profile separates actual local operator authentication,
 workload signing identity and enrolled immutable remote peer identity. Public credential versions,
@@ -3217,17 +3294,19 @@ implementation gaps above.
 
 **State:** Partial
 
-**Proved now:** The explicit `outbound-public-text@1` service and operator session submit a sealed
-public task, retain the receiver's task identity, poll it and consume authenticated inline text
-under separate read authority. A2A `1.0.1` JSON-RPC and a required RFC 9421 Ed25519 profile bind the
-exact body, roles, peer, schema, physical attempt and pending request. Complete-wire gating uses
-numeric-pinned TLS, explicit CA/hostname, one finite deadline and current same-loop authority.
-Seven PostgreSQL tables retain enrollment, public credentials, source declarations, tasks,
-outbox, physical transmissions and permanent capacity. Every attempt charges one use, its complete
-application bytes and conservative network capacity before contact; observed bytes do not refund
-charges. An uncertain submit is never resent. Fresh authentication can reconcile a known foreign
-task after reconstruction. Local cancellation closes result adoption independently of foreign
-execution observations, and the first admitted terminal remains readable under current authority.
+**Proved now:** The explicit `outbound-public-text@1` service and operator session submit a
+sealed public task, retain its receiver-assigned identity, poll it, and consume authenticated
+inline text under separate read authority. A2A `1.0.1` JSON-RPC with a required RFC 9421 Ed25519
+profile binds exact body, roles, peer, schema, physical attempt, and pending request. Complete-wire
+gating uses numeric-pinned TLS, explicit CA/hostname, one finite deadline, and current same-loop
+authority.
+
+Seven PostgreSQL tables retain enrollment, public credentials, source declarations, tasks, outbox,
+physical transmissions, and permanent capacity. Before contact, each attempt charges one use,
+its complete application bytes, and conservative network capacity; observed bytes never refund
+those charges. An uncertain submit is never resent. After reconstruction, fresh authentication
+can reconcile a known foreign task. Local cancellation closes result adoption independently of
+foreign execution observations. The first admitted terminal remains readable under current authority.
 
 The 22 October manual qualification against official SDK `1.2.3` exercised actual asynchronous task dispatch,
 polling and cancellation with explicitly test-only signing middleware. Lost replies, altered body
@@ -3335,8 +3414,9 @@ or proof that a proxy substitutes for application authorization.
 
 ## Boundaries still to cross {#human-ruling-queue}
 
-The missing pieces converge at a few larger boundaries. Their Covenants retain decisions;
-implementation and named receipts must establish the passage before this ledger can promote it:
+Several larger boundaries collect the remaining work. Their Covenants already own the
+decisions; implementation and named receipts must establish each passage before this ledger can
+promote it:
 
 - single-Vessel ownership, hung shutdown, durable process leases, and multi-process event custody;
 - authenticated caller/object authority, effect-time reauthorization, and remote exposure;
@@ -3346,17 +3426,19 @@ implementation and named receipts must establish the passage before this ledger 
 
 ## Operator receipt requirements
 
-A receipt names the exact commit, configuration, host and security context, runtime and dependency
-revisions, hardware/model identity when relevant, commands, expected and observed results, bounded
-timings, useful work, cancellation, shutdown, recovery, redacted logs, artifact digests, date,
-operator, verdict, and uncovered boundary. A materially different engine, model, image, driver,
-hardware topology, or configuration needs its own receipt.
+A receipt makes an observation reproducible by naming its exact commit, configuration, host and
+security context, runtime and dependency revisions, and relevant hardware/model identity. It
+retains commands, expected and observed results, bounded timings, useful work, cancellation,
+shutdown, recovery, redacted logs, artifact digests, date, operator, verdict, and uncovered
+boundary. A materially different engine, model, image, driver, hardware topology, or configuration
+requires its own receipt.
 
 ## Update law
 
-When behavior or evidence changes, update source, focused verification, the owning topic, and this
-one delivery record together; downgrade immediately when proof disappears. Do not copy canonical
-states into README, Prophecy, Lexicon, ADR indexes, or every Composition leaf.
+Change source, focused verification, the owning topic, and this single delivery record together
+when behavior or evidence changes. If proof disappears, downgrade the record immediately.
+Canonical states must not be copied into README, Prophecy, Lexicon, ADR indexes, or every
+Composition leaf.
 
 ## Enter the Work
 

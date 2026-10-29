@@ -20,13 +20,14 @@ port-forward.
 [ADR 40](../../adr/40-proxy.md) selects Caddy as the default managed engine. An external edge
 remains possible, but no compatibility profile ships.
 
-Remote exposure is opt-in per route. Typed Runes name the host or route, backend, protocols,
-limits, application-authentication preconditions, and exposure tier: public, through
-[Tether](tether.md), or local. Everything else stays closed. The design rejects ambiguous or
-overlapping ownership, unknown backends, non-admitted ports, and raw directives. Contributions
-cannot shadow Core, remove authentication, expose a database or model API, select an arbitrary
-upstream, or create a forward proxy. The complete configuration retains attribution and passes
-Caddy validation in staging before transactional inscription.
+Begin with the particular route to expose. Its typed Rune names the host or route, backend,
+protocols, limits, application-authentication preconditions, and exposure tier: public, through
+[Tether](tether.md), or local. All other routes remain closed.
+
+The design refuses ambiguous or overlapping ownership, unknown backends, unadmitted ports, and
+raw directives. A contribution cannot shadow Core, remove authentication, expose a database or
+model API, select an arbitrary upstream, or create a forward proxy. Before transactional
+inscription, the complete attributed configuration must pass Caddy validation in staging.
 
 Caller-supplied forwarding, identity, and client-certificate claims are discarded. Canonical
 scheme, host, origin, and peer metadata may cross only an authenticated backend path the Vessel
@@ -86,8 +87,9 @@ model, Reactor, systemd, container, application-secret, or arbitrary-egress auth
 
 ## Fail without opening another path
 
-The design detects listener and route collisions before change. Certificate state and account keys
-stay within declared durable and secret boundaries. Each transition validates before activation
-and retains the prior projection for restoration. Renewal failure preserves the last valid
-configuration while readiness degrades before expiry. If ACME prerequisites fail, the public Veil
-stays unavailable while the local Vessel continues. Reconciliation closes removed routes.
+A transition first detects listener and route collisions and validates the candidate before
+activation. Certificate state and account keys remain within declared durable and secret
+boundaries; the prior projection remains available for restoration. If renewal fails, keep the
+last valid configuration and degrade readiness before expiry. Failed ACME prerequisites leave
+the public Veil unavailable while the local Vessel continues. Reconciliation closes routes
+removed from the declaration.

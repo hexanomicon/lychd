@@ -17,7 +17,9 @@ Channels sharing an interface can retain different owners. Speech intended for d
 
 ## Instrument and vocal tracking
 
-An admitted profile identifies each microphone/instrument channel, its electrical input mode, power requirements, gain/clip behavior, and monitoring route from exact device instructions and host measurements. Connector shape and vendor claims cannot prove Linux compatibility. Direct monitoring and a processed Guitarix or other effect path must be explicitly mapped so dry/processed doubles are intentional; retain dry DI separately from the amp/cabinet print.
+Build the admitted profile from exact device instructions and host measurements. For each microphone/instrument channel, identify its electrical input mode, power requirements, gain/clip behavior, and monitoring route. Connector shape and vendor claims cannot prove Linux compatibility.
+
+Explicitly map direct monitoring and any processed Guitarix or other effect path so dry/processed doubles are intentional. Retain dry DI separately from the amp/cabinet print; the monitored sound must not obscure which signal was recorded.
 
 Bluetooth/TWS, passive-instrument inputs, and anonymous microphone kits receive no special compatibility presumption. Every route must pass the exact format, latency, stability, reconnect, and failure bake. Device settings belong to the qualified host route rather than universal instructions inferred from a musical role.
 

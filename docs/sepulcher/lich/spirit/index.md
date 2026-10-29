@@ -28,9 +28,10 @@ four-function presentations, classical Sāṃkhya’s threefold internal organ, 
 and Vṛttis are distinct registers. [Inner Tongue](../../../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
 keeps the source notes, limits, and working distinctions.
 
-One office crosses three surfaces: parametric inheritance (model dispositions), durable forms
-(Phylactery records and governed retrieval), and active assembled Context. These describe how
-retained form may matter, not a single storage mechanism. [ADR 21 — Context](../../../adr/21-context.md)
+Spirit's conditioning can appear on three surfaces: model dispositions carry parametric
+inheritance; Phylactery records and governed retrieval carry durable forms; assembled Context
+brings material into the present. These surfaces explain how retained form can matter without
+reducing the office to one storage mechanism. [ADR 21 — Context](../../../adr/21-context.md)
 owns the active field; [ADR 27 — Memory](../../../adr/27-memory.md) owns durable Archive and Recall.
 
 > _Next: enter [the Flux](./flux.md), where the Spirit moves now._

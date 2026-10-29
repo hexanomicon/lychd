@@ -22,9 +22,9 @@ The coordinator performs this order without omission:
    manifest and captures as one checkpoint;
 5. resume admission only after that seal succeeds or the freeze is explicitly aborted.
 
-A failure writes no valid seal. The body returns to its pre-capture state when it can, otherwise
-remains paused for repair. A capture is therefore never inferred from a collection of nearby
-backups.
+Only a successful seal establishes a capture. If capture fails, no valid seal is written; the
+body returns to its pre-capture state where possible and otherwise stays paused for repair.
+A set of nearby backups cannot substitute for that coordinated result.
 
 ## Manifest and capture
 
@@ -43,11 +43,11 @@ the protocol without altering its restore semantics.
 
 ## Rehydration and reckoning
 
-Restore enters an inactive target. It verifies the seal and manifest, supplies the exact revision
-and locks, restores stores through the recorded driver, verifies schema/configuration/artifact/
-extension/storage identity, rebuilds only where the manifest says a rebuild is required, and then
-reconciles. Admission opens last. A mismatch stops reanimation; migration to a newer body is an
-[Evolution](18-evolution.md) act, not restore.
+Restore begins with an inactive target and opens admission last. First it verifies the seal and
+manifest, supplies the exact revision and locks, and restores stores through the recorded driver.
+It then verifies schema/configuration/artifact/extension/storage identity, performs only the
+rebuilds required by the manifest, and reconciles. Any mismatch stops reanimation. Moving to a
+newer body requires an [Evolution](18-evolution.md) act rather than being treated as restore.
 
 Reconciliation revokes vanished leases and worker attachments, re-admits only work parked at a
 declared checkpoint edge, and marks all other in-flight work `abandoned`. It identifies external
@@ -65,9 +65,10 @@ Known loss or uncertainty of that control history keeps the store inactive. A fu
 reconcile independently retained, nonrollback authority before opening admission; inode, UUID and
 in-root hash checks alone do not establish that freshness.
 
-The coordinator composes, rather than absorbs, the owners of queue claim and retry
-([Workers](14-workers.md)), graph re-admission ([Graph](24-graph.md)), physical convergence
-([Orchestrator](23-orchestrator.md)), and source selection ([Evolution](18-evolution.md)).
+Each participating owner keeps its responsibility during recovery: [Workers](14-workers.md)
+owns queue claim and retry, [Graph](24-graph.md) owns graph re-admission,
+[Orchestrator](23-orchestrator.md) owns physical convergence, and [Evolution](18-evolution.md)
+owns source selection. The coordinator composes their work without absorbing their authority.
 
 ## Delivery boundary
 

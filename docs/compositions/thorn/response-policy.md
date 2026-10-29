@@ -50,11 +50,13 @@ Iron Shield can execute prompt preauthorized protection. Hornet can investigate 
 requiring acceptance for every service change. Automation preference alone grants neither one
 permission to act.
 
-Preauthorization binds the action, eligible targets, evidence conditions/freshness, current
-authority, impact limit, duration, rate/concurrency ceiling, verification, and recovery rule.
-The effect boundary checks these independently of the proposing worker. “Defend me” and a model's
-severity label do not constitute that envelope. Conflicting actions over a resource need an
-accountable owner; changing the target cannot evade aggregate limits.
+For preauthorization, state which action may run against which eligible targets and under what
+evidence conditions/freshness. Bind current authority, impact limit, duration, rate/concurrency
+ceiling, verification, and recovery rule. The effect boundary checks this envelope independently
+of the proposing worker; “Defend me” and a model's severity label cannot supply it.
+
+When several actions could affect one resource, retain an accountable owner for resolving
+conflicts. A changed target still falls under the aggregate limits.
 
 Preserve accepted, effective, partially effective, and unknown outcomes. Reconcile ambiguity before
 retry; account for service impact and current exposure before rollback. An irreversible action
@@ -91,11 +93,13 @@ budget. Show the effective choices and their origins before admission. Missing l
 conflicting policy produces a concrete refusal. New methods, destinations, or disclosures need
 their own admission even when more effort is available.
 
-Each occurrence pins its effective policy revision and budget allocation. A new default governs
-new admissions; it cannot rewrite historical Runs or silently upgrade open cases. Explicitly
-applying a downgrade, expiry, or revocation stops newly disallowed optional work, rechecks queued
-effects, and accounts for work underway. A higher allowance needs a newly admitted allocation;
-retries never reset consumption.
+At admission, each occurrence pins its effective policy revision and budget allocation. Changing
+the default governs later admissions while preserving historical Runs and the existing limits of
+open cases.
+
+To apply a downgrade, expiry, or revocation to current work, stop newly disallowed optional work,
+recheck queued effects, and account for work already underway. Raising an allowance instead needs
+a newly admitted allocation. Retrying never resets what the work has consumed.
 
 Switching to Iron Shield leaves separately admitted protection and collectors in place; stopping
 a collector has its own control. Corrections and uncertain deliveries survive. Returning to a

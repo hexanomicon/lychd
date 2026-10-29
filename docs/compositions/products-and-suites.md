@@ -5,7 +5,7 @@ icon: material/vector-link
 
 # :material-vector-link: Products and Suites
 
-An editor can assemble a film from visual, music, and language bundles that already exist. A different promise—commission changes in all three and deliver one jointly settled result—must coordinate their live work. Products and Suites give those two situations different homes.
+An editor can assemble a film from visual, music, and language bundles that already exist. A different promise—commission changes in all three and deliver one jointly settled result—must coordinate their live work. The distinction is whether the application receives finished contributions or must coordinate work still in progress.
 
 A **Product** is the promise an operator chooses. It names the profession or market it serves,
 the supported jobs, defaults, and support envelope. Its exact revision pins the eligible
@@ -74,7 +74,9 @@ Proposed Mechanic packages Workshop's passenger-vehicle service profile. A settl
 
 An exact `KeeperSupplyNeed@1` or `CultivatorSupplyNeed@1` can enter Homestead provision; an attributed yield can later enter stores. An admitted environment requirement can receive a `HomesteadEnvironmentResult@1` in separate work. These settled references need no Suite, and technical success does not settle biological care. A common household Product or dashboard also needs no Suite merely to show the three owners together.
 
-“Prepare care during my absence” needs a Suite if it starts care-planning Invocations, awaits household supply and environment work, and recovers or cancels them as one result. Before that path can be cast, its own published revision must pin exact member Patterns, handoffs, deadlines, aggregate ceilings, conflict policy, cancellation, and partial settlement. No Suite identity or executable absence workflow is accepted by this example. A refused water allocation leaves the dependent tending plan blocked; a completed purchase remains committed when another member fails. The parent cannot cancel local life-support protection or erase a member's unknown physical effect to declare the household ready.
+“Prepare care during my absence” needs a Suite when it promises to start care-planning Invocations, await household supply and environment work, and recover or cancel them as one result. Before casting that path, publish its own revision with exact member Patterns, handoffs, deadlines, aggregate ceilings, conflict policy, cancellation, and partial settlement. This example accepts no Suite identity or executable absence workflow.
+
+The joint result must preserve what each member actually did. A refused water allocation leaves the dependent tending plan blocked; a completed purchase remains committed when another member fails. The parent cannot cancel local life-support protection or erase a member's unknown physical effect to declare the household ready.
 
 ### Atelier, Riffmaw, Language Edition, and Broadcast
 
@@ -169,6 +171,8 @@ not a shipped industrial application or profile selector.
 
 Commercial catalogues may live outside LychD and reference exact public revisions. Their websites own presentation; private Product truth stays outside technical docs. LychD may link rather than copy it.
 
-An open-source Product reference needs exact Product/use-case and Composition/Suite/profile pins; code licence/notices and separate model, data, fixture, font, screenshot, mark, and redistribution rights; reproducible installation/acceptance; State evidence; and honest externally supplied dependencies. Source alone is insufficient. When necessary weights, corpora, providers, or assets cannot be redistributed, describe “open-source Product code with externally supplied dependencies,” not an unqualified FOSS Product. State must record the evidence before it becomes a technical reference; this page creates no catalogue or selector.
+To establish an open-source Product reference, pin the exact Product/use-case and Composition/Suite/profile revisions. Account for code licence/notices and the separate model, data, fixture, font, screenshot, mark, and redistribution rights. The reference also needs reproducible installation/acceptance, State evidence, and an honest account of externally supplied dependencies; source alone is insufficient.
+
+If necessary weights, corpora, providers, or assets cannot be redistributed, describe “open-source Product code with externally supplied dependencies,” not an unqualified FOSS Product. State must record the evidence before it becomes a technical reference. This page creates no catalogue or selector.
 
 [Choosing a Home](choosing-a-home.md) · [Workflow](../adr/28-workflow.md#compositions-products-suites-and-schedules) · [State of Work](../state-of-the-work.md#composition-portfolio-delivery)

@@ -43,11 +43,14 @@ It has no live Ward projection factory, role parser, Principal, Credential or Gr
 fixture's local offers can be narrowed in tests; the app exposes no user-controlled role or
 capability selector.
 
-The current surfaces are Conversation, Words and Local recording. Creation/opening a conversation
-is distinct from reading/refreshing one. A read-only offer cannot invoke the initial POST or
-Refresh's create fallback. Missing policy denies work by default; an omitted offer denies the
-corresponding surface/action. A stale local context cannot authorize a callback or queued action.
-Unknown access is distinct from a submission whose external outcome is unknown.
+The current surfaces are Conversation, Words and Local recording. Their actions remain separate:
+creation/opening is distinct from reading/refreshing a conversation. A read-only offer therefore
+cannot invoke the initial POST or Refresh's create fallback.
+
+Check the exact offer whenever work is requested. Missing policy denies work by default; an
+omitted offer denies its corresponding surface/action. A stale local context cannot authorize
+a callback or queued action. Also distinguish unknown access from an already attempted submission
+whose external outcome is unknown.
 
 Compose and its controller use the same policy. Hiding a button is presentation; the controller
 also checks policy and local conditions before invoking transport or capture. This is preparation
@@ -57,11 +60,14 @@ it cannot establish Ward enforcement.
 
 ## Context change and loss of access
 
-Selecting another instance/account, signing out, losing access or replacing the current projection
-advances a local generation before any new work. Clear affected session IDs, history, draft,
-reviewed-word state and pending presentation; cancel local microphone/replay and attempt bounded
-file cleanup. Late transport and audio results remain bound to their originating generation and
-cannot populate the replacement context. Safety stops and deletion retries remain available.
+When the person selects another instance/account, signs out, loses access or replaces the current
+projection, advance the local generation before any new work. Clear affected session IDs, history,
+draft, reviewed-word state and pending presentation. Cancel local microphone/replay and attempt
+bounded file cleanup.
+
+Keep late transport and audio results bound to their originating generation; they cannot populate
+the replacement context. Safety stops and deletion retries remain available so losing work access
+does not prevent local cleanup.
 
 Changing context does not cancel server work, transfer its authority or prove whether an
 in-flight submission was admitted. Do not replay or retarget it. Reconciliation belongs to its

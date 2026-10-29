@@ -5,9 +5,10 @@ icon: material/calendar-clock
 
 # :material-calendar-clock: Scheduling and service classes
 
-A Bridge turn needs attention now. A nightly rite may wait until five. A backfill may borrow only
-capacity it can safely release. These are three admission promises, each with a different way to
-wait, miss, yield, or finish.
+A Bridge turn needs attention now. A nightly rite may wait until five. A backfill may borrow
+capacity only while it can safely release it. Scheduling must preserve each of these promises
+through waiting, missed windows, yielding, and completion. The distinctions below explain what
+admission can promise and which evidence is needed to keep that promise.
 
 > _The night bell sounds above the forge. Below, a hammer is still falling._
 
@@ -77,12 +78,13 @@ worker until its window opens.
 
 ## The Occurrence before the Run
 
-An **Occurrence** is one schedule or external-trigger firing before Invocation admission. Find
-it by authority-qualified stable Schedule and recoverable source firing before consulting the
-active revision. A calendar source identifies its nominal firing and selected fold member when
-applicable; an external source supplies a durable source-qualified event identity. Jitter, input
-equality, delivery attempts, and delayed eligibility never create another firing. This describes
-the identity boundary, not a public identifier encoding.
+Before admitting an Invocation, Spellweaver identifies the schedule or external-trigger firing
+that requested it. That firing is an **Occurrence**. Find it by authority-qualified stable Schedule
+and recoverable source firing before consulting the active revision. A calendar source identifies
+its nominal firing and, where applicable, selected fold member; an external source supplies a
+durable source-qualified event identity. Jitter, input equality, delivery attempts, and delayed
+eligibility never create another firing. This defines the identity boundary, not a public
+identifier encoding.
 
 Each firing is assigned to one exact Schedule revision once. A repeated source event after a
 revision switch retrieves that original assignment, even if its Run has already settled. For a
@@ -107,12 +109,12 @@ to `deadline_windowed`; foreground and spare-capacity work require no invented c
 | Overlap, misfire, and catch-up policy | Exact treatment of a prior live Invocation and missed firings. |
 | Budgets and policy generation | Concurrency, time, capability, token, spend, network, storage, and other ceilings to revalidate. |
 
-A duplicate source firing with the same immutable source content returns the existing Occurrence
-and its admission outcome under the originally assigned revision. Changed source content fails
-closed; a newly active policy revision alone is not changed source content. A crash after
-persistence but before admission relays the same Occurrence. A crash after admission commit
-recovers its exact Invocation and initial Run delivery. Neither case mints another firing or
-proves exactly-once external effects.
+Recovery returns to that retained assignment. A duplicate source firing with the same immutable
+source content returns the existing Occurrence and its admission outcome under the originally
+assigned revision. Changed source content fails closed; activating a new policy revision alone
+does not change source content. After persistence but before admission, a crash relays the same
+Occurrence. After admission commit, recovery retrieves its exact Invocation and initial Run
+delivery. Neither recovery path mints another firing or proves exactly-once external effects.
 
 The delivered Graph runtime also has a field named `occurrence_id` for each node attempt. That is a
 legacy station-attempt correlation, not the durable Spellweaver Occurrence described here. A future
@@ -220,12 +222,13 @@ justify replacement submissions.
 
 ## Selection is not three FIFO lines
 
-Foreground receives the default latency preference. That preference cannot be absolute: continuous
-foreground demand would otherwise make a deadline promise dishonest. Spellweaver first removes invalid,
-revoked, duplicate, or expired candidates, then considers deadline feasibility and protected
-capacity, foreground latency, remaining deadline-windowed work, and finally spare-capacity work.
-Within a class, pinned priority and aging may order eligible candidates; neither may widen Sigil,
-budget, egress, effect, or lifecycle authority.
+Foreground has the default latency preference, but deadline feasibility and protected capacity
+must also shape selection. An absolute foreground preference could make deadline promises
+dishonest under continuous demand. Spellweaver first removes invalid, revoked, duplicate, or
+expired candidates. It then considers deadline feasibility and protected capacity, foreground
+latency, remaining deadline-windowed work, and finally spare-capacity work. Within a class,
+pinned priority and aging may order eligible candidates; neither may widen Sigil, budget, egress,
+effect, or lifecycle authority.
 
 `estimated_duration` and resource estimates may support feasibility only when their provenance and
 confidence are explicit. Unknown capacity cannot be rounded into success. For deadline-windowed
@@ -255,10 +258,11 @@ rewrites a deadline because the substrate is inconvenient.
 
 ## Authority, failure, and recovery
 
-A Schedule is durable intent, not stored authority. Occurrence creation, Invocation admission,
-worker claim, Stasis return, and every consequential effect re-evaluate the current owner, Sigil,
-Pattern revision, input, budget, policy generation, and required consent. Revocation invalidates
-affected pending work. Priority, lateness, or catch-up never revives a credential or bypasses Ward.
+A Schedule retains intent across time. Current authority must still be checked when that intent
+is acted upon: Occurrence creation, Invocation admission, worker claim, Stasis return, and every
+consequential effect re-evaluate the current owner, Sigil, Pattern revision, input, budget, policy
+generation, and required consent. Revocation invalidates affected pending work. Priority,
+lateness, or catch-up never revives a credential or bypasses Ward.
 
 The identity boundaries remain separate:
 
@@ -281,10 +285,11 @@ cohort establishes neither a durable Occurrence nor workflow settlement.
 
 ## Evidence before delivery
 
-Promotion requires an executable receipt for the declared calendar, deduplication, admission,
-overlap, yielding, authority, and recovery behavior. The [Workflow Covenant](../../../adr/28-workflow.md#compositions-products-suites-and-schedules)
-owns those obligations; each temporal choice above must be exercised through its failure and
-restart boundaries before it becomes an operating promise.
+Before this design becomes an operating promise, promotion needs an executable receipt covering
+the declared calendar, deduplication, admission, overlap, yielding, authority, and recovery
+behavior. The [Workflow Covenant](../../../adr/28-workflow.md#compositions-products-suites-and-schedules)
+owns those obligations. Each temporal choice above must be exercised at its failure and restart
+boundaries; a successful ordinary firing cannot establish them all.
 
 Until that evidence exists, current `runs`/`rites`, priority constants, and proposed Whim or idle controls must
 not be presented as this scheduler. The former no-effect `perform_rite` placeholder has been

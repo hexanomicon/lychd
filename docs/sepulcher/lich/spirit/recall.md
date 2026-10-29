@@ -11,9 +11,9 @@ icon: material/restore
 [Flux](./flux.md). **Smṛti** comes from _smṛ_: to remember or call to mind. In Patañjali’s map it is
 itself a Vṛtti: retained cognition becoming present cognition.
 
-Its sequence is storage → retrieval → relevance → reanimation. Retrieval finds a candidate;
-relevance recognizes what may answer the present; reanimation lets that form shape active Flux.
-Recall is complete only then. The same field may call toward a present signal or a latent
+Follow storage → retrieval → relevance → reanimation. Retrieval finds a candidate; relevance
+recognizes what might answer the present situation. Recall completes only when reanimation lets
+that form shape active Flux. The same field can call toward a present signal or a latent
 [Seed](./seed.md).
 
 Returned form can be false, obsolete, or in the wrong relation. Similarity establishes neither

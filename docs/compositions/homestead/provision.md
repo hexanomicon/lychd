@@ -11,13 +11,17 @@ An approved need is still several steps away from an order. Provision brings ord
 
 `homestead.observe_shops@1` admits dated, attributed offers from Kaufland, Lidl, another merchant, a local market, or another eligible source. A shop profile is independently revocable. Public fetch, rendered observation, authentication, cart mutation, address disclosure, order submission, and payment remain separate powers.
 
-`homestead.plan_provision@2` combines policy, stores, budget, offers, and purpose-limited needs: `FoodNeed@1` from [Eating](../wellbeing/eating.md), `KeeperSupplyNeed@1` from [Feeding](../keeper/feeding.md), or `CultivatorSupplyNeed@1` from [Tending](../cultivator/tending.md). Each binds its originating owner and revision, required quantities and units, exclusions, useful product traits, validity/expiry, privacy class, and unresolved flags. It carries no diagnosis, care journal, measurement history, medication record, genetics, movement history, or merchant instruction. The care owner retains the subject and profile behind the minimal requirement.
+`homestead.plan_provision@2` brings policy, stores, budget, and offers together with the needs being supplied: `FoodNeed@1` from [Eating](../wellbeing/eating.md), `KeeperSupplyNeed@1` from [Feeding](../keeper/feeding.md), or `CultivatorSupplyNeed@1` from [Tending](../cultivator/tending.md).
+
+Each need gives Provision enough information to find the supply: its originating owner and revision, required quantities and units, exclusions, useful product traits, validity/expiry, privacy class, and unresolved flags. The care owner retains the subject and profile behind that requirement. No diagnosis, care journal, measurement history, medication record, genetics, movement history, or merchant instruction accompanies it.
 
 A supply's availability cannot establish biological suitability. A material substitution outside the reviewed need returns to its owner before approval and checkout; Homestead cannot weaken species, culture, or human-food constraints to finish a cart. Live-animal acquisition, breeding commitments, clinical treatments, and hazardous or regulated agricultural interventions are not ordinary-consumable checkout paths.
 
 `homestead.build_cart@1` prepares the cart. Before `homestead.checkout@1` submits it once, it rechecks merchant, product, package, price, stock, fees, delivery, substitutions, recurring terms, disclosure, and worst-case budget. A material change returns to the Magus. Raw addresses, payment data, credentials, and one-time codes never enter prompts.
 
-`ProvisionResult@1` reports what became available, unavailable, substituted, refused, or uncertain. It does not report eating, health, or adherence. Offers, plans, carts, orders, deliveries, and reconciliation retain independent revisions. Missing merchant acknowledgement leaves checkout or payment unknown and blocks retries until reconciliation establishes the effect. Restart cannot duplicate cart changes, orders, notifications, or delivery reconciliation.
+`ProvisionResult@1` closes this work by reporting what became available, unavailable, substituted, refused, or uncertain. Eating, health, and adherence require their own evidence. Keep offers, plans, carts, orders, deliveries, and reconciliation independently revisioned so a later correction can identify the affected step.
+
+If the merchant acknowledgement is missing, checkout or payment remains unknown. Reconcile that effect before retrying. Restart cannot duplicate cart changes, orders, notifications, or delivery reconciliation.
 
 Personal meal choice, preparation guidance, and eating out remain with Wellbeing; confirmed cooking becomes a stock transformation in [Stores](stores.md). [Scavenger](../scavenger/index.md) owns irregular, high-value, compatibility-heavy, property, and seller-negotiated acquisitions.
 

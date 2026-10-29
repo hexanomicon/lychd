@@ -7,10 +7,16 @@ icon: material/shape-outline
 
 A publication needs sources, editorial judgment, and a release decision. A musical work needs its own acceptance, credits, and production records. Combining them should preserve what each contribution means and who answers for it.
 
-A **Composition** gives that work a durable home. It keeps the application's records, judges its
-results, and governs the effects it may request. Its policies, projections, and catalogue of
-Patterns belong to the same reusable application across customers, Products, and deployments.
-Browse by the outcome you want to leave behind.
+A **Composition** gives each application a durable home. For the publication, Broadcast keeps
+the source words and evidence alongside editorial decisions and candidate revisions. Riffmaw
+keeps the musical work's production history and acceptance. When the editor uses that music,
+Broadcast judges its place in the final cut without taking over Riffmaw's judgment of the music.
+Putting the accepted cut before an external audience still needs a separate release decision.
+
+More generally, a Composition keeps the application's records, judges its results, and governs
+the effects it may request. Its policies, projections, and catalogue of Patterns belong to the
+same reusable application across customers, Products, and deployments. Browse by the outcome
+you want to leave behind.
 
 For a software question, [Creation investigation](creation/index.md) retains the source, candidate
 and separate verdict under one bounded application contract.
@@ -31,11 +37,12 @@ leading to its applications and their outcomes.
 | [Presence & Embodiment](presence-and-embodiment/index.md) | social presence, presentation, virtual worlds, physical bodies, and mobile sessions |
 | [Professional Operations](professional-operations/index.md) | attributable client casework and professional handoffs |
 
-Areas can overlap. Each Composition keeps one canonical route and owns its records and judgment;
-the Area supplies orientation. A [Suite](products-and-suites.md#compositions-relate-without-nesting)
+Areas may overlap because a reader can approach the same work from different concerns. Each
+Composition nevertheless keeps one canonical route and owns its records and judgment; the Area
+only helps the reader find it. A [Suite](products-and-suites.md#compositions-relate-without-nesting)
 coordinates live work within one Area or across several. The [Area contract](../adr/28-workflow.md#areas-for-discovery)
-keeps navigation separate from application ownership. Guides and Candidate studies remain
-separate views of explanations and proposals.
+keeps that navigation separate from application ownership, while Guides and Candidate studies
+provide separate views of explanations and proposals.
 
 ## Follow a shared work
 

@@ -25,12 +25,12 @@ Context is itself one of the Blade's cuts. In this correspondence, selecting its
 is Buddhi's progressive clarification: omitted material has not thereby been judged false.
 [ADR 21 — Context](../../adr/21-context.md) owns what must fit and when assembly must refuse.
 
-Giving a model tokens does not tell attention what is true or important; it only makes those signs
-available to its attention mechanism. Reassembling a narrower Context at each bounded handoff can
-therefore act like a zoom: each recipient inherits an attributable field, makes another cut, and
-passes forward a more task-specific view. The zoom remains trustworthy only while provenance,
-constraints, omissions, and uncertainty survive the handoffs. Otherwise compression becomes
-forgetting, and a sharp answer may only be a narrow one.
+Supplying tokens makes signs available to a model's attention mechanism. It does not establish
+which signs are true or important. A bounded handoff can therefore reassemble Context like a
+zoom: each recipient receives an attributable field, makes another cut, and passes a more
+task-specific view onward. Preserve provenance, constraints, omissions, and uncertainty through
+every such handoff. Otherwise compression becomes forgetting, and the apparent sharpness of an
+answer may come only from what it no longer sees.
 
 ### Stay with the consequential relation { #sustained-attention }
 
@@ -48,11 +48,11 @@ distinction still needs evidence, another witness where relevant, and a route to
 
 ## The Magus bottleneck {#the-magus-bottleneck}
 
-Model power can generate more candidates than one Magus can judge. Adding another Agent does
-little for general intelligence if the human must still discover every important question,
-repair every framing, and decide which test would settle each dispute. **Viveka** names the
-discernment that must become transferable: recognizing what matters, why it matters here, and
-what would change the judgment.
+The bottleneck moves to judgment when model power produces more candidates than one Magus can
+examine. More Agents do little for general intelligence if the human must still find every
+important question, repair every framing, and choose the test for every dispute. **Viveka** names
+what must become transferable: recognizing what matters, why it matters here, and what would
+change the judgment.
 
 A procedure can work perfectly in isolation while carrying a responsibility that belongs
 elsewhere. A fluent explanation of its operation may conceal the missing question of why it
@@ -74,12 +74,11 @@ the whole effort astray. The first cut examines the direction itself. A flawless
 steps can still carry the Work away from its purpose. The depth of this examination should
 answer to the consequence of choosing wrongly and the cost of changing course.
 
-Some directions become legible only through an experiment. Then the next act should be the
-smallest informative trial: name the uncertainty, the observation that would favor or defeat
-the approach, and the point at which to reconsider. The trial is itself a way of measuring.
-Its result must be able to redirect the work before further effort hardens into commitment.
-Discernment includes recognizing when another argument can clarify the path and when contact
-with the world must supply what thought alone cannot.
+When an argument cannot settle a direction, use the smallest informative trial. Name the
+uncertainty, the observation that would favor or defeat the approach, and the point for
+reconsideration. This experiment is itself a measurement. Its result must be able to redirect
+the work before more effort hardens into commitment. Discernment includes knowing when further
+thought can help and when only contact with the world can supply the missing answer.
 
 ## Discernment within exploration { #discernment-within-exploration }
 
@@ -144,17 +143,16 @@ observation.
 
 ### Illuminate what the argument omitted {#coverage-and-stopping}
 
-Coverage is itself a judgment. The Crucible must examine how the question was framed, which
-alternatives were admitted, whose experience is absent, and what evidence all sides inherited
-without checking. Ten advocates can share one blind spot. A strong opposition must be able to
-change the question, not merely compete inside its first formulation.
+The Crucible must examine what the contest left out. How was the question framed? Which alternatives were admitted,
+whose experience is absent, and what evidence did every side inherit unchecked? Ten advocates
+can share one blind spot. Coverage is therefore a judgment in its own right, and serious
+opposition must be able to change the question as well as contest answers within it.
 
-For a bounded decision, the Blade should be able to name what was examined, the consequential
-gaps, and the observation that would reopen the case. Another check is useful when it can
-change the act; repetition that only increases agreement supplies no new ground. The cut may
-yield a supported decision, a targeted request for evidence, or an honest ending without a
-decision. Learning to recognize an adequate stopping point belongs to discernment alongside
-learning to search.
+For a bounded decision, name what was examined, which gaps could matter, and what observation
+would reopen the case. Another check earns its place if it can change the act. Repetition that
+only strengthens agreement supplies no new ground. The cut can yield a supported decision,
+a targeted evidence request, or an honest ending without a decision. Learning when to stop
+belongs to discernment as much as learning where to search.
 
 Compression must carry what could defeat a favored answer, including dissent and missing evidence.
 Otherwise the Crucible merely rewards what survived summarization. [Spellweaver](../extensions/weaver/crucible.md)

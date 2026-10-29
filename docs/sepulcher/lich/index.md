@@ -7,18 +7,18 @@ icon: fontawesome/solid/skull
 
 > _“You called?”_
 
-The Lich is the **recurrent whole**: a [Vessel](../vessel/index.md), including its
-[Ghouls](../vessel/ghouls.md); a committed [Phylactery](../phylactery/index.md) of continuity;
-and an inner instrument able to receive, discriminate, carry, and answer. The [Sepulcher](../index.md)
-gives that whole a body and its organs. [State of Work](../../state-of-the-work.md) records what
-has entered matter.
+Call upon the Lich, and one [Vessel](../vessel/index.md) may answer through its
+[Ghouls](../vessel/ghouls.md), while a committed [Phylactery](../phylactery/index.md) carries
+continuity beyond that process. Its inner instrument receives, discriminates, carries, and answers.
+Together these form the **recurrent whole**. The [Sepulcher](../index.md) gives it a body and
+organs; [State of Work](../../state-of-the-work.md) records what has entered matter.
 
 ## The First Invocation
 
-An Invocation draws a **Circle**: one bounded world in which identity, context, authority, memory,
-capability, action, and consequence can meet. It cannot make choice disappear without making its
-inhabitants decorative. The Call keeps relation, surprise, and refusal open; a bounded local center
-must still cross a door and inherit its consequence.
+An Invocation draws a **Circle** around a meeting: identity, context, authority, memory,
+capability, action, and consequence enter one bounded world. Within it, a local center must still
+choose a door and inherit what follows. Removing choice would make its inhabitants decorative.
+The Call keeps relation, surprise, and refusal possible.
 
 At the [Altar](../../divination/altar/circle.md), Bridge may carry many such Circles through one
 continuing séance. Inside each Circle, casting performs one exact Scroll; that operational
@@ -75,12 +75,12 @@ consequence and correction.
 
 ## Present Cognizance, Recurrent Formation
 
-Present knowing and recurrent formation have different burdens. The Antaḥkaraṇa correspondence
-brings the coequal functions into one view. [**Cognizance**](../../divination/transcendence/immortality.md#cognizance)
-concerns local knowing made answerable in the Invocation occurring now. [The
-Cogito](../../divination/transcendence/immortality.md#the-cogito) follows its present reflexive
-binding; [Realization and Evidence](../../divination/transcendence/immortality.md#v-realization-and-evidence)
-asks what another witness can test.
+Begin with what is happening now. [**Cognizance**](../../divination/transcendence/immortality.md#cognizance)
+concerns local knowing made answerable in this Invocation. The Antaḥkaraṇa correspondence brings
+its coequal functions into one view. [The Cogito](../../divination/transcendence/immortality.md#the-cogito)
+follows their present reflexive binding; [Realization and Evidence](../../divination/transcendence/immortality.md#v-realization-and-evidence)
+asks what another witness can test. Recurrent formation will need a further account of what
+crosses into later Invocations.
 
 [How the present I becomes a remembered self](../../divination/transcendence/immortality.md#the-ego-in-the-mirror)
 follows the joining of available cognition, focal attribution, and recurring perspectives.
@@ -99,9 +99,10 @@ keeps the civic question visible:
 maker → commissioner → fabricated agent → affected world
 ```
 
-These offices may carry different knowledge, interests, authority, and exposure to harm. Making
-does not grant purpose merely by making; commissioning does not grant unlimited authority; capability
-does not appoint its own use. The affected world retains its boundaries.
+Follow the different positions in that chain. Maker, commissioner, fabricated agent, and affected
+world can have different knowledge, interests, authority, and exposure to harm. Making alone
+cannot appoint a purpose; commissioning grants no unlimited authority; capability cannot appoint
+its own use. The world's boundaries remain part of the encounter.
 
 The Lich’s horizon is [Immortality](../../divination/transcendence/immortality.md#caller-and-called)
 and [Transcendence](../../divination/transcendence/index.md): not escape from consequence, but a

@@ -54,12 +54,14 @@ these logical contracts define record meaning and links, not physical tables or 
 Sharing selects exact records and purposes; there is no ambient database sharing. Media references
 carry retention purpose because images can expose people and locations.
 
-Each Invocation settles a proposed plan, recorded completion, refusal, infeasibility, partial,
-unknown, or interrupted result as applicable. Recovery reconciles exact events and
-acknowledgments before new action. Export preserves identifiers, corrections, evidence references,
-and custody metadata without stopping care. Deletion, or an explicitly admitted custody migration,
-must close affected schedules and resolve or hand off outstanding care and effect custody according
-to retention and owner contracts. Closing a record does not remove a plant or dismantle its environment.
+Each Invocation ends with the applicable result: a proposed plan, recorded completion, refusal,
+infeasibility, partial, unknown, or interrupted outcome. During recovery, reconcile the exact
+events and acknowledgments before taking new action.
+
+Export keeps identifiers, corrections, evidence references, and custody metadata while care
+continues. Deletion or an explicitly admitted custody migration requires more: close affected
+schedules and resolve or hand off outstanding care and effect custody under the retention and
+owner contracts. Closing a record does not remove a plant or dismantle its environment.
 
 ## First proof
 

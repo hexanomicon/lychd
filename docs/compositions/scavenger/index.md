@@ -13,7 +13,7 @@ The cheapest listing may be the wrong part; the attractive vehicle may carry una
 
 A campaign begins with its revisioned subject profile, concrete need, known inventory, budget, deadline, region, evidence standard, source policy, and autonomy ceiling. It may return a durable campaign, reviewed field, explicit preference revision, shortlist, seller thread, negotiated outcome, commitment, parcel result, or diligence packet.
 
-Scavenger owns criteria, observations, evidence, rankings, judgments, preference revisions, offers, commitments, parcels, inspections, and diligence alongside the campaign. Scout owns bounded acquisition/interaction receipts. The Magus retains private disclosure, final commitment, payment, acceptance, dispute, and every property transaction.
+Scavenger retains the campaign and the criteria, observations, evidence, rankings, judgments, preference revisions, offers, commitments, parcels, inspections, and diligence that support its decisions. Scout separately owns the bounded acquisition/interaction receipts. The Magus decides private disclosure, final commitment, payment, acceptance, dispute, and every property transaction; a campaign result cannot make those decisions on its own.
 
 Unbounded scraping, spam, false identity or leverage, hidden criteria changes, professional certification, and unapproved commitment, payment, deposit, signature, or settlement remain outside the contract. Scavenger searches a finite market; [Hunter](../../sepulcher/extensions/shadow/hunter.md) instead adversarially challenges an already formed candidate.
 

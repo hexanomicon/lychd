@@ -33,10 +33,10 @@ constructed new `Settings` instance or a process restart. `SettingsSnapshot` ret
 serialized declaration and the already-loaded credentials separately in memory as `SecretStr`.
 Each preview/apply phase revalidates its own copy without running settings sources again.
 
-Every accepted field must have one real consumer. Current Settings exposes `server.port`, but the
-managed image listener is fixed by runtime policy rather than TOML. Obsolete `server.host`,
-`server.reload`, `server.keep_alive`, and `server.web.url` inputs are rejected and do not appear in
-generated configuration; launcher flags or environment cannot smuggle them back as Codex intent.
+An accepted Settings field needs a real consumer. `server.port` is exposed today, but runtime
+policy fixes the managed image listener independently of TOML. The obsolete `server.host`,
+`server.reload`, `server.keep_alive`, and `server.web.url` inputs are rejected and omitted from
+generated configuration. Launcher flags and environment cannot reintroduce them as Codex intent.
 
 ### Current selections
 
@@ -94,10 +94,11 @@ binding in Run intent and Graph state; idempotent admission and restart use that
 not the current Settings generation. Unknown adapter names refuse assembly. Registration and
 selection do not establish host readiness, containment, privacy, or permission to launch.
 
-This section accepts no command, executable, environment, provider credential, model alias,
-alternate list, or fallback switch. An adapter's trusted host still owns effect-time admission.
-Failure, policy refusal, or an uncertain start never redirects this exact casting to a different
-runtime. Provider/Gate configuration and compatible-road fallback need their own admitted contracts.
+The adapter's trusted host remains responsible for effect-time admission. This selector carries
+no command, executable, environment, provider credential, model alias, alternate list, or fallback
+switch. A failure, policy refusal, or uncertain start leaves the exact casting in place; it cannot
+redirect to another runtime. Provider/Gate configuration and compatible-road fallback require
+their own admitted contracts.
 
 ### Exact Creation investigation selection
 
@@ -176,10 +177,10 @@ instances. A file's path supplies its identity and `source_file` provenance. Dup
 files in branch anchors, arrays-of-tables instance encoding, unsafe fragments, and schema
 violations abort discovery.
 
-An **Anchor** is an owned directory territory. A **Fragment** is its safe local path segment. An
-**Instance** is one leaf TOML document. Provenance follows an instance at runtime but is not a TOML
-field. Validated instances are frozen: resolvers may derive effective state but may not alter
-Codex intent.
+Three terms describe a Rune's location. An **Anchor** owns a directory territory; a **Fragment**
+is its safe local path segment; and an **Instance** is one leaf TOML document. The instance carries
+provenance into runtime, but provenance is not a TOML field. Validation freezes instances so that
+resolvers can derive effective state without changing Codex intent.
 
 Filesystem ancestry names type, not semantic defaults. Named leaf profile instances supply
 family-specific defaults; a capability-bearing Rune references profiles and applies local overlays.
@@ -247,11 +248,10 @@ before mutation. A content-identical reconciliation is a no-op; an indeterminate
 recovery evidence. [Layout (13)](13-layout.md) owns path creation, locks, receipts, and filesystem
 attestation; [Privilege (10)](10-privilege.md) owns trusted host executables and their permissions.
 
-The assembly pipeline is: load and validate Settings; assemble selected schemas; discover and
-validate Rune instances; enforce identity, domain policy, and ports; then project only exact
-Scribe-owned units. Downstream registries consume that generation and must not reopen the Rune
-filesystem.
-Rune read, syntax and schema-validation failures identify the source file; schema failures retain
+Assembly proceeds from Settings to selected schemas, then to discovered and validated Rune
+instances. It enforces identity, domain policy, and ports before projecting exact Scribe-owned
+units. Downstream registries consume that generation rather than reopening the Rune filesystem.
+Read, syntax, and schema-validation failures identify the source file; schema failures also retain
 their field diagnostics and original validation cause.
 
 A sanctioned live Codex writer is designed separately from current sample writing. It must stage a
@@ -316,10 +316,11 @@ its exact Composition/Pattern revisions and registered service roles into the
 revalidates global ports, routes, secrets, mounts, migrations, dependencies, and resource policy
 before Bind.
 
-Changing profile or authority location is a typed Evolution effect, not Settings reload. It must
-quiesce admission, settle or preserve external-effect identities, fence the old epochs, revoke old
-routes and credential owners, transactionally restore an admitted partition when authority moves,
-and activate the new generation last. An old or simultaneous generation fails closed.
+A change of profile or authority location requires a typed Evolution effect. Settings reload
+cannot perform it. The transition quiesces admission, settles or preserves external-effect
+identities, fences the old epochs, and revokes old routes and credential owners. Where authority
+moves, it transactionally restores an admitted partition. Only then does it activate the new
+generation; an old or simultaneous generation fails closed.
 
 Gateway placement follows the same exact-profile law. [Home and Remote](../sepulcher/gateway.md)
 are reference placements of one separate Gateway Host role, not applications, Extension

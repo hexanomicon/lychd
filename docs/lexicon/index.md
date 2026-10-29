@@ -7,14 +7,14 @@ icon: material/translate
 
 _The tongue of the construct._
 
-Vessel, Phylactery, Spell, Seed: the Hexanomicon gives names to what the Magus builds,
-calls upon, and comes to know. The Lexicon keeps their meanings close to the passage that
-summoned them.
+Use the Lexicon when a name interrupts your reading. Vessel, Phylactery, Spell, and Seed each
+name something the Magus builds, calls upon, or comes to know. The two tongues lead from a short
+meaning back to the passage that develops it.
 
 ## Iron Tongue
 
-**[The names of the body and its workings](./iron-tongue.md).** An alphabetical dictionary,
-from Agent to xDDD. Each term leads into its anatomy, law, or practice.
+**[The names of the body and its workings](./iron-tongue.md).** Look up a technical project term
+alphabetically, from Agent to xDDD, then follow its link into anatomy, law, or practice.
 
 Find the [Vessel](./iron-tongue.md#vessel) and [Phylactery](./iron-tongue.md#phylactery),
 read a [Rune](./iron-tongue.md#rune), or distinguish the [Scroll](./iron-tongue.md#scroll)

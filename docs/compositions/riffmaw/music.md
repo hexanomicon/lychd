@@ -11,7 +11,9 @@ A guitar phrase can become the center of an arrangement, a reference for an acco
 
 `riffmaw.forge_track@2` pins brief, sources, `FeelProfile@1`, target form, budget, and acceptance. A model may propose motifs, harmony, rhythm, timbre, sections, or complete sketches; a human performance or another method can answer or replace them. Each artifact retains tool/provider revision, controls, seed where available, source influence, input/output digests, and cost.
 
-`FeelProfile@1` can begin as direction or derive from correctable take/[jam](sessions.md#jam-in-shared-time) observations: pocket, density, attack, space, motion, instrumental relation, tension/release, and when the machine should listen. Corrections create linked immutable revisions, never facts about the performer's unspoken intent. The Magus selects structure, tempo map, meter, key/tuning, roles, transitions, repetition, and variation. A generated sketch remains a candidate.
+Describe how the music should move and how its parts should answer one another in `FeelProfile@1`. It can begin as direction or derive from correctable take/[jam](sessions.md#jam-in-shared-time) observations about pocket, density, attack, space, motion, instrumental relation, tension/release, and when the machine should listen. Corrections create linked immutable revisions; they cannot establish the performer's unspoken intent.
+
+The Magus uses that direction to select structure, tempo map, meter, key/tuning, roles, transitions, repetition, and variation. A generated sketch remains a candidate for those choices.
 
 ## Language belongs to the musical request
 
@@ -52,8 +54,10 @@ These policies cannot arm capture, authorize payment/Portal egress, admit a plug
 
 Comping, timing, tuning, cleanup, resampling, and destructive processing retain parent revisions. The mix records routing, gain, pan, automation, effects, spatial relation, and balance among instrumental, vocal, sampled, and processed elements. Stems export those relationships rather than become independent masters.
 
-Mastering binds loudness, peak, dynamics, sample rate, format, and sequencing targets. Score/MIDI where present, edits/session lineage, stems, mix, and master stay attributable. Probes establish measurable fit; listening review decides musical fit. Generation, DAW export, and plug-in renders have separate effects; lost acknowledgement remains **unknown** until provider/session/destination reconciliation. Failed profiles, similarity uncertainty, stale inputs, or exhausted repair return findings/refusal.
+Mastering works toward declared loudness, peak, dynamics, sample rate, format, and sequencing targets. Keep score/MIDI where present, edits/session lineage, stems, mix, and master attributable so the reviewer can trace the result. Probes establish measurable fit; listening review decides musical fit.
 
-Compound-model music must have originated under a `VideoJob@2` whose `MediaFacetAuthoritySet@1` predeclared `music`, `riffmaw.music` revision `2`, and exact request digest. After Prism technical settlement, Riffmaw issues `SemanticFacetAdmissionReceipt@1` over music/compound digests, use, rights, evidence, findings, and disposition. Labels, demux, and undeclared sound cannot supply musical acceptance.
+Record each operation that produced the result separately. Generation, DAW export, and plug-in renders are separate effects. If an acknowledgement is lost, retain **unknown** until the provider, session, or destination reconciles it. Failed profiles, similarity uncertainty, stale inputs, or exhausted repair return findings/refusal.
+
+Music returned with video still needs Riffmaw's judgment. Before the `VideoJob@2` began, its `MediaFacetAuthoritySet@1` must have declared `music`, `riffmaw.music` revision `2`, and the exact request digest. After Prism settles the technical attempt, Riffmaw issues `SemanticFacetAdmissionReceipt@1` over music/compound digests, use, rights, evidence, findings, and disposition. Labels, demux, and undeclared sound cannot supply that musical acceptance.
 
 [Package](package.md) seals accepted work. [Sync](sync.md) exposes exact musical events to another craft.

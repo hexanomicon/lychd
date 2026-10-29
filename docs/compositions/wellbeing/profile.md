@@ -11,6 +11,6 @@ A preference can change. A hard restriction needs an explicit, confirmed success
 
 Storage and inference are local by default. Remote providers, lookup, reminders, retained media, calorie or weight features, imports, sharing, export, and research each require revocable consent for their purpose. Journals, measurements, symptoms, diagnoses, medication, clinical records, movement history, and genetics stay out of Homestead, shop queries, catalogues, carts, providers, and merchant messages.
 
-The same custody boundary governs departure. `wellbeing.export@1` creates the approved export. `wellbeing.delete@1` closes admission, disables schedules, drains atomic work, removes permitted records and derivatives, verifies absence, and leaves a content-free receipt. A restored backup must reapply deletion tombstones before reopening data.
+The same custody boundary governs departure. Use `wellbeing.export@1` for the approved export. For deletion, `wellbeing.delete@1` first closes admission, disables schedules, and drains atomic work. It then removes permitted records and derivatives, verifies their absence, and leaves a content-free receipt. Before a restored backup reopens data, it must reapply the deletion tombstones.
 
 Return to [Wellbeing](index.md), or use the reviewed profile in [Eating](eating.md) and [Fitness](fitness.md).

@@ -26,21 +26,21 @@ boundary.
 
 ## The Prime Inscription
 
-`lychd.toml` contains process-wide settings only: server and persistence settings, orchestration
-policy, extension selection, and the [bounded Bridge selector](extensions/weaver/index.md#choose-a-bridge-capability).
-Named runtime or provider instances belong in individual Rune
-documents beneath `runes/`. **Scroll** is reserved for an immutable Spellweaver Pattern revision;
-configuration is not executable workflow law.
+Put only process-wide settings in `lychd.toml`: server and persistence settings, orchestration policy,
+extension selection, and the [bounded Bridge selector](extensions/weaver/index.md#choose-a-bridge-capability).
+Give each named runtime or provider instance its own Rune document beneath `runes/`. Reserve
+**Scroll** for an immutable Spellweaver Pattern revision; configuration declares the body's
+intent without becoming executable workflow law.
 
 Settings resolve in one order: explicit construction → environment overrides → `lychd.toml` →
 Pydantic file secrets → model defaults. LychD loads no `.env`; nested sections load no separate
 sources.
 
 Set database and signing credentials in the process environment or mounted secret files before
-starting the Vessel. Their values are captured with Settings at startup and omitted from generated
-TOML and serialized snapshots. Editing an environment variable or secret file does not update a
-running process; restart it to load the change. The exact credential names and precedence belong to
-[Configuration](../adr/12-configuration.md#secrets-privacy-autonomy-and-projections).
+starting the Vessel. Settings captures their values at startup and excludes them from generated
+TOML and serialized snapshots. Restart to load a later change; editing the environment or secret
+file cannot update the running process. [Configuration](../adr/12-configuration.md#secrets-privacy-autonomy-and-projections)
+gives the exact credential names and precedence.
 
 The former host-native `LYCHD_RUNTIME_SECRETS=podman-core@1` source is retired; explicit
 selection refuses before credential I/O. The container consumes its separately mounted
@@ -83,10 +83,11 @@ Three rules keep the Archive legible:
 - Runes name secrets; they never embed secret values.
 - Valid Runes feed `lychd bind`; they never edit systemd or Podman state themselves.
 
-Current Animator Runes expose model-shaped `[[models]]` declarations. The Designed
-general-service form uses `[[capabilities]]` references to registered interface/profile/driver/
-dialect/evidence/resource definitions. Non-model services do not invent a model id, and an
-"OpenAI-compatible" label never implies every API beneath `/v1`; see
+Current Animator Runes describe models through `[[models]]`. The Designed general-service form
+instead uses `[[capabilities]]` references to registered interface, profile, driver, dialect,
+evidence, and resource definitions. It gives non-model services a way to declare themselves
+without inventing a model id. In either case, establish the exact supported surface: an
+"OpenAI-compatible" label cannot imply every API beneath `/v1`. Continue through
 [Capabilities](animator/capabilities.md) and [Connectors](animator/connectors.md).
 
 Read [Animator](animator/index.md), [Soulstone](animator/soulstone/index.md), and

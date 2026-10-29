@@ -65,16 +65,19 @@ contracts and trials. They do not follow automatically from connecting speech to
 
 ## Feedback and sound contract
 
-The first presentation cut uses fixed Slovak, Czech and English wording selected from the actual
-result. It says that idle/follow/build was **started**, not completed. An ordinary command result
-remains a **client report**. A refused instruction says no eligible action was admitted; an
-unknown effect says work stopped and must not be replayed. No provider-private detail or raw
-exception becomes a spoken explanation. Full diagnostic records remain privately accessible.
+Choose feedback from the actual result using the first presentation cut's fixed Slovak, Czech
+and English wording. When idle/follow/build begins, say it was **started**. Completion needs its
+own evidence. An ordinary command result remains a **client report**.
 
-Optional speech is a separately settled stage. A synthesis or playback failure after a game
-result preserves that result and marks the speech stage failed. It does not convert an already
-attempted action into a safe retry. Cancellation still propagates and settles owned work.
-Generated audio and a successful local player exit do not establish that the person heard it.
+Make the next step clear when work cannot proceed. Refusal means no eligible action was admitted;
+an unknown effect means work stopped and must not be replayed. Keep provider-private detail and
+raw exceptions out of the spoken explanation while leaving full diagnostics privately accessible.
+
+After the game result, settle optional speech separately. If synthesis or playback fails, keep
+the game result and mark the speech stage failed. The failed reply cannot make an already
+attempted game action safe to retry. Cancellation still propagates and settles owned work.
+Generated audio and successful local player exit remain evidence about their own stages, not
+proof that the person heard the reply.
 
 An explicit playback option uses only validated bounded PCM bytes with a fixed local player
 invocation. It accepts no shell command, arbitrary player option or voice-controlled device name.

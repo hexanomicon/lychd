@@ -31,8 +31,6 @@ Where a camera is involved, its admission specifies the purpose, masks, active h
 
 An alarm opens work; silence does not close it.
 
-Check the result against the verification named in the work order. If an acknowledgement was lost after an action, its effect remains unknown.
-
-Recovery inspects the controller, independent evidence, open work, and remaining hazards before repeating the action or declaring it complete. If the required evidence cannot establish the result, the work stays unresolved.
+Use the verification named in the work order to assess the result. A lost acknowledgement after an action leaves its effect unknown, so recovery must inspect the controller, independent evidence, open work, and remaining hazards before repeating the action or declaring completion. If that evidence cannot establish the required result, keep the work unresolved.
 
 Return to [Homestead](index.md).

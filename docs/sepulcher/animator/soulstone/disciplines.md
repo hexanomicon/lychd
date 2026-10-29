@@ -5,11 +5,10 @@ icon: material/atom
 
 # :material-atom: Soulstone Disciplines
 
-A discipline is the adapter knowledge that turns one Soulstone Rune into a callable local
-Animator: launch arguments, capability synthesis, probes, and any supported runtime-native model
-activation. The detailed runtime contracts are indexed in [Soulstone
-Engines](./engines/index.md). This page keeps the canonical short vocabulary and the historical
-discipline anchors used by the Lexicon.
+Each runtime needs its own knowledge of how to start, declare capabilities, report readiness,
+and—where supported—activate a model inside the running service. A **discipline** is that adapter
+knowledge applied to a Soulstone Rune. [Soulstone Engines](./engines/index.md) indexes the detailed
+contracts. The short names and historical anchors below remain the vocabulary used by the Lexicon.
 
 ## I. The Kinetic (vLLM) {#i-the-kinetic-vllm}
 

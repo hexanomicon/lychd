@@ -7,9 +7,10 @@ icon: material/anvil
 
 > _Long before the hammer falls, the metal has a history._
 
-**Soulforge** binds an admitted corpus, base-model digest, objective, Recipe, Training Run,
-evaluation, and candidate weights into immutable lineage. Its tools may change; its evidence must
-survive the strike.
+Training changes weights, but a useful result must also show what was taught and how the change
+was judged. **Soulforge** keeps that history immutable: the admitted corpus and base-model digest
+lead through an objective, Recipe, and Training Run to evaluated candidate weights. Its tools
+may change; the evidence linking those stages must survive the strike.
 
 Soulforge is **Designed**; the passages below have no operational training or serving path yet.
 [State of Work](../../../state-of-the-work.md#soulforge-training) records delivery, and
@@ -27,10 +28,11 @@ consolidation contract. The forge instead follows the explicit passage below.
 | [Training run](./training-run.md) | Manifest, base digest, objective, Recipe, and resource request | Training Run receipt and frozen Candidate Bundle | Unpinned inputs, a refused resource window, or unknowable retry state |
 | [Candidate handoff](./candidate-handoff.md) | Frozen bundle and evaluation contract | Drift Outcomes and an externally owned Promotion Decision | Trainer self-grading, mutable custody, or unowned serving |
 
-Each passage needs its own admission: [Orchestrator](../../../adr/23-orchestrator.md) decides the
-physical transition; passing independent [Drift](../drift/capability-claims.md) evaluation
-establishes eligibility; owning policy and required Magus/[HitL](../../../adr/25-hitl.md) authority decide
-promotion. The serving owner alone registers and routes the exact promoted digest.
+No passage inherits permission merely because the previous one succeeded.
+[Orchestrator](../../../adr/23-orchestrator.md) decides the physical transition needed for resources.
+Independent [Drift](../drift/capability-claims.md) evaluation can establish eligibility, after
+which owning policy and required Magus/[HitL](../../../adr/25-hitl.md) authority decide promotion.
+Only the serving owner can register and route the exact promoted digest.
 
 Observation may trigger rollback or lineage invalidation. It cannot rewrite an earlier record,
 erase completed effects, or remove learned influence from weights already produced.

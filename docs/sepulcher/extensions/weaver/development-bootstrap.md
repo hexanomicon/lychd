@@ -25,12 +25,13 @@ settings the client reports. [Coding-runtime research](coding-runtime-research.m
 Ultra orchestration from model reasoning, account limits from API billing, and local use from
 a distributed product. A different provider is a measured alternative, never an implicit fallback.
 
-The first LychD integration should qualify a trusted host for the existing one-shot CLI protocol.
-It should return a bounded artifact and terminal receipt. Add a bidirectional app-server adapter
-when a demonstrated requirement needs live steering, interactive approvals, or persistent product
-sessions. Do not introduce several runtimes or a second orchestration framework to prove one job.
-LychD owns task semantics, admission, custody, verification requirements and effect requests;
-the foreign harness owns its private planning and tool loop within the admitted boundary.
+Begin LychD integration by qualifying a trusted host for the existing one-shot CLI protocol and
+returning one bounded artifact with its terminal receipt. A bidirectional app-server adapter
+comes later, when a demonstrated requirement calls for live steering, interactive approvals, or
+persistent product sessions. Do not introduce several runtimes or a second orchestration
+framework to prove one job. LychD owns task semantics, admission, custody, verification
+requirements and effect requests. Within that admitted boundary, the foreign harness owns its
+private planning and tool loop.
 
 ```mermaid
 flowchart TD
@@ -81,11 +82,12 @@ stop: <completion, expiry, cancellation and ambiguity conditions>
 result: <artifact shape, custody destination and terminal outcome>
 ```
 
-An exact commit does not identify a dirty checkout. First inspect status and preserve operator
-changes. If the task needs uncommitted material, admit an explicit patch and selected untracked
-files with content identities; exclude credentials, ignored shelves and private collateral.
-Otherwise start from the admitted clean commit. Never auto-stash, clean, reset, commit unrelated
-work, or silently omit needed files to obtain a convenient base.
+Make the input record describe the actual checkout. An exact commit does not identify dirty
+working bytes, so first inspect status and preserve operator changes. Admit an explicit patch
+and selected untracked files with content identities when the task needs them; exclude
+credentials, ignored shelves and private collateral. Otherwise, start from the admitted clean
+commit. Never auto-stash, clean, reset, commit unrelated work, or silently omit needed files to
+obtain a convenient base.
 
 Give each writer its own branch/worktree or disposable projection. Separate candidate storage
 from the authoritative checkout and running installation. A worktree still shares host resources;
@@ -109,11 +111,11 @@ Lead dispatches closed task packets with fresh worker contexts under
 | Independent verifier | Original acceptance, exact candidate and evidence | Reproducible findings, failed or missing checks and acceptance recommendation. |
 | Integrator | Admitted returns and current integration state | One combined candidate, renewed checks and its disposition. |
 
-For ordinary work, one constructor and a separate verification context are sufficient. Add
-parallel investigators when their questions are independent. Consequential unsettled alternatives
-can use [Crucible](crucible.md): independent first reports, actual reciprocal rebuttal, then
-synthesis retaining dissent and what would defeat the recommendation. Do not simulate an
-opponent's reply or vote a fact into existence.
+Start ordinary work with one constructor and a separate verification context. Independent
+questions can justify parallel investigators. Consequential unsettled alternatives can justify
+[Crucible](crucible.md): independent first reports, actual reciprocal rebuttal, and synthesis
+that retains dissent and what would defeat the recommendation. Staffing supplies perspectives;
+it cannot simulate an opponent's reply or vote a fact into existence.
 
 Before freezing a composed or host-bound experiment, sample the cheapest real premise that
 could change its design: the actual DTO, route, normalization, tool field or role-specific process
@@ -121,11 +123,11 @@ identity. An admitted read-only sample can establish compatibility without launc
 effect. Pure fixtures establish their model, not that environment. If a required sample is
 unavailable, retain the qualification gap and select work whose claim does not depend upon it.
 
-Before committing to construction that changes shared source, trace maintained receipts that
-pin the affected modules and check the cost and feasibility of fresh qualification, including
-prerequisites and cleanup. Choose a smaller boundary when that burden is disproportionate to the
-intended increment. Preserve earlier receipts as dated evidence; refreshing their fingerprints
-cannot substitute for requalification.
+A proposed source change also needs a feasible qualification path. Before committing to
+construction on shared source, trace the maintained receipts that pin affected modules and
+assess the cost of fresh qualification, including prerequisites and cleanup. Narrow the boundary
+when that burden is disproportionate to the intended increment. Earlier receipts remain dated
+evidence; refreshing their fingerprints cannot substitute for requalification.
 
 End an inquiry when another observation cannot change the admitted choice. After a repair,
 return the exact finding and affected joins to the independent verifier; reopen whole-candidate
@@ -162,13 +164,13 @@ launch can proceed while host-boundary design is investigated separately.
 | **3 — Spare-capacity queue** | Admit one eligible task at a time under explicit standing policy and reviewer capacity. | Durable claims and expiry, no overlapping writer, budget admission, pause/revoke/restart and ambiguity tests. |
 | **4 — Changed-body adoption** | Construct packages and rehearse selected extensions, configuration, migrations and owner recovery before activation. | Exact artifact closure, effect-time authority, new-generation readiness, observed rollback/compensation or declared forward recovery. |
 
-An external operator queue can already coordinate recurring campaigns under the platform's
-actual permissions. Through Stage 2 it retains backlog, candidate judgment, retry, review and
-promotion ownership while LychD supplies only bounded labor. Do not stretch the legacy Core
-delegation exception into an application lifecycle. Preserve retained score revisions and publish
-a successor when manifest or checkpoint semantics change. Stage 3 below means transferring
-that lifecycle into LychD, after the B7 ownership gate; it is not required to practice recurring
-operator work.
+Recurring campaigns can begin in an external operator queue under the platform's actual
+permissions. Through Stage 2, that queue retains backlog, candidate judgment, retry, review and
+promotion ownership; LychD supplies only bounded labor. The legacy Core delegation exception
+must not be stretched into an application lifecycle. Preserve retained score revisions and
+publish a successor whenever manifest or checkpoint semantics change. Stage 3 transfers that
+lifecycle into LychD after the B7 ownership gate. It is not a prerequisite for recurring operator
+work.
 
 Stage 2 initially uses operator/CI verification through trusted commands and disposable state.
 Running generated tests or build hooks inside LychD is a separate untrusted-execution admission;
@@ -208,12 +210,13 @@ nested sensitive material where relevant. Record rejection as a failed task outc
 only admitted safe evidence; changing its evaluator or repairing its text requires a separately
 admitted successor.
 
-Distinguish request acknowledgement, terminal Run state, external-effect settlement, candidate
-validity, semantic usefulness and repository promotion. A DONE Run can return an invalid or
-unhelpful candidate; terminal state alone does not establish physical closure of its effects.
-Separate verification must establish the useful outcome against the original acceptance. Native
-ownership of a recurring analysis task follows B7 and the existing
-[Spell contract](../../../adr/28-workflow.md#spells-scrolls-and-casting); an operator's JSON prompt
+Judge the returned candidate separately from the machinery that carried it. Request
+acknowledgement, terminal Run state, external-effect settlement, candidate validity, semantic
+usefulness and repository promotion are distinct. A DONE Run can return invalid or unhelpful
+material, and terminal state alone does not establish physical closure of its effects. Separate
+verification must establish the useful outcome against the original acceptance. Native ownership
+of a recurring analysis task follows B7 and the existing
+[Spell contract](../../../adr/28-workflow.md#spells-scrolls-and-casting). An operator's JSON prompt
 creates neither a native application boundary nor an executable contract revision.
 
 ### First implementation queue
@@ -279,10 +282,10 @@ reservations and Gate qualification remain separate gates; no controller or exec
 
 ## Spend spare capacity on admitted work
 
-An idle loop is a service that sometimes sleeps. It selects eligible work from an owned queue;
-it does not repeatedly ask a model to invent changes. A human-curated backlog can serve this
-purpose before native scheduling exists. [Scheduling](scheduling-and-service-classes.md) owns
-future foreground and spare-capacity behavior; it is not delivered by a desktop timer.
+Spare capacity needs an owned queue of eligible work and a service willing to sleep when none
+qualifies. It does not need a model repeatedly inventing changes. A human-curated backlog can
+supply that queue before native scheduling exists. [Scheduling](scheduling-and-service-classes.md)
+owns future foreground and spare-capacity behavior; a desktop timer does not deliver it.
 
 Admit tasks in this order when their actual impact and dependencies justify it:
 
@@ -325,11 +328,11 @@ Before **each** successor, the coordinator must observe:
 - a fresh task claim, no duplicate work and no unresolved external outcome; and
 - an observable stop condition and a permitted cancellation/recovery road.
 
-Stop dispatch at success, expiry, budget exhaustion, policy revocation, missing boundary,
-review saturation, repeated unchanged failure, or unknown external state. Retain partial artifacts
-and the actual reason. An ambiguous launch is reconciled before another effectful attempt;
-timeout or LOST does not prove that descendants stopped. A retry needs a changed repair hypothesis
-or justified replication and consumes the parent budget.
+Dispatch ends when the campaign succeeds or reaches expiry, budget exhaustion, policy revocation,
+a missing boundary, review saturation, repeated unchanged failure, or unknown external state.
+Retain partial artifacts with the actual stopping reason. Reconcile an ambiguous launch before
+another effectful attempt: timeout or LOST does not prove that descendants stopped. A retry
+requires a changed repair hypothesis or justified replication and consumes the parent budget.
 
 For a later durable scheduler, a claim binds task/policy/input identities, owner, occurrence,
 expiry and renewal. Lease expiry changes dispatch eligibility; it does not prove process death
@@ -352,13 +355,14 @@ serially and verify the resulting exact snapshot. Appropriate maintainers can ac
 founder-only queue. Expertise-based
 adjacent review is especially useful for shared API, checkpoint and effect-settlement changes.
 
-The author supplies the complete candidate and observed checks. A separate verifier examines
-the original request, governing owners and exact diff, including forbidden behavior, recovery,
-generated artifacts and truth-changing documentation. The integrator inspects current base and
-scope before admitting selected bytes. Changed base, conflict, patch, dependency or verification
-plan creates a successor candidate and repeats affected checks. Test the combination: separate
-passing patches do not prove an integrated result. A broken integration branch is repaired or
-reverted before more work accumulates.
+Integration carries responsibility through three roles. The author supplies the complete
+candidate and observed checks. A separate verifier examines the original request, governing
+owners and exact diff, including forbidden behavior, recovery, generated artifacts and
+truth-changing documentation. The integrator then inspects the current base and scope before
+admitting selected bytes. A change to the base, conflict, patch, dependency or verification plan
+creates a successor candidate and repeats affected checks. Test the combination: separately
+passing patches do not prove an integrated result. Repair or revert a broken integration branch
+before allowing more work to accumulate.
 
 Keep three exchanges distinct:
 
@@ -396,11 +400,12 @@ subagent authority or billing fallback with the framing code.
 
 ## Measure whether the loop helps
 
-First establish a baseline with the requested Sol setting and existing procedure. Compare one
-changed variable at a time: a fresh reviewer, a Claude reviewer, a context policy or a different
-task decomposition. Use matched tasks and total budgets including failed attempts, verification,
-review and human attention. [Evaluation](../../../adr/34-evaluation.md) owns the native design;
-ordinary operator comparisons should retain their actual identities and limited conclusions.
+Measure the loop against a baseline using the requested Sol setting and existing procedure.
+Change one variable at a time: a fresh reviewer, a Claude reviewer, a context policy or a
+different task decomposition. Match tasks and total budgets, counting failed attempts,
+verification, review and human attention. [Evaluation](../../../adr/34-evaluation.md) owns the
+native design; ordinary operator comparisons retain their actual identities and limited
+conclusions.
 
 For an initial reviewer comparison, freeze six representative past diffs with known defects and
 clean controls across delegation, persistence, configuration, API, frontend and documentation.
@@ -410,12 +415,12 @@ accepted unique defects, false positives, missed requirements, fix effort, elaps
 actual usage. Six cases are a screening pilot, not statistical proof of universal superiority.
 Reserve separate unseen cases for confirmation before adopting a standing default.
 
-Promote a method only when it improves the declared useful outcome within its full cost envelope
-without regressing mandatory behavior or authority/recovery constraints. Record rejection and
-inconclusive results. The constructor cannot rewrite the evaluator, holdout, acceptance threshold,
-promotion policy or budget to obtain a pass. A proposal to change those has its own independent
-comparison and owner decision. Training weights is a later, separately admitted experiment;
-many useful improvements concern Context, tools, instructions and handoffs instead.
+Promote a method only when it improves the declared useful outcome within its full cost envelope,
+without regressing mandatory behavior or authority/recovery constraints. Retain rejection and
+inconclusive results too. The constructor cannot obtain a pass by rewriting the evaluator,
+holdout, acceptance threshold, promotion policy or budget. Any proposal to change those requires
+its own independent comparison and owner decision. Training weights is a later, separately
+admitted experiment; many useful improvements concern Context, tools, instructions and handoffs.
 
 ## Start the first campaign
 

@@ -7,9 +7,10 @@ icon: material/flask-outline
 
 What should the next creation inherit?
 
-A finding becomes a useful lesson when it carries the condition under which it matters.
-Distillation preserves the reason, evidence, uncertainty, and counterexample together, so the
-next undertaking can use the lesson without mistaking one encounter for a universal law.
+The next creator needs to know when a finding matters. Distillation carries that condition with
+the reason, evidence, uncertainty, and counterexample. Together they make a lesson usable beyond
+the encounter that produced it, while preserving the limits that keep it from becoming an
+unearned universal law.
 
 There is an echo of [Deuteronomy](https://bible.usccb.org/bible/deuteronomy/0) here: a journey
 is remembered and its commitments spoken to the generation about to continue it. Our return
@@ -22,11 +23,11 @@ preserve both observations and test whether a worker can resolve them without lo
 meaning” carries a condition and a consequence. It nominates a change for another comparison;
 the proposal still has to earn its place.
 
-The next use determines the handoff. A missing fact may belong in Context. A correction may
-be nominated to Memory. A repeated procedural failure may call for a revised prompt, schema,
-tool contract, or Scroll. A stable, transferable skill gap may justify a separately admitted
-[Soulforge training objective](../../sepulcher/extensions/soulforge/discernment-training.md#choose-what-should-change).
-Preserving a lesson does not itself grant permission to train on it.
+Decide what the lesson should change before choosing its destination. A missing fact may belong
+in Context; a correction may be nominated to Memory. A repeated procedural failure may call for
+a revised prompt, schema, tool contract, or Scroll. A stable and transferable skill gap may
+justify a separately admitted [Soulforge training objective](../../sepulcher/extensions/soulforge/discernment-training.md#choose-what-should-change).
+Keeping the lesson and authorizing training on it remain separate decisions.
 
 [Ouroboros](../../sepulcher/extensions/weaver/ouroboros.md#carry-the-distinction-not-the-entire-conversation)
 keeps these practical returns and their owners. Distillation may also conclude that the current
@@ -42,11 +43,11 @@ offline writers require another reconciliation test” preserves a boundary and 
 Keep the decisive condition, its source, the evidence that could defeat the conclusion, and
 what remains unresolved. A generic warning that the answer might be wrong supplies none of them.
 
-The next encounter should then respond selectively: evidence of concurrent writers reopens
-that design decision; an unrelated stylistic objection does not erase the earlier result.
+That preserved condition lets a later encounter reopen the right decision. Evidence of concurrent
+writers reopens that design decision; an unrelated stylistic objection does not erase the earlier result.
 The [proposed temporal comparison](../../sepulcher/extensions/drift/workflow-improvement.md#correction-after-distillation)
-tests whether this capacity survives compaction and transfer to another task. The useful
-inheritance includes how to become differently informed.
+asks whether this selective response survives compaction and transfer to another task. The
+inheritance includes a way to become differently informed.
 
 This connects the Tree's [handoff relation](genesis.md#repair-the-relation) to Ouroboros. A
 distinction must survive both a change of form and a passage through time. Omitted material
@@ -73,10 +74,10 @@ rupture.
 
 ### A form ends; a consequence may continue
 
-Consider a proposal withdrawn after examination. Its active use ends. An admitted record may
-preserve its wording, attribution, and the reasons for withdrawal. Later Recall may change a
-later act if those traces remain available and are brought into it. This example concerns the
-passage of work; it does not equate a canceled task with biological death.
+Withdraw a proposal after examination and its active use ends. An admitted record may still
+preserve its wording, attribution, and reasons for withdrawal. If those traces remain available,
+later Recall can bring them into another act and change it. This is one way work can cross an
+ending; the example does not equate a canceled task with biological death.
 
 An exact copy can preserve an arrangement. Resemblance can preserve a recognizable pattern.
 Neither alone establishes continuity of historical identity. [Symmetry](genesis.md#symmetry)

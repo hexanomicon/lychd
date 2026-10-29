@@ -64,11 +64,12 @@ first examine explicit procedure and memory. Only a demonstrated remaining trans
 motivates parameter training. Low measured usefulness cannot retire a mandatory check or
 another person's required decision.
 
-Nominate exact, authorized traces and artifacts with their human explanations. A teaching example
-should retain the task and available evidence, relevant constraints, the observed decision and
-result, the correction, the reason for it, and the conditions under which that correction applies.
-Keep a counterexample where following the same superficial rule would be wrong. Distinguish
-human preference, factual label, authority decision, measured result, and evaluator judgment.
+Begin with exact, authorized traces and artifacts, including the human explanations actually
+supplied with them. Preserve enough of each episode for the learner to distinguish the decision:
+the task, evidence available then, relevant constraints, observed action and result, correction,
+reason, and conditions under which that correction applies. Pair it with a counterexample where
+the same superficial rule would be wrong. Keep human preference, factual label, authority
+decision, measured result, and evaluator judgment separately attributable.
 
 For instance, a corrected workflow may have asked the same approval twice. The lesson needs the
 earlier authorization and its scope, the later proposed action, and why that action still fell
@@ -126,10 +127,11 @@ capability, exact base digest, allowed data classes, resource envelope, and prom
 [Corpus admission](./corpus.md#admit-one-snapshot) then establishes training-specific consent,
 license, or other authority over the exact nominated material and derivative uses.
 
-The review must expose a concrete choice: which examples and fields would enter, why they are
-useful, who may receive them, how long they are retained, and the consequence of learned
-influence. Reuse valid authorization within that declared scope; do not ask the operator to
-approve every compiler operation. Missing or expanded authority still blocks the affected use.
+Make admission a concrete choice over the proposed material. Show which examples and fields
+would enter, why they are useful, who may receive them, how long they would be retained, and
+what learned influence would mean. Once valid authorization covers that scope, compiler
+operations need not each become a new approval request. Missing authority or an expanded use
+still blocks the affected material.
 
 Minimize private material and preserve provenance through redaction and transformation. An
 anonymized explanation may still reveal its source or encode a distinctive private fact. Keep

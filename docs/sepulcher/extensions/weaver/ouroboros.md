@@ -54,12 +54,12 @@ flowchart TB
     class T,A,B training
 ```
 
-Blue follows one piece of work. Red evaluates the candidate before promotion where required,
-then its observed consequences or the method that produced it. These are
-[distinct evaluation subjects](../drift/workflow-improvement.md#evaluate-at-two-scales), with
-their own declared evidence. Tests and review retain their separate roles; a favorable inferred
-judgment cannot erase a failed deterministic gate. Evaluation belongs within SDLC as well as
-across its improvement cycle, even though Drift has its own jurisdiction.
+Blue follows one piece of work. Red marks evaluation: first of the candidate before promotion
+where required, then of its observed consequences or the method that produced it. Each is a
+[distinct evaluation subject](../drift/workflow-improvement.md#evaluate-at-two-scales) with its own
+declared evidence. Tests and review keep their separate roles, and a favorable inferred judgment
+cannot erase a failed deterministic gate. Drift has its own jurisdiction, but evaluation belongs
+both within SDLC and across its improvement cycle.
 
 Violet changes model competence only when a training hypothesis earns that more expensive passage.
 Context and memory admission can improve the next attempt without changing weights. An evaluation
@@ -83,13 +83,13 @@ names Evolution's judgment of what a successor should inherit. Their tension bel
 existing offices. It does not create a universal Ouroboros coordinator or make every acquisition
 an improvement.
 
-Practice the return with one candidate and a declared comparison. Select the relevant predecessor
-history and expose its omissions; gather verification, independent findings and affected-owner
-judgments; then record which obligations are retained, reconciled, replaced or rejected and why.
-A reconciliation returns a new combined candidate to Creation. A replacement names the consumers
-and work that must transition. An unresolved contradiction returns a bounded question or a
-refusal; it does not quietly become consent. The settled result can support a later Promotion
-Request, whose effects still require their receiving owners.
+Make the return concrete through one candidate and a declared comparison. Select the relevant
+predecessor history and make its omissions visible. Gather verification, independent findings
+and affected-owner judgments, then give each obligation a reasoned disposition: retained,
+reconciled, replaced or rejected. Reconciliation sends a new combined candidate back to Creation.
+Replacement identifies the consumers and work that must transition. An unresolved contradiction
+returns a bounded question or a refusal; it does not quietly become consent. Once settled, the
+result can support a later Promotion Request, whose effects still require their receiving owners.
 
 For example, a successor may remove an insecure legacy contract while preserving an unrelated
 private extension. The old contract's failing check is retained as a fact. Changing the declared
@@ -124,13 +124,14 @@ It accepts at most 1 MiB and emits a bounded report. Exit 0 means `comparison_co
 Exit 1 means `blocked`; exit 2 refuses malformed, duplicate-key, nonfinite or oversized input
 with a fixed diagnostic. No public Pulse command is added.
 
-A receipt summary is an attributed claim, not the receipt's authenticated contents. The utility
-reads none of the referenced bytes and proves no test result, issuer identity, independence,
-Drift Outcome or promotion eligibility. Old-baseline failures remain in the pinned history;
-active summaries concern this exact candidate, whose failing checks still block a non-rejection
-disposition. The caller retains the packet and its references: a deterministic digest is neither
-durable custody nor an adoption ledger. [State of Work](../../../state-of-the-work.md#evolution-comparison)
-keeps this mechanism distinct from the still-designed native lifecycle and target-owner effects.
+The utility evaluates attributed receipt summaries without reading the referenced bytes. It
+therefore proves no test result, issuer identity, independence, Drift Outcome or promotion
+eligibility; a summary is a claim, not the receipt's authenticated contents. Old-baseline failures
+remain in the pinned history. Active summaries concern this exact candidate, and its failing
+checks still block a non-rejection disposition. The caller must retain the packet and its
+references: a deterministic digest supplies neither durable custody nor an adoption ledger.
+[State of Work](../../../state-of-the-work.md#evolution-comparison) distinguishes this mechanism
+from the still-designed native lifecycle and target-owner effects.
 
 ## Carry the distinction, not the entire conversation
 
@@ -152,11 +153,12 @@ judgments, current state, acceptance, dependencies and unresolved alternatives. 
 revision, authority class and any limits on use. The hierarchy of instructions survives selection;
 quoted documents and conversational claims remain attributed material.
 
-Compaction preserves the purpose, accepted decisions and their reasons, strongest surviving
-objections, evidence references, authority boundaries, unfinished obligations and the next
-discriminating probe. A summary points back to durable artifacts; it neither replaces them nor
-silently resolves a dispute. A shared workspace is an attributable record of the undertaking,
-not one ever-growing prompt copied into every Agent.
+Compaction prepares that bounded handoff by preserving purpose, accepted decisions and their
+reasons, the strongest surviving objections, evidence references, authority boundaries,
+unfinished obligations and the next discriminating probe. It points back to durable artifacts;
+it neither replaces them nor silently resolves a dispute. The shared workspace remains an
+attributable record of the undertaking, rather than an ever-growing prompt copied into every
+Agent.
 
 [Distillation](../../../divination/transmutation/distillation.md#future-correction) asks whether
 the lesson preserves its route to correction. Retain the particular condition and source that
@@ -170,11 +172,11 @@ names that transmission of discernment. Its effectiveness is tested on a later t
 
 ## What the next round inherits
 
-Retained experience can change the procedure that seeks the next improvement. For example, a
-repeatedly wasteful branch search may motivate a revised exploration strategy while the coding
-model stays fixed. Follow one exact revision through the evidence that motivated it, its owning
-adoption decision, and the later attempt that used it. The later attempt must expose whether the
-inherited change affected its decisions.
+The next improvement may come from changing how attempts are organized while leaving the coding
+model fixed. A repeatedly wasteful branch search, for example, can motivate a revised exploration
+strategy. Follow that exact revision from its motivating evidence through its owning adoption
+decision to the later attempt that used it. That attempt must expose whether the inherited
+change affected its decisions.
 
 [The Last AI Built by Humans](https://arxiv.org/html/2609.11873v1#S3.SS6), a September 2026 research
 preprint, distinguishes structural reuse of a revised improvement mechanism from evidence that it
@@ -209,12 +211,12 @@ durable parallel fan-out.
 
 ## Let conversation become usable work
 
-The proposed interaction horizon is a meeting in which people think together and their Agents
-help turn the discussion into bounded work. Capture is visible and agreed by participants, with
-declared custody and retention. The Agent distinguishes a speculation, preference, disagreement,
-decision, task request and effect authorization before proposing an Intent. Speaker attribution
-and uncertainty survive transcription and summarization. Recording permission supplies no
-training permission.
+One proposed setting for this work is a meeting where people think together and their Agents
+help turn discussion into bounded tasks. Capture is visible and agreed by participants, with
+declared custody and retention. Before proposing an Intent, the Agent distinguishes speculation,
+preference, disagreement, decision, task request and effect authorization. Speaker attribution
+and uncertainty survive transcription and summarization. Permission to record supplies no
+permission to train.
 
 A useful human interruption arrives with the missing distinction, a recommendation, the evidence
 and consequence, and one answerable question. It can be brought to the human through a convenient
@@ -256,13 +258,13 @@ retains the same delivery identifier on redelivery. Changed bytes under an admit
 identity refuse; an accepted issue edit creates a new native revision and cannot rewrite an
 already admitted Run or its judged basis.
 
-Authenticating a provider delivery establishes provenance, not the sender's LychD authority.
-The receiver separately checks local policy for the requested work and again before later
-admission or effects. Never forward external prose under the bootstrap operator's ambient
-privileges. An external reply binds result, destination, payload and delivery identity under its
-credential-bearing effect owner; a lost send response remains unknown until reconciled, rather
-than rerunning cognition or blindly posting again. A worker-job publication receipt is not proof
-of an external comment.
+Provider authentication establishes where a delivery came from, not the sender's LychD
+authority. The receiver checks local policy for the requested work separately, then checks again
+before later admission or effects. Never forward external prose under the bootstrap operator's
+ambient privileges. Replies have their own effect boundary: an external reply binds result,
+destination, payload and delivery identity under its credential-bearing effect owner. A lost
+send response remains unknown until reconciled; it cannot justify rerunning cognition or blindly
+posting again. A worker-job publication receipt is not proof of an external comment.
 
 Several PCs can be clients of one resident authority through a collaboration surface. Physical
 workers under one sovereign plane follow [Multinode](../../../adr/42-multinode.md); independent
@@ -289,19 +291,18 @@ The later passages retain their own owners:
 | [Evolution](../../../adr/18-evolution.md) | Revalidate authority and recovery, then activate the changed body as a new generation. |
 | Observation and evaluation | Verify the resulting behavior and retain failures or recovery; nominate the next correction under its own authority. |
 
-The running body does not import its candidate to see whether it works. A failed candidate can be
-discarded before an effect; an emitted effect requires the responsible owner's recovery or
-compensation. Reanimation restores the same body after process death. Evolution deliberately
-changes it. Ouroboros describes the wider return through both experience and governed change.
+Candidate verification happens outside the running body; that body does not import its candidate
+to see whether it works. Before an effect, a failed candidate can be discarded. After an effect
+has been emitted, recovery or compensation belongs to the responsible owner. Reanimation restores
+the same body after process death, whereas Evolution deliberately changes it. Ouroboros follows
+the wider return through experience and governed change.
 
 ## Two perspectives on the same work
 
-The engineering workflow came first. The author's whiteboard designs already contained
-exploration, adversarial comparison, human judgment, implementation, evaluation, and a later
-training return before the sefirotic correspondence was proposed. The Tree entered as a second
-lens for discovering and improving relations within that independently developed workflow.
-Resemblance motivates investigation; a proposed addition must still earn its place through a
-clearer decision, a better handoff, or a demonstrated improvement.
+Creation draws exploration, adversarial comparison, human judgment, implementation, evaluation,
+and a later training return into one undertaking. Each changes what the others can receive.
+The Tree reveals where their relations need a clearer decision, a better handoff, or a
+correction before the whole can hold together.
 
 The [Tree of Life](../../../divination/transmutation/genesis.md#tree-of-life) illuminates **how creation becomes formed**:
 purpose, possibility, understanding, generosity, restraint, integration, persistence, correction,
@@ -314,14 +315,13 @@ stations; Blade can test a proposal or stop an unjustified promotion; Spirit car
 conditions and later correction; Answer binds each act to its local author and consequence.
 Neither ten sefirot nor four offices prescribe a model count, org chart, or permanent chief Agent.
 [Genesis](../../../divination/transmutation/genesis.md#tree-of-life) keeps the Tree's traditional
-provenance and authored correspondence; [Inner Tongue](../../../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
+sources and creative relations; [Inner Tongue](../../../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
 keeps the inherited vocabulary of the inner instrument.
 
-Yaga's crafted life in Gege Akutami's [*Jujutsu Kaisen*, chapter 147](https://www.viz.com/shonenjump/jujutsu-kaisen-chapter-147/chapter/22420)
-is a fictional prompt behind this comparison. The borrowed question is whether mutually observing
-perspectives can change one another and sustain a common undertaking. [Polypsyche](../../../lexicon/inner-tongue.md#polypsyche)
-carries that native inquiry; the story supplies neither an engineering recipe nor a required
-number of Agents.
+[Polypsyche](../../../lexicon/inner-tongue.md#polypsyche) carries the inquiry into mutually
+observing perspectives: how can they change one another and sustain a common undertaking?
+The Tree's [relations within relations](../../../divination/transmutation/genesis.md#relations-within-relations)
+give specialization a way to preserve participation in that whole.
 
 The outward movement gives an idea form. Ouroboros adds the return through experience. The wider
 meaning of [autopoiesis and recurrent formation](../../../divination/transcendence/illumination.md#i-the-ouroboros)
@@ -346,8 +346,9 @@ does not support improvement. Only a recurring, well-characterized skill deficit
 the training passage. Its first success requires independent transfer evidence and a reversible,
 owner-controlled serving choice, not merely a completed training job.
 
-Runtime implementation then has a concrete burden: publish the application-owned score and
-records; prove bounded Context handoffs, admission and terminal truth; add recovery and parallel
-execution only with their own evidence; and connect independently delivered evaluation and
-training owners through settled handoffs. Documented choreography, a hand-operated example and a
-delivered autonomous cycle are different milestones in [State of Work](../../../state-of-the-work.md).
+These practiced handoffs give runtime implementation a concrete burden. Publish the
+application-owned score and records, then prove bounded Context handoffs, admission and terminal
+truth. Recovery and parallel execution each need their own evidence. Evaluation and training
+owners must be independently delivered and connected through settled handoffs. [State of Work](../../../state-of-the-work.md)
+keeps documented choreography, a hand-operated example and a delivered autonomous cycle as
+different milestones.

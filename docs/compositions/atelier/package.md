@@ -9,22 +9,26 @@ A consumer needs to know exactly which images it received and which uses their a
 
 ## What crosses the boundary
 
-The manifest binds revision/digest, target profile, assets, visual constraints, source and derivative lineage, tools/provider receipts, validators, findings, approvals, and known use or likeness boundaries. [Foundry](../foundry/) can admit exact revisions for engine import and playability. [Broadcast](../broadcast/) can admit them for claims, storyboards, timeline, render, accessibility, and publication. Each consumer may refuse.
+The package manifest lets another craft inspect the accepted work before using it. It binds the revision/digest, target profile, assets, visual constraints, source and derivative lineage, tools/provider receipts, validators, findings, approvals, and known use or likeness boundaries.
 
-The handoff carries no Sigil, secret, provider session, approval for another use, or downstream effect authority. Exported files cannot convey the director's judgment about an entirely different commission.
+[Foundry](../foundry/) uses that account to decide whether exact revisions can enter an engine and support playability. [Broadcast](../broadcast/) judges their use in claims, storyboards, timeline, render, accessibility, and publication. Either consumer may refuse. The visual director's approval answers the original commission; exported files cannot extend that judgment to an entirely different one.
+
+The handoff therefore carries no Sigil, secret, provider session, approval for another use, or downstream effect authority.
 
 ## Effects, failure, and return
 
-Paid generation and external handoff are separate effects. Each binds an idempotency key and exact payload digest. Missing acknowledgement leaves an **unknown** result. Reconcile the same effect with its provider or consumer before deciding whether another attempt is permitted.
+Paid generation and external handoff each need their own effect record, binding an idempotency key and exact payload digest. If an acknowledgement is missing, keep the result **unknown**. Reconcile that same effect with its provider or consumer before deciding whether another attempt is permitted.
 
-A bad reference, revoked consent, or later finding stales every dependent revision while preserving accepted history. Restart requires pinned Pattern, schema, sources, providers, tools, receipts, and artifacts. Incompatible parked work drains, migrates explicitly, or ends non-complete. Deletion inventories derivatives and handoffs, requests authorized downstream removal, and leaves external custody honest.
+A bad reference, revoked consent, or later finding makes every dependent revision stale. Preserve the accepted history so it remains possible to explain what was used and why. A correction must address those dependencies rather than overwrite the accepted package.
+
+Restart first recovers the pinned Pattern, schema, sources, providers, tools, receipts, and artifacts. If parked work is incompatible with them, it must drain, migrate explicitly, or end non-complete. Deletion follows the same chain of custody: inventory derivatives and handoffs, request authorized downstream removal, and record any material still held externally.
 
 ## Proving package
 
-First build a local, style-led 2D package from licensed references: frozen [brief](brief.md), versioned [direction](direction.md), concept plus sprite/texture assets, probes and normalization, bounded repair, and accepted `VisualAssetBundle@1`. No sound, engine import, channel render, Portal, paid generation, or public release enters that proof.
+Begin with a local, style-led 2D commission using licensed references. Freeze the [brief](brief.md), version the [direction](direction.md), make concept plus sprite/texture assets, probe and normalize them, and complete a bounded repair before accepting `VisualAssetBundle@1`. This first proof includes no sound, engine import, channel render, Portal, paid generation, or public release.
 
-Then exercise separate landscape and portrait hero profiles. Retain their accepted stills, animate one or two exact boundary frames through an admitted Video implementation, probe loop/export behavior, and seal a successor package. Either declared still or motion boundary may finish honestly.
+Then try separate landscape and portrait hero profiles. Keep the accepted stills and animate one or two exact boundary frames through an admitted Video implementation. Probe loop and export behavior before sealing the successor package. The declared still or motion boundary can each be an honest finish.
 
-Model-returned sound crosses only with pre-execution role authority, its independent `SemanticFacetAdmissionReceipt@1`, and shared compound parent. [Motion](motion.md#clips-and-cues) follows each role's admission. Broadcast alone accepts the final editorial audiovisual relation.
+Model-returned sound may cross into the package only with pre-execution role authority, its independent `SemanticFacetAdmissionReceipt@1`, and the shared compound parent. Retain all three with the admitted material. [Motion](motion.md#clips-and-cues) follows each role's admission. Broadcast alone accepts the final editorial audiovisual relation.
 
 Return to [Atelier](index.md), or follow the declared finish in [Motion](motion.md#progressive-visual-depth).

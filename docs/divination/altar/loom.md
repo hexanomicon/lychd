@@ -5,7 +5,9 @@ icon: material/vector-polyline
 
 # :material-vector-polyline: Loom: The Visible Scroll
 
-Loom lets you read a Pattern revision as a declared Scroll: the stations it contains and the routes they permit. Use it to understand what a chosen workflow could do, then compare that declaration with the evidence of a particular Run in [Orb](orb.md). The current instrument is read-only.
+Open Loom when you want to understand what a workflow permits. It presents one exact Pattern
+revision as a declared Scroll: its stations and the routes between them. Once you can read that
+score, compare it with a particular Run's evidence in [Orb](orb.md). Loom is currently read-only.
 
 ## Find the exact score
 
@@ -50,13 +52,24 @@ outgoing permission declared** describes the manifest; it does not infer that ex
 terminated. A failed score read offers **Retry reading Pattern**, preserving the requested exact
 revision instead of silently selecting another one.
 
-The station's kind needs care when interpreting the score. A Spell is an independently identified semantic action, and the accepted grammar places its exact contract in a Scroll-local station. Current manifests do not yet carry independent Spell identity. In particular, the distinct glyph for a `delegate` station does not establish an independent Spell contract or provider-backed execution.
+Read a station's kind as a declaration in the current manifest. The accepted grammar also gives
+a Spell its own identity and places that exact semantic-action contract in a Scroll-local
+station. Current manifests do not yet carry that independent Spell identity. Thus a `delegate`
+glyph identifies a station kind; it cannot establish an independent Spell contract or prove
+provider-backed execution.
 
 ## Compare it with a Run
 
 An Invocation is the admitted Circle; casting performs its Scroll, and the Run is its durable ledger identity. Compare the declaration in Loom with [Orb's retained evidence of traversal](orb.md), accounting for any gaps and omissions there.
 
-Orb can open a score with `?run={run_id}` attached. That query supplies review context; it does not select the Pattern identity. Loom offers **Return to Run in Orb** only after the Run's pinned manifest validates and equals the entire registered score. Matching the digest, Pattern ID, and revision alone is insufficient. Loom also checks that the separately fetched displayed score still has the validated digest. The return preserves the selected event or delegated-job hint. Invalid, unavailable, or mismatched Run context is shown explicitly. Selecting another Pattern discards the Run query.
+Orb can attach `?run={run_id}` when it opens the score. This supplies the Run you are reviewing;
+the path still selects the Pattern identity. Before offering **Return to Run in Orb**, Loom
+validates the Run's pinned manifest and requires it to equal the entire registered score. Matching
+only digest, Pattern ID, and revision is insufficient. It also checks that the separately fetched
+displayed score still has the validated digest.
+
+A valid return preserves the selected event or delegated-job hint. Invalid, unavailable, or
+mismatched Run context remains explicit. Choosing another Pattern discards the Run query.
 
 ??? info "Compare the source contract"
 
@@ -79,6 +92,8 @@ the whole candidate remains `castable=false`; no placeholder enters the executab
 Follow [ADR 15's editing gate](../../adr/15-frontend.md#loom-workload-and-editing-gate) for the future editor and [Spellweaver](../../sepulcher/extensions/weaver/index.md) for a candidate's passage to a published revision.
 
 ## Reading direction
+
+For interface review and design, use the following composition and acceptance case.
 
 The exact revision, source registration, entry, station counts, and declared successors should
 be legible before the reader opens digest or source detail. The computed graph has an outline

@@ -17,10 +17,11 @@ Work](../../../state-of-the-work.md#shadow-simulation) records delivery, while [
 
 ## Hold one candidate still
 
-A Hunter Invocation receives one attributed, named candidate: a [Dancer](./dancer.md) alternative
-or another candidate presented for review. Its envelope carries candidate identity and lineage,
-source Intent, assumptions, required state, claimed predicates, observations, evidence, artifacts,
-and the owning policy or contract.
+Begin with one candidate whose identity can remain fixed throughout review: either a
+[Dancer](./dancer.md) alternative or another attributed, named candidate. Its envelope gives
+Hunter the source Intent, lineage, assumptions, required state, and claimed predicates, together
+with observations, evidence, artifacts, and the owning policy or contract. Those records let a
+challenge point to a specific claim under a specific boundary.
 
 The owning [Spellweaver Pattern](../../../adr/28-workflow.md) declares the operational
 [Shadow Lens](../../../adr/20-agents.md#mechanical-cognitive-postures), permitted evidence and tool
@@ -54,9 +55,10 @@ Pattern's spend decision; it cannot cancel work or deny spending by itself.
 
 ## End at the evidence boundary
 
-Missing evidence remains unknown, and bounded inquiry cannot widen its own access. Exhausted rounds,
-budget, tool access, or a stop condition return an incomplete review with uncertainty preserved.
-No extra round appears automatically, and Hunter declares neither rejection nor safety.
+The review ends where its evidence or permission ends. Missing evidence remains unknown;
+Hunter cannot widen tool access to settle it. Exhausted rounds, budget, tool access, or a stop
+condition produce an incomplete review with uncertainty preserved. An extra round is never
+automatic, and reaching the limit establishes neither rejection nor safety.
 
 Review leaves the candidate's identity, provenance, artifacts, and failure evidence intact.
 Neither an unanswered challenge nor a lack of further challenges certifies it.

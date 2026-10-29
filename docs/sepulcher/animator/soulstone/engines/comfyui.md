@@ -21,19 +21,22 @@ acceptance. [State](../../../../state-of-the-work.md#music-comfy-engineering-pro
 
 ## Keep model, engine, and road apart
 
-An immutable semantic profile belongs to its domain and pins the operation, request and result
-schemas, model or voice identity, languages, formats, license, limits, and bake evidence. Each
-engine/provider implementation pins that exact semantic revision together with its dialect, runtime,
-placement, and evidence. Local open-weight MiniMax Music and the hosted MiniMax API remain distinct
-unless exact model, protocol, and evidence establish equivalence. The
-[engine and semantic-owner map](index.md#engine-versus-technical-contract-and-semantic-owner)
-supplies the shared division of responsibility.
+Begin with the operation and the owner that will judge its result. That domain's immutable
+semantic profile pins request and result schemas, model or voice identity, languages, formats,
+license, limits, and bake evidence. Each engine or provider implementation then pins this exact
+semantic revision together with its dialect, runtime, placement, and evidence.
 
-A Comfy preset pins the immutable editor/API graph, complete node and custom-node closure, model
-files, allowed parameter openings, output mapping and paths, network behavior, container revision, and license
-set. The complete engine program must pass [Assimilation](../../../../adr/35-assimilation.md)
-before execution. Callers select an admitted preset and its permitted parameters. Arbitrary caller
-graphs, partner/cloud nodes, runtime downloads, and ambient custom-node installation fail closed.
+This comparison must reach beyond a familiar model name. Local open-weight MiniMax Music and the
+hosted MiniMax API remain different routes unless exact model, protocol, and evidence establish
+equivalence. The [engine and semantic-owner map](index.md#engine-versus-technical-contract-and-semantic-owner)
+explains the shared division of responsibility.
+
+The preset is the complete program you are admitting: immutable editor/API graph, node and
+custom-node closure, model files, permitted parameter openings, output mapping and paths,
+network behavior, container revision, and licenses. [Assimilation](../../../../adr/35-assimilation.md)
+must admit that program before execution. A caller can then choose the preset and its permitted
+parameters. Arbitrary caller graphs, partner/cloud nodes, runtime downloads, and ambient
+custom-node installation remain closed.
 
 The Soulstone Rune pins the local container, endpoint, devices, mounts, lifecycle, resources, and
 admitted profile/preset references. A Portal requires separate admission of provider, endpoint,
@@ -55,13 +58,14 @@ both services. The [classic server](https://docs.comfy.org/development/comfyui-s
 including `/prompt`, `/history`, `/queue`, `/interrupt`, and WebSocket communication, remains a
 distinct dialect.
 
-Pin authentication, retention, and restart recovery for the chosen route. The
-[v2 submission](https://docs.comfy.org/api-reference/v2/jobs/submit-a-workflow-for-execution)
-contract uses a single-use `Idempotency-Key` that rejects duplicates rather than replaying a
-response. The self-hosted proxy needs persistent
+Before relying on job recovery, pin the chosen route's authentication, retention, and restart
+behavior. The [v2 submission](https://docs.comfy.org/api-reference/v2/jobs/submit-a-workflow-for-execution)
+contract uses a single-use `Idempotency-Key`: a duplicate is rejected, rather than returning the
+previous response. The self-hosted proxy needs persistent
 [`--state-dir` storage](https://github.com/Comfy-Org/comfy-api-proxy/blob/main/docs/batch-workloads.md#persistence---state-dir)
-for its records; this does not preserve ComfyUI queue/history or output bytes across restart.
-An ambiguous submit requires lookup before deciding recovery; blind retry is inadmissible.
+for its own records, which does not preserve ComfyUI queue/history or output bytes after restart.
+If submission is ambiguous, look it up before deciding recovery. Blind retry is inadmissible:
+it cannot resolve the missing account.
 
 An admitted adapter must supply upload, submit, queue, progress, history, output, interruption,
 cancellation-request, and reconciliation facts. Core alone owns `ServiceJobAttempt@1`; the domain

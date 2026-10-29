@@ -11,9 +11,9 @@ icon: material/lan-connect
 
 ## Decision
 
-**WireGuard** is the transport of the **Tether** extension: an operator-controlled, encrypted,
-self-hosted private-reachability layer. It is transport only. Tunnel membership grants neither an
-application role, Sigil, capability, nor permission to a named object or effect.
+The **Tether** extension uses **WireGuard** for an operator-controlled, encrypted, self-hosted
+private road. This layer supplies reachability only. Tunnel membership grants no application
+role, Sigil, capability, or permission to a named object or effect.
 
 Private reachability is not anonymous browsing. A tunnel can conceal destination traffic from
 the access network while moving visibility and trust to its endpoint; traffic timing and volume,
@@ -64,11 +64,12 @@ keepalive policy, enabled/revoked state, and creation/rotation metadata. Private
 are hydrated through the secret boundary and never rendered into ordinary documentation, logs, QR
 history, or public peer records.
 
-Routes are explicit. Host firewall policy decides listeners reachable through the interface; Veil
-may apply ingress policy; Ward and Vessel still authenticate and authorize. Database
-administration, lifecycle mutation, Oculus, audio, model APIs, and A2A remain closed unless their
-own policy admits the peer. A tunnel address, interface, peer key, or forwarded metadata can
-contribute credential evidence; it cannot mint `magus:*`, widen a Sigil, or create an administrator.
+Each route must be explicit. Host firewall policy determines which listeners the interface can
+reach, Veil may apply ingress policy, and Ward and Vessel still authenticate and authorize.
+Database administration, lifecycle mutation, Oculus, audio, model APIs, and A2A stay closed until
+their own policy admits the peer. A tunnel address, interface, peer key, or forwarded metadata
+can contribute credential evidence but cannot mint `magus:*`, widen a Sigil, or create an
+administrator.
 
 ## Lifecycle, failure, and recovery
 
@@ -79,10 +80,10 @@ operator authorization. Versioned public peer/routing intent prevents restore or
 from reviving revoked or stale access; failure stays visible and privileged traffic never falls
 back to a public route.
 
-Dynamic addressing still needs an operator-supplied reachable endpoint through DNS, fixed
+Dynamic addressing needs an operator-supplied reachable endpoint, whether through DNS, fixed
 addressing, or a separately accepted rendezvous mechanism. Carrier NAT, blocked UDP, changing
-endpoints, roaming, endpoint metadata, and traffic analysis remain. Relay and NAT traversal are
-separate trust decisions, never an invisible recovery route.
+endpoints, roaming, endpoint metadata, and traffic analysis remain concerns. Relay and NAT
+traversal require separate trust decisions; recovery cannot introduce them invisibly.
 
 ## Delivery and consequences
 

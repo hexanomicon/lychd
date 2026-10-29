@@ -88,12 +88,14 @@ provide the transport organization.
 
 ## Admit an explicit policy
 
-The strict TOML-backed Discord configuration uses schema version `1`. It binds one application,
-bot user and guild; an allowed channel set; mention/slash triggers; ordered rules; question and
-event-age limits; and explicit context bounds. It compiles into the platform-neutral preparation
-policy. Discord identifiers are decimal unsigned 64-bit strings. Display names, tags and rule
-labels confer no authority. Unknown configuration or unsupported actions refuse rather than
-silently becoming a broader default.
+Configure the admission boundary before submitting a prospective event. The strict TOML-backed
+Discord schema uses version `1` and binds one application, bot user and guild, an allowed channel
+set, mention/slash triggers, ordered rules, question and event-age limits, and explicit context
+bounds. The adapter compiles this into the platform-neutral preparation policy.
+
+Use decimal unsigned 64-bit strings for Discord identifiers; display names, tags and rule labels
+confer no authority. Unknown configuration or unsupported actions refuse, so a misspelled setting
+cannot silently select a broader default.
 
 Each Discord rule has a label, user IDs, role IDs and allowed actions. A rule matches a user ID
 **or** one of the event's role IDs. The first matching rule owns the decision: if its actions
@@ -154,10 +156,10 @@ or a verified capability requirement changes the fit; release recency alone esta
 
 ### What a raw client would own
 
-A raw Gateway client owns Hello/heartbeat scheduling, jitter and ACK failure, sequence/session/
-resume-URL state, close-code decisions, invalid sessions and Identify quotas. Resume can fail;
-reconnection must expose gaps. These transport duties apply independently of Reach's durable
-event admission. [Gateway lifecycle](https://docs.discord.com/developers/events/gateway)
+Choosing a raw client makes LychD responsible for the Gateway lifecycle: Hello/heartbeat
+scheduling, jitter and ACK failure, sequence/session/resume-URL state, close-code decisions,
+invalid sessions and Identify quotas. It must also expose gaps when resume fails. Completing
+these transport duties still leaves Reach's durable event admission to be implemented separately. [Gateway lifecycle](https://docs.discord.com/developers/events/gateway)
 
 Its HTTP layer must respect dynamic route buckets, major-resource partitions, global limits and
 `Retry-After`; fixed guessed limits are insufficient.
@@ -173,12 +175,12 @@ application effect.
 
 ## Expand context and media through separate gates
 
-`context_message_limit = 0` disables surrounding history. Positive limits are configuration bounds
-for later work, not evidence of a fetcher. Enabling history requires explicit operator policy,
-bounded count and age, channel access, `Read Message History`, and the privileged Message Content
-intent for surrounding guild content. The current preparation requests none of that access.
-Checking a triggering member's roles does not by itself require privileged member-list or
-presence intents. [Message Content intent](https://docs.discord.com/developers/events/gateway#message-content-intent)
+Keep `context_message_limit = 0` to disable surrounding history. A positive value only configures
+a bound for later work; it does not provide a fetcher. Before enabling that later history path,
+require explicit operator policy, bounded count and age, channel access, `Read Message History`,
+and the privileged Message Content intent for surrounding guild content. The current preparation
+requests none of that access. Checking the triggering member's roles is a narrower operation and
+does not by itself require privileged member-list or presence intents. [Message Content intent](https://docs.discord.com/developers/events/gateway#message-content-intent)
 and [member-cache behavior](https://discordpy.readthedocs.io/en/stable/intents.html#member-cache)
 remain provider constraints.
 

@@ -7,9 +7,10 @@ icon: material/account-arrow-right-outline
 
 > _The errand may leave the tower. The keys, the ledger, and the last word do not._
 
-[Spellweaver](index.md) delegates through an attributed `AgentJob`. The coordinator tracks it; Graph
-holds station state; the Run ledger binds its wait. An adapter receives a frozen request, never
-the live Run, and the Pattern parks for one terminal adoption.
+A delegated task leaves its parent with a specific job to await. [Spellweaver](index.md) records
+that task as an attributed `AgentJob`: the coordinator tracks the job, Graph holds station state,
+and the Run ledger binds the wait. The adapter receives a frozen request rather than the live Run.
+The Pattern then parks for one terminal adoption.
 
 Today only the deterministic, effect-free `reference` adapter runs by default. Codex and Claude
 have one-shot protocol adapters behind an unimplemented, refusing-by-default host port. Foreign
@@ -30,14 +31,14 @@ below separates the current job mechanics from those designs.
 | `DelegatedAgentJob` | `request`, `ref`, `status`, optional `result`, and ordered `events` |
 | `DelegatedAgentResult` | Same `job_id`, terminal `status`, optional `output`, `artifacts`, and `error`; `failed`, `timed_out`, and `lost` require an error, while `succeeded` forbids one |
 
-An `ArtifactRef` is frozen metadata for external bytes, not bytes or custody. The full station
-contract declares containment, budget, timeout, cancellation, artifact boundary, and permitted
-downstream use. Today's
-`DelegatedAgentRequest` has no budget or timeout fields, and State records no measured delegated
-budget ledger. V2 adds the four existing capture/wall bounds and owner references; it does not
-supply the full host/provider budget envelope or implement those owners. Its actual owner producer
-remains absent and the trusted observation consumer denies by default. A positive inert fixture
-proves consumer conformance only. [Workers](../../../adr/14-workers.md#versioned-cli-intent-and-owner-binding)
+The frozen request can identify external material through an `ArtifactRef`, but that reference
+contains metadata, not the bytes or their custody. The full station contract must also declare
+containment, budget, timeout, cancellation, artifact boundary, and permitted downstream use.
+Today's `DelegatedAgentRequest` has no budget or timeout fields, and State records no measured
+delegated budget ledger. V2 adds the four existing capture/wall bounds and owner references; it
+does not supply the full host/provider budget envelope or implement those owners. The actual
+owner producer remains absent, and the trusted observation consumer denies by default. A positive
+inert fixture proves only consumer conformance. [Workers](../../../adr/14-workers.md#versioned-cli-intent-and-owner-binding)
 owns the exact version/codec, validity and compatibility contract.
 
 Fresh legacy CLI requests refuse before host launch. Historical lookup and cancellation remain
@@ -58,9 +59,10 @@ This is the normal path; earlier states may take only their declared terminal ed
 stores `job_id`, GraphRunner snapshots, and the worker binds that owner with
 `AWAITING_DELEGATE`. Only its terminal job may re-admit the Run.
 
-First terminal adoption wins. Duplicate or late result adoption is inert and appends no event; a
-mismatched job id is rejected, and an older job cannot resume a newer wait. Only `succeeded` lets
-the delegated rite project optional text; every other terminal status fails it.
+The first terminal adoption settles the job's return. Duplicate or late adoption is inert and
+appends no event. A mismatched job id is rejected, so an older job cannot resume a newer wait.
+Only `succeeded` lets the delegated rite project optional text; every other terminal status fails
+that rite.
 
 Reference cancellation is idempotent; no effectful process-tree cancellation is delivered.
 `lost` records indeterminate external truth: it is terminal for result adoption, neither polled nor
@@ -84,9 +86,9 @@ The serialized envelope contains no `RunContext`, live toolsets, provider object
 credentials, or ambient authority. A profile and pure policy express posture; they do not prove
 enforcement.
 
-Returned text and `ArtifactRef`s are data, not authority. A lower-trust return remains
-provenance-tagged and quarantined: it grants no instruction, execution, promotion, or effect
-authority, only station-declared interpretation. A reference alone neither admits nor materializes bytes.
+The station may interpret returned text and `ArtifactRef`s only as its contract declares. A
+lower-trust return remains provenance-tagged and quarantined; it grants no instruction, execution,
+promotion, or effect authority. Even a reference to bytes neither admits nor materializes them.
 [Return quarantine](../../../adr/09-security.md#7-return-quarantine) owns this law.
 
 The host marks candidate content produced through this job lineage `agent_generated`; a later
@@ -99,12 +101,12 @@ If a delegated request, child provider call, or returned derivative may cross a 
 it also follows the parent [anonymization and egress](anonymization.md) contract. Delegation cannot
 copy authority or shed privacy lineage.
 
-The runtime and its provider are separate consumers. A remote runtime receives its own minimum
-workspace projection under a `DelegatedRuntimeTarget`; a child model receives a second consumer-
-specific Cut when transformation policy requires one, plus a fresh `PortalTarget` decision for its
-exact prompt/tool envelope. A local Coffin still
-protects the host from its runtime even when only the child call crosses the network. The outer
-`AgentJob` never authorizes an unknown series of child payloads.
+A runtime and its child provider receive different disclosures. The remote runtime gets its
+minimum workspace projection under a `DelegatedRuntimeTarget`. The child model requires a fresh
+`PortalTarget` decision for its exact prompt/tool envelope. When transformation policy requires
+it, that child disclosure also gets a second, consumer-specific Cut. A local Coffin must still protect the host from its
+runtime even when only that child call crosses the network. The outer `AgentJob` never authorizes
+an unknown series of child payloads.
 
 This separation is also the delegation's economic leverage: the
 [local anonymizer and bastion](anonymization.md#the-leverage-of-a-local-boundary) can make
@@ -154,11 +156,11 @@ An effectful adapter needs these five passages under the existing Coffin contrac
    and verification examine the exact resulting candidate. Adapter success neither passes those
    checks nor promotes the artifact.
 
-For a first adapter, declare how each observed runtime event and exit condition maps to the
-existing job statuses. Do not make every non-zero exit `failed`: work may already have occurred.
-An adapter-specific rejection receipt can establish that nothing started; uncertainty cannot.
-The current request/result types are a starting envelope, not evidence that this richer binding,
-budget accounting, or artifact custody already exists.
+Begin an adapter by defining how its observed events and exit conditions map to the existing job
+statuses. A non-zero exit cannot automatically mean `failed`, because work may already have
+occurred. Establishing that nothing started requires an adapter-specific rejection receipt;
+uncertainty cannot establish it. The current request/result types provide a starting envelope,
+not evidence that this richer binding, budget accounting, or artifact custody already exists.
 
 The current protocol implementation pins Codex 0.159.2 and Claude Code 2.1.296. It builds literal
 commands with prompt bytes on stdin, isolated configuration roots and an allowlisted replacement
@@ -246,11 +248,12 @@ Complete the capability in independently reviewable slices:
 | Admitted provider crossing | Verify the exact destination and payload, applicable Cut and utility evidence, and every child call's gate; block an undeclared retry or fallback. |
 | Creation candidate return | An exact patch or artifact survives quarantine, any permitted rehydration, and independent checks against the real base. A useful proposal can still fail acceptance. |
 
-Adversarial checks include a process that prints success before failing, a valid result whose
-artifact belongs to another job or base, a background child that outlives its parent, and a patch
-that targets a path outside the admitted workspace. Pair them with successful controls so refusal
-cannot masquerade as a working adapter. The bounded protocol slice has offline tests; contained
-execution, provider crossing and candidate custody still need their own acceptance evidence.
+Test the boundary with returns that look successful while violating its contract: a process that
+prints success before failing, a valid result whose artifact belongs to another job or base, a
+background child that outlives its parent, and a patch outside the admitted workspace. Pair these
+adversarial checks with successful controls so refusal cannot masquerade as a working adapter.
+The bounded protocol slice has offline tests; contained execution, provider crossing and
+candidate custody still need their own acceptance evidence.
 
 ## Name the delivered truth
 

@@ -43,11 +43,12 @@ The complete 16 KiB bound still applies. No complete seed is copied into Run or 
 
 ### Whole field and local views
 
-Scavenger owns immutable `MarketObservation@1` records. The exact subject/request binds the
-canonical seed digest, Run and selected Composition/Pattern/manifest, source and acquisition
-profiles, purpose, retention profile and initial filter revision. Exact replay resolves the same
-admission/result; changed bindings refuse. The first profile permits one pending or retained
-observation per selected profile database. It does not create another Scout allowance store.
+Retain the response in an immutable `MarketObservation@1` owned by Scavenger. Its exact
+subject/request binds the canonical seed digest, Run and selected Composition/Pattern/manifest,
+source and acquisition profiles, purpose, retention profile and initial filter revision. Replaying
+that exact binding resolves the same admission/result; a changed binding refuses. The first
+profile allows only one pending or retained observation per selected profile database and creates
+no additional Scout allowance store.
 
 The whole field contains every item returned by the admitted bounded extraction, in source order,
 including unmatched, duplicate and unjudged occurrences. Each occurrence retains an internal
@@ -57,12 +58,14 @@ occurrences or query/path spelling. Missing values and unresolved facts remain v
 eligibility or seller judgment is inferred. This field is the finite response, not the source's
 entire market.
 
-Retain at most 100 observations, with titles at most 1024 UTF-8 bytes and links at most 4096 bytes,
-matching the qualified RSS mechanism. The complete seed is at most 16 KiB and the canonical
-application observation at most 256 KiB. Overflow refuses the complete result rather than hiding
-items or shortening fields. Preserve requested/contacted locator, retrieval time, Scout receipt,
-source/record/field digests, selected profiles, omissions, duplicate/missing counts and declared
-coverage. Source dates/GUIDs do not establish identity or freshness.
+Keep the field within the qualified RSS mechanism's limits: at most 100 observations, titles of
+at most 1024 UTF-8 bytes, and links of at most 4096 bytes. The complete seed is bounded to 16 KiB
+and the canonical application observation to 256 KiB. If the result overflows, refuse it whole
+rather than hide items or shorten fields.
+
+To show what the field represents, retain the requested/contacted locator, retrieval time, Scout
+receipt, source/record/field digests, selected profiles, omissions, duplicate/missing counts and
+declared coverage. Source dates/GUIDs alone establish neither identity nor freshness.
 
 Only the admitted title/link field and necessary attribution survive in application custody.
 Feed bodies, channel text, summaries, images, publisher dates/identifiers and separate contact
@@ -87,21 +90,25 @@ disposition are proved terminal. Pending work must be cancelled through the Run 
 unknown acquisition cannot be declared settled by deletion. The first profile supplies no
 automatic unknown-attempt reconciliation.
 
-Deletion atomically removes the application seed, item payload and content projections. It keeps
-only a content-free tombstone and necessary immutable execution/Scout receipts; contact metadata
-in those receipts is not erased. A tombstone fences late writes and exact replay, so neither can
-recreate payload. Deleted is distinct from an empty market. Backup erasure is not implied.
-Reopening the application slot does not reset spent counters, unknown reservations or an issued
-claim. Replacing an observation is a visible delete followed by a fresh request and consent.
+Once terminal disposition permits deletion, atomically remove the application seed, item payload
+and content projections. Keep only a content-free tombstone and necessary immutable execution/
+Scout receipts, whose contact metadata is not erased. The tombstone fences late writes and exact
+replay so neither can recreate the payload. Report deletion distinctly from an empty market and
+do not imply backup erasure.
 
-Before acquisition claim, the exact retained consent may resume under current authority and
-expiry. After claim or uncertain acknowledgement, lost transient material cannot be reconstructed
-or refetched. Commit the entire consumer field once, atomically under its request/claim identity,
-after current CONSUME and result-adoption checks. Settlement without a confirmed consumer commit
-returns material unavailable unless the same key proves a committed result. Lost commit
-acknowledgement reconciles that same key/digest; ambiguity stays unknown and creates no acquisition.
-A committed field supports fresh authorized reads/re-filters after restart; deletion remains final
-for that identity.
+Reopening the application slot does not reset spent counters, unknown reservations or an issued
+claim. To replace an observation, visibly delete it and obtain a fresh request and consent.
+
+Recovery depends on whether acquisition has been claimed. Before claim, the exact retained
+consent may resume under current authority and expiry. After claim or an uncertain acknowledgement,
+lost transient material cannot be reconstructed or refetched.
+
+After current CONSUME and result-adoption checks, commit the entire consumer field once, atomically
+under its request/claim identity. If settlement has no confirmed consumer commit, return material
+unavailable unless that same key proves a committed result. Reconcile a lost commit acknowledgement
+against the same key/digest; ambiguity remains unknown and creates no acquisition. Once committed,
+the field supports fresh authorized reads/re-filters after restart. Once deleted, that identity
+stays deleted.
 
 The first native profile uses one active Scout binding in a fresh profile database. Existing page
 budget rows refuse a page/RSS switch or coexistence without mutation. This is an explicit initial
@@ -143,7 +150,7 @@ A missing VIN, service history, condition detail, photo, or video can become an 
 
 ## Images, messages, and learned contact style
 
-An image judgment binds source identity/digest, region, observed cue, interpretation, confidence, and correction. A model highlight proposes a place to inspect; it proves no damage, identity, condition, or value. Eligible public listing images may cross an exact source/egress policy to a named remote vision provider for bounded inference with provider/model provenance. Public availability grants neither training nor republication rights.
+For an image judgment, retain the source identity/digest, region, observed cue, interpretation, confidence, and correction. This keeps a model's suggested inspection region separate from proof of damage, identity, condition, or value. Eligible public listing images may go to a named remote vision provider only under an exact source/egress policy, for bounded inference with provider/model provenance. Public availability grants no training or republication rights.
 
 Already approved questions and truthful automation disclosures can be compared for decision-useful answers. Bargain still owns every send, limit, stop signal, uncertain acknowledgement, and seller thread. Phone numbers, private replies, credentials, and private anchors never enter a preference revision as ambient context.
 

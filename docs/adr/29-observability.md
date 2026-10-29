@@ -29,10 +29,10 @@ redacted exports and gains no LychD authority.
 
 ## Decision Outcome
 
-[Oculus](../sepulcher/extensions/oculus.md) is the designed native evidence Domain. **Orb** is its
-Altar instrument; **scrying** is the act of using it. Phoenix, Logfire, an OpenTelemetry collector,
-or another viewer may serve as an external **[Eye](../lexicon/iron-tongue.md#e)**. A viewer supplies a way to look, not a second
-source of truth.
+[Oculus](../sepulcher/extensions/oculus.md) is the designed native evidence Domain. Its Altar
+instrument is **Orb**, and using that instrument is **scrying**. An external **[Eye](../lexicon/iron-tongue.md#e)**
+may be Phoenix, Logfire, an OpenTelemetry collector, or another viewer. Each supplies a way to
+inspect evidence without becoming a second source of truth.
 
 Structured logging and the bounded Orb have current repository evidence. Native Oculus has no
 ingestion or telemetry adapter, trace/metric store, retention, health query, cross-process bus,
@@ -80,9 +80,9 @@ service spelling `oculus` is a compatibility name and cannot make that service n
 
 ### 3. Interior Evidence Without Mind Reading
 
-First-person testimony, operated telemetry, and declared interpretation are separate sources.
-Progress text is testimony; a tool/provider span is an observation; a scored explanation is a
-versioned interpretation. None is hidden chain-of-thought.
+Interior evidence needs an attributed source and a declared kind. Progress text is first-person
+testimony, a tool/provider span is an operated observation, and a scored explanation is a
+versioned interpretation. These remain separate sources; none exposes hidden chain-of-thought.
 
 Prompts and completions, retrieved Context, tool bodies, provider exchanges, media, credentials,
 and identity data remain absent unless the applicable policy admits them. A useful structural
@@ -91,10 +91,10 @@ needed for a stronger conclusion was not captured.
 
 ### 4. Delegated-Agent Evidence
 
-The admitted adapter is the observation boundary for a delegated runtime. LychD records job
-admission, policy, settlement, artifacts, and adoption. Provider-reported usage and protocol
-messages remain attributed provider evidence; neither source reveals the foreign planner,
-subagent tree, or private reasoning.
+For delegated work, observation stops at the admitted adapter. LychD records admission, policy,
+settlement, artifacts, and adoption. Usage and protocol messages reported by the provider stay
+attributed to that provider. Neither source reveals the foreign planner, subagent tree, or
+private reasoning.
 
 Orb displays at most **32 newest job summaries** and **64 newest lifecycle events per job**. It
 shows state and result-or-artifact presence while withholding prompts, output, and private errors.
@@ -179,9 +179,9 @@ diagnosis; authoritative correctness records still commit through their owning t
 
 ## Consequences
 
-A reader can distinguish what happened, what was observed, what was derived, and what someone
-concluded. Capture class, gaps, freshness, and uncertainty become part of the evidence instead of
-being hidden by a seamless display. External Eyes remain replaceable.
+The evidence contract lets a reader distinguish an authoritative event, an observation, a
+derivation, and someone's conclusion. Capture class, gaps, freshness, and uncertainty remain
+visible parts of that evidence. An external Eye can be replaced without replacing those meanings.
 
 The cost is explicit ingestion, retention, query, migration, health, and queue work. Privacy and
 partial-order correlation require more care than arbitrary tracing spans, and some questions must

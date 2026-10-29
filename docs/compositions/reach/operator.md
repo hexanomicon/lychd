@@ -12,14 +12,16 @@ profile. Document search is the default; an explicit private profile can instead
 local-model conversation. Independently enabled owner publications use a local queue. Neither
 option supplies Ward enrollment, durable Phylactery, or restart continuation.
 
-The edge runs **discord.py 2.7.1** on Python 3.14.8, with its own lockfile. The worker runs
-on Python 3.15.0 in the explicit OCI development image, with a generation-local memory Run
-ledger and real native Graph. A host supervisor relays
-bounded JSON over the two containers' standard streams. Neither container receives an engine
-socket, checkout, HOME or the other's credentials. The worker receives a compiled policy
-and an immutable export of selected public documents. Default answers are deterministic excerpts
-and source links. The optional conversation profile also mounts one frozen static persona and
-model binding into that worker; model HTTP stays in a closed host transport.
+The two processes have different dependencies and custody. The edge runs **discord.py 2.7.1**
+on Python 3.14.8 with its own lockfile. The worker runs Python 3.15.0 in the explicit OCI development
+image and executes a real native Graph with a generation-local memory Run ledger. A host supervisor
+relays bounded JSON over their standard streams; neither container receives an engine socket,
+checkout, HOME or the other's credentials.
+
+For document search, the worker receives a compiled policy and an immutable export of selected
+public documents, then returns deterministic excerpts and source links. The optional conversation
+profile adds one frozen static persona and model binding to that worker. Its model HTTP remains
+in a closed host transport.
 
 The existing generic Reach policy selects people, groups, conversations and actions. Discord
 administrator permission does not grant a native Sigil, shell or host operation. Administrative
@@ -47,41 +49,6 @@ Start with [Prepare Reachy](preparation.md): create a private application, insta
 ends with the bot offline. The steps here deliberately continue into this separate operator
 profile. The [public Discord contract](index.md) and the Designed
 [home and VPS profiles](deployments/index.md) keep their existing boundaries.
-
-The optional community onboarding profile binds a public welcome channel, a separate public
-introduction channel, an existing bot-owned welcome message, and two zero-permission baseline
-roles. The welcome channel can remain read-only. A persistent welcome button opens a
-private form with optional interests and introduction text. Only an explicit publication
-confirmation creates or updates that member's one public introduction. Choices do not grant
-Contributor, Maintainer, Admin, native identity, or capabilities. Humans receive the configured
-Magus baseline unless they already hold an explicitly configured elevated community role;
-bot accounts receive the common Bot role. For a server using these exemptions, keep one
-community role per human: Magus, Contributor, or Maintainer, with Admin as a separate add-on.
-An authorized human promotes members by replacing
-their previous community role. Onboarding never removes roles or grants an elevated role.
-This automation requires Server Members Intent, uses no member/presence cache, and backfills at
-most 1,000 existing members once per process generation. Private drafts expire after five minutes
-or restart.
-
-Select it with `--onboarding-profile /absolute/private/onboarding.json` on `run`. The strict
-JSON object contains `guild_id`, `channel_id`, `introduction_channel_id`, `panel_message_id`,
-`magus_role_id`, and `bot_role_id`. Optional `elevated_human_role_ids` is an array of at most two
-exact role ID strings for Contributor and Maintainer; omission defaults to an empty array and
-preserves the baseline behavior of existing profiles. IDs must be distinct from one another,
-the everyone role, Magus and Bot. Keep Admin outside this list. Role names do not
-select exemptions. Startup requires each exempted role to exist and be unmanaged; these
-read-only checks confer no authority to assign it. Join and startup backfill skip Magus for
-humans holding either configured role, including after restart. Existing duplicate community
-memberships require a separate reviewed human cleanup.
-
-The two channel IDs must differ. The host freezes this bounded private file and mounts it only
-into the Discord edge. Startup verifies both public text channels, welcome author, baseline
-role authority and hierarchy before registering controls. Attaching the controls to the welcome
-message is a separate reviewed operator edit. Role additions preserve other memberships; public
-introductions use the content-free effect journal to retain their message identity across
-restarts. Unknown
-creation or update outcomes fence further publication until operator reconciliation. These
-are Discord presentation and membership effects, not Ward enrollment or native Graph runs.
 
 Use a Linux host with the repository's host tooling installed as described in
 [CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#setup-and-commands)
@@ -224,12 +191,12 @@ private operations overwrites do not revoke it. The setup does not change the ev
 assign members, moderate, ban, delete channels or delete roles. Creating voice channels does not
 provide a voice connection, transcription or other media feature.
 
-Names only identify exact compatible existing resources: the desired fields and permission
-overwrites must already match before a name-only match can be retained without writes.
-Duplicate names, incompatible role permissions or channel settings refuse planning. The first policy channel has an explicit ID,
-so its reviewed plan may patch it; the planner does not rename or reconfigure arbitrary
-name-matched channels. Preserve the old channel ID in the policy after setup even if its name
-or category changes.
+A matching name lets the planner retain a resource without writing only when its desired fields
+and permission overwrites already match exactly. Duplicate names, incompatible role permissions
+or incompatible channel settings refuse planning. The first policy channel is different because
+its explicit ID allows the reviewed plan to patch that exact resource. The planner cannot rename
+or reconfigure arbitrary name-matched channels. Keep the existing channel ID in policy after
+setup, even if the plan changes its name or category.
 
 A plan expires after fifteen minutes. Copy the digest you actually reviewed into `PLAN_DIGEST`;
 the placeholder below must be replaced with that exact 64-character lowercase hexadecimal value.
@@ -305,6 +272,43 @@ a new generation, refuses pre-generation events, and starts with empty memory Ru
 conversations. Keep the same state directory so the durable transport attempt journal continues
 to fence uncertain effects.
 
+The optional community onboarding profile starts from a public welcome channel, a separate public
+introduction channel, an existing bot-owned welcome message, and two zero-permission baseline
+roles. The welcome channel may stay read-only. Its persistent button opens a private form for
+optional interests and introduction text; only explicit publication confirmation creates or
+updates that member's one public introduction. Those choices grant no Contributor, Maintainer,
+Admin, native identity, or capabilities.
+
+For membership, humans receive the configured Magus baseline unless they already hold an explicitly
+configured elevated community role; bot accounts receive the common Bot role. When using these
+exemptions, keep one community role per human—Magus, Contributor, or Maintainer—with Admin as a
+separate add-on. An authorized human promotes a member by replacing the previous community role.
+Onboarding itself never removes roles or grants an elevated role.
+
+This automation requires Server Members Intent. It uses no member/presence cache and backfills at
+most 1,000 existing members once per process generation. A private draft expires after five
+minutes or restart.
+
+Select it with `--onboarding-profile /absolute/private/onboarding.json` on `run`. The strict
+JSON object contains `guild_id`, `channel_id`, `introduction_channel_id`, `panel_message_id`,
+`magus_role_id`, and `bot_role_id`. Optional `elevated_human_role_ids` is an array of at most two
+exact role ID strings for Contributor and Maintainer; omission defaults to an empty array and
+preserves the baseline behavior of existing profiles. IDs must be distinct from one another,
+the everyone role, Magus and Bot. Keep Admin outside this list. Role names do not
+select exemptions. Startup requires each exempted role to exist and be unmanaged; these
+read-only checks confer no authority to assign it. Join and startup backfill skip Magus for
+humans holding either configured role, including after restart. Existing duplicate community
+memberships require a separate reviewed human cleanup.
+
+The two channel IDs must differ. The host freezes this bounded private file and mounts it only
+into the Discord edge. Startup verifies both public text channels, welcome author, baseline
+role authority and hierarchy before registering controls. Attaching the controls to the welcome
+message is a separate reviewed operator edit. Role additions preserve other memberships; public
+introductions use the content-free effect journal to retain their message identity across
+restarts. Unknown
+creation or update outcomes fence further publication until operator reconciliation. These
+are Discord presentation and membership effects, not Ward enrollment or native Graph runs.
+
 ## Enable bounded surrounding history only when intended
 
 The default policy keeps `context_message_limit = 0` and the run command omits `--history`.
@@ -377,14 +381,15 @@ uv run --locked python scripts/reach_operator.py run \
   --history
 ```
 
-Omit `--history` when the policy limit is zero. The corpus remains required and supplies bounded
-public-document excerpts when relevant. Recent messages and excerpts enter the model as
-attributed untrusted data. Oldest history is omitted first to meet the profile's input bound.
-The native worker admits a generation-local Run, executes `reach.operator_converse@1`, and
-acquires an exact Dispatcher Chat lease without tools. One bounded generation request crosses
-the host relay; it has no retry, proxy, redirect, arbitrary endpoint or model override. A model
-reply supplies no publication or host authority. Model and Discord response limits can truncate
-an answer; this profile does not qualify general answer quality.
+Omit `--history` when the policy limit is zero. The corpus is still required and supplies bounded
+public-document excerpts where relevant. The model receives recent messages and excerpts as
+attributed untrusted data, with oldest history omitted first to meet the input bound.
+
+For each admitted turn, the native worker creates a generation-local Run, executes
+`reach.operator_converse@1`, and acquires an exact Dispatcher Chat lease without tools. One bounded
+generation request crosses the host relay, with no retry, proxy, redirect, arbitrary endpoint or
+model override. Its reply grants no publication or host authority. Model and Discord response
+limits may truncate the answer; this profile does not qualify general answer quality.
 
 The public slash-command group defaults to `reach`. Select an alias with `--command-name example`
 and deliberately repeat `--sync-commands` when changing guild registration. Names accept a
@@ -428,12 +433,15 @@ entries, 1,900 characters per body and a lifetime of at most one hour. A running
 queue and makes one REST attempt with mentions disabled. It does not ask the model to rewrite
 or decide whether to publish.
 
-Private queue receipts retain the publication ID, body digest, outcome and any returned remote
-ID. Known settlement removes queued body and request files; an unknown result retains them and
-blocks automatic repetition of that publication. The REST journal remains an independent
-uncertainty fence. Inspect an uncertain external result before any further authorized action;
-new UUIDs must not be used to bypass uncertainty. These receipts do not establish a durable
-native outbox, cross-process producer authority or application-level release acceptance.
+After an attempt, a private queue receipt retains the publication ID, body digest, outcome and
+any returned remote ID. A known settlement removes queued body and request files. An unknown
+result retains them and blocks automatic repetition of that publication; the REST journal also
+continues to fence uncertainty independently.
+
+Inspect the uncertain external result before taking any further authorized action. A new UUID
+cannot bypass that uncertainty. The receipt witnesses this local transport path, without
+establishing a durable native outbox, cross-process producer authority or application-level
+release acceptance.
 
 ## Handle refusals and uncertain effects
 
@@ -449,13 +457,15 @@ or fixed code. They do not retain the token, message text or response body. `att
 an interruption and `unknown` both mean that Discord **may already have performed the write**.
 The journal refuses unresolved effects in the same scope even under a newly generated plan.
 
-Stop the instance, retain the plan and journal, and inspect the actual Discord server and its
-relevant audit trail manually. Compare the reviewed resource intent and any recorded remote IDs
-with what exists. Do not rerun an uncertain create, delete the possible new resource, edit/remove
-journal records, switch to an empty state directory, or regenerate a plan to bypass the fence.
-There is no public journal reset or automated reconciliation command in this profile. Inspection
-can establish what happened; any further recovery needs an explicit manual reconciliation
-outside this automatic apply path. If evidence remains inconclusive, leave the effect unknown.
-The journal is an attempt witness, not a native Run ledger or durable conversation store.
+To investigate, stop the instance and retain its plan and journal. Inspect the actual Discord
+server and relevant audit trail manually, comparing the reviewed resource intent and recorded
+remote IDs with what exists. Do not bypass the fence by rerunning an uncertain create, deleting a
+possible new resource, editing/removing journal records, choosing an empty state directory, or
+regenerating a plan.
+
+This profile has no public journal reset or automated reconciliation command. Inspection may
+establish what happened, but further recovery requires explicit manual reconciliation outside
+the automatic apply path. Leave the effect unknown if the evidence stays inconclusive. The journal
+witnesses attempts; it does not retain native Runs or durable conversations.
 
 [Preparation](preparation.md) · [Architecture](architecture.md) · [State of Work](../../state-of-the-work.md#composition-portfolio-delivery)

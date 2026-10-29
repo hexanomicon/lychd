@@ -36,7 +36,9 @@ The candidate would retain distinct, linked records for:
 - **Assets and recurring rights:** acquisition/disposal basis, separate book and tax schedules, impairment evidence where applicable, subscription rights, renewal dates, cancellation conditions, and future obligations.
 - **Compliance outputs:** attributed tax positions, applicable rule versions, report and filing candidates, reviewer disposition, and separately observed submission/acceptance receipts.
 
-The accounting kernel must use decimal arithmetic with deterministic balancing, rounding, currency precision, effective-date resolution, and rule selection. Model output proposes classification or explanation; it does not choose arithmetic or establish tax law. Posting requires validated accounts, dates, amounts, provenance, and applicable review. Posted corrections append reversals or adjustments rather than rewriting history. A closed period is locked; authorized reopening records a reason and produces a successor close while preserving its predecessor.
+These records must support calculations another reviewer can reproduce. The accounting kernel therefore uses decimal arithmetic with deterministic balancing, rounding, currency precision, effective-date resolution, and rule selection. A model can propose a classification or explanation; it cannot choose the arithmetic or establish tax law.
+
+Before posting, validate accounts, dates, amounts, provenance, and applicable review. Once posted, a correction appends a reversal or adjustment so the original remains inspectable. A closed period stays locked. Authorized reopening records its reason and produces a successor close while preserving the predecessor.
 
 ## Portable rules, isolated entities
 
@@ -44,7 +46,9 @@ The proposed Composition-owned `EntityComplianceProfile@1` binds legal form, tax
 
 Neither a country string nor a successful import proves support. Missing, conflicting, expired, or inapplicable rules block the affected judgment with an exact reason. Portability requires a second wholly synthetic foreign profile with distinct rules, effective-time changes, calendar, and currency. Its fixture must demonstrate deliberate rule selection and refusal without fallback; this study makes no live foreign legal assertion.
 
-Each admitted rule needs its authoritative source, source digest, publication and effective dates, applicability predicates, reviewer, executable revision, and expected fixtures. Research findings cannot activate themselves. A rule change identifies affected open cases; it cannot silently recompute a filed return or closed period. Interface language, bank country, tax residence, establishment, and transaction jurisdiction remain separate configuration facts.
+To admit a rule, retain its authoritative source, source digest, publication and effective dates, applicability predicates, reviewer, executable revision, and expected fixtures. Research can assemble that evidence, but its findings cannot activate themselves.
+
+When a rule changes, identify the open cases it affects and preserve earlier judgments. It cannot silently recompute a filed return or closed period. Selection must continue to distinguish interface language, bank country, tax residence, establishment, and transaction jurisdiction; none substitutes for the others.
 
 Each entity keeps separate books, credential references, source coverage, grants, and acceptance authority. A counterparty buying services establishes a commercial relationship, not permission to operate that counterparty's books. Shared software and reusable profiles do not create shared financial authority.
 
@@ -82,13 +86,17 @@ close: period_ref, reviewer_ref, exception_policy_ref
 
 `MailAdapter`, `BankAdapter`, and `DocumentAdapter` name proposed application-facing ports, not existing global LychD classes or new Core offices or Extension Domains. Mail separates read, draft, send, and delivery observation. Bank separates read, payment preparation, submission, status observation, and reconciliation. Document intake retains original evidence and quarantines untrusted content. Any required registration must identify the receiving owner, typed Contribution, Provider, profile revision, and Registrant under [Extensions](../../adr/05-extensions.md); these names do not justify stuffing bank or mail operations into `ToolConnector`.
 
-Provider capability declarations must expose supported operations, coverage, limits, and recovery semantics. Unsupported operations refuse or produce a manual handoff. Cursors track traversal, not document identity. At-least-once ingestion deduplicates without losing distinct arrivals; partial imports, unavailable attachments, and historical gaps remain visible. Refunds, fees, FX differences, and payments without invoices require their own evidence and classification. A bank movement alone never becomes an automatic expense.
+Before using an adapter, inspect its declared operations, coverage, limits, and recovery semantics. Unsupported operations must refuse or return a manual handoff. During intake, use cursors to track traversal while keeping document identity separate. At-least-once ingestion deduplicates repeated delivery without losing distinct arrivals. Partial imports, unavailable attachments, and historical gaps remain visible.
+
+Classification comes after that evidence is established. Refunds, fees, FX differences, and payments without invoices each need their own evidence and judgment. A bank movement alone cannot become an automatic expense.
 
 Bounded standing policy may authorize low-impact ingestion and repeated exact actions. Fresh consent is required when the applicable HitL or effect policy requires it; there is no mandatory per-click doctrine. Approval binds the exact entity, operation, recipient/account, payload, amount/currency, policy, and expiry as applicable. Mutation invalidates it. Credentials stay in their owning custody and never enter model context.
 
 Observed submission is not delivered mail, settled money, or an accepted filing. An unclear timeout stays indeterminate. Recovery observes and reconciles the original external identity before any retry; uncertain execution cannot silently create a duplicate payment or message.
 
-Issuing an invoice reserves its number within the entity's declared series and preserves the issued revision; a correction links its predecessor. Preparing a document, issuing it, sending it, receiving payment, and recognizing revenue have distinct records. A filing candidate likewise freezes its source/period and rule/schema revisions before submission. Neither generation nor local validation manufactures an official acceptance receipt.
+Follow an invoice through its separate acts. Preparing the document does not issue it. Issuing reserves its number within the entity's declared series and preserves that revision; a later correction links its predecessor. Sending, receiving payment, and recognizing revenue each create distinct records.
+
+A filing candidate follows the same evidence discipline: freeze its source/period and rule/schema revisions before submission. Generation and local validation establish a candidate, while official acceptance still requires its own receipt.
 
 ## Privacy before remote cognition
 

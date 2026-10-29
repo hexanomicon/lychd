@@ -13,12 +13,14 @@ The client, staff member, and technical operator need different views of the sam
 | **Client Web** | Submit bounded material and see authorized records and choices. |
 | **Altar** | Inspect Runs, evidence, readiness, consent, and recovery. |
 
-These are separate typed projections. None opens a direct route to PostgreSQL, a model server, or an insurer.
+Each surface is a separate typed projection of permitted work. None opens a direct route to PostgreSQL, a model server, or an insurer.
 
-Inbound prose, attachments, mail, audio, and provider material remain hostile data. Credentials and raw client secrets stay outside Context. Local inference preserves access, retention, backup, export, and deletion duties; remote inference additionally requires the exact Context/Security privacy and egress decision.
+Before using an incoming message, treat its prose, attachments, mail, audio, and provider material as hostile data. Keep credentials and raw client secrets outside Context. Processing locally still carries duties for access, retention, backup, export, and deletion. Remote inference adds another decision: the exact Context/Security privacy and egress policy must admit the transfer.
 
-A reviewed outbound answer pins recipient, channel, payload digest, case/product revisions, current authority, expiry, and idempotency identity. Unknown acknowledgement is reconciled before retry. Deletion closes admission, drains or contains atomic work, and removes governed local derivatives while retaining explicit legal holds and third-party custody.
+For delivery, bind the reviewed answer to its recipient and channel, payload digest, case/product revisions, current authority, expiry, and idempotency identity. A missing acknowledgement leaves delivery uncertain; reconcile it before retrying. This preserves the connection between what staff reviewed and what the client may actually have received.
 
-The first proof admits email only. Telephone and public client routes each need separate authentication, recording, disclosure, and delivery evidence before joining it.
+Deletion begins by closing admission and draining or containing atomic work. It can then remove governed local derivatives while retaining explicit legal holds and an account of third-party custody.
+
+The first proof admits email only. Telephone and public client routes must each establish their own authentication, recording, disclosure, and delivery evidence before joining it.
 
 Return to [Broker](index.md).

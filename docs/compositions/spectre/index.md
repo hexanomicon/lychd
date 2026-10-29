@@ -11,7 +11,9 @@ The name follows _spectre_, an appearance or apparition. The experience can matt
 
 ## Contract
 
-`spectre.virtual_reality` revision `2` publishes `spectre.admit_habitat@1` and `spectre.enter_encounter@2`. It returns immutable `VRHabitat@1` or settled `SpectreEncounter@2`: completed, safely exited, interrupted, refused, or unresolved. World authorship, persistent-world effects, headset/runtime ownership, raw tracking archives, Persona/Avatar ownership, generic multiplayer, public release, and claims of physical presence remain outside its contract.
+Use `spectre.admit_habitat@1` to admit the place and `spectre.enter_encounter@2` for the bounded meeting; both belong to `spectre.virtual_reality` revision `2`. The result is immutable `VRHabitat@1` or settled `SpectreEncounter@2`, with an outcome of completed, safely exited, interrupted, refused, or unresolved.
+
+These results do not take ownership of world authorship, persistent-world effects, headset/runtime, raw tracking archives, or Persona/Avatar. Generic multiplayer, public release, and claims of physical presence also remain outside the contract.
 
 ## From place to meeting
 

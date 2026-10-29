@@ -64,11 +64,12 @@ settings are later separately authorized capabilities.
 
 ## Mailbox writes are separate effects
 
-Saving a draft discloses its body to Google even when no recipient receives it. Proposed
-`ReachMailboxMutationIntent@1` and `ReachMailboxMutationReceipt@1` bind one connection, operation,
-exact message/draft ids, MIME or label delta, preparation/observation, authorization, expiry,
-effect identity and fenced attempt. Use the same durable outbox states and current byte-time
-disclosure checks as delivery; creating a draft does not consume or imply send authority.
+Saving a draft is already an external effect: Google receives the body even though no recipient
+does. The proposed `ReachMailboxMutationIntent@1` and `ReachMailboxMutationReceipt@1` would account
+for that effect by binding one connection, operation, exact message/draft ids, MIME or label delta,
+preparation/observation, authorization, expiry, effect identity and fenced attempt. Apply the same
+durable outbox states and current byte-time disclosure checks used for delivery. Authority to
+create a draft neither consumes nor implies authority to send it.
 
 The first draft operation creates a Reach-owned snapshot and retains the returned draft id.
 Ambiguous creation remains `UNKNOWN` until matching draft content/correlation is reconciled;
@@ -85,25 +86,30 @@ trash and deletion remain excluded. [Message label changes](https://developers.g
 
 ## Synchronization and sending
 
-Start with outbound incremental polling and a bounded initial synchronization; persist a mailbox
-history cursor. A later push option uses Pub/Sub: create a topic in the calling project, grant
-Gmail publication, and select authenticated push or outbound pull. Renew `watch` before expiration
-(Google recommends daily; at least every seven days). Notifications are wakeups, not message
-contents or complete event history. Persist admitted changes and finish pagination before advancing
-the processed cursor. Repeated/out-of-order notifications cannot create new sends.
+Begin with a bounded initial synchronization, persist a mailbox history cursor, and use outbound
+incremental polling to follow subsequent changes. A later Pub/Sub option requires a topic in the
+calling project, a grant for Gmail publication, and either authenticated push or outbound pull.
+Renew `watch` before expiration (Google recommends daily; at least every seven days).
+
+A notification only wakes synchronization; it contains neither the message contents nor a complete
+event history. Persist admitted changes and finish pagination before advancing the processed
+cursor. Repeated or out-of-order notifications therefore cannot create new sends.
 [Push contract](https://developers.google.com/workspace/gmail/api/guides/push)
 
 Expired Gmail history returns **404**. Rebuild the purpose-bounded projection with a new full sync;
 do not replay every rediscovered message as a fresh request. A new watch baseline cannot overwrite
 an unprocessed cursor. [Synchronization](https://developers.google.com/workspace/gmail/api/guides/sync)
 
-Freeze canonical MIME, sender/alias, recipients, reply headers and body before review or standing
-policy admission. Verify an alias is eligible; an alias shares the mailbox's limits and is not a
-separate identity grant. Gmail's send API documents no idempotency key. Retain an application
-effect id and RFC Message-ID for correlation, then the returned Gmail message id. A timeout after
-submission stays `UNKNOWN` while Sent mail is inspected. Matching author, destination, bytes and
-correlation can support reconciliation; absence in one read cannot prove non-delivery. A vanished
-draft is insufficient evidence. Provider acceptance is not final delivery.
+Before review or standing-policy admission, freeze the canonical MIME, sender/alias, recipients,
+reply headers and body. Check that the alias is eligible; it shares the mailbox's limits and
+provides no separate identity grant.
+
+Gmail's send API documents no idempotency key, so retain an application effect id and RFC Message-ID
+for correlation, followed by the returned Gmail message id when available. If submission times
+out, keep `UNKNOWN` while inspecting Sent mail. Matching author, destination, bytes and correlation
+can support reconciliation. A missing result in one read cannot prove non-delivery. A vanished
+draft alone is insufficient evidence of the send outcome, and provider acceptance still does not
+establish final delivery.
 [Send API](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/send),
 [draft lifecycle](https://developers.google.com/workspace/gmail/api/guides/drafts),
 [delivery errors](https://developers.google.com/workspace/gmail/api/guides/handle-errors)

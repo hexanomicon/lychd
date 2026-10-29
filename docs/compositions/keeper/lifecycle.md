@@ -30,11 +30,11 @@ evidence of death.
 
 ## Change requirements deliberately
 
-A review can propose changed feeding or environmental requirements using an admitted, source-reviewed
-profile. Identify the previous and proposed profile revisions and which needs require review.
-Dates and counts alone cannot authorize a transition, and a profile update cannot silently change
-an active plan. Refer resulting work to [territory](territory.md), [feeding](feeding.md), or
-[care](care.md) with explicit dependencies.
+When the evidence supports changed feeding or environmental requirements, use an admitted,
+source-reviewed profile to propose them. Identify both the previous and proposed profile revisions
+and the needs that require review. Dates or counts alone cannot authorize the transition, and
+updating a profile cannot silently change an active plan. Refer any resulting work to
+[territory](territory.md), [feeding](feeding.md), or [care](care.md), retaining explicit dependencies.
 
 ## Finish with a review
 

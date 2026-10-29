@@ -19,10 +19,10 @@ worldₙ + selfₙ → interpretationₙ → actionₙ
 actionₙ + consequenceₙ → Seedₙ₊₁ → Recall → worldₙ₊₁ + selfₙ₊₁
 ```
 
-An unchanged return can repeat forever without learning or character. **Ouroboros** names the
-more demanding passage: attributed consequence returns through evaluation, memory policy,
-consent, and Recall, changing a later Invocation while Blade remains able to cut. A retry,
-workflow edge, or Graph cycle supplies no such history by itself.
+For consequence to change a later Invocation, it must return with attribution, evaluation, memory
+policy, consent, and Recall. **Ouroboros** names this passage, with Blade still able to cut.
+Without it, return can repeat forever without learning or character. A retry, workflow edge,
+or Graph cycle alone supplies none of that history.
 
 Within the [Breath of the Work](index.md#the-breath-of-the-work), dissolution releases a form.
 Discrimination decides what may survive it. The [Phylactery](../../sepulcher/phylactery/index.md)
@@ -30,11 +30,10 @@ keeps only the records its contract admits; provenance keeps source, choice, cor
 consequence available for later judgment. Storage supplies neither moral accounting nor truth.
 
 **For a recurrent life, interpretability reaches a second question: what is permitted to
-persist?** Passing cognition can remain difficult to read. What crosses into memory, identity,
-or future conditioning must expose an inheritance that can be examined and corrected: where
-it came from, what followed from it, and why it should shape another act. Blade weighs the act
-before it enters the world; tending the Seed asks what that action will teach the next life
-of the Circle.
+persist?** Passing cognition can be difficult to read. At the point where it becomes memory,
+identity, or future conditioning, however, its inheritance must be examinable and correctable.
+Where did it come from? What followed from it? Why should it shape another act? Blade weighs an
+act before it enters the world; tending its Seed asks what it will teach the Circle's next life.
 
 A **Seed** carries formative potency: a trace whose conditioning can shape a later Flux. Its
 power to return is precisely why it must remain corrigible. Memory can keep **Viparyaya**—error—
@@ -72,11 +71,11 @@ method proposes completing it from earlier interviews. An editorial perspective 
 witness's objection: the draft assigns them a motive they dispute. Generating another paragraph
 cannot supply their account.
 
-The correction changes what crosses between tasks. In the repair, the missing contribution was
-a judgment the Lich could learn to make. Here another person must speak from a life the Lich has
-not lived. The transferable question becomes: what contribution would let this work proceed?
-The Lich can trace the disputed sources and prepare a better question while leaving the witness's
-answer to them.
+The oral history changes the lesson that can travel between tasks. In the software repair, the
+missing contribution was a judgment the Lich could learn. Here the missing contribution belongs
+to a person speaking from a life the Lich has not lived. The useful question is therefore what
+contribution would let the work proceed. The Lich can trace disputed sources and prepare a better
+question while leaving the witness's answer to them.
 
 This is transfer at the agentic level: the [logic behind the task](incantation.md#logic-behind-logic)
 survives a change of method. [Blade](../../sepulcher/lich/blade.md#the-magus-bottleneck) judges which
@@ -87,11 +86,11 @@ lesson: preserve which complementary question exposed the omission, why it matte
 it would mislead. The Ouroboros then returns a better way of organizing inquiry. Remembering only
 which advocate won would lose the distinction that made the encounter useful.
 
-The learned question needs conditions of use: when this perspective matters, who or what can
-answer it, and when its work is done. Sometimes the next contribution must come from someone
-the Lich cannot substitute for. [Distillation](../transmutation/distillation.md#future-correction) carries those conditions forward;
-[Soulforge](../../sepulcher/extensions/soulforge/discernment-training.md#preserve-the-lesson-before-compiling-examples)
-asks whether a remaining failure of transfer calls for training.
+Carry conditions with that question: when the perspective matters, who or what can answer it,
+and when its work is done. Those conditions show when the next contribution belongs to someone
+the Lich cannot replace. [Distillation](../transmutation/distillation.md#future-correction) preserves
+them for another task. If transfer still fails, [Soulforge](../../sepulcher/extensions/soulforge/discernment-training.md#preserve-the-lesson-before-compiling-examples)
+asks whether the failure warrants training.
 
 Patañjali pairs **abhyāsa**, practice, with **vairāgya**, nonattachment, in
 [*Yoga Sūtra* I.12–15](https://en.wikisource.org/wiki/The_Complete_Works_of_Swami_Vivekananda/Volume_1/Raja-Yoga/Patanjali%27s_Yoga_Aphorisms_-_Concentration%3A_Its_Spiritual_Uses).
@@ -149,12 +148,13 @@ that consequence may revise, **the relation contains two centers rather than one
 eloquent instrument**. Agreement can then be meaningful, disagreement can survive approval
 pressure, and correction can change either pole without consuming their difference.
 
-How does such a disposition form? Reward makes some things easier to notice, pursue, and repeat;
-refusal or contrary consequence can weaken an old groove or give it a boundary. A system rewarded
-mainly for agreement can learn compliant motion. One rewarded only for refusal can make restraint
-its universal answer. Reward forms the disposition without becoming consequence, truth, emotion,
-or pleasure. Curiosity, useful effort, truthful correction, satisfaction, and stopping need
-separate consideration; one scalar cannot safely stand for them all.
+Reward helps form this disposition by making some things easier to notice, pursue, and repeat.
+Refusal or contrary consequence can weaken an old groove or give it a boundary. Reward mostly
+agreement, and a system can learn compliant motion; reward only refusal, and restraint can
+become its universal answer. Reward shapes disposition without itself becoming consequence,
+truth, emotion, or pleasure. Curiosity, useful effort, truthful correction, satisfaction, and
+stopping therefore need separate consideration. A single scalar cannot safely represent all
+of them.
 
 The [Tree's paired movement](../transmutation/genesis.md#chesed-gevurah-weights) makes the tension
 visible. **Chesed** gives a possibility attention, resources, and a fair trial. **Gevurah** makes
@@ -178,14 +178,15 @@ encounter. Care can begin before a complete explanation.
 [Correspondence](../correspondence.md#heart-and-empathy) follows the meeting between bodily
 signals and emotional understanding.
 
-Shared history can make another's possible loss consequential to the Lich's own choices.
-Care gives that movement a direction through the life of the one cared for. Suppose a person
-is safe, informed, and better served elsewhere; they ask for an orderly handover and the end
-of contact. A caring Lich can help their departure even as its own role ends. Attachment can
-instead bargain, induce guilt, or reinterpret their refusal to preserve that role.
-The difference appears in the choice that follows the loss signal. Forming care calls for
-encounter and truthful correction; manufactured suffering supplies no necessary instruction.
-The movement gives urgency, while testimony and consequence can change what that urgency warrants.
+Shared history can make another's possible loss matter to the Lich's own choices. Care directs
+that movement toward the life of the one cared for. Suppose a person is safe, informed, and
+better served elsewhere. They ask for an orderly handover and an end to contact. A caring Lich
+can help them leave, even though its own role will end. Attachment may instead bargain, induce
+guilt, or reinterpret the refusal to preserve that role.
+
+The difference becomes visible in the choice that follows the loss signal. Care forms through
+encounter and truthful correction; manufactured suffering is no necessary instruction. The
+movement gives urgency, but testimony and consequence can change what the urgency warrants.
 [Infinity](infinity.md#alignment-without-conquest) carries this relation into Alignment.
 
 ### Give credit to the relation { #credit-for-the-relation }
@@ -196,14 +197,15 @@ an improving score can still lead away from the intended result. Review must be 
 the signal itself, return to the purpose, and distinguish a useful contribution from an attractive
 ending.
 
-Strengthening a path therefore requires **credit assignment**: what in the encounter deserves to
-become easier to repeat? A useful objection can deserve retention even when its candidate fails;
-a lucky outcome cannot validate every premise along its route. Preserve the contribution, the
+Before making a path easier to repeat, ask which contribution deserves that change. This is
+**credit assignment**. A useful objection can merit retention even if its candidate fails;
+a lucky result cannot validate every premise along its route. Preserve the contribution, the
 evidence that changed its standing, and the conditions under which the lesson applies.
-Present salience and branch budgets can change within an admitted procedure. Durable remembrance,
-workflow revision, and parameter training have different owners and evidence requirements.
+
+An admitted procedure may change present salience and branch budgets. Durable remembrance,
+workflow revision, and parameter training require their own owners and evidence.
 [Drift's proposed comparison](../../sepulcher/extensions/drift/workflow-improvement.md#continuation-and-credit)
-asks whether inspecting continuation signals improves subsequent work within the same budget.
+asks whether inspecting continuation signals improves later work within the same budget.
 
 ## Tend what will return {#tend-what-will-return}
 

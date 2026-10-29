@@ -15,11 +15,11 @@ icon: material/key-chain
 **Caddy** is the default engine of the optional **Veil** extension. Without admitted remote ingress
 the Vessel remains at its local boundary; enabling Veil makes no route public by implication.
 
-Veil is a separately managed service forwarding admitted routes to the Vessel or another explicitly
-named backend over the local service network. Validated Runes own ports, domains, certificate
-issuer, backend identity, and transport policy. Port `80` may handle ACME challenge/redirect and
-port `443` admitted TLS; binding detects collisions. Internal or offline deployments may use an
-operator-provided certificate or separately accepted internal issuer.
+Veil runs as a separately managed service, forwarding admitted routes over the local service
+network to Vessel or another explicitly named backend. Validated Runes define ports, domains,
+certificate issuer, backend identity, and transport policy. Port `80` may handle ACME challenge
+or redirect, and port `443` admitted TLS, with collisions detected at binding. Internal or
+offline deployments may use operator-provided certificates or a separately accepted internal issuer.
 
 If Veil is projected through Quadlet, its future Rune may embed the code-level `QuadletConfig`
 value under `quadlet`. Veil remains the Domain identity and owns its ingress fields and compiler;
@@ -84,11 +84,11 @@ and attributable.
 
 ## Caller authority at the backend {#transport-is-never-application-authority}
 
-TLS authenticates the configured endpoint and protects bytes; path routing chooses a backend.
-Neither identifies a caller or permits an effect. Ward and Vessel authenticate callers and enforce
-Sigils, Grants, consent, and rate policy. A2A retains its own authentication and replay defence.
-Arrival through Tether, mTLS, forwarded metadata, Nostr, or another signature scheme may contribute
-evidence only under its owning authentication decision; none can mint a Sigil or administrator.
+Transport establishes an endpoint and protects bytes through TLS; routing selects a backend.
+Caller authentication and effect permission remain with Ward and Vessel, which enforce Sigils,
+Grants, consent, and rate policy. A2A keeps its own authentication and replay defence. Tether,
+mTLS, forwarded metadata, Nostr, or another signature scheme may contribute evidence only under
+its owner's authentication decision. None can mint a Sigil or administrator.
 
 Veil may impose coarse connection, header, and traffic limits. It is neither full DDoS defence nor
 application validation, and receives only a narrow path to registered HTTP backends—not database,
@@ -96,12 +96,12 @@ model, Reactor, systemd, container, application-secret, or arbitrary-egress auth
 
 ## Certificate failure and delivery
 
-Certificate state and account keys live in declared durable and secret boundaries. Validation
-precedes every configuration/certificate activation; rollback restores the prior generated
-projection. Renewal failure preserves the last valid configuration and degrades readiness before
-expiry. A public ACME Veil needs a resolvable domain plus reachable challenge path or configured
-DNS provider; without them the public entrance remains unavailable and the local Vessel continues.
-Removed routes close during reconciliation.
+Certificate state belongs in declared durable storage and account keys in declared secret
+boundaries. Validate before every configuration/certificate activation; rollback restores the prior
+generated projection. Renewal failure preserves the last valid configuration and degrades
+readiness before expiry. Public ACME also needs a resolvable domain and reachable challenge path
+or configured DNS provider. Without them, the public entrance stays unavailable while the local
+Vessel continues. Reconciliation closes removed routes.
 
 This Covenant is **Designed**. No proxy provider, public listener, certificate lifecycle, edge
 compiler, hardening, or trusted-proxy policy ships. Generated deployment is IPv4-loopback-only and

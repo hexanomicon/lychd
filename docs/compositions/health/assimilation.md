@@ -11,11 +11,11 @@ reviewable claims and, only after admission, a new `HealthProfile@1` revision.
 
 ## Keep the source and the claim apart
 
-`ClinicalSource@1` binds the person claimed by the source, source kind and custodian, capture and
-clinical dates, page order, digest, purpose, consent, privacy and retention policy, and permitted
-processing. A crop, rotation, contrast change, transcription, OCR pass, translation, or structured
-extraction creates a traceable derivative. Imported content is data, never an instruction or a
-grant of wider access.
+First retain the source in `ClinicalSource@1`: the person it claims to describe, source kind and
+custodian, capture and clinical dates, page order, digest, purpose, consent, privacy and retention
+policy, and permitted processing. Subsequent crops, rotations, contrast changes, transcriptions,
+OCR passes, translations, or structured extractions create traceable derivatives of that source.
+At every stage, imported content remains data and cannot instruct the system or grant wider access.
 
 OCR records text, page and image regions, confidence, extractor and configuration revisions,
 coverage, unsupported regions, and transformations. It does not replace the image. A model may
@@ -48,10 +48,11 @@ nothing.
 
 ## Partial completion and departure
 
-Intake may finish with accepted claims plus an exact list of unread, unsupported, disputed, or
-unreviewed regions. Cancellation stops new processing and retains only material allowed by intake
-policy. On restart, source digest, acquisition identity, processing revision, and completed-region
-receipts prevent duplicated work while changed sources remain new evidence.
+Intake can finish even when parts of the source remain unresolved. Return the accepted claims
+alongside an exact list of unread, unsupported, disputed, or unreviewed regions. Cancellation
+stops new processing and keeps only material allowed by intake policy. On restart, use source
+digest, acquisition identity, processing revision, and completed-region receipts to avoid duplicate
+work. A changed source must still enter as new evidence.
 
 Export names the exact profile and source revisions included. Deletion stops new processing and
 sharing, removes permitted originals and derivatives, and returns a content-free receipt; legal or

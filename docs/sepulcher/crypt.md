@@ -37,11 +37,11 @@ Each chamber has one owner:
 | `extensions/` | Private Extension source | Runtime read-only |
 | `core/` | Reserved Core source | Runtime read-only |
 
-The Crypt itself grants no execution or deletion authority. **Geography is not authority:**
-lifecycle receipts and live identity checks decide what LychD may replace or remove. Symlink,
-mount, receipt, or identity ambiguity is witnessed, never guessed; it fails closed, preserves the
-object, and returns typed recovery or blocking evidence. External projects, model shelves, foreign
-mounts, and operator data do not become LychD-owned because they are near the Crypt.
+A location in the Crypt grants neither execution nor deletion authority. **Geography is not
+authority:** lifecycle receipts and live identity checks determine what LychD may replace or
+remove. When a symlink, mount, receipt, or identity is ambiguous, the operation fails closed,
+preserves the object, and returns typed recovery or blocking evidence. Proximity cannot make
+external projects, model shelves, foreign mounts, or operator data LychD-owned.
 
 ## The Phylactery
 
@@ -56,10 +56,10 @@ checkpoint protocol; [Layout](../adr/13-layout.md) owns present creation and del
 
 ## The Spheres
 
-The **Lab** is LychD's internal workbench. The **Outlands** are the accepted design for
+Use the **Lab** as LychD's internal workbench. The accepted **Outlands** design would also admit
 operator-selected external workspaces beneath `~/work/` inside the Vessel. Native Vessel
-generation currently has no Outland mount selector. In that design, a read-only Outland may serve
-as a reference library; that does not make it a new trust domain.
+generation currently supplies no Outland mount selector. A read-only Outland could serve as a
+reference library under that design without becoming a new trust domain.
 
 The trusted Vessel receives these mounts:
 

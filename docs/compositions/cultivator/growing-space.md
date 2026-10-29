@@ -18,19 +18,19 @@ It records substrate or growing medium, batch and change history, and evidence a
 drainage, light, and other relevant conditions. These are evidence fields, not universal
 care recommendations. Unknown substrate or light cannot become fabricated suitability.
 
-Placement records the culture's actual occupancy interval and count or density
-estimates. A planned transplant does not change observed occupancy. Confirmed movement closes
-the prior interval and establishes another while retaining culture identity; an uncertain move
-keeps both the intended destination and the unresolved observation. Biological arrangement and assessed suitability belong
-to Cultivator.
+Record where the culture actually is through its placement: the occupancy interval and count or
+density estimates. Planning a transplant does not change that observation. Once movement is
+confirmed, close the prior interval and establish another under the same culture identity. If
+the move is uncertain, retain both its intended destination and the unresolved observation.
+Cultivator owns this biological arrangement and the assessment of its suitability.
 
 ## Reviewed needs
 
-An environment need binds its originating owner, exact subject, growing-space and placement
-revisions, target zones/assets, profile revision, and admission generation to a condition, unit,
-and reviewed desired interval. It carries freshness,
-validity, expiry, resource limits, and supporting evidence. Review must distinguish
-a desired range from a measured observation and preserve uncertainty.
+To request a condition for a culture, record an environment need with a unit and reviewed desired
+interval. Bind it to the originating owner, exact subject, growing-space and placement revisions,
+target zones/assets, profile revision, and admission generation. Include freshness, validity,
+expiry, resource limits, and supporting evidence. This lets review distinguish the desired range
+from an actual measurement without losing uncertainty.
 
 [Homestead utilities](../homestead/utilities.md#meet-an-environment-request) may receive exact place, asset, or
 controller references and the reviewed need. The infrastructure owner retains actual

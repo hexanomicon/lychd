@@ -6,8 +6,8 @@ icon: material/source-merge
 # :material-source-merge: Returning Findings: The Smallest Supported Cut
 
 An artifact passes its producer's checks and reaches two independent consumers. One succeeds; the
-other fails under a different Environment. That failure neither condemns the artifact nor
-identifies the producer through proximity. Drift instead performs a bounded dependency walk
+other fails under a different Environment. That failure alone neither condemns the artifact nor
+proves that its producer caused the failure. Drift instead performs a bounded dependency walk
 across the exact Composition Suite and its retained evidence, stopping where observations can distinguish one
 responsible boundary from its rivals.
 
@@ -43,17 +43,18 @@ travels as evidence, not reverse Graph edges.
 
 ## Walk only as far as evidence supports
 
-Drift follows declared dependencies backward until evidence distinguishes the narrowest boundary.
-The search stops at the smallest supported cut, not the nearest convenient producer. Earlier
-evidence may be reused only when its complete input closure, artifact revisions, Rubric, Evaluator,
-relevant Environment, and evidence contract still match.
+Start at the failing observation and follow its declared dependencies backward. Stop at the
+narrowest boundary the evidence can distinguish from rival explanations: that is the smallest
+supported cut. The nearest producer is only one possible explanation. To reuse earlier evidence,
+check that its complete input closure, artifact revisions, Rubric, Evaluator, relevant
+Environment, and evidence contract still match.
 
-One failing consumer does not condemn a shared artifact for independent consumers. The
-`InvalidationSet@1` names claims whose complete support has broken while preserving every intact
-closure. Missing lineage, flaky measurements, shared-input contagion, Evaluator capture, or
-unresolved rival explanations produce `UNKNOWN` or `DISPUTED`. If policy permits recovery, the
-next step is a broader bounded trial—not reconstruction of unobserved history or assignment of
-blame.
+The same artifact may still work for an independent consumer. The `InvalidationSet@1` therefore
+identifies the claims whose complete support has broken and preserves every intact closure.
+Missing lineage, flaky measurements, shared-input contagion, Evaluator capture, or unresolved
+rival explanations lead to `UNKNOWN` or `DISPUTED`. If policy allows further recovery, seek the
+missing distinction through a broader bounded trial. Do not reconstruct unobserved history or
+assign blame to fill the gap.
 
 A deterministic localized regression with complete lineage is the positive control: it may
 support a narrow `AttributionCandidate@1` and `CorrectionRequest@1`. Negative controls vary the

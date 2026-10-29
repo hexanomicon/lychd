@@ -19,14 +19,13 @@ engine construction, codecs, sessions and transaction boundaries, migration orde
 and schema admission. Domains own record meaning and lifecycle; neither they nor
 extension packages gain ambient migration authority.
 
-In durable operation, **Phylactery means PostgreSQL**: the one database cluster assigned to an
-application partition. It is not a generic storage facade, a repository of interchangeable
-save/retrieve backends, or an abstraction that makes committed application truth backend-agnostic.
-Domain repositories isolate SQL mechanics and permit bounded test substitutes and the explicitly
-isolated, disposable [developer fixture](11-backend.md#isolated-developer-fixture-designed).
-Neither makes a process-local or in-memory store a deployed Phylactery. LychD does not use loose
-application-managed files as a shadow database around PostgreSQL transactions, constraints, and
-migrations.
+A deployed **Phylactery means PostgreSQL**: the one database cluster assigned to an application
+partition. Domain repositories isolate SQL mechanics, allowing bounded test substitutes and the
+explicitly isolated, disposable [developer fixture](11-backend.md#isolated-developer-fixture-designed).
+Those techniques do not make a process-local or in-memory store a deployed Phylactery. Committed
+application truth stays under PostgreSQL transactions, constraints, and migrations, without loose
+application-managed files forming a shadow database. The Phylactery is therefore neither a generic
+storage facade nor an interchangeable save/retrieve backend abstraction.
 
 Future delegated-host attempt records and dispatch/closure tombstones belong to this Phylactery,
 through an explicitly admitted schema and narrow typed store. The
@@ -37,6 +36,13 @@ host broad credentials, connection construction or migration authority. No host-
 store or restore qualification is delivered by this decision.
 
 ### Schema admission
+
+Core owns the schema-admission seam across native and extension models. Every admitted model
+derives from Core's `UUIDBase`; an extension explicitly calls `register_model(MyModel)` during
+initialization; Core aggregates those references before Alembic derives migration order. Runtime
+package scanning is not admission, and migration generation or application remains an explicit
+release or operator act. Colliding models, table names, or migrations refuse before a schema is
+changed.
 
 The `delegated-host-disposition@1` precursor stores one restrictive, create-once record per
 AgentJob. The typed store owns exact canonical preparation bytes, their digest, optional one-time
@@ -80,13 +86,6 @@ sequence admits runtime DML on the new tables; runtime retains no DDL or extensi
 Downgrade locks namespace, source, generation and derivation tables before checking emptiness and
 refuses any retained derivation history, including failed or retired tombstones. It never drops
 pgvector or older Archive history to make rollback succeed.
-
-Core owns the schema-admission seam across native and extension models. Every admitted model
-derives from Core's `UUIDBase`; an extension explicitly calls `register_model(MyModel)` during
-initialization; Core aggregates those references before Alembic derives migration order. Runtime
-package scanning is not admission, and migration generation or application remains an explicit
-release or operator act. Colliding models, table names, or migrations refuse before a schema is
-changed.
 
 ### Database credentials and runtime authority
 
@@ -142,11 +141,12 @@ or online storage expansion.
 
 #### Retention before expansion
 
-Scale-up does not imply indefinite retention. Before automated retirement, every persisted record
-class must declare its owning lifecycle, holds and terminal eligibility, compaction or archival,
-deletion or tombstone and derivative handling, and operational maintenance. Age or disk pressure
-alone grants no deletion authority. The [Reaper](31-simulation.md#the-branch-reaper) remains
-Shadow-owned branch hygiene; it has no ambient authority to trim Phylactery records.
+Scale-up does not imply indefinite retention. Every persisted record class must
+declare its owning lifecycle, holds and terminal eligibility, compaction or archival, deletion or
+tombstone and derivative handling, and operational maintenance before automated retirement is
+admitted. Neither age nor disk pressure grants deletion authority. The
+[Reaper](31-simulation.md#the-branch-reaper) performs Shadow-owned branch hygiene and has no ambient
+authority to trim Phylactery records.
 
 #### Storage placement inside one cluster
 
@@ -179,11 +179,12 @@ shared database fabric.
 
 ## Reliquary custody (Designed)
 
-Reliquary is a separately named artifact store reached through one typed custody port. It is not
-a Phylactery backend and shares no PostgreSQL transaction. Its first profile,
+Reliquary gives artifact custody a separately named store and one typed port. It shares no
+PostgreSQL transaction and is not a Phylactery backend. Its first profile,
 `same-host-trusted-bootstrap@1`, retains bounded immutable bytes supplied by trusted local
-composition. The first consumer is Echo's canonical PCM inspector. This accepts a custody
-contract; [State](../state-of-the-work.md#artifact-reference-contract) owns implementation evidence.
+composition; Echo's canonical PCM inspector is the first consumer. This decision accepts that
+custody contract. [State](../state-of-the-work.md#artifact-reference-contract) supplies the
+implementation evidence.
 
 ### Identity and quarantine
 
@@ -290,10 +291,10 @@ target and reconcile against separately retained, nonrollback deletion and hold 
 without it, activation refuses. [Snapshots](07-snapshots.md#rehydration-and-reckoning) cannot revive
 material merely because an older capture lacks a later tombstone.
 
-Root UUID and inode checks establish ordinary binding continuity, not freshness against an
-out-of-band in-place rollback. This trusted-host profile does not contain malicious processes
-with the same UID or an operator rewriting its storage. Such behavior cannot be detected merely
-by revalidating in-root hashes and is not claimed as protected recovery.
+Root UUID and inode checks verify ordinary binding continuity. They cannot establish freshness
+after an out-of-band in-place rollback. This trusted-host profile does not protect storage against
+malicious same-UID processes or an operator rewriting it. Revalidating hashes within that same
+root cannot detect all such changes and does not establish protected recovery against them.
 
 ## Wire and work contracts
 
@@ -422,10 +423,10 @@ cannot expose a settled decision without its history or manufacture missing past
 Existing rows may be imported only as explicitly attributed legacy snapshots; absent proposal
 ancestry, review facts or intermediate events remain unknown.
 
-An effect receipt remains owned by the executor. History adopts its exact reference through an
-idempotent, recoverable delivery or reconciliation path; publication failure cannot authorize
-re-execution. Per-proposal sequence orders admitted records, not remote physical events, and
-does not claim a global order across owners. [Graph](24-graph.md) keeps checkpoint/wait ownership.
+The executor owns each effect receipt. History adopts an exact reference through an idempotent,
+recoverable delivery or reconciliation path. Publication failure cannot authorize re-execution.
+Per-proposal sequence orders admitted records only; it imposes neither remote physical order nor
+a global order across owners. [Graph](24-graph.md) retains checkpoint/wait ownership.
 
 History has an explicit retention policy independent of execution cleanup: deleting a Run must
 not cascade through the journal or erase a decision's identity and lineage. Missing execution
@@ -529,13 +530,13 @@ independently of a Project's lifecycle. Removing an association cannot erase the
 reinterpret another context's judgment. Shared relations refer to retained identities rather than
 copying a Concern's mutable definition into each Project.
 
-Historical assessments retain the exact Concern, context, and relation basis they used. Source
-and target locators bind the actual revision or content identity inspected; a mutable URL or an
-unchanged Covenant number cannot substitute for that identity. Updates preserve prior bases and
-use owner-scoped version checks and retry receipts. Migrating the initial Project aggregates must
-preserve existing Concern, assessment, reference, and retry identities and their Project context;
-it must not infer new shared identities from similar text. This requires a new explicit schema and
-migration contract before delivery; migration `0009` supplies only the initial Project aggregate.
+An assessment must keep the exact Concern, context, and relation basis it judged. Its source and
+target locators bind the actual revision or content identity inspected; a mutable URL or unchanged
+Covenant number cannot identify that basis. Updates keep prior bases and use owner-scoped version
+checks and retry receipts. Migrating the initial Project aggregates must preserve existing Concern,
+assessment, reference, and retry identities with their Project context. Similar text cannot justify
+inventing shared identities. Delivery needs a new explicit schema and migration contract;
+migration `0009` provides only the initial Project aggregate.
 
 ## Outbound Intercom custody
 
@@ -591,12 +592,12 @@ their material sources and transformations. Checkpoints, history, memory, artifa
 records retain the applicable label or omit sensitive content. Missing ORM annotation never makes
 raw data public.
 
-This is storage and information-flow support, not declassification. Context owns the Privacy Cut;
-the trusted [Security Egress Gate](09-security.md#portal-privatization-and-egress) enforces the
-resulting decision immediately before transmission. Dispatcher may provisionally refuse or bind a
-capability, but it cannot declassify bytes. Exact label schema, row policy, and full production
-persistence remain subject to the delivery boundary in
-[State of Work](../state-of-the-work.md#phylactery-first-light).
+These persistence rules support storage and information flow; they do not declassify material.
+Context owns the Privacy Cut. Security owns declassification, and its trusted
+[Security Egress Gate](09-security.md#portal-privatization-and-egress) enforces the resulting decision
+immediately before transmission. Dispatcher can provisionally refuse or bind a capability but
+cannot declassify bytes. [State of Work](../state-of-the-work.md#phylactery-first-light) sets the
+delivery boundary for the exact label schema, row policy, and full production persistence.
 
 ### Closed disclosure-accounting custody
 

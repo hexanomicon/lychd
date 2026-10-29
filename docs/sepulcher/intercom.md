@@ -17,10 +17,11 @@ separate work. Neither session starts a Minecraft client, model or incoming A2A 
 
 ## Prepare the two identities
 
-The session authenticates its operator against the installation's dedicated local-access
-credential. Its separately configured Ed25519 signing key identifies the local workload. Enroll
-the remote peer's immutable identity and public verification key through trusted host
-configuration. A reachable URL, TLS certificate or advertised Agent Card cannot enroll a peer.
+Prepare operator identity and workload identity separately. The installation's dedicated
+local-access credential authenticates the operator; a configured Ed25519 signing key identifies
+the local workload. Trusted host configuration must also enroll the remote peer's immutable
+identity and public verification key. Reachability, a TLS certificate, or an advertised Agent
+Card cannot perform that enrollment.
 
 The peer must implement this profile's required signing extension. An unsigned stock A2A SDK
 route is useful for baseline protocol testing, but cannot satisfy the protected session. The
@@ -47,10 +48,10 @@ The file contains `workload_id`, `signing_key_id` and `policy`. The policy is th
 there are no wildcards. The eight independent actions are `enroll`, `classify_public`, `submit`,
 `poll`, `cancel`, `read`, `rotate`, `revoke`.
 
-Changing a configuration label, task id or credential cannot reset capacity. Changed ceilings
-refuse. A changed policy generation immediately invalidates old live authority; matching durable
-policy must be established through trusted host composition before a new startup can activate it.
-The session does not expose a policy-update command.
+Capacity survives changes to configuration labels, task ids, and credentials. Changed ceilings
+refuse rather than resetting it. A new policy generation immediately invalidates old live
+authority; before a later startup activates the new generation, trusted host composition must
+establish the matching durable policy. The session supplies no policy-update command.
 
 ## Author, submit and read
 
@@ -103,10 +104,10 @@ A known foreign task id permits a fresh, authorized poll. An unknown id cannot b
 discovered by silently resending. Restart restores neither declarations nor live transmission
 claims; it can explicitly reconcile known tasks with fresh authentication and current policy.
 
-Cancel closes local result adoption before asking the peer to cancel. Its local disposition and
-authenticated foreign observation remain distinct. A cancellation acknowledgement proves neither
-rollback nor process containment. A task that already reached an admitted terminal remains
-readable under current authority and refuses late cancellation.
+Cancellation first closes local result adoption, then asks the peer to cancel. Read its local
+disposition separately from the authenticated foreign observation. An acknowledgement establishes
+neither rollback nor process containment. If a task already reached an admitted terminal, it
+remains readable under current authority and refuses late cancellation.
 
 `rotate` takes the exact target and a new remote key record; the old key version is retired before
 the persistence wait. `revoke` fences local handoffs before awaiting durable revocation. An
@@ -149,12 +150,14 @@ An already settled unknown, expiry or remote noncompletion returns an explicit `
 local status; the next operator command remains usable. Other worker and authority failures are
 not converted into a successful settlement.
 
-Restart restores durable evidence without live peer permission. After fresh authentication,
-`reauthorize-run` takes `run_id`, the returned `task_id` and `binding_digest`, plus the exact
-`actions` selected from `submit`, `poll`, `read`, `adopt`, `resume`. An unclaimed first submit also
-requires `reaffirm_public_source: true`. This reuses the original task, body and expiry; it cannot
-refresh the request or replace an uncertain submit. A claimed task without a foreign identity
-takes an explicit unknown failure route after its local exchange has been reconciled.
+After restart, the lab restores durable evidence but needs fresh authentication and live peer
+permission. Call `reauthorize-run` with `run_id`, the returned `task_id` and `binding_digest`, and
+the exact `actions` selected from `submit`, `poll`, `read`, `adopt`, and `resume`. An unclaimed
+first submit also needs `reaffirm_public_source: true`.
+
+Reauthorization preserves the original task, body, and expiry. It cannot refresh the request or
+replace an uncertain submit. If a claimed task lacks a foreign identity, reconcile its local
+exchange before following the explicit unknown failure route.
 
 The lab has no incoming peer, automatic relay loop, private-input producer, voice command path or
 Blockworld effect. Its process restart and local cancellation checks do not prove remote process

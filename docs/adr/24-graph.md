@@ -25,10 +25,10 @@ and parallel execution have no admitted checkpoint contract and are rejected by 
 
 ## State and dependencies
 
-Resume state is a JSON-round-tripping Pydantic model containing only declared continuation data.
-Live models, grants, toolsets, sessions, connectors, and service handles belong in deps; messages
-needed after a park are serialized first. Frames, token fragments, temporary objects, and
-uncommitted work may die. This is declared memory, not total recall.
+Resume retains only declared continuation data in a JSON-round-tripping Pydantic model. Live models,
+grants, toolsets, sessions, connectors, and service handles remain in deps; any messages needed
+after a park must first be serialized. Frames, token fragments, temporary objects, and
+uncommitted work may be lost. This boundary preserves declared memory without claiming total recall.
 
 ## Pattern binding
 
@@ -87,9 +87,10 @@ convergence was a load, systemd swap, or no effect.
 
 ## Live and Durable Stasis
 
-Live Stasis leaves the loop resident; current linear hardware waits use an in-memory
-LiveStasisPhylactery. Durable Stasis exits the worker after mandatory checkpoint and re-enters by a
-new queue claim. Gate, DelegatedAgentNode or PeerTaskNode automatically selects the durable tier.
+Stasis has two lifetimes. Live Stasis keeps the loop resident; the current linear hardware
+wait uses an in-memory LiveStasisPhylactery. Durable Stasis saves a mandatory checkpoint, exits
+the worker, and re-enters through a new queue claim. Gate, DelegatedAgentNode, and PeerTaskNode
+select the durable tier automatically.
 
 | Park | Signal | Run status |
 | --- | --- | --- |
@@ -216,10 +217,11 @@ external durability remain separate designs.
 
 ## Future parallel topology
 
-A future adapter must retain typed isolated branch state, fan-out identity/parentage, declared
-join/reduction, bounded concurrency/capability admission, checkpoint compatibility, cancellation
-settlement for every branch, and evidence separating topology from factual agreement. A reducer
-only applies its predicate; consensus, first completion, or a model judge does not establish truth.
+Parallel execution needs an adapter that retains typed isolated branch state, fan-out
+identity/parentage, declared join/reduction, bounded concurrency/capability admission, checkpoint
+compatibility, and cancellation settlement for every branch. Its evidence must distinguish
+topology from factual agreement. A reducer applies a predicate; consensus, first completion, or
+a model judge cannot thereby establish truth.
 
 ## Runtime evidence
 

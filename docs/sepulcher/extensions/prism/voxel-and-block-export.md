@@ -29,12 +29,16 @@ Form distinguishes three voxel routes rather than calling each a Minecraft gener
    contained interpreter effect validates and renders it. Arbitrary Python, shell, Blender scripts,
    or Minecraft commands are not this contract.
 
-`VoxelGrid@1` pins dimensions, axes, origin, cell scale, occupancy or density channels, optional
-colors, source axis-aligned bounding-box (AABB) fit and padding, cell-center or cell-volume sampling, boundary and tie rules,
-axis-to-index mapping, and source transform. The canonical `BlockGrid@1` pins dimensions, origin,
-axes, units, exact game registry edition and version plus registry digest, palette revision and
-ordering, exact block identifiers and state properties, air and unknown policy, source relation,
-and digest. It remains independent of one game-file encoding.
+First make the sampled space unambiguous. `VoxelGrid@1` pins dimensions, axes, origin, cell scale,
+occupancy or density channels, optional colors, source axis-aligned bounding-box (AABB) fit and
+padding, cell-center or cell-volume sampling, boundary and tie rules, axis-to-index mapping,
+and source transform.
+
+Mapping that space to blocks adds a game-specific meaning. The canonical `BlockGrid@1` pins
+dimensions, origin, axes, units, exact game registry edition and version plus registry digest,
+palette revision and ordering, exact block identifiers and state properties, air and unknown
+policy, source relation, and digest. That canonical grid remains independent of the game-file
+encoding later chosen for export.
 
 The derived Minecraft projection pins Java edition and version, `DataVersion`, palette mapping,
 offset, unsupported-block policy, block-entity and entity policy, metadata and timestamp policy,
@@ -49,11 +53,11 @@ unsigned-short interpretation of `Width`, `Height`, and `Length`, `Blocks.Palett
 `Blocks.Data` indexed as `x + z*Width + y*Width*Length`. Read-back normalization proves dimensions,
 palette, offsets, states, block data, and metadata against the canonical grid.
 
-The package contains the source grid, canonical block grid, `.schem`, preview GLB and PNG, block
-counts, palette statistics, clipping and unsupported-material findings, plus an export-and-read-back
-receipt. Thirty-two cubed is only 32,768 cells, so this first golden fixture favors simple,
-inspectable data structures over a large-volume framework. It is one proving profile, never a
-universal product limit.
+Return enough material to inspect the conversion: the source grid, canonical block grid,
+`.schem`, preview GLB and PNG, block counts, palette statistics, clipping and unsupported-material
+findings, and the export-and-read-back receipt. At 32,768 cells, the 32-cubed golden fixture can
+use simple, inspectable data structures rather than a large-volume framework. Its size makes
+this first proof manageable; it sets no universal product limit.
 
 A `.schem` admitted to [Foundry](../../../compositions/foundry/assets.md) is a project asset. The
 same exact blueprint admitted to a [Blockworld mission](../../../compositions/blockworld/mission.md)

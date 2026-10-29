@@ -9,7 +9,9 @@ A phone, a wheeled body, and an airborne body cannot share one emergency action.
 
 ## Body admission
 
-`familiar.admit_body@3` returns immutable `FamiliarBody@3` after checking an already admitted controller/device attachment. Legion may own remote enrollment/reservation; a bounded local adapter may own another controller binding. For a phone, Ward first supplies the device/application `Principal`, revocable `Credential` and generation, current object-scoped `Authority Grant`, and policy generation. Companion needs no prior record: it opens its device/session only after Familiar supplies the body.
+Begin with an already admitted controller or device attachment. `familiar.admit_body@3` checks that attachment and returns immutable `FamiliarBody@3`. Legion may own remote enrollment/reservation, while a bounded local adapter may own another controller binding.
+
+For a phone, Ward must first supply the device/application `Principal`, revocable `Credential` and generation, current object-scoped `Authority Grant`, and policy generation. Familiar can then admit the body. Companion opens its device/session afterwards; no prior Companion record is needed.
 
 The body record pins:
 
@@ -61,6 +63,6 @@ Every `FamiliarMission@3` pins the body revision. Broken or withdrawn capabiliti
 
 The exact controller owns fast motion loops, actuation, and local safety interrupts. Familiar issues admitted semantic waypoint/task intents and receives receipts, never prompt-produced `motor_pwm=1400` or generic actuator commands.
 
-Stop behavior must remain enforceable locally without a LychD round trip. On a Legion route the admitted node carries that responsibility; local/mobile attachments prove their equivalent. Link loss invokes the commissioned body-specific policy, not a universal hover, land, brake, disarm, or freeze instruction. Re-entry requires observed controller state and the profile's recovery admission.
+The body must enforce its admitted stop policy locally without a LychD round trip, including when it cannot reach LychD. An admitted Legion node carries that responsibility on its route; local/mobile attachments must prove their equivalent. When the link is lost, the commissioned body-specific policy decides the response. Hover, land, brake, disarm, or freeze cannot serve as a universal instruction. Before re-entry, observe the controller's actual state and satisfy the profile's recovery admission.
 
 Continue with [Follow](follow.md), or return to [Familiar](index.md).

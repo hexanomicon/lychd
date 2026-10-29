@@ -85,12 +85,12 @@ an automatic contribution channel.
 
 ### Reconcile concurrent contributors and recurring candidates
 
-Each contributor's candidate binds its admitted upstream/base and local input closure. Independent
-candidates may be developed concurrently in separate surfaces; integration is an attributable
-successor candidate. Verify that combined object rather than inferring compatibility from the
-individual branches' receipts. Base, dependency, configuration, schema or selected-extension
-changes invalidate the affected evidence and authorization. Neither an automated conflict repair
-nor a clean textual merge proves semantic compatibility.
+Concurrent contributors can work in separate candidate surfaces, each bound to its admitted
+upstream/base and local input closure. Their integration creates an attributable successor
+candidate that needs its own verification; individual branch receipts cannot establish the
+combined object's compatibility. Changes to base, dependencies, configuration, schema, or selected
+extensions invalidate affected evidence and authorization. A clean textual merge or automated
+conflict repair still needs proof of semantic compatibility.
 
 An idle-development coordinator may prepare candidates under SDLC admission but gains no
 source-selection vote, promotion credential or activation authority. Current branch, review and
@@ -107,11 +107,11 @@ responsible for repairing a separately governed lineage.
     can coexist or form a better successor. Continuity preserves attributable consequence and
     answerable obligations; it does not require every old implementation to remain executable.
 
-**Synchronic Syncretizer** names Evolution's bounded adoption judgment. It consumes verification
-receipts, [Drift's findings](34-evaluation.md) when available, required owner verdicts and retained
-history; it does not become a second evaluator or take the target owners' effects. A proposal
-for changed selection criteria or an evaluator is a separately reviewed candidate, never a
-candidate author's permission to rewrite a failed comparison.
+**Synchronic Syncretizer** names the bounded judgment that decides adoption in Evolution. It
+consumes verification receipts, [Drift's findings](34-evaluation.md) where available, required
+owner verdicts, and retained history. Evaluation stays with its evaluator, and effects stay with
+target owners. Changing selection criteria or an evaluator requires a separately reviewed
+candidate; a candidate author cannot use that proposal to rewrite a failed comparison.
 
 A comparison binds the installed and candidate closures, exact base and local delta, selected
 extensions, predeclared acceptance and policy revisions, and the history selected for this
@@ -128,10 +128,10 @@ Each affected obligation receives an attributable disposition:
 | **Replace** | What deliberately ends, why its retirement is justified, affected consumers and unresolved work, and their authorized transition or refusal. |
 | **Reject** | Why the proposed change is refused and which evidence or changed condition could reopen it. |
 
-A known harmful baseline does not become acceptable merely because a candidate is blocked.
-Security revocation may forbid an old executable closure while its history remains attributable.
-Plurality also permits independent lineages, policies or capabilities to coexist: synthesis
-cannot require one universal agent, paradigm or canonical body for every participant.
+Blocking a candidate does not make a known harmful baseline acceptable. Security revocation may
+forbid an old executable closure while preserving its attributable history. Independent lineages,
+policies, and capabilities may also coexist; synthesis cannot demand one universal agent,
+paradigm, or canonical body for every participant.
 
 Missing mandatory evidence, an unresolved required owner verdict or an unowned transition blocks an
 eligible Promotion Request. Changed base, candidate, relevant environment, policy or evaluation
@@ -160,12 +160,11 @@ Evolution never imports replacement modules into the live Vessel and never carri
 process-local object graph across that boundary. Listeners, caches, coroutines, dependency
 handles, and other volatile objects belong to the old generation and die with it.
 
-The old generation closes admission and drains, parks, or resolves owned work according to its
-domain contracts. The new generation reconstructs its volatile world from the attested manifest,
-validated configuration, and compatible Phylactery records. Unresolved work and already-emitted
-external effects remain subject to the [Graph](24-graph.md), [Workers](14-workers.md), and
-[Reanimation](../sepulcher/phylactery/reanimation.md) rules; process replacement does not pretend
-to rewind them.
+Before replacement, the old generation closes admission and drains, parks, or resolves owned
+work under its domain contracts. The new generation rebuilds volatile state from the attested
+manifest, validated configuration, and compatible Phylactery records. Unresolved work and emitted
+external effects still follow [Graph](24-graph.md), [Workers](14-workers.md), and
+[Reanimation](../sepulcher/phylactery/reanimation.md) law. Replacing the process cannot rewind them.
 
 This boundary optimizes for coherent recovery, not uninterrupted availability. Death of a Vessel
 running the same body is Reanimation. Deliberately starting a changed body is Evolution. In both

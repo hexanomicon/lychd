@@ -23,9 +23,11 @@ Tether grants an exact private road, not application power. Veil constrains an a
 
 ## Invariants across every profile
 
-For each `(Discord application, Habitat partition)`, one deployment generation binds one profile revision, `ReachAuthorityEpoch`, active Phylactery, `ReachEdgeEpoch`, Gateway/delivery credential owner, corpus authority, and provider/A2A gate. Pin per-host manifest digests, service Principals, credentials/routes, and both epochs in every event, attempt, settlement, backup, and migration receipt.
+Every `(Discord application, Habitat partition)` has one active deployment generation. Its binding identifies the profile revision, `ReachAuthorityEpoch`, active Phylactery, `ReachEdgeEpoch`, Gateway/delivery credential owner, corpus authority, and provider/A2A gate. To establish which generation owned any work, pin the per-host manifest digests, service Principals, credentials/routes, and both epochs in every event, attempt, settlement, backup, and migration receipt.
 
-Unknown combinations, simultaneous activation, and stale epochs fail before Bind/admission. PostgreSQL is never WAN-exposed, shared, live-replicated, dual-written, or failed over. A transport journal witnesses bytes/effects without owning Run, Context, Ward, Sigil, corpus judgment, turn, or terminal truth. Service separation remains mandatory locally too. Every remote attempt needs exact destination/task policy, required Cut, and fresh payload-bound egress decision.
+Reject an unknown combination, simultaneous activation, or stale epoch before Bind/admission. PostgreSQL is never WAN-exposed, shared, live-replicated, dual-written, or failed over. A transport journal can witness bytes and effects, but Run, Context, Ward, Sigil, corpus judgment, turn, and terminal truth remain with their owners.
+
+Co-locating services does not remove their separation requirements. Likewise, every remote attempt still needs exact destination/task policy, any required Cut, and a fresh egress decision bound to its payload.
 
 ## Selection and migration
 
@@ -38,7 +40,7 @@ Changing profile is a quiesced Evolution effect:
 5. Attest new host manifests, rotate custody-changing bot/provider/Tether/Veil credentials, and enroll service Principals.
 6. Activate the new authority last; reopen admission while rejecting old-generation messages.
 
-Home-only/edge-home retain the home database but still transfer the Discord edge. Standalone transitions refuse when nonterminal or indeterminate effects cannot be safely preserved. After new admission begins, rollback is another quiesced migration and the old database remains fenced/read-only.
+Moving between home-only and edge-home retains the home database, but still requires transfer of the Discord edge. A transition involving the standalone profile must refuse if it cannot safely preserve nonterminal or indeterminate effects. Once the new body begins admitting work, rolling back requires another quiesced migration; the old database stays fenced/read-only.
 
 ## Administrative separation
 

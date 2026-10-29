@@ -66,11 +66,12 @@ customer's message. Outside it, only eligible approved templates may be sent. Au
 a clear escalation path to a person or business support. A template's approval does not authorize
 its recipient, purpose or data disclosure.
 
-Connection policy pins own-business versus AI-provider use, business/account/phone ids, exact
-recipient identity, permitted purposes, opt-in/opt-out evidence and current market rules. A
-prepared send additionally binds the triggering message, last eligible inbound time, conservative
-`latest_send_at`, message type, exact text or template revision/language/parameters, and spend
-ceiling. Recheck these and current provider eligibility immediately before transmission.
+First establish what use the connection admits. Its policy pins own-business versus AI-provider
+use, business/account/phone ids, exact recipient identity, permitted purposes, opt-in/opt-out
+evidence and current market rules. Each prepared send then binds the triggering message, last
+eligible inbound time, conservative `latest_send_at`, message type, exact text or template
+revision/language/parameters, and spend ceiling. Recheck all of these, together with current
+provider eligibility, immediately before transmission.
 
 An expired free-form reply parks or refuses; never silently convert it to a charged template.
 Paused/rejected templates, opt-out, quality restriction or exhausted budget fence queued work.
@@ -86,11 +87,11 @@ route, bounded raw-body intake and provider verification. The outbound-only
 [`reach.home.connected@1`](accounts.md#first-deployment-road) stays unchanged. A new public route
 cannot be implemented by exposing the current loopback bootstrap application.
 
-Validate GET setup challenges separately from POST authenticity. POST verification uses
-`X-Hub-Signature-256` over the original body and the scoped Meta application secret; the setup
-verify token is not that signature secret. Check configured app/account/phone ownership, allowed
-event kind, bytes and generation before durable admission. Acknowledge only after bounded intake
-custody is committed. [Webhook endpoint](https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/create-webhook-endpoint)
+Setting up the webhook and admitting a message require different proofs. Validate GET setup
+challenges separately; for a POST, verify `X-Hub-Signature-256` over the original body with the scoped
+Meta application secret. The setup verify token is not the signature secret. Before durably
+admitting the POST, check configured app/account/phone ownership, allowed event kind, bytes and
+generation. Acknowledge only after committing custody of that bounded intake. [Webhook endpoint](https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/create-webhook-endpoint)
 
 Deduplicate incoming provider message ids within the account/phone partition. Status updates need
 their own message/status/event fingerprint; a delivered or read event is not another customer
@@ -99,12 +100,14 @@ retry is not a complete history API. Record gaps and avoid promising Gmail-style
 No remote edge carrying only refetchable hints can recover an unretained message body by assumption.
 [Webhook delivery](https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/overview)
 
-A successful send returns a `wamid` but does not prove delivery. Retain later sent/delivered/read/
-failed observations without treating read as comprehension. `biz_opaque_callback_data` can carry a
-random effect correlation, not secret/customer metadata or an idempotency guarantee. An ambiguous
-send stays `UNKNOWN` until authenticated matching status or other independent evidence resolves
-it. If none exists, stop rather than repeat. Provider queue TTL also means an accepted message may
-arrive late; no instant cancellation is assumed.
+A successful send returns a `wamid`; retain it to correlate later sent/delivered/read/failed
+observations. The initial success does not prove delivery, and a later read observation does not
+prove comprehension. `biz_opaque_callback_data` may carry a random effect correlation, but no
+secret/customer metadata and no implied idempotency guarantee.
+
+Keep an ambiguous send `UNKNOWN` until authenticated matching status or other independent evidence
+resolves it. Without that evidence, stop instead of repeating the send. Provider queue TTL can also
+delay an accepted message, so the contract assumes no instant cancellation.
 [Send semantics](https://developers.facebook.com/documentation/business-messaging/whatsapp/messages/send-messages),
 [status events](https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/reference/messages/status)
 
@@ -130,9 +133,10 @@ number/custody changes, template versions and provider Graph API deprecations ne
 admission or administrator action. Automation cannot replace Meta eligibility or make an unavailable
 personal agent rollout available.
 
-Before delivery, falsify window expiry during a queue wait, template pause, opt-out, human takeover,
-duplicate/late webhook, forged signature, shared-customer disconnect, unknown send, exhausted spend,
-market-policy change and unavailable agent rollout. Keep the common
-[acceptance plan](delivery.md) and the initial three connectors independent of this optional work.
+Before qualifying delivery, exercise window expiry during a queue wait, template pause, opt-out
+and human takeover. Also test duplicate/late webhooks, forged signatures, shared-customer
+disconnect, unknown sends, exhausted spend, market-policy changes and unavailable agent rollout.
+These cases must challenge the promised behavior. The common [acceptance plan](delivery.md) and
+the initial three connectors remain independent of this optional work.
 
 [Chat](../chat.md) · [Accounts and updates](accounts.md)

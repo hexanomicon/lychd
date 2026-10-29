@@ -33,12 +33,14 @@ The [body's controller](embodiment.md#the-body-decides-what-fits) retains balanc
 limits, collision response, and fast actuation; an LLM can select an admitted mode or request a
 stop while this local loop runs independently.
 
-Each robot needs its own mapping and physical admission. Shared source timing would support
-group synchronization, with an explicit policy for one member dropping out. Intentional Echo
-delay must remain distinguishable from stale tracking. Lost tracking, changed calibration, or
-an expired segment invokes the commissioned local response; reconnect requires fresh admission.
-The result records the performed intervals, deviations, stopped members, and any unknown effects.
-Capture, recording, and reuse of the performer's motion remain separate consent choices.
+Admit and map each robot separately before using shared source timing to synchronize the group.
+The group policy must say what happens when one member drops out, and intentional Echo delay must
+remain distinguishable from stale tracking. Lost tracking, changed calibration, or an expired
+segment invokes the commissioned local response; reconnect requires fresh admission.
+
+At settlement, record performed intervals, deviations, stopped members, and unknown effects.
+Participation alone does not authorize all uses of the source: capture, recording, and reuse of
+the performer's motion remain separate consent choices.
 
 ## Research and existing demonstrations
 

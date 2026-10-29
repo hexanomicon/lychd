@@ -20,11 +20,14 @@ Legion extends one Magus; it neither creates a second Master nor describes the
 **[Necropolis](../../adr/26-a2a.md#legion-and-necropolis)** relation among foreign sovereign
 peers.
 
-The Master retains principals, policy, consent, sessions, memory, Graph continuity, routing, and
-the delegation ledger. Each node alone observes its hardware, admits and reserves work, actuates,
-recovers, and refuses. Its Node Agent holds an immutable `node_id`, one rotating node-scoped
-credential, and a small crash-safe journal. It receives no Master Sigil and shares no Master
-database, queue, filesystem, or infrastructure control plane.
+The Master keeps the work's logical continuity: principals, policy, consent, sessions, memory,
+Graph, routing, and delegation ledger. The node decides what may happen on its hardware. It
+observes, admits, reserves, actuates, recovers, and can refuse.
+
+A Node Agent carries an immutable `node_id`, a rotating node-scoped credential, and a small
+crash-safe journal. This gives it its own accountable boundary rather than a copy of the Master.
+It receives no Master Sigil and shares none of the Master's database, queue, filesystem, or
+infrastructure control plane.
 
 ## Delegation through Intercom
 
@@ -56,10 +59,11 @@ from the machine that would bear the work.
 Consequential messages bind Master epoch, node boot/session, delegation attempt/fence, reservation
 generation, and transition precondition. Stale messages remain evidence but cannot act.
 
-During a partition, local policy may finish already admitted bounded work and spool its result. A
-superseded fence makes that result inadmissible. After Master restore, fleet admission closes, the
-epoch advances, and signed node receipts reconcile before delegation resumes. Reconnection alone
-does not settle the past.
+If the connection breaks, local policy may let already admitted bounded work finish and spool
+its result. A superseded fence makes that result inadmissible. If the Master is restored, close
+fleet admission, advance its epoch, and reconcile signed node receipts before resuming delegation.
+Reconnection restores communication; it cannot by itself settle what happened while the accounts
+were apart.
 
 ## Evidence and artifacts
 

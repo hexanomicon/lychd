@@ -8,13 +8,22 @@ title: Roadmap — Metamorphosis
 
 We are building a laboratory in which people and agents make LychD together. Its first public encounter grows through a speaking companion, a phone, Minecraft and visual creation. The same body must support useful work, careful changes and the freedom to investigate a question whose answer we do not yet know.
 
-The founding cycle runs from **2 November 2026 to 1 November 2027**: 52 full weeks and a one-day epilogue. Python's methods name its transformations. Each week keeps its complete approved quotation and narrative meaning; the current planning paragraphs below Genesis turn that story toward the work ahead.
+The founding cycle runs from **2 November 2026 to 1 November 2027**: 52 full weeks and a one-day
+epilogue. Python's methods name its transformations. Begin with Genesis for the current practical
+plan, then read the later books as the year's narrative horizon. Each week retains its complete
+approved quotation and meaning; the planning paragraphs within Genesis explain how that story
+guides the work ahead.
 
 ## Where the work stands
 
 The opening chapter is **Genesis**. Shared agent tasks, history and steering are the first collaboration undertaking. **Phone and voice belong in the Christmas enthusiast release**, planned for **21 December 2026**. Minecraft is the leading showcase, drawing on Blockworld, Atelier and selected Avatar work. The precise user scenes and supported profiles are chosen with the team before the corresponding weekly commitments.
 
-[State of Work](state-of-the-work.md) records what the current revision actually supports. [Compositions](compositions/index.md) own application contracts; [Covenants](adr/index.md) own accepted architecture. The weeks give the journey its rhythm and orientation; the chosen scope can evolve and work can continue across chapter boundaries. Issues keep their own acceptance and need no one-to-one pairing with calendar weeks. Delivered capabilities still need their evidence.
+To see what can be used now, read [State of Work](state-of-the-work.md). Follow
+[Compositions](compositions/index.md) for application contracts and [Covenants](adr/index.md) for
+accepted architecture. The weeks orient the journey while the team chooses and revises its scope.
+Work may continue across chapter boundaries, and an issue keeps its own acceptance criteria
+without needing a matching calendar week. A place in the roadmap does not establish delivery;
+each delivered capability still needs evidence.
 
 ## Working as a laboratory
 
@@ -52,7 +61,9 @@ Agents can help prepare alternatives, clips and explanations. Existing qualified
 
 ### Related work
 
-These are thematic entrypoints into current issues and application contracts. They keep their own scope and acceptance; a link neither assigns an issue to a week nor promises that its whole scope will be complete by that date. Ordinary exploration can begin without a ticket.
+Use these links to find the issues and application contracts behind a selected encounter. Each
+keeps its own scope and acceptance criteria. Linking it here does not assign the entire issue to
+a week or promise its completion by that date. Ordinary exploration can begin without a ticket.
 
 - **Shared agent laboratory:** [Graph #8](https://github.com/hexanomicon/lychd/issues/8), [Atlas #15](https://github.com/hexanomicon/lychd/issues/15), [Creation #40](https://github.com/hexanomicon/lychd/issues/40) and [Ward/IAM #24](https://github.com/hexanomicon/lychd/issues/24) are related execution, planning, candidate and access work.
 - **Phone and voice:** [Android handset qualification #77](https://github.com/hexanomicon/lychd/issues/77), [Echo speech #48](https://github.com/hexanomicon/lychd/issues/48) and [runtime handoffs #50](https://github.com/hexanomicon/lychd/issues/50). The handset issue is local audio work; the selected phone-to-Lich integration needs its own scoped acceptance.
@@ -241,7 +252,9 @@ Choose Exodus's first repair or deepening from those encounters. Keep the runnab
 
 ## Exodus · 10–17 — Encounter, transformation, and deepening
 
-Exodus takes the first body into sustained encounter. Use it with people, repair what resists them and deepen the selected capabilities. Business use follows a real undertaking and its readiness, during this book or afterwards.
+Exodus takes the first body into sustained use with people. Their encounters reveal what needs
+repair and which selected capabilities need to deepen. Business use begins when a real
+undertaking and its readiness justify it, during this book or afterwards.
 
 <a id="week-10"></a>
 
@@ -337,7 +350,9 @@ We carry proven patterns deeper into **our own project**. After composition, ind
 
 ## Leviticus · 18–26 — Identity, discernment, and commitments
 
-Leviticus cleans what those encounters revealed. Discern what belongs, make the necessary sacrifices, establish accountable roles and firm API commitments, and give the resulting order a clear expression.
+Leviticus cleans what those encounters revealed. Discern what belongs, make the necessary
+sacrifices, establish accountable roles and firm API commitments, then make that
+order understandable to the people who will use it.
 
 <a id="week-18"></a>
 
@@ -442,7 +457,9 @@ We align language, documentation, interfaces, and demonstrations so people can u
 
 ## Numeri · 27–39 — Measure, refinement, and multiplication
 
-Numeri takes stock and aligns a growing ecosystem: people, Liches, resources, standards, comparisons and parallel work. The numerical methods revisit capacities cultivated since Genesis.
+Numeri takes stock of and aligns a growing ecosystem. People and Liches need resources, shared standards,
+and meaningful comparisons as more work runs in parallel. The numerical methods revisit the
+capacities cultivated since Genesis and ask how they hold up as that work grows.
 
 <a id="week-27"></a>
 

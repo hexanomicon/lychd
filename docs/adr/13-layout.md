@@ -27,11 +27,11 @@ Soulstone, and Portal anchors. The Crypt contains the Vessel's `runtime-guard`, 
 The Forge contains `assembly`. [Configuration (12)](12-configuration.md) owns what these paths
 mean; Security owns credentials and network policy.
 
-Binding sites are shared host namespaces: `~/.config/containers/`,
-`~/.config/containers/systemd/`, `~/.config/systemd/`, and `~/.config/systemd/user/` (with XDG
-overrides applied). The lifecycle and Scribe ownership receipts are regular, non-symlink,
-invoking-UID-owned files with mode `0600`. They grant authority only over recorded identities and
-names, never their shared parents.
+Binding takes place in shared host namespaces: `~/.config/containers/`,
+`~/.config/containers/systemd/`, `~/.config/systemd/`, and `~/.config/systemd/user/`, with XDG
+overrides applied. The lifecycle and Scribe receipts identify exactly which names and objects
+LychD owns there. These regular, non-symlink, invoking-UID-owned `0600` files grant no authority
+over the shared parents.
 
 ## Creation, binding, and deletion authority
 
@@ -91,11 +91,12 @@ and before/after confirmation remain descriptor-bound. A successful subvolume re
 UUID and non-reserved ID as well as device/inode in the version-2 lifecycle receipt. Existing
 storage is never retrofitted; `+C` is only an inheritance policy and a false result is a warning.
 
-LychD never adopts an observed existing subvolume or backfills a missing identity. A mounted
-Phylactery requires complete live mount and Btrfs agreement; an unmounted one requires the exact
-version-2 creation receipt plus matching live identity and a safe top-level mapping. On success,
-LychD emits an attested `btrfs subvolume delete --subvolid ID TOP_LEVEL` operator handoff and waits
-for proven absence before generic retirement. It never invokes `sudo`.
+Retiring a subvolume requires identity established at creation; observing an existing subvolume
+cannot adopt it or fill in a missing identity. A mounted Phylactery requires complete live mount
+and Btrfs agreement. An unmounted one requires the exact version-2 creation receipt, matching
+live identity, and a safe top-level mapping. Once those checks succeed, LychD emits the attested
+`btrfs subvolume delete --subvolid ID TOP_LEVEL` operator handoff and waits for proven absence
+before generic retirement. It never invokes `sudo`.
 
 ## Host and container geography
 
@@ -111,7 +112,7 @@ owns its credentials/network/isolation and [Workers (14)](14-workers.md) any exe
 
 ## Consequences
 
-XDG overrides move roots but not relative topology or ownership law. A known location is useful
-geography, never permission to adopt, overwrite, or delete somebody else's object. The implemented
-CLI path is Partial and real-host lifecycle proof remains separate; [State of Work](../state-of-the-work.md#core-cli-rites)
-owns that maturity boundary.
+XDG overrides relocate roots while preserving relative topology and ownership law. Knowing an
+object's location helps find it; only the appropriate ownership evidence permits adoption,
+overwrite, or deletion. The implemented CLI path is Partial, with real-host lifecycle proof still
+separate. [State of Work](../state-of-the-work.md#core-cli-rites) owns that maturity boundary.

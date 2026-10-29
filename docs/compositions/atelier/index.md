@@ -20,7 +20,7 @@ approved, [Package](package.md) seals the exact revisions another craft can admi
 
 ## The requested finish
 
-`atelier.studio` revision `5` publishes principal Pattern `atelier.build_visual_package@3`. It begins with an admitted commission, frozen references, target profile, and acceptance criteria. The requested finish may be an accepted still, accepted motion, or an approved immutable `VisualAssetBundle@1`. Failure to reach that requested boundary returns exact partial or non-completion under the pinned score.
+Choose the requested finish when admitting the commission: an accepted still, accepted motion, or an approved immutable `VisualAssetBundle@1`. The principal Pattern `atelier.build_visual_package@3`, published by `atelier.studio` revision `5`, works from that commission, frozen references, target profile, and acceptance criteria. If it cannot reach the requested boundary, it must return exact partial or non-completion under the pinned score.
 
 Reaching a requested still boundary completes the Run; later motion begins a forward Invocation over the retained artifact. [Motion](motion.md#progressive-visual-depth) follows both motion within the pinned score and separately admitted continuation.
 

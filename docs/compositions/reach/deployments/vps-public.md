@@ -44,7 +44,9 @@ DiscordEventAdmission
 
 This binds event, turn, Run/station attempt, provider/A2A request/task/message/idempotency identities, effect, digest, and Discord message. HTTP success or provider prose replaces none of those committed edges.
 
-`ReachTurn@1` terminates as `SUCCEEDED`, `REFUSED`, `DEPENDENCY_UNAVAILABLE`, `EXPIRED`, `FAILED`, or `INDETERMINATE`. `ReachDelivery@1` returns `NOT_ATTEMPTED`, `KNOWN_SENT`, `KNOWN_REJECTED`, or `UNKNOWN`. Intent states are `PENDING -> CLAIMED -> SUBMITTING -> KNOWN_SENT | KNOWN_REJECTED | UNKNOWN`; claims/generations/leases/attempts stay durable. Post-submit crash is possible effect, never reclaimable unsent work.
+Keep the outcome of the turn separate from the outcome of sending it. `ReachTurn@1` terminates as `SUCCEEDED`, `REFUSED`, `DEPENDENCY_UNAVAILABLE`, `EXPIRED`, `FAILED`, or `INDETERMINATE`; `ReachDelivery@1` returns `NOT_ATTEMPTED`, `KNOWN_SENT`, `KNOWN_REJECTED`, or `UNKNOWN`.
+
+The intent follows `PENDING -> CLAIMED -> SUBMITTING -> KNOWN_SENT | KNOWN_REJECTED | UNKNOWN`, with durable claims/generations/leases/attempts. A crash after submission may have left an external effect, so recovery cannot reclaim that work as unsent.
 
 ## Enforced service and secret split
 
@@ -63,7 +65,7 @@ Provision a non-root, non-login host account and platform floor separately from 
 
 Each egress instance serves one provider/peer trust class with only its credential reference and short-lived occurrence grant. Core supplies payload and decision id, never Sigil or another bearer's credential.
 
-Manifest-pinned service Principals, credentials, audience, object/message types, expiry, replay fences, and receiver authorization govern mutually authenticated local ports. Discard caller-supplied identity. Loopback, shared bearers, DNS, and route possession prove no workload identity. Non-owning service compromise must still fail cross-service impersonation.
+Authenticate both ends of each local port using the manifest-pinned service Principals, credentials, audience, object/message types, expiry, replay fences, and receiver authorization. Discard identity supplied by the caller itself: loopback, shared bearers, DNS, and possession of a route establish no workload identity. This boundary must still reject cross-service impersonation when a non-owning service is compromised.
 
 Firewall policy denies metadata/private-network egress except exact local service roads; later Tether needs another profile. This limits lateral movement without claiming resistance to root, operator-account, or VPS-control-plane compromise, which can expose all resident secrets and payloads.
 
@@ -71,9 +73,11 @@ Firewall policy denies metadata/private-network egress except exact local servic
 
 Reach judges source eligibility, interpretation, selection, and citations. Acquisition follows [Webcrawler](../../../adr/30-webcrawler.md#destination-and-data-boundary); a checkout or static site alone is no retrieval system.
 
-Admit only canonical HTTPS Git/static sources. Refuse git/SSH/SCP/local/file origins, credential helpers, and ambient credentials. Pin paths, operator-admitted commit or verified immutable release provenance, digests, builder/parser/index revisions, and file/byte/expansion/depth/work ceilings. Branch movement discovers a candidate, never activates it. Disable hooks, submodules, smudge/LFS, and content-directed network; reject escaping symlinks, unsupported media, malformed encoding, and archive/parser bombs. Index offline, validate staging completely, then activate atomically. Failure preserves the previous snapshot.
+Start acquisition from canonical HTTPS Git/static sources only. Refuse git/SSH/SCP/local/file origins, credential helpers, and ambient credentials. Bind the source to pinned paths, an operator-admitted commit or verified immutable release provenance, digests, builder/parser/index revisions, and file/byte/expansion/depth/work ceilings. A moving branch may reveal a candidate but cannot activate it.
 
-`PublicCorpusSnapshot@1` retains source/revision/digests, accepted paths, tools, build receipt, activation, and freshness. Passages remain attributed instruction-fenced data. `fresh_until` is 24 hours after activation; expiry returns `DEPENDENCY_UNAVAILABLE`. A separately admitted frozen historical source may answer an explicitly historical question displaying that revision.
+Process that candidate without hooks, submodules, smudge/LFS, or content-directed network. Reject escaping symlinks, unsupported media, malformed encoding, and archive/parser bombs. Build the index offline and validate all staging before atomically activating the snapshot. If any stage fails, keep the previous snapshot.
+
+Record the admitted source in `PublicCorpusSnapshot@1`, retaining source/revision/digests, accepted paths, tools, build receipt, activation, and freshness. Its passages remain attributed, instruction-fenced data. The snapshot's `fresh_until` is 24 hours after activation; after expiry, return `DEPENDENCY_UNAVAILABLE`. An explicitly historical question may instead use a separately admitted frozen historical source, with that revision displayed.
 
 `CorpusEvidenceBundle@1` pins one snapshot, passage ids/digests, canonical URLs/sections, and retrieval/count/token/size limits. Only the bounded bundle can travel remotely. Missing, altered, or unbound citations refuse validation.
 
@@ -96,7 +100,9 @@ A2A 1.0 makes [Send Message idempotency optional](https://a2a-protocol.org/v1.0.
 
 Replace each peer field with an observed independent endpoint; placeholders or same-process fakes prove conformance only. A model Portal is a separate E2E case under the same egress/attempt/quarantine/delivery law.
 
-Commit task/outbox before send and park in Durable Stasis. Baseline uses outbound response/polling; push callbacks are disabled. Authenticate and correlate every update against current authorization/revocation and record the first authenticated protocol terminal. Its returned content stays quarantined until validation and Composition adoption. `SUCCEEDED`, `REFUSED`, `FAILED`, `EXPIRED`, `REVOKED`, `CANCELLED`, and `LOST` remain distinct; silence settles none by itself and never permits blind repeat.
+Commit the task/outbox before sending, then park in Durable Stasis while waiting. The baseline obtains updates through outbound response/polling and disables push callbacks. Authenticate and correlate each update against current authorization/revocation, and record the first authenticated protocol terminal. Even then, keep the returned content quarantined until validation and Composition adoption.
+
+Preserve the distinction between `SUCCEEDED`, `REFUSED`, `FAILED`, `EXPIRED`, `REVOKED`, `CANCELLED`, and `LOST`. Silence alone establishes none of these outcomes and cannot authorize a blind repeat.
 
 Map `TASK_STATE_COMPLETED`, `TASK_STATE_REJECTED`, `TASK_STATE_FAILED`, and `TASK_STATE_CANCELED` to their respective success/refusal/failure/cancellation. One-shot work refuses `TASK_STATE_INPUT_REQUIRED`/`TASK_STATE_AUTH_REQUIRED` without new credentials. Local deadline, current revocation, or irreconcilable loss settles expiry/revocation/loss with evidence.
 
@@ -113,7 +119,7 @@ Admit canonical HTTPS origin/port/path/purpose without ambient proxy or credenti
 
 Before Core sees a return, the egress adapter bounds status/type, headers, wire/expanded bytes and ratio, chunks/count/size, stream/idle time, JSON depth/items, parsing/tokens, and total result. Violation closes response and returns dependency failure without further parsing.
 
-Bound platform events per application/guild/channel/subject, concurrency, evidence/results, tokens/time/retries/spend. Later ingress additionally bounds pre-auth connections, headers/compressed/expanded bodies, signature work, per-IP/peer/route/global quotas, durable queues/streams, and CPU/memory/process/disk/connections. Overload cannot evict heartbeat, committed delivery, or recovery.
+Set limits on platform events per application/guild/channel/subject, as well as concurrency, evidence/results, and tokens/time/retries/spend. A later ingress profile must additionally bound pre-auth connections, headers/compressed/expanded bodies, signature work, per-IP/peer/route/global quotas, durable queues/streams, and CPU/memory/process/disk/connections. Apply those limits so overload cannot displace heartbeat, committed delivery, or recovery work.
 
 ## Retention and provider custody
 
@@ -131,18 +137,20 @@ These are maximums; shorter policy is allowed, longer retention needs a declared
 
 Telemetry excludes raw prompts/passages/results, credentials, and pseudonym maps. Admit provider storage/training/region/subcontractor/deletion policy before egress; local deletion cannot erase its copies. Limits also cover replicas, exports, encrypted backups, VPS snapshots, journals, swap, and dumps. Disable raw payload/credential dumps/logs and encrypt or disable swap.
 
-Manifest either disables backups and declares loss unrecoverable, or pins encrypted off-host backup/expiry/restore with offline key. Lost Phylactery disables Reach until effects inside the idempotency horizon reconcile; an empty database cannot prove old Discord/A2A effects absent. Decommission destroys volumes and expires secondary copies.
+The manifest must choose a recovery policy: either disable backups and declare loss unrecoverable, or pin encrypted off-host backup/expiry/restore with an offline key. If Phylactery is lost, disable Reach until effects inside the idempotency horizon have been reconciled. Starting with an empty database proves nothing about old Discord/A2A effects. On decommission, destroy volumes and expire secondary copies.
 
 ## Restart, uncertainty, and compromise
 
-Replay returns committed admission/turn. Failed refresh preserves the earlier snapshot with degraded freshness. Proved pre-submit failure may create a new attempt/egress decision; possible post-submit failure remains `INDETERMINATE` until reconciliation. Parked A2A survives as protocol identities/checkpoints, never SDK objects. Unknown Discord delivery needs independent evidence before retry.
+On replay, return the committed admission/turn. A failed corpus refresh preserves the earlier snapshot with degraded freshness. Recover remote work according to what the attempt record proves: a proved pre-submit failure may create a new attempt/egress decision, while possible post-submit failure remains `INDETERMINATE` until reconciliation. Parked A2A survives through protocol identities/checkpoints, never SDK objects. An unknown Discord delivery needs independent evidence before any retry.
 
-Service compromise revokes leases/credentials, quarantines output, taints tasks/deliveries, and preserves bounded secret-free correlation. Root/operator/VPS-control-plane compromise requires stopping Reach and withdrawing routes/callback DNS/cards; revoking every potentially exposed Discord/provider/A2A/Tether/Veil/ACME/operator/source/deployment credential; marking and reconciling uncertain external effects; destroying and reprovisioning from a trusted pinned image; then restoring only independently verified non-secret records, rebuilding corpus, issuing disjoint credentials, and enrolling from zero authority.
+For a service compromise, revoke leases/credentials, quarantine output, mark tasks/deliveries as tainted, and preserve bounded secret-free correlation. A root/operator/VPS-control-plane compromise requires rebuilding the body. Stop Reach and withdraw routes/callback DNS/cards, then revoke every potentially exposed Discord/provider/A2A/Tether/Veil/ACME/operator/source/deployment credential. Mark and reconcile uncertain external effects before destroying and reprovisioning from a trusted pinned image.
+
+Restore only independently verified non-secret records. Rebuild the corpus, issue disjoint credentials, and enroll from zero authority before returning the body to service.
 
 ## Acceptance gates
 
 Tests cover identity/digest collision, replay/partition isolation, Cut/egress binding, destination/redirect rebinding, malicious corpus/path/parser and compressed/chunked/deep return cases, timeout at each commit, quarantine/revocation, restart/overload, and nonce/claim expiry without duplication.
 
-A live-host receipt names source/images, OS/systemd/Podman/users, manifest/compiler, units/mounts, local mTLS Principals/credentials and impersonation refusals, network/firewall/DNS, secrets/resources, corpus, Mirror/Ward, external adapters, reboot, secret isolation, backup/restore or loss, reconciliation, shutdown, and clean rebuild/rotation. Only evidence owners and State can promote delivery.
+To assess the deployed body, the live-host receipt must identify source/images, OS/systemd/Podman/users, manifest/compiler, units/mounts, local mTLS Principals/credentials and impersonation refusals, network/firewall/DNS, secrets/resources, corpus, Mirror/Ward, and external adapters. It must also account for reboot, secret isolation, backup/restore or loss, reconciliation, shutdown, and clean rebuild/rotation. Only the evidence owners and State can use that evidence to promote delivery.
 
 [Deployment matrix](index.md) · [Reach turn](../turn.md)

@@ -23,34 +23,38 @@ no camera, microphone, MIDI, avatar, robot, or world-effect authority.
 
 ## Pin the session and preserve its epoch
 
-The session pins participants; purpose and consent scopes; exact upstream session or admitted
-transport references and epochs; calibration and target-rig revisions; requested channels; clock
-maps and uncertainty; armed window; latency, cardinality, compute and cost bounds; bounded queue;
-sampling, resampling, reorder, and drop policy; consumers; retention; and output-segment policy.
-Every output binds the motion epoch, source cursor, target-rig digest, and deadline so consumers
-can reject stale results. Calibration, sender, target-rig, or unproved reconnect changes rotate
-the motion epoch. When an upstream source cannot pause, sampling and drops emit exact gaps and
-watermarks rather than hidden latency or invented motion. Disconnect retains acknowledged
-segments; only proved transport continuity may resume the same epoch, otherwise a newly armed
-forward session is required.
+Before arming, pin participants, purpose and consent scopes, exact upstream session or admitted
+transport references and epochs, calibration and target-rig revisions, requested channels, and
+clock maps with their uncertainty. Define the armed window, latency, cardinality, compute and
+cost bounds, bounded queue, sampling, resampling, reorder and drop policy, consumers, retention,
+and output-segment policy.
+
+Each output then binds its motion epoch, source cursor, target-rig digest, and deadline, allowing
+the consumer to reject stale motion. A calibration, sender, target-rig, or unproved reconnect
+change rotates the motion epoch. If upstream cannot pause, sampling and drops must expose exact
+gaps and watermarks rather than hide latency or invent motion. Disconnect preserves acknowledged
+segments; resuming the same epoch requires proved transport continuity. Otherwise, admit a newly
+armed forward session.
 
 ## Deliver through an admitted transport
 
 [VMC](https://protocol.vmc.info/english.html) over
-[OSC](https://opensoundcontrol.stanford.edu/spec-1_0.html) is a later admitted motion-transport or
-output-projection profile, not Core law. Its first profile allowlists motion messages and rejects
-file paths, configuration, MIDI/control, and passthrough messages unless separately authorized.
-Kinesis may consume an admitted source transport or create the projection artifact; it does not
-open or send to a target avatar endpoint. A separately authorized Foundry or avatar adapter owns
-that effect. OSC and VMC provide neither application authentication nor guaranteed reliable
-delivery. A profile binds an admitted sender and network zone, allowlists message addresses,
-records receive time, reorder and drop facts, and rotates the epoch whenever sender or clock
-continuity cannot be proved. [GStreamer](https://gstreamer.freedesktop.org/) may preserve media
-clocks, PTS, gaps, reorders, and drops; its core is LGPL-2.1-or-later while plug-in and codec
-licenses remain profile-specific. It is media substrate rather than a Kinesis runtime. Checkpoints
-retain configuration, cursors, exact segment references, and gaps—not sockets, device handles,
-tensors, or unbounded history. Stopping Kinesis proves neither that upstream capture stopped nor
-that a downstream avatar stopped moving.
+[OSC](https://opensoundcontrol.stanford.edu/spec-1_0.html) is a candidate for a later admitted
+motion-transport or output-projection profile. Its first profile allowlists motion messages;
+file paths, configuration, MIDI/control, and passthrough messages require separate authorization.
+Kinesis may consume an admitted transport or create the projection artifact, but sending to or
+opening a target avatar endpoint belongs to a separately authorized Foundry or avatar adapter.
+
+Neither OSC nor VMC supplies application authentication or guaranteed reliable delivery. The
+profile must bind an admitted sender and network zone, allowlist message addresses, and retain
+receive time, reorder, and drop facts. If sender or clock continuity cannot be proved, rotate
+the epoch. [GStreamer](https://gstreamer.freedesktop.org/) may preserve media clocks, PTS, gaps,
+reorders, and drops as media substrate, not as a Kinesis runtime. Its core is LGPL-2.1-or-later;
+plug-in and codec licenses remain profile-specific.
+
+Checkpoints retain configuration, cursors, exact segment references, and gaps, excluding sockets,
+device handles, tensors, and unbounded history. Stopping Kinesis establishes neither that upstream
+capture stopped nor that a downstream avatar stopped moving.
 
 ## Earlier Designed revisions
 

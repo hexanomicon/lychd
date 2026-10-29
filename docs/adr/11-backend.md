@@ -18,9 +18,9 @@ Core controllers and the compiled Altar fallback are collected there. Extensions
 explicitly, receive a host-created context, and contribute shaped records rather than arbitrary
 route or middleware mutation. There is no delivered extension route bundle.
 
-The host Click CLI remains useful without an application graph. `database` delegates lazily to
-Litestar; the managed image owns application startup. Help, `init`, `bind`, lifecycle
-commands, and ordinary operator commands do not construct the ASGI application.
+The host Click CLI works without constructing an application graph. Help, `init`, `bind`,
+lifecycle commands, and ordinary operator commands do not build the ASGI application. The
+`database` command delegates lazily to Litestar, while the managed image owns application startup.
 
 ### Process and listener boundary
 
@@ -64,10 +64,11 @@ then enters its lifespan. Startup crosses these boundaries in order:
    and checkpoints, orphaned Runs, consent, delegated waits, and pending delivery.
 4. Start the maintenance relays, then publish the shared run substrate and `app.state.services`.
 
-PostgreSQL recovery is an admission prerequisite. A failed or degraded required reconciliation
-aborts startup before workers can claim work or HTTP can resolve services. The memory profile has
-no cross-process state to recover and permits best-effort reconciliation. That exception does not
-weaken durable startup. [Workers (14)](14-workers.md) owns exact recovery order and settlement law.
+Durable startup must recover PostgreSQL authority before admitting work. A failed or degraded
+required reconciliation aborts startup before workers can claim work or HTTP can resolve services.
+The memory profile permits best-effort reconciliation because it has no cross-process state to
+recover; that exception does not weaken durable startup. [Workers (14)](14-workers.md) owns the
+exact recovery order and settlement law.
 
 Any failed startup follows the same reverse order as shutdown: stop in-process workers, withdraw
 the run substrate, close services, then disconnect queues. A collaborator therefore cannot outlive
@@ -126,10 +127,10 @@ respective transaction, configuration, and trust laws.
 
 ## Interfaces rather than rows
 
-Public endpoints use versioned Pydantic or dataclass DTOs and named operations. An explicitly
-bounded `SQLAlchemyDTO` is permitted for a true CRUD projection, but ORM shape never becomes the
-public API by accident. Includes, exclusions, aliases, nested depth, input rules, SSE envelopes,
-and compatibility are interface contracts with tests.
+The public API is defined by versioned Pydantic or dataclass DTOs and named operations. A true
+CRUD projection may use an explicitly bounded `SQLAlchemyDTO`, but its ORM shape must never become
+the API accidentally. Includes, exclusions, aliases, nested depth, input rules, SSE envelopes,
+and compatibility all belong to tested interface contracts.
 
 Litestar owns typed HTTP/OpenAPI and JSON serialization. Runtime and offline export share one
 JSON-only OpenAPI configuration. Controller validation and mapped application/repository failures

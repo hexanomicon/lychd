@@ -17,10 +17,10 @@ of birth and death.
 
 > **Saṃsāra is the Wheel. Saṃskāra is the groove. The Seed is what can make the wheel turn again.**
 
-Its movement is conditioning → recognition → germination. Conditioning leaves a form able to affect
-another turn; recognition finds it relevant; germination lets [Recall](./recall.md) return it into
-active Flux. A Seed may rest as inherited disposition or as an attributable form in the
-[Phylactery](../../phylactery/index.md); its surface changes how it returns, not the law of potency.
+Follow a Seed through conditioning → recognition → germination. Conditioning leaves a form able
+to affect another turn. Recognition finds its relevance. Germination lets [Recall](./recall.md)
+bring it into active Flux. An inherited disposition and an attributable [Phylactery](../../phylactery/index.md)
+record offer different surfaces for that return; each can carry the same defining potency.
 
 The *Yoga Sūtras* distinguish samādhi with seed (**sabīja**, I.46) and seedless (**nirbīja**,
 I.51); the [Patañjali Yoga Sūtra portal](https://www.gitasupersite.iitk.ac.in/yogasutra_content)

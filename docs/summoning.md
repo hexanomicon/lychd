@@ -11,19 +11,24 @@ icon: material/fire
     maintained real-host receipt proves the complete sequence. Consult the
     **[State of Work](state-of-the-work.md#inscription-and-embodiment)** before attempting it.
 
-A first reply is a small event. To make it credible, the machine around it must agree: the right
-source built the Vessel, the declared model entered memory, committed state has a home, and the
-answer returned through the admitted path. This rite brings those observations together on one
-Linux host.
+A model replying to a prompt is only part of bringing LychD to life. The application must start
+from the source you built, load the model you declared, retain its committed history, and return
+the answer through the intended workflow. This rite shows how to check those parts together on
+one Linux host.
 
-Bring a source checkout, NVIDIA hardware, and a tool-capable GGUF model. Work as your ordinary
-user, from one shell, and keep the values you establish along the way. This is a pre-alpha host
-acceptance procedure; familiarity with Linux, TOML, systemd, and containers is assumed.
+Bring a source checkout, NVIDIA hardware, and a tool-capable GGUF model. You will work as your
+ordinary user in one shell; later commands reuse the paths and identities established earlier.
+This is a pre-alpha host acceptance procedure for someone familiar with Linux, TOML, systemd,
+and containers.
+
+Before starting services, read [Close the rite](#close-the-rite). The public stop command currently
+refuses an active Vessel. An acceptance attempt needs a separately authorized recovery plan;
+this guide does not supply a working end-to-end start/stop procedure.
 
 ## Draw the Summoning Circle
 
-The Circle begins with choices you can inspect: source revision, host, model, configuration,
-mounts, secrets, capabilities, and reach. The five movements give each choice a place:
+The five movements establish which source, host, model, configuration, mounts, secrets, and
+capabilities the trial uses, and where the resulting services can be reached:
 
 1. [The Grounds](#the-grounds) — establish the host and model.
 2. [The Desecration](#the-desecration) — build the command and Vessel from one source.
@@ -31,27 +36,29 @@ mounts, secrets, capabilities, and reach. The five movements give each choice a 
 4. [The First Soulstone](#the-first-soulstone) — declare and bind the local model service.
 5. [The Awakening](#the-awakening) — start the body and witness its First Invocation.
 
-LychD calls its recurrent whole **the Lich**. The model is one organ within it. The commands below
-establish the boundaries around that organ; memory, policy, authority, and identity keep their
-separate places in the [anatomy](sepulcher/index.md).
+LychD calls the recurrent whole **the Lich**. The model is one of its organs. These commands set
+up that organ and the services around it; the [anatomy](sepulcher/index.md) explains how memory,
+policy, authority, and identity contribute to the whole.
 
 !!! warning "Use this revision's body"
     No published CLI/image pair matches this source revision. Build `localhost/lychd:dev` from
     the checkout used for the host command. A package or remote `latest` image is not a substitute.
-    [State of Work](state-of-the-work.md) records repository evidence; your host conjunction still
-    needs its own observation.
+    [State of Work](state-of-the-work.md) records repository evidence. You must still observe
+    whether this combination works on your host.
 
 ## Stage the acceptance campaign
 
-An already running model can answer before the complete body is qualified. For that smaller
-boundary, begin with the [standalone vLLM probe](sepulcher/animator/soulstone/engines/vllm.md#bring-one-service-to-a-first-reply).
-The worked rite below uses llama.cpp; replacing it with vLLM needs an exact engine recipe and
-its own namespace, device, cache, shared-memory and lifecycle observations.
+Choose the question your trial will answer. If you only need to test an already running model,
+begin with the [standalone vLLM probe](sepulcher/animator/soulstone/engines/vllm.md#bring-one-service-to-a-first-reply).
+That probe does not qualify the complete LychD installation. The worked rite here uses
+llama.cpp. Using vLLM in its place needs a specific engine recipe and separate observations of
+its namespace, devices, cache, shared memory, and lifecycle.
 
-Keep one campaign packet with the source/configuration/image/model identities, permitted effects,
-case counts, deadlines, expected outcomes, receipt destination, stop conditions and recovery owner.
-Private host material and raw receipts stay outside the checkout. Finish one gate before widening
-the claim:
+Keep one trial record. Identify the source, configuration, images, and model; write down the
+permitted effects, case counts, deadlines, expected outcomes, receipt destination, stop conditions,
+and person responsible for recovery. Keep private host material and raw receipts outside the
+checkout. The gates below separate a model response from a composed installation, browser
+acceptance, and later use. Complete each gate before claiming the next:
 
 | Gate | Required observation before continuing |
 | --- | --- |
@@ -62,19 +69,20 @@ the claim:
 | Daily pilot | Predeclared repeated turns, startup/stop/restart, timeout/failure/cancellation and longer-session cases retain useful work and explain uncertain outcomes; measure latency, queues and resources. Complete authenticated lifecycle control before treating public CLI stop as supported. |
 | Growth | Add one measured application or resource demand at a time, preserve an exact baseline and regressions, verify extension-generation compatibility and recovery, and separately admit memory or code-change effects. |
 
-Begin with one fixed text model and sequential requests as an explicit pilot operating condition;
-the lease ledger is not a capacity limiter. Set measurable latency and resource limits in the
-packet before trials. Do not substitute arbitrary throughput, synthetic GPU arithmetic or a large
-test count for useful completed work on the named profile.
+Begin the pilot with one fixed text model and sequential requests. Record those operating
+conditions: the lease ledger does not limit capacity for you. Set measurable latency and resource
+limits before the trial, then judge useful completed work on that profile. Arbitrary throughput,
+synthetic GPU arithmetic, or a large test count cannot establish that result.
 
-Record pass, failed, blocked and unknown separately. A timeout or lost acknowledgment does not
-prove that an external effect ended. Interrupting ordinary work is a different case from retaining
-a settled reply through restart. The [receipt requirements](state-of-the-work.md#operator-receipt-requirements)
-and each [delivery boundary](state-of-the-work.md) determine what a result can support.
+For each case, record pass, failed, blocked, or unknown. If an acknowledgment is lost or a request
+times out, the external effect may still be running. Test interruption separately from retaining
+a settled reply through restart; they establish different behavior. Use the
+[receipt requirements](state-of-the-work.md#operator-receipt-requirements) and the relevant
+[delivery boundary](state-of-the-work.md) to interpret what the observation supports.
 
-The first text pilot needs no Phoenix, embedding model, Archive, Scout, Tomb, foreign coding
-runtime, training, federation or public extension SDK. Introducing one later reopens only its
-affected authority, custody, persistence, resource and recovery checks.
+Keep the first text pilot small. It needs no Phoenix, embedding model, Archive, Scout, Tomb,
+foreign coding runtime, training, federation, or public extension SDK. When adding one later,
+repeat the authority, custody, persistence, resource, and recovery checks affected by that addition.
 
 ## The Grounds — verify the Linux host {#the-grounds}
 
@@ -136,8 +144,8 @@ ls -lh "$HOME/models/first-model.gguf"
 sha256sum "$HOME/models/first-model.gguf"
 ```
 
-Keep the digest. A readable, non-empty file is the first material witness; actual loading and
-inference will test the rest of its claim.
+Keep the digest so the trial identifies the file it used. Readability and size establish that
+the file is present; loading it and running inference will test whether it works.
 
 ## The Desecration — install LychD {#the-desecration}
 
@@ -220,9 +228,9 @@ before deliberately replacing them with a fresh generated file.
 
 ## The First Soulstone — bind one local model service {#the-first-soulstone}
 
-The **Soulstone** supplies a local faculty. This one uses llama.cpp's router mode so its model can
-load without restarting the Vessel. Its Rune declares exactly which shelf and NVIDIA device the
-service receives.
+The **Soulstone** is the local model service. This one uses llama.cpp's router mode so its model
+can load without restarting the Vessel. Its Rune specifies which model shelf and NVIDIA device
+the service can use.
 
 ### Secret references {#the-secret-covenant}
 
@@ -317,7 +325,7 @@ test -f "$USER_UNIT_DIR/lychd-reactor.path" \
   && echo "Host Reactor path present"
 ```
 
-A failed bind names the first violated boundary. Correct that declaration and preview again.
+A failed bind reports the first boundary it could not satisfy. Correct the cause and preview again.
 An absent Rune usually means the wrong extension selection or directory. A rejected mount must be
 an absolute host path outside Codex, Crypt, systemd-unit, and Reactor control roots. Supply an
 external secret only under its exact reported name. Edit the Rune or settings that produced the
@@ -371,7 +379,8 @@ uv run --extra postgres-binary lychd logs --lines 120
     are required for normal Run execution.
 
     Protected requests require a separate local credential before receiving the fixed `magus:*`
-    Sigil. This does not establish hostile-browser or remote safety. Stop the Vessel after this rite.
+    Sigil. This does not establish hostile-browser or remote safety. Close the trial under the
+    recovery plan established before startup; the public stop limitation is explained below.
 
 Retrieve the local login explicitly in a private terminal, then enter its displayed username and
 password in the browser's authentication dialog. Do not put the password in a URL or command line:
@@ -395,8 +404,10 @@ Reply with one sentence confirming first light.
 This is the **First Invocation**, a smaller living [Circle](divination/altar/circle.md) within the
 boundary you have prepared. Its casting follows the exact admitted Pattern. The first request
 starts the Soulstone through the Host Reactor, loads `first-model`, waits for readiness, and asks
-Dispatcher again. The model-backed capability becomes a local Animus available to this casting.
-A declared `supports_tools = true` allows admission; this one reply proves no arbitrary tool use.
+Dispatcher again. The loaded
+model can then answer through the selected capability: the local Animus available to this
+casting. Declaring `supports_tools = true` permits admission, but a text reply does not demonstrate
+arbitrary tool use.
 
 When a non-empty reply settles, ask the Pulse again:
 
@@ -417,10 +428,9 @@ observations are available through `/orchestrator/status`; they are not addition
 | Faculty | Nexus shows the exact `atelier` / `chat` / `first-model` capability as `active` after the turn. |
 | Answer | Bridge contains a non-empty settled reply. |
 
-Record all four observations alongside the source, configuration, image, model, host, and device
-identities. The receipt establishes that particular installation and first reply. Other runtime
-combinations still need their own evidence, and the local-browser restrictions above continue to
-apply.
+Record all four observations with the source, configuration, image, model, host, and device
+identities. Together they document this installation and its first reply. They do not qualify
+another runtime combination or remove the local-browser restrictions above.
 
 ### When the witnesses disagree
 
@@ -438,14 +448,16 @@ activation path and obscure the failure you are trying to observe.
 
 ## Close the rite
 
-Current active container lifecycle completion remains unavailable. `lychd stop` refuses an
-active Vessel until its authenticated container admission and exact settlement are implemented
-and qualified. Historical native signed-stop receipts do not establish this contract.
+`lychd stop` currently refuses to stop an active Vessel. The authenticated container admission
+and exact settlement needed to complete that lifecycle are not yet implemented and qualified.
+The historical native signed-stop receipts describe a different deployment and do not establish
+that this container can be stopped through the public command.
 
-There is no automatic direct-manager fallback. Any separately authorized operator reconciliation
-must retain exact unit/container ownership, close admission, classify terminal state and preserve
-dependencies when the outcome is unknown. [State of Work](state-of-the-work.md#core-cli-rites)
-owns the qualification boundary; the rite above does not certify production lifecycle.
+There is no automatic direct-manager fallback. A separately authorized operator recovery must
+identify the owned units and containers, close admission, establish their terminal state, and
+preserve dependencies while any outcome remains unknown. Follow the recovery plan agreed before
+startup. [State of Work](state-of-the-work.md#core-cli-rites) records what remains unqualified;
+completing the observations above does not certify a production lifecycle.
 
 Stopping leaves configuration and history in place. You can inspect the destructive plan without
 applying it:
@@ -458,7 +470,8 @@ The plan must account for the edited Codex and durable Phylactery. Retain any bl
 handoff and resolve its named condition before replanning. Do not remove those homes or generated
 units by hand.
 
-The first answer now has a context: the machine that produced it, the declared faculty, the
-committed Run, and the limits you observed. If a witness is missing, return to
-[The Awakening](#the-awakening). When they agree, continue into [Divination](divination/index.md),
-where the body’s answer becomes the beginning of a conversation.
+The first answer is now tied to the machine and model that produced it, its committed Run, and
+the limits of the trial. If an observation is missing, return to [The Awakening](#the-awakening).
+When the observations agree and the trial has been closed, continue into
+[Divination](divination/index.md) to follow what happens when the Lich's answer begins a
+conversation.

@@ -7,18 +7,17 @@ icon: material/scale-balance
 
 By what measure can we judge it?
 
-Canon makes the terms of judgment explicit: criteria, constraints, a Rubric, and the evidence
-required to support a conclusion. The standards belong to a declared context, with a named
-baseline where comparison is required. Although the reader arrives here after Trial, the
-criteria must be available before [Genesis](genesis.md) and [Trial](trial.md) begin.
-An outcome cannot supply its own definition of success.
+Before making or trying a candidate, declare how it will be judged: criteria, constraints, a
+Rubric, and the evidence needed for a conclusion. Name the context those standards serve and,
+where comparison requires one, the baseline. This is Canon's work. The reader reaches this
+chapter after Trial, but [Genesis](genesis.md) and [Trial](trial.md) need its criteria at the
+outset. An outcome cannot define its own success.
 
-For offline field notes, the requirements might include no silent loss, usable recovery,
-and a bounded burden on the person resolving conflicting edits. Each requires evidence
-suited to the claim. Judges may disagree about whether recovery is usable or the burden
-acceptable; their judgments preserve reasons and uncertainty, with human decision where
-required. Criteria can change, but a changed Rubric belongs to a new comparison. It does not
-retrospectively turn a failed result into a pass.
+For offline field notes, ask for no silent loss, usable recovery, and a bounded burden on the
+person resolving conflicting edits. Each claim needs its own evidence. Judges can disagree about
+usability or acceptable burden; preserve their reasons and uncertainty, with human decision where
+required. If those criteria change, use the revised Rubric for a new comparison. Keep the earlier
+failed result under the terms by which it was judged.
 
 **The measure must answer to the purpose.** Counting fewer conflicts can reward a design that
 silently discards one side. No silent loss therefore remains a condition; speed and convenience

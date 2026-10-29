@@ -7,11 +7,11 @@ icon: fontawesome/solid/heart-pulse
 
 > _Follow the spark to where the iron answers._
 
-LychD calls services for work: a model can answer, a search service can find, a renderer can draw.
-An **Animator** is the live handle through which LychD addresses, discovers, probes and invokes
-such a capability. A model is one possible source; independently managed search, rendering or
-speech services may answer under their own typed contracts. The handle carries neither the service's
-deployment manifest nor the application's purpose.
+A workflow may need a model to answer, a search service to find material, or a renderer to draw.
+The **Animator** gives LychD an addressable handle for discovering, probing, and invoking that
+service's typed capabilities. A model is one possible source of power; independently managed
+search, rendering, or speech services can supply others. The handle says where a capability can
+answer. The service's deployment manifest and the application's purpose belong elsewhere.
 
 ## Two Sources of Power
 
@@ -41,9 +41,11 @@ typed demand → declared eligible profile → current observation
   └─ managed but cold → handle-free transition → readiness → dispatch again
 ```
 
-While readiness converges, the waiting Graph holds no Connector or lease. Dispatcher selects and
-grants; Orchestrator alone converges an admissible physical or runtime-native transition. The current implementation performs
-this handshake for its narrower v1 family/model demand and chat-model/toolset compatibility grant.
+If the service is ready and the request is admitted, Dispatcher supplies the grant and lease.
+If a managed service must change first, Orchestrator performs the admissible physical or
+runtime-native transition. The waiting Graph keeps neither Connector nor lease while readiness
+converges, then returns to dispatch. Current implementation performs this handshake for the
+narrower v1 family/model demand and chat-model/toolset compatibility grant.
 
 ## Animus: the power answering
 

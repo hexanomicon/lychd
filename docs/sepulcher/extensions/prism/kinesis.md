@@ -62,11 +62,14 @@ has proved:
 `compose`, `choreograph`, `direct`, `play`, `drive_avatar`, and `publish` are deliberately absent.
 Those acts belong to a Composition or a separately authorized world effect, not a motion worker.
 
-The request pins exact sources and temporal regions; operation and requested facets; source
-skeleton and target Form rig digests where the operation uses them; calibration; units, axes,
-coordinate spaces, and time policies; constraints and anchors; purpose, classification, consent,
-retention, and likeness-use boundary; immutable model or tool preset; seed policy; deadline;
-compute or Portal budget; and idempotency key. Optional material never invents profile support.
+Begin by fixing the material and the motion contract. The request names exact sources and
+temporal regions, the operation and requested facets, and source skeleton and target Form rig
+digests where needed. It pins calibration, units, axes, coordinate spaces, time policies,
+constraints, and anchors so later curves can retain their meaning.
+
+It also fixes purpose, classification, consent, retention, likeness-use boundary, immutable
+model or tool preset, seed policy, deadline, compute or Portal budget, and idempotency key.
+Providing optional material cannot establish support absent from the selected profile.
 
 `KinesisJob@2` owns motion stages, candidates, technical validation, and result settlement.
 Creative adoption belongs to the consuming Composition. Each concrete service or tool execution
@@ -90,19 +93,22 @@ and forward axes; units and scale; root and pelvis semantics; degrees of freedom
 limits; effectors and contact bones; mirror pairs; skin influences; and facial, expression, or
 viseme ontology where present.
 
-`RigMap@1` binds source and target skeleton digests, calibration pose, semantic mapping,
-orientation offsets, scale and translation rules, twist and helper distribution, IK chains and
-goals, unmapped joints, root and contact policy, facial mapping, and declared loss. Bone-name
-equality or `humanoid=true` is not compatibility. A changed target rig stales the retargeted clip;
-altering that rig creates a separate Form derivative.
+Retargeting requires more than matching bone names. `RigMap@1` binds source and target skeleton
+digests to a calibration pose, semantic mapping, orientation offsets, scale and translation
+rules, twist and helper distribution, IK chains and goals, unmapped joints, root and contact
+policy, facial mapping, and declared loss. Bone-name equality or `humanoid=true` cannot establish
+that relationship. Changing the target rig makes the retargeted clip stale; the rig change itself
+is a separate Form derivative.
 
-A rational source timebase and exact timestamps survive every stage; `30 fps` alone is
-insufficient. Variable-rate video, duplicate or dropped frames, audio/video desynchronization, resampling, and gaps
-remain explicit. Rotations pin coordinate frame and representation plus Euler order where used;
-quaternions are normalized and checked for hemisphere continuity. Root motion is never silently
-stripped, baked into the pelvis, or reintroduced. Metric scale requires calibration or an admitted
-scale reference. Lip or facial timing points to the exact audio, transcript, or phoneme evidence
-and preserves its uncertainty.
+Carry the rational source timebase and exact timestamps through every stage; `30 fps` alone
+cannot describe variable-rate video, duplicate or dropped frames, audio/video desynchronization,
+resampling, or gaps. Those differences remain explicit in the result.
+
+The same care applies to spatial motion. Rotations declare their coordinate frame and
+representation, including Euler order where used; quaternions are normalized and checked for
+hemisphere continuity. Root motion cannot be silently stripped, baked into the pelvis, or
+reintroduced. Metric scale needs calibration or an admitted scale reference. Lip and facial
+timing must point to exact audio, transcript, or phoneme evidence and preserve its uncertainty.
 
 ## Motion is a typed asset set
 
@@ -170,26 +176,29 @@ admission rejects or explicitly allowlists them. Kinesis pins the Blender build,
 permitted add-ons, backend, threading, flags, and environment, then claims reproducible intent only
 where semantic validation agrees—not byte identity by default.
 
-The first proving profile would use deterministic declared mapping, rest-pose orientation
-correction and FK, with an optional IK pass for named effectors. Foot lock acts only over declared
-or estimated contact intervals and reports the magnitude of every correction. Validate
-joint-limit violations and bone-length constancy except for declared scale channels; end-effector
-error; foot skate and floor penetration; root path and yaw; angular and discontinuity error; loop
-pose and velocity seam; maximum and RMS cleanup correction; output timebase; and projection
-validity. Exported and re-imported or decompressed projections are sampled against canonical
-curves under pinned maximum and RMS translation and angular tolerances; structural glTF validation
-alone cannot prove animation fidelity. Engine-native controllers, blending, target-engine
-root-motion extraction and use, and animation compression remain Foundry concerns.
+Start the proving profile with declared deterministic mapping, rest-pose orientation correction,
+and FK; add an optional IK pass only for named effectors. Foot lock acts only over declared or
+estimated contact intervals and must report every correction's magnitude.
+
+Validate what those operations changed: joint-limit violations; bone-length constancy except
+for declared scale channels; end-effector error; foot skate and floor penetration; root path and
+yaw; angular and discontinuity error; loop pose and velocity seam; maximum and RMS cleanup
+correction; output timebase; and projection validity. Then sample exported and re-imported or
+decompressed projections against the canonical curves under pinned maximum and RMS translation
+and angular tolerances. Structural glTF validation alone cannot establish animation fidelity.
+Foundry still owns engine-native controllers, blending, target-engine root-motion extraction and
+use, and animation compression.
 
 <span id="privacy-rights-and-the-proving-bake"></span>
 
 ## Privacy, rights, and receipts
 
-Body proportions, gait, hands, face curves, voice-conditioned facial motion, and even
-skeleton-only derivatives may identify or reveal a performer. Their classification and purpose
-follow every derivative after pixels or sound are discarded. Admission distinguishes capture,
-realtime analysis, persistence, inference, Portal egress, retargeting or likeness use,
-personalization or training, and publication. Consent for one is not consent for the others.
+Discarding pixels or sound does not necessarily remove the performer from the data. Body
+proportions, gait, hands, face curves, voice-conditioned facial motion, and even skeleton-only
+derivatives may identify or reveal them. Classification and purpose therefore follow every
+derivative. Admission distinguishes capture, realtime analysis, persistence, inference, Portal
+egress, retargeting or likeness use, personalization or training, and publication; consent for
+one use does not admit the others.
 
 Face or gait recognition, cross-session re-identification, demographic, emotion, health, injury,
 or intention inference is outside Kinesis. Source-side privacy masking remains capture or Sight

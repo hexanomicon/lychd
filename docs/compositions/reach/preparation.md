@@ -79,12 +79,14 @@ Complete the repository setup in
 the repository root. Open
 [`examples/reach/policy.toml`](https://github.com/hexanomicon/lychd/blob/main/examples/reach/policy.toml).
 
-The Discord configuration schema is version `1`. It binds one application, bot user and guild,
-an allowed channel list, and ordered `rules`. Each rule has `user_ids`, `role_ids` and `actions`.
-The adapter compiles these values into a platform-neutral Reach policy; the shared evaluator
-and Graph do not know Discord guilds, snowflakes or slash-command payloads.
-Supported action names are `answer_docs` and `summarize_context`; the preparation helper
-evaluates their admission without performing them.
+Use schema version `1` to describe the place where you intend Reachy to respond: one application,
+bot user and guild, an allowed channel list, and ordered `rules`. Each rule lists `user_ids`,
+`role_ids` and `actions`. The supported actions, `answer_docs` and `summarize_context`, name the
+work you want to allow; the preparation helper only evaluates their admission.
+
+The adapter compiles these Discord values into a platform-neutral Reach policy. Consequently,
+the shared evaluator and Graph need no knowledge of Discord guilds, snowflakes or slash-command
+payloads.
 
 The first rule matching a user ID **or** one of the event's role IDs owns the allowed actions.
 If that rule lacks the requested action, admission is denied without falling through to another
@@ -133,11 +135,11 @@ Optionally exercise event admission:
 uv run --locked python scripts/reach_prepare.py --policy examples/reach/policy.toml --event examples/reach/event.json
 ```
 
-The fixture is normalized synthetic input. Its IDs and roles prove no Discord identity and grant
-no local authority. If you use a private policy, copy the fixture outside the checkout too and
-make its IDs match that policy. The normalized fixture uses shared Reach names: `account_id`
+Read the fixture as already normalized synthetic input. It uses shared Reach names: `account_id`
 for the Discord application, `space_id` for the guild, `conversation_id` for the channel,
-`subject_id` for the person, and `group_ids` for roles. Its `platform` is `discord`.
+`subject_id` for the person, and `group_ids` for roles, with `platform` set to `discord`. These
+IDs and roles prove no Discord identity and grant no local authority. To try a private policy,
+copy the fixture outside the checkout too, then make its IDs match that policy.
 
 The fixture has a fixed historical `occurred_at` and expires under the five-minute TTL. To
 demonstrate admission, update it to the current UTC timestamp with its timezone, or run policy-only

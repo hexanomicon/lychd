@@ -42,11 +42,11 @@ icon: material/source-branch
 
 ## Decision Outcome
 
-LychD adopts an evidence-bearing SDLC with explicit handoffs between intent, candidate work,
-verification, delivery, and subsequent change. **[Creation](../sepulcher/extensions/weaver/creation.md)**
-is the practical workflow for carrying a software request through that lifecycle. This Covenant
-owns the lifecycle invariants and candidate-to-effect boundary; the workflow supplies the
-repeatable method, including Inquiry, task decomposition, review, and human decisions.
+LychD carries a software change through explicit handoffs: intent, candidate work, verification,
+delivery, and subsequent change each retain their evidence.
+**[Creation](../sepulcher/extensions/weaver/creation.md)** is the practical workflow for that
+passage. This Covenant owns lifecycle invariants and the candidate-to-effect boundary; Creation
+provides the repeatable method, including Inquiry, task decomposition, review, and human decisions.
 
 Its candidate-to-effect chain is:
 
@@ -88,10 +88,10 @@ inputs, acceptance, admission and lineage; no automatic successor follows from f
 
 ### Lifecycle and ownership
 
-The lifecycle can return to an earlier question when evidence defeats its premise. Each return
-retains the prior decision and outcome and identifies which checks must run again. Acceptance
-criteria are established before the verification they judge; revising them creates a later
-comparison rather than converting the previous failure into a pass.
+When evidence defeats a premise, the lifecycle can return to the relevant question while retaining
+the prior decision and outcome. That return identifies which checks must run again. Acceptance
+criteria must exist before the verification they judge; revising them creates a later comparison
+and cannot turn the previous failure into a pass.
 
 | Passage | Required handoff | Owning law |
 | --- | --- | --- |
@@ -166,12 +166,12 @@ adoption remain separately owned passages.
 
 ### External workflow research
 
-An independently operated workflow forge may supply candidate SDLC contracts and evaluation cases
-for a future local implementation or explicit service integration. Its own owner retains scope and
-delivery evidence; reuse does not require migration or retirement of that external project. Each
-admitted reuse must separately prove this record's admission, candidate, verification and promotion
-boundaries. No graph, trace export or favorable benchmark imports runtime behavior or grants LychD
-effects by itself.
+A future local implementation or explicit service integration may draw candidate SDLC contracts
+and evaluation cases from an independently operated workflow forge. The external owner keeps
+its scope and delivery evidence, and reuse requires neither migration nor retirement of that
+project. Each admitted reuse must separately prove this Covenant's admission, candidate,
+verification, and promotion boundaries. A graph, trace export, or favorable benchmark cannot by
+itself import runtime behavior or grant LychD effects.
 
 ### Admission and candidate identity
 
@@ -247,11 +247,11 @@ them atomic.
 
 ### Changed state, conflict, and recovery
 
-A changed base, changed source tree, or unresolved conflict fails closed. The candidate and its
-evidence remain for diagnosis; they are neither silently discarded nor applied over operator work. Continuing means a
-new base, resolved conflict, renewed invalidated checks, and fresh authorization when the effect
-changed. An external effect already produced must be reconciled by its owner rather than hidden by
-VCS cleanup.
+A changed base or source tree, or an unresolved conflict, stops promotion. Keep the candidate and
+its evidence for diagnosis; neither discard them silently nor apply them over operator work.
+Continuation requires a new base, resolved conflict, renewed invalidated checks, and fresh
+authorization when the effect changed. Any external effect already produced remains its owner's
+reconciliation responsibility and cannot be hidden by VCS cleanup.
 
 An implementation must demonstrate candidate identity and workspace containment, refusal of
 active-tree mutation, receipt capture, crash recovery, refusal after state changes, effect-time

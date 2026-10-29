@@ -52,11 +52,12 @@ already-approved response. Polling recovers accessible current state, not every 
 intermediate event. [Comment polling](https://docs.github.com/en/rest/issues/comments#list-issue-comments-for-a-repository),
 [conditional requests](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api)
 
-A later webhook profile verifies HMAC-SHA256 over the original body, binds the configured
-app/installation/repository and event/action, then durably admits intake before returning 2xx
-within the provider deadline. Deduplicate `X-GitHub-Delivery` with a payload fingerprint and bind
-each semantic action to its resource version as well; the same GUID is retained on redelivery.
-Provider signature proves source bytes, not Ward authority for the commenter.
+A later webhook profile would first verify HMAC-SHA256 over the original body and bind the
+configured app/installation/repository and event/action. It must durably admit that intake before
+returning 2xx within the provider deadline. To recognize redelivery, deduplicate `X-GitHub-Delivery`
+with a payload fingerprint; GitHub retains the same GUID on redelivery. Bind each semantic action
+to its resource version as well, so delivery identity does not conceal an edit. The signature
+proves source bytes but gives the commenter no Ward authority.
 [Signature validation](https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries),
 [webhook intake](https://docs.github.com/en/webhooks/using-webhooks/best-practices-for-using-webhooks)
 
@@ -69,16 +70,18 @@ remains the bounded reconciliation path. [Failure handling](https://docs.github.
 
 ## Comment delivery and wider capabilities
 
-Freeze host, installation, repository id, issue/PR id, body, visibility observation and actor before
-review or standing policy. Check current installation access and destination again at send time.
-For reconciliation, a proposed opaque Reach marker in a hidden Markdown comment can bind a
-delivery occurrence to the bot-authored comment. It is externally visible source metadata, must
-be included in the admitted bytes, and must contain no customer/private identifier.
+Before review or standing policy, freeze the host, installation, repository id, issue/PR id, body,
+visibility observation and actor. Recheck current installation access and destination at send time.
+A proposed opaque Reach marker, carried in a hidden Markdown comment, can then help reconciliation
+associate a delivery occurrence with the bot-authored comment. Although hidden in rendering, it is
+externally visible source metadata: include it in the admitted bytes and keep customer/private
+identifiers out of it.
 
-A marker, GraphQL `clientMutationId`, or check-run `external_id` does not establish provider-enforced
-uniqueness. After an ambiguous POST, inspect the intended thread for matching bot, marker and body;
-retain the returned provider id/URL when known. Inconclusive reads preserve `UNKNOWN`, not a safe
-resend. Updating a known comment remains another separately authorized exact edit.
+Correlation does not prevent duplicate writes. Neither the marker, GraphQL `clientMutationId`,
+nor check-run `external_id` establishes provider-enforced uniqueness. After an ambiguous POST,
+inspect the intended thread for the matching bot, marker and body, and retain the provider id/URL
+when known. If those reads are inconclusive, preserve `UNKNOWN` and do not resend. Even when the
+comment is known, updating it requires a separately authorized exact edit.
 
 PR diff comments and formal reviews have separate APIs and Pull requests write. `APPROVE` and
 `REQUEST_CHANGES` are consequential review actions, not ordinary replies. Discussions use GraphQL

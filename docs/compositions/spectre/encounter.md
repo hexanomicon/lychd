@@ -11,7 +11,7 @@ The participant enters an admitted VR Habitat to meet the Lich. Later the runtim
 
 `spectre.enter_encounter@2` begins with exact `VRHabitat@1`, participants, purpose, consent, and—when meeting the Lich—an already admitted Avatar `ProjectionBinding@2` for that Habitat. A generic Encounter needs no Avatar. Spectre may report the target result but cannot create, revise, replace, or close Avatar's binding.
 
-`SpectreEncounter@2` keeps participant/entry admission, purpose, Habitat revision, consent chronology, optional Avatar reference, significant semantic interactions, focus/pause/recenter, interruption/recovery, exit, and terminal judgment. Changed participants, purpose, consent scope, or Avatar binding need fresh admission or an explicit recovery boundary. Many Encounters can use a Habitat without becoming one endless session.
+Follow the meeting in `SpectreEncounter@2`: retain participant/entry admission, purpose, Habitat revision, consent chronology, optional Avatar reference, significant semantic interactions, focus/pause/recenter, interruption/recovery, exit, and terminal judgment. If participants, purpose, consent scope, or Avatar binding change, require fresh admission or an explicit recovery boundary. The Habitat can support many such Encounters while each meeting remains finite.
 
 ```mermaid
 flowchart TD
@@ -31,7 +31,7 @@ The [OpenXR lifecycle](https://registry.khronos.org/OpenXR/specs/1.1/man/html/Xr
 
 An `XrSession`, game process, socket, device handle, or pose stream remains volatile provider state. Preserve runtime version, session-state changes, selected space kind, capabilities, start/stop/loss, and session epoch as observations. They cannot replace durable Encounter identity.
 
-`XR_SESSION_STATE_LOSS_PENDING` or equivalent loss opens interruption. Policy either settles it or offers explicit recovery: enumerate capabilities again, recheck purpose/consent, create and link a fresh provider epoch. A runtime `EXITING` request ends the XR road without automatic restart. Rendering and input cannot be fabricated across the gap.
+When the runtime reports `XR_SESSION_STATE_LOSS_PENDING` or equivalent loss, open an interruption. Policy must either settle it or offer explicit recovery by enumerating capabilities again, rechecking purpose/consent, and creating and linking a fresh provider epoch. A runtime `EXITING` request ends the XR road without automatic restart. Do not fabricate rendering or input across the gap.
 
 ## Each participant may leave
 

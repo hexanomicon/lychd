@@ -12,10 +12,10 @@ version” offers a simple candidate; “what happens to the other observation?�
 it has not answered. [Canon](canon.md) has already required that no observation disappear silently.
 The purpose now needs alternatives, assumptions, and a form that [Trial](trial.md) can confront.
 
-**One contribution makes another question visible.** A possibility asks what would let it hold;
-a constraint asks what possibility could satisfy it. Their exchange can reveal a form neither
-perspective supplied alone. Genesis follows that becoming until another participant can examine
-what is proposed, why it might work, and what would show it wrong.
+**One contribution makes another question visible.** Proposing a possibility brings its conditions
+into question; naming a constraint invites possibilities that could satisfy it. Their exchange
+may produce a form neither perspective could supply alone. Genesis stays with this formation
+until someone else can examine the proposal, its reasons, and the evidence that would defeat it.
 
 The biblical [Genesis](https://bible.usccb.org/bible/genesis/0) gives the chapter its image of
 beginnings: possibility acquires a differentiated world. The Tree of Life asks how the capacities
@@ -26,23 +26,23 @@ Creation's [offline decision dossier](../../sepulcher/extensions/weaver/creation
 
 <span id="the-tree-of-life"></span>
 
-LychD's engineering workflow began on the whiteboard before the sefirotic comparison. The Tree
-deepens that independently developed design: what can each contribution give, what must it
-receive, and what happens when it claims to suffice alone?
+A purpose can gather capable powers and still fail to become a coherent whole. The Tree asks
+what each can give, what it must receive, and what happens when it claims to suffice alone.
 
-The author's colored board gave that inquiry a working vocabulary. Red severity / − carried
-**WHY**, **CHALLENGE**, and **REVIEW**; green mercy / + carried **HOW**, **EXPAND**, and **TEST**.
-These were read beside Binah / Chokhmah, Gevurah / Chesed, and Hod / Netzach. Black followed
+The creative workflow preceded this sefirotic comparison. Its
+[geometry](index.md#between-crown-and-kingdom) keeps three currents visible. Red severity / −
+carries **WHY**, **CHALLENGE**, and **REVIEW**; green mercy / + carries **HOW**, **EXPAND**, and
+**TEST**. These meet Binah / Chokhmah, Gevurah / Chesed, and Hod / Netzach. Black follows
 **WHAT → KNOWING → HARMONY → IDENTITY CANDIDATE → PRODUCT**, beside Keter, the displayed Da'at,
-Tiferet, Yesod, and Malkhut. Blue **INTELLECT**, **EMOTION**, and **ACTION** named the relations
+Tiferet, Yesod, and Malkhut. Blue **INTELLECT**, **EMOTION**, and **ACTION** name the relations
 between the sides. Understanding and possibility concern the same WHAT; their exchange changes
 what the next relation receives.
 
-The colors preserve the design's questions; the source meanings below keep their own histories.
-“TEST” emphasizes an active encounter, while Netzach's persistence can sustain many kinds of
-work. “REVIEW” makes correction active, while Hod's acknowledgment reaches beyond a review task.
-“Identity candidate” gathers a forming composition; Answer participates before that candidate
-is complete. Neither the colors nor the ovals prescribe isolated Agents or exclusive faculties.
+Keep the design questions beside their source meanings. “TEST” asks for an active encounter;
+Netzach's persistence can sustain many kinds of work. “REVIEW” makes correction active; Hod's
+acknowledgment extends beyond a review task. “Identity candidate” gathers a forming composition,
+although Answer already participates before it is complete. These colors and ovals organize
+questions without assigning them to isolated Agents or exclusive faculties.
 
 In the Jewish Kabbalistic account followed here, the ten **sefirot**, also transliterated
 **Sephiroth** (singular: *sefirah*), are divine emanations connected through channels and also
@@ -104,10 +104,10 @@ The final column is **LychD interpretation**: questions for examining an agentic
 | **Yesod** | Foundation; connection and transmission | Join the work into a concrete, testable candidate with the evidence and limits its recipient needs. What must hold together before this can become real? |
 | **Malkhut** | Kingdom; received manifestation and speech | The admitted form enters the world and meets consequences beyond its designers' account. What actually happened? |
 
-A single exchange can exercise several capacities; several participants can contest one.
-The ten sefirot prescribe no model count or new Lich offices. **Da'at — Knowledge / Recognition**
-accompanies the table under its counting convention: what has become known through the exchange,
-and how does that recognition change the next act?
+Use the ten capacities to examine an exchange, without deriving a model count or new Lich offices
+from them. One exchange can exercise several capacities, and several participants can contest
+one. Under the stated counting convention, **Da'at — Knowledge / Recognition** accompanies the
+table. It asks what became known through the exchange and how that recognition changes the next act.
 
 ### When knowing reaches the act { #daat }
 
@@ -129,19 +129,21 @@ Binah develops their categories, dependencies, assumptions, and implications. Th
 can expose a possibility the first exploration missed: **understanding returns something
 generative to insight**. Each must encounter what the other actually found.
 
-Da'at names the situated recognition made usable through their exchange. A shared evidence
-and decision packet can carry it; no additional model agent is required. Earlier knowing may
-inform Keter, while fresh recognition can expose a premise in the original intent. These are
-our epistemic relations. A changed intent or criterion receives an attributable revision.
+Their exchange becomes consequential through Da'at: situated recognition that can be used in
+the next act. A shared evidence and decision packet may carry it; it requires no additional
+model agent. Earlier knowing can inform Keter, and fresh recognition can expose a premise in the
+original intent. These are the Work's epistemic relations. When intent or criteria change, an
+attributable revision records the change.
 
-The chamber seeks enough explored and structured knowledge for the next decision. Alternatives,
-coverage, decisive unknowns, remaining budget, and reopening conditions make that sufficiency
-examinable. A missing distinction opens a question; sufficient evidence can close it without
-claiming to exhaust the possible. The
-[First Axiom](../transcendence/immortality.md#the-first-axiom) gives this inquiry its ground;
-the Tree asks how local knowing takes form and becomes effective in an act.
-[Immortality](../transcendence/immortality.md#v-realization-and-evidence) takes up the
-investigation of that organization.
+The chamber has done enough when the explored and structured knowledge supports the next
+decision. Make that sufficiency examinable by keeping alternatives, coverage, decisive unknowns,
+remaining budget, and conditions for reopening. A missing distinction can open another question;
+sufficient evidence can close one without exhausting every possibility.
+
+The [First Axiom](../transcendence/immortality.md#the-first-axiom) grounds this inquiry. The Tree
+asks how local knowing takes form and becomes effective in an act;
+[Immortality](../transcendence/immortality.md#v-realization-and-evidence) investigates that
+organization.
 
 ### Giving, measure, and the middle relation { #pillars }
 
@@ -156,11 +158,11 @@ fitting compassion and is itself called mercy. These [source meanings](https://w
 show why mercy cannot be assigned exclusively to the right, why severity need not be hostile,
 and why giving need not mean relaxation. A demanding limit may be what allows the gift to arrive.
 
-**Offer, measure, and fit to the receiver belong to one creative relation.** A smaller experiment
-can give a possibility its fair trial. A better question can make an overlooked concern
-answerable. A revised packet can preserve the distinction its reader needs to act. Tiferet seeks
-that fitting composition; averaging incompatible recommendations would merely conceal their
-conflict.
+**Offer, measure, and fit to the receiver belong to one creative relation.** Sometimes a smaller
+experiment gives a possibility its fair trial. Sometimes a better question makes an overlooked
+concern answerable, or a revised packet preserves the distinction a reader needs to act. Tiferet
+seeks a composition that makes these contributions usable together. Averaging incompatible
+recommendations would conceal the conflict that still needs an answer.
 
 The three columns gather continuities within this work. Chokhmah, Chesed, and Netzach join
 possibility, support, and persistence on the right. Binah, Gevurah, and Hod join understanding,
@@ -169,9 +171,8 @@ Tiferet, Yesod, and Malkhut, the middle follows intent, recognition, coherent de
 candidate, and manifestation. They gather modes of relation rather than teams repeating one job.
 A return along or across them can change the structure, its measure, or the intent that began it.
 
-The modern [*Anatomy Occultus* artwork](https://chukart.blogspot.com/2013/08/anatomy-occultus.html)
-marks the right with + and the left with −. Here those signs can read as opening, supporting,
-and sustaining beside distinguishing, measuring, and correcting. They assign neither moral worth
+In the Work's geometry, + and − mark opening, supporting, and sustaining beside distinguishing,
+measuring, and correcting. They assign neither moral worth
 nor compulsory opposite verdicts. Binah understands; Netzach persists; Hod gives yielding a
 place. Understanding keeps the left from meaning destruction alone; persistence keeps the right
 from meaning letting go alone. Mapping a diagram's sides onto a body also requires its tradition
@@ -191,11 +192,11 @@ contain, refuse, or stop a route. When both are strong, the next step may be a b
 a discriminating probe, or a Crucible. Counterparts can jointly defend a neglected claim and
 strengthen the same possibility. Adversarial attention must leave its bearer free to concede.
 
-These appraisals require reasons. An untried return is unknown; absent reward supplies no verdict
-of low value or failure. A discovery allowance can make the uncertainty answerable. A useful
-failed experiment may earn credit for its method while weakening the hypothesis it tested.
-The question is what each contribution deserves next, rather than how to fill every empty
-place in a score.
+Give reasons for each appraisal. An untried return remains unknown; absent reward cannot establish
+low value or failure. A discovery allowance may make that uncertainty answerable. A failed
+experiment can deserve credit for its method while weakening the hypothesis it tested. The
+appraisal should decide what the contribution deserves next, without inventing a verdict merely
+to fill an empty place in a score.
 
 The two pressures can shape attention, the next attempt, and the decision to cease throughout
 the cycle. No single debate owns them. Tiferet considers the receiver and affected world: open
@@ -241,12 +242,12 @@ is shorter and easier to read. It has also lost the condition that made the appr
 More argument about the proposal cannot recover the omitted revision. The vessel needs repair:
 it must carry which version the judgment concerned.
 
-Different failures call for different returns. A disputed claim may need contrary evidence. A
-missing perspective may require a new question. A lost condition needs a form capable of carrying it.
-Compare what the sender supplied, what the packet preserved, and what the receiver actually
-used. Sometimes the attempt to express a distinction reveals that the sender never understood
-its limit. Insight and articulation can change from either side; no fixed assignment of repair
-to horizontal or vertical edges can settle the matter beforehand.
+Choose a repair by comparing what the sender supplied, what the packet preserved, and what the
+receiver actually used. A disputed claim may need contrary evidence; a missing perspective may
+need a new question; a lost condition needs a form capable of carrying it. Sometimes trying to
+express a distinction reveals that the sender never understood its limit. Insight and
+articulation can change from either side. Assigning repair to horizontal or vertical edges in
+advance would miss that discovery.
 
 Some missing contributions belong outside the inquiry. A simulated advocate may expose the
 need to hear a witness. It cannot supply that person's testimony or refusal. The [Many](../transcendence/infinity.md#v-formation)
@@ -267,10 +268,11 @@ it from Atzilut, Beriah, Yetzirah, and Asiyah, and describes circular and human-
 The metaphysical human form does not denote a physical person, and its appearance in another
 sefirotic diagram does not by itself identify that diagram with Adam Kadmon.
 
-For the Work, the correspondence asks whether purpose and relationships survive their
-articulation into specialized tasks. This whole is available only partially to its participants;
-consequences can revise their understanding. Adam Kadmon gives us that perspective on formation
-without installing an omniscient manager, a new Lich office, or another node above Keter.
+The Work takes from this correspondence a question about division of labor: do purpose and
+relationships survive when the undertaking becomes specialized tasks? Each participant knows
+the whole only partially, and consequences can revise that understanding. Adam Kadmon lets us
+examine formation from the whole's perspective without installing an omniscient manager, a new
+Lich office, or another node above Keter.
 
 #### A geometry of capacities { #geometry-of-capacities }
 
@@ -279,11 +281,11 @@ into a recognizable function; an edge carries what can change another function. 
 concerns organization and relation. Creation follows a task through it; learning, conversation,
 and repair can involve the same capacities with different evidence and endings.
 
-Intellect makes the relation intelligible; emotion gives it situated significance; action
-brings its proposed consequence into encounter. These planes remain mutually involved. A trial
-can change understanding, understanding can change what matters, and what matters can change
-which trial deserves effort. The next focus may therefore be a relation: what still prevents
-this purpose from receiving a justified form?
+The planes participate in one another. Intellect makes a relation intelligible, emotion gives it
+situated significance, and action brings its proposed consequence into encounter. A trial can
+change understanding; that understanding can change what matters; what matters can change which
+trial deserves effort. Follow those returns to find the next question: which relation still
+prevents this purpose from receiving a justified form?
 
 Binah may structure the alternatives, return to the chosen interface, then return again to a
 distinction exposed by review. The capacity recurs because the question has changed. Its answer
@@ -293,29 +295,37 @@ through a [concrete return](../../sepulcher/extensions/weaver/creation.md#repeat
 and specifies [which contributions can proceed together](../../sepulcher/extensions/weaver/creation.md#tree-relations-in-practice).
 The task's evidence supplies the dependency order.
 
-CHUK's [2013 *Anatomy Occultus*](https://chukart.blogspot.com/2013/08/anatomy-occultus.html)
-places the heart lotus, Anāhata, near Tiferet and the throat lotus, Viśuddha, near Da'at. This
-modern personal synthesis joins distinct maps of the human microcosm. We read its juxtapositions
-as questions: how does a fitting relation hold together, and how does recognition become
-expressible, shareable, and effective? Expression remains answerable to what is known. Eloquence
-alone cannot establish Da'at.
+The heart gives this geometry a question about significance: how does what matters change the
+composition and the act? Beside Tiferet, it asks how a fitting relation holds together. Beside
+Da'at, expression asks how recognition becomes shareable and effective. Expression remains
+answerable to what is known; eloquence alone cannot establish Da'at.
 
-The chakra comparison opens further questions without fixing a second set of exclusive slots.
+A comparison with chakras opens further questions without fixing a second set of exclusive slots.
 Pūrṇānanda's *Ṣaṭcakranirūpaṇa*, translated in Woodroffe's
 [*The Serpent Power*](https://verdict.org/library/kashmir-shaivism/the-serpent-power), orders six
 centers through earth, water, fire, air, ether, and subtle mind, with Sahasrāra above them.
-The Work can read crown / Keter, heart / Tiferet, and earth-base / Malkhut together. Maṇipūra's
+The Work can read crown / Keter, Anāhata's heart / Tiferet, and earth-base / Malkhut together. Maṇipūra's
 fire suggests transformative agency; Viśuddha's throat and sound suggest disciplined expression;
 Ājñā's subtle manas opens a cognitive comparison wider than Binah alone. Svādhiṣṭhāna's
 generative region invites comparison with Yesod's connection and transmission, alongside
 Miller's procreative association. Desire and persistence can also bring Netzach into view.
-These are authored questions about function, with the source maps still distinct.
+These functional correspondences bring distinct maps into conversation.
 
 ### Relations within relations { #relations-within-relations }
 
 **Specialization need not amputate the other faculties.** An explorer needs enough judgment
 to notice a defeated premise; a critic needs enough imagination to propose a discriminating
 experiment. Each contribution needs an inner range wide enough to meet the others.
+
+**Agentic disintegration** names a failure of that participation: individually capable
+contributors drift into incompatible purposes or assumptions, and their local successes no
+longer compose a coherent whole. The Tree's proposed antidote is a geometry of mutual
+participation: each contribution remains able to question, support, and correct the others.
+
+**Keter → Malkhut** holds their common direction, from intent to manifestation,
+or *world of ideas → world of forms*. Purpose becomes intelligible, meets measure, acquires a
+testable body, and encounters consequences. Coherence depends on those relations remaining
+effective as the work differentiates and changes.
 
 The Hasidic exposition of **hitkalelut** describes a developed sefirah as including aspects of
 the others while retaining its distinctive emphasis. Difference survives mutual inclusion.
@@ -331,9 +341,9 @@ an organizational meaning: a specialized contribution retains complementary capa
 which the wider work becomes locally intelligible. Its participation carries relations and
 dependencies, while unknown facts and another center's experience still require encounter.
 
-The correspondence invites us to examine an Agent's differentiated participation. It requires
-no ten workers nested inside every worker. Four failures show why these relations matter to
-the design:
+At the agentic scale, examine whether a specialized contribution can still receive what the
+others know. This correspondence requires no ten workers inside every worker. The following
+failures show what is lost when the relations cease to work:
 
 | Relation | What fails when its contributions cannot answer one another? |
 | --- | --- |
@@ -359,12 +369,12 @@ integrations of diagram and explanatory text, including the reciprocal relation 
 sefirotic order and worldly activity. A bare ten-node picture leaves the action of its
 relations unstated.
 
-In our graph, an edge must say what crosses it: evidence, an objection with a defeat condition,
-acceptance of a handoff, or a proposal to reopen the question. The receiving worker may discover
-that the assigned question itself is wrong. That finding can propose a successor Inquiry under
-the proper owner; it cannot silently rewrite the present Scroll. The
-[Ouroboros return](../../sepulcher/extensions/weaver/ouroboros.md) can change what is being asked
-as well as improve an answer.
+Give each edge in our graph a meaning: it may carry evidence, an objection with a defeat condition,
+acceptance of a handoff, or a proposal to reopen the question. A receiver may even discover that
+the assigned question is wrong. Under the proper owner, that finding can propose a successor
+Inquiry; it cannot silently rewrite the present Scroll, because that would lose the distinction. The
+[Ouroboros return](../../sepulcher/extensions/weaver/ouroboros.md) can therefore change what is
+being asked as well as improve an answer.
 
 ### The inner instrument crosses the Tree { #the-inner-instrument }
 
@@ -466,10 +476,11 @@ what consequence can change on return.
 
 What can a known relation let us reconstruct?
 
-A contribution can expose the question its counterpart must answer. Supplying that answer is
-another matter. **Symmetry** asks what remains invariant under a specified transformation.
-**Complementarity** asks how different contributions require one another. **Reciprocity** asks
-how a return can revise the participants or their question.
+A known relation can tell us which question a counterpart must answer. It cannot always supply
+the answer. To see where reconstruction is warranted, separate three questions. **Symmetry**
+asks what stays invariant under a specified transformation. **Complementarity** asks how different
+contributions need one another. **Reciprocity** asks how their return can revise the participants
+or the question.
 
 Draw three points to the left of a vertical axis. Given reflection across that axis, their
 partners on the right are determined. The axis and rule do essential work: the points alone
@@ -496,21 +507,21 @@ question uncovers a neglected concern; a reciprocal reply corrects assumptions o
 next probe; support and measure regulate effort; synthesis composes a form that answers the
 relevant opportunities and constraints.
 
-Begin with a participant's **Posture**. Preserve the question, common evidence, acceptance
-criteria, and authority; change which consequence receives attention and what would defeat
-its recommendation. “What could this make possible?” invites “under which conditions would
-this fail?” Both may recommend the same bounded trial. The counterpart protects a concern,
-without committing to the opposite answer.
+A participant's **Posture** lets us vary attention while keeping the question, common evidence,
+acceptance criteria, and authority fixed. Change which consequence receives attention and what
+would defeat the recommendation. “What could this make possible?” can meet “under which
+conditions would this fail?” Both may recommend the same bounded trial: the counterpart protects
+a concern without having to recommend the opposite answer.
 
 The meaning of a relation determines what to ask. Insight invites articulation, persistence
 invites acknowledgment, and a handoff invites its recipient's account of whether it can be
 used. Some questions need more than two perspectives. Rebuttal is one useful return among them.
 
-Reciprocity begins when a reply addresses an actual contribution and can change the candidate,
-its experiment, or its refusal. Each consequential objection needs a disposition: accepted,
-defeated, unresolved, or outside the decision's scope. Its attribution survives; a defeated
-objection need not retain a permanent veto. Tiferet may discover a form neither participant
-initially proposed.
+An exchange becomes reciprocal when the reply addresses an actual contribution and can change
+the candidate, its experiment, or its refusal. Give every consequential objection a disposition:
+accepted, defeated, unresolved, or outside the decision's scope. Keep its attribution after the
+decision. A defeated objection need not retain a permanent veto, and Tiferet may discover a form
+neither participant originally proposed.
 
 In this reading, “the whole Tree is lit” means that every declared relation has been accounted
 for: what it supplied, what received it, and what remains unknown. It cannot certify that every possible

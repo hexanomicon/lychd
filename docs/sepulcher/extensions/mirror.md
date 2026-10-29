@@ -46,11 +46,12 @@ retain their separate owners. Eligible identity-scoped memory may enter hydratio
 
 ## III. Attribution Without Laundering
 
-An attribution envelope separates initiating and approving principals from delegate or actor,
-Persona, AgentSpec, Posture, Sigil, exact workflow revisions, human and machine producers, sources,
-tools, and artifact handoffs. When another application consumes an artifact, the producer stays
-on it. The consumer begins a separately admitted Invocation with its own binding. Human edits
-and rejected branches retain their authorship; selecting a result cannot launder its origin.
+Follow an artifact through two applications. Its first attribution envelope distinguishes the
+initiating and approving principals from delegate or actor, Persona, AgentSpec, Posture, Sigil,
+exact workflow revisions, human and machine producers, sources, tools, and handoffs. When a second
+application consumes it, the original producer remains on the artifact. The consumer opens its
+own separately admitted Invocation and binding. Selection cannot rewrite origin: human edits
+and rejected branches retain their authorship as well.
 
 A **spotless** Mirror keeps provenance clear enough to show the stain: exact origins and
 revisions, ruptures, contradictions, corrections, and rejected branches remain visible. Clarity
@@ -64,8 +65,8 @@ cannot substitute for them.
 
 ## IV. Summoning and Hydration {#v-summoning-and-hydration}
 
-Hydration brings the admitted Pattern's exact Persona revision—or explicit absence—together
-with Pattern and AgentSpec requirements, active Principal and Sigil, and eligible identity-scoped
-memory. It produces bounded, ordered identity Context and a hydration receipt. A fresh or resumed
-Agent remains pinned to that revision. Sounding like yesterday's speaker does not establish who
-is speaking today.
+To prepare an Agent, hydration takes the Persona revision pinned by the admitted Pattern—or its
+explicit no-Persona choice—and combines it with Pattern and AgentSpec requirements, active
+Principal and Sigil, and eligible identity-scoped memory. It produces ordered identity Context
+within bounds and a receipt recording that construction. Fresh and resumed Agents keep the
+pinned revision. Resemblance to yesterday's voice cannot supply the missing binding.

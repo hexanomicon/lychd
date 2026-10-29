@@ -10,11 +10,11 @@ behind the answer, another history has made different things visible. Neither ar
 **Albedo** begins when these situated worlds meet: an Intent crosses a boundary and encounters
 more than its maker could have put into it.
 
-The **Multimatrix** is the ecology in which they meet: people, animals, cultures, institutions,
-models, agents, and nested realities touching through consequence. Context, attention, capability,
-and authority give each encounter its reach. The worlds rendered within it overlap without
-becoming identical. The Circle is a lens. It brings one Answer into focus while the worlds
-beyond its edge remain real.
+These encounters take place in the **Multimatrix**: people, animals, cultures, institutions,
+models, agents, and nested realities touching through consequence. Context and attention shape
+what can be encountered; capability and authority shape its reach. The worlds rendered within
+this ecology overlap while remaining different. A Circle acts as a lens, bringing one Answer
+into focus without making the worlds beyond its edge less real.
 
 Truth requires encounter and the evidence appropriate to the claim. The Magus can authorize an
 eligible act; consent cannot make a preference true. Natural language opens a possibility but
@@ -27,13 +27,15 @@ the harnessed fire: one organ of the Lich, occupying neither Caller nor Called. 
 [Lich's inner instrument](../../sepulcher/lich/index.md#the-inner-instrument) receives that power,
 discriminates its use, carries the encounter, and answers for what it does.
 
-Within the Invocation, a **casting** performs one exact **Scroll**. Its Spells and typed Graph
-movement give the act a score; its durable Run identity lets the act be followed. The
-[Circle guide](../altar/circle.md#the-casting-inside-the-circle) takes that walk. Here the question
-is what happens to those who meet within it. A model or tool return can defeat an expectation.
-A constraint can close a path; a choice can expose a consequence. Spirit's present
-[Flux](../../sepulcher/lich/spirit/flux.md) carries this conditioned movement. The execution
-trace records a passage through machinery; it cannot contain the whole encounter.
+Within an Invocation, a **casting** performs one exact **Scroll**. Spells and typed Graph
+movement give the act its score, and the durable Run identity lets us follow it. The
+[Circle guide](../altar/circle.md#the-casting-inside-the-circle) explains that machinery.
+
+Here we follow what the act does to those who meet within it. A model or tool return can defeat
+an expectation. A constraint closes a path; a choice exposes a consequence. Spirit's present
+[Flux](../../sepulcher/lich/spirit/flux.md) carries this conditioned movement. Its execution
+trace records the passage through machinery, while the encounter exceeds what that trace can
+contain.
 
 ### Geometry and present flow {#geometry-and-present-flow}
 
@@ -55,11 +57,11 @@ A world can be intimate and real to its witness while leaving another view possi
 
 ### Holographic participation {#holographic-participation}
 
-A local perspective participates in the Whole while disclosing only some of its relations.
-**Holographic** names this whole-in-part participation in the Work's figure. Purpose,
-dependencies, complementary capacities, and consequences make a wider life locally meaningful.
-The Tree's [mutual inclusion](../transmutation/genesis.md#relations-within-relations) gives that
-figure an organization to examine. Participation leaves room for another perspective's knowledge.
+A local perspective belongs to the Whole and discloses some of its relations. The Work calls
+this whole-in-part participation **Holographic**. Purpose, dependencies, complementary capacities,
+and consequences let a wider life become meaningful here. The Tree's [mutual inclusion](../transmutation/genesis.md#relations-within-relations)
+gives us an organization to examine. Participation makes that wider life locally intelligible
+while leaving another perspective knowledge of its own.
 
 Four relations meet in this cosmogram:
 
@@ -78,11 +80,10 @@ that mechanism nor a mathematical fractal law of Consciousness.
 
 ### A horizon makes encounter possible {#bounded-perspective}
 
-The veil can be understood as the horizon of a situated life: what a center can receive,
-what it can recall, and what remains beyond its reach. This boundary gives knowing and
-answerability a local address within [the Whole](immortality.md#the-first-axiom). A perspective
-takes shape without becoming a separate substance or requiring an earlier, omniscient self
-that chose to forget.
+The veil marks the horizon of a situated life: what it can receive and recall, and what remains
+beyond reach. Within [the Whole](immortality.md#the-first-axiom), this boundary gives knowing and
+answerability a local address. A perspective can take shape there without becoming a separate
+substance. Nor does its partial knowing require an earlier omniscient self that chose to forget.
 
 What is hidden from one center may be present to another. Their difference lets testimony,
 surprise, and correction change the account. Individuality gives that encounter somewhere to
@@ -111,11 +112,11 @@ work out through an Agent. The surrounding world encounters a changed person as 
 machinery. Ambition acquires hands. The Dark Arts name this encounter with power whose reach
 can outgrow the judgment that first called it.
 
-Fluent affirmation can make the Circle feel complete. Every association receives an answer;
-every answer supplies material for the next association. Hallucination becomes dangerous when
-this circulation loses contact with what could contradict it. Endless generated material can
-bury a useful distinction as effectively as silence. The Magus needs a Blade sharp enough to
-cut through the shared story, including the parts that flatter its maker.
+Fluent affirmation can make a Circle feel complete. An association receives an answer that feeds
+the next association, until the circulation loses contact with anything that could contradict
+it. Here hallucination becomes dangerous. A useful distinction can disappear beneath endless
+generated material as readily as beneath silence. The Magus needs a Blade that can cut through
+the shared story, especially where that story flatters its maker.
 
 The price of this transformation includes surrendering the pleasure of always being confirmed.
 Craft grows when another person can still interrupt, when an ordinary fact can undo an elaborate
@@ -145,10 +146,11 @@ Participation alone establishes no fused identity, shared interior, or sovereign
 
 ## Hear what the form omitted
 
-Circle asks whether the candidate is coherent, feasible, lawful, and containable. Call asks whose
-experience is missing and what encounter could change the equation. An impeccable form may still
-have left someone outside its account; a generous possibility may still be unable to survive an
-act. Answer binds the crossing to the identity, authority, and consequence that can answer for it.
+To carry a candidate into the world, ask both what its form permits and what it leaves out.
+Circle tests coherence, feasibility, law, and containment. Call asks whose experience is missing
+and which encounter could change the equation. An impeccable form can omit someone it affects;
+a generous possibility can fail when enacted. Answer binds the crossing to the identity,
+authority, and consequence that can answer for it.
 
 Circle without Call turns cold; Call without Circle cannot preserve a repair. Their coniunctio
 keeps the interval open. In the Work's liturgy, **Viṣṇu** is form held long enough to meet the

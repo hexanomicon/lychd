@@ -28,10 +28,10 @@ keep those effects. Evaluation is evidence offered to policy, never policy disgu
 
 ## The declared goal
 
-The requesting owner expresses the goal through a Case's expected and forbidden behavior and a
-Rubric's criteria, thresholds, and missing-evidence policy before the trial. Applicable authority,
+Before a trial, its requesting owner states expected and forbidden behavior in the Case and
+criteria, thresholds, and missing-evidence policy in the Rubric. Applicable authority,
 constraints, and permitted effects remain part of the trial conditions. Drift evaluates that
-contract; its findings cannot revise the goal or authorize a method of reaching it.
+declared contract. Its findings cannot revise the goal or authorize a way of reaching it.
 
 Deviation from the goal may be categorical, qualitative, or measured along separate axes. A first
 trial needs no earlier version or time series: its reference is the declared goal. Baseline/candidate
@@ -125,13 +125,13 @@ shows how to prepare that comparison.
 
 ### Evidence of recursive improvement
 
-A recursive-improvement claim identifies the changed mechanism and its exact baseline/candidate
-revisions, motivating evidence, adoption decision and later improvement attempt that actually used
-it. This establishes structural reuse. An effectiveness claim additionally compares the successors
-produced by the original and revised mechanisms from comparable starting subjects and evidence,
-under matched total budgets and independent evaluation. Retain transfer results, regressions,
-uncertainty and stopping decisions alongside improvement across rounds. A better task artifact
-alone cannot establish a better mechanism for producing future improvements.
+A recursive-improvement claim must show reuse of a changed mechanism: exact baseline/candidate
+revisions, motivating evidence, adoption decision, and a later improvement attempt that actually
+used it. Showing effectiveness requires a further comparison. Compare the successors produced
+by original and revised mechanisms from comparable starting subjects and evidence, under matched
+total budgets and independent evaluation. Keep transfer results, regressions, uncertainty, and
+stopping decisions alongside improvement across rounds. A better task artifact alone does not
+establish a better mechanism for future improvements.
 
 Development feedback remains separate from protected assessment. Revising an Evaluator creates
 a separately calibrated candidate and new Outcomes; the subject cannot redefine its own acceptance
@@ -160,11 +160,11 @@ without making one local or frontier win universal routing authority.
 
 ## Evaluation before and after training
 
-Soulforge pins any proposal to expected change, baseline Outcomes, holdout evidence, and
-unacceptable regressions. Post-training work uses that contract or makes every change visible;
-training-facing improvement cannot promote. Drift returns evidence, neither selects corpus nor
-registers model; passing an identity/behavior Trial Suite grants no Persona, Sigil, tool, or privileged
-route.
+Soulforge defines a training proposal's expected change, baseline Outcomes, holdout evidence,
+and unacceptable regressions. Post-training evaluation uses that contract or makes every change
+visible; training-facing improvement cannot promote a candidate. Drift returns evidence without
+selecting a corpus or registering a model. Passing an identity/behavior Trial Suite grants no
+Persona, Sigil, tool, or privileged route.
 
 ## Returning findings across a Composition Suite
 

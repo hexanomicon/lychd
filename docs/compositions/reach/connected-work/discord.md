@@ -40,12 +40,14 @@ before wider distribution.
 
 ## Intake, reply and interruption
 
-Receive both mentions and interactions over an outbound Gateway for the first deployment road.
-Gateway resumes use session id, resume URL and sequence, but can fail; record an explicit gap
-rather than promise complete history. Deduplicate by application/connection plus interaction or
-message identity and content version; session sequence is transport evidence, not a replacement
-for object identity. Commit admitted work before advancing its processing checkpoint. Discard
-non-trigger content before persistence, and ignore self/bot/webhook loops under explicit policy.
+The first deployment receives mentions and interactions over an outbound Gateway. On reconnect,
+resume with the session id, resume URL and sequence. If resume fails, record the gap rather than
+claiming complete history.
+
+For each event, deduplicate by application/connection plus interaction or message identity and
+content version. A session sequence describes transport order and cannot replace object identity.
+Commit admitted work before advancing its processing checkpoint; discard non-trigger content before
+persistence and apply explicit policy to ignore self/bot/webhook loops.
 [Gateway resume](https://docs.discord.com/developers/events/gateway#resuming)
 
 Interactions require an acknowledgement or deferral within **three seconds**, and their tokens
@@ -113,13 +115,15 @@ service. Its native envelope carries:
 | Place and audience | Exact qualified connection/conversation references and admission-time audience evidence in the protected Reach record. Default Orb detail contains no platform account, channel, user or role identities. |
 | Receipt | Exact intake or delivery receipt reference, with no message body, prompt, token, raw error or canonical private-content hash in structural evidence. |
 
-`received` witnesses intake before policy admission; `admitted` follows a successful native gate.
-An egress `attempting` observation follows a committed, fenced physical-attempt claim and precedes
-transmission. `sent`, `rejected` and `unknown` require its matching transport receipt. `reply`
-means a received message has passed the exact outstanding-question correlation and admission;
-it does not establish that its assertions are true. Cancellation after provider acceptance cannot
-rewrite that earlier observation as unsent. Malformed, missing or unsupported observations stay
-unclassified or unavailable rather than acquiring an inferred phase.
+The phases describe observations at specific boundaries. `received` witnesses intake before
+policy admission, while `admitted` follows a successful native gate. On egress, record `attempting`
+only after committing a fenced physical-attempt claim and before transmission. A matching
+transport receipt is then required for `sent`, `rejected` or `unknown`.
+
+Use `reply` only when a received message passes the exact outstanding-question correlation and
+admission. It says nothing about the truth of the answer's assertions. Later cancellation cannot
+turn an earlier provider acceptance into an unsent message. If an observation is malformed, missing
+or unsupported, leave it unclassified or unavailable instead of inferring a phase.
 
 Reach's proposed pure presentation contribution maps validated records to a closed Discord icon,
 an ingress/egress arrow, fixed phase/outcome text and optional authorized channel label. The browser
@@ -127,11 +131,12 @@ cannot supply an icon URL, HTML, phase or destination. Channel labels are bounde
 and rendered as text; absent disclosure authority yields a generic channel label. Run-read access
 alone does not disclose private channel names or resolve protected participant references.
 
-The Orb DTO carries only that authorized decoration and opaque correlation. The same decoration
-appears on the retained evidence row, selected-event inspector and folded graph record. It uses
-shape, direction and text together, preserves Run sequence, gaps and occurrence membership, and
-respects reduced motion. Playback shows only records through its supplied cursor. A glow marks an
-observation, not continuous connectivity or successful delivery; no synthetic edges imply causality.
+Carry only the authorized decoration and opaque correlation in the Orb DTO. Show that same
+decoration on the retained evidence row, selected-event inspector and folded graph record, using
+shape, direction and text together and respecting reduced motion. These views must preserve Run
+sequence, gaps and occurrence membership; playback shows only records through its supplied cursor.
+A glow marks the observation itself. It cannot imply continuous connectivity or successful delivery,
+and synthetic edges must not imply causality.
 
 ### Ask a named maintainer from Bridge (Proposed)
 
@@ -139,27 +144,32 @@ A Lich working in Bridge may propose one bounded question to explicitly designat
 maintainers. Selection uses operator-maintained expertise and exact admitted participant mappings;
 a Discord name, role, model guess or previous helpful reply cannot grant that authority.
 
-Before sending, Reach retains the originating Run/occurrence, purpose, exact connection,
+To prepare the question, Reach retains its originating Run/occurrence, purpose, exact connection,
 guild/channel/thread, recipient set, question bytes, disclosure class, expiry and finite answer
-budget. A current authenticated Sigil must authorize that audience and effect. The exact review or
-standing-policy binding follows [HitL](../../../adr/25-hitl.md#required-review-for-native-actions-designed)
-and is rechecked with current account, policy and revocation generations immediately before the
-physical attempt. Preparing a question cannot enqueue the operator's local publication queue.
+budget. Before sending, a current authenticated Sigil must authorize that audience and effect.
+Bind the exact review or standing policy according to
+[HitL](../../../adr/25-hitl.md#required-review-for-native-actions-designed), then recheck it against
+current account, policy and revocation generations immediately before the physical attempt.
+Preparing this question grants no ability to enqueue the operator's local publication queue.
 
-The admitted workflow commits its delivery intent/outbox before the credential owner sends.
-A declared durable wait retains the outstanding question and releases model/worker leases. An
-ordinary Discord answer is evidence, not a Consent verdict, peer task or instruction to resume an
-unrelated Run. Return intake must match the selected connection, exact channel/thread and sent
-message reference, an admitted responder, deadline and unconsumed question generation. Duplicate,
-late, edited, wrong-person and wrong-thread returns have explicit refusal or revision semantics;
-Gateway replay cannot consume the answer budget twice.
+The admitted workflow commits its delivery intent/outbox before the credential owner sends. It
+then retains the outstanding question in a declared durable wait and releases model/worker leases.
+When an answer arrives, match its selected connection, exact channel/thread and sent message
+reference, admitted responder, deadline and unconsumed question generation. Specify refusal or
+revision semantics for duplicate, late, edited, wrong-person and wrong-thread returns; Gateway
+replay cannot consume the answer budget twice.
 
-The accepted reply becomes bounded, attributed, hostile source material for the exact waiting
-work. Its source identity and permitted audience survive Context assembly; it is not automatically
-Memory, a teaching operation or authority to publish elsewhere. Native re-admission rechecks the
-current Sigil and disclosure before resuming. If the send remains unknown, the workflow retains
-that uncertainty and reconciles without another automatic question. No unanswered question,
-model confidence or reply content starts a follow-up loop.
+Even a matching Discord answer remains evidence. It is neither a Consent verdict nor a peer task,
+and it cannot instruct an unrelated Run to resume.
+
+Give the exact waiting work the accepted reply as bounded, attributed, hostile source material.
+Preserve its source identity and permitted audience through Context assembly, and recheck current
+Sigil and disclosure during native re-admission before resuming. Acceptance does not automatically
+turn the reply into Memory, a teaching operation or authority to publish elsewhere.
+
+If the original send remains unknown, retain that uncertainty and reconcile it without asking
+another automatic question. An unanswered question, model confidence or the contents of a reply
+cannot start a follow-up loop.
 
 ### Implementation order and falsifying checks
 

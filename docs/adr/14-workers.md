@@ -11,6 +11,10 @@ icon: material/excavator
 
 ## Topology and limits
 
+A Run is the canonical workflow record. A worker is the long-lived SAQ engine, and a Ghoul is
+one task invocation; several sequential Ghouls may carry one Run. Queueing lets that work outlive
+a request without providing process isolation.
+
 The Vessel runs two fixed PostgreSQL SAQ workers, `runs` and `rites`, in its single process and
 event loop (`separate_process=False`, no SAQ server lifespan). The application constructs these
 workers explicitly and does not register the raw Litestar `workers run` process launcher.
@@ -37,11 +41,9 @@ Occurrence truth rather than occupy a Ghoul while sleeping for its window.
 registered as broker-callable work, because an invocation without that process boundary could
 misclassify live current-boot Runs as orphans.
 
-A worker is a long-lived SAQ engine; a Ghoul is one task invocation; a Run is the canonical
-workflow record and may require sequential Ghouls. Queueing separates request life from work; it
-does not provide process isolation. Tomb has no delivered queue, executor, credentials, workspace,
-or cancellation protocol. [State of Work](../state-of-the-work.md#tomb-untrusted-execution) owns
-that boundary.
+Tomb still has no delivered queue, executor,
+credentials, workspace, or cancellation protocol. [State of Work](../state-of-the-work.md#tomb-untrusted-execution)
+owns that delivery boundary.
 
 ## Admission and exact claim
 
@@ -268,9 +270,10 @@ its separate cancellation shield.
 
 ### Live hardware waits
 
-Hardware stasis is different: the same Ghoul checkpoints, marks `AWAITING_HARDWARE`, awaits a
-bounded orchestrator transition, returns to `RUNNING`, and resumes from persistence. It holds no
-capability lease while waiting but still occupies its worker task.
+During hardware stasis, the Run keeps the same Ghoul. That Ghoul checkpoints, marks
+`AWAITING_HARDWARE`, awaits a bounded orchestrator transition, returns to `RUNNING`, and resumes
+from persistence. It holds no capability lease while waiting but continues to occupy its worker
+task, unlike a durable consent or delegated wait.
 
 ## Cancellation, mutation, and recovery
 
@@ -366,10 +369,10 @@ exponential backoff capped at five seconds. Delegated and consent probes share t
 reconciliation paths with startup; a verdict or terminal child committed after an earlier clean
 probe is therefore re-fired without requiring another process restart.
 
-These relays are not generic SAQ retry: Graph effects remain
-fenced by claim sequence and their own idempotency law. There is still no periodic workflow
-scheduler or public failed-Run retry. Recovery exists only at declared checkpoints; uncheckpointed
-process death is failed, never guessed forward.
+Recovery stops at declared checkpoints. The relays preserve Graph effects' claim-sequence
+fences and idempotency law; they do not provide generic SAQ retry, a periodic workflow scheduler,
+or public failed-Run retry. Uncheckpointed process death is recorded as failure rather than
+guessed forward.
 
 ### Shutdown order and deadline
 
@@ -377,11 +380,11 @@ Shutdown cancels all maintenance relays and stops every in-process worker before
 queue pools are dismantled. A relay timeout or worker-stop failure raises and leaves those shared
 dependencies live.
 
-Returning from a worker's stop method is insufficient when a captured worker
-task remains live; teardown must not manufacture use-after-close behavior in a task whose stop was
-never proved. Lifespan therefore owns both each worker's stop coroutine and SAQ's captured launcher
-task, cancels the launchers, and proves every observed worker task ended under one 30-second
-deadline.
+Teardown must prove that worker tasks have ended before closing what they use. A stop method's
+return is insufficient if its captured worker task remains live. Lifespan therefore owns both
+the stop coroutine and SAQ's captured launcher task, cancels the launchers, and proves every
+observed worker task ended under one 30-second deadline. Otherwise teardown would manufacture
+use-after-close behavior.
 
 Queue teardown then attempts every configured disconnect and reports the grouped failures
 instead of abandoning later pools after the first error. Cancellation is retained but deferred until
@@ -496,12 +499,11 @@ retained launch. Malformed, incomplete, conflicting or oversized protocol output
 success; a timeout requires containment before terminal classification. Neither adapter is
 registered by default, and no subprocess launcher or Provider Gate bridge is delivered.
 
-Every poll and containment call receives the exact store-retained request alongside the job
-reference. The coordinator supplies that request from its current authoritative read. The reviewed
-CLI protocols receive exactly its prompt encoded as UTF-8 stdin; lookup and cancellation never
-recreate a submission. The Python adapter port requires the retained-request argument for both
-operations; built-ins change atomically under
-[Extension compatibility](05-extensions.md#7-extension-compatibility-tiers).
+Polling and containment use the exact store-retained request with its job reference. The
+coordinator obtains that request from its current authoritative read. For the reviewed CLI
+protocols, the prompt is exactly its UTF-8 stdin; lookup and cancellation never recreate a
+submission. Both operations require the retained-request argument on the Python adapter port,
+and built-ins change atomically under [Extension compatibility](05-extensions.md#7-extension-compatibility-tiers).
 
 ### Versioned CLI intent and owner binding
 
@@ -675,10 +677,10 @@ after a known disposition. Failed locking, observation, or settlement remains an
 unresolved failure with the initiating write failure or interruption retained as context.
 These rules neither reopen `LOST` nor replace owning-runtime containment.
 
-There is no Rite registry or Rite handler. The former no-effect `perform_rite` placeholder has been
-removed, and background work on `rites` is ordinary `perform_run` execution. Any future registry
-needs typed identifiers, extension provenance, payload schema, authorization, idempotency, queue
-policy, and settlement.
+Background work on `rites` now uses ordinary `perform_run` execution; the former no-effect
+`perform_rite` placeholder has been removed. There is no Rite registry or Rite handler. Admitting
+one later would require typed identifiers, extension provenance, payload schema, authorization,
+idempotency, queue policy, and settlement.
 
 ## Consequences
 

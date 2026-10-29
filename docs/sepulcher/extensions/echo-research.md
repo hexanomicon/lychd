@@ -17,8 +17,9 @@ and [local qualification](echo-local-probe.md) owns the first experiment.
 | STT | [Parakeet TDT 0.6B v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) through audio.cpp | Declares `sk`, `cs`, `en` among 25 languages; automatic detection; CC BY 4.0 weights. | Names, numbers, short fragments, noise and language switching require independent recordings. |
 | TTS | [Supertonic 3](https://huggingface.co/Supertone/supertonic-3) through audio.cpp | Declares `sk`, `cs`, `en` among 31 languages; stock `M1`–`M5` and `F1`–`F5` voices; OpenRAIL-M weights. | Original upstream [development and support ended](https://github.com/supertone-oss-archive/supertonic); stock voices still require listening and pronunciation review. |
 
-The runtime's Apache 2.0 license and the model licenses are separate. Local execution alone does
-not make model weights unrestricted open source. Neither selected profile needs voice cloning.
+Treat the runtime and weights as separate selections. The runtime uses Apache 2.0, while each
+model has its own license; running locally does not make those weights unrestricted open source.
+Neither selected profile requires voice cloning.
 
 Another local TTS candidate is [OHF Piper](https://github.com/OHF-Voice/piper1-gpl), whose engine
 uses GPL-3.0. Its [voice guide](https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md)
@@ -75,10 +76,12 @@ uses `sk`, `cs` and `en`. The engineering profile requires an explicit declared 
 than relying on the server's default English setting. A CPU build disables accelerator backends
 and starts with `--no-gpu`; short-command latency still needs local measurement.
 
-The current candidate does not justify replacing one recognizer with another globally. Compare
-the same immutable recordings, preserve refusals, and test server text framing independently of
-word recognition. [State of Work](../../state-of-the-work.md#audio-admission) owns measured
-delivery and its remaining human checks.
+Use the candidate to run a matched comparison before deciding whether to replace a recognizer.
+Give both recognizers the same immutable recordings, retain refusals, and test server text framing
+separately from word recognition. That separates a change in transport formatting from a change
+in what speech the model recognizes. [State of Work](../../state-of-the-work.md#audio-admission)
+owns measured delivery and the remaining human checks; this candidate alone cannot justify a
+global replacement.
 
 ## Hosted alternatives
 
@@ -124,12 +127,13 @@ cold loading during play; thread count, idle unload and GPU placement still need
 Optimize the whole path, including capture duration, Graph scheduling and game response, rather
 than reporting inference time as microphone-to-action latency.
 
-The companion's fixed-word text grammar and speech recognition are separate checks. A generated
-voice can pronounce a word poorly, a recognizer can misread it, and a correct transcript can
-still fall outside the declared grammar. Preserve the original transcript and refusal instead
-of mapping a similar-sounding word to a world action. The current
-[synthetic command qualification](../../state-of-the-work.md#composition-portfolio-delivery)
-includes failed SK/CS/EN examples; its TTS→STT round trips cannot attribute those failures to
-one model or establish human accuracy. The next human comparison should reuse exact recordings
-across recognizers and exact text across synthesizers, with a listener scoring pronunciation
-separately from parsing and local elapsed time.
+When a command fails, distinguish three stages: the generated voice may pronounce the word
+poorly, the recognizer may misread it, or a correct transcript may fall outside the companion's
+declared fixed-word grammar. Preserve the original transcript and refusal so those causes remain
+investigable; do not map a similar-sounding word to a world action.
+
+The current [synthetic command qualification](../../state-of-the-work.md#composition-portfolio-delivery)
+includes failed SK/CS/EN examples. Its TTS→STT round trips cannot identify one model as the cause
+or establish human accuracy. The next human comparison should therefore reuse exact recordings
+across recognizers and exact text across synthesizers. A listener scores pronunciation separately
+from parsing and local elapsed time.

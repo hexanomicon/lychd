@@ -57,14 +57,16 @@ loopback possession credential must not be copied into the client or exposed ove
 
 ## Local state and custody
 
-Bridge state and fixture records are memory-only. A successful submission has a fresh request
-UUID, then the client reads the session snapshot. Missing or malformed acknowledgement marks
-the outcome unknown and blocks further sends in that session. Refresh cannot prove the missing
-outcome by matching text. An explicit new session clears that local latch; the fixture does not
-provide a durable request lookup. Cancellation, background invalidation, new session and close
-fence stale responses. Explicit presentation-context replacement also clears the local projection,
-including history, draft and review state. Disposal does not settle the original external outcome.
-There are no automatic retries.
+Bridge state and fixture records live only in memory. A submission uses a fresh request UUID;
+after success, the client reads the session snapshot. If acknowledgement is missing or malformed,
+mark the outcome unknown and block further sends in that session. Matching text during Refresh
+cannot prove the missing outcome. An explicit new session clears this local latch, but the fixture
+has no durable request lookup.
+
+Cancellation, background invalidation, new session and close fence stale responses. Explicit
+presentation-context replacement also clears history, draft and review state from the local
+projection. Disposing of that state does not settle the original external outcome, and there are
+no automatic retries.
 Caller cancellation propagates through transport and local interaction while an unacknowledged
 submission remains unknown. The transport's own 15-second deadline is a bounded request failure;
 it does not turn a cancelled caller into a successful return.
@@ -93,14 +95,15 @@ object authorization or profile management.
 
 ## Audio custody
 
-Audio files live only in the app's `noBackupFilesDir/companion-recordings` directory. The manifest
-disables backup and supplies explicit cloud/device-transfer exclusions. Cancel closes capture
-and attempts to remove partial or unclaimed completed recordings; a bounded retry guard blocks
-new capture when disposal fails. A successful stop transfers file cleanup to the interaction
-controller.
-Background/discard attempts deletion of its transferred recording. A failed deletion is visible,
-retained for bounded retry and prevents another recording until cleanup succeeds. Overflow asks
-for a process restart so startup cleanup can recover the abandoned directory.
+Keep audio only in the app's `noBackupFilesDir/companion-recordings` directory. The manifest
+disables backup and explicitly excludes cloud/device transfer. During capture, cancellation
+closes the recorder and attempts to remove partial or unclaimed completed files. A bounded retry
+guard blocks another capture if disposal fails. Successful stop transfers file cleanup to the
+interaction controller.
+
+Background/discard then attempts deletion of that transferred recording. Make a failed deletion
+visible, retain it for bounded retry, and prevent another recording until cleanup succeeds.
+Overflow asks for a process restart so startup cleanup can recover the abandoned directory.
 At process startup, the recorder's IO initialization removes abandoned `capture-*.wav` files
 from an earlier process; the first recording waits for cleanup. This is ordinary file deletion,
 not a secure-erasure or flash-forensics guarantee. Partial/unclaimed and transferred-file cleanup
@@ -157,11 +160,13 @@ Then qualify the chosen live Ktor engine on the handset, wire the exact generate
 and connect Echo's bounded transcription/synthesis custody through the proposed Communion Suite.
 Only that sequence can establish the capture → reviewed words → host work → settled reply journey.
 
-The fixture's known-refusal classification cannot become live recovery policy. The current Altar
-Bridge can fail after admission while constructing its acknowledgement. Its acknowledgement also
-does not echo the request identity: the current client attaches that identity locally. Neither an
-HTTP status nor this locally attached value establishes an exact retained host outcome. Live work
-needs the owning host contract and tests for pre-admission refusal, post-admission failure, lost
+Before replacing the fixture with a live connection, establish how the host reports uncertain
+admission. Current Altar Bridge can fail after admission while constructing its acknowledgement.
+That acknowledgement also omits the request identity, which the current client attaches locally.
+Neither an HTTP status nor that local attachment establishes an exact retained host outcome.
+
+The fixture's known-refusal classification therefore cannot become live recovery policy. The
+owning host contract needs tests for pre-admission refusal, post-admission failure, lost
 acknowledgement and lookup in the original account/context.
 
 | Review follow-up | Required evidence |

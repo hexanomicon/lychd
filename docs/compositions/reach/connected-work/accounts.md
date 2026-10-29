@@ -49,25 +49,27 @@ confirmation. `DEGRADED` means transient service or quota failure; `REAUTH_REQUI
 revoked authorization; `SUSPENDED` means operator/provider policy denies work; `DISCONNECTED` closes
 the connection. Status distinguishes these from a disconnected host and from unknown deliveries.
 
-Authorization binds the authenticated local initiator, chosen provider/client, exact callback,
-short expiry, one-use state and PKCE where supported. Redeem and validate the grant only in the
-credential owner; confirm immutable provider identity before activation. Do not replace a refresh
-token with an absent value during reconnection. Concurrent refreshes serialize per connection;
-generation fencing prevents a late refresh from resurrecting a revoked grant.
+To authorize a connection, bind the authenticated local initiator to the chosen provider/client,
+exact callback, short expiry, one-use state and PKCE where supported. Only the credential owner
+may redeem and validate the grant, and activation must wait for confirmation of immutable provider
+identity. Reconnection must retain an existing refresh token when the response omits one. Serialize
+concurrent refreshes per connection and fence them by generation, so a late response cannot revive
+a revoked grant.
 
 Persist bearer tokens encrypted with separately scoped key custody. Configuration and database
 records carry secret references; prompts, checkpoints, logs and ordinary backups carry no usable
 bearer or decryption key. Restore must explicitly recover or reenroll the credential generation.
 
-Disconnect first closes admission and fences queued sends, then stops watches/subscriptions and
-retires only that connection's authorization, installation binding and derived tokens. Never revoke
-a shared Discord bot token or GitHub App signing key merely to disconnect one guild/repository
-installation. App-wide credential retirement is a separate administrative operation that enumerates
-and fences every affected connection. An already-submitted send remains subject to reconciliation.
-Content removal follows retention and holds; preserve the minimal lawful effect
-identity needed to prevent replay, without claiming that deletion can erase a recipient's copy.
-Reconnection confirms identity and policy again and cannot release an old pending send merely by
-making its token valid.
+Disconnect in custody order: close admission and fence queued sends first, then stop watches/
+subscriptions and retire that connection's authorization, installation binding and derived tokens.
+A shared Discord bot token or GitHub App signing key also serves other installations; disconnecting
+one guild/repository must not revoke it. Retiring an app-wide credential is a separate administrative
+operation that enumerates and fences every affected connection.
+
+Disconnection does not settle a send already submitted: that effect still needs reconciliation.
+Remove content according to retention and holds, preserving the minimal lawful effect identity
+needed to prevent replay. Deletion cannot erase a recipient's copy. On reconnection, confirm identity
+and policy again; a valid token alone cannot release an old pending send.
 
 ## What an update asks of the user
 
@@ -97,10 +99,11 @@ the authority refetches; it cannot assert an enrolled caller or receive private 
 Discord profiles remain unchanged and cannot become private-mail profiles through configuration
 flags. Shared signing keys and bot tokens require a separately bounded publisher service road.
 
-Before activation, the exact registered manifest must close services, secret references, sockets,
-outbound destinations, callback routes, resource limits, migrations, authority epochs, retention
-and restart/compromise recovery. Moving custody fences the old generation and reconciles pending
-effects before activating the new owner. Secret rotation cannot make an uncertain send safe to repeat.
+Before activation, the registered manifest must specify the exact services, secret references,
+sockets, outbound destinations, callback routes, resource limits, migrations, authority epochs,
+retention and restart/compromise recovery. If custody moves, fence the old generation and reconcile
+pending effects before activating the new owner. Rotating its secret does not establish whether an
+uncertain send occurred and cannot make that send safe to repeat.
 
 The existing missing Ward, Composition selection, service-attempt and deployment prerequisites
 remain delivery gates, recorded in [State](../../../state-of-the-work.md#composition-portfolio-delivery).

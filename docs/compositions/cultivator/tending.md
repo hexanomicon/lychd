@@ -30,11 +30,11 @@ order; availability cannot weaken the reviewed culture requirements.
 
 ## Execution and results
 
-`cultivator.record_work@1` produces `CultivatorWorkEvent@1` and
-`CultivatorWorkResult@1`. Record the actual action, actor, effective and recorded
-times, quantity and unit uncertainty, evidence, plan reference, and outcome. Partial
-work retains its actual result and unresolved remainder. Stock use is reconciled and
-deduplicated by event; a plan or provision receipt does not imply consumption.
+After work, use `cultivator.record_work@1` to produce `CultivatorWorkEvent@1` and
+`CultivatorWorkResult@1`. Record what actually happened: action, actor, effective and recorded
+times, quantity and unit uncertainty, evidence, plan reference, and outcome. If only part was
+done, retain both the actual result and unresolved remainder. Reconcile and deduplicate stock
+use by that event; neither a plan nor a provision receipt establishes consumption.
 
 When Homestead supplies water, its actual resource limits remain decisive. Automatic actuation requires a separately
 admitted owner, current evidence, and applicable vetoes. A missing acknowledgment
@@ -46,10 +46,10 @@ request grants no general robot authority.
 
 ## Finite recovery
 
-A work attempt records completed, refused, infeasible, partial, unknown, or interrupted
-results as applicable. Restart uses event identity, owner evidence, and acknowledgments
-to establish what occurred before deciding further work. Cancellation settles only the admitted
-work and preserves any performed effect; disabling future schedule Occurrences is a separate act.
+Settle a work attempt as completed, refused, infeasible, partial, unknown, or interrupted, as
+applicable. On restart, use event identity, owner evidence, and acknowledgments to establish
+what occurred before deciding further work. Cancellation closes only that admitted work and
+preserves any effect already performed. Disable future schedule Occurrences separately.
 Cross-owner live recovery follows
 the [Suite boundary](../products-and-suites.md); settled receipt exchange alone does
 not require a Suite.

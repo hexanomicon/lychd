@@ -17,11 +17,11 @@ material, purpose, target namespaces, synthesis implementation and configuration
 resource limits. Missing authorization excludes the comparison source or destination. Similarity
 does not grant access to another person's or Persona's records.
 
-The output groups evidence into tentative claims, relations, contradictions, and proposed uses.
-Each proposal names its subject and receiving owner, exact proposed content or change, supporting
-and opposing source references, uncertainty, dependencies, and required review. A Persona-change
-proposal names its exact parent revision. A summary retains its derivation rather than becoming
-a substitute source.
+Group the selected evidence into tentative claims, relations, contradictions, and proposed uses.
+A reviewer must be able to assess each proposal on its own: name its subject and receiving owner,
+exact proposed content or change, supporting and opposing source references, uncertainty,
+dependencies, and required review. A Persona-change proposal also names its exact parent revision.
+Keep a summary's derivation available so the summary never substitutes for the source.
 
 The stage keeps three subjects distinct: the operator's preferences and history, the Lich's
 Persona and commitments, and dated facts about devices or software. A model-generated description
@@ -50,9 +50,10 @@ receiving owner's outcome. Local synthesis may finish while memory is accepted, 
 is refused, and training was never requested. An unknown downstream effect remains unknown until
 reconciled with that owner; a missing receipt is not permission to repeat the effect.
 
-Retries preserve fixed inputs and revision pins. Source changes or corrections create revised
-candidates and invalidate affected pending proposals. Past acceptances remain recorded; needed
-repairs are proposed to the responsible owner rather than silently rewriting its history.
+Retry an attempt against its fixed inputs and revision pins. If a source changed or was corrected,
+prepare a revised candidate and invalidate the affected pending proposals instead. Earlier
+acceptances remain in the record. Any repair they need must be proposed to the responsible owner,
+which retains authority over its own history.
 
 Budget exhaustion retains completed proposals and identifies unfinished work. Cancellation stops
 new synthesis and handoffs while preserving committed effects. Resumption must reconcile recorded

@@ -18,11 +18,12 @@ owns that delivery boundary.
 
 ## The default road
 
-For unattended work, Reach/public services, CI and A2A-backed applications, prefer one direct
-server API using a workload-issued API key, service account or workload identity. The initial
-profile calls one upstream directly. This conditional preference establishes neither an admitted
-profile nor a price winner. Every intermediary adds custody of request bytes, metadata,
-credentials and receipts, plus an availability dependency.
+For an unattended indexing job, begin by considering one direct server API with a workload-issued
+API key, service account, or workload identity. The same initial preference applies to Reach and
+public services, CI, and A2A-backed applications. One direct upstream keeps the custody question
+small: every added intermediary also receives request bytes, metadata, credentials or receipts,
+and adds an availability dependency. This is a conditional starting point, not an admitted
+profile or a claim that direct service is cheapest.
 
 Identify what the offered credential actually buys:
 
@@ -84,25 +85,28 @@ typed demand
 → reconcile usage, cost, custody, and terminal state
 ```
 
-A semantic retry, redirect, fallback, model substitution, gateway route change, or different
-destination is a new LychD-owned attempt with its own persisted identity and decision before any
-bytes leave. Exact transport redelivery may retain one attempt only when the adapter contract
-proves atomic server-side same-key/same-payload replay under the same sealed bytes, target, and
-external/idempotency identity—or proves no prior effect; every physical send still needs a fresh
-EgressDecision and bounded disclosure use. Crash
-or timeout after `SUBMITTING` otherwise performs lookup by that identity and remains
-`INDETERMINATE` when the provider cannot establish the effect; it never blindly resubmits.
-Disable gateway-internal
-automatic fallback, load balancing, and account/provider pooling; each eligible fallback member is
-a separate pinned attempt. An unplanned internal switch is an integrity fault with an indeterminate
-receipt, not successful resilience.
+If the indexing job retries semantically, redirects, falls back, substitutes a model, changes a
+gateway route, or chooses another destination, it begins a new LychD-owned attempt. Persist that
+attempt's identity and decision before sending bytes.
 
-A gateway's marketing name is not the producing provider. Label provider, model, region,
-retention, and training fields `gateway_asserted` unless independent signed or contractual evidence
-establishes them. TLS authenticates the gateway endpoint, not whatever it selected behind itself.
-When any of those facts is material to policy, require a direct provider road or separately
-verifiable routing evidence. If a route cannot disclose or constrain that chain, it cannot carry
-material whose policy depends on it.
+Exact transport redelivery can remain within the same attempt only if the adapter proves atomic
+server-side same-key/same-payload replay under the same sealed bytes, target, and external or
+idempotency identity, or proves there was no prior effect. Every physical send still needs a fresh
+EgressDecision and bounded disclosure use. Otherwise, after a crash or timeout in `SUBMITTING`,
+look up that identity. If the provider cannot establish the outcome, retain `INDETERMINATE`
+instead of resubmitting blindly.
+
+Disable a gateway's automatic fallback, load balancing, and account/provider pooling. Each
+eligible fallback member needs its own pinned attempt. An unplanned internal switch breaks the
+integrity of the account and leaves an indeterminate receipt; it cannot be counted as successful
+resilience.
+
+When reading the result, ask which service actually produced it. A gateway's brand cannot answer
+that question. Mark provider, model, region, retention, and training facts `gateway_asserted`
+unless independent signed or contractual evidence establishes them. TLS authenticates the gateway
+endpoint, not its hidden selection. If policy depends on one of those facts, use a direct provider
+or independently verifiable routing evidence. Material cannot take a route whose custody chain
+cannot be disclosed or constrained as its policy requires.
 
 ## Reach placement
 

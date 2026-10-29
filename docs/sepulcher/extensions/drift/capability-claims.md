@@ -21,10 +21,12 @@ A claim derives only from a healthy, version-pinned `TrialSuite@1` and its retai
 page defines no health algorithm. The evidence must survive its declared controls, harness and
 Evaluator health, leakage checks, calibration review, and required receipts.
 
-The claim pins exact Animator, model, adapter, toolset, and configuration revisions. It names the
-task class, Cases, Rubric, Evaluators, and Environment; retains sample count, controls, verdict
-distribution, uncertainty, and noise; and records cost and latency per admitted success, including
-failed attempts. Creation time, expiry, and evidence references close the support boundary.
+Make the claim precise enough for a consumer to decide whether its evidence applies. Pin the
+exact Animator, model, adapter, toolset, and configuration revisions; name the task class, Cases,
+Rubric, Evaluators, and Environment. Retain sample count, controls, verdict distribution,
+uncertainty, and noise, so a favorable verdict does not hide how often it held. Record cost and
+latency per admitted success, counting failed attempts too. Creation time, expiry, and evidence
+references delimit how long and from what material the claim draws support.
 
 Accuracy, latency, VRAM, cost, restraint, and tool behavior remain separate axes. The consumer
 decides which dimensions matter for its present request. Drift does not collapse them into one
@@ -32,10 +34,11 @@ scalar.
 
 ## Expire without rewriting history
 
-Missing, unhealthy, or expired evidence yields no active claim. A changed subject, toolset,
-configuration, Rubric, Evaluator, or Environment requires new Outcomes and a new claim; no silent
-refresh inherits the earlier conclusion. The stale claim remains historical evidence without
-steering current decisions.
+A claim can guide current decisions only while its evidence is present, healthy, and unexpired.
+Changing the subject, toolset, configuration, Rubric, Evaluator, or Environment requires new
+Outcomes and a new claim. A silent refresh would borrow a conclusion from conditions no longer
+being tested. Keep the stale claim as historical evidence, without allowing it to steer current
+decisions.
 
 Later loss, leakage, changes in Evaluator behavior, or contradiction invalidates only claims whose complete
 support closure has broken. Independently supported claims remain intact. Recovery means a new

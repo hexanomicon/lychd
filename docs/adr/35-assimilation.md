@@ -19,10 +19,10 @@ Work](../state-of-the-work.md#smith-forge-promotion) owns this boundary.
 
 ## Decision
 
-**Assimilation** is the Smith Domain's governed protocol for re-expressing admitted foreign
-pattern as attributable local LychD code. Its output is a candidate, never a live organ. The
-protocol orders governance questions and settled handoffs; it does not coordinate or execute the
-separately owned admissions and effects, and it is not a Portfolio Composition.
+**Assimilation** re-expresses an admitted foreign pattern as attributable local LychD code under
+the Smith Domain's governance. It produces a candidate, never a live organ. The protocol orders
+governance questions and settled handoffs, while the owners of admissions and effects retain
+their coordination and execution. Assimilation itself is not a Portfolio Composition.
 
 | Act | Meaning |
 | --- | --- |
@@ -64,12 +64,12 @@ the protocol stages transfer no lifecycle authority and imply no ambient resume 
 
 ## Teaching a missing Spell
 
-A peer may answer an unknown-Spell refusal with an attributed **teaching bundle**. The bundle is a
-foreign pattern offered for study, not a Spell installed by Intercom. Its bounded,
-content-addressed manifest binds the exact public contract revision and digest, examples,
-source/artifact identities, provenance, license and notice duties, implementation requirements,
-declared authority/effects, and claimed evidence. Every claim remains untrusted until local
-admission and proof; intake never imports or executes its contents.
+A peer can respond to an unknown-Spell refusal by offering an attributed **teaching bundle** for
+study. Its bounded, content-addressed manifest binds the exact public contract revision and
+digest, examples, source/artifact identities, provenance, license and notice duties,
+implementation requirements, declared authority/effects, and claimed evidence. Intercom does not
+install a Spell by receiving it. Every claim stays untrusted until local admission and proof;
+intake must never import or execute the contents.
 
 A candidate-author AgentSpec selected by an exact owning application Pattern may satisfy Smith's
 role contract and re-express the lesson as a local Spell-contract or implementation candidate under an
@@ -128,11 +128,11 @@ can produce valid-looking schemas.
 
 ### Admit the mechanism, preserve its maintenance boundary
 
-The Dossier identifies the smallest foreign mechanism needed by the local contract, the behavior
-claimed to survive re-expression, deliberately excluded authority and defaults, and the receiving
-maintenance owner. Acquisition or a provider's new feature does not admit its credential store,
-router, tool permissions, orchestration or billing fallback. The choice to integrate an existing
-service, delegate bounded labor, or maintain a local expression is explicit before construction.
+Before construction, the Dossier identifies the smallest foreign mechanism the local contract
+needs, the behavior expected to survive re-expression, excluded authority and defaults, and the
+receiving maintenance owner. It explicitly chooses service integration, bounded delegation, or
+a locally maintained expression. Acquiring the source or gaining a provider feature cannot also
+admit its credential store, router, tool permissions, orchestration, or billing fallback.
 
 Conformance evidence compares the claimed behavior at the actual local boundary, including refusal,
 malformed input, limits, interruption and uncertain outcomes where relevant. Foreign tests and

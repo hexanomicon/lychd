@@ -62,11 +62,12 @@ Approval of one result does not establish that every preceding decision was soun
 may nominate a future memory or training example; neither retention nor correction admits it to
 those other uses.
 
-Inspection identifies a critical point and its rivals. Repeated mistakes may come from missing
-source material, irrelevant Context crowding out a constraint, a misleading prompt, an ambiguous
-schema, a dependency released too early, unnecessary serialization, or an unsuitable model.
-Changing all of them together would make attribution harder. Select the smallest credible
-change, and retain the alternatives it leaves unresolved.
+Use that trajectory to locate a critical decision and compare explanations for its failure.
+Perhaps the source material was missing; perhaps excess Context obscured a constraint already
+present. A misleading prompt, ambiguous schema, dependency released too early, unnecessary
+serialization, or unsuitable model can produce different failures that look alike in the final
+answer. Choose the smallest credible change and retain the alternatives still unresolved.
+Changing every factor together would make it harder to tell which one mattered.
 
 ## Turn a suspicion into a comparison
 
@@ -162,8 +163,9 @@ they prevent the next cycle from rediscovering the same failure. Repeated access
 weakens its independence, so do not turn sealed answers into tuning instructions and continue
 calling the set unseen.
 
-The resulting evidence may support a durable workflow correction. When a demonstrated limitation
-instead motivates a change to learned model competence, continue through the separately admitted
+The resulting evidence tells the owner what kind of change it can support. A demonstrated
+procedural problem may justify a durable workflow correction. If the limitation instead concerns
+learned model competence, the next investigation belongs to the separately admitted
 [discernment training passage](../soulforge/discernment-training.md).
 
 ## Choose an experiment

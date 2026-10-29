@@ -13,11 +13,11 @@ icon: material/hammer-wrench
 >
 > _What is worthy becomes organ._
 
-**Smith** is the Assimilation Extension Domain. Its reference **candidate-author Agent** turns
-an admitted external pattern, protocol, defect, or need into
-attributable candidate code, schemas, migrations, tests, documentation, and packaging inputs
-within a bounded Lab coordinate. That work can be examined; it has not entered the body. A
-candidate is not an organ.
+Suppose foreign craft exposes a useful pattern or a defect the local body should learn from.
+**Smith**, the Assimilation Extension Domain, defines a **candidate-author Agent** for that work.
+Given an admitted pattern, protocol, defect, or need, the Agent can prepare code, schemas,
+migrations, tests, documentation, and packaging inputs in a bounded Lab coordinate. Attribution
+makes the result examinable. The candidate has not yet become an organ of the running body.
 
 **Maturity: Designed.** No candidate-author Agent or end-to-end Assimilation path is delivered.
 [ADR 35](../../adr/35-assimilation.md) owns the architecture and full protocol;
@@ -25,12 +25,14 @@ candidate is not an organ.
 
 ## The hammer has no crown
 
-Admission comes first. [Scout](scout.md) may acquire exact material, but the custody owner must
-validate and admit its bytes before Smith can use them; another source/custody route may supply the
-same settled handoff. The Assimilation Dossier carries its source identity and revision,
-acquisition path, license and notice duties, local base, transformations,
-Smith/model/tool/human authorship, unresolved gaps, and maintenance lineage. Material without
-established identity, provenance, or license may inform study but cannot request promotion.
+First establish what material the author may use. [Scout](scout.md) can acquire exact source,
+but its custody owner must validate and admit the bytes before Smith receives them. Another
+source/custody route can provide the same settled handoff.
+
+The Assimilation Dossier then carries the source identity and revision, acquisition path,
+license and notice duties, local base, transformations, Smith/model/tool/human authorship,
+unresolved gaps, and maintenance lineage. Without established identity, provenance, or license,
+material may inform study but cannot support a promotion request.
 
 The candidate-author Agent may read admitted source and relevant Core code, then write only to permitted Lab
 paths. It can submit typed requests, but receives no ambient access to the active checkout,
@@ -59,11 +61,13 @@ The path is compact, but its records are not disposable. Source revision, licens
 candidate parentage, tools and providers, human edits, checks, failures, and the final decision
 remain attributable.
 
-Smith is not a Composition, Suite, or second workflow coordinator. It defines the candidate-author
-role; an exact application Pattern must select a registered AgentSpec satisfying it. Spellweaver
-may admit and execute that Pattern's pinned Scroll; each verification, consent, packaging,
-migration, and activation owner later acts from a settled typed request. No exact application
-Pattern or Suite for end-to-end Assimilation is defined yet, so the reference protocol remains
+The candidate-author role needs an application to give it executable work. An exact application
+Pattern must select a registered AgentSpec satisfying that role; Spellweaver can then admit and
+perform its pinned Scroll. Verification, consent, packaging, migration, and activation remain
+later effects of their respective owners, each receiving a settled typed request.
+
+Smith supplies neither a Composition nor a Suite nor another coordinator. No exact application
+Pattern or Suite currently defines end-to-end Assimilation, so this reference protocol remains
 non-executable.
 
 Each arrow above is a governance dependency between separately owned, already-settled records.

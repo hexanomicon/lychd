@@ -156,13 +156,15 @@ lifecycle, and browser-trusted HTTPS origin must exist first. QR trust installed
 not establish browser trust. Device enrollment remains separate; DPoP or another sender constraint
 needs its own admitted implementation and cannot be inferred from PKCE or Keystore use.
 
-Enrollment precedes Familiar body admission, which precedes Companion device/session admission.
-Pin credential and policy generations and the phone capability epoch. Android permission and URI
-access are additional local checks. The target/platform matrix must also resolve Android's
-[local network permission rules](https://developer.android.com/privacy-and-security/local-network-permission).
-Every protected read, stream, artifact download, submission,
-and effect checks the requesting object and current authority. Revocation closes affected live
-access and refuses new work. LAN discovery and later VPN reach change addresses, not these grants.
+Complete enrollment before Familiar body admission, then use that admitted body for Companion
+device/session admission. Pin credential and policy generations and the phone capability epoch.
+Android permission and URI access add local checks; the target/platform matrix must also resolve
+Android's [local network permission rules](https://developer.android.com/privacy-and-security/local-network-permission).
+
+After admission, every protected read, stream, artifact download, submission and effect still
+checks the requesting object and current authority. Revocation closes affected live access and
+refuses new work. LAN discovery and later VPN reach may change addresses, but they do not change
+these grants.
 
 No provider, database, host-lifecycle, signing, or workflow secret belongs in the phone. APK signing,
 device credentials, and a later Tether key have separate lifecycles. Reinstallation, key
@@ -256,14 +258,16 @@ to execute a reported capability.
 
 ### Wire and recovery rules
 
-Every effectful candidate operation needs a stable request identity and canonical request hash,
-exact operation/version, target, expiry, current grant/credential/policy generations, and
-correlation. Generations declared by a caller remain claims until checked against host state.
+Give each effectful candidate operation a stable request identity and canonical request hash.
+Bind exact operation/version, target, expiry, current grant/credential/policy generations, and
+correlation. The host must check declared generations against its own state before accepting
+them as more than caller claims.
+
 The first admitted terminal result wins. An identical duplicate returns the retained account;
-a changed payload under the same identity conflicts. Duplicate-in-flight behavior, retention and
-replay horizon must be explicit. After a lost acknowledgement, query the identity before proposing
-another attempt; unknown remains unknown until reconciled. Reconnection never widens or renews
-authority by itself.
+changed payload under the same identity conflicts. Specify duplicate-in-flight behavior, retention
+and replay horizon explicitly. If acknowledgement is lost, query the original identity before
+proposing another attempt. Unknown remains unknown until reconciled, and reconnect alone neither
+widens nor renews authority.
 
 Saving an operation identity cannot atomically commit a Media3, Binder, filesystem, or external
 app effect with its receipt. A crash between the two leaves an explicit reconciliation problem.
@@ -287,13 +291,15 @@ security requirements, all actual error responses, upload media types/limits, cu
 pagination, and compatibility policy in the future schema. Keep runtime authorization tests
 independent of schema generation, since the existing schema exporter does not run middleware.
 
-An Android event reducer validates schema version, account/host/object identity, event ID,
-sequence, kind, and each consumed payload. Seed from an authoritative snapshot. Ignore duplicates;
-gaps and `resync` require a bounded authoritative refetch. Fence late responses after logout,
-host/account switch, revocation, teardown, or local generation change. Retained results outrank
-incomplete token streams. A connected SSE socket proves neither current authority nor durable
-event retention. Keep queues, event bytes, concurrent streams, backoff, and request deadlines
-bounded; ordinary Android background suspension uses snapshot recovery on return.
+Seed the Android event reducer from an authoritative snapshot. For each event, validate schema
+version, account/host/object identity, event ID, sequence, kind, and every consumed payload. Ignore
+duplicates; a gap or `resync` requires a bounded authoritative refetch.
+
+Fence late responses after logout, host/account switch, revocation, teardown, or local generation
+change. Retained results take precedence over incomplete token streams. The SSE socket being
+connected proves neither current authority nor durable event retention. Bound queues, event
+bytes, concurrent streams, backoff, and request deadlines. After ordinary Android background
+suspension, recover from a snapshot on return.
 
 The [OpenAPI Kotlin generator](https://openapi-generator.tech/docs/generators/kotlin/) is a
 candidate mechanism, with documented limitations around nulls and composite schemas. A bootstrap
@@ -367,12 +373,13 @@ lookup redirected to another organization during this research, so exact publica
 must be resolved before reconsidering that artifact. Ktor/CIO still requires reviewed artifact
 provenance and the same bounded transport and device-key probe before admission.
 
-Choose a stable application ID and versioning scheme before durable use. The operator/project
-controls its [release signing key](https://developer.android.com/studio/publish/app-signing),
-backed up outside the checkout and separate from device credentials. Verify signed upgrades,
-data migration, key invalidation, and reinstall/re-enrollment. Use API-appropriate cloud-backup
-and device-transfer extraction exclusions, excluded custody for sensitive material where
-applicable, and restore reconciliation tests. Android's [backup
+Before durable use, choose a stable application ID and versioning scheme. The operator/project
+controls the [release signing key](https://developer.android.com/studio/publish/app-signing),
+backed up outside the checkout and kept separate from device credentials. Prove how that identity
+survives signed upgrades, data migration, key invalidation, and reinstall/re-enrollment.
+
+Recovery also needs API-appropriate cloud-backup and device-transfer extraction exclusions,
+excluded custody for sensitive material where applicable, and restore reconciliation tests. Android's [backup
 guidance](https://developer.android.com/identity/data/autobackup) explains that `allowBackup=false`
 alone can still permit OEM device transfers on API 31+. Android
 [PackageInstaller](https://developer.android.com/reference/android/content/pm/PackageInstaller)

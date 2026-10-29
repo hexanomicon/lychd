@@ -74,19 +74,22 @@ flowchart LR
     Stop --> Bridge
 ```
 
-The local bridge authenticates a private token and listens only on literal loopback. Every action
-binds protocol version, server boot, actor, native Run, action identity, stop generation and
-expiry. HTTP acceptance is not execution. World and entity access occurs only on the server
-thread; endpoint workers see immutable observations. Stop takes priority over ordinary commands.
-Same-boot duplicate identities must not repeat effects, and changed content under an old identity
-refuses. Queue and result storage are finite. A crash or lost acknowledgement remains unknown;
-process-local records establish no durable exactly-once guarantee.
+The local bridge authenticates a private token and listens only on literal loopback. It binds
+each action to protocol version, server boot, actor, native Run, action identity, stop generation
+and expiry before handing it to the game. HTTP acceptance alone does not establish execution.
+World and entity access occurs only on the server thread; endpoint workers see immutable
+observations, and stop takes priority over ordinary commands.
 
-Stop identities have their own finite history, independent of ordinary action capacity. A newer
-stop may supersede a pending stop before its tick barrier; that earlier record settles as
-cancelled and remains queryable. The final available stop-history slot seals new ordinary
-admission for that boot while preserving its priority barrier. Further unknown identities refuse
-until an explicit server restart; no retained identity is silently evicted or reused.
+Within one boot, duplicate identities must recover the same action without repeating its effects.
+Changed content under an old identity refuses. Queue and result storage stay finite. After a
+crash or lost acknowledgement, retain unknown rather than infer a result: these process-local
+records establish no durable exactly-once guarantee.
+
+Keep a separate finite history for stop identities so ordinary action capacity cannot consume it.
+A newer stop may supersede a pending stop before its tick barrier; settle the earlier record as
+cancelled and keep it queryable. When the final stop-history slot is used, seal new ordinary
+admission for that boot while preserving the priority barrier. Further unknown identities refuse
+until an explicit server restart. Never evict or reuse a retained identity silently.
 
 Only the owned actor is controlled. Vanilla movement and target-selection goals must not compete
 with its admitted controller. A missing, unloaded, dead or changed actor refuses dependent work.
@@ -108,12 +111,14 @@ local session must explicitly select `--allow-weather`; its native admission the
 scope nor the NPC's control box grants this effect. The server independently checks its opt-in
 and current weather advancement setting before applying anything. Disabled advancement refuses.
 
-The weather owner uses the engine's typed API on the server thread and returns a separate
-`blockworld.weather@1` observation: requested mode/timer, actual flags/timers, global scope,
-overworld anchor, boot/actor/generation, world tick and timestamp. The outer record binds action
-and Run identities. Pose or cell observations cannot confirm weather. The timer programme is
-finite, but does not promise thirty wall-clock seconds, restoration of earlier weather or immunity
-from later world changes. Ordinary natural cycling resumes; later natural thunder is not excluded.
+After admission, the weather owner calls the engine's typed API on the server thread. It returns
+a separate `blockworld.weather@1` observation recording requested mode/timer, actual flags/timers,
+global scope, overworld anchor, boot/actor/generation, world tick and timestamp. The outer record
+binds action and Run identities; a pose or cell observation cannot confirm this weather result.
+
+The timer programme is finite, but it promises neither thirty wall-clock seconds nor restoration
+of earlier weather or immunity from later world changes. Ordinary natural cycling resumes, and
+later natural thunder is not excluded.
 
 Exact text or transcript forms include `weather clear`, `weather rain`, Slovak `počasie jasno`
 and `počasie dážď`, Czech `počasí jasno` and `počasí déšť`, and the fixed phrases `daj jasno`,
@@ -154,12 +159,15 @@ zero or negative), pause and time-advancement settings are preserved and reporte
 promises future cycling. Simulation ticks, weather and the original NPC controller/lease are
 separate and remain unchanged by this immediate operation.
 
-A separate closed `blockworld.clock@1` readback retains requested/resolved modes, clock/scope/anchor,
-before/after ticks, phases, cycles and cycle increment, exact delta, fractional readings, rate,
-pause and advancement settings, plus boot/actor/generation/world tick/timestamp. The outer record
-binds action and Run. The host recomputes placement; another observation kind cannot confirm it.
-Stop cancels queued clock work without undoing applied placement. Unknown acknowledgement never
-authorizes replay. Existing FIFO, mailbox, history and original deadlines stay their owners.
+Verify the clock placement through its own closed `blockworld.clock@1` readback. It retains
+requested/resolved modes, clock/scope/anchor, before/after ticks, phases, cycles and cycle increment,
+exact delta, fractional readings, rate, pause and advancement settings, plus
+boot/actor/generation/world tick/timestamp. The outer record binds action and Run. The host
+recomputes placement from this evidence; another observation kind cannot confirm it.
+
+Stop cancels queued clock work but cannot undo an applied placement. Unknown acknowledgement
+never authorizes replay. The existing FIFO, mailbox, history and original deadlines retain their
+owners.
 
 Exact forms include `time day`, `time night`, `time toggle`, Slovak `čas deň`, `čas noc`,
 `prepni deň noc` and `prepni deň/noc`, Czech `čas den`, `čas noc`, `přepni den noc`, and English
@@ -220,14 +228,16 @@ The confirmation repeats the concrete command. Only an unambiguous `áno`/`ano`/
 frozen proposal. Rejection, another instruction, expiry, target change or stop discards it.
 Selection and confirmation cannot renew the original instruction deadline or stop generation.
 
-Only a matched applied result may lead to `Je to v poriadku?`. A positive answer then offers
-remembering; `áno` retains the meaning, while `áno bez potvrdenia` additionally permits future
-confirmation skipping in `unremembered` mode. Negative, unknown, cancelled or failed outcomes
-never teach a phrase. Matching is exact after Unicode normalization, case folding and outer
-whitespace removal, partitioned by language and configured server/actor namespace. A remembered
-follow command binds the currently selected target anew; it cannot retain an old player UUID.
-Every reuse creates a fresh request and re-enters the ordinary native checks. Original strict
-commands cannot be redefined as a different action.
+Ask `Je to v poriadku?` only after a matched applied result. A positive answer can then offer
+remembering: `áno` retains the meaning, while `áno bez potvrdenia` also permits future confirmation
+skipping in `unremembered` mode. A negative, unknown, cancelled or failed outcome never teaches
+a phrase.
+
+Reuse is exact after Unicode normalization, case folding and outer whitespace removal, partitioned
+by language and configured server/actor namespace. Each reuse creates a fresh request and passes
+the ordinary native checks. A remembered follow command binds the currently selected target anew
+instead of retaining an old player UUID. Original strict commands cannot be redefined as a
+different action.
 
 Without a separately selected memory database profile, reviewed phrases last only for this
 console session. Cross-session records belong to Phylactery, not a JSON shadow database or the
@@ -317,15 +327,16 @@ Selected reply playback likewise uses the host's ALSA `default` output. The shar
 only an explicit supported `pulse` alternative; failure never selects another output. Playback
 forwards the inspected WAV unchanged and does not alter host routing or volume.
 
-Each accepted voice input also retains one private `REQUEST_ID-timing.json`
-(`companion-host-timing@1`). Its origin is host voice admission, before scheduling the
-utterance, rather than a physical key press or speech onset. Fixed stages distinguish audio
-ownership wait, capture or supplied-WAV read, source/transcript retention, transcription,
-instruction admission, queue/native outcome wait, reply audio wait, synthesis, reply artifact
-retention, player retirement and the existing evidence-write attempts. Spoken stop has its own
-stage. Relative monotonic milliseconds and a directly measured local elapsed time are
-observations, not deadlines. Unavailable clocks yield null; unattempted work differs from a
-measured zero. Stages can overlap and must not be summed.
+To inspect delay, use the private `REQUEST_ID-timing.json` (`companion-host-timing@1`) retained
+for each accepted voice input. Timing begins at host voice admission, before the utterance is
+scheduled; it does not begin at a physical key press or speech onset.
+
+Fixed stages distinguish audio ownership wait, capture or supplied-WAV read, source/transcript
+retention, transcription, instruction admission, queue/native outcome wait, reply audio wait,
+synthesis, reply artifact retention, player retirement and the existing evidence-write attempts.
+Spoken stop has its own stage. Relative monotonic milliseconds and directly measured local elapsed
+time are observations, not deadlines. Unavailable clocks yield null, and unattempted work differs
+from a measured zero. Stages may overlap, so their durations must not be summed.
 
 Queue/native outcome wait includes local scheduling, FIFO, Run/Graph and transport, and often
 native evidence publication. It does not separate queue time from game computation. The record
@@ -421,17 +432,19 @@ same-session stop remains available after recording authority expires to retire
 already-owned audio. Final console shutdown seals recording before its final audio retirement.
 A lost mutation acknowledgement permits only lookup of that original UUID, never replay.
 
-The local Slovak/Czech/English multiline HUD distinguishes a capture request from the host's
-first observed PCM (`recording`) and recorder retirement (`finishing`). These stages remain
-separate from known game outcome, reply generation, playback and retained evidence. It receives
-no recognized words or foreign diagnostic prose. Terminal native evidence cannot regress to an
-older pending snapshot.
-Its context guards and status labels are source contracts, not proof of a physical key press,
+The local Slovak/Czech/English multiline HUD follows the host's observations. It distinguishes
+a capture request from the first observed PCM (`recording`) and recorder retirement (`finishing`).
+Known game outcome, reply generation, playback and retained evidence remain separate stages. The
+HUD receives no recognized words or foreign diagnostic prose, and terminal native evidence cannot
+regress to an older pending snapshot.
+
+These context guards and status labels are source contracts, not proof of a physical key press,
 active microphone or heard reply. Retire uncertain audio through the console before starting a
-new session; a changed console session requires an explicit client restart.
-The complete result wraps within current scaled GUI bounds. Missing fields remain unreported.
-If it cannot fit, a notice retains the own ID and directs the player to enlarge the display or
-use the foreground console; the view never substitutes a success-only subset.
+new session. If the console session changes, restart the client explicitly.
+
+The view wraps the complete result within current scaled GUI bounds and leaves missing fields
+unreported. If it cannot fit, retain the own ID in a notice directing the player to enlarge the
+display or use the foreground console. Never replace the full result with a success-only subset.
 
 Without `--intent-profile`, commands use the exact parser. Select a private version 1 intent
 profile explicitly to enable state, idle and bound-follow paraphrases. It requires a literal
@@ -475,12 +488,14 @@ turn uncertain command admission into a refusal. Other recoverable failures requ
 explicit new input; the original request, expiry and stop generation are never renewed or
 automatically replayed. Failure feedback makes no claim that remote speech inference retired.
 
-Every admitted command keeps its request UUID even when it expires or is cancelled before a Run
-exists. Those early results resolve immediately with private evidence pending; the session retains
-their eventual evidence status separately and joins publication on stop or close. Evidence failure
-does not rewrite a known game outcome. State feedback uses only the matched observation's mode and
-rounded coordinates; it does not speak player identifiers or raw diagnostic prose. Movement
-feedback describes the applied instruction without claiming observed progress or arrival.
+Keep the request UUID even when an admitted command expires or is cancelled before a Run exists.
+Resolve those early results immediately with private evidence pending, then retain eventual
+evidence status separately. The session joins publication on stop or close. A failure to retain
+evidence cannot rewrite a known game outcome.
+
+Use only the matched observation's mode and rounded coordinates in state feedback; do not speak
+player identifiers or raw diagnostic prose. Movement feedback describes the applied instruction
+without claiming observed progress or arrival.
 An applied idle, look, movement or follow result retains `controller_expires_at_ms`, the exact
 outgoing host authorization deadline after the lease, session and original instruction limits
 are combined. This optional local metadata is separate from the Minecraft wire receipt.
@@ -601,11 +616,12 @@ audio records identify the same instruction; synthesis metadata stays unchanged 
 claim playback. Player exit means the owned player and descendants settled, not that a human
 heard or understood the reply.
 
-The private `REQUEST_ID-reply.wav` and `REQUEST_ID-reply.json` retain generated bytes and the
-unchanged synthesis observation. `REQUEST_ID-reply-evidence.json` separately correlates the
-request, real or absent/unknown Run, game disposition, retained artifacts and player settlement.
-Failure to retain that evidence is reported separately and does not claim a saved receipt.
-Cancelling the caller's wait leaves the console-owned native outcome available for the reply.
+Retain generated bytes in private `REQUEST_ID-reply.wav` and the unchanged synthesis observation
+in `REQUEST_ID-reply.json`. Use `REQUEST_ID-reply-evidence.json` to correlate the request, real or
+absent/unknown Run, game disposition, retained artifacts and player settlement separately.
+
+If retaining that evidence fails, report the failure rather than claim a saved receipt. Cancelling
+the caller's wait still leaves the console-owned native outcome available for the reply.
 
 Stop must settle owned reply work even when requested before its coroutine starts, while
 synthesis is pending, or during playback. A cancelled synthesis wait cannot prove that the

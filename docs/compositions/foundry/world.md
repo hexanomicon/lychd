@@ -37,7 +37,9 @@ design and admitted catalogue
 | **procedure** | seed, closed generator revision, opened parameters, maximum counts, spatial envelope, and termination rule |
 | **target** | `EngineProfile@1`, platform, quality profile, scenario set, and build acceptance criteria |
 
-`game.assemble_world@1`, `game.bake_world@1`, and `game.validate_world@1` are semantic Spells inside the principal Pattern. The compiler checks identities, references, bounds/cardinality, units/axes, placements, physics/navigation, resource ceilings, and target support. Unsupported facets return `WorldFindingSet@1` rather than disappear. A successful `WorldBakeReceipt@1` preserves source/result digests, compiler/profile, transforms, generated collision/navigation/lighting/LOD, warnings, validation, and loss.
+The principal Pattern uses `game.assemble_world@1`, `game.bake_world@1`, and `game.validate_world@1` as semantic Spells to turn the plan into an inspectable candidate. The compiler checks identities, references, bounds/cardinality, units/axes, placements, physics/navigation, resource ceilings, and target support. It returns unsupported facets in `WorldFindingSet@1` instead of silently dropping them.
+
+When baking succeeds, `WorldBakeReceipt@1` preserves source/result digests, compiler/profile, transforms, generated collision/navigation/lighting/LOD, warnings, validation, and loss. That receipt explains the relationship between the plan and the resulting world.
 
 Engine `.tscn`/`.scn` files and resources emitted by the world compiler, along with import caches, navmeshes, lightmaps, and shader caches, remain derivatives. They do not replace the plan, [project source](project.md), source assets, Form assembly, or Kinesis clips.
 
@@ -47,9 +49,11 @@ The dated first candidate is [Godot](https://github.com/godotengine/godot): an M
 
 A [Worker](../../adr/14-workers.md#service-job-attempts) delivers the job to a trusted executor or Tomb through a pinned ToolProfile. Independent residency, queue, lifecycle, or remote work may justify an Animator `JobGrant`; direct Godot is no Soulstone. Editor ports, debug consoles, generic RPC, arbitrary CLI arguments, and project scripts cannot be the stable contract.
 
-`EngineProfile@1` pins engine binary/build digest, export-template digest, platform/renderer, GPU/display/audio mode, physics backend/tick/substeps/threading, navigation settings per agent, importers/plug-ins/revisions/licences, locale/timezone/random streams, network policy, CPU/GPU/RAM/disk/time ceilings, and trusted-fixture versus Tomb posture.
+To make an engine result assessable, `EngineProfile@1` pins the engine binary/build digest, export-template digest, platform/renderer, and GPU/display/audio mode. It also fixes physics backend/tick/substeps/threading, navigation settings per agent, importers/plug-ins/revisions/licences, and locale/timezone/random streams. Network policy, CPU/GPU/RAM/disk/time ceilings, and trusted-fixture versus Tomb posture bound how that environment may run.
 
-Headless execution proves neither containment, deterministic rendering, nor audio. Project scripts, native extensions, plug-ins, shaders, resource references, archives, and generated code remain hostile. General execution waits for [Tomb](../../adr/09-security.md#6-tomb-execution-contract) filesystem, process, device, network, secret, resource, cancellation, and residue evidence. Physics/navigation reproducibility holds only within the exact profile and asserted tolerances; changed backends, hardware, drivers, threading, or engines need new evidence.
+Running headless does not prove containment, deterministic rendering, or audio behavior. Treat project scripts, native extensions, plug-ins, shaders, resource references, archives, and generated code as hostile. General execution must wait for [Tomb](../../adr/09-security.md#6-tomb-execution-contract) evidence covering filesystem, process, device, network, secret, resource, cancellation, and residue boundaries.
+
+Reproducibility is similarly specific: physics/navigation results hold only within the exact profile and asserted tolerances. A changed backend, hardware, driver, threading configuration, or engine needs new evidence.
 
 ## Portable sources and engine derivatives
 
@@ -61,7 +65,7 @@ The [asset import](assets.md#source-to-engine-derivative) keeps its transformati
 
 A Mind can propose a plan or reviewed project patch. It cannot invent rights, open an unbounded catalogue, install plug-ins, execute generated source, or claim playability from prose. GDScript, C#, native code, shaders, and build configuration pass ordinary diff review, containment, tests, and playtest; they cannot hide in the closed recipe grammar. Video world models return Prism pixels; spatial models return Form candidates. Both still need normal admission and engine proof.
 
-Actors begin with project-owned deterministic state machines, behavior trees, navigation policies, and fixture controllers. A later `ActorPolicyProfile@1` may admit bounded model observations/actions, with unavailable, late, malformed, and unsafe-result policies fixed in the build. It grants no console, filesystem, scene mutation, network, or world authority.
+Begin actors with project-owned deterministic state machines, behavior trees, navigation policies, and fixture controllers. If a later `ActorPolicyProfile@1` admits bounded model observations/actions, the build must already specify what happens when results are unavailable, late, malformed, or unsafe. Admitting that policy grants no console, filesystem, scene mutation, network, or world authority.
 
 ## Playable evidence handoff
 

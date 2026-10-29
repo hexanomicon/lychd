@@ -34,10 +34,11 @@ icon: material/package-variant-closed
 
 ## Decision Outcome
 
-LychD uses **source-bound packaging**: review eligibility requires source identity, version,
-dependency declaration, generated client, notices, and checks to agree. The repository implements
-that for Python release-candidate archives and holds a checked-in Vessel definition. Publication,
-synthesized extension bodies, and activation are distinct work.
+A release candidate is eligible for review only when its source identity, version, dependency
+declaration, generated client, notices, and checks agree. LychD calls this **source-bound
+packaging**. The repository implements it for Python release-candidate archives and retains a
+checked-in Vessel definition. Publication, synthesized extension bodies, and activation remain
+separate work.
 
 The [Ouroboros map](../sepulcher/extensions/weaver/ouroboros.md#from-a-useful-lesson-to-a-changed-body)
 places this artifact boundary between candidate work and governed Evolution. Conversational or
@@ -67,11 +68,12 @@ package-for-package equality with `uv.lock`.
 
 ### One body before any build
 
-A future coupled-organ Forge must first bind Core and organ revisions, manifests, locks, build
-tools, platform, base-image digests, and system packages. It resolves dependency and platform
-conflicts away from the active runtime; records every input, generated file, legal obligation, and
-output digest; binds separately compiled deployment intent from [Containers](08-containers.md) and
-[Configuration](12-configuration.md); then verifies the whole body before promotion.
+Before building a coupled body, a future Forge must bind Core and organ revisions, manifests,
+locks, build tools, platform, base-image digests, and system packages. It resolves dependency and
+platform conflicts away from the active runtime, then records every input, generated file, legal
+obligation, and output digest. Separately compiled deployment intent remains bound through
+[Containers](08-containers.md) and [Configuration](12-configuration.md). The whole body must pass
+verification before promotion.
 
 Pre-v1 in-process organs are coupled source, not an extension ABI. Compiled organs require an
 explicit manifest, platform check, and activation path; arbitrary shared-object scanning is
@@ -183,14 +185,13 @@ promotion rather than revealing a founder master key.
 
 #### Portable verification
 
-Verification is also forge-neutral. A versioned plan and its receipts, not the service that ran
-them, form the interface. A local workstation, isolated host or VM, GitHub or Forgejo runner, or a
-future Radicle adapter may execute the same plan. Each receipt binds the exact source object,
-resolved inputs, plan and tool versions, platform and containment context, command results, and
-output digests. Host-level Podman, systemd, migration, or recovery claims still require the
-operator boundary defined by [Testing](04-testing.md); a green container cannot attest its own
-host. Changing the candidate or any bound input invalidates affected receipts and signatures.
-Deterministic failure cannot be outvoted.
+Verification travels as a versioned plan and receipts. That interface lets a local workstation,
+isolated host or VM, GitHub or Forgejo runner, or future Radicle adapter execute the same plan.
+Each receipt binds the exact source object, resolved inputs, plan and tool versions, platform and
+containment context, command results, and output digests. Host-level Podman, systemd, migration,
+and recovery claims still require [Testing's](04-testing.md) operator boundary: a green container
+cannot attest its own host. A change to the candidate or a bound input invalidates affected
+receipts and signatures. Deterministic failure cannot be outvoted.
 
 #### Conditions for a canonical cutover
 

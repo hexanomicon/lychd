@@ -107,18 +107,20 @@ When a transition would no longer be useful after a short wait, add
 counts seconds from entry to the activation handler. It must be finite and nonnegative; `0`
 declines immediately. Omission adds no caller-owned admission cutoff.
 
-The cutoff covers queueing, planning, lease drain, and observation before activation. It ends
-when Orchestrator invokes the actuator or adapter, or confirms readiness on a path that needs no
-activation. An already-warming capability must become honestly ready within that admission
-window. Once admission succeeds, the request continues waiting for settlement; its response may
-arrive after the cutoff. Planning, drain, and convergence retain their separate safety budgets. When a local safety
-deadline comes first, its existing failure classification is preserved.
+Treat the cutoff as a limit on admitting the change. It covers queueing, planning, lease drain,
+and observation before activation. It ends when Orchestrator invokes the actuator or adapter,
+or confirms readiness on a path requiring no activation. If a capability is already warming,
+it must become honestly ready within this window.
 
-Requests for the same capability at the same priority join one in-flight transition. The first
-request owns its admission cutoff. A follower can limit its own wait for admission without
-cancelling that owner. A nonexpired follower joining already-admitted work waits for settlement.
-An untimed request can therefore inherit a timed owner's refusal, while a timed follower cannot
-shorten an untimed owner's budget. Different priorities remain separate requests.
+After admission, the request continues waiting for settlement, even beyond the cutoff. Planning,
+drain, and convergence retain their separate safety budgets. A local safety deadline that expires
+first keeps its existing failure classification.
+
+Requests for the same capability and priority share one in-flight transition. The first request
+owns its admission cutoff. A follower may limit how long it waits for admission, but cannot cancel
+the owner's work. A nonexpired follower that joins already-admitted work waits for settlement.
+Thus an untimed follower may inherit a timed owner's refusal, while a timed follower cannot shorten
+an untimed owner's budget. Different priorities create separate requests.
 
 Admission refusal returns **409** with readable `detail` and one of these codes:
 
@@ -158,28 +160,37 @@ retrying.
 
 ## Recover an interrupted soft activation
 
-The Vessel writes `runtime-guard/pending.json` beneath the Crypt before runtime-native model
-activation. An unfinished record blocks startup before any Run queue connects, under both
-actuator profiles. Restarting the Vessel, changing configuration, or observing a warm model does
-not clear it. The directory is owner-only `0700`, provisioned by `lychd init` and mounted
-read-write by the generated Vessel binding. Existing installations need the updated initialization
-and binding before using this path; startup refuses missing or unsafe storage.
+Before activating a model through a runtime-native API, the Vessel writes
+`runtime-guard/pending.json` in the Crypt. An unfinished record means the activation's physical
+outcome still needs reconciliation. Both actuator profiles block startup before any Run queue
+connects while that record remains. Restarting, changing configuration, or observing a warm model
+cannot clear it.
 
-For recovery, keep the Vessel and the record's target Animator stopped through the ordinary
-host lifecycle procedure. Read the exact `activation_id` from that owner-only record, then invoke
-the bounded host helper:
+The owner-only `0700` directory is provisioned by `lychd init` and mounted read-write by the
+generated Vessel binding. Existing installations need updated initialization and binding before
+using this path. Missing or unsafe storage makes startup refuse.
+
+For recovery, establish and keep both the Vessel and the record's target Animator stopped under
+a separately authorized [operator recovery plan](../../summoning.md#close-the-rite). The current
+public stop command cannot establish that state for an active Vessel;
+[State of Work](../../state-of-the-work.md#core-cli-rites) records the lifecycle limit. If the
+stopped state cannot be established, keep the pending record and admission fenced. Once those
+prerequisites hold, read the exact `activation_id` from that owner-only record, then invoke the
+bounded host helper:
 
 ```bash
 lychd reactor recover-soft ACTIVATION_ID
 ```
 
-Replace `ACTIVATION_ID` with its exact 32-character value. This hidden host operation starts and
-stops nothing: it validates the record against current declarations, attests the Scribe-owned
-loaded topology, and proves the Vessel and affected runtime stopped without main/control processes
-or pending systemd work before clearing that exact record. Changed configuration, corrupt records,
-unknown ownership, live or uncertain runtime state, and persistence errors refuse release. Preserve
-the record and reconcile the reported discrepancy; deleting it by hand is not verified recovery.
-Host Reactor `.contained`/`.processing` records retain their separate recovery boundary.
+Supply the record's exact 32-character `ACTIVATION_ID`. The hidden helper performs no start or
+stop itself. It validates the record against current declarations, attests the Scribe-owned
+loaded topology, and verifies that both Vessel and affected runtime are stopped with no main or
+control processes and no pending systemd work. Only then can it clear that exact record.
+
+Changed configuration, corrupt records, unknown ownership, live or uncertain runtime state, and
+persistence errors refuse release. Keep the record and reconcile the reported discrepancy;
+manual deletion would remove the evidence without proving recovery. Host Reactor `.contained`
+and `.processing` records retain a separate recovery boundary.
 
 ## Tune With Intent
 

@@ -7,11 +7,10 @@ icon: material/call-made
 
 > _What is here, and what must answer it?_
 
-The **Call** is the [Manas](../../lexicon/inner-tongue.md#manas) correspondence: addressability
-before judgment. The active
-[Flux](./spirit/flux.md) contains more movement than one act can carry. Call receives present Intent,
-gives a movement a destination, and routes it toward a bounded relation without pretending that every
-opened continuation should happen.
+Before a movement can be judged, it must become reachable. **Call**, the [Manas](../../lexicon/inner-tongue.md#manas)
+correspondence, receives present Intent and routes it toward a bounded relation. The active
+[Flux](./spirit/flux.md) holds more movement than one act can carry. Giving a movement a
+destination opens a possible continuation without deciding that it should happen.
 
 The word works at two scales. In [the First Invocation](./index.md#the-first-invocation), the
 Magus’s outer Call establishes an address with a new center; inner Call distributes what that
@@ -24,11 +23,12 @@ from the first account. What can be asked changes with what has become reachable
 the craft here through reception and address; [Blade](./blade.md) examines the relevance,
 sufficiency, and limits of what has been found. A missing premise can send Call outward again.
 
-A familiar request may need only a quick route proposal. A specialized decision model can help
-Call identify a destination and express uncertainty without asking a general reasoning model to
-solve the task first. [Specialized models for routing](../extensions/weaver/discovery.md#specialized-models-for-routing)
+For a familiar request, a quick route proposal may be enough. A specialized decision model can
+suggest a destination and express uncertainty before a general reasoning model attempts the
+whole task. [Specialized models for routing](../extensions/weaver/discovery.md#specialized-models-for-routing)
 considers Jev and similar models as possible latency optimizations. Call and Blade name functions,
-not fixed model sizes or speeds: a quick proposal still meets discernment before action.
+so their distinction prescribes neither model size nor speed. Even a quick proposal still needs
+discernment before action.
 
 Call may turn toward a [Seed](./spirit/seed.md) and invite [Recall](./spirit/recall.md), or open
 several candidates. That is opening, not selection. Unchecked routing takes the **Rajas** image of activity into branching

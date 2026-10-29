@@ -40,12 +40,15 @@ Three limits matter:
 3. **No hidden remote lifecycle.** Binding writes no Portal Quadlet and contacts no provider. It
    validates intent, proves named-secret presence, and mounts the reference into the Vessel.
 
-With probing off, a declared route is projected as `UNKNOWN`, not fabricated as `WARM`. With
-probing on, current source performs a two-second, unauthenticated `GET <base_url>/models` and
-validates the returned `data[*].id` inventory. A live link with malformed inventory or without the
-declared model id becomes `ERROR`, while a credentialed provider may reject the probe even when its
-ordinary authenticated model path works. Successful readiness observation still does not bypass
-the current all-Portal dispatch quarantine.
+With probing off, the registry reports the route as `UNKNOWN`; a declaration alone cannot
+establish `WARM`. Enabling it permits the current
+two-second unauthenticated `GET <base_url>/models` probe and validation of the returned
+`data[*].id` inventory. Malformed inventory or the absence of the declared model id produces
+`ERROR`. A credentialed provider can reject this probe even if its ordinary authenticated model
+call would work.
+
+Read the result as a readiness observation only. It cannot bypass the current all-Portal
+dispatch quarantine.
 
 [State of Work](../../state-of-the-work.md#context-privatization-and-portal-egress) owns the absent
 egress gate. The documented anonymization Pattern does not authorize transmission.
@@ -100,13 +103,15 @@ Inscribe the provider anchors and inactive samples:
 uv run --extra postgres-binary lychd init
 ```
 
-The built-in `animator` extension contributes `runes/animator/portals/openai/` and
-`runes/animator/portals/google-gemini/`. Both speak an OpenAI-shaped HTTP interface, while the
-connector selects the declared provider's model-profile resolver. Selecting an `animator/*`
-runtime also registers the shared Portal base. Another interface needs an extension-owned Rune
-schema and connector factory. Registering a schema alone is deliberately inert: runtime and
-capability construction require one exact `PortalDefinition` for that concrete schema. There is no
-anonymous OpenAI-compatible fallback.
+The built-in `animator` extension registers `runes/animator/portals/openai/` and
+`runes/animator/portals/google-gemini/`. Both use an OpenAI-shaped HTTP interface, while the
+Connector selects the declared provider's model-profile resolver. Selecting an `animator/*`
+runtime also registers the shared Portal base.
+
+For another interface, an extension must supply its Rune schema and Connector factory. The schema
+alone admits declarations, without constructing a runtime or capability. That construction needs
+one exact `PortalDefinition` for the concrete schema; there is no anonymous OpenAI-compatible
+fallback.
 
 ### 2. Seal one credential
 
@@ -166,6 +171,12 @@ endpoints may select it. This is not evidence of a native Gemini transport.
     `RUNNING` or `AWAITING_HARDWARE`. Stop submissions and let visible runs settle; if continuity
     is uncertain, do not restart.
 
+The direct Systemd restart below is a separately chosen operator action under
+[Reanimation’s limits](../phylactery/reanimation.md#perform-one-bounded-reanimation) and the
+separately authorized [recovery plan](../../summoning.md#close-the-rite). It bypasses Orchestrator
+admission and lease drain. It is not a delivered CLI fallback: [public stop still refuses an
+active Vessel](../../state-of-the-work.md#core-cli-rites).
+
 ```bash
 uv run --extra postgres-binary lychd bind --dry-run
 uv run --extra postgres-binary lychd bind
@@ -173,12 +184,15 @@ systemctl --user restart lychd-vessel.service
 uv run --extra postgres-binary lychd status
 ```
 
-Successful bind proves Rune validation, secret presence, and atomic unit reconciliation—not
-provider reachability. CLI `status` inspects the installation; it does not list model capabilities.
-Open the running Vessel's local registry snapshot at `http://127.0.0.1:7134/orchestrator/status`
-within the same-host browser boundary. In `all_capabilities`, find the `capability_key`
-`openai-main:chat:gpt-5.2`. That row establishes synthesis and registration; this example's
-`probe = false` leaves its `phase` as `unknown`.
+After binding, distinguish the three observations. Bind verifies the Rune, named secret, and
+atomic reconciliation of units. CLI `status` inspects the installation. Neither establishes a
+provider call or lists its model capabilities.
+
+To inspect registration, open `http://127.0.0.1:7134/orchestrator/status` in the same-host browser.
+Under `all_capabilities`, find the row whose `capability_key` is `openai-main:chat:gpt-5.2`.
+This row establishes that the declared
+capability was synthesized and registered. Because the example sets `probe = false`, its `phase`
+remains `unknown`.
 
 A later `warm` observation would establish readiness of that exact declared binding, without
 establishing egress eligibility or credentialed invocation. Current Dispatcher policy quarantines
@@ -202,13 +216,14 @@ secret policy.
 
 ## Credential custody in Reach
 
-The Vessel-local credential placement is insufficient for every [Reach deployment
-profile](../../compositions/reach/deployments/index.md). Reach core and the Discord edge must never
-inherit the provider secret merely because services run on one host. Its Designed profiles require
-a separate Provider Gate/egress-adapter service that alone holds one exact provider or peer
-credential and accepts only typed, egress-admitted attempts. Until that service boundary and its
-deployment receipt ship, a current Vessel-local Portal connector cannot activate as a Reach
-provider path, including on the public VPS profile.
+Reach needs a stronger credential boundary than the current Vessel-local Connector supplies.
+Its [deployment profiles](../../compositions/reach/deployments/index.md) must keep the provider
+secret out of both Reach core and the Discord edge, even when they share a host. The Designed
+profiles place that one exact provider or peer credential in a separate Provider Gate/egress
+adapter service, which accepts only typed, egress-admitted attempts.
+
+Until that service boundary and its deployment receipt are delivered, the current Connector
+cannot serve as a Reach provider path, including in the public VPS profile.
 
 ## Portal Rune Reference
 

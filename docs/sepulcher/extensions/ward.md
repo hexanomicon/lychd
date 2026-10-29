@@ -37,19 +37,23 @@ and the [deployment examples](../../compositions/products-and-suites.md#deployme
 
 ## The marks inside the circle
 
-A Credential is revocable evidence of possession; a Principal names the immutable human,
-service, peer, or owned node to whom acts and objects belong. After verification, Core would issue
-a secret-free Sigil carrying that Principal and bounded claims through one request or Run. An
-Authority Grant is the current decision over Principal, action, object, audience, lifetime, policy
-generation, and delegation chain. Historical scopes are evidence, not live policy. An
-authentication session remains distinct from all four and from a Bridge conversation.
+Start with what the caller presents. A **Credential** is revocable evidence of possession.
+Verification connects it to a **Principal**, the immutable human, service, peer, or owned node
+to whom acts and objects belong. Core would then issue a secret-free **Sigil** carrying that
+Principal and bounded claims through a request or Run.
 
-In the designed Ward, provider adapters verify evidence without minting Sigils or becoming policy
-authorities. Admission validates protocol, issuer, audience, expiry, replay, revocation, and
-assurance; resolves one enrolled Principal; then authorizes the route and named object in an
-ownership-aware query. The decision records credential, policy, and revocation generations. Unknown
-credentials, unresolved Principals, and caller-supplied identity or scope headers receive zero
-authority. No Extension may remove Ward from a protected surface.
+Whether that Principal may perform this act now is a further decision. An **Authority Grant**
+binds Principal, action, object, audience, lifetime, policy generation, and delegation chain.
+Historical scopes can inform the decision but cannot replace current policy. An authentication
+session is another distinct record, separate from these four and from the Bridge conversation.
+
+In the designed path, a provider adapter verifies credential evidence while Ward retains policy
+and Core retains Sigil issuance. Admission checks protocol, issuer, audience, expiry, replay,
+revocation, and assurance, then resolves one enrolled Principal. An ownership-aware query decides
+access to the route and named object and records credential, policy, and revocation generations.
+
+An unknown credential or unresolved Principal receives no authority. Caller-supplied identity
+or scope headers cannot fill the gap, and no Extension may remove Ward from a protected surface.
 
 ## Authority at the moment of consequence
 
@@ -68,12 +72,14 @@ exists.
 
 ### The current preauthorization floor
 
-The current preauthorization floor rechecks enabled state, source presence, database time expiry,
-and remaining use budget in the conditional consumption write immediately before granting the
-effect. Startup synchronization marks removed Rune-owned policies `source_present = false` without
-overwriting operator enable/disable or usage state; a later exact reappearance can restore source
-presence. Budget consumption and its consent record share one PostgreSQL transaction, with rollback
-tested against injected insert failure and removal/expiry races.
+The current preauthorization path checks permission in the conditional write that consumes it,
+immediately before the effect is granted. It rechecks enabled state, source presence, expiry
+against database time, and the remaining use budget.
+
+At startup, synchronization marks removed Rune-owned policies `source_present = false` while
+preserving operator enable/disable and usage state. An exact later reappearance may restore source
+presence. Budget consumption and the consent record commit in one PostgreSQL transaction;
+injected insert failure and removal/expiry races test rollback of that joint account.
 
 ## No borrowed authority
 

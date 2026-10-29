@@ -43,7 +43,9 @@ For interactive sound, the independent Pattern takes its admitted layers through
 | `game.bind_world_sound@1` | Bind admitted sound to exact world events, states, zones, listeners, and runtime behavior. |
 | `game.validate_world_sound@1` | Check those sound bindings through their own observations and findings. |
 
-Foundry owns project source/design, scenes/worlds, interactive sound, resources/imports, tests, recipes, playtests, balance evidence, and local candidates/receipts. Producers retain visual, music, and timed-language lineage. Engines and store accounts remain external. Fun, autonomous project direction, universal sound libraries, public multiplayer, signing, upload, and store release lie beyond the finish. An XR candidate still needs [Spectre](../spectre/index.md) Habitat and Encounter admission.
+Foundry retains the project source/design, scenes/worlds, interactive sound, resources/imports, tests, recipes, playtests, balance evidence, and local candidates/receipts needed to assess the build. Each producer retains the lineage of its visual, music, or timed-language contribution, while engines and store accounts remain external.
+
+The local finish does not establish fun or authorize autonomous project direction, universal sound libraries, public multiplayer, signing, upload, or store release. To use an XR candidate as a lived place, obtain [Spectre](../spectre/index.md) Habitat and Encounter admission separately.
 
 ## Revision continuity
 

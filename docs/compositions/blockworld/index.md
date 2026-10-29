@@ -21,7 +21,7 @@ inert effects. It is not registered at normal boot and does not connect to Minec
 [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) keeps their evidence and
 remaining game checks distinct.
 
-Blockworld owns inhabitant, mission, world-local relationship, project, memory-candidate, lease, action, and receipt records. The server owns blocks, entities, inventory, and game time. An [Avatar](../avatar/index.md) can project the Lich through the inhabitant without acquiring any mission, inventory, lease, or world effect.
+Blockworld records why the inhabitant acts and what it can account for: inhabitant, mission, world-local relationship, project, memory-candidate, lease, action, and receipt records. The server remains authoritative for blocks, entities, inventory, and game time. An [Avatar](../avatar/index.md) may project the Lich through the inhabitant, but gains no mission, inventory, lease, or world effect.
 
 ## Your Minecraft client
 
@@ -57,7 +57,7 @@ mode = "managed" # managed | attached
 | **`managed`** | Rootless server Quadlet, declared world volume, configuration, exact mod/plug-in set, lifecycle and recovery receipts. | Server or modpack changes require a separately admitted deployment and operator approval. The bot receives no administrator power. |
 | **`attached`** | Bot identity, endpoint, credentials and client adapter. | No server files, console, lifecycle, snapshot, plug-in or mod authority. Admit only capabilities the external server offers. |
 
-The first fixture is managed: private, allowlisted, online-mode, and operated through a dedicated non-operator bot. An attached server may offer weaker observation or verification. Mode, server identity, protocol, capability/modpack revision, and Sentinel availability are pinned before the bot wakes. Changing mode drains missions and creates a new server generation and world epoch.
+The first proving fixture uses managed mode: a private, allowlisted, online-mode server and a dedicated non-operator bot. An attached server may offer weaker observation or verification. Before the bot wakes in either mode, pin mode, server identity, protocol, capability/modpack revision, and Sentinel availability. A mode change must drain missions and create a new server generation and world epoch.
 
 ## Enter by question
 

@@ -24,8 +24,8 @@ revision it relied on under the declared retention policy.
 
 ## Build the claim ledger
 
-Bind each factual claim to its spans and classify the work as quotation, extraction, calculation, synthesis, or interpretation. Preserve confidence, assumptions, contradictory evidence, reviewer state, and every dependent article, script, caption, or timeline object.
+For each factual claim, identify the spans that support it and whether the work is quotation, extraction, calculation, synthesis, or interpretation. Keep confidence, assumptions, contradictory evidence, and reviewer state alongside that binding. Also record every dependent article, script, caption, or timeline object, so a finding can reach all work that relied on the claim.
 
 A stale or disputed claim can be narrowed, attributed, removed, returned for research, or refused. Fluent wording cannot raise its evidence grade. A correction appends corrected/withdrawn state and stales dependants without rewriting what the earlier claim said.
 
-Rights, privacy, likeness, and Portal egress are checked on entry and whenever intended use changes. The resulting evidence and claim revisions enter [Script](script.md). They grant neither voice synthesis, another owner's asset revision, rendering, nor publication.
+Check rights, privacy, likeness, and Portal egress when evidence enters and again whenever its intended use changes. Once those checks are satisfied, the evidence and claim revisions can enter [Script](script.md). Voice synthesis, another owner's asset revision, rendering, and publication still require their own authority.

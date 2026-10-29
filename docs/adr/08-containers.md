@@ -44,10 +44,10 @@ into Core's support scope. Neither may become a required owner of LychD's contin
 
 ### Rationale: FOSS commitment and the agentic transition
 
-LychD's architectural commitment is to an open host that its operator can inspect, rebuild,
-replace, and reshape through authorized, recoverable changes. Agentic control over the body must
-remain accountable to the operator across the software stack. A proprietary host places part of
-that authority beyond the project's ability to maintain and replace it.
+The operator must be able to inspect, rebuild, replace, and reshape the host through authorized,
+recoverable changes. That open-host commitment keeps agentic control accountable across the
+software stack. A proprietary host would place part of the body's authority beyond the project's
+ability to maintain and replace it.
 
 Supporting macOS or Windows would require separate integrations for service supervision,
 networking, filesystem ownership, privilege boundaries, secrets, CLI control, and recovery. Each
@@ -103,10 +103,10 @@ it writes units.
 
 ### Compiler input
 
-Code names the reusable mechanism directly. `QuadletConfig` is a frozen non-Rune value object
-embedded as the `quadlet` field of operator intent that an admitted owner compiles into a
-Quadlet-backed service; current Soulstone and Phoenix Runes are its concrete consumers. It owns
-only their common OCI image invariant.
+`QuadletConfig` names the reusable OCI image mechanism. It is a frozen non-Rune value object,
+embedded in operator intent as `quadlet`, for an admitted owner to compile into a Quadlet-backed
+service. Soulstone and Phoenix Runes are its current consumers. Only their common OCI image
+invariant belongs to this shared object.
 
 Lifecycle, mounts, devices, secrets, ports, commands, placement, and policy remain explicit fields
 of the receiving owner rather than generic raw-Quadlet authority. `QuadletContainer` is the later
@@ -171,13 +171,14 @@ the old body is another quiesced migration rather than process restart.
 
 ## Three authorities, one transition
 
-The [Orchestrator](23-orchestrator.md) decides that a lifecycle transition is admissible; the
-[Dispatcher](22-dispatcher.md) grants capability; systemd performs the physical unit transaction.
-No office substitutes for another. Before asking systemd, the application closes relevant
-admission, drains leases, revalidates configuration and observed world, attests the generated
-target/service/Coven graph and its loaded sources against Scribe ownership, then submits the
-transition. It observes settlement, readiness, and recovery under [Privilege](10-privilege.md).
-Direct target start bypasses those gates and is break-glass only.
+A lifecycle transition crosses three authorities. The [Orchestrator](23-orchestrator.md) decides
+admissibility, the [Dispatcher](22-dispatcher.md) grants capability, and systemd performs the
+physical unit transaction. Before contacting systemd, the application closes relevant admission,
+drains leases, revalidates configuration and the observed world, and attests the generated
+target/service/Coven graph and its loaded sources against Scribe ownership. It then submits the
+transition and observes settlement, readiness, and recovery under [Privilege](10-privilege.md).
+Each office keeps its own responsibility. A direct target start bypasses these gates and is
+break-glass only.
 
 Every mount, device, secret, port, and network edge is declared per unit. Joined containers share
 a Pod network and therefore need service authorization as well as mounts; generated host ports are
@@ -234,9 +235,9 @@ Before planning, the complete ownership manifest also requires a one-to-one mapp
 `.pod`, and generated/plain systemd source to its resolved runtime unit; different source names
 that systemd would collapse onto one unit refuse together.
 
-The declared compilation/materialization path is available within its State boundary. It is not a
-receipt that a real operator host started Podman, systemd, GPU, or a model:
-[State of Work](../state-of-the-work.md#systemd-podman-embodiment) owns that distinction.
+Compilation and materialization are available within their declared State boundary. A rendered
+generation supplies no receipt that an operator's host actually started Podman, systemd, GPU, or
+a model. [State of Work](../state-of-the-work.md#systemd-podman-embodiment) owns that distinction.
 
 ## Consequences
 

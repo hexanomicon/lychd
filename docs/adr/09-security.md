@@ -37,12 +37,13 @@ fences its deployment generation, quarantines bounded transport evidence, and re
 It does not justify rotating disjoint Core credentials unless evidence shows they crossed, and it
 never upgrades forwarded identity or authorizes an effect.
 
-A remote platform edge is an application adapter, not caller authority. If upstream events lack an
-independently verifiable end-user signature, compromise of that edge can fabricate caller evidence;
-its assertions therefore cannot unlock enrolled/private Context or consequential effects without
-an independent proof presented to Ward. Edge compromise revokes platform, workload, tunnel, and
-edge-epoch credentials, quarantines its journal, and reconciles external identities. It does not
-imply compromise of disjoint home/provider credentials unless boundary evidence says they crossed.
+A remote platform edge translates an application's platform traffic. Its assertions alone cannot
+authorize a caller: where upstream events lack an independently verifiable end-user signature,
+a compromised edge can fabricate that evidence. Enrolled/private Context and consequential
+effects therefore require independent proof presented to Ward. On edge compromise, revoke
+platform, workload, tunnel, and edge-epoch credentials, quarantine the journal, and reconcile
+external identities. Disjoint home/provider credentials are implicated only if boundary evidence
+shows they crossed.
 
 ### Tomb Execution Contract {#6-tomb-execution-contract}
 
@@ -186,10 +187,11 @@ publicness, not a PII detector or proof of original authorship. Known restricted
 unknown lineage, prohibited categories and local-only constraints still refuse. Text equality,
 ordinary chat, ASR, model output and a serialized declaration cannot supply this authority.
 
-A coding runtime's child provider request is a separate `PortalTarget`; the outer job decision
-cannot authorize an unknown series of model calls. A black-box runtime that cannot keep its network
-behind the admitted Provider Gate is ineligible for automated remote execution. Transparent MITM,
-ambient proxying, and caller-supplied target fields do not close that boundary.
+Each child provider request from a coding runtime needs its own `PortalTarget`. The outer job
+decision cannot authorize an unknown series of model calls. Automated remote execution therefore
+requires the runtime's network to remain behind the admitted Provider Gate; a black-box runtime
+that cannot do so is ineligible. Transparent MITM, ambient proxying, and caller-supplied target
+fields cannot establish this boundary.
 
 #### Decision identity and local custody
 
@@ -213,12 +215,12 @@ already sealed application bytes to transport; it neither appends decision metad
 adapter serialize the verdict. A public projection uses only an opaque event id or the keyed
 evidence form below.
 
-A canonical raw payload, source, manifest, or content digest is also restricted local evidence: a
-plain hash of a short prompt, filename, identifier, or stable manifest can be a dictionary and
-linkage oracle. Exported, logged, or operator-wide evidence uses either a random opaque id or
-`EvidenceDigest@1`, a deployment-local, domain-separated keyed digest scoped to consumer, purpose,
-record class, key epoch, and retention. It never receives raw low-entropy fields as metadata and
-never claims that a digest anonymizes its input.
+Evidence can itself disclose private facts. A plain hash of a short prompt, filename, identifier,
+or stable manifest can become a dictionary and linkage oracle, so canonical raw payload, source,
+manifest, and content digests remain restricted local evidence. Exported, logged, or operator-wide
+evidence instead uses a random opaque id or `EvidenceDigest@1`: a deployment-local,
+domain-separated keyed digest scoped to consumer, purpose, record class, key epoch, and retention.
+It receives no raw low-entropy metadata and makes no claim to anonymize its input.
 
 #### Transmission and redelivery
 
@@ -313,13 +315,13 @@ also refuse whenever policy depends on them. Current local-only source has no ho
 authorization and does not deliver this general egress gate; [State of
 Work](../state-of-the-work.md#context-privatization-and-portal-egress) owns that boundary.
 
-Disclosure accounting must also cover related calls, retries, delegated child requests, and
-intermediaries across one purpose: several individually sanitized payloads can reveal a stable
-identity or reconstruct withheld context together. Per-call censorship is not an anonymity
-guarantee. A future gate must enforce cumulative policy before transmission and retain bounded
-local evidence sufficient to detect reuse without exporting a correlation identifier. Semantic
-re-identification resistance needs adversarial evaluation for the stated observer and workload;
-no general proof or implemented cumulative-disclosure gate is claimed here.
+Several sanitized payloads can together reveal a stable identity or reconstruct withheld context.
+Disclosure accounting must therefore cover related calls, retries, delegated child requests, and
+intermediaries across one purpose. A future gate must enforce that cumulative policy before
+transmission and keep enough bounded local evidence to detect reuse without exporting a
+correlation identifier. Per-call censorship cannot guarantee anonymity. Resistance to semantic
+re-identification needs adversarial evaluation against the stated observer and workload; neither
+a general proof nor an implemented cumulative-disclosure gate is claimed here.
 
 ### Return Quarantine {#7-return-quarantine}
 
@@ -362,7 +364,7 @@ retention.
 
 ## Consequences
 
-An unavailable boundary is a refusal, not a reason to widen an execution profile. The current
-policy shapes do not substitute for containment receipts. Once delivered, local transformation
-and gated containment may admit lower-cost remote computation without handing its provider raw
-authority-bearing context; economic advantage never relaxes a boundary.
+An unavailable boundary requires refusal, and policy shapes still need containment receipts before
+they can support execution. Once delivered, local transformation and gated containment may make
+lower-cost remote computation possible without handing the provider raw authority-bearing
+context. Economic advantage cannot relax the boundary or justify widening an execution profile.

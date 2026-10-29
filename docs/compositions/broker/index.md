@@ -15,7 +15,7 @@ The reference office is a Slovak non-life insurance intermediary beginning with 
 
 ## Contract
 
-`broker.office` revision `1` publishes `broker.service_case@1`. Admission requires `ClientContact@1`, one requested action, business policy, product catalogue, and current staff authority. The result stops before unlicensed advice, undisclosed automation, payment, signature, binding, or unsupported product claims.
+Admit one requested action with its `ClientContact@1`, business policy, product catalogue, and current staff authority. `broker.service_case@1`, published by `broker.office` revision `1`, carries that bounded case to its result. It must stop before unlicensed advice, undisclosed automation, payment, signature, binding, or unsupported product claims.
 
 Broker names this application office. It is unrelated to LychD's internal queue broker.
 

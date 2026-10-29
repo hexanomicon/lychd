@@ -14,10 +14,11 @@ icon: material/toy-brick-outline
 
 ## Decision Outcome
 
-LychD selects native, protocol-bound contributions for admitted extensions and external service
-protocols where isolation or independent deployment is required. An external service for every
-extension would buy isolation at latency and deployment cost; sandbox scripting remains a future
-containment option, not a second language or runtime promised today.
+An extension can join LychD as an admitted, protocol-bound native contribution or as an external
+service. Native Python provides direct access where the receiving owner accepts that trust;
+external protocols provide isolation or independent deployment where those are required. Making
+every extension an external service would impose latency and deployment costs. Sandbox scripting
+remains a future containment option, with no second language or runtime promised today.
 
 The Extension Protocol joins local-package admission and external-provider integration without
 conflating their trust or lifecycle boundaries. Semantic contract and profile identities remain
@@ -45,9 +46,10 @@ the contract.
 
 ### Vocabulary Boundary: Domain Is Not Package
 
-The distinction prevents provenance, trust, evolution, and configuration from being collapsed
-into import location. Core owns schemas, policies, lifecycle, and host effects. A package can
-contribute only the explicit shapes that a receiving owner accepts.
+Core owns schemas, policies, lifecycle, and host effects. A package can add only the explicit
+shapes accepted by a receiving owner. Keeping Domain and package separate therefore lets each
+contribution state its provenance, trust, evolution, and configuration without making import
+location stand in for those decisions.
 
 ### 1. The Federation Strategy
 
@@ -88,14 +90,13 @@ contracts is an [Evolution](18-evolution.md) of the body: prepare an inactive ca
 admitted work, replace the Vessel generation, and reconstruct volatile state from validated
 configuration and durable truth.
 
-This is a coherence boundary, not a missing cleanup API. A fine-grained lifecycle can reverse only
-the registrations and resources mediated through it. References, closures, background tasks,
-caches, foreign-library state, and already-emitted filesystem, database, or network effects can
-escape that ledger; removing a module cannot prove that old and new memory no longer coexist.
-LychD therefore treats process memory as disposable rather than making perfect effect capture a
-system-wide invariant. Ordinary shutdown must still quiesce owned workers and resources, but
-teardown hygiene never authorizes live code replacement or claims that external effects were
-rolled back.
+Process replacement keeps one executable generation coherent. A fine-grained lifecycle can
+reverse registrations and resources only when it mediates them: references, closures, background
+tasks, caches, foreign-library state, and already-emitted filesystem, database, or network effects
+can escape its ledger. Removing a module therefore cannot prove that old and new memory no longer
+coexist. LychD treats process memory as disposable instead of requiring perfect effect capture
+throughout the system. Ordinary shutdown must still quiesce owned workers and resources. That
+teardown hygiene neither authorizes live code replacement nor proves external effects rolled back.
 
 A future declarative catalogue generation may activate without Vessel replacement only when it
 introduces no new executable implementation and its owner supplies atomic durable generation and
@@ -223,11 +224,11 @@ is where platform validation and operator consent can be made explicit.
 
 ### 5. Runtime Schema Discovery
 
-Schema makes TOML loadable; it is not runtime. A domain supplies the runtime definition and
-hydrator. LychD-facing state uses `Runic[T]` and its `.rune` provenance; a foreign object is not
-`Runic` until an adapter wraps it. Codex validates configuration, an adapter builds state, and the
-handle retains the rune while foreign internals remain sovereign. Foreign systems may use rune
-machinery, but their stable boundary is translated configuration, not borrowed internals.
+A schema makes TOML loadable; a Domain's runtime definition and hydrator make the configured
+capability usable. Codex validates the configuration, an adapter builds state, and the resulting
+LychD-facing `Runic[T]` handle retains its `.rune` provenance. A foreign object becomes `Runic`
+only through such a wrapper. Foreign internals remain sovereign even when a system uses rune
+machinery: translated configuration is the stable boundary.
 
 ### 6. The MPL 2.0 Shield (Private Extensions)
 
@@ -289,7 +290,8 @@ platform validation, and explicit operator consent before runtime import.
 
 ### Consequences
 
-In-process code shares the daemon and can crash or corrupt it, so only trusted, admitted source
-receives that path. Selection and contracts stay explicit. Process isolation and independent
-lifecycle require an external protocol; refactor independence for in-process packages requires a
-future public extension-package API. Neither is granted by a package name.
+Admitting in-process code means trusting it with the daemon's memory and stability: it can crash
+or corrupt the process. Only trusted, admitted source receives that path, with explicit selection
+and contracts. External protocols provide process isolation and independent lifecycle. A future
+public extension-package API is still required for in-process refactor independence; a package
+name grants none of these properties.

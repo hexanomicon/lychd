@@ -30,10 +30,11 @@ every admitted model implements every form:
 
 ### Request and provenance
 
-A candidate `ImageJob@2` therefore carries an explicit operation, prompt and negative prompt,
-authorized source, reference, mask, and control `ArtifactRef` values, requested dimensions and
-candidate count, seed policy, immutable preset, deadline, budget, and output policy. Optional
-inputs do not grant an engine capabilities it has not declared and proved.
+Describe the intended change before resolving an engine. A candidate `ImageJob@2` names its
+operation, prompt and negative prompt, and the authorized source, reference, mask, and control
+`ArtifactRef` values it may use. Dimensions, candidate count, seed policy, immutable preset,
+deadline, budget, and output policy bound the work. Supplying an optional input does not prove
+that an engine can use it; the selected profile must declare and prove that capability.
 
 The job also retains the operator-facing prompt, its declared or detected source language when
 known, the requested model-facing language, and translation policy. A translator may derive a
@@ -48,14 +49,18 @@ anonymous workflow tensors.
 
 ### Technical settlement
 
-`ImageJob@2` owns the requested operation, candidate set, technical validation, and result
-settlement. Creative adoption belongs to [Atelier](../../../compositions/atelier/index.md) or another consuming Composition; successful
-custody and probes never accept the image on that owner's behalf. Each concrete execution uses Core's Designed
-[`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts) mechanics;
-`INDETERMINATE` remains contained and nonterminal rather than a successful or failed image result.
-Numeric progress, previews, cancellation acceptance and settlement, multiple references, hard
-masks, deterministic seeds, and partial streaming are independent capability facts. A Connector
-must not synthesize support from a broadly compatible endpoint.
+`ImageJob@2` settles whether the requested operation produced a technically valid candidate set.
+[Atelier](../../../compositions/atelier/index.md) or another consuming Composition then decides
+whether to adopt it creatively; successful custody and probes cannot make that choice for the
+owner. Each concrete execution uses Core's Designed
+[`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts) mechanics. An
+`INDETERMINATE` attempt remains contained and nonterminal, so it cannot count as either a
+successful or failed image result.
+
+Qualify the interaction details separately too: numeric progress, previews, cancellation
+acceptance and settlement, multiple references, hard masks, deterministic seeds, and partial
+streaming are independent capability facts. A Connector cannot infer them from a broadly
+compatible endpoint.
 
 Each result receipt retains source and output digests, original and derived prompt language and
 texts, translator revision and declared loss, engine and container revision, model and component
@@ -75,10 +80,10 @@ graph through a lowest-common-denominator API.
 | [ComfyUI](https://github.com/Comfy-Org/ComfyUI) | GPL-3.0 graph inference server with image and mask upload, queued workflows, WebSocket progress, history, interruption, and model-memory release. | Full-power workflow connector for control maps, LoRA stacks, multiple samplers, inpaint, upscale, detail passes, and future image/video/3D nodes. Only allowlisted built-in or exactly pinned custom nodes and immutable workflow presets may run. |
 | [SGLang-Diffusion](https://github.com/sgl-project/sglang) | Apache-2.0 performance-oriented diffusion server with OpenAI Images serving and native or Diffusers-backed pipelines. | Challenger behind the same basic Images profile. Promote only where a model or measured throughput, batching, placement, or sharding advantage beats the first route. |
 
-OpenAI Images is a useful transport dialect, not the inner contract. Generation and edit support
-must be profiled separately, along with mask, multi-reference, partial-stream, and cancellation
-behavior. The API does not provide a universal durable image-job resource; LychD retains job
-identity, state, authority, retry law, and artifact custody.
+Use OpenAI Images to carry requests where its dialect fits, while keeping the inner contract
+with Image. Profile generation and editing separately, including masks, multiple references,
+partial streams, and cancellation. Because the API offers no universal durable image-job
+resource, LychD must retain job identity, state, authority, retry law, and artifact custody.
 
 For a Comfy route, select only the immutable preset and parameter openings admitted under the
 [engine contract](../../animator/soulstone/engines/comfyui.md#keep-model-engine-and-road-apart).
@@ -111,12 +116,13 @@ not a hard preservation mask, and separate Qwen checkpoints remain separate Rune
 
 ## Coven, stasis, and the proving bake
 
-One possible Coven keeps a compact Multimodal Mind on one 24 GB GPU and FLUX.2 klein on the other.
-A large Qwen-Image profile may instead need affected work to release its leases through
+Placement must work on the operator's actual devices. One possible Coven keeps a compact
+Multimodal Mind on one 24 GB GPU and FLUX.2 klein on the other. A large Qwen-Image profile may
+instead require affected work to release its leases through
 [Prism's Stasis and readiness passage](index.md#sight-on-finite-iron).
-Two 24 GB devices are not implicitly one 48 GB device: the exact runtime must prove sharding,
-offload, warm-up, cancellation, and complete release. Neither Comfy nor a serving engine may choose
-placement or evict another Animator.
+Two 24 GB devices do not implicitly provide one 48 GB allocation. The exact runtime must prove
+sharding, offload, warm-up, cancellation, and complete release; neither Comfy nor a serving
+engine can choose placement or evict another Animator.
 
 The first corpus should cover natural scenes, illustration, UI and poster text, Slovak diacritics,
 single- and multi-reference identity, preservation edits, masks and expanded canvases, pose/depth/

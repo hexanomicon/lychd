@@ -7,7 +7,7 @@ icon: material/run
 
 The plan called for movement; the day may call for a change. Fitness gives one consenting adult editable choices inside the reviewed profile's time, equipment, enabled mode, hard restrictions, and operator maxima.
 
-In movement mode, `wellbeing.plan_cycle@1` checks those limits before softer preferences. It returns infeasibility when they cannot be met, leaving the Magus to edit, approve, or reject the plan. `wellbeing.check_in@1` records only confirmed completion, skip, substitution, duration, or reflection. Silence supplies no missing result.
+In movement mode, `wellbeing.plan_cycle@1` checks those limits before considering softer preferences. If they cannot be met, return infeasibility for the Magus to consider when editing, approving, or rejecting the plan. What happened later is recorded separately: `wellbeing.check_in@1` records only confirmed completion, skip, substitution, duration, or reflection. Silence cannot fill in a missing result.
 
 “My knee hurt” remains the operator's testimony and halts automated progression. It does not
 establish an injury, cause, adherence judgment, or treatment. Fitness does not infer calorie

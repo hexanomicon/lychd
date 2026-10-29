@@ -24,11 +24,13 @@ the live task and subscribers even when the broker retains its job.
 
 ### Admission and claim
 
-`RunEngine.submit` selects the workflow and queue. In one transaction, `RunLedger` mints the Run
-id and commits `QUEUED`, the Pattern, Intent, queue, priority, authority, and exact initial
-delivery. When caller-owned retention is required, delivery remains `HELD` until retention
-succeeds, then releases to `PENDING`; otherwise admission creates `PENDING` directly. The live
-channel opens and `run:<run_id>:<enqueue_seq>` publishes only after any required release.
+Admission starts in `RunEngine.submit`, which chooses the workflow and queue. `RunLedger` then
+mints the Run id and commits `QUEUED`, Pattern, Intent, queue, priority, authority, and exact
+initial delivery in one transaction.
+
+Some callers must retain their own material before publication. For those callers, delivery
+starts `HELD` and becomes `PENDING` only after retention succeeds. Otherwise it starts `PENDING`.
+The live channel opens and `run:<run_id>:<enqueue_seq>` publishes only after any required release.
 
 Each failure keeps its own boundary:
 
@@ -66,20 +68,24 @@ commit DONE / FAILED and exact delivery settlement
 → close the live channel
 ```
 
-Cleanup or evidence failure cannot revise committed status. If child containment fails transiently,
-the worker retries it; continuing uncertainty leaves the Run nonterminal for recovery. It cannot
-claim `FAILED` while correlated authority may still act.
-Before that containment, the Ghoul verifies its exact delivery generation under the same per-Run
-guard used by claims and park commits. A late failure cannot cancel the next Ghoul's effects or
-undo a durable wait whose commit acknowledgement was lost.
+Once status commits, cleanup or evidence failure cannot revise it. Before settling failure, the
+worker must also contain correlated children. It retries transient containment failures; continuing
+uncertainty leaves the Run nonterminal for recovery. Claiming `FAILED` while correlated authority
+could still act would conceal an unresolved effect.
+
+Before containment, the Ghoul checks its exact delivery generation under the same per-Run guard
+used for claims and park commits. A late failure therefore cannot cancel the next Ghoul's effects
+or undo a durable wait whose commit acknowledgement was lost.
 
 Cancellation elects one writer, commits `CANCELLING`, and fences claims and delivery rotation.
-Broker, delegate, and pending Consent containment must acknowledge before the elected generation
-commits `CANCELLED`. A worker observing its exact `CANCELLING` generation releases volatile Context
-for containment acknowledgement while retaining its checkpoint. After `CANCELLED` commits, the
-engine handles terminal evidence and channel closure before best-effort Context and checkpoint
-cleanup; evidence failure still runs that cleanup. Uncertain containment preserves `CANCELLING`;
-completion that already won makes a new cancellation a no-op.
+The elected generation may commit `CANCELLED` only after broker, delegate, and pending Consent
+containment acknowledge. A worker that sees its exact `CANCELLING` generation releases volatile
+Context for containment acknowledgement while keeping its checkpoint.
+
+After `CANCELLED` commits, the engine handles terminal evidence and channel closure, then performs
+best-effort Context and checkpoint cleanup. Evidence failure still runs that cleanup. If
+containment remains uncertain, status stays `CANCELLING`. If completion already won, a new
+cancellation is a no-op.
 
 `RunEvent` has bounded process-local replay. Non-token events copy to `step` best-effort; token
 deltas are live-only. The evidence class is `durable_best_effort`, not a transactional event outbox.
@@ -91,14 +97,15 @@ A new process judges committed Run, delivery, checkpoint, Consent, and delegated
 state-by-state return: unsupported active work becomes `FAILED / ghoul lost`, exact durable
 waits may return, and missing or ambiguous required truth aborts PostgreSQL startup.
 
-Startup repairs missing terminal evidence from canonical terminal Runs. Mismatched terminal
-evidence aborts required PostgreSQL startup; it is not overwritten. Cancellation cleanup may still
-remove its checkpoint when evidence fails. Lifespan-owned relays continue delivery, consent, and
-delegated-owner repair. They retain every degraded page while scanning forward, so a blocked owner is not lost
-behind a keyset cursor. Consent lookup and re-admission have one ten-second deadline per owner;
-timeout preserves the wait or committed pending delivery and lets other owners progress.
-There is no same-boot worker-failure custody watchdog, public failed-Run
-retry, or workflow scheduler.
+Startup repairs missing terminal evidence from canonical terminal Runs. If existing terminal
+evidence disagrees, required PostgreSQL startup aborts instead of overwriting it. Cancellation
+cleanup may still remove its checkpoint when evidence fails.
+
+Lifespan-owned relays continue delivery, consent, and delegated-owner repair. While scanning
+forward, they retain every degraded page so a blocked owner cannot disappear behind a keyset
+cursor. Consent lookup and re-admission share one ten-second deadline per owner. A timeout keeps
+the wait or committed pending delivery and lets other owners progress. There is no same-boot
+worker-failure custody watchdog, public failed-Run retry, or workflow scheduler.
 
 [Workers](../../adr/14-workers.md) owns claims and recovery;
 [Graph](../../adr/24-graph.md) owns checkpoints and terminal commits. [Topology-A](../../state-of-the-work.md#topology-a-local-runs)

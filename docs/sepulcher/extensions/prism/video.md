@@ -50,15 +50,16 @@ prompt translator may derive the model-facing prompt from the operator's preferr
 the receipt preserves both texts, translator revision, and declared loss. Translation never
 silently replaces visual direction.
 
-`VideoJob@2` owns the requested temporal effect, candidate set, technical validation, and result
-settlement. Creative adoption belongs to Atelier or another consuming Composition; successful
-custody and probes never accept the work on that owner's behalf. Each concrete execution uses
-Core's Designed
+`VideoJob@2` settles the requested temporal effect: its candidate set and technical validation.
+Atelier or another consuming Composition decides whether to adopt the work creatively; custody
+and probes cannot decide for it. Each concrete execution uses Core's Designed
 [`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts) mechanics.
-Numeric progress, step progress, previews, cancellation before start, cancellation while running,
-and cancellation granularity are separate Connector facts. Deleting a provider record is not
-evidence that a running generation was cancelled; an indeterminate attempt remains contained and
-is reconciled by the same provider identity.
+
+The Connector must establish what the provider can actually report or stop. Numeric progress,
+step progress, previews, cancellation before start, cancellation while running, and cancellation
+granularity are separate facts. Deleting a provider record does not prove that a running
+generation was cancelled. An indeterminate attempt stays contained and must be reconciled using
+the same provider identity.
 
 Every returned file is immediately ingested into Reliquary custody and rehashed. A canonical
 receipt retains input and output digests; engine, container, model, encoder, decoder, VAE, LoRA,
@@ -73,13 +74,16 @@ A video request that may return sound crosses a second, explicit admission bound
 roles before dispatch; after technical settlement, retain each owner's independent judgment.
 The same compound artifact can therefore be technically valid while one intended use is refused.
 
-Before execution, `VideoJob@2` also pins one `MediaFacetAuthoritySet@1`. It contains one row for
-every requested output facet: stable facet id; technical kind; exact semantic role; consuming
-Composition identity and revision; owner request or brief digest; permitted use and audience;
-source, likeness, voice, rights, and consent evidence; classification, retention, and Portal
-policy; paid-effect ceiling; required separability; and disposition when that facet cannot be
-proved. The closed sound-role vocabulary is `music`, `timed_language`, `picture_sound`, and
-`world_sound`; a provider's generic `audio` or `sound` label is not a semantic role.
+Before dispatch, identify every requested output facet in the job's pinned
+`MediaFacetAuthoritySet@1`. Each row binds a stable facet id and technical kind to its exact
+semantic role, consuming Composition identity and revision, owner request or brief digest,
+permitted use, and audience. It also carries source, likeness, voice, rights, and consent
+evidence; classification, retention, and Portal policy; the paid-effect ceiling; required
+separability; and the disposition to use when the facet cannot be proved.
+
+For sound, choose from the closed roles `music`, `timed_language`, `picture_sound`, and
+`world_sound`. A provider label such as `audio` or `sound` cannot make that choice: it describes
+media without identifying the owner or intended use.
 
 A profile may enable native sound only after every requested sound row passes that preflight. When
 the row entails speech capture, transcription, synthesis, cloning, or voice identity, it also pins
@@ -97,20 +101,23 @@ retains visual judgment; [Riffmaw](../../../compositions/riffmaw/index.md) music
 [Broadcast](../../../compositions/broadcast/index.md) picture-sound and final editorial audiovisual judgment;
 and [Foundry](../../../compositions/foundry/sound.md) world-sound judgment.
 
-Technical settlement does not make any facet usable. Each declared consumer independently issues a
-`SemanticFacetAdmissionReceipt@1` that pins its Composition identity and revision, owner request
-digest, facet and compound digests, role, use boundary, evidence and findings, decision maker, and
-one `accepted`, `refused`, or `quarantined` disposition. Prism may link those receipts to the
-technical result but cannot issue, merge, or upgrade them. The same bytes used in two roles require
-two receipts. Broadcast's later judgment of the final editorial audiovisual relation cannot substitute for
-Atelier, Riffmaw, Language Edition, or Foundry admission.
+After technical settlement, each declared consumer still judges its own facet. Its independent
+`SemanticFacetAdmissionReceipt@1` pins Composition identity and revision, owner request digest,
+facet and compound digests, role, use boundary, evidence and findings, decision maker, and an
+`accepted`, `refused`, or `quarantined` disposition. Prism can link those receipts to the result,
+but cannot issue, merge, or upgrade them.
 
-Sound absent from `MediaFacetAuthoritySet@1` produces an `UnexpectedMediaFacet@1` finding and fails
-closed for that facet: it is quarantined or deleted under the pinned retention rule, never routed
-as a usable candidate and never assigned a guessed owner. A provably separable visual child may
-continue after that disposition; an inseparable compound remains unusable unless every declared
-facet owner accepts the exact compound digest and use. `generate_sound=true`, demux, or a provider
-label cannot transfer an office or launder undeclared sound.
+If the same bytes serve two roles, they require two receipts. Broadcast's later judgment of the
+final editorial audiovisual relation cannot replace admission by Atelier, Riffmaw, Language
+Edition, or Foundry. Technical validity alone therefore makes no facet usable.
+
+If returned sound was absent from `MediaFacetAuthoritySet@1`, record an
+`UnexpectedMediaFacet@1` finding and fail closed for that facet. The pinned retention rule
+determines quarantine or deletion; the sound cannot be routed as a usable candidate or assigned
+a guessed owner. A provably separable visual child may continue once that disposition is settled.
+An inseparable compound remains unusable unless every declared facet owner accepts that exact
+compound digest and use. Neither `generate_sound=true`, demux, nor a provider label can transfer
+an office or admit undeclared sound.
 
 ## Serving route, workflow route, and deterministic tools
 
@@ -161,10 +168,11 @@ banned: it is ineligible where its own territory clause withholds a license.
 
 ## Profiles, Runes, Covens, and arbitrary iron
 
-Hardware suitability belongs to an exact deployment profile, never to the universal job contract.
-The same model may be permanently resident on a large-memory workstation, offloaded or quantized
-on a smaller host, sharded across measured devices, or reached through an explicitly admitted
-Portal. A personal two-card bake is evidence for that host, not a product ceiling.
+Choose placement after fixing the job contract. A large-memory workstation may keep the model
+resident; a smaller host may need a measured quantized or offloaded profile. Other possibilities
+are proved sharding across devices or an explicitly admitted Portal. Hardware suitability is
+evidence about that exact deployment profile. A personal two-card bake establishes a result for
+that host, not a ceiling on the product.
 
 Follow [Prism's admission route](index.md#sight-on-finite-iron) for a grant or handle-free
 transition and re-dispatch. Declare the concrete service through its

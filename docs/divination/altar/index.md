@@ -5,16 +5,20 @@ icon: fontawesome/solid/dungeon
 
 # :fontawesome-solid-dungeon: Altar
 
-A reply is the beginning of a review. The **Altar** lets you stay with one piece of work as you
-move from a project's concerns to conversation and evidence, from evidence to its declared score,
-and from a recorded transition to the state of the iron.
+Bring a piece of work to the **Altar**, then follow it beyond the reply. You can keep a project's
+concerns beside its conversation, inspect the evidence behind a result, read the score that guided
+the Run, and examine any recorded change to the iron. Each instrument answers a different part of
+that inquiry.
 
 ## Bring one Intent
 
-Establish the four observations in [Summoning](../../summoning.md). That rite ends by stopping
-the Vessel; for a later Altar session, return through [The Awakening’s
-startup](../../summoning.md#the-awakening) before opening the browser. Use a dedicated profile on
-the same host:
+Begin with [Summoning](../../summoning.md), including its four observations of the bound body
+and first reply. Before starting services, read its [closure limitation](../../summoning.md#close-the-rite):
+`lychd stop` currently refuses an active Vessel, so the trial needs a separately authorized
+recovery plan. Summoning does not supply a working end-to-end start/stop procedure.
+
+For startup and local access, follow [The Awakening](../../summoning.md#the-awakening). With the
+Vessel running under that trial boundary, open the Altar in a dedicated profile on the same host:
 
 ```text
 http://127.0.0.1:7134/
@@ -34,9 +38,13 @@ Work](../../state-of-the-work.md#altar-and-observability) records the delivered 
 
 ## Carry the Run with you
 
-One séance can hold many [Circles](./circle.md). Each Circle is one admitted Invocation, whose
-casting performs an exact Scroll and whose Run keeps durable execution identity. Keep that Run
-identity in view when changing instruments.
+Follow one admitted conversation turn from your offered request to its result. Its **Run**
+identity lets you find the same act in each instrument. The conversation, or séance, can hold
+many such turns.
+
+Each admitted turn opens a [Circle](./circle.md): one Invocation. Within that Circle, the
+**casting** performs an exact **Scroll**, the workflow score; its Run keeps durable execution
+identity. Keep that identity in view when changing instruments.
 
 | What you need to establish | Instrument |
 | --- | --- |
@@ -51,18 +59,21 @@ panel beside the selected work. Icons accompany their visible names; hover, clic
 opens the menu. **Applications** opens the admitted application list, including Canvas and
 Scavenger market.
 
-Atlas keeps a Project across conversations and Runs; it can also begin without either. Circle is the Invocation-shaped pinnacle within Bridge,
-not a separate instrument. Its current material form is a compact per-turn Run disclosure with
-supplied status, complete identity, evidence and declared-score links, and eligible cancellation. A
-composed Circle workspace is not delivered.
+Atlas gives a larger undertaking continuity across conversations and Runs, and can begin before
+either exists. Inside Bridge, a Circle gathers one Invocation. Its current form is a compact
+per-turn Run disclosure: supplied status, complete identity, evidence and declared-score links,
+and eligible cancellation. Circle is the Invocation-shaped pinnacle within Bridge; a composed
+Circle workspace is not yet delivered.
 
-At a Bridge result, keep its Run identity and choose **Look into the Orb**. The leaf guides show
-how to account for capture and gaps, compare the pinned score in Loom, and follow exact physical
-transition correlations into Nexus. Carrying the same Run through those views keeps each
-observation attached to the work that raised your question.
-Open `/orb` for the parallel Run field: a paged catalogue and at most three bounded live lenses
-share one canvas. Zoom or explicit detail controls unfold supplied Run, station, occurrence, and
-record identities; deeper subworkflow structure remains unavailable without its owner's identity.
+Start with **Look into the Orb** beside a Bridge result. Keep the same Run identity as you inspect
+capture limits and gaps, compare its pinned score in Loom, or follow an exact physical-transition
+correlation into Nexus. The leaf guides explain each step. That shared identity keeps an
+observation attached to the work that prompted your question.
+
+For several Runs, open `/orb`. Its parallel field combines a paged catalogue with at most three
+bounded live lenses on one canvas. Zoom or explicit detail controls reveal supplied Run, station,
+occurrence, and record identities. Deeper subworkflow structure needs an identity from its owner;
+the view cannot infer it.
 
 Nexus inspection changes no lifecycle state. **Preview** is nonbinding; **Request transition**
 performs a real maximum-priority mutation. Read the [Nexus guide](./nexus.md) before making that
@@ -95,12 +106,12 @@ contracts belong to the Frontend Covenant; interface choices preserve retained s
 
 ## Presentation direction
 
-The presentation follows a quiet observatory: a readable undertaking, conversation,
-account, board, or score is each page's focal point. Secondary identity and history are disclosed
-when useful. Uncertainty, consent, capture limits, and physical consequences stay beside the
-choices they qualify. [Frontend's reading hierarchy](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction)
-owns the shared design; each instrument's **Reading direction** distinguishes its current
-composition, further targets, and a practical acceptance case.
+Each page is arranged as a quiet observatory around the work you came to read: an undertaking,
+conversation, account, board, or score. Identity and history unfold as needed, while uncertainty,
+consent, capture limits, and physical consequences stay beside the choices they qualify.
+[Frontend's reading hierarchy](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction)
+owns this shared design. Each instrument's **Reading direction** explains its current composition,
+further targets, and a practical acceptance case.
 
 Follow [Atlas's concerns and citations](atlas.md#reading-direction),
 [Bridge's conversation and recovery](bridge.md#reading-direction),

@@ -33,11 +33,13 @@ owns exact table admission and migration history. Planned `vectors`, `traces`, a
 chambers describe governed memory, cognitive evidence, and broker separation; naming those
 chambers does not deliver their services.
 
-A checkpoint preserves declared Graph state. Subscribers, leases, provider handles, and
-uncommitted frames die with the process; its image, runtime dependencies, and event stream cannot
-be restored from that checkpoint. Terminal Run status commits before Context release and
-best-effort checkpoint cleanup. A surviving checkpoint after failed cleanup grants no replay
-permission. [Reanimation](reanimation.md) must first judge canonical truth.
+Read a checkpoint as declared Graph state. It cannot restore the process's image, runtime
+dependencies, or event stream. Subscribers, leases, provider handles, and uncommitted frames end
+with the process.
+
+Terminal Run status commits before Context release and best-effort checkpoint cleanup. A
+checkpoint left behind by failed cleanup therefore grants no replay permission.
+[Reanimation](reanimation.md) must judge canonical truth before anything can return.
 
 ## One cluster, one custody boundary
 
@@ -46,35 +48,41 @@ in the [Crypt](../crypt.md). The default design enlarges one cluster on one host
 that mount without moving application authority. Process-local and in-memory profiles provide
 bounded execution or test substitutes. Loose files cannot become a shadow database.
 
-Growth begins with lifecycle policy. Age and disk pressure confer no deletion rights, and Shadow's
-Reaper does not collect database records. Later measurements may justify partitions or
-tablespaces that place hot and cold relations on local tiers while preserving PostgreSQL's one
-query boundary. Extra mounts first need Layout, container, whole-cluster capture, and restore
-support. No scale-out topology has been selected. A future named Domain store needs its own
-custody or projection contract; it is not an interchangeable Phylactery backend. Follow the
-[topology and scale seam](../../adr/06-persistence.md#default-topology-and-scale-seam) when that
+Plan growth through lifecycle policy first. Neither age nor disk pressure grants deletion rights,
+and Shadow's Reaper does not collect database records. If later measurements justify local hot
+and cold tiers, partitions or tablespaces must preserve PostgreSQL's single query boundary.
+Additional mounts would first need Layout, container, whole-cluster capture, and restore support.
+
+No scale-out topology has been selected. A future named Domain store requires its own custody or
+projection contract, rather than becoming an interchangeable Phylactery backend. Follow the
+[topology and scale seam](../../adr/06-persistence.md#default-topology-and-scale-seam) when the
 choice becomes necessary.
 
 ## Read the evidence before claiming continuity
 
-First-light persistence is **Partial**. The [named receipts](../../state-of-the-work.md#phylactery-first-light)
-separate the lifecycle test with offline collaborators from actual warm-model reply/history
-retention, including two normal source-CLI/native TCP boots. These source-profile receipts do not establish a
-Consent-plus-Checkpoint restart, current installed body or crash recovery. A separate
-[trusted source-browser journey](../../state-of-the-work.md#current-evidence-envelope) retains its
-fixed useful reply after normal restart; its test composition remains explicit. The separate
+First-light persistence is **Partial**. Read the [named receipts](../../state-of-the-work.md#phylactery-first-light)
+according to what each observed. The lifecycle test uses offline collaborators. Actual warm-model
+reply/history retention includes two normal source-CLI/native TCP boots. These source-profile
+receipts establish neither a Consent-plus-Checkpoint restart, a current installed body, nor crash
+recovery.
+
+A separate [trusted source-browser journey](../../state-of-the-work.md#current-evidence-envelope)
+retains its fixed useful reply after normal restart under an explicit test composition. The
 [trusted installed-hybrid receipt](../../state-of-the-work.md#current-evidence-envelope) retains
-identical complete SDK history, Intent capability and exact Pattern manifest across two normal
-installed native boots; its private Docker and borrowed-model scope remains binding. General
-retention, compaction and physical tiering are incomplete. The bounded
-[public-note Archive](../../state-of-the-work.md#karma-semantic-memory) adds explicit intake,
-lifecycle and lexical recall; old Karma rows remain inert. The independently
-selected [derivation path](../../adr/27-memory.md#explicit-local-derivation) retains bounded vectors
-and their invalidation fences. Its durable status reports only the latest attempt; expired work
-requires an explicit retry. Separately selected semantic recall and Bridge revision 5 have fixed
-native lifecycle and attributed-answer/empty-recall observations. Their exact model, authority
-and source scopes remain binding; they do not establish general retrieval quality, automatic
-curation, sharing or a formation path.
+identical complete SDK history, Intent capability, and exact Pattern manifest across two normal
+installed native boots. Its private Docker and borrowed-model scope still applies. General
+retention, compaction, and physical tiering remain incomplete.
+
+The bounded [public-note Archive](../../state-of-the-work.md#karma-semantic-memory) adds explicit
+intake, lifecycle, and lexical recall; old Karma rows stay inert. An independently selected
+[derivation path](../../adr/27-memory.md#explicit-local-derivation) retains bounded vectors and
+invalidation fences. Its durable status describes only the latest attempt, and expiry requires
+an explicit retry.
+
+Separately selected semantic recall and Bridge revision 5 have fixed native lifecycle and
+attributed-answer/empty-recall observations. Their exact model, authority, and source scopes bind
+the claims. They do not establish general retrieval quality, automatic curation, sharing, or a
+formation path.
 
 Follow [Ghouls](../vessel/ghouls.md) to see the workers that write these records, or
 [Reanimation](reanimation.md) to cross the death of their process.

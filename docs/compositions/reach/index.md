@@ -40,9 +40,9 @@ The separate [Discord operator profile](operator.md) supplies an explicit develo
 networkless native document-search worker and local reviewed server setup. It preserves the
 same generic preparation policy, while retaining its own effects, generation and hosting limits.
 
-`reach.discord` revision `1` publishes `reach.external_converse@1`, `reach.external_summon@1`, and `reach.external_presence@1`. An allowlisted mention, guild command, or policy-admitted internal event may return `ReachTurn@1` and optional `ReachDelivery@1`.
+Under `reach.discord` revision `1`, an allowlisted mention, guild command, or policy-admitted internal event may return `ReachTurn@1` and optional `ReachDelivery@1`. The contract publishes `reach.external_converse@1`, `reach.external_summon@1`, and `reach.external_presence@1` for those bounded uses.
 
-Reach stops before cross-place identity/continuity, moderation, ambient surveillance, attachments, DMs, shell, deployment effects, and platform-settled consent. [Avatar](../avatar/index.md) may bind presentation, while Reach retains the event, audience, turn, delivery, and receipt. One result gives no next projection its authority.
+This public profile excludes cross-place identity/continuity, moderation, ambient surveillance, attachments, DMs, shell, deployment effects, and consent settled by the platform. [Avatar](../avatar/index.md) may bind presentation, while Reach retains responsibility for the event, audience, turn, delivery, and receipt. A later projection must obtain its own authority; the result of this turn cannot supply it.
 
 ## Connected work
 

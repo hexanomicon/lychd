@@ -35,10 +35,11 @@ pages, and the exact engine, model, configuration, and license profile. Markdown
 PDF, and a provider's JSON tree are useful projections or derivatives; none is canonical source
 truth.
 
-Scanner fixes page and region meaning. Its immutable profile closes engine, model, media,
-language, limits, quality, and license evidence; a dialect driver supplies invocation and recovery,
-while a runtime adapter supplies service lifecycle. [Capabilities](../../animator/capabilities.md)
-and [Connectors](../../animator/connectors.md) keep those shared contracts exact.
+Scanner defines what the returned page and region observations mean. Its immutable profile
+pins the engine, model, media, languages, limits, quality evidence, and license evidence needed
+to support that meaning. The dialect driver handles invocation and recovery; the runtime adapter
+handles service lifecycle. [Capabilities](../../animator/capabilities.md) and
+[Connectors](../../animator/connectors.md) keep those shared contracts exact.
 
 A Prism-owned Scanner reference adapter may assemble those pieces, but its name does not collapse
 their authority. A finite CLI/library path is a Spell-selected ToolProfile delivered into a trusted
@@ -50,11 +51,12 @@ The host normally materializes authorized bytes and uploads them directly. A pro
 URL is allowed only through a separate egress decision and must never become an ambient fetch or
 SSRF path.
 
-Engine and model remain separate even when a project bundles both. For a service, a Designed Rune
-selects exact registered interface/profile/driver/dialect/evidence/resource definitions and pins
-the deployment instance. For a finite tool, the Resolution Lock pins the ToolProfile instead.
-Either way the closure retains pipeline or model, weights and digest, device/backend, languages,
-optional modules, concurrency, memory envelope, and exact output fields that passed the bake.
+Choose the engine and model explicitly, even when one project bundles both. A service's
+Designed Rune selects exact registered interface/profile/driver/dialect/evidence/resource
+definitions and pins the deployment instance. For a finite tool, the Resolution Lock pins the
+ToolProfile instead. In both cases, retain the pipeline or model, weights and digest,
+device/backend, languages, optional modules, concurrency, memory envelope, and the exact output
+fields that passed the bake. A project name alone cannot identify what was qualified.
 
 ## Routing without a universal wrapper
 
@@ -66,10 +68,11 @@ The first routing study should compare explicit profiles rather than stack every
 | Screenshot, photograph, or scan needing text regions | PaddleOCR direct, with the exact OCR or PP-StructureV3 profile pinned. |
 | Multi-column report, table, formula, chart, or difficult mixed PDF | Compare PaddleOCR PP-StructureV3 or PaddleOCR-VL with MinerU. MinerU enters only through an explicit license gate, never as the strict-FOSS default. |
 
-Fallback is not inferred from a low confidence value or parser failure. A Pattern may predeclare a
-comparison or escalation branch with pinned implementations, or a failed attempt may settle and a
-new forward Invocation may admit another extractor. Every result remains separately attributed;
-agreement raises confidence only under an admitted comparison rule.
+A low confidence value or parser failure is an outcome to inspect, not permission to select
+another extractor. If a Pattern predeclares a comparison or escalation branch, its implementations
+must be pinned. Otherwise the failed attempt must settle before a new forward Invocation admits
+another extractor. Attribute every result separately; agreement increases confidence only under
+an admitted comparison rule.
 
 ## Three candidate routes
 

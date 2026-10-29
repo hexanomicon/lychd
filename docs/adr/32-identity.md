@@ -58,9 +58,9 @@ text, or turn localized wording into identity.
 
 ## Persona and binding
 
-A Pattern explicitly selects an exact Persona revision or selects no Persona. Every admitted Run
-keeps that choice. A name may direct later work to a promoted revision, but promotion cannot
-rewrite an existing binding.
+Each Pattern makes an explicit Persona choice: one exact revision or no Persona. The admitted
+Run retains that choice. Promoting a revision can redirect later work through a name, but cannot
+rewrite an existing Run's binding.
 
 One Persona has a stable id and immutable revisions. Publication freezes a revision; editing
 produces candidate children. Each revision declares:
@@ -95,12 +95,12 @@ not silently replace the selected revision with the latest Persona.
 
 ## Attribution and congruence
 
-Every identity-bearing Invocation or artifact records who initiated, approved, delegated and
-acted, together with the active Sigil. It retains the exact Persona, AgentSpec, Posture,
-Composition and Pattern revisions; the exact Invocation identity; contributing models, providers,
-tools, sources and humans; and parent, handoff and artifact lineage. Each record identifies its evidential role:
-assertion, observation, evaluation, correction or promoted act. Attribution establishes these
-relationships without deciding quality, credit, fault or causal blame.
+Attribution follows every identity-bearing Invocation or artifact. It records who initiated,
+approved, delegated, and acted, with the active Sigil; exact Persona, AgentSpec, Posture,
+Composition, and Pattern revisions; the exact Invocation identity; contributing models,
+providers, tools, sources, and humans; and parent, handoff, and artifact lineage. Each record
+declares whether it is an assertion, observation, evaluation, correction, or promoted act. Those
+relationships make the act traceable without deciding its quality, credit, fault, or causal blame.
 
 At a Composition Suite handoff, the immutable artifact retains its original attribution. The
 consumer starts a newly admitted child Invocation with its own binding. Handoff and correlation
@@ -123,8 +123,8 @@ regression evidence. A punctuation change need not rerun every Trial Suite.
 
 ## Revision and recovery
 
-Experience may inform a revision proposal. The promoted definition changes only through the
-reviewed passage:
+Experience can motivate a revision proposal. Changing the promoted definition still requires
+the reviewed passage below:
 
 ```text
 attributed observations/findings → bounded diff against exact parent → validation

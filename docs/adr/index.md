@@ -7,9 +7,9 @@ icon: material/pillar
 
 > _The Word binds what the Will would raise._
 
-Open a Covenant when a choice needs its reasons. Each numbered record states one architectural
-decision, the constraints that shaped it, and the consequences a later change must preserve.
-Current text gives current law; version history keeps earlier rulings available.
+A Covenant explains an architectural choice and what a future change must preserve. Each
+numbered record gives the decision, the constraints that shaped it, and its consequences.
+Read the current text for current law; version history preserves earlier rulings.
 
 For a first reading, follow [Doctrine](01-doctrine.md), then the question that brought you here.
 For an operating procedure, enter the [Sepulcher](../sepulcher/index.md). For an implementation
@@ -18,8 +18,9 @@ before that part can be used.
 
 ## The Return from Myth to Law
 
-The Great Work supplies constitutional pressure, never technical proof. Its images return through
-engineering invariants that can be implemented, tested, refused, and repaired:
+The Great Work gives architecture its constitutional pressure. To act on that pressure,
+engineering needs invariants it can implement, test, refuse, and repair. The table traces that
+return from myth to law; the images themselves supply no technical proof:
 
 | Constitutional pressure | Engineering return | Owning Covenants |
 | --- | --- | --- |
@@ -101,9 +102,9 @@ name the telos it serves, but its decision must stand on technical requirements 
 
 ## Changing a Covenant
 
-The numbered Covenant register is closed at **42**. New architecture amends or rewrites the
-smallest existing Covenant that owns the decision; it does not add another Covenant number.
-Version history keeps displaced law legible when a decision is reversed.
+The numbered Covenant register ends at **42** and is closed. Find the smallest existing Covenant
+that owns a new architectural decision, then amend or rewrite it. Do not add another Covenant
+number. When a decision is reversed, version history keeps the displaced law legible.
 
 Every change preserves three seams:
 

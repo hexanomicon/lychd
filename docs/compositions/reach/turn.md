@@ -19,15 +19,17 @@ A public corpus cannot make the caller's question public. Before remote formatio
 
 For `reach.external_converse@1`, a bounded answer may use local Soulstone capability, one exact Portal model attempt while LychD owns retrieval/citations, or one outbound Intercom task to an enrolled sovereign specialist for `reach.public_corpus_answer@1`. The A2A road parks durably, quarantines the return, and adopts the first authenticated terminal. Repository inspection/mutation with an iterative CLI loop belongs to separate delegated-coding work; an admitted artifact can return later. Interactive coding subscriptions are outside Reach and Spellweaver automation.
 
-Every remote attempt needs its exact `EgressDecision` and a Privacy Cut when policy requires one. Retry, fallback, payload, model, peer, or destination changes require another decision. Output remains attributed hostile input until explicit success, refusal, dependency, expiry, failure, or indeterminate settlement. Only a committed delivery intent reaches the Discord credential owner. [Deployment](deployments/index.md) owns placement/custody; the [standalone E2E contract](deployments/vps-public.md#first-e2e-contract-one-public-discord-question) gives the full ledger chain.
+Before each remote attempt, obtain its exact `EgressDecision` and any Privacy Cut required by policy. Obtain another decision for a retry or fallback, or when the payload, model, peer, or destination changes. The returned output remains attributed hostile input until the attempt explicitly settles as success, refusal, dependency, expiry, failure, or indeterminate.
+
+Formation alone cannot send the answer: only a committed delivery intent reaches the Discord credential owner. [Deployment](deployments/index.md) owns placement and custody, and the [standalone E2E contract](deployments/vps-public.md#first-e2e-contract-one-public-discord-question) follows the full ledger chain.
 
 ## Commands and interrupted delivery
 
 `/reach link` and `/reach unlink` belong to Ward. `/reach status` shows only caller-owned or explicitly shared committed state. Messages, buttons, reactions, roles, and a fluent yes cannot authorize consent, deployment, repository/host mutation, deletion, secrets, authority change, or publication.
 
-Gateway replay deduplicates namespaced event identity and payload digest. Expired interaction tokens may lead to status lookup, never re-running work to manufacture a reply. Disconnect after send leaves delivery **unknown** until effect identity/payload reconcile.
+On Gateway replay, deduplicate against the namespaced event identity and payload digest. An expired interaction token may lead to status lookup, never to running the work again to manufacture a reply. A disconnect after send leaves delivery **unknown** until reconciliation accounts for the effect identity and payload.
 
-A contained adapter compromise revokes its Principal, rotates the bot token, closes Gateway, marks deliveries uncertain, and preserves secret-free evidence. Recreate the unit from zero authority only after proving its boundary. Host/root compromise follows the selected profile's [clean rebuild](deployments/vps-public.md#restart-uncertainty-and-compromise), not an in-place restart.
+If compromise is contained to the adapter, revoke its Principal, rotate the bot token, close Gateway, and mark deliveries uncertain while preserving secret-free evidence. Prove the containment boundary before recreating the unit from zero authority. A host/root compromise requires the selected profile's [clean rebuild](deployments/vps-public.md#restart-uncertainty-and-compromise); an in-place restart cannot restore trust.
 
 ## Proving one turn
 

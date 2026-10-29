@@ -27,13 +27,16 @@ replacement cultures or silently terminate the source.
 
 ## Pin the growing profile
 
-`CultivatorGrowingProfile@1` is Cultivator's owner-qualified profile record, with stable identity
-and revision, applicable species/cultivar or culture class, attributed sources and dates, reviewed
-cycle and tending requirements with units and bounds, exclusions, unresolved cases, and reviewer.
-`cultivator.record_culture@1` may record it alongside a culture. Accepting a source does not make
-every recommendation applicable to that culture and growing space. An active plan pins a reviewed
-revision; a replacement identifies which plans require fresh review. Ornamental, food, and fungi
-profiles share record discipline without acquiring one universal cycle or care schedule.
+The growing profile explains which reviewed requirements apply to this culture. Cultivator owns
+that account as `CultivatorGrowingProfile@1`: stable identity and revision, applicable
+species/cultivar or culture class, attributed sources and dates, reviewed cycle and tending
+requirements with units and bounds, exclusions, unresolved cases, and reviewer.
+`cultivator.record_culture@1` may record it alongside the culture.
+
+Review must still establish whether a source recommendation fits this culture and growing space.
+An active plan pins the reviewed profile revision; a replacement identifies which plans need
+fresh review. Ornamental, food, and fungi profiles share this record discipline while retaining
+their different cycles and care schedules.
 
 ## Evidence graph
 
@@ -43,8 +46,8 @@ findings remain distinguishable. An observation records its subject, effective t
 recorded time, source or actor, evidence references, units, uncertainty, and applicable
 profile revision.
 
-The same evidential discipline applies throughout the composition: preserve exact
-parent and artifact references, correlation identifiers, and deduplication identity.
+Later work must be able to trace these observations, so preserve exact parent and artifact
+references, correlation identifiers, and deduplication identity throughout the composition.
 A late report keeps its actual effective time. A correction retains the earlier claim
 and identifies what it supersedes; the latest view is derived from retained claims,
 rather than overwriting history.

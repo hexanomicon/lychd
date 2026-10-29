@@ -11,9 +11,11 @@ The candidate loads. Now make the player perform the declared interaction and in
 
 ## Pin the attempt
 
-`GameplayScenario@1` binds build/world epoch, initial state, spawn/reset, random streams, ordered steps, inputs, structured observations, tick/clock policy, time/action budgets, assertions, tolerances, and terminal outcomes. A fresh session gets a new epoch unless process, world, cursor, and clock continuity are all proved. Epoch and cursor fence late observations.
+Define what the attempt will do and what would count as a result in `GameplayScenario@1`. It binds build/world epoch, initial state, spawn/reset, random streams, ordered steps, inputs, structured observations, tick/clock policy, time/action budgets, assertions, tolerances, and terminal outcomes.
 
-`EngineObservationSet@1` retains exact tick/time, entity identities, transforms/velocities, collisions/triggers, navigation, controller/animation state, selected gameplay state, logs, performance, gaps, and assertions. Missing acknowledgement after an input requires reconciliation of the same epoch, cursor, and resulting state. Settle recovered, failed, cancelled, or indeterminate/contained; do not repeat an unproved effect.
+A fresh session normally starts a new epoch. Reusing one requires proof of process, world, cursor, and clock continuity. The epoch and cursor keep late observations from being mistaken for evidence about a different attempt.
+
+During the attempt, `EngineObservationSet@1` retains exact tick/time, entity identities, transforms/velocities, collisions/triggers, navigation, controller/animation state, selected gameplay state, logs, performance, gaps, and assertions. Those observations also support recovery. If an input acknowledgement disappears, reconcile the same epoch, cursor, and resulting state before considering another input. Settle recovered, failed, cancelled, or indeterminate/contained. Do not repeat an unproved effect: repetition cannot establish what happened.
 
 ## What the evidence can judge
 

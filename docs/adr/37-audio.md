@@ -36,9 +36,9 @@ Work](../state-of-the-work.md#audio-admission) owns this boundary and the
 
 ## Decision
 
-**Echo** is the speech-lifecycle Domain. Its first profile is **record and send**: one explicit,
-bounded utterance becomes an immutable artifact, then an admitted provider returns text or another
-audio artifact.
+**Echo** owns the speech lifecycle. Its first profile, **record and send**, begins with one
+explicit, bounded utterance. The utterance becomes an immutable artifact before an admitted
+provider returns text or another audio artifact.
 
 | Role | Contract |
 | --- | --- |
@@ -185,9 +185,9 @@ execution still requires capture, retention, and tool authority; source influenc
 
 ## Streaming without pretending a socket is a protocol
 
-Record-and-send is the minimum. Half-duplex may stream one response after capture closes.
-Full-duplex additionally owes simultaneous capture/playback, VAD, barge-in, echo cancellation,
-and contested turn ownership.
+Record-and-send establishes the minimum passage. Half-duplex can then stream one response after
+capture closes. Full-duplex requires more: simultaneous capture and playback, VAD, barge-in,
+echo cancellation, and contested turn ownership must all be accounted for.
 
 Voice-activity detection answers whether speech is present; it does not prove that an activation
 phrase was spoken. The first profile therefore uses visible push-to-talk. A future wake-word
@@ -213,12 +213,12 @@ application authority, classification, or consent.
 
 ## Application-owned live audio
 
-Echo's Resonance Session owns speech chronology; it does not absorb musical performance or every
-application that carries sound. [Riffmaw](../compositions/riffmaw/sessions.md) may own a musical
-performance session and clock overlay; Language Edition may own a language-edition timeline over exact
-speech attempts. Each remains an application record referencing Echo chronology rather than a
-duplicate capture, synthesis, delivery, or playback ledger, and every live route still obeys Audio
-custody, transport, interruption, and uncertain-playback law.
+Echo's Resonance Session owns speech chronology. Applications retain their own records over
+that chronology: [Riffmaw](../compositions/riffmaw/sessions.md) may own a musical performance
+session and clock overlay, while Language Edition may own a language-edition timeline over exact
+speech attempts. Neither duplicates the capture, synthesis, delivery, or playback ledger. Every
+live route still follows Audio custody, transport, interruption, and uncertain-playback law;
+Echo does not absorb every application that carries sound.
 
 [Avatar](../compositions/avatar/index.md) may use an authorized exact voice profile or derived
 artifact inside one profile or Morphe. Avatar can narrow purpose, audience, words, disclosure,
@@ -249,9 +249,9 @@ resampling, loss, jitter, latency, discontinuity, and uncertainty rather than na
 
 ## Consequences and acceptance
 
-Echo distinguishes generation, delivery, and playback and lets independent Ears, Voices, Minds,
-and Listeners compose. The cost is sensitive custody, storage/retention pressure, and timing,
-cancellation, and egress races.
+Independent Ears, Voices, Minds, and Listeners can compose because Echo keeps generation,
+delivery, and playback distinct. Doing so requires sensitive custody, storage and retention,
+and explicit handling of timing, cancellation, and egress races.
 
 Bounded material inspection can be accepted through actual byte-parsing and refusal tests without
 claiming a speech runtime. Usable record-and-send execution additionally requires evidence for

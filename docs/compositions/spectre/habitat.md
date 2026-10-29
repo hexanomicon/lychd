@@ -11,9 +11,9 @@ A participant may need a seated experience with captions; another may require a 
 
 `spectre.admit_habitat@1` begins with exact world/scene reference, engine/runtime capability snapshot, reference-space policy, comfort, accessibility, retention, and exit policy. It returns immutable `VRHabitat@1` or refusal.
 
-The record binds a world/build and capability epoch: adapter/runtime revision; requested, required, granted, missing, and revoked features; admitted spatial context/reference-space policy; comfort/accessibility; retention; disclosure; and exit. It does not own source project, engine build, headset, reference-space handle, multiplayer service, or persistent world.
+Tie the Habitat record to an exact world/build and capability epoch. Record the adapter/runtime revision, requested, required, granted, missing, and revoked features, and the admitted spatial context/reference-space policy. Bind comfort/accessibility, retention, disclosure, and exit to that same admission. The record describes the eligible place without taking ownership of its source project, engine build, headset, reference-space handle, multiplayer service, or persistent world.
 
-Required capabilities refuse admission when missing; optional ones become explicit downgrades. Hands, haptics, room bounds, eye/face tracking, passthrough, anchors, and body tracking cannot be inferred from “VR.” Changed world/build digest, required features, reference-space, comfort/accessibility, retention, or exit contract requires a new Habitat revision or epoch. Runtime restart alone does not rewrite it.
+Refuse admission if a required capability is missing; record an explicit downgrade for an optional one. The label “VR” cannot establish hands, haptics, room bounds, eye/face tracking, passthrough, anchors, or body tracking. If the world/build digest, required features, reference-space, comfort/accessibility, retention, or exit contract changes, require a new Habitat revision or epoch. A runtime restart alone must not rewrite the admitted Habitat.
 
 ## Admit the space the participant will use
 

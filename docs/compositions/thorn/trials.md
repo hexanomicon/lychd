@@ -25,10 +25,11 @@ separate treatment. For an authorized assessment, add a declared suspected weakn
 candidate repair. Test the original and repaired revisions under pinned conditions, including a
 case where the service becomes healthy but the security weakness remains.
 
-Before execution, pin subjects and component revisions, permitted sources/actions, case selection,
-authority, machine and human budgets, protection floor, deadlines, metrics, meaningful improvement,
-and advancement criteria. Keep development material separate from held-out assessment. Where
-practical, reviewers inspect permitted underlying evidence without knowing the treatment.
+Define the comparison before running it. Pin subjects and component revisions, permitted
+sources/actions, case selection, authority, machine and human budgets, protection floor, deadlines,
+metrics, meaningful improvement, and advancement criteria. Keep development material separate from
+the held-out assessment so tuning cannot quietly become proof. Where practical, reviewers inspect
+permitted underlying evidence without knowing the treatment.
 
 Compare competent local protection and manual or agent-assisted response with Thorn's case
 coordination. Then vary optional investigation while holding protection rules and authority fixed.
@@ -159,10 +160,12 @@ admitted successors. Transport success proves no official investigation or inter
 
 ## Decide what has earned expansion
 
-Retain exact inputs, versions, enforcement receipts, denied effects, criteria, measurements,
-exceptions, and unresolved obligations. Report case counts, spread, and uncertainty for supported
+At the end of the trial, keep enough evidence to reconstruct both its result and its limits:
+exact inputs, versions, enforcement receipts, denied effects, criteria, measurements, exceptions,
+and unresolved obligations. The report gives case counts, spread, and uncertainty for supported
 links, false associations, useful decisions, privacy failures, reporting adequacy, correction delay,
-total machine/human cost, and primary-task disruption. Count justified abstention and unfinished work.
+total machine/human cost, and primary-task disruption. Include justified abstention and unfinished
+work in that account rather than counting only completed investigations.
 
 Advance for a predeclared decision-quality gain within cost limits, or lower total cost at equivalent
 quality, while meeting the protection floor. A safe but inferior or inconclusive result warrants

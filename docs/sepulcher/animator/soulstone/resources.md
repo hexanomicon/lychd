@@ -15,10 +15,10 @@ shelf, host socket, or credential authority from being local.
 container paths. Model artifacts must be reachable through a declared Rune or
 adapter-contributed mount; there is no implicit host `model_root`.
 
-Every contributed mount passes one protected-root gate. Both endpoints must be absolute. Host
-symlinks resolve before comparison, and a safe alias is emitted as its canonical target. Neither
-endpoint may equal, contain, or sit beneath the Codex, Crypt, Reactor, or user-systemd binding
-roots. Percent signs, backslashes, and non-printable characters are rejected.
+Before admitting a mount, the protected-root gate checks both ends. Each must be absolute.
+It resolves host symlinks before comparison and emits a safe alias as its canonical target.
+Neither end may equal, contain, or sit beneath the Codex, Crypt, Reactor, or user-systemd binding
+roots. Percent signs, backslashes, and non-printable characters also cause rejection.
 
 ## Secret Hydration
 
@@ -37,12 +37,11 @@ image = "vllm/vllm-openai:latest"
 HF_TOKEN_FILE = "hf_runtime_token"
 ```
 
-Binding checks that `hf_runtime_token` exists without inspecting its contents. A missing name or
-failed existence probe refuses binding. The generated Quadlet emits `Secret=hf_runtime_token`, and
-the container receives
-`HF_TOKEN_FILE=/run/secrets/hf_runtime_token`. The Codex stores only the name; the value remains
-in rootless Podman's secret store. Replacing
-a secret requires recreation of the consuming container.
+Binding first checks that `hf_runtime_token` exists, without reading its contents. Missing secrets
+or failed existence probes refuse the bind. A successful bind emits `Secret=hf_runtime_token`
+in the Quadlet, making `HF_TOKEN_FILE=/run/secrets/hf_runtime_token` available inside the container.
+The Codex retains the name; rootless Podman's secret store retains the value. Recreate the
+consuming container after replacing that value.
 
 ## The Port Singularity
 

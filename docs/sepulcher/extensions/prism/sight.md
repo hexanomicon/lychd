@@ -61,20 +61,26 @@ and time spans, supporting and contradicting regions or tracks, prompt, model an
 uncertainty, and alternatives. It cannot establish identity, cause, security incident, or effect
 completion.
 
-The request pins the operation, source and every Lens derivative, region and time window, query or
-class ontology, segmentation and skeleton variants, desired result kinds, eligible profile
-constraints, thresholds and output limits, deadline and budget, purpose, classification, and
-retention. Resolution Lock selects an exact finite ToolProfile, or Dispatcher selects an eligible
-declared capability; the admitted invocation and terminal receipt pin the exact tool or model,
-runtime, preprocessing, and postprocessing profile. Optional inputs never imply support.
+To make a result reproducible and interpretable, pin what Sight is asked to observe: the
+operation, source and every Lens derivative, region and time window, query or class ontology,
+segmentation and skeleton variants, and desired result kinds. The request also fixes eligible
+profile constraints, thresholds, output limits, deadline, budget, purpose, classification, and
+retention.
 
-`SightJob@2` owns perception stages, observation validity, and technical result settlement. The
-consuming owner decides how an observation affects its domain judgment. Each asynchronous or
-durable service or tool execution follows Core's Designed
-[`ServiceJobAttempt@1` recovery contract](../../../adr/14-workers.md#service-job-attempts).
-The parent Run remains fenced until the same attempt settles. Partial results enter quarantined
-custody; only rehashed, validated observations enter the settled Prism result, and an uncertain paid or remote request is
-never replayed under a new identity.
+Resolution Lock then selects an exact finite ToolProfile, or Dispatcher selects an eligible
+declared capability. The admitted invocation and terminal receipt identify the exact tool or
+model, runtime, preprocessing, and postprocessing profile that actually ran. Optional inputs
+cannot imply support that the selected implementation has not established.
+
+`SightJob@2` determines whether the perception stages produced valid observations and settles
+the technical result. The consuming owner decides what those observations mean for its domain.
+For each asynchronous or durable service or tool execution, Core's Designed
+[`ServiceJobAttempt@1` recovery contract](../../../adr/14-workers.md#service-job-attempts)
+keeps the parent Run fenced until that same attempt settles.
+
+Partial results enter quarantined custody. Only rehashed, validated observations can enter the
+settled Prism result. An uncertain paid or remote request must never be replayed under a new
+identity; doing so cannot resolve the uncertainty about the original request.
 
 ## Coordinates and time survive preprocessing
 
@@ -87,11 +93,12 @@ Every mask raster, depth grid, and dense flow field pins its own width, height, 
 validity domain, and exact spatial map to the original source. A model-sized array is never assumed
 to share source pixels merely because it has been upsampled for display.
 
-Finite-video observations pin artifact digest, presentation-frame ordinal, original rational
-timebase and PTS, and DTS where relevant. They also retain the temporal derivative-to-source map
-for trim, frame extraction, decimation, resampling, and duplicate or dropped frames. Inferred
-average FPS cannot replace variable-rate timing. Tracks name gaps and occlusion rather than drawing
-a continuous history through missing evidence. Stream epoch belongs only to live sessions.
+Video grounding must preserve the actual sequence rather than a convenient playback rate.
+Finite-video observations pin the artifact digest, presentation-frame ordinal, original rational
+timebase and PTS, and DTS where relevant. Their temporal derivative-to-source map records trim,
+frame extraction, decimation, resampling, and duplicate or dropped frames. An inferred average
+FPS cannot replace variable-rate timing. Tracks expose gaps and occlusion instead of drawing a
+continuous history through missing evidence. Only live sessions have a stream epoch.
 
 Depth additionally pins intrinsics, extrinsics, lens distortion and admitted scale evidence where
 available. Relative depth is not metres. Pose declares image, camera, or world coordinates and the
@@ -123,11 +130,13 @@ thresholds, NMS or association revision, taxonomy and label map, timing, resourc
 skipped material, gaps, cancellation settlement, and output digests. An overlay PNG or annotated
 video is a derived visualization; machine-readable observations remain canonical.
 
-A confidence value is not automatically a calibrated probability and is not comparable across
-models. Calibration evidence, if available, names its corpus, revision, and applicable profile. A
-negative result is valid only for its exact region, time window, ontology, threshold, sampling, and
-coverage. Crash, occlusion, dropped frame, skipped region, and unknown class never become
-"absent".
+Read a score in the terms of the profile that produced it. Confidence is not automatically a
+calibrated probability, and confidence scores from different models are not comparable.
+Available calibration evidence must name its corpus, revision, and applicable profile.
+
+Read a negative result with equal care: it applies only to the exact region, time window,
+ontology, threshold, sampling, and coverage examined. Crash, occlusion, a dropped frame, a skipped
+region, or an unknown class cannot be reported as "absent".
 
 ## Prepare the finite source
 
@@ -210,11 +219,12 @@ The first register composes a small number of distinct specialists:
 | `human_wholebody` | Exact RTMW-m 256 by 192 through [MMPose](https://github.com/open-mmlab/mmpose), with a pinned RTMDet person detector and whole-body schema. | Apache-2.0 toolkit candidate for detailed 2D body, hand, face, and foot keypoints; exact weights and dependencies still require closure. First prove PyTorch reference and ONNX Runtime CPU/OpenVINO parity. Ordinary RTMPose-m remains a baseline, not the same profile. |
 | `dense_flow` | [SEA-RAFT `Tartan480x640-M`](https://github.com/princeton-vl/SEA-RAFT) for optical flow and uncertainty. | BSD-3-Clause 19.7M specialist. Activate only when Image, Video, Form, or an exact Pattern has a consumer; no CPU or real-time promise is inferred. |
 
-SAM 2 propagates only prompted masks. ByteTrack associates boxes supplied by repeated detector
-runs; it neither detects new entrants nor performs mask propagation. Point tracking and optical
-flow are further distinct temporal claims. Stateful video profiles preserve frame order and retain
-every point, box, mask, query, detector-cadence, and association event; embedding caches and
-framework session objects are ephemeral optimizations, never artifact custody or recoverable truth.
+The temporal components do different work. SAM 2 propagates prompted masks only. ByteTrack
+associates boxes from repeated detector runs; it cannot discover new entrants or propagate masks.
+Point tracking and optical flow make further distinct claims. A stateful video profile therefore
+keeps frame order and every point, box, mask, query, detector-cadence, and association event.
+Embedding caches and framework session objects may accelerate execution, but they provide
+neither artifact custody nor recoverable truth.
 
 Useful challengers remain profiles rather than initial duplication: Apache-designated D-FINE N/S
 or RF-DETR Nano/Small for fixed-taxonomy real-time detection; EdgeTAM for mobile segmentation;

@@ -24,11 +24,14 @@ profile requests no source edit, executable workspace, external acquisition, pro
 
 ## Admit one question
 
-Admission retains canonical request bytes, an explicit public-material declaration, literal UTF-8
-source bytes and their relative names, lengths and digests. It pins the declared repository/base or
-patch identity, question, non-goals, criterion IDs, omissions, exact role bindings and acceptance.
-A filename or hash without its bytes is insufficient. Declared base identity is not an independently
-observed live Git tree. Changed inputs require another request; an old report keeps its old target.
+Begin by preserving exactly what the investigation will examine. Admission retains canonical
+request bytes, an explicit public-material declaration, literal UTF-8 source bytes and their
+relative names, lengths and digests. It pins the declared repository/base or patch identity,
+question, non-goals, criterion IDs, omissions, exact role bindings and acceptance.
+
+The retained bytes let another reviewer reconstruct the question. A filename or hash alone is
+insufficient, and the declared base identity is not an independently observed live Git tree.
+Changed inputs require another request; an old report keeps its original target.
 
 Revision 2 permits at most 8 sources and 4096 total source bytes, 512 question bytes and 4 criteria of
 192 bytes each. Relative source names are bounded and cannot escape a root; duplicate keys/names,
@@ -63,10 +66,11 @@ temperature 0 and `qwen3.8-non-thinking`. Missing or changed binding, unsupporte
 WARM grant or fallback refuses. No model lifecycle request is admitted. Agent and SDK retries are 0;
 only structured final output is available, with no executable toolsets.
 
-Before construction, reserve one logical application slot, one constructor attempt, one verifier
-attempt and 30 seconds per role, plus30 seconds for recovery, under a 180-second original lifetime.
-One unresolved investigation occupies the slot. This reserves application allowances, not exclusive
-GPU capacity or a hard aggregate quota. Recheck authority, expiry and grant at each stage.
+Reserve the work before construction: one logical application slot, one constructor attempt,
+one verifier attempt and 30 seconds per role, plus 30 seconds for recovery, all within the
+180-second original lifetime. An unresolved investigation continues to occupy that slot. These
+are application allowances; they reserve neither exclusive GPU capacity nor a hard aggregate
+quota. At each stage, recheck authority, expiry and grant.
 
 The complete serialized role packet includes instructions, source, question, criteria and output
 schema. Its 12288-byte envelope reserves the verifier's maximum candidate before construction.
@@ -141,18 +145,23 @@ next step into an investigation. The fixed profile, source/packet bounds and all
 remain unchanged. The [Bridge guide](../../divination/altar/bridge.md#investigate-public-source)
 owns the ordinary interaction.
 
-Browser sources and the submitted body remain transient. Ambiguous submission retains its UUID
-and exact body without automatic retry; an explicit Check cannot turn an in-flight 404 into
-proof of non-admission. Identical replay needs the original body, which reload does not recover.
-The protected detail read may perform existing expiration and includes retained operational
-records. Its report disclosure renders validated request/candidate/verdict text, requires current
-read authority after awaited storage and fences changed selection. **Load feedback** separately
-reads the protected historical projection without expiring execution. Current assessment/decision
-IDs select the displayed judgments; later assessments leave earlier owner holds historical.
-**Reload feedback** is explicit, and a refused read clears protected feedback. Report/reason text
-and server annotation coverage confer no semantic pass. Viewing supplies no continuation, feedback
-mutation, successor, source-edit or promotion authority. Run completion and native/external/owner
-judgments remain separate; later case changes need explicit Refresh.
+Browser sources and the submitted body remain transient. If submission is ambiguous, keep its
+UUID and exact body without automatic retry. An explicit Check cannot turn an in-flight 404 into
+proof of non-admission. Identical replay requires the original body, which reload does not recover.
+
+Reading the protected detail can perform existing expiration and returns retained operational
+records. The report renders validated request/candidate/verdict text. After awaited storage, it
+still requires current read authority and fences a changed selection.
+
+Use **Load feedback** for the separate protected historical projection; this read does not expire
+execution. Current assessment/decision IDs select the displayed judgments. A later assessment
+leaves an earlier owner hold historical. **Reload feedback** is explicit, and a refused read
+clears protected feedback.
+
+Distinguish Run completion from the native verdict, external assessment, and owner decision.
+These are four separate facts. Report/reason text and server annotation coverage cannot establish a semantic
+pass. Viewing authorizes no continuation, feedback mutation, successor, source edit or promotion;
+explicit Refresh is needed to see later case changes.
 
 ## Selected-Run summary
 
@@ -205,16 +214,19 @@ lease. Check these conditions and current local authority while holding the case
 expiring or altering execution. Retained revision 2 closures need no current model/profile readiness
 merely to receive feedback. Revision 1 writes remain refused.
 
-An owner decision has its own UUID and exact assessment id/digest and target binding. Its action is
-`hold` or `reject`, with a non-empty reason of at most 1024 UTF-8 bytes and optional distinguishing
-observation of at most 512 bytes. New decisions target the latest assessment. Every append shares
-one per-case sequence; the latest decision for that assessment is current. Another assessment
-makes earlier decisions historical and projects `review_required` until separately addressed.
-Before latest-target or capacity checks, identical canonical-body replay returns its original row;
-changed or cross-case identity refuses. Fresh current authority is still mandatory on every replay.
-Original attribution is never overwritten. Admit at most 16 assessments and 16 decisions per case;
-identical replay still works at capacity. Expose no update or delete. Additive persistence preserves
-all original custody, and downgrade refuses while feedback exists.
+To record the owner's judgment, bind a new decision UUID to the exact assessment id/digest and
+target. Choose `hold` or `reject`, with a non-empty reason of at most 1024 UTF-8 bytes and an
+optional distinguishing observation of at most 512 bytes. New decisions target the latest
+assessment. All appends share one per-case sequence, and the latest decision for that assessment
+is current. Another assessment makes earlier decisions historical and projects `review_required`
+until the owner addresses it separately.
+
+Replay preserves the original record. Before latest-target or capacity checks, an identical
+canonical body returns its original row; changed or cross-case identity refuses. Every replay
+still requires fresh current authority, and original attribution is never overwritten. The case
+admits at most 16 assessments and 16 decisions, while identical replay continues to work at
+capacity. There is no update or delete. Additive persistence preserves original custody, and
+downgrade refuses while feedback exists.
 
 The protected local routes use the same actual operator marker, object/action policy, Origin and
 CSRF gates. Append requires `runs:submit`; read requires `altar:read`.
@@ -259,14 +271,16 @@ holding its case lock. An existing child cannot be retroactively attached. A cas
 child cannot itself become a parent through this operation. Ordinary unrelated submissions remain
 separately governed; this is not a global execution prohibition.
 
-Atomically retain the fresh child case, admission, exact lineage body/digest and authenticated
-attribution before publishing its Run. That commit consumes the parent's one-child allowance
-permanently, including if later publication fails. There is no refund, second child, replacement
-UUID, automatic retry or descendant chain. The child reserves the existing one application slot,
-180-second lifetime and one constructor/verifier attempt, under the current exact profile and
-WARM capability check. This independently authorized reservation is not renewal or reuse of the
-parent's budget, exclusive GPU capacity or a hard aggregate quota. Recheck actual authority after
-awaited preparation and lock acquisition, at commit, and before releasing held Run publication.
+Before publishing the new Run, atomically retain the fresh child case, admission, exact lineage
+body/digest and authenticated attribution. This commit permanently consumes the parent's one-child
+allowance, even if publication later fails. There is no refund, second child, replacement UUID,
+automatic retry or descendant chain.
+
+The child needs its own authorized reservation: the existing one application slot, 180-second
+lifetime and one constructor/verifier attempt, under the current exact profile and WARM
+capability check. It neither renews nor reuses the parent's budget, and reserves no exclusive GPU
+capacity or hard aggregate quota. Recheck actual authority after awaited preparation and lock
+acquisition, at commit, and before releasing held Run publication.
 
 Identical canonical-body replay under fresh current submit authority returns the original
 lineage and child identities before freshness, capacity or model-readiness checks. Preserve the
@@ -318,13 +332,16 @@ A claimed call without a complete durable response remains incomplete/unknown. T
 expiry or startup cannot make it unclaimed or release its encumbered slot. Revision 2 has no automatic
 unknown-outcome release. Known terminal completion or proved not-issued failure may release capacity.
 
-Generic startup reconciliation remains unchanged: an orphan Run can become FAILED. A fresh current
-local operator may explicitly admit at most one **new continuation Run** only while the original reservation
-is live, the prior Run/delivery/lease is settled, the exact complete candidate is retained and the
-verifier has never been claimed. Match source/base/question/criteria/profile and candidate identities;
-retain the new authority generation and bind its Run before queue publication. It inherits the
-original deadline and unused verifier/recovery allowance. The continuation also has a recovery
-cutoff 30 seconds after its own admission, bounded by the original deadline; the verifier uses
-only the remaining time and its single attempt. There is no renewed attempt or constructor replay. A cancelled, expired or ambiguous case cannot continue. No scanner submits replacement Runs.
+Generic startup reconciliation remains unchanged: an orphan Run can become FAILED. Continuation
+requires a separate decision by a fresh current local operator. At most one **new continuation
+Run** may be admitted, and only while the original reservation is live, the prior Run/delivery/lease
+is settled, the exact complete candidate is retained, and the verifier has never been claimed.
+
+Match source/base/question/criteria/profile and candidate identities, retain the new authority
+generation, and bind the Run before queue publication. It inherits the original deadline and
+unused verifier/recovery allowance. It also has a recovery cutoff 30 seconds after its own
+admission, bounded by the original deadline. The verifier therefore gets only the remaining time
+and its single attempt. There is no renewed attempt or constructor replay. Cancelled, expired or
+ambiguous cases cannot continue, and no scanner submits replacement Runs.
 
 [Workflow](../../adr/28-workflow.md) · [SDLC](../../adr/16-sdlc.md) · [Portfolio](../index.md)

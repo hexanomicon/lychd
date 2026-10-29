@@ -7,11 +7,12 @@ icon: material/eye-lock-outline
 
 > _Let the message cross the sea wearing a borrowed name._
 
-Sensitive material may be copied long before a Portal Spell placement appears. Spellweaver therefore carries
-privacy lineage through the Pattern and creates a new sanitized branch before remote inference.
-[Context](../../../adr/21-context.md#privatization-and-the-privacy-cut) owns labels and the Privacy
-Cut; [Security](../../../adr/09-security.md#portal-privatization-and-egress) owns declassification
-and refusal; this page owns the journey through the score.
+A workflow can copy sensitive material before it ever reaches a Portal Spell placement.
+Spellweaver therefore carries privacy lineage through the whole Pattern and creates a new,
+sanitized branch before remote inference. [Context](../../../adr/21-context.md#privatization-and-the-privacy-cut)
+owns labels and the Privacy Cut; [Security](../../../adr/09-security.md#portal-privatization-and-egress)
+owns declassification and refusal. This page follows that material through the score, from its
+local source to a checked return.
 
 !!! warning "Egress remains closed"
     Context Blocks now carry conservative influence labels. A bounded offline diagnostic profile
@@ -45,9 +46,10 @@ records the tested boundary.
 
 ## Labels begin at the source
 
-SQL is storage, not the classifier. Domain and repository ports attach table and column defaults,
-row- or subject-specific policy, and query lineage before values reach Context. Computed fields
-inherit the values that formed them. Unknown or raw access is restricted at the governed boundary.
+Classification must accompany values as they leave storage. Domain and repository ports attach
+table and column defaults, row- or subject-specific policy, and query lineage before values reach
+Context; SQL itself is not the classifier. Computed fields inherit the values that formed them.
+Unknown or raw access is restricted at the governed boundary.
 
 Tools declare whether output introduces a sensitive source, inherits or joins inputs, remains
 local-only, proposes sanitization, or enters quarantine. A `sensitive` annotation warns the
@@ -102,22 +104,22 @@ single model may certify its own sanitization.
 
 ## Preserve the question through the Cut { #preserve-the-coding-question }
 
-Within [Creation's delegated branch](creation.md#cli-delegation-branch), first name what the
-recipient must distinguish to solve the task. A sanitized coding projection may need a minimal
-module interface, dependency relation, synthetic failing fixture, and expected behavior. It need
-not contain the whole repository, its history, or the parent's conversation. If the task depends
-on an identifier's exact spelling or bytes, replacing it may destroy the problem; use an adequate
-synthetic reproducer or keep that work local.
+To prepare [Creation's delegated branch](creation.md#cli-delegation-branch), first identify the
+distinctions the recipient needs to solve the task. A minimal module interface, dependency
+relation, synthetic failing fixture, and expected behavior may suffice. The projection need not
+include the whole repository, its history, or the parent's conversation. Exact spelling or bytes
+can themselves be part of a defect, however. If replacing an identifier destroys the question,
+use an adequate synthetic reproducer or keep that work local.
 
-Independent Cut verification keeps disclosure and utility findings separately attributable for
-the same candidate projection. The disclosure finding addresses identification, linkage,
-inference, and credential exposure from the declared recipient's perspective. The utility finding
-addresses whether the coding question is still answerable. Each names the exact offending or
-missing relation and a bounded proposed repair. These are distinct obligations, not a requirement
-for two more agents on top of the independent verifier. The admitted plan may use additional
-adversarial reviewers when warranted; independence from the transformer remains required.
-A repaired candidate receives renewed verification, including both findings where affected.
-Agreement cannot compensate for either failed obligation or replace the Egress Gate.
+Independent Cut verification examines the same candidate projection for disclosure and utility,
+keeping its findings separately attributable. Disclosure asks what the declared recipient could
+identify, link, infer, or learn about credentials. Utility asks whether the coding question is
+still answerable. Each finding names the exact offending or missing relation and a bounded
+proposed repair. These are distinct obligations, not a requirement for two more agents on top of
+the independent verifier. The admitted plan may add adversarial reviewers when warranted;
+independence from the transformer remains required. A repaired candidate receives renewed
+verification, including both findings where affected. Agreement cannot compensate for either
+failed obligation or replace the Egress Gate.
 
 For the dossier exporter, replacing every record ID with one category label can hide names while
 merging distinct records. Giving every occurrence a different token can instead sever repeated
@@ -126,11 +128,11 @@ relations inside its scoped namespace, and keeps accepted, unresolved, and unkno
 The receiving coding agent sees only that admitted projection. A local verifier checks the result
 against the original preservation criteria after any permitted rehydration.
 
-A first useful coding return can be a repair to the synthetic reproducer or a structured proposal
-that a local worker applies to the real base under Creation's checks. Reversible source changes
-need a return format with declared substitution positions and a validated mapping to that base;
-whole-patch search-and-replace is not that contract. If the requested return cannot satisfy those
-conditions, choose the proposal route or keep construction local.
+The return can stay small too: a repair to the synthetic reproducer, or a structured proposal
+that a local worker applies to the real base under Creation's checks. Returning reversible source
+changes requires more. The format must declare substitution positions and provide a validated
+mapping to that base; whole-patch search-and-replace is not that contract. When the requested
+return cannot meet those conditions, choose the proposal route or keep construction local.
 
 Prepare synthetic Cases before admitting a remote road:
 
@@ -167,10 +169,10 @@ branch and Security decides its exit. No component upgrades its own claim into p
 [Context contract](../../../adr/21-context.md#privatization-and-the-privacy-cut) keeps their exact
 roles separate.
 
-Source influence also survives. A successful disclosure assessment does not relabel a private
-source or its derivatives as public. Pseudonymized material remains private while a reversal or
-likely linkage route exists; private code may be an authorized sanitized disclosure without ever
-becoming anonymous.
+The source's influence survives a successful disclosure assessment. That success does not
+relabel a private source or its derivatives as public. Pseudonymized material remains private
+while reversal or likely linkage is possible. Private code can therefore qualify for an
+authorized sanitized disclosure without becoming anonymous.
 
 Deterministic work runs first in the designed sequence. A future Censor rebuilds bounded JSON-like
 values and redacts secret-shaped fields, JWTs, PEM private keys, emails, telephones, IPv4 addresses,
@@ -277,12 +279,13 @@ CAPTURED → CLASSIFIED → MINIMALLY_PROJECTED
 reversible map: ACTIVE → CLAIMED → CONSUMED | EXPIRED | REVOKED → KEY_DESTROYED
 ```
 
-The sequence describes Pattern law, not one mutable record. Service attempts, Intercom tasks,
-AgentJobs, Context receipts, and Security decisions retain their own authoritative states. Cut
-candidate/map cleanup is orthogonal: refusal, failed review, cancellation, failure, expiry,
-revocation, adoption, and an indeterminate attempt reaching its retention deadline all enter key
-destruction. Cleanup removes only ephemeral Cut/vault custody; it never purges the Composition's
-separately admitted authoritative result.
+The sequence coordinates records owned by different components: service attempts, Intercom
+tasks, AgentJobs, Context receipts, and Security decisions each retain their own authoritative
+states. It describes Pattern law, not one mutable record. Cut candidate/map cleanup is a
+separate obligation. Refusal, failed review, cancellation, failure, expiry, revocation, adoption,
+and an indeterminate attempt reaching its retention deadline all enter key destruction. That
+cleanup removes only ephemeral Cut/vault custody; it never purges the Composition's separately
+admitted authoritative result.
 
 ## Let Loom show the boundary
 

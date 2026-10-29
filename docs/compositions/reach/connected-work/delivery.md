@@ -59,9 +59,10 @@ credential service or deployed capability.
 | Limits and lifecycle | 429/403/quota exhaustion yields bounded waiting; revoked credentials stop retries. Disconnect one of two shared-app installations without revoking the other. Disconnect, retention, backup restore and generation upgrade preserve dedupe/effect identities and cannot resurrect a send. |
 | Custody | Each service can read only its declared secrets/routes. A customer package has no shared publisher signing key/token. Logs, model Context, checkpoints and status contain no bearer secrets. |
 
-Each adapter must declare what its provider can prove about an ambiguous write. If the evidence
-cannot exclude a prior send, the acceptance target is a visible unresolved result and no automatic
-repetition; a fake cannot manufacture an exactly-once provider guarantee.
+Use these fixtures to test the provider's actual limits as well as local recovery. Each adapter
+must declare what its provider can prove about an ambiguous write. When the evidence cannot
+exclude a prior send, qualification requires a visible unresolved result and no automatic
+repetition. A fake provider cannot establish an exactly-once guarantee the real provider lacks.
 
 ## Owners and delivery gates
 
@@ -82,9 +83,9 @@ public-only Discord profile and credential-gated loopback bootstrap supply no pr
 general service-attempt runtime, Composition selector or connected deployment by themselves.
 Private mail must not be exposed through a convenient callback or permissive local-authority shim.
 
-Live qualification remains separate from deterministic proof: one test account/repository/guild,
-explicitly admitted message, real expiry/revoke/429 observations where feasible, reconnect and
-generation upgrade. No production-wide permissions or external sends are implied by this design.
-The delivery record must state which of these were actually observed.
+After deterministic proof, qualify the live path separately with one test account/repository/guild
+and an explicitly admitted message. Observe real expiry/revoke/429 behavior where feasible, then
+exercise reconnect and a generation upgrade. Record which observations actually occurred. This
+design itself authorizes neither production-wide permissions nor external sends.
 
 [Accounts and updates](accounts.md) · [Gmail](gmail.md) · [Discord](discord.md) · [GitHub](github.md) · [WhatsApp](whatsapp.md)

@@ -11,7 +11,9 @@ An eligible profile supplies the presentation envelope; a Morphe selects a form 
 
 ## Contract
 
-`avatar.presence` revision `2` publishes `avatar.compose_profile@2`, `avatar.bind_morphe@2`, and `avatar.project_presence@2`. The results are immutable `AvatarProfile@2`, `MorpheBinding@2`, `AvatarPresence@2`, and per-target `ProjectionBinding@2` records/receipts, or exact partial/non-completion. These contracts grant no identity change, unbounded ambient presence, target-world/device ownership, unobserved delivery/motion claim, or physical/virtual effect authority.
+The work progresses through composing an eligible profile, binding a form, and projecting its presence. `avatar.presence` revision `2` publishes `avatar.compose_profile@2`, `avatar.bind_morphe@2`, and `avatar.project_presence@2` for those purposes. Results are immutable `AvatarProfile@2`, `MorpheBinding@2`, `AvatarPresence@2`, and per-target `ProjectionBinding@2` records/receipts, or exact partial/non-completion.
+
+Those records grant no identity change, unbounded ambient presence, target-world/device ownership, unobserved delivery/motion claim, or physical/virtual effect authority.
 
 ## Follow the appearance
 

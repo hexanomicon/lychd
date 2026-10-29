@@ -13,11 +13,13 @@ icon: material/spider-thread
 
 ## Decision
 
-Scout is the acquisition Extension Domain, not a crawler service or a Composition. [The first passage](#the-first-passage) follows one bounded static read from proposed URL to attributed text. A provider
-supplies mechanism only; the host binds an Agent's or admitted application Pattern's proposed
-locator to principal, Run, effect, destination scope, consent, provider, and budget. Scout owns
-acquisition mechanics, attribution, freshness, and destination/contact policy—not an application's
-source-eligibility judgment, interpretation, truth, autonomy, or consequence.
+Scout owns acquisition: mechanics, attribution, freshness, and destination/contact policy.
+It is an Extension Domain, not a crawler service or Composition.
+[The first passage](#the-first-passage) follows a bounded static read from a proposed URL to
+attributed text. A provider supplies the mechanism. The host binds the locator proposed by an
+Agent or admitted application Pattern to principal, Run, effect, destination scope, consent,
+provider, and budget. The consuming application still owns source eligibility, interpretation,
+truth, autonomy, and consequence.
 
 Each of **Search, Fetch, Extract, Crawl, Render, Interact, Credential Use, Session Custody,
 Screenshot,** and **Download** needs its own host-owned `ScoutEffectGrant` and ceiling. **Artifact
@@ -164,22 +166,22 @@ Scout delivery or permission to auto-promote sources into memory.
 
 ### Native adapters and upstream services {#integration-not-vendoring}
 
-A **native adapter** means LychD-owned Rune schemas, provider binding, probe, request allowlist,
-normalizer, receipts, and conformance tests. It does not mean copying a search engine, crawler, or
-browser service into the MPL-covered core. Upstream services retain their own source, image,
-license, release cadence, and process boundary. Small useful patterns may enter through
-[Assimilation](35-assimilation.md) with provenance and independent expression; entire engine
-catalogues and service internals do not.
+A **native adapter** is the LychD-owned side of an integration: Rune schemas, provider binding,
+probe, request allowlist, normalizer, receipts, and conformance tests. The upstream search engine,
+crawler, or browser service keeps its own source, image, license, release cadence, and process
+boundary. Native integration does not copy that engine into the MPL-covered core. Small useful
+patterns may enter through [Assimilation](35-assimilation.md) with provenance and independent
+expression; entire engine catalogues and service internals may not.
 
 ### Advertised feeds
 
-A known public feed may serve a purpose through one explicitly admitted Fetch and Extract
-passage before a search service or browser is needed. Publication of a feed proposes a locator;
-it grants no contact, parsing, custody or recurring polling authority. A feed needs its own
-qualified media and extraction profile: the current native HTML/plain-text profile does not
-admit XML. Bounded item locators are returned data, never permission to fetch each item. Local
-filtering and suitability belong to the consuming application; repeat watching needs current
-admission and finite standing policy.
+A known public feed can answer a purpose through an explicitly admitted Fetch and Extract
+passage, before a search service or browser is needed. Its publication supplies a proposed locator
+only. Contact, parsing, custody, and recurring polling need their own authority. The feed also
+needs a qualified media and extraction profile because the current native HTML/plain-text profile
+does not admit XML. Item locators remain bounded returned data, never permission for further
+fetches. The consuming application owns local filtering and suitability; repeat watching needs
+current admission and finite standing policy.
 
 The [Scout source study](../sepulcher/extensions/scout-web-research.md) records a Bazoš RSS
 premise and the next qualification obligations. It is a candidate study, not an admitted feed
@@ -318,10 +320,10 @@ site terms, nor legal permission.
 
 ### Initial qualification envelope
 
-The designed `static-public-page@1` envelope below is a conservative qualification target, not a
-measured claim of parser safety or document coverage. Its numeric limits become usable only with
-the pinned adapter's conformance evidence. Changing them changes the profile; runtime settings
-may narrow them but cannot silently widen a prepared attempt.
+The `static-public-page@1` envelope below defines a conservative qualification target. Its
+numeric limits become usable only with the pinned adapter's conformance evidence; declaring them
+does not measure parser safety or document coverage. A limit change creates a changed profile.
+Runtime settings may narrow the limits but cannot silently widen a prepared attempt.
 
 | Resource | Ceiling | Enforcing owner |
 | --- | --- | --- |
@@ -530,11 +532,12 @@ They are never instructions, code, policy, or truth. Interpretation belongs to
 
 ## Custody and stronger tracks
 
-A digest or receipt is not an artifact. Bytes stay ephemeral unless the custody owner verifies
-digest, media type, size, classification, retention, retrieval authority, and storage, then
-returns a retrievable `ArtifactRef`. Download arrival creates neither a workspace nor an artifact; it enters
-bounded quarantine. Render, Interact, Credential Use, Session Custody, Screenshot, and Download
-remain Designed. JavaScript or a challenge returns refusal or `human_required`, never a browser.
+Acquired bytes remain ephemeral until their custody owner verifies digest, media type, size,
+classification, retention, retrieval authority, and storage and returns a retrievable
+`ArtifactRef`. A digest or receipt alone is not an artifact, and an arriving download enters
+bounded quarantine rather than creating a workspace or artifact. Render, Interact, Credential Use,
+Session Custody, Screenshot, and Download remain Designed. JavaScript or a challenge produces
+refusal or `human_required`, never a browser.
 
 Any future renderer needs a finite destination/egress grant and isolation from Core peers, host
 paths, databases, control sockets, wallets, and unrelated secrets. Credentials are opaque,

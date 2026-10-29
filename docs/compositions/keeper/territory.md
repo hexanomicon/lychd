@@ -33,16 +33,17 @@ instead of copying it. Shared enclosure relationships can include flora and faun
 
 ## Bound environmental requests
 
-An environment need names its originating owner, subject, placement and profile revisions,
-admission generation, target zones/assets, requested conditions, source evidence, units,
+Before requesting an environmental change, record the conditions, source evidence, units,
 observation freshness, validity and expiry, resource ceiling, uncertainties, and human-approved
-bounds. A change of profile or arrangement requires reviewing the need's applicability.
+bounds. Bind that environment need to its originating owner, subject, placement and profile
+revisions, admission generation, and target zones/assets. A later profile or arrangement change requires review of whether the need still applies; these
+references identify the requirements under review.
 
-A settled requirement can enter separately admitted [Homestead work](../homestead/utilities.md#meet-an-environment-request).
-Its exact `HomesteadEnvironmentResult@1` returns technical evidence for Keeper's assessment.
-Starting and awaiting that work within a joint result requires a Suite. Keeper's assessment
-supplies no controller credentials or direct actuation authority; local controller safety takes
-precedence over a proposed husbandry condition.
+Once settled, the requirement can enter separately admitted [Homestead work](../homestead/utilities.md#meet-an-environment-request).
+Keeper assesses the technical evidence returned in its exact `HomesteadEnvironmentResult@1`.
+If one joint result must start and await that work, a Suite owns the coordination. Keeper's
+assessment supplies neither controller credentials nor direct actuation authority, and local
+controller safety takes precedence over the proposed husbandry condition.
 
 ## Finish with an assessment
 

@@ -34,14 +34,17 @@ limits, and permitted disclosures. Uncertain identity or suitability must
 remain visible; insufficient evidence can stop a plan. Keeper supplies no clinical diagnosis or
 treatment authority. Human-approved bounds and separately admitted owners constrain physical work.
 
-Records belong in local PostgreSQL under [persistence law](../../adr/06-persistence.md). These
-logical contracts prescribe neither a physical SQL schema nor a Markdown shadow database.
+A later keeper must be able to reconstruct what was known when care was planned or performed.
 Retain relational links, record and profile versions, authored observation time and recording
 time, actor and source, units and uncertainty, permitted attachment references, idempotency
-identity, and correlation. Corrections preserve earlier claims; current views derive from history.
-The same event identity with changed contents requires an explicit correction or refuses as a
-conflict. Subject, placement, lifecycle, plan, and event references remain independently versioned;
-an edit to one never silently changes a previously admitted action.
+identity, and correlation. Corrections preserve earlier claims, and current views derive from
+that history. The same event identity with changed contents requires an explicit correction or
+refuses as a conflict. Subject, placement, lifecycle, plan, and event references remain
+independently versioned; an edit to one never silently changes a previously admitted action.
+
+These records belong in local PostgreSQL under [persistence law](../../adr/06-persistence.md).
+The logical contracts describe their meaning and relationships; they prescribe neither a physical
+SQL schema nor a Markdown shadow database.
 
 [Homestead](../homestead/index.md) owns optional infrastructure, supply custody, and commissioned
 effects; [Cultivator](../cultivator/index.md) owns plants and cultivated fungi even in a shared

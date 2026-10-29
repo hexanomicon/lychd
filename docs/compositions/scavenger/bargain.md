@@ -9,6 +9,6 @@ A missing specification can justify a question; a seller's answer cannot rewrite
 
 Refusal, opt-out, abuse, silence, sale, changed subject, changed payment rail, failed evidence, expiry, or exhausted caps closes automatic messaging. A persuasive reply grants no extra budget, item substitution, private data, or payment method.
 
-Each send has a stable effect identity and redacted receipt. If acknowledgement disappears, `unknown_send` parks the same thread. Restart neither resends nor creates a second commitment until the destination has been reconciled. Replies remain attributable hostile input rather than policy.
+Give each send a stable effect identity and redacted receipt. If its acknowledgement disappears, retain `unknown_send` and park that same thread. Reconcile the destination before restart can resend or create a second commitment. Any reply remains attributable hostile input; it cannot change the policy governing the thread.
 
-The thread can finish with exact terms, unanswered questions, refusal, expiry, or an offer ready for fresh human review. Bargaining never approves commitment or payment. Continue to [Acquisition](acquisition.md) only after revalidating current evidence, terms, budget, exposure, authority, delivery, and disclosure.
+Close the thread with exact terms, unanswered questions, refusal, expiry, or an offer for fresh human review. None of those bargaining results approves commitment or payment. Before proceeding to [Acquisition](acquisition.md), revalidate current evidence, terms, budget, exposure, authority, delivery, and disclosure.

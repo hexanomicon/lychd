@@ -19,55 +19,16 @@ After completing [Altar setup](index.md), open `http://127.0.0.1:7134/bridge` in
 browser profile on the same host. Existing session, Run and consent URLs open their exact Bridge
 focus. Keep the listener on literal `127.0.0.1`; do not proxy, tunnel, or forward it.
 
-## Investigate public source
-
-Choose **Investigate public source** for a bounded software question rather than an ordinary
-chat offering. Supply the declared repository, base revision and tree/patch digest, your question,
-literal named public sources and explicit criteria. Omissions and non-goals explain the boundary;
-no repository or file is acquired for you. Confirm that every supplied item is public. The form
-shows UTF-8 byte limits; it never truncates or silently normalizes your material. The fixed
-[Creation investigation](../../compositions/creation/index.md) is tools-free and does not edit
-source, execute a workspace or promote a change.
-
-Submit once. If the response is lost, **Admission unconfirmed** keeps the original case UUID and
-body. **Check this case** reads that exact identity; a404 while submission may still be in flight
-does not prove refusal. **Replay identical request** is an explicit action using the original
-body, available only while this document retains it. No timeout, reconnect or navigation retries
-POST automatically. **Start different request** opens a consequence review. **Keep current
-request** preserves the draft and replay body; only **Discard draft and replay body** clears
-them, while earlier uncertain UUIDs remain visible. Selection of one valid case within this focus
-keeps that transient state without a loss prompt or an automatic read. Missing, invalid or duplicate
-selection leaves the focus and retains its loss warning.
-
-The URL retains only the case UUID. Sources and submitted bodies have no durable browser draft;
-reload warns before discarding transient material and cannot recover an identical replay body.
-After reload, explicitly Check the case using its UUID. Opening an investigation does not select
-a different ordinary séance or discard its drafts and consent. **Return to conversation** leaves
-this focus, and the global Bridge link keeps its ordinary session behavior.
-
-Read the retained question, source and candidate findings with citations, then the separate
-verifier verdict. A complete Run does not establish a correct report. Follow the exact admitted
-Run into Orb for execution evidence. **Load feedback** opens the separately protected historical
-judgments in this report: native verdict, external assessment, owner disposition and feedback
-status. The external report, owner reason and annotation coverage remain distinct; a native
-accepted verdict does not supply owner permission, and coverage is not a semantic pass. A newer
-assessment requires owner review rather than inheriting an older hold. Use **Reload feedback**
-for later changes. A refused read clears that feedback; unavailable is different from unassessed.
-
-The detail read may expire an overdue case; the historical feedback read does not. Use **Refresh
-retained case** for later case changes. An unavailable case, missing report, refused read and
-unconfirmed admission are separate states. Viewing appends no feedback and authorizes no
-continuation, cancellation or successor.
-
 ## Offer one Intent {#follow-a-turn-to-settlement}
 
-Choose **New Séance** to create a local session, or select an existing session to continue it.
-Submit your message once. Its request receives an identity that retries reuse, so an identical
-retry can return the same canonical Run. If the response is lost, **Retry original offering**
-resends that immutable request. A later refusal does not erase an earlier unknown outcome; the
-next offering stays disabled until the original is resolved. You can write a later draft while
-waiting. If the original is definitely refused, its text is retained beside that draft for
-restoration or dismissal.
+Choose **New Séance**, or select an existing session, and submit your message once. Bridge gives
+the request an identity that an identical retry reuses, allowing the server to return the same
+canonical Run. If the response is lost, **Retry original offering** resends that immutable request.
+The next offering stays disabled until its outcome is resolved: a later refusal cannot erase an
+earlier unknown outcome.
+
+You can write a later draft while waiting. If the original offering is definitely refused, Bridge
+keeps its text beside that later draft so you can restore or dismiss it.
 
 Drafts and unresolved offerings remain separate for each session when you visit another Altar
 instrument. They last while this browser document stays open; reload or closing the tab warns
@@ -99,43 +60,17 @@ applies to that pending request. Each Invocation has its own Sigil, Context boun
 consequences; permission for another object, wider tools or a later effect needs its own
 admission. Suggesting an action in conversation cannot authorize it.
 
-## Consent history direction
-
-The planned [consent history](../../adr/25-hitl.md#consent-history-and-proposal-branches) lets you
-follow a proposed action through review, revisions and its reported result. Related proposals
-appear as branches, with your decision shown separately from what the executor actually did:
-
-```text
-Configuration change
-└─ Proposal A
-   ├─ Decision: denied
-   └─ Proposal B: revises A
-      ├─ Review: exact base and diff
-      ├─ Decision: approved
-      └─ Execution receipt: applied
-```
-
-A file proposal links the exact reviewed diff and artifact revision; a page acquisition shows
-its destination and limits. Each type supplies its own review details. You can inspect a refused
-version and a later alternative without approval carrying between them. A missing receipt means
-the result is unavailable, not that an approved action succeeded. Withdrawing approval cannot
-undo an effect that already happened.
-
-This tree and its revision/explanation controls are not available in the current Bridge. The
-current consent card still judges one exact request; denial does not automatically ask an Agent
-to revise it. [State of Work](../../state-of-the-work.md#graph-stasis-consent) records the remaining
-storage, recovery and interface work.
-
 ## Read the result
 
-When the Run settles, follow the strip's link to [Orb](orb.md) to inspect its evidence. A failed
-or cancelled Run stays visible even when it has no corresponding settled agent turn. Your
-admitted message may therefore appear in the conversation without an answer beside it. When a
-failed Run still has a live text projection, Bridge explicitly marks that text as not a completed
-answer. A terminal event may already supply a retained failure message; the notice makes no claim
-about the text's provenance. A retained agent turn from the session snapshot replaces the live
-projection when it becomes available. Orb reports failure presence; it does not expose private
-diagnostic reasons or authorize an automatic retry.
+When the Run settles, follow its strip to [Orb](orb.md) for evidence. Failed and cancelled Runs
+remain visible even if they produced no settled agent turn. In that case, the conversation can
+contain your admitted message with no answer beside it.
+
+If text from a failed Run is still projected live, Bridge marks it as an incomplete answer. A
+terminal event may already have supplied a retained failure message; the notice does not identify
+the text's provenance. When a retained agent turn becomes available in the session snapshot, it
+replaces that live projection. Orb records the presence of failure while keeping private
+diagnostic reasons private; it neither authorizes an automatic retry nor performs one.
 
 After reload or restart, a turn may be presented as **Retained reply** rather than its former
 live activity card. Failed text can remain in history without retaining every live status badge.
@@ -163,11 +98,11 @@ evidence-freshness indicator.
 
 ## What the next turn remembers
 
-Bridge revisions 1 and 2 carry forward recent, complete, settled turns. They select the newest whole turns that
-fit the configured turn and character budgets. A visible user row can precede settlement; it
-becomes part of this retained history only with the settled agent turn. Full-session replay and
-Archive retrieval are outside this history path. The opt-in public-note revision below answers
-each question independently and does not replay those earlier turns.
+In revisions 1 and 2, Bridge builds the next turn's history from recent, complete, settled turns.
+It takes the newest whole turns that fit the configured turn and character budgets. Your message
+may appear in the conversation earlier, but it joins this history only when its agent turn settles.
+This path supplies neither full-session replay nor Archive retrieval. The opt-in public-note
+revision below instead answers each question independently, without replaying those turns.
 
 ??? info "How Bridge retains and restores a turn"
 
@@ -191,6 +126,53 @@ each question independently and does not replay those earlier turns.
     across multiple processes. The existing consent round is supported; general multi-approval
     flows and notifications remain unavailable. The [Bridge delivery
     record](../../state-of-the-work.md#bridge-surface) gives the current scope.
+
+## Investigate public source
+
+Choose **Investigate public source** when you have a bounded software question and public material
+for it to examine. Supply the declared repository, base revision and tree/patch digest, your
+question, literal named public sources, and explicit criteria. State omissions and non-goals so
+the investigation's boundary is clear, and confirm that every supplied item is public. You supply
+the material yourself; this operation acquires no repository or file.
+
+The form shows UTF-8 byte limits and preserves the material exactly, without truncation or silent
+normalization. The fixed [Creation investigation](../../compositions/creation/index.md) uses no
+tools: it produces an investigation without editing source, executing a workspace, or promoting a
+change.
+
+Submit once. If the response is lost, **Admission unconfirmed** retains the original case UUID and
+body. Use **Check this case** to read that identity. A 404 can arrive while submission is still in
+flight, so it does not establish refusal. **Replay identical request** explicitly resends the
+original body and is available only while this document still retains it. Timeouts, reconnects,
+and navigation never retry POST automatically.
+
+To move on, **Start different request** opens a consequence review. **Keep current request** keeps
+the draft and replay body; **Discard draft and replay body** clears them but leaves earlier
+uncertain UUIDs visible. Selecting one valid case within this focus preserves the transient
+state without a loss prompt or automatic read. A missing, invalid, or duplicate selection leaves
+the focus and retains its loss warning.
+
+The URL retains only the case UUID. Sources and submitted bodies have no durable browser draft;
+reload warns before discarding transient material and cannot recover an identical replay body.
+After reload, explicitly Check the case using its UUID. Opening an investigation does not select
+a different ordinary séance or discard its drafts and consent. **Return to conversation** leaves
+this focus, and the global Bridge link keeps its ordinary session behavior.
+
+Read the question and source alongside the candidate findings and their citations, then examine
+the separate verifier verdict. Completion tells you the Run finished; judging the report still
+requires this comparison. The exact admitted Run opens in Orb for execution evidence.
+
+**Load feedback** reads the report's separately protected historical judgments: native verdict,
+external assessment, owner disposition, and feedback status. Keep the external report, owner
+reason, and annotation coverage distinct. Native acceptance supplies no owner permission, and
+coverage does not establish semantic adequacy. A newer assessment needs owner review rather than
+inheriting an older hold. **Reload feedback** reads later changes. A refused read clears the
+feedback; unavailable feedback and an unassessed report remain different states.
+
+The detail read may expire an overdue case; the historical feedback read does not. Use **Refresh
+retained case** for later case changes. An unavailable case, missing report, refused read and
+unconfirmed admission are separate states. Viewing appends no feedback and authorizes no
+continuation, cancellation or successor.
 
 ## Public-note answers {#public-note-answers}
 
@@ -247,12 +229,15 @@ readiness, the next routed Run nor an earlier Run's binding.
    version. **Confirm exact revoke** removes controlled text and retains the anti-reingestion
    tombstone. Earlier answers and backups are outside that promise.
 
-A lost response stays unknown. An explicit **Replay identical intake** can reuse only the frozen
-original body; metadata lookup cannot identify which intake occurrence committed. Lifecycle
-commands have no replay action. Check the exact record and make a fresh explicit decision; an
-unchanged version, missing read or later refusal cannot prove rollback. A newer version proves
-current state rather than authorship of the attempted occurrence. No refresh or navigation sends
-a write automatically, and a late response cannot take over a newer selected focus.
+For intake, **Replay identical intake** can resend the frozen original body. Use it deliberately:
+a metadata lookup cannot establish which intake occurrence committed. A lost response therefore
+remains unknown even when you can read current metadata.
+
+Lifecycle commands have a different recovery path and no replay action. Check the exact record,
+then make a fresh explicit decision. An unchanged version, missing read, or later refusal cannot
+prove rollback. A newer version establishes current state, without identifying the author of the
+attempted occurrence. Refresh and navigation never send writes automatically, and a late response
+cannot replace a newer selected focus.
 
 Drafts and frozen bodies remain in this browser document only. Departure/reload warns before
 losing them; reload recovers authorized metadata, not the original body or identical replay ability.
@@ -342,12 +327,15 @@ Configuration alone proves neither registration, source preparation nor readines
    derive that exact note. It does not promote the note, activate a model, start a Run or submit a
    recall. Oversize or changed sources refuse; no truncation or automatic correction occurs.
 
-A derivation UUID identifies a durable row. Its row/attempt versions and server times describe the
-latest state; they do not identify one browser HTTP invocation or report all compute spent. A lost
-preparation response remains unknown after a successful Check. Prepared, failed or DB-expired state
-can admit new work even for the identical body. A further explicit preparation decision may repeat
-compute; there is no automatic retry. Observed expiry neither stops earlier work nor proves that
-its transport has settled. Only the server can establish an eligible completed no-work replay.
+Read a derivation UUID as the identity of a durable row. Its row and attempt versions, together
+with server times, describe the latest state. They do not identify a particular browser HTTP call
+or account for all compute spent. A successful **Check** therefore leaves a lost preparation
+response uncertain.
+
+Prepared, failed, or DB-expired state can admit new work even for the same body. Choosing to prepare
+again may repeat compute; it never retries automatically. Observing expiry neither stops earlier
+work nor proves its transport has settled. Only the server can establish an eligible completed
+replay that performs no new work.
 
 Keep the frozen generation and exact source reference while recovering an uncertain call. After a
 lifecycle change, the newer current reference may not locate historical status; reload cannot
@@ -437,13 +425,15 @@ rather than publishing a normal settled answer or new SDK message history. Text 
 is provisional and may remain in Run evidence. Open the linked Orb to inspect the failure; review
 the configured generation budget before making a new offering. There is no automatic retry or
 budget increase, and replaying the same admitted request does not create another inference.
-A successful current recall selecting no notes returns a labelled deterministic recall result
-without calling the answer-generation model. It explains whether no notes were searchable, the
-threshold selected none, or retrieved notes did not fit the character limit, together with the
-receipt's coverage at recall. Partial coverage is not an exhaustive search. Fresh query embedding
-still consumes its admitted work; the visible outcome adds no SDK message history. Source or
-service refusal remains a failed Run. A completed Run is not a certificate of answer truth or
-universal provider completeness.
+When a successful current recall selects no notes, the workflow returns a labelled deterministic
+recall result without calling the answer-generation model. It explains which boundary applied:
+no notes were searchable, none met the threshold, or the retrieved notes did not fit the character
+limit. The result includes the receipt's coverage at recall; partial coverage cannot establish an
+exhaustive search.
+
+Fresh query embedding still consumes its admitted work, and this visible outcome adds no SDK
+message history. Source or service refusal produces a failed Run. Even successful completion
+cannot certify answer truth or universal provider completeness.
 
 This revision has no tools and does not replay earlier conversation history. It resolves the
 same receipt again before outbound model work and settlement. The full escaped source envelope
@@ -474,9 +464,39 @@ This profile answers one page independently, using no earlier conversation histo
 It does not search for URLs, follow redirects or retry a lost acquisition. A refused or expired
 review grants no contact. Loom shows the exact `bridge_chat@4` score; Orb keeps the Run outcome.
 
+## Consent history direction
+
+The planned [consent history](../../adr/25-hitl.md#consent-history-and-proposal-branches) lets you
+follow a proposed action through review, revisions and its reported result. Related proposals
+appear as branches, with your decision shown separately from what the executor actually did:
+
+```text
+Configuration change
+└─ Proposal A
+   ├─ Decision: denied
+   └─ Proposal B: revises A
+      ├─ Review: exact base and diff
+      ├─ Decision: approved
+      └─ Execution receipt: applied
+```
+
+A file proposal links the exact reviewed diff and artifact revision; a page acquisition shows
+its destination and limits. Each type supplies its own review details. You can inspect a refused
+version and a later alternative without approval carrying between them. A missing receipt means
+the result is unavailable, not that an approved action succeeded. Withdrawing approval cannot
+undo an effect that already happened.
+
+This tree and its revision/explanation controls are not available in the current Bridge. The
+current consent card still judges one exact request; denial does not automatically ask an Agent
+to revise it. [State of Work](../../state-of-the-work.md#graph-stasis-consent) records the remaining
+storage, recovery and interface work.
+
 ## Two crossings still being designed
 
-**Pin and Ask** would carry an authorized typed reference into a new Intent. Before admission, a preview would identify the reference, show what material would be included or summarized, disclose unavailable or redacted material, and state the permission involved. The Vessel would then reauthorize the request. Pinning a reference grants no retrieval or mutation authority.
+**Pin and Ask** would begin a new Intent from an authorized typed reference. Before admission,
+you would review which reference is being carried, what material would be included or summarized,
+what is unavailable or redacted, and what permission is involved. The Vessel would then
+reauthorize the request. Pinning itself would grant neither retrieval nor mutation authority.
 
 **Propose in Loom** would turn selected conversation material into an attributed, inert charcoal Scroll candidate against a specified base Pattern revision. A future Spellweaver draft contract would have to validate it and publish a new revision before it could become executable work. The selection must become a typed handoff; copied prose or canvas coordinates alone cannot supply it.
 
@@ -484,10 +504,12 @@ Neither action is available yet. Follow their development through [Loom](loom.md
 
 ## Reading direction
 
-The conversation has the widest readable area. One reading sequence joins the offered text,
-exact Run status, reply or explicit missing reply, and any consent or unresolved admission.
-Keep a permission request's actual target and scope beside its decisions. Conversation selection
-stays accessible; secondary metadata unfolds on demand.
+For interface review and design, use the following composition and acceptance case.
+
+Give the conversation the widest readable area so a reader can follow one offered text through
+its exact Run status to a reply, an explicit missing reply, consent, or unresolved admission.
+Keep each permission request's actual target and scope beside its decision controls. Conversation
+selection stays accessible while secondary metadata unfolds on demand.
 
 Judge the composition by what survives a detour: returning from Orb should recover the originating
 Run while preserving the later draft and the reader's place. Project origin, saved membership,

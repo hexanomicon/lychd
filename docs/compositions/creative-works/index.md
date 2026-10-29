@@ -17,7 +17,8 @@ use the same file format.
 | [Foundry](../foundry/index.md) | A playtested local game build that another person can reproduce. |
 | [Broadcast](../broadcast/index.md) | An article or audiovisual publication candidate whose claims lead back to their sources. |
 
-Settled bundles can pass between these Compositions. Jointly commissioning and awaiting changes
-requires a [Suite](../products-and-suites.md#compositions-relate-without-nesting).
+When the needed contributions already exist, pass their settled bundles between these
+Compositions. If the result instead promises to commission and await changes jointly, it requires
+a [Suite](../products-and-suites.md#compositions-relate-without-nesting).
 
 [Composition Areas](../index.md#areas)

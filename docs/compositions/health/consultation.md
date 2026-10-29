@@ -29,12 +29,14 @@ candidate explanations only under a pinned knowledge and policy revision. Missin
 limits accompany every rank. Popularity, model confidence, and a clean-looking OCR result do not
 establish a diagnosis.
 
-`DiagnosticProposal@1` records the case and profile revisions, candidate explanations, rationale,
-contradictions, information gaps, proposed examination or test, prerequisites, burdens and risks,
-alternatives, expected discriminating value, urgency, stop conditions, required professional
-role, and expiry. The proposal can end as self-observation, routine clinician discussion, urgent
-handoff, exact blocker, refusal, or unresolved case. It cannot order a test, certify necessity,
-interpret an unseen result, or promise access.
+Record the proposed next step in `DiagnosticProposal@1`, tied to the case and profile revisions.
+Include candidate explanations, rationale, contradictions and information gaps, then describe the
+proposed examination or test, prerequisites, burdens and risks, alternatives, expected
+discriminating value, urgency, stop conditions, required professional role, and expiry.
+
+The resulting proposal may call for self-observation, routine clinician discussion, urgent
+handoff, or an honest stop as an exact blocker, refusal, or unresolved case. It cannot itself
+order a test, certify necessity, interpret an unseen result, or promise access.
 
 An accepted external test order remains the external clinician's act. A returned result enters
 through [assimilation](assimilation.md) with its author and source intact, then opens a new case

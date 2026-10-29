@@ -44,11 +44,12 @@ consent spelling is reserved by the grammar.
 
 ### Inscribe, then bind
 
-`lychd init` inspects the host, plans canonical XDG layout, and establishes the lifecycle receipt
-and root authority used later; it does not bind declarations or start services. Its `--dry-run`
-renders the plan without LychD-managed mutation. Probes are bounded, though an inspected tool may
-write its own metadata; therefore this is not a bit-for-bit host no-effect claim. Missing runtime
-capabilities remain for `bind`; only an unsafe or impossible inscription blocks `init`.
+`lychd init` establishes the layout and creation evidence that later commands rely on. It
+inspects the host, plans canonical XDG layout, and records lifecycle and root authority without
+binding declarations or starting services. `--dry-run` renders the same plan without
+LychD-managed mutation. Probes are bounded, but an inspected tool may write its own metadata, so
+the preview makes no bit-for-bit host no-effect claim. Only unsafe or impossible inscription
+blocks `init`; missing runtime capabilities remain for `bind`.
 
 Effectful `init` rejects effective UID 0 before Settings, host inspection, locks or filesystem
 effects. It then takes the lifecycle lock and requires the previewed plan to remain unchanged.
@@ -135,12 +136,12 @@ Ward-authenticated CLI admission route is delivered today.
 
 ### Delete only what the body can name
 
-`lychd del` is init's confirmed destructive counterpart. It removes only authority proven by
-receipt and live revalidation: familiar paths, units, object names, and mounts are not ownership.
-Planning is staged and fingerprinted. Dry-run makes the same authority and blocker decisions
-without deletion; an effect requires confirmation unless explicitly supplied, recomputes and
-revalidates under the lifecycle lock, and supplies the displayed fingerprint to execution. Any
-blocker suppresses every deletion effect.
+`lychd del` retires an installation through init's separately confirmed destructive counterpart.
+It may remove only what receipts and live revalidation prove it owns; familiar paths, units,
+object names, and mounts are insufficient. Planning is staged and fingerprinted. Dry-run reaches
+the same authority and blocker decisions without deleting. For effect, the command requires
+confirmation unless explicitly supplied, recomputes and revalidates under the lifecycle lock, and
+passes the displayed fingerprint to execution. Any blocker suppresses every deletion effect.
 
 The executor stops exact owned units, clears exact Scribe bindings, traverses receipted dedicated
 roots without following symlinks or crossing mount authority, quarantines and re-attests names
@@ -153,12 +154,12 @@ incomplete effect exits 2.
 
 ### Shared target, recovery, and adapter laws
 
-The delivered target source is fixed `OperatorTarget` enum/resolver, not a runtime extension
-registry. `status` and `logs` accept its whole observable set; `start`/`stop` only its explicit
-lifecycle subset. A target resolves to visible resources and exact ownership, never arbitrary
-units, containers, paths, or tables. Adding one means source, authority mapping, help, tests, and
-delivery evidence. Observation never confers actuation; dynamic targets and extension status are
-Designed.
+One fixed `OperatorTarget` enum/resolver supplies delivered targets. `status` and `logs` can
+observe its whole set, while `start`/`stop` accept only its explicit lifecycle subset. Each target
+resolves visible resources and exact ownership, never arbitrary units, containers, paths, or
+tables. Adding a target therefore requires source, authority mapping, help, tests, and delivery
+evidence. Observation grants no actuation. Dynamic targets and extension status remain Designed;
+this source is not a runtime extension registry.
 
 Whole-body capture and restoration remain Designed. A future inventory may project through status,
 and mutation may use a typed operation or lifecycle target only after freeze, durability,

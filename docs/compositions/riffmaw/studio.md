@@ -20,7 +20,7 @@ brief + admitted sources + takes or jam
 → assets, editable session handoff, or MusicAssetBundle@1
 ```
 
-Every iteration names parents and consumes a bounded attempt while accepted sources/takes remain unchanged. Model ranking, measured facts, and Magus acceptance stay distinguishable. [Music](music.md#production-autonomy) follows permitted finishes and bounded repair.
+For each iteration, name the parent material and charge one bounded attempt. Accepted sources and takes remain unchanged, so a proposed repair can be compared with the work it seeks to improve. Keep model ranking, measured facts, and Magus acceptance distinguishable throughout. [Music](music.md#production-autonomy) explains which finishes and repairs the request permits.
 
 [Sessions](sessions.md#the-realtime-stopping-line) follows live deadlines and epoch recovery against `ClockDomainMap@1`. The Scroll owns execution and termination; the plan owns musical direction. Once Jam closes, its accepted captured material can enter a slower offline Invocation.
 
@@ -42,7 +42,9 @@ Every iteration names parents and consumes a bounded attempt while accepted sour
 | **Media utility** | Bounded decode, encode, resample, trim, join, metadata, waveform, and conformance operations. | Semantic interpretation or application finish. |
 | **Human DAW projection** | Portable assets, tempo and marker maps, automation or mix notes, and enough lineage to continue manually. | The canonical Riffmaw record or authority to mutate it behind the handoff. |
 
-`MusicProductionPlan@1` is a neutral creative record. The exact Spell implementation compiles only the creative fields admitted at its pinned placement into a tool dialect. The plan cannot be executable Python, a Scroll, a DAW session, or a provider request by implication. Failure settles the implementation; another declared exact branch or forward Invocation may try different craft without changing the current Resolution Lock.
+These tool roles act on `MusicProductionPlan@1` as a neutral creative record. At each pinned placement, the exact Spell implementation compiles only the admitted creative fields into its tool dialect. The plan itself does not become executable Python, a Scroll, a DAW session, or a provider request.
+
+If an implementation fails, settle that attempt first. Another declared exact branch or a forward Invocation may then try different craft. This preserves the current Resolution Lock instead of silently changing the tools underneath the same casting.
 
 A human handoff must name what can be continued: portable assets, MIDI, maps, processing receipts, and notes. It must not promise lossless plug-in/automation round trips merely because two programs can open a project format.
 
@@ -75,7 +77,9 @@ The following ledger retains the study reviewed **2026-08-26**. Its dated observ
 engineering-worker plan. That trial supplies technical recipes and receipts; native application
 admission, Comfy Soulstone management, musical acceptance and Jam keep their separate proofs.
 
-The proposed offline proof chooses one baked music profile. The dated study selects MiniMax Music 3 through an immutable allowlisted ComfyUI preset as the first long-form candidate, with `audio.cpp` as the alternative family road. It also calls for a separated-source profile, isolated DawDreamer with allowlisted processors, pinned FFmpeg, librosa tempo/onset probes, and a LychD sample-accurate compiler from creative plan placements into the exact render graph.
+Start the proposed offline proof by choosing one baked music profile. The dated study selects MiniMax Music 3 through an immutable allowlisted ComfyUI preset as the first long-form candidate, with `audio.cpp` as the alternative family road.
+
+The rest of the proof must cover the other production roles: a separated-source profile, isolated DawDreamer with allowlisted processors, pinned FFmpeg, librosa tempo/onset probes, and a LychD sample-accurate compiler that turns creative plan placements into the exact render graph.
 
 That proof may establish `assets_only` and bounded `assisted_session`. Its human return is stems, MIDI, tempo/markers, processor receipts, and mix notes—not a native DawDreamer project. Add PortAudio only for the separate armed-take proof.
 

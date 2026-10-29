@@ -39,19 +39,21 @@ timeout --signal=TERM --kill-after=5s 40s \
   --source-revision "$(git rev-parse HEAD)"
 ```
 
-Supply the endpoint and exact model id you intend to test. The probe accepts only literal
-loopback HTTP endpoints with an explicit port. It sends synthetic inputs, runs the two cases
-sequentially with finite request/output limits and a cooperative deadline, and writes one JSON result
-to stdout; diagnostics use stderr. Success requires the model to return a fresh marker obtained
-from the actual tool call and leave no live capability lease. Each response must identify the
-declared model and carry an explicit provider finish reason matching `stop` or `tool_call`
-before the Agent may process it. The SDK's default for an absent wire reason does not qualify.
-Filtered, truncated, errored, or unknown completion states fail even if their text contains the
-marker. A failed case retains any response metadata already observed by the probe. A failed or
-cancelled call does not prove that the externally operated server has finished its work. Shielded
-client cleanup can outlast the cooperative deadline; the outer process timeout bounds the command.
-A missing final JSON receipt after forced termination leaves cleanup and server outcome unknown
-and blocks a pass.
+Point the probe at the endpoint and exact served model you want to test. Only literal loopback
+HTTP with an explicit port is admitted. It sends synthetic inputs and runs the two cases
+sequentially with finite request/output limits and a cooperative deadline. One JSON result goes
+to stdout; diagnostics go to stderr.
+
+A passing tool round must return a fresh marker from the actual tool call and leave no live
+capability lease. Before the Agent processes a response, that response must identify the declared
+model and carry an explicit wire finish reason of `stop` or `tool_call`. The SDK's default for an
+absent wire reason cannot supply this evidence. Filtered, truncated, errored, or unknown endings
+fail even if the marker appears. Failure retains any response metadata already observed.
+
+A failed or cancelled call leaves the externally operated server's outcome unresolved. Shielded
+client cleanup may outlast the cooperative deadline, so the outer process timeout bounds the
+command. If forced termination prevents a final JSON receipt, cleanup and server outcome remain
+unknown and the probe cannot pass.
 
 Retain the JSON outside the checkout with the independently observed image/model/host identities.
 The supplied source revision is a declaration, not a clean-checkout or artifact attestation.
@@ -78,12 +80,14 @@ editable example, not a benchmark-qualified recipe. Check the endpoint **from th
 network namespace**: host loopback and the loopback inside its pod are different destinations.
 An endpoint override alone does not prove reachability or admit a new network route.
 
-For a repeatable Bridge trial, use the [exact capability selector](../../../extensions/weaver/index.md#choose-a-bridge-capability)
-with revision 2 and a capability declaring chat and tools. Verify the Run's pinned Pattern
-revision in Loom and its recorded capability dispatch in Orb. Capability-key pinning does not pin model bytes or the runtime generation;
-keep those identities separately in the receipt. Start with one admitted request at a time.
-Before increasing concurrency, measure waiting, timeouts, cancellation and useful completed work
-on the exact serving profile; engine sequence count and LychD lease count are different bounds.
+To repeat the trial through Bridge, configure revision 2 with the [exact capability selector](../../../extensions/weaver/index.md#choose-a-bridge-capability)
+and a capability declaring chat and tools. Confirm the Run's pinned Pattern revision in Loom
+and its recorded capability dispatch in Orb. Keep model-byte and runtime-generation identities
+in the receipt as well: a capability key does not pin either.
+
+Begin with one admitted request at a time. Before increasing concurrency, measure waits, timeouts,
+cancellation, and useful completed work on that exact serving profile. Engine sequence count and
+LychD lease count constrain different things.
 
 Use [Summoning's host and first-light checks](../../../../summoning.md) for the surrounding body.
 Its worked model recipe is llama.cpp; a vLLM trial must substitute its own qualified declaration
@@ -102,11 +106,12 @@ structured Bridge reply and identical retained turns/model history after a secon
 process boot, with explicit test Settings/Runes and refusing host actuation. Their raw receipts
 and historical validators remain; no old source hash is refreshed to claim current qualification.
 
-The former source-native TCP launcher and host Core test deployment are removed. There is no
-host pytest fallback. A new proof must execute Core in the explicit OCI test image or, for
-installed runtime acceptance, the actual rebuilt Vessel image with its declared PostgreSQL and
-security boundary. External warm-model use, daemon/socket authority, profiles, resource bounds
-and terminal cleanup need fresh admission; the ordinary wrapper does not forward arbitrary
+The host Core test deployment and source-native TCP launcher have been removed, leaving no host
+pytest fallback. New evidence must run Core in the explicit OCI test image or, for installed
+acceptance, in the rebuilt Vessel image with its declared PostgreSQL and security boundary.
+
+That new proof needs fresh admission for external warm-model use, daemon/socket authority,
+profiles, resource bounds, and terminal cleanup. The ordinary wrapper does not forward arbitrary
 external profile files or proof environment. No replacement container runtime receipt is claimed.
 
 The frozen trusted browser and installed-hybrid observations retain their original private

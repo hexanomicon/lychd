@@ -78,12 +78,15 @@ Their limits do not alter authority or the evidence needed for a claim.
 
 ## The case and its Patterns
 
-The private case retains its owner, restricted subject/victim references, purpose, scope,
-effective policy revision and expiry, budget allocations/consumption, leads, claims, contrary
-evidence, action attempts and receipts, dispositions, and correction obligations. Source
-references retain custody, method, transformations and redaction lineage, original and UTC times
-with clock uncertainty, and observed versus inferred status. Original bytes and local custody digests remain
-with their owners. Assessments retain reviewer, confidence grounds, and review/expiry conditions.
+The private case must explain both the investigation and its consequences. Retain its owner,
+restricted subject/victim references, purpose, scope, effective policy revision and expiry,
+budget allocations/consumption, leads, claims, contrary evidence, action attempts and receipts,
+dispositions, and correction obligations.
+
+For a reviewer to challenge a claim, its source references must preserve custody, method,
+transformations and redaction lineage, original and UTC times with clock uncertainty, and
+observed versus inferred status. Original bytes and local custody digests remain with their
+owners. Each assessment records its reviewer, grounds for confidence, and review/expiry conditions.
 
 | Proposed Pattern | Admitted input → accounted result |
 | --- | --- |
@@ -99,10 +102,11 @@ replaceable behind typed boundaries; the case and its judgment explain why Thorn
 
 ## Respond and verify
 
-A response pins the target, evidence conditions and freshness, current authority, impact,
-duration, limits, verification, and recovery plan. The effect boundary checks these independently
-of the proposing worker. Concurrent requests must not duplicate or conflict over an effect.
-Its accountable owner retains verification and recovery when the worker disappears.
+Before attempting a response, bind it to the target, evidence conditions and freshness, current
+authority, impact, duration, limits, verification, and recovery plan. The effect boundary checks
+that account independently of the worker proposing it. It must also prevent concurrent requests
+from duplicating or conflicting over an effect. Assign an accountable owner who retains
+verification and recovery even if the worker disappears.
 
 Keep proposed, authorized, attempted, partially effective, maintained, and recovered states
 distinct. An accepted command does not establish containment. Verification may reveal a failed
@@ -129,10 +133,10 @@ under [Security's disclosure rules](../../adr/09-security.md#decision-identity-a
 not raw canonical source digests. Peer exchange follows the same disclosure boundary through its
 [own contract](investigation.md#ask-another-defender).
 
-**Prepared**, **sent**, **acknowledged**, **refused**, **failed**, and **unknown** are different
-handoff outcomes. Transport success proves neither guilt nor official action. Persist the exact
-artifact, authority, attempt identity, and receipts; a possible send with lost acknowledgement
-requires reconciliation before retry.
+Once a report is admitted for handoff, persist its exact artifact, authority, attempt identity,
+and receipts. Record whether it was **prepared**, **sent**, **acknowledged**, **refused**, **failed**,
+or remains **unknown**. A successful transport proves neither guilt nor official action. If the
+send may have happened but its acknowledgement was lost, reconcile that attempt before retrying.
 
 Review equivalent allegations across visible collaborating cases, including differently worded
 reports, while recording visibility limits. Cooperation must not become report flooding. A

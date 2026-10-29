@@ -52,10 +52,10 @@ required HitL, and target effect owner under [Training](33-training.md).
 
 ## Spells, Scrolls, and casting
 
-The mythic grammar is exact: a **Scroll** is one immutable workflow score; each semantic station is
-a placement of a **Spell**; a **casting** performs that Scroll inside one admitted Invocation and
-its [Circle](../divination/altar/circle.md). These names do not create duplicate schemas or let
-imagery replace engineering identity.
+The grammar follows a performance: a **Scroll** is one immutable workflow score; each semantic
+station places a **Spell**; a **casting** performs the Scroll inside one admitted Invocation and
+its [Circle](../divination/altar/circle.md). These names preserve distinct engineering identities.
+They create no duplicate schemas, and imagery cannot replace those identities.
 
 A Spell is the smallest independently named, discoverable, teachable action at the workflow
 boundary: ask an Agent, anonymize material, await consent, write an artifact, delegate work, or
@@ -565,12 +565,12 @@ invokes foreign runtime, never embedded CLI/credential/private graph.
 
 ### Scoped context handoff
 
-When a score hands a bounded task to another Agent, the receiving placement starts with a fresh,
-recipient-specific Context. It does not implicitly inherit the parent's conversation, loaded
-documents, tool outputs, or sibling work. Loading a scope into an existing conversation narrows
-the task but does not remove material already present; a handoff requires a new assembly boundary.
-The parent retains the wider purpose, dependencies, shared budget, ordering, and responsibility
-for assessing the return against the owning acceptance contract.
+A handoff begins a fresh, recipient-specific Context for the receiving Agent placement. The
+parent's conversation, loaded documents, tool outputs, and sibling work do not enter implicitly.
+Loading a scope into an existing conversation can narrow its task, but cannot remove material
+already present; a handoff therefore needs a new assembly boundary. The parent keeps the wider
+purpose, dependencies, shared budget, ordering, and responsibility for assessing the return
+against the owning acceptance contract.
 
 The exact Scroll pins the handoff's input and return contracts. The parent supplies the smallest
 sufficient packet: task and role, acceptance target, relevant operator decisions and constraints,
@@ -598,10 +598,11 @@ boundaries established by the reference adapter.
 
 ### Bounded Inquiry in an engineering workflow
 
-The [Creation workflow](../sepulcher/extensions/weaver/creation.md) uses **Inquiry** as a reusable design
-form: bounded Explore, independent coverage and sufficiency judgment, then Crucible for material
-alternatives. The same form can address direction and later implementation boundaries. It is not
-a registered global Pattern or proof of delivered subgraph composition.
+**Inquiry** is a reusable design form in the
+[Creation workflow](../sepulcher/extensions/weaver/creation.md): bounded Explore is followed by
+independent coverage and sufficiency judgment, then Crucible for material alternatives. It can
+examine both direction and later implementation boundaries. This method is neither a registered
+global Pattern nor evidence of delivered subgraph composition.
 
 The owning score declares the question, required evidence, omissions, judge independence, probe
 budget, stopping conditions, and typed return. Sufficiency means enough evidence for the declared
@@ -674,10 +675,10 @@ implementations are already admitted and an atomic durable catalogue-generation 
 
 ## Authorship provenance and protected regions
 
-Authorship and approval are different records. A human may approve model-written text without
-having written it; an Agent may commit through a human-configured VCS identity. Git author,
-committer, account name, prose style, detector score, and absence of model metadata are evidence at
-most. None may mint human provenance.
+Authorship records who wrote material; approval records who accepted it. A human can approve
+model-written text without becoming its author, just as an Agent can commit through a
+human-configured VCS identity. Git author, committer, account name, prose style, detector score,
+and missing model metadata can serve as evidence at most. None may mint human provenance.
 
 An **Authorship Attestation** binds one artifact revision and stable region id to its canonical
 content digest, locator, origin class, attesting Principal, and evidence references:
@@ -758,11 +759,11 @@ remain separately declared and admitted under their execution owners.
 
 ### Composition identity, revision, and retirement
 
-A Composition has one stable URL-safe identity and immutable numbered revisions. Its revision pins
-the reusable application contract: owned record and request/result families, Pattern catalogue,
-judgment and policy boundaries, effect and authority seams, projections, terminal outcomes, and
-recovery law. Pattern and Scroll revisions remain separate identities; changing a Scroll never
-silently changes the Composition revision that selected its catalogue contract.
+A Composition keeps one stable URL-safe identity across immutable numbered revisions. Each
+revision pins its reusable application contract: owned record and request/result families,
+Pattern catalogue, judgment and policy boundaries, effect and authority seams, projections,
+terminal outcomes, and recovery law. Pattern and Scroll have their own revision identities.
+Changing a Scroll cannot silently revise the Composition that selected its catalogue contract.
 
 Publication freezes a Composition revision independently of its implementation. A material
 change to any pinned part creates a new revision under the same stable identity. A change that
@@ -976,11 +977,11 @@ engine, service-class persistence, safe preemption, or periodic workflow schedul
 ## Returning findings
 
 Drift returns `CompositionSuiteFindingSet@1`, `AttributionCandidate@1`, `InvalidationSet@1`, and
-`CorrectionRequest@1` as evidence, not reverse edges. Spellweaver admits a Correction Request only
-as a new forward Invocation under validation/budget/authority/consent; it cannot resume an arbitrary
-old station, mutate an artifact, inherit consumer authority, or turn recurrence into training.
-Repair starts from the smallest supported cut; reuse requires full input/evaluation closure;
-unresolved attribution or exhausted budget terminates honestly.
+`CorrectionRequest@1` as evidence. A Correction Request enters Spellweaver only as a new forward
+Invocation under validation, budget, authority, and consent. It cannot create reverse edges,
+resume an arbitrary old station, mutate an artifact, inherit consumer authority, or turn
+recurrence into training. Repair begins at the smallest supported cut. Reuse needs full
+input/evaluation closure, while unresolved attribution or exhausted budget ends the attempt honestly.
 
 ## Loom projection and drafting
 

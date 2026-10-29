@@ -34,11 +34,15 @@ inputs, output facets, controls, and limits it has actually proved:
 | `convert` | one admitted facet set | Create explicit derivative facets with declared loss and validation. |
 | `render` | admitted form facets, camera, and render profile | Produce attributable image or video previews; a beauty render does not validate the source asset. |
 
-The job carries immutable input and control `ArtifactRef` values; original and derived prompts;
-requested operation and output facets; units, axes, origin, scale, bounds, coordinate transforms,
-seed policy, immutable preset, deadline, budget, and a closed engine-extension object. Optional
-material never invents support. Text-to-image-to-form is a legitimate compound route, but the
-generated image remains an attributable intermediate artifact rather than hidden prompt machinery.
+The request must identify both the material and the spatial meaning to preserve. It carries
+immutable input and control `ArtifactRef` values, original and derived prompts, the requested
+operation and output facets, and units, axes, origin, scale, bounds, and coordinate transforms.
+Seed policy, immutable preset, deadline, budget, and a closed engine-extension object bound the
+execution. Optional material cannot invent support in the selected profile.
+
+A text-to-image-to-form route is valid when both effects remain explicit. The generated image
+is an attributable intermediate artifact, so the spatial result can still be traced through it;
+it cannot disappear into hidden prompt machinery.
 
 [Sight](sight.md) may supply masks, regions, pose, depth, flow, and camera estimates as exact input
 facets. Form owns reconstruction and form generation; monocular relative depth is neither metric
@@ -60,11 +64,14 @@ admission, cooperative model cancellation, bounded worker termination, and tool-
 termination are different proved capabilities. A vanished worker does not prove that its effect
 stopped or failed.
 
-Partial, temporary, failed, or uncertain output enters quarantined Reliquary custody with its own
-digest and working-set relation so restart and reconciliation can inspect it. Only validated
-output enters the settled Prism Form result. Reconnect reconciles the exact
-provider job, request digest, working-set receipt, and returned artifacts; it never blindly
-retries an uncertain paid or remote effect.
+Keep unfinished material available for diagnosis without treating it as a result. Partial,
+temporary, failed, or uncertain output enters quarantined Reliquary custody with its own digest
+and working-set relation. Restart and reconciliation can inspect that material, but only validated
+output enters the settled Prism Form result.
+
+On reconnect, reconcile the exact provider job, request digest, working-set receipt, and returned
+artifacts. Repeating an uncertain paid or remote effect would create a new event without settling
+the old one, so no blind retry is permitted.
 
 Every canonical receipt retains request digest and idempotency key; input, intermediate, and output
 digests; model weights, runtime, container, graph, tool, add-on, and dependency revisions and
@@ -93,12 +100,15 @@ deformation, and animation facets when each is present. A Gaussian PLY or exact 
 a NeRF checkpoint and configuration, and their camera sets remain field/render facets. They do not
 impersonate point clouds or meshes merely because a viewer can render each of them.
 
-Every conversion is a new derivative. Meshing a radiance field, baking a Gaussian scene, reducing
-a textured mesh to blocks, retopologizing geometry, or converting a rig may discard information;
-the receipt names that loss. Reconstruction remains inferred from admitted captures. Metric scale
-is claimed only when camera calibration or an admitted scale reference supports it. TRELLIS.2's
-internal sparse voxel representation is not a Minecraft block grid and receives no shortcut around
-explicit conversion.
+A conversion creates another artifact whose losses must be named. Meshing a radiance field,
+baking a Gaussian scene, reducing a textured mesh to blocks, retopologizing geometry, or converting
+a rig can each discard different information. The receipt records that loss rather than allowing
+the converted file to stand in for everything its source contained.
+
+Reconstruction remains an inference from admitted captures. It can claim metric scale only with
+supporting camera calibration or an admitted scale reference. Likewise, TRELLIS.2's internal
+sparse voxels are not a Minecraft block grid; reaching that grid still requires an explicit
+conversion.
 
 ## Hostile form custody
 
@@ -135,12 +145,12 @@ projection, or acquire world or body authority.
 
 ## Model workers, graph serving, and tool workers
 
-The first implementation should expose one Prism-owned Form semantic interface and several
-immutable profiles instead of promoting each research repository into Core protocol. A resident,
-queued, or remote model worker is an Animator reached through a `JobGrant`; a finite model or tool
-execution is selected by the Spell Resolution Lock and delivered into a trusted executor or Tomb.
-A pinned contained process is not a fake Soulstone. Neither path is interchangeable merely because
-both can emit GLB.
+Keep one Prism-owned Form interface while qualifying several immutable implementations behind
+it. A research repository can supply a model without defining Core's protocol. If its worker
+has resident, queued, or remote service behavior, it is an Animator reached through a `JobGrant`.
+If execution is a finite model or tool operation, the Spell Resolution Lock selects it for a
+trusted executor or Tomb. A pinned contained process needs no invented Soulstone, and two paths
+that both emit GLB are not thereby interchangeable.
 
 | Candidate | Office | Present judgment |
 | --- | --- | --- |
@@ -195,15 +205,18 @@ terms are not closed. The whole route therefore remains license-blocked research
 Core profile. Even after closure, model tokens must map to the canonical block palette and pass the
 same validation and consumer admission as any other block source.
 
-The first text-to-form quality route is text-to-image through [Image](image.md), then the admitted
-image-to-PBR TRELLIS.2 profile. Both effects, both prompts, and the intermediate image remain in
-lineage. A candidate editable-character chain may retain the original unified shape, derive
-optional semantic parts, select compatible geometry for rigging, then perform contained Blender
-validation. Every handoff needs its own compatibility bake: disconnected part meshes or seams may
-invalidate skinning and cannot be assumed to compose with SkinTokens or UniRig. Form hands the
-exact skeleton, hierarchy, rest and bind transforms, local frames, axes, units, limits, skinning,
-and morph ontology to [Kinesis](kinesis.md). Kinesis owns motion clips and technical retargeting;
-Atelier owns animated storytelling. Neither is an implied feature of `rig`.
+The first text-to-form quality route begins with [Image](image.md), then passes its admitted
+image to the image-to-PBR TRELLIS.2 profile. Keep both effects, both prompts, and that intermediate
+image in the lineage.
+
+For an editable character, a candidate chain may retain the original unified shape, derive
+optional semantic parts, choose compatible geometry for rigging, and run contained Blender
+validation. Every handoff needs its own compatibility bake: disconnected parts or seams may
+invalidate skinning, so their
+outputs cannot be assumed compatible with SkinTokens or UniRig. Form then hands the exact
+skeleton, hierarchy, rest and bind transforms, local frames, axes, units, limits, skinning, and
+morph ontology to [Kinesis](kinesis.md). Kinesis supplies motion clips and technical retargeting;
+Atelier supplies animated storytelling. The `rig` operation implies neither.
 
 ## Profiles, Runes, Covens, and arbitrary iron
 

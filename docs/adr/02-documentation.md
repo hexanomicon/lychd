@@ -14,9 +14,10 @@ discipline. For current placement rules, follow
 
 ## Context and requirements
 
-The Hexanomicon must be versioned beside the body it describes, visually its own, quick to preview,
-and accessible. Its plain, reviewable Markdown source must stay readable by humans and coding
-agents while preserving the distinct burdens of law, operation, threshold, and myth.
+The Hexanomicon must remain versioned beside the body it describes so that readers can review
+the two together. Its Markdown source must be plain enough for humans and coding agents to read,
+while the rendered work stays accessible, visually its own, and quick to preview. Within that
+shared medium, law, operation, threshold, and myth retain their distinct burdens.
 
 ## Options
 
@@ -43,11 +44,12 @@ snippets, and Mermaid are used when they clarify. Snippets stay short and use re
 | Operated doctrine | Sepulcher and Altar: anatomy joined to concrete ownership and use. |
 | Great Work | Transcendence: full mythic voltage, formative movement, correspondence, and vow. |
 
-Placement establishes register. Myth needs no disclaimer where it belongs, but a technical page
-cannot borrow scientific or mystical certainty to make an unproved mechanism sound inevitable.
-Portfolio publication marks a Native Reference Composition and accepted application contract; it
-does not prove executable delivery. A leaf mentions local delivery only when it materially changes
-how the contract is read; State of Work keeps the shared whole-system evidence envelope.
+A page's placement establishes its register. Myth can speak fully where it belongs; technical
+pages must support their mechanisms without borrowing scientific or mystical certainty.
+Likewise, publication in the Portfolio accepts a Native Reference Composition and its application
+contract, but does not prove executable delivery. State of Work holds the shared whole-system
+evidence envelope. A leaf needs a local delivery note only when that limit materially changes
+how its contract should be read.
 
 ## Progressive revelation
 
@@ -61,12 +63,12 @@ how the contract is read; State of Work keeps the shared whole-system evidence e
 
 ## ADR presentation
 
-An ADR normally records context and pressure; requirements; alternatives; decision and invariants;
-then failure, recovery, compatibility, and consequence. It does not copy live implementation.
-Short source snippets name a repository-root path and link explicitly to their source. Stable named
-sections are used only where the source accepts them; page view/edit actions do not imply an
-included target. Where registers meet, pages link across the seam. The current
-[Covenant registry](./index.md) routes architectural questions.
+An ADR normally leads from context and pressure through requirements and alternatives to a decision and
+its invariants. It then explains failure, recovery, compatibility, and consequence. Live
+implementation stays in source. When a short snippet helps, name its repository-root path and
+link explicitly to the source; use a stable named section only where the source accepts it.
+Page view/edit actions do not establish an included target. Links carry readers across register
+seams, and the current [Covenant registry](./index.md) routes architectural questions.
 
 ## Consequences
 

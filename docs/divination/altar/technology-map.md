@@ -5,10 +5,11 @@ icon: material/graph-outline
 
 # :material-graph-outline: Owned Technology Map
 
-Keep the technology you own understandable across devices, software, and services. For a PC,
-phone, router, appliance, or application, establish its components, dependencies, data, interfaces,
-current state, available source, and ways to change or recover it. Prefer more FOSS, better
-documentation, and greater replaceability while retaining the boundaries of closed components.
+Start with a device or application you own and a question about maintaining it. A useful map
+should let you trace its components, dependencies, data, interfaces, current state, available
+source, and ways to change or recover it. The same inquiry applies to a PC, phone, router,
+appliance, or application. Prefer more FOSS, better documentation, and greater replaceability,
+while recording where closed components limit that understanding and control.
 
 This candidate undertaking, developed **2026-10-09**, uses [Atlas](atlas.md) to keep its brief,
 questions, evidence, and judgments together. The direction is independent of Companion or the
@@ -41,11 +42,12 @@ their behavior is fully understood.
 
 ## Knowledge and control have different coverage
 
-Track source visibility, documented behavior, observed behavior, ability to modify/install,
-vendor independence, and recovery separately. Public source can be inspectable while installation
-remains restricted. An opaque firmware image can have a documented interface and a verified
-update path. A hardware design can be understood without access to a practical manufacturing
-process. These are useful, different facts.
+Ask separately what you can inspect, what is documented, what you have observed, what you can
+modify or install, whether it works independently of a vendor, and how you could recover it.
+These dimensions often diverge. Public source may be readable while installation is restricted.
+An opaque firmware image may have a documented interface and a verified update path. You may
+understand a hardware design without having a practical way to manufacture it. Keeping each fact
+separate makes the map useful for an actual decision.
 
 FOSS increases the material available for inspection, testing, maintenance, and replacement. An
 open layer should improve its own entry in the map without making its dependencies open by
@@ -98,10 +100,11 @@ choosing an open driver alone supplies no application-portability evidence.
 
 ## Make an agent's questions answerable
 
-For a selected component, an agent should be able to find what it is, what depends on it, which
-exact documentation applies, what has been observed, what operations exist, and which gaps limit
-the proposed work. Keep claims distinct as source-supported, experimentally established,
-inferred, disputed, or unknown, with their versions, evidence, and conditions attached.
+An agent examining a component should be able to answer a connected set of questions: what is it,
+what depends on it, which exact documentation applies, what has been observed, and which operations
+are available? The remaining gaps determine how far a proposed task can responsibly proceed.
+Keep every claim's versions, evidence, and conditions attached, and identify whether it is
+source-supported, experimentally established, inferred, disputed, or unknown.
 
 Schemas describe shape; tests and observations establish particular behavior. An action contract
 also needs effects, current authority, limits, outcomes, and recovery. Reading a map grants no

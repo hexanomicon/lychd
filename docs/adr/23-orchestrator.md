@@ -174,13 +174,13 @@ physical transition.
 
 ### Runtime-Started Convergence (`SOFT_SWAP` Plan Label)
 
-SOFT_SWAP says only that the runtime is started. It need not load a model. The whole target
-Animator drains because a dynamic load can unload another model behind a lease. A dynamic
-non-WARM/non-WARMING capability asks its canonical adapter to activate; WARMING and static
-started routes merely await honest warmth.
-Router observations classify each model independently. Activation rechecks that inventory and
-does not submit another load for a target already loading or loaded. Inference disables router
-autoload so lost warmth cannot initiate a load or eviction outside this transition boundary.
+A SOFT_SWAP plan begins with a started runtime, which may still need no model load at all. The
+whole target Animator drains because loading dynamically can unload another leased model. For a
+dynamic capability outside WARM and WARMING, the canonical adapter receives an activation request;
+WARMING and static started routes simply await honest warmth. Router observations classify models
+individually. Activation rechecks that inventory and cannot submit another load for a target
+already loading or loaded. Inference disables router autoload so that lost warmth cannot trigger
+a load or eviction outside this transition boundary.
 
 Dispatcher never asks this of a shared non-warm route. Direct surfaces enforce the same ownership
 boundary before considering runtime-started convergence, so an already-started shared dynamic
@@ -221,9 +221,9 @@ or uncertain service state refuse recovery. No readiness probe alone releases co
 
 ### Host Mutation Port and Privilege Boundary
 
-RuntimeActuator.apply(TransitionIntent) is the lone domain mutation port. Its closed intent has
-logical Animator identities, no shell or unit payload. Compensation names one completed forward
-transition and is its exact typed inverse.
+All domain host mutation passes through `RuntimeActuator.apply(TransitionIntent)`. The closed
+intent contains logical Animator identities, never a shell or unit payload. Compensation refers
+to one completed forward transition and must be its exact typed inverse.
 
 Direct systemd remains an explicit host-adapter test mechanism, not a host-native Core profile: under the lifecycle lock it resolves registry identities,
 attests the loaded Scribe-owned graph, requests one target transaction, awaits jobs, and classifies
@@ -277,12 +277,13 @@ parks. Current process-local leases cannot prove that handoff.
 
 ### 3. Delegated Provider Capacity
 
-After semantic selection, a future policy may delay/decline delegated work for admitted physical
-or economic capacity, never rewrite task, choose provider, alter Graph, or manufacture capacity.
-A future `ProviderCapacityPolicy` must keep conservative/balanced/maximize behavior beneath the
-minimum authorized, provider, and configured ceilings; disablement or cooldown stops admission,
-and unknown quota cannot manufacture slots. No policy implementation, scheduler, observation,
-durable reservation/release, Provider Gate, or spend ledger is wired.
+A future delegated-capacity policy acts after semantic selection. It may delay or decline work
+for admitted physical or economic capacity, but may not rewrite the task, choose its provider,
+alter Graph, or manufacture capacity. Conservative/balanced/maximize behavior in a future
+`ProviderCapacityPolicy` must stay beneath the minimum authorized, provider, and configured
+ceilings. Disablement or cooldown stops admission; unknown quota cannot create slots. No such
+policy implementation, scheduler, observation, durable reservation/release, Provider Gate, or
+spend ledger is wired.
 
 ### 4. Swarm Lease Management
 

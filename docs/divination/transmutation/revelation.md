@@ -7,15 +7,16 @@ icon: material/eye-outline
 
 What did the encounter disclose?
 
-In the field-note experiment, one field observation is absent from the merged output.
-That absence is what the trial disclosed. An insufficient conflict rule is a possible diagnosis;
-retaining both versions is a proposed correction. These claims answer different questions:
-what happened, why it happened, and what might improve it.
+Return to the merged field notes: one observation is missing. That is the finding. An insufficient
+conflict rule may explain it; retaining both versions may correct it. Keeping those statements
+separate gives the next inquiry its shape. We know what happened, have a possible account of why,
+and have something further to test.
 
-**Revelation brings what happened into accountable interpretation.** The evidence meets the
-criteria already declared in [Canon](canon.md), with its sources, failures, and capture gaps
-kept visible. A score alone cannot prove a cause. The diagnosis needs evidence that establishes
-it; the proposed correction needs another trial and the responsible owner's adoption decision.
+**Revelation brings what happened into accountable interpretation.** Read the evidence against
+[Canon's](canon.md) previously declared criteria, preserving sources, failures, and capture gaps.
+Then ask what each conclusion requires. A score cannot establish a cause; the diagnosis needs
+evidence for that cause. A proposed correction needs another trial and an adoption decision
+from its responsible owner.
 
 [Da'at](genesis.md#daat) names recognition that has become usable. The absent observation exposes
 what the next attempt must repair, and the suspected rule becomes a question to test. The

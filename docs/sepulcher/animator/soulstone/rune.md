@@ -43,13 +43,14 @@ Runtime leaves may add typed fields such as `extra_args` or llama.cpp `startup_m
 defaults are followed by typed overrides; explicit `exec` replaces synthesized arguments rather
 than extending them.
 
-A concrete built-in runtime leaf pins its own `runtime` literal. A llama.cpp, vLLM, SGLang, or
-ExLlamaV3 file cannot claim another adapter merely by changing that field; use the matching Rune
-directory and schema. `base_url` is a composable endpoint root, so a path prefix such as `/v1` is
-preserved, while embedded credentials, query or fragment state, port zero, and out-of-range ports
-fail during Rune validation. Hydration additionally requires a Soulstone URL to use an approved
-loopback host and an explicit port; when `port` is also declared, the two values must agree. A
-non-loopback endpoint belongs at the Portal boundary.
+Choose the Rune directory for the adapter you intend to use. Each built-in runtime leaf pins
+its `runtime` literal, so a llama.cpp, vLLM, SGLang, or ExLlamaV3 file cannot select a different
+adapter merely by changing that field.
+
+Then check the endpoint. `base_url` preserves a path prefix such as `/v1`, but rejects embedded
+credentials, query or fragment state, port zero, and out-of-range ports during validation.
+Hydration also requires an approved loopback host and an explicit port. If `port` is declared
+separately, it must match the URL. Remote endpoints belong at the Portal boundary.
 
 ## Capability declarations
 
@@ -58,12 +59,14 @@ The model catalogue below is the current v1 compatibility path. General service 
 
 ### Declared models become v1 capabilities
 
-Each `[[models]]` block names a stable `id`, an explicit container-side `path`, an optional
-format, capability hints, and a per-model generation overlay. It yields capability
-identity `{animator}:{family}:{model_id}`. Duplicate ids fail validation. When at least one block is
-present, those ids are the complete admitted catalogue in declaration order: live discovery for an
-undeclared id is ignored, while a declared id absent from discovery keeps its declaration but may
-be downgraded by readiness evidence.
+Give each `[[models]]` block a stable `id`, an explicit container-side `path`, and, as needed,
+a format, capability hints, and a per-model generation overlay. The resulting capability is
+identified as `{animator}:{family}:{model_id}`. Duplicate ids refuse validation.
+
+Once any model blocks exist, their ids form the entire admitted catalogue in declaration order.
+Discovery cannot add an undeclared id. A declared id missing from discovery stays declared but
+may be downgraded by readiness evidence. This lets you distinguish what was authorized from what
+the service currently reports.
 
 `[models.capabilities]` may declare:
 
@@ -78,11 +81,12 @@ closed. When that field is omitted, the current catalogue synthesizes `chat`; ot
 require an explicit declaration. Image input enriches a `chat` capability and does not create the dedicated
 `vision` family. The full two-axis law lives in [Capabilities](../capabilities.md).
 
-These fields describe model admission, not a complete application. The current Bridge accepts
-text and requires tool support for its structured reply. It has no image/audio upload or materializer,
-and the `vision`, `embedding`, `rerank`, `stt`, and `tts` families have no executable v1 grant.
-Selecting a model that can accept images does not add image input to Bridge. Output modalities,
-streaming hints, and model descriptions are not current Rune fields and fail validation.
+The declared model is only one part of an application path. Bridge currently accepts text and
+needs tool support for its structured reply. It supplies no image/audio upload or materializer,
+and the v1 grant cannot execute the `vision`, `embedding`, `rerank`, `stt`, or `tts` families.
+An image-capable model therefore cannot by itself add image input to Bridge. Output modalities,
+streaming hints, and model descriptions are also absent from the current Rune schema and fail
+validation.
 
 An empty `models` list is not the Portal zero-capability rule. A Soulstone adapter may instead use
 its runtime/discovery model catalogue or derive one model id from `served_model_id`, `model_path`,
@@ -150,11 +154,14 @@ do not change the conflict graph, reserve hardware, or ask for semantic dispatch
 
 ## Schema and process generation
 
-In code, the Rune combines Animator-owned identity and capability intent with an embedded
-`quadlet: QuadletConfig` value. That nested value owns the common image invariant only. Soulstone
-and Phoenix embed it under `quadlet` without sharing Domain or Rune ancestry; future Tether or Veil
-Runes may compose it on the same terms. Soulstone keeps its own runtime, endpoint, resource, secret,
-and lifecycle policy, and the generated `QuadletContainer` remains a separate Bind/Scribe artifact.
+The Rune brings together Animator identity and capability intent with an embedded
+`quadlet: QuadletConfig`. The nested value supplies only the common image invariant. Soulstone
+and Phoenix can both embed it under `quadlet` without sharing a Domain or Rune ancestry; future
+Tether or Veil Runes may do the same.
+
+Soulstone still owns runtime, endpoint, resource, secret, and lifecycle policy. Binding and Scribe
+produce the separate `QuadletContainer` artifact. Sharing a configuration value cannot transfer
+those responsibilities.
 
 Loaded Rune values are immutable through their nested models, sequences, and string maps. Change
 the TOML and construct a new process generation; do not mutate an admitted object in place. Rune

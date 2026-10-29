@@ -37,10 +37,11 @@ boundary, and [ADR 29](../../adr/29-observability.md) owns the evidence contract
 Correlation locates related evidence; it does not prove causation or make a payload true. A
 projection is rebuildable and cannot supplant the records whose facts it presents.
 
-Today, useful evidence is divided among owning records, a best-effort non-token Step trail, and a
-process-local live event channel. Token deltas are not retained as structural evidence, and failed
-Step persistence can leave gaps. A native read model must join these sources while keeping their
-different authority and loss visible.
+To follow today's Run, a reader must join several accounts: records kept by the owners, the
+best-effort non-token Step trail, and the process-local live event channel. Failed Step writes
+can leave gaps, and token deltas never become retained structural evidence. A native Oculus
+read model must make these sources readable together without concealing their different
+authority or losses.
 
 Future physical evidence begins at the node that measured it. The Orchestrator consumes fresh
 node-local evidence through its admission contract; Oculus may retain the same observation for
@@ -66,13 +67,15 @@ provider or tool bodies, and identity-bearing material require explicit authorit
 policy. Secrets are rejected at the producer boundary. Redaction precedes serialization, and
 external export passes through a second filter.
 
-Retention is declared by evidence class and subject. Removing an observation cannot erase an
-owning Run fact or effect receipt. A conforming path bounds queues and cardinality, batches
-deliberately, flushes within a shutdown budget, and makes overload or loss visible as a gap.
-Today's live Run replay and each subscriber queue are bounded at 256 events. A stalled subscriber
-receives an explicit snapshot-resync boundary when its pending deltas overflow; the producer does
-not wait for that reader. This channel behavior does not supply the future Oculus ingestion,
-retention, or shutdown contract.
+Set retention according to evidence class and subject. Deleting an observation cannot erase the
+Run fact or effect receipt owned elsewhere. A conforming capture path must bound queues and
+cardinality, batch deliberately, flush within its shutdown budget, and reveal overload or loss
+as a gap.
+
+Today's live Run replay and each subscriber queue are bounded at 256 events. When pending deltas
+overflow for a stalled subscriber, it receives an explicit snapshot-resync boundary; the producer
+does not wait for that reader. This is the current channel behavior, not delivery of the future
+Oculus ingestion, retention, or shutdown contract.
 
 ## External Eyes
 

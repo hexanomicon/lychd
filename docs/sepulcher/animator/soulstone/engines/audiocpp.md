@@ -5,10 +5,10 @@ icon: material/waveform
 
 # :material-waveform: audio.cpp
 
-**audio.cpp** is a candidate local audio inference engine. It belongs in the Soulstone engine
-catalog because a pinned server or worker can become a local Animator, while its produced meaning
-belongs to Echo for speech mechanics, Riffmaw for music, or the consuming application according to
-the admitted operation and semantic role.
+Consider **audio.cpp** when a bounded local audio operation needs an inference engine. A pinned
+server or worker may justify a Soulstone and local Animator. The meaning of its output still
+belongs to the consuming owner: Echo for speech mechanics, Riffmaw for music, or another application
+according to the admitted operation and semantic role.
 
 The candidate study concerns music, separation, and speech families supported by an exact pinned
 runtime profile;
@@ -16,10 +16,11 @@ it does not admit arbitrary model execution merely because the runtime is Apache
 weights, dependencies, family support, input/output bytes, and license terms remain separate
 profile facts.
 
-An audio.cpp Soulstone must eventually pin the runtime revision, model family, worker or server
-shape, queue/lifecycle behavior, device topology, audio formats, cancellation boundary, output
-custody, and measured receipt. A library or one-shot CLI that does not justify an independent
-managed lifecycle remains a bounded `ToolProfile`, not a Soulstone.
+To admit an audio.cpp Soulstone, first pin how it will run: runtime revision, model family,
+worker or server shape, queue and lifecycle behavior, and device topology. Then establish the
+audio formats, cancellation boundary, output custody, and measured receipt. If a library or
+one-shot CLI needs no independently managed lifecycle, keep it in a bounded `ToolProfile`
+instead.
 
 The music candidate is recorded in [Riffmaw Studio](../../../../compositions/riffmaw/studio.md);
 speech law and Language Edition's use of exact STT/TTS operations remain in the

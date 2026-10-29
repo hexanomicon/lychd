@@ -21,7 +21,7 @@ values are permitted only by the seed schema and establish no suitability or eli
 | **Technology** | Exact CPU, board, BIOS, cooling, memory, GPU, storage, case, PSU, firmware and connector compatibility. | Bazaar consequence after fresh compatibility and evidence checks. |
 | **Property** | Transaction type, area, rooms, locality, route/amenity observations, contradictions and professional questions. | Shortlist and diligence only: no contact, viewing, offer, reservation, deposit, signature or payment. |
 
-These are Scavenger-owned versioned rules, not new Compositions or source adapters. Technology can refine Bazaar; property rules cannot silently become parcel or hardware judgment. Profile selection supplies no source, credential, private anchor, money, or effect authority.
+Choose these versioned Scavenger rules according to the subject being acquired. Technology may refine Bazaar, while property rules cannot silently become parcel or hardware judgment. Selecting a profile creates neither a Composition nor a source adapter, and supplies no source, credential, private anchor, money, or effect authority.
 
 `Watch` observes and reports. `Concierge` prepares questions and offers for review. `Bounded Autopilot` acts only within its fully pinned envelope. Changing subject, ceilings, permitted disclosure, payment rail, evidence requirement, or deadline creates a successor campaign revision.
 
@@ -29,4 +29,4 @@ These are Scavenger-owned versioned rules, not new Compositions or source adapte
 
 A candidate may meet every hard gate and still be unattractive to the buyer. `PreferenceRevision@1` can refine that soft ordering while retaining the reviewed field, admitted judgments, scope, provenance, and predecessor. It cannot repair a failed hard gate, widen budget or authority, change disclosure, or rewrite earlier rankings.
 
-The declared learning mode determines whether a reviewed revision may become active for the next observation. Otherwise it stays a proposal awaiting explicit acceptance. [Market](market.md) makes that learning visible in the full candidate field.
+Before the next observation uses a reviewed preference revision, check the campaign's declared learning mode. If that mode does not allow activation, keep the revision as a proposal awaiting explicit acceptance. [Market](market.md) exposes the full candidate field so the person can assess what the learning changed.

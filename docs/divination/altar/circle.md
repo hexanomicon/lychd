@@ -7,10 +7,12 @@ icon: material/circle-outline
 
 > _A world opens where the Circle closes._
 
-The same boundary appears at several scales. A host gives one Lich a place to answer. A Bridge
-séance lets a relation continue. Within it, an admitted **Invocation** opens a **Circle**
-for one answerable act. Caller and Called meet there with an Intent, Sigil, Context, selected
-memory, capability, and authority. The boundary holds their action and its consequence together.
+An admitted **Invocation** opens a **Circle** for one answerable act. Caller and Called meet
+within it with an Intent, Sigil, Context, selected memory, capability, and authority. Holding
+these together gives the act a boundary within which its consequences can be attributed.
+
+That boundary sits inside larger ones: a Bridge séance sustains a continuing relation, and a host
+gives one Lich a place to answer. The same figure thus appears at several scales.
 
 ```text
 Summoning Circle — this Lich's enduring host boundary
@@ -20,10 +22,10 @@ Summoning Circle — this Lich's enduring host boundary
     └── Circle — another Invocation, with its own Run
 ```
 
-A Circle begins at admission, not when a browser draws a ring. Its **Run** anchors durable
-execution truth. Several people, Agents, Postures, or model powers may participate, each with
-attribution, separate authority, and refusal. Their meeting creates no fused super-Sigil or
-identical interior.
+Admission begins the Circle. Its **Run** gives the act durable execution identity, whether or
+not a browser draws a ring. Several people, Agents, Postures, or model powers can take part.
+Each retains attribution, separate authority, and the ability to refuse; meeting within one
+Circle creates neither a fused super-Sigil nor an identical interior.
 
 ## The casting inside the Circle
 
@@ -60,11 +62,11 @@ Follow [Bridge](bridge.md#follow-a-turn-to-settlement) to offer an Intent, answe
 recover an uncertain offering. Choose **Look into the Orb** beside the turn to inspect that
 Run's evidence.
 
-A future Bridge-native focus may join authorized views of that same Invocation: Loom's exact
-score and casting state; Caller, Called, Sigil, Context, budgets, and consent; Nexus's capability
-and Animator observations; and Orb's bounded traces. The view must be reconstructible from its
-owners. A selected node, animation, open stream, or model utterance cannot establish progress or
-authority on its own.
+A future focus within Bridge may gather the authorized views of one Invocation in one place.
+Loom would supply its exact score and casting state; the account would show Caller, Called, Sigil,
+Context, budgets, and consent; Nexus would supply capability and Animator observations; Orb would
+supply bounded traces. Each view must remain reconstructible from its owners. A selected node,
+animation, open stream, or model utterance alone cannot establish progress or authority.
 
 ## What can outlast the act
 

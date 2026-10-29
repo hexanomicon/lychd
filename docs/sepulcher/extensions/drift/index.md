@@ -7,11 +7,12 @@ icon: material/compass-outline
 
 > _By which star will you judge the wandering?_
 
-**Drift** evaluates how actual behavior and outcomes meet or depart from a declared goal. Each
-trial binds an exact subject revision to Cases and Rubrics that make the goal testable. Declared
-Evaluators judge retained observations, preserve uncertainty, and return only the findings the
-evidence supports. [ADR 34](../../../adr/34-evaluation.md#the-declared-goal) owns this evaluation
-jurisdiction.
+To judge a result, first say what the work was meant to achieve. **Drift** makes that declared
+goal testable through Cases and Rubrics, then binds each trial to the exact subject revision
+being examined. Declared Evaluators compare retained observations with those criteria and return
+only findings the evidence supports. Their findings say where actual behavior and outcomes met or departed from the goal, and preserve
+what remains uncertain. [ADR 34](../../../adr/34-evaluation.md#the-declared-goal) owns this
+evaluation jurisdiction.
 
 That office carries no authority to execute unsafe work, select or grant an Animator, authorize
 spending, repair or mutate a subject, publish, train, or promote. Its findings become input to
@@ -33,9 +34,10 @@ comparison is optional, and several criteria need not collapse into one distance
 
 ## Execution is not verdict
 
-Trial status records execution; claim verdict records what its evidence supports. A
-policy-blocked trial therefore cannot establish claim failure. [Trials](trials.md) carries the
-status/verdict vocabulary and separates infrastructure, subject, and evaluator failures.
+A trial can be blocked by policy before it produces the evidence needed to judge its subject.
+Its execution status records that block; it cannot turn the absence of a trial into claim
+failure. [Trials](trials.md) supplies the separate status and verdict vocabularies, including
+how to distinguish infrastructure, subject, and evaluator failures.
 
 A **Trial Suite** (`TrialSuite@1`) groups Cases and evaluation controls; a
 [Composition Suite](../../../compositions/products-and-suites.md#compositions-relate-without-nesting) coordinates

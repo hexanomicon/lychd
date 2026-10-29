@@ -13,7 +13,7 @@ This candidate study, reviewed **2026-08-09**, tests that reusable application b
 
 `workshop.service` revision `1` proposes `workshop.service_case@1`. Its `WorkshopServiceRequest@1` binds purpose, case-scoped asset identity/configuration evidence, condition, hazards, operator role, pinned service profile, attributed sources/observations, and privacy/authority ceilings.
 
-The proposed `WorkshopServiceCase@1` owns that purpose and operator assignment; asset assurance; symptoms, manuals, bulletins, schematics, codes, images, statements and measurements; hypotheses and contradictions; checks, prerequisites, hazards, tools, results and interruptions; part/tool requirements; and verification scope. A hypothesis remains separate from an observed fact, and chat is no substitute for the record.
+The proposed `WorkshopServiceCase@1` keeps the work reconstructible after the conversation. It owns purpose and operator assignment, asset assurance, and the evidence available to the case: symptoms, manuals, bulletins, schematics, codes, images, statements and measurements. It also retains hypotheses and contradictions; checks, prerequisites, hazards, tools, results and interruptions; part/tool requirements; and verification scope. A hypothesis remains distinct from an observed fact, and chat cannot substitute for this record.
 
 `WorkshopServiceDisposition@1` can return scoped verified restoration, containment advice or attributable containment evidence, professional handoff, exact blocker, unresolved result, refusal, or indeterminate action. It cannot certify a machine generally safe, perform statutory inspection, admit unsafe/unqualified work, control a machine, bypass guards, invent part identity, purchase, or pay. Emergency response is outside this office.
 
@@ -41,7 +41,7 @@ A Product selects profiles/use cases; a client changes presentation; a [Persona]
 
 ## Proposed reuse beneath the Product
 
-Companion, Echo, Tether, and Ward retain mobile controls, speech chronology, transport, authentication, grants, and revocation. Workshop retains purpose and case policy. Scout and Sight supply acquisition/visual evidence; Workshop judges source applicability and the next permitted check. [Scavenger](../scavenger/index.md) retains listing, seller, bargaining, commitment, payment, and parcel truth.
+Workshop can use existing mechanisms while retaining the purpose and policy of the service case. Companion, Echo, Tether, and Ward keep mobile controls, speech chronology, transport, authentication, grants, and revocation. Scout and Sight provide acquisition/visual evidence; Workshop decides whether that source applies and which check may follow. When parts need sourcing, [Scavenger](../scavenger/index.md) keeps its own listing, seller, bargaining, commitment, payment, and parcel records.
 
 `WorkshopPartRequirement@1` carries compatibility, quantity, condition, certification, and evidence needs to stock or Scavenger, without reservation or commitment authority. A stock owner can return exact snapshots and reservation/use/return receipts. Workshop records them; it cannot mutate ambient inventory.
 
@@ -49,7 +49,9 @@ An asset owner such as [Homestead](../homestead/index.md) may supply the request
 
 ## Honest settlement
 
-Verified restoration means the case-defined symptom and checks passed under recorded conditions. Containment advice remains advice; containment evidence names the human/controller and independent verification. Handoff preserves identity, evidence, attempted checks, uncertainty, and hazards. Missing identity, source, observation, tool, part, qualification, or authority returns an exact blocker. Conflicts and exhausted budget remain unresolved; an uncertain action remains indeterminate and is not repeated.
+Close the case only as far as its evidence permits. Verified restoration means the case-defined symptom and checks passed under recorded conditions. If the useful result is containment advice, keep it as advice; evidence of actual containment must name the human/controller and independent verification. A handoff carries identity, evidence, attempted checks, uncertainty, and hazards to the next responsible person.
+
+When identity, source, observation, tool, part, qualification, or authority is missing, return that exact blocker. Conflicts and exhausted budget remain unresolved. An uncertain action stays indeterminate and must not be repeated.
 
 The first network-disabled synthetic passenger-vehicle fixture must include conflicting identity, a pinned manual excerpt, finite images, codes/measurements, and fake stock. It proves refusal and source mismatch, one parked/resumed check without duplication, Sight uncertainty, hypothesis revision, hazardous-work handoff, a part need without purchase, scoped verification, and interruption without invented completion. No live vehicle, public web, camera stream, purchase, actuator, or repair enters it.
 

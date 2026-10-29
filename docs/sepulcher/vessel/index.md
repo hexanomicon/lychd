@@ -15,10 +15,11 @@ after it dies.
 
 ## One process takes breath
 
-Granian supplies production ASGI; Litestar owns routing, injection, lifecycle, and API authority.
-Pydantic validates configuration and typed boundaries. Pydantic AI supplies Agent and Graph
-mechanics over [Animator](../animator/index.md) capabilities. Litestar also serves the compiled
-static SvelteKit client: the browser projection acquires no separate server authority.
+A request enters through Granian's production ASGI service. Litestar supplies routing, injection,
+lifecycle, and API authority, while Pydantic validates configuration and typed boundaries.
+Pydantic AI provides Agent and Graph mechanics over [Animator](../animator/index.md) capabilities.
+Litestar also serves the compiled static SvelteKit client, so the browser remains a projection
+without a separate server authority.
 
 Exactly one ASGI process is required. Two SAQ workers, live Run events, cancellation, and the
 service graph share its event loop. A second process or reload supervisor would create another
@@ -26,17 +27,23 @@ private runtime world. A blocking Ghoul can therefore delay HTTP as well as othe
 
 ## Before the Altar opens
 
-Startup connects queues, constructs services, warms the registry, and synchronizes standing
-policy. With PostgreSQL, every required durable reconciliation pass must succeed before workers
-or HTTP can observe the substrate; failure or degradation aborts startup. The memory profile has
-no cross-process truth and retains best-effort recovery. Delivery, consent, and delegated-wait
-relays carry repair forward after admission opens.
+Startup first connects the queues, constructs services, warms the registry, and synchronizes
+standing policy. Before workers can claim jobs or HTTP can expose those services, the PostgreSQL
+profile must reconcile what the previous process left behind: canonical Runs, their exact
+deliveries, checkpoints, Consent, and delegated-wait owners. These records determine whether
+work may resume, must remain parked, or needs containment and settlement.
 
-The owned launcher enters the application lifespan explicitly and runs one embedded no-lifespan
-ASGI worker. It refuses new application callbacks once retirement starts and waits for existing
-callbacks, including background work after response delivery, before closing application services.
-Required startup or shutdown failure becomes a failed process exit. A signal requests this
-retirement; the user manager's outer timeout still decides whether a stuck process must be forced.
+Required reconciliation must finish cleanly before admission opens; startup aborts on failure
+or degradation. The memory profile has no cross-process truth and retains
+best-effort recovery. After admission opens, lifespan-owned delivery, consent, and delegated-wait
+relays continue repairing their respective publication and return obligations.
+
+The owned launcher enters the application lifespan explicitly, then runs one embedded ASGI
+worker with no lifespan of its own. Retirement first refuses new application callbacks and waits
+for existing callbacks, including background work continuing after a response was delivered.
+Only then does it close application services. A required startup or shutdown failure produces a
+failed process exit. Signals request this retirement; the user manager's outer timeout decides
+whether a stuck process must ultimately be forced.
 
 The managed Vessel image uses the fixed internal `0.0.0.0:8000` listener behind generated
 loopback-only host publication. Host-native Vessel deployment and hidden `lychd serve` are

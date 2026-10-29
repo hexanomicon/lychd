@@ -11,11 +11,12 @@ A missed due window is unfinished care, even when its reminder has expired.
 
 ## Record what happened
 
-Care can include feeding completion, water inspection, cleaning, confirmed transfer, and
-appointments. Preserve the intended work, subject and placement references, due window, actor,
-effective and recorded times, evidence, uncertainty, and outcome. Link professional instructions
-by exact reference and version. Clinical diagnosis and treatment decisions remain with the
-external professional authority; recording an instruction does not broaden it.
+For feeding completion, water inspection, cleaning, confirmed transfer, appointments, or other
+care, record what was intended alongside what happened. Preserve the subject and placement
+references, due window, actor, effective and recorded times, evidence, uncertainty, and outcome.
+If professional instructions guided the work, link their exact reference and version. Recording
+them does not broaden their authority: clinical diagnosis and treatment decisions remain with
+the external professional.
 
 Physical work belongs to a human or separately admitted owner. Local controller safety wins.
 Distinguish proposed, confirmed, partial, missed, cancelled, interrupted, and unknown-effect work.
@@ -38,11 +39,13 @@ the original collection identity and trigger an explicit stock adjustment agains
 
 ## Finish or hand off
 
-Return the confirmed result, named partial completion, refusal, blockage, or unresolved physical
-effect. A care schedule can identify future work without extending this invocation indefinitely.
-On restart, recover the settled result and reconcile pending effects before retrying. When deletion
-is requested, stop schedules and disclosure and reconcile or hand off pending care obligations
-before authorized erasure; the animal's custody and welfare obligations remain.
+Close the invocation with the confirmed result, named partial completion, refusal, blockage, or
+unresolved physical effect. A care schedule can identify future work after this invocation ends.
+On restart, recover its settled result and reconcile pending effects before retrying.
+
+Deletion also requires attention to unfinished care. Stop schedules and disclosure, then reconcile
+or hand off pending obligations before authorized erasure. The animal's custody and welfare
+obligations remain even when records are removed.
 
 ---
 

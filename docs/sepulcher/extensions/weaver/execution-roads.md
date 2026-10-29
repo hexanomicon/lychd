@@ -7,10 +7,10 @@ icon: material/routes
 
 > _The roads part beneath different banners._
 
-A station that needs one answer, a sovereign task, or an iterative coding workspace asks three
-different things. Spellweaver chooses that labor boundary inside an immutable Scroll, then admits
-the cognition and disclosure needed within it. A lower price can order eligible roads; it cannot
-choose their authority or custody.
+One bounded answer, a sovereign task, and an iterative coding workspace place different work
+with their receivers. Spellweaver first selects that labor boundary within an immutable Scroll,
+then admits the cognition and disclosure needed inside it. Price may rank roads that are already
+eligible; it cannot decide their authority or custody.
 
 Current work uses fixed source-defined Patterns, local capabilities,
 and the effect-free delegated reference adapter. Portal egress remains quarantined; A2A transport
@@ -29,10 +29,10 @@ branch, and [Security](../../../adr/09-security.md#portal-privatization-and-egre
 | **Delegated coding agent** | repository exploration, iterative tool use, tests, patch generation, or verification needs its own runtime loop | one `read`, `candidate`, or `verify` Coffin over an immutable projection or disposable worktree | quarantined analysis, candidate patch, ArtifactRefs, or verification receipts |
 | **Interactive coding seat** | a human is actively operating a provider-supported Codex, Claude Code, Copilot, or similar client | the human client and its account session; not a LychD service | an external artifact that later enters ordinary admission and provenance |
 
-If the task can be expressed as one model request while LychD keeps the plan, use a local or Portal-
-backed native Agent. If the receiver must own a durable public task, use A2A. If the worker needs a
-workspace and iterative tools under LychD containment, use a delegated coding agent. A consumer
-subscription never becomes an automated road merely because the payload was sanitized.
+Use a native local or Portal-backed Agent when one model request can do the work and LychD keeps
+the plan. Use A2A when the receiver must own a durable public task. Use a delegated coding agent
+when the worker needs a workspace and iterative tools under LychD containment. Sanitizing a
+payload does not turn a consumer subscription into an automated road.
 
 ## The roads are layered
 
@@ -49,9 +49,9 @@ three values in one provider dropdown.
 | Job-scoped Provider Gate | Separate Portal attempts |
 | A2A peer task | Receiver-owned workflow and models |
 
-The peer's internal model is not the sender's Portal. Conversely, a coding CLI does not stop being
-a delegated runtime merely because its planner calls an API. That child API call is another exact
-disclosure edge under the parent job.
+An A2A peer chooses its own internal model; that model is not the sender's Portal. A coding CLI,
+meanwhile, remains a delegated runtime even when its planner uses an API. The child API call
+adds an exact disclosure edge under the parent job.
 
 A native Agent loop follows the same rule. Validation repair, tool-result follow-up, changed
 history, or another model round creates another exact Portal payload and decision; the first grant
@@ -80,9 +80,9 @@ or disclosure never preauthorizes the loop.
 7. **Quarantine and adopt.** Remote success supplies candidate material. The Composition's local
    validators and effect owners decide whether it enters application truth.
 
-Local work is the refusal-safe baseline, not an automatic quality winner. A declared policy may
-prefer an eligible Portal or peer for latency, specialization, or cost, but economics can only
-order roads that have already passed privacy, authority, custody, durability, and terms gates.
+Local work supplies the refusal-safe baseline without guaranteeing the best quality. Declared
+policy may prefer an eligible Portal or peer for latency, specialization, or cost. Economics can
+rank those choices only after privacy, authority, custody, durability, and terms gates have passed.
 
 ## One disclosure plan per boundary
 
@@ -117,11 +117,12 @@ non-exportable; Loom, logs, and external receipts receive only its opaque id or 
 keyed `EvidenceDigest@1` projection. Plain canonical hashes are not broadly visible evidence or an
 anonymization claim.
 
-Spellweaver rejects a Scroll when a remote edge can bypass classification, byte-time egress,
-budget reservation, quarantine, explicit adoption, or a required Privacy Cut or durable submission.
-It also rejects A2A without task/peer/durable-return law, coding delegation without
-containment/workspace/artifact law, and Portal fallback that can silently change provider or payload.
-Loom may show these declared boundaries; it cannot prove that an occurrence crossed them correctly.
+Every remote edge must pass classification, byte-time egress, budget reservation, quarantine,
+explicit adoption, and any required Privacy Cut or durable submission. A Scroll that can bypass
+one of them is rejected. The same applies to A2A without task/peer/durable-return law, coding
+delegation without containment/workspace/artifact law, and Portal fallback that can silently change
+provider or payload. Loom may display the declared boundaries; it cannot prove an occurrence
+crossed them correctly.
 
 ## Failure stays on the score
 

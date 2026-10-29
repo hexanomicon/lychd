@@ -74,11 +74,12 @@ contract, not ambient access from this Composition.
 
 ## Recovery and falsification
 
-Every accepted fact and proposal retains profile, case, source, policy, and Pattern revisions.
-Corrections preserve earlier claims and invalidate dependent pending proposals. Restart resumes
-only exact compatible work, never duplicates an import or approval, and never assumes an ordered
-test, dispensed medicine, taken dose, or completed treatment from a request or missing
-acknowledgement. Pending external effects settle by receipt, reconciliation, or qualified handoff.
+Retain profile, case, source, policy, and Pattern revisions with every accepted fact and proposal.
+Corrections must preserve earlier claims and invalidate dependent pending proposals; these
+references identify the affected work. On restart, resume only exact compatible work without duplicating an import or approval.
+A request or missing acknowledgement cannot establish that a test was ordered, medicine dispensed,
+a dose taken, or treatment completed. Settle pending external effects through receipts,
+reconciliation, or qualified handoff.
 
 The smallest falsifying fixture uses a wholly synthetic adult and fabricated photographs: a
 two-page discharge note, a duplicated laboratory report, one illegible medication line, and a

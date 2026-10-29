@@ -24,9 +24,13 @@ Revision `2` retains one native action record for the prepared placement. Blockw
 
 Run and Consent identities remain immutable references in the retained action. Their deletion does not erase the frozen command, review binding, issuance judgment, or recovery disposition. A prepared action whose Run or Consent is unavailable cannot issue. On re-entry, an action that has acquired its pending claim can only reconcile, including when its checkpoint or Core records are gone. The first bounded placement schema retains mission and action records until a separately owned export or deletion operation exists.
 
-Preparation and its one Consent binding commit together before the review becomes available or Graph parks. Any consumed preauthorization belongs to that same transaction. Re-entry with the same native action identity resolves that committed preparation and Consent; changed content conflicts instead of replacing them. Repeated validation of the same call resolves that retained preparation and Consent; it does not mint another native action. An unconfirmed commit is reconciled by that identity before further admission.
+Commit preparation and its one Consent binding together before exposing the review or parking Graph. Any consumed preauthorization belongs to the same transaction. This gives re-entry one identity to recover: the same native action resolves the committed preparation and Consent, while changed content conflicts instead of replacing them.
 
-Before invoking the adapter, a conditional transaction marks the exact action pending against the current mission cursor and limits. Competing resumptions cannot acquire another issuance claim for that action or cursor. The database transaction does not encompass the server effect. Once invocation may have begun, pending or unknown acknowledgement requires reconciliation of the same action; neither a new Graph hop nor a missing reply permits another placement.
+Repeated validation of the same call returns those retained records without minting another action. If the commit itself is unconfirmed, reconcile it by that identity before admitting further work.
+
+Before invoking the adapter, conditionally mark the exact action pending against the current mission cursor and limits. Competing resumptions must recover that claim rather than acquire another one for the action or cursor.
+
+The database transaction cannot include the server effect. Once invocation may have begun, a pending or unknown acknowledgement therefore requires reconciliation of the same action. A new Graph hop or missing reply cannot authorize another placement.
 
 A matching response plus either an authoritative event or sufficient resulting-state proof permits verified settlement. The receipt and its corresponding mission cursor and budget update commit together; repeated settlement returns the same result. An observed adapter invocation, a completed Run, or the desired block appearing without sufficient attribution cannot manufacture that receipt. Missing proof remains exact non-completion.
 
@@ -34,7 +38,9 @@ A matching response plus either an authoritative event or sufficient resulting-s
 
 A managed cold backup follows orderly save and stop. Only the Magus restores a named snapshot; restoration increments the world epoch and invalidates old leases and assumptions. An attached client cannot snapshot or restore the server. It detects external generation change, invalidates leases, and obtains newly attested truth.
 
-Server, protocol, Sentinel, adapter, controller, Pattern, and application schemas version independently. Incompatible parked work drains, migrates explicitly, or settles non-complete. Export and deletion inventory application and world-derived custody: deleting a relationship cannot erase a world event from the journal, and restoring blocks cannot rewrite why a mission existed.
+Recovery must also check compatibility across independently versioned server, protocol, Sentinel, adapter, controller, Pattern, and application schemas. Incompatible parked work drains, migrates explicitly, or settles non-complete.
+
+For export or deletion, inventory both application custody and material derived from the world. Deleting a relationship cannot erase a world event from the journal. Restoring the blocks likewise cannot rewrite the purpose for which a mission existed.
 
 ## Proving return
 

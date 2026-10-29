@@ -12,17 +12,21 @@ icon: material/chip
 
 ## Launch and identity
 
-The adapter translates the Rune into a deterministic launch plan. Explicit `exec` owns the whole
-command. In managed operation, explicit `startup_mode` selects `single` or `router`; `auto` uses
-argument and environment inference before falling back to `single` when `model_path` exists and
-`router` otherwise. Typed `extra_args` append last. Forced modes refuse known main-model source
-controls in `extra_args`, including model shortcuts and token lookalikes in value positions.
-Use `model_path` for forced `single`, or model directories and presets for forced `router`.
-Forced `router` also refuses model-source environment controls; forced `single` refuses a main
-Hugging Face repository in the environment because a remote preset can clear its model path.
-Both checks include variables projected from `secret_env_files`.
-These checks bound the supported command shape without reproducing upstream's full option grammar.
-GPU/CPU offload remains an exact profile fact, not a universal VRAM promise.
+First decide whether the adapter or the operator owns the command. Explicit `exec` supplies the
+whole command. For a managed command, `startup_mode` chooses `single` or `router`. With `auto`,
+argument and environment inference comes first; otherwise a `model_path` selects `single`, and
+its absence selects `router`. Typed `extra_args` append last.
+
+A forced mode must remain true after all inputs are considered. Forced modes therefore refuse
+known main-model source controls in `extra_args`, including shortcuts and token lookalikes in
+value positions. Use `model_path` for forced `single`, or model directories and presets for
+forced `router`. Forced `router` also refuses model-source environment controls. Forced `single`
+refuses a main Hugging Face repository in the environment because a remote preset can clear its
+model path. Both checks include variables projected from `secret_env_files`.
+
+These checks establish the supported command shape without reproducing all upstream option
+grammar. GPU/CPU offload remains a fact of the exact profile; the launch mode supplies no universal
+VRAM promise.
 
 Mode metadata follows the final command and its projected environment, including
 `secret_env_files`. For main-model and router source options, environment values apply first;
@@ -36,12 +40,14 @@ preset contents can change the server's mode, so local declaration cannot establ
 explicit local model or router directory/preset. A model URL, HF filename, draft model, or
 `--spec-default` alone does not establish a main model or its provider identity.
 
-Source, router, and alias controls require separate positional values; empty values are retained,
-while missing, dash-leading, and equals-form values fail validation. Known underscore aliases are
-normalized for interpretation without rewriting passthrough bytes. Place these controls before
-options whose arity LychD does not know: a later source or alias token is ambiguous and refused.
-Unknown trailing options remain operator-owned. This bounds source interpretation without
-reproducing every upstream option or treating a consumed option value as a source control.
+Write source, router, and alias controls with separate positional values. Empty values are
+retained; missing values, dash-leading values, and equals-form values fail validation. The adapter
+normalizes known underscore aliases for interpretation without rewriting their passthrough bytes.
+
+Place these controls before options whose arity LychD does not know. Otherwise a later source or
+alias token could be an unknown option's value, making its meaning ambiguous and causing refusal.
+Unknown trailing options remain operator-owned. This boundary prevents a consumed value from
+being mistaken for a source control without claiming a complete upstream parser.
 
 With passthrough `exec`, the operator must keep its listening port and served alias aligned with
 the declared endpoint and model identity. Declaration compilation rejects a known `--port` or
@@ -49,18 +55,20 @@ the declared endpoint and model identity. Declaration compilation rejects a know
 override of a managed command. LychD does not rewrite passthrough commands or infer unknown wrapper
 syntax; declare the endpoint and command consistently for a runnable profile.
 
-Engine idle sleep is unsupported because readiness probes and `autoload=false` cannot fence its
-automatic wake. Managed argument vectors begin with `--sleep-idle-seconds -1`; omit
-`sleep_idle_seconds` or set it to `-1`. `extra_args` cannot contain any sleep control.
-Passthrough `exec` must begin with that exact disabling pair: either
+Keep engine idle sleep disabled. Readiness probes and `autoload=false` cannot fence the engine's
+automatic wake, so that mode falls outside the supported profile. Managed arguments begin with
+`--sleep-idle-seconds -1`; omit `sleep_idle_seconds` or set it to `-1`. No sleep control may
+appear in `extra_args`.
+
+Passthrough `exec` must begin with the exact disabling pair: either
 `["--sleep-idle-seconds", "-1", ...]` for an image entrypoint, or
-`["llama-server", "--sleep-idle-seconds", "-1", ...]` for a complete command.
-The executable token must be nonempty and cannot begin with `-`. Admitted bytes are not rewritten.
-Later sleep controls, duplicate disabling flags, underscore aliases, equals spellings, and
-misplaced or malformed disabling arguments fail validation. This deliberately bounds the command
-shape instead of inferring arbitrary option arity; a flag consumed as another option's value
-cannot supply admission. Custom wrappers that cannot honor this contract are outside the
-supported llama.cpp profile.
+`["llama-server", "--sleep-idle-seconds", "-1", ...]` for a complete command. The executable token
+must be nonempty and cannot begin with `-`; admitted bytes are not rewritten.
+
+Validation rejects later sleep controls, duplicate disabling flags, underscore aliases, equals
+spellings, and misplaced or malformed disabling arguments. It needs a known command shape because
+a flag consumed as another option's value cannot disable sleep. Custom wrappers unable to honor
+this shape remain outside the supported llama.cpp profile.
 
 This contract was checked against upstream revision
 [`434ddbbc0e30522e897670681e503b797c12b7c1`](https://github.com/ggml-org/llama.cpp/commit/434ddbbc0e30522e897670681e503b797c12b7c1):
@@ -106,29 +114,30 @@ contents and runtime behavior remain operator validation.
 
 ## Context allocation
 
-Managed context metadata comes from the generated command, including final `extra_args`.
-The catalogue derives a conservative per-request bound from positive total `-c` context divided
-by positive `-np` parallel slots, reduced by any explicit `--kv-unified-per-slot` cap. Thus
-`-c 8192 -np 4` admits a 2048-token bound even when a unified KV layout might permit more for one
-request. Generated flags override environment and preset values. Explicit `exec` without known
-positive context and slot counts leaves that derived bound unknown; automatic or malformed
-command/environment context inputs do not silently fall back to a lower-priority value. These flags follow the upstream
-[server parameters](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md#server-specific-params).
-The bound describes configured allocation, not the loaded model's training context or a live
-hardware measurement. Explicit generation overlays remain request policy; they do not change
-the engine's allocation.
+Use the generated command, including final `extra_args`, to determine managed context metadata.
+The catalogue divides positive total `-c` context by positive `-np` parallel slots, then applies
+any smaller explicit `--kv-unified-per-slot` cap. For example, `-c 8192 -np 4` admits a conservative
+2048-token request bound even if unified KV could give one request more.
+
+Generated flags take precedence over environment and presets. Explicit `exec` leaves the derived
+bound unknown unless positive context and slot counts are known. Automatic or malformed command
+or environment inputs cannot silently fall back to a lower-priority value. These flags follow the
+upstream [server parameters](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md#server-specific-params).
+
+This measures configured allocation, not the model's training context or live hardware. Explicit
+generation overlays set request policy without resizing the engine's allocation.
 
 ## Readiness and control
 
-Router models are dynamic capabilities. Each model's inventory status determines its readiness:
-clean `unloaded` admits activation, `loading` means `WARMING`, and `loaded` plus ready health supplies warmth.
-Missing declared models and malformed inventories fail closed; failed, sleeping, downloading, or
-unknown statuses cannot authorize activation. One model's health cannot establish a sibling's state.
-Activation rechecks inventory and does not repeat a load already in progress. Inference and targeted
-health requests carry `autoload=false`; with engine idle sleep disabled, a missing loaded model
-cannot silently trigger router loading or eviction.
-Dynamic activation is not a restart; reclaiming a conflicting physical runtime remains an
-Orchestrator transition.
+Inspect each router model's own inventory status. Clean `unloaded` permits activation; `loading`
+is `WARMING`; `loaded` together with ready health supplies warmth. A missing declared model or
+malformed inventory fails closed. Failed, sleeping, downloading, or unknown statuses cannot
+authorize activation, and one model's health cannot establish a sibling's readiness.
+
+Activation checks inventory again and does not repeat a load in progress. Inference and targeted
+health requests use `autoload=false`. With idle sleep disabled, losing a loaded model therefore
+cannot silently load or evict another. Runtime-native activation leaves the process running;
+reclaiming a conflicting physical runtime remains an Orchestrator transition.
 
 The current repository proves planning, discovery, capability derivation, and model-load control.
 Model unloading is not a separate adapter operation; whole-runtime shutdown belongs to Orchestrator.

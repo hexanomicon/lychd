@@ -32,12 +32,16 @@ register treats these independently:
 | `openai.images@1` | image generation and editing | operation routes, image/reference counts, masks, sizes, formats, progress, result retrieval, and revised prompts |
 | `openai.videos-job@1` | asynchronous video generation and editing | submit, durable provider id, status, progress, cancellation request, result retrieval, expiry, and reconciliation |
 
-Endpoint names are only evidence inputs. Each provider profile records exact routes and methods;
-supported operations and fields; required and rejected parameters; media encodings and limits;
-authentication; whether "streaming" means token deltas, audio frames, progress, previews, or
-partial artifacts; error and rate-limit mapping; idempotency support; cancellation semantics;
-provider-job lookup; retention and expiry; and the recorded compatibility test—the conformance bake—that established those facts.
-An omitted fact is unsupported, not silently forwarded in an `extra_body` bag.
+To establish compatibility, inspect the exact provider profile rather than inferring from endpoint
+names. The profile records routes and methods, supported operations and fields, required and
+rejected parameters, media encodings and limits, and authentication. It must explain what
+"streaming" means on that surface: token deltas, audio frames, progress, previews, or partial
+artifacts.
+
+The same account needs error and rate-limit mapping, idempotency support, cancellation semantics,
+provider-job lookup, retention, expiry, and the compatibility test—the conformance bake—that
+established those facts. An omitted fact stays unsupported; an `extra_body` bag cannot silently
+supply the missing contract.
 
 A service may implement only part of a dialect. That partial profile is legitimate when every
 opening and refusal is explicit. It must not inherit a family logo's optional fields, endpoints,
@@ -55,11 +59,14 @@ Not every useful service resembles OpenAI:
   drops, reconnect, consumers, and stopping law; and
 - an **agent model connector** hydrates a Pydantic AI `Model` and optional agent-loop toolsets.
 
-FFmpeg, Blender, Godot, native parsers, and similar finite local programs are normally delivered by
-a Worker into a trusted executor or, for hostile material/code, a Tomb; a Worker task in the Vessel
-is not containment. They are not fake network models. A wrapper service may still be an Animator when its
-independent lifecycle, queue, resource residency, or remote boundary justifies one; the same typed
-job interface remains outside its private transport.
+Choose the execution boundary according to how the program lives. Finite local programs such as
+FFmpeg, Blender, Godot, and native parsers normally arrive through a Worker at a trusted executor,
+or at a Tomb when the material or code is hostile. Merely running a Worker task in the Vessel
+provides no containment. These programs need not masquerade as network models.
+
+A wrapper can instead justify an Animator when it has an independent lifecycle, queue, resident
+resources, or a remote boundary. The same typed job interface remains visible above that wrapper's
+private transport.
 
 `ToolConnector` and Pydantic AI toolsets remain an agent-loop convenience. They cannot establish a
 Scout Search grant, media effect, filesystem right, browser session, Blender job, payment,
@@ -91,12 +98,12 @@ than replaced by a runtime fallback.
 
 ## Durable job handoff
 
-Before any local or remote asynchronous effect is submitted, the owning Worker persists
-[`ServiceJobAttempt@1`](../../adr/14-workers.md#service-job-attempts) with the exact
-request, execution route, and recovery identity, plus a managed local reservation when required.
-Only then may the driver or executor receive its idempotency identity; persist any returned
-provider/executor job identity.
-The attempt remains the ledger for progress, result, and settlement.
+Before submitting an asynchronous effect, its Worker records exactly what it intends to send,
+where it will execute, and how it can later find the result. That durable account is
+[`ServiceJobAttempt@1`](../../adr/14-workers.md#service-job-attempts). It also holds a managed
+local reservation when required. Only after persistence may the driver or executor receive the
+idempotency identity. Persist the returned provider or executor job identity as well; the attempt
+then remains the ledger for progress, result, and settlement.
 
 The parent Run may enter its owner's durable service wait with no live Connector or grant in
 Graph state. Re-admission rebinds the exact capability or Resolution Lock/ToolProfile and reconciles
@@ -105,12 +112,14 @@ client timed out. The Workers law carries the complete persisted record and reco
 
 ## Egress and secrets
 
-A Portal grant proves only that one eligible runtime route was selected. Before any bytes leave,
-Security re-evaluates the exact canonical payload digest, classification, destination, purpose,
-consent, transformation receipts, cost, and expiry. A changed crop, prompt, attachment, retry,
-fallback, or derived artifact requires a fresh decision. Connector code receives the narrow secret
-reference or mounted value required by its exact driver; it cannot enumerate the Codex, borrow a
-different provider credential, or return secrets in diagnostics.
+Selecting an eligible Portal route supplies only one part of permission to send. Immediately
+before transmission, Security re-evaluates the exact canonical payload digest, classification,
+destination, purpose, consent, transformation receipts, cost, and expiry. Changing a crop, prompt,
+attachment, retry, fallback, or derived artifact needs a fresh decision.
+
+The Connector receives only the narrow secret reference or mounted value its exact driver needs.
+It cannot enumerate the Codex, borrow another provider's credential, or reveal secrets through
+diagnostics.
 
 ## Five boundaries that must not collapse
 

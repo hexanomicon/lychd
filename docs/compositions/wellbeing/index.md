@@ -15,7 +15,7 @@ Imagine planning the next three days with limited time, a small kitchen, and foo
 
 The Composition also keeps confirmed check-ins and reflection through the separate Patterns described in [Journal](journal.md). Confirmation of eating or movement comes through an explicit `wellbeing.check_in@1`; planning cannot supply it.
 
-Wellbeing owns profile and plan revisions, restrictions, preferences, journals, check-ins, schedules, exports, and deletion records. The Magus approves each profile, plan, share, external use, export, and deletion. A Mind proposes and explains; deterministic tools check units, ingredient closure, hard constraints, typed handoffs, and deletion.
+Wellbeing retains the profile and plan revisions, restrictions, preferences, journals, check-ins, schedules, exports, and deletion records that make the cycle reviewable. The Magus approves each profile, plan, share, external use, export, and deletion. A Mind can propose choices and explain them, while deterministic tools check units, ingredient closure, hard constraints, typed handoffs, and deletion.
 
 ## One person's cycle
 

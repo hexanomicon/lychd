@@ -5,24 +5,27 @@ icon: material/lightning-bolt-circle
 
 # :material-lightning-bolt-circle: Capabilities
 
-Before choosing a service, name the operation the work needs. A **capability** is the exact
-versioned contract a caller may request from an [Animator](./index.md): what it may ask for, and
-which typed inputs and results may cross the grant. Model, endpoint, container, tool, Rune, Coven
-and application purpose each answer a different question.
+Suppose the work needs a recording transcribed. Choosing a model or endpoint is not yet enough:
+the caller needs a contract for the inputs it may send and the typed result it can receive.
+A **capability** names that exact, versioned contract at an [Animator](./index.md). Begin with the
+operation, then establish which service can perform it. Model, endpoint, container, tool, Rune,
+Coven, and application purpose each contribute a different part of that decision.
 
 The interface/profile design described below remains **Designed** until source, migrations, adapters, tests and
 operator receipts establish delivery.
 
 ## The delivered v1 surface
 
-`CapabilitySpec` uses the key
-`{animator}:{family}:{model_id}`, seven closed families, coarse input/output modality strings, and
-one compatibility grant class. `chat` grants carry a hydrated Pydantic AI model and only explicitly
-declared agent-loop toolsets; `tool_execution` grants require a non-empty toolset surface. The other
-five family labels remain routing metadata and fail closed at issue. That v1 shape supports the
-proved chat/model path, narrow toolset compatibility, and readiness mechanics. It does not prove
-executable audio, visual, embedding, rerank, service-job, or host-tool routes. [State of
-Work](../../state-of-the-work.md#animator-dispatch-spine) owns that boundary.
+Current `CapabilitySpec` identifies a capability by `{animator}:{family}:{model_id}`. It uses
+seven closed families, coarse input/output modality strings, and one compatibility grant class.
+For `chat`, that grant contains a hydrated Pydantic AI model and only explicitly declared
+agent-loop toolsets. For `tool_execution`, a non-empty toolset surface is required. The remaining
+five labels route metadata but fail closed when a grant is issued.
+
+This proves the narrow chat/model path, toolset compatibility, and readiness mechanics. It does
+not yet give the transcription example an executable v1 route, nor establish visual, embedding,
+rerank, service-job, or host-tool execution. [State of Work](../../state-of-the-work.md#animator-dispatch-spine)
+records the delivered boundary.
 
 A capability carries the `registrant_id` assigned to its runtime or Portal definition during
 extension assembly. The same identity accompanies its granted specification and Nexus response
@@ -41,11 +44,13 @@ implementation that can fulfill it and the act you are requesting now:
 | `CapabilityProfileRef` | Which exact implementation closure can perform it? | one model and weights, Comfy graph, native parser, engine toolchain, language set, limits, and licenses at an immutable revision/digest |
 | **operation** | Which admitted act within that interface is requested now? | `generate`, `edit`, `transcribe`, `segment`, `retarget`, `search`, `validate` |
 
-The interface owner defines request and result schemas, operations, typed facets, failure and
-recovery meaning, and domain-specific validation. A profile pins exact code, model, weights,
-runtime, workflow or graph, configuration, dependencies, licenses, language and format support,
-resource evidence, and proved limits. The operator Rune chooses a concrete deployable instance and
-references those admitted definitions.
+For the transcription example, the interface tells the caller which request and result schemas,
+operations, facets, failures, and recovery meanings apply. Its owner validates those domain
+requirements. A profile identifies an exact implementation that can meet them by pinning code,
+model, weights, runtime, workflow or graph, configuration, dependencies, licenses, language and
+format support, resource evidence, and proved limits. Finally, an operator Rune chooses a
+concrete deployable instance and references those admitted definitions. A contract, a tested
+implementation, and a running instance answer different questions.
 
 Image input may enrich `model.chat@1`; it does not become precise Sight. Audio output from a chat
 model does not become an eligible speech synthesizer. A Comfy graph that can produce an image and
@@ -83,12 +88,14 @@ Four records keep assertion, proof, readiness, and permission distinct:
 | `CapabilityState` | Latest observation for the exact Animator/interface/profile binding and, where necessary, its operations. |
 | discriminated capability grant | Temporary WARM binding to one operation and one callable surface under an exact lease. |
 
-A Rune declaration is routing intent, not quality proof. Admitted evidence closes exact code,
-weights, workflow, dependencies, dialect, licenses, language or format corpus, hardware profile,
-and measured limits. Drift may produce findings but cannot promote; Assimilation may repair
-foreign craft but does not own every capability. The target interface/profile owner admits or
-promotes evidence under its policy. Dispatcher consumes that decision without becoming a benchmark
-judge.
+Declaring a route in a Rune makes it a candidate for selection; evidence establishes what its
+exact implementation can do. That evidence closes over code, weights, workflow, dependencies,
+dialect, licenses, language or format corpus, hardware profile, and measured limits.
+
+The target interface/profile owner admits or promotes the evidence under its policy. Drift can
+produce findings and Assimilation can repair foreign craft, but neither thereby acquires that
+owner's decision. Dispatcher consumes the admission when matching a request; it does not become
+a benchmark judge.
 
 A grant exposes neither its Animator nor its Connector. The designed union separates four
 callable surfaces:
@@ -100,10 +107,11 @@ callable surfaces:
 | `JobGrant` | typed submit, status, cancellation, result, and reconciliation driver | image, video, Form, Kinesis, Comfy, engine, or paid asynchronous work |
 | `SessionGrant` | typed bounded live-session driver | later audio, vision, motion, game, or device sessions |
 
-The grant contains only its exact operation surface. A `ModelGrant` cannot be cast to a job driver;
-a `JobGrant` supplies no arbitrary HTTP client; a `SessionGrant` grants no source-device or world
-effect not present in its interface. Live models, connectors, SDK clients, iterators, sockets,
-sessions, and grants never enter Graph checkpoints or delegated payloads.
+Once granted, the caller receives only the operation surface it needs. A `ModelGrant` cannot
+be treated as a job driver, a `JobGrant` contains no arbitrary HTTP client, and a `SessionGrant`
+confers no source-device or world effect beyond its interface. This keeps the technical ability
+to call a service within the admitted act. Live models, connectors, SDK clients, iterators,
+sockets, sessions, and grants never enter Graph checkpoints or delegated payloads.
 
 ## Readiness is not compatibility
 
@@ -160,13 +168,14 @@ catalogue.
 
 ### Calls, durable jobs, and live sessions
 
-Immediate calls retain a scoped process-local lease only during use. Every asynchronous effect,
-local or remote, must persist `ServiceJobAttempt@1` before first submit so timeout or process death
-can reconcile the same request rather than repeat it. Work on managed resident or scarce local
-substrate additionally transfers an exact Orchestrator-visible reservation and fence to that
-attempt; live work uses a bounded session
-record. Current process-local leases cannot provide those guarantees, so durable service work
-remains Designed.
+A short call keeps a process-local lease for its duration. An asynchronous effect can outlive
+that process, so it needs a different return path: persist `ServiceJobAttempt@1` before the first
+submit, allowing timeout or death to reconcile the same request instead of repeating it.
+
+If the work uses managed resident or scarce local resources, the attempt also receives an exact
+Orchestrator-visible reservation and fence. Live work needs a bounded session record. Current
+process-local leases cannot supply these guarantees, which is why durable service work remains
+Designed.
 
 There is no universal `SessionAttempt` yet. Echo Resonance, Riffmaw Jam, LiveSight,
 LiveKinesis, and Foundry Playtest each own their chronology, clocks, epochs, participants,
@@ -209,14 +218,15 @@ One Rune may belong to several [Covens](coven.md). A Coven names compatible loca
 rise together; it does not choose semantic capability, reserve resources, schedule a job, pool
 VRAM, or authorize a Portal. Current conflict domains remain the conservative executable law.
 
-The later `ResourceEnvelopeRef` records measured idle, active and transition-peak GPU memory, host
-RAM, disk, devices and topology, bandwidth, warm-up and unload time, concurrency, and measurement
-conditions. A `PlacementProfile` relates exact envelopes and required headroom under one host or
-Legion topology. A future `CapabilitySetRequest@1` may ask Orchestrator to converge several exact
-bindings through one serialized desired-world transaction. Physical effects are not atomic: the
-request uses those profiles and existing drain, attest, compensation, restoration, and containment
-law rather than turning a Coven into a second scheduler or promising rollback that hardware cannot
-prove.
+To decide whether several capabilities fit together, the later `ResourceEnvelopeRef` would retain
+measured idle, active, and transition-peak GPU memory, host RAM, disk, devices and topology,
+bandwidth, warm-up and unload time, concurrency, and measurement conditions. A `PlacementProfile`
+would relate these exact envelopes and required headroom on one host or a Legion topology.
+
+A future `CapabilitySetRequest@1` could then ask Orchestrator to converge several exact bindings
+in one serialized desired-world transaction. Serialization cannot make physical effects atomic.
+Drain, attestation, compensation, restoration, and containment still govern partial change; a
+Coven becomes neither another scheduler nor a promise of unproved hardware rollback.
 
 ## Composition boundary
 

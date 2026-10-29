@@ -32,12 +32,16 @@ behavior.
 | [Mirror](mirror.md) | **Identity:** preserve Persona lineage, hydration provenance and attribution. |
 | [Legion](legion.md) | **Distributed embodiment:** fence delegation across operator-owned bodies while each retains authority over its iron. |
 
-The offices cooperate through their own contracts. A private path or admitted edge route still
-leaves application authority with the service behind it. Acquiring a source establishes neither
-its truth nor a wider permission. Oculus keeps observations distinct from owning records, and
-Mirror's identity binding supplies no caller authority. A Shadow branch, Smith candidate or
-favorable Drift finding must reach the responsible owner before it can become an admitted effect;
-none can promote its own conclusion or grant privilege.
+Consider a source acquired for a candidate change. Scout can obtain the source, but acquisition
+cannot establish its truth or authorize a wider use. Smith can prepare the candidate, Shadow
+can hold an isolated alternative, and Drift can evaluate it. The responsible owner must still
+judge whether it may become an effect; none of those contributors can promote its own conclusion
+or grant privilege.
+
+The same division holds at the system's edges. A private path or admitted route leaves application
+authority with the service behind it. Oculus observes records without replacing their owners,
+and Mirror attributes identity without authorizing the caller. Cooperation joins the offices
+through these contracts.
 
 ## Domain, package, and provider
 
@@ -49,10 +53,11 @@ none can promote its own conclusion or grant privilege.
 | **Contribution** | A typed addition admitted by one explicit receiving Core office or Extension Domain while that owner keeps authority |
 | **Provider** | A concrete engine or service supplying mechanism behind a typed contract |
 
-Packages may contribute across several Core offices or Domains; a Domain may have several packages
-or Providers. [Compositions and Products](../../compositions/index.md) use and package those
-contracts while retaining their own offices. **Activation** names a concrete package or declared
-instance, never an abstract Domain.
+A package can register contributions with several Core offices or Domains. Conversely, one Domain
+can receive several packages or Providers. These are different relationships, so **Activation**
+must name a concrete package or declared instance rather than an abstract Domain.
+[Compositions and Products](../../compositions/index.md) use and package the resulting contracts
+while keeping their own responsibilities.
 
 ## How an organ enters
 
@@ -65,12 +70,12 @@ entry points. Built-ins evolve atomically with Core, while private packages acce
 breakage. A versioned independent extension-package API and conformance suite remain future work, so an
 external protocol is the present boundary where process or lifecycle coupling is unacceptable.
 
-The selected assembly is frozen for one Vessel process: there is no hot-load, hot-replace, or
-hot-unload path. A change to code, package selection, dependencies, or contribution contracts
-requires a new body generation under [Evolution](../../adr/18-evolution.md). Its continuity comes
-from compatible Phylactery truth and explicit [Reanimation](../phylactery/reanimation.md), not
-migration of volatile extension objects. The boot boundary is enforced; automated Evolution
-remains Designed.
+After assembly, that selection stays fixed for the Vessel process. There is no hot-load,
+hot-replace, or hot-unload. Changing code, package selection, dependencies, or contribution contracts
+requires a new body generation under [Evolution](../../adr/18-evolution.md). Compatible Phylactery
+records and explicit [Reanimation](../phylactery/reanimation.md) provide continuity into it;
+volatile extension objects do not migrate. The boot boundary is enforced, while automated
+Evolution remains Designed.
 
 [ADR 05](../../adr/05-extensions.md) owns admission and compatibility. [State of
 Work](../../state-of-the-work.md#extension-activation-contributions) records the five-store surface, its v1

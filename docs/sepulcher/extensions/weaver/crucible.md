@@ -7,10 +7,10 @@ icon: material/anvil
 
 > _Lay your convictions on the anvil. Listen for the crack._
 
-A consequential choice can survive a persuasive first answer and still fail on the objection
-nobody was asked to make. **Crucible** gives serious alternatives two rounds: first an independent
-case, then a reply to the actual opposition. A separate Lead gathers what survives into an
-attributed decision dossier; the receiving owner decides what to do with it.
+A persuasive answer may survive review simply because nobody was asked to make the decisive
+objection. **Crucible** gives serious alternatives two rounds: each first develops an independent
+case, then replies to the actual opposition. A separate Lead gathers what survives into an
+attributed decision dossier. The receiving owner retains the decision about what to do with it.
 
 This is Spellweaver's canonical adversarial choreography. [Blade](../../lich/blade.md#crucible)
 owns the discipline of discrimination; [Workflow](../../../adr/28-workflow.md#crucible-choreography)
@@ -51,13 +51,12 @@ One admitted casting freezes:
 | Limits | Per-round Context, tokens, calls, spend, wall time, concurrency, and stop conditions. |
 | Finish boundary | Brainstorm dossier, recommendation, or decision candidate; never automatic adoption. |
 
-Crucible is biased toward pressure, not toward multiplying selves. Each advocate's declared angle
-gives one class of consequence enough procedural weight to resist premature agreement. That
-temporary **Posture** is neither a Persona nor evidence of emotion, continuing identity, or an
-independent [Will](../../../lexicon/inner-tongue.md#emotion-and-will). A revision-pinned Persona
-may wear several Postures; without that binding, resemblance or opposition cannot create one.
-The dossier therefore attributes every contribution without pretending that each branch was a
-separate life.
+Each advocate's declared angle gives a class of consequence enough procedural weight to resist
+premature agreement. That is the purpose of multiplying Postures. A temporary **Posture** is
+neither a Persona nor evidence of emotion, continuing identity, or an independent
+[Will](../../../lexicon/inner-tongue.md#emotion-and-will). A revision-pinned Persona can wear
+several Postures; without that binding, resemblance or opposition creates none. The dossier
+attributes each contribution without pretending each branch was a separate life.
 
 ### Derive a complementary Posture
 
@@ -83,11 +82,11 @@ Frame question, evidence, biases, and limits
 → Magus Gate or inert dossier
 ```
 
-Clash I branches share evidence but not sibling output. At Temper, every advocate nominates its own
-strongest claims and concession; the join retains their citations, defeat conditions, unknowns,
-and original report references. Clash II may see only the bounded attributed projection required
-for rebuttal. It is not entitled to hidden chain-of-thought, an opponent's private Context, or an
-unbounded transcript.
+Clash I gives every advocate the common evidence and withholds sibling output. At Temper, each
+nominates its own strongest claims and concession; the join preserves citations, defeat
+conditions, unknowns, and references to original reports. Clash II receives only the bounded,
+attributed projection needed for rebuttal. It has no entitlement to hidden chain-of-thought,
+an opponent's private Context, or an unbounded transcript.
 
 To make reciprocity inspectable, the proposed dossier should identify the exact earlier claim
 and report revision each reply addresses. A revision should name what it retains, changes, or
@@ -139,20 +138,20 @@ The Lead answers the decision, not the debate. Its dossier retains:
 - the strongest surviving dissent and conditions that would change the recommendation; and
 - any proposed owner delta as inert text or an artifact reference.
 
-Compression may shorten the projection or final dossier, but cannot drop a nominated strongest
-claim, concession, dissent, uncertainty, source, or declared omission. Full reports remain retained
-under their own provenance. Agreement can still be wrong; disagreement can expose the missing
-predicate that matters most.
+The projection or final dossier may be shortened, but compression must retain every nominated
+strongest claim, concession, dissent, uncertainty, source, and declared omission. Full reports
+remain under their own provenance. Agreement can still be wrong; a surviving disagreement may
+identify the missing predicate that matters most.
 
 The return can preserve more than a verdict: the distinction that changed the question,
 the conditions under which it holds, and the observation that would undo it.
 [Learning the cut](../../../divination/transcendence/illumination.md#learning-the-cut) follows
 how that encounter can shape another task through memory and correction.
 
-The final Gate may accept the dossier for downstream consideration, request one bounded evidence
-extension, refuse it, or close without decision. It does not itself edit a Covenant, promote a
-candidate, deploy a service, spend, publish, or relabel evidence. Those effects require a new
-forward Invocation under the exact target owner and authority.
+The final Gate can accept the dossier for downstream consideration, request one bounded evidence
+extension, refuse it, or close without deciding. None of those outcomes edits a Covenant, promotes
+a candidate, deploys a service, spends, publishes, or relabels evidence. Each such effect needs a
+new forward Invocation under its exact target owner and authority.
 
 An inert dossier may instead go directly to its receiving owner. Applicable standing policy can
 admit eligible downstream work; Crucible adds no universal second approval. An exact live-only

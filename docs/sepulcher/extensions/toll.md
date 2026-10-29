@@ -19,11 +19,17 @@ receives wallet or signing authority.
 
 ## First road, later rails
 
-Initial Toll delivery is issuer-local. An operator may manually grant **MANA** service credits,
-then optionally fund an exact balance through one conventional payment processor or charge one
-bounded request as pay-as-you-go. MANA is an issuer-qualified, account-bound balance in that
-issuer's Counting House. It is not cash or cryptocurrency; the initial profile cannot be spent
-with or accepted by another issuer and carries no peer transfer, cash redemption, or cross-issuer
+Choose a supported purchase method from the vendor's offer. That vendor owns the accepted
+currencies and arranges any conversion and payouts with its payment provider; LychD does not
+automatically exchange currencies or clear balances between vendors. Joining the network or
+casting requires no common coin or token allocation. Toll still checks the exact charge and
+spending authority and accounts for funding, delivery, and refunds.
+
+The first planned Toll path keeps the balance with its issuer. An operator may manually grant
+**MANA** service credits, later fund an exact balance through one conventional processor, or
+charge one bounded request as pay-as-you-go. MANA belongs to one account in one issuer's Counting
+House. It is a service balance, not cash or cryptocurrency: the initial profile permits no other
+issuer to accept or spend it, and provides no peer transfer, cash redemption, or cross-issuer
 conversion.
 
 Tithe meters model-token and resource consumption; the Counting House separately reserves, debits,
@@ -54,32 +60,39 @@ project-native token or chain.
 A destination-pinned connector produces a candidate request and quote.
 Execution-road policy considers quotes among roads that satisfy capability, privacy, policy, and
 resource eligibility. Toll judges their economic terms and reserves the exposure;
-[Dispatcher](../../adr/22-dispatcher.md) binds an already eligible capability without ranking prices. Two unequal planes then carry the same request.
+[Dispatcher](../../adr/22-dispatcher.md) binds an already eligible capability without ranking prices.
+Accounting for the obligation and moving the money then belong to separate offices.
 
 For Intercom, casting work and teaching a missing Spell are different purchased resources. Each
 needs its own exact quote, content identity, budget reservation, consent or standing authority,
 idempotency key, delivery condition, and reconciliation. Payment for one never buys or retries the
 other.
 
-The **Counting House** parses one supported, versioned quote in integer units, accounts its cost,
-reserves worst-case exposure, and reconciles receipts. It holds no spend key. The reservation binds
-an authenticated Principal and budget owner; trusted merchant or service; exact method and
-canonical destination; request-body digest and purchased resource; asset and network; maximum
-amount including fees; expiry; redirect policy; and idempotency key. Unknown versions, schemes,
-networks, merchants, destinations, amounts, fee bounds, changed terms, or expired authority fail
-closed.
+Before money can move, the **Counting House** parses a supported versioned quote in integer
+units, accounts for its cost, and reserves the worst-case exposure. The Counting House also
+reconciles the external payment receipts. It holds no spend key.
+Its reservation ties the purchase to an authenticated Principal and budget owner, trusted
+merchant or service, exact method and canonical destination, request-body digest and purchased
+resource, asset and network, maximum amount including fees, expiry, redirect policy, and
+idempotency key.
+
+This complete account is what later authorization must cover. Unknown versions, schemes,
+networks, merchants, destinations, amounts, or fee bounds refuse, as do changed terms and expired
+authority.
 
 Policy rejects the request, applies one explicitly bounded low-risk standing authority, or parks
 the Run for live consent to the exact terms. Significant or novel spend requires
 [HitL](../../adr/25-hitl.md). Approval covers the stated maximum, never a later challenge. The
 Magus administers policy without exemption from signer or key safety.
 
-The **Irreversible Gate** has no model or general tool surface. It revalidates the pinned
-authorization, live reservation, and caps; atomically consumes the reservation; signs and submits
-the one named settlement at most once; and records the external-effect identity. After independently
-authorized settlement, the original connector may make at most one proof-bearing replay to the
-same destination. That replay cannot initiate another payment. Reconciliation then joins
-settlement to useful delivery.
+The **Irreversible Gate** performs the separately authorized settlement. It has no model or
+general tool surface. It checks the pinned authorization, live reservation, and caps again,
+atomically consumes the reservation, signs and submits the one named settlement at most once,
+and records its external-effect identity.
+
+Only after that settlement may the original Connector make at most one proof-bearing replay to
+the same destination. This replay cannot start another payment. Reconciliation must still
+establish whether the paid request produced useful delivery.
 
 ## What settlement cannot buy
 

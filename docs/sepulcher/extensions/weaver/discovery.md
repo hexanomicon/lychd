@@ -25,10 +25,10 @@ those boundaries in use.
 
 ## How routers fan out
 
-A router is an entry map with task triggers and explicit destinations. Some links end at an
-owning document; others enter another scope tree whose router exposes more specialized branches.
-The parent names when to enter that branch, while the destination maintains its deeper routes.
-A branch and its downstream links form a discoverable subgraph of the documentation map.
+A router helps a reader choose the next destination by giving task triggers and explicit links.
+Some links reach an owning document directly. Others open a scope tree whose router maintains
+its own specialized branches. The parent explains when to enter that tree without duplicating
+its contents, making the branch and its downstream links a discoverable subgraph of the map.
 
 Each route makes its purpose and destination legible:
 
@@ -39,9 +39,9 @@ Each route makes its purpose and destination legible:
 | Workflow playbook | Procedure for the requested operation | Load it after the matching scope |
 | Pattern or Scroll | A named score and its exact revision | Check registration and admission through Spellweaver |
 
-Fan-out makes several branches available. The task determines which branches are read and in
-what order. Enter another scope when the task crosses its boundary; leave unrelated branches
-unloaded. A link to a workflow does not start it, and a link to a Pattern does not register or
+The available branches offer choices; the task determines which to read and in what order.
+Cross into another scope when the task crosses its boundary, leaving unrelated branches unloaded.
+Following a workflow link does not start the workflow. Finding a Pattern does not register it or
 authorize its casting.
 
 ## Specialized models for routing
@@ -54,11 +54,12 @@ a prose answer. Such a model could propose a scope, registered Pattern, or decla
 leaving deeper reasoning for unresolved questions. This is an optimization to evaluate, not a
 selected LychD dependency or a claim that the fastest router has been established.
 
-Keep explicit commands and reliable deterministic matches as the baseline. For unresolved intent,
-offer the model bounded destinations and an explicit uncertain or unsupported outcome. Supply the
-relevant conversational context: a short confirmation can refer to substantial earlier work.
-Clear proposals still pass normal validation and admission; ambiguity can trigger clarification,
-another bounded probe, or deeper reasoning. A route proposal cannot rewrite an admitted Scroll.
+Begin with explicit commands and reliable deterministic matches. Where intent remains unresolved,
+a model can choose among bounded destinations, including an explicit uncertain or unsupported
+outcome. Give it the relevant conversational context—a short confirmation may refer to substantial
+earlier work. Even a clear proposal must pass ordinary validation and admission. Ambiguity may
+call for clarification, a bounded probe, or deeper reasoning; no route proposal can rewrite an
+admitted Scroll.
 
 Keep probabilities distinct from confidence. Jev's
 [Choice confidence](https://docs.typesafe.ai/confidence) rescales the leading probability relative
@@ -97,12 +98,11 @@ A missing prerequisite calls for a targeted probe or bounded request for the mis
 
 ## From discovery to a task handoff
 
-Once the relevant owners and procedure are known, the coordinator can frame the task and select
-the scope routes for its recipient. Under the designed
-[scoped context handoff](../../../adr/28-workflow.md#scoped-context-handoff), those routes
-travel with the task, acceptance target, operator constraints, allowed inputs and effects, exact
-revisions, dependencies, and unresolved unknowns. The recipient then discovers further material
-within that admitted boundary.
+Finding the relevant owners and procedure gives the coordinator enough ground to frame the task.
+Under the designed [scoped context handoff](../../../adr/28-workflow.md#scoped-context-handoff),
+the chosen routes travel with the task, acceptance target, operator constraints, allowed inputs
+and effects, exact revisions, dependencies, and unresolved unknowns. The recipient can then
+continue discovery within that admitted boundary.
 
 Opening another scope in the current conversation retains the material already loaded. A new
 Agent handoff requires its own Context assembly. The parent keeps the wider purpose and assesses

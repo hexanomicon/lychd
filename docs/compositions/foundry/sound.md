@@ -15,7 +15,9 @@ Recording, synthesis, procedures, licensed samples, processing, and models can p
 
 ## From cue to audible behavior
 
-A cue map expresses semantics, not a rendered soundtrack. A door can choose admitted variants; a machine has start/loop/stop; a zone crossfades by listener position. `game.import_world_sound@1`, `game.bind_world_sound@1`, and `game.validate_world_sound@1` produce their sound-specific import, binding, and observation records without widening generic asset, bake, or playtest schemas. Import success cannot prove event, zone, loop, listener, priority, or failure behavior.
+The cue map describes how the world should respond. A door can choose admitted variants; a machine has start/loop/stop; a zone crossfades by listener position. These relations still need to be installed and tried in the engine; the map itself is no rendered soundtrack.
+
+`game.import_world_sound@1`, `game.bind_world_sound@1`, and `game.validate_world_sound@1` keep sound-specific records of import, binding, and observation. They do not widen generic asset, bake, or playtest schemas. Import success answers only the import question. Event, zone, loop, listener, priority, and failure behavior require their own evidence.
 
 | Record | Required meaning |
 | --- | --- |
@@ -39,6 +41,8 @@ Pre-execution `MediaFacetAuthoritySet@1` must declare `world_sound`, `game.found
 
 ## Recovery and proof
 
-Changed project source, world plan, event schema, listener/coordinates, target engine, timebase, rights, or brief stales dependent cues/imports/bindings/builds/playtests. Lost recorder, generator, importer, or engine acknowledgement leaves `unknown` until exact job, derivative, destination, and digest reconcile. Fallback needs a declared branch or forward Invocation. Cancellation does not prove capture, output, or mutation stopped; partial/mismatched material stays quarantined. Deletion inventories derivatives/imports/bindings/builds/exports without promising another custodian forgot them.
+A sound result depends on the world it was judged against. Changes to project source, world plan, event schema, listener/coordinates, target engine, timebase, rights, or brief make dependent cues/imports/bindings/builds/playtests stale. Preserve those dependencies so review can identify which work must return.
+
+If a recorder, generator, importer, or engine loses an acknowledgement, keep the result `unknown` until the exact job, derivative, destination, and digest reconcile. A fallback requires a declared branch or forward Invocation. Cancellation alone cannot prove that capture, output, or mutation stopped; partial/mismatched material stays quarantined. On deletion, inventory derivatives/imports/bindings/builds/exports and retain an honest account of other custodians' copies.
 
 The first network-disabled synthetic world has deterministic interaction sound, a start/loop/stop machine, ambience zone, listener transition, and bounded failure. Prove cue/event order, loop/crossfade bounds, buses/resources, rebuild/restart, `WorldSoundBindingReceipt@1`, and `WorldSoundObservationSet@1`. This is no proof of universal sound libraries, photoreal acoustics, public release, or another engine profile.

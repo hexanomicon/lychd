@@ -7,9 +7,11 @@ icon: material/pyramid
 
 > _Sight begins when a source survives the seeing._
 
-**Prism** is LychD's visual and spatial grounding and transformation Extension Domain. It turns
-admitted sources into bounded transformations and observations without letting captions, OCR,
-crops, reconstructions, conversions, or model judgments replace them.
+An image can yield text, a crop, a depth estimate, or a reconstructed object, but each result must
+remain connected to the source it came from. **Prism** owns that visual and spatial grounding
+and transformation as an Extension Domain. It takes admitted sources through bounded operations
+and records their observations and derivatives. Captions, OCR, crops, reconstructions, conversions,
+and model judgments remain attributable results; none replaces the source.
 
 Vision admission is **Partial**: current code preserves immutable `ArtifactRef` metadata,
 distinguishes `vision` from image-capable `chat`, and filters declarations by explicitly supplied
@@ -31,11 +33,11 @@ Choose the return needed by the consuming owner:
 | Geometry, appearance, parts, rigs, assemblies, or field representations | [Form](form.md); [Voxel and block export](voxel-and-block-export.md) follows bounded grids through schematic read-back. |
 | Reusable motion curves, retargeted clips, or technical motion findings | [Kinesis](kinesis.md), with [Live Kinesis](live-kinesis.md) for bounded epoch-to-rig sessions. |
 
-A deployment may combine these faculties, precise workers, deterministic
-[Prism Lens transforms](../../../adr/36-vision.md#decision), and an image-capable multimodal Mind.
-Each profile remains an exact implementation closure; the Mind remains chat, and activating one
-service does not activate every faculty. Generation and editing
-are separate effects from grounded observation.
+A deployment chooses the faculties needed for that return and may combine them with precise
+workers, deterministic [Prism Lens transforms](../../../adr/36-vision.md#decision), and an
+image-capable multimodal Mind. Each profile pins its exact implementation and supporting evidence.
+The Mind still supplies chat, and starting one service activates only its admitted faculties.
+Generation and editing require their own effects even when they consume grounded observations.
 
 ## The optic path
 
@@ -58,11 +60,14 @@ operation, immutable implementation revision, parameters, and declared loss.
 Provider request encodings and handles are transport forms, not universal storage or durable
 custody. Any retained visual output returns to artifact custody with provenance.
 
-A grounded observation keeps the source and derivative chain, relevant page, frame, time, or
-region, requested task and output, the producing provider or deterministic operation with its
-immutable revision, and appropriate uncertainty. It distinguishes extraction, measurement, and
-inference. Generated or edited media is a new artifact with effect provenance. A caption or OCR
-result may enter bounded Context; it is not the image and cannot silently replace or delete it.
+An observation must let its reader find the evidence again. It keeps the source and derivative
+chain, the relevant page, frame, time, or region, the requested task and output, and the producing
+provider or deterministic operation with its immutable revision. It also carries appropriate
+uncertainty and states whether the result is extraction, measurement, or inference.
+
+Generated or edited media becomes a new artifact with effect provenance. A caption or OCR result
+can enter bounded Context, but that text is not the image; using it cannot silently replace or
+delete the source.
 
 ## Designed interface register
 
@@ -93,12 +98,15 @@ asynchronous or durable provider or local execution is a separately identified
 receive another attempt only through declared forward-branch or retry law; the shared mechanics do
 not collapse these contracts into a generic `MediaJob`.
 
-Two execution paths remain explicit. A resident, shared, independently queued, or remote service
-is an Animator reached through `CapabilityDemand@1` and a typed grant. A finite library, CLI, or
-subprocess is selected by the Spell Resolution Lock and delivered by a Worker into a trusted
-executor or Tomb under an immutable ToolProfile; it does not become a fake Animator or Rune.
-Either path may use `ServiceJobAttempt@1` when it must survive the invoking Ghoul. A wrapper becomes
-an Animator only when its independent lifecycle, residency, queue, or remote boundary justifies it.
+Choose execution according to who owns its lifecycle. A resident, shared, independently queued,
+or remote service is an Animator reached through `CapabilityDemand@1` and a typed grant. For a
+finite library, CLI, or subprocess, the Spell Resolution Lock selects an immutable ToolProfile
+and a Worker delivers it into a trusted executor or Tomb. That finite tool needs no invented
+Animator or Rune.
+
+Either path may use `ServiceJobAttempt@1` when execution must survive the invoking Ghoul. A
+wrapper becomes an Animator only when it has the independent lifecycle, residency, queue, or
+remote boundary that warrants one.
 
 ## Sight on finite iron
 

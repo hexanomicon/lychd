@@ -15,11 +15,11 @@ moves retained form into present work.
 
 ## Decision
 
-LychD adopts PostgreSQL Archive with pgvector-derived indexes behind LychD-owned ports. PostgreSQL
-owns authoritative records, lineage, policy, lifecycle, and derivations; frameworks may extract,
-embed, rank, or rerank but cannot silently own transaction, migration, curation, sharing, or
-training eligibility. Run/Step ledgers, traces, checkpoints, Personas, one-call context, and
-Soulforge corpora stay distinct and cite by stable ref.
+Archive keeps authoritative records, lineage, policy, lifecycle, and derivations in PostgreSQL,
+with pgvector-derived indexes behind LychD-owned ports. Frameworks may help extract, embed, rank,
+or rerank; they cannot silently acquire transaction, migration, curation, sharing, or
+training-eligibility authority. Run/Step ledgers, traces, checkpoints, Personas, one-call context,
+and Soulforge corpora remain distinct stores of meaning, cited through stable refs.
 
 !!! warning "Delivery boundary"
     The bounded public-note profile below does not deliver the general Archive contract.
@@ -330,10 +330,10 @@ Pramāṇa both carry source and correction.
 
 ## Namespaces and authority
 
-Every write and recall request names its namespace before retrieval begins. A namespace may
-belong to a Principal, Persona, Composition, shared body or published corpus; each has an explicit
-identity and policy. Current Sigils lack a stable `entity_id`. Archive must not invent `Sigil.id`
-or claim delivered isolation across identities.
+Choose the namespace before retrieval begins, for every write and recall request. A namespace
+may belong to a Principal, Persona, Composition, shared body, or published corpus, and needs its
+own explicit identity and policy. Current Sigils have no stable `entity_id`; Archive must neither
+invent `Sigil.id` nor claim delivered isolation across identities.
 
 Cross-namespace recall is denied by default. A sharing decision binds the source, consumer,
 purpose, record and field classes, duration, onward disclosure and revocation. Similarity,
@@ -387,8 +387,8 @@ Retries are idempotent by source revision and derivation specification.
 ## Curation and sediment {#memory-layering-sediment-not-dump}
 
 A versioned Curator weighs source quality, verification, correction, contradiction, use outcome,
-recency, expiry and Drift findings. Access, repetition, similarity and praise can affect salience
-only under declared policy; they do not establish truth.
+recency, expiry, and Drift findings. Declared policy may let access, repetition, similarity, or
+praise affect salience. None of those signals establishes truth.
 
 The Curator may promote, retain or archive a record; revoke it and invalidate derivatives; or
 record supersession and contradiction without rewriting history. An anchor has an owner and a
@@ -437,9 +437,10 @@ cannot erase it.
 
 ## Training boundary
 
-Archive can supply structured input to Soulforge. Corpus admission separately selects exact
-revisions and checks privacy, license, deduplication, splits and holdout. Findings and feedback
-may nominate material for review, but cannot automatically change Karma, rank or weights.
+Archive may supply structured input to Soulforge, but corpus admission remains a separate act.
+It selects exact revisions and checks privacy, license, deduplication, splits, and holdout.
+Findings and feedback can nominate material for review; they cannot automatically alter Karma,
+rank, or weights.
 
 ## Rejected alternatives
 

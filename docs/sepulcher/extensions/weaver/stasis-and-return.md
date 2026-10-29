@@ -7,8 +7,9 @@ icon: material/pause-circle-outline
 
 > _Between the pages, a ribbon holds the place where the rite fell quiet._
 
-A pause records its owner and return boundary. Broken continuity never reroutes or restarts the
-Intent. [ADR 28](../../../adr/28-workflow.md#gates-effects-and-stasis) owns this law.
+A pause must retain both the owner of the wait and the boundary through which work can return.
+If that continuity breaks, the Intent is never rerouted or restarted.
+[ADR 28](../../../adr/28-workflow.md#gates-effects-and-stasis) owns this law.
 
 ## Three boundaries
 
@@ -25,10 +26,10 @@ initial ordinary node execution is not a counted hardware convergence request.
 [Live and Durable
 Stasis](../../../adr/24-graph.md#live-and-durable-stasis) owns the distinction.
 
-A durable park ends the current worker execution; it does not require the Vessel to die. If the
-process does die, [Reanimation](../../phylactery/reanimation.md) reconciles committed Run, queue,
-checkpoint, and wait-owner truth in the replacement process. Restoring an earlier whole-body
-snapshot is a separate [Restoration](../../../adr/07-snapshots.md) rite; check its
+Durable parking ends the current worker execution while the Vessel may keep running. If the
+process also dies, [Reanimation](../../phylactery/reanimation.md) reconciles the committed Run,
+queue, checkpoint, and wait owner in its replacement. Whole-body snapshot restoration is a
+separate [Restoration](../../../adr/07-snapshots.md) rite; consult its
 [implementation evidence](../../../state-of-the-work.md#whole-body-snapshot-restore) before relying on it.
 
 ## What crosses the threshold
@@ -55,10 +56,10 @@ but no real Postgres consent-plus-checkpoint restart receipt proves that path.
 Either verdict may win `AWAITING_CONSENT → QUEUED`; the resumed hop reads stored truth, never an
 enqueue payload. Delegate return accepts only the terminal `AgentJob` owning the current wait.
 
-The winner allocates a fresh monotonic enqueue sequence; its queue key derives from Run and
-sequence. The status change and its pending delivery commit together. Publication failure leaves
-that exact queued hop for the startup/runtime relay; it does not recreate the wait or reuse a
-possibly escaped key. Duplicate verdicts and callbacks are inert.
+The successful return allocates a fresh monotonic enqueue sequence, from which its Run-specific
+queue key derives. Status change and pending delivery commit together. If publication fails,
+startup or the runtime relay can publish that exact queued hop; failure neither recreates the
+wait nor permits reuse of a possibly escaped key. Duplicate verdicts and callbacks remain inert.
 
 Bridge admits one approval call per model round. Resumed rounds may chain, bounded to three.
 Multiple approvals in one response create no consent row; they settle `DONE` with an honest
@@ -78,10 +79,10 @@ each durable delegated wait and re-admits it only when its exact owning job is t
 
 ## Truth closes first
 
-Committed terminal status closes the return path even if checkpoint cleanup fails. The worker
-settles its exact delivery before releasing Context and attempting cleanup; retained stasis cannot
-revive that Run. [Ghouls](../../vessel/ghouls.md#parks-terminal-truth-and-cancellation) carries the
-terminal-event and cleanup sequence, governed by
+Once terminal status commits, the Run cannot return, even if checkpoint cleanup fails. The
+worker settles its exact delivery before releasing Context and attempting cleanup, so retained
+stasis cannot revive it. [Ghouls](../../vessel/ghouls.md#parks-terminal-truth-and-cancellation)
+follows the terminal-event and cleanup sequence under
 [Graph's commit law](../../../adr/24-graph.md#checkpoint-ownership-and-terminal-commit).
 
 Cancellation fences Run claims and delivery rotation while the parent broker job, delegated jobs,

@@ -7,10 +7,10 @@ icon: material/link-variant
 
 ## Context
 
-LychD needs reciprocity for the shared core without claiming ownership of every private organ an
-operator composes around it. This Covenant calls MPL-2.0 **the Iron Pact**. Its binding text is
-the repository [LICENSE](https://github.com/hexanomicon/lychd/blob/main/LICENSE); this ADR records
-the boundary and does not amend that license.
+An operator must be able to compose private organs around LychD while sharing distributed
+changes to its covered core. MPL-2.0 supplies that file-level boundary. This Covenant calls it
+**the Iron Pact** and explains the choice; the binding text remains the repository
+[LICENSE](https://github.com/hexanomicon/lychd/blob/main/LICENSE), which this ADR does not amend.
 
 ## Requirements
 
@@ -36,16 +36,16 @@ the boundary and does not amend that license.
 
 LychD is licensed under MPL-2.0.
 
-MPL follows covered source at the file boundary. A distributed Source Code Form containing Covered
-Software, including a Modification, stays MPL-2.0. Distribution of an executable containing
-Covered Software requires the corresponding Source Code Form to be available as the license
-requires. A Larger Work may contain separate files under different terms. A new file that contains
-no covered code is not a Modification merely because it is compiled or bundled with the work.
+The boundary follows covered source files. Distributed Source Code Form containing Covered
+Software, including a Modification, stays MPL-2.0. When an executable contains Covered Software,
+its distributor must make the corresponding Source Code Form available as the license requires.
+A Larger Work can still contain separate files under different terms: a new file containing no
+covered code does not become a Modification merely by being compiled or bundled with the work.
 
-Private use and modification need no publication. Network serving alone is not distribution of
-server code; client code actually delivered is a separate distribution question. These legal
-boundaries do not create local sovereignty: local-first operation, portable custody, and
-replaceable composition must carry that architectural work.
+Private use and modification require no publication. Network serving alone is not distribution
+of server code, although client code actually delivered raises its own distribution question.
+Local sovereignty also needs architectural support: local-first operation, portable custody, and
+replaceable composition must make the legal freedom usable.
 
 ## The boundary of the Pact
 
@@ -60,9 +60,9 @@ The project may use mythic names for ownership, but MPL follows covered sourceâ€
 | Phylactery data, secrets, configuration, prompts, and model artifacts containing no code | Not covered merely because LychD stores or processes them. |
 | A2A or REST peer | Protocol use alone neither copies nor distributes covered server source. |
 
-MPL does not make abstract ideas proprietary. Copying covered expression remains governed by the
-license; independently implementing an architecture or protocol is a different act. Naming copied
-core code an Extension creates no loophole.
+Independent implementations of an architecture or protocol remain possible because MPL does
+not make abstract ideas proprietary. Copying covered expression is a different act, governed by
+the license. Calling copied core code an Extension does not change that boundary.
 
 ## Contribution terms
 
@@ -75,6 +75,7 @@ under MPL section 3.3 unless a later Covenant deliberately changes that position
 
 ## Consequences
 
-The Iron Pact keeps distributed changes to covered files open and leaves separate code and private
-material to their proper owners. It cannot prevent cloud capture by license alone; that resistance
-depends on a body that can run locally, preserve its state, expose provenance, and be left.
+The Iron Pact keeps distributed changes to covered files open while leaving separate code and
+private material to their proper owners. To resist cloud capture, LychD must also provide a body
+that can run locally, preserve its state, expose provenance, and be left. The license cannot do
+that architectural work alone.

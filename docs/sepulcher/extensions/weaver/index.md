@@ -7,13 +7,14 @@ icon: material/state-machine
 
 > _Through motion and silence, the thread remembers its course._
 
-**Spellweaver** keeps one chosen score through execution, pause, return, and ending. It is LychD's
-singular logical workflow jurisdiction: it validates immutable **Scrolls** and admits their casting.
-`Weaver` remains the short name used by code and existing paths.
+Once work has chosen a score, **Spellweaver** keeps it intact through execution, pause, return,
+and ending. It is LychD's singular logical workflow jurisdiction: it validates immutable
+**Scrolls** and admits their casting. Code and existing paths retain the short name `Weaver`.
 
-A Scroll is one immutable revision of a **Pattern**. An Agent call, Gate, tool, effect, wait, or
-delegation may warrant an independently named **Spell**; a Scroll-local station places that
-Spell's exact contract. The score fixes their relationship before work begins.
+A **Pattern** names the score's lineage; a Scroll fixes one immutable revision. Within it, an
+Agent call, Gate, tool, effect, wait, or delegation may deserve an independently named **Spell**.
+A Scroll-local station places that Spell's exact contract, fixing the relationship before work
+begins.
 
 Future packages may contribute Spell contracts and Scroll declarations through separate
 Spellweaver-shaped stores. Executable implementations and adapters remain separate Extension or
@@ -63,8 +64,8 @@ delegated_rite@1 (default) / delegated_rite@2 (configured exact runtime)
 DispatchDelegate ⇢ ProjectDelegatedReply → End
 ```
 
-Admission chooses once. The registered workflow name and exact manifest snapshot are committed
-with the Run; resume looks up that stored choice and never routes the Intent again.
+Admission commits the chosen workflow name and exact manifest snapshot with the Run. That
+choice lasts: resume looks up the stored score and never routes the Intent again.
 
 The registry is executable substrate, not a general workflow platform. `delegated_rite@1`
 exercises only the deterministic reference adapter. Revision 2 pins an
@@ -89,12 +90,12 @@ support chat and tools. Loading Settings validates the selector's shape without 
 engine; Dispatcher checks the actual declaration, readiness, and policy at execution. An unknown,
 incompatible, or unavailable target refuses the turn rather than choosing another runtime.
 
-Restarting with this configuration selects revision 2 for new Bridge admissions. The Run stores
-its choice before queue publication and retains it through hardware retries and consent pauses.
-Changing or removing the setting does not redirect an existing Run or an idempotent retry. Omitting
-the section keeps revision 1's eligible-pool selection for new turns. Both revisions stay registered
-for retained work. This key pins capability identity, not a model artifact or runtime configuration
-fingerprint; the general Resolution Lock remains a separate contract.
+After restart, this configuration selects revision 2 for new Bridge admissions. Each Run records
+its choice before queue publication and keeps it through hardware retries and consent pauses.
+Later configuration changes or removal cannot redirect that Run or an idempotent retry. Without
+the section, new turns use revision 1's eligible-pool selection; both revisions remain registered
+for retained work. The key identifies a capability, not a model artifact or runtime configuration
+fingerprint. The general Resolution Lock is a separate contract.
 
 Revision 3 adds bounded public-note recall with transient Context injection and no tools. Its
 [Archive configuration and authority checks](../../../divination/altar/bridge.md#public-note-answers) are separate from
@@ -142,11 +143,11 @@ preparing a grant or entering inference. Malformed or failed probes abort admiss
 non-warm observation excludes that route. An empty eligible set returns a content-free 503 code
 before retaining a Run or user turn.
 
-The Run retains the complete policy, its digest, dated observations and one exact selected key.
-An idempotent replay returns that retained decision before any new probe. Configuration changes
-apply only to new admissions. Execution and restart keep the selected key under the existing
-Bridge tools, consent and retry rules; later unavailability may pause or refuse execution. The
-batch does not reserve future readiness, and it supplies no execution fallback.
+The admission decision becomes part of the Run: complete policy, digest, dated observations,
+and one exact selected key. An idempotent replay returns it before any new probe, while changed
+configuration applies only to new admissions. Execution and restart keep the key under the
+existing Bridge tools, consent, and retry rules. The batch reserves no future readiness and
+provides no execution fallback, so later unavailability may still pause or refuse execution.
 
 The selected Run's Orb inspector shows these retained observations and exclusions. They describe
 admission time, not current availability. Follow [configured Bridge casting](../../../state-of-the-work.md#configured-bridge-casting)
@@ -206,12 +207,12 @@ work needs live coordination across application owners.
 
 ## Hand off a bounded task
 
-In the [scoped context handoff](../../../adr/28-workflow.md#scoped-context-handoff),
-the coordinating Agent keeps the wider purpose while another Agent receives a fresh Context for
-one task. For a repository change, that packet gives the requested result, relevant operator
-decisions, acceptance checks, allowed paths, source revision, dependencies, and a scope routing to
-the owning documents and code. The recipient reads those owners without inheriting the whole
-conversation that led to the task.
+A [scoped context handoff](../../../adr/28-workflow.md#scoped-context-handoff) gives another Agent
+a fresh Context for one bounded task while the coordinator keeps the wider purpose. For a
+repository change, the packet includes the requested result, relevant operator decisions,
+acceptance checks, allowed paths, source revision, dependencies, and scope routes to the owning
+documents and code. The recipient reads those owners without inheriting the conversation that
+produced the task.
 
 If a needed decision is missing, the recipient requests that bounded input. It returns a candidate
 patch or findings with verification evidence and unresolved questions for the coordinator to

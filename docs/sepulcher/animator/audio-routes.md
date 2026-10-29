@@ -10,12 +10,11 @@ keep a take. Begin with the actual host's device and signal evidence, connect on
 then decide which application may arm and retain it. The same audio hardware can serve several
 owners without combining their permission or chronology.
 
-ALSA device interfaces and PipeWire's audio-routing nodes, USB devices, finite host helpers, and
-in-process libraries are attachments
-or tool routes. Animator manages an independently resident, queued, shared, or remote service when
-its lifecycle warrants that contract. This page supplies the hardware map;
-[Audio](../../adr/37-audio.md) owns capture consent, custody, transport, interruption, and playback
-law.
+First distinguish a device route from a service. ALSA device interfaces, PipeWire audio-routing
+nodes, USB devices, finite host helpers, and in-process libraries are attachments or tool routes.
+An independently resident, queued, shared, or remote service may instead need Animator's lifecycle
+contract. This page maps the hardware and host route; [Audio](../../adr/37-audio.md) governs capture
+consent, custody, transport, interruption, and playback.
 
 ## Current LychD boundary
 
@@ -41,10 +40,11 @@ mechanics do not merge their grants, records, retention, or acceptance.
 
 ## Host receipt boundary
 
-For the desktop PipeWire route below, a useful host receipt must come from the real login that
-owns PipeWire and the audio devices. Other routes need evidence from their actual device-owning
-environment. A restricted shell, container, or coding-agent session without the required
-`/dev/snd`, D-Bus, or PipeWire access proves only that the session lacks access.
+Test from the environment that actually owns the device. For the desktop PipeWire route below,
+that means the real login owning PipeWire and the audio devices. A restricted shell, container,
+or coding-agent session without `/dev/snd`, D-Bus, or PipeWire access can establish its own lack
+of access, but cannot judge the host route. Other routes likewise need evidence from their
+actual device-owning environment.
 
 Before promoting a route, record the OS and kernel, exact board or USB-device identity, loaded
 driver, ALSA capture/playback inventory, PipeWire/WirePlumber graph where used, selected sample format and
@@ -121,11 +121,12 @@ combinations, follow the exact interface and microphone instructions under the
 [Riffmaw hardware boundary](../../compositions/riffmaw/hardware.md). Which application may retain
 each channel is still decided before capture.
 
-For amp simulation, monitor through Guitarix or another native Linux effect chain and turn direct
-monitoring off to avoid hearing both dry DI and processed signal. For clean practice or a
-latency-sensitive take, turn it on. Riffmaw keeps the dry DI signal separate from the amp/cabinet print so a later mix can repair the
-sound. The motherboard headphone output may remain ordinary desktop
-playback; interface headphones are preferable for latency-sensitive tracking.
+Choose monitoring according to what you need to hear. Through Guitarix or another native Linux
+amp-simulation chain, turn direct monitoring off so the dry DI signal does not double the processed
+sound. For clean practice or latency-sensitive takes, turn it on. Riffmaw retains dry DI separately
+from the amp/cabinet print so a later mix can repair the sound. Ordinary desktop playback may use
+the motherboard headphone output; latency-sensitive tracking is better served by the interface
+headphones.
 
 ## Candidate device profiles
 

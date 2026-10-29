@@ -15,11 +15,15 @@ An exact `BlockGrid@1` digest can express desired blocks. A Sponge `.schem` must
 
 ## Prepare one placement
 
-The first revision `2` placement profile consumes an already admitted one-placement blueprint mission. Blockworld's placement operation resolves trusted mission, blueprint, lease, and authority records before accepting the proposed step. Caller arguments cannot create admission. It validates the exact target, full block state, one-item inventory change, and expected cursor against those records and [Sentinel](sentinel.md)'s action contract, then freezes the command before Consent admission or checkpoint encoding. This operation adds no movement, equipment change, digging, or replanning to the placement.
+The first revision `2` placement profile begins with an already admitted one-placement blueprint mission. Before accepting a proposed step, Blockworld resolves the trusted mission, blueprint, lease, and authority records; caller arguments cannot create that admission.
+
+It then validates the exact target, full block state, one-item inventory change, and expected cursor against those records and [Sentinel](sentinel.md)'s action contract. Freeze the validated command before Consent admission or checkpoint encoding so later review and execution refer to the same placement. The operation includes no movement, equipment change, digging, or replanning.
 
 The placement profile validates the original wire values against its closed command grammar before coercion or encoding; booleans cannot stand in for integer coordinates, cursors, or epochs. Serialization and re-entry preserve that validated command.
 
-The same native action identity follows that command through preparation, judgment, issuance, and reconciliation. A changed security-relevant command requires a new preparation and Consent. Fresh corroborating evidence may support the unchanged command without rewriting it. An exact bounded Codex preauthorization may settle the call when its admitted effect policy permits; otherwise that policy determines live judgment or refusal. Neither path removes the checks immediately before issuance.
+Carry the same native action identity through preparation, judgment, issuance, and reconciliation. Fresh corroborating evidence may support the unchanged command. A security-relevant change to the command itself instead requires new preparation and Consent.
+
+The admitted effect policy decides how judgment happens. It may permit an exact bounded Codex preauthorization to settle the call; otherwise it requires live judgment or refusal. Either path still performs the checks immediately before issuance.
 
 ## What the inhabitant carries
 

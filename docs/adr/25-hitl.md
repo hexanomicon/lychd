@@ -77,9 +77,10 @@ generation, revocation, and IAM authority.
 
 ### No scarce lease across judgment
 
-AwaitConsent follows release of chat grant. Run becomes AWAITING_CONSENT; worker exits; no model or
-VRAM lease remains. This is Durable Stasis, held by checkpoint and run/consent records, not a
-sleeping coroutine or old event channel.
+Judgment begins after the chat grant is released. AwaitConsent moves the Run to
+AWAITING_CONSENT and lets its worker exit, leaving no model or VRAM lease. Checkpoint and
+Run/Consent records hold this Durable Stasis; neither a sleeping coroutine nor an old event
+channel owns the wait.
 
 ### Commit before projection
 
@@ -189,10 +190,11 @@ not executable direction, permission, an automatic Context injection, or trainin
 
 ### Branches never inherit consent
 
-A changed proposal receives a new identity and its own Consent. A parent, sibling, group,
-previously approved version, or human-authorship attestation cannot approve it. Denial may be
-followed by a separately admitted revision; it does not itself schedule revision work or promise
-an Agent response. Historical approval remains visible even when its proposal is later withdrawn.
+A revision is a new proposal with a new identity and its own Consent. Approval cannot pass from
+a parent, sibling, group, previously approved version, or human-authorship attestation. After
+denial, a separately admitted revision remains possible, but denial itself neither schedules that
+work nor promises an Agent response. If a proposal is later withdrawn, its historical approval
+remains visible.
 
 Creating an alternative does not silently supersede its predecessor. Explicit supersession must
 close the predecessor's remaining issuance eligibility through its effect owner before admitting
@@ -212,11 +214,12 @@ cause a second effect, and a history read cannot resume a Run.
 
 ### Typed review, shared history
 
-File changes, network acquisition, external disclosure, spending and deployment share the history
-envelope while their effect owners supply versioned review profiles and receipt semantics. File
-review links the exact base, candidate and diff; network review binds the destination and limits;
-other types expose the facts their own law requires. An unsupported profile remains visibly
-unavailable for judgment. This envelope does not register or authorize a new effect class.
+The shared history envelope covers file changes, network acquisition, external disclosure,
+spending, and deployment. Each effect owner still supplies the versioned review profile and
+receipt semantics for its own act: file review links exact base, candidate, and diff; network
+review binds destination and limits; other types expose the facts their law requires. An
+unsupported profile must remain visibly unavailable for judgment. The envelope cannot register
+or authorize a new effect class.
 
 Bridge presents proposals as a tree with separate decision and execution details. Orb correlates
 the same identities to retained Run evidence. Both consume authorized, bounded pages from the

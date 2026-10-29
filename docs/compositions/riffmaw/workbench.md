@@ -38,6 +38,35 @@ direction is an assistant that can listen to admitted takes or mixes when helpin
 and eventually hear and respond during live playing. Live interaction follows the separate
 [capture and Jam contracts](sessions.md#the-realtime-stopping-line).
 
+The interaction follows a small loop: name the part and desired change, prepare a candidate,
+hear it against the selected version, then keep, revise or discard it. A request such as
+“turn the bass down” and the corresponding track control use the same typed edit and revision
+rules. The response identifies the changed part and the version available to hear. Earlier work
+remains available for comparison.
+
+AI assistance may interpret a brief, propose a bounded edit or compare candidates. An unclear
+target needs clarification; an unavailable effect returns a finding rather than a claim that
+it was applied. Listening observations retain their source and uncertainty. A rendered WAV or a
+loudness measurement alone does not establish that an assistant listened to the music.
+
+## Next bounded increments
+
+Keep the first native increment focused on one short edit-and-listen task:
+
+1. Connect the existing finite worker to a native musical revision and candidate. A human and
+   agent must see the same revision, apply one guarded change, hear the exact result, and recover
+   the candidate after restart. The authoring, admission and custody requirements in
+   [Native implementation stages](#native-implementation-stages) still apply.
+2. Add one ordinary-language edit over those same typed operations. Show the affected track or
+   region and the proposed change; preserve comparison and the musician's selection.
+3. Qualify one generation or separated-source profile for a concrete musical task, then connect
+   its verified output to the same revision-and-listening loop. Keep the exact tool and model
+   proof with [Studio](studio.md#minimum-first-proofs).
+
+Choose a Rust component only when a measured DSP, timing or device requirement needs it. The
+first feedback loop can use the existing Python adapters and offline renderer. Capture and live
+Jam retain their separate proofs; they are not prerequisites for this offline increment.
+
 ## Construction decision
 
 Python owns validation, compilation, adapters and technical receipts. The first offline trial
@@ -52,13 +81,15 @@ timing component. Neither choice establishes compatibility or realtime delivery 
 
 ## Finite engineering worker
 
-A schema-versioned immutable technical recipe describes bounded notes, PCM sources, clip frames,
-gain, pan and admitted synth controls. The worker returns aligned stems, a candidate mix,
-format/peak observations and digest receipts. Recipe JSON is not executable Python, a Scroll,
-`MusicProductionPlan@1`, or a canonical native project. Limits bound tracks, events, frames, bytes
-and process time, with at most 32 concurrent events and a conservative graph-buffer admission
-estimate. Native RSS has no cgroup limit. Unsupported formats or missing processors refuse rather
-than silently substitute. These source-owned trial instruments make no production-quality claim.
+Give the worker an immutable, schema-versioned technical recipe describing bounded notes, PCM
+sources, clip frames, gain, pan and admitted synth controls. It returns aligned stems, a candidate
+mix, format/peak observations and digest receipts. This recipe JSON describes the finite trial;
+it is not executable Python, a Scroll, `MusicProductionPlan@1`, or a canonical native project.
+
+Admission bounds tracks, events, frames, bytes and process time. It permits at most 32 concurrent
+events and uses a conservative graph-buffer estimate, though native RSS has no cgroup limit.
+Unsupported formats or missing processors refuse rather than silently substitute. The source-owned
+trial instruments make no production-quality claim.
 
 An operator development runner can exercise this mechanism without the Vessel, a background
 service, a new public Pulse command, or invented Run/Invocation identities. External workspaces
@@ -79,13 +110,15 @@ Empty history never proves no submission occurred. Verify the exact
 [classic routes](https://docs.comfy.org/development/comfyui-server/comms_routes) and runtime before
 a real model trial. HTTP acknowledgement alone does not establish containment or useful output.
 
-Fetched bytes become immutable for that occurrence; repeating retrieval verifies and reuses
-retained files. A later-file failure preserves earlier files and their technical receipts. Publication
-first retains deterministic staging, then pins its digest before installing the final file. An
-interruption after that pin can be repaired using only the exact local stage; normal load still
-refuses a missing final file. Unpinned staging, lost or damaged bytes, and conflicting final files
-refuse and require manual reconciliation. Repair never replaces bytes from the server or repeats
-generation. Extension and digest checks alone do not establish a valid image, video or audio format.
+Once fetched, bytes become immutable for that occurrence. Repeating retrieval verifies and reuses
+the retained files; if a later file fails, preserve the earlier files and their technical receipts.
+
+To publish a file, first retain deterministic staging and pin its digest, then install the final
+file. An interruption after the pin can be repaired from that exact local stage. Normal load
+still refuses a missing final file. Unpinned staging, lost or damaged bytes, and conflicting final
+files refuse and require manual reconciliation. Repair cannot replace bytes from the server or repeat
+generation. Even a matching extension and digest cannot establish that the bytes are a valid
+image, video or audio format.
 
 ## Development operations
 
@@ -115,15 +148,18 @@ ceiling, and makes no network requests. Seeking is a browser listening aid, not 
 proof or musical edit. Controls remain typed recipe edits through the runner; this preview is not
 the native studio editor.
 
-The cache binds exact recipe, processor, renderer/model source, installed DawDreamer/NumPy
-executable artifacts, their versions and runtime platform. Repeats on that pinned runtime are
-verified; cross-platform bit identity is not promised. A 30-second child deadline bounds native
-execution. Cleanup has a separate one-second budget to kill the owned process group and observe
-its stopped state through Linux `/proc`; unavailable or unresolved observation refuses completion.
-This does not cover descendants that escape into a new session.
-This is process separation rather than Coffin containment. Publication uses exclusive hard links,
-fsync and a receipt committed last; interrupted/incomplete cache entries refuse. Directories are
-assumed stable and operator-owned, not hostile mutable mounts.
+A cache hit must identify the same computation. The key binds exact recipe, processor,
+renderer/model source, installed DawDreamer/NumPy executable artifacts, their versions and runtime
+platform. Repeats on that pinned runtime are verified; cross-platform bit identity is not promised.
+Publication uses exclusive hard links, fsync and a receipt committed last. Interrupted or incomplete
+entries refuse, under the assumption that directories are stable and operator-owned rather than
+hostile mutable mounts.
+
+Execution has its own stopping checks. A 30-second child deadline bounds native execution, followed
+by a separate one-second cleanup budget to kill the owned process group and observe its stopped
+state through Linux `/proc`. Unavailable or unresolved observation refuses completion. Descendants
+that escape into a new session are outside that check, so the worker establishes process separation
+rather than Coffin containment.
 
 `schema comfy-profile` and `schema comfy-request` expose the actual Comfy inputs. Supply reviewed
 profile and request files, then run `comfy prepare --profile PROFILE --request REQUEST --workspace

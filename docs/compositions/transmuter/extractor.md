@@ -28,10 +28,10 @@ For each extracted unit, the proposed result records:
 - Proposed name, labels, content classification, privacy and retention constraints, and the
   parser, extractor, and configuration revisions that produced it.
 
-Naming, labeling, and classification are part of Extractor. They can describe topics, projects,
-document kinds, or likely relationships while preserving evidence and uncertainty. A proposed
-display name does not replace source identity or rename an original file. Operator corrections
-create attributable revisions.
+Use naming, labeling, and classification within Extractor to make the units easier to find.
+They can describe topics, projects, document kinds, or likely relationships, with their evidence
+and uncertainty intact. A proposed display name leaves source identity and the original filename
+unchanged. When the operator corrects it, create an attributable revision.
 
 A topical label does not lower a Privacy Label, authorize sharing, or establish a person's identity
 from an image. Source and derivative restrictions survive extraction. Observations supplied by
@@ -51,9 +51,10 @@ Budget exhaustion returns partial extraction with explicit gaps. Cancellation st
 resumption reconciles pending attempts and continues only the admitted remainder. Neither a
 skipped image nor an unparsed archive entry proves there was nothing relevant there.
 
-A correction invalidates dependent pending proposals and identifies which extraction must be
-revisited. Already accepted downstream records require correction through their own owner; editing
-a label cannot rewrite an earlier Memory or Persona decision.
+After a correction, identify which extraction needs to be revisited and invalidate the pending
+proposals that depended on it. If a downstream owner already accepted the result, request the
+correction through that owner. Editing a label locally cannot rewrite an earlier Memory or
+Persona decision.
 
 The stage finishes with attributed units and an accounted extraction disposition. [Synthesizer](synthesizer.md)
 then works from exact selected revisions; successful extraction alone establishes no memory,

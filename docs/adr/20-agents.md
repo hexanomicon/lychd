@@ -162,11 +162,12 @@ smuggling.
 
 ## Typed results and truth
 
-Pydantic validation establishes shape, not the truth of prose, an effect's validity, claim
-identity, or permission to publish or promote. Deterministic validators, domain handlers, Sigil,
-grant, receipts, evaluation, HitL, and the Phylactery retain those proofs. A typed falsehood is
-still false. `AgentSpec.retries` bounds validation repair; tool argument repair may use Pydantic
-AI retries, while policy refusal and missing premises settle explicitly rather than demand success
+Pydantic validation establishes a typed result's shape. Its prose can still be false, and its
+type establishes neither an effect's validity, claim identity, nor permission to publish or
+promote. Those proofs remain
+with deterministic validators, domain handlers, Sigil, grant, receipts, evaluation, HitL, and the
+Phylactery. `AgentSpec.retries` bounds validation repair; tool arguments may use Pydantic AI
+retries. Policy refusal and missing premises settle explicitly instead of demanding success
 without bound.
 
 ### Semantic answer completion
@@ -190,12 +191,12 @@ completion, usage, dispatch or token events. Other castings keep their own resul
 
 ### Mechanical cognitive postures
 
-A **Posture** bounds instructions, output schema, model settings, and tool grant. Expansion,
-review, repair, and red-team work belong in separate runs when one proposal would otherwise grade
-itself. A **Lens** is a Posture template for [Simulation](./31-simulation.md)'s isolated Shadow
-branch. A **Persona** is a durable revisioned identity that may wear Postures. Persona names the
-actor; Posture constrains this act; Lens diversifies a simulation. These are enforceable contracts
-only where types, grants, settings, and Graph placement preserve the claimed separation.
+A **Posture** constrains an act through instructions, output schema, model settings, and tool
+grant. A durable revisioned **Persona** names the actor and may wear different Postures. A
+**Lens** supplies a Posture template to diversify [Simulation's](./31-simulation.md) isolated
+Shadow branch. Expansion, review, repair, and red-team work belong in separate runs when a
+proposal would otherwise grade itself. These distinctions are enforceable only where types,
+grants, settings, and Graph placement preserve the claimed separation.
 
 [Crucible](../sepulcher/extensions/weaver/crucible.md) uses explicitly biased Postures to pressure
 one decision from several declared angles. Every advocate receives the same pinned evidence and
@@ -248,9 +249,10 @@ node with its own job and trust boundary; ADR 25 owns durable consent ordering a
 
 ## Artifacts and multimodality
 
-Agents may return immutable `ArtifactRef` metadata. LychD does not yet materialize authorized
-blobs as Pydantic AI binary content. Image, audio, and other bytes require a Vessel-owned
-materializer enforcing authorization, media constraints, and provenance; metadata is not payload.
+An Agent can return immutable `ArtifactRef` metadata, but metadata does not supply the payload.
+LychD does not yet materialize authorized blobs as Pydantic AI binary content. Image, audio, and
+other bytes need a Vessel-owned materializer that enforces authorization, media constraints,
+and provenance.
 
 ## Correspondence
 

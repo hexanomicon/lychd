@@ -44,7 +44,7 @@ platform integration and local UI state while Composition records, policy, effec
 judgment remain native domain truth. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery)
 owns the delivery boundary.
 
-Capability requirements, local routes, presentation/privacy settings, and admitted feature bindings are explicit session inputs. Extension packages may supply features without becoming an application-owned extension set. This independent disclosure, draft, commit, playback, reconnect, expiry, and revocation lifecycle is why Companion is a Composition rather than just a Familiar profile.
+Configure each session explicitly with capability requirements, local routes, presentation/privacy settings, and admitted feature bindings. Extension packages may supply features without becoming an application-owned extension set. Companion then owns the passage through disclosure, draft, commit, playback, reconnect, expiry, and revocation. That independent lifecycle makes it a Composition rather than only a Familiar profile.
 
 [Android Development](android-development.md) describes the implemented fixture/local-audio slice
 and its build route. [Android Foundation](android-foundation.md) studies the first Bridge and foreground voice client,
@@ -63,7 +63,7 @@ before later VPN reach. That proposal remains separate from this revision's acce
 screens, action offers, device conditions and context changes. The current fixture supplies no
 live User or remote authorization.
 
-Push-to-talk is the initial visible, foreground, revocable activation. Companion owns physical controls and indicators, local state, configuration, features, and reconnect. Echo owns speech admission, audio custody and derivation, the chronology of transcription, synthesis, delivery and playback, and revocation.
+Begin speech through visible, foreground, revocable push-to-talk activation. Companion owns the physical controls and indicators, local state, configuration, features, and reconnect that make this a device experience. Echo retains speech admission, audio custody and derivation, transcription/synthesis/delivery/playback chronology, and revocation.
 
 Stop speaking and cancel session are separate controls. A spoken response or microphone indicator grants no consequential authority. Text remains visible before or beside speech.
 

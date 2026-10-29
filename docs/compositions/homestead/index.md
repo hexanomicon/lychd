@@ -45,7 +45,9 @@ the admitted action. These checks remain deterministic; professionals, manufactu
 merchants, controllers, and the Magus retain their own judgment. Schedules create finite
 Occurrences.
 
-Homestead owns household models, physical asset identity, resource policy, stores, recurring provision, forecasts, alerts, maintenance, work orders, and admission of its effects. Keeper and Cultivator retain care profiles, living-subject histories, biological suitability, and care outcomes. Homestead provides no health or consumption judgment, unapproved purchase/disclosure, design certification, permits, construction, potability claim, unsafe energization, interlock bypass, hazardous repair, or general robot authority. No general smart-home or physical-actuator Domain is accepted; [Multinode](../../adr/42-multinode.md), Workflow, Security, IAM, Vision, and host owners keep their boundaries.
+Homestead maintains the household models, physical asset identity, resource policy, stores, recurring provision, forecasts, alerts, maintenance, and work orders, and admits its own effects. When that infrastructure supports living subjects, Keeper and Cultivator retain care profiles, subject histories, biological suitability, and care outcomes.
+
+The household contract supplies no health or consumption judgment, unapproved purchase/disclosure, design certification, permits, construction, potability claim, unsafe energization, interlock bypass, hazardous repair, or general robot authority. There is no accepted general smart-home or physical-actuator Domain; [Multinode](../../adr/42-multinode.md), Workflow, Security, IAM, Vision, and host owners retain their boundaries.
 
 ## Portfolio seams
 
@@ -53,7 +55,7 @@ Homestead owns household models, physical asset identity, resource policy, store
 
 Keeper and Cultivator may reference the same enclosure, greenhouse, tank, or circuit. Their placements and requirements remain separately owned. [Utilities](utilities.md#meet-an-environment-request) checks the joint commissioned envelope; a technical acknowledgement establishes no animal or plant care outcome. Settled needs, yields, and receipts need no Suite. Starting and recovering several owners' live work follows the [Suite boundary](../products-and-suites.md#homestead-keeper-and-cultivator).
 
-Coordinates, plans, camera material, and device access remain restricted. Deletion revokes grants, disables schedules and checkout, drains or contains admitted motion, inventories hazards, orders, and handoffs, then removes permitted material. External merchant and other custody remains explicit.
+Coordinates, plans, camera material, and device access remain restricted throughout the work. Before deletion removes permitted material, revoke grants, disable schedules and checkout, drain or contain admitted motion, and inventory hazards, orders, and handoffs. Keep external merchant and other custody explicit after local removal.
 
 ## Proving the household
 

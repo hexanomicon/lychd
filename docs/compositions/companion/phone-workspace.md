@@ -98,11 +98,13 @@ limits, and content identity. Partial bytes stay incomplete until verification a
 Conflicts, insufficient space, missing access, and failed transfers remain visible. Both originals
 survive; mirroring, overwrite, deletion, and cleanup need separately designed operations.
 
-After a lost action response, the outcome is unknown until reconciled with the device's operation
-record and current state. Reconnect queries that identity rather than blindly repeating a queue
-change or another effect. Transfers can resume verified portions under current access and grants;
-expired or revoked authority cannot survive through a retry. Network-dependent agent commands do
-not silently execute when connectivity returns. Offline player use continues independently.
+If an action response is lost, reconcile the device's operation record and current state before
+claiming its outcome. Reconnect queries that identity instead of repeating a queue change or
+another effect. Until reconciliation succeeds, the outcome remains unknown.
+
+A transfer may resume its verified portions only under current access and grants; retry cannot
+preserve expired or revoked authority. Network-dependent agent commands do not silently execute
+when connectivity returns. The offline player continues independently.
 
 The first device fixture should prove offline playback, locked-screen and headset behavior,
 rejection of an unpaired peer on the same Wi-Fi, revocation, and lost acknowledgement without a

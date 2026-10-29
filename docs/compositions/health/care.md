@@ -5,10 +5,12 @@ icon: material/clipboard-pulse-outline
 
 # Health care planning
 
-`health.plan_care@1` turns one reviewed case and its externally established facts or explicitly
-declared diagnostic assumptions into treatment options. `health.follow_up@1` records what the
-person or qualified professional says happened. A proposal is not a prescription, a verdict is
-not administration, and a plan is not evidence of adherence or benefit.
+A reviewed case can lead to several treatment options, each resting on facts and assumptions
+that the person and qualified professional need to see. `health.plan_care@1` develops those
+options from externally established facts or explicitly declared diagnostic assumptions.
+`health.follow_up@1` later records what the person or qualified professional says happened.
+Keep each step distinct: a proposal is not a prescription, a verdict is not administration, and
+a plan is not evidence of adherence or benefit.
 
 ## Compare care options
 
@@ -35,11 +37,12 @@ required qualification; disclosures and destination; cost ceiling; policy revisi
 Any clinically relevant change creates a new call. Approval of one option does not approve its
 alternatives, refills, substitutions, later cycles, purchases, sharing, or administration.
 
-The Altar should show the evidence for and against the option, unresolved fields, likely and severe
-risks, alternatives, reversibility, required professional role, and what approval can and cannot
-cause. Denial closes that proposal without effect. Revision returns to planning. Approval only
-authorizes an eligible next effect to be rechecked by its owner; it does not attest safety or
-outcome.
+The person making this verdict needs to see the choice and its consequences together. The Altar
+should show evidence for and against the option, unresolved fields, likely and severe risks,
+alternatives, reversibility, the required professional role, and what approval can and cannot
+cause. Denial closes that proposal without effect; revision returns to planning. Approval
+authorizes only an eligible next effect, which its owner must recheck. It does not attest safety
+or outcome.
 
 Prescription, test ordering, dispensing, booking, payment, device control, and treatment delivery
 remain external effects until separately governed owners are accepted and integrated. A

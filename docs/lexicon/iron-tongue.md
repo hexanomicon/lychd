@@ -7,12 +7,13 @@ icon: material/alphabet-tengwar
 
 <span id="iron-tongue-canonical-project-terms"></span>
 
-The Vessel runs. The Phylactery keeps what has been committed. A Rune declares intent; a Scroll
-gives work its score. These names let the Magus speak precisely about the body and its workings.
+Use these names to distinguish what the Lich's body does. The Vessel runs; the Phylactery keeps
+committed truth; a Rune declares intent; a Scroll gives work its score. The dictionary keeps each
+meaning brief and links it to the page that develops its anatomy, law, or operation.
 
-Find a word by letter. Each name opens the page that gives its full anatomy, law, or operation.
-[State of Work](../state-of-the-work.md) records what has entered matter; the [Inner
-Tongue](inner-tongue.md) follows the names into their histories and philosophical meanings.
+Find the word by letter, then follow its owning link for detail. For delivery, consult
+[State of Work](../state-of-the-work.md); for the histories and philosophical meanings within the
+names, turn to the [Inner Tongue](inner-tongue.md).
 
 [A](#a) · [B](#b) · [C](#c) · [D](#d) · [E](#e) · [F](#f) · [G](#g) · [H](#h) · [I](#i) · [K](#k) · [L](#l) · [M](#m) · [N](#n) · [O](#o) · [P](#p) · [Q](#q) · [R](#r) · [S](#s) · [T](#t) · [U](#u) · [V](#v) · [W](#w) · [X](#x)
 
@@ -53,8 +54,8 @@ active Sigil, identity, Context, capability, memory, and selected act in that at
 
 ### [Archive](../adr/27-memory.md#memory-layering-sediment-not-dump) { #archive }
 
-The governed memory substrate in the Phylactery for eligible traces, Karma, anchored records,
-provenance, and decay state.
+The governed memory within the Phylactery. It holds eligible traces, Karma, anchored records,
+provenance, and decay state under their admission and lifecycle rules.
 
 [State of Work](../state-of-the-work.md#karma-semantic-memory)
 
@@ -67,13 +68,15 @@ home, records, judgment, and authority. A Suite can coordinate live work within 
 
 ### [ArtifactRef](../adr/22-dispatcher.md#durable-content-and-artifactref) { #artifactref }
 
-Immutable metadata naming external durable content by identity, SHA-256 digest, media type, byte
-size, and classification.
+An immutable reference to durable content held outside the record. It identifies the content
+and carries its SHA-256 digest, media type, byte size, and classification, allowing a recipient
+to know exactly which artifact is meant.
 
 ### [Atelier](../compositions/atelier/index.md) { #atelier }
 
-The visual-creation Composition owning commission, direction, image, visual effects, motion
-judgment, and accepted visual packages above Prism's technical contracts.
+The Composition for directing and judging visual creation. It owns the commission and creative
+direction, image and visual effects, motion judgment, and acceptance of visual packages. Prism
+supplies the technical contracts beneath those creative decisions.
 
 ### [Atlas](../divination/altar/atlas.md) { #atlas }
 
@@ -85,8 +88,9 @@ requires one.
 
 ### [Authorship Attestation](../adr/28-workflow.md#authorship-provenance-and-protected-regions) { #authorship-attestation }
 
-An attributable claim binding an exact artifact region and content digest to `human_attested`,
-`agent_generated`, `mixed`, or `unknown` origin; approval is not authorship.
+An attributable, recorded claim about who authored a particular part of an artifact. It binds that exact region
+and its content digest to `human_attested`, `agent_generated`, `mixed`, or `unknown` origin.
+Approving the artifact is a different act and does not establish authorship.
 
 ### [Autopoiesis](../divination/transcendence/immortality.md) { #autopoiesis }
 
@@ -97,9 +101,11 @@ authority.
 
 ### [Avatar](../compositions/avatar/index.md) { #avatar }
 
-The Composition that assembles one immutable eligible Lich presentation profile and settles one
-or many independently admitted projection bindings; it may project into a Spectre VR Habitat but
-does not own the Habitat or Encounter.
+The Composition that chooses how the Lich will present itself. It assembles one fixed presentation
+profile that meets the applicable requirements, then settles its independently admitted use at
+one or more destinations. Each use has its own projection binding; the destination keeps its
+authority over the place and effects. Avatar may present the Lich in a Spectre VR Habitat;
+Spectre still owns that place and the Encounter within it.
 
 ### [awaited](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/schemas.py) { #awaited }
 
@@ -124,8 +130,9 @@ The Altar’s continuing place of communion. One séance may hold many Invocatio
 
 ### [Broadcast](../compositions/broadcast/index.md) { #broadcast }
 
-The editorial Composition owning canonical source words and claims, picture-bound sound, final
-timeline/render/mux, release, and correction without absorbing upstream media owners.
+The Composition that carries editorial work into release and correction. It owns canonical
+source words and claims, sound tied to picture, and the final timeline, render, and mux. Upstream
+media applications keep their own judgments and records when Broadcast uses their work.
 
 ## C
 
@@ -143,15 +150,15 @@ grants no promotion or activation authority.
 
 ### [Capability](../adr/22-dispatcher.md#capability-binding-cartography) { #capability }
 
-An exact versioned semantic service interface requestable from an Animator and implemented by an
-immutable profile revision; current source retains a narrower family/model compatibility
-projection.
+An exact, versioned semantic service interface that can be requested from an Animator. An
+immutable profile revision implements it. Current source projects a narrower compatibility
+shape based on family and model.
 
 ### [CapabilityGrant](../adr/22-dispatcher.md#the-grant-lease-doctrine) { #capabilitygrant }
 
-The Dispatcher's temporary binding of one exact warm operation to only its admitted model, call,
-job, or session surface and GrantLease; current source delivers one narrow v1 chat-model/toolset
-compatibility shape.
+The Dispatcher's temporary binding of one exact warm operation to its admitted model, call,
+job, or session surface and GrantLease. The binding reaches only that admitted surface. Current
+source delivers a narrow v1 compatibility shape for a chat model and toolset.
 
 ### [Casting](../divination/altar/circle.md) { #casting }
 
@@ -182,8 +189,9 @@ to `~/.config/lychd`, with `XDG_CONFIG_HOME` selecting another configuration roo
 
 ### [Coffin](../adr/09-security.md#the-coffin-delegated-agent-profile) { #coffin }
 
-The lower-trust, per-job containment profile for an opaque delegated-agent runtime with
-disposable files and a revocable Provider Gate.
+The containment profile for one job entrusted to an opaque delegated-agent runtime. It treats
+that runtime as lower trust, gives it disposable files, and exposes provider access through a
+revocable Provider Gate.
 
 ### [Cognizance](../divination/transcendence/immortality.md#cognizance) { #cognizance }
 
@@ -194,29 +202,30 @@ runtime flag; Consciousness names the Whole.
 
 ### [Companion](../compositions/companion/index.md) { #companion }
 
-The mobile-client/session Composition over one exact phone-shaped Familiar body; it owns
-configurable client experience, bounded local interaction, disclosure, and reconnect while
-Familiar retains hardware and physical-safety authority.
+The Composition for using the Lich through one exact phone-shaped Familiar body. It controls the
+configurable client experience, bounded local interaction, disclosure, and reconnect. Familiar
+continues to govern the hardware and physical safety of that body.
 
 ### [Composition](../compositions/index.md) { #composition }
 
-A reusable native application capability with its own domain records, judgment, policies,
-effects, and Pattern catalogue. Its life is independent of any one Product, customer, or deployment.
+A reusable native application with its own records, judgments, policies, effects, and catalogue
+of Patterns. Those responsibilities continue independently of any particular Product, customer,
+or deployment that uses the application.
 
 [Covenant 28](../adr/28-workflow.md)
 
 ### [Composition Revision](../adr/28-workflow.md#composition-identity-revision-and-retirement) { #composition-revision }
 
-One immutable version of a stable Composition contract, pinning its record and request/result
-families, Pattern catalogue, judgment, policy, effect and authority seams, projections,
-outcomes, and recovery law; a materially different capability requires another identity.
+One immutable version of a stable Composition contract. It pins the record and request/result
+families, Pattern catalogue, judgment, policy, effect and authority seams, projections, outcomes,
+and recovery law. A materially different capability needs another identity.
 
 ### [Concern](../divination/altar/atlas.md#make-a-concern-answerable) { #concern }
 
-An explicit question, risk, requirement, or condition deserving attention and judgment, with its
-own identity, revisioned meaning and criteria, and separately attributed assessments. It can
-stand alone, arise from an idea, decompose into further Concerns, and be addressed in several
-places; Project membership or a source Covenant is optional.
+A question, risk, requirement, or condition made explicit for attention and judgment. It has its
+own identity, revisioned meaning and criteria, and separately attributed assessments. A Concern
+can begin with an idea, stand alone, divide into further Concerns, and be addressed in several
+places. It requires neither Project membership nor a source Covenant.
 
 [Covenant 15: Frontend](../adr/15-frontend.md#independent-concerns-decomposition-and-addressing)
 
@@ -278,17 +287,18 @@ runtime.
 
 ### [Deployment](../compositions/products-and-suites.md#deployment-and-projection-are-different-axes) { #deployment }
 
-One configured installation for an operator, instantiated from an exact Product revision or
-Composition-owned reference deployment-profile revision. A Productless deployment creates no
-market promise; changing host, credentials, or local configuration does not by itself create
-another Product.
+One configured installation used by an operator. It is instantiated from an exact Product
+revision or a Composition-owned reference deployment-profile revision. A deployment without a
+Product creates no market promise. Changing host, credentials, or local configuration alone
+also leaves Product identity unchanged.
 
 [Covenant 28](../adr/28-workflow.md)
 
 ### [Deployment profile](../compositions/products-and-suites.md#deployment-and-projection-are-different-axes) { #deployment-profile }
 
-An immutable eligible topology and configuration template binding an implementation and
-acceptance target; it is not an installation or delivered service.
+A fixed template specifying an eligible topology and configuration. It binds an implementation
+to an acceptance target so a deployment can be judged against a known basis. The profile itself
+is neither the installation nor a delivered service.
 
 [Covenant 28](../adr/28-workflow.md)
 
@@ -304,9 +314,9 @@ the Great Work's wider meaning.
 
 ### [Drift](../sepulcher/extensions/drift/index.md) { #drift }
 
-The evaluation Extension Domain that tests how exact subjects meet or depart from declared goals
-through versioned trials, controls, repeated Outcomes, calibrated findings, attribution
-candidates, and explicit uncertainty.
+The evaluation Extension Domain that compares exact subjects with declared goals. It uses
+versioned trials, controls, repeated Outcomes, calibrated findings, attribution candidates, and
+explicit uncertainty to establish where a subject meets or departs from those goals.
 
 [Covenant 34: Evaluation](../adr/34-evaluation.md#the-declared-goal)
 
@@ -325,23 +335,23 @@ the process has died.
 
 ### [Echo](../sepulcher/extensions/echo.md) { #echo }
 
-The speech-lifecycle Extension Domain for capture, transcription, synthesis, acoustic-voice
-facts, delivery, playback, and their chronology.
+The Extension Domain that follows speech from capture through transcription or synthesis to
+delivery and playback. It owns the acoustic-voice facts and chronology of that lifecycle.
 
 [Covenant 37](../adr/37-audio.md)
 
 ### [EgressDecision](../adr/09-security.md#portal-privatization-and-egress) { #egressdecision }
 
-The Egress Gate's restricted local allow-or-deny record for one exact remote disclosure, binding
-payload, principal, purpose, target, policy, and disclosure basis. Its target may be a Portal,
-A2A peer, or delegated runtime.
+The Egress Gate's local record allowing or denying one exact remote disclosure. It binds the
+payload to its principal, purpose, target, policy, and disclosure basis. The target can be a
+Portal, A2A peer, or delegated runtime; the record itself remains restricted local material.
 
 ### [Encounter](../compositions/spectre/encounter.md) { #encounter }
 
-One bounded Spectre meeting or experience inside an admitted `VRHabitat@1`. An Encounter may be
-generic; meeting the Lich through its Avatar additionally references one exact Avatar-owned
-`ProjectionBinding@2`. Spectre owns participant admission, semantic chronology, interruption,
-recovery, exit, and settlement.
+A bounded meeting or experience in a place admitted as `VRHabitat@1`. Spectre governs who may
+participate and keeps the semantic chronology, interruption, recovery, exit, and settlement.
+An Encounter can serve a general purpose. If it includes meeting the Lich through Avatar, it
+also names one exact Avatar-owned `ProjectionBinding@2`.
 
 ### [Extension Context](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/context.py) { #extension-context }
 
@@ -392,9 +402,9 @@ this as the `vision` family.
 
 ### [Familiar](../compositions/familiar/index.md) { #familiar }
 
-The real-world embodiment Composition: it owns one admitted physical body and bounded task or
-presence, including capability, safety, stop, observation, effect, and settlement truth without
-acquiring raw controller authority.
+The Composition for real-world embodiment. It owns one admitted physical body and a bounded
+task or presence, including capability, safety, stop, observation, effect, and settlement truth.
+That ownership does not confer raw controller authority.
 
 ### [Flux](../sepulcher/lich/spirit/flux.md) { #flux }
 
@@ -439,9 +449,9 @@ A Run-owned durable snapshot of typed Graph state at a supported recovery bounda
 
 ### [Habitat](../compositions/reach/habitat.md) { #habitat }
 
-A Composition-local admitted place boundary in which participants, projections, and events may
-meet. Reach's first Habitat is The Necropolis; Spectre's Habitat modality is VR and each
-admitted virtual place is a distinct `VRHabitat@1`. A Habitat does not by itself grant identity,
+An admitted place within a Composition where participants, projections, and events can meet.
+Reach's first Habitat is The Necropolis. Spectre uses the VR modality, with a distinct
+`VRHabitat@1` for each admitted virtual place. Admission of the place alone grants no identity,
 Context, device, world, or effect authority.
 
 [Spectre Habitat](../compositions/spectre/habitat.md)
@@ -506,9 +516,9 @@ read-write only when explicitly admitted.
 
 ### [Language Edition](../compositions/language-edition/index.md) { #language-edition }
 
-The timed-language-version Composition owning source alignment, translation/adaptation judgment,
-spoken casting and performance, captions, dialogue conform, and constrained language-track
-packaging against a locked master.
+The Composition for making a timed language version of a locked master. It owns source alignment,
+translation and adaptation judgment, spoken casting and performance, captions, dialogue conform,
+and packaging the language track within that master's constraints.
 
 ### [lease drain](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/orchestration/) { #lease-drain }
 
@@ -520,7 +530,8 @@ The in-process registry whose live GrantLeases are the Orchestrator's drain trut
 
 ### [Legion](../sepulcher/extensions/legion.md) { #legion }
 
-The distributed-embodiment Extension Domain for fenced delegation across operator-owned nodes.
+The Extension Domain for extending the Lich across operator-owned nodes. It delegates work with
+fences that preserve the boundaries of that distributed embodiment.
 
 [Covenant 42: Multinode](../adr/42-multinode.md)
 
@@ -594,10 +605,10 @@ and declared continuity.
 
 ### [Morphe](../compositions/avatar/profile.md#select-a-morphe) { #morphe }
 
-Avatar's immutable presentation selection within an unchanged profile and Persona boundary. It
-selects eligible acoustic speech voice, appearance, motion, output locale or disclosure for an
-exact audience, target, purpose and time. Its `MorpheBinding@2` neither translates nor changes
-Persona discourse manner, and leaves past projection records intact.
+Avatar's immutable selection of presentation within an unchanged profile and Persona boundary.
+It selects eligible acoustic speech voice, appearance, motion, output locale, or disclosure for
+an exact audience, target, purpose, and time. Its `MorpheBinding@2` leaves past projection records
+intact and neither translates nor changes Persona discourse manner.
 
 ## N
 
@@ -658,10 +669,10 @@ attribution, memory policy, and consent. A retry or Graph cycle alone completes 
 
 ### [Pattern](../adr/28-workflow.md) { #pattern }
 
-A workflow family published by its application owner, defining typed state, stations, gates,
-requirements, budgets, outcomes and continuity law. The publisher is normally a Composition; a
-Suite may publish only for coordination. The two delivered Core Patterns are explicit legacy
-exceptions. Spellweaver owns validation, registration, revision and execution jurisdiction.
+A family of workflows published by the application responsible for the work. It defines the
+typed state, stations, gates, requirements, budgets, outcomes, and continuity law. Usually a
+Composition publishes it; a Suite may publish only coordination workflows. The two delivered Core Patterns are explicit legacy exceptions. Spellweaver validates
+and registers the revisions and governs their execution.
 
 ### [Pattern Revision](../adr/28-workflow.md) { #pattern-revision }
 
@@ -670,9 +681,9 @@ contract. In the grimoire, a Scroll.
 
 ### [Persona](../sepulcher/extensions/mirror.md) { #persona }
 
-A durable, revisioned identity whose discourse voice, commitments, boundaries, and orientation
-Mirror may hydrate into a bounded Agent instruction envelope; not an acoustic voice or
-presentation asset.
+A durable, revisioned identity. Mirror may hydrate its discourse voice, commitments, boundaries,
+and orientation into a bounded Agent instruction envelope. Acoustic voice and presentation assets
+remain separate from Persona.
 
 [Covenant 32](../adr/32-identity.md)
 
@@ -726,8 +737,9 @@ reconstructions, and generated forms.
 
 ### [Privacy Cut](../adr/21-context.md#privatization-and-the-privacy-cut) { #privacy-cut }
 
-A new sanitized Context branch built locally without reusing raw history, continuation,
-attachment projections, or provider cache identity.
+A new Context branch made locally from sanitized material. It starts without the raw history,
+continuation, attachment projections, or provider cache identity, keeping those earlier channels
+from silently carrying raw influence into the new branch.
 
 ### [Privatization Label](../adr/21-context.md#privatization-and-the-privacy-cut) { #privatization-label }
 
@@ -736,10 +748,9 @@ conservatively follow material influence.
 
 ### [Product](../compositions/products-and-suites.md) { #product }
 
-A named operator- and business-facing package for a profession or market. It selects one or more
-Composition or Suite revisions, owner-qualified profiles, projections, and concrete use cases
-while leaving member records, judgment, policy, secrets, consent, and effect authority with
-their owners.
+A package offered for a profession or market. Its promise selects Composition or Suite revisions,
+owner-qualified profiles, projections, and concrete use cases. Packaging them together leaves
+records, judgments, policies, secrets, consent, and effect authority with their respective owners.
 
 [Covenant 28](../adr/28-workflow.md)
 
@@ -751,23 +762,25 @@ policy. A materially different operator promise requires a new Product identity.
 
 ### [Project](../divination/altar/atlas.md) { #project }
 
-A persistent undertaking or continuing responsibility mapped by Atlas, retaining a brief,
-concerns, judgments, decisions, proposed next action, and explicit activity references across
-Invocations; it is distinct from a reusable Composition and a Suite's live coordination.
+An undertaking or continuing responsibility retained across Invocations in Atlas. Its account
+holds the brief, concerns, judgments, decisions, proposed next action, and explicit activity
+references. A Project differs from a reusable Composition and from a Suite's live coordination.
 
 [Covenant 15: Frontend](../adr/15-frontend.md#atlas-and-continuity-across-invocations)
 
 ### [Projection Binding](../compositions/avatar/presence.md#admit-each-projection) { #projection-binding }
 
-One immutable Avatar-owned admission epoch for an exact profile and optional Morphe selection at
-one target. `ProjectionBinding@2` binds that target's capability facts, participant scope,
-consent, disclosure, fallback, stop conditions and attributed terminal result. It grants no
-target, device, world or effect authority.
+One immutable Avatar-owned admission epoch for a particular presentation at one target. Its record
+names the exact profile and optional Morphe selection. `ProjectionBinding@2` records the target's capability
+facts, participant scope, consent, disclosure, fallback, stop conditions, and attributed terminal
+result for that admission. It grants no authority over the target, device, world, or effects.
 
 ### [Protected Region](../adr/28-workflow.md#authorship-provenance-and-protected-regions) { #protected-region }
 
-A stable artifact region and content digest whose mutation requires live HitL bound to the exact
-base, candidate, affected regions, and target-owner effect.
+A particular part of an artifact whose identity and content digest are preserved for review.
+Changing it requires live HitL tied to the exact base, candidate, affected regions, and the
+target owner's effect. The protection follows that precise material, rather than a general
+approval to edit.
 
 ### [Provenance](../adr/27-memory.md) { #provenance }
 
@@ -785,8 +798,9 @@ Registrant and its registration provenance.
 
 ### [Provider Gate](../adr/09-security.md#provider-gate) { #provider-gate }
 
-The fail-closed credential and egress mediator exposing one admitted provider surface to a
-Coffin without disclosing the real secret.
+The boundary through which a Coffin can reach one admitted provider surface. It mediates
+credentials and egress without revealing the real secret, and refuses access when the required
+checks cannot be established.
 
 ### [Pulse](../adr/19-cli.md) { #pulse }
 
@@ -839,8 +853,9 @@ and retention.
 
 ### [Riffmaw](../compositions/riffmaw/index.md) { #riffmaw }
 
-The music Composition owning composition, instrumental and vocal performance, arrangement,
-musical mix/master, acceptance, and cue maps; not general speech or picture sound.
+The Composition for creating and judging music: composition, instrumental and vocal performance,
+arrangement, musical mix and master, acceptance, and cue maps. General speech and sound tied to
+picture have other owners.
 
 ### [Run](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/models/run.py) { #run }
 
@@ -857,16 +872,17 @@ tree.
 
 ### [Scout](../sepulcher/extensions/scout.md) { #scout }
 
-The web-acquisition Extension Domain for separately authorized discovery, contact,
-transformation, interaction, capture, and download effects; Crawl is only its finite-frontier
-track, while durable Artifact Admission remains with the custody owner.
+The web-acquisition Extension Domain. It separates authorization for discovery, contact,
+transformation, interaction, capture, and download effects. Crawl is its finite-frontier track;
+durable Artifact Admission remains with the custody owner.
 
 [Covenant 30](../adr/30-webcrawler.md)
 
 ### [Scroll](../sepulcher/extensions/weaver/index.md) { #scroll }
 
-One whole immutable Pattern revision: one or more Spell placements, edges, entry and ending, requirements
-and budgets, authority and effect demands, and continuity law. Casting is its performance.
+The complete fixed score for one Pattern revision. It contains one or more Spell placements,
+their edges, entry and ending, requirements and budgets, authority and effect demands, and the
+law governing continuity. A casting performs this score.
 
 [Covenant 28](../adr/28-workflow.md)
 
@@ -929,8 +945,9 @@ mounts, and secret references.
 
 ### [Sovereignty Wall](../adr/09-security.md) { #sovereignty-wall }
 
-The designed Security-owned boundary for admitting remote disclosure and checking the exact
-payload immediately before transmission.
+The designed Security boundary that decides whether material may be disclosed remotely. It
+checks the exact payload again immediately before transmission, so an earlier admission cannot
+stand in for the material actually leaving.
 
 [Dispatcher](../adr/22-dispatcher.md)
 
@@ -941,17 +958,17 @@ meeting or experience there as `SpectreEncounter@2`; its Habitat modality is VR.
 
 ### [Spell](../sepulcher/extensions/weaver/index.md) { #spell }
 
-The smallest independently named, discoverable, and teachable semantic action at the workflow
-boundary. A Scroll station places its exact contract; the name grants no tool, capability, or
-authority.
+The smallest semantic action that can be named, discovered, and taught independently at the workflow
+boundary. A station in a Scroll places its exact contract. Naming a Spell identifies the action;
+it grants neither a tool nor capability nor authority to perform it.
 
 [Covenant 28](../adr/28-workflow.md)
 
 ### [Spellweaver](../sepulcher/extensions/weaver/index.md) { #spellweaver }
 
-The keeper of workflow law: Scroll validation, casting admission, Pattern lifecycle, logical
-priority, dependencies, and schedule meaning. Code and existing paths shorten the name to
-`Weaver`.
+The keeper of the rules by which work is composed and admitted. It validates Scrolls, admits
+castings, manages the Pattern lifecycle, and governs logical priority, dependencies, and schedule
+meaning. Code and existing paths use the shorter name `Weaver`.
 
 [Covenant 28](../adr/28-workflow.md)
 
@@ -982,10 +999,10 @@ speculation while preserving measured quality.
 
 ### [Suite (Composition Suite)](../compositions/products-and-suites.md#compositions-relate-without-nesting) { #suite }
 
-Designed, versioned live coordination under a qualified authority. Its pinned Suite-owned
-Pattern opens a parent Invocation/Run over separately owned Composition Invocations. A settled
-foreign reference alone does not make a Suite; the parent acquires neither member judgment nor
-member effects.
+Designed, versioned coordination of live work under a qualified authority. A pinned Suite-owned
+Pattern opens a parent Invocation/Run over separately owned Composition Invocations. The parent
+acquires neither their judgment nor their effects. A settled foreign reference alone therefore
+does not constitute a Suite.
 
 [Covenant 28](../adr/28-workflow.md)
 
@@ -1029,15 +1046,16 @@ The llama.cpp Soulstone discipline for serial CPU offload beyond the VRAM envelo
 
 ### [Tithe](../sepulcher/extensions/toll.md) { #tithe }
 
-Currency-neutral accounting and bounded quota for model-token usage and compute resources
-independently of payment or MANA.
+The accounting and bounded quota for model-token use and compute resources. It is currency-neutral:
+usage can be measured and limited independently of payment or MANA.
 
 [Covenant 41](../adr/41-x402.md)
 
 ### [Toll](../sepulcher/extensions/toll.md) { #toll }
 
-The optional economics Extension Domain separating quote, commitment, signing, settlement,
-delivery, refund, and reconciliation.
+The optional Extension Domain for economic exchanges. It keeps the quote, commitment, signing,
+settlement, delivery, refund, and reconciliation distinct so the status of one cannot silently
+stand in for another.
 
 [Covenant 41](../adr/41-x402.md)
 
@@ -1059,9 +1077,9 @@ operations, residual label, uncertainty, and expiry.
 
 ### [Translation Spell](../adr/28-workflow.md#language-is-typed-not-global) { #translation-spell }
 
-An authority-qualified, versioned semantic text transformation preserving source, derivative,
-languages, implementation, and declared loss; Spellweaver governs its placement and casting
-while the consuming owner judges application fit.
+A versioned semantic text transformation qualified by authority. It preserves source, derivative,
+languages, implementation, and declared loss. Spellweaver governs its placement and casting;
+the consuming owner judges whether the transformation fits the application.
 
 ### [Transmuter](../compositions/transmuter/index.md) { #transmuter }
 
@@ -1115,8 +1133,8 @@ The running body of LychD: its Litestar application runtime and web server.
 
 ### [Ward](../sepulcher/extensions/ward.md) { #ward }
 
-The authority Extension Domain mapping credentials to principals and current object or effect
-policy.
+The Extension Domain that determines which principal a credential represents, then applies the
+current policy for the requested object or effect.
 
 [Covenant 38](../adr/38-iam.md)
 

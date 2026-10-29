@@ -15,11 +15,11 @@ revision, and review window. Keep quantities, units, uncertainties, and exclusio
 contracts prescribe no generic food or clinical diet. Missing applicable evidence can block the
 plan; a proposed substitution requires Keeper review before changing it.
 
-Consult exact Homestead `SupplySnapshot@1` and `ProvisionResult@1` references for stock and
-availability. A supply need binds its originating owner and revision, and discloses only necessary
-product traits, quantity and units, exclusions, purpose, validity/expiry, privacy class, and unknowns.
-Raw husbandry histories and veterinary journals do not accompany a
-stock request. Availability does not certify husbandry suitability.
+Check stock and availability through exact Homestead `SupplySnapshot@1` and `ProvisionResult@1`
+references. When supplies are needed, bind the request to its originating owner and revision and
+include only necessary product traits, quantity and units, exclusions, purpose, validity/expiry,
+privacy class, and unknowns. Raw husbandry histories and veterinary journals stay out of that
+request. Keeper must still judge suitability; an available product is not thereby suitable.
 
 ## Reconcile distinct evidence
 
@@ -27,10 +27,10 @@ Record offered or delivered quantities separately from observed consumption, lef
 disposal. Each has its own source, time, units, and uncertainty; unknown consumption stays unknown.
 Confirmed feeding work is recorded through [care](care.md).
 
-Reconcile stock changes using exact supply-use event identifiers. Duplicate delivery of the same
-event must not remove stock twice or create a second feeding. An amount removed from stock cannot
-automatically become an amount consumed. Lost acknowledgment requires reconciliation before a
-physical retry; a ledger correction alone cannot settle whether feeding occurred.
+Use exact supply-use event identifiers to reconcile stock changes. Repeated delivery must resolve to the same event and must not remove stock twice or create a
+second feeding. The stock
+change still does not establish consumption. If an acknowledgment is lost, reconcile before
+repeating physical work; correcting the ledger alone cannot establish whether feeding occurred.
 
 ## Finish with a proposed plan
 

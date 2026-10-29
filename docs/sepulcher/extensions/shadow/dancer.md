@@ -7,10 +7,11 @@ icon: material/dance-ballroom
 
 > _“Open another door, but do not call it the exit.”_
 
-One source Intent forks beneath a declared [Shadow Lens](../../../adr/20-agents.md#mechanical-cognitive-postures),
-an operational Posture. **Dancer** is [Shadow's](./index.md) expansion
-office: it makes several alternatives legible from the same starting point, preserving what each
-assumes and requires while favoring none of them.
+Start with one source Intent and ask what other forms it might take. **Dancer** opens those
+alternatives under a declared [Shadow Lens](../../../adr/20-agents.md#mechanical-cognitive-postures),
+an operational Posture. As [Shadow's](./index.md) expansion office, it makes several possibilities
+legible from the same starting point. Each keeps its assumptions and requirements, and none
+receives preference merely by being generated.
 
 Dancer is **Designed**. No simulation Rune or schema ships, and no Dancer path runs. [State of
 Work](../../../state-of-the-work.md#shadow-simulation) records delivery, while [ADR
@@ -52,10 +53,10 @@ honestly.
 
 ## Stop before selection
 
-Exhausting the branch limit, time or token budget, or a declared stop condition returns an honest
-incomplete expansion. Existing alternatives remain attributed; unknowns and provenance remain
-visible. Dancer cannot silently substitute the first or cheapest candidate for the requested
-breadth.
+When the branch limit, time or token budget, or a declared stop condition is reached, return the
+expansion actually achieved and identify it as incomplete. Keep every existing alternative
+attributed, with its unknowns and provenance visible. Selecting the first or cheapest candidate
+would conceal the missing breadth, so Dancer cannot silently use that as a substitute.
 
 A candidate may then enter [Hunter](./hunter.md) through a separate Invocation, undergo
 deterministic checks, or become a [Drift](../drift/trials.md) trial subject. Those passages may

@@ -55,18 +55,24 @@ exists, a bounded periodic source check may propose a diff; it must report missi
 
 ## Definitions and actual obligations
 
-An obligation definition specifies applicability, event or recurring trigger, deadline algorithm,
-calendar and time zone, evidence needed, exact recipient/form family, preparer and signatory
-roles, and completion criteria. An entity-specific instance pins those revisions and the facts
-that activated it. False applicability and unknown applicability must remain different states.
+First define the obligation as a reusable rule: when it applies, which event or recurring trigger
+opens it, how its deadline is calculated, and which calendar and time zone govern that calculation.
+The definition also fixes the evidence needed, exact recipient/form family, preparer and signatory
+roles, and completion criteria.
 
-Each instance keeps the statutory deadline separate from an earlier internal preparation target.
-It names the actual accountable owner and delegate, records status as of a known time, and keeps
-any payment deadline, next review and escalation time explicit. Rejected, missed and reopened
-instances retain their history and require a documented next action.
-It also keeps prepared, reviewed, authorized, submitted, accepted, paid and reconciled outcomes
-separate where relevant. A tax return, its payment and a regulator's receipt are related records,
-not interchangeable evidence. A postponed meeting cannot postpone a statutory deadline.
+An entity-specific instance then pins those revisions and the facts that activated the rule.
+Keep false applicability distinct from unknown applicability: evidence that a rule does not apply
+is a different result from missing the facts needed to decide.
+
+For each instance, name the actual accountable owner and delegate and record its status as of a
+known time. Keep the statutory deadline separate from an earlier internal preparation target, and
+make any payment deadline, next review and escalation time explicit. A postponed meeting cannot
+postpone the statutory deadline. Rejected, missed and reopened instances retain their history and
+need a documented next action.
+
+Completion must be equally specific. Preserve prepared, reviewed, authorized, submitted, accepted,
+paid and reconciled outcomes separately where relevant. The tax return, its payment and the
+regulator's receipt are related records, but each proves a different part of the obligation.
 
 Schedules use [Workflow's occurrence law](../../adr/28-workflow.md#compositions-products-suites-and-schedules).
 Repeated observations of the same event must not create duplicate obligations. A timeout after

@@ -41,10 +41,10 @@ trial's answer.
 
 ## Observe before judging
 
-Mechanical observation records exit status, files, database rows, tool requests, admitted effects,
-resource measurements, and provider receipts. Evaluation applies criteria, grades, attribution,
-or a declared model judge. Direct receipts outrank textual similarity when an effect can be
-observed directly.
+First retain what happened: exit status, files, database rows, tool requests, admitted effects,
+resource measurements, and provider receipts. Evaluation then applies criteria, grades,
+attribution, or a declared model judge to those observations. Where an effect can be observed
+directly, its receipt carries more weight than text that merely resembles a successful answer.
 
 Shadow may hold candidate worlds and Tomb may execute an admitted unsafe payload; Drift owns
 neither isolation nor execution. An LLM judge is a declared, calibrated Evaluator with recorded
@@ -56,11 +56,14 @@ trial status   completed | subject_error | harness_error | evaluator_error | blo
 claim verdict  PASS | PARTIAL | FAIL | CONTRADICTED | UNKNOWN | DISPUTED
 ```
 
-Status describes execution. Verdict describes what retained evidence supports. The declared Case
-and Environment decide whether an unavailable dependency or hidden-validator condition blocks the
-trial or exposes a harness or state-contract failure; neither condition is automatically a subject
-error. `blocked` does not mean `FAIL`. Missing evidence remains missing: its verdict is `UNKNOWN`.
-Unresolved conflict in retained evidence or among rival Evaluators is `DISPUTED`.
+Read status and verdict as answers to different questions. Status says whether execution
+completed; verdict says what the retained evidence supports. An unavailable dependency or
+hidden-validator condition may block the trial or expose a harness or state-contract failure.
+The declared Case and Environment determine which; neither condition automatically establishes
+a subject error.
+
+Accordingly, `blocked` does not mean `FAIL`. Missing evidence yields `UNKNOWN`, while unresolved
+conflict within the retained evidence or among rival Evaluators yields `DISPUTED`.
 
 ## Pressure, repetition, and coverage
 

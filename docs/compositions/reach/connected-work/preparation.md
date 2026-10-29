@@ -36,16 +36,17 @@ Thread-scoped email reads, Telegram chat-history reads, WhatsApp history and soc
 Telegram's bot-wide `getUpdates` would also acknowledge offset advancement; it cannot stand in for
 a target-scoped read. A Discord reply fails if its exact referenced message no longer exists.
 
-Connection IDs are local references. Provider account and actor IDs remain external observations;
-neither becomes a Ward Principal. Each policy closes one partition, exact connection snapshots,
-exact targets, operations, bounds and lifetime. A policy allowing preparation is not send authority.
-Matching a display name or email address never links two accounts.
+A preparation policy defines one partition, exact connection snapshots, exact targets, operations,
+bounds and lifetime. Its connection IDs are local references; the provider account and actor IDs
+are external observations and do not become Ward Principals. Allowing preparation therefore grants
+no send authority. Nor can matching display names or email addresses link two accounts.
 
 ## Call the native Graph
 
-The explicit factory builds an ordinary serial score: validate the admitted request, prepare its
-provider payloads, then project the plan. State binds the canonical Run, session, policy and exact
-request. Live handles remain dependencies. Normal application boot installs no connected profile.
+The explicit factory builds an ordinary serial score. It validates the admitted request, prepares
+the provider payloads, and projects the resulting plan. The state binds the canonical Run, session,
+policy and exact request; live handles remain dependencies. A caller must assemble this profile
+explicitly, because normal application boot installs no connected profile.
 
 The corrected payload generator uses implementation `py.2` under the same Pattern revision `1`.
 Runs pinned to `py.1` refuse execution against it; prepare a fresh offline Run instead of resuming
@@ -59,10 +60,11 @@ flowchart LR
     O -. later authority and durable delivery .-> E[Provider transport]
 ```
 
-The plan contains application bytes and a provider route selector. It contains no bearer token,
-credential URL or SDK session. A Telegram endpoint still needs token insertion by its credential
-owner; Fastmail needs an authenticated JMAP Session and admitted API endpoint. Its digest binds
-the prepared application request, not transport headers or a provider's eventual response.
+Inspect the plan as a prepared application request. It contains application bytes and a provider
+route selector, with no bearer token, credential URL or SDK session. Later transport still needs
+its own setup: the Telegram credential owner must insert a token, and Fastmail requires an
+authenticated JMAP Session and admitted API endpoint. The plan's digest binds only the prepared
+application request, not transport headers or the provider's eventual response.
 
 There is no effect executor in this profile. Saving a provider draft would already disclose data
 and is therefore a later admitted write. Read plans also require current authority and disclosure

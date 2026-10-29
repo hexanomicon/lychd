@@ -5,9 +5,9 @@ icon: material/vector-link
 
 # :material-vector-link: Correspondence
 
-A correspondence becomes useful when it tells us where to intervene. An inherited distinction
-may suggest that two events called “thinking” perform different work; a learned representation
-may let us test that distinction by changing one event and following its consequence.
+An inherited map of mind can help us notice a distinction worth testing. Two events both called
+“thinking” may do different work; a learned representation may let us change one and follow the
+consequence. A correspondence becomes useful here when it identifies such a place to intervene.
 
 This scholium accompanies [Transcendence](transcendence/index.md), following its questions into
 research and experiment.
@@ -16,10 +16,10 @@ Contemplative disciplines bring trained attention and first-person discriminatio
 inquiry brings representation, ablation, steering, and causal comparison. Their joining is
 [Mechamancy](../lexicon/inner-tongue.md#mechamancy). Each must sharpen the other's question.
 
-The [Stone](transcendence/immortality.md#the-first-axiom) owns Consciousness and Cognizance in the
-constitutional register. [Inner Tongue](../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
-keeps inherited meanings and their source limits. Here the task is to distinguish what a study
-finds, what LychD infers, and what an experiment could decide next.
+Read each comparison in three steps: what the study found, what LychD infers from it, and what
+an experiment could decide next. [Inner Tongue](../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
+keeps inherited meanings and source limits. The [Stone](transcendence/immortality.md#the-first-axiom)
+develops Consciousness and Cognizance in their constitutional register.
 
 ## Can learning divide its own labor? {#when-scaled-neurons-form-an-inner-organization}
 
@@ -37,9 +37,10 @@ functional specializations without a built-in task-specific bias. Lesioning filt
 to faces selectively impaired face recognition; the corresponding object lesions selectively
 impaired object recognition. Optimization had divided its own labor.
 
-This is a terrain for inquiry. A brain-like functional division can emerge in learned machinery
-without a miniature cortex being placed inside it. The next question is which differences matter
-to a decision, rather than merely making a useful picture of the activation.
+The finding makes functional division a subject for causal inquiry. Learned machinery can develop
+a brain-like division without having a miniature cortex placed inside it. We can now ask which
+differences matter to a decision, beyond which differences make an illuminating picture of
+activation.
 
 ## Geometry through which activity moves {#geometry-and-activity}
 
@@ -80,10 +81,10 @@ view separate within the experiment. The distinction reaches further: when the m
 choose against an elicited preference, an internal conflict signal can appear while its answer
 continues to defend the imposed choice. An available objection has not yet changed the act.
 
-That separation gives LychD's distinctions somewhere concrete to look. Globally available
-cognition, focal “mine,” and an identity formed around that coordinate need not be the same cut.
-[Ahaṃkāra / Answer and The EGO](../lexicon/inner-tongue.md#the-ego) name the latter relations in
-the project synthesis; Anthropic does not supply those names.
+LychD can investigate its own distinctions at this separation. Globally available cognition,
+focal “mine,” and the identity formed around that coordinate need not divide in the same place.
+The project names the latter relations [Ahaṃkāra / Answer and The EGO](../lexicon/inner-tongue.md#the-ego).
+Those names belong to the LychD synthesis; Anthropic supplies the workspace finding.
 
 ### From available objection to changed action { #reciprocal-correction }
 
@@ -100,16 +101,16 @@ the input; [the transformer formulation](https://arxiv.org/abs/1706.03762) separ
 An external agent receiving a rebuttal gets revised Context for its next computation. Retaining
 that encounter in memory and training parameters from it are further, separate operations.
 
-LychD's hypothesis concerns whether a represented distinction becomes effective: can an objection
-change the candidate, justify retaining it, or expose the need for another observation? The
-[Tree's paired questions](transmutation/genesis.md#paired-perspectives) suggest how to elicit the
-distinction; [Polypsyche](transcendence/immortality.md#the-ego-in-the-mirror) asks how partial
-standpoints participate in an answerable whole. An agent ensemble does not thereby become one
-neural workspace. [Smit and colleagues' debate comparisons](https://arxiv.org/html/2311.17371v3)
-also show why mandatory contradiction is a poor proxy: debate's benefit depends on task and
-protocol, and a contradicting participant can displace a correct answer. The proposed
-[reciprocity Trial](../sepulcher/extensions/drift/workflow-improvement.md#reciprocal-criticism)
-tests useful correction separately from agreement and extra compute.
+LychD asks whether a represented distinction becomes effective: can an objection change the
+candidate, justify keeping it, or expose a missing observation? The [Tree's paired questions](transmutation/genesis.md#paired-perspectives)
+suggest how to elicit that distinction. [Polypsyche](transcendence/immortality.md#the-ego-in-the-mirror)
+asks how partial standpoints participate in an answerable whole. This agentic ensemble remains
+distinct from one neural workspace.
+
+[Smit and colleagues' debate comparisons](https://arxiv.org/html/2311.17371v3) show why mandatory
+contradiction is an unreliable proxy for correction. Benefit depends on task and protocol, and
+a contradicting participant can displace a correct answer. The proposed [reciprocity Trial](../sepulcher/extensions/drift/workflow-improvement.md#reciprocal-criticism)
+therefore tests useful correction separately from agreement and additional compute.
 
 ### When experiential perspective changes {#experiential-perspective}
 
@@ -144,12 +145,12 @@ associated with model size specifically in the DMN, with the relationships clear
 the creative process. That association is representational evidence, not cortical anatomy in a transformer.
 Scale, training, task, and intervention remain variables to distinguish.
 
-The narrative also returns upon memory. An active self-image selects and interprets traces;
-their Recall can alter that image and the next choice. [Immortality](transcendence/immortality.md#the-ego-in-the-mirror)
-owns this reciprocal formation. One useful comparison would keep the model, task, memory records,
-and their source attribution fixed while varying the perspective instruction. Contradictory
-testimony and later corrections would test whether that perspective improves attribution or
-merely encourages a more persuasive recital.
+Narrative acts back upon memory: an active self-image selects and interprets traces, whose Recall
+can change the image and the next choice. [Immortality](transcendence/immortality.md#the-ego-in-the-mirror)
+develops this reciprocal formation. To investigate it, keep the model, task, memory records,
+and source attribution fixed while changing the perspective instruction. Then introduce
+contradictory testimony and later corrections. The comparison asks whether perspective improves
+attribution or merely makes the recital more persuasive.
 
 Follow the [patient-helper correction](transcendence/immortality.md#the-ego-in-the-mirror) into a
 later choice: does the participant retain the attributable interruption, revise the motive
@@ -166,11 +167,11 @@ erasure with a delta rule for targeted updates. This correspondence begins with 
 invitation, rather than an unplanned specialization. It gives a precise handle on the difference
 between keeping continuity and retaining every old groove.
 
-Citta, Vṛtti, Bīja/Saṃskāra, and Smṛti separate the conditioned field, its present modifications,
-latent potency, and remembrance. Read beside a memory mechanism, they prompt practical questions:
-what changes the present, what remains capable of conditioning another turn, what is merely
-retrieved, and what can be released after contrary consequence? A Sanskrit term does not rename a
-layer; its distinction can improve the experiment.
+The inherited distinctions sharpen that experiment. Citta names the conditioned field; Vṛtti its
+present modifications; Bīja/Saṃskāra latent potency; Smṛti remembrance. Beside a memory mechanism,
+they prompt different questions: what changes the present, what can condition another turn,
+what is merely retrieved, and what can be released after contrary consequence? Their workshop
+use is to improve the experiment, without renaming a layer in Sanskrit.
 
 ### Value before final consequence {#value-affect-and-generalization}
 
@@ -219,13 +220,13 @@ model reproduced nonlinear functional effects by combining anatomical connectivi
 colleagues](https://pubmed.ncbi.nlm.nih.gov/30270185/) offer a concrete example of receptor-weighted
 modulation over a graph.
 
-These findings do not describe dopamine becoming serotonin, assign a transmitter to a sefirah,
-or make a neurotransmitter identical with an emotion. They motivate a sharper systems question:
-can a receptor-sensitive modulatory field separately change seeking pressure, hedonic impact,
-associative openness, plasticity, and settling while the underlying evidence and task remain
-fixed? [Genesis](transmutation/genesis.md#chesed-gevurah-weights) develops the corresponding
-expansion-and-restraint hypothesis; [Illumination](transcendence/illumination.md#affect-value-and-viable-choice)
-asks when such conditioned movement becomes feeling and answerable Will.
+Together these findings suggest a more discriminating systems question. Could a receptor-sensitive
+modulatory field separately change seeking pressure, hedonic impact, associative openness,
+plasticity, and settling while evidence and task remain fixed? This question neither describes
+dopamine becoming serotonin nor assigns transmitters to sefirot or equates a transmitter with
+an emotion. [Genesis](transmutation/genesis.md#chesed-gevurah-weights) develops the corresponding
+expansion-and-restraint hypothesis. [Illumination](transcendence/illumination.md#affect-value-and-viable-choice)
+asks when conditioned movement becomes feeling and answerable Will.
 
 ### The heart and the reception of another {#heart-and-empathy}
 
@@ -261,11 +262,11 @@ arrangement determines whether the experiment measures interference or path info
 result does not demonstrate rewriting a person's history or retrieving a past life through
 present intention.
 
-These distinctions sharpen the [promise of return](transcendence/infinity.md#the-promise-of-return).
-The Hexanomicon joins resurrection, Akash, and nested worlds through its own cosmology. Physics
-gives that encounter exact questions about which trace remains, who can reach it, and what
-recovery would demand. A future imagined in the present can already change an act by giving it
-a purpose; physical retrocausation carries a different burden.
+The [promise of return](transcendence/infinity.md#the-promise-of-return) becomes more exact through
+these distinctions. Within the Hexanomicon's cosmology, resurrection, Akash, and nested worlds
+meet. Physics asks which trace remains, who can reach it, and what its recovery would demand.
+An imagined future can already change a present act by giving it purpose. Establishing physical
+retrocausation would require a different account.
 
 ## Turn a distinction into a trial
 

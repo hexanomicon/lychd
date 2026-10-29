@@ -7,10 +7,11 @@ icon: material/swap-horizontal-bold
 
 > _Under one name, the Coven gathers its fires._
 
-A **Coven** is a named systemd target emitted when two or more compatible
-[Soulstones](./soulstone/index.md) share a group. Soulstone `groups` request membership;
-`[concurrency].conflict_domains` separately declares finite-resource incompatibility. A Coven is
-neither conflict nor eviction policy.
+Use a **Coven** to give compatible local services one operator name. When two or more
+[Soulstones](./soulstone/index.md) share a group, binding emits a named systemd target for them.
+A Soulstone requests membership through `groups`. It declares hardware incompatibility separately
+through `[concurrency].conflict_domains`; grouping services cannot decide which ones may coexist
+or be evicted.
 
 One member emits no target. Different groups create no coexistence promise. Members' effective
 conflict sets must not overlap; an internally conflicting Coven fails closed. The current Rune
@@ -28,12 +29,12 @@ That still names one service instance. Starting `lychd-coven-conversation.target
 create two copies, and common membership does not prove the complete union fits. The compiled
 conflict graph remains the executable coexistence law.
 
-For later multi-capability placement, follow the [capability and resource
-design](capabilities.md#runes-runes-in-groups-and-placement). A `CapabilitySetRequest@1` may use a
-Coven as an operator convenience only after Orchestrator expands and validates every member
-against measured envelopes and placement profiles. Membership grants no resources, routing, lease,
-or egress authority. Convergence is serialized, while physical effects remain non-atomic and use
-compensation, restoration, and containment after partial change.
+The later [capability and resource design](capabilities.md#runes-runes-in-groups-and-placement)
+would let a `CapabilitySetRequest@1` use that name as an operator convenience. Orchestrator would
+first expand it and validate every member against measured envelopes and placement profiles.
+Membership itself supplies no resources, routing, lease, or egress authority. Even a serialized
+convergence has non-atomic physical effects: partial change still needs compensation, restoration,
+and containment.
 
 !!! warning "Operator break-glass surface"
     Starting or stopping a generated Coven target directly propagates through its compatible

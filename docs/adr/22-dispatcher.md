@@ -34,8 +34,9 @@ Rune identity, Connector, and typed runtime surfaces while
 
 ## Capability Binding Cartography
 
-The binding keeps five questions explicit: what was requested, what is declared, what was
-tested, what was observed, and what may be used now.
+A capability binding lets the reader trace demand to use: what was requested, what was declared,
+what was tested, what was observed, and what may be used now. Keeping these five questions
+separate prevents a declaration or observation from standing in for a grant.
 
 | Record | Office |
 | --- | --- |
@@ -71,11 +72,11 @@ reinterpreted and an unknown family never becomes a generic service.
 
 ### Interfaces, profiles, and material
 
-An interface is the versioned semantic ABI, such as `model.chat@1`, `echo.transcribe@1`,
-`prism.image@2`, or `prism.scanner@1`. A profile pins the exact model, weights, graph,
-workflow, configuration, dependencies, licenses, formats, languages, limits, and conformance
-evidence that implement it. Operations name admitted acts such as `generate`, `edit`,
-`transcribe`, `segment`, or `search`.
+An interface defines the versioned semantic ABI, for example `model.chat@1`,
+`echo.transcribe@1`, `prism.image@2`, or `prism.scanner@1`. Its implementing profile pins the exact
+model, weights, graph, workflow, configuration, dependencies, licenses, formats, languages,
+limits, and conformance evidence. Operations then name the admitted acts, such as `generate`,
+`edit`, `transcribe`, `segment`, or `search`.
 
 A demand matches only its exact interface and operation, typed I/O contract references, every
 required material facet and feature fact, invocation mode, and eligible profile. Unknown support
@@ -284,14 +285,13 @@ trusted live objects and may not enter Graph state, persistence, or delegated pr
 
 ### From a grant to an enduring effect
 
-For a bounded immediate call, the lease ends with that call. Before any local or remote asynchronous
-effect is first submitted, execution ownership must transfer to a persisted
-`ServiceJobAttempt@1`; attempts on managed resident or scarce local substrate additionally require
-an Orchestrator-visible exact reservation and fence. Live work uses its domain-owned bounded
-session record; no common
-`SessionAttempt` is accepted yet. A process-local lease alone cannot
-prevent duplicate remote effects or fence local residency. [Workers
-(14)](14-workers.md#service-job-attempts) owns that Designed handoff.
+An immediate bounded call owns its lease only for the call's duration. An asynchronous effect
+needs durable execution ownership before its first local or remote submission, transferred to a
+persisted `ServiceJobAttempt@1`. Managed resident or scarce local substrate also needs an exact
+Orchestrator-visible reservation and fence. Live work instead uses its domain-owned bounded
+session record; no common `SessionAttempt` is accepted yet. Process-local leasing cannot prevent
+duplicate remote effects or fence local residency. [Workers (14)](14-workers.md#service-job-attempts)
+owns this Designed handoff.
 
 ## Durable Content and ArtifactRef
 

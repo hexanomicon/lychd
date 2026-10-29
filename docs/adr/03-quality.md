@@ -24,11 +24,11 @@ owns setup and exact command examples.
 | BasedPyright | Check `src/lychd` in strict mode, with the same implementation locally and in CI. |
 | pytest | Establish regression evidence within the taxonomy and limits of [Testing](04-testing.md). |
 
-The older Poetry, mypy, Flake8, and Black/isort stack remains a credible alternative. It was not
-selected because it spreads environment and lint/format responsibility across more independently
-configured tools. The selected tools share committed configuration, so contributors can
-reproduce the same checks. Dependency changes go through the uv environment; any exception
-must be recorded in reviewed configuration.
+Reproducibility depends on committed configuration as well as tool choice. The selected tools
+share that configuration, and dependency changes go through the uv environment; any exception
+must appear in reviewed configuration. The older Poetry, mypy, Flake8, and Black/isort stack was a
+credible alternative, but divided environment and lint/format responsibility among more
+independently configured tools.
 
 ### Cross-stack gates
 
@@ -43,9 +43,10 @@ A complete change can cross several evidence boundaries. Keep their results sepa
 | Companion Android | Application compilation, lint and ViewModel checks; separate instrumented Activity checks establish behavior only on the selected emulator or device. |
 | Documentation build | The published Hexanomicon can be generated from its maintained source and navigation. |
 
-The Python umbrella does not silently run frontend or Android work. Both frontend gates regenerate the API
-contract; the build also changes the tracked static projection, which belongs in review with the
-source that produced it. A generated diff guard catches disagreement.
+Frontend work has its own gates, as does Android work; neither runs silently under the Python
+umbrella. Both frontend gates regenerate the API contract, and the build also updates the tracked
+static projection. Review that output with the source that produced it. A generated diff guard
+catches disagreement.
 
 Automatic pull-request, `dev` and `main` checks run repository lint, formatting, strict typing and the
 explicit core test selection owned by `make test-ci`. That selection uses in-process substitutes
@@ -72,8 +73,8 @@ native Companion authority or qualify every declared Android version.
 
 ## Consequences
 
-Changes to a tool or its configuration carry their lockfile, generated-output, and documentation
-consequences. Shared gates make defects reproducible, while exact scope prevents a passing
-repository check from becoming an unsupported host or production-browser claim.
-[State of Work](../state-of-the-work.md) retains delivery interpretation; [Packaging](17-packaging.md)
-retains artifact identity and promotion boundaries.
+A tool or configuration change must carry its lockfile, generated-output, and documentation
+consequences with it. Shared gates then make defects reproducible, while each gate's declared
+scope keeps a repository pass from becoming an unsupported host or production-browser claim.
+[State of Work](../state-of-the-work.md) owns delivery interpretation;
+[Packaging](17-packaging.md) owns artifact identity and promotion boundaries.

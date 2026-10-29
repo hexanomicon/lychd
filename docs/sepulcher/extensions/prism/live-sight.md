@@ -15,23 +15,28 @@ Composition admits capture and every world effect; Sight returns observations un
 
 ## Arm one bounded session
 
-A camera or RTSP feed is not an infinite `SightJob`. The later `LiveSightSession@1` pins camera and
-controller identity, named purpose, retained admitted authority or policy receipt, viewers, zones
-and privacy masks, active window, resolution and rate, separately admitted raw-frame access,
-recording, analysis, retention and egress scopes, stream epoch, queue, cardinality, latency and
-resource budgets, sampling and drop policy, and downstream consumers. The receipt records the
-basis LychD admitted; it is not a claim of legal certification.
+Arming a camera or RTSP feed requires a bounded session, not an infinite `SightJob`. The later
+`LiveSightSession@1` pins camera and controller identity, named purpose, and the retained admitted
+authority or policy receipt. It names viewers, zones, privacy masks, the active window,
+resolution, and rate, and separately admits raw-frame access, recording, analysis, retention,
+and egress scopes.
+
+It also fixes the stream epoch, queue, cardinality, latency and resource budgets, sampling and
+drop policy, and downstream consumers. The receipt records the basis on which LychD admitted
+that session; it does not claim legal certification.
 
 ## Keep frame and clock truth
 
-Frame identity is stream epoch plus sequence. Reported RTP, device, or PTS clocks may be absent,
-synthesized, or reset, so their provenance and mapping to monotonic and wall clocks retain explicit
-synchronization uncertainty. Queues are bounded. When upstream cannot pause, the admitted profile
-samples or drops under an explicit policy and emits exact gaps and watermarks. A proved contiguous
-transport reconnect may continue the same epoch; otherwise it closes. Every new epoch receives a
-new local track namespace. Cross-epoch association is a separately attributed inference, never a
-reused track identity. Checkpoints retain references, cursors, prompts, and gaps—not raw frames,
-framework objects, device handles, or unbounded history.
+Identify each frame by stream epoch and sequence. Reported RTP, device, or PTS clocks may be
+absent, synthesized, or reset, so preserve their provenance and the uncertainty in their mapping
+to monotonic and wall clocks. Bounded queues prevent an unnoticed backlog: when upstream cannot
+pause, the admitted sampling or drop policy emits exact gaps and watermarks.
+
+Continue the same epoch after reconnect only when contiguous transport is proved; otherwise
+close it. A new epoch gets a new local track namespace. Cross-epoch association is a separately
+attributed inference, never reuse of an old track identity. Checkpoints retain references,
+cursors, prompts, and gaps, excluding raw frames, framework objects, device handles, and
+unbounded history.
 
 ## Contain transport and control
 

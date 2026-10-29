@@ -30,10 +30,10 @@ reports establish neither health nor death. Users may record suggestions and
 professional guidance with their source; the composition claims no diagnostic,
 pesticide approval, or food safety authority.
 
-Each review is finite and may resolve to an evidence-supported change, refusal,
-infeasibility, or unknown outcome. A growing season and a perennial's history remain
-durable records across completed reviews; neither is an endless Run. Tending completion
-and harvest receipts inform review without automatically proving a developmental
-transition or end of life.
+End each review with an evidence-supported change, refusal, infeasibility, or unknown outcome.
+The growing season and a perennial's longer history continue as durable records across those
+completed reviews, rather than keeping a Run open indefinitely. Tending completion and harvest
+receipts can inform the next review, but neither automatically proves a developmental transition
+or the end of the culture's life.
 
 Return to [Cultivator](index.md).

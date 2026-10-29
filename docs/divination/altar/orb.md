@@ -5,9 +5,9 @@ icon: material/crystal-ball
 
 # :material-crystal-ball: Orb
 
-Before trusting a result, find the Run that produced it and the limit of what was retained.
-Looking through the **Orb** is **scrying**: inspecting ordered structural evidence with its gaps
-still visible.
+A result raises two questions: which Run produced it, and how much of that Run can still be
+examined? The **Orb** opens its ordered structural evidence and keeps gaps visible as you read.
+This act of looking through the evidence is **scrying**.
 
 Open `/orb` for the parallel Run field, or choose **Look into the Orb** at a Bridge result to
 inspect `/orb/{run_id}`. The shell’s **Orb** tab opens the parallel field; exact Run and event
@@ -59,14 +59,14 @@ Then read the coverage strip:
 the evidence already loaded stays visible; use **Retry loading retained evidence** to retry the
 same page read.
 
-The live feed reads newly retained structural records and metadata in bounded batches. It resumes
-from its delivered cursor on reconnect, replaces a reset account through a fresh snapshot, and
-settles when the ledger reports terminal status and the currently retained account has drained.
-That settlement does not promise a complete trace. Token text, prompts, output bodies, and private
-errors are absent. The live window keeps the latest 100 received records; older retained evidence
-remains separately pageable. Refresh or a transport connection never changes the Run's status.
+The live feed collects newly retained structural records and metadata in bounded batches. On
+reconnect it resumes from the delivered cursor; if the account resets, a fresh snapshot replaces
+it. The feed settles once the ledger reports terminal status and the currently retained account
+has drained. This tells you the available account has caught up, without promising a complete trace.
 
-## Locate the event
+The live window holds the latest 100 received records. Older retained evidence remains separately
+pageable. Token text, prompts, output bodies, and private errors are absent. Refreshing or opening
+a transport connection leaves Run status unchanged.
 
 ## Locate the event
 
@@ -97,13 +97,14 @@ evidence** if filtering removed the opener. Changing a filter retains the select
 labels it when outside that filter. Refresh preserves the selected identity without moving the
 reader's focus; if the record cannot be found at that read, the requested identity stays in the URL.
 
-If the linked event lies beyond the loaded page, load more. If it is absent after the retained pages are exhausted, the Orb
-reports that it was not found at this read. To investigate a wait, inspect its recorded status, phase, subject, station attempt, and
-transition correlation. These observations may leave the cause unknown; the Orb has no
-**Why waiting?** analysis. Follow [Stasis and return](../../sepulcher/extensions/weaver/stasis-and-return.md)
-for the recorded wait's owner and return boundary, or
-[Reanimation](../../sepulcher/phylactery/reanimation.md#reanimation-a-new-vessel-judges-durable-truth)
-when the Vessel has died.
+Load more pages when a linked event lies beyond the current page. If you exhaust the retained
+pages without finding it, Orb reports that absence at this read. To investigate a wait, examine
+its recorded status, phase, subject, station attempt, and transition correlation. The cause may
+still be unknown; Orb supplies no **Why waiting?** analysis.
+
+Follow [Stasis and return](../../sepulcher/extensions/weaver/stasis-and-return.md) for the recorded
+wait's owner and return boundary. If the Vessel has died, continue through
+[Reanimation](../../sepulcher/phylactery/reanimation.md#reanimation-a-new-vessel-judges-durable-truth).
 
 When delegated work exists, open **Delegated jobs** below the evidence and selected-record detail.
 The disclosure shows at most the newest 32 summaries, each with
@@ -178,10 +179,12 @@ It retains ordered source keys/revisions, exact record/lifecycle identities, sco
 result bounds and `omitted_for_budget`. These describe that selection: its character bound covers
 selected note text, not the complete model Context or provider token accounting.
 
-Capture is `matching_retained_request`. Recall accepts caller-supplied identities, so an exactly
-matching receipt can exist before the workflow reaches recall. This read does not prove consumption
-or provider transmission, reconstruct the released Context cache, or expose the prompt, source body,
-answer or provider payload. Source names and digests remain protected local metadata.
+The capture class is `matching_retained_request`: the retained receipt matches the request's
+identities. Because Recall accepts caller-supplied identities, that match can exist before the
+workflow reaches recall. It therefore establishes a selection account, without proving consumption
+or provider transmission. The read neither reconstructs the released Context cache nor exposes
+the prompt, source body, answer, or provider payload. Source names and digests remain protected
+local metadata.
 
 A later correction, archival or revocation does not rewrite the old receipt. Current source
 eligibility requires a separate authorized check; inspecting history neither resolves former
@@ -197,6 +200,8 @@ history. [Frontend's folding law](../../adr/15-frontend.md#folding-not-scale) ke
 expansion, and sequence faithful to what their sources supplied.
 
 ## Reading direction
+
+For interface review and design, use the following composition and acceptance case.
 
 Place the selected account's qualifications where the reader judges it: Run identity, canonical
 status, capture class, snapshot time, retained and loaded boundaries, and omissions stay beside

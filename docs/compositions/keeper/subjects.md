@@ -30,13 +30,16 @@ entry whose latest text replaces the previous account.
 
 ## Keep the care profile attributable
 
-`KeeperCareProfile@1` is Keeper's own versioned husbandry profile: a stable profile id and revision,
-applicable species or group, source references and dates, reviewed life/seasonal conditions,
-care requirements with units and bounds, excluded or uncertain cases, and reviewer. It can be
-recorded alongside the subject through `keeper.record_subject@1`; accepting source material and
-admitting its use for a specific subject remain separate judgments. A species label does not
-select an unreviewed generic care schedule. Plans pin the applicable profile revision, and a later
-revision identifies which active plans require review without rewriting previous care.
+Use `KeeperCareProfile@1` to retain the husbandry requirements being considered for the subject.
+Keeper versions this profile with a stable id and revision, applicable species or group, source
+references and dates, reviewed life/seasonal conditions, care requirements with units and bounds,
+excluded or uncertain cases, and reviewer. It may be recorded alongside the subject through
+`keeper.record_subject@1`.
+
+Accepting that source material and admitting its use for a particular subject are separate
+judgments. A species label cannot select an unreviewed generic care schedule. Each plan pins the
+applicable profile revision; a successor identifies active plans that need review while leaving
+previous care intact.
 
 ## Preserve the evidence
 

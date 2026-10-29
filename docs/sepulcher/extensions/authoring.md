@@ -52,10 +52,10 @@ context.runes.add_schema(PhoenixSettings)
 context.transmutation.add_contributor(PhoenixQuadletContributor())
 ```
 
-The host assigns the Registrant provenance `builtin:observability/phoenix` to these registrations.
-That identity records which package contributed them; each receiving store keeps its own contract.
-Selection admits the package at assembly. Phoenix contributes no container until it receives an
-active Rune.
+After registration, the host marks these contributions with
+`builtin:observability/phoenix`. This Registrant identity lets a reader trace them back to the
+selected package while each receiving store enforces its own contract. Selection makes Phoenix
+available during assembly. An active Rune is still needed before it contributes a container.
 
 ## Give the contribution a typed Rune
 
@@ -101,10 +101,11 @@ Read the
 next. It requests `ctx.runes.one_or_none(PhoenixSettings)`. No instance produces an empty
 contribution; more than one raises an error.
 
-Exactly one instance supplies a typed `QuadletContribution` containing a Phoenix container and
-two pod ports. The service name, image, and host ports come from the Rune. The database user and
-Phoenix secret reference come from Settings, and the container carries migration gate
-dependencies. The Transmuter places the host ports on loopback.
+With exactly one active instance, the contributor creates typed `QuadletContribution` data for
+one Phoenix container and two pod ports. Trace each value to its source: the Rune supplies
+service name, image, and host ports; Settings supplies the database user and Phoenix secret
+reference. The container includes migration-gate dependencies, and Transmuter places the host
+ports on loopback.
 
 This output is projection data. The [binding workflow](../codex.md#the-rite-of-binding) separately
 owns publication and host reconciliation. Follow [External Eyes](oculus.md#external-eyes) for
@@ -158,12 +159,12 @@ remains future work under [ADR 05](../../adr/05-extensions.md#7-extension-compat
 
 ## Finish a bounded contribution
 
-`get_settings()` and `get_extensions()` retain one process generation, and registration stores
-seal after assembly. Restart or replace the process after code, dependency, contribution-contract,
-or selection changes. Removing Phoenix's selector in a new process removes its contribution;
-registration and loading leave retained Runes and storage alone. This example does not implement
-installation, uninstallation, rollback, or automated Evolution. [State of
-Work](../../state-of-the-work.md#extension-activation-contributions) owns delivery status.
+Finish by testing a new process generation. `get_settings()` and `get_extensions()` retain the
+current generation, and registration stores seal after assembly; edits to code, dependencies,
+contribution contracts, or selection require restart or replacement. Removing Phoenix's selector
+in the new process removes its contribution while leaving retained Runes and storage alone.
+This guide does not implement installation, uninstallation, rollback, or automated Evolution.
+[State of Work](../../state-of-the-work.md#extension-activation-contributions) records delivery.
 
 Change the owned schema, registration, or contributor together with a test of the affected
 behavior, then rerun the focused selection above. Follow the

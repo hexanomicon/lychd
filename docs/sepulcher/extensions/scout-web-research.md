@@ -20,8 +20,11 @@ monitoring and standing authority remain outside this study.
 | Discover sources across the web | SearXNG, one qualified engine and one result page | No admitted engine, Rune or adapter ships; upstream-request mediation remains a prerequisite |
 | Read a page whose useful content requires JavaScript | Separately admitted Fetch + Render + Extract | Crawl4AI remains a later isolated candidate, not an automatic fallback |
 
-These paths can develop independently. A Bazoš feed is not a reason to wait for general Search,
-and a feed observation is not a claim that Search or Crawl has been implemented.
+Choose the path by the observation the application needs. A known Bazoš feed can supply a finite
+listing observation without first building general Search. Search can discover other sources,
+and rendering can make a particular JavaScript page readable, but each adds a separate contact
+and qualification problem. Progress on the feed therefore neither waits for nor demonstrates
+Search or Crawl.
 
 ## What the live source established
 
@@ -95,9 +98,10 @@ The experiment's acceptance baseline is:
   means no match in that finite response; it never means no matching listing exists on Bazoš.
   The consuming application owns suitability criteria and any proposed consequence.
 
-The first useful result is an attributed digest that can run without a model. Measure it against
-that simple baseline before adding model ranking, semantic extraction or a browser. Prices parsed
-from source prose remain derived claims; current availability and seller trust are not established.
+Begin by returning an attributed digest without a model, and measure that result against the
+baseline above. It gives model ranking, semantic extraction, or a browser a concrete result to
+improve on. Even then, a price parsed from source prose is a derived claim: the observation
+establishes neither current availability nor seller trust.
 
 Repeated watching is a later application policy: explicit purpose, exact feed, cadence, finite
 contact/retention budget, revocation and uncertain-attempt reconciliation. Each poll needs current
@@ -142,15 +146,18 @@ redirect before parser invocation rather than record a clean miss. Regional/time
 add cookies, and debug diagnostics include query-bearing data. No live engine or parser
 qualification follows from reading those functions.
 
-The next implementation must preserve this transport cut while supplying a typed, authenticated
-request/response channel, host-authored final bytes, Search-specific preparation and current
-disclosure admission, and independent denial of direct service egress. Existing native Scout
-authority accepts only fixed page/RSS FETCH claims; relabelling one cannot authorize Search.
-Use the pinned SearXNG parser to refuse engine/language/category/timeout/bang/lucky directives,
-qualify one exact engine and response wrapper, and retain query-bearing diagnostics as restricted
-evidence. The [accepted Search contract](../../adr/30-webcrawler.md#searxng-search-contract)
-already owns these requirements. A working JSON endpoint or this offline prototype is not Search
-delivery and cannot reset the retained feed's spent budget.
+To turn the prototype into an implementation, preserve the transport cut and connect it to
+host authority. That requires a typed, authenticated request/response channel, host-authored
+final bytes, Search-specific preparation, current disclosure admission, and independent denial
+of direct service egress. Existing native Scout authority admits only fixed page/RSS FETCH
+claims; changing their label cannot authorize Search.
+
+Then constrain and qualify the actual request and response path: use the pinned SearXNG parser
+to refuse engine/language/category/timeout/bang/lucky directives, qualify one exact engine and
+response wrapper, and retain query-bearing diagnostics as restricted evidence. The
+[accepted Search contract](../../adr/30-webcrawler.md#searxng-search-contract) owns these
+requirements. Neither a working JSON endpoint nor this offline prototype delivers Search, and
+neither can reset the retained feed's spent budget.
 
 
 ## Full service fixture: context must cross the dispatcher

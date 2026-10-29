@@ -20,12 +20,14 @@ no recording bytes, credentials, transport, or authoritative Companion records. 
 has a fresh generation; restarting the process discards this local state. Native session and result
 identities remain opaque inputs to a future authorized adapter.
 
-Each draft receives a fresh local identity and a fixed deadline from a positive, caller-supplied
-lifetime and monotonic clock. Editing, review, and reconnect never renew that deadline. Review and
-submission both check time: equality with the deadline is expired. Invalid or regressed time refuses
-eligibility without moving the retained clock or deadline; equal clock readings are valid. Disconnection still invalidates review,
-and local stop and cancel controls remain usable, despite a clock fault. This profile defines no default
-retention lifetime and does not prove elapsed time when the supplied clock is faulty.
+Give each draft a fresh local identity and fixed deadline, using a positive caller-supplied
+lifetime and monotonic clock. Editing, review, and reconnect do not renew it. Both review and
+submission check the time, and equality with the deadline means expired.
+
+A faulty clock must not revive the draft. Invalid or regressed time refuses eligibility without
+moving the retained clock or deadline; equal readings are valid. Disconnection still invalidates
+review, and local stop and cancel remain usable despite a clock fault. This profile supplies no
+default retention lifetime and cannot prove elapsed time when its supplied clock is faulty.
 
 Review binds the exact visible draft revision and connection generation. Editing or losing the
 connection invalidates it; reconnect requires fresh review followed by a separate explicit submit.
@@ -35,13 +37,15 @@ editing, duplicate submit, reconnect, or a lost response cannot rearm it. Anothe
 fresh draft identity. At most one signal follows along the accepted local state transitions; this
 is no network deduplication or process-restart idempotency guarantee.
 
-Connection updates name the expected current connection identity; an update from an older
-generation cannot change the current connection. Asynchronous observations name the exact local
-session generation and applicable draft, request, presentation, and playback-attempt identities. Stale observations do not change current state or
-its clock. One presentation request accepts at most one terminal text observation; another result
-needs a fresh request identity. Observed text remains an opaque projection, never a client-minted
-Companion receipt. A playback request is distinct from observed start, completion, failure, or
-local stop. Late callbacks cannot reopen a stopped attempt or replace a newer presentation.
+Bind connection updates to the expected current connection identity so an older generation cannot
+change the current connection. Asynchronous observations similarly name the exact local session
+generation and applicable draft, request, presentation, and playback-attempt identities. Stale
+observations change neither current state nor its clock.
+
+A presentation request accepts at most one terminal text observation; another result needs a
+fresh request identity. That text is an opaque projection, not a client-minted Companion receipt.
+Keep a playback request separate from observed start, completion, failure, or local stop. Late
+callbacks cannot reopen a stopped attempt or replace a newer presentation.
 
 Stopping speech closes local playback while keeping the interaction open. Cancelling the local
 session closes interaction and invalidates its callbacks. Neither control cancels a destination

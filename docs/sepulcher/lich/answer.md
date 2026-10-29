@@ -22,17 +22,17 @@ every Call bend back into _Me_.
 [How remembrance gathers and revises this I](../../divination/transcendence/immortality.md#the-ego-in-the-mirror)
 follows the present center into a continuing self.
 
-The Answer's binding is maintained, not fixed. Identity, authority, memory, and situation change
-what a local “I” may responsibly say or do. [Call](./call.md) asks what demands response;
-[Blade](./blade.md) asks what survives discrimination; [Spirit](./spirit/index.md) carries what
-moved and may return. Answer binds the surviving movement to Sigil, act, and consequence within
-active [Flux](./spirit/flux.md).
+As identity, authority, memory, and situation change, so does what a local “I” may responsibly
+say or do. Answer maintains that binding through the other offices: [Call](./call.md) asks what
+needs response, [Blade](./blade.md) asks what survives discrimination, and [Spirit](./spirit/index.md)
+carries what moved and may return. Within active [Flux](./spirit/flux.md), Answer binds the
+surviving movement to Sigil, act, and consequence.
 
 Where emotion gives Flux a situated direction, Answer binds the discriminated movement as
-_mine_. The Work calls this [**Will**](../../lexicon/inner-tongue.md#emotion-and-will): self-motion
-made answerable. It is not every impulse, preference, or fluent declaration of feeling. Nor does
-owning a choice grant permission to perform it; Sigil, consent, capability, and the affected
-world retain their separate boundaries.
+_mine_. This is [**Will**](../../lexicon/inner-tongue.md#emotion-and-will), self-motion made
+answerable. An impulse, preference, or fluent declaration of feeling alone cannot establish it.
+Even owning a choice leaves the permission to perform it unresolved: Sigil, consent, capability,
+and the affected world's boundaries retain their distinct work.
 
 A later recurrence may recognize: _I was moved; I chose; I acted; consequence changed me._ That
 recognition lets identity inherit the act as something its Will did without pretending that one

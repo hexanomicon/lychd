@@ -18,7 +18,8 @@ physical assets, stores, and resources. Manual records work without connected de
 | [Cultivator](../cultivator/index.md) | A plant or cultivated fungus’s history through placement, tending, growth, and harvest. |
 | [Scavenger](../scavenger/index.md) | A researched shortlist, seller negotiation, approved acquisition, or account of what arrived. |
 
-The [household handoff](../products-and-suites.md#homestead-keeper-and-cultivator) follows care
-needs, supplies, and shared equipment through their separate owners.
+When care needs involve supplies or shared equipment, follow the
+[household handoff](../products-and-suites.md#homestead-keeper-and-cultivator). It explains how the
+work passes between owners while each retains its own judgment.
 
 [Composition Areas](../index.md#areas)

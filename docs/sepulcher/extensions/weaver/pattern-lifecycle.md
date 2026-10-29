@@ -7,12 +7,11 @@ icon: material/source-branch-sync
 
 > _The ink has dried. Write the next score on fresh parchment._
 
-Within [Spellweaver](index.md), a Scroll—one immutable Pattern revision—is never silently
-rewritten. Spellweaver selects one revision from an admitted Intent; the Invocation names that
-casting, and the canonical Run
-carries its identity. If the registered executable no longer matches, execution fails instead of
-substituting another workflow. [Pattern identity](../../../adr/28-workflow.md#pattern-identity)
-owns the complete law.
+A casting keeps the score it was admitted to perform. Within [Spellweaver](index.md), a Scroll
+is one immutable Pattern revision: admission selects it from the Intent, the Invocation names
+the casting, and the canonical Run retains its identity. If the registered executable stops
+matching, execution fails rather than substituting another workflow. A Scroll is never silently
+rewritten. [Pattern identity](../../../adr/28-workflow.md#pattern-identity) owns the full law.
 
 ## Identity before motion
 
@@ -28,14 +27,13 @@ data valid. Blockworld admission refuses it before freezing, and Orb withholds P
 Those checks do not resolve executable implementations; execution still requires exact registry
 equality. Additional top-level metadata remains outside the v2 checksum and prevents that equality.
 
-Executable stations bind one-to-one to Python Graph node types, and the declared entry must bind the
-actual Graph start node. The manifest is authored beside
-that Python and fingerprints the declared score; it is not a canonical intermediate
-representation from which all behavior is compiled. The implementation revision (`py.1` for the
-original built-ins, `py.2` for configured Bridge) records a reviewed compatibility closure:
-change it or the public Pattern revision when new behavior cannot safely resume old state. It does
-not automatically detect source edits. Edge parity and return semantics must still be established
-by source review and tests.
+Every executable station binds one-to-one to a Python Graph node type, and the declared entry
+must bind the actual start node. The manifest lives beside that Python and fingerprints the
+score; it is not an intermediate representation that compiles all behavior. Its implementation
+revision (`py.1` for original built-ins, `py.2` for configured Bridge) records a reviewed
+compatibility closure. Change that revision or the public Pattern revision when new behavior
+cannot safely resume old state. Neither detects source edits automatically, so source review
+and tests must still establish edge parity and return semantics.
 
 The [private v2 adapter](../../../adr/28-workflow.md#private-v2-adapter) derives a Scroll-private
 `legacy_inline` identity for each executable station and fingerprints its Python node binding in
@@ -71,11 +69,12 @@ operations:
 3. Retain the caller-owned initiating record while that delivery is held, then release it.
 4. Publish one queue job keyed by Run and enqueue sequence; relay the same key when unavailable.
 
-Retention failure settles only an exact unreleased held generation. A release call that commits and
-then raises is resolved from the delivery row and remains admitted; compensation cannot overwrite
-`PENDING`. Broker failure leaves the admitted Run queued with its exact pending delivery. PostgreSQL and SAQ are not one distributed transaction;
-startup reconciliation and the process-owned relay probe and republish the idempotent delivery key
-without fabricating a new Pattern hop.
+A failed retention can settle only the exact held generation that has not been released. If a
+release commits and then raises, the delivery row resolves the uncertainty: the work remains
+admitted, and compensation cannot overwrite `PENDING`. Broker failure likewise leaves the Run
+queued with its exact pending delivery. PostgreSQL and SAQ do not share a distributed transaction;
+startup reconciliation and the process-owned relay probe and republish that idempotent key without
+inventing a new Pattern hop.
 
 Execution and resume look up the exact persisted Pattern key and revision rather than routing the
 Intent again; a retained revision need not remain active for new admission. Before running, the
@@ -130,10 +129,10 @@ live review names every touched region, old and replacement digests, and an auth
 artifact. A changed base or candidate, a newly touched region, or a changed target effect
 invalidates the call and requires another verdict.
 
-Approval and authorship remain separate after promotion. A wholly Agent-written replacement stays
-`agent_generated`; retained human text interleaved with Agent work becomes `mixed`. Unchanged
-human-attested content may keep its origin through an approved move. Only a fresh human authorship
-attestation can mark a rewritten exact digest `human_attested`.
+Promotion preserves the distinction between approval and authorship. A wholly Agent-written
+replacement remains `agent_generated`; interleaved retained human text and Agent work is `mixed`.
+An approved move may preserve the origin of unchanged human-attested content. A rewritten exact
+digest becomes `human_attested` only through a fresh human authorship attestation.
 
 Visible comments, front matter, and Loom decoration are projections of the target-owner manifest,
 not enforcement. A compliant effectful Agent therefore works through Creation's candidate surface;
@@ -144,12 +143,12 @@ boundary.
 
 ## A new score is a new revision
 
-Keep Invocation choice separate from score change. A new prompt, source `ArtifactRef`, requested
-language, target profile, or declared finish boundary is another Invocation of the same Scroll only
-when its typed schema already admits that value. Adding a station, edge, Spell contract, authority
-ceiling, or required model changes the score and therefore creates a new immutable revision.
-Finishing one Invocation at an accepted intermediate boundary and later continuing from its
-artifact is a new forward Invocation, never resurrection of the terminal Run.
+A new Invocation can vary a prompt, source `ArtifactRef`, requested language, target profile,
+or finish boundary only when the existing Scroll's typed schema already admits that value.
+Changing the score itself—adding a station, edge, Spell contract, authority ceiling, or required
+model—creates a new immutable revision. If one Invocation finishes at an accepted intermediate
+boundary, continuing from its artifact starts a new forward Invocation. It never resurrects the
+terminal Run.
 
 The current catalogue can preserve multiple executable revisions per workflow name. Active routing
 is explicit; a saved Run continues through its exact registered revision even after activation moves

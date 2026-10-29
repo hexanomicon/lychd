@@ -13,10 +13,11 @@ unspent claim on reality. **Shadow** keeps that distinction inspectable.
 
 ## Possibility with lineage
 
-Shadow is the singular possibility-lineage Extension Domain. A [**Shadow
-Realm**](../../../divination/transcendence/invocation.md) holds the speculative state and declared
-workspace topology of one active branch. Changed files remain candidate state; container and
-executor identity belong to separately owned boundaries.
+Shadow keeps track of possibilities and their parentage as one Extension Domain. Within it,
+a [**Shadow Realm**](../../../divination/transcendence/invocation.md) holds the speculative state
+and declared workspace topology of one active branch. That tells the reader which possible
+world is being explored and where it came from. Changed files are still candidate state;
+separate owners supply container and executor identity.
 
 The branch record pins its base, parentage, assumptions, required state, unknowns, evidence,
 artifact references, budget, status, and resource owner.
@@ -52,10 +53,11 @@ enters later work through its owner; it cannot change the ongoing experiment's p
 
 ## Nothing crosses by acclaim
 
-Shadow may package an inert Vision or Promotion Request with its lineage. The target's ordinary
-effect owner still revalidates current state and required evidence, prepares rollback, obtains Ward
-and HitL or eligible preauthorization, then applies and verifies the effect. The branch cannot
-merge, deploy, publish, purchase, restore, or promote itself.
+When a branch is ready to propose a real change, Shadow may package an inert Vision or Promotion
+Request with its lineage. The target's ordinary effect owner then checks current state and the
+required evidence, prepares rollback, obtains Ward and HitL or eligible preauthorization, and
+applies and verifies the effect. That passage is what lets a possibility affect the world. The
+branch itself cannot merge, deploy, publish, purchase, restore, or promote.
 
 A rank or “winner” inside the experiment remains only a search result. Failed and ineligible
 branches retain required findings, artifacts, provenance, and residue before cleanup. Branch

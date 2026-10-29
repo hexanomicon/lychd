@@ -7,9 +7,9 @@ icon: material/coffin
 
 > _Within these walls, the Lich slumbers. Align the stones and summon your destiny._
 
-The Sepulcher is LychD's runtime body: rootless pods and services, managed by systemd on Linux,
-with their mounts and execution boundaries. These pages lay open the organs that sustain the
-[Lich](lich/index.md) from one invocation to the next.
+The Sepulcher gives the [Lich](lich/index.md) a runtime body on Linux. Rootless pods and services,
+managed by systemd, house its organs; mounts and execution boundaries determine what each can
+reach. Follow these organs to see how an invocation is received, carried out, and remembered.
 
 To follow the body at work, take the [Map](../map.md): one request, from admission through
 execution to its return.
@@ -57,9 +57,10 @@ readiness, and recovery.
 
 ### III. Growth and Sight
 
-The [Federation of Extensions](extensions/index.md) maps fifteen stable jurisdictions for new
-organs. It explains how a Domain relates to a selected package, a contribution, or a provider,
-and how Compositions and Products use them.
+To understand how the body can grow, enter the [Federation of Extensions](extensions/index.md).
+It maps fifteen stable jurisdictions and distinguishes a Domain from the package that registers
+a contribution or the provider that implements it. Compositions and Products build on these
+roles without absorbing their authority.
 
 The [Oculus](extensions/oculus.md) design follows the evidence of an act, showing where each
 observation came from and where evidence is missing. Native Oculus remains **Designed**;

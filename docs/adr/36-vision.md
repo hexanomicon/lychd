@@ -27,9 +27,9 @@ execution. [State of Work](../state-of-the-work.md#vision-admission) owns that b
 
 ## Decision
 
-**Prism** is the visual-grounding and transformation Domain. It turns an admitted source artifact
-into bounded derivatives and observations while retaining source identity, classification,
-provenance, and declared information loss.
+**Prism** owns visual grounding and transformation. Given an admitted source artifact, it
+produces bounded derivatives and observations while preserving the source's identity,
+classification, provenance, and declared information loss.
 
 | Faculty | Contract |
 | --- | --- |
@@ -97,10 +97,11 @@ Import or a beauty render proves none of those facts.
 
 ## Custody before sight
 
-The Reliquary owns source bytes before Prism acts. Its durable reference binds artifact identity
-and SHA-256 digest, media type and byte size, classification and owning Principal, plus custody
-and retention policy. The future materializer rechecks authority on every read. `ArtifactRef` is
-neither byte custody nor a bearer token; a provider URL is neither durable custody nor permission.
+Prism begins with source bytes already owned by the Reliquary. Their durable reference binds
+identity and SHA-256 digest, media type and byte size, classification and owning Principal, and
+custody and retention policy. A future materializer must recheck authority on every read.
+`ArtifactRef` itself supplies neither byte custody nor a bearer token; a provider URL supplies
+neither durable custody nor permission.
 
 The [first Reliquary custody profile](06-persistence.md#reliquary-custody-designed) compares the
 complete retained reference before materialization, including identity and classification as well
@@ -184,9 +185,9 @@ an owner's judgment.
 
 ## Consequences and acceptance
 
-Prism keeps vision, multimodal chat, OCR, transforms, and generation composable while preserving
-the path from result to source. It also makes custody, safe decoding, derivative storage,
-retention, and provider loss first-class costs.
+Keeping a result connected to its source lets Prism compose vision, multimodal chat, OCR,
+transforms, and generation. That continuity brings explicit costs: custody, safe decoding,
+derivative storage, retention, and provider loss all remain part of the contract.
 
 It cannot move beyond the current schema seam until focused evidence proves upload and custody,
 principal-bound materialization, hostile-media limits, transform lineage, modality forwarding,

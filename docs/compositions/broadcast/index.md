@@ -32,7 +32,7 @@ Broadcast owns source words/claims, picture sound, editorial judgment, and desti
 
 ??? info "Earlier designs and their exact successors"
 
-    Revision `4` supersedes revision `3`, advancing the principal Pattern to `broadcast.build_local_package@3` and picture sound to `broadcast.design_picture_sound@2`. It returns `EditorialPackage@2`/`PublicationCandidate@2`, reviews and repairs through `broadcast.review_package@2`/`broadcast.revise_from_correction@2`, and uses only `@2` publication/correction/takedown effects. Revision `3` had introduced timed-language and picture-sound handoffs via `broadcast.build_local_package@2`; revision `4` closes exact record and model-native authority seams. Retired designs were never registered or run; their meanings remain historical without executable migration.
+    Revision `4` supersedes revision `3`, advancing the principal Pattern to `broadcast.build_local_package@3` and picture sound to `broadcast.design_picture_sound@2`. It returns `EditorialPackage@2`/`PublicationCandidate@2`, reviews and repairs through `broadcast.review_package@2`/`broadcast.revise_from_correction@2`, and uses only `@2` publication/correction/takedown effects. Revision `3` had introduced timed-language and picture-sound handoffs via `broadcast.build_local_package@2`; revision `4` adds the exact `@2` record family and requires picture-sound authority before model execution, followed by Broadcast's own semantic admission receipt. Retired designs were never registered or run; their meanings remain historical without executable migration.
 
 Follow [Workflow](../../adr/28-workflow.md) for casting and application ownership,
 [Vision](../../adr/36-vision.md) and [Audio](../../adr/37-audio.md) for the media contracts beneath

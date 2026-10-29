@@ -13,7 +13,9 @@ The edge is bounded Discord transport/effect custody, not a Vessel, replica, Leg
 
 The generation pins both manifests, service Principals, schema range, Tether peer generation, private Veil route, and `ReachAuthorityEpoch`/`ReachEdgeEpoch` in a compatibility/enrollment receipt.
 
-VPS holds the bot token, encrypted spool key, exact Tether key, relay mTLS/service credential, Gateway/delivery adapter, bounded journals, and relay. Home holds database credentials, Ward/task Sigils, corpus/index, private Context, provider/A2A credentials and application ledger, plus core/Workers/refresher/gates/isolated edge adapter/private Veil. Distinct rootless services have exact mounts, secrets, networks, budgets, and local authentication. VPS has no PostgreSQL road or home Codex.
+The VPS needs enough custody to receive and relay Discord work: the bot token, encrypted spool key, exact Tether key, relay mTLS/service credential, Gateway/delivery adapter, bounded journals, and relay. It has no PostgreSQL road or home Codex.
+
+Home retains database credentials, Ward/task Sigils, corpus/index, private Context, provider/A2A credentials and the application ledger. It also runs core/Workers/refresher/gates/isolated edge adapter/private Veil. On both hosts, distinct rootless services have exact mounts, secrets, networks, budgets, and local authentication.
 
 ```text
 home Tether peer -- outbound UDP/keepalive --> public VPS WireGuard endpoint
@@ -34,7 +36,9 @@ BUFFERED | FORWARDING → EXPIRED | QUARANTINED
 RECEIVED → EDGE_REFUSED_SIZE
 ```
 
-Bind epochs, edge Principal, adapter, platform application/Habitat/event identity, canonical digest, bounded encrypted payload, receipt/expiry times, forwarding generation, and eventual admission identity. Home rechecks credentials/epochs, freshness, guild/channel/subject, digest, quotas, and guest policy, atomically committing or deduplicating `DiscordEventAdmission@1`. Same identity with changed bytes is a security fault. Successful forwarding permits raw-payload retirement only after an authenticated commit receipt; local expiry or refusal follows the bounded custody limits below and never claims home admission.
+The envelope binds the epochs, edge Principal, adapter, platform application/Habitat/event identity, canonical digest, bounded encrypted payload, receipt/expiry times, forwarding generation, and eventual admission identity. Home uses that binding to recheck credentials/epochs, freshness, guild/channel/subject, digest, quotas, and guest policy before atomically committing or deduplicating `DiscordEventAdmission@1`. Reusing an identity with changed bytes is a security fault.
+
+Forwarding alone does not establish home custody. Retire a successfully forwarded raw payload only after receiving an authenticated commit receipt. Local expiry or refusal instead follows the limits below and must never claim home admission.
 
 Ingress custody and delivery custody have separate ceilings:
 
@@ -58,12 +62,14 @@ Home commits `ReachTurn@1` and `DiscordDeliveryIntent@1`. The edge's `EdgeDelive
 4. Record known/unknown result and retry only authenticated settlement to home.
 5. Home idempotently adopts evidence and alone settles `ReachDelivery@1`.
 
-Time cannot reassign cross-host `SUBMITTING`; a partition hides whether the edge sent. Only the durable same attempt may resume/reconcile. Journal loss leaves `UNKNOWN`; changed payload/attempt refuses.
+A network partition can hide whether the edge sent, so elapsed time cannot reassign cross-host `SUBMITTING`. Only the same durable attempt may resume or reconcile. If its journal is lost, retain `UNKNOWN`; refuse a changed payload or attempt.
 
 ## Failure, compromise, and acceptance
 
-Tether loss invokes spool limits without alternate route. VPS compromise revokes bot, edge Principal/mTLS, spool key, Tether peer, and edge epoch; closes the route, quarantines spool, treats public queries as exposed, and reconciles Discord before rebuild. Provider keys rotate only if evidence shows they crossed. Home compromise stops claims, revokes home/provider/A2A/Veil/Tether credentials, taints issued work, preserves edge journals without new execution, and restores fresh home authority.
+When Tether is lost, enforce the spool limits and use no alternate route. A compromised VPS requires revoking the bot, edge Principal/mTLS, spool key, Tether peer, and edge epoch. Close the route, quarantine the spool, treat public queries as exposed, and reconcile Discord before rebuilding. Rotate provider keys only if evidence shows they crossed to the edge.
 
-Acceptance covers hostile/replayed/old-epoch relay, no WAN database/private upgrade, every spool limit, offline slash expiry with zero reply, dedupe, every claim/send/settle partition, unreassignable submission, journal-loss uncertainty, isolation, both compromise drills, and migration without duplicate Gateway owners or authorities.
+Home compromise has a different scope. Stop claims, revoke home/provider/A2A/Veil/Tether credentials, and mark issued work as tainted. Preserve edge journals without allowing new execution, then restore fresh home authority.
+
+Qualification must show that hostile, replayed and old-epoch relay cannot obtain admission or upgrade the profile to private access, and that no WAN database route exists. Exercise every spool limit, offline slash expiry with zero reply, dedupe, and every partition between claim, send and settlement. Prove that submission cannot be reassigned and that journal loss preserves uncertainty. Finally, verify isolation, both compromise drills, and migration without duplicate Gateway owners or authorities.
 
 [Deployment matrix](index.md) · [Tether](../../../sepulcher/extensions/tether.md) · [Veil](../../../sepulcher/extensions/veil.md)

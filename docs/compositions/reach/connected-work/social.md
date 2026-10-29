@@ -39,10 +39,11 @@ It refuses excess text rather than splitting one reviewed post into several effe
 [Text syntax](https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/little-text-format?view=li-lms-2026-10),
 [post length](https://www.linkedin.com/help/lms/answer/a522483/differences-between-posting-updates-and-publishing-articles?lang=en)
 
-The first founder journey is: accept the service's claims and creative assets, prepare one
-Facebook Page post and one LinkedIn post, review their exact author/text/audience, then admit each
-publication separately through a future qualified delivery path. Cross-posting is a new disclosure
-at each destination. A post's provider acceptance does not prove reach, engagement or a sale.
+For the first founder journey, begin by accepting the service's claims and creative assets.
+Prepare one Facebook Page post and one LinkedIn post, then review each exact author, text and
+audience. A future qualified delivery path must admit each publication separately because
+cross-posting makes a new disclosure at each destination. Provider acceptance of a post establishes
+none of its reach, engagement or sales.
 
 Images and video require separately admitted upload artifacts and returned media references;
 the present connector subset constructs text requests. It does not scrape link previews, generate
@@ -78,10 +79,10 @@ permanent provider compatibility.
 [Page posts](https://developers.facebook.com/documentation/pages-api/posts),
 [LinkedIn posts](https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/posts-api?view=li-lms-2026-10)
 
-No builder retries, rotates accounts, fetches a link, opens a session or sends a request. A future
-transport must check current authority, exact destination, provider limits and eligibility,
-persist its attempt before submission, and distinguish rejected, accepted and unknown results.
-Provider acceptance cannot manufacture exactly-once delivery. A timeout after submission must
-not turn WUPHF into another send to every destination.
+The builders stop after constructing requests: they do not retry, rotate accounts, fetch links,
+open sessions or send. A future transport must check current authority, exact destination, provider
+limits and eligibility, then persist its attempt before submission. Record whether the result is
+rejected, accepted or unknown. Provider acceptance alone cannot establish exactly-once delivery;
+a timeout after submission must never cause WUPHF to send again to every destination.
 
 [Social](../social.md) · [Preparation and user stories](preparation.md) · [Account lifecycle](accounts.md) · [Delivery gates](delivery.md)

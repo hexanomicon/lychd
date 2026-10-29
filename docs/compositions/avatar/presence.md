@@ -13,7 +13,7 @@ The greeting reaches a VR room and a Blockworld inhabitant. Each place must repo
 
 `ProjectionBinding@2` admits one target epoch with profile/Morphe, target capability receipt, participants, consent, disclosure, fallback, stops, and attributed terminal result. It records membership in Avatar's presence, without owning the target world, device, Invocation, provider session, or effects. Changed form, capability set, target epoch, participants, consent, or disclosure closes or replaces the affected binding according to its declared policy.
 
-`AvatarPresence@2` groups those Avatar-owned bindings under one purpose. It identifies required/optional members, presentation-synchronization intent, local ceilings, and the policy for evaluating attributed target results. It cannot initiate, admit, await, cancel, retry, recover, or correlate the lifecycle of target-owned Invocations. A [Suite](../products-and-suites.md) owns any promised live coordination.
+`AvatarPresence@2` brings these Avatar-owned bindings together for one purpose. It identifies required/optional members, presentation-synchronization intent, local ceilings, and the policy for evaluating attributed target results. This gives Avatar an account of the presentation. A [Suite](../products-and-suites.md) must own any promised live coordination: Avatar itself cannot initiate, admit, await, cancel, retry, recover, or correlate the lifecycle of target-owned Invocations.
 
 ## One Lich, many projections
 
@@ -53,7 +53,9 @@ Each target keeps the authority needed to judge what happened there:
 | [Familiar](../familiar/index.md) | Body, capabilities, geofence, emergency stop, mission, observations, and effects. |
 | [Companion](../companion/index.md) | Mobile session, privacy, disclosure, configuration, reconnect, and separate stop-speaking/cancel-session controls over an admitted Familiar phone body. |
 
-For VR, the target is exact `VRHabitat@1`. Avatar may select eligible head, hands, body, voice, motion, captions, disclosure, and fallback. It creates no XR session/reference space, locomotion, haptics, tracking capture, entry, or exit authority. Head/hand/gaze/face/body signals constrain eligibility but prove no identity, intent, attention, emotion, consent, co-location, or remembered experience. Raw high-rate inputs stay with the engine/runtime; Avatar retains minimum capability facts and semantic results.
+For VR, Avatar binds to an exact `VRHabitat@1` and may select eligible head, hands, body, voice, motion, captions, disclosure, and fallback. The target retains authority over the XR session/reference space, locomotion, haptics, tracking capture, entry, and exit.
+
+Tracking tells Avatar which presentations are eligible. Head/hand/gaze/face/body signals prove no identity, intent, attention, emotion, consent, co-location, or remembered experience. Keep raw high-rate inputs with the engine/runtime; Avatar retains only minimum capability facts and semantic results.
 
 ## Proving independent settlement
 

@@ -41,6 +41,40 @@ records that outcome alongside what it prepared. In the designed memory path, Ar
 admitted records in the [Phylactery](../../sepulcher/phylactery/index.md); its Curator separately
 decides which revisions are eligible for recall.
 
+## Learn through Transmutation
+
+[Transmutation](../../divination/transmutation/index.md) gives the two stages a method for
+learning from what they transform. Suppose an archive contains “keep answers short,” followed
+months later by “explain this design fully.” A model has summarized both as “the operator always
+prefers brevity.” The useful result must recover whose words support which claim, what their
+contexts permit, and how a later correction could reach the proposed lesson.
+
+| Chapter | Question within this intake |
+| --- | --- |
+| [Genesis](../../divination/transmutation/genesis.md) | Could the statements express a general preference, a task-specific request, or a changed preference? Form alternatives from attributed units before settling their relation. |
+| [Trial](../../divination/transmutation/trial.md) | Compare each interpretation with the exact source passages and authorized surrounding context. Include the inconvenient statement; unprocessed material remains a gap. |
+| [Canon](../../divination/transmutation/canon.md) | Declare before extraction and synthesis what would support the proposed use: correct speaker, preserved scope, traceable evidence, and the receiving owner's requirements. More extracted claims or a smoother summary cannot substitute for these conditions. |
+| [Revelation](../../divination/transmutation/revelation.md) | Separate the observed requests from the diagnosis that their contexts differ and the proposal for a scoped preference. The model's universal summary is another attributable claim to examine. |
+| [Distillation](../../divination/transmutation/distillation.md) | Carry the supported distinction with its conditions, counterevidence, and proposed next use. A later correction should reopen the affected preference rather than erase unrelated history. No adoption may be the warranted result. |
+
+These chapters can recur within either stage; they add no five-stage execution pipeline.
+**Canon precedes the attempt.** A later statement does not automatically defeat an earlier one:
+changed context, changed preference, and unresolved contradiction require different conclusions.
+
+The Tree's [relations](../../divination/transmutation/genesis.md#relations-within-relations)
+sharpen the method. Chokhmah opens interpretations and Binah asks what supports their structure.
+Chesed gives a neglected source room to matter; Gevurah limits what may be inferred from it.
+Tiferet seeks a useful composition that preserves disagreement where it remains unresolved.
+Netzach sustains the search; Hod can acknowledge that the available material cannot support the
+desired conclusion. Their interaction matters more than assigning a separate Agent to each name.
+
+The [receiving relation](../../divination/transmutation/genesis.md#repair-the-relation) reaches
+the handoff itself. “Prefers brevity” loses the condition that made the lesson usable; a scoped
+proposal carries that condition to Archive or Mirror. Likewise, an archive's description of the
+Lich may inform a Persona proposal without establishing what it should become. Distillation
+preserves a way back to correction within the dossier's privacy and retention bounds; the
+receiving owner still decides what may enter memory, identity, or training.
+
 ## Sources and machinery
 
 The candidate scope includes mobile shared items, conversation exports such as ChatGPT or Claude
@@ -60,11 +94,15 @@ This study supplies no general installation, self-extension, or autonomous evolu
 
 ## The processing dossier
 
-The proposed durable dossier owns the processing purpose and scoped authorization; source
-manifest and fixed revisions; privacy, retention, and resource bounds; stage implementation and
-configuration revisions; progress, extracted units, corrections, knowledge candidates, and their
-dependencies. It keeps exact handoff payloads, attempt identities, receiving receipts, and
-separate outcomes. It references original artifacts without becoming their byte-custody owner.
+The proposed durable dossier lets the operator see what was admitted, what each stage produced, and what remains
+unresolved. It owns the processing purpose and scoped authorization, source manifest and fixed
+revisions, privacy/retention/resource bounds, and stage implementation and configuration revisions.
+As work proceeds, it keeps progress, extracted units, corrections, knowledge candidates, and their
+dependencies together.
+
+For each proposed handoff, retain the exact payload, attempt identity, receiving receipt, and
+separate outcome. The dossier references original artifacts so a reader can return to the
+evidence; it does not become their byte-custody owner.
 
 Completion means the admitted scope was processed and every proposed handoff has an accounted
 disposition. It does not require every proposal to be accepted. Partial work identifies unfinished
@@ -72,9 +110,10 @@ sources or proposals; refusal names the blocker; cancellation stops new work. An
 effect remains unresolved until reconciled and cannot be reported as successful completion.
 Committed receiving-owner effects survive local cancellation.
 
-The stages specify their own retry and correction behavior. Deletion follows artifact, Archive,
-and Mirror policies, retaining only permitted lineage and propagating invalidation to dependent
-material. It cannot promise removal of influence from already trained weights.
+The stage pages specify how their attempts can be retried or corrected. Deletion must follow
+the policies of artifacts, Archive, and Mirror, retain only permitted lineage, and mark dependent
+material invalid where required. That process can account for stored records and proposals; it
+cannot promise to remove influence from already trained weights.
 
 ## What would establish the application
 

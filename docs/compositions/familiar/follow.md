@@ -9,7 +9,9 @@ A finite follow mission begins with an explicitly designated, consenting subject
 
 ## Admission
 
-Pin `FamiliarBody@3`, its confirmed capability epoch, designation/fallback chain, path constraints, and stop conditions. The envelope includes target-distance limits, relevant altitude/speed/terrain limits, obstacle policy by class, signal-loss behavior, speaking triggers and media settings, duration/distance/battery budgets, and optional Avatar `ProjectionBinding@2`. Every physical value comes from the exact commissioned body/profile and applicable authority; this contract sets no universal safety distances or operating defaults.
+Before movement, bind the mission to `FamiliarBody@3`, its confirmed capability epoch, designation/fallback chain, path constraints, and stop conditions. Then declare the envelope it must preserve: target-distance limits, relevant altitude/speed/terrain limits, obstacle policy by class, signal-loss behavior, speaking triggers and media settings, duration/distance/battery budgets, and optional Avatar `ProjectionBinding@2`.
+
+The commissioned body/profile and applicable authority supply every physical value. This shared contract cannot supply universal safety distances or operating defaults.
 
 Required capabilities—such as the admitted camera for visual lock or positioning method for a particular route—must be available before movement. Safety, geography, authority, or designation failure refuses admission.
 
@@ -20,6 +22,7 @@ The synthetic fixture admits a mock body with simulated positioning, camera, mic
 At a workbench, the subject stops beside a tray of seedlings: “Hey Lich, what do you notice about these leaves?” The admitted activation requests a speaking window. Disclosure precedes separate Sight and Echo capture; their observations and transcript enter Context with uncertainty. An admitted response returns through Avatar/Echo/device receipts. The resume request closes capture before the follow loop continues. A simulated battery floor then triggers the declared local policy and settles the exact completed subset, with battery-depleted reason rather than invented destination success.
 
 This proves workflow and receipt behavior, not drone dynamics, obstacle avoidance, hardware compatibility, plant diagnosis, or physical safety.
+
 ## Subject designation
 
 The subject is explicit, attributable, and pinned. “Follow whoever is nearby” is inadmissible. A profile may use an admitted BLE/UWB beacon, GPS tag, AprilTag/ArUco marker, visual signature, thermal cue, or other bounded visual tracker. Each needs exact sensor, tracking, confidence, ambiguity, and loss behavior. A face embedding or similar cue proves no identity, attention, relationship, or consent.
@@ -60,7 +63,7 @@ First obtain the body's admitted stationary/contained presentation posture. Acti
 
 ### Active session
 
-Open a separately admitted camera epoch for Prism/Sight source-bound observations and an Echo capture window whose transcript retains source, timing, provider, language assumptions, and uncertainty. Avatar may select an eligible presentation; Echo owns synthesis and playback chronology, while the device supplies physical delivery evidence.
+With the presentation posture established, open a separately admitted camera epoch for Prism/Sight source-bound observations and an Echo capture window. The transcript retains source, timing, provider, language assumptions, and uncertainty. Avatar may select an eligible presentation for the reply. Echo keeps synthesis and playback chronology, and the device supplies the physical delivery evidence.
 
 Familiar records the bounded window's exact Companion controls when present, Prism/Echo epochs, transcript, disclosures, and receipts. It creates no duplicate `FamiliarSpeakingSession` chronology.
 

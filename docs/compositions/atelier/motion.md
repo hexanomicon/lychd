@@ -35,7 +35,9 @@ The Scroll names Image and Video Spell contracts. Its exact Resolution Lock may 
 
 A [Riffmaw](../riffmaw/sync.md) `MusicCueMap@1` offers musical events, windows, intensity, and transitions. The director chooses their visual answer without editing the musical map. Audio conditioning likewise requires an exact admitted reference.
 
-Before a `VideoJob@2`, `MediaFacetAuthoritySet@1` must declare visual role, `atelier.studio` revision `5`, and exact commission request digest. Any sound role needs separate authority. The compound Prism parent remains attached; Atelier issues its own `SemanticFacetAdmissionReceipt@1` for the visual facet. Riffmaw, Language Edition, Broadcast, or Foundry separately admits declared music, timed-language, picture-sound, or world-sound facets. Undeclared sound is quarantined/deleted. Inseparable streams cannot be used when any required owner refuses the compound.
+A video attempt may also produce sound, so its owners must be known before execution. Before a `VideoJob@2`, `MediaFacetAuthoritySet@1` must declare the visual role, `atelier.studio` revision `5`, and exact commission request digest. Any sound role needs separate authority.
+
+After production, Atelier issues its own `SemanticFacetAdmissionReceipt@1` for the visual facet, keeping the compound Prism parent attached. Riffmaw, Language Edition, Broadcast, or Foundry separately admits declared music, timed-language, picture-sound, or world-sound facets. Undeclared sound is quarantined/deleted. When streams are inseparable, refusal by any required owner prevents use of the compound.
 
 Those judgments may concern one joint model attempt with a shared timebase. They require neither
 duplicate generation nor a separate screen for each role; [Vision](../../adr/36-vision.md#compound-media-and-application-acceptance)
@@ -43,6 +45,6 @@ keeps the single technical parent and each facet's admission explicit.
 
 ## Review the movement
 
-Check duration, seams, ordering, camera continuity, clipping, flicker/accessibility hazards, and export stability across time, not merely in the last frame. A bounded correction makes a successor revision. Wrong timebase, stale assets, unsupported profile, or ambiguous synchronization returns findings or refusal.
+Check the sequence duration against the target, then review across that full duration: seams, ordering, camera continuity, clipping, flicker/accessibility hazards, and export stability can fail between otherwise acceptable frames. A bounded correction makes a successor revision. A wrong timebase, stale assets, unsupported profile, or ambiguous synchronization returns findings or refusal.
 
 [Package](package.md) receives accepted motion as visual material. Broadcast owns its final placement, trim, retime, transitions, captions, sound relation, and claims. Foundry owns engine import/runtime behavior. A pinned FFmpeg or other deterministic renderer may serve either office without deciding the creative sequence or final cut.

@@ -5,8 +5,9 @@ icon: material/engine
 
 # :material-engine: Soulstone Engines
 
-An **engine** is an upstream execution substrate that a Soulstone adapter can bind into a local
-Animator. It is not itself a Soulstone, a model, or a semantic extension.
+Choose an **engine** for the execution it can supply, then give it a local body through a
+Soulstone adapter, Rune, Quadlet, and declared resources. The upstream engine alone is neither
+the Soulstone instance nor a model or semantic extension.
 
 ```text
 engine + adapter + Rune + Quadlet + resources = one local Soulstone instance
@@ -31,9 +32,10 @@ The same engine may manifest several Soulstones with different model sets, graph
 domains, and capability profiles. `comfy-qwen`, `comfy-ltx`, and `comfy-music3`, for example, may
 use one ComfyUI image while remaining separate managed service instances.
 
-Models and workflow graphs are not universal engine facts. An exact model, graph, node set,
-quantization, license, and hardware placement become a capability profile only after the selected
-engine adapter and the owning extension or Composition have admitted them.
+Qualify the particular work you intend to run on that engine. Model, graph, node set,
+quantization, license, and hardware placement belong to an exact capability profile. The
+selected adapter and owning extension or Composition must admit them; an engine's name cannot
+establish these facts for every model or workflow it can load.
 
 ## Engine versus technical contract and semantic owner
 

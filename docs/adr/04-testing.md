@@ -25,11 +25,12 @@ to host pytest when the engine is unavailable. Application construction and ASGI
 inside the image are test techniques, not another deployment profile. Installed-runtime
 qualification instead needs the actual rebuilt production Vessel image and declared boundary.
 
-Tests run serially by default because some probes share host-resource boundaries. A caller may
-select bounded `pytest-xdist` parallelism. Each ordinary invocation receives unique scratch under
-the disposable container's `.cache/pytest`, captured logs, and pytest's native compact report without an output wrapper.
-Caller-owned scratch and verbose diagnostics remain explicit choices. The exact switches belong
-in [CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#test-selection).
+Some probes share host-resource boundaries, so tests run serially by default. Callers may select
+bounded `pytest-xdist` parallelism. An ordinary invocation gets unique scratch under the
+disposable container's `.cache/pytest`, captured logs, and pytest's native compact report without
+an output wrapper. Caller-owned scratch and verbose diagnostics require explicit choices;
+[CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#test-selection)
+owns the exact switches.
 
 Start with the smallest relevant source boundary. The directory layout makes that selection
 visible:
@@ -59,9 +60,10 @@ test only when its declared integration boundary requires them.
 
 ### 3. The Fabricator (Polyfactory)
 
-Generated fixture data must remain valid under the actual schema. Factories help construct it;
-they do not explain which property matters or conceal a validator prerequisite. A failing
-fabrication and a failing system behavior are distinct diagnoses.
+Generated fixture data must remain valid under the actual schema; a factory helps construct it.
+The test still needs to show which property matters and satisfy any validator prerequisites.
+Keeping those responsibilities visible lets a contributor distinguish a failed fabrication from
+failed system behavior.
 
 ### 4. The Quality Gate (Coverage)
 
@@ -92,7 +94,7 @@ remains authoritative, and a rendered success message must not substitute for th
 
 ## Consequences
 
-Retain failures with their reproducing tests. Choose directories, marks, and opt-in boundaries for
-the claim being made, then widen when a change crosses those boundaries. Any exception needs its
-own stated scope and receipt. The result is a suite a contributor can reason about, and a clear
-account of what still needs to be witnessed on real iron.
+Keep a failure together with the test that reproduces it. Select directories, marks, and opt-in
+boundaries to match the claim, widening the checks when a change crosses those boundaries. An
+exception needs its own stated scope and receipt. This gives contributors both a suite they can
+reason about and an exact account of what still needs to be witnessed on real iron.

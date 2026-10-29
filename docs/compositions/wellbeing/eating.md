@@ -19,8 +19,8 @@ Exclusions, equipment, time windows, and operator maxima are hard gates. Variety
 
 [Stores](../homestead/stores.md) supplies only the food identity, quantity interval, location class, freshness or expiry evidence, storage-condition uncertainty, and provenance in `InventorySnapshot@1`. Whole receipts, credentials, payment, addresses, and unrelated stock remain at home with their owner.
 
-When an approved plan lacks ingredients, `FoodNeed@1` may carry quantities, declared exclusions, useful product traits, expiry, privacy class, and unresolved flags to [Provision](../homestead/provision.md). It contains no diagnosis, journal, measurement, medication, genetics, movement history, or merchant instruction. The returned `ProvisionResult@1` describes availability; Eating decides whether the plan still fits.
+If an approved plan lacks ingredients, send only what [Provision](../homestead/provision.md) needs in `FoodNeed@1`: quantities, declared exclusions, useful product traits, expiry, privacy class, and unresolved flags. Keep diagnosis, journal, measurement, medication, genetics, movement history, and merchant instructions out of it. When `ProvisionResult@1` returns, Eating uses its availability evidence to decide whether the plan still fits.
 
-Only an explicit `wellbeing.check_in@1` can confirm eating or substitution and send a minimal consumption event for stock reconciliation. A purchase, recipe, prepared household lot, plan, or silence proves none of it. Eating never sources, mutates stores, builds carts, or pays.
+After the meal, only an explicit `wellbeing.check_in@1` can confirm eating or substitution and send a minimal consumption event for stock reconciliation. A purchase, recipe, prepared household lot, plan, or silence cannot establish what the person ate. Eating itself never sources products, mutates stores, builds carts, or pays.
 
 Return to [Wellbeing](index.md).

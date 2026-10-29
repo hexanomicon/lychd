@@ -18,8 +18,9 @@ Familiar keeps the body's capabilities and safety.
 | [Familiar](../familiar/index.md) | A physical body carrying a bounded task or presence, with its local limits and outcome preserved. |
 | [Companion](../companion/index.md) | A configurable phone client for bounded sessions over an admitted Familiar body. |
 
-Companion's first client target is native Android. Communion is its bounded interaction route,
-not another Composition or Product. [The worked handoffs](../products-and-suites.md#avatar-and-spectre)
-show when these owners exchange settled references and when live work needs a Suite.
+For the phone route, Companion's first client target is native Android and Communion names its
+bounded interaction, without creating another Composition or Product. Follow
+[the worked handoffs](../products-and-suites.md#avatar-and-spectre) to decide when these owners can
+exchange settled references and when their live work needs a Suite.
 
 [Composition Areas](../index.md#areas)

@@ -14,9 +14,10 @@ its declared capabilities become `ACTIVATABLE`, not `WARM`. LychD sends the decl
 directory and backend through Tabby's lifecycle API; context, cache, split, and reserve remain
 TabbyAPI defaults unless a model-local `tabby_config.yml` overrides them.
 
-Stable LychD `[[models]].id` values are not Tabby directory names. Each model `path` must identify a
-validated direct child of the mounted model directory. The connector derives the runtime name from
-that path's basename and translates it on both lifecycle and data planes.
+Keep the identity used by LychD separate from the directory TabbyAPI loads. A stable
+`[[models]].id` names the LychD model; its `path` must name a validated direct child of the mounted
+model directory. The Connector takes that path's basename as Tabby's runtime name and translates
+between them for both lifecycle control and data calls.
 
 The current LychD TabbyAPI adapter executes the Chat Completions surface. A model declaration
 with `capabilities.surface = "responses"` is rejected at Rune validation because that surface is
@@ -26,10 +27,10 @@ Authentication is mandatory even inside the unpublished private pod. The two dis
 admin keys remain Podman-secret material and are never placed in browser code or ordinary Rune
 fields. Core binds only the managed container Vessel; the former `bind --uncaged` option is retired.
 
-`POST /v1/model/load` reports stages over server-sent events. LychD consumes the complete stream
-and verifies the active model with `GET /v1/model`; a disconnected client alone is not proof that a
-detached load failed. An indeterminate stream remains contained and is reconciled or reset through
-the owning Vessel boundary.
+Follow model loading through the whole `POST /v1/model/load` server-sent-event stream, then
+verify the active model with `GET /v1/model`. LychD performs both steps because a disconnected
+client cannot establish that a detached load failed. An indeterminate stream keeps the result
+contained for reconciliation or reset through the owning Vessel boundary.
 
 Focused contracts cover the runtime, control plane, connector, registration, authentication, and
 containment behavior. The named GPU/model/runtime receipt remains

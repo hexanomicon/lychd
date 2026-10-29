@@ -26,11 +26,12 @@ Separate what the user wants to achieve from ideas offered while discussing it. 
 supplies possible questions, alternatives, and evidence leads. It grants no further authority to
 edit, spend, send, train, deploy, or publish. Preserve the actual authorization with the request.
 
-Make the desired state observable. “Make development faster” leaves the important choices open:
-which delay matters, what is the baseline, and what improvement would count? Establish the
-current state from its canonical owners and the smallest relevant source and test slice.
-Record the difference to be achieved, the non-goals, and the acceptance conditions. A proposed
-solution can then be judged by the change it would produce.
+Give the intended change an observable acceptance boundary. “Make development faster” still
+leaves the important decisions open: which delay matters, what is the baseline, and what
+improvement would count? Establish the present state through its canonical owners and the
+smallest relevant source and test slice. Then record the difference to achieve, the non-goals,
+and acceptance conditions. Those terms let the recipient judge a proposed solution by what it
+would actually change.
 
 Owning documentation establishes intended truth before implementation under xDDD. Closure
 reconciles that truth with the actual result. A candidate, a verified change, and an authorized
@@ -100,9 +101,9 @@ where a failed premise can redirect the search before a favored solution hardens
    model imagining both sides, do not establish reciprocal exchange.
    [Crucible's bounded casting](crucible.md#the-bounded-casting) owns the full contract.
 
-Every handoff must carry the distinction that could change the next act. “Use this design”
-may conceal an unresolved recovery assumption; “use it only if the recovery probe preserves the
-committed records” gives the recipient a condition it can examine.
+Every handoff must carry the distinction that could change the recipient's next act. “Use this
+design” can hide an unresolved recovery assumption. “Use it only if the recovery probe preserves
+the committed records” exposes the condition and gives the recipient something to examine.
 
 When admitted measurement can settle a factual dispute, specify the proposition, exact subject
 and environment, observable result, acceptance rule, and effect limits before running the probe.
@@ -118,11 +119,11 @@ Ask only for a still-required choice or authorization. Exact standing authorizat
 Inquiry adds no blanket approval at each station. Required live Gates retain their exact-effect
 rules, and a reserved operator choice remains unresolved until answered.
 
-After direction is settled, repeat Inquiry at construction scale where uncertainty warrants it.
-Choosing a database leaves questions about schema ownership, interface placement, changed
-callers, and the documentation owner. Inspect those seams and compare implementation cuts before
-splitting the work; settle their acceptance conditions. A settled mechanical detail can reuse
-an accepted conclusion without another debate.
+Settling direction gives construction a more specific question; repeat Inquiry at that scale
+where uncertainty warrants it. A database choice still leaves schema ownership, interface
+placement, changed callers, and the documentation owner to establish. Inspect those seams,
+compare implementation cuts, and settle acceptance before splitting the work. Accepted
+conclusions can carry settled mechanical details forward without another debate.
 
 When the decision is settled, carry it into [bounded work](#hand-off-work-that-can-return-intact).
 When another attempt may be needed, first make the reason for continuing inspectable.
@@ -154,10 +155,11 @@ inspectable by recording:
 - what would settle or stop the attempt, what could reopen the question, and where its result
   must return.
 
-The return compares the observation sought with what was actually obtained, including inconclusive
-results and resources used. It can revise a recommendation, justify continued work, or close the
-branch. Required authority and deterministic gates remain binding. These signals recur during
-exploration, construction, and review; they are not confined to one Chesed–Gevurah station.
+When the probe returns, compare the observation sought with what it actually established,
+including inconclusive results and resources used. That comparison can revise a recommendation,
+justify continued work, or close the branch. Required authority and deterministic gates remain
+binding throughout. Support and measure recur during exploration, construction, and review;
+they are not confined to one Chesed–Gevurah station.
 
 This separates three questions that can otherwise blur together. In the Tree correspondence,
 Gevurah supplies the measuring concern and Hod the reflective review; their
@@ -169,11 +171,11 @@ Gevurah supplies the measuring concern and Hod the reflective review; their
 | Gevurah's measure | What must this proposed act respect, and which constraint, failure condition, or disputed criterion needs examination? |
 | Hod's review | What did this exact result reveal, what was missed, and does the signal rewarding further effort still track the purpose? |
 
-An informative failure can defeat a candidate while supporting retention of the probe or
-question that exposed it. Give that method credit only for the distinction the evidence supports;
-do not reward every preceding step. Another attempt still needs a stated informative reason,
-such as a changed candidate or a justified replication, and room in the parent budget. Repeated
-failure alone earns neither endless retries nor automatic memory or training admission.
+A failed candidate can still reveal a useful probe or question. Credit the method only for the
+distinction its evidence supports, rather than rewarding every preceding step. Continuing needs
+an informative reason—a changed candidate or justified replication, for example—and room in the
+parent budget. Repeated failure alone earns neither endless retries nor automatic memory or
+training admission.
 
 ### Make the inquiry policy explicit { #inquiry-policy }
 
@@ -206,10 +208,11 @@ model prose would invent a signal.
 
 ## Hand off work that can return intact
 
-Derive the test strategy and decomposition from the accepted delta. Identify which tests establish
-changed behavior, failure and recovery obligations, and which repository gates must pass. Split
-work where owners, inputs, outputs, and acceptance can be separated. Shared-file mutation or an
-unsettled interface is a dependency to resolve before distributing writers.
+Use the accepted delta to decide how to test the work and where to divide it. Identify tests for
+changed behavior, failure and recovery obligations, along with the repository gates that must
+pass. Tasks can separate where their owners, inputs, outputs, and acceptance separate. Resolve
+shared-file mutation or an unsettled interface before distributing writers; either creates a
+dependency the handoff must respect.
 
 Every task receives an immutable handoff containing:
 
@@ -229,12 +232,12 @@ owns the runtime design. In an operator campaign, record the platform's actual c
 permission boundaries rather than inventing a LychD Run or containment receipt. Changed task
 requirements produce a successor handoff with explicit lineage.
 
-Compact between stages when it helps the next recipient. Preserve accepted and unresolved
-decisions separately, the reason each matters, dissent and defeat conditions, exact source
-references, and uncompleted obligations. Keep full attributable artifacts under their owners;
-the compact view is a continuation aid. If omission makes the next decision unsafe or unsupported,
-restore the necessary bounded material or stop. A summary cannot turn missing evidence into an
-accepted premise.
+Prepare a compact view between stages when it helps the next recipient continue. Keep accepted
+and unresolved decisions separate, explain why each matters, and preserve dissent, defeat
+conditions, exact source references, and unfinished obligations. Full attributable artifacts
+remain under their owners. If an omission leaves the next decision unsafe or unsupported,
+restore the necessary bounded material or stop. Compaction cannot turn missing evidence into
+an accepted premise.
 
 ### Hand a bounded task to a CLI runtime { #cli-delegation-branch }
 
@@ -279,12 +282,12 @@ runtime fan-out and composed reusable subgraphs are not implemented under [Graph
 contract](../../../adr/24-graph.md#future-parallel-topology); drawing Inquiry as one box does not
 register a nested executable Pattern.
 
-Collect candidate changes with observed verification evidence and remaining blockers. The parent
-checks each return against its exact handoff before integrating it. Run the focused tests and
-required repository gates, then independent review against behavior, owner boundaries, and
-failure paths. Refactor where the findings justify it and rerun the checks affected by those
-changes. A failed test or review can return to implementation or reopen a construction inquiry
-within the remaining budget.
+Each task returns candidate changes, observed verification evidence, and remaining blockers.
+The parent checks that return against the exact handoff before integrating it. Focused tests and
+required repository gates are followed by independent review of behavior, owner boundaries, and
+failure paths. Refactor where findings justify it, then rerun the affected checks. A failed test
+or review may return work to implementation or reopen a construction inquiry, within the
+remaining budget.
 
 Review also examines **what earns another attempt**. Rewarding passed-check counts, agreement,
 or tasks closed can improve a proxy while losing the intended behavior. Here Hod reviews whether
@@ -337,13 +340,13 @@ may make a materially better arrangement thinkable. Novelty alone does not requi
 State the decision it could change, a decisive question, the remaining budget, and the stopping
 condition. Preserve already sufficient conclusions when the new finding does not affect them.
 
-A return produces a **later task attempt**, not an edit to an earlier result. Retain the old
-artifact and mark which dependent conclusions need reconsideration. Reuse unaffected evidence
-only after checking that its inputs, assumptions, and obligations still apply. A changed
-candidate receives renewed affected verification and all checks required by its final owner;
-the old candidate's pass cannot silently certify the new one. Within LychD, a return must follow
-the admitted Scroll; a changed score needs a successor revision. The human campaign cannot use
-these labels to invent an undeclared runtime edge.
+Preserve an earlier result when new findings require a return: the return creates a **later task
+attempt**. Retain the old artifact and identify the dependent conclusions that need reconsideration.
+Before reusing unaffected evidence, check that its inputs, assumptions, and obligations still
+apply. The changed candidate needs renewed affected verification and every check required by
+its final owner; the old candidate's pass cannot silently certify it. Within LychD, the return
+must follow the admitted Scroll, and a changed score needs a successor revision. Human campaign
+labels cannot invent an undeclared runtime edge.
 
 The workflow may be cyclic while an unfolded history of invocation and station-attempt
 occurrences is acyclic: each later attempt has its own identity and refers to earlier evidence.
@@ -402,11 +405,11 @@ contribution blocks settlement. Development can split across independent compone
 always names the candidate revision it examined. Shared mutable work and changing interfaces
 create dependencies, even when the drawing places their questions side by side.
 
-The poles preserve common intent, evidence, criteria, and authority while changing attention.
-They need not disagree. Alignment means the joined decision answers the relevant concerns;
-unsupported agreement cannot close a decisive unknown. This choreography refines bounded
-Inquiry and can recur at direction and construction scales. Settled mechanical work does
-not require every role or a new debate.
+Each pole directs attention while preserving common intent, evidence, criteria, and authority.
+They need not disagree. Their joined decision is aligned when it answers the relevant concerns;
+unsupported agreement cannot close a decisive unknown. This choreography refines bounded Inquiry
+at both direction and construction scales. Settled mechanical work does not require every role
+or a new debate.
 
 ### An aspect can return in another task { #aspects-workers-and-attempts }
 
@@ -439,10 +442,11 @@ One small staffing arrangement makes the distinction visible:
 | Worker B | Structure alternatives and interfaces, measure proposals, and answer their advocates. Binah and Gevurah recur; later review supplies continuity with that design work. |
 | Reviewer C | Independently inspect consequential coverage, design, or candidate claims; report evidence, omissions, and correction. Hod can also question the continuation signal. |
 
-The available participants need not all be active together. Candidate assembly expresses Yesod
-through the joined work; Malkhut requires the target owner's actual effect. Reusing B for review
-does not make B independent of a design B helped author. C's exposure and conflicts must remain
-visible too. Distinct sessions cannot eliminate a shared source blind spot.
+This staffing arrangement can unfold over time; its participants need not all be active together.
+Joining their work expresses Yesod, while Malkhut requires the target owner's actual effect.
+Exposure still matters when roles change. B cannot become independent of a design B helped author
+merely by reviewing it later, and C's exposures and conflicts must remain visible too. Separate
+sessions cannot eliminate a shared source blind spot.
 
 ## Worked design example: an offline decision dossier { #tree-worked-example }
 
@@ -496,13 +500,14 @@ overlap. Every reply follows receipt of the report it answers.
 | 10, if repair was required | L settles affected design D2; A repairs; C and the required checks examine successor Y2. | Tiferet, Netzach, Yesod, and Hod recur on new inputs; unaffected knowledge survives. |
 | 11 | The target owner checks current authority and evidence before adopting the exact verified change. | Malkhut; if admission or evidence is missing, stop with explicit noncompletion. |
 
-For wave 9, suppose a fixture hypothetically reveals two visually identical but code-point-distinct
-record IDs merged. If D1 already distinguishes exact source identity from display labels, the
-defect belongs in construction: repair it. If D1 itself equates normalized display keys with
-source identity, Binah must revise that distinction. C0 still requires identity preservation.
-That discovery might reveal a choice between an exact-value appendix and an identity-preserving
-reference table. Chokhmah can explore the choice if it materially affects the decision; neither
-alternative has won merely by being named. Missing original information remains a source gap.
+To see what wave 9 must decide, suppose a fixture hypothetically reveals that two visually
+identical but code-point-distinct record IDs were merged. If D1 already distinguishes exact
+source identity from display labels, repair the construction defect. If D1 equates normalized
+display keys with source identity, Binah must revise the design distinction. C0 continues to
+require identity preservation. The finding might expose a choice between an exact-value appendix
+and an identity-preserving reference table. Chokhmah can explore that choice if it materially
+affects the decision; naming an alternative does not make it the winner. Missing original
+information remains a source gap.
 
 ```mermaid
 flowchart TD
@@ -551,11 +556,11 @@ retain the actual platform boundary, prove one candidate passage, then qualify t
 handoffs incrementally. Its implementation queue keeps current delegation evidence separate
 from later native lifecycle ownership.
 
-The workflow graph says which question or action comes next, what its input means, and what can
-settle it. Spellweaver owns that logical ordering under [ADR 28](../../../adr/28-workflow.md).
-Dispatcher resolves an eligible capability for a placement; Orchestrator converges the physical
-resources needed to serve it. Neither chooses the engineering goal or turns a model's preference
-into a new workflow edge.
+The workflow graph carries the engineering sequence: which question or action comes next, what
+its input means, and what can settle it. Spellweaver owns that logical ordering under
+[ADR 28](../../../adr/28-workflow.md). Dispatcher resolves an eligible capability for a placement,
+and Orchestrator converges the physical resources needed to serve it. Neither chooses the
+engineering goal or turns a model's preference into a new workflow edge.
 
 The following primitives are bounded contracts for designing that graph. Their names describe
 semantic work; they do not require one model, Agent, or subprocess per box. Deterministic code can
@@ -574,11 +579,11 @@ return, non-completion, limits, permissions, and recovery.
 | **Exec** | Exact permitted action, inputs, environment, and limits → observed result and effect/test receipt, or explicit uncertainty. | Authority and effect settlement remain with their owners. An ambiguous outcome is not permission to repeat. |
 | **Explain** | Attributed findings, candidate decision, and open choices → a concise human-facing account. | Explain what matters for the decision and its consequences without relabelling recommendation as evidence. |
 
-Independent judgment is a placement with its own input and acceptance contract; this list is not
-a closed catalogue. [Discovery](discovery.md) finds owners and useful context;
-[execution roads](execution-roads.md) selects the admitted labor boundary. An A2A exchange may
-carry an engineering task, but task transport cannot replace artifact revisions, custody, or
-lineage.
+Independent judgment also needs a placement with its own input and acceptance contract; the
+primitives above are not a closed catalogue. [Discovery](discovery.md) finds owners and useful
+context, while [execution roads](execution-roads.md) selects the admitted labor boundary. An A2A
+exchange can carry an engineering task, but transport cannot replace artifact revisions,
+custody, or lineage.
 
 An external comparison is Anthropic's
 [Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents):

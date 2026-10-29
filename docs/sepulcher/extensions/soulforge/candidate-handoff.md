@@ -44,9 +44,10 @@ Passing Drift establishes eligibility only. The owning policy and required
 Magus/[HitL](../../../adr/25-hitl.md) authority choose whether to promote and which capability
 envelope may be exposed.
 
-The external Promotion Decision binds the exact Candidate Bundle and independent Outcomes;
-eligible capabilities and denied uses; compatible engines and base relationship; rollout
-population, observation window, and stop conditions; fallback and rollback; and retention,
+The external Promotion Decision states exactly what may enter use. It binds the Candidate Bundle
+to its independent Outcomes, names eligible capabilities and denied uses, and fixes compatible
+engines and the base relationship. It also defines how that use will be watched and stopped:
+rollout population, observation window, stop conditions, fallback, rollback, and retention,
 quarantine, or retirement terms.
 
 The serving owner registers and routes the exact promoted digest. Files appearing in a directory
@@ -60,11 +61,12 @@ Versioned serving observation belongs to the declared evidence window. A stop co
 regression routes new work to an earlier promoted digest and quarantines the suspect revision.
 Rollback cannot erase completed effects or remove learned examples from produced weights.
 
-Later discovery of privacy, authority, license, contamination, or holdout failure follows lineage
-through the Dataset Manifest, Training Run, Candidate Bundle, Outcomes and evaluation claims, and
-Promotion Decision. Policy may block reuse or serving, quarantine or delete controlled artifacts,
-invalidate evidence, and require clean admission and rebuild. Deleting a source record does not
-untrain derived weights.
+If privacy, authority, license, contamination, or holdout failure is discovered later, follow
+its consequences through the retained lineage: Dataset Manifest, Training Run, Candidate Bundle,
+Outcomes and evaluation claims, and Promotion Decision. Policy determines which reuse or serving
+must stop, which controlled artifacts must be quarantined or deleted, and which evidence must
+be invalidated. A replacement requires clean admission and rebuild. Deleting the source record
+alone does not untrain weights derived from it.
 
 Custody ends in one durable state: the exact digest remains promoted within its bounds, is
 superseded by a new immutable decision, or is quarantined and blocked with lineage intact.

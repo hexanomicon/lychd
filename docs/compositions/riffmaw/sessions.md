@@ -9,13 +9,15 @@ Keep what was actually played before editing makes it seem inevitable. A take pr
 
 ## Arm and capture
 
-`riffmaw.capture_take@2` requires explicit arming and pins device, clocks, sample rate, latency, monitoring, channels, plug-in state, session revision, and consent. Retain immutable raw audio/MIDI before transcription, timing correction, comping, cleanup, or transformation.
+Arm the exact performance route before `riffmaw.capture_take@2` begins. Admission pins its device, clocks, sample rate, latency, monitoring, channels, plug-in state, session revision, and consent. Preserve immutable raw audio/MIDI first, so later transcription, timing correction, comping, cleanup, or transformation can always identify the performance it changed.
 
 `PerformanceTake@1` separates performance from attributed tempo, pitch, timing, score/lyric transcription, and other observations. Their source regions and uncertainty remain visible. [Audio](../../adr/37-audio.md) governs visible, bounded, revocable capture, custody, and hostile input. A later `MusicalPerformanceSession@1` may reference settled takes; shared file formats do not create a jam.
 
 ## Choose without erasing
 
-A comp names each source take and selected region. Rejected takes retain their own retention; acceptance cannot rewrite them. Device, clock, plug-in, and session changes are explicit revisions. If failure leaves capture uncertain, stop the device and reconcile artifacts/session state before retry; silence cannot prove nothing was recorded.
+When choosing the best passages, record each source take and selected region in the comp. Acceptance does not rewrite rejected takes or their retention rules. Changes to device, clock, plug-in, or session likewise create explicit revisions.
+
+If a failure leaves capture uncertain, first stop the device. Reconcile the artifacts and session state before retrying; silence cannot prove that nothing was recorded.
 
 [Music](music.md) receives artifacts and observations without an open DAW, microphone authority, or credentials. Ordinary spoken replacement/localization remains Language Edition work.
 
@@ -37,7 +39,7 @@ Microphones, instruments, MIDI/controllers, clips, remote performers, and machin
 | `CaptureManifest@1` | Immutable pre-fader sources, optional processed prints, MIDI, hardware returns, local and remote stems, exact frame boundaries, discontinuities, and checksums. A guitar DI remains separate from its amp or cabinet monitor path. |
 | `RemoteJamLeg@1` | Peer identity, topology, codec, channels, encryption, jitter buffer, loss concealment, latency estimate, clock-rate divergence, resampling, reconnect epoch, local-monitor policy, and recording consent. |
 
-Mix, individual sources, MIDI/control events, responses, and route/clock changes remain attributable. Graph checkpoints keep typed references, bounded sequence state, and receipts—not PCM/MIDI streams, device handles, or plug-in state.
+Together, these records keep the mix, individual sources, MIDI/control events, responses, and route/clock changes attributable. Graph checkpoints refer to that work through typed references, bounded sequence state, and receipts. The PCM/MIDI streams, device handles, and plug-in state remain outside those checkpoints.
 
 A route's participation is **observe** (correctable observations, no audible reply), **accompany** (bounded musical answer), **transform** (process the selected live route while preserving dry source), or **conduct** (propose structural/tempo/cue changes). Escalation needs new visible admission by every affected Principal; proposals cannot silently become changes to a human performance.
 
@@ -45,7 +47,7 @@ A route's participation is **observe** (correctable observations, no audible rep
 
 `MusicalGestureObservation@1` may interpret notes/chords, key/tuning, beat/pocket, accents, articulation, dynamics, timbre, phrases, repetition, tension/release, and player relations. Preserve source regions, feature/model revisions, latency, confidence, and competing readings. It grants no access to emotion or unspoken intent.
 
-`JamResponse@1` binds source-time cutoff and lookahead, jam/route epochs, turn sequence, answered observation/cue, controls, ready-by deadline, scheduled window, planned/actual first audible sample, measured latency, output acknowledgement, omission reason, and audio/MIDI artifact.
+A musical answer must also explain when it was prepared and when it actually entered. `JamResponse@1` binds source-time cutoff and lookahead, jam/route epochs, turn sequence, answered observation/cue, controls, ready-by deadline, scheduled window, planned/actual first audible sample, measured latency, output acknowledgement, omission reason, and audio/MIDI artifact. This preserves the difference between an intended entrance and its observed result.
 
 ## The realtime stopping line
 

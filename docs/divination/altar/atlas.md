@@ -5,9 +5,10 @@ icon: material/map-outline
 
 # :material-map-outline: Atlas
 
-Keep an undertaking in view across conversations and Runs. **Atlas** records its brief,
-concerns, judgments, and proposed next step. A software release, a record, and the continuing
-care of a home all fit; none needs an existing conversation, Pattern, or Run to begin.
+A conversation can end while the undertaking continues. **Atlas** keeps its brief, concerns,
+judgments, and proposed next step available across conversations and Runs. Begin with a software
+release, a record, or the continuing care of a home; an existing conversation, Pattern, or Run
+is unnecessary.
 
 The current surface gathers this material in a **Project**. Its concerns name what deserves
 attention, and its judgments retain your reasons for accepting, disputing, or questioning the
@@ -45,11 +46,11 @@ A concern states a question, risk, requirement, or condition that needs judgment
 criteria explain what would make an answer adequate. Prefer something you can inspect, such as
 “The export must preserve the original audio,” with criteria naming the comparison you will make.
 
-An unassessed concern has no recorded judgment. When you assess it, record **Sufficient**,
-**Insufficient**, or **Disputed**, and explain why. You may cite linked activity as part of the
-reason. Atlas retains the brief and concern text that you judged, your local Sigil attribution,
-and the time of the assessment. These are recorded judgments; a successful Run does not award
-sufficiency, and a linked Run is not proof that every criterion was tested.
+Assess a concern when you can explain a judgment about it. Record **Sufficient**, **Insufficient**,
+or **Disputed**, with your reason and any linked activity you cite. Until then, it remains
+unassessed. Atlas retains the brief and concern text you judged, your local Sigil attribution,
+and the assessment time. This preserved basis makes the judgment reviewable: a successful Run
+alone cannot award sufficiency, and a linked Run does not show that every criterion was tested.
 
 Changing the brief or a concern makes earlier assessments **need review**. The earlier judgment
 and its original requirements remain readable. Record a fresh assessment after examining the new
@@ -60,13 +61,15 @@ as judged beside their current values. This is a read-only comparison; a new jud
 an explicit assessment save.
 
 Use **Find a concern** and the **Assessment** filter to reach a question or judgment in a longer
-project. Assessment forms open beside the concern and its history. Cited activity opens in a new
-tab so you can inspect it while keeping your draft. The board's filters apply to its loaded page;
-unassessed concerns, assessments needing review, and current insufficient or disputed judgments
-have separate counts and filters. Stale judgments count as needing review rather than as current
-judgments. These are separate observations, not a complete measure of project health.
-Inside the project, the four count controls select those same assessment groups. **Clear concern filters**
-restores the full concern list and returns focus to **Find a concern**.
+project. The assessment form opens beside the concern and its history. Cited activity opens in a
+new tab, letting you inspect it without leaving your draft.
+
+The board filters its loaded page. It counts unassessed concerns, assessments needing review,
+and current insufficient or disputed judgments separately. A stale judgment belongs under
+needing review, rather than among current judgments. These counts answer different questions;
+they do not combine into a measure of project health. Inside a project, the four count controls
+select those same groups. **Clear concern filters** restores the full list and returns focus
+to **Find a concern**.
 
 Decisions retain a statement and reason. When a decision changes, record a replacement that
 supersedes it. The earlier decision stays under **Earlier decisions**.
@@ -85,10 +88,11 @@ reference opens the currently retained evidence, with Orb's capture limits and g
 not freeze a copy of that evidence. If the target becomes unavailable, the retained reference
 does not become a successful result.
 
-An assessment cites an Atlas reference record by its own identity. Merely linking the same
-activity to a concern does not make it cited evidence. The useful reading chain is concern →
-assessment → cited reference → conversation or Run. A relation view must distinguish uncited
-references and retain each reference's scope and note when several lead to one target.
+To inspect why an assessment reached its judgment, follow concern → assessment → cited reference →
+conversation or Run. Each citation names an Atlas reference record by its own identity. Linking
+activity to a concern is a separate relation and does not automatically cite it as evidence.
+A relation view must keep uncited references recognizable and preserve each reference's scope
+and note, even when several references lead to the same target.
 
 Linking does not feed the whole project into a model, change the selected conversation's Context,
 or authorize another act. Use Bridge's ordinary admission and consent when you decide to carry
@@ -100,12 +104,14 @@ readiness and physical transitions.
 Atlas saves through the Vessel. In the PostgreSQL profile, projects survive browser and Vessel
 restarts. The test-only memory profile retains them only for its process lifetime.
 
-If a save's outcome is uncertain, retry the same pending change. Its identity prevents duplicate
-concerns, assessments, decisions, and references. If another view has changed the project, Atlas
-refuses to overwrite it. Load the latest saved version and compare the differing fields beside
-your draft. **Use saved…** adopts a saved value for that field; **Use reviewed values** enables a
-new explicit save using the values now in the form. Check fields another editor changed even
-when you did not edit them. A failed read is shown as a failure, rather than an empty map.
+Retry the same pending change when a save's outcome is uncertain. Its identity prevents duplicate
+concerns, assessments, decisions, and references.
+
+If another view changed the project, Atlas refuses the overwrite. Load the latest saved version
+and compare the differing fields beside your draft. **Use saved…** adopts the saved value of one
+field; **Use reviewed values** enables a new explicit save of the values now in the form. Review
+fields the other editor changed, including those you left untouched. If the read fails, Atlas
+shows that failure rather than an empty map.
 
 The initial surface retains records when a project closes; it has no delete action. Existing
 installations need the normal database migration before opening Atlas. Migration `0009` refuses
@@ -117,6 +123,8 @@ to remove its schema while projects remain.
 and remaining boundary.
 
 ## Reading direction
+
+For interface review and design, use the following composition and acceptance case.
 
 The current Project view puts concerns before secondary context. Wide screens keep the brief
 and proposed next step beside them; narrow screens follow the concern list with that context.
@@ -157,11 +165,11 @@ As an application takes shape, map where those Concerns are addressed:
 | Uncertainty is visible | An answer policy and its presentation | Whether the reader can distinguish evidence, inference, and missing knowledge |
 | Mistakes can be corrected | A correction procedure and revision history | Whether an earlier answer and its correction remain understandable |
 
-These are proposed design relations, not existing Atlas records or delivered controls. One part
-may address several Concerns, and one Concern may need several parts. An empty addressing list
-makes an unresolved need visible. The map explains how the application is composed around its
-Concerns while keeping an addressing claim distinct from tested adequacy. If the idea later
-becomes a Project, associate the existing Concerns without recreating them.
+In this proposed design, a part can address several Concerns, and a Concern can need several
+parts. An empty addressing list exposes an unresolved need. The map would show how an application
+answers its Concerns while leaving adequacy to judgment and testing. If the idea later becomes a
+Project, its existing Concerns would be associated with it without recreation. These relations
+are still a design direction, not existing Atlas records or controls.
 
 The idea or Project can author its own Concerns and Covenants. Its questions may lead to an adopted
 decision, whose consequences suggest further Concerns. It may draw inspiration from LychD, another

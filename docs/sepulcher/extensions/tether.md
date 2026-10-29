@@ -37,12 +37,14 @@ backend. **Home** does not require Tether when an exact local segment already su
 reachability. In neither placement does a tunnel grant authority or a default route into the home
 network.
 
-The Codex may retain stable peer identity, public key, allowed addresses and routes, endpoint and
-keepalive policy, enabled or revoked state, and creation or rotation metadata. Private and
-preshared keys stay within the secret boundary; they never enter ordinary documentation, logs, QR
-history, or public peer records. Future typed operations under a host-owned run-operation verb may
-generate, admit, inspect, revoke, rotate, or export a short-lived client configuration or QR
-projection without adding a root CLI verb.
+Keep the public account of a peer in the Codex: stable identity, public key, allowed addresses
+and routes, endpoint and keepalive policy, enabled or revoked state, and creation or rotation
+metadata. Keep private and preshared keys with the secret owner, outside ordinary documentation,
+logs, QR history, and public peer records.
+
+Future typed operations under a host-owned run-operation verb may generate, admit, inspect,
+revoke, rotate, or export short-lived client configuration or QR projections. They would use
+that governed operation path without adding a root CLI verb.
 
 ## Reach attachment
 
@@ -78,12 +80,14 @@ container and Host lifecycle control, Oculus, audio, and
 
 ## Revocation, rotation, and recovery
 
-Binding validates peer-address overlap, route conflicts, key references, port collisions, and the
-generated service contribution. Revocation removes the peer from the live interface and persists
-revised intent. Rotation overlaps old and new credentials only with explicit operator
-authorization. Public peer and routing intent is versioned so restore or reconciliation cannot
-resurrect revoked or stale access. Failure is visible; privileged traffic never falls back to a
-public route.
+Before changing the service, binding validates peer-address overlap, route conflicts, key
+references, port collisions, and the generated contribution. Revocation then removes a peer from
+the live interface and persists the revised intent. Rotation may overlap old and new credentials
+only with explicit operator authorization.
+
+Version the public peer and routing intent so restore or reconciliation cannot revive stale or
+revoked access. Keep failures visible; privileged traffic must never escape through a public
+fallback.
 
 Direct WireGuard avoids a mandatory hosted control plane, but CGNAT, blocked UDP, changing
 endpoints, roaming, endpoint metadata, and traffic analysis remain. Reachability may require fixed

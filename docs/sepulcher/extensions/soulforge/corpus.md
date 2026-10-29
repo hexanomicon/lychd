@@ -24,13 +24,17 @@ success may be noise or one duplicated error.
 Training Intent records the Principal, exact purpose, target capability, base digest, allowed data
 classes, and authority boundary.
 
-Corpus Admission freezes one snapshot. It binds sources, Runs, artifacts, producers, times,
-transformations, and generated descendants to purpose, retention, derivative use, consent,
-license or other authority, and approving Principal. It records privacy minimization, secret
-removal, reviewable redaction limits, target behavior, objective, expected lift, regression
-limits, and lineage groups spanning duplicates, revisions, sibling trajectories, and generated
-variants. Train, development, and sealed-holdout membership become immutable before
-training-facing generation.
+Corpus Admission freezes the material and the conditions of its use together. It binds sources,
+Runs, artifacts, producers, times, transformations, and generated descendants to the declared
+purpose, retention, derivative use, consent, license or other authority, and approving Principal.
+The same record states privacy minimization, secret removal, and reviewable redaction limits,
+so later compilation can be checked against what was actually admitted.
+
+It also fixes the learning claim: target behavior, objective, expected lift, and regression
+limits. Lineage groups connect duplicates, revisions, sibling trajectories, and generated
+variants before the split. Train, development, and sealed-holdout membership then become
+immutable before training-facing generation, preventing related material from quietly appearing
+on both sides of the examination.
 
 Accepted members travel with a negative ledger of rejected, redacted, and duplicate member ids;
 retry or another compiler cannot restore exclusions. Refuse admission and name the failed
@@ -39,11 +43,15 @@ lineage-safe splits, or a viable uncontaminated sealed holdout is missing.
 
 ## Compile without leakage
 
-Compilation reads only the admitted snapshot and emits one immutable Dataset Manifest. Every field
-traces to a source or versioned deterministic transformation. The manifest preserves role, tool,
-workflow, and authority context; distinguishes observation, human label, evaluator judgment,
-augmentation, truthful non-completion, and failure; and records filtering, redaction, truncation,
-normalization, sampling, lineage, splits, and audit statistics.
+The compiler reads only that admitted snapshot and emits one immutable Dataset Manifest. Each
+field must trace to a source or a versioned deterministic transformation. Preserve the role,
+tool, workflow, and authority context needed to understand the example, and distinguish an
+observation from a human label, evaluator judgment, augmentation, truthful non-completion, or
+failure.
+
+The manifest records how the compiler handled the material: filtering, redaction, truncation,
+normalization, sampling, lineage, splits, and audit statistics. These records make the compiled
+Dataset inspectable without allowing compilation to reopen the admission decision.
 
 Sealed-holdout answers, benchmark solutions, evaluator rationales, and target artifacts cannot
 enter prompts, retrieval, augmentation, preference construction, trainer metadata, or selection.

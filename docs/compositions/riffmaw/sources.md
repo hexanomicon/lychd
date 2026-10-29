@@ -15,7 +15,7 @@ Sources helps find that moment without turning the whole media library into admi
 
 `riffmaw.index_sources@2` accepts named files, recordings, or attributable artifacts, bounding recursion, symlinks, bytes, duration, decoding, metadata, and retention before indexing. Neither an ambient home directory nor a searchable provider catalogue enters by default.
 
-`riffmaw.mark_moment@2` uses a timestamp, beat range, tapped rhythm, phrase, or other bounded clue to rank spans under a pinned feature set. The Magus selects the useful one. `ReferenceMoment@1` preserves its source, digest, timebase, exact region, observations, uncertainty, attribution, rights, and admission decision.
+Once a source is admitted, use `riffmaw.mark_moment@2` to locate the idea. A timestamp, beat range, tapped rhythm, phrase, or other bounded clue ranks spans under a pinned feature set, and the Magus selects the useful one. Record that choice in `ReferenceMoment@1` with its source, digest, timebase, exact region, observations, uncertainty, attribution, rights, and admission decision.
 
 Similarity can locate a clue; it cannot prove authorship or safe reuse. Translate a style request into reviewable pocket, density, accents, space, motion, instrumental relation, and energy. A lifted melody, disputed source, missing permission, or hidden influence leads to quarantine, replacement, or refusal.
 
