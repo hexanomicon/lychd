@@ -28,4 +28,9 @@ GitHub correspondence, plus optional WhatsApp business messaging and a separate 
 It includes private accounts, reviewed or preauthorized sends, onboarding and updates while
 preserving the current public Discord contract.
 
+For a finite cross-provider announcement, use [connected preparation](connected-work/preparation.md).
+Its Email, Chat, Forge and Social requests translate into provider-specific application payloads
+through an explicit native Graph. The [account assessment](connected-work/social.md) distinguishes
+bot and personal access, organic publishing and later paid campaigns.
+
 [Composition Portfolio](../index.md) · [Workflow](../../adr/28-workflow.md)

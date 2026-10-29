@@ -44,6 +44,7 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/domain/intercom tests/unit/system/services/test_intercom.py \
 	tests/unit/cli/test_intercom_lab.py \
 	tests/unit/interface tests/unit/cli/test_reach_prepare.py \
+	tests/unit/cli/test_reach_connect_prepare.py \
 	tests/unit/cli/test_reach_worker.py tests/unit/cli/test_reach_operator.py \
 	tests/unit/cli/test_reach_operator_model.py \
 	tests/unit/cli/test_reach_operator_onboarding.py \

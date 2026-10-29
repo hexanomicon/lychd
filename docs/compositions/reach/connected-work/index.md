@@ -15,6 +15,12 @@ the accepted [`reach.discord` revision `1`](../index.md),
 its public-only deployment profiles, or their permissions. [State of Work](../../../state-of-the-work.md#composition-portfolio-delivery)
 owns the implementation boundary.
 
+The explicit [connected preparation profile](preparation.md), added **2026-10-29**, makes bounded
+email, chat, forge and social request preparation executable without account access or delivery.
+It adds Fastmail, Telegram and public social-post preparation alongside the initial providers,
+with [account and advertising distinctions](social.md). Its finite WUPHF plan does not activate
+the operational successor or supply its missing durable delivery machinery.
+
 ## Contract and ownership
 
 The proposed identity is **`reach.correspondence` revision `1`**. Private correspondence, proactive

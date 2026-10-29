@@ -1,0 +1,70 @@
+{
+  "policy_id": "founder-organic-launch",
+  "connections": [
+    {
+      "connection_id": "company-fastmail",
+      "partition_id": "example-company",
+      "provider": "fastmail",
+      "account_id": "mail-account-1",
+      "actor_id": "founder@example.com"
+    },
+    {
+      "connection_id": "company-facebook",
+      "partition_id": "example-company",
+      "provider": "facebook",
+      "account_id": "123456789",
+      "actor_id": "123456789"
+    },
+    {
+      "connection_id": "founder-linkedin",
+      "partition_id": "example-company",
+      "provider": "linkedin",
+      "account_id": "example-member",
+      "actor_id": "urn:li:person:example-member"
+    },
+    {
+      "connection_id": "founder-x",
+      "partition_id": "example-company",
+      "provider": "x",
+      "account_id": "123456789",
+      "actor_id": "123456789"
+    }
+  ],
+  "allowed_targets": [
+    {
+      "kind": "email",
+      "connection_id": "company-fastmail",
+      "mailbox_id": "mail-account-1",
+      "sender": "founder@example.com",
+      "to": [
+        "client@example.net"
+      ],
+      "identity_id": "identity-1",
+      "draft_mailbox_id": "drafts-1"
+    },
+    {
+      "kind": "social",
+      "connection_id": "company-facebook",
+      "account_id": "123456789",
+      "actor_kind": "page"
+    },
+    {
+      "kind": "social",
+      "connection_id": "founder-linkedin",
+      "account_id": "urn:li:person:example-member",
+      "actor_kind": "member"
+    },
+    {
+      "kind": "social",
+      "connection_id": "founder-x",
+      "account_id": "123456789",
+      "actor_kind": "user"
+    }
+  ],
+  "operations": [
+    "send"
+  ],
+  "max_text_chars": 250,
+  "max_batch_size": 4,
+  "ttl_seconds": 300
+}

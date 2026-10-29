@@ -1,0 +1,17 @@
+{
+  "policy_id": "release-announcement",
+  "connections": [
+    {"connection_id": "founder-gmail", "partition_id": "example-company", "provider": "gmail", "account_id": "example-google-subject", "actor_id": "founder@example.com"},
+    {"connection_id": "release-chat", "partition_id": "example-company", "provider": "telegram", "account_id": "123456789", "actor_id": "123456789"},
+    {"connection_id": "project-forge", "partition_id": "example-company", "provider": "github", "account_id": "123456", "actor_id": "example-reach[bot]"}
+  ],
+  "allowed_targets": [
+    {"kind": "email", "connection_id": "founder-gmail", "mailbox_id": "me", "sender": "founder@example.com", "to": ["client@example.net"]},
+    {"kind": "chat", "connection_id": "release-chat", "conversation_id": "-1001234567890"},
+    {"kind": "forge", "connection_id": "project-forge", "repository": "example/project", "issue_number": 42}
+  ],
+  "operations": ["send"],
+  "max_text_chars": 1000,
+  "max_batch_size": 3,
+  "ttl_seconds": 300
+}

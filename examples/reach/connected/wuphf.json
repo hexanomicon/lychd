@@ -1,0 +1,7 @@
+{
+  "requests": [
+    {"kind": "send", "request_id": "release-email-1", "target": {"kind": "email", "connection_id": "founder-gmail", "mailbox_id": "me", "sender": "founder@example.com", "to": ["client@example.net"]}, "subject": "Release candidate ready", "text": "The accepted release candidate is ready for review."},
+    {"kind": "send", "request_id": "release-chat-1", "target": {"kind": "chat", "connection_id": "release-chat", "conversation_id": "-1001234567890"}, "text": "The accepted release candidate is ready for review."},
+    {"kind": "send", "request_id": "release-forge-1", "target": {"kind": "forge", "connection_id": "project-forge", "repository": "example/project", "issue_number": 42}, "text": "The accepted release candidate is ready for review."}
+  ]
+}

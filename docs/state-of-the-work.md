@@ -1940,8 +1940,17 @@ Public history/media and production deployment acceptance remain separate contra
 [Reach connected work](./compositions/reach/connected-work/index.md) proposes a successor to the
 public Discord contract for Gmail, Discord and GitHub correspondence, plus optional WhatsApp business
 messaging and a separate owner–agent probe. Its account lifecycle, provider profiles, delivery policy
-and recovery plan supply no implemented OAuth/installation
-flow, credential service, registered Pattern, platform adapter, or deployed private-mail capability.
+and recovery plan supply no implemented OAuth/installation flow, credential service, registered
+operational correspondence Pattern, live provider transport, or deployed private-mail capability.
+The separate explicit `reach.connect.prepare@1` profile now supplies immutable Email, Chat, Forge
+and Social requests, exact connection/partition/target policy, provider-specific application payload
+builders and finite WUPHF batch preparation through an inactive native serial Graph. Gmail and
+Fastmail have distinct MIME/REST and JMAP preparation; Discord, Telegram bot, WhatsApp business,
+GitHub timeline and Facebook Page/LinkedIn/X organic text plans preserve their provider semantics.
+Radicle, unsupported history reads, attachments, social replies and paid campaigns refuse or remain
+design work. Preparation performs no network, authentication, provider draft save, send or model
+call, and its policy is not current effect authority. This does not implement the successor's
+durable records/outbox, service attempts, required review, provider qualification or live deployment.
 [Thorn](./compositions/thorn/index.md) remains a candidate whitehat security workbench for scoped
 assessment, incident response, cooperative investigation, and reviewed reports/corrections.
 General monitoring and system maintenance remain outside its case ownership. It supplies no
@@ -1954,6 +1963,9 @@ physical devices or every Android version allowed by the declared minimum SDK.
 
 **Evidence**
 
+- **Source:** [Connected request values and policy](https://github.com/hexanomicon/lychd/tree/main/src/lychd/compositions/reach/connected), [provider request builders](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/connected/providers.py), and [offline connected helper](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_connect_prepare.py)
+- **Verification:** [Connected policy cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_connected_policy.py), [provider wire fixtures](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_connected_providers.py), [native connected Graph and WUPHF cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_connected_workflow.py), and [connected CLI previews](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_connect_prepare.py)
+- **Topic:** [Connected preparation and journeys](./compositions/reach/connected-work/preparation.md) and [account, social and advertising assessment](./compositions/reach/connected-work/social.md)
 - **Source:** [Shared Reach preparation](https://github.com/hexanomicon/lychd/tree/main/src/lychd/compositions/reach), [Discord interface](https://github.com/hexanomicon/lychd/tree/main/src/lychd/interface/discord), and [offline helper](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_prepare.py)
 - **Verification:** [Policy and native Graph cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach.py), [Discord wire cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_events.py), [configuration compilation](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_policy.py), and [offline CLI cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_prepare.py)
 - **Topic:** [Reachy preparation](./compositions/reach/preparation.md) and [provider-neutral boundary](./compositions/reach/architecture.md)

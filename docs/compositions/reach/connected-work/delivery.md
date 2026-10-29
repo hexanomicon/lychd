@@ -9,8 +9,10 @@ The first useful result is one prepared email from the correct mailbox and one k
 after authorized review. A successful API request alone cannot qualify Reach: it must survive a
 restart, revoked access and a lost response without sending the same message twice by assumption.
 
-This is the implementation plan for the [candidate successor](index.md). It creates no source
-package, registration, fixture receipt or deployed capability.
+This is the implementation plan for the [candidate successor](index.md). The separate
+[connected preparation profile](preparation.md) implements pure account/target/payload preparation
+and a finite native Graph. It supplies no operational successor registration, provider transport,
+credential service or deployed capability.
 
 ## Ordered slices
 
@@ -20,6 +22,8 @@ package, registration, fixture receipt or deployed capability.
 2. **Prove preparation without providers.** Pure application policy plus typed fake ports exercise
    account selection, bounded reads, hostile input, exact communication preparation, required native
    review, standing-policy constraints and finite retention. Initially no model/network is needed.
+   The offline connected profile now covers exact preparation and provider request construction;
+   its preparation policy is deliberately not standing delivery authority or native review.
 3. **Prove durable delivery.** Add Composition-owned PostgreSQL models/migration/store and
    transactionally bound intake, communication, outbox, authority generations and effect identity.
    Bind existing Run/Consent/worker ownership without a second workflow executor. Exercise restart,

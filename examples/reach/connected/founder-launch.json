@@ -1,0 +1,54 @@
+{
+  "requests": [
+    {
+      "kind": "send",
+      "request_id": "launch-fastmail-1",
+      "target": {
+        "kind": "email",
+        "connection_id": "company-fastmail",
+        "mailbox_id": "mail-account-1",
+        "sender": "founder@example.com",
+        "to": [
+          "client@example.net"
+        ],
+        "identity_id": "identity-1",
+        "draft_mailbox_id": "drafts-1"
+      },
+      "text": "Our AI service launch announcement is ready for your review.",
+      "subject": "AI service launch candidate"
+    },
+    {
+      "kind": "send",
+      "request_id": "launch-facebook-1",
+      "target": {
+        "kind": "social",
+        "connection_id": "company-facebook",
+        "account_id": "123456789",
+        "actor_kind": "page"
+      },
+      "text": "We are preparing to introduce our AI service. Follow our Page for the launch."
+    },
+    {
+      "kind": "send",
+      "request_id": "launch-linkedin-1",
+      "target": {
+        "kind": "social",
+        "connection_id": "founder-linkedin",
+        "account_id": "urn:li:person:example-member",
+        "actor_kind": "member"
+      },
+      "text": "We are preparing to introduce our AI service. I look forward to sharing the launch."
+    },
+    {
+      "kind": "send",
+      "request_id": "launch-x-1",
+      "target": {
+        "kind": "social",
+        "connection_id": "founder-x",
+        "account_id": "123456789",
+        "actor_kind": "user"
+      },
+      "text": "We are preparing to introduce our AI service. Launch details soon."
+    }
+  ]
+}

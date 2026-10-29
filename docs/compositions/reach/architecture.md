@@ -16,6 +16,10 @@ conversation promised by **`reach.external_converse@1`**. The accepted [Habitat]
 [Turn](turn.md) keep their existing meaning; [State of Work](../../state-of-the-work.md#composition-portfolio-delivery)
 owns the shared implementation evidence.
 
+The later **[`reach.connect.prepare@1`](connected-work/preparation.md)** profile prepares bounded
+provider requests for email, chat, forge and social targets. It keeps the same explicit native
+Graph boundary while remaining separate from ingress normalization and connected delivery.
+
 The [operator development profile](operator.md) now implements a separate explicit edge and
 native documents worker. Its generation-local memory, source excerpts and local administration
 do not supply the public contract's durable conversation, Ward or deployment acceptance.
