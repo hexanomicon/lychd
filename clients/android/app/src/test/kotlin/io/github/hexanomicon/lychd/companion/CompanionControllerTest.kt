@@ -128,6 +128,153 @@ class CompanionControllerTest {
         setup.controller.close()
     }
 
+    @Test fun returningToTheReviewedWordsDoesNotReviveAQueuedSend() = runTest {
+        val setup = setup()
+        setup.controller.onForeground()
+        runCurrent()
+        setup.controller.editDraft("A")
+        setup.controller.reviewWords(true)
+        setup.controller.send()
+        setup.controller.editDraft("B")
+        setup.controller.editDraft("A")
+        runCurrent()
+        assertEquals(0, setup.transport.submits)
+        assertEquals("A", setup.controller.bridgeState.value.draft)
+        assertFalse(setup.controller.wordsReviewed.value)
+        setup.controller.close()
+    }
+
+    @Test fun evenAnIdenticalDraftEditInvalidatesAQueuedSend() = runTest {
+        val setup = setup()
+        setup.controller.onForeground()
+        runCurrent()
+        setup.controller.editDraft("A")
+        setup.controller.reviewWords(true)
+        setup.controller.send()
+        setup.controller.editDraft("A")
+        runCurrent()
+        assertEquals(0, setup.transport.submits)
+        assertFalse(setup.controller.wordsReviewed.value)
+        setup.controller.close()
+    }
+
+    @Test fun explicitReviewRevocationCancelsAQueuedSend() = runTest {
+        val setup = setup()
+        setup.controller.onForeground()
+        runCurrent()
+        setup.controller.editDraft("A")
+        setup.controller.reviewWords(true)
+        setup.controller.send()
+        setup.controller.reviewWords(false)
+        runCurrent()
+        assertEquals(0, setup.transport.submits)
+        assertFalse(setup.controller.wordsReviewed.value)
+        setup.controller.close()
+    }
+
+    @Test fun newReviewAfterReturningToTheWordsNeedsItsOwnSend() = runTest {
+        val setup = setup()
+        setup.controller.onForeground()
+        runCurrent()
+        setup.controller.editDraft("A")
+        setup.controller.reviewWords(true)
+        setup.controller.send()
+        setup.controller.editDraft("B")
+        setup.controller.editDraft("A")
+        setup.controller.reviewWords(true)
+        runCurrent()
+        assertEquals(0, setup.transport.submits)
+        assertTrue(setup.controller.wordsReviewed.value)
+        setup.controller.send()
+        runCurrent()
+        assertEquals(1, setup.transport.submits)
+        setup.controller.close()
+    }
+
+    @Test fun revokingAndReviewingAgainNeedsANewSend() = runTest {
+        val setup = setup()
+        setup.controller.onForeground()
+        runCurrent()
+        setup.controller.editDraft("A")
+        setup.controller.reviewWords(true)
+        setup.controller.send()
+        setup.controller.reviewWords(false)
+        setup.controller.reviewWords(true)
+        runCurrent()
+        assertEquals(0, setup.transport.submits)
+        assertTrue(setup.controller.wordsReviewed.value)
+        setup.controller.send()
+        setup.controller.send()
+        runCurrent()
+        assertEquals(1, setup.transport.submits)
+        setup.controller.close()
+    }
+
+    @Test fun unchangedReviewedWordsCanBeSentOnce() = runTest {
+        val setup = setup()
+        setup.controller.onForeground()
+        runCurrent()
+        setup.controller.editDraft("A")
+        setup.controller.reviewWords(true)
+        setup.controller.send()
+        setup.controller.send()
+        runCurrent()
+        assertEquals(1, setup.transport.submits)
+        assertFalse(setup.controller.wordsReviewed.value)
+        setup.controller.close()
+    }
+
+    @Test fun staleRenderActionsCannotChangeTheReplacementContext() = runTest {
+        val setup = setup()
+        setup.controller.onForeground()
+        runCurrent()
+        val oldGeneration = setup.controller.presentationState.value.generation
+        setup.controller.replacePresentationPolicy(PresentationPolicy.developmentFixture())
+        runCurrent()
+        setup.controller.editDraft("current")
+        setup.controller.reviewWords(true)
+        val bridge = setup.controller.bridgeState.value
+        val voice = setup.controller.voiceState.value
+        setup.controller.editDraft("stale", oldGeneration)
+        setup.controller.reviewWords(false, oldGeneration)
+        setup.controller.send(oldGeneration)
+        setup.controller.refresh(oldGeneration)
+        setup.controller.newConversation(oldGeneration)
+        setup.controller.startRecording(oldGeneration)
+        setup.controller.microphonePermissionDenied(oldGeneration)
+        runCurrent()
+        assertEquals(bridge, setup.controller.bridgeState.value)
+        assertEquals(voice, setup.controller.voiceState.value)
+        assertTrue(setup.controller.wordsReviewed.value)
+        assertEquals(2, setup.transport.opens)
+        assertEquals(0, setup.transport.reads)
+        assertEquals(0, setup.transport.submits)
+        assertEquals(0, setup.recorder.starts)
+        setup.controller.close()
+    }
+
+    @Test fun staleRenderCannotReplayOrDiscardACurrentRecording() = runTest {
+        val setup = setup()
+        setup.controller.onForeground()
+        runCurrent()
+        val oldGeneration = setup.controller.presentationState.value.generation
+        setup.controller.replacePresentationPolicy(PresentationPolicy.developmentFixture())
+        setup.controller.startRecording(setup.controller.presentationState.value.generation)
+        runCurrent()
+        setup.recorder.result.complete(RecordedAudio(absentRecording(), 500, 16044))
+        runCurrent()
+        val voice = setup.controller.voiceState.value
+        setup.controller.replayRecording(oldGeneration)
+        setup.controller.startRecording(oldGeneration)
+        setup.controller.microphonePermissionDenied(oldGeneration)
+        assertEquals(voice, setup.controller.voiceState.value)
+        assertEquals(0, setup.player.plays)
+        assertEquals(1, setup.recorder.starts)
+        setup.controller.replayRecording(setup.controller.presentationState.value.generation)
+        assertEquals(1, setup.player.plays)
+        setup.controller.close()
+    }
+
     @Test fun earlyMicrophoneFailureImmediatelyLeavesRecordingAndShowsError() = runTest {
         val setup = setup()
         setup.controller.onForeground()

@@ -40,6 +40,7 @@ import io.github.hexanomicon.lychd.companion.CapturePhase
 import io.github.hexanomicon.lychd.companion.VoiceUiState
 import io.github.hexanomicon.lychd.companion.core.BridgeState
 import io.github.hexanomicon.lychd.companion.core.BridgeTurn
+import io.github.hexanomicon.lychd.companion.core.diagnostics.DeviceStatus
 import io.github.hexanomicon.lychd.companion.core.presentation.CompanionAction
 import io.github.hexanomicon.lychd.companion.core.presentation.CompanionScreenId
 import io.github.hexanomicon.lychd.companion.core.presentation.OfferDecision
@@ -53,6 +54,9 @@ fun CompanionScreen(
     bridge: BridgeState,
     voice: VoiceUiState,
     reviewed: Boolean,
+    deviceStatus: DeviceStatus,
+    onRefreshDeviceStatus: () -> Unit,
+    onAppSettings: () -> Unit,
     onDraftChange: (String) -> Unit,
     onReviewChange: (Boolean) -> Unit,
     onSend: () -> Unit,
@@ -82,8 +86,11 @@ fun CompanionScreen(
                         style = MaterialTheme.typography.headlineMedium,
                         modifier = Modifier.semantics { heading() },
                     )
-                    Text("Review your words before sending.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Device status and local tools.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+            }
+            item(key = "device-status") {
+                DeviceStatusPanel(deviceStatus, onRefreshDeviceStatus, onAppSettings)
             }
             if (presentation.policy.source == PolicySource.UNAVAILABLE) {
                 item(key = "unavailable") {

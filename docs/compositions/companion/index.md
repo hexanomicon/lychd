@@ -46,8 +46,9 @@ owns the delivery boundary.
 
 Configure each session explicitly with capability requirements, local routes, presentation/privacy settings, and admitted feature bindings. Extension packages may supply features without becoming an application-owned extension set. Companion then owns the passage through disclosure, draft, commit, playback, reconnect, expiry, and revocation. That independent lifecycle makes it a Composition rather than only a Familiar profile.
 
-[Android Development](android-development.md) describes the implemented fixture/local-audio slice
-and its build route. [Android Foundation](android-foundation.md) studies the first Bridge and foreground voice client,
+[Android Development](android-development.md) describes the implemented fixture, local audio and
+device status, their build route and [where to resume the phone campaign](android-development.md#resume-the-current-campaign).
+[Android Foundation](android-foundation.md) studies the first Bridge and foreground voice client,
 including shared API contracts and the path to later phone capabilities.
 [Phone Workspace](phone-workspace.md) studies a broader candidate direction: an offline music
 player, progressively admitted phone actions, selected photos, and explicit sync over local Wi-Fi

@@ -2,7 +2,12 @@ package io.github.hexanomicon.lychd.companion
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -31,12 +36,12 @@ class MainActivity : ComponentActivity() {
         ) {
             if (granted) {
                 if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
-                    companion.startRecording()
+                    companion.startRecording(policyGeneration)
                 } else {
                     pendingPermissionStart = policyGeneration
                 }
             } else {
-                companion.microphonePermissionDenied()
+                companion.microphonePermissionDenied(policyGeneration)
             }
         }
         permissionRequestGeneration = null
@@ -51,20 +56,26 @@ class MainActivity : ComponentActivity() {
             val voice by companion.voiceState.collectAsStateWithLifecycle()
             val reviewed by companion.wordsReviewed.collectAsStateWithLifecycle()
             val presentation by companion.presentationState.collectAsStateWithLifecycle()
+            val deviceStatus by companion.deviceStatusState.collectAsStateWithLifecycle()
+            // Capture this render's value, not a delegated State getter read by a late callback.
+            val renderGeneration = presentation.generation
             CompanionTheme {
                 CompanionScreen(
                     presentation = presentation,
                     bridge = bridge,
                     voice = voice,
                     reviewed = reviewed,
-                    onDraftChange = companion::editDraft,
-                    onReviewChange = companion::reviewWords,
-                    onSend = companion::send,
-                    onRefresh = companion::refresh,
-                    onNewConversation = companion::newConversation,
-                    onStartRecording = ::requestRecording,
+                    deviceStatus = deviceStatus,
+                    onRefreshDeviceStatus = companion::refreshDeviceStatus,
+                    onAppSettings = ::openAppSettings,
+                    onDraftChange = { companion.editDraft(it, renderGeneration) },
+                    onReviewChange = { companion.reviewWords(it, renderGeneration) },
+                    onSend = { companion.send(renderGeneration) },
+                    onRefresh = { companion.refresh(renderGeneration) },
+                    onNewConversation = { companion.newConversation(renderGeneration) },
+                    onStartRecording = { requestRecording(renderGeneration) },
                     onStopRecording = companion::stopRecording,
-                    onReplay = companion::replayRecording,
+                    onReplay = { companion.replayRecording(renderGeneration) },
                     onStopReplay = companion::stopReplay,
                     onDiscard = companion::discardRecording,
                 )
@@ -72,16 +83,27 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requestRecording() {
+    private fun requestRecording(expectedGeneration: Long) {
         if (!BuildConfig.DEBUG || !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
         val presentation = companion.presentationState.value
-        if (presentation.decision(CompanionAction.START_RECORDING) != OfferDecision.OFFERED) return
+        if (presentation.decision(CompanionAction.START_RECORDING, expectedGeneration) != OfferDecision.OFFERED) return
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            companion.startRecording()
+            companion.startRecording(expectedGeneration)
         } else {
             permissionRequestGeneration = foregroundGeneration
             permissionPolicyGeneration = presentation.generation
             microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    private fun openAppSettings() {
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
+        try {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)))
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(this, "App settings are unavailable. Open Companion's permissions from Android Settings.", Toast.LENGTH_LONG).show()
+        } catch (_: SecurityException) {
+            Toast.makeText(this, "Android did not allow app settings to open. Review Companion's permissions in Settings.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -94,7 +116,7 @@ class MainActivity : ComponentActivity() {
             companion.presentationState.value.decision(CompanionAction.START_RECORDING, pending) == OfferDecision.OFFERED &&
             checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         ) {
-            companion.startRecording()
+            companion.startRecording(pending)
         }
     }
 

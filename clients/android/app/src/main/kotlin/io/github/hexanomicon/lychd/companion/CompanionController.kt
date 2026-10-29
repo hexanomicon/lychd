@@ -59,6 +59,8 @@ internal class CompanionController(
     private var lifetimeGeneration = 0L
     private var audioGeneration = 0L
     private var replayGeneration = 0L
+    // Approval belongs to one review decision, even when later edits restore identical words.
+    private var reviewToken = Any()
     private var recorder: LocalRecorder? = if (gate.state.value.policy.source == PolicySource.DEVELOPMENT_FIXTURE) recorderFactory() else null
     private var player: LocalPlayer? = null
     // Adapter destruction does not discharge its byte custody or an overflow restart latch.
@@ -68,40 +70,49 @@ internal class CompanionController(
     private val recordingDiscards = RecordingDiscards()
 
     private data class Origin(val presentation: Long, val lifetime: Long)
-    private fun origin() = Origin(gate.state.value.generation, lifetimeGeneration)
+    private fun origin(expectedPresentationGeneration: Long = gate.state.value.generation) =
+        Origin(expectedPresentationGeneration, lifetimeGeneration)
     private fun offered(action: CompanionAction, origin: Origin = origin()): Boolean =
         !closed && foreground && origin.lifetime == lifetimeGeneration &&
             gate.state.value.decision(action, origin.presentation) == OfferDecision.OFFERED
 
-    fun editDraft(text: String) {
-        if (!offered(CompanionAction.EDIT_WORDS)) return
-        mutableReviewed.value = false
+    fun editDraft(text: String, expectedPresentationGeneration: Long = gate.state.value.generation) {
+        if (!offered(CompanionAction.EDIT_WORDS, origin(expectedPresentationGeneration))) return
+        invalidateReview()
         store?.editDraft(text)
     }
 
-    fun reviewWords(reviewed: Boolean) {
-        if (!offered(CompanionAction.REVIEW_WORDS)) return
+    fun reviewWords(reviewed: Boolean, expectedPresentationGeneration: Long = gate.state.value.generation) {
+        if (!offered(CompanionAction.REVIEW_WORDS, origin(expectedPresentationGeneration))) return
+        invalidateReview()
         mutableReviewed.value = reviewed && bridgeState.value.draft.isNotBlank()
     }
 
-    fun send() {
+    private fun invalidateReview() {
+        reviewToken = Any()
+        mutableReviewed.value = false
+    }
+
+    fun send(expectedPresentationGeneration: Long = gate.state.value.generation) {
         val state = bridgeState.value
-        val origin = origin()
+        val origin = origin(expectedPresentationGeneration)
         if (!offered(CompanionAction.SEND_WORDS, origin) || !mutableReviewed.value || state.busy ||
             state.sessionId == null || state.hasUncertainSubmission || mutableVoice.value.phase != CapturePhase.IDLE
         ) return
+        val approval = reviewToken
         mutableReviewed.value = false
         scope.launch {
-            if (offered(CompanionAction.SEND_WORDS, origin) && bridgeState.value.draft == state.draft &&
+            if (offered(CompanionAction.SEND_WORDS, origin) && reviewToken === approval &&
+                bridgeState.value.draft == state.draft &&
                 bridgeState.value.sessionId == state.sessionId && mutableVoice.value.phase == CapturePhase.IDLE
             ) store?.send()
         }
     }
 
-    fun refresh() {
+    fun refresh(expectedPresentationGeneration: Long = gate.state.value.generation) {
         val sessionId = bridgeState.value.sessionId
         val action = if (sessionId == null) CompanionAction.OPEN_CONVERSATION else CompanionAction.REFRESH_CONVERSATION
-        val origin = origin()
+        val origin = origin(expectedPresentationGeneration)
         if (!offered(action, origin) || bridgeState.value.busy) return
         scope.launch {
             if (!offered(action, origin) || bridgeState.value.sessionId != sessionId) return@launch
@@ -109,11 +120,11 @@ internal class CompanionController(
         }
     }
 
-    fun newConversation() {
-        val origin = origin()
+    fun newConversation(expectedPresentationGeneration: Long = gate.state.value.generation) {
+        val origin = origin(expectedPresentationGeneration)
         if (!offered(CompanionAction.OPEN_CONVERSATION, origin) || bridgeState.value.busy) return
         cancelLocalAudio()
-        mutableReviewed.value = false
+        invalidateReview()
         scope.launch { if (offered(CompanionAction.OPEN_CONVERSATION, origin)) store?.newSession() }
     }
 
@@ -121,7 +132,7 @@ internal class CompanionController(
         gate.replace(policy)
         lifetimeGeneration += 1
         store?.clearProjection()
-        mutableReviewed.value = false
+        invalidateReview()
         cancelLocalAudio()
         if (foreground) openIfOffered()
     }
@@ -147,16 +158,16 @@ internal class CompanionController(
         cancelLocalAudio(if (hadAudio) "Audio stopped when the app left the foreground. Temporary files are checked before another recording." else null)
     }
 
-    fun microphonePermissionDenied() {
-        if (!offered(CompanionAction.START_RECORDING)) return
+    fun microphonePermissionDenied(expectedPresentationGeneration: Long = gate.state.value.generation) {
+        if (!offered(CompanionAction.START_RECORDING, origin(expectedPresentationGeneration))) return
         mutableVoice.value = mutableVoice.value.copy(
             error = "Microphone access was denied. You can still enter words manually; Android app settings can restore access.",
             notice = null,
         )
     }
 
-    fun startRecording() {
-        val origin = origin()
+    fun startRecording(expectedPresentationGeneration: Long = gate.state.value.generation) {
+        val origin = origin(expectedPresentationGeneration)
         if (!offered(CompanionAction.START_RECORDING, origin) || mutableVoice.value.phase != CapturePhase.IDLE) return
         if (!cancelLocalAudio()) return
         val generation = audioGeneration
@@ -230,8 +241,8 @@ internal class CompanionController(
         }
     }
 
-    fun replayRecording() {
-        val origin = origin()
+    fun replayRecording(expectedPresentationGeneration: Long = gate.state.value.generation) {
+        val origin = origin(expectedPresentationGeneration)
         val recording = mutableVoice.value.recording ?: return
         if (!offered(CompanionAction.REPLAY_RECORDING, origin) || mutableVoice.value.phase != CapturePhase.IDLE) return
         val generation = audioGeneration

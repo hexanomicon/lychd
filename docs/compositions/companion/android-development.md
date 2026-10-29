@@ -32,12 +32,34 @@ resources. Rotation may retain the ViewModel's draft while discarding audio. Thi
 `onStop`; the implementation does not claim capture ends merely on `onPause` or against every
 Samsung-specific lifecycle condition before a handset probe.
 
+## Local device status
+
+Local diagnostics are independent of host working views and remain available in debug and
+release. They sample Android API level, microphone hardware and this app's permission, available
+space on the app-data filesystem, battery level/charging, and power-save mode. Refresh runs on
+foreground return or an explicit request. Backgrounding marks the snapshot stale and fences
+late reads; one failed probe leaves its field unknown without discarding the other observations.
+Snapshots stay in memory on the phone and are not uploaded or logged.
+
+Troubleshooting distinguishes reported facts from operational proof. Microphone permission does
+not establish working capture or the global Mic access setting. Available filesystem space does
+not inventory media or guarantee a later write. Low-space and battery notices are local advice,
+using 32 MiB and 15 percent thresholds. An explicit app-settings button can help restore this
+app's microphone permission; checking status never requests permission or starts recording.
+Unavailable settings navigation leaves a visible local message.
+
+The pure JVM diagnostics model and lifecycle monitor belong to `core`; Android reads and the
+status card belong to `app`. These local observations are not a Familiar admission record, Ward
+projection, remote diagnostic service, or phone-administration interface. New integrations must
+add their own bounded observations and admitted actions rather than turning a status check into
+an automatic repair.
+
 ## Code and contract ownership
 
 | Path | Responsibility |
 | --- | --- |
 | `clients/android/app` | Compose views, lifecycle and permission handling, testable handset interaction, AudioRecord capture and Media3 replay adapters. |
-| `clients/android/core` | Local Bridge state, bounded Ktor transport, explicitly in-process HTTP fixture, local presentation offers and recovery tests. |
+| `clients/android/core` | Local Bridge state, bounded Ktor transport, explicitly in-process HTTP fixture, local presentation offers, local diagnostics/advice and foreground sampling lifecycle. |
 | `clients/android/tools/generate_wire.py` | Deterministic Kotlin wire models and JSON token-shape checks from the current Altar OpenAPI export. |
 | `clients/web/openapi.json` | Existing host-owned transport schema; Android does not own a second copy. |
 | `clients/android/gradle/libs.versions.toml` | Pinned direct build and library versions. |
@@ -58,7 +80,12 @@ loopback possession credential must not be copied into the client or exposed ove
 ## Local state and custody
 
 Bridge state and fixture records live only in memory. A submission uses a fresh request UUID;
-after success, the client reads the session snapshot. If acknowledgement is missing or malformed,
+review binds the exact current words and presentation context. An edit invalidates it even when
+the text later returns to the same string; withdrawing and granting review again requires a new
+Send. Rendered work controls retain their originating presentation generation, so an old control
+cannot edit, review, submit, record or replay in a replacement context.
+
+After a successful submission, the client reads the session snapshot. If acknowledgement is missing or malformed,
 mark the outcome unknown and block further sends in that session. Matching text during Refresh
 cannot prove the missing outcome. An explicit new session clears this local latch, but the fixture
 has no durable request lookup.
@@ -132,11 +159,20 @@ queued actions, context loss, early audio failures, late callbacks and cleanup a
 destruction. Cleanup retry cannot erase a current recording-failure message or resurrect a closed
 owner's recorder.
 Android lint and an APK build verify platform compilation; they do not operate a microphone.
-The reviewed aggregate passed **31 Bridge tests, 12 presentation tests, 24 controller tests,
+The initial reviewed aggregate passed **31 Bridge tests, 12 presentation tests, 24 controller tests,
 17 audio tests, five deletion-recovery tests and nine generator tests**—98 client tests in total—
 Android lint with no issues, and the debug APK build. Lockfiles retain the
 resolved dependency graph. These checks do not prove supply-chain provenance or reproducible
 APK bytes across machines.
+
+The current locked JDK 17 `core:check` passes 70 JVM tests, including 18 local-diagnostics and
+foreground-refresh tests, and the nine generator tests. These exercise unknown readings, advisory
+boundaries, permission changes on resume, cancellation and late-read fencing. Review-token and
+render-generation regressions are covered by the 32 controller tests within 54 passing Android
+debug JVM tests. Debug lint reports no issues, and both debug and unsigned release APKs build.
+These current compilation receipts include the Android status adapter, UI and callback wiring;
+they do not establish actual microphone, storage or battery readings, settings navigation, or
+Samsung lifecycle behavior without the handset probe.
 
 The wrapper verifies its distribution SHA-256 and Gradle verification metadata retains artifact
 hashes observed during this first build. This establishes a baseline for detecting artifact changes,
@@ -150,6 +186,42 @@ version and test permission refusal/revocation, repeated recording, the automati
 background, rotation, process kill/relaunch cleanup, audio focus, wired/Bluetooth route changes,
 and stop/discard while finishing or replaying. A local completed WAV is not evidence of a remote
 voice journey. This first slice contains no instrumented-device test receipt.
+
+## Resume the current campaign
+
+The **29 October 2026 checkpoint** leaves local status and reviewed-input fencing in the native
+Android project. [State of Work](../../state-of-the-work.md#companion-android-client) owns the
+current checks, build evidence and undelivered boundaries; [the client README](https://github.com/hexanomicon/lychd/blob/main/clients/android/README.md)
+owns reproducible setup and commands. [Phone Workspace](phone-workspace.md) retains the full
+operator goal, both device directions, proposed authority ladder, app delivery, photos and cleanup.
+Neither the build nor this continuation procedure broadens Companion revision 3.
+
+Start a later campaign here rather than treating an earlier APK or temporary tool directory as
+the source. Inspect the current checkout, preserve unrelated changes, read the current State
+record, and identify the smallest next acceptance. Reuse an operator-local development environment
+and signing key if retained; otherwise follow the README and make the changed signing identity
+explicit before proposing an update. Keep APKs, key material, environment paths and raw receipts
+outside the checkout. The tracked source and ordinary build route must suffice when old local
+artifacts are unavailable.
+
+Local construction and handset qualification can proceed alongside one another; retain separate
+acceptance for the build and for behavior observed on the phone.
+
+| Work package | Next acceptance | Stopping line |
+| --- | --- | --- |
+| Handset qualification | On the selected S20 FE, record exact model/Android/API/build, install the reviewed APK, and exercise status refresh, permission denial/revocation/settings return, background/lock, recording stop and cleanup. | Do not infer handset behavior from compilation or JVM tests; do not uninstall an existing app to hide a signing conflict. |
+| Local folder player | Select a music folder explicitly, browse/play a useful offline library and queue, and observe playback through background, lock and headset controls. Cover revoked access, missing files, storage limits and interruption. | Keep persistent media and the background player separate from foreground reply replay; settle any new durable ownership before expanding it. |
+| Reviewed app delivery | Retain exact source/build/checks, signed APK/package/version/permissions, verified received bytes, explicit Android installation and installed-identity readback. Prove offline MP3 playback. | Manual or available authorized KDE Connect delivery is operator evidence, not native enrollment or automated construction. A separate requested app has its own package and signing identity. |
+| Native phone connection | Resolve operation/material ownership first; publish the accepted contract, then protected ingress, Ward → Familiar → Companion admission, exact request lookup and one bounded player operation. | Test unpaired peer, wrong object/action, expiry/revocation, changed context and lost acknowledgement without repeating an effect. Do not expose the existing loopback Altar. |
+| Photos before cleanup | Export selected representations to verified destination custody; subsequently review exact eligible local items and a separate system trash request. | Preserve provider/cloud limits, changed-source refusal, per-item outcomes and the URI/content race. Permanent deletion is another live decision. |
+| Later reach and interaction | Repeat an already admitted journey through VPN; connect speech or further observations through their exact owners. | A new route, model or microphone supplies no additional effect authority. |
+
+The local-player/delivery campaign can proceed independently of live speech. The Bridge and Voice
+release still needs its own live Communion acceptance. For remote troubleshooting, use
+[the observation-to-repair passage](phone-workspace.md#grow-observation-into-troubleshooting)
+and admit each new action rather than a generic phone command executor. Stop when the next step
+requires a missing owner, authority, recovery contract or unobserved physical premise; retain the
+specific gap and the smallest probe that could settle it.
 
 ## Next integration
 

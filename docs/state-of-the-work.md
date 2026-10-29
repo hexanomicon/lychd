@@ -2135,21 +2135,32 @@ denied offers, stale callbacks, WAV bounds and file custody. Real Ktor fixture t
 caller cancellation from the transport's own deadline, keep unacknowledged submissions unknown,
 and refuse redirect/replay or late-response restoration after context clearing. The fixture
 performs no host work; these client mechanics do not deliver a Portfolio Composition.
-The debug APK builds with the pinned Gradle toolchain and passes Android lint; that compile
-evidence is separate from the outstanding handset probe.
+Foreground local diagnostics now have a separate pure JVM snapshot/advice model and lifecycle
+monitor. The locked JDK 17 Core gate passes 70 JVM tests, including 18 diagnostics/lifecycle
+tests, plus the nine wire-generator tests. Source adds Android reads for microphone
+hardware/permission, app-data filesystem space and battery/power conditions, and a local status
+panel with explicit settings navigation. These observations neither qualify hardware nor grant
+host access. Exact review tokens fence queued sends after edits or review withdrawal, and rendered
+work callbacks retain their original presentation generation.
+The current Android assembly passes 54 debug JVM tests, including 32 controller tests, and debug
+lint with no issues. Debug and unsigned release APKs build with the pinned toolchain. These
+compilation receipts include the local-status adapter/UI and callback wiring, but remain separate
+from actual-device readings and the outstanding handset probe.
 
 **Boundary — Not yet:** There is no enrolled handset or real-device validation receipt, live
 network engine, protected mobile ingress, Ward/Familiar enrollment, authenticated working-view
 projection, object-scoped authorization, semantic event subscription,
 Echo transcription/synthesis transport, settled Companion handoff/presentation, or Communion
-Suite execution. Release builds show an unavailable screen. Music, photo access and copy sync
-remain candidate work.
+Suite execution. Host work stays unavailable in release; local status has an independent UI path.
+Current diagnostics and callback wiring still need actual-device checks. Music, photo access and
+copy sync remain candidate work.
 
 **Evidence**
 
 - **Source:** [Android client](https://github.com/hexanomicon/lychd/tree/main/clients/android), [Bridge transport](https://github.com/hexanomicon/lychd/blob/main/clients/android/core/src/main/kotlin/io/github/hexanomicon/lychd/companion/core/KtorBridgeTransport.kt), [presentation policy](https://github.com/hexanomicon/lychd/blob/main/clients/android/core/src/main/kotlin/io/github/hexanomicon/lychd/companion/core/presentation/PresentationPolicy.kt), [interaction controller](https://github.com/hexanomicon/lychd/blob/main/clients/android/app/src/main/kotlin/io/github/hexanomicon/lychd/companion/CompanionController.kt), and [foreground recorder](https://github.com/hexanomicon/lychd/blob/main/clients/android/app/src/main/kotlin/io/github/hexanomicon/lychd/companion/audio/ForegroundRecorder.kt)
 - **Verification:** [Core tests](https://github.com/hexanomicon/lychd/tree/main/clients/android/core/src/test/kotlin/io/github/hexanomicon/lychd/companion/core), [presentation tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/core/src/test/kotlin/io/github/hexanomicon/lychd/companion/core/presentation/PresentationPolicyTest.kt), [controller tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/app/src/test/kotlin/io/github/hexanomicon/lychd/companion/CompanionControllerTest.kt), [WAV tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/app/src/test/kotlin/io/github/hexanomicon/lychd/companion/audio/Pcm16WavFileTest.kt), and [wire generator tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/tools/test_generate_wire.py)
 - **Topic:** [Android Development](./compositions/companion/android-development.md) and [Access and Views](./compositions/companion/access-and-views.md)
+- **Verification:** [Device observation/advice tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/core/src/test/kotlin/io/github/hexanomicon/lychd/companion/core/diagnostics/DeviceDiagnosticsTest.kt) and [foreground diagnostic lifecycle tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/core/src/test/kotlin/io/github/hexanomicon/lychd/companion/core/diagnostics/DeviceStatusMonitorTest.kt)
 - **Law:** [Source topology](./adr/01-doctrine.md#repository-source-topology), [Audio](./adr/37-audio.md), and [IAM](./adr/38-iam.md)
 
 ### Orb instrument {#orb-instrument}

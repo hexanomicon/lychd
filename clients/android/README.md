@@ -3,6 +3,9 @@
 Native Kotlin/Compose development client for the [Companion Composition](../../docs/compositions/companion/index.md).
 The debug app runs an explicitly labelled in-process Bridge fixture and records/replays bounded
 local audio. It does not connect to a live LychD, transcribe, synthesize speech, or enroll a device.
+Both debug and release also offer foreground local device status: microphone hardware/permission,
+app-data filesystem space, battery/charging and power-save mode, with explicit troubleshooting
+steps. These readings stay on the phone; Refresh neither requests access nor performs repairs.
 
 ## Build
 
@@ -36,8 +39,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 You can also transfer the APK yourself and allow installation for that transfer app in Android.
-Release builds intentionally show an unavailable screen; no production signing or live transport
-is configured. Debug signing cannot be treated as a future production identity.
+Release builds keep host work unavailable while allowing local device status; no production
+signing or live transport is configured. Debug signing cannot be treated as a future production
+identity.
 
 Protocol and generator tests can run without an Android SDK:
 
@@ -55,7 +59,9 @@ existing plugin graph without building an APK; it does not regenerate ordinary m
 
 `app` owns Compose UI, ViewModel/lifecycle integration, testable handset interaction, Android
 permission handling, AudioRecord and Media3 adapters. `core` owns bounded local Bridge interaction,
-Ktor HTTP contract probes and local presentation policy. Views and handlers consult the same
+Ktor HTTP contract probes, local presentation policy and a separate local diagnostics model/monitor.
+Android reads are in `app`; diagnostics refresh on foreground return or request and become stale
+on background entry. Views and handlers consult the same
 screen/action offers; unavailable policy offers no work. These local offers are a seam for a
 future authorized host projection, not delivered Ward authentication or object grants.
 The mock engine is the only transport engine in this slice; CIO remains a researched live-engine

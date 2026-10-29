@@ -43,9 +43,15 @@ It has no live Ward projection factory, role parser, Principal, Credential or Gr
 fixture's local offers can be narrowed in tests; the app exposes no user-controlled role or
 capability selector.
 
-The current surfaces are Conversation, Words and Local recording. Their actions remain separate:
+The host-working surfaces are Conversation, Words and Local recording. Their actions remain separate:
 creation/opening is distinct from reading/refreshing a conversation. A read-only offer therefore
 cannot invoke the initial POST or Refresh's create fallback.
+
+Local device status has its own foreground refresh lifecycle outside these offers. It reads only
+bounded app/device conditions and can open this app's settings after a user click. It stays
+available when host access is unavailable, without creating a conversation, requesting a
+permission, capturing audio, or supplying remote authority. The
+[local status contract](android-development.md#local-device-status) owns its observation limits.
 
 Check the exact offer whenever work is requested. Missing policy denies work by default; an
 omitted offer denies its corresponding surface/action. A stale local context cannot authorize
