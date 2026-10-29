@@ -15,7 +15,6 @@ from email import policy
 from email.headerregistry import Address
 from email.message import EmailMessage
 from email.utils import format_datetime
-from hashlib import sha256
 from typing import Any, Literal, NoReturn, Protocol
 
 from lychd.compositions.reach.connected.schemas import (
@@ -276,6 +275,7 @@ def _reply(request: SendRequest, target: ChatTarget) -> str | None:
 
 
 def _discord(preparation: PreparedOperation, target: ChatTarget) -> PreparedRequest:
+    """Bind an exact channel request and nonce to its complete preparation."""
     channel = _numeric(target.conversation_id)
     route = f"discord:/api/v10/channels/{channel}/messages"
     request = preparation.request
@@ -286,7 +286,7 @@ def _discord(preparation: PreparedOperation, target: ChatTarget) -> PreparedRequ
         return _plan(preparation, "GET", route, query=query)
     if len(request.text) > _DISCORD_TEXT:
         _refuse("discord_text_limit")
-    nonce = sha256(f"{preparation.connection.actor_id}:{channel}:{request.request_id}".encode()).hexdigest()[:25]
+    nonce = preparation.digest[:25]
     body: dict[str, Any] = {
         "content": request.text,
         "flags": 4,

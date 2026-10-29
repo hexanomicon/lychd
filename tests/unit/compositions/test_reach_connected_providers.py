@@ -7,7 +7,6 @@ import json
 from datetime import UTC, datetime, timedelta
 from email import policy
 from email.parser import BytesParser
-from hashlib import sha256
 from typing import Any
 
 import pytest
@@ -261,12 +260,29 @@ def test_discord_payload_preserves_suppressed_mentions_and_existing_reply_interf
         "content": "Hello",
         "flags": 4,
         "allowed_mentions": {"parse": [], "replied_user": False},
-        "nonce": sha256(b"123:456:request").hexdigest()[:25],
+        "nonce": value.digest[:25],
         "enforce_nonce": True,
         "message_reference": {"message_id": "789", "channel_id": "456", "fail_if_not_exists": True},
     }
     read = build_request(preparation(connection("discord"), chat_target(), read=True, limit=2, cursor="900"))
     assert read.query == (("limit", "2"), ("before", "900"))
+
+
+def test_discord_nonce_is_stable_only_for_the_same_exact_preparation() -> None:
+    value = preparation(connection("discord"), chat_target(reply_to_id="789"))
+
+    def nonce(item: PreparedOperation) -> str:
+        return json.loads(build_request(item).body)["nonce"]
+
+    original = nonce(value)
+    assert len(original) == 25
+    assert nonce(value) == original
+    changed_body = value.model_copy(update={"request": value.request.model_copy(update={"text": "Corrected text"})})
+    changed_reply = preparation(connection("discord"), chat_target(reply_to_id="790"))
+    changed_time = value.model_copy(
+        update={"prepared_at": NOW + timedelta(seconds=1), "expires_at": value.expires_at + timedelta(seconds=1)}
+    )
+    assert all(nonce(changed) != original for changed in (changed_body, changed_reply, changed_time))
 
 
 def test_telegram_bot_send_uses_exact_numeric_target_without_parse_mode_or_token() -> None:

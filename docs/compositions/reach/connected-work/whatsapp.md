@@ -134,3 +134,5 @@ Before delivery, falsify window expiry during a queue wait, template pause, opt-
 duplicate/late webhook, forged signature, shared-customer disconnect, unknown send, exhausted spend,
 market-policy change and unavailable agent rollout. Keep the common
 [acceptance plan](delivery.md) and the initial three connectors independent of this optional work.
+
+[Chat](../chat.md) · [Accounts and updates](accounts.md)

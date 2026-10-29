@@ -21,6 +21,10 @@ It adds Fastmail, Telegram and public social-post preparation alongside the init
 with [account and advertising distinctions](social.md). Its finite WUPHF plan does not activate
 the operational successor or supply its missing durable delivery machinery.
 
+Browse the provider contracts by family: [Email](../email.md), [Chat](../chat.md),
+[Forge](../forge.md) and [Social](../social.md). Those routes distinguish current request preparation
+from each provider's proposed connected operation without creating separate application owners.
+
 ## Contract and ownership
 
 The proposed identity is **`reach.correspondence` revision `1`**. Private correspondence, proactive

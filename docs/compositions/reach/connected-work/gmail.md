@@ -129,4 +129,4 @@ Routine releases retain the client/grant/cursor/outbox identities. Scope or mate
 changes may require new authorization or verification; automatic refresh and watch renewal belong
 to the service. [Approved-app changes](https://support.google.com/cloud/answer/13464018)
 
-[Accounts and updates](accounts.md) · [Acceptance and delivery](delivery.md)
+[Email](../email.md) · [Accounts and updates](accounts.md) · [Acceptance and delivery](delivery.md)

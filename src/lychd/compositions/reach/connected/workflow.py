@@ -253,7 +253,7 @@ def connected_preparation_workflow(
         manifest=PatternManifest(
             key=_SOURCE,
             revision="1",
-            implementation_revision="py.1",
+            implementation_revision="py.2",
             checkpoint_schema="reach-connected-preparation-state-v1",
             entry_node="prepare",
             nodes=(

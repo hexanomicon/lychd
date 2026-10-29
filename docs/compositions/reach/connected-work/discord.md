@@ -203,4 +203,4 @@ Python checks through the source-bound OCI harness, then `make frontend-check` a
 Svelte edit. Published documentation changes also require a clean Zensical build. These are
 implementation gates, not evidence that this candidate or its backend ports are delivered.
 
-[Accounts and updates](accounts.md) · [Acceptance and delivery](delivery.md)
+[Chat](../chat.md) · [Accounts and updates](accounts.md) · [Acceptance and delivery](delivery.md)

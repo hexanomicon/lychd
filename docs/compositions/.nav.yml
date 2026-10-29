@@ -95,9 +95,26 @@ nav:
           - blockworld/continuity.md
       - Reach:
           - reach/index.md
-          - reach/preparation.md
-          - reach/architecture.md
-          - reach/operator.md
+          - reach/connected-work/preparation.md
+          - Email:
+              - reach/email.md
+              - reach/connected-work/gmail.md
+              - reach/connected-work/fastmail.md
+          - Chat:
+              - reach/chat.md
+              - Discord:
+                  - reach/preparation.md
+                  - reach/architecture.md
+                  - reach/operator.md
+                  - reach/connected-work/discord.md
+              - reach/connected-work/telegram.md
+              - reach/connected-work/whatsapp.md
+          - Forge:
+              - reach/forge.md
+              - reach/connected-work/github.md
+          - Social:
+              - reach/social.md
+              - reach/connected-work/social.md
           - reach/habitat.md
           - reach/turn.md
           - Deployment profiles:
@@ -137,10 +154,6 @@ nav:
       - Reach Connected Work:
           - reach/connected-work/index.md
           - reach/connected-work/accounts.md
-          - reach/connected-work/gmail.md
-          - reach/connected-work/discord.md
-          - reach/connected-work/github.md
-          - reach/connected-work/whatsapp.md
           - reach/connected-work/delivery.md
       - Companion Android Foundation: companion/android-foundation.md
       - Companion Phone Workspace: companion/phone-workspace.md

@@ -385,4 +385,6 @@ def test_explicit_factory_does_not_activate_registry_or_change_legacy_reach() ->
     policy, _ = correspondence()
     workflow = connected_preparation_workflow(policy, clock=lambda: NOW, record_result=lambda _: None)
     assert [node.key for node in workflow.manifest.nodes] == ["prepare", "project", "end"]
+    assert workflow.manifest.implementation_revision == "py.2"
+    assert workflow.manifest.revision == "1"
     assert all(item.name != "reach.connect.prepare" for item in builtin_workflow_registry().all())

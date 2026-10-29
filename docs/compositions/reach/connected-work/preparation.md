@@ -19,10 +19,10 @@ owns its evidence and the remaining deployment boundary.
 
 | Family | Concrete preparation | Why the distinction survives |
 | --- | --- | --- |
-| Email | Gmail MIME/REST; Fastmail JMAP | Mailbox, sender, recipients, reply headers and thread remain explicit. Fastmail submission identity is separate from its account. |
-| Chat | Discord bot, Telegram bot, WhatsApp business text | A server/channel, bot chat and business phone/recipient have different identities and eligibility. No personal-session impersonation is selected. |
-| Forge | GitHub issue or pull-request timeline comment | A repository and numbered conversation are required. Radicle remains a future implementation of this family; no compatibility is inferred. |
-| Social | Facebook Page, LinkedIn member/organization and X original text post | The external author and public audience are pinned. Advertising, direct messages and automatic AI replies are separate capabilities. |
+| [Email](../email.md) | Gmail MIME/REST; Fastmail JMAP | Mailbox, sender, recipients, reply headers and thread remain explicit. Fastmail submission identity is separate from its account. |
+| [Chat](../chat.md) | Discord bot, Telegram bot, WhatsApp business text | A server/channel, bot chat and business phone/recipient have different identities and eligibility. No personal-session impersonation is selected. |
+| [Forge](../forge.md) | GitHub issue or pull-request timeline comment | A repository and numbered conversation are required. Radicle needs a future provider profile and may need its own target schema; no compatibility is inferred. |
+| [Social](../social.md) | Facebook Page, LinkedIn member/organization and X original text post | The external author and public audience are pinned. Advertising, direct messages and automatic AI replies are separate capabilities. |
 
 The shared request is semantic: read bounded correspondence or prepare text for one selected
 target. Provider builders translate it into their own protocol subset. They do not turn every
@@ -46,6 +46,10 @@ Matching a display name or email address never links two accounts.
 The explicit factory builds an ordinary serial score: validate the admitted request, prepare its
 provider payloads, then project the plan. State binds the canonical Run, session, policy and exact
 request. Live handles remain dependencies. Normal application boot installs no connected profile.
+
+The corrected payload generator uses implementation `py.2` under the same Pattern revision `1`.
+Runs pinned to `py.1` refuse execution against it; prepare a fresh offline Run instead of resuming
+with different request bytes. This changes no live delivery or replay authority.
 
 ```mermaid
 flowchart LR
@@ -113,8 +117,8 @@ need a [Suite](../../products-and-suites.md#compositions-relate-without-nesting)
 | Prepare AI-service promotional copy for Facebook and LinkedIn. | Separate public post candidates as the configured Page/member/organization. | A personal Facebook profile, private audience or paid advertisement cannot inherit this capability. |
 | Say WUPHF for an accepted release. | One bounded, fully preflighted plan across explicit provider targets. | One bad target rejects preparation; restart is not permission to send any item twice. |
 
-The [provider and account assessment](social.md) explains why account access, organic publication
-and advertising remain separate. The [acceptance plan](delivery.md) retains the durable outbox,
+The [account lifecycle](accounts.md) and [social assessment](social.md) distinguish provider access,
+organic publication and advertising. The [acceptance plan](delivery.md) retains the durable outbox,
 credential, current-authority, revocation and live-provider work needed before actual delivery.
 
 [Reach architecture](../architecture.md) · [Accounts](accounts.md)

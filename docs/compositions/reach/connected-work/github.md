@@ -98,4 +98,4 @@ owner's approval; an installation that has not approved keeps its old grant. Rep
 installation suspension or uninstall fences pending sends without rerouting them.
 [Permission changes](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/choosing-permissions-for-a-github-app#about-changes-to-permissions)
 
-[Accounts and updates](accounts.md) · [Acceptance and delivery](delivery.md)
+[Forge](../forge.md) · [Accounts and updates](accounts.md) · [Acceptance and delivery](delivery.md)
