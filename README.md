@@ -52,7 +52,7 @@ beginning with the shared agentic laboratory and its first public encounters.
 - 💬 **[Discussions](https://github.com/hexanomicon/lychd/discussions)** — ask questions, explore ideas, and share your work.
 - 🐛 **[Issues](https://github.com/hexanomicon/lychd/issues)** — report bugs and track concrete work.
 
-[![Discord — Come hang out](https://img.shields.io/badge/Discord-Come_hang_out-5865F2?style=for-the-badge&logo=discord&logoColor=white&labelColor=1a1a20)](https://discord.gg/WpN3aWEMQ)
+[![Join us on Discord](https://img.shields.io/badge/Discord-Join_us-5865F2?style=for-the-badge&logo=discord&logoColor=white&labelColor=1a1a20)](https://discord.gg/WpN3aWEMQ)
 
 ## 🚩 Local sovereignty — a rebellion against digital feudalism
 
