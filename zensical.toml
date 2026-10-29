@@ -21,7 +21,7 @@ extra_javascript = [
 name = "material"
 logo = "assets/hexanomicon.png"
 favicon = "assets/hexanomicon.png"
-custom_dir = "docs-theme"
+custom_dir = "scripts/docs"
 features = [
     "navigation.instant",
     "navigation.indexes",

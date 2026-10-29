@@ -95,7 +95,7 @@ trap 'exit 143' TERM
 inputs=(AGENTS.md CONTRIBUTING.md README.md ROADMAP.md LICENSE THIRD_PARTY_NOTICES.md
     Makefile Containerfile Containerfile.tests pyproject.toml uv.lock
     .containerignore .python-version .nvmrc zensical.toml
-    .github .agents/scopes .agents/workflows clients docs docs-theme examples scripts src tests)
+    .github .agents/scopes .agents/workflows clients docs examples scripts src tests)
 tar -C "$root" --exclude=node_modules --exclude=.venv --exclude=.cache \
     --exclude=__pycache__ --exclude='*.pyc' --exclude=.gradle --exclude=build \
     --exclude=.svelte-kit --exclude=.pytest_cache --exclude=.ruff_cache \
