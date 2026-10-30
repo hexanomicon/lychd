@@ -5,15 +5,17 @@ icon: material/cellphone-sound
 
 # :material-cellphone-sound: Companion Android Foundation
 
-Build Companion first as a native Android Bridge and foreground voice client on the Samsung
+This study designs Companion's native Android Bridge and foreground voice journey on the Samsung
 S20 FE. Pair with the operator's LychD, record a short deliberate utterance, review its transcript,
 submit the chosen words, and present the settled reply with optional speech. A folder-first music
 player, selected photos, and explicit copy sync can grow from that foundation.
 
 This candidate study, opened **2026-10-09**, develops the construction choices beside
 [`companion.mobile` revision `3`](index.md). It accepts no successor Composition, Suite, remote
-ingress, or phone execution contract. The priority is now Bridge and voice; [Phone
-Workspace](phone-workspace.md) retains the broader everyday-phone direction. [State of
+ingress, or phone execution contract. The operator's later priority is the
+[install-once and PC-managed update lifecycle](phone-workspace.md#install-once-manage-from-the-pc),
+before the MP3 feature. This page retains the separate Bridge and Voice journey and its release
+acceptance; [Phone Workspace](phone-workspace.md) owns that broader direction. [State of
 Work](../../state-of-the-work.md#composition-portfolio-delivery) owns delivery.
 
 [Android Development](android-development.md) now describes the first implementation under
@@ -341,7 +343,7 @@ path](https://developer.android.com/work/dpc/dedicated-devices), including devic
 documented production route. It does not enter the existing-phone milestone. Deeper system
 ownership remains a separate device/OS undertaking.
 
-After Bridge and voice, add Media3 background music with folder-first SAF access, then selected
+Following the prioritized installed-app lifecycle, add Media3 background music with folder-first SAF access, then selected
 photos and verified copy sync. Keep those local features useful without a host. A persistent media
 index or effect journal can earn Room and explicit migrations; recoverable transfers can earn
 WorkManager with current grants and Android execution limits. The broader media/transfer domain
@@ -396,7 +398,7 @@ can require user action; ordinary app evolution must not promise silent installa
 | Local and admitted phone features | Folder-first player, then selected photos and copy sync | Media/controller behavior, retained/revoked URI access, no duplicate effect after reconnect, integrity/conflict/storage/migration tests. |
 | Later VPN reach | Same protected application journey over another route | Existing identities, scopes and refusals remain effective when the address changes. |
 
-The requested first useful **Bridge and Voice release includes the live Communion milestone**.
+A **Bridge and Voice release includes the live Communion milestone**.
 The shell, handoff fixture, and speech fixture are intermediate proofs; a pre-settled response
 cannot establish a working conversational round trip.
 

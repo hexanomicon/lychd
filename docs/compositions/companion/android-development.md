@@ -196,6 +196,12 @@ owns reproducible setup and commands. [Phone Workspace](phone-workspace.md) reta
 operator goal, both device directions, proposed authority ladder, app delivery, photos and cleanup.
 Neither the build nor this continuation procedure broadens Companion revision 3.
 
+The **30 October priority clarification** is install once, manage from the PC, and initiate a
+verified Companion update with one PC action. Begin the next integration campaign with
+[that lifecycle](phone-workspace.md#install-once-manage-from-the-pc); the MP3 player is its first
+useful feature, not a prerequisite for proving update delivery. Current local diagnostics and
+the debug APK do not yet implement pairing, PC management or remote updating.
+
 Start a later campaign here rather than treating an earlier APK or temporary tool directory as
 the source. Inspect the current checkout, preserve unrelated changes, read the current State
 record, and identify the smallest next acceptance. Reuse an operator-local development environment
@@ -209,14 +215,15 @@ acceptance for the build and for behavior observed on the phone.
 
 | Work package | Next acceptance | Stopping line |
 | --- | --- | --- |
+| Installed lifecycle and PC Update | Settle the receiving owner/contract, install/pair version A, show its observed state on the PC, request a signed compatible B through Update, handle Android action, reconnect and verify version/data/health. | Preserve exact attempt identity across app replacement; cover revoked access, interruption, unknown result, storage/migration failure and changed signer. Do not promise silent install or automatic binary rollback. |
 | Handset qualification | On the selected S20 FE, record exact model/Android/API/build, install the reviewed APK, and exercise status refresh, permission denial/revocation/settings return, background/lock, recording stop and cleanup. | Do not infer handset behavior from compilation or JVM tests; do not uninstall an existing app to hide a signing conflict. |
 | Local folder player | Select a music folder explicitly, browse/play a useful offline library and queue, and observe playback through background, lock and headset controls. Cover revoked access, missing files, storage limits and interruption. | Keep persistent media and the background player separate from foreground reply replay; settle any new durable ownership before expanding it. |
 | Reviewed app delivery | Retain exact source/build/checks, signed APK/package/version/permissions, verified received bytes, explicit Android installation and installed-identity readback. Prove offline MP3 playback. | Manual or available authorized KDE Connect delivery is operator evidence, not native enrollment or automated construction. A separate requested app has its own package and signing identity. |
-| Native phone connection | Resolve operation/material ownership first; publish the accepted contract, then protected ingress, Ward → Familiar → Companion admission, exact request lookup and one bounded player operation. | Test unpaired peer, wrong object/action, expiry/revocation, changed context and lost acknowledgement without repeating an effect. Do not expose the existing loopback Altar. |
+| Native phone connection | Resolve operation/material ownership first; publish the accepted contract, then protected ingress, Ward → Familiar → Companion admission, exact request lookup and the selected bounded phone operation, beginning with the admitted update lifecycle. | Test unpaired peer, wrong object/action, expiry/revocation, changed context and lost acknowledgement without repeating an effect. Do not expose the existing loopback Altar. |
 | Photos before cleanup | Export selected representations to verified destination custody; subsequently review exact eligible local items and a separate system trash request. | Preserve provider/cloud limits, changed-source refusal, per-item outcomes and the URI/content race. Permanent deletion is another live decision. |
 | Later reach and interaction | Repeat an already admitted journey through VPN; connect speech or further observations through their exact owners. | A new route, model or microphone supplies no additional effect authority. |
 
-The local-player/delivery campaign can proceed independently of live speech. The Bridge and Voice
+The installed-lifecycle and local-player/delivery campaigns can proceed independently of live speech. The Bridge and Voice
 release still needs its own live Communion acceptance. For remote troubleshooting, use
 [the observation-to-repair passage](phone-workspace.md#grow-observation-into-troubleshooting)
 and admit each new action rather than a generic phone command executor. Stop when the next step

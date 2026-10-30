@@ -50,7 +50,8 @@ Configure each session explicitly with capability requirements, local routes, pr
 device status, their build route and [where to resume the phone campaign](android-development.md#resume-the-current-campaign).
 [Android Foundation](android-foundation.md) studies the first Bridge and foreground voice client,
 including shared API contracts and the path to later phone capabilities.
-[Phone Workspace](phone-workspace.md) studies a broader candidate direction: an offline music
+[Phone Workspace](phone-workspace.md) studies a broader candidate direction: install once and
+[manage/update from the PC](phone-workspace.md#install-once-manage-from-the-pc), then an offline music
 player, progressively admitted phone actions, selected photos, and explicit sync over local Wi-Fi
 before later VPN reach. That proposal remains separate from this revision's accepted contract.
 

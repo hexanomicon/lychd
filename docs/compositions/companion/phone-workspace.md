@@ -6,16 +6,62 @@ icon: material/cellphone-cog
 # :material-cellphone-cog: Companion Phone Workspace
 
 Companion could grow into the everyday mobile workspace through which LychD can act on the
-operator's phone. [Android Foundation](android-foundation.md) now places Bridge and foreground
-voice first. The first everyday local feature remains an ordinary offline music player. Selected
-photos and explicit file sync follow; a local Wi-Fi connection comes before access through a VPN.
-Each stage adds named capabilities that the operator can grant and revoke on the phone.
+operator's phone. The operator's **30 October 2026 clarification** makes the primary promise:
+install Companion once, pair it with the PC, then manage its state and initiate updates from the
+PC application. The phone maintains its local state and recovers/reconnects within its granted
+authority and Android limits. The first end-to-end priority is that application lifecycle;
+an offline music player is a useful feature delivered through it. Selected photos and explicit
+file sync follow, with local Wi-Fi before later VPN reach.
 
 This candidate study, opened **2026-10-07**, explores that direction beside
 [`companion.mobile` revision `3`](index.md). It publishes no successor revision or supported phone
 administration path. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery)
 owns delivery. The initial device to test is the operator's Samsung S20 FE; the first application
 design requires ordinary Android app permissions rather than root or a replacement ROM.
+
+## Install once, manage from the PC
+
+The ordinary operator should be able to install and pair Companion, then use the PC's LychD
+interface to see its installed version, last observed connection/condition, offered capabilities
+and update availability. **Update** starts one identified operation for that phone. Preparing
+and checking the package, transferring it, and recovering the result belong to that workflow;
+routine use should not require manually running Gradle or copying an APK each time.
+
+The first complete lifecycle experiment is:
+
+1. Install a reviewed version A under a stable package/signing identity and enroll/pair the
+   expected PC and phone/application identities through their receiving owners.
+2. Show the observed version and current access/connection state in the PC application.
+3. Click Update for a reviewed compatible version B. Bind the exact artifact, target, expected
+   installed identity, current authority and retained request identity before transfer.
+4. Verify and stage the complete package on the phone, then follow Android's installation flow.
+   The PC shows any required phone-side confirmation as an explicit waiting step.
+5. Observe the installation result, reconnect under current authority, and verify version B,
+   retained permitted settings/data and the selected post-update checks.
+
+The PC must distinguish requested, transferring, staged, awaiting Android action, awaiting
+reconnect, verified, declined, failed and unknown outcomes. A broken connection during app
+replacement establishes neither success nor failure. Request/attempt evidence must survive the
+phone process being replaced; recovery reconciles the original operation before another attempt.
+
+Self-management includes bounded update checks, local-state recovery, reconnect and clear requests
+for unavailable permissions or human action. Background operation remains subject to the actual
+Android profile. Stable application signing, device enrollment and credential generation are
+different identities; a compatible update must test their continuity rather than silently copying
+credentials or reenrolling. Cover insufficient storage, interrupted transfer, process death,
+changed signer, denied/revoked authority, data migration and incompatible updates. An automatic
+binary downgrade or rollback needs a separately supported and tested recovery profile.
+
+Android's [installation user-action rules](https://developer.android.com/reference/android/content/pm/PackageInstaller.SessionParams#setRequireUserAction(int))
+permit some update profiles to proceed without an installation prompt, while others require local
+confirmation. Keep that distinction visible and qualify it on the selected handset. One PC action
+can coordinate the complete passage without promising that it removes every Android decision.
+The default personal-phone path retains the local confirmation described below.
+
+This lifecycle is the main integration priority before the MP3 feature. A manual/KDE Connect APK
+transfer can help qualify bootstrap delivery, but cannot establish the PC Update workflow. The
+receiving application owner, successor contract, protected ingress and durable recovery must be
+settled before native remote handlers; Companion revision 3 remains unchanged.
 
 ## Start with a player worth using
 
@@ -43,6 +89,7 @@ admission exists, and photos need no VPN to become useful.
 
 | Stage | Proposed behavior | Smallest useful journey |
 | --- | --- | --- |
+| Installed lifecycle | One initial install/pairing, PC-visible state, one-click initiated update and reconciled reconnect. | Update A to B from the PC and verify version, retained state and post-update checks on the phone. |
 | Local music | Folder library, search, queue, and offline/background playback. | Pick an album, lock the screen, use headset controls, and continue playing without LychD. |
 | Paired Wi-Fi | Connect to the operator's host and admit bounded player operations. | Grant playback control, execute one identified request, and display the observed player state. |
 | Selected photos | Browse selected images and prepare a copy to a chosen destination. | Select a photo, inspect what will leave the phone, and copy it without changing the original. |
