@@ -4,8 +4,13 @@ import type { OrbEventEnvelope, OrbRunPage } from "$lib/api/models";
 import { fixtureRun } from "$lib/orb/__fixtures__/snapshot";
 vi.mock("$lib/api/client", () => ({ getOrbRun: vi.fn() }));
 vi.mock("$lib/orb/live", async (original) => ({ ...await original<typeof import("$lib/orb/live")>(), getOrbCatalogue: vi.fn(), listenToOrb: vi.fn() }));
+vi.mock("$lib/graph/orb", async (original) => {
+  const module = await original<typeof import("$lib/graph/orb")>();
+  return { ...module, projectOrbField: vi.fn(module.projectOrbField) };
+});
 import { getOrbRun } from "$lib/api/client";
 import { getOrbCatalogue, listenToOrb, type OrbLiveCallbacks } from "$lib/orb/live";
+import { projectOrbField } from "$lib/graph/orb";
 import OrbField from "./OrbField.svelte";
 const page: OrbRunPage = { schema_version: 1, snapshot_at: "2026-09-22T00:00:00Z", capture: "process_local", next_cursor: null,
   runs: ["run-a", "run-b", "run-c", "run-d"].map((id) => fixtureRun(id).run) };
@@ -26,6 +31,41 @@ async function mountField() {
 }
 
 describe("Orb parallel Run field", () => {
+  it("does not reproject a loaded graph when a refreshed catalogue contains the same Run metadata", async () => {
+    const view = await mountField();
+    await waitFor(() => expect(listenToOrb).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Refresh Runs" }).hasAttribute("disabled")).toBe(false));
+    const count = vi.mocked(projectOrbField).mock.calls.length;
+    const projection = vi.mocked(projectOrbField).mock.results.at(-1)?.value;
+    vi.mocked(getOrbCatalogue).mockResolvedValueOnce(structuredClone(page));
+    await fireEvent.click(screen.getByRole("button", { name: "Refresh Runs" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Refresh Runs" }).hasAttribute("disabled")).toBe(false));
+    expect(projectOrbField).toHaveBeenCalledTimes(count);
+    expect(vi.mocked(projectOrbField).mock.results.at(-1)?.value).toBe(projection);
+    view.unmount();
+  });
+  it("keeps a catalogue outage and the last graph visible during retry, then clears it on success", async () => {
+    const view = await mountField();
+    await waitFor(() => expect(listenToOrb).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Refresh Runs" }).hasAttribute("disabled")).toBe(false));
+    vi.mocked(getOrbCatalogue).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await fireEvent.click(screen.getByRole("button", { name: "Refresh Runs" }));
+    const message = "Cannot reach the Run catalogue. Showing the last received field. Use Refresh Runs to retry.";
+    const alert = await screen.findByText(message);
+    expect(alert.getAttribute("role")).toBe("alert");
+    expect(alert.textContent).toContain("Showing the last received field.");
+    const graph = screen.getByRole("region", { name: "Parallel Run workflow field" });
+    let release!: (value: OrbRunPage) => void;
+    vi.mocked(getOrbCatalogue).mockReturnValueOnce(new Promise((accept) => release = accept));
+    await fireEvent.click(screen.getByRole("button", { name: "Refresh Runs" }));
+    expect(screen.getByText(message)).toBe(alert);
+    expect(screen.getByRole("region", { name: "Parallel Run workflow field" })).toBe(graph);
+    expect(screen.getByRole("button", { name: "Refresh Runs" }).getAttribute("aria-busy")).toBe("true");
+    await act(() => release(structuredClone(page)));
+    expect(screen.queryByText(message)).toBeNull();
+    expect(screen.getByRole("region", { name: "Parallel Run workflow field" })).toBe(graph);
+    view.unmount();
+  });
   it("does not overwrite newer streamed metadata with an older in-flight catalogue read", async () => {
     const initial = fixtureRun();
     vi.mocked(getOrbCatalogue).mockResolvedValue({ ...page, runs: [initial.run] });

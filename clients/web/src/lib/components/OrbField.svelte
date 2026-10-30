@@ -8,7 +8,7 @@
   import GraphCanvas from "./graph/GraphCanvas.svelte";
   import AnimatorRail from "./AnimatorRail.svelte";
   import OrbTimeline from "./OrbTimeline.svelte";
-  import { appendFieldFrame, pruneFieldRun, trimFieldFrames, type FieldFrame } from "$lib/orb/field-history";
+  import { appendFieldFrame, pruneFieldRun, sameOrbRun, trimFieldFrames, type FieldFrame } from "$lib/orb/field-history";
 
   type Run = OrbRunSnapshot["run"];
   type Lens = OrbFieldLens & { readonly connection: OrbConnection; readonly note: string; readonly trimmed: boolean };
@@ -122,6 +122,8 @@
     const version = metadataVersions.get(run.run_id) ?? 0;
     if (expectedVersion !== undefined && expectedVersion !== version) return;
     metadataVersions.set(run.run_id, version + 1);
+    const current = runs.find((candidate) => candidate.run_id === run.run_id);
+    if (!current || sameOrbRun(current, run)) return;
     runs = runs.map((current) => current.run_id === run.run_id ? run : current);
   }
 
@@ -135,10 +137,11 @@
     const controller = new AbortController();
     const observedVersions = new Map(metadataVersions);
     catalogueController = controller;
-    loading = true; error = "";
+    loading = true;
     try {
       const next = await getOrbCatalogue(cursor ?? undefined, controller.signal);
       if (destroyed || version !== catalogueVersion) return;
+      error = "";
       const overlaps = next.runs.some((run) => runs.some((loaded) => loaded.run_id === run.run_id));
       catalogue = automatic && catalogue && overlaps ? { ...next, next_cursor: catalogue.next_cursor } : next;
       const retained = more || automatic ? runs : runs.filter((run) => lenses.has(run.run_id) || loadingIds.has(run.run_id));
@@ -148,10 +151,11 @@
         const current = currentRuns.get(run.run_id);
         if (current && version !== (observedVersions.get(run.run_id) ?? 0)) return [run.run_id, current] as const;
         metadataVersions.set(run.run_id, version + 1);
-        return [run.run_id, run] as const;
+        return [run.run_id, current && sameOrbRun(current, run) ? current : run] as const;
       }));
       for (const run of retained) if (!merged.has(run.run_id)) merged.set(run.run_id, run);
-      runs = [...merged.values()];
+      const nextRuns = [...merged.values()];
+      if (nextRuns.length !== runs.length || nextRuns.some((run, index) => run !== runs[index])) runs = nextRuns;
       captureField();
       if (!selectedRun || !runs.some((run) => run.run_id === selectedRun)) selectedRun = runs[0]?.run_id ?? null;
       if (!initialReady && !lenses.size && !loadingIds.size) {
@@ -161,7 +165,9 @@
     } catch (cause) {
       if (!destroyed && version === catalogueVersion) {
         if (authorityRefused(cause)) clearProtectedField();
-        error = cause instanceof Error ? cause.message : "The Run catalogue could not be read.";
+        error = cause instanceof TypeError && cause.message === "Failed to fetch"
+          ? `Cannot reach the Run catalogue.${runs.length ? " Showing the last received field." : ""} Use Refresh Runs to retry.`
+          : cause instanceof Error ? cause.message : "The Run catalogue could not be read.";
       }
     } finally {
       if (!destroyed && version === catalogueVersion) { loading = false; initialReady = true; captureField(); }
@@ -339,7 +345,7 @@
         <button type="button" onclick={clearHistory}>Clear tab history</button>
       </div>
     </details>
-    <button class="refresh" type="button" disabled={loading} onclick={() => loadCatalogue()}>{loading ? "Reading…" : "Refresh Runs"}</button>
+    <button class="refresh" type="button" disabled={loading} aria-busy={loading} onclick={() => loadCatalogue()}>{loading && !initialReady ? "Reading…" : "Refresh Runs"}</button>
     <button id="orb-evidence-toggle" type="button" aria-label={inspectorOpen ? "Hide evidence" : "Show evidence"} aria-expanded={inspectorOpen} aria-controls="orb-evidence" onclick={(event) => { if (inspectorOpen) closeEvidence(); else { inspectorOpener = event.currentTarget; inspectorOpen = true; } }}>Evidence</button>
   </header>
   {#if error}<p class="field-fault" role="alert">{error}</p>{/if}

@@ -336,7 +336,7 @@
 </div>
 
 <style>
-  .topbar { height: auto; min-height: 3.5rem; padding: 0 1.25rem; gap: 1.25rem; flex: 0 0 auto; flex-wrap: wrap; background: var(--color-obsidian); border: 0; border-bottom: 1px solid var(--color-engraving); border-image: none; box-shadow: none; backdrop-filter: none; position: relative; z-index: 40; }
+  .topbar { height: auto; min-height: 3.5rem; padding: 0 1.25rem; gap: 1.25rem; flex: 0 0 auto; flex-wrap: wrap; background: var(--color-void); border: 0; border-bottom: 1px solid var(--color-engraving); border-image: none; box-shadow: none; backdrop-filter: none; position: relative; z-index: 40; }
   .brand { gap: .6rem; padding: .5rem 0; }
   .brand .name { font: 650 var(--text-lg)/1.2 var(--font-body); letter-spacing: .06em; }
   .brand .sub { font-size: .65rem; }

@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════════════
    LychD · The Altar — design tokens (canonical; ADR 15)
-   Black work plane · neutral graphite chrome · icy-blue interaction · green
+   Black work plane · near-black chrome · icy-blue interaction · green
    confirmation · bounded purple context. One canonical LychD Dark palette.
 
    Native CSS is the styling language. Tokens remain ordinary custom properties;
@@ -11,9 +11,9 @@
 :root {
   /* ── substrate ─────────────────────────────────────────── */
   --color-void:       #000000;  /* page base */
-  --color-obsidian:   #111416;  /* panel base */
-  --color-obsidian-2: #1b1f22;  /* raised / hover */
-  --color-engraving:  #363d42;  /* neutral borders and separators */
+  --color-obsidian:   #07090b;  /* panel base */
+  --color-obsidian-2: #10161c;  /* raised / hover */
+  --color-engraving:  #29333c;  /* neutral borders and separators */
 
   /* ── chromatic hierarchy ────────────────────────────────── */
   --color-primary:        #8be7ff;  /* icy blue: interaction, focus, readiness */

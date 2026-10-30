@@ -31,6 +31,11 @@ function runKey(run: Run): string {
   return key;
 }
 
+/** Equal served metadata can keep its immutable identity across catalogue polls. */
+export function sameOrbRun(left: Run, right: Run): boolean {
+  return left === right || runKey(left) === runKey(right);
+}
+
 function lensKey(lens: OrbFieldLens | undefined): string | null {
   if (!lens) return null;
   let key = lensKeys.get(lens);

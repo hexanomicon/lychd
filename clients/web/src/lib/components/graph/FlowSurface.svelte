@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { SvelteFlow, MiniMap, Panel, MarkerType, useSvelteFlow, type Node, type Edge, type NodeTargetEventWithPointer } from "@xyflow/svelte";
+  import { SvelteFlow, MiniMap, Panel, MarkerType, useSvelteFlow, type Edge, type NodeTargetEventWithPointer } from "@xyflow/svelte";
   import { onDestroy, tick, untrack } from "svelte";
-  import type { GraphProjection, GraphNode } from "$lib/graph/model";
+  import type { GraphProjection } from "$lib/graph/model";
+  import { reconcileEdges, reconcileNodes, type RenderNode } from "./flow-drafts";
   import { layoutProjection, NODE_WIDTH, NODE_HEIGHT, type Point } from "./layout";
   import { createOrbLayoutMemory, layoutOrbProjection, orbTerritories, ORB_NODE_WIDTH, ORB_NODE_HEIGHT } from "./orb-layout";
   import OrbNode from "./OrbNode.svelte";
@@ -16,7 +17,6 @@
     onzoom?: (zoom: number) => void; onviewportinteraction?: () => void;
     presentation?: "diagram" | "orb"; hideMinimap?: boolean;
   } = $props();
-  type RenderNode = Node<{ semantic: GraphNode; select: (id: string, opener: HTMLElement, pointer?: boolean) => void }>;
   const nodeTypes = { semantic: FlowNode, orb: OrbNode };
   const edgeTypes = { semantic: FlowEdge };
   const viewport = useSvelteFlow<RenderNode>();
@@ -92,7 +92,7 @@
       const computed = mode === "orb" ? layoutOrbProjection(input, orbMemory) : layoutProjection(input);
       const retained = new Set(input.nodes.flatMap(node => [node.id, ...(node.members ?? [])]));
       for (const key of positions.keys()) if (!retained.has(key)) positions.delete(key);
-      nodes = input.nodes.map(semantic => {
+      const nextNodes: RenderNode[] = input.nodes.map(semantic => {
         let position = computed.get(semantic.id) ?? { x:0, y:0 };
         const members = (semantic.members ?? []).flatMap(id => positions.has(id) ? [positions.get(id)!] : []);
         if (mode !== "orb" && members.length) position = {
@@ -105,11 +105,13 @@
           data:{ semantic:{ ...semantic }, select }, selected:semantic.id === chosen,
           draggable:mode === "orb", dragHandle:mode === "orb" ? ".orb-drag-handle" : undefined, connectable:false, deletable:false, selectable:false, focusable:false };
       });
-      edges = input.edges.map(edge => ({ id:edge.id, source:edge.source, target:edge.target,
+      const nextEdges: Edge[] = input.edges.map(edge => ({ id:edge.id, source:edge.source, target:edge.target,
         type:"semantic", sourceHandle:edge.source === edge.target ? "loop-out" : "out",
         targetHandle:edge.source === edge.target ? "loop-in" : "in", label:edge.label, ariaLabel:edge.label,
         data:{ relation:edge.relation, presentation:mode }, selectable:false, deletable:false, reconnectable:false,
         markerEnd:mode === "orb" ? undefined : { type:MarkerType.ArrowClosed, color:"var(--color-rune-dim)" } }));
+      nodes = reconcileNodes(changedIdentity ? [] : nodes, nextNodes);
+      edges = reconcileEdges(changedIdentity ? [] : edges, nextEdges);
       const version = ++generation;
       if (changedIdentity) void tick().then(() => { if (version === generation) void fit(); });
     });
