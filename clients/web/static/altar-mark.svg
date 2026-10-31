@@ -1,27 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64" fill="none">
-  <title>Altar — walnut table with two candles</title>
+  <title>Altar — dark walnut, purple cloth and small front-mounted candles</title>
   <defs>
-    <linearGradient id="wood" x1="32" y1="29" x2="32" y2="38" gradientUnits="userSpaceOnUse"><stop stop-color="#D6A16C"/><stop offset=".32" stop-color="#B7804E"/><stop offset="1" stop-color="#8D5835"/></linearGradient>
-    <linearGradient id="leg" x1="14" y1="37" x2="24" y2="57" gradientUnits="userSpaceOnUse"><stop stop-color="#C38D58"/><stop offset=".5" stop-color="#AD784B"/><stop offset="1" stop-color="#8C5836"/></linearGradient>
-    <linearGradient id="wax" x1="20" y1="24" x2="25" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#D9BE8E"/><stop offset=".38" stop-color="#FFF1D4"/><stop offset="1" stop-color="#E7D3AC"/></linearGradient>
-    <linearGradient id="flame" x1="0" y1="7" x2="0" y2="17" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE2A2"/><stop offset=".55" stop-color="#FFC66D"/><stop offset="1" stop-color="#E99739"/></linearGradient>
-    <g id="candle">
-      <path d="M22.5 7.2c-.8 2.9-3.6 4.7-3.1 7.3a3.2 3.2 0 0 0 6.2-.1c.4-2.6-2.2-4-3.1-7.2Z" fill="url(#flame)"/>
-      <path d="M22.5 16v3" stroke="#67472F" stroke-width="1.2" stroke-linecap="round"/>
-      <path d="M20 18.5h5v11.2a2.5 1.1 0 0 1-5 0Z" fill="url(#wax)"/>
-      <ellipse cx="22.5" cy="18.5" rx="2.5" ry=".9" fill="#FFF3DB"/>
+    <linearGradient id="wood" x1="32" y1="20" x2="32" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#80583B"/><stop offset=".45" stop-color="#65432E"/><stop offset="1" stop-color="#493024"/></linearGradient>
+    <linearGradient id="leg" x1="13" y1="31" x2="24" y2="57" gradientUnits="userSpaceOnUse"><stop stop-color="#765138"/><stop offset=".52" stop-color="#563829"/><stop offset="1" stop-color="#493024"/></linearGradient>
+    <linearGradient id="cloth" x1="20" y1="20" x2="45" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#75458E"/><stop offset=".35" stop-color="#5B3373"/><stop offset="1" stop-color="#482360"/></linearGradient>
+    <linearGradient id="candle" x1="10" y1="29" x2="14" y2="29" gradientUnits="userSpaceOnUse"><stop stop-color="#CDB994"/><stop offset=".42" stop-color="#F6EAD0"/><stop offset="1" stop-color="#DFCBA5"/></linearGradient>
+    <path id="left-leg" d="M12 29h12v5h-2v15l2 4v5H11v-4l3-4V35h-2Z"/>
+    <g id="front-candle">
+      <rect x="16" y="32.2" width="3" height="5" rx=".8" fill="#896637"/>
+      <path d="M17 35.2c0 3.1-5 3.7-5-.6" stroke="#B48B50" stroke-width="2" stroke-linecap="round"/>
+      <path d="M8.5 32.5h7l-1 2.8h-5Z" fill="#B48B50"/>
+      <path d="M10 27.5h4v5.2h-4Z" fill="url(#candle)"/>
+      <path d="M12 25.7v2.1" stroke="#65452D" stroke-width=".9" stroke-linecap="round"/>
+      <path d="M12 20.7c-.5 1.6-2.1 2.5-1.8 4a1.85 1.85 0 0 0 3.6 0c.3-1.4-1.3-2.6-1.8-4Z" fill="#F4C16F"/>
+      <path d="M8.7 32.5h6.6" stroke="#D4B47D" stroke-width="1.1" stroke-linecap="round"/>
     </g>
-    <path id="left-leg" d="M15 36h9l-3 16c-.4 2.3.2 3.6 2.5 4.8L23 59H10.5l-.5-2.2c2.9-.7 4.1-2.1 4.4-4.8Z"/>
   </defs>
   <use href="#left-leg" fill="url(#leg)"/>
   <use href="#left-leg" transform="translate(64 0) scale(-1 1)" fill="url(#leg)"/>
-  <path d="m17.6 40-1.2 12.2M46.4 40l1.2 12.2" stroke="#D6A16C" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M11 35h42v5H11z" fill="#71492F"/>
-  <path d="M13 38h38" stroke="#AC784D" stroke-width="1.4" stroke-linecap="round"/>
-  <use href="#candle"/>
-  <use href="#candle" transform="translate(19 0)"/>
-  <rect x="8" y="29" width="48" height="7" rx="1.8" fill="url(#wood)"/>
-  <path d="M12 32C6.8 32 4.5 29.4 4.5 25.7c0-3.2 4-4 5.7-1.6 1 1.5.3 3-1.1 3.3M52 32c5.2 0 7.5-2.6 7.5-6.3 0-3.2-4-4-5.7-1.6-1 1.5-.3 3 1.1 3.3" stroke="#AD784B" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="M11 30h42" stroke="#E0AE77" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M12 57.6h9M43 57.6h9" stroke="#BF8B59" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M15.7 36v13.5M48.3 36v13.5" stroke="#8F6647" stroke-width="1.5"/>
+  <path d="M12.5 54.7h9.5M42 54.7h9.5" stroke="#79543B" stroke-width="1.4"/>
+  <path d="M10 24h44v8H10Z" fill="#493024"/>
+  <path d="M11 30.7h42" stroke="#80583B" stroke-width="1.4"/>
+  <path d="m5 20 5-6h44l5 6-4 4H9Z" fill="#765039"/>
+  <path d="M5 20h54v5H5Z" fill="url(#wood)"/>
+  <path d="M6 20.6h52" stroke="#9B724E" stroke-width="1.3"/>
+  <path d="M16 14h32l4 6H12Z" fill="#68417F"/>
+  <path d="M18 20h28l-2 19c-4 2.7-8 2.7-12 .5-4 2.2-8 2.2-12-.5Z" fill="url(#cloth)"/>
+  <path d="M19 20h6l-1.2 18.7-3.8-.4Z" fill="#805196"/>
+  <path d="M40 20h5l-1.7 18.6-4.1 1.2Z" fill="#3E2054"/>
+  <path d="M20.2 38.4c3.9 2.7 7.9 2.7 11.8.5 3.9 2.2 7.9 2.2 11.8-.5" stroke="#B9A073" stroke-width="1.15"/>
+  <use href="#front-candle"/>
+  <use href="#front-candle" transform="translate(64 0) scale(-1 1)"/>
 </svg>
