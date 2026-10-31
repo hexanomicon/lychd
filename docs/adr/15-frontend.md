@@ -303,9 +303,10 @@ an always-available conversation surface, not a competing top-level instrument t
 `/bridge` links remain valid compatibility and focus destinations; exact session, Run, consent,
 Project, investigation and public-note intent must survive the composition change.
 
-A compact altar-table mark opens About; a permanent product wordmark is unnecessary in the
-masthead. About retains the LychD identity, version, source and licence provenance. The fixed
-green mark is decorative identity, never a connection or activity indicator.
+A compact wooden altar mark with two separate legs and ivory candles opens About; a permanent
+product wordmark is unnecessary in the masthead. About retains the LychD identity, version,
+source and licence provenance. The fixed natural-colour mark is decorative identity, never a
+connection or activity indicator.
 
 The dock's persistent edge chevron opens or collapses it; the masthead has no second toggle.
 New layouts start on the left, preserving a valid saved side. It can occupy either side and resize through a pointer or keyboard
