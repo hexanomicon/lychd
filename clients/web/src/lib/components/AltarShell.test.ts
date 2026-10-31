@@ -242,7 +242,7 @@ describe("shell contextual navigation", () => {
 it("closes the About disclosure on Escape and restores focus to its trigger", async () => {
   vi.mocked(getAltarStatus).mockResolvedValue(status(0));
   const view = render(AltarShell, { children });
-  const trigger = screen.getByLabelText("About LychD — The Altar");
+  const trigger = screen.getByLabelText("About Altar");
   const disclosure = trigger.closest("details");
   if (!(disclosure instanceof HTMLDetailsElement)) {
     throw new Error("The About trigger must belong to a details disclosure.");

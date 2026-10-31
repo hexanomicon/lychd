@@ -36,7 +36,9 @@ instrument. They last while this browser document stays open; reload or closing 
 before losing them. This is not storage across browser restarts.
 
 **Conversations** discloses the session rail; **Séance details** holds secondary identity and
-session attention. The conversation remains the main reading area. If admission is unresolved or
+session attention. **Public sources** groups investigation, public-note management and recall;
+**Project links** discloses explicit project linking. The conversation remains the main reading
+area. If admission is unresolved or
 another Run is unsettled, the composer explains why **Offer** is unavailable while keeping the
 later draft editable; that draft is not queued.
 

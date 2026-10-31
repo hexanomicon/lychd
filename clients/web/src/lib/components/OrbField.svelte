@@ -419,24 +419,24 @@
   .field-layout { display:flex; flex:1; min-height:0; min-width:0; position:relative; overflow:hidden; }
   .canvas-area { flex:1; min-height:0; min-width:0; position:relative; background:#000; }
   .field-caption { position:absolute; top:.75rem; left:.9rem; right:.9rem; display:flex; justify-content:space-between; gap:1rem; color:var(--color-ash); font:10px/1.4 var(--font-glyph); pointer-events:none; }
-  .field-feed { flex:0 0 clamp(17rem,30%,23rem); width:clamp(17rem,30%,23rem); min-width:0; min-height:0; overflow:auto; padding:1rem; border-inline-start:1px solid var(--color-engraving); background:var(--color-void); }
+  .field-feed { flex:0 0 clamp(17rem,30%,23rem); width:clamp(17rem,30%,23rem); min-width:0; min-height:0; overflow:auto; padding:1rem; border-inline-start:1px solid var(--color-tertiary-edge); background:var(--color-tertiary); }
   .field-feed[hidden] { display:none; }
   .field-feed > header { display:flex; justify-content:space-between; align-items:start; gap:.5rem; padding-bottom:.6rem; border-bottom:1px solid var(--color-engraving); margin-bottom:.75rem; }
-  .field-feed > header p { margin:.3rem 0 0; font-size:11px; }
+  .field-feed > header p { margin:.3rem 0 0; font-size:12px; }
   .field-feed > header button { border:0; min-width:36px; font-size:20px; padding:0; }
   .run-name { font-weight:600; margin:.75rem 0 .35rem; }
-  .run-identity,.record-detail code { overflow-wrap:anywhere; display:block; font-size:10px; }
-  .feed-status,.record-detail dl { display:grid; grid-template-columns:auto minmax(0,1fr); gap:.4rem .65rem; margin:.8rem 0; font-size:11px; }
+  .run-identity,.record-detail code { overflow-wrap:anywhere; display:block; font-size:12px; }
+  .feed-status,.record-detail dl { display:grid; grid-template-columns:auto minmax(0,1fr); gap:.4rem .65rem; margin:.8rem 0; font-size:12px; }
   dd { margin:0; min-width:0; overflow-wrap:anywhere; }
   .detail-link { display:inline-flex; padding-block:.4rem; font-size:12px; }
   .lens-actions { display:flex; flex-wrap:wrap; gap:.4rem; margin:.75rem 0; }
-  .feed-boundary { font-size:11px; }
+  .feed-boundary { font-size:12px; }
   .field-feed :global(.animator-rail) { margin-top:.75rem; padding:.7rem; }
   .live-records { list-style:none; padding:0; margin:.75rem 0; }
   .live-records button { width:100%; text-align:left; display:grid; grid-template-columns:2.2rem minmax(0,1fr); gap:.4rem; border-radius:0; border-inline:0; border-top:0; background:transparent; }
   .live-records strong { display:block; font-size:12px; font-weight:500; overflow-wrap:anywhere; }
-  .live-records small,.live-records time { display:block; color:var(--color-ash); font-size:10px; overflow-wrap:anywhere; }
-  .record-seq { color:var(--color-ash); font:10px/1.5 var(--font-glyph); }
+  .live-records small,.live-records time { display:block; color:var(--color-ash); font-size:12px; overflow-wrap:anywhere; }
+  .record-seq { color:var(--color-ash); font:12px/1.5 var(--font-glyph); }
   .record-detail { border-top:1px solid var(--color-engraving); padding-top:.75rem; }
   .record-detail h3 { font-size:13px; overflow-wrap:anywhere; }
   .record-detail a { font-size:12px; }

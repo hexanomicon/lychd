@@ -576,7 +576,7 @@
   .transition-ledger time { grid-column: 2 / -1; color: var(--color-parchment); font-size: var(--text-xs); }
   .transition-source { color: var(--color-parchment); }
   .transition-phase { overflow-wrap: anywhere; color: var(--color-bone); font-size: var(--text-xs); }
-  .nexus-plan { width: 100%; position: static; }
+  .nexus-plan { width: 100%; position: static; background: var(--color-tertiary); border-color: var(--color-tertiary-edge); }
   .preview-identity { display: grid; gap: 0.5rem; padding: 1rem 1.125rem 0.25rem; }
   .preview-identity span { font-size: var(--text-xs); color: var(--color-parchment); }
   .preview-identity code { font-size: var(--text-sm); overflow-wrap: anywhere; }
@@ -592,7 +592,7 @@
   .plan-act { padding: 1rem 1.125rem 1.125rem; gap: 0.75rem; }
   .plan-act .warn, .action-note { margin: 0; font-size: var(--text-sm); color: var(--color-parchment); line-height: 1.55; }
   .plan-act .rune-btn { min-height: 2.75rem; box-shadow: none; font-size: var(--text-sm); }
-  .preview-empty { padding: 1.5rem 1.125rem 1.75rem; }
+  .preview-empty { padding: 1rem 1.125rem 1.25rem; }
   .empty-number { color: var(--color-rune-dim); font-family: var(--font-glyph); font-size: var(--text-xs); }
   .preview-empty h3 { font-weight: 400; font-size: var(--text-lg); margin: 1rem 0 0.75rem; }
   .preview-empty p { color: var(--color-parchment); font-size: var(--text-sm); line-height: 1.65; margin: 0; }
@@ -610,6 +610,12 @@
   .containment, .turn__fault { overflow-wrap: anywhere; }
   :is(button, summary, a):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   :is(.nexus-plan, .transition-inspector):focus { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  @container work-area (max-width: 56.25rem) {
+    .instrument-deck--nexus { flex-direction: column; }
+    .nexus-main, .nexus-side { width: 100%; }
+    .nexus-side { padding-top: 0; }
+    .nexus-plan[data-open="true"], .transition-inspector[data-open="true"] { position: static; max-height: none; overflow: visible; box-shadow: none; }
+  }
   @media (max-width: 1100px) { .nexus-side { width: min(24rem, 40%); } }
   @media (max-width: 900px) {
     .instrument-deck--nexus { display: flex; flex-direction: column; }

@@ -853,7 +853,10 @@
   {/if}
 
   <div class="bridge-thread">
-    <nav class="atlas-links" aria-label="Bridge work"><a href="/bridge?investigation=new">Investigate public source</a><a href="/bridge?notes=manage">Manage public notes</a><a href="/bridge?notes=recall">Recall public sources</a></nav>
+    <details class="public-sources">
+      <summary>Public sources</summary>
+      <nav class="atlas-links" aria-label="Bridge work"><a href="/bridge?investigation=new">Investigate public source</a><a href="/bridge?notes=manage">Manage public notes</a><a href="/bridge?notes=recall">Recall public sources</a></nav>
+    </details>
     {#if !firstVisit}
       <header class="bridge-heading">
         <div>
@@ -1139,24 +1142,33 @@
   .offering-recovery .offering-recovery__text { color: var(--color-bone); white-space: pre-wrap; max-height: 12rem; overflow: auto; overflow-wrap: anywhere; }
   .atlas-links { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; padding: .75rem 1rem; color: var(--color-ash); }
   .atlas-links a { color: var(--color-rune); min-height: 2.75rem; display: inline-flex; align-items: center; }
+  .public-sources { flex: 0 0 auto; padding: 0 1rem; border-bottom: 1px solid var(--color-engraving); }
+  .public-sources[open] { background: var(--color-tertiary); border-color: var(--color-tertiary-edge); }
+  .public-sources .atlas-links { padding: 0 0 .4rem; }
   .turn:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
   .bridge-embedded { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100%; overflow: hidden; }
   .bridge-embedded.instrument-deck--welcome { grid-template-rows: minmax(0, 1fr); }
-  .bridge-embedded .bridge-rail { padding: .25rem .85rem; border-right: 0; border-bottom: 1px solid var(--color-engraving); max-height: 16rem; overflow: auto; }
+  .bridge-embedded .bridge-rail { padding: 0 .85rem; border-right: 0; border-bottom: 1px solid var(--color-engraving); max-height: 16rem; overflow: auto; }
+  .bridge-embedded summary { min-height: 2rem; padding: .35rem .15rem; }
   .bridge-embedded .conversation-list > summary { margin: 0; font: 500 var(--text-sm)/1.5 var(--font-body); }
   .bridge-embedded .bridge-thread { min-height: 0; overflow: hidden; }
-  .bridge-embedded .bridge-heading { padding: .75rem 1rem; align-items: start; flex-wrap: wrap; gap: .5rem; }
+  .bridge-embedded .bridge-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; padding: .4rem .85rem; align-items: start; gap: .15rem .5rem; }
   .bridge-embedded .bridge-heading h1 { display: none; }
-  .bridge-embedded .conversation-title { margin: 0; font: 500 var(--text-base)/1.5 var(--font-body); }
-  .bridge-embedded .seance-details .kv { right: 0; width: min(24rem, 80vw); }
+  .bridge-embedded .conversation-title { margin: 0; font: 500 var(--text-sm)/1.5 var(--font-body); }
+  .bridge-embedded .seance-details[open] { grid-column: 1 / -1; width: 100%; }
+  .bridge-embedded .seance-details .kv { position: static; width: 100%; }
+  .bridge-embedded .project-details { padding: 0 .85rem; }
+  .bridge-embedded .public-sources { padding: 0 .85rem; }
+  .bridge-embedded .public-sources .atlas-links { padding: 0 0 .35rem; gap: 0 .65rem; }
   .bridge-embedded .atlas-links { padding: .25rem 1rem; gap: .4rem; font-size: var(--text-xs); }
   .bridge-embedded .atlas-links a { min-height: 2rem; }
   .bridge-embedded .thread-scroll { padding: 1rem; gap: 1rem; flex: 1; min-height: 4rem; }
-  .bridge-embedded .composer-area { padding: .75rem 1rem; }
-  .bridge-embedded .composer { flex-wrap: wrap; padding: .6rem; }
-  .bridge-embedded .composer textarea { flex-basis: 100%; width: 100%; min-height: 3rem; }
-  .bridge-embedded .composer .rune-btn { margin-left: auto; background: var(--color-rune); color: var(--color-void); border-color: var(--color-rune); }
-  .bridge-embedded .composer-footer { font-size: var(--text-2xs); }
+  .bridge-embedded .composer-area { padding: .5rem .85rem; }
+  .bridge-embedded .composer-label { margin-bottom: .3rem; }
+  .bridge-embedded .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; padding: .45rem; }
+  .bridge-embedded .composer textarea { width: 100%; min-height: 4rem; }
+  .bridge-embedded .composer .rune-btn { min-width: 4rem; margin-left: 0; padding-inline: .65rem; background: var(--color-rune); color: var(--color-void); border-color: var(--color-rune); }
+  .bridge-embedded .composer-footer { margin-top: .35rem; gap: .2rem .75rem; font-size: var(--text-xs); }
   .bridge-embedded .turn__body { font-size: var(--text-base); line-height: 1.6; }
   .bridge-embedded .turn--user .turn__body { background: var(--color-grimoire); }
   @media (max-width: 48rem) {

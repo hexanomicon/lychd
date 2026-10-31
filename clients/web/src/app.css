@@ -18,10 +18,11 @@
   /* ── chromatic hierarchy ────────────────────────────────── */
   --color-primary:        #8be7ff;  /* icy blue: interaction, focus, readiness */
   --color-primary-deep:   #55cce9;  /* saturated icy-blue depth */
-  --color-secondary:      #78e8b4;  /* confirmation and live activity */
-  --color-secondary-deep: #39c78b;  /* saturated live activity */
-  --color-tertiary:       #21172b;  /* bounded secondary/context surface */
-  --color-tertiary-edge:  #665275;  /* contextual border, never body text */
+  --color-secondary:      #22e68a;  /* matrix green: confirmation and live activity */
+  --color-secondary-deep: #14b86c;  /* saturated live activity */
+  --color-tertiary:       #241036;  /* bounded secondary/context surface */
+  --color-tertiary-edge:  #806297;  /* contextual border, never body text */
+  --color-control-border: #60717e; /* required control boundaries */
   --color-heat:           #f0b379;  /* banked threshold / transition heat */
   --color-heat-deep:      #82512f;  /* low-luminance threshold wash */
 
@@ -48,11 +49,11 @@
   /* type scale honors the operator's browser font-size preference */
   --text-2xs: 0.6875rem; --text-2xs--line-height: 1.4;
   --text-xs:  0.75rem;   --text-xs--line-height: 1.45;
-  --text-sm:  0.8125rem; --text-sm--line-height: 1.5;
+  --text-sm:  0.875rem; --text-sm--line-height: 1.5;
   --text-base: 0.9375rem; --text-base--line-height: 1.55;
   --text-lg:  1.125rem;  --text-lg--line-height: 1.4;
   --text-xl:  1.375rem;  --text-xl--line-height: 1.35;
-  --text-3xl: 2.125rem;  --text-3xl--line-height: 1.1;
+  --text-3xl: 1.75rem;   --text-3xl--line-height: 1.2;
 
   /* ── radius (semantic, thematic) ───────────────────────── */
   --radius-glyph: 3px;   /* kbd keys, layer badges */
@@ -109,7 +110,7 @@
   .eyebrow,
   .instrument-kicker {
     display: block;
-    color: var(--color-rune);
+    color: var(--color-ash);
     font-size: var(--text-xs);
     letter-spacing: 0.16em;
     text-transform: uppercase;
@@ -338,6 +339,7 @@
   }
   .run-outcome .run-status { font-size: var(--text-base); padding: 0.3rem 0.7rem; }
   .selected-evidence-summary { padding: 0.85rem 1rem 0; color: var(--color-bone); line-height: 1.55; overflow-wrap: anywhere; }
+  .selected-evidence { background: var(--color-tertiary); border-color: var(--color-tertiary-edge); }
   .run-outcome { display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; color: var(--color-ash); font-size: var(--text-xs); }
   .context-links { display: flex; gap: 0.8rem; margin-top: 0.45rem; }
   .context-links a { color: var(--color-rune); font-size: var(--text-xs); text-decoration: none; }
@@ -608,6 +610,21 @@
     min-height: 100vh;
   }
 
+  a, a:visited { color: var(--color-rune); text-underline-offset: .2em; }
+  button:not([class]) {
+    align-self: start;
+    min-height: 2.5rem;
+    padding: .45rem .75rem;
+    border: 1px solid var(--color-control-border);
+    border-radius: var(--radius-rune);
+    background: var(--color-obsidian-2);
+    color: var(--color-bone);
+    font-size: var(--text-sm);
+    cursor: pointer;
+  }
+  button:not([class]):hover { border-color: var(--color-rune); }
+  button:not([class]):disabled { opacity: .5; cursor: default; }
+
   ::selection { background: color-mix(in srgb, var(--color-rune) 40%, transparent); color: var(--color-bone); }
 
   /* scrollbars in-theme */
@@ -685,9 +702,9 @@
     max-height: calc(100dvh - 6rem);
     overflow: auto;
     padding: 1rem;
-    border: 1px solid var(--color-engraving);
+    border: 1px solid var(--color-tertiary-edge);
     border-radius: var(--radius-panel);
-    background: var(--color-obsidian);
+    background: var(--color-tertiary);
     box-shadow: 0 0.75rem 2rem color-mix(in srgb, var(--color-void) 80%, transparent);
   }
   .altar-about__panel h2 {
@@ -866,8 +883,8 @@
     font-weight: 600;
   }
   .rune-btn--frost:hover { border-color: var(--color-frost); background: var(--color-frost); }
-  .rune-btn--ash { border-color: var(--color-engraving); background: transparent; color: var(--color-ash); }
-  .rune-btn--ash:hover { color: var(--color-ember); border-color: color-mix(in srgb, var(--color-ember) 45%, transparent); box-shadow: none; }
+  .rune-btn--ash { border-color: var(--color-control-border); background: transparent; color: var(--color-ash); }
+  .rune-btn--ash:hover { color: var(--color-bone); border-color: var(--color-rune); box-shadow: none; }
 
   kbd.key {
     font-family: var(--font-glyph); font-size: var(--text-xs);
@@ -1092,7 +1109,7 @@
   .composer {
     margin-top: 12px;
     display: flex; gap: 10px; align-items: flex-end;
-    border: 1px solid var(--color-engraving);
+    border: 1px solid var(--color-control-border);
     border-radius: var(--radius-panel);
     background: var(--color-obsidian);
     padding: 10px 12px;
@@ -1309,6 +1326,11 @@
   }
   .shell-placeholder .glyph-big { font-size: var(--text-3xl); color: var(--color-engraving); display: block; margin-bottom: 14px; }
   .shell-placeholder .rune-head { font-size: var(--text-xl); display: block; margin-bottom: 8px; }
+  .shell-placeholder h1 { margin-bottom: .7rem; color: var(--color-bone); font-size: var(--text-3xl); }
+  .shell-placeholder p { line-height: 1.65; }
+  .shell-placeholder nav { display: flex; justify-content: center; flex-wrap: wrap; gap: .5rem; margin-top: 1.25rem; }
+  .shell-placeholder nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 2.75rem; padding: .5rem .85rem; border: 1px solid var(--color-tertiary-edge); border-radius: var(--radius-rune); background: var(--color-tertiary); text-decoration: none; }
+  .shell-placeholder nav a:hover { border-color: var(--color-rune); }
 
   /* Bounded loading placeholder; the owning view supplies its label. */
   .mist {

@@ -1084,7 +1084,7 @@
     gap: 0.75rem;
   }
   .atlas-heading { align-items: flex-start; margin-bottom: 1rem; }
-  .atlas-heading h1 { margin-block: 0.35rem 0.6rem; font-size: clamp(1.8rem, 2.5vw, 2.2rem); letter-spacing: -0.02em; overflow-wrap: anywhere; }
+  .atlas-heading h1 { margin-block: 0.35rem 0.6rem; font-size: clamp(1.6rem, 2.3vw, 1.9rem); letter-spacing: -0.02em; overflow-wrap: anywhere; }
   .atlas-heading p { color: var(--color-parchment); max-width: 48rem; }
   .back-link { display: inline-block; margin-bottom: 0.6rem; }
   h2 { font-size: var(--text-xl); font-weight: 500; }
@@ -1160,7 +1160,7 @@
     min-width: 0;
     min-height: 2.75rem;
     padding: 0.6rem 0.7rem;
-    border: 1px solid var(--color-rune-dim);
+    border: 1px solid var(--color-control-border);
     border-radius: var(--radius-rune);
     background: var(--color-void);
     color: var(--color-bone);
@@ -1195,17 +1195,18 @@
   .empty { padding: 1.8rem; color: var(--color-parchment); }
   .empty h3 { color: var(--color-bone); }
   .empty p { max-width: 42rem; margin-block: 0.6rem 1rem; }
-  .atlas-introduction { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: clamp(1.5rem, 4vw, 3rem); background: var(--color-obsidian); }
+  .atlas-introduction { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: clamp(1.25rem, 2.5vw, 2rem); background: var(--color-obsidian); }
   .introduction-copy { max-width: 38rem; }
-  .introduction-copy h2 { font-family: var(--font-rune); font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.2; text-wrap: balance; }
-  .introduction-copy > p { color: var(--color-parchment); margin-block: 1rem 1.4rem; line-height: 1.7; }
+  .introduction-copy h2 { font-family: var(--font-rune); font-size: clamp(1.5rem, 2.5vw, 1.9rem); line-height: 1.2; text-wrap: balance; }
+  .introduction-copy > p { color: var(--color-parchment); margin-block: 0.75rem 1rem; line-height: 1.65; }
   .introduction-copy > .field-help { margin-block: 0.85rem 0; }
-  .atlas-chart { width: clamp(10rem, 22vw, 16rem); flex-shrink: 0; stroke: var(--color-rune-dim); stroke-width: 1; }
+  .atlas-chart { width: clamp(9rem, 18vw, 13rem); flex-shrink: 0; padding: 0.5rem; border-radius: var(--radius-panel); background: var(--color-tertiary); stroke: var(--color-tertiary-edge); stroke-width: 1; }
   .atlas-chart__route { stroke: var(--color-rune); stroke-width: 1.5; }
-  .atlas-chart__point { fill: var(--color-obsidian); stroke: var(--color-rune); stroke-width: 1.5; }
+  .atlas-chart__point { fill: var(--color-tertiary); stroke: var(--color-rune); stroke-width: 1.5; }
   .project-detail { display: grid; gap: 1.2rem; }
   .project-reading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.46fr); gap: 1.2rem; align-items: start; }
   .project-reading > section { min-width: 0; }
+  .overview { background: var(--color-tertiary); border-color: var(--color-tertiary-edge); }
   .overview-body { display: grid; gap: 1rem; align-items: start; }
   .overview-brief { max-width: 44rem; }
   .overview-brief .metadata { margin-top: 1rem; }
@@ -1235,6 +1236,19 @@
     .project-reading { grid-template-columns: minmax(0, 1fr); }
   }
   @media (max-width: 48rem) {
+    .atlas-introduction { gap: 0; }
+    .atlas-chart { display: none; }
+    .supporting-grid, .form-pair, .comparison-values, .concern-filters, .overview-body, .basis-columns { grid-template-columns: minmax(0, 1fr); }
+    .concern-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .atlas-heading { gap: 1rem; }
+    .section-heading { gap: 0.8rem; }
+    .atlas { padding: 1rem; }
+    .editor input, .editor textarea, .editor select { font-size: 1rem; }
+  }
+  @container work-area (max-width: 68rem) {
+    .project-reading { grid-template-columns: minmax(0, 1fr); }
+  }
+  @container work-area (max-width: 48rem) {
     .atlas-introduction { gap: 0; }
     .atlas-chart { display: none; }
     .supporting-grid, .form-pair, .comparison-values, .concern-filters, .overview-body, .basis-columns { grid-template-columns: minmax(0, 1fr); }

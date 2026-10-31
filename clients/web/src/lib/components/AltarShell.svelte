@@ -265,15 +265,12 @@
 <a class="skip-link" href="#altar-main">Skip to instrument</a>
 <header class="topbar" inert={narrow && dockOpen} {@attach measureMasthead}>
   <details class="altar-about" {@attach manageAboutDisclosure}>
-    <summary class="brand" aria-label="About LychD — The Altar">
-      <img class="mark" src={asset("/favicon.svg")} width="32" height="32" alt="" />
-      <span class="brand-wordmark">
-        <span class="name rune-head">LychD</span>
-        <span class="sub">The Altar <span class="about-caret" aria-hidden="true">⌄</span></span>
-      </span>
+    <summary class="brand" aria-label="About Altar" title="Altar">
+      <img class="mark" src={asset("/altar-mark.svg")} width="32" height="32" alt="" />
     </summary>
     <div class="altar-about__panel">
       <h2>About the Altar</h2>
+      <p class="altar-product">LychD · The Altar</p>
       <p class="altar-about__version" title={__LYCHD_ALTAR_VERSION__}>
         Altar {__LYCHD_ALTAR_VERSION__.slice(0, 12)}
       </p>
@@ -337,13 +334,13 @@
 
 <style>
   .topbar { height: auto; min-height: 3.5rem; padding: 0 1.25rem; gap: 1.25rem; flex: 0 0 auto; flex-wrap: wrap; background: var(--color-void); border: 0; border-bottom: 1px solid var(--color-engraving); border-image: none; box-shadow: none; backdrop-filter: none; position: relative; z-index: 40; }
-  .brand { gap: .6rem; padding: .5rem 0; }
-  .brand .name { font: 650 var(--text-lg)/1.2 var(--font-body); letter-spacing: .06em; }
-  .brand .sub { font-size: .65rem; }
+  .brand { justify-content: center; width: 2.75rem; min-height: 2.75rem; padding: .375rem; }
+  .brand:hover { background: var(--color-tertiary); }
+  .altar-product { margin-top: .35rem; color: var(--color-parchment); font-size: var(--text-sm); }
   nav.instruments { height: auto; align-self: stretch; gap: .25rem; margin-left: auto; }
   nav.instruments a { gap: .6rem; padding: .5rem .7rem; letter-spacing: 0; text-transform: none; color: var(--color-parchment); min-height: 3.5rem; }
   nav.instruments a :global(svg), .application-menu :global(svg) { color: var(--color-rune); flex: 0 0 auto; }
-  nav.instruments a[aria-current="page"] { color: var(--color-bone); text-shadow: none; background: var(--color-obsidian-2); }
+  nav.instruments a[aria-current="page"] { color: var(--color-bone); text-shadow: none; background: var(--color-tertiary); }
   .topbar .spacer { flex: 1 1 0; }
   .sigil { border-radius: var(--radius-glyph); padding: .45rem .6rem; box-shadow: none; animation: none; }
   .sigil-identity { display: none; }
@@ -351,14 +348,13 @@
   .application-menu { position: relative; flex-shrink: 0; align-self: stretch; }
   .application-menu > summary { display: flex; align-items: center; gap: .65rem; list-style: none; min-height: 3.5rem; padding: .5rem .25rem; color: var(--color-bone); cursor: pointer; font-size: var(--text-sm); }
   .application-menu > summary::-webkit-details-marker { display: none; }
-  .application-menu nav { position: absolute; inset-block-start: 100%; inset-inline-start: -.5rem; z-index: 50; min-width: 14rem; padding: .35rem; background: var(--color-obsidian); border: 1px solid var(--color-engraving); border-radius: var(--radius-glyph); }
+  .application-menu nav { position: absolute; inset-block-start: 100%; inset-inline-start: -.5rem; z-index: 50; min-width: 14rem; padding: .35rem; background: var(--color-tertiary); border: 1px solid var(--color-tertiary-edge); border-radius: var(--radius-glyph); }
   .application-menu a { display: flex; align-items: center; gap: .75rem; min-height: 2.75rem; padding: .65rem; font-size: var(--text-sm); text-decoration: none; color: var(--color-bone); }
-  .application-menu a:hover, .application-menu a[aria-current="page"] { background: var(--color-grimoire); }
+  .application-menu a:hover, .application-menu a[aria-current="page"] { background: color-mix(in srgb, var(--color-rune) 10%, var(--color-tertiary)); }
   .altar-workbench { position: relative; display: flex; flex: 0 0 auto; min-width: 0; min-height: 0; overflow: hidden; background: var(--color-void); }
-  #altar-main { flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; background: var(--color-void); }
+  #altar-main { flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; background: var(--color-void); container-type: inline-size; container-name: work-area; }
   #altar-main::before, #altar-main::after { display: none; }
   :focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   @media (max-width: 75rem) { .topbar { gap: .65rem; padding-inline: .75rem; } nav.instruments a { padding-inline: .5rem; gap: .4rem; } .offline-status { display: none; } }
-  @media (max-width: 56rem) { .topbar { gap: .4rem .8rem; } .brand-wordmark .sub { display: none; } nav.instruments { order: 3; flex: 1 0 100%; justify-content: center; } nav.instruments a { min-height: 2.75rem; flex: 1; justify-content: center; } .topbar .spacer { display: none; } .application-menu { margin-left: auto; } .application-menu > summary { min-height: 3rem; } .application-menu nav { inset-inline-start: auto; inset-inline-end: 0; } .sigil { font-size: .65rem; } }
-  @media (max-width: 30rem) { .brand .mark { width: 1.5rem; height: 1.5rem; } .brand .name { font-size: var(--text-sm); } .sigil { order: 4; margin: 0 auto .4rem; } .application-menu > summary { gap: .35rem; font-size: var(--text-xs); } }
+  @media (max-width: 56rem) { .topbar { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) auto; gap: .25rem .5rem; padding: .25rem .75rem 0; } .altar-about { grid-column: 1; grid-row: 1; } nav.instruments { grid-column: 1 / -1; grid-row: 2; width: 100%; margin: 0; justify-content: center; } nav.instruments a { min-height: 2.75rem; flex: 1; justify-content: center; } .topbar .spacer { display: none; } .application-menu { grid-column: 2; grid-row: 1; margin: 0; } .application-menu > summary { min-height: 2.75rem; gap: .4rem; font-size: var(--text-xs); } .application-menu nav { inset-inline-start: 0; inset-inline-end: auto; } .sigil { grid-column: 3; grid-row: 1; margin: 0; max-width: 100%; font-size: var(--text-xs); line-height: 1.3; white-space: normal; } }
 </style>

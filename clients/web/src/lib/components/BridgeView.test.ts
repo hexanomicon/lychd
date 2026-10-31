@@ -1718,6 +1718,10 @@ it("links the separate source recall focus without moving a session draft, unres
   const first = render(BridgeView, { props: { sessionId: "session-a" }, context: new Map([[bridgeWorkspaceKey, work]]) });
   await screen.findByLabelText("Message"); await offer("unresolved conversation offering");
   await fireEvent.input(screen.getByLabelText("Message"), { target: { value: "later conversation draft" } });
+  const sources = screen.getByText("Public sources").closest("details")!;
+  expect(sources.open).toBe(false);
+  await fireEvent.click(screen.getByText("Public sources"));
+  expect(sources.open).toBe(true);
   const link = screen.getByRole("link", { name: "Recall public sources" });
   expect(link.getAttribute("href")).toBe("/bridge?notes=recall");
   expect(work.drafts.get("session-a")).toBe("later conversation draft"); expect(sendMock).toHaveBeenCalledTimes(1); expect(decideConsentMock).not.toHaveBeenCalled();

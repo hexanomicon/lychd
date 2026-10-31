@@ -157,10 +157,11 @@
   .dock-frame[hidden] { display: none; }
   .dock-left .dock-frame { border-left: 0; border-right: 1px solid var(--color-engraving); }
   .bridge-dock { display: flex; flex-direction: column; width: 100%; min-width: 0; min-height: 0; }
-  .dock-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; padding: .75rem 1rem; border-bottom: 1px solid var(--color-engraving); }
-  .dock-heading h2 { font: 600 var(--text-lg)/1.4 var(--font-body); color: var(--color-bone); }
+  .dock-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .35rem; padding: .35rem .85rem; border-bottom: 1px solid var(--color-tertiary-edge); background: var(--color-tertiary); }
+  .dock-heading h2 { font: 600 var(--text-base)/1.4 var(--font-body); color: var(--color-bone); }
+  .dock-actions button { min-height: 2rem; }
   .dock-actions { display: flex; gap: .5rem; }
-  .dock-context { padding: .55rem 1rem; border-bottom: 1px solid var(--color-engraving); color: var(--color-ash); font-size: var(--text-xs); }
+  .dock-context { margin: 0; padding: .35rem .85rem; border-bottom: 1px solid var(--color-engraving); color: var(--color-ash); font-size: var(--text-xs); }
   .dock-context strong { color: var(--color-rune); font-weight: 500; }
   .dock-context span { display: block; margin-top: .2rem; font-size: var(--text-2xs); }
   button { min-height: 2.5rem; padding: .4rem .65rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-glyph); background: var(--color-obsidian); color: var(--color-bone); font: inherit; font-size: var(--text-xs); cursor: pointer; }

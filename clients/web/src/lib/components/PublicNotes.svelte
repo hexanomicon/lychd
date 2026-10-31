@@ -220,21 +220,22 @@
 </section>
 
 <style>
-  .public-notes { width: min(100%, 58rem); margin: 0 auto; padding: 1.25rem; display: grid; gap: 1.25rem; min-width: 0; }
-  header, section, article, form, fieldset { display: grid; gap: 0.8rem; min-width: 0; }
+  .public-notes { width: min(100%, 58rem); margin: 0 auto; padding: 1.25rem; display: grid; align-content: start; gap: 1.25rem; min-width: 0; }
+  header, section, article, form, fieldset { display: grid; align-content: start; gap: 0.8rem; min-width: 0; }
   h1, h2, h3, p { margin: 0; }
   nav { display: flex; flex-wrap: wrap; gap: 1rem; }
   fieldset, article, .notice { border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); padding: 1rem; }
   legend { padding: 0 0.35rem; }
   label { display: grid; gap: 0.4rem; }
-  input:not([type="checkbox"]), textarea { width: 100%; min-width: 0; padding: 0.65rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); background: var(--color-void); }
+  input:not([type="checkbox"]), textarea { width: 100%; min-width: 0; min-height: 2.75rem; padding: 0.65rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-void); }
+  label span { color: var(--color-ash); font-size: var(--text-sm); }
   textarea { resize: vertical; font-family: var(--font-glyph); }
   dd, code, a, li { overflow-wrap: anywhere; }
   dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); gap: 0.4rem 1rem; }
   dd { margin: 0; }
-  button { justify-self: start; max-width: 100%; white-space: normal; }
+  button { align-self: start; justify-self: start; min-height: 2.75rem; max-width: 100%; white-space: normal; }
   .declaration { display: flex; align-items: start; gap: 0.6rem; }
   .declaration input { margin-top: 0.4rem; }
-  :is(a, button, input, textarea):focus-visible { outline: 2px solid var(--color-bone); outline-offset: 3px; }
+  :is(a, button, input, textarea):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   @media (max-width: 36rem) { .public-notes { padding: 0.75rem; } dl { grid-template-columns: minmax(0, 1fr); } }
 </style>

@@ -303,6 +303,10 @@ an always-available conversation surface, not a competing top-level instrument t
 `/bridge` links remain valid compatibility and focus destinations; exact session, Run, consent,
 Project, investigation and public-note intent must survive the composition change.
 
+A compact altar-table mark opens About; a permanent product wordmark is unnecessary in the
+masthead. About retains the LychD identity, version, source and licence provenance. The fixed
+green mark is decorative identity, never a connection or activity indicator.
+
 The dock's persistent edge chevron opens or collapses it; the masthead has no second toggle.
 New layouts start on the left, preserving a valid saved side. It can occupy either side and resize through a pointer or keyboard
 separator. A wide workbench allocates real width beside it; it does not cover the work. A narrow
@@ -316,8 +320,10 @@ state remain alive across ordinary work-route changes. Current-authority refusal
 protected projections under the existing rules.
 
 The canonical LychD Dark workbench uses an untextured black work plane, neutral graphite chrome,
-icy-blue interaction and focus, restrained green confirmation/activity, and bounded deep-purple
-secondary surfaces. Text stays neutral and readable. Icons supplement visible labels. Surfaces
+icy-blue interaction and focus, saturated matrix-green confirmation/activity, and bounded
+deep-purple context surfaces. Text stays neutral and readable. Required control boundaries use
+a stronger role than passive separators. Context columns respond to the space left beside the
+dock, not just the viewport. Icons supplement visible labels. Surfaces
 use crisp geometry and restrained separators; status, consent and uncertainty remain explicit
 words rather than colour or decorative motion. Canvas has no dotted background. Its optional
 freehand lasso selects whole intersecting objects without adding the selection loop to source

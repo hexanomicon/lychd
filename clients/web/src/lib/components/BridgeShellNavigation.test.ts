@@ -229,6 +229,8 @@ describe("shell-lifetime Bridge conversation", () => {
       if (document.getElementById("bridge-dock")?.closest("[hidden]")) {
         await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
       }
+      const sources = screen.getByText("Public sources", { selector: "summary" });
+      if (!sources.parentElement?.hasAttribute("open")) await fireEvent.click(sources);
       const link = screen.getByRole("link", { name: label });
       expect(link.getAttribute("href")).toBe(`/bridge?${query}`);
       await visit(link.getAttribute("href")!);

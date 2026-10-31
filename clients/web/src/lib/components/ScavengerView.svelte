@@ -257,7 +257,7 @@
 </section>
 
 <style>
-  .scavenger { width: min(100%, 76rem); margin-inline: auto; padding: clamp(1rem, 3vw, 2.5rem); display: grid; gap: 1rem; min-width: 0; }
+  .scavenger { width: min(100%, 76rem); margin-inline: auto; padding: clamp(1rem, 3vw, 2.5rem); display: grid; align-content: start; gap: 1rem; min-width: 0; }
   header p, .limits, caption { color: var(--color-ash); }
   h1 { margin-block: .25rem .75rem; }
   h2 { font-size: 1.25rem; margin-block: .25rem .5rem; }
@@ -266,7 +266,8 @@
   .notice, .deletion { padding: 1rem; border: 1px solid var(--color-engraving); border-inline-start: 3px solid var(--color-rune); }
   label { display: grid; gap: .4rem; margin-block: .75rem; }
   .confirm { display: flex; align-items: center; gap: .75rem; }
-  input:not([type="checkbox"]), textarea, select { width: 100%; min-height: 2.75rem; padding: .65rem; color: var(--color-bone); background: var(--color-obsidian); border: 1px solid var(--color-engraving); border-radius: .25rem; font: inherit; }
+  input:not([type="checkbox"]), textarea, select { width: 100%; min-height: 2.75rem; padding: .65rem; color: var(--color-bone); background: var(--color-obsidian); border: 1px solid var(--color-control-border); border-radius: .25rem; font: inherit; }
+  button { align-self: start; justify-self: start; min-height: 2.75rem; max-width: 100%; white-space: normal; }
   textarea { resize: vertical; }
   fieldset { min-width: 0; border: 1px solid var(--color-engraving); padding: 1rem; }
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }

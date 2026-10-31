@@ -241,13 +241,14 @@
 </section>
 
 <style>
-  .investigation { width: min(100%, 58rem); margin: 0 auto; padding: 1.25rem; display: grid; gap: 1.25rem; min-width: 0; }
-  header, form, article, fieldset, .entry { display: grid; gap: 0.8rem; min-width: 0; }
+  .investigation { width: min(100%, 58rem); margin: 0 auto; padding: 1.25rem; display: grid; align-content: start; gap: 1.25rem; min-width: 0; }
+  header, form, article, fieldset, .entry { display: grid; align-content: start; gap: 0.8rem; min-width: 0; }
   h1, h2, h3, h4, p { margin: 0; }
   fieldset, article, .notice { border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); padding: 1rem; }
   legend { color: var(--color-bone); padding: 0 0.35rem; }
   label { display: grid; gap: 0.4rem; }
-  input:not([type="checkbox"]), textarea { width: 100%; min-width: 0; padding: 0.65rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); background: var(--color-void); }
+  input:not([type="checkbox"]), textarea { width: 100%; min-width: 0; min-height: 2.75rem; padding: 0.65rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-void); }
+  button { align-self: start; justify-self: start; min-height: 2.75rem; max-width: 100%; white-space: normal; }
   textarea { resize: vertical; }
   .source, code, pre { font-family: var(--font-glyph); }
   pre { white-space: pre-wrap; overflow-wrap: anywhere; }

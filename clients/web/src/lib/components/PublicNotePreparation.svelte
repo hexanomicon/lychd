@@ -85,14 +85,14 @@
 </section>
 
 <style>
-  section { display: grid; gap: 0.8rem; min-width: 0; }
+  section { display: grid; align-content: start; gap: 0.8rem; min-width: 0; }
   .preparation { border-top: 1px solid var(--color-engraving); padding-top: 1rem; }
-  .notice { border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); padding: 1rem; }
+  .notice { background: var(--color-grimoire); border: 1px solid var(--color-tertiary-edge); border-radius: var(--radius-panel); padding: 1rem; }
   h3, h4, p { margin: 0; }
   dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); gap: 0.4rem 1rem; }
   dd { margin: 0; }
   dd, code, a { overflow-wrap: anywhere; }
-  button { justify-self: start; max-width: 100%; white-space: normal; }
-  :is(a, button, summary):focus-visible { outline: 2px solid var(--color-bone); outline-offset: 3px; }
+  button { align-self: start; justify-self: start; min-height: 2.75rem; max-width: 100%; white-space: normal; }
+  :is(a, button, summary):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   @media (max-width: 36rem) { dl { grid-template-columns: minmax(0, 1fr); } }
 </style>
