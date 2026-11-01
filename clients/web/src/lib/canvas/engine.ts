@@ -200,6 +200,15 @@ function nextRevision(document: Document): number {
   if (current >= Number.MAX_SAFE_INTEGER) throw new Error("Scene revision limit reached.");
   return current + 1;
 }
+/** Replace portable content within a retained board, invalidating packets from either document. */
+export function replaceDocument(input: Document, replacement: Document): Document {
+  const current = validateDocument(input), next = validateDocument(replacement);
+  const freshRevision = Math.max(nextRevision(current), nextRevision(next));
+  const id = current.scene.id;
+  return validateDocument({ ...next, scene: { ...next.scene, id, revision: freshRevision },
+    past: next.past.map((entry) => ({ ...entry, id })),
+    future: next.future.map((entry) => ({ ...entry, id })) });
+}
 function retainHistory(document: Document): Document {
   const bounded = { ...document, past: document.past.slice(-HISTORY), future: document.future.slice(-HISTORY) };
   while (bytes(bounded) > DOCUMENT_BYTES && (bounded.past.length || bounded.future.length)) {

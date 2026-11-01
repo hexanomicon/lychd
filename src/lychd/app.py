@@ -197,9 +197,10 @@ class AppInit(InitPluginProtocol):
     def _configure_composition(self, app_config: AppConfig) -> tuple[Settings, AssembledExtensions, RuneRegistry]:
         """Select service authority before the shared HTTP configuration."""
         if self.fixture is not None:
-            from lychd.developer import refuse_fixture_mutations
+            from lychd.developer import allow_fixture_canvas_authoring, refuse_fixture_mutations
 
-            app_config.guards.append(refuse_fixture_mutations)  # pyright: ignore[reportUnknownMemberType]
+            guard = allow_fixture_canvas_authoring if self.fixture.canvas_authoring else refuse_fixture_mutations
+            app_config.guards.append(guard)  # pyright: ignore[reportUnknownMemberType]
             app_config.lifespan.append(self.fixture.lifespan)  # pyright: ignore[reportUnknownMemberType]
             return self.fixture.settings, self.fixture.extensions, self.fixture.runes
 

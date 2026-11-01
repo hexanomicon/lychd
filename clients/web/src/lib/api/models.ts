@@ -2,6 +2,7 @@ import type { components } from "./openapi";
 
 export type AltarStatus = components["schemas"]["AltarStatus"];
 export type AtlasProject = components["schemas"]["AtlasProject"];
+export type CanvasProjectCreate = components["schemas"]["CanvasProjectCreate"];
 export type AtlasSummary = components["schemas"]["AtlasSummary"];
 export type AtlasCatalogue = components["schemas"]["AtlasCatalogue"];
 export type AtlasCreate = components["schemas"]["AtlasCreate"];

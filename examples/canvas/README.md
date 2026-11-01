@@ -3,7 +3,7 @@
 These synthetic files illustrate a manually transported model proposal. They do not describe
 running LychD infrastructure or invoke a model, Comfy workflow, GPU, or executable Pattern.
 
-1. Start the source client with `make frontend-dev` and open `/canvas`. The development preview
+1. Start the source client with `make frontend-dev` and open `/canvas/local`. The development preview
    is an offline board and needs no backend sign-in.
 2. Choose **Example**. Select the two rough boxes and arrow, leaving **Illustrative context**
    outside the selection. The Objects list can select **Stroke 1**, **Stroke 2** and **Stroke 3**

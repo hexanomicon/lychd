@@ -8,6 +8,7 @@ vi.mock("$lib/api/client", () => ({
   ApiError: class extends Error {
     constructor(message: string, readonly status?: number, readonly code?: string) { super(message); }
   },
+  bootstrapCanvasWorkspace: vi.fn(),
   getAtlasProjects: vi.fn(),
   getAtlasProject: vi.fn(),
   createAtlasProject: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock("$lib/api/client", () => ({
 import { beforeNavigate, goto } from "$app/navigation";
 import {
   ApiError,
+  bootstrapCanvasWorkspace,
   changeAtlasProject,
   createAtlasProject,
   getAtlasProject,
@@ -52,6 +54,9 @@ function project(patch: Partial<AtlasProject> = {}): AtlasProject {
     assessments: [],
     decisions: [],
     references: [],
+    canvas_document: null,
+    workspace_state: "kept",
+    builtin: false,
     ...patch
   };
 }
@@ -70,7 +75,10 @@ function catalogue(p: AtlasProject): AtlasCatalogue {
       unassessed_count: p.concerns.length,
       review_needed_count: 0,
       insufficient_count: 0,
-      disputed_count: 0
+      disputed_count: 0,
+      has_canvas: p.canvas_document !== null,
+      workspace_state: p.workspace_state,
+      builtin: p.builtin
     }],
     total: 1,
     limit: 50,
@@ -86,6 +94,9 @@ function deferred<T>() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(bootstrapCanvasWorkspace).mockReset().mockResolvedValue(project({
+    id: "55555555-5555-4555-8555-555555555555", title: "LychD", builtin: true
+  }));
   vi.mocked(getAtlasProjects).mockReset().mockResolvedValue({ projects: [], total: 0, limit: 50, offset: 0 });
   vi.mocked(getAtlasProject).mockReset().mockResolvedValue(project());
   vi.mocked(createAtlasProject).mockReset().mockResolvedValue(project());
@@ -103,16 +114,17 @@ it("distinguishes a failed catalogue read from a genuinely empty Atlas", async (
   vi.mocked(getAtlasProjects).mockRejectedValueOnce(new ApiError("Unavailable", 503));
   render(AtlasView);
   expect((await screen.findByRole("alert")).textContent).toContain("Atlas could not be loaded");
-  expect(screen.queryByText("A place for work that lasts")).toBeNull();
+  expect(screen.queryByText("Create your next canvas")).toBeNull();
 
   await fireEvent.click(screen.getByRole("button", { name: "Retry loading" }));
-  expect(await screen.findByText("A place for work that lasts")).toBeTruthy();
+  expect(await screen.findByText("Create your next canvas")).toBeTruthy();
+  expect(screen.getByRole("link", { name: "New canvas" }).getAttribute("href")).toBe("/canvas?new=1");
   expect(createAtlasProject).not.toHaveBeenCalled();
 });
 
-it("creates an project without starting a conversation and retries uncertain delivery unchanged", async () => {
+it("creates a project for incoming activity and retries uncertain delivery unchanged", async () => {
   vi.mocked(createAtlasProject).mockRejectedValueOnce(new TypeError("Connection lost"));
-  render(AtlasView);
+  render(AtlasView, { linkKind: "run", linkId: "run:one" });
   await screen.findByText("A place for work that lasts");
   await fireEvent.click(screen.getByRole("button", { name: "New project" }));
   const name = screen.getByLabelText(/Name required/) as HTMLInputElement;
@@ -128,7 +140,7 @@ it("creates an project without starting a conversation and retries uncertain del
   await fireEvent.click(screen.getByRole("button", { name: "Retry same save" }));
   expect(createAtlasProject).toHaveBeenCalledTimes(2);
   expect(vi.mocked(createAtlasProject).mock.calls[1]![0]).toEqual(original);
-  expect(goto).toHaveBeenCalledWith(`/atlas/${projectId}`);
+  expect(goto).toHaveBeenCalledWith(`/atlas/${projectId}?link_kind=run&link_id=run%3Aone`);
   expect(changeAtlasProject).not.toHaveBeenCalled();
 });
 
@@ -136,6 +148,8 @@ it("keeps an uncertain mutation's request identity, version, and payload for ret
   vi.mocked(changeAtlasProject).mockRejectedValueOnce(new ApiError("Response lost", 502));
   render(AtlasView, { projectId });
   await screen.findByRole("heading", { level: 1, name: "Care for the release" });
+  expect(screen.getByText("Canvas project record")).toBeTruthy();
+  expect(screen.getByRole("link", { name: "Open Canvas →" }).getAttribute("href")).toBe(`/canvas/${projectId}`);
   await fireEvent.click(screen.getByRole("button", { name: "Edit project" }));
   await fireEvent.input(screen.getByLabelText("Proposed next step"), { target: { value: "Ask support to review the guide." } });
   await fireEvent.submit(screen.getByRole("form", { name: "Edit project" }));
@@ -274,7 +288,7 @@ it("ignores a late mutation result after the route identity changes", async () =
 it("does not navigate for a creation that resolves after component destruction", async () => {
   const save = deferred<AtlasProject>();
   vi.mocked(createAtlasProject).mockReturnValueOnce(save.promise);
-  const view = render(AtlasView);
+  const view = render(AtlasView, { linkKind: "run", linkId: "run:one" });
   await screen.findByText("A place for work that lasts");
   await fireEvent.click(screen.getByRole("button", { name: "New project" }));
   await fireEvent.input(screen.getByLabelText(/Name required/), { target: { value: "A draft" } });
@@ -325,11 +339,86 @@ it("keeps paused projects visible with their unresolved concern counts", async (
   const item = project({ lifecycle: "paused", concerns: [concern] });
   vi.mocked(getAtlasProjects).mockResolvedValue(catalogue(item));
   render(AtlasView);
-  await screen.findByRole("link", { name: /Care for the release/ });
-  expect(screen.getByText("1 concern · 1 unassessed")).toBeTruthy();
+  const canvas = await screen.findByRole("link", { name: /Care for the release/ });
+  expect(canvas.getAttribute("href")).toBe(`/canvas/${projectId}`);
+  expect(screen.queryByText("1 concern · 1 unassessed")).toBeNull();
+  await fireEvent.click(screen.getByText("Project record filters", { selector: "summary" }));
+  expect(await screen.findByText("1 concern · 1 unassessed")).toBeTruthy();
   expect(screen.getByRole("heading", { name: "Paused 1" })).toBeTruthy();
   expect(screen.queryByText(/100%/)).toBeNull();
   expect(screen.queryByRole("navigation", { name: "Project pages" })).toBeNull();
+});
+
+it("keeps the separate LychD pin first across page filters, pagination, and a title collision", async () => {
+  const baseline = catalogue(project()).projects[0]!;
+  const pinnedId = "55555555-5555-4555-8555-555555555555";
+  const pinned = { ...baseline, id: pinnedId, title: "LychD", builtin: true, has_canvas: true, workspace_state: "kept" as const };
+  const projects = Array.from({ length: 50 }, (_, index) => ({
+    ...baseline, id: `project-${index}`, title: `Canvas ${index}`
+  }));
+  vi.mocked(getAtlasProjects)
+    .mockResolvedValueOnce({ projects, pinned, total: 51, limit: 50, offset: 0 })
+    .mockResolvedValueOnce({
+      projects: [{ ...baseline, title: "LychD", lifecycle: "closed" }],
+      pinned, total: 51, limit: 50, offset: 50
+    });
+  render(AtlasView);
+  const pinnedRegion = await screen.findByRole("region", { name: "Pinned project" });
+  expect(within(pinnedRegion).getByRole("link").getAttribute("href")).toBe(`/canvas/${pinnedId}`);
+  expect(document.querySelector(".project-card")?.getAttribute("href")).toBe(`/canvas/${pinnedId}`);
+  await fireEvent.change(screen.getByLabelText("Lifecycle on this page"), { target: { value: "closed" } });
+  expect(screen.getByText("No projects on this page match these filters.")).toBeTruthy();
+  expect(document.querySelectorAll(".project-card")).toHaveLength(1);
+  await fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  await screen.findByRole("heading", { name: "Closed 1" });
+  expect(vi.mocked(getAtlasProjects).mock.calls[1]?.[0]).toMatchObject({ limit: 50, offset: 50 });
+  const cards = [...document.querySelectorAll(".project-card")];
+  expect(cards.map((card) => card.getAttribute("href"))).toEqual([`/canvas/${pinnedId}`, `/canvas/${projectId}`]);
+});
+
+it("shows the pinned project when the user catalogue is empty", async () => {
+  const pinned = { ...catalogue(project()).projects[0]!, builtin: true, title: "LychD" };
+  vi.mocked(getAtlasProjects).mockResolvedValue({ projects: [], pinned, total: 0, limit: 50, offset: 0 });
+  render(AtlasView);
+  expect(await screen.findByRole("region", { name: "Pinned project" })).toBeTruthy();
+  expect(screen.getByRole("heading", { level: 1, name: "Atlas" })).toBeTruthy();
+  expect(screen.getByText("Canvas projects")).toBeTruthy();
+  expect(screen.getByRole("link", { name: "New canvas" }).getAttribute("href")).toBe("/canvas?new=1");
+  expect(screen.queryByRole("button", { name: "New project" })).toBeNull();
+  expect(createAtlasProject).not.toHaveBeenCalled();
+});
+
+it("prepares the LychD reference before the first direct catalogue read", async () => {
+  const ready = deferred<AtlasProject>();
+  const pinned = { ...catalogue(project()).projects[0]!, id: otherProjectId, title: "LychD", builtin: true };
+  vi.mocked(bootstrapCanvasWorkspace).mockReturnValueOnce(ready.promise);
+  vi.mocked(getAtlasProjects).mockResolvedValue({ projects: [], pinned, total: 0, limit: 50, offset: 0 });
+  render(AtlasView);
+  await act(() => Promise.resolve());
+  expect(bootstrapCanvasWorkspace).toHaveBeenCalledOnce();
+  expect(getAtlasProjects).not.toHaveBeenCalled();
+  await act(() => ready.resolve(project({ id: otherProjectId, title: "LychD", builtin: true })));
+  const pin = await screen.findByRole("region", { name: "Pinned project" });
+  expect(within(pin).getByRole("link").getAttribute("href")).toBe(`/canvas/${otherProjectId}`);
+  expect(getAtlasProjects).toHaveBeenCalledOnce();
+});
+
+it("keeps existing activity selection usable when reference preparation fails and retries explicitly", async () => {
+  vi.mocked(bootstrapCanvasWorkspace).mockRejectedValueOnce(new ApiError("Reference unavailable", 503));
+  const listed = catalogue(project());
+  const pinned = { ...listed.projects[0]!, id: otherProjectId, title: "LychD", builtin: true };
+  vi.mocked(getAtlasProjects).mockResolvedValueOnce(listed).mockResolvedValueOnce({ ...listed, pinned });
+  render(AtlasView, { linkKind: "session", linkId: "session:one" });
+  const choice = await screen.findByRole("link", { name: /Care for the release/ });
+  expect(choice.getAttribute("href")).toBe(`/atlas/${projectId}?link_kind=session&link_id=session%3Aone`);
+  expect(screen.getByRole("alert").textContent).toContain("Reference unavailable");
+  await fireEvent.click(screen.getByRole("button", { name: "Retry LychD reference" }));
+  await screen.findByRole("region", { name: "Pinned project" });
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(bootstrapCanvasWorkspace).toHaveBeenCalledTimes(2);
+  expect(getAtlasProjects).toHaveBeenCalledTimes(2);
+  expect(createAtlasProject).not.toHaveBeenCalled();
+  expect(changeAtlasProject).not.toHaveBeenCalled();
 });
 
 it("carries activity from a board choice into a prefilled form without saving automatically", async () => {
@@ -427,7 +516,7 @@ it("keeps an ambiguous creation identity when a later retry is denied", async ()
     .mockRejectedValueOnce(new ApiError("Response lost", 502))
     .mockRejectedValueOnce(new ApiError("Token expired", 403))
     .mockResolvedValueOnce(project());
-  render(AtlasView);
+  render(AtlasView, { linkKind: "run", linkId: "run:one" });
   await screen.findByText("A place for work that lasts");
   await fireEvent.click(screen.getByRole("button", { name: "New project" }));
   await fireEvent.input(screen.getByLabelText(/Name required/), { target: { value: "One project" } });
@@ -533,7 +622,11 @@ it("shows and filters current negative judgments separately from stale review an
   });
   render(AtlasView);
   await screen.findByRole("link", { name: /Recovery missing/ });
-  expect(screen.getByText("1 current insufficient judgment")).toBeTruthy();
+  const disclosure = screen.getByText("Project record filters", { selector: "summary" });
+  expect((disclosure.parentElement as HTMLDetailsElement).open).toBe(false);
+  expect(screen.queryByText("1 current insufficient judgment")).toBeNull();
+  await fireEvent.click(disclosure);
+  expect(await screen.findByText("1 current insufficient judgment")).toBeTruthy();
   expect(screen.getByText("1 current disputed judgment")).toBeTruthy();
   expect(screen.getByText("1 assessment needs review")).toBeTruthy();
   const insufficient = screen.getByRole("checkbox", { name: "Current insufficient judgments" });

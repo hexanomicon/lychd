@@ -27,8 +27,8 @@
       </button>
 
       <div class="altar-welcome__continuity">
-        <p>For work that spans conversations</p>
-        <a href={resolve("/atlas")}>Open Atlas <span aria-hidden="true">→</span></a>
+        <p>For a visual workspace and its projects</p>
+        <a href={resolve("/canvas")}>Open Canvas <span aria-hidden="true">→</span></a>
       </div>
     </div>
 

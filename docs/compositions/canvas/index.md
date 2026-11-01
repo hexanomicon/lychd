@@ -10,12 +10,29 @@ marks, select the part worth improving, and judge a proposed change before it re
 **Canvas** owns that visual board and its revision history. Its accepted Composition identity is
 **`canvas.board`, revision `1`**.
 
-The first profile is a **portable board authoring demo** at `/canvas`. A browser draft can be
-saved as a local document and opened again. It is not a server-retained Project, a published
-workflow, or evidence that the illustrated architecture is running. [State of Work](../../state-of-the-work.md#canvas-board-authoring)
+The **project workspace** at `/canvas` starts with LychD's own Canvas and its curated static
+architecture map. **Atlas** is the project catalogue. LychD remains separately pinned above the
+loaded user collection, including after filters or pagination. The diagram describes selected
+canonical relationships; it supplies no live status or proof that an illustrated capability runs.
+
+**New Canvas** immediately creates a draft project and its blank primary board. Draw without
+first naming or categorizing the idea. Keep it, rename it through its project record, or discard
+an eligible draft. One primary board belongs to each project in this profile. Existing projects
+retain their identities, judgments, decisions and references when a board is added.
+
+Use the workspace save to retain the complete board and bounded undo/redo history on the server.
+Read its result: an uncertain or conflicting save leaves the local document available to retry
+or export. Project version checks protect against overwriting another view. Keeping and discarding
+use that same versioned request contract. Discard hides a retained draft account; it cannot erase
+planning records, a kept project, or the built-in LychD project. In-memory fixtures last only for
+their process; the PostgreSQL profile supplies restart retention.
+
+The **portable board profile** remains at `/canvas/local`. A browser draft can be
+saved as a local document and opened again. A local download is independent of server save,
+workflow publication, or evidence that the illustrated architecture is running. [State of Work](../../state-of-the-work.md#canvas-board-authoring)
 owns the delivered evidence and its limits.
 
-The Vite development preview opens Canvas in the Altar's offline workbench profile, so drawing
+The Vite development preview opens `/canvas/local` in the Altar's offline workbench profile, so drawing
 needs no sign-in and starts no protected status or Bridge request. The shell and dock controls
 remain visible with the backend unavailable until explicitly connected. The compiled application
 keeps the normal authenticated shell and API boundaries.
@@ -63,7 +80,7 @@ without requiring a pointer or pan/zoom gesture.
 
 | Canvas owns | Related owner |
 | --- | --- |
-| Board documents, source ink, visual objects, selection packets, proposal review and reversible edits | [Atlas](../../divination/altar/atlas.md) retains undertaking purpose, concerns and judgments. A board is not an Atlas decision. |
+| Board documents, source ink, visual objects, selection packets, proposal review and reversible edits | [Atlas](../../divination/altar/atlas.md) catalogues these projects; their retained records keep undertaking purpose, concerns and judgments. A board edit does not record a decision. |
 | Visual workflow sketches and possible future exports | [Loom](../../divination/altar/loom.md) retains exact workflow meaning and admission. A drawn arrow is not an executable permission. |
 | Illustrations of execution | [Orb](../../divination/altar/orb.md) projects recorded Run evidence. Diagram motion supplies no execution observation. |
 | Placement of local symbolic artwork | [Atelier](../atelier/index.md) owns visual commissions and creative acceptance; [Prism Image](../../sepulcher/extensions/prism/image.md) owns designed technical image jobs. |
@@ -75,7 +92,8 @@ their owning instrument without transferring its records, permissions or executi
 ## Save, stop, and return
 
 Download the local document to retain the current scene and its bounded undo/redo snapshots
-outside the browser; closing an unsaved draft can lose it. Save the current draft before opening
+outside the browser; closing an unsaved draft can lose it. In the project workspace, confirm its
+server save before leaving or retain an export. Save the current draft before opening
 another document. Before an import replaces that draft, it validates format, byte and collection
 bounds, finite geometry, unique identities, source-stroke references, image envelopes and edge
 endpoints. Untrusted imports cannot contain remote images, SVG or executable code.
@@ -85,9 +103,10 @@ Python. This prevents differences in number formatting from changing acceptance,
 conservative budget may be larger than the compact downloaded file.
 
 Undo and redo preserve object identities and create fresh scene revisions so an old model response
-cannot become current again accidentally. The board has no live external effect to reconcile in
-this profile. A future server-retained, concurrent or provider-backed profile must define its own
-admission, custody, conflict and interrupted-effect recovery before becoming supported.
+cannot become current again accidentally. Board undo remains separate from durable project judgments.
+The workspace retains immutable retry requests after uncertain writes and refuses stale aggregate
+versions. A provider-backed profile still needs its own admission, custody and interrupted-effect
+recovery before becoming supported.
 
 The executable file and proposal contracts belong to
 [`src/lychd/compositions/canvas/`](https://github.com/hexanomicon/lychd/tree/main/src/lychd/compositions/canvas).

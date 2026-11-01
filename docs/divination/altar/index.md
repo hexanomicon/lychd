@@ -50,16 +50,16 @@ identity. Keep that identity in view when changing instruments.
 
 | What you need to establish | Instrument |
 | --- | --- |
-| What are we trying to accomplish or care for, what needs judgment, and what comes next? | [Atlas](./atlas.md) |
+| What can we draw, develop, organize and return to across conversations? | [Canvas](../../compositions/canvas/index.md), with [Atlas](./atlas.md) as its project catalogue |
 | What was offered, what judgment is pending, and what settled? | [Bridge](./bridge.md) |
 | Which Runs are before us, what evidence is arriving, and where does capture run out? | [Orb](./orb.md) |
 | Which stations and paths does this exact Scroll permit? | [Loom](./loom.md) |
 | What was observed about readiness or a physical transition? | [Nexus](./nexus.md) |
 
-Atlas, Orb, Loom and Nexus appear in the top navigation. Bridge remains available as a conversation
+Canvas, Orb, Loom and Nexus appear in the top navigation. Atlas is reached from Canvas as its
+project catalogue; LychD's own Canvas is pinned first and opens by default. Bridge remains available as a conversation
 panel beside the selected work. Icons accompany their visible names; hover, click or keyboard
-opens the menu. **Applications** opens the admitted application list, including Canvas and
-Scavenger market.
+opens the menu. **Applications** opens the other admitted applications, including Scavenger market.
 
 Atlas gives a larger undertaking continuity across conversations and Runs, and can begin before
 either exists. Inside Bridge, a Circle gathers one Invocation. Its current form is a compact

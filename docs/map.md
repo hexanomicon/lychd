@@ -127,7 +127,7 @@ a Provider identifies a mechanism. Neither designation transfers the application
 | An organ and its operating guide | [Sepulcher](./sepulcher/index.md) |
 | The owner of an application idea | [Choosing a Home](./compositions/choosing-a-home.md) |
 | The way separate applications work together | [Products and Suites](./compositions/products-and-suites.md) |
-| An undertaking's continuing brief, concerns, and decisions | [Atlas](./divination/altar/atlas.md) |
+| A visual project and its continuing brief, concerns, and decisions | [Canvas](./compositions/canvas/index.md), catalogued in [Atlas](./divination/altar/atlas.md) |
 | A term's exact meaning | [Lexicon](./lexicon/index.md) |
 | The decision behind a boundary | [Covenants](./adr/index.md) |
 | The purpose behind the whole | [Transcendence](./divination/transcendence/index.md) |

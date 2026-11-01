@@ -585,6 +585,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/canvas/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** CreateProject */
+        post: operations["createCanvasProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/canvas/review": {
         parameters: {
             query?: never;
@@ -596,6 +613,23 @@ export interface paths {
         put?: never;
         /** Review */
         post: operations["reviewCanvasProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/canvas/workspace/bootstrap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** BootstrapWorkspace */
+        post: operations["bootstrapCanvasWorkspace"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1165,10 +1199,17 @@ export interface components {
             reference_ids: string[];
             statement: string;
         };
+        /** AtlasCanvasSave */
+        AtlasCanvasSave: {
+            canvas_document: components["schemas"]["CanvasDocument"];
+            /** @constant */
+            kind: "canvas.save";
+        };
         /** AtlasCatalogue */
         AtlasCatalogue: {
             limit: number;
             offset: number;
+            pinned?: components["schemas"]["AtlasSummary"] | null;
             projects: components["schemas"]["AtlasSummary"][];
             total: number;
         };
@@ -1230,7 +1271,7 @@ export interface components {
         };
         /** AtlasMutation */
         AtlasMutation: {
-            change: components["schemas"]["AtlasProjectUpdate"] | components["schemas"]["AtlasConcernSave"] | components["schemas"]["AtlasConcernAssess"] | components["schemas"]["AtlasDecisionRecord"] | components["schemas"]["AtlasReferenceAdd"];
+            change: components["schemas"]["AtlasProjectUpdate"] | components["schemas"]["AtlasConcernSave"] | components["schemas"]["AtlasConcernAssess"] | components["schemas"]["AtlasDecisionRecord"] | components["schemas"]["AtlasReferenceAdd"] | components["schemas"]["AtlasCanvasSave"] | components["schemas"]["AtlasProjectKeep"] | components["schemas"]["AtlasProjectDiscard"];
             expected_version: number;
             /** Format: uuid */
             request_id: string;
@@ -1240,6 +1281,9 @@ export interface components {
             assessments: components["schemas"]["AtlasAssessment"][];
             brief: string;
             brief_revision: number;
+            /** @default false */
+            builtin: boolean;
+            canvas_document?: components["schemas"]["CanvasDocument"] | null;
             concerns: components["schemas"]["AtlasConcern"][];
             /** Format: date-time */
             created_at: string;
@@ -1254,6 +1298,21 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
             version: number;
+            /**
+             * @default kept
+             * @enum {string}
+             */
+            workspace_state: "draft" | "kept" | "discarded";
+        };
+        /** AtlasProjectDiscard */
+        AtlasProjectDiscard: {
+            /** @constant */
+            kind: "project.discard";
+        };
+        /** AtlasProjectKeep */
+        AtlasProjectKeep: {
+            /** @constant */
+            kind: "project.keep";
         };
         /** AtlasProjectUpdate */
         AtlasProjectUpdate: {
@@ -1291,8 +1350,12 @@ export interface components {
         /** AtlasSummary */
         AtlasSummary: {
             brief: string;
+            /** @default false */
+            builtin: boolean;
             concern_count: number;
             disputed_count: number;
+            /** @default false */
+            has_canvas: boolean;
             /** Format: uuid */
             id: string;
             insufficient_count: number;
@@ -1305,6 +1368,11 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
             version: number;
+            /**
+             * @default kept
+             * @enum {string}
+             */
+            workspace_state: "draft" | "kept" | "discarded";
         };
         /** BridgeComposer */
         BridgeComposer: {
@@ -1412,20 +1480,20 @@ export interface components {
              */
             proposal_format: "lychd.canvas.proposal/1";
             /**
-             * @default 1
+             * @default 2
              * @constant
              */
-            revision: 1;
+            revision: 2;
             /**
              * @default lychd.canvas/1
              * @constant
              */
             scene_format: "lychd.canvas/1";
             /**
-             * @default false
+             * @default true
              * @constant
              */
-            server_retention: false;
+            server_retention: true;
         };
         /** CanvasCrop */
         CanvasCrop: {
@@ -1477,6 +1545,12 @@ export interface components {
         CanvasPoint: {
             x: number;
             y: number;
+        };
+        /** CanvasProjectCreate */
+        CanvasProjectCreate: {
+            canvas_document: components["schemas"]["CanvasDocument"];
+            /** Format: uuid */
+            id: string;
         };
         /** CanvasProposal */
         CanvasProposal: {
@@ -4128,6 +4202,63 @@ export interface operations {
             };
         };
     };
+    createCanvasProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CanvasProjectCreate"];
+            };
+        };
+        responses: {
+            /** @description Document created, URL follows */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtlasProject"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+            /** @description Additional response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+        };
+    };
     reviewCanvasProposal: {
         parameters: {
             query?: never;
@@ -4152,6 +4283,44 @@ export interface operations {
             };
             /** @description Additional response */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+        };
+    };
+    bootstrapCanvasWorkspace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtlasProject"];
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+            /** @description Additional response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

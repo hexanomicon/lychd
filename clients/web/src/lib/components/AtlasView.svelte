@@ -5,6 +5,7 @@
 
   import {
     ApiError,
+    bootstrapCanvasWorkspace,
     changeAtlasProject,
     createAtlasProject,
     getAtlasProject,
@@ -18,7 +19,8 @@
     AtlasDecision,
     AtlasMutation,
     AtlasProject,
-    AtlasReference
+    AtlasReference,
+    AtlasSummary
   } from "$lib/api/models";
 
   let { projectId, linkKind, linkId }: { projectId?: string; linkKind?: string | null; linkId?: string | null } = $props();
@@ -79,6 +81,7 @@
   let loading = $state(true);
   let saving = $state(false);
   let readError = $state("");
+  let workspaceError = $state("");
   let saveError = $state("");
   let notice = $state("");
   let uncertain = $state(false);
@@ -89,10 +92,12 @@
   let unassessedOnly = $state(false);
   let insufficientOnly = $state(false);
   let disputedOnly = $state(false);
+  let recordFiltersOpen = $state(false);
   let concernFilter = $state<ConcernFilter>("all");
   let concernQuery = $state("");
   let offeredLink = "";
   let requestedOffset = 0;
+  let workspaceReady = false;
   let generation = 0;
   let readSequence = 0;
   let controller: AbortController | undefined;
@@ -154,6 +159,7 @@
   let filteredProjects = $derived(
     (catalogue?.projects ?? []).filter(
       (item) =>
+        item.id !== catalogue?.pinned?.id &&
         (lifecycleFilter === "all" || item.lifecycle === lifecycleFilter) &&
         (!reviewOnly || item.review_needed_count > 0) &&
         (!unassessedOnly || item.unassessed_count > 0) &&
@@ -188,6 +194,8 @@
       pending = null;
       baseline = "";
       readError = "";
+      workspaceError = "";
+      workspaceReady = false;
       saveError = "";
       notice = "";
       saving = false;
@@ -239,6 +247,18 @@
         project = next;
         if (forComparison) latestLoaded = true;
       } else {
+        if (!workspaceReady) {
+          try {
+            await bootstrapCanvasWorkspace();
+            if (!current(scope, id) || sequence !== readSequence) return;
+            workspaceReady = true;
+            workspaceError = "";
+          } catch (cause) {
+            if (!current(scope, id) || sequence !== readSequence || requestController.signal.aborted) return;
+            workspaceError = message(cause, "The LychD reference could not be prepared.");
+          }
+        }
+        if (!current(scope, id) || sequence !== readSequence) return;
         const next = await getAtlasProjects({ limit: 50, offset, signal: requestController.signal });
         if (!current(scope, id) || sequence !== readSequence) return;
         catalogue = next;
@@ -561,17 +581,20 @@
   <header class="atlas-heading">
     <div>
       {#if projectId}<a class="back-link" href={atlasHref(undefined, linkIntent)}>← All projects</a>{/if}
-      <span class="instrument-kicker">Atlas · Projects</span>
+      <span class="instrument-kicker">{projectId ? "Canvas project record" : "Canvas projects"}</span>
       <h1 class="rune-head" id={`${uid}-page-title`} tabindex="-1">{view?.title ?? "Atlas"}</h1>
-      {#if !projectId && catalogue?.total !== 0}<p>Work and ongoing care, across conversations.</p>{/if}
+      {#if !projectId}<p>Open a canvas or return to a project.</p>{/if}
     </div>
     <div class="actions">
       <button type="button" disabled={loading || saving || uncertain} onclick={() => refresh()}>
         {loading && (catalogue || view) ? "Refreshing…" : "Refresh"}
       </button>
-      {#if !projectId && catalogue?.total !== 0}
+      {#if !projectId && !linkIntent}
+        <a class="canvas-action" href="/canvas?new=1">New canvas</a>
+      {:else if !projectId && catalogue?.total !== 0}
         <button class="primary" type="button" disabled={loading || editorLocked} onclick={() => openEditor("create")}>New project</button>
       {:else if view}
+        <a class="canvas-action" href={`/canvas/${encodeURIComponent(view.id)}`}>Open Canvas →</a>
         <span class="badge">{lifecycleNames[view.lifecycle]}</span>
       {/if}
     </div>
@@ -596,6 +619,14 @@
       <button type="button" disabled={loading || editorLocked} onclick={() => void load(projectId, requestedOffset, conflict)}>Retry loading</button>
     </div>
   {/if}
+  {#if workspaceError}
+    <div class="fault" role="alert">
+      <strong>The LychD reference could not be prepared.</strong>
+      <p>{workspaceError}</p>
+      <p>You can still open any projects listed below.</p>
+      <button type="button" disabled={loading || editorLocked} onclick={() => refresh()}>Retry LychD reference</button>
+    </div>
+  {/if}
 
   {#snippet citedReference(reference: AtlasReference)}
     <a href={referenceHref(reference)} target="_blank" rel="noopener noreferrer">{activityName(reference)} · Open in new tab ↗</a>
@@ -608,6 +639,29 @@
         {#if reference.concern_id}<dt>Concern ID</dt><dd class="prose">{reference.concern_id}</dd>{/if}
       </dl>
     </details>
+  {/snippet}
+
+  {#snippet projectCard(item: AtlasSummary, pinned = false)}
+    <a class="project-card panel" href={linkIntent ? atlasHref(item.id, linkIntent) : `/canvas/${encodeURIComponent(item.id)}`}>
+      <div class="card-heading">
+        <h4>{item.title}</h4>
+        <span class="card-state">{pinned ? "Pinned · " : ""}{item.workspace_state === "draft" ? "Draft" : "Kept"} · {item.has_canvas ? "Canvas" : "Project records"}</span>
+      </div>
+      {#if item.brief.trim()}<p class="card-brief">{item.brief}</p>{/if}
+      {#if item.next_action.trim()}<p class="next-preview"><span>Next:</span> {item.next_action}</p>{/if}
+      {#if (linkIntent || recordFiltersOpen) && (item.concern_count > 0 || item.review_needed_count > 0 || item.insufficient_count > 0 || item.disputed_count > 0)}
+        <div class="record-preview">
+          {#if item.concern_count > 0}<span>{item.concern_count} {item.concern_count === 1 ? "concern" : "concerns"} · {item.unassessed_count} unassessed</span>{/if}
+          {#if item.review_needed_count > 0}<span class="review-count">{item.review_needed_count} {item.review_needed_count === 1 ? "assessment needs" : "assessments need"} review</span>{/if}
+          {#if item.insufficient_count > 0}<span class="review-count">{item.insufficient_count} current insufficient {item.insufficient_count === 1 ? "judgment" : "judgments"}</span>{/if}
+          {#if item.disputed_count > 0}<span class="review-count">{item.disputed_count} current disputed {item.disputed_count === 1 ? "judgment" : "judgments"}</span>{/if}
+        </div>
+      {/if}
+      <div class="card-foot">
+        <time datetime={item.updated_at}>Updated {date(item.updated_at)}</time>
+        <span>{linkIntent ? "Select project →" : "Open Canvas →"}</span>
+      </div>
+    </a>
   {/snippet}
 
   {#snippet editorPanel()}
@@ -779,21 +833,33 @@
 
   {#if loading && !view && !catalogue}
     <p class="loading" role="status">Loading Atlas…</p>
-  {:else if !projectId && catalogue && (catalogue.total > 0 || (!editor && !readError))}
+  {:else if !projectId && catalogue && (catalogue.pinned || catalogue.total > 0 || (!editor && !readError))}
     <section aria-label={catalogue.total === 0 ? "Start a project" : undefined} aria-labelledby={catalogue.total > 0 ? `${uid}-list-title` : undefined}>
+      {#if catalogue.pinned}
+        <section class="lifecycle-group pinned-project" aria-label="Pinned project">
+          <ul class="project-grid">
+            <li>{@render projectCard(catalogue.pinned, true)}</li>
+          </ul>
+        </section>
+      {/if}
       {#if catalogue.total > 0}
       <div class="section-heading">
         <h2 id={`${uid}-list-title`}>Your projects</h2>
         <span class="metadata">{catalogue.total} recorded</span>
       </div>
       {/if}
-      {#if catalogue.total === 0}
+      {#if catalogue.total === 0 && !editor}
         <div class="atlas-introduction panel">
           <div class="introduction-copy">
-            <h2>A place for work that lasts</h2>
-            <p>Start with a brief, a question, or a responsibility. Keep its concerns, decisions, and next step together as the work takes shape.</p>
-            <button class="primary" type="button" disabled={loading || editorLocked} onclick={() => openEditor("create")}>New project</button>
-            <p class="field-help">Begin here, then link conversations and evidence when they matter.</p>
+            {#if linkIntent}
+              <h2>A place for work that lasts</h2>
+              <p>Start with a brief, a question, or a responsibility. Keep its concerns, decisions, and next step together as the work takes shape.</p>
+              <button class="primary" type="button" disabled={loading || editorLocked} onclick={() => openEditor("create")}>New project</button>
+              <p class="field-help">Begin here, then link conversations and evidence when they matter.</p>
+            {:else}
+              <h2>Create your next canvas</h2>
+              <p>Begin with a draft project. Keep it to return to your work, or discard the draft when you are done.</p>
+            {/if}
           </div>
           <svg class="atlas-chart" viewBox="0 0 240 200" fill="none" aria-hidden="true">
             <circle cx="120" cy="100" r="74" />
@@ -806,17 +872,24 @@
             <path class="atlas-chart__point" d="m182 61 6 7-6 7-6-7Z" />
           </svg>
         </div>
-      {:else}
+      {:else if catalogue.total > 0}
         <div class="list-filters">
-          <label for={`${uid}-filter`}>Lifecycle on this page</label>
-          <select id={`${uid}-filter`} bind:value={lifecycleFilter}>
-            <option value="all">All</option>
-            {#each lifecycles as lifecycle (lifecycle)}<option value={lifecycle}>{lifecycleNames[lifecycle]}</option>{/each}
-          </select>
-          <label class="checkbox-label"><input type="checkbox" bind:checked={reviewOnly} /> Assessment review needed</label>
-          <label class="checkbox-label"><input type="checkbox" bind:checked={unassessedOnly} /> Unassessed concerns</label>
-          <label class="checkbox-label"><input type="checkbox" bind:checked={insufficientOnly} /> Current insufficient judgments</label>
-          <label class="checkbox-label"><input type="checkbox" bind:checked={disputedOnly} /> Current disputed judgments</label>
+          <div class="lifecycle-filter">
+            <label for={`${uid}-filter`}>Lifecycle on this page</label>
+            <select id={`${uid}-filter`} bind:value={lifecycleFilter}>
+              <option value="all">All</option>
+              {#each lifecycles as lifecycle (lifecycle)}<option value={lifecycle}>{lifecycleNames[lifecycle]}</option>{/each}
+            </select>
+          </div>
+          <details class="project-record-filters" bind:open={recordFiltersOpen}>
+            <summary>Project record filters</summary>
+            <div class="record-filter-options">
+              <label class="checkbox-label"><input type="checkbox" bind:checked={reviewOnly} /> Assessment review needed</label>
+              <label class="checkbox-label"><input type="checkbox" bind:checked={unassessedOnly} /> Unassessed concerns</label>
+              <label class="checkbox-label"><input type="checkbox" bind:checked={insufficientOnly} /> Current insufficient judgments</label>
+              <label class="checkbox-label"><input type="checkbox" bind:checked={disputedOnly} /> Current disputed judgments</label>
+            </div>
+          </details>
         </div>
         {#each lifecycles as lifecycle (lifecycle)}
           {@const items = filteredProjects.filter((item) => item.lifecycle === lifecycle)}
@@ -825,20 +898,7 @@
               <h3 id={`${uid}-${lifecycle}`}>{lifecycleNames[lifecycle]} <span class="metadata">{items.length}</span></h3>
               <ul class="project-grid">
                 {#each items as item (item.id)}
-                  <li>
-                    <a class="project-card panel" href={atlasHref(item.id, linkIntent)}>
-                      <h4>{item.title}</h4>
-                      {#if item.review_needed_count > 0}<span class="review-count">{item.review_needed_count} {item.review_needed_count === 1 ? "assessment needs" : "assessments need"} review</span>{/if}
-                      {#if item.insufficient_count > 0}<span class="review-count">{item.insufficient_count} current insufficient {item.insufficient_count === 1 ? "judgment" : "judgments"}</span>{/if}
-                      {#if item.disputed_count > 0}<span class="review-count">{item.disputed_count} current disputed {item.disputed_count === 1 ? "judgment" : "judgments"}</span>{/if}
-                      <p class="card-brief">{item.brief || "No brief recorded yet."}</p>
-                      <div class="next-preview"><span>Proposed next step</span><p>{item.next_action || "No next step recorded."}</p></div>
-                      <div class="card-foot">
-                        <span>{item.concern_count} {item.concern_count === 1 ? "concern" : "concerns"} · {item.unassessed_count} unassessed</span>
-                      </div>
-                      <time datetime={item.updated_at}>Updated {date(item.updated_at)}</time>
-                    </a>
-                  </li>
+                  <li>{@render projectCard(item)}</li>
                 {/each}
               </ul>
             </section>
@@ -1107,6 +1167,7 @@
   button:disabled { opacity: 0.55; cursor: not-allowed; }
   :is(button, a, input, select, textarea, summary, h2, h3):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   .actions { justify-content: flex-start; }
+  .canvas-action { display: inline-flex; align-items: center; min-height: 2.75rem; padding-inline: 0.85rem; border: 1px solid var(--color-rune-dim); border-radius: var(--radius-rune); text-decoration: none; }
   .panel { border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); background: var(--color-obsidian); }
   .section-heading { margin-bottom: 1rem; align-items: flex-start; }
   .section-heading > div { min-width: 0; }
@@ -1177,20 +1238,27 @@
   .list-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 0.8rem; padding-block: 0.35rem 1rem; }
   .list-filters label { margin: 0; }
   .list-filters select { width: auto; min-width: 8rem; }
-  .lifecycle-group { margin-block: 0.5rem 1.75rem; }
+  .lifecycle-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 0.65rem; }
+  .project-record-filters { margin-left: auto; }
+  .project-record-filters summary { display: list-item; padding-block: 0.75rem; color: var(--color-parchment); cursor: pointer; }
+  .project-record-filters[open] { flex-basis: 100%; }
+  .record-filter-options { display: flex; flex-wrap: wrap; gap: 0.6rem 1.2rem; padding-block: 0.35rem 0.65rem; }
+  .lifecycle-group { margin-block: 0.5rem 1rem; }
   .lifecycle-group > h3 { margin-bottom: 0.7rem; }
   .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: 1rem; list-style: none; margin: 0; padding: 0; }
+  .pinned-project .project-grid { grid-template-columns: minmax(0, 1fr); }
   .project-grid li, .record-list, .history-list, .assessment-references { list-style: none; margin: 0; padding: 0; }
-  .project-card { display: flex; flex-direction: column; height: 100%; padding: 1.15rem; color: var(--color-bone); text-decoration: none; }
+  .project-card { display: flex; flex-direction: column; gap: 0.4rem; height: 100%; padding: 0.85rem 1rem; color: var(--color-bone); text-decoration: none; }
   .project-card:hover { border-color: var(--color-rune-dim); }
-  .project-card h4 { color: var(--color-frost); font-size: var(--text-lg); overflow-wrap: anywhere; }
-  .card-brief { color: var(--color-parchment); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
-  .next-preview { margin-block: auto 0; padding-top: 1rem; }
-  .next-preview > span { color: var(--color-parchment); font-size: var(--text-xs); }
-  .next-preview p { font-size: var(--text-sm); overflow-wrap: anywhere; }
-  .card-foot { display: flex; flex-wrap: wrap; gap: 0.4rem 0.8rem; margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px solid var(--color-engraving); font-size: var(--text-xs); color: var(--color-parchment); }
+  .card-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.35rem 1rem; }
+  .project-card h4 { margin: 0; color: var(--color-bone); font-size: var(--text-lg); overflow-wrap: anywhere; }
+  .card-state { color: var(--color-parchment); font-size: var(--text-xs); }
+  .card-brief { margin: 0; color: var(--color-parchment); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; font-size: var(--text-sm); }
+  .next-preview { margin: 0; font-size: var(--text-sm); overflow-wrap: anywhere; }
+  .next-preview > span { color: var(--color-parchment); }
+  .card-foot, .record-preview { display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; font-size: var(--text-xs); color: var(--color-parchment); }
+  .card-foot { justify-content: space-between; margin-top: auto; padding-top: 0.15rem; }
   .review-count { color: var(--color-heat); }
-  .project-card time { margin-top: 0.6rem; font-size: var(--text-xs); color: var(--color-parchment); }
   .pagination { justify-content: center; padding-block: 0.5rem; color: var(--color-parchment); }
   .empty { padding: 1.8rem; color: var(--color-parchment); }
   .empty h3 { color: var(--color-bone); }

@@ -6,7 +6,7 @@
   import AltarShell from "$lib/components/AltarShell.svelte";
 
   let { children } = $props();
-  const offlineProfile = untrack(() => import.meta.env.DEV && page.url.pathname === "/canvas");
+  const offlineProfile = untrack(() => import.meta.env.DEV && page.url.pathname === "/canvas/local");
   const bridgeWorkspace = setContext(bridgeWorkspaceKey, createBridgeWorkspace());
   function guardUnload(event: BeforeUnloadEvent) {
     if (!bridgeWorkspace.needsUnloadWarning) return;

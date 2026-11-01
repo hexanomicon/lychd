@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/svelte";
+import { act, fireEvent, render, screen, within } from "@testing-library/svelte";
 import { createRawSnippet } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -214,6 +214,19 @@ describe("Altar consent status", () => {
 
 
 describe("shell contextual navigation", () => {
+  it.each(["/canvas", "/canvas/project-a", "/atlas", "/atlas/project-a"])("keeps Canvas primary and selected at %s", async (path) => {
+    vi.mocked(getAltarStatus).mockResolvedValue(status(0));
+    page.url.href = `http://localhost${path}`;
+    const view = render(AltarShell, { children });
+    const instruments = screen.getByRole("navigation", { name: "Instruments" });
+    const canvas = within(instruments).getByRole("link", { name: "Canvas" });
+    expect(canvas.getAttribute("href")).toBe("/canvas");
+    expect(canvas.getAttribute("aria-current")).toBe("page");
+    expect(within(instruments).queryByRole("link", { name: "Atlas" })).toBeNull();
+    expect(screen.getAllByRole("link", { name: "Canvas" })).toHaveLength(1);
+    view.unmount();
+  });
+
   it("opens the parallel Run field across instrument switches", async () => {
     vi.mocked(getAltarStatus).mockResolvedValue(status(1));
     page.url.href = "http://localhost/orb/run-a?event=event-a";
@@ -269,12 +282,12 @@ it("opens Applications by hover, pins a click, and keeps menu traversal and Esca
   expect(disclosure.open).toBe(true);
   await fireEvent.click(trigger);
   expect(disclosure.open).toBe(true);
-  const canvas = screen.getByRole("link", { name: "Canvas" });
-  canvas.focus();
+  const scavenger = screen.getByRole("link", { name: "Scavenger market" });
+  scavenger.focus();
   await fireEvent.pointerLeave(disclosure);
   expect(disclosure.open).toBe(true);
-  expect(canvas.getAttribute("href")).toBe("/canvas");
-  expect(screen.getByRole("link", { name: "Scavenger market" }).getAttribute("href")).toBe("/scavenger");
+  expect(scavenger.getAttribute("href")).toBe("/scavenger");
+  expect(within(screen.getByRole("navigation", { name: "Applications" })).queryByRole("link", { name: "Canvas" })).toBeNull();
   await fireEvent.keyDown(window, { key: "Escape" });
   expect(disclosure.open).toBe(false);
   expect(document.activeElement).toBe(trigger.closest("summary"));

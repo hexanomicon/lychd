@@ -22,7 +22,7 @@ icon: material/language-html5
   remote functions, or JavaScript production server.
 - A snapshot plus event cursor must reconstruct browser state. Connection, animation, and canvas
   layout never prove execution.
-- Atlas, Orb, Nexus, and Loom are work routes; Bridge is a shell-owned conversation panel available
+- Canvas, Orb, Nexus, and Loom are work routes; Bridge is a shell-owned conversation panel available
   beside every work route. Existing Bridge URLs retain explicit server fallbacks and exact session,
   Run, consent and focused-application navigation. Generated UI is closed descriptors, never model-
   or extension-supplied HTML, JavaScript, Svelte, or imports.
@@ -65,11 +65,11 @@ owns delivery.
 
 <span id="the-four-instruments"></span>
 
-### The five instruments
+### The workbench instruments
 
 | Instrument | Browser contract | Current limit |
 | --- | --- | --- |
-| Atlas | Versioned Projects, concerns, attributed judgments, decisions, next steps, and explicit activity references | Initial planning surface; no autonomous continuation or automatic coverage. |
+| Canvas | Project creation and visual board authorship; Atlas catalogues Projects and their retained records | One primary board per Project; no live microphone, native model transport, autonomous continuation or automatic coverage. |
 | Bridge | Session selection, single-active-Run text admission, reconstruction, semantic stream, consent, closed fragments, and bounded Creation investigation intake/report focus | Partial: text only; live reconstruction and tokens are process-local. |
 | Orb | Paged Run catalogue, parallel graph field, and bounded selected-Run evidence feeds with gaps, capture labels, and links | Partial: no complete trace store, nested subworkflow identity, or annotation. |
 | Nexus | Timestamped capability observations, non-binding plan preview, typed request, and ticket stream | Partial: observations and tickets are process-local and not restart-complete. |
@@ -296,8 +296,9 @@ retains that boundary.
 
 #### The shared workbench and Bridge dock
 
-The top masthead presents Atlas, Orb, Loom and Nexus as icon-and-label navigation. Applications
-is a bounded disclosure for Canvas and other admitted applications; hover, click and keyboard
+The top masthead presents Canvas, Orb, Loom and Nexus as icon-and-label navigation. Atlas is
+the Canvas Project catalogue, reached from the workspace. Applications
+is a bounded disclosure for other admitted applications; hover, click and keyboard
 focus can open it, Escape dismisses it, and moving into the menu keeps it reachable. Bridge is
 an always-available conversation surface, not a competing top-level instrument tab. Existing
 `/bridge` links remain valid compatibility and focus destinations; exact session, Run, consent,
@@ -339,14 +340,14 @@ ink; rectangle and semantic-list selection remain available. A selected scope is
 proposal boundary, never a model transmission or execution permission.
 
 The Altar should read as a quiet observatory. Work holds the focal point; restrained surfaces,
-typography, and fixed brand art provide identity around it. Its five instruments retain their
+typography, and fixed brand art provide identity around it. Canvas, Orb, Loom and Nexus retain
 single-word names, with Bridge always available as the conversation dock. Their distinct reading
 tasks determine their form, rather than a repeated dashboard or universal graph. No instrument
 becomes another owner of an existing action:
 
 | Instrument | Primary reading order | Role of a graph |
 | --- | --- | --- |
-| Atlas | Concerns, their decomposition and where they are addressed; current assessment basis; optional Project brief and next step | An optional selected-concern relation lens distinguishing decomposition, sources, addressing, and assessment citations. |
+| Canvas and its Atlas catalogue | The selected Project's board, catalogue, or retained project record; concerns, assessment basis, brief and next step remain directly addressable | Freehand visual authorship on the board; an optional concern relation lens preserves decomposition, addressing, and citation distinctions. |
 | Bridge | Conversation and offered text; the exact Run's reply, consent or unresolved admission; next draft | No default graph. A future Circle composes authorized lenses around one Invocation. |
 | Orb | Parallel Run groups; selected Run and capture limits; ordered evidence; selected record; bounded delegated jobs | Zoom discloses supplied Run, station, occurrence, and record membership; declared permissions and observed records remain distinct. |
 | Nexus | Snapshot and containment; observed capabilities; explicit preview and request; ticket and physical observations | A native board remains primary. Planned evictions and launches are more useful than an inferred topology map. |
@@ -405,17 +406,38 @@ identity, or persuasive copy cannot supply those contracts.
 ### Canvas portable board authoring
 
 [Canvas](../compositions/canvas/index.md) is the Composition for visual board authorship and
-reviewed transformations. Its first `/canvas` profile is a browser authoring draft with explicit
-portable document import/export. Native SVG captures actual ink and projects draft objects;
+reviewed transformations. `/canvas` is the primary creator workspace; `/atlas` is its Project
+catalogue. Opening a new Canvas explicitly creates a draft Project and blank primary board,
+without requiring a name or an existing undertaking. `/canvas/{project_id}` opens that exact
+Project; `/atlas/{project_id}` retains the directly addressable project record and existing
+activity-link intent. Projects without a board can acquire one without recreating their records.
+This initial workspace supports one primary board per Project.
+
+An authorized workspace bootstrap creates or replays the owner-specific LychD Project and its
+curated static architecture board. It is the default Canvas and a separately supplied pinned
+catalogue entry, visible regardless of the loaded user page or its filters. Pinning uses server
+identity, never a title match. The map states its source and static character; it asserts no live
+execution, coverage, readiness or inference. Ordinary Projects cannot claim its reserved identity.
+
+Board saves, keeping a draft and discarding an eligible draft use the Project's owner, expected
+aggregate version, and immutable retry identity. Canvas writes require both Canvas and Atlas write
+scopes. An uncertain save retains its original payload; a conflict preserves the local document
+for reconciliation or export. Discard retains a tombstone and is unavailable for built-in, kept,
+legacy or planning-bearing Projects. Board undo does not undo saved judgments or accepted decisions.
+The record remains usable without spatial navigation, microphone access, or a model.
+
+The explicit `/canvas/local` authoring profile retains portable document import/export; its Vite
+development form omits protected shell requests until connection. Native SVG captures actual ink and projects draft objects;
 the existing Loom/Orb renderer and read-only contracts are unchanged. This bounded authoring
 surface does not introduce a second graph engine or make layout a source of workflow meaning.
 
 Canvas owns the file/proposal schemas and pure admission rules under its Composition source.
-The browser holds disposable authoring state; it claims no server retention, publication,
+The browser holds disposable authoring state; only a confirmed server save establishes Project
+retention. Local downloads do not establish that save. Neither surface establishes publication,
 execution or native media custody. Text remains native editable text, independent of optional
 local PNG artwork. Imported bytes are bounded and validated; remote image URLs, SVG, HTML and
 executable proposal content are unavailable. The real API exports the schemas for generated
-client aliases and provides stateless CPU validation, not a board persistence service.
+client aliases and provides stateless CPU validation alongside the versioned Project workspace.
 
 Selection capture binds exact object identities, world bounds and scene revision to source
 geometry and a same-revision crop. Proposals may change selected objects and create explicit
@@ -428,7 +450,7 @@ are separate capabilities with explicit unavailable states until independently q
 
 ### Atlas and continuity across Invocations
 
-Atlas maps Concerns: what needs attention, how it decomposes, where it is addressed, and what
+Atlas is the catalogue of Canvas Projects. Their retained record maps Concerns: what needs attention, how it decomposes, where it is addressed, and what
 supports a judgment. A Concern can begin with an idea or question before any Project exists.
 The independent Concern contract is [Designed](#independent-concerns-decomposition-and-addressing).
 The initial server-owned Project aggregate holds a
@@ -437,7 +459,7 @@ references to existing Bridge sessions or Runs. A Project may begin without a co
 and may describe continuing stewardship. Its identity survives individual Invocations. It owns
 neither a reusable Composition or Pattern nor a Suite's live coordination.
 
-Atlas begins as a native list and detail board. References connect it to conversation and
+The catalogue and project record use native list and detail views. References connect them to conversation and
 consent in Bridge, execution inspection in Orb, exact scores in Loom, and physical readiness in
 Nexus. Those links make navigation possible without changing ownership: membership must be
 explicit, never inferred from geometry, tags, prose similarity, or a selected browser tab. Linking
@@ -993,7 +1015,7 @@ owns the exact material boundary.
 ### Build boundary, security, and reopening
 
 Development runs Vite on `127.0.0.1:5173`, proxying `/api` and `/schema` to the loopback Vessel.
-Production serves static Atlas, Bridge, Orb, Nexus, and Loom shells; unknown APIs and retired paths stay
+Production serves static Canvas, Atlas, Bridge, Orb, Nexus, and Loom shells; unknown APIs and retired paths stay
 404. Every operation that raises a runtime not-found across those verticals declares the shared JSON
 `FrameworkError` contract. `npm ci`, OpenAPI and notice generation, compilation, and Python build share a release source.
 Audit verifies source identity, compiled `index.html`, and archive notices—not a real browser or

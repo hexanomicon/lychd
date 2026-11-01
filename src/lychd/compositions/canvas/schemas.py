@@ -1,7 +1,7 @@
 """Closed, bounded portable records for the Canvas board authoring profile.
 
-These records prove local structure and proposal scope, not model transmission,
-native media custody, or server retention. Revalidation is required at every
+These records prove portable structure and proposal scope, not model transmission
+or native media custody. Workspace retention belongs to Atlas. Revalidation is required at every
 public operation because Python callers can still mutate a model's lists.
 """
 
@@ -419,11 +419,11 @@ class CanvasReviewResult(_CanvasRecord):
 
 class CanvasContracts(_CanvasRecord):
     composition: Literal["canvas.board"] = "canvas.board"
-    revision: Literal[1] = 1
+    revision: Literal[2] = 2
     scene_format: Literal["lychd.canvas/1"] = "lychd.canvas/1"
     document_format: Literal["lychd.canvas.document/1"] = "lychd.canvas.document/1"
     packet_format: Literal["lychd.canvas.selection/1"] = "lychd.canvas.selection/1"
     proposal_format: Literal["lychd.canvas.proposal/1"] = "lychd.canvas.proposal/1"
-    server_retention: Literal[False] = False
+    server_retention: Literal[True] = True
     model_transmission: Literal[False] = False
     image_generation: Literal[False] = False

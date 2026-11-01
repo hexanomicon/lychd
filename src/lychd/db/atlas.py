@@ -10,6 +10,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 
+from lychd.compositions.canvas.workspace import is_reserved_system_project_id
 from lychd.domain.web.atlas import (
     AtlasCatalogue,
     AtlasConflictError,
@@ -19,7 +20,10 @@ from lychd.domain.web.atlas import (
     AtlasProject,
     AtlasReferenceKind,
     AtlasSummary,
+    CanvasProjectCreate,
     apply_change,
+    canvas_creation_digest,
+    new_canvas_project,
     new_project,
     payload_digest,
     summarize_project,
@@ -81,12 +85,21 @@ class DbAtlasStore:
             # Both statements must describe one catalogue snapshot, including
             # an empty page beyond the end of a concurrently growing catalogue.
             await session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-            total = await session.scalar(
-                select(func.count()).select_from(AtlasProjectRecord).where(AtlasProjectRecord.sigil_name == owner)
+            ordinary = (
+                AtlasProjectRecord.sigil_name == owner,
+                AtlasProjectRecord.document["builtin"].as_boolean().is_not(True),
+                AtlasProjectRecord.document["workspace_state"].astext.is_distinct_from("discarded"),
+            )
+            total = await session.scalar(select(func.count()).select_from(AtlasProjectRecord).where(*ordinary))
+            pinned_row = await session.scalar(
+                select(AtlasProjectRecord).where(
+                    AtlasProjectRecord.sigil_name == owner,
+                    AtlasProjectRecord.document["builtin"].as_boolean().is_(True),
+                )
             )
             rows = await session.scalars(
                 select(AtlasProjectRecord)
-                .where(AtlasProjectRecord.sigil_name == owner)
+                .where(*ordinary)
                 .order_by(AtlasProjectRecord.updated_at.desc(), AtlasProjectRecord.id.desc())
                 .limit(limit)
                 .offset(offset)
@@ -96,6 +109,7 @@ class DbAtlasStore:
                 total=total or 0,
                 limit=limit,
                 offset=offset,
+                pinned=summarize_project(_document(pinned_row)) if pinned_row is not None else None,
             )
 
     async def get_project(self, owner: str, project_id: UUID) -> AtlasProject:
@@ -113,10 +127,44 @@ class DbAtlasStore:
             return _document(row)
 
     async def create_project(self, owner: str, data: AtlasCreate) -> AtlasProject:
+        digest = payload_digest(data)
+        if is_reserved_system_project_id(data.id):
+            replay = await self._reserved_creation_replay(owner, data.id, digest)
+            if replay is not None:
+                return replay
+            message = "The built-in LychD Project identity is reserved for workspace bootstrap."
+            raise AtlasConflictError(message)
+        project = new_project(data, now=datetime.now(UTC))
+        return await self._create_project(owner, project, digest)
+
+    async def create_canvas_project(
+        self, owner: str, data: CanvasProjectCreate, *, builtin: bool = False
+    ) -> AtlasProject:
+        digest = canvas_creation_digest(data, builtin=builtin)
+        if is_reserved_system_project_id(data.id):
+            replay = await self._reserved_creation_replay(owner, data.id, digest)
+            if replay is not None:
+                return replay
+        project = new_canvas_project(data, owner=owner, now=datetime.now(UTC), builtin=builtin)
+        return await self._create_project(owner, project, digest)
+
+    async def _reserved_creation_replay(self, owner: str, project_id: UUID, digest: str) -> AtlasProject | None:
+        """Preserve exact historical creation replay before reserving new system identities."""
         from lychd.db.models.atlas import AtlasProjectRecord
 
-        digest = payload_digest(data)
-        project = new_project(data, now=datetime.now(UTC))
+        async with self._session_factory() as session, session.begin():
+            exists = await session.scalar(select(AtlasProjectRecord.id).where(AtlasProjectRecord.id == project_id))
+            if exists is None:
+                return None
+            row = await self._owned_row(session, owner, project_id)
+            if row.creation_digest != digest:
+                message = "Atlas Project identity was already used for a different creation payload."
+                raise AtlasConflictError(message)
+            return _document(row)
+
+    async def _create_project(self, owner: str, project: AtlasProject, digest: str) -> AtlasProject:
+        from lychd.db.models.atlas import AtlasProjectRecord
+
         async with self._session_factory() as session, session.begin():
             await session.execute(
                 insert(AtlasProjectRecord)
@@ -131,7 +179,7 @@ class DbAtlasStore:
                 )
                 .on_conflict_do_nothing(index_elements=[AtlasProjectRecord.id])
             )
-            row = await self._owned_row(session, owner, data.id)
+            row = await self._owned_row(session, owner, project.id)
             if row.creation_digest != digest:
                 message = "Atlas Project identity was already used for a different creation payload."
                 raise AtlasConflictError(message)
@@ -177,6 +225,7 @@ class DbAtlasStore:
                 select(AtlasProjectRecord)
                 .where(
                     AtlasProjectRecord.sigil_name == owner,
+                    AtlasProjectRecord.document["workspace_state"].astext.is_distinct_from("discarded"),
                     AtlasProjectRecord.document.contains({"references": [{"kind": kind, "target_id": target_id}]}),
                 )
                 .order_by(AtlasProjectRecord.updated_at.desc(), AtlasProjectRecord.id.desc())

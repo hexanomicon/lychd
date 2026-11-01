@@ -166,7 +166,7 @@
   }
 
   const instruments = [
-    { slug: "atlas", label: "Atlas" }, { slug: "orb", label: "Orb" },
+    { slug: "canvas", label: "Canvas" }, { slug: "orb", label: "Orb" },
     { slug: "loom", label: "Loom" }, { slug: "nexus", label: "Nexus" }
   ] as const;
 
@@ -284,7 +284,8 @@
     {#each instruments as instrument (instrument.slug)}
       <a
         href={resolve(`/${instrument.slug}`)}
-        aria-current={page.url.pathname.startsWith(`/${instrument.slug}`) ? "page" : undefined}
+        aria-current={(page.url.pathname.startsWith(`/${instrument.slug}`) ||
+          (instrument.slug === "canvas" && page.url.pathname.startsWith("/atlas"))) ? "page" : undefined}
       >
         <AltarIcon name={instrument.slug} /><span>{instrument.label}</span>
       </a>
@@ -294,7 +295,6 @@
   <details class="application-menu" {@attach manageAboutDisclosure}>
     <summary><AltarIcon name="applications" /><span>Applications</span><span aria-hidden="true">⌄</span></summary>
     <nav aria-label="Applications">
-      <a href={resolve("/canvas")} aria-current={page.url.pathname === "/canvas" ? "page" : undefined}><AltarIcon name="canvas" />Canvas</a>
       <a href={resolve("/scavenger")} aria-current={page.url.pathname === "/scavenger" ? "page" : undefined}><AltarIcon name="scavenger" />Scavenger market</a>
     </nav>
   </details>

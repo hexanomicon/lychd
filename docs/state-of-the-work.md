@@ -124,11 +124,13 @@ warm vLLM did not execute the full generated rootless body or qualify managed-mo
 The separate installed-source `0cc0988` activation observation retains its own historical scope
 under [vLLM](#vllm-integration).
 
-The developer fixture remains a separate read-only memory composition with real controllers and
+The developer fixture remains a separate memory composition with real controllers and
 security, synthetic failed Run/Pattern links and refusing execution. `make developer-fixture`
 runs it in the explicit OCI image at fixed internal `0.0.0.0:8000`, published only at host
 `127.0.0.1:8000`. Its current source and frontend guards remain; a new image/browser occurrence is
-pending. The fixture reads no operator configuration or credentials and grants no production
+pending. The default is read-only; explicit `CANVAS_AUTHORING=1` admits only Canvas and Project
+authoring into disposable memory under normal security checks. Execution, consent and physical
+transitions remain refused. The fixture reads no operator configuration or credentials and grants no production
 authority. [CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md)
 owns the workflow.
 
@@ -1190,8 +1192,8 @@ incidental variation is not delivered localization support.
 The compiled Altar has one fixed LychD Dark palette, dark browser metadata, dark native-control
 colour scheme, and no light/system selector, system-scheme following, palette configuration,
 runtime theme loader, or supported theme extension. Its canonical semantic palette now uses a black
-work plane, neutral graphite, icy-blue interaction, green confirmation/activity and bounded
-deep-purple context surfaces. Shared controls, instrument typography and graph chrome consume
+work plane, neutral graphite, icy-blue interaction, green confirmation/activity and muted
+cloth-purple navigation accents. Shared controls, instrument typography and graph chrome consume
 that palette; fixed brand artwork remains separately attributed. There is no complete contrast matrix or bright/dim production-browser receipt;
 ADR 15's bounded operator-palette contract is design law, not delivered configurability.
 
@@ -1231,7 +1233,22 @@ cross-engine heap gate. Existing server-held recovery, current-access and consen
 
 **State:** Partial
 
-**Proved now:** At `/canvas`, the portable board authoring profile captures actual pointer
+**Proved now:** Canvas is the primary creator entry; Atlas catalogues its Projects. `/canvas`
+bootstraps and opens the owner's pinned LychD Project with a curated static architecture board;
+`/canvas/{project_id}` opens an exact Project. New Canvas atomically creates a draft and its
+primary board without a naming form. This profile supports one primary board per Project.
+Confirmed saves retain the complete portable document in the owner-scoped Atlas aggregate with
+version checks and exact request replay. Legacy records, titles and retry digests survive board
+attachment. Keeping a draft is explicit; discard retains a tombstone and refuses kept, built-in
+or planning-bearing Projects. Retries cannot resurrect it. The pinned system entry is supplied
+separately from the user page and remains visible through local filters and pagination. Bootstrap
+preserves an existing edited board across seed changes.
+
+The workspace preserves local edits through failed, uncertain and conflicting saves, fences late
+reads and guards unsaved navigation. Managed imports and conflict reconciliation preserve the
+retained primary identity and invalidate old packets. Local downloads remain independent of
+server save. Project record URLs and incoming activity linking remain available.
+At `/canvas/local`, portable board authoring captures actual pointer
 strokes and supplies native nodes and connections, rectangle or freehand-lasso whole-object
 selection, original geometry, and a same-revision bounded PNG packet. It also supports
 deterministic text, optional local PNG artwork, explicitly local Tidy, bounded CPU arrangement,
@@ -1247,25 +1264,28 @@ status/Bridge reads until connection, allowing offline authoring without sign-in
 application retains its authenticated shell and API boundaries.
 
 **Boundary — Not yet:** There is no native vision transmission, live microphone, automatic model
-interpretation, generated-art engine, server-retained board, collaborative editing, registered
+interpretation, generated-art engine, collaborative editing, registered
 Canvas Pattern or Invocation. The example proposal is manually authored by Codex from a captured
 selection and imported; it is not a live inference receipt. Local PNG envelope validation does
 not prove compressed pixels render correctly. No GPU, model, Comfy deployment, broad touch or
-cross-engine browser qualification is established. Canvas does not edit Loom scores, Atlas
-judgments or Orb evidence, and layout creates no semantic relation or execution authority.
+cross-engine browser qualification is established. Board edits do not change Loom scores, project
+judgments or Orb evidence; layout creates no semantic relation or execution authority. Retention
+survives process restart only in the PostgreSQL profile; disposable memory does not.
 
 **Evidence**
 
 - **Source:** [Canvas records](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/canvas/schemas.py), [pure review](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/canvas/operations.py), [stateless API](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/canvas.py), [client engine](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/canvas/engine.ts), and [Canvas surface](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/CanvasView.svelte)
 - **Verification:** [Domain and parity tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_canvas.py), [HTTP admission tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_canvas.py), [client engine tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/canvas/engine.test.ts), [gesture/review tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/canvas/CanvasView.test.ts), [offline preview test](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/routes/canvas/layout.test.ts), and [manual model example](https://github.com/hexanomicon/lychd/blob/main/examples/canvas/README.md)
-- **Law:** [Frontend](./adr/15-frontend.md#canvas-portable-board-authoring)
+- **Verification:** [Workspace domain](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/web/test_canvas_workspace.py), [PostgreSQL retention](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_atlas_pg.py), and [workspace client recovery](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/CanvasWorkspace.test.ts)
+- **Law:** [Frontend](./adr/15-frontend.md#canvas-portable-board-authoring) and [Project retention](./adr/06-persistence.md#atlas-records)
 - **Topic:** [Canvas](./compositions/canvas/index.md)
 
 ### Atlas undertaking map {#atlas-projects}
 
 **State:** Partial
 
-**Proved now:** Atlas offers a fifth Altar route with a Project list and detail forms. Each
+**Proved now:** Atlas catalogues Canvas Projects with a separate pinned LychD entry and the
+existing directly addressable Project record forms. Each
 Project retains a brief, concerns and criteria, attributed assessments with the requirement text
 and revisions judged, append-only decisions and supersession, proposed next step, lifecycle,
 and explicit session or Run references. Owner-scoped, version-checked changes and retained
@@ -1297,7 +1317,8 @@ relations, versioned source derivations, or source-based proposal acceptance are
 There is no AI concern generation, automated coverage judgment, autonomous continuation, project
 scheduler, implicit Context injection, inferred clustering, or project-wide control over Run
 admission and cancellation. References identify related activity; they do not freeze execution
-evidence. The surface has no delete action or complete edit audit.
+evidence. The surface has no physical delete action or complete edit audit. Canvas draft discard
+retains its account and receipts rather than removing existing planning records.
 The local Sigil remains bootstrap context rather than an authenticated person. The memory profile
 is process-local. Production-browser, multi-user, and large-history performance receipts remain
 outside this evidence; existing installations require migration `0009` before use.

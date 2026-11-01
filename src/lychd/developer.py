@@ -53,6 +53,33 @@ async def refuse_fixture_mutations(connection: ASGIConnection[Any, Any, Any, Any
         raise PermissionDeniedException(detail=_READ_ONLY)
 
 
+async def allow_fixture_canvas_authoring(
+    connection: ASGIConnection[Any, Any, Any, Any], handler: BaseRouteHandler
+) -> None:
+    """Admit only Canvas/Project authoring into disposable memory, never execution.
+
+    Normal authentication, Origin, CSRF and handler scopes still run. This guard
+    is selected only by the explicit developer authoring profile.
+    """
+    path = connection.scope["path"]
+    if (
+        connection.scope["type"] == "http"
+        and connection.scope["method"] == "POST"
+        and (
+            path
+            in {
+                "/api/v1/canvas/projects",
+                "/api/v1/canvas/workspace/bootstrap",
+                "/api/v1/canvas/documents/validate",
+                "/api/v1/canvas/review",
+            }
+            or (path.startswith("/api/v1/atlas/projects/") and path.endswith("/changes"))
+        )
+    ):
+        return
+    await refuse_fixture_mutations(connection, handler)
+
+
 class RefusingQueue:
     """Named, inert collaborator; no queue operation represents execution or health."""
 
@@ -159,6 +186,7 @@ class DeveloperFixture:
     settings: Settings
     extensions: AssembledExtensions
     runes: RuneRegistry
+    canvas_authoring: bool = False
 
     @asynccontextmanager
     async def lifespan(self, app: Litestar) -> AsyncGenerator[None]:
@@ -203,7 +231,9 @@ class DeveloperFixture:
                     raise
 
 
-def create_developer_app(*, access_password: SecretStr, signing_key: SecretStr, listener_port: int = 8000) -> Litestar:
+def create_developer_app(
+    *, access_password: SecretStr, signing_key: SecretStr, listener_port: int = 8000, canvas_authoring: bool = False
+) -> Litestar:
     """Build real HTTP surfaces from explicit credentials without reading Settings sources."""
     from lychd.app import AppInit
     from lychd.interface.server_policy import evaluate_server_runtime_policy
@@ -233,6 +263,7 @@ def create_developer_app(*, access_password: SecretStr, signing_key: SecretStr, 
         settings=settings,
         extensions=AssembledExtensions(context=ExtensionManager(builtins=(), crypt=()).assemble()),
         runes=RuneRegistry(()),
+        canvas_authoring=canvas_authoring,
     )
     return Litestar(plugins=[AppInit(listener_port=listener_port, fixture=fixture)])
 
@@ -261,19 +292,26 @@ def main(arguments: Sequence[str] | None = None) -> None:
     arguments = tuple(sys.argv[1:] if arguments is None else arguments)
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--caged", action="store_true", required=True, help="Run inside the development image")
-    parser.parse_args(arguments)
+    parser.add_argument(
+        "--canvas-authoring", action="store_true", help="Allow disposable in-memory Canvas and project edits only"
+    )
+    options = parser.parse_args(arguments)
     try:
         validate_server_environment(os.environ)
     except ServerRuntimePolicyError as exc:
         parser.error(str(exc))
     password = SecretStr(secrets.token_urlsafe(32))
     app = create_developer_app(
-        access_password=password, signing_key=SecretStr(secrets.token_urlsafe(48)), listener_port=_LISTENER_PORT
+        access_password=password,
+        signing_key=SecretStr(secrets.token_urlsafe(48)),
+        listener_port=_LISTENER_PORT,
+        canvas_authoring=options.canvas_authoring,
     )
     # This explicit terminal result is the only credential output. It is never a
     # structured diagnostic, environment variable, URL, browser asset, or file.
+    profile = "Canvas authoring" if options.canvas_authoring else "read-only"
     sys.stdout.write(
-        f"SYNTHETIC read-only fixture. No execution or durable state.\nUsername: magus\nPassword: {password.get_secret_value()}\n"
+        f"SYNTHETIC {profile} fixture. No execution or durable state.\nUsername: magus\nPassword: {password.get_secret_value()}\n"
     )
     sys.stdout.flush()
     asyncio.run(_serve(app, host=_LISTENER_HOST, port=_LISTENER_PORT))

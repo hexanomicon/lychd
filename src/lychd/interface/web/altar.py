@@ -69,7 +69,12 @@ class AltarController(Controller):
         return Response(content=_ALTAR_INDEX, media_type=MediaType.HTML)
 
     @get(
-        ["/atlas/{client_path:str}", "/bridge/{client_path:str}", "/orb/{client_path:str}"],
+        [
+            "/atlas/{client_path:str}",
+            "/bridge/{client_path:str}",
+            "/orb/{client_path:str}",
+            "/canvas/{client_path:str}",
+        ],
         name="altar:deep-link",
         guards=[requires_scopes("altar:read")],
         include_in_schema=False,

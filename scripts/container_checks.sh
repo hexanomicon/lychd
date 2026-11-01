@@ -124,7 +124,7 @@ fi
 
 selection=()
 # Forward selection only; never inherit credentials or the caller's whole env.
-for name in N K M ARGS VERBOSE PYTEST_TARGETS PYTEST_BASE_ROOT PYTEST_BASETEMP \
+for name in N K M ARGS VERBOSE CANVAS_AUTHORING PYTEST_TARGETS PYTEST_BASE_ROOT PYTEST_BASETEMP \
     RUFF_TARGETS FORMAT_TARGETS TYPECHECK_TARGETS CONTAINER_TEST_TARGETS; do
     if [[ -v "$name" ]]; then
         selection+=(--env "$name")

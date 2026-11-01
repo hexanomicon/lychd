@@ -12,7 +12,8 @@ afterEach(() => { cleanup(); vi.resetAllMocks(); });
 const project: AtlasSummary = {
   id: "11111111-1111-4111-8111-111111111111", title: "The record", brief: "", lifecycle: "active",
   next_action: "", version: 1, updated_at: "2026-09-06T00:00:00Z", concern_count: 0,
-  unassessed_count: 0, review_needed_count: 0, insufficient_count: 0, disputed_count: 0
+  unassessed_count: 0, review_needed_count: 0, insufficient_count: 0, disputed_count: 0,
+  has_canvas: false, builtin: false, workspace_state: "kept"
 };
 
 it("never applies one activity's delayed membership to another activity", async () => {

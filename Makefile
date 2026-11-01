@@ -50,6 +50,7 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/cli/test_reach_context_rounds.py tests/unit/cli/test_reach_podman_model.py \
 	tests/unit/cli/test_reach_relay_retirement.py tests/unit/cli/test_reach_research_broker.py \
 	tests/unit/cli/test_reach_research_image.py tests/unit/cli/test_reach_scout_worker.py \
+	tests/unit/cli/test_reach_trace_archive.py tests/unit/cli/test_reach_trace_capture.py \
 	tests/unit/cli/test_reach_operator_onboarding.py \
 	tests/unit/system/services/test_intercom_http.py \
 	tests/unit/domain/test_artifact_custody.py tests/unit/domain/test_evolution.py \
@@ -210,9 +211,13 @@ frontend-dev: ## Run the SvelteKit Altar in loopback-only development mode
 	@$(NPM) --prefix $(WEB_CLIENT_DIR) run dev
 
 .PHONY: developer-fixture
-developer-fixture: ## Run the read-only synthetic backend for local browser development
+developer-fixture: ## Run the synthetic backend (Canvas edits opt in with CANVAS_AUTHORING=1)
 ifeq ($(LYCHD_TEST_CONTAINER),1)
+ifeq ($(CANVAS_AUTHORING),1)
+	@$(UV_DEV_RUN) python -m lychd.developer --caged --canvas-authoring
+else
 	@$(UV_DEV_RUN) python -m lychd.developer --caged
+endif
 else
 	@bash scripts/container_checks.sh developer-fixture
 endif

@@ -5,7 +5,12 @@ icon: material/map-outline
 
 # :material-map-outline: Atlas
 
-A conversation can end while the undertaking continues. **Atlas** keeps its brief, concerns,
+**Atlas is the catalogue of Canvas projects.** Its pinned first entry is LychD's own Canvas,
+with a curated static project map. Search, filters and pagination apply to the loaded user
+collection while that entry remains available. Open a project to draw on its Canvas, or open
+its **Project record** directly to inspect its brief, concerns, decisions and related activity.
+
+A conversation can end while the undertaking continues. The project record keeps its brief, concerns,
 judgments, and proposed next step available across conversations and Runs. Begin with a software
 release, a record, or the continuing care of a home; an existing conversation, Pattern, or Run
 is unnecessary.
@@ -25,11 +30,15 @@ distinguish understanding from the ability to modify, replace, or recover a comp
 
 ## Put an undertaking on the map
 
-Open **Atlas** in the [Altar](index.md#bring-one-intent) navigation. Create a project with a name and a brief: describe the
+Open **Canvas** in the [Altar](index.md#bring-one-intent) navigation, then **Atlas** for the catalogue.
+**New Canvas** creates a draft project with a blank board immediately; a name and brief can follow.
+Keep the project when it is worth retaining in your working collection, or discard an eligible
+draft to remove it from the catalogue. Discard retains a recoverable account, and cannot remove
+LychD, a kept project, or existing planning records. In the Project record, describe the
 desired outcome or the responsibility you intend to keep. Add a proposed next step when you know
 one. Saving records your plan; it does not submit an Intent or start execution.
 
-The board lists retained projects and their lifecycle. Open one to work with its brief, concerns,
+The catalogue lists retained projects and their lifecycle. Open the Project record to work with its brief, concerns,
 decisions, and related activity. `Active`, `Paused`, and `Closed` describe your planning choice.
 You can reopen a closed project. Pausing or closing leaves admitted Runs alone and does not
 promise to prevent new work through other instruments.
@@ -113,7 +122,8 @@ field; **Use reviewed values** enables a new explicit save of the values now in 
 fields the other editor changed, including those you left untouched. If the read fails, Atlas
 shows that failure rather than an empty map.
 
-The initial surface retains records when a project closes; it has no delete action. Existing
+The surface retains records when a project closes. Draft discard is a retained tombstone rather
+than a delete action. Existing
 installations need the normal database migration before opening Atlas. Migration `0009` refuses
 to remove its schema while projects remain.
 

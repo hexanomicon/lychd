@@ -1,21 +1,27 @@
 <script lang="ts">
-  import { tick } from "svelte";
+  import { tick, untrack } from "svelte";
   import { beforeNavigate } from "$app/navigation";
-  import { applyProposal, arrangeScene, blankDocument, boundsOfSelection, commit, deleteSelection, exampleDocument, makePacket, moveSelection, pngArtwork, redo, renameNode, tidyProposal, undo, validateDocument, validateProposal } from "$lib/canvas/engine";
+  import { applyProposal, arrangeScene, blankDocument, boundsOfSelection, commit, deleteSelection, exampleDocument, makePacket, moveSelection, pngArtwork, redo, renameNode, replaceDocument, tidyProposal, undo, validateDocument, validateProposal } from "$lib/canvas/engine";
   import type { CanvasNode, Document as BoardDocument, Packet, Proposal, Scene, Tool } from "$lib/canvas/types";
   import CanvasSurface from "./canvas/CanvasSurface.svelte";
   import CanvasObjects from "./canvas/CanvasObjects.svelte";
   import AltarIcon from "./AltarIcon.svelte";
 
+  let { initialDocument, managed = false, onchange, onbusy }: {
+    initialDocument?: BoardDocument;
+    managed?: boolean;
+    onchange?: (document: BoardDocument) => void;
+    onbusy?: (busy: boolean) => void;
+  } = $props();
   type Review = { scene: Scene; sceneId: string; revision: number; title: string; summary: string; author: string; proposal: Proposal | null; packet: Packet | null };
-  let board = $state.raw<BoardDocument>(exampleDocument());
+  let board = $state.raw<BoardDocument>(untrack(() => initialDocument ? validateDocument(initialDocument) : exampleDocument()));
   let selected = $state.raw<string[]>([]);
   let tool = $state<Tool>("select");
   let objectsOpen = $state(false);
   let helpOpen = $state(false);
   let unexported = $state(false);
-  let fileState = $state("Temporary example · download to keep");
-  let notice = $state("Illustrative example. Draw, select a region, then try Tidy or capture a selection packet.");
+  let fileState = $state(untrack(() => managed ? "Loaded project document" : "Temporary example · download to keep"));
+  let notice = $state(untrack(() => managed ? "Project board loaded. Save to retain edits in LychD, or download a portable copy." : "Illustrative example. Draw, select a region, then try Tidy or capture a selection packet."));
   let error = $state("");
   let instruction = $state("");
   let capturing = $state(false);
@@ -39,10 +45,13 @@
   ];
 
   beforeNavigate((navigation) => {
+    if (managed) return;
     if (!unexported || navigation.willUnload) return;
     if (!window.confirm("This board has changes that have not been downloaded. Leave and discard this draft?")) navigation.cancel();
   });
-  function guardUnload(event: BeforeUnloadEvent) { if (unexported || capturing) { event.preventDefault(); event.returnValue = ""; } }
+  function guardUnload(event: BeforeUnloadEvent) { if (!managed && (unexported || capturing)) { event.preventDefault(); event.returnValue = ""; } }
+  function changed() { onchange?.(structuredClone(board)); }
+  function busy() { onbusy?.(capturing || gestureBusy || pending !== null); }
   function fail(cause: unknown) { error = cause instanceof Error ? cause.message : "The change could not be completed."; }
   function select(ids: string[]): boolean {
     if (capturing || pending) return false;
@@ -52,14 +61,14 @@
   }
   function change(next: Scene, message: string) {
     if (capturing || pending) return;
-    try { board = commit(board, next); unexported = true; fileState = "Unsaved changes · download to keep"; notice = message; error = ""; selected = selected.filter((id) => boundsOfSelection(board.scene, [id]) !== null); }
+    try { board = commit(board, next); changed(); unexported = true; fileState = managed ? "Edited project document" : "Unsaved changes · download to keep"; notice = message; error = ""; selected = selected.filter((id) => boundsOfSelection(board.scene, [id]) !== null); }
     catch (cause) { fail(cause); }
   }
   function history(direction: "undo" | "redo") {
     if (capturing || gestureBusy) return;
     try {
       surface?.settleAnimation();
-      board = direction === "undo" ? undo(board) : redo(board); selected = []; unexported = true; fileState = "Unsaved changes · download to keep";
+      board = direction === "undo" ? undo(board) : redo(board); changed(); selected = []; unexported = true; fileState = managed ? "Edited project document" : "Unsaved changes · download to keep";
       notice = direction === "undo" ? "Change undone. A fresh revision prevents old proposals from being reused." : "Change redone."; error = "";
     } catch (cause) { fail(cause); }
   }
@@ -78,6 +87,7 @@
     if (capturing || gestureBusy) return;
     if (unexported && !window.confirm("Download your current board first if you want to keep it. Replace this draft?")) return;
     board = example ? exampleDocument() : blankDocument(); selected = []; pending = null; packet = null; unexported = false; instruction = "";
+    changed(); busy();
     fileState = example ? "Temporary example · download to keep" : "Temporary blank board · download to keep";
     notice = example ? "Illustrative example loaded. These objects do not describe running LychD architecture." : "Blank board ready. Draw freely or add an editable node."; error = "";
     void tick().then(() => surface.fit());
@@ -95,10 +105,12 @@
     const input = event.currentTarget as HTMLInputElement, file = input.files?.[0]; input.value = ""; if (!file || capturing || gestureBusy) return;
     try {
       if (file.size > 12 * 1024 * 1024) throw new Error("Board document exceeds the 12 MiB limit.");
-      const next = validateDocument(JSON.parse(await file.text()));
+      let next = validateDocument(JSON.parse(await file.text()));
       if (capturing || gestureBusy) throw new Error("A board gesture or capture began while reading the file. Open the document again when it finishes.");
       if (unexported && !window.confirm("Replace the current draft? Changes that have not been downloaded will be lost.")) return;
-      board = next; selected = []; pending = null; packet = null; unexported = false; fileState = "Opened local document · no new edits"; notice = `Opened ${file.name}. No file was sent to a server.`; error = "";
+      if (managed) next = replaceDocument(board, next);
+      board = next; selected = []; pending = null; packet = null; unexported = false; fileState = managed ? "Imported local document · save to retain" : "Opened local document · no new edits"; notice = managed ? `Imported ${file.name} into this project board. Save board to retain it. No file was sent to a server.` : `Opened ${file.name}. No file was sent to a server.`; error = "";
+      changed(); busy();
       await tick(); surface.fit();
     } catch (cause) { fail(cause); }
   }
@@ -112,6 +124,7 @@
       const captured = selectedPacket("Regularize selected geometry with the local Tidy helper.");
       const proposal = tidyProposal(captured), next = applyProposal(scene, proposal, captured);
       pending = { scene: next, sceneId: scene.id, revision: scene.revision, title: "Tidy preview", summary: proposal.summary, author: "Local geometry helper · no model", proposal, packet: captured }; original = false; error = "";
+      busy();
       notice = "Preview only. Tidy regularizes geometry; it does not interpret the instruction field.";
     } catch (cause) { fail(cause); }
   }
@@ -122,6 +135,7 @@
       const next = arrangeScene(scene, selected.length ? selected : undefined);
       surface.animateArrangement(scene, next);
       pending = { scene: next, sceneId: scene.id, revision: scene.revision, title: "Arrangement preview", summary: "Settle movable nodes around their connections and pinned obstacles. Unselected nodes and raw ink stay fixed.", author: "Local CPU layout", proposal: null, packet: null }; original = false; error = "";
+      busy();
       notice = "Preview only. Apply to keep this arrangement as one undoable change.";
     } catch (cause) { fail(cause); }
   }
@@ -131,15 +145,17 @@
     try {
       surface.settleAnimation();
       const next = pending.proposal && pending.packet ? applyProposal(scene, pending.proposal, pending.packet) : pending.scene;
-      board = commit(board, next); pending = null; original = false; selected = []; unexported = true; fileState = "Unsaved changes · download to keep"; notice = "Proposal applied as one change. Undo restores the previous board and source ink."; error = ""; surface.focusBoard();
+      board = commit(board, next); pending = null; original = false; selected = []; unexported = true; fileState = managed ? "Edited project document" : "Unsaved changes · download to keep"; notice = "Proposal applied as one change. Undo restores the previous board and source ink."; error = ""; surface.focusBoard();
+      changed(); busy();
     } catch (cause) { fail(cause); }
   }
-  function reject() { surface.settleAnimation(); pending = null; original = false; error = ""; notice = "Preview rejected. The board is unchanged."; surface.focusBoard(); }
+  function reject() { surface.settleAnimation(); pending = null; busy(); original = false; error = ""; notice = "Preview rejected. The board is unchanged."; surface.focusBoard(); }
   async function capture() {
     if (editingLocked) return;
     try {
       if (!instruction.trim()) throw new Error("Write an instruction to include in the selection packet.");
       const captured = selectedPacket(instruction.trim()); capturing = true; error = ""; notice = "Capturing this scene revision locally…";
+      busy();
       await tick();
       let crop: Packet["crop"] = null;
       try { crop = await surface.captureCrop(captured.selection.bounds); }
@@ -148,7 +164,7 @@
       packet = makePacket(captured.scene, captured.selection.object_ids, captured.selection.bounds, captured.instruction, crop);
       notice = crop ? `Captured revision ${scene.revision}: ${selected.length} objects and a ${crop.width} × ${crop.height} PNG. Download the packet for manual model transport.` : "Selection records captured without a PNG. No model transmission occurred.";
     } catch (cause) { fail(cause); }
-    finally { capturing = false; }
+    finally { capturing = false; busy(); }
   }
   async function importProposal(event: Event) {
     const input = event.currentTarget as HTMLInputElement, file = input.files?.[0]; input.value = ""; if (!file || capturing || gestureBusy || pending) return;
@@ -164,6 +180,7 @@
       const next = applyProposal(scene, proposal, boundPacket);
       selected = [...boundPacket.selection.object_ids];
       pending = { scene: next, sceneId: scene.id, revision: scene.revision, title: "Imported proposal", summary: proposal.summary, author: proposal.author, proposal, packet: boundPacket }; original = false; error = "";
+      busy();
       notice = "Manual proposal import. Inspect the proposed objects before applying.";
     } catch (cause) { fail(cause); }
   }
@@ -203,16 +220,22 @@
 <svelte:head><title>Canvas · LychD</title><meta name="description" content="A portable visual board for drawing, selecting and judging editable proposals." /></svelte:head>
 <svelte:window onbeforeunload={guardUnload} onkeydown={keys} />
 
-<section class="canvas-view" aria-label="Canvas board authoring" {@attach attachRoot}>
-  <header class="canvas-header"><div class="identity"><span class="eyebrow">Portable board</span><h1>Canvas</h1></div><div class="document-actions"><button type="button" onclick={() => newBoard(false)} disabled={capturing || gestureBusy}>Blank board</button><button type="button" onclick={() => newBoard(true)} disabled={capturing || gestureBusy}>Example</button><button type="button" onclick={() => chooseFile("board")} disabled={capturing || gestureBusy}>Open JSON</button><button type="button" class="primary" onclick={saveBoard} disabled={capturing || gestureBusy}>Download board <span aria-hidden="true">↓</span></button></div></header>
+<section class={["canvas-view", { "canvas-managed": managed }]} aria-label="Canvas board authoring" {@attach attachRoot}>
+  {#snippet boardTitle()}<label class="board-title"><span class="visually-hidden">Board title</span><input aria-label="Board title" maxlength="120" value={scene.title} disabled={editingLocked} onblur={(event) => { const title = event.currentTarget.value.trim(); if (title && title !== scene.title) change({ ...scene, title }, "Board renamed."); else event.currentTarget.value = scene.title; }} onkeydown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} /></label>{/snippet}
+  {#snippet fileActions()}<button type="button" onclick={() => chooseFile("board")} disabled={capturing || gestureBusy}>Open JSON</button><button type="button" class="primary" onclick={saveBoard} disabled={capturing || gestureBusy}>Download board <span aria-hidden="true">↓</span></button>{/snippet}
+  {#if managed}
+    <div class="managed-document-row">{@render boardTitle()}<span class="revision">r{scene.revision} · {count} objects</span><div class="document-actions">{@render fileActions()}</div></div>
+  {:else}
+    <header class="canvas-header"><div class="identity"><span class="eyebrow">Portable board</span><h1>Canvas</h1></div><div class="document-actions"><button type="button" onclick={() => newBoard(false)} disabled={capturing || gestureBusy}>Blank board</button><button type="button" onclick={() => newBoard(true)} disabled={capturing || gestureBusy}>Example</button>{@render fileActions()}</div></header>
+    <div class="board-meta">{@render boardTitle()}<span class="file-state" data-unsaved={unexported}>{unexported ? "● " : ""}{fileState}</span><span class="revision">r{scene.revision} · {count} objects</span></div>
+  {/if}
   <input class="file-input" data-file="board" type="file" accept="application/json,.json" aria-label="Open board document" onchange={openBoard} />
   <input class="file-input" data-file="proposal" type="file" accept="application/json,.json" aria-label="Import proposal document" onchange={importProposal} />
-  <div class="board-meta"><label class="board-title"><span class="visually-hidden">Board title</span><input aria-label="Board title" maxlength="120" value={scene.title} disabled={editingLocked} onblur={(event) => { const title = event.currentTarget.value.trim(); if (title && title !== scene.title) change({ ...scene, title }, "Board renamed."); else event.currentTarget.value = scene.title; }} onkeydown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} /></label><span class="file-state" data-unsaved={unexported}>{unexported ? "● " : ""}{fileState}</span><span class="revision">r{scene.revision} · {count} objects</span></div>
   <div class={["workbench", { "with-objects": objectsOpen }]}>
     <div class="board-host"><div class="floating-tools" role="toolbar" aria-label="Canvas tools">{#each tools as item (item.key)}<button type="button" class="tool" aria-label={`${item.label} tool (${item.shortcut})`} aria-pressed={tool === item.key} title={`${item.label} (${item.shortcut})`} disabled={capturing || gestureBusy} onclick={() => { tool = item.key; surface.focusBoard(); }}><span aria-hidden="true"><AltarIcon name={item.key === "box" ? "node" : item.key} size={18} /></span><span>{item.label}</span><kbd>{item.shortcut}</kbd></button>{/each}<span class="tool-divider"></span><button type="button" class="history" aria-label="Undo" title="Undo (Ctrl/⌘ Z)" disabled={!board.past.length || capturing || gestureBusy} onclick={() => history("undo")}><AltarIcon name="undo" size={18} /></button><button type="button" class="history" aria-label="Redo" title="Redo (Ctrl/⌘ Shift Z)" disabled={!board.future.length || capturing || gestureBusy} onclick={() => history("redo")}><AltarIcon name="redo" size={18} /></button></div>
       <button type="button" class="object-toggle" aria-pressed={objectsOpen} onclick={() => objectsOpen = !objectsOpen}>Objects <span aria-hidden="true">{objectsOpen ? "×" : "☷"}</span></button>
-      <CanvasSurface bind:this={surface} scene={displayScene} {tool} {selected} locked={capturing || pending !== null} onselect={select} onchange={change} onbusy={(busy) => gestureBusy = busy} onerror={(message) => error = message} onedit={edit} />
-      {#if !count}<div class="empty-board"><span aria-hidden="true">✧</span><h2>Give your idea some room.</h2><p>Draw a first mark, add a node, or start with the example.</p><button type="button" onclick={addNode}>Add your first node</button></div>{/if}
+      <CanvasSurface bind:this={surface} scene={displayScene} {tool} {selected} locked={capturing || pending !== null} onselect={select} onchange={change} onbusy={(active) => { gestureBusy = active; busy(); }} onerror={(message) => error = message} onedit={edit} />
+      {#if !count}<div class="empty-board"><span aria-hidden="true">✧</span><h2>Give your idea some room.</h2><p>{managed ? "Draw a first mark or add an editable node." : "Draw a first mark, add a node, or start with the example."}</p><button type="button" onclick={addNode}>Add your first node</button></div>{/if}
     </div>
     {#if objectsOpen}<CanvasObjects {scene} {selected} disabled={editingLocked} onselect={select} onrename={rename} onpin={(id) => { const node = scene.nodes.find((item) => item.id === id); if (node) patchNode(id, { pinned: !node.pinned }, node.pinned ? "Node unpinned." : "Node pinned during arrangement."); }} onkind={(id, kind) => patchNode(id, { kind }, "Node shape updated.")} onconnect={connect} onadd={addNode} ondelete={deleteObjects} onartwork={artwork} onreveal={(id) => { surface.reveal(id); surface.focusBoard(); }} />{/if}
   </div>
@@ -223,8 +246,8 @@
   {/if}
   {#if packet}<div class="packet-strip"><div><strong>{packetStale ? "Captured packet is stale" : `Packet · revision ${packet.scene.revision}`}</strong><span>{packet.selection.object_ids.length} objects · {packet.crop ? `${packet.crop.width} × ${packet.crop.height} PNG` : "records only · PNG unavailable"} · full scene context included</span></div><button type="button" onclick={() => download(packet, `canvas-selection-r${packet!.scene.revision}.json`)}>Download packet</button><button type="button" onclick={() => chooseFile("proposal")} disabled={packetStale || capturing || gestureBusy || pending !== null}>Import proposal</button></div>{/if}
   <div class="feedback"><p role="status" aria-live="polite">{notice}</p>{#if error}<p class="error" role="alert">{error}</p>{/if}</div>
-  <footer class="canvas-footer"><span>Offline authoring · local CPU helpers</span><span>Voice, live model interpretation & image generation unavailable</span><button type="button" aria-expanded={helpOpen} onclick={() => helpOpen = !helpOpen}>How this works {helpOpen ? "−" : "+"}</button></footer>
-  {#if helpOpen}<div class="help" id="canvas-gestures"><p><strong>Draw → circle or select → preview → apply.</strong> Tidy is a local geometry helper. It does not read the instruction. Capture downloads nothing automatically and sends nothing to a model. Download the packet, take it to your model yourself, then import its strict proposal JSON for review.</p><p><strong>Keep your board.</strong> Download board JSON to retain the current scene and bounded history. This browser draft has no automatic storage or server retention.</p><p><strong>Keyboard.</strong> D Draw, L Lasso, V rectangle Select, B Node, C Connect, H Pan. On the board: Space temporarily pans, arrows move selected objects, Shift + arrows move further, Enter edits a node, Delete removes selection, +/− zoom, 0 fits. Use Objects for checkboxes, label editing and a keyboard connection form. Touch: one finger uses the active tool; two fingers pan and zoom.</p></div>{:else}<p id="canvas-gestures" class="visually-hidden">Use Objects for keyboard selection, node labels and connections. Board shortcuts: D draw, L lasso, V rectangle select, B node, C connect, H pan. Space pans; arrows move selected objects; Enter edits; Delete removes; plus and minus zoom; zero fits.</p>{/if}
+  <footer class="canvas-footer"><span>{managed ? "Project authoring · local CPU helpers" : "Offline authoring · local CPU helpers"}</span><span>Voice, live model interpretation & image generation unavailable</span><button type="button" aria-expanded={helpOpen} onclick={() => helpOpen = !helpOpen}>How this works {helpOpen ? "−" : "+"}</button></footer>
+  {#if helpOpen}<div class="help" id="canvas-gestures"><p><strong>Draw → circle or select → preview → apply.</strong> Tidy is a local geometry helper. It does not read the instruction. Capture downloads nothing automatically and sends nothing to a model. Download the packet, take it to your model yourself, then import its strict proposal JSON for review.</p><p><strong>Keep your board.</strong> {managed ? "Save board retains the complete document and bounded history in this project. Download board makes a separate portable JSON copy. Local edits remain unsaved until the server confirms a save." : "Download board JSON to retain the current scene and bounded history. This browser draft has no automatic storage or server retention."}</p><p><strong>Keyboard.</strong> D Draw, L Lasso, V rectangle Select, B Node, C Connect, H Pan. On the board: Space temporarily pans, arrows move selected objects, Shift + arrows move further, Enter edits a node, Delete removes selection, +/− zoom, 0 fits. Use Objects for checkboxes, label editing and a keyboard connection form. Touch: one finger uses the active tool; two fingers pan and zoom.</p></div>{:else}<p id="canvas-gestures" class="visually-hidden">Use Objects for keyboard selection, node labels and connections. Board shortcuts: D draw, L lasso, V rectangle select, B node, C connect, H pan. Space pans; arrows move selected objects; Enter edits; Delete removes; plus and minus zoom; zero fits.</p>{/if}
 </section>
 
 <style>
@@ -247,4 +270,10 @@
     .canvas-view { padding-inline: 1rem; }
     .canvas-header .identity { padding-inline: 1.5rem; }
   }
+  .canvas-view.canvas-managed { padding-top:.4rem; }
+  .managed-document-row { display:flex; align-items:center; gap:.65rem; margin-bottom:.5rem; min-width:0; }
+  .managed-document-row .board-title { min-width:0; }
+  .managed-document-row .board-title input { width:100%; padding:.4rem 0; }
+  .managed-document-row .document-actions { flex-shrink:0; }
+  @container (max-width:420px) { .managed-document-row { flex-wrap:wrap; }.managed-document-row .board-title { flex-basis:100%; } }
 </style>

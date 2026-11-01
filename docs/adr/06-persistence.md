@@ -517,6 +517,19 @@ only PostgreSQL supplies restart persistence.
 
 No Project, concern, assessment, decision, or reference deletion is admitted in the initial
 surface. Closing a Project retains its records and does not cascade into sessions or Runs.
+Canvas workspace Projects reuse this aggregate with one optional validated portable board,
+independent `draft`, `kept`, or `discarded` workspace state, and server-owned built-in identity.
+Existing documents default to kept with no board; their creation and mutation payload digests
+remain unchanged. Saving a board retains its bounded undo/redo document under the same atomic
+version and request receipt as the Project. A local scene revision does not replace that version.
+Discard is a retained tombstone for a draft without planning records, never physical deletion.
+Kept, legacy, and built-in Projects cannot be discarded. Exact retries resolve before tombstone
+refusal and cannot resurrect the draft. Catalogue queries exclude discarded records before
+counting and pagination; the owner-specific built-in LychD Project is supplied separately.
+Creating that built-in account requires an explicit authorized bootstrap mutation, not a read.
+Its owner-derived UUID reserves the `1ec4d000` prefix across Sigils. Ordinary creation refuses
+new identities in that range while permitting exact retained legacy replays first.
+The additive JSON contract needs no table migration and does not rewrite old records or receipts.
 Migration `0009` adds Atlas without rewriting execution identity. Its downgrade takes an
 exclusive table lock and refuses while any Project remains, preserving operator material across
 an attempted rollback. Deployment migration remains an explicit operator act.

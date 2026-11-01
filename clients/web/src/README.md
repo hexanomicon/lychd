@@ -7,8 +7,8 @@ routes to the implementation and its operating guide rather than duplicating eit
 
 | Reading or interaction | Source entry | Interpretation |
 | --- | --- | --- |
-| Project concerns, judgments, references, and continuation | [AtlasView.svelte](lib/components/AtlasView.svelte), [Atlas link hints](lib/atlas/navigation.ts) | [Atlas](../../../docs/divination/altar/atlas.md) |
-| Portable visual board authorship and reviewed selection transformations | [CanvasView.svelte](lib/components/CanvasView.svelte), [Canvas engine](lib/canvas/engine.ts) | [Canvas](../../../docs/compositions/canvas/index.md) |
+| Canvas Project catalogue, retained concerns, judgments, references, and continuation | [AtlasView.svelte](lib/components/AtlasView.svelte), [Atlas link hints](lib/atlas/navigation.ts) | [Atlas](../../../docs/divination/altar/atlas.md) |
+| Project board retention/recovery, portable authorship and reviewed selection transformations | [CanvasWorkspace.svelte](lib/components/CanvasWorkspace.svelte), [CanvasView.svelte](lib/components/CanvasView.svelte), [Canvas engine](lib/canvas/engine.ts) | [Canvas](../../../docs/compositions/canvas/index.md) |
 | Conversation, consent, and offering recovery | [BridgeView.svelte](lib/components/BridgeView.svelte), [shell-lifetime workspace](lib/bridge/workspace.svelte.ts) | [Bridge](../../../docs/divination/altar/bridge.md) |
 | Public-note intake, lifecycle review and metadata recovery within Bridge | [PublicNotes.svelte](lib/components/PublicNotes.svelte), [recovery controller](lib/archive/notes.ts) | [Public notes](../../../docs/divination/altar/bridge.md#manage-public-notes) |
 | Spatial Run field, tab observation history, and one Run's retained records and gaps | [OrbField.svelte](lib/components/OrbField.svelte), [OrbTimeline.svelte](lib/components/OrbTimeline.svelte), [OrbView.svelte](lib/components/OrbView.svelte) | [Orb](../../../docs/divination/altar/orb.md) |

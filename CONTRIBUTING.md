@@ -616,6 +616,13 @@ sample data for Bridge, Orb, and the exact Pattern revision in Loom. The failed 
 no graph, model, or host execution. All mutations are refused, including requests with valid
 credentials and CSRF.
 
+For the disposable Canvas creation/save/discard journey, explicitly opt in with
+`make developer-fixture CANVAS_AUTHORING=1`. This admits only Canvas and existing Project
+authoring into the fixture's process-local memory. Normal authentication, Origin, CSRF and
+handler scopes remain active; conversation admission, consent decisions and physical transitions
+remain refused. It starts no database, model, worker or host operation, and stopping it loses
+the synthetic edits. The default fixture remains read-only.
+
 This developer fixture's manual browser check uses a dedicated local browser profile: open
 `http://127.0.0.1:5173/api/v1/altar/status`, authenticate with the terminal credentials, then open
 `http://127.0.0.1:5173/bridge` and follow the synthetic Run into Orb and its exact Pattern in
@@ -635,6 +642,12 @@ and source; preserve the browser's Origin. Do not connect this preview to the in
 for Summoning. Real-host browser acceptance uses the compiled Altar at Litestar's own origin
 and follows [Summoning](docs/summoning.md). The disposable fixture grants no production macOS
 support or Linux host qualification.
+
+The Atlas database module also accepts `LYCHD_ATLAS_TEST_DATABASE_URL` inside the OCI test
+profile for a daemon-free disposable sidecar. It requires the literal `canvas-postgres:5432`
+host and `canvas_test` database on an operator-created internal network. This profile grants
+the check container no Docker socket, host network or production database access. The operator
+owns both temporary containers and their cleanup; the module recreates only its two Atlas tables.
 
 ### Test Selection
 

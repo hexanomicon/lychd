@@ -1,5 +1,6 @@
 <script lang="ts">
-  import CanvasView from "$lib/components/CanvasView.svelte";
+  import { page } from "$app/state";
+  import CanvasWorkspace from "$lib/components/CanvasWorkspace.svelte";
 </script>
 
-<CanvasView />
+<CanvasWorkspace newRequested={page.url.searchParams.get("new") === "1"} />

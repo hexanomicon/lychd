@@ -1,4 +1,4 @@
-"""Atlas contracts and versioned undertaking changes, independent of execution.
+"""Atlas Projects, primary Canvas boards and versioned planning independent of execution.
 
 The memory adapter is loop-confined. Reference targets are admitted by the web
 boundary; this module validates their relationships inside the Project only.
@@ -14,6 +14,10 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
+from lychd.compositions.canvas.operations import validate_document
+from lychd.compositions.canvas.schemas import CanvasDocument
+from lychd.compositions.canvas.workspace import is_reserved_system_project_id, lychd_project_id
+
 MAX_CONCERNS = 200
 MAX_ASSESSMENTS = 2_000
 MAX_DECISIONS = 2_000
@@ -21,6 +25,7 @@ MAX_REFERENCES = 2_000
 MAX_PAGE_SIZE = 100
 
 AtlasLifecycle = Literal["active", "paused", "closed"]
+AtlasWorkspaceState = Literal["draft", "kept", "discarded"]
 AtlasJudgment = Literal["sufficient", "insufficient", "disputed"]
 AtlasReferenceKind = Literal["session", "run"]
 AtlasTitle = Annotated[str, StringConstraints(strict=True, min_length=1, max_length=200, pattern=r"\S")]
@@ -112,6 +117,9 @@ class AtlasProject(AtlasContract):
     assessments: list[AtlasAssessment] = Field(max_length=MAX_ASSESSMENTS)
     decisions: list[AtlasDecision] = Field(max_length=MAX_DECISIONS)
     references: list[AtlasReference] = Field(max_length=MAX_REFERENCES)
+    canvas_document: CanvasDocument | None = None
+    workspace_state: AtlasWorkspaceState = "kept"
+    builtin: bool = False
 
 
 class AtlasSummary(AtlasContract):
@@ -127,6 +135,9 @@ class AtlasSummary(AtlasContract):
     review_needed_count: int = Field(strict=True, ge=0)
     insufficient_count: int = Field(strict=True, ge=0)
     disputed_count: int = Field(strict=True, ge=0)
+    has_canvas: bool = False
+    workspace_state: AtlasWorkspaceState = "kept"
+    builtin: bool = False
 
 
 class AtlasCatalogue(AtlasContract):
@@ -134,6 +145,7 @@ class AtlasCatalogue(AtlasContract):
     total: int = Field(strict=True, ge=0)
     limit: int = Field(strict=True, ge=1, le=MAX_PAGE_SIZE)
     offset: int = Field(strict=True, ge=0)
+    pinned: AtlasSummary | None = None
 
 
 class AtlasCreate(AtlasContract):
@@ -141,6 +153,26 @@ class AtlasCreate(AtlasContract):
     title: AtlasTitle
     brief: AtlasBrief = ""
     next_action: AtlasNextAction = ""
+
+
+class CanvasProjectCreate(AtlasContract):
+    """Create one draft Project and its primary portable board atomically."""
+
+    id: UUID
+    canvas_document: CanvasDocument
+
+
+class AtlasCanvasSave(AtlasContract):
+    kind: Literal["canvas.save"]
+    canvas_document: CanvasDocument
+
+
+class AtlasProjectKeep(AtlasContract):
+    kind: Literal["project.keep"]
+
+
+class AtlasProjectDiscard(AtlasContract):
+    kind: Literal["project.discard"]
 
 
 class AtlasProjectUpdate(AtlasContract):
@@ -191,7 +223,14 @@ class AtlasReferenceAdd(AtlasContract):
 
 
 AtlasChange = Annotated[
-    AtlasProjectUpdate | AtlasConcernSave | AtlasConcernAssess | AtlasDecisionRecord | AtlasReferenceAdd,
+    AtlasProjectUpdate
+    | AtlasConcernSave
+    | AtlasConcernAssess
+    | AtlasDecisionRecord
+    | AtlasReferenceAdd
+    | AtlasCanvasSave
+    | AtlasProjectKeep
+    | AtlasProjectDiscard,
     Field(discriminator="kind"),
 ]
 
@@ -202,10 +241,30 @@ class AtlasMutation(AtlasContract):
     change: AtlasChange
 
 
-def payload_digest(data: AtlasCreate | AtlasMutation) -> str:
+def payload_digest(data: AtlasCreate | AtlasMutation | CanvasProjectCreate) -> str:
     """Fingerprint the complete validated payload, preserving ordered citations."""
     payload = json.dumps(data.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def canvas_creation_digest(data: CanvasProjectCreate, *, builtin: bool) -> str:
+    """Bind trusted seed attribution separately from unchanged legacy create bytes."""
+    return hashlib.sha256(f"canvas:{int(builtin)}:{payload_digest(data)}".encode()).hexdigest()
+
+
+def new_canvas_project(data: CanvasProjectCreate, *, owner: str, now: datetime, builtin: bool) -> AtlasProject:
+    """Admit one validated board without giving clients seed or retained-state privileges."""
+    if (builtin and data.id != lychd_project_id(owner)) or (not builtin and is_reserved_system_project_id(data.id)):
+        message = "The built-in LychD Project identity is reserved for workspace bootstrap."
+        raise AtlasConflictError(message)
+    document = validate_document(data.canvas_document)
+    project = new_project(AtlasCreate(id=data.id, title=document.scene.title), now=now)
+    project.canvas_document = document.model_copy(deep=True)
+    project.workspace_state = "kept" if builtin else "draft"
+    project.builtin = builtin
+    if builtin:
+        project.brief = "Static reference map of LychD architecture; not live status or execution evidence."
+    return project
 
 
 def new_project(data: AtlasCreate, *, now: datetime) -> AtlasProject:
@@ -267,6 +326,9 @@ def summarize_project(project: AtlasProject) -> AtlasSummary:
         review_needed_count=review_needed,
         insufficient_count=insufficient,
         disputed_count=disputed,
+        has_canvas=project.canvas_document is not None,
+        workspace_state=project.workspace_state,
+        builtin=project.builtin,
     )
 
 
@@ -373,10 +435,43 @@ def _add_reference(
     )
 
 
+def _apply_workspace_change(
+    result: AtlasProject, change: AtlasCanvasSave | AtlasProjectKeep | AtlasProjectDiscard
+) -> None:
+    """Apply bounded board replacement or its explicit retained draft lifecycle."""
+    if isinstance(change, AtlasCanvasSave):
+        document = validate_document(change.canvas_document)
+        if result.canvas_document is not None and document.scene.id != result.canvas_document.scene.id:
+            message = "Canvas saves must retain the Project's primary scene identity."
+            raise AtlasValidationError(message)
+        result.canvas_document = document.model_copy(deep=True)
+    elif isinstance(change, AtlasProjectKeep):
+        if result.canvas_document is None:
+            message = "Only a Canvas Project can retain a workspace draft."
+            raise AtlasValidationError(message)
+        result.workspace_state = "kept"
+    else:
+        if (
+            result.workspace_state != "draft"
+            or result.builtin
+            or result.canvas_document is None
+            or result.concerns
+            or result.assessments
+            or result.decisions
+            or result.references
+        ):
+            message = "Only a Canvas draft without retained planning records can be discarded."
+            raise AtlasValidationError(message)
+        result.workspace_state = "discarded"
+
+
 def apply_change(
     project: AtlasProject, data: AtlasMutation, *, author: str, now: datetime, record_id: UUID
 ) -> AtlasProject:
     """Calculate a detached successor; adapters own atomic replay and commit."""
+    if project.workspace_state == "discarded":
+        message = "This Canvas draft was discarded and cannot accept new changes."
+        raise AtlasConflictError(message)
     if data.expected_version != project.version:
         message = "Atlas Project changed since this draft was loaded. Reload and reconcile the draft."
         raise AtlasConflictError(message)
@@ -395,8 +490,10 @@ def apply_change(
         _assess_concern(result, change, author=author, now=now, record_id=record_id)
     elif isinstance(change, AtlasDecisionRecord):
         _record_decision(result, change, author=author, now=now, record_id=record_id)
-    else:
+    elif isinstance(change, AtlasReferenceAdd):
         _add_reference(result, change, author=author, now=now, record_id=record_id)
+    else:
+        _apply_workspace_change(result, change)
     result.version += 1
     result.updated_at = now
     return result
@@ -411,6 +508,10 @@ class AtlasStorePort(Protocol):
     async def get_project(self, owner: str, project_id: UUID) -> AtlasProject: ...
 
     async def create_project(self, owner: str, data: AtlasCreate) -> AtlasProject: ...
+
+    async def create_canvas_project(
+        self, owner: str, data: CanvasProjectCreate, *, builtin: bool = False
+    ) -> AtlasProject: ...
 
     async def change_project(self, owner: str, project_id: UUID, data: AtlasMutation) -> AtlasProject: ...
 
@@ -440,7 +541,11 @@ class InMemoryAtlasStore:
     async def list_projects(self, owner: str, limit: int = 50, offset: int = 0) -> AtlasCatalogue:
         validate_page(limit, offset)
         projects = sorted(
-            (project for project in self._projects.values() if self._owners[project.id] == owner),
+            (
+                project
+                for project in self._projects.values()
+                if self._owners[project.id] == owner and not project.builtin and project.workspace_state != "discarded"
+            ),
             key=lambda project: (project.updated_at, project.id),
             reverse=True,
         )
@@ -449,6 +554,14 @@ class InMemoryAtlasStore:
             total=len(projects),
             limit=limit,
             offset=offset,
+            pinned=next(
+                (
+                    summarize_project(project)
+                    for project in self._projects.values()
+                    if self._owners[project.id] == owner and project.builtin
+                ),
+                None,
+            ),
         )
 
     async def get_project(self, owner: str, project_id: UUID) -> AtlasProject:
@@ -462,7 +575,26 @@ class InMemoryAtlasStore:
                 message = "Atlas Project identity was already used for a different creation payload."
                 raise AtlasConflictError(message)
             return existing.model_copy(deep=True)
+        if is_reserved_system_project_id(data.id):
+            message = "The built-in LychD Project identity is reserved for workspace bootstrap."
+            raise AtlasConflictError(message)
         project = new_project(data, now=datetime.now(UTC))
+        self._projects[data.id] = project
+        self._owners[data.id] = owner
+        self._creation_digests[data.id] = digest
+        return project.model_copy(deep=True)
+
+    async def create_canvas_project(
+        self, owner: str, data: CanvasProjectCreate, *, builtin: bool = False
+    ) -> AtlasProject:
+        digest = canvas_creation_digest(data, builtin=builtin)
+        if data.id in self._projects:
+            existing = self._owned_project(owner, data.id)
+            if self._creation_digests[data.id] != digest:
+                message = "Atlas Project identity was already used for a different creation payload."
+                raise AtlasConflictError(message)
+            return existing.model_copy(deep=True)
+        project = new_canvas_project(data, owner=owner, now=datetime.now(UTC), builtin=builtin)
         self._projects[data.id] = project
         self._owners[data.id] = owner
         self._creation_digests[data.id] = digest
@@ -499,6 +631,7 @@ class InMemoryAtlasStore:
                 project
                 for project in self._projects.values()
                 if self._owners[project.id] == owner
+                and project.workspace_state != "discarded"
                 and any(reference.kind == kind and reference.target_id == target_id for reference in project.references)
             ),
             key=lambda project: (project.updated_at, project.id),

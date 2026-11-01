@@ -241,6 +241,24 @@
         "title": "AtlasAssessment",
         "type": "object"
       },
+      "AtlasCanvasSave": {
+        "additionalProperties": false,
+        "properties": {
+          "canvas_document": {
+            "$ref": "#/components/schemas/CanvasDocument"
+          },
+          "kind": {
+            "const": "canvas.save",
+            "type": "string"
+          }
+        },
+        "required": [
+          "canvas_document",
+          "kind"
+        ],
+        "title": "AtlasCanvasSave",
+        "type": "object"
+      },
       "AtlasCatalogue": {
         "additionalProperties": false,
         "properties": {
@@ -252,6 +270,16 @@
           "offset": {
             "minimum": 0.0,
             "type": "integer"
+          },
+          "pinned": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AtlasSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "projects": {
             "items": {
@@ -528,6 +556,15 @@
               },
               {
                 "$ref": "#/components/schemas/AtlasReferenceAdd"
+              },
+              {
+                "$ref": "#/components/schemas/AtlasCanvasSave"
+              },
+              {
+                "$ref": "#/components/schemas/AtlasProjectKeep"
+              },
+              {
+                "$ref": "#/components/schemas/AtlasProjectDiscard"
               }
             ]
           },
@@ -565,6 +602,20 @@
           "brief_revision": {
             "minimum": 1.0,
             "type": "integer"
+          },
+          "builtin": {
+            "default": false,
+            "type": "boolean"
+          },
+          "canvas_document": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CanvasDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "concerns": {
             "items": {
@@ -620,6 +671,15 @@
           "version": {
             "minimum": 1.0,
             "type": "integer"
+          },
+          "workspace_state": {
+            "default": "kept",
+            "enum": [
+              "draft",
+              "kept",
+              "discarded"
+            ],
+            "type": "string"
           }
         },
         "required": [
@@ -638,6 +698,34 @@
           "version"
         ],
         "title": "AtlasProject",
+        "type": "object"
+      },
+      "AtlasProjectDiscard": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "project.discard",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "AtlasProjectDiscard",
+        "type": "object"
+      },
+      "AtlasProjectKeep": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "project.keep",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "AtlasProjectKeep",
         "type": "object"
       },
       "AtlasProjectUpdate": {
@@ -788,6 +876,10 @@
             "maxLength": 20000,
             "type": "string"
           },
+          "builtin": {
+            "default": false,
+            "type": "boolean"
+          },
           "concern_count": {
             "minimum": 0.0,
             "type": "integer"
@@ -795,6 +887,10 @@
           "disputed_count": {
             "minimum": 0.0,
             "type": "integer"
+          },
+          "has_canvas": {
+            "default": false,
+            "type": "boolean"
           },
           "id": {
             "format": "uuid",
@@ -837,6 +933,15 @@
           "version": {
             "minimum": 1.0,
             "type": "integer"
+          },
+          "workspace_state": {
+            "default": "kept",
+            "enum": [
+              "draft",
+              "kept",
+              "discarded"
+            ],
+            "type": "string"
           }
         },
         "required": [
@@ -1197,8 +1302,8 @@
             "type": "string"
           },
           "revision": {
-            "const": 1,
-            "default": 1,
+            "const": 2,
+            "default": 2,
             "type": "integer"
           },
           "scene_format": {
@@ -1207,8 +1312,8 @@
             "type": "string"
           },
           "server_retention": {
-            "const": false,
-            "default": false,
+            "const": true,
+            "default": true,
             "type": "boolean"
           }
         },
@@ -1456,6 +1561,24 @@
           "y"
         ],
         "title": "CanvasPoint",
+        "type": "object"
+      },
+      "CanvasProjectCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "canvas_document": {
+            "$ref": "#/components/schemas/CanvasDocument"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "canvas_document",
+          "id"
+        ],
+        "title": "CanvasProjectCreate",
         "type": "object"
       },
       "CanvasProposal": {
@@ -8752,6 +8875,94 @@
         "summary": "Document"
       }
     },
+    "/api/v1/canvas/projects": {
+      "post": {
+        "deprecated": false,
+        "operationId": "createCanvasProject",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CanvasProjectCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtlasProject"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          }
+        },
+        "summary": "CreateProject"
+      }
+    },
     "/api/v1/canvas/review": {
       "post": {
         "deprecated": false,
@@ -8790,6 +9001,46 @@
           }
         },
         "summary": "Review"
+      }
+    },
+    "/api/v1/canvas/workspace/bootstrap": {
+      "post": {
+        "deprecated": false,
+        "operationId": "bootstrapCanvasWorkspace",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtlasProject"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          }
+        },
+        "summary": "BootstrapWorkspace"
       }
     },
     "/api/v1/creation/investigations": {

@@ -9,6 +9,7 @@ import type {
   AtlasMutation,
   AtlasProject,
   AtlasSummary,
+  CanvasProjectCreate,
   BridgeSnapshot,
   LoomSummary,
   LoomView,
@@ -193,6 +194,19 @@ export async function getAtlasProject(id: string, signal?: AbortSignal): Promise
   return unwrap(await client.GET("/api/v1/atlas/projects/{project_id}", {
     signal,
     params: { path: { project_id: id } }
+  }));
+}
+
+export async function createCanvasProject(data: CanvasProjectCreate): Promise<AtlasProject> {
+  return unwrap(await client.POST("/api/v1/canvas/projects", {
+    body: data,
+    headers: await csrfHeaders()
+  }));
+}
+
+export async function bootstrapCanvasWorkspace(): Promise<AtlasProject> {
+  return unwrap(await client.POST("/api/v1/canvas/workspace/bootstrap", {
+    headers: await csrfHeaders()
   }));
 }
 

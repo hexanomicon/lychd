@@ -1,6 +1,6 @@
 import { deflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { applyProposal, arrangeScene, blankDocument, boundsOfSelection, commit, deleteSelection, exampleDocument, makePacket, moveSelection, objectBounds, pngArtwork, redo, renameNode, selectInBounds, tidyProposal, undo, validateDocument, validatePacket, validateProposal, validateScene } from "./engine";
+import { applyProposal, arrangeScene, blankDocument, boundsOfSelection, commit, deleteSelection, exampleDocument, makePacket, moveSelection, objectBounds, pngArtwork, redo, renameNode, replaceDocument, selectInBounds, tidyProposal, undo, validateDocument, validatePacket, validateProposal, validateScene } from "./engine";
 import type { Bounds, CanvasNode, Packet, Proposal, Scene, Stroke } from "./types";
 import parity from "./parity.json";
 
@@ -44,6 +44,27 @@ function png(width = 1, height = 1, padding = 0, edit?: (chunks: PngChunk[]) => 
 }
 
 describe("portable scene and packet validation", () => {
+  it("replaces retained board content with a fresh revision while preserving object identity, ink and history", () => {
+    const current = validateDocument({ format: "lychd.canvas.document/1", scene: { ...scene(), revision: 4 },
+      past: [{ ...scene(), revision: 6 }], future: [{ ...scene(), revision: 8 }] });
+    const incomingScene = { ...scene(), id: id(101), revision: 10, title: "Imported board" };
+    const incoming = validateDocument({ format: "lychd.canvas.document/1", scene: incomingScene,
+      past: [{ ...incomingScene, revision: 16 }], future: [{ ...incomingScene, revision: 12 }] });
+    const captured = packet(current.scene), candidate = proposal(captured);
+    const rebound = replaceDocument(freeze(current), freeze(incoming));
+    expect(rebound).toEqual({ ...incoming, scene: { ...incoming.scene, id: current.scene.id, revision: 17 },
+      past: incoming.past.map((entry) => ({ ...entry, id: current.scene.id })),
+      future: incoming.future.map((entry) => ({ ...entry, id: current.scene.id })) });
+    expect(() => applyProposal(rebound.scene, candidate, captured)).toThrow(/changed after capture/);
+    expect(current.scene.revision).toBe(4); expect(incoming.scene.id).toBe(id(101));
+  });
+  it("refuses document replacement atomically when either revision history cannot advance", () => {
+    const normal = blankDocument();
+    const exhausted = { ...normal, future: [{ ...normal.scene, revision: Number.MAX_SAFE_INTEGER }] };
+    expect(() => replaceDocument(freeze(exhausted), freeze(normal))).toThrow(/revision limit/);
+    expect(() => replaceDocument(freeze(normal), freeze(exhausted))).toThrow(/revision limit/);
+    expect(normal.scene.revision).toBe(1); expect(exhausted.future[0]!.revision).toBe(Number.MAX_SAFE_INTEGER);
+  });
   it("creates an explicit example and exports independent validated documents", () => {
     const document = blankDocument();
     expect(document.past).toEqual([]); expect(document.scene.revision).toBe(1);

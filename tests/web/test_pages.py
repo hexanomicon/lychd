@@ -133,7 +133,14 @@ def test_every_explicit_error_operation_publishes_the_shared_framework_error(
 
 @pytest.mark.parametrize(
     "path",
-    ["/atlas/project-x", "/bridge/session-x", "/loom/pattern-x/revision-1", "/orb/run-x"],
+    [
+        "/atlas/project-x",
+        "/bridge/session-x",
+        "/loom/pattern-x/revision-1",
+        "/orb/run-x",
+        "/canvas/project-x",
+        "/canvas/local",
+    ],
 )
 def test_deep_links_return_same_static_shell(
     altar_client: TestClient[Litestar],

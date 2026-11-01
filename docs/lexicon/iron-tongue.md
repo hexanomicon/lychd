@@ -31,8 +31,8 @@ node.
 
 ### [Altar](../adr/15-frontend.md) { #altar }
 
-The place where the Magus meets the running Lich. Its five instruments—Atlas, Bridge, Loom,
-Nexus, and Orb—show server-owned truth through a Svelte web interface served by Litestar.
+The place where the Magus meets the running Lich. Canvas, Loom, Nexus and Orb share the Bridge
+conversation dock through a Svelte web interface served by Litestar. Atlas catalogues Canvas projects.
 
 [State of Work](../state-of-the-work.md#altar-and-observability)
 
@@ -80,9 +80,9 @@ supplies the technical contracts beneath those creative decisions.
 
 ### [Atlas](../divination/altar/atlas.md) { #atlas }
 
-The Altar’s map of Concerns: how they divide, where they are addressed, and what judgment and
-evidence bear on them. A Project can supply undertaking context; the initial delivered Atlas
-requires one.
+The catalogue of Canvas projects. Each project's directly addressable record retains its brief,
+Concerns, criteria, attributed judgments, decisions and activity references. Independent Concern
+decomposition and addressing remain the wider designed map.
 
 [Covenant 15: Frontend](../adr/15-frontend.md#atlas-and-continuity-across-invocations)
 
@@ -762,7 +762,8 @@ policy. A materially different operator promise requires a new Product identity.
 
 ### [Project](../divination/altar/atlas.md) { #project }
 
-An undertaking or continuing responsibility retained across Invocations in Atlas. Its account
+An undertaking or continuing responsibility retained across Invocations and catalogued in Atlas. Its Canvas
+can begin as an automatically created draft for a free sketch. Its account
 holds the brief, concerns, judgments, decisions, proposed next action, and explicit activity
 references. A Project differs from a reusable Composition and from a Suite's live coordination.
 

@@ -8,20 +8,25 @@ from uuid import UUID
 from litestar import Controller, Request, get, post
 from litestar.datastructures import State
 from litestar.di import NamedDependency
-from litestar.exceptions import HTTPException, NotFoundException, ValidationException
+from litestar.exceptions import HTTPException, NotFoundException, PermissionDeniedException, ValidationException
 from litestar.openapi.datastructures import ResponseSpec
 from litestar.params import FromPath, QueryParameter
 from litestar.status_codes import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
+from lychd.compositions.canvas.schemas import MAX_DOCUMENT_BYTES
 from lychd.domain.codex.guards import requires_scopes
+from lychd.domain.codex.scopes import scopes_satisfied
 from lychd.domain.codex.sigil import Sigil
 from lychd.domain.web.atlas import (
+    AtlasCanvasSave,
     AtlasCatalogue,
     AtlasConflictError,
     AtlasCreate,
     AtlasMutation,
     AtlasNotFoundError,
     AtlasProject,
+    AtlasProjectDiscard,
+    AtlasProjectKeep,
     AtlasReferenceAdd,
     AtlasStorePort,
     AtlasSummary,
@@ -137,6 +142,7 @@ class AtlasController(Controller):
         name="atlas:change",
         operation_id="changeAtlasProject",
         status_code=HTTP_200_OK,
+        request_max_body_size=MAX_DOCUMENT_BYTES + 4096,
         guards=[requires_scopes("altar:read", "atlas:write")],
         responses={
             HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False),
@@ -153,6 +159,10 @@ class AtlasController(Controller):
         state: State,
     ) -> AtlasProject:
         """Apply one revision-checked, retry-safe planning change."""
+        if isinstance(data.change, (AtlasCanvasSave, AtlasProjectKeep, AtlasProjectDiscard)) and not scopes_satisfied(
+            cast("Sigil", request.user).scopes, ("canvas:write",)
+        ):
+            raise PermissionDeniedException(detail="This sigil lacks the required scope(s): canvas:write.")
         owner = _owner(request)
         try:
             replay = await atlas.replay_change(owner, project_id, data)

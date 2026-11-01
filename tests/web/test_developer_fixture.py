@@ -558,6 +558,64 @@ def test_fixture_image_launcher_issues_fresh_credentials_with_fixed_listener(
     assert serve.call_args.kwargs == {"host": "0.0.0.0", "port": 8000}  # noqa: S104 - image listener
 
 
+@pytest.mark.asyncio
+async def test_canvas_fixture_keeps_security_and_admits_only_memory_authoring() -> None:
+    """Real HTTP saves remain isolated from Bridge execution and physical transitions."""
+    app = developer.create_developer_app(
+        access_password=SecretStr(TEST_ACCESS_PASSWORD),
+        signing_key=SecretStr("synthetic-canvas-signing-key"),
+        canvas_authoring=True,
+    )
+    async with app.lifespan(), _client(app) as client:
+        await client.get("/api/v1/canvas/contracts")
+        path = "/api/v1/canvas/workspace/bootstrap"
+        assert (await client.post(path)).status_code == 403
+        headers = {"origin": _ORIGIN, "x-csrftoken": client.cookies["csrftoken"]}
+        assert (await client.post(path, headers={**headers, "authorization": ""})).status_code == 401
+        assert (await client.post(path, headers={**headers, "origin": "https://evil.example"})).status_code == 403
+        seeded = await client.post(path, headers=headers)
+        assert seeded.status_code == 200, seeded.text
+        builtin = seeded.json()
+        assert builtin["builtin"] is True
+        document = builtin["canvas_document"]
+        document["scene"].update(id=str(uuid4()), title="Synthetic free drawing", nodes=[], edges=[])
+        created = await client.post(
+            "/api/v1/canvas/projects", json={"id": str(uuid4()), "canvas_document": document}, headers=headers
+        )
+        assert created.status_code == 201, created.text
+        project = created.json()
+        assert project["workspace_state"] == "draft"
+        document["scene"]["revision"] += 1
+        document["scene"]["strokes"].append(
+            {
+                "id": str(uuid4()),
+                "points": [{"x": 10, "y": 20}, {"x": 40, "y": 50}],
+                "color": "#8be7ff",
+                "width": 2,
+                "archived": False,
+            }
+        )
+        saved = await client.post(
+            f"/api/v1/atlas/projects/{project['id']}/changes",
+            json={
+                "request_id": str(uuid4()),
+                "expected_version": project["version"],
+                "change": {"kind": "canvas.save", "canvas_document": document},
+            },
+            headers=headers,
+        )
+        assert saved.status_code == 200, saved.text
+        retained = (await client.get(f"/api/v1/atlas/projects/{project['id']}")).json()
+        assert retained["canvas_document"] == document
+        catalogue = (await client.get("/api/v1/atlas/projects")).json()
+        assert catalogue["pinned"]["id"] == builtin["id"]
+        assert [entry["id"] for entry in catalogue["projects"]] == [project["id"]]
+        for refused in ("/api/v1/bridge/sessions", "/api/v1/nexus/swaps", "/orchestrator/activate?target=missing"):
+            response = await client.post(refused, json={}, headers=headers)
+            assert response.status_code == 403, (refused, response.text)
+            assert "read-only" in response.json()["detail"]
+
+
 def _substitute_embedded_transport(
     monkeypatch: pytest.MonkeyPatch, app: Litestar, events: list[str], failure: str
 ) -> None:

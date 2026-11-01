@@ -3,7 +3,7 @@ import { createRawSnippet } from "svelte";
 import { afterEach, expect, it, vi } from "vitest";
 
 vi.mock("$app/navigation", () => ({ goto: vi.fn(), replaceState: vi.fn(), beforeNavigate: vi.fn(), afterNavigate: vi.fn() }));
-vi.mock("$app/state", () => ({ page: { url: new URL("http://localhost/canvas") } }));
+vi.mock("$app/state", () => ({ page: { url: new URL("http://localhost/canvas/local") } }));
 vi.mock("$lib/api/client", async (original) => ({
   ...await original<typeof import("$lib/api/client")>(),
   getAltarStatus: vi.fn(),
