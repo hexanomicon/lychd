@@ -70,12 +70,12 @@
   .orb-node[data-kind="run"] .orb-caption,.orb-node[data-kind="animator"] .orb-caption,.orb-caption.attention { visibility:visible; }
   .orb-node[data-kind="run"] .orb-mark { width:48px; height:48px; margin-top:-4px; margin-bottom:-4px; background:color-mix(in srgb,var(--color-primary) 7%,var(--color-obsidian)); box-shadow:0 0 0 9px color-mix(in srgb,var(--color-primary) 3%,transparent); color:var(--color-primary); }
   .orb-node.folded[data-kind="run"] .orb-mark::before { content:""; position:absolute; inset:5px; border:1px dashed color-mix(in srgb,var(--color-primary) 25%,transparent); border-radius:50%; }
-  .orb-node[data-kind="tool"] .orb-mark { width:44px; height:30px; margin:5px 0; border-radius:5px; border-color:var(--color-tertiary-edge); color:var(--color-parchment); background:var(--color-tertiary); }
+  .orb-node[data-kind="tool"] .orb-mark { width:44px; height:30px; margin:5px 0; border-radius:5px; border-color:var(--color-control-border); color:var(--color-parchment); background:var(--color-tertiary); }
   .orb-node[data-kind="delegate"] .orb-mark { border-style:double; border-width:3px; }
   .orb-node[data-kind="peer"] .orb-mark { box-shadow:inset 0 0 0 4px var(--color-obsidian),inset 0 0 0 5px var(--color-engraving); }
   .orb-node[data-kind="terminal"] .orb-mark { border-radius:4px; }
-  .orb-node[data-kind="dispatch"] .orb-mark { border-radius:11px 3px 11px 3px; border-color:var(--color-tertiary-edge); background:color-mix(in srgb,var(--color-tertiary) 70%,var(--color-obsidian)); }
-  .orb-node[data-kind="gate"] .orb-mark,.orb-node[data-kind="animator"] .orb-mark { width:32px; height:32px; margin:4px; border-radius:7px; transform:rotate(45deg); border-color:var(--color-tertiary-edge); }
+  .orb-node[data-kind="dispatch"] .orb-mark { border-radius:11px 3px 11px 3px; border-color:var(--color-control-border); background:color-mix(in srgb,var(--color-tertiary) 70%,var(--color-obsidian)); }
+  .orb-node[data-kind="gate"] .orb-mark,.orb-node[data-kind="animator"] .orb-mark { width:32px; height:32px; margin:4px; border-radius:7px; transform:rotate(45deg); border-color:var(--color-control-border); }
   .orb-node[data-kind="gate"] .orb-mark > span,.orb-node[data-kind="animator"] .orb-mark > span { transform:rotate(-45deg); }
   .orb-node[data-kind="gap"] .orb-mark,.orb-node[data-kind="unknown"] .orb-mark { border-style:dashed; background:transparent; }
   .orb-node[data-kind="event"] .orb-mark { width:28px; height:28px; margin:6px; border-radius:4px; }

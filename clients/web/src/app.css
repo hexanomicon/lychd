@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════════════════════════════════════
    LychD · The Altar — design tokens (canonical; ADR 15)
    Black work plane · near-black chrome · icy-blue interaction · green
-   confirmation · bounded purple context. One canonical LychD Dark palette.
+   confirmation · quiet neutral context. One canonical LychD Dark palette.
 
    Native CSS is the styling language. Tokens remain ordinary custom properties;
    semantic component classes consume them without a utility or preprocessing DSL.
@@ -20,14 +20,14 @@
   --color-primary-deep:   #55cce9;  /* saturated icy-blue depth */
   --color-secondary:      #22e68a;  /* matrix green: confirmation and live activity */
   --color-secondary-deep: #14b86c;  /* saturated live activity */
-  --color-tertiary:       #241036;  /* bounded secondary/context surface */
-  --color-tertiary-edge:  #806297;  /* contextual border, never body text */
+  --color-tertiary:       var(--color-obsidian);  /* quiet secondary/context surface */
+  --color-tertiary-edge:  var(--color-engraving); /* passive contextual separators */
   --color-control-border: #60717e; /* required control boundaries */
   --color-heat:           #f0b379;  /* banked threshold / transition heat */
   --color-heat-deep:      #82512f;  /* low-luminance threshold wash */
 
   /* ── semantic palette ───────────────────────────────────── */
-  --color-grimoire:   var(--color-tertiary);       /* bounded user-turn/context surface */
+  --color-grimoire:   var(--color-obsidian-2);     /* readable user-turn separation */
   --color-rune:       var(--color-primary);        /* interactive chrome, focus, links */
   --color-rune-dim:   #6095a6;                     /* inactive chrome, graph edges */
   --color-lich:       var(--color-secondary);      /* ACTIVE / computing — sparingly */
@@ -1329,7 +1329,7 @@
   .shell-placeholder h1 { margin-bottom: .7rem; color: var(--color-bone); font-size: var(--text-3xl); }
   .shell-placeholder p { line-height: 1.65; }
   .shell-placeholder nav { display: flex; justify-content: center; flex-wrap: wrap; gap: .5rem; margin-top: 1.25rem; }
-  .shell-placeholder nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 2.75rem; padding: .5rem .85rem; border: 1px solid var(--color-tertiary-edge); border-radius: var(--radius-rune); background: var(--color-tertiary); text-decoration: none; }
+  .shell-placeholder nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 2.75rem; padding: .5rem .85rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-tertiary); text-decoration: none; }
   .shell-placeholder nav a:hover { border-color: var(--color-rune); }
 
   /* Bounded loading placeholder; the owning view supplies its label. */

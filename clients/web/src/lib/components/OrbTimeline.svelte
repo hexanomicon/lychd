@@ -186,7 +186,7 @@
   .run-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-2xs); }
   code { color:var(--color-ash); font:inherit; font-family:var(--font-glyph); margin-inline-start:.3rem; }
   .marks { position:relative; height:20px; margin-inline:7px; border-block-end:1px solid var(--color-engraving); }
-  .mark { position:absolute; transform:translateX(-50%); top:3px; width:9px; min-height:13px; padding:0; border-color:var(--color-tertiary-edge); border-radius:1px; background:var(--color-tertiary); }
+  .mark { position:absolute; transform:translateX(-50%); top:3px; width:9px; min-height:13px; padding:0; border-color:var(--color-control-border); border-radius:1px; background:var(--color-tertiary); }
   .mark.selected { background:var(--color-rune); border-color:var(--color-rune); }
   .mark:hover { width:13px; }
   .coverage-help summary { cursor:pointer; color:var(--color-rune); font-size:var(--text-2xs); }
