@@ -143,7 +143,7 @@ def test_opaque_ids_do_not_impose_a_provider_dialect(identity: str) -> None:
         {"schema_version": 1.0},
         {"event_ttl_seconds": True},
         {"context_message_limit": 51},
-        {"context_max_age_seconds": 3601},
+        {"context_max_age_seconds": 172801},
         {"allowed_conversation_ids": ()},
         {"allowed_conversation_ids": ("104", "104")},
         {"rules": ()},

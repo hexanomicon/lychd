@@ -10,27 +10,28 @@ import os
 import re
 import stat
 import sys
+from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, NoReturn, cast
-from uuid import uuid4
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
+from lychd.compositions.reach.conversation_session import drive_context_turn
+from lychd.compositions.reach.operator_client import PipeWorker
 from lychd.compositions.reach.operator_wire import (
-    MAX_WIRE_BYTES,
     ReachHistoryEntry,
-    ReachWorkerReady,
-    ReachWorkerRequest,
     ReachWorkerResult,
-    protocol_bytes,
 )
 from lychd.compositions.reach.policy import prepare_turn
+from lychd.compositions.reach.research_wire import ReachResearchProgress
 from lychd.compositions.reach.schemas import ReachEvent
 from lychd.interface.discord.admin import ChannelSnapshot, GuildSnapshot, snapshot_guild
+from lychd.interface.discord.history import HistoryPager
+from lychd.interface.discord.messages import split_message
 from lychd.interface.discord.onboarding import OnboardingPanel, OnboardingProfile, OnboardingService
 from lychd.interface.discord.operator_io import load_policy, read_token
 from lychd.interface.discord.publications import PublicationQueue
@@ -172,56 +173,6 @@ def result_text(result: ReachWorkerResult) -> str:
     return "Odpoveď sa nepodarilo pripraviť. Skús novú požiadavku neskôr."
 
 
-class PipeWorker:
-    """One bounded outstanding request on the supervisor's private standard streams."""
-
-    def __init__(self, reader: asyncio.StreamReader, ready: ReachWorkerReady) -> None:
-        """Bind exactly one worker generation to the private pipe."""
-        self.reader = reader
-        self.ready = ready
-        self.lock = asyncio.Lock()
-        self.available = True
-
-    @classmethod
-    async def open(cls) -> PipeWorker:
-        reader = asyncio.StreamReader(limit=MAX_WIRE_BYTES)
-        protocol = asyncio.StreamReaderProtocol(reader)
-        await asyncio.get_running_loop().connect_read_pipe(lambda: protocol, sys.stdin.buffer)
-        async with asyncio.timeout(30):
-            raw = await reader.readline()
-        if not raw or len(raw) > MAX_WIRE_BYTES:
-            msg = "worker_readiness"
-            raise ValueError(msg)
-        return cls(reader, ReachWorkerReady.model_validate_json(raw))
-
-    async def request(self, event: ReachEvent, history: tuple[ReachHistoryEntry, ...]) -> ReachWorkerResult:
-        if not self.available or self.lock.locked():
-            msg = "worker_busy_or_unavailable"
-            raise ValueError(msg)
-        request = ReachWorkerRequest(request_id=str(uuid4()), event=event, history=history)
-        frame = protocol_bytes(request)
-        async with self.lock:
-            try:
-                sys.stdout.buffer.write(frame)
-                sys.stdout.buffer.flush()
-                async with asyncio.timeout(90):
-                    raw = await self.reader.readline()
-                if not raw or len(raw) > MAX_WIRE_BYTES:
-                    _refuse("worker_protocol")
-                result = ReachWorkerResult.model_validate_json(raw)
-                if (
-                    result.request_id != request.request_id
-                    or result.policy_digest != self.ready.policy_digest
-                    or result.corpus_digest != self.ready.corpus_digest
-                    or result.model_binding_digest != self.ready.model_binding_digest
-                ):
-                    _refuse("worker_correlation")
-            except (ValueError, OSError, TimeoutError, asyncio.CancelledError):
-                self.available = False
-                raise
-            return result
-
-
 def _parent(channel: object, policy: DiscordPolicy) -> str | None:
     if isinstance(channel, discord.Thread) and str(channel.parent_id) in policy.allowed_thread_parent_ids:
         return str(channel.parent_id)
@@ -232,9 +183,32 @@ def event_from_message(
     message: discord.Message, policy: DiscordPolicy, *, conversation: bool = False
 ) -> ReachEvent | None:
     """Translate SDK identity after cheap rejection, without retaining ambient messages."""
+    if message.guild is None:
+        channel = message.channel
+        if (
+            not conversation
+            or not isinstance(channel, discord.DMChannel)
+            or str(message.author.id) not in policy.allowed_dm_user_ids
+            or message.author.bot
+            or message.webhook_id is not None
+            or channel.recipient is None
+            or channel.recipient.id != message.author.id
+        ):
+            return None
+        return ReachEvent(
+            platform="discord",
+            account_id=policy.application_id,
+            event_id=str(message.id),
+            conversation_id=str(channel.id),
+            subject_id=str(message.author.id),
+            subject_label=str(message.author.display_name).strip()[:80] or None,
+            trigger="message",
+            action="converse",
+            question=message.content.strip(),
+            occurred_at=message.created_at,
+        )
     if (
-        message.guild is None
-        or str(message.guild.id) != policy.guild_id
+        str(message.guild.id) != policy.guild_id
         or (str(message.channel.id) not in policy.allowed_channel_ids and _parent(message.channel, policy) is None)
         or message.author.bot
         or message.webhook_id is not None
@@ -319,6 +293,8 @@ class ReachService:
         self.publications = publications
         self.seen: set[str] = set()
         self.bound_threads: set[str] = set()
+        self.turn_active = False
+        self.expression_blocked: set[str] = set()
 
     def eligible(self, event: ReachEvent | None) -> bool:
         return (
@@ -364,11 +340,35 @@ class ReachService:
             )
         return tuple(sorted(entries, key=lambda item: (item.occurred_at, int(item.event_id))))
 
-    async def run_event(self, event: ReachEvent, channel: discord.abc.Messageable) -> ReachWorkerResult | None:
+    async def run_event(
+        self,
+        event: ReachEvent,
+        channel: discord.abc.Messageable,
+        *,
+        acknowledge: Callable[[], Awaitable[bool]] | None = None,
+        reference: discord.MessageReference | None = None,
+    ) -> ReachWorkerResult | None:
         if not self.eligible(event) or event.event_id in self.seen:
             return None
-        if not self.worker.available or self.worker.lock.locked():
+        # A generation-local fence is in addition to the persistent transport journal.
+        if len(self.seen) >= MAX_GENERATION_EVENTS:
+            msg = "generation_event_budget"
+            raise ValueError(msg)
+        self.seen.add(event.event_id)
+        if not self.worker.available or self.worker.lock.locked() or self.turn_active:
             _refuse("worker_busy_or_unavailable")
+        self.turn_active = True
+        try:
+            await self._bind_conversation(event, channel)
+            if acknowledge is not None and not await acknowledge():
+                return None
+            async with asyncio.timeout(480 if self.worker.ready.research_enabled else 180):
+                return await self._context_turn(event, channel, reference=reference)
+        finally:
+            self.turn_active = False
+
+    async def _bind_conversation(self, event: ReachEvent, channel: discord.abc.Messageable) -> None:
+        """Bind the observed place without extending private access to administration."""
         if str(getattr(channel, "id", None)) != event.conversation_id:
             _refuse("channel_identity_mismatch")
         if event.parent_conversation_id is not None:
@@ -379,18 +379,95 @@ class ReachService:
                     _refuse("generation_thread_budget")
                 self.rest.bind_channels((event.conversation_id,))
                 self.bound_threads.add(event.conversation_id)
-        # A generation-local fence is in addition to the persistent transport journal.
-        if len(self.seen) >= MAX_GENERATION_EVENTS:
-            msg = "generation_event_budget"
-            raise ValueError(msg)
-        self.seen.add(event.event_id)
-        return await self.worker.request(event, await self.history(channel, event))
+        if event.trigger == "message":
+            await self.rest.bind_direct_channel(event.conversation_id, event.subject_id)
+
+    async def _context_turn(
+        self,
+        event: ReachEvent,
+        channel: discord.abc.Messageable,
+        *,
+        reference: discord.MessageReference | None,
+    ) -> ReachWorkerResult:
+        """Ask for older pages only when the exact native result requests them."""
+        if not self.conversation or not self.worker.ready.adaptive_context:
+            return await self.worker.request(event, await self.history(channel, event))
+        reference_id, anchor = await self._reply_anchor(event, channel, reference)
+        pager = HistoryPager(
+            self.policy,
+            event,
+            channel,
+            enabled=self.history_enabled,
+            conversation=True,
+            anchor=anchor,
+            page_size=16 if self.worker.ready.research_enabled else 6,
+        )
+        return await drive_context_turn(self.worker, event, pager, reply_to_event_id=reference_id, reply_anchor=anchor)
+
+    async def _reply_anchor(
+        self,
+        event: ReachEvent,
+        channel: discord.abc.Messageable,
+        reference: discord.MessageReference | None,
+    ) -> tuple[str | None, ReachHistoryEntry | None]:
+        """Resolve only an observed same-place reference under this turn's history limits."""
+        if not isinstance(reference, discord.MessageReference) or reference.message_id is None:
+            return None, None
+        if str(reference.channel_id) != event.conversation_id:
+            _refuse("reply_conversation_not_allowed")
+        identity = str(reference.message_id)
+        if not self.history_enabled or not self.policy.context_message_limit:
+            return identity, None
+        try:
+            message = await channel.fetch_message(reference.message_id)
+        except discord.HTTPException:
+            return identity, None
+        cutoff = event.occurred_at - timedelta(seconds=self.policy.context_max_age_seconds)
+        if (
+            str(message.channel.id) != event.conversation_id
+            or str(message.id) != identity
+            or not cutoff <= message.created_at < event.occurred_at
+            or message.webhook_id is not None
+            or not message.content
+            or (message.author.bot and str(message.author.id) != self.policy.bot_user_id)
+            or (
+                event.trigger == "message" and str(message.author.id) not in {event.subject_id, self.policy.bot_user_id}
+            )
+        ):
+            return identity, None
+        return identity, ReachHistoryEntry(
+            subject_id=str(message.author.id),
+            subject_label=str(message.author.display_name).strip()[:80] or None,
+            event_id=identity,
+            conversation_id=event.conversation_id,
+            text=message.content[:2000],
+            occurred_at=message.created_at,
+        )
 
 
 class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded Reach operator tools"):
     def __init__(self, service: ReachService) -> None:
         """Bind one explicitly configured edge, never ambient Core settings."""
         self.service = service
+        self.service.worker.progress = self._research_progress
+
+    async def _research_progress(self, event: ReachEvent, progress: ReachResearchProgress) -> bool:
+        """Deliver the interpreted plan in this same admitted audience before source reads."""
+        if event.trigger == "command":
+            return False
+        try:
+            result = await self.service.rest.send_message(
+                event.conversation_id,
+                progress.text,
+                event_id=event.event_id,
+                reply_to=event.event_id,
+                phase="plan",
+                silent=True,
+            )
+        except (ValueError, OSError, TimeoutError, DiscordRestError):
+            diagnostic("research_plan_failed")
+            return False
+        return result.status == "succeeded"
 
     async def _request(self, interaction: discord.Interaction, question: str, action: str) -> None:
         event = event_from_interaction(interaction, self.service.policy, question=question, action=action)
@@ -403,13 +480,30 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
         try:
             result = await self.service.run_event(event, interaction.channel)
             if result is not None:
-                outcome = await self.service.rest.edit_interaction_original(
-                    interaction.token, result_text(result), event_id=str(interaction.id)
-                )
-                if outcome.status != "succeeded":
-                    diagnostic("request_failed")
+                parts = split_message(result_text(result))
+                for index, part in enumerate(parts):
+                    outcome = await (
+                        self.service.rest.edit_interaction_original(
+                            interaction.token, part, event_id=str(interaction.id)
+                        )
+                        if index == 0
+                        else self.service.rest.send_interaction_followup(
+                            interaction.token,
+                            part,
+                            event_id=str(interaction.id),
+                            part=index,
+                        )
+                    )
+                    if outcome.status != "succeeded":
+                        diagnostic("request_failed")
+                        break
         except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError):
             diagnostic("request_failed")
+            await self.service.rest.edit_interaction_original(
+                interaction.token,
+                "Odpoveď sa nepodarilo pripraviť alebo práve riešim inú otázku.",
+                event_id=str(interaction.id),
+            )
 
     @app_commands.command(description="Ask Reach using this connection's configured mode")
     @app_commands.describe(question="What would you like to ask?")
@@ -463,16 +557,92 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
         event = event_from_message(message, self.service.policy, conversation=self.service.conversation)
         if not self.service.eligible(event) or event is None:
             return
+
         try:
-            result = await self.service.run_event(event, message.channel)
-            if result is not None:
-                outcome = await self.service.rest.send_message(
-                    event.conversation_id, result_text(result), event_id=event.event_id, reply_to=event.event_id
-                )
-                if outcome.status != "succeeded":
-                    diagnostic("message_failed")
+            result = await self.service.run_event(
+                event, message.channel, acknowledge=lambda: self._acknowledge(event), reference=message.reference
+            )
+            if result is not None and await self._send_final(event, result_text(result)):
+                await self._send_expressions(event, result)
         except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError):
             diagnostic("message_failed")
+            if event.trigger == "message":
+                await self.service.rest.bind_direct_channel(event.conversation_id, event.subject_id)
+            await self._send_final(
+                event, "Odpoveď sa nepodarilo pripraviť alebo práve riešim inú otázku. Skús to neskôr."
+            )
+
+    async def _acknowledge(self, event: ReachEvent) -> bool:
+        """Confirm receipt before optional cosmetic acknowledgement and native work."""
+        preview = " ".join(event.question.split())[:240]
+        text = f"Pozriem sa na tvoju požiadavku: „{preview}“. Vrátim sa sem s výsledkom alebo doplňujúcou otázkou."
+        outcome = await self.service.rest.send_message(
+            event.conversation_id,
+            text,
+            event_id=event.event_id,
+            reply_to=event.event_id,
+            phase="ack",
+        )
+        if outcome.status != "succeeded":
+            diagnostic("message_failed")
+        elif self.service.worker.ready.expressions.enabled and self.service.worker.ready.expressions.acknowledge:
+            try:
+                seen = await self.service.rest.add_reaction(
+                    event.conversation_id, event.event_id, "👀", event_id=event.event_id, phase="seen"
+                )
+                if seen.status != "succeeded":
+                    self.service.expression_blocked.add(event.event_id)
+                    diagnostic("expression_failed")
+            except (ValueError, OSError, TimeoutError, DiscordRestError):
+                self.service.expression_blocked.add(event.event_id)
+                diagnostic("expression_failed")
+        return outcome.status == "succeeded"
+
+    async def _send_final(self, event: ReachEvent, text: str) -> bool:
+        """Freeze bounded parts before the first journaled send; stop on uncertainty."""
+        parts = split_message(text)
+        for index, part in enumerate(parts):
+            outcome = await self.service.rest.send_message(
+                event.conversation_id,
+                part,
+                event_id=event.event_id,
+                reply_to=event.event_id,
+                phase="final",
+                part=index,
+            )
+            if outcome.status != "succeeded":
+                diagnostic("message_failed")
+                return False
+        return True
+
+    async def _send_expressions(self, event: ReachEvent, result: ReachWorkerResult) -> None:
+        """Decorate a completed message turn from exact frozen choices; failure stays cosmetic."""
+        expressions = self.service.worker.ready.expressions
+        if (
+            not expressions.enabled
+            or event.trigger == "command"
+            or result.status != "conversation"
+            or event.event_id in self.service.expression_blocked
+        ):
+            return
+        try:
+            expressions.validate_selection(result.reaction, result.gif_id)
+            if result.reaction is not None and not (result.reaction == "👀" and expressions.acknowledge):
+                outcome = await self.service.rest.add_reaction(
+                    event.conversation_id, event.event_id, result.reaction, event_id=event.event_id, phase="reply"
+                )
+                if outcome.status != "succeeded":
+                    diagnostic("expression_failed")
+                    return
+            if result.gif_id is not None:
+                selected = next(item for item in expressions.gifs if item.id == result.gif_id)
+                outcome = await self.service.rest.send_gif(
+                    event.conversation_id, selected.url, event_id=event.event_id, reply_to=event.event_id
+                )
+                if outcome.status != "succeeded":
+                    diagnostic("expression_failed")
+        except (ValueError, OSError, TimeoutError, DiscordRestError):
+            diagnostic("expression_failed")
 
 
 class ReachBot(commands.Bot):
@@ -489,6 +659,7 @@ class ReachBot(commands.Bot):
         intents = discord.Intents.none()
         intents.guilds = True
         intents.guild_messages = True
+        intents.dm_messages = bool(service.policy.allowed_dm_user_ids)
         intents.message_content = service.history_enabled
         intents.members = onboarding is not None
         super().__init__(

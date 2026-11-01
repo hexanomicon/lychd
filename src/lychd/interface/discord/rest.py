@@ -21,9 +21,12 @@ from contextlib import asynccontextmanager, contextmanager, suppress
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Literal, cast
+from urllib.parse import quote
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
+
+from lychd.compositions.reach.expressions import REACTIONS, Reaction, validate_gif_url
 
 _BASE = "https://discord.com/api/v10"
 _MAX_RESPONSE = 2 * 1024 * 1024
@@ -33,14 +36,19 @@ _RECORD = re.compile(r"[a-f0-9]{64}\.json\Z")
 _DIGEST = r"^[a-f0-9]{64}$"
 _MAX_RECORD = 8192
 _MAX_MESSAGE = 2000
+_MAX_MESSAGE_PARTS = 6
+_EPHEMERAL = 1 << 6
 SUPPRESS_EMBEDS = 1 << 2
+SUPPRESS_NOTIFICATIONS = 1 << 12
 _BASELINE_ROLES = 2
 type _Target = Literal[
     "guild_roles",
     "guild_channels",
     "channel",
     "channel_messages",
+    "message_reaction",
     "interaction_original",
+    "interaction_followup",
     "guild_member_role",
     "introduction",
 ]
@@ -336,6 +344,7 @@ class DiscordRest:
         self._token = token
         self._verified = False
         self._channels: set[str] = set()
+        self._direct_channels: dict[str, str] = {}
         self._member_roles: frozenset[str] = frozenset()
         self._introduction_channel: str | None = None
         self._effects_lock = asyncio.Lock()
@@ -362,6 +371,32 @@ class DiscordRest:
         """Bind channel IDs observed in the authenticated guild snapshot."""
         channels = {_id(value) for value in ids}
         self._channels.update(channels)
+
+    async def bind_direct_channel(self, channel_id: str, subject_id: str) -> None:
+        """Verify one observed private recipient; authorize replies and reactions."""
+        channel_id, subject_id = _id(channel_id), _id(subject_id)
+        if not self._verified or channel_id in self._channels:
+            code = "direct_channel_binding"
+            raise DiscordRestError(code)
+        status, data = await self._request("GET", f"/channels/{channel_id}")
+        channel = _object(data)
+        raw_recipients = channel.get("recipients") if channel else None
+        recipients = cast("list[Any]", raw_recipients) if isinstance(raw_recipients, list) else None
+        recipient = _object(recipients[0]) if recipients is not None and len(recipients) == 1 else None
+        if (
+            status != HTTPStatus.OK
+            or channel is None
+            or channel.get("id") != channel_id
+            or channel.get("type") != 1
+            or not isinstance(recipients, list)
+            or len(recipients) != 1
+            or recipient is None
+            or recipient.get("id") != subject_id
+            or self._direct_channels.get(channel_id, subject_id) != subject_id
+        ):
+            code = "direct_channel_binding"
+            raise DiscordRestError(code)
+        self._direct_channels[channel_id] = subject_id
 
     def bind_member_roles(self, ids: Iterable[str]) -> None:
         """Bind exactly two operator-validated baseline roles, never everyone."""
@@ -462,6 +497,8 @@ class DiscordRest:
         if path == f"{guild}/channels" and method in {"GET", "POST"}:
             return "guild_channels"
         channel = re.fullmatch(r"/channels/([1-9][0-9]{0,19})(/messages)?", path)
+        if channel and channel[1] in self._direct_channels and channel[2] == "/messages" and method == "POST":
+            return "channel_messages"
         if channel and channel[1] in self._channels:
             if channel[2] is None and method in {"GET", "PATCH"}:
                 return "channel"
@@ -685,17 +722,98 @@ class DiscordRest:
             status="unknown", code="invalid_response" if status < HTTPStatus.MULTIPLE_CHOICES else f"http_{status}"
         )
 
+    async def add_reaction(
+        self,
+        channel_id: str,
+        message_id: str,
+        emoji: Reaction,
+        *,
+        event_id: str,
+        phase: Literal["seen", "reply"] = "reply",
+    ) -> EffectResult:
+        """React once to the admitted incoming event in an already bound channel."""
+        try:
+            channel_id, message_id, event_id = _id(channel_id), _id(message_id), _id(event_id)
+        except DiscordRestError as error:
+            return EffectResult(status="rejected", code=error.code)
+        if type(emoji) is not str or emoji not in REACTIONS:
+            return EffectResult(status="rejected", code="invalid_reaction")
+        if type(phase) is not str or phase not in {"seen", "reply"}:
+            return EffectResult(status="rejected", code="invalid_reaction_phase")
+        if message_id != event_id:
+            return EffectResult(status="rejected", code="reaction_message_binding")
+        if channel_id not in self._channels and channel_id not in self._direct_channels:
+            return EffectResult(status="rejected", code="reaction_channel_binding")
+        key = f"reaction:{self.application_id}:{event_id}:{phase}"
+        scope = f"reaction:{self.application_id}:{channel_id}:{event_id}:{phase}"
+        async with self._effect():
+            return await self._write(
+                "PUT",
+                f"/channels/{channel_id}/messages/{message_id}/reactions/{quote(emoji, safe='')}/@me",
+                {},
+                effect_key=key,
+                scope=scope,
+                target="message_reaction",
+                empty_success_id=message_id,
+            )
+
+    async def send_gif(self, channel_id: str, url: str, *, event_id: str, reply_to: str) -> EffectResult:
+        """Send one exact validated GIF URL as a silent reply with previews enabled."""
+        try:
+            channel_id, event_id, reply_to = _id(channel_id), _id(event_id), _id(reply_to)
+        except DiscordRestError as error:
+            return EffectResult(status="rejected", code=error.code)
+        if reply_to != event_id:
+            return EffectResult(status="rejected", code="gif_reply_binding")
+        try:
+            url = validate_gif_url(url)
+        except ValueError:
+            return EffectResult(status="rejected", code="invalid_gif_url")
+        key = f"gif:{self.application_id}:{event_id}"
+        scope = f"gif:{self.application_id}:{channel_id}:{event_id}"
+        body: dict[str, Any] = {
+            "content": url,
+            "flags": SUPPRESS_NOTIFICATIONS,
+            "allowed_mentions": {"parse": [], "replied_user": False},
+            "nonce": _digest(scope)[:25],
+            "enforce_nonce": True,
+            "message_reference": {
+                "message_id": reply_to,
+                "channel_id": channel_id,
+                "fail_if_not_exists": False,
+            },
+        }
+        try:
+            return await self.write("POST", f"/channels/{channel_id}/messages", body, effect_key=key, scope=scope)
+        except DiscordRestError as error:
+            if error.code != "route_not_allowed":
+                raise
+            return EffectResult(status="rejected", code=error.code)
+
     async def send_message(
-        self, channel_id: str, text: str, *, event_id: str, reply_to: str | None = None
+        self,
+        channel_id: str,
+        text: str,
+        *,
+        event_id: str,
+        reply_to: str | None = None,
+        phase: Literal["ack", "plan", "final"] | None = None,
+        part: int = 0,
+        silent: bool = False,
     ) -> EffectResult:
         """Send text with clickable links, suppressed previews and no mentions."""
         channel_id, event_id = _id(channel_id), _id(event_id)
+        if phase not in {None, "ack", "plan", "final"} or type(part) is not int or not 0 <= part < _MAX_MESSAGE_PARTS:
+            return EffectResult(status="rejected", code="invalid_message_phase")
+        if (phase != "final" and part != 0) or type(silent) is not bool:
+            return EffectResult(status="rejected", code="invalid_message_phase")
         if type(text) is not str or not 1 <= len(text) <= _MAX_MESSAGE:
             return EffectResult(status="rejected", code="invalid_message")
-        nonce = _digest(f"{self.application_id}:{channel_id}:{event_id}")[:25]
+        suffix = f":{phase}:{part}" if phase is not None else ""
+        nonce = _digest(f"{self.application_id}:{channel_id}:{event_id}{suffix}")[:25]
         body: dict[str, Any] = {
             "content": text,
-            "flags": SUPPRESS_EMBEDS,
+            "flags": SUPPRESS_EMBEDS | (SUPPRESS_NOTIFICATIONS if silent else 0),
             "allowed_mentions": {"parse": []},
             "nonce": nonce,
             "enforce_nonce": True,
@@ -711,8 +829,8 @@ class DiscordRest:
             "POST",
             f"/channels/{channel_id}/messages",
             body,
-            effect_key=f"message:{self.application_id}:{event_id}",
-            scope=f"message:{self.application_id}:{channel_id}:{event_id}",
+            effect_key=f"message:{self.application_id}:{event_id}{suffix}",
+            scope=f"message:{self.application_id}:{channel_id}:{event_id}{suffix}",
         )
 
     async def edit_interaction_original(self, interaction_token: str, text: str, *, event_id: str) -> EffectResult:
@@ -730,4 +848,33 @@ class DiscordRest:
                 effect_key=f"interaction:{self.application_id}:{event_id}",
                 scope=f"interaction:{self.application_id}:{event_id}",
                 target="interaction_original",
+            )
+
+    async def send_interaction_followup(
+        self,
+        interaction_token: str,
+        text: str,
+        *,
+        event_id: str,
+        part: int,
+    ) -> EffectResult:
+        """Send a private continuation of this exact deferred interaction."""
+        event_id = _id(event_id)
+        if type(interaction_token) is not str or not re.fullmatch(r"[A-Za-z0-9._-]{1,2048}", interaction_token):
+            return EffectResult(status="rejected", code="invalid_interaction_token")
+        if (
+            type(part) is not int
+            or not 1 <= part < _MAX_MESSAGE_PARTS
+            or type(text) is not str
+            or not 1 <= len(text) <= _MAX_MESSAGE
+        ):
+            return EffectResult(status="rejected", code="invalid_message")
+        async with self._effect():
+            return await self._write(
+                "POST",
+                f"/webhooks/{self.application_id}/{interaction_token}",
+                {"content": text, "flags": SUPPRESS_EMBEDS | _EPHEMERAL, "allowed_mentions": {"parse": []}},
+                effect_key=f"interaction:{self.application_id}:{event_id}:part:{part}",
+                scope=f"interaction:{self.application_id}:{event_id}:part:{part}",
+                target="interaction_followup",
             )

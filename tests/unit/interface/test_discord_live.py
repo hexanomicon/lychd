@@ -340,9 +340,19 @@ async def test_effect_outcomes_report_failure_without_retrying(
 
     if path == "mention":
         await cog.on_message(observed)
-        send.assert_awaited_once_with(
-            str(observed.channel.id), "Public excerpt", event_id=str(observed.id), reply_to=str(observed.id)
-        )
+        assert send.await_args_list[0].kwargs["phase"] == "ack"
+        if status == "succeeded":
+            assert send.await_count == 2
+            assert send.await_args_list[1].args == (str(observed.channel.id), "Public excerpt")
+            assert send.await_args_list[1].kwargs == {
+                "event_id": str(observed.id),
+                "reply_to": str(observed.id),
+                "phase": "final",
+                "part": 0,
+            }
+        else:
+            send.assert_awaited_once()
+            cast("AsyncMock", configured.worker.request).assert_not_awaited()
         edit.assert_not_awaited()
         code = "message_failed"
     elif path == "inspect":

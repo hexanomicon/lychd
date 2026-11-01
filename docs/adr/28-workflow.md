@@ -395,6 +395,30 @@ deadlines and request/token/concurrency/spend ceilings; durability and idempoten
 fallback edges; and result-adoption evidence. Economics and readiness may eliminate an eligible
 branch, never make an ineligible one lawful.
 
+A serial selection profile may validate a bounded acyclic graph of declared alternatives for one
+exact Pattern revision and station. Its semantic contract identifies input, output, completion,
+non-completion, effect ceiling and adoption validators; matching declarations establish intended
+compatibility, not actual result quality. Edge predicates and precedence are explicit. This
+fallback graph is separate from the Pattern topology: durable peer/delegate self-edges remain
+valid re-entry of the same occurrence.
+
+A pure selection proposal is not `ExecutionRoadDecision@1`, an admission, reservation, dispatch,
+or result-adoption record. It consumes an owner-supplied snapshot bound to Run, station occurrence,
+policy digest, predecessor and observation identity. Unresolved submission or effects block every
+new semantic execution, including local alternatives; reconciliation-required grants no polling
+or transport-retry permission. Local closure remains visible without claiming remote rollback.
+Terminal status alone cannot prove replacement is safe. A claimed A2A submission retains its own
+permanent no-resubmit rule even when no accepted bytes or foreign task id were observed.
+
+Selection retains one absolute deadline and counts consumed resources, outstanding reservations
+and the proposed ceiling against one common envelope, with exact units. No branch renews those
+bounds. Unknown or expired eligibility at a higher-precedence matching edge blocks lower choices
+in this serial profile; explicit current ineligibility may exclude that branch. Every proposal
+still needs current owner admission, a consumer-specific input projection, atomic reservation and
+the complete durable decision before submission. Snapshot validation cannot authenticate facts,
+prevent stale replay, enforce physical ceilings or supply that transaction. Reconciliation and
+safety obligations retain their own finite authority and budgets after forward-work expiry.
+
 Before road admission, Spellweaver creates immutable `ExecutionRoadDecision@1`; the Run ledger
 stores it before any road-owned submission, and the later dispatch event, `ServiceJobAttempt`,
 Intercom task, or `AgentJob` references its id. The decision binds Run, station attempt, parent

@@ -479,6 +479,36 @@ transports, callbacks or DNS work.
 - **Verification:** [Retained-score validation](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_state_serializable.py), [Blockworld admission](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_placement.py), and [Orb exactness](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_orb.py)
 - **Law:** [Workers](./adr/14-workers.md) and [Workflow](./adr/28-workflow.md)
 
+### Execution-road selection {#execution-road-selection}
+
+**State:** Partial
+
+**Proved now:** A pure serial selection subset validates one exact Pattern revision/station and
+declared semantic contract, discriminated local/Portal/peer/delegated alternatives, per-target input
+projection references and ceilings, and a bounded acyclic fallback graph. Explicit failure predicates
+and edge precedence determine selection. Canonical digests ignore declaration order while retaining
+priority. Exact scope, predecessor and alternative-digest checks reject substituted observations;
+public calculation revalidates unchecked model copies. Unknown or stale higher-precedence eligibility
+blocks lower alternatives. Owner-declared unresolved work blocks every fresh local or remote choice,
+including after closure/expiry. The calculation retains the supplied absolute deadline and compares
+consumed quantities, outstanding reservations and the next declared ceiling against strict integer
+bounds with explicit currency/byte/token units.
+Time comparisons use UTC instants, including repeated-hour/fold observation and deadline cases.
+
+**Boundary — Not yet:** This produces a non-authorizing proposal from a supplied snapshot. It has no
+production caller, settings selector, authenticated owner observation, stale-replay protection, atomic
+reservation, full persisted `ExecutionRoadDecision`, dispatch, transport retry, reconciliation polling,
+adoption election or physical resource enforcement. Synthetic serialization is not restart recovery.
+No Nadir, Bridge, Portal, A2A or CLI fallback is activated. Existing Bridge preference keeps its
+admission-only contract. Actual durable integration remains with the existing road owners.
+
+**Evidence**
+
+- **Source:** [Pure road selector](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/execution_roads.py)
+- **Verification:** [Policy and selection tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_execution_roads.py)
+- **Topic:** [Execution roads](./sepulcher/extensions/weaver/execution-roads.md#pure-serial-selection)
+- **Law:** [Workflow](./adr/28-workflow.md#execution-road-planning)
+
 ### Configured Bridge casting {#configured-bridge-casting}
 
 **State:** Partial
@@ -1956,17 +1986,57 @@ categories, channels and explicit-id patches. Single-attempt REST and content-fr
 records fence uncertainty across restarts. Source tests cover policy, protocol, native execution,
 SDK registration, plan ordering, concurrent custody, expiry, reconciliation and no blind retry.
 
-An explicit private conversation profile now selects one static persona and exact local
-`Qwen3.8-27B` binding while document search remains the default. An OCI-only native
-`reach.operator_converse@1` Run/Graph obtains an exact Dispatcher Chat lease without tools.
-A closed host relay performs fresh health/model observations and bounded generation against one
-fixed loopback endpoint; it supplies no runtime lifecycle control. Same-channel history is
-separately bounded and opt-in, including this bot's own prior replies in conversation mode.
-The static profile is not Mirror identity or persistent memory. Independently selected local
-publications carry already authorized producer text through a private queue to exact guild
-channels. Only the edge receives that queue; model/chat output grants no publication authority.
-Mock-HTTP and portable tests cover model/frame separation, current exact identity, cancellation,
-queue custody, expiry and single-attempt publication. They do not qualify a live model or Discord.
+An explicit private conversation profile selects one static persona and exact local
+`Qwen3.8-27B` binding while document search remains the default. Each OCI-only
+`reach.operator_converse@4` Run/Graph obtains an exact Dispatcher Chat lease without tools.
+The closed host relay performs fresh health/model observations against one fixed loopback
+endpoint and supplies no runtime lifecycle control. Exact `allowed_dm_user_ids` plus an explicit
+subject rule permitting `converse` can admit one-to-one DMs; guild roles confer no DM access.
+Opt-in `adaptive_context` permits at most three generation-local Runs per turn, with exact
+continuation admission and bounded same-conversation history. Admitted mentions and DMs receive
+an acknowledgement; final replies are bounded to six parts, with stable delivery identities and
+no continuation after a failed or uncertain part. These additions supply no durable memory,
+private Archive ingestion, cross-place identity or autonomous publication authority.
+The operator context-round driver, continuation admission and correlated private-pipe client
+now live in provider-neutral Reach modules. Discord supplies its SDK observations, admitted
+audience and delivery projection. Synthetic second-platform cases exercise these shared modules
+with the same native research Pattern and host broker; they supply no Telegram adapter,
+multi-account research authority or executable experimentation workbench.
+An opt-in frozen expression catalogue adds 👀 after acknowledgement and permits one final
+allowlisted reaction and one catalogue GIF in the same admitted mention/DM. Model choices carry
+IDs, never acquisition or destination authority. GIFs are separate silent replies with previews;
+normal text and ephemeral slash responses retain their existing audience. Cosmetic failures do
+not discard the answer, and stable slots fence changed or uncertain attempts. No ambient
+reaction loop, live GIF search or media upload is supplied.
+The maintained public corpus selection now names 19 documents, including Lich identity,
+Transcendence and Inner Tongue owners. A separately enabled research catalogue adds an explicit
+`generate` → `research` → `settle` branch within the same native Run: one model call proposes a
+bounded interpreted plan and exact document/web IDs, and one later call synthesizes admitted
+sources. A mention or admitted DM must receive that plan successfully before local source reads
+or the separate web worker starts; slash commands cannot satisfy this delivered-plan gate.
+At most four sources, including at most three documents and two catalogue web entries, supply
+bounded 4,000-character excerpts. Exact source metadata, occurrence correlation, digests,
+citations and unavailable outcomes are checked. Detached outbound source projections keep raw
+acquisition bodies out of checkpoint state, cached Context and native history. The host renders
+supporting citations and explicit unavailable-source notices rather than treating a blocked page
+as read. Humour and expression selection retain those attribution limits.
+
+The current research assembly selects Docker images and the fixed Podman model transport. A
+separate private runtime profile supplies exact public-catalogue authority, initiators and
+places, resolver custody, expiry/revocation and cumulative attempts. Its content-free private
+journal reserves stable event/source attempts before contact and fences uncertain repetition.
+The explicit source-image builder copies a bounded, fingerprinted public CPython closure onto
+the selected Core image; building it supplies no new host-qualification receipt. Research uses
+300-second native requests, a 310-second edge response bound and a 480-second whole-turn ceiling;
+ordinary conversation retains 90-second requests and 180-second turns. These ceilings do not
+extend the policy's event lifetime. This is catalogue Fetch/Extract and local synthesis, with
+no general Search, browser, redirects, retries, discovered-link traversal or durable source
+storage. Its source, protocol and authored hostile/positive cases do not yet establish a newly
+qualified live deployment.
+
+Independently selected local publications still carry already authorized producer text through
+an edge-only private queue to exact guild channels. Offline and mock-HTTP cases do not qualify
+a live model, Discord dialogue or production deployment.
 
 **Boundary — Not yet:** Creation's one application selector supplies no general Composition or
 Product catalogue, shared store, Suite execution or application scheduler. Other Portfolio members
@@ -2016,6 +2086,11 @@ has no Ward producer enrollment, automatic coding-work integration, durable nati
 application release judgment. Uncertain publications require inspection rather than a new ID
 or automatic resend. Learning, teaching, introspection and Comfy execution are not part of this
 operator profile.
+The separate operator research path does not supply native per-URL consent, remote Principal
+enrollment, general web research authority or persistent memory. Its current Docker/Bubblewrap
+assembly and full delivered-plan → public acquisition → local synthesis → Discord delivery chain
+still require an identified live-host occurrence; the existing native Scout mechanism receipts
+do not qualify that new assembly automatically.
 Public history/media and production deployment acceptance remain separate contract work.
 
 [Reach connected work](./compositions/reach/connected-work/index.md) proposes a successor to the
@@ -2058,6 +2133,15 @@ physical devices or every Android version allowed by the declared minimum SDK.
 - **Verification:** [Conversation Run and lease cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_conversation.py), [model contract cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_operator_model.py), [host HTTP and frame custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_operator_model.py), and [publication custody and effects](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_publications.py)
 - **Source:** [Optional Discord onboarding](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/onboarding.py) keeps private drafts separate from explicitly confirmed public introductions and harmless baseline-role assignment. It does not provide Ward enrollment or native Graph execution.
 - **Verification:** [Onboarding audience and actor binding](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_onboarding.py), [startup and member-event admission](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_onboarding_live.py), [role and introduction effect recovery](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_onboarding_rest.py), and [edge-only private profile custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_operator_onboarding.py).
+- **Source:** [Bounded history pager](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/history.py) and [bounded message splitter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/messages.py).
+- **Source:** [Shared operator session](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/conversation_session.py) and [provider-neutral worker client](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/operator_client.py) retain context decisions and protocol custody outside the Discord adapter.
+- **Verification:** [Second-transport native choreography](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_portability.py) covers research plan delivery, acquisition gating, context outcomes and SDK-independent imports.
+- **Verification:** [Explicit DM subjects and isolated history](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_direct_policy.py), [same-conversation page and budget cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_history.py), [closed adaptive decisions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_adaptive_decision.py), [exact next-round admission](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_context_rounds.py), and [UTF-16 multipart limits](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_messages.py).
+- **Source:** [Frozen expression catalogue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/expressions.py) binds reaction and GIF choices to the operator profile.
+- **Verification:** [Native expression selection and settlement](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_expressions.py), [reaction/GIF REST custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_expressions.py), and [dialogue ordering and cosmetic failures](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_nadir_expressions.py).
+- **Source:** [Transient catalogue research and citations](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/research.py), [closed source/progress values](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/research_wire.py), [host research broker](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_research_broker.py), [separate source worker](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_scout_worker.py), and [source-image builder](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_research_image.py).
+- **Verification:** [Native two-call research and source-custody cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_research.py), [document catalogue and excerpt cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_document_research.py), [acknowledgement and broker custody cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_research_broker.py), [source authority and attempt cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_scout_worker.py), and [same-audience plan delivery cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_nadir_research_progress.py). These authored cases do not themselves record a live deployment.
+- **Law:** [Explicit Reach research profile](./adr/30-webcrawler.md#explicit-reach-operator-research-profile) and [separate operator authority](./adr/38-iam.md#trusted-local-scout-profile).
 - **Topic:** [Discord operator profile](./compositions/reach/operator.md)
 - **Source:** [Companion native score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion.py), [operator session](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_session.py), [HTTP effect adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_bridge.py), [voice/text entry](https://github.com/hexanomicon/lychd/blob/main/scripts/companion_lab.py), and [Fabric delivery client](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft)
 - **Source:** [Reviewed dialogue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_dialogue.py), [private recipe store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/companion_memory.py), and [inactive Dump & Search score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_search.py)

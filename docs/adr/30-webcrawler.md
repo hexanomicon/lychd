@@ -593,6 +593,35 @@ dependency or deployment. Recheck the exact selected revision before implementat
   introduces a broader service stack. Keep the existing renderer candidate and deferred comparison
   until a demonstrated static-coverage gap justifies their operating and containment cost.
 
+## Explicit Reach operator research profile
+
+The separate development profile `reach-public-page@1` may reuse native static Fetch and
+network-denied Extract under an operator-owned public-source catalogue. This is not the native
+`bridge_chat@4` authentication/consent profile, a Ward Principal mapping, or general web Search.
+Its private startup configuration explicitly asserts the publicness and standing contact basis
+of each complete catalogue URL. The model proposes source IDs only. Discord text, links, roles,
+reactions and model output cannot add a locator, recipient, query, effect or permission.
+
+The profile names its exact eligible initiators and places, public catalogue, policy/revocation
+generation, expiry, resolver custody, fixed extraction runtime and cumulative attempt/contact
+ceilings. A distinct local attempt owner commits the stable event/source identity and complete
+worst-case reservation before contact. Changed duplicates refuse; an unsettled attempt after
+restart remains unknown and cannot issue another execution. Profile changes do not reset host
+accounting. No receipt reconstructs source material or restores an execution permit.
+
+A separate acquisition process receives only that profile, its private attempt partition and
+bounded request metadata. It receives no Discord/model credentials, checkout mount or engine
+socket. The Reach cognition worker stays networkless. Each actual DNS/TLS/HTTP handoff checks
+the current exact catalogue destination, expiry, revocation and reserved budget synchronously.
+Extract and transient consumption have separate current checks after awaits. No redirect,
+retry, browser, login, payment, provider fallback, page-discovered link or automatic storage is
+admitted. Mechanism and complete deployment qualification remain necessary.
+
+The dialogue must deliver its validated interpreted plan before acquisition. It returns bounded,
+attributed excerpts and unavailable-source outcomes to local synthesis. Citation IDs resolve only
+through those admitted sources. A blocked page may produce a candid partial explanation; it may
+not be represented as a page that was read. Persona and humour do not weaken source attribution.
+
 ## Delivery Boundary
 
 The native public-page profile implements bounded Fetch and Extract through opt-in

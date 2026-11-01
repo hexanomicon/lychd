@@ -20,19 +20,24 @@ import stat
 import subprocess
 import sys
 import tempfile
-from collections.abc import Generator, Sequence
-from contextlib import contextmanager
+from collections.abc import Callable, Generator, Sequence
+from contextlib import contextmanager, suppress
 from hashlib import sha256
 from pathlib import Path
 from typing import Any, Literal, NoReturn, cast
 from uuid import uuid4
 
+from lychd.compositions.reach.operator_model_wire import OperatorModelRequest
 from lychd.interface.discord.operator_io import load_policy
 
 if __package__:
     from scripts.reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker, validate_endpoint
+    from scripts.reach_podman_model import PodmanModelTransport
+    from scripts.reach_research_broker import OperatorResearchBroker
 else:
     from reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker, validate_endpoint
+    from reach_podman_model import PodmanModelTransport
+    from reach_research_broker import OperatorResearchBroker
 
 ROOT = Path(__file__).resolve().parents[1]
 WIRE_LIMIT = 65_536
@@ -46,7 +51,19 @@ EDGE_INPUTS = (
     "clients/discord/pyproject.toml",
     "clients/discord/uv.lock",
     "clients/discord/Containerfile",
-    *(f"src/lychd/compositions/reach/{name}.py" for name in ("__init__", "schemas", "policy", "operator_wire")),
+    *(
+        f"src/lychd/compositions/reach/{name}.py"
+        for name in (
+            "__init__",
+            "schemas",
+            "policy",
+            "operator_wire",
+            "operator_client",
+            "conversation_session",
+            "expressions",
+            "research_wire",
+        )
+    ),
     *(
         f"src/lychd/interface/discord/{name}.py"
         for name in (
@@ -60,6 +77,8 @@ EDGE_INPUTS = (
             "operator_cli",
             "publications",
             "onboarding",
+            "messages",
+            "history",
         )
     ),
 )
@@ -440,14 +459,38 @@ async def relay(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, *, r
         await writer.drain()
 
 
+def authorize_research_synthesis(payload: str, broker: OperatorResearchBroker) -> Callable[[], None] | None:
+    """Bind the source envelope to one issued, currently authorized local consumption."""
+    generation = strict_object(payload.encode())
+    messages = generation.get("messages")
+    prompt: dict[str, Any] = {}
+    if isinstance(messages, list) and messages:
+        last: Any = cast("list[Any]", messages)[-1]
+        if isinstance(last, dict):
+            content = cast("dict[str, Any]", last).get("content")
+            if isinstance(content, str):
+                with suppress(ValueError):
+                    prompt = strict_object(content.encode())
+    if prompt.get("research_phase") == "synthesis":
+        return broker.authorize_consume(str(prompt.get("research_request_id", "")))
+    if broker.material_pending:
+        _fail("research_consume_binding")
+    return None
+
+
 async def model_relay(
     reader: asyncio.StreamReader,
     edge_writer: asyncio.StreamWriter,
     core_writer: asyncio.StreamWriter,
     broker: OperatorModelBroker,
+    research_broker: OperatorResearchBroker | None = None,
 ) -> None:
     """Keep model frames on the trusted host pipe and expose only public results."""
-    from lychd.compositions.reach.operator_model_wire import OperatorModelRequest
+    from lychd.compositions.reach.research_wire import OperatorResearchRequest, ReachResearchProgress
+
+    async def progress(value: ReachResearchProgress) -> None:
+        edge_writer.write(value.model_dump_json().encode() + b"\n")
+        await edge_writer.drain()
 
     while True:
         try:
@@ -460,18 +503,67 @@ async def model_relay(
             _fail("operator_frame_limit")
         value = strict_object(raw)
         if value.get("kind") in {"ready", "result"}:
+            if value.get("kind") == "result" and research_broker is not None:
+                research_broker.settled(str(value.get("request_id", "")))
             edge_writer.write(raw)
             await edge_writer.drain()
         elif value.get("kind") == "model_request":
             request = OperatorModelRequest.model_validate_json(raw)
-            response = await broker.handle(request)
-            encoded = response.model_dump_json().encode() + b"\n"
-            if len(encoded) > WIRE_LIMIT:
-                _fail("operator_frame_limit")
-            core_writer.write(encoded)
-            await core_writer.drain()
+            response = await handle_model_request(broker, request, research_broker)
+            await write_core_response(core_writer, response)
+        elif value.get("kind") == "research_request" and research_broker is not None:
+            research_request = OperatorResearchRequest.model_validate_json(raw)
+            research_response = await research_broker.handle(research_request, progress)
+            await write_core_response(core_writer, research_response.model_dump_json())
         else:
             _fail("operator_core_frame")
+
+
+async def handle_model_request(
+    broker: OperatorModelBroker, request: OperatorModelRequest, research_broker: OperatorResearchBroker | None
+) -> str:
+    """Issue the local consumption guard only for the pending research synthesis."""
+    authorize = None
+    if research_broker is not None and request.operation == "generate":
+        authorize = authorize_research_synthesis(request.payload_json, research_broker)
+    response = (
+        await broker.handle(request, authorize=authorize) if authorize is not None else await broker.handle(request)
+    )
+    return response.model_dump_json()
+
+
+async def write_core_response(writer: asyncio.StreamWriter, response: str) -> None:
+    """Keep every host response within the same bounded Core pipe dialect."""
+    encoded = response.encode() + b"\n"
+    if len(encoded) > WIRE_LIMIT:
+        _fail("operator_frame_limit")
+    writer.write(encoded)
+    await writer.drain()
+
+
+async def research_edge_relay(
+    reader: asyncio.StreamReader, writer: asyncio.StreamWriter, broker: OperatorResearchBroker
+) -> None:
+    """Consume exact progress acknowledgements and forward only normalized requests."""
+    from lychd.compositions.reach.operator_wire import parse_request_line
+    from lychd.compositions.reach.research_wire import ReachResearchAcknowledgement
+
+    while True:
+        try:
+            raw = await reader.readuntil(b"\n")
+        except asyncio.IncompleteReadError as error:
+            if error.partial:
+                _fail("operator_truncated_frame")
+            return
+        if len(raw) > WIRE_LIMIT:
+            _fail("operator_frame_limit")
+        value = strict_object(raw)
+        if value.get("kind") == "progress_ack":
+            broker.acknowledge(ReachResearchAcknowledgement.model_validate_json(raw))
+        else:
+            parse_request_line(raw)
+            writer.write(raw)
+            await writer.drain()
 
 
 async def diagnostics(reader: asyncio.StreamReader) -> None:
@@ -527,6 +619,7 @@ async def supervise(  # noqa: C901, PLR0912 - explicit two-child settlement and 
     cidfiles: tuple[Path, Path],
     *,
     broker: OperatorModelBroker | None = None,
+    research_broker: OperatorResearchBroker | None = None,
 ) -> int:
     """First EOF, child failure or signal retires both processes and exact owned containers."""
     children: list[asyncio.subprocess.Process] = []
@@ -562,9 +655,13 @@ async def supervise(  # noqa: C901, PLR0912 - explicit two-child settlement and 
             asyncio.create_task(
                 relay(core.stdout, edge.stdin)
                 if broker is None
-                else model_relay(core.stdout, edge.stdin, core.stdin, broker)
+                else model_relay(core.stdout, edge.stdin, core.stdin, broker, research_broker)
             ),
-            asyncio.create_task(relay(edge.stdout, core.stdin, requests_only=broker is not None)),
+            asyncio.create_task(
+                relay(edge.stdout, core.stdin, requests_only=broker is not None)
+                if research_broker is None
+                else research_edge_relay(edge.stdout, core.stdin, research_broker)
+            ),
             asyncio.create_task(core.wait()),
             asyncio.create_task(edge.wait()),
             asyncio.create_task(stopped.wait()),
@@ -648,6 +745,23 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
         profile_raw = read_regular(args.conversation_profile, WIRE_LIMIT, private=True)
         strict_object(profile_raw)
         profile = OperatorConversationProfile.model_validate_json(profile_raw)
+    research_broker = None
+    if profile is not None and profile.research.enabled:
+        if (
+            args.engine != "docker"
+            or args.model_transport != "podman"
+            or not all((args.research_profile, args.research_state_dir, args.research_image))
+        ):
+            _fail("operator_research_configuration")
+        research_broker = OperatorResearchBroker(
+            profile,
+            policy.to_reach_policy(),
+            runtime_profile_path=args.research_profile,
+            state_dir=args.research_state_dir,
+            image=args.research_image,
+        )
+    elif any((args.research_profile, args.research_state_dir, args.research_image)):
+        _fail("operator_research_configuration")
     onboarding_raw = None
     if args.onboarding_profile is not None:
         onboarding_raw = read_regular(args.onboarding_profile, 4096, private=True)
@@ -670,6 +784,10 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
         generation = Path(temporary)
         generic = generation / "policy.json"
         write_private(generic, policy.to_reach_policy().model_dump_json().encode())
+        edge_policy = generation / "edge-policy.toml"
+        write_private(edge_policy, read_regular(args.policy, WIRE_LIMIT))
+        if load_policy(edge_policy).digest != policy.digest:
+            _fail("operator_policy_changed")
         core_cid, edge_cid = generation / "core.cid", generation / "edge.cid"
         core = container_arguments(args.engine, images["core"], core_cid, offline=True)
         core += bind(generic, "/run/reach/policy.json") + bind(args.corpus_dir, "/run/reach/corpus")
@@ -691,7 +809,7 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
             core += ["--conversation-profile", "/run/reach/conversation.json"]
         edge = container_arguments(args.engine, images["edge"], edge_cid, offline=False)
         edge += (
-            bind(args.policy, "/run/reach/policy.toml")
+            bind(edge_policy, "/run/reach/policy.toml")
             + bind(args.token_file, "/run/secrets/discord-token")
             + bind(effects, "/state/effects", readonly=False)
         )
@@ -734,7 +852,12 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
                     args.engine,
                     (core, edge),
                     (core_cid, edge_cid),
-                    broker=OperatorModelBroker(profile, endpoint=args.model_endpoint),
+                    broker=OperatorModelBroker(
+                        profile,
+                        endpoint=args.model_endpoint,
+                        transport=PodmanModelTransport() if args.model_transport == "podman" else None,
+                    ),
+                    research_broker=research_broker,
                 )
             )
         return asyncio.run(supervise(args.engine, (core, edge), (core_cid, edge_cid)))
@@ -821,6 +944,10 @@ def parser() -> argparse.ArgumentParser:
             child.add_argument("--conversation-profile", type=Path)
             child.add_argument("--onboarding-profile", type=Path)
             child.add_argument("--model-endpoint", default=MODEL_ENDPOINT)
+            child.add_argument("--model-transport", choices=("host", "podman"), default="host")
+            child.add_argument("--research-profile", type=Path)
+            child.add_argument("--research-state-dir", type=Path)
+            child.add_argument("--research-image")
             child.add_argument("--publications-dir", type=Path)
             child.add_argument("--publication-channel", action="append", default=[])
         elif operation == "admin-plan":

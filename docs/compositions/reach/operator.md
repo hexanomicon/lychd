@@ -9,8 +9,9 @@ icon: material/console
 credential-bearing Discord edge, a networkless native documents worker, and a local operator
 tool for reviewed server setup. It does not activate `reach.discord@1` or any public deployment
 profile. Document search is the default; an explicit private profile can instead select bounded
-local-model conversation. Independently enabled owner publications use a local queue. Neither
-option supplies Ward enrollment, durable Phylactery, or restart continuation.
+local-model conversation and, separately, catalogue research. Independently enabled owner
+publications use a local queue. These options supply no Ward enrollment, durable Phylactery,
+or restart continuation.
 
 The two processes have different dependencies and custody. The edge runs **discord.py 2.7.1**
 on Python 3.14.8 with its own lockfile. The worker runs Python 3.15.0 in the explicit OCI development
@@ -120,7 +121,9 @@ needs a deliberately selected new file, followed by explicit use of that file at
 
 ## Export public documents and build both images
 
-Export the committed public documents selected by `examples/reach/public-docs.txt`:
+Export the committed public documents selected by `examples/reach/public-docs.txt`. The maintained
+selection names 19 public pages, including the Lich's identity, Transcendence and Inner Tongue
+owners alongside setup and extension material:
 
 ```bash
 uv run --locked python scripts/reach_operator.py export-corpus \
@@ -316,7 +319,7 @@ Direct mentions and slash questions do not require general surrounding-history a
 Message Content, Server Members and Presence privileged intents off for that default.
 
 To opt into history, stop the instance, choose a positive `context_message_limit` (at most 50)
-and `context_max_age_seconds` (at most 3600) in the private policy, grant **Read Message History**
+and `context_max_age_seconds` (at most 172800, or two days) in the private policy, grant **Read Message History**
 in the allowed channel, and enable **Message Content** for the application in the Developer
 Portal. Then add `--history` to the same run command. The policy setting and flag must agree;
 a positive limit without the flag, or the flag with a zero limit, refuses startup. Member-list
@@ -336,10 +339,102 @@ channel whose surrounding content you did not intend to admit.
 
 ## Enable local conversation
 
+### Nadir conversation evolution
+
+The explicit operator conversation profile may opt into one-to-one DMs. In the private
+`policy.toml`, add the exact sender to top-level `allowed_dm_user_ids` and include that sender in
+`user_ids` on the first matching rule with `converse`. Both are required: a guild role rule cannot
+admit a DM, and the allowlist alone grants no action. The following IDs are synthetic; replace
+them locally and update the existing matching rule rather than appending a competing rule:
+
+```toml
+allowed_dm_user_ids = ["111111111111111111"]
+
+[[rules]]
+name = "conversation-owner"
+user_ids = ["111111111111111111"]
+role_ids = []
+actions = ["converse"]
+```
+
+A DM has no guild, inherited roles or parent conversation. Only `converse` is admitted there;
+`allowed_triggers` continues to govern guild mentions and slash commands. DMs require the
+conversation profile and remain separate from guild channels and other people's DMs. The edge
+verifies the observed one-to-one recipient before sending. That message binding grants no
+channel administration authority.
+
+An admitted mention or DM receives a short acknowledgement before work starts. The
+acknowledgement and each final answer part have separate stable delivery identities; an
+acknowledgement is not completion. Answers are frozen into at most six parts of at most 1,900
+UTF-16 units each before the first final send. Text exceeding that delivery budget is refused
+instead of silently cut off. A failed or uncertain part stops later parts. Slash answers use the
+same bounded splitting with ephemeral followups.
+
+Adaptive context is separately opt-in: add `"adaptive_context": true` to the private conversation
+JSON shown below. Omission retains the single-call behavior. Without catalogue research, the model
+returns only an `answer`, `read_more` or `clarify` text decision, never an executable tool call.
+Without catalogue research, at most three model calls share one turn deadline; each uses a fresh
+generation-local native Run. Only a settled request for more context admits the exact next round, preserving the event,
+reply reference and earlier evidence. Terminal results cannot open another round.
+
+History still requires the explicit policy/`--history` opt-in above. The edge reads only the same
+conversation, at most three pages of six recent messages, or sixteen per page when research is
+enabled, within the policy's total count and
+age limits and a shared 16 KiB text budget. A same-place reply anchor consumes those same count
+and byte budgets. Disabled history, exhaustion, a spent budget and unavailable history remain
+distinct observations; a missing needed source can produce a concrete clarification question.
+DM history admits only that sender and this bot. Cached excerpts last for the bounded request;
+they supply no durable memory, private Archive ingestion, cross-place identity or publication
+authority.
+
+### Optional reactions and GIFs
+
+The private conversation JSON may enable `expressions` alongside `adaptive_context`:
+
+```json
+{
+  "adaptive_context": true,
+  "expressions": {
+    "enabled": true,
+    "acknowledge": true,
+    "gifs": []
+  }
+}
+```
+
+These are fields to merge into the complete profile below. Omission keeps expressions disabled.
+After a successful textual acknowledgement, the edge may add 👀 to the exact incoming mention
+or admitted DM. A completed answer may select one additional reaction from 👀, 👍, ❤️, 😂, ✨ and
+🤔. These effects never target another message or observe unmentioned channel traffic.
+A cosmetic failure preserves the text answer; a failed or uncertain final part prevents later
+decorations. Slash responses remain text-only and ephemeral.
+
+To offer GIF choices, add at most eight entries to `gifs`, each with a unique lowercase `id`,
+a short `description`, and an exact HTTPS GIPHY media `url` of the form
+`https://media.giphy.com/media/VERIFIED_ID/giphy.gif`. Replace `VERIFIED_ID` with a real verified
+media ID. The model receives only IDs and descriptions; the edge resolves the selected ID
+against the generation's frozen catalogue. Arbitrary model URLs, live GIF search, attachments,
+custom emoji and animation generation are not part of this option.
+
+After all text parts succeed, the edge may send one selected GIF as a separate silent reply
+with previews enabled and mentions disabled. Ordinary text still suppresses previews.
+Reaction and GIF slots have stable attempt identities, so changing a choice cannot bypass an
+uncertain earlier effect. The bot needs Discord's Add Reactions and Embed Links permissions
+where used; this option does not grant or change permissions. Discord client settings and
+provider availability still determine whether the GIF animates.
+
 This option requires an already running, warm local `Qwen3.8-27B` at the fixed literal endpoint
 `http://127.0.0.1:28000`. The host transport checks fresh `/health` and `/v1/models` observations
 for the exact model. It cannot start, activate, evict or replace an engine. An absent or unsuitable
 model refuses the turn; document search and another model are not fallbacks.
+
+The default `--model-transport host` reads that loopback endpoint on the operator host.
+When the already-running model is inside the native Podman pod, explicitly select
+`--model-transport podman`. Its bounded transport executes only a fixed Python HTTP helper
+in the exact `lychd-night-qwen38` container and reads the same loopback endpoint there.
+Request text crosses standard input, never shell arguments. The helper cannot select a
+different container, URL, command, model, or runtime transition; it publishes no host port.
+Both roads retain the exact health/model and generation-payload checks.
 
 Create a private `0600` file at `$REACH_ROOT/conversation-01.json` with your local editor. This
 synthetic example uses the admitted defaults:
@@ -361,8 +456,9 @@ synthetic example uses the admitted defaults:
 
 The profile is a static instruction and exact model binding, not Mirror identity, Persona
 lineage or lasting memory. The supervisor freezes its validated bytes for one generation and
-mounts that snapshot read-only into the worker. It does not pass the profile or model frames to
-the Discord edge. Changes require a new explicit launch.
+mounts that snapshot read-only into the worker. Only its validated expression catalogue reaches
+the Discord edge through readiness; the persona and model frames do not. Changes require a new
+explicit launch.
 
 Add `converse` to the first matching rule's actions. Keep `answer_docs` if you use
 `admin-inspect`; keep `summarize_context` if you use the excerpt-only context command. To admit
@@ -385,16 +481,118 @@ Omit `--history` when the policy limit is zero. The corpus is still required and
 public-document excerpts where relevant. The model receives recent messages and excerpts as
 attributed untrusted data, with oldest history omitted first to meet the input bound.
 
-For each admitted turn, the native worker creates a generation-local Run, executes
-`reach.operator_converse@1`, and acquires an exact Dispatcher Chat lease without tools. One bounded
-generation request crosses the host relay, with no retry, proxy, redirect, arbitrary endpoint or
-model override. Its reply grants no publication or host authority. Model and Discord response
-limits may truncate the answer; this profile does not qualify general answer quality.
+For each admitted context round, the native worker creates a generation-local Run, executes
+`reach.operator_converse@4`, and acquires an exact Dispatcher Chat lease without tools. An ordinary
+Run makes one bounded model request; the optional research branch below makes one planning and
+one synthesis request in the same Run. Adaptive context can admit up to three Runs for one turn.
+The relay supplies no retry, proxy, redirect, arbitrary endpoint or model override. Its reply
+grants no publication or host authority. Model output remains bounded; this profile does not
+qualify general answer quality.
 
 The public slash-command group defaults to `reach`. Select an alias with `--command-name example`
 and deliberately repeat `--sync-commands` when changing guild registration. Names accept a
 lowercase initial letter followed by lowercase letters, digits or underscores, at most 32
 characters. The alias changes the displayed commands, not the Reach Composition or permissions.
+
+### Opt into public catalogue research
+
+Research requires `adaptive_context` and a separate `research` object in the private conversation
+profile. It offers verified local documents as `doc:<manifest-path>` selectors and at most eight
+operator-authored public web entries. Each web entry has a unique lowercase `id`, `title`, exact
+canonical HTTPS `url`, and optional bounded `focus` phrases. The operator authorizes each complete
+public locator before launch; a question, pasted link or model decision cannot add a destination.
+The [research profile law](../../adr/30-webcrawler.md#explicit-reach-operator-research-profile)
+keeps that standing authority separate from native Bridge consent and Discord identity.
+
+An admitted mention or one-to-one DM may select at most four sources: at most three documents
+and two web entries. The first model call returns an interpreted plan of at most 500 characters.
+The edge must deliver that plan as a separate reply to the same incoming message and acknowledge
+successful delivery before any selected document read or web acquisition. Slash commands cannot
+acknowledge a research plan and therefore cannot acquire sources through this branch. The usual
+initial acknowledgement and optional 👀 reaction remain separate from this interpreted plan.
+
+The native `research` station obtains its exact no-tool Chat lease, waits for the delivered-plan
+gate, then consumes bounded source excerpts and makes one synthesis call. A source provides at
+most 4,000 characters; oldest history is omitted before source projections are shortened to fit
+the combined persona and JSON input budget. Original and projected digests remain explicit.
+Source bodies are transient data attached only to detached outbound model messages; checkpoint
+state retains the plan and selectors, and neither native history nor cached Context retains the
+acquired bodies. The final model selects citation IDs; the host renders links only through
+admitted successful sources and appends explicit unavailable-source notices. A blocked page does
+not become a page that was read. If every selected web source fails, the host returns a fixed
+clarification and its unavailable-source notices, without adopting the model's unsupported comparison.
+Persona, humour, multipart replies and optional GIFs retain the same evidence and delivery bounds.
+
+The current research assembly requires Docker for the edge, Core worker and separate source
+worker, with `--model-transport podman` for the already-running native model. Build the paired
+images using `ENGINE="docker"`; images built in Podman's store do not supply that Docker record.
+The source image adds Bubblewrap and a dedicated public CPython 3.15 runtime closure to the exact
+Core image. Prepare that closure outside every checkout, with no credentials or private material,
+then build a new private image record:
+
+```bash
+uv run --locked python scripts/reach_research_image.py \
+  --core-images "$REACH_ROOT/images-01.json" \
+  --python-root /absolute/public/runtime/python \
+  --output "$REACH_ROOT/research-images-01.json"
+```
+
+Replace the synthetic runtime path with the complete dedicated interpreter tree. The builder
+bounds and fingerprints it, verifies copied bytes, and retains an exact `research` image ID.
+It does not qualify a new host or runtime merely by building the image.
+
+Create a separate owner-only authority directory containing exactly one `0600` `profile.json`,
+and a distinct `0700` research-state directory; neither may contain or nest inside the other.
+The strict `ResearchRuntimeProfile` names `source_kind = "operator_public_catalogue"`,
+`public_catalogue_authorized = true`, policy/revocation generations, an aware expiry, a `catalogue`
+exactly matching the conversation profile's `research` object, exact subject/channel/DM selectors,
+a numeric resolver address and its custody statement, and cumulative attempt/contact ceilings.
+Keep these files outside every checkout. Add the following selections to the conversation run
+command, replacing the image placeholder with the exact `research` value from the new record:
+
+```text
+--engine docker --model-transport podman
+--research-profile "$REACH_ROOT/research-authority/profile.json"
+--research-state-dir "$REACH_ROOT/research-state"
+--research-image sha256:REPLACE_WITH_THE_RECORDED_RESEARCH_IMAGE_ID
+```
+
+The source worker receives only the public catalogue authority, its private attempt partition
+and bounded event/source metadata. Discord credentials, model credentials, conversation text,
+checkout mounts and engine sockets do not enter it. It reserves each stable event/source attempt
+before contact and rechecks current authority at network and consumption boundaries. Redirects,
+retries, discovered links, general web search, browser rendering and durable source storage are
+outside this profile. Restart uncertainty cannot authorize another source attempt.
+
+With research enabled, the native request deadline is 300 seconds, the edge waits at most 310
+seconds for that result, and the whole adaptive turn has a 480-second ceiling. The research relay
+has 150 seconds, including a 20-second delivered-plan gate and a 70-second source-worker bound
+plus cleanup. Ordinary conversation retains its 90-second request and 180-second turn limits;
+each model call retains the selected profile timeout. These ceilings do not extend event
+eligibility: the default 300-second event lifetime can still refuse late consumption or settlement.
+Live Discord/model/source deployment and host-specific extraction qualification remain separate
+operator evidence obligations in [State of Work](../../state-of-the-work.md#composition-portfolio-delivery).
+
+### Reuse from another chat transport
+
+The native research Pattern is shared Reach application code. The
+[conversation session](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/conversation_session.py)
+also owns context-round admission, the three-page ceiling and the adaptive paging/clarification loop. The
+[operator client](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/operator_client.py)
+owns the bounded private-pipe protocol, including progress delivery acknowledgements. Discord
+supplies its SDK pager, audience verification, progress sender and final rendering. Another
+transport consumes those shared contracts rather than copying the conversation controller.
+
+Acknowledging the interpreted plan records delivery to the admitted audience, not a human
+verdict. The standing research authority remains separate. The current source profile and
+attempt partition belong to one exact Reach policy; a multi-account successor must qualify its
+authority and attempt identities and explicitly migrate retained claims. The extraction does
+not make bare subject/event IDs portable authority.
+
+[Provider-neutral acceptance cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_portability.py)
+exercise the same native Pattern, broker, pipe client and context driver with a synthetic second
+transport. They qualify reuse of that choreography, not a Telegram adapter. [Workbench ownership](architecture.md#workbench-ownership)
+keeps the finite research path distinct from tool execution and inspection UI integration.
 
 ## Publish owner-supplied updates
 

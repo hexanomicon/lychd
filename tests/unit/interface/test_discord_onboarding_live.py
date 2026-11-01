@@ -40,6 +40,7 @@ def onboarding(*, elevated_human_role_ids: tuple[str, ...] = ()) -> OnboardingSe
 
 def reach() -> Any:
     result = Mock(spec=ReachService)
+    result.worker = Mock()
     result.history_enabled = False
     result.policy = Mock(guild_id="300000000000000003")
     result.publications = None

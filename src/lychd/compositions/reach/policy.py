@@ -18,7 +18,7 @@ _ASCII_CONTROL_LIMIT = 32
 
 
 def prepare_turn(policy: ReachPolicy, event: ReachEvent, *, now: datetime) -> ReachDecision:  # noqa: C901, PLR0911, PLR0912 - explicit closed refusal order
-    """Filter one transient event; rejected content never belongs in an Intent or Graph."""
+    """Filter guild events or opted-in direct conversation before native admission."""
     require_aware(now)
     identity = ReachEventIdentity.from_event(event)
 
@@ -31,28 +31,38 @@ def prepare_turn(policy: ReachPolicy, event: ReachEvent, *, now: datetime) -> Re
         return refuse("wrong_platform")
     if event.account_id != policy.account_id:
         return refuse("wrong_account")
-    if event.space_id != policy.space_id:
-        return refuse("wrong_space")
-    if event.conversation_id not in policy.allowed_conversation_ids and (
-        event.parent_conversation_id is None
-        or event.parent_conversation_id not in policy.allowed_parent_conversation_ids
-    ):
-        return refuse("conversation_not_allowed")
+    direct_message = event.trigger == "message" and event.space_id is None
+    if direct_message:
+        if event.parent_conversation_id is not None:
+            return refuse("conversation_not_allowed")
+        if event.group_ids or event.subject_id not in policy.allowed_direct_subject_ids:
+            return refuse("subject_not_allowed")
+    else:
+        if event.space_id != policy.space_id:
+            return refuse("wrong_space")
+        if event.conversation_id not in policy.allowed_conversation_ids and (
+            event.parent_conversation_id is None
+            or event.parent_conversation_id not in policy.allowed_parent_conversation_ids
+        ):
+            return refuse("conversation_not_allowed")
     if event.subject_id == policy.agent_subject_id:
         return refuse("self_event")
     if event.is_automated:
         return refuse("automated_subject")
-    if event.trigger not in policy.allowed_triggers:
+    if not direct_message and event.trigger not in policy.allowed_triggers:
         return refuse("trigger_not_allowed")
     if event.trigger == "mention" and policy.agent_subject_id not in event.mention_subject_ids:
         return refuse("missing_agent_mention")
     if event.action not in ("answer_docs", "summarize_context", "converse"):
         return refuse("action_not_supported")
+    if direct_message and event.action != "converse":
+        return refuse("action_not_allowed")
     rule = next(
         (
             candidate
             for candidate in policy.rules
-            if event.subject_id in candidate.subject_ids or set(event.group_ids).intersection(candidate.group_ids)
+            if event.subject_id in candidate.subject_ids
+            or (not direct_message and set(event.group_ids).intersection(candidate.group_ids))
         ),
         None,
     )

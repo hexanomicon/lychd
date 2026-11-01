@@ -13,8 +13,10 @@ then admits the cognition and disclosure needed inside it. Price may rank roads 
 eligible; it cannot decide their authority or custody.
 
 Current work uses fixed source-defined Patterns, local capabilities,
-and the effect-free delegated reference adapter. Portal egress remains quarantined; A2A transport
-and an effectful Coffin do not ship. [Workflow](../../../adr/28-workflow.md#execution-road-planning)
+and the effect-free delegated reference adapter. The bounded outbound public-text A2A profile and
+opt-in native peer lab have separate [evidence](../../../state-of-the-work.md#a2a-intercom).
+Portal egress remains quarantined and an effectful Coffin does not ship.
+[Workflow](../../../adr/28-workflow.md#execution-road-planning)
 owns the policy, [Context](../../../adr/21-context.md#privatization-and-the-privacy-cut) the material
 branch, and [Security](../../../adr/09-security.md#portal-privatization-and-egress) each disclosure.
 
@@ -123,6 +125,37 @@ one of them is rejected. The same applies to A2A without task/peer/durable-retur
 delegation without containment/workspace/artifact law, and Portal fallback that can silently change
 provider or payload. Loom may display the declared boundaries; it cannot prove an occurrence
 crossed them correctly.
+
+## Pure serial selection
+
+The source-defined `RoadSelectionPolicy` and `propose_road` calculation validate a selection subset
+of execution-road law. A policy binds an exact Pattern revision/station, a declared semantic
+contract, typed local/Portal/peer/delegated alternatives, their input-projection references and
+ceilings, and a finite acyclic transition graph. Predicates use closed failure outcomes and
+explicit precedence. A peer alternative identifies its task schema and target, never its private
+model. Canonical policy digests preserve explicit priority while ignoring declaration tuple order.
+
+The owner supplies a bound occurrence snapshot, predecessor disposition, finite eligibility
+observations, original deadline, consumed quantities and outstanding reservations. The calculation
+proposes at most one alternative. Unresolved work blocks new local and remote work even after
+closure or expiry. A terminal label alone never permits replacement. Unknown/stale eligibility
+blocks lower-precedence matching edges; current ineligibility may exclude a branch. Exhaustion,
+closure, missing transitions and completed observations produce explicit non-selection outcomes.
+Initial ineligibility does not invent a failed attempt: the owner must supply the relevant
+pre-submission observation before a fallback edge can be considered.
+Deadlines and observation windows compare UTC instants, preserving the supplied deadline value
+without allowing a repeated local hour to extend its lifetime.
+
+Every proposal still needs fresh owner admission, consumer-specific projection, atomic budget
+reservation and the full persisted road decision. `reconciliation_required` is a non-execution
+disposition, not permission to poll or resend. The planner never debits capacity, authenticates
+observations, adopts output or changes a running Scroll. JSON round-tripping supplies shape
+evidence, not durable recovery. A stale or replayed snapshot cannot be detected without its owner.
+
+There is no production caller or configuration surface for this subset. It does not wire Nadir,
+Bridge, Intercom, Portal or a CLI runtime to fallback. Current Bridge preferences retain their
+separate admission-only meaning. Use [State](../../../state-of-the-work.md#execution-road-selection)
+for source and focused evidence; actual durable integration remains a separate gate.
 
 ## Failure stays on the score
 

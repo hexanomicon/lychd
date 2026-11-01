@@ -158,6 +158,98 @@ async def test_cancellation_joins_http_and_releases_single_outstanding_slot() ->
     assert resumed.status == "ok"
 
 
+@pytest.mark.asyncio
+async def test_source_authority_callback_crosses_transport_as_non_wire_state() -> None:
+    phases: list[str] = []
+
+    def authorize() -> None:
+        phases.append("authorize")
+
+    def handle(value: httpx.Request) -> httpx.Response:
+        phases.append("http")
+        assert value.extensions["lychd_research_authorize"] is authorize
+        assert all("research" not in name for name in value.headers)
+        body = json.loads(value.content)
+        assert set(body) == {"model", "messages", "max_tokens", "temperature", "stream", "chat_template_kwargs"}
+        assert "lychd_research_authorize" not in value.content.decode()
+        return httpx.Response(200, json=completion())
+
+    broker = OperatorModelBroker(profile(), transport=httpx.MockTransport(handle))
+    result = await broker.handle(request(), authorize=authorize)
+    assert result.status == "ok"
+    assert phases.count("http") == 1
+    assert phases[0] == phases[-1] == "authorize"
+    assert phases.index("http") > 0
+    assert phases.index("http") < len(phases) - 1
+
+
+@pytest.mark.asyncio
+async def test_revoked_source_authority_refuses_before_http() -> None:
+    observed: list[httpx.Request] = []
+
+    def authorize() -> None:
+        message = "research_consume"
+        raise ValueError(message)
+
+    def handle(value: httpx.Request) -> httpx.Response:
+        observed.append(value)
+        return httpx.Response(200, json=completion())
+
+    result = await OperatorModelBroker(profile(), transport=httpx.MockTransport(handle)).handle(
+        request(), authorize=authorize
+    )
+    assert observed == []
+    assert result.status == "error"
+    assert result.reason == "model_protocol"
+    assert result.payload_json == "{}"
+
+
+@pytest.mark.asyncio
+async def test_revocation_while_awaiting_response_blocks_source_result_adoption() -> None:
+    entered, release_response = asyncio.Event(), asyncio.Event()
+    current = True
+    checked: list[bool] = []
+    requests = 0
+    provider_answer = "source-derived result that must remain unadopted"
+
+    def authorize() -> None:
+        checked.append(current)
+        if not current:
+            message = "research_consume"
+            raise ValueError(message)
+
+    async def handle(value: httpx.Request) -> httpx.Response:
+        nonlocal requests
+        requests += 1
+        assert value.extensions["lychd_research_authorize"] is authorize
+        entered.set()
+        await release_response.wait()
+        return httpx.Response(200, json=completion(content=provider_answer))
+
+    broker = OperatorModelBroker(profile(), transport=httpx.MockTransport(handle))
+    frame = request()
+    task = asyncio.create_task(broker.handle(frame, authorize=authorize))
+    async with asyncio.timeout(3):
+        await entered.wait()
+        assert checked
+        assert all(checked)
+        current = False
+        release_response.set()
+        result = await task
+    assert requests == 1
+    assert checked[-1] is False
+    assert result.call_id == frame.call_id
+    assert result.binding_digest == frame.binding_digest
+    assert result.status == "error"
+    assert result.reason == "model_protocol"
+    assert result.payload_json == "{}"
+    assert provider_answer not in result.model_dump_json()
+    current = True
+    reauthorized = await broker.handle(request(), authorize=authorize)
+    assert reauthorized.status == "ok"
+    assert requests == 2
+
+
 @pytest.mark.parametrize(("operation", "profile_timeout", "expected_budget"), [("generate", 5, 5), ("probe", 60, 5)])
 @pytest.mark.asyncio
 async def test_profile_deadline_and_probe_cap_retire_http_before_response(
@@ -267,7 +359,9 @@ def test_profile_is_frozen_worker_only_and_publication_mount_is_edge_only(
         _ids: tuple[Path, Path],
         *,
         broker: OperatorModelBroker,
+        research_broker: object | None = None,
     ) -> int:
+        assert research_broker is None
         observed.extend(commands)
         core, edge = commands
         mount = next(item for item in core if ":/run/reach/conversation.json:ro" in item)

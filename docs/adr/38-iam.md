@@ -295,6 +295,13 @@ This local composition seam supplies no remote Principal enrollment, Ward sessio
 revocation or isolation from trusted same-process code. Runtime activation remains Designed until
 the complete assembly and its effectful refusal, revocation and recovery evidence are delivered.
 
+The separate [Reach operator research profile](30-webcrawler.md#explicit-reach-operator-research-profile)
+uses a private operator-authored standing public catalogue and a distinct local attempt owner.
+It does not manufacture `LocalOperatorAuthentication`, native per-URL consent or a retained
+Bridge Run from a Discord identity. Exact initiator/place selectors narrow that local standing
+authority; a model selection or incoming URL is a proposal only. Native Bridge admission and its
+pending-only consent operation retain their existing law.
+
 ## Outbound peer authority profile
 
 The Designed [outbound public-text profile](26-a2a.md#peer-task-jsonrpc-1) introduces narrowly

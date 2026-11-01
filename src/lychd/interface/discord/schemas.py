@@ -36,7 +36,7 @@ class DiscordRule(_Value):
 
 
 class DiscordPolicy(_Value):
-    """Public non-secret Discord configuration; no SDK or transport is constructed."""
+    """Public Discord configuration; direct-message senders require explicit opt-in."""
 
     schema_version: Literal[1] = 1
     application_id: DiscordId
@@ -44,6 +44,7 @@ class DiscordPolicy(_Value):
     guild_id: DiscordId
     allowed_channel_ids: tuple[DiscordId, ...] = Field(min_length=1, max_length=100)
     allowed_thread_parent_ids: tuple[DiscordId, ...] = Field(default=(), max_length=100)
+    allowed_dm_user_ids: tuple[DiscordId, ...] = Field(default=(), max_length=100)
     rules: tuple[DiscordRule, ...] = Field(min_length=1, max_length=100)
     allowed_triggers: tuple[Literal["mention", "slash"], ...] = Field(
         default=("mention", "slash"), min_length=1, max_length=2
@@ -51,7 +52,7 @@ class DiscordPolicy(_Value):
     event_ttl_seconds: int = Field(default=300, ge=1, le=3600)
     max_question_chars: int = Field(default=2000, ge=1, le=2000)
     context_message_limit: int = Field(default=0, ge=0, le=50)
-    context_max_age_seconds: int = Field(default=600, ge=1, le=3600)
+    context_max_age_seconds: int = Field(default=600, ge=1, le=172800)
 
     @field_validator("schema_version", mode="before")
     @classmethod
@@ -67,7 +68,7 @@ class DiscordPolicy(_Value):
         return self
 
     def to_reach_policy(self) -> ReachPolicy:
-        """Translate provider names once; preserve ordered rules and action semantics."""
+        """Compile guild and direct-message selectors while preserving rule order."""
         return ReachPolicy(
             platform="discord",
             account_id=self.application_id,
@@ -75,6 +76,7 @@ class DiscordPolicy(_Value):
             space_id=self.guild_id,
             allowed_conversation_ids=self.allowed_channel_ids,
             allowed_parent_conversation_ids=self.allowed_thread_parent_ids,
+            allowed_direct_subject_ids=self.allowed_dm_user_ids,
             rules=tuple(rule.to_reach_rule() for rule in self.rules),
             allowed_triggers=tuple("command" if trigger == "slash" else "mention" for trigger in self.allowed_triggers),
             event_ttl_seconds=self.event_ttl_seconds,

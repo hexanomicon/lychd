@@ -1,0 +1,13 @@
+# Explicit development Scout image; no Discord/model credential or host runtime.
+ARG CORE_IMAGE
+FROM ${CORE_IMAGE}
+USER root
+RUN apt-get update && \
+    apt-get install --yes --no-install-recommends bubblewrap patchelf && \
+    rm -rf /var/lib/apt/lists/*
+COPY python-root /opt/scout-python
+# The extraction root has no /proc or loader cache. Bind this dedicated binary
+# to exactly the eight library mounts of the native Scout extraction contract.
+RUN python -c "import subprocess; names=('libpthread.so.0','libdl.so.2','libutil.so.1','libm.so.6','librt.so.1','libgcc_s.so.1','libc.so.6'); [subprocess.run(['patchelf','--replace-needed',n,'/lib64/'+n,'/opt/scout-python/bin/python3.15'],check=True) for n in names]"
+USER 1000:1000
+ENTRYPOINT ["python", "/work/scripts/reach_scout_worker.py"]

@@ -86,6 +86,47 @@ exact committed output. [Cogs](https://discordpy.readthedocs.io/en/stable/ext/co
 and [extensions](https://discordpy.readthedocs.io/en/stable/ext/commands/extensions.html)
 provide the transport organization.
 
+### Shared operator conversation
+
+The separate operator development profile uses the same Reach-owned
+`reach.operator_converse@4` Pattern behind its process boundary. That Pattern decides whether
+to answer, ask for older context, research selected sources, or clarify. Generic Graph supplies
+typed execution and continuation; Reach owns those application decisions.
+
+The operator's [conversation session](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/conversation_session.py)
+owns the context-round driver, shared three-page ceiling and exact continuation admission. Its context port exposes
+only normalized cumulative entries, a paging outcome and an awaited next page. The
+[worker client](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/operator_client.py)
+owns request/result correlation, progress framing and acknowledgement on private pipes. Neither
+imports a provider SDK. Discord constructs its pager and reply anchor, delivers progress to the
+admitted audience, and renders the final result using its own size and notification rules.
+
+The interpreted research plan originates in the Pattern. Its host relay returns successful
+acquisition only after the shared client has acknowledged successful plan delivery; selected
+local document reads also follow that boundary. This is a delivery receipt, not human approval.
+The standing research profile still owns contact authority.
+
+A later Telegram adapter can consume these same contracts while supplying its own authenticated
+intake, audience, available context and output projection. A synthetic second transport verifies
+the common choreography; it supplies no Telegram login, listener or history capability.
+The current acquisition profile has one exact Reach policy and private attempt partition.
+Multi-provider/account sharing additionally needs qualified authority and durable attempt
+identity, including an explicit migration for existing journal claims. Bare matching identifiers
+cannot establish shared identity, and renaming a digest-bound profile cannot reset its budget.
+
+### Workbench ownership
+
+A conversational workbench belongs to the Composition's Pattern: interpretation, admitted
+observations, bounded operations, result judgment and finish policy. A client projects those
+steps; generic Graph executes and checkpoints them. Current research supplies source reading
+and transient synthesis. Tool-bearing experiments require their own admitted capabilities,
+effect custody and recovery contract.
+
+Loom and Bridge already own declared scores and Run inspection. The disposable operator worker
+has a separate in-memory substrate, so its Runs are not automatically visible in the normal
+Altar. Neither this client extraction nor its progress messages supply an execution sandbox,
+persistent workspace, durable personal memory or an Altar workbench integration.
+
 ## Admit an explicit policy
 
 Configure the admission boundary before submitting a prospective event. The strict TOML-backed

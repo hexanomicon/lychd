@@ -7,6 +7,7 @@ native worker owns cognition; this broker performs only its closed HTTP dialect.
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from typing import Any, cast
 
 import httpx
@@ -63,8 +64,19 @@ class OperatorModelBroker:
         self.transport = transport
         self._busy = False
 
-    async def _request(self, client: httpx.AsyncClient, method: str, route: str, body: bytes | None = None) -> Any:
-        async with client.stream(method, self.endpoint + route, content=body) as response:
+    async def _request(
+        self,
+        client: httpx.AsyncClient,
+        method: str,
+        route: str,
+        body: bytes | None = None,
+        *,
+        authorize: Callable[[], None] | None = None,
+    ) -> Any:
+        if authorize is not None:
+            authorize()
+        extensions = {"lychd_research_authorize": authorize} if authorize is not None else None
+        async with client.stream(method, self.endpoint + route, content=body, extensions=extensions) as response:
             response.raise_for_status()
             if response.headers.get("content-encoding", "identity").lower() != "identity":
                 msg = "model_response_encoding"
@@ -101,12 +113,16 @@ class OperatorModelBroker:
             raise LookupError(msg)
         return canonical_json(OperatorModelProbe(healthy=True, model_ids=ids).model_dump(mode="json"))
 
-    async def _generate(self, client: httpx.AsyncClient, payload: str) -> str:
+    async def _generate(
+        self, client: httpx.AsyncClient, payload: str, *, authorize: Callable[[], None] | None = None
+    ) -> str:
         body = canonical_json(validate_generation_payload(self.profile, payload)).encode()
         if len(body) > MAX_MODEL_PAYLOAD_BYTES:
             msg = "model_request_limit"
             raise ValueError(msg)
-        value = _object(await self._request(client, "POST", "/v1/chat/completions", body), "model_completion")
+        value = _object(
+            await self._request(client, "POST", "/v1/chat/completions", body, authorize=authorize), "model_completion"
+        )
         if value.get("model") != self.profile.model_id:
             msg = "model_completion"
             raise ValueError(msg)
@@ -127,7 +143,9 @@ class OperatorModelBroker:
             raise ValueError(msg)
         return canonical_json(value)
 
-    async def handle(self, request: OperatorModelRequest) -> OperatorModelResponse:
+    async def handle(
+        self, request: OperatorModelRequest, *, authorize: Callable[[], None] | None = None
+    ) -> OperatorModelResponse:
         """Finish or cancel the HTTP context before releasing this one-call slot."""
         if self._busy or request.binding_digest != self.profile.digest:
             msg = "model_binding"
@@ -148,8 +166,10 @@ class OperatorModelBroker:
                 payload = await (
                     self._probe(client)
                     if request.operation == "probe"
-                    else self._generate(client, request.payload_json)
+                    else self._generate(client, request.payload_json, authorize=authorize)
                 )
+            if authorize is not None:
+                authorize()
             return OperatorModelResponse(
                 call_id=request.call_id, binding_digest=request.binding_digest, status="ok", payload_json=payload
             )

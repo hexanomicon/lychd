@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import logging
 import os
 import stat
@@ -18,7 +17,6 @@ from collections.abc import Callable, MutableMapping
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from hashlib import sha256
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, NoReturn, cast
 from uuid import uuid4
@@ -27,6 +25,7 @@ import structlog
 
 from lychd.agents.factory import AgentForge, build_agent
 from lychd.agents.workflows import BuiltinWorkflowRegistry
+from lychd.compositions.reach.conversation_session import MAX_REQUESTS, ContextRounds, request_digest
 from lychd.compositions.reach.conversation_workflow import (
     conversation_agent_spec,
     make_conversation_intent,
@@ -39,6 +38,7 @@ from lychd.compositions.reach.documents_workflow import (
     make_documents_intent,
     reach_documents_workflow,
 )
+from lychd.compositions.reach.expressions import ConversationExpressions
 from lychd.compositions.reach.operator_model import ModelRelay, OperatorModelAdapter, operator_model_rune
 from lychd.compositions.reach.operator_model_wire import (
     OperatorConversationProfile,
@@ -54,6 +54,7 @@ from lychd.compositions.reach.operator_wire import (
     protocol_bytes,
     strict_json,
 )
+from lychd.compositions.reach.research_wire import OperatorResearchRequest, OperatorResearchResponse, ResearchRelay
 from lychd.compositions.reach.schemas import ReachPolicy, require_aware
 from lychd.domain.animation.services.declarations import AnimatorDeclarations
 from lychd.domain.animation.services.registry import AnimatorRegistry
@@ -76,7 +77,6 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.priority import Priority
     from lychd.domain.orchestration.schema import TransitionPlan
 
-MAX_REQUESTS = 512
 MAX_PENDING_INPUTS = 4
 
 
@@ -199,8 +199,9 @@ class DocumentsRuntime:
     bus: InProcessEventBus
     profile: OperatorConversationProfile | None = None
     pending_inputs: list[bytes] = field(default_factory=list)
+    late_response_filter: Callable[[bytes], bool] | None = None
     generation: str = field(default_factory=lambda: str(uuid4()))
-    _seen: dict[tuple[str, str, str], str] = field(default_factory=dict)
+    _context_rounds: ContextRounds = field(default_factory=ContextRounds)
     _serial: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     @property
@@ -211,6 +212,9 @@ class DocumentsRuntime:
             policy_digest=self.policy.digest,
             corpus_digest=self.corpus.digest,
             model_binding_digest=self.profile.digest if self.profile else None,
+            adaptive_context=self.profile.adaptive_context if self.profile else False,
+            research_enabled=self.profile.research.enabled if self.profile else False,
+            expressions=self.profile.expressions if self.profile else ConversationExpressions(),
         )
 
     def refuse(
@@ -252,24 +256,19 @@ class DocumentsRuntime:
         )
 
     async def process(self, request: ReachWorkerRequest, *, timeout: float = 15) -> ReachWorkerResult:  # noqa: C901, PLR0911, ASYNC109 - explicit bounded admission and asyncio.timeout ownership
-        """Admit once, execute through the real worker, and retrieve its exact settled result."""
+        """Admit each permitted round to a fresh Run and retrieve its exact settled result."""
         async with self._serial:
-            identity = (request.event.platform, request.event.account_id, request.event.event_id)
-            canonical = json.dumps(
-                request.model_dump(mode="json", exclude={"request_id"}), sort_keys=True, separators=(",", ":")
-            )
-            digest = sha256(canonical.encode()).hexdigest()
-            if identity in self._seen:
-                reason = "duplicate" if self._seen[identity] == digest else "duplicate_conflict"
+            digest = request_digest(request)
+            adaptive = self.profile.adaptive_context if self.profile else False
+            reason = self._context_rounds.reason(request, digest, adaptive=adaptive)
+            if reason is not None:
                 return self.refuse(request.request_id, reason)
-            if len(self._seen) >= MAX_REQUESTS:
-                return self.refuse(request.request_id, "generation_budget")
             # Validate before even a fixture session or native Run is constructed.
             try:
                 self.intent(request, "preflight")
             except DocumentsRefused as error:
                 return self.refuse(request.request_id, str(error))
-            self._seen[identity] = digest
+            self._context_rounds.admit(request, digest)
             session = await self.sessions.create_session(title="Operator public documents")
             intent = self.intent(request, session.id)
             handle = await self.engine.submit(intent, idempotency_key=f"{self.generation}:{digest}")
@@ -293,6 +292,7 @@ class DocumentsRuntime:
                 result = ReachWorkerResult.model_validate_json(turn.content)
                 if result.request_id != request.request_id or result.run_id != run.run_id:
                     return self.refuse(request.request_id, "result_binding", error=True, run_id=run.run_id)
+                self._context_rounds.settled(request, result, adaptive=adaptive)
                 return result  # noqa: TRY300 - settlement retrieval shares the guarded failure boundary
             except TimeoutError:
                 return self.refuse(request.request_id, "run_timeout", error=True, run_id=run.run_id)
@@ -317,6 +317,7 @@ def build_runtime(
     *,
     profile: OperatorConversationProfile | None = None,
     model_relay: ModelRelay | None = None,
+    research_relay: ResearchRelay | None = None,
     started_at: datetime | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> DocumentsRuntime:
@@ -338,7 +339,11 @@ def build_runtime(
             runtime_adapters=(OperatorModelAdapter(profile, model_relay),),
         )
         animator_registry.load(probe_readiness=False)
-        workflows.append(reach_conversation_workflow(policy, corpus, profile, started_at=boundary, clock=clock))
+        workflows.append(
+            reach_conversation_workflow(
+                policy, corpus, profile, started_at=boundary, clock=clock, research_relay=research_relay
+            )
+        )
         spec = conversation_agent_spec(profile)
         forge.register(spec.name, lambda selected: build_agent(selected, toolset_factories={}))
         identity = Block(layer=1, key=spec.instructions_key, text=persona_text(profile))
@@ -390,12 +395,15 @@ async def serve(runtime: DocumentsRuntime, reader: asyncio.StreamReader, write: 
             write(protocol_bytes(runtime.refuse("invalid", "input_limit", error=True)))
             return
         try:
+            if runtime.late_response_filter is not None and runtime.late_response_filter(raw):
+                continue
             request = parse_request_line(raw)
         except (ValueError, UnicodeError, RecursionError):
             write(protocol_bytes(runtime.refuse("invalid", "invalid_request", error=True)))
             continue
         try:
-            result = await runtime.process(request, timeout=90 if runtime.profile else 15)
+            budget = 300 if runtime.profile and runtime.profile.research.enabled else 90 if runtime.profile else 15
+            result = await runtime.process(request, timeout=budget)
         except Exception:  # noqa: BLE001 - malformed continuations never echo their diagnostics
             result = runtime.refuse(request.request_id, "run_failed", error=True)
         write(protocol_bytes(result))
@@ -410,6 +418,7 @@ class PipeModelRelay:
         """Retain only the selected profile and bounded standard-stream custody."""
         self.profile, self.reader, self.write = profile, reader, write
         self.pending_inputs: list[bytes] = []
+        self.retired_calls: dict[str, tuple[str, str | None]] = {}
         self.lock = asyncio.Lock()
 
     async def __call__(self, operation: str, payload_json: str) -> str:
@@ -423,31 +432,101 @@ class PipeModelRelay:
             operation=admitted_operation,
             payload_json=payload_json,
         )
+        raw = await self._exchange(
+            frame.model_dump_json().encode() + b"\n", call_id=frame.call_id, budget=self.profile.timeout_seconds + 5
+        )
+        response = OperatorModelResponse.model_validate_json(raw)
+        if response.call_id != frame.call_id or response.binding_digest != frame.binding_digest:
+            msg = "model_response_binding"
+            raise ValueError(msg)
+        if response.status != "ok":
+            raise RuntimeError(response.reason)
+        return response.payload_json
+
+    async def research(self, frame: OperatorResearchRequest) -> OperatorResearchResponse:
+        """Expose only the separate catalogue/progress handoff, never an HTTP client."""
+        if not self.profile.research.enabled or frame.binding_digest != self.profile.digest:
+            msg = "research_binding"
+            raise ValueError(msg)
+        raw = await self._exchange(
+            frame.model_dump_json().encode() + b"\n",
+            call_id=frame.call_id,
+            budget=150,
+            response_kind="research_response",
+            request_id=frame.request_id,
+        )
+        response = OperatorResearchResponse.model_validate_json(raw)
+        if (response.call_id, response.request_id, response.binding_digest) != (
+            frame.call_id,
+            frame.request_id,
+            frame.binding_digest,
+        ):
+            msg = "research_response_binding"
+            raise ValueError(msg)
+        return response
+
+    def discard_late(self, raw: bytes) -> bool:
+        """Keep a retired response from becoming another event or breaking the next call."""
+        parsed = strict_json(raw)
+        if not isinstance(parsed, dict):
+            return False
+        value = cast("dict[str, Any]", parsed)
+        call_id = value.get("call_id")
+        if not isinstance(call_id, str) or call_id not in self.retired_calls:
+            return False
+        kind, request_id = self.retired_calls[call_id]
+        if value.get("kind") != kind:
+            msg = "retired_response_binding"
+            raise ValueError(msg)
+        if value.get("kind") == "model_response":
+            model = OperatorModelResponse.model_validate_json(raw)
+            if model.binding_digest != self.profile.digest:
+                msg = "model_response_binding"
+                raise ValueError(msg)
+            return True
+        if value.get("kind") == "research_response":
+            research = OperatorResearchResponse.model_validate_json(raw)
+            if research.binding_digest != self.profile.digest or research.request_id != request_id:
+                msg = "research_response_binding"
+                raise ValueError(msg)
+            return True
+        return False
+
+    async def _exchange(
+        self,
+        raw_frame: bytes,
+        *,
+        call_id: str,
+        budget: float,
+        response_kind: str = "model_response",
+        request_id: str | None = None,
+    ) -> bytes:
         async with self.lock:
-            raw_frame = frame.model_dump_json().encode() + b"\n"
             if len(raw_frame) > MAX_WIRE_BYTES:
                 msg = "model_frame_limit"
                 raise ValueError(msg)
-            self.write(raw_frame)
-            async with asyncio.timeout(self.profile.timeout_seconds + 5):
-                while True:
-                    raw = await self.reader.readuntil(b"\n")
-                    value = strict_json(raw)
-                    observed = cast("dict[str, Any]", value) if isinstance(value, dict) else None
-                    if observed is not None and observed.get("kind") == "request":
-                        parse_request_line(raw)
-                        if len(self.pending_inputs) >= MAX_PENDING_INPUTS:
-                            msg = "model_pending_limit"
-                            raise ValueError(msg)
-                        self.pending_inputs.append(raw)
-                        continue
-                    response = OperatorModelResponse.model_validate_json(raw)
-                    if response.call_id != frame.call_id or response.binding_digest != frame.binding_digest:
-                        msg = "model_response_binding"
-                        raise ValueError(msg)
-                    if response.status != "ok":
-                        raise RuntimeError(response.reason)
-                    return response.payload_json
+            if len(self.retired_calls) >= MAX_REQUESTS * 4:
+                msg = "model_generation_call_budget"
+                raise ValueError(msg)
+            try:
+                self.write(raw_frame)
+                async with asyncio.timeout(budget):
+                    while True:
+                        raw = await self.reader.readuntil(b"\n")
+                        if self.discard_late(raw):
+                            continue
+                        value = strict_json(raw)
+                        observed = cast("dict[str, Any]", value) if isinstance(value, dict) else None
+                        if observed is not None and observed.get("kind") == "request":
+                            parse_request_line(raw)
+                            if len(self.pending_inputs) >= MAX_PENDING_INPUTS:
+                                msg = "model_pending_limit"
+                                raise ValueError(msg)
+                            self.pending_inputs.append(raw)
+                            continue
+                        return raw
+            finally:
+                self.retired_calls[call_id] = (response_kind, request_id)
 
 
 async def run(policy: ReachPolicy, corpus: PublicCorpus, profile: OperatorConversationProfile | None = None) -> None:
@@ -461,9 +540,12 @@ async def run(policy: ReachPolicy, corpus: PublicCorpus, profile: OperatorConver
         sys.stdout.buffer.flush()
 
     relay = PipeModelRelay(profile, reader, write) if profile else None
-    runtime = build_runtime(policy, corpus, profile=profile, model_relay=relay)
+    runtime = build_runtime(
+        policy, corpus, profile=profile, model_relay=relay, research_relay=relay.research if relay is not None else None
+    )
     if relay is not None:
         runtime.pending_inputs = relay.pending_inputs
+        runtime.late_response_filter = relay.discard_late
     try:
         await serve(runtime, reader, write)
     finally:

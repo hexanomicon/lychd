@@ -9,7 +9,9 @@ from uuid import UUID
 
 from pydantic import AfterValidator, Field, field_validator, model_validator
 
+from lychd.compositions.reach.expressions import ConversationExpressions
 from lychd.compositions.reach.operator_wire import strict_json
+from lychd.compositions.reach.research_wire import ResearchOptions
 from lychd.compositions.reach.schemas import PolicyDigest, Record
 
 MAX_MODEL_PAYLOAD_BYTES = 49_152
@@ -46,11 +48,21 @@ class OperatorConversationProfile(Record):
     persona_instructions: str = Field(min_length=1, max_length=8000, repr=False)
     animator_id: Literal["night-qwen38"] = "night-qwen38"
     model_id: Literal["Qwen3.8-27B"] = "Qwen3.8-27B"
+    adaptive_context: bool = False
+    expressions: ConversationExpressions = Field(default_factory=ConversationExpressions)
+    research: ResearchOptions = Field(default_factory=ResearchOptions)
     max_context: int = Field(default=16_384, ge=4096, le=32_768)
-    max_tokens: int = Field(default=384, ge=32, le=768)
+    max_tokens: int = Field(default=384, ge=32, le=2048)
     temperature: float = Field(default=0.6, ge=0, le=1)
     max_input_chars: int = Field(default=20_000, ge=1000, le=24_000)
     timeout_seconds: int = Field(default=60, ge=5, le=60)
+
+    @model_validator(mode="after")
+    def expressions_require_decisions(self) -> OperatorConversationProfile:
+        if (self.expressions.enabled or self.research.enabled) and not self.adaptive_context:
+            msg = "expressions_require_adaptive_context"
+            raise ValueError(msg)
+        return self
 
     @property
     def digest(self) -> str:
@@ -113,7 +125,7 @@ class _Message(Record):
 class _Generation(Record):
     model: Literal["Qwen3.8-27B"]
     messages: tuple[_Message, ...] = Field(min_length=1, max_length=60)
-    max_tokens: int = Field(ge=1, le=768)
+    max_tokens: int = Field(ge=1, le=2048)
     temperature: float = Field(ge=0, le=1)
     stream: Literal[False] = False
     chat_template_kwargs: dict[Literal["enable_thinking"], Literal[False]]

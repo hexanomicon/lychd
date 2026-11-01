@@ -66,7 +66,7 @@ class Record(BaseModel):
 
 
 class ReachRule(Record):
-    """First matching subject-or-group selector decides permitted preparation actions."""
+    """First matching selector decides actions; direct messages use only subjects."""
 
     name: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")
     subject_ids: tuple[ReachId, ...] = Field(default=(), max_length=100)
@@ -85,7 +85,7 @@ class ReachRule(Record):
 
 
 class ReachPolicy(Record):
-    """Preparation policy only; selecting a person or action grants no external effect."""
+    """Preparation policy with explicit direct-message opt-in and no external grants."""
 
     schema_version: Literal[1] = 1
     platform: ReachPlatform
@@ -94,17 +94,19 @@ class ReachPolicy(Record):
     space_id: ReachId | None = None
     allowed_conversation_ids: tuple[ReachId, ...] = Field(min_length=1, max_length=100)
     allowed_parent_conversation_ids: tuple[ReachId, ...] = Field(default=(), max_length=100)
+    allowed_direct_subject_ids: tuple[ReachId, ...] = Field(default=(), max_length=100)
     rules: tuple[ReachRule, ...] = Field(min_length=1, max_length=100)
     allowed_triggers: tuple[ReachTrigger, ...] = Field(default=("mention", "command"), min_length=1, max_length=2)
     event_ttl_seconds: int = Field(default=300, ge=1, le=3600)
     max_question_chars: int = Field(default=2000, ge=1, le=2000)
     context_message_limit: int = Field(default=0, ge=0, le=50)
-    context_max_age_seconds: int = Field(default=600, ge=1, le=3600)
+    context_max_age_seconds: int = Field(default=600, ge=1, le=172800)
 
     @model_validator(mode="after")
     def unique_configuration(self) -> Self:
         _unique(self.allowed_conversation_ids, "conversation ids")
         _unique(self.allowed_parent_conversation_ids, "parent conversation ids")
+        _unique(self.allowed_direct_subject_ids, "direct subject ids")
         _unique(self.allowed_triggers, "triggers")
         _unique(tuple(rule.name for rule in self.rules), "rule names")
         return self
