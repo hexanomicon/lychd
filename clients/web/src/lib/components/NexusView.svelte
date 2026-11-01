@@ -610,15 +610,15 @@
   .containment, .turn__fault { overflow-wrap: anywhere; }
   :is(button, summary, a):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   :is(.nexus-plan, .transition-inspector):focus { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  @container work-area (max-width: 56.25rem) {
-    .instrument-deck--nexus { flex-direction: column; }
+  @media (max-width: 1100px) { .nexus-side { width: min(24rem, 40%); } }
+  @media (max-width: 900px) {
+    .instrument-deck--nexus { display: flex; flex-direction: column; }
     .nexus-main, .nexus-side { width: 100%; }
     .nexus-side { padding-top: 0; }
     .nexus-plan[data-open="true"], .transition-inspector[data-open="true"] { position: static; max-height: none; overflow: visible; box-shadow: none; }
   }
-  @media (max-width: 1100px) { .nexus-side { width: min(24rem, 40%); } }
-  @media (max-width: 900px) {
-    .instrument-deck--nexus { display: flex; flex-direction: column; }
+  @container work-area (max-width: 56.25rem) {
+    .instrument-deck--nexus { flex-direction: column; }
     .nexus-main, .nexus-side { width: 100%; }
     .nexus-side { padding-top: 0; }
     .nexus-plan[data-open="true"], .transition-inspector[data-open="true"] { position: static; max-height: none; overflow: visible; box-shadow: none; }

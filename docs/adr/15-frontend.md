@@ -997,8 +997,8 @@ Production serves static Atlas, Bridge, Orb, Nexus, and Loom shells; unknown API
 404. Every operation that raises a runtime not-found across those verticals declares the shared JSON
 `FrameworkError` contract. `npm ci`, OpenAPI and notice generation, compilation, and Python build share a release source.
 Audit verifies source identity, compiled `index.html`, and archive notices—not a real browser or
-running image. Only `src/lychd/public/_app` is broadly mounted; the two known root artifacts,
-`/altar-lightning.svg` and `/THIRD_PARTY_NOTICES.txt`, have narrow typed Litestar handlers.
+running image. Only `src/lychd/public/_app` is broadly mounted; `/altar-lightning.svg`,
+`/favicon.svg`, `/altar-mark.svg` and `/THIRD_PARTY_NOTICES.txt` have narrow typed Litestar handlers.
 
 The Altar is loopback-only. Defaults use same-origin CORS, accept only explicit loopback Origin
 exceptions, constrain Host to literal loopback authorities, and expose schema JSON without remote
