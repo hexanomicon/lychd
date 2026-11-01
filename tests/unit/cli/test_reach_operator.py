@@ -8,10 +8,12 @@ import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import pytest
 from scripts import reach_operator as operator
 
+from lychd.compositions.reach.operator_diagnostics import ReachRunDiagnostic, diagnostic_bytes
 from lychd.interface.discord.admin import DeveloperLayout, GuildSnapshot, ServerPlan
 from lychd.interface.discord.operator_cli import load_plan
 
@@ -163,12 +165,58 @@ async def test_relay_refuses_oversize_duplicate_and_partial_frames(raw: bytes) -
 
 
 @pytest.mark.asyncio
-async def test_diagnostics_preserve_readiness_but_hide_foreign_text(capsys: pytest.CaptureFixture[str]) -> None:
+async def test_diagnostics_preserve_readiness_but_hide_foreign_text(capfd: pytest.CaptureFixture[str]) -> None:
     reader = asyncio.StreamReader()
     reader.feed_data(b"reach_discord:ready\nforeign message content\nTraceback (most recent call last):\n")
     reader.feed_eof()
     await operator.diagnostics(reader)
-    assert capsys.readouterr().err == "reach_discord:ready\nreach_child_diagnostic\nreach_child_diagnostic\n"
+    assert capfd.readouterr().err == "reach_discord:ready\nreach_child_diagnostic\nreach_child_diagnostic\n"
+
+
+@pytest.mark.parametrize("role", ["core", "edge"])
+@pytest.mark.asyncio
+async def test_structured_diagnostics_require_core_custody(
+    capfd: pytest.CaptureFixture[str],
+    role: Any,
+) -> None:
+    record = ReachRunDiagnostic(
+        observed_at=datetime.now(UTC),
+        generation=str(uuid4()),
+        request_id=str(uuid4()),
+        run_id=str(uuid4()),
+        status="error",
+        reason="run_failed",
+        stage="execute",
+        run_status="failed",
+        evidence="flushed",
+    )
+    raw = diagnostic_bytes(record)
+    reader = asyncio.StreamReader()
+    reader.feed_data(raw)
+    reader.feed_eof()
+    await operator.diagnostics(reader, role=role)
+    assert capfd.readouterr().err == (raw.decode() if role == "core" else "reach_child_diagnostic\n")
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        b'{"kind":"reach_run_diagnostic","private_error":"secret-token"}\n',
+        b'{"kind":"reach_run_diagnostic","kind":"reach_run_diagnostic"}\n',
+        b"reach_discord:\xffready\n",
+        b'{"failure_code":"model_unrecognized"}\n',
+    ],
+)
+@pytest.mark.asyncio
+async def test_core_diagnostics_never_sanitize_or_forward_unadmitted_bytes(
+    raw: bytes,
+    capfd: pytest.CaptureFixture[str],
+) -> None:
+    reader = asyncio.StreamReader()
+    reader.feed_data(raw)
+    reader.feed_eof()
+    await operator.diagnostics(reader, role="core")
+    assert capfd.readouterr().err == "reach_child_diagnostic\n"
 
 
 class Process:

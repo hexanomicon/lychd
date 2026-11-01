@@ -165,6 +165,37 @@ def test_plain_text_profile_remains_default_with_legacy_prompt() -> None:
     assert spec.retries == 0
 
 
+@pytest.mark.parametrize("adaptive", [False, True])
+@pytest.mark.parametrize("question", ["Please say hello briefly.", "Please answer in Slovak: say hello briefly."])
+def test_current_question_language_precedes_persona_and_quoted_history(*, adaptive: bool, question: str) -> None:
+    binding = profile().model_copy(
+        update={
+            "adaptive_context": adaptive,
+            "persona_instructions": "Prefer Slovak for this persona.",
+        }
+    )
+    request = make_request(action="converse")
+    earlier = ReachHistoryEntry(
+        subject_id="earlier-person",
+        subject_label="Earlier speaker",
+        event_id="earlier-message",
+        conversation_id=request.event.conversation_id,
+        occurred_at=NOW - timedelta(seconds=1),
+        text="Doteraz sme sa rozprávali po slovensky.",
+    )
+    request = request.model_copy(
+        update={"event": request.event.model_copy(update={"question": question}), "history": (earlier,)}
+    )
+    instructions = persona_text(binding)
+    assert instructions.index("The current question determines your reply language") > instructions.index(
+        binding.persona_instructions
+    )
+    assert "persona preferences must not override it" in instructions
+    prompt = json.loads(conversation_prompt(binding, make_corpus(), request))
+    assert prompt["question"] == question
+    assert prompt["recent_messages"][0]["text"] == earlier.text
+
+
 def test_extended_generation_limit_remains_closed_and_bound_to_profile() -> None:
     binding = OperatorConversationProfile(
         persona_name="Example Familiar", persona_instructions="Be helpful.", max_tokens=2048

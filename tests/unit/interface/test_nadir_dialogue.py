@@ -129,6 +129,8 @@ async def test_dm_ack_precedes_native_and_multipart_delivery_stops_on_unknown(
             sha256(f"101:204:110:{label}".encode()).hexdigest()[:25] for label in labels
         ]
         assert timeline == ["ack", "native", "final:0", "final:1"] + ([] if fail_second_part else ["final:2"])
+        assert bodies[0]["content"].startswith("I'll look into your request:")
+        assert observed.content in bodies[0]["content"]
         assert all(body["message_reference"]["message_id"] == "110" for body in bodies)
         assert all(body["allowed_mentions"] == {"parse": [], "replied_user": False} for body in bodies)
         assert "".join(body["content"] for body in bodies[1:]) == (answer[:3800] if fail_second_part else answer)

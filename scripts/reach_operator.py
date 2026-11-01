@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Literal, NoReturn, cast
 from uuid import uuid4
 
+from lychd.compositions.reach.operator_diagnostics import diagnostic_bytes, parse_diagnostic, write_diagnostic_line
 from lychd.compositions.reach.operator_model_wire import OperatorModelRequest
 from lychd.interface.discord.operator_io import load_policy
 
@@ -566,16 +567,27 @@ async def research_edge_relay(
             await writer.drain()
 
 
-async def diagnostics(reader: asyncio.StreamReader) -> None:
-    """Expose fixed codes only; foreign traces or message content never reach the terminal."""
+async def diagnostics(reader: asyncio.StreamReader, *, role: Literal["core", "edge"] = "edge") -> None:
+    """Admit closed Core observations and fixed codes; reject foreign diagnostic bodies."""
     while True:
         try:
             raw = await reader.readuntil(b"\n")
         except (asyncio.IncompleteReadError, asyncio.LimitOverrunError):
             return
-        code = raw.decode("ascii", errors="ignore").strip()
+        if role == "core" and raw.startswith(b"{"):
+            try:
+                record = parse_diagnostic(raw)
+            except (ValueError, UnicodeError, RecursionError):
+                pass
+            else:
+                write_diagnostic_line(diagnostic_bytes(record))
+                continue
+        try:
+            code = raw.decode("ascii").strip()
+        except UnicodeError:
+            code = ""
         admitted = code if re.fullmatch(r"(?:reach_discord:)?[a-z][a-z0-9_]{0,63}", code) else "reach_child_diagnostic"
-        sys.stderr.write(admitted + "\n")
+        write_diagnostic_line((admitted + "\n").encode("ascii"))
 
 
 async def retire(process: asyncio.subprocess.Process) -> None:
@@ -667,8 +679,8 @@ async def supervise(  # noqa: C901, PLR0912 - explicit two-child settlement and 
             asyncio.create_task(stopped.wait()),
         ]
         diagnostic_tasks = [
-            asyncio.create_task(diagnostics(core.stderr)),
-            asyncio.create_task(diagnostics(edge.stderr)),
+            asyncio.create_task(diagnostics(core.stderr, role="core")),
+            asyncio.create_task(diagnostics(edge.stderr, role="edge")),
         ]
         tasks.extend(diagnostic_tasks)
         done, _ = await asyncio.wait(tasks[:5], return_when=asyncio.FIRST_COMPLETED)

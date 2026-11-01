@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, NoReturn, cast
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import structlog
 
@@ -39,6 +39,14 @@ from lychd.compositions.reach.documents_workflow import (
     reach_documents_workflow,
 )
 from lychd.compositions.reach.expressions import ConversationExpressions
+from lychd.compositions.reach.operator_diagnostics import (
+    DiagnosticCode,
+    DiagnosticStage,
+    FailedNodeDiagnostic,
+    ReachRunDiagnostic,
+    diagnostic_bytes,
+    write_diagnostic_line,
+)
 from lychd.compositions.reach.operator_model import ModelRelay, OperatorModelAdapter, operator_model_rune
 from lychd.compositions.reach.operator_model_wire import (
     OperatorConversationProfile,
@@ -61,7 +69,7 @@ from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.context import Block, ContextOrchestrator
 from lychd.domain.cortex.dispatcher import Dispatcher
 from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine
-from lychd.domain.cortex.events import InProcessEventBus
+from lychd.domain.cortex.events import InProcessEventBus, RunEventKind
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.runs import RunStatus
@@ -78,6 +86,36 @@ if TYPE_CHECKING:
     from lychd.domain.orchestration.schema import TransitionPlan
 
 MAX_PENDING_INPUTS = 4
+DIAGNOSTIC_TIMEOUT = 0.25
+
+
+def _stderr_diagnostic(value: ReachRunDiagnostic) -> None:
+    write_diagnostic_line(diagnostic_bytes(value))
+
+
+def _failure_code(error: Exception | None) -> DiagnosticCode | None:
+    """Recognize exact trusted codes without rendering any exception."""
+    if error is None or len(error.args) != 1:
+        return None
+    code = error.args[0]
+    if not isinstance(code, str):
+        return None
+    if isinstance(error, DocumentsRefused) and code in {
+        "conversation_output",
+        "conversation_checkpoint",
+        "conversation_fresh_state",
+        "conversation_grant",
+    }:
+        return cast("DiagnosticCode", code)
+    if type(error) is RuntimeError and code in {
+        "model_unavailable",
+        "model_timeout",
+        "model_refused",
+        "model_protocol",
+        "model_failed",
+    }:
+        return cast("DiagnosticCode", code)
+    return None
 
 
 def _read_regular(path: Path, limit: int, *, directory_fd: int | None = None) -> bytes:
@@ -201,6 +239,7 @@ class DocumentsRuntime:
     pending_inputs: list[bytes] = field(default_factory=list)
     late_response_filter: Callable[[bytes], bool] | None = None
     generation: str = field(default_factory=lambda: str(uuid4()))
+    diagnostic: Callable[[ReachRunDiagnostic], None] | None = None
     _context_rounds: ContextRounds = field(default_factory=ContextRounds)
     _serial: asyncio.Lock = field(default_factory=asyncio.Lock)
 
@@ -255,7 +294,63 @@ class DocumentsRuntime:
             now=self.clock(),
         )
 
-    async def process(self, request: ReachWorkerRequest, *, timeout: float = 15) -> ReachWorkerResult:  # noqa: C901, PLR0911, ASYNC109 - explicit bounded admission and asyncio.timeout ownership
+    async def observe_result(
+        self,
+        request_id: str,
+        run_id: str,
+        result: ReachWorkerResult,
+        stage: DiagnosticStage,
+        error: Exception | None,
+    ) -> None:
+        """Best-effort bounded projection, isolated from Run and result settlement."""
+        if self.diagnostic is None:
+            return
+        try:
+            evidence = "flushed"
+            try:
+                async with asyncio.timeout(DIAGNOSTIC_TIMEOUT):
+                    await self.substrate.bus.wait_persisted(run_id)
+            except Exception:  # noqa: BLE001 - diagnostics cannot change the result
+                evidence = "unavailable"
+            terminal = None
+            failed = None
+            try:
+                async with asyncio.timeout(DIAGNOSTIC_TIMEOUT):
+                    terminal = await self.substrate.ledger.get(run_id)
+                    latest = await self.substrate.ledger.latest_event(run_id, RunEventKind.NODE)
+                if latest is not None and latest.meta.get("phase") == "failed":
+                    failed = FailedNodeDiagnostic(
+                        event_id=latest.event_id,
+                        seq=latest.seq,
+                        node=latest.data,
+                        occurrence_id=latest.meta["occurrence_id"],
+                    )
+            except Exception:  # noqa: BLE001 - missing structural evidence remains explicit
+                evidence = "unavailable"
+            try:
+                admitted_request_id = request_id if str(UUID(request_id)) == request_id else None
+            except ValueError:
+                admitted_request_id = None
+            record = ReachRunDiagnostic.model_validate(
+                {
+                    "observed_at": self.clock(),
+                    "generation": self.generation,
+                    "request_id": admitted_request_id,
+                    "run_id": run_id,
+                    "status": result.status,
+                    "reason": result.reason,
+                    "stage": stage,
+                    "run_status": terminal.status.value if terminal else None,
+                    "evidence": evidence,
+                    "failure_code": _failure_code(error),
+                    "failed_node": failed,
+                }
+            )
+            self.diagnostic(record)
+        except Exception:  # noqa: BLE001 - metadata/sink failures never become Run failure
+            return
+
+    async def process(self, request: ReachWorkerRequest, *, timeout: float = 15) -> ReachWorkerResult:  # noqa: C901, PLR0911, PLR0912, PLR0915, ASYNC109 - explicit admission, stage attribution and terminal cleanup
         """Admit each permitted round to a fresh Run and retrieve its exact settled result."""
         async with self._serial:
             digest = request_digest(request)
@@ -272,37 +367,54 @@ class DocumentsRuntime:
             session = await self.sessions.create_session(title="Operator public documents")
             intent = self.intent(request, session.id)
             handle = await self.engine.submit(intent, idempotency_key=f"{self.generation}:{digest}")
-            run = await self.substrate.ledger.get(handle.run_id)
-            if run is None:
-                return self.refuse(request.request_id, "run_missing", error=True)
-            task = asyncio.create_task(
-                perform_run({"run_substrate": self.substrate}, run_id=run.run_id, enqueue_seq=run.enqueue_seq)
-            )
-            for job in self.queue.jobs.values():
-                if job.task is None:
-                    job.task = task
+            result = None
+            failure = None
+            stage: DiagnosticStage = "result_lookup"
+            task = None
             try:
+                run = await self.substrate.ledger.get(handle.run_id)
+                if run is None:
+                    result = self.refuse(request.request_id, "run_missing", error=True)
+                    return result
+                stage = "execute"
+                task = asyncio.create_task(
+                    perform_run({"run_substrate": self.substrate}, run_id=run.run_id, enqueue_seq=run.enqueue_seq)
+                )
+                for job in self.queue.jobs.values():
+                    if job.task is None:
+                        job.task = task
                 async with asyncio.timeout(timeout):
                     await task
+                    stage = "evidence_flush"
                     await self.substrate.bus.wait_persisted(run.run_id)
+                stage = "result_lookup"
                 terminal = await self.substrate.ledger.get(run.run_id)
                 turn = await self.sessions.settled_turn_for_run(run.run_id)
                 if terminal is None or terminal.status is not RunStatus.DONE or turn is None:
-                    return self.refuse(request.request_id, "run_incomplete", error=True, run_id=run.run_id)
+                    result = self.refuse(request.request_id, "run_incomplete", error=True, run_id=run.run_id)
+                    return result
+                stage = "result_validation"
                 result = ReachWorkerResult.model_validate_json(turn.content)
                 if result.request_id != request.request_id or result.run_id != run.run_id:
-                    return self.refuse(request.request_id, "result_binding", error=True, run_id=run.run_id)
+                    result = self.refuse(request.request_id, "result_binding", error=True, run_id=run.run_id)
+                    return result
                 self._context_rounds.settled(request, result, adaptive=adaptive)
                 return result  # noqa: TRY300 - settlement retrieval shares the guarded failure boundary
             except TimeoutError:
-                return self.refuse(request.request_id, "run_timeout", error=True, run_id=run.run_id)
-            except Exception:  # noqa: BLE001 - closed diagnostics never echo input, paths or provider errors
-                return self.refuse(request.request_id, "run_failed", error=True, run_id=run.run_id)
+                result = self.refuse(request.request_id, "run_timeout", error=True, run_id=handle.run_id)
+                return result
+            except Exception as error:  # noqa: BLE001 - closed diagnostics never echo input, paths or provider errors
+                failure = error
+                result = self.refuse(request.request_id, "run_failed", error=True, run_id=handle.run_id)
+                return result
             finally:
-                if not task.done():
-                    task.cancel()
-                await asyncio.gather(task, return_exceptions=True)
+                if task is not None:
+                    if not task.done():
+                        task.cancel()
+                    await asyncio.gather(task, return_exceptions=True)
                 self.queue.jobs.clear()
+                if result is not None:
+                    await self.observe_result(request.request_id, handle.run_id, result, stage, failure)
 
     async def aclose(self) -> None:
         """Retire owned tasks before withdrawing the ephemeral event bus."""
@@ -318,6 +430,7 @@ def build_runtime(
     profile: OperatorConversationProfile | None = None,
     model_relay: ModelRelay | None = None,
     research_relay: ResearchRelay | None = None,
+    diagnostic: Callable[[ReachRunDiagnostic], None] | None = None,
     started_at: datetime | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> DocumentsRuntime:
@@ -378,7 +491,19 @@ def build_runtime(
         stasis_store=substrate.stasis_store,
         cancellations=substrate.cancellations,
     )
-    return DocumentsRuntime(policy, corpus, boundary, clock, engine, substrate, sessions, queue, bus, profile=profile)
+    return DocumentsRuntime(
+        policy,
+        corpus,
+        boundary,
+        clock,
+        engine,
+        substrate,
+        sessions,
+        queue,
+        bus,
+        profile=profile,
+        diagnostic=diagnostic,
+    )
 
 
 async def serve(runtime: DocumentsRuntime, reader: asyncio.StreamReader, write: Callable[[bytes], None]) -> None:
@@ -541,7 +666,12 @@ async def run(policy: ReachPolicy, corpus: PublicCorpus, profile: OperatorConver
 
     relay = PipeModelRelay(profile, reader, write) if profile else None
     runtime = build_runtime(
-        policy, corpus, profile=profile, model_relay=relay, research_relay=relay.research if relay is not None else None
+        policy,
+        corpus,
+        profile=profile,
+        model_relay=relay,
+        research_relay=relay.research if relay is not None else None,
+        diagnostic=_stderr_diagnostic,
     )
     if relay is not None:
         runtime.pending_inputs = relay.pending_inputs

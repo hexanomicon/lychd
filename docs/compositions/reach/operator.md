@@ -370,6 +370,12 @@ UTF-16 units each before the first final send. Text exceeding that delivery budg
 instead of silently cut off. A failed or uncertain part stops later parts. Slash answers use the
 same bounded splitting with ephemeral followups.
 
+Model-authored answers, research plans and clarification questions follow the reply language
+explicitly requested in the current question, otherwise that question's language. Earlier history,
+quoted evidence and persona preferences do not choose a different reply language. Fixed transport
+acknowledgements, readiness/refusal messages and context-limit notices use English; this profile
+does not implement automatic localization of operational copy.
+
 Adaptive context is separately opt-in: add `"adaptive_context": true` to the private conversation
 JSON shown below. Omission retains the single-call behavior. Without catalogue research, the model
 returns only an `answer`, `read_more` or `clarify` text decision, never an executable tool call.
@@ -648,6 +654,19 @@ children expose bounded diagnostic codes. A refusal does not print credentials, 
 or a detailed foreign exception. Check the selected file paths, owner-only permissions, policy,
 image record, expected digest and engine first. Do not work around a refusal by widening mounts,
 passing the token in an environment variable, or starting the native worker on the host.
+
+The isolated Core also attempts a bounded structural diagnostic for each admitted Run to stderr.
+It correlates the worker generation, request and Run with the returned status, fixed reason and
+processing stage. A failed station is named only when a retained native node event explicitly
+records its failure; absent or incomplete capture remains visible. These records exclude question,
+answer, source and provider bodies and arbitrary exception text. The supervisor accepts this record
+only from its Core child, separately from the Edge's fixed diagnostic codes. Diagnostic writes
+drop on backpressure so a stalled log consumer cannot withhold the Run's answer.
+
+This profile keeps its RunLedger and event bus in memory. Its diagnostics describe process-local
+evidence; they are not an Oculus trace store or a recoverable Run archive. Retaining supervisor
+stderr is an operator responsibility. Container-engine stdout logs can incidentally retain private
+wire bodies and must not be treated as a safe structural trace or a completeness guarantee.
 
 Transport attempts live in `$REACH_ROOT/state/effects`. Their private JSON records contain
 method, target class, hashed effect/payload/scope identities, status, and an optional remote ID

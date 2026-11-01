@@ -169,8 +169,8 @@ def result_text(result: ReachWorkerResult) -> str:
     if result.text.strip():
         return result.text
     if result.status == "refused":
-        return "Túto požiadavku nemôžem vykonať. Skontroluj oprávnenia a povolený kanál."
-    return "Odpoveď sa nepodarilo pripraviť. Skús novú požiadavku neskôr."
+        return "I can't perform this request. Please check your permissions and the allowed channel."
+    return "I couldn't prepare an answer. Please try a new request later."
 
 
 def _parent(channel: object, policy: DiscordPolicy) -> str | None:
@@ -472,7 +472,7 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
     async def _request(self, interaction: discord.Interaction, question: str, action: str) -> None:
         event = event_from_interaction(interaction, self.service.policy, question=question, action=action)
         if not self.service.eligible(event):
-            await interaction.response.send_message("Táto požiadavka tu nie je povolená.", ephemeral=True)
+            await interaction.response.send_message("This request isn't allowed here.", ephemeral=True)
             return
         await interaction.response.defer(ephemeral=True, thinking=True)
         if event is None or not isinstance(interaction.channel, discord.abc.Messageable):
@@ -501,7 +501,7 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
             diagnostic("request_failed")
             await self.service.rest.edit_interaction_original(
                 interaction.token,
-                "Odpoveď sa nepodarilo pripraviť alebo práve riešim inú otázku.",
+                "I couldn't prepare an answer, or I'm currently handling another question.",
                 event_id=str(interaction.id),
             )
 
@@ -519,18 +519,18 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
         """Report admitted connection availability without issuing native work."""
         event = event_from_interaction(interaction, self.service.policy, question="status", action="answer_docs")
         if not self.service.eligible(event):
-            text = "Prístup odmietnutý."
+            text = "Access denied."
         elif self.service.worker.available:
             text = (
-                "Reach operator: konverzačný worker je pripravený."
+                "Reach operator: conversation worker is ready."
                 if self.service.conversation
-                else "Reach operator: dokumentačný worker je pripravený."
+                else "Reach operator: documentation worker is ready."
             )
         else:
             text = (
-                "Reach operator: konverzačný worker nie je dostupný."
+                "Reach operator: conversation worker is unavailable."
                 if self.service.conversation
-                else "Reach operator: dokumentačný worker nie je dostupný."
+                else "Reach operator: documentation worker is unavailable."
             )
         await interaction.response.send_message(text, ephemeral=True)
 
@@ -538,12 +538,12 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
     async def admin_inspect(self, interaction: discord.Interaction) -> None:
         event = event_from_interaction(interaction, self.service.policy, question="inspect", action="answer_docs")
         if not self.service.eligible(event) or str(interaction.user.id) not in self.service.admin_users:
-            await interaction.response.send_message("Prístup odmietnutý.", ephemeral=True)
+            await interaction.response.send_message("Access denied.", ephemeral=True)
             return
         await interaction.response.defer(ephemeral=True, thinking=True)
         try:
             snapshot = await snapshot_guild(self.service.rest)
-            text = f"Server má {len(snapshot.roles)} rolí a {len(snapshot.channels)} kanálov. Zmeny sa aplikujú lokálnym plánom."
+            text = f"The server has {len(snapshot.roles)} roles and {len(snapshot.channels)} channels. Changes require a local plan."
             outcome = await self.service.rest.edit_interaction_original(
                 interaction.token, text, event_id=str(interaction.id)
             )
@@ -569,13 +569,13 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
             if event.trigger == "message":
                 await self.service.rest.bind_direct_channel(event.conversation_id, event.subject_id)
             await self._send_final(
-                event, "Odpoveď sa nepodarilo pripraviť alebo práve riešim inú otázku. Skús to neskôr."
+                event, "I couldn't prepare an answer, or I'm handling another question. Please try again later."
             )
 
     async def _acknowledge(self, event: ReachEvent) -> bool:
         """Confirm receipt before optional cosmetic acknowledgement and native work."""
         preview = " ".join(event.question.split())[:240]
-        text = f"Pozriem sa na tvoju požiadavku: „{preview}“. Vrátim sa sem s výsledkom alebo doplňujúcou otázkou."
+        text = f"I'll look into your request: “{preview}”. I'll return here with an answer or a clarification question."
         outcome = await self.service.rest.send_message(
             event.conversation_id,
             text,

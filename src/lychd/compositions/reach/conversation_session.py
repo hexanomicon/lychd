@@ -170,7 +170,7 @@ async def drive_context_turn(
             return result.model_copy(
                 update={
                     "status": "clarify",
-                    "text": "Ďalšie súvisiace správy sa mi nepodarilo načítať. Pošli prosím konkrétny podklad alebo doplň otázku.",
+                    "text": "I couldn't load more relevant messages. Please quote the missing material or clarify your question.",
                 }
             )
         result = await worker.request(
@@ -187,7 +187,7 @@ async def drive_context_turn(
             return result.model_copy(
                 update={
                     "status": "clarify",
-                    "text": "Chýba mi súvisiaci kontext. Pošli prosím konkrétnu správu alebo doplň otázku.",
+                    "text": "I'm missing relevant context. Please quote the message or clarify your question.",
                 }
             )
     if result is None:
@@ -196,6 +196,6 @@ async def drive_context_turn(
     return result.model_copy(
         update={
             "status": "clarify",
-            "text": "Dosiahol som limit čítania. Pošli prosím relevantnú časť diskusie.",
+            "text": "I've reached the history limit. Please quote the relevant part of the conversation.",
         }
     )

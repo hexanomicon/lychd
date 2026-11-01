@@ -179,7 +179,7 @@ def test_empty_worker_outcome_renders_fixed_useful_message(status: Literal["empt
     text = result_text(result)
     assert text.strip()
     assert "foreign_failure" not in text
-    assert "oprávnenia" in text if status == "refused" else "neskôr" in text
+    assert "permissions" in text if status == "refused" else "later" in text
 
 
 @pytest.mark.asyncio
@@ -299,9 +299,9 @@ async def test_status_reports_worker_availability_without_requesting_work(*, ava
     await callback(cog, interaction)
 
     expected = (
-        "Reach operator: dokumentačný worker je pripravený."
+        "Reach operator: documentation worker is ready."
         if available
-        else "Reach operator: dokumentačný worker nie je dostupný."
+        else "Reach operator: documentation worker is unavailable."
     )
     interaction.response.send_message.assert_awaited_once_with(expected, ephemeral=True)
     cast("AsyncMock", configured.worker.request).assert_not_awaited()
