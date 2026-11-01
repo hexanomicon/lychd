@@ -27,7 +27,9 @@ http://127.0.0.1:7134/
 Before entering, retrieve the dedicated local credential in a private terminal with `lychd access`
 and answer the browser's authentication dialog as described in
 [The Awakening](../../summoning.md#the-awakening). Keep the password out of URLs and command lines.
-The root then opens **Bridge**. On a fresh Phylactery, choose **New Séance** and offer a bounded Intent.
+The root then opens **Orb**, with **Bridge** open on the left in a fresh wide layout. On a narrow
+window, use the edge chevron to open Bridge; saved panel preferences remain in use.
+On a fresh Phylactery, choose **New Séance** in Bridge and offer a bounded Intent.
 Answer an inline consent card only when the Run asks for judgment.
 
 Keep the listener on literal loopback, with no proxy, tunnel, or forwarding. Loopback and the

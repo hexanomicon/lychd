@@ -395,7 +395,8 @@ Open the local Altar:
 http://127.0.0.1:7134/
 ```
 
-The root opens **Bridge**. On a fresh Phylactery, choose **New Séance**, then offer a simple Intent:
+The root opens **Orb**, with **Bridge** beside it in a fresh wide layout. On a narrow window,
+open Bridge with the edge chevron. On a fresh Phylactery, choose **New Séance**, then offer a simple Intent:
 
 ```text
 Reply with one sentence confirming first light.

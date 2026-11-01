@@ -317,7 +317,7 @@
 <svelte:document onkeydown={dismissPanels} onvisibilitychange={() => { if (document.visibilityState === "visible" && !loading) void loadCatalogue(false, true); }} />
 <div class="orb-field">
   <header class="field-header">
-    <div class="field-title"><h1>Orb</h1><span>{filteredRuns.length}/{viewedRuns.length} Run groups</span></div>
+    <div class="field-title"><h1>Orb</h1>{#if query.trim() || statusFilter !== "all"}<span>{filteredRuns.length}/{viewedRuns.length} Run groups</span>{/if}</div>
     <label class="search"><span class="sr-only">Filter Runs</span><input type="search" placeholder="Find workflow or Run…" bind:value={query} /></label>
     <label><span class="sr-only">Run status filter</span><select aria-label="Run status filter" bind:value={statusFilter}><option value="all">All states</option><option value="active">Active</option><option value="running">Running</option><option value="waiting">Waiting</option><option value="done">Done</option><option value="failed">Failed</option><option value="cancelled">Cancelled</option></select></label>
     <details class="run-list" bind:open={runsOpen}>

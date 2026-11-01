@@ -288,6 +288,8 @@ it("places the persistent Bridge chevron at the workbench edge and removes the m
   const view = render(AltarShell, { children });
   const toggle = screen.getByRole("button", { name: "Collapse Bridge" });
   expect(toggle.closest(".altar-workbench")).toBeTruthy();
+  expect(toggle.closest(".dock-shell")?.classList.contains("dock-left")).toBe(true);
+  expect(screen.getByRole("separator", { name: "Bridge width" }).getAttribute("aria-valuenow")).toBe("440");
   expect(document.querySelector(".topbar #bridge-toggle")).toBeNull();
   expect(document.querySelectorAll("#bridge-toggle")).toHaveLength(1);
   await fireEvent.click(toggle);
@@ -299,6 +301,20 @@ it("places the persistent Bridge chevron at the workbench edge and removes the m
   view.unmount();
 });
 
+
+it("keeps a saved collapsed right-side Bridge when opening Orb", async () => {
+  vi.mocked(getAltarStatus).mockResolvedValue(status(0));
+  localStorage.setItem(bridgeDockStorageKey, JSON.stringify({ width: 536, side: "right", open: false }));
+  page.url.href = "http://localhost/orb";
+  const view = render(AltarShell, { children });
+  await act(() => Promise.resolve());
+  const toggle = screen.getByRole("button", { name: "Expand Bridge" });
+  expect(toggle.closest(".dock-shell")?.classList.contains("dock-left")).toBe(false);
+  await fireEvent.click(toggle);
+  expect(screen.getByRole("separator", { name: "Bridge width" }).getAttribute("aria-valuenow")).toBe("536");
+  expect(page.url.pathname).toBe("/orb");
+  view.unmount();
+});
 
 it.each(["/bridge", "/bridge/session-a?run=run-a&consent=consent-a&event=event-a"])("opens explicit Bridge destination %s despite a collapsed preference", async (destination) => {
   vi.mocked(getAltarStatus).mockResolvedValue(status(0));

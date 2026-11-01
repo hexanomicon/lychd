@@ -1148,7 +1148,7 @@
   .turn:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
   .bridge-embedded { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100%; overflow: hidden; }
   .bridge-embedded.instrument-deck--welcome { grid-template-rows: minmax(0, 1fr); }
-  .bridge-embedded .bridge-rail { padding: 0 .85rem; border-right: 0; border-bottom: 1px solid var(--color-engraving); max-height: 16rem; overflow: auto; }
+  .bridge-embedded .bridge-rail { padding: 0 .85rem; border-right: 0; border-bottom: 0; max-height: 16rem; overflow: auto; }
   .bridge-embedded summary { min-height: 2rem; padding: .35rem .15rem; }
   .bridge-embedded .conversation-list > summary { margin: 0; font: 500 var(--text-sm)/1.5 var(--font-body); }
   .bridge-embedded .bridge-thread { min-height: 0; overflow: hidden; }
@@ -1159,6 +1159,7 @@
   .bridge-embedded .seance-details .kv { position: static; width: 100%; }
   .bridge-embedded .project-details { padding: 0 .85rem; }
   .bridge-embedded .public-sources { padding: 0 .85rem; }
+  .bridge-embedded .project-details, .bridge-embedded .public-sources { border-bottom: 0; }
   .bridge-embedded .public-sources .atlas-links { padding: 0 0 .35rem; gap: 0 .65rem; }
   .bridge-embedded .atlas-links { padding: .25rem 1rem; gap: .4rem; font-size: var(--text-xs); }
   .bridge-embedded .atlas-links a { min-height: 2rem; }

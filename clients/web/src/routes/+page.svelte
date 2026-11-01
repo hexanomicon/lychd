@@ -4,12 +4,11 @@
   import { onMount } from "svelte";
 
   onMount(() => {
-    void goto(resolve("/bridge"), { replaceState: true });
+    void goto(resolve("/orb"), { replaceState: true });
   });
 </script>
 
 <svelte:head><title>LychD — The Altar</title></svelte:head>
 <div class="shell-placeholder" aria-busy="true">
-  <span class="glyph-big">⬡</span>
-  <span class="rune-head">Opening the Bridge</span>
+  <p role="status">Opening Orb…</p>
 </div>

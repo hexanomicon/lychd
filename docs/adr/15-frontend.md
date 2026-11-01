@@ -55,7 +55,7 @@ icon: material/language-html5
 
 The canonical Altar is a Svelte 5 static SPA. `clients/web/src/routes/+layout.ts` sets `ssr = false`
 and `prerender = false`; `adapter-static` writes `index.html` and assets to `src/lychd/public`.
-Litestar redirects `/` to `/bridge`, admits the instrument/deep-link shells, and mounts hashed
+Litestar redirects `/` to `/orb`, admits the instrument/deep-link shells, and mounts hashed
 assets at `/_app`. New Svelte uses runes, current event attributes, snippets, and native CSS.
 `+page.server.*`, `+layout.server.*`, `+server.*`, private server modules, form actions, remote
 functions, and a SvelteKit production server are forbidden. Node 24.20 and npm 12.0 are build
@@ -302,6 +302,10 @@ focus can open it, Escape dismisses it, and moving into the menu keeps it reacha
 an always-available conversation surface, not a competing top-level instrument tab. Existing
 `/bridge` links remain valid compatibility and focus destinations; exact session, Run, consent,
 Project, investigation and public-note intent must survive the composition change.
+
+The bare root opens Orb. A fresh wide workbench starts with Bridge open on the left; saved dock
+preferences remain in force. A fresh narrow workbench keeps the graph visible and opens Bridge
+from its edge chevron. Explicit Bridge focus destinations still open the conversation.
 
 A compact dark-wood altar mark with two separate legs, purple cloth and small front-mounted
 candles opens About; a permanent product wordmark is unnecessary in the masthead. About retains

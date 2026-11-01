@@ -126,12 +126,12 @@
     {#if narrow}<button class="dock-backdrop" type="button" tabindex="-1" aria-label="Close Bridge overlay" onclick={collapse}></button>{/if}
     <section id="bridge-dock" class="bridge-dock" role={narrow ? undefined : "complementary"} aria-labelledby="bridge-dock-title">
       <header class="dock-heading">
-        <h2 id="bridge-dock-title">Bridge</h2>
+        <div class="dock-location"><h2 id="bridge-dock-title">Bridge</h2><span class="dock-view"><span class="visually-hidden">Viewing: </span>{viewing}</span></div>
         <div class="dock-actions">
           <button type="button" onclick={() => { side = side === "left" ? "right" : "left"; }} aria-label={`Dock Bridge ${side === "left" ? "right" : "left"}`}>Dock {side === "left" ? "right" : "left"}</button>
         </div>
       </header>
-      <p class="dock-context">Viewing: <strong>{viewing}</strong><span>Page content is not attached to messages.</span></p>
+      <p class="dock-context">Page content is not attached to messages.</p>
       {#if !available}
         <div class="dock-offline">
           <h3>Bridge is offline</h3>
@@ -159,11 +159,11 @@
   .bridge-dock { display: flex; flex-direction: column; width: 100%; min-width: 0; min-height: 0; }
   .dock-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .35rem; padding: .35rem .85rem; border-bottom: 1px solid var(--color-tertiary-edge); background: var(--color-tertiary); }
   .dock-heading h2 { font: 600 var(--text-base)/1.4 var(--font-body); color: var(--color-bone); }
+  .dock-location { display: flex; align-items: baseline; flex-wrap: wrap; gap: .35rem .6rem; min-width: 0; }
+  .dock-view { font-size: var(--text-xs); color: var(--color-ash); overflow-wrap: anywhere; }
   .dock-actions button { min-height: 2rem; }
   .dock-actions { display: flex; gap: .5rem; }
   .dock-context { margin: 0; padding: .35rem .85rem; border-bottom: 1px solid var(--color-engraving); color: var(--color-ash); font-size: var(--text-xs); }
-  .dock-context strong { color: var(--color-rune); font-weight: 500; }
-  .dock-context span { display: block; margin-top: .2rem; font-size: var(--text-2xs); }
   button { min-height: 2.5rem; padding: .4rem .65rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-glyph); background: var(--color-obsidian); color: var(--color-bone); font: inherit; font-size: var(--text-xs); cursor: pointer; }
   button:hover { border-color: var(--color-rune); }
   button:focus-visible, .dock-resizer:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }

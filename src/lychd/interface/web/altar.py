@@ -12,7 +12,13 @@ from litestar.params import FromPath
 from litestar.response import Redirect, Response
 from litestar.status_codes import HTTP_302_FOUND
 
-from lychd.config.constants import PATH_ALTAR_FAVICON, PATH_ALTAR_INDEX, PATH_ALTAR_LIGHTNING, PATH_ALTAR_NOTICES
+from lychd.config.constants import (
+    PATH_ALTAR_FAVICON,
+    PATH_ALTAR_INDEX,
+    PATH_ALTAR_LIGHTNING,
+    PATH_ALTAR_MARK,
+    PATH_ALTAR_NOTICES,
+)
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.web.contracts import AltarStatus
@@ -20,6 +26,7 @@ from lychd.domain.web.contracts import AltarStatus
 _ALTAR_INDEX = PATH_ALTAR_INDEX.read_text(encoding="utf-8")
 _ALTAR_LIGHTNING = PATH_ALTAR_LIGHTNING.read_text(encoding="utf-8")
 _ALTAR_FAVICON = PATH_ALTAR_FAVICON.read_text(encoding="utf-8")
+_ALTAR_MARK = PATH_ALTAR_MARK.read_text(encoding="utf-8")
 _ALTAR_NOTICES = PATH_ALTAR_NOTICES.read_text(encoding="utf-8")
 
 
@@ -28,8 +35,8 @@ class AltarController(Controller):
 
     @get("/", name="altar:index", include_in_schema=False)
     async def index(self) -> Response[Any]:
-        """Redirect the bare root to the resident Bridge instrument."""
-        return Redirect("/bridge", status_code=HTTP_302_FOUND)
+        """Redirect the bare root to the Orb workbench."""
+        return Redirect("/orb", status_code=HTTP_302_FOUND)
 
     @get("/THIRD_PARTY_NOTICES.txt", name="altar:notices", include_in_schema=False)
     async def notices(self) -> Response[str]:
@@ -45,6 +52,11 @@ class AltarController(Controller):
     async def favicon(self) -> Response[str]:
         """Return the fixed Altar identity mark for browser chrome and the shell."""
         return Response(content=_ALTAR_FAVICON, media_type="image/svg+xml")
+
+    @get("/altar-mark.svg", name="altar:mark", include_in_schema=False)
+    async def mark(self) -> Response[str]:
+        """Return the packaged Altar mark for browser chrome and the shell."""
+        return Response(content=_ALTAR_MARK, media_type="image/svg+xml")
 
     @get(
         ["/atlas", "/bridge", "/nexus", "/loom", "/orb", "/scavenger", "/canvas"],

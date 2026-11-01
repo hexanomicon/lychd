@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
+from lychd.config.constants import PATH_ALTAR_MARK
+
 if TYPE_CHECKING:
     from litestar import Litestar
     from litestar.testing import TestClient
@@ -35,10 +37,10 @@ def test_pages_return_compiled_svelte_shell(
     assert "/_app/immutable/" in response.text
 
 
-def test_root_redirects_to_bridge(altar_client: TestClient[Litestar]) -> None:
+def test_root_redirects_to_orb(altar_client: TestClient[Litestar]) -> None:
     response = altar_client.get("/", follow_redirects=False)
     assert response.status_code == 302
-    assert response.headers["location"] == "/bridge"
+    assert response.headers["location"] == "/orb"
 
 
 def test_fixed_root_assets_have_narrow_routes_and_exact_media_types(
@@ -47,6 +49,7 @@ def test_fixed_root_assets_have_narrow_routes_and_exact_media_types(
     notices = altar_client.get("/THIRD_PARTY_NOTICES.txt")
     lightning = altar_client.get("/altar-lightning.svg")
     favicon = altar_client.get("/favicon.svg")
+    mark = altar_client.get("/altar-mark.svg")
 
     assert notices.status_code == 200
     assert notices.headers["content-type"].startswith("text/plain")
@@ -57,7 +60,11 @@ def test_fixed_root_assets_have_narrow_routes_and_exact_media_types(
     assert favicon.status_code == 200
     assert favicon.headers["content-type"].startswith("image/svg+xml")
     assert favicon.text.lstrip().startswith("<svg")
-    assert 'href="/favicon.svg"' in altar_client.get("/bridge").text
+    assert mark.status_code == 200
+    assert mark.headers["content-type"].split(";", 1)[0] == "image/svg+xml"
+    assert mark.text.lstrip().startswith("<svg")
+    assert mark.text == PATH_ALTAR_MARK.read_text(encoding="utf-8")
+    assert 'href="/altar-mark.svg"' in altar_client.get("/bridge").text
     assert "LychD Altar — visual assets" in notices.text
 
 
