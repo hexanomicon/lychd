@@ -668,8 +668,8 @@
   .brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .brand .mark {
     display: block;
-    width: 2rem;
-    height: 2rem;
+    width: 2.75rem;
+    height: 2.75rem;
     flex-shrink: 0;
   }
   .brand-wordmark { display: flex; flex-direction: column; gap: 2px; }

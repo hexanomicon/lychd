@@ -266,7 +266,7 @@
 <header class="topbar" inert={narrow && dockOpen} {@attach measureMasthead}>
   <details class="altar-about" {@attach manageAboutDisclosure}>
     <summary class="brand" aria-label="About Altar" title="Altar">
-      <img class="mark" src={asset("/altar-mark.svg")} width="32" height="32" alt="" />
+      <img class="mark" src={asset("/altar-mark.svg")} width="44" height="44" alt="" />
     </summary>
     <div class="altar-about__panel">
       <h2>About the Altar</h2>
@@ -334,7 +334,7 @@
 
 <style>
   .topbar { height: auto; min-height: 3.5rem; padding: 0 1.25rem; gap: 1.25rem; flex: 0 0 auto; flex-wrap: wrap; background: var(--color-void); border: 0; border-bottom: 1px solid var(--color-engraving); border-image: none; box-shadow: none; backdrop-filter: none; position: relative; z-index: 40; }
-  .brand { justify-content: center; width: 2.75rem; min-height: 2.75rem; padding: .375rem; }
+  .brand { justify-content: center; width: 3.5rem; min-height: 3.5rem; padding: .375rem; }
   .brand:hover { background: var(--color-tertiary); }
   .altar-product { margin-top: .35rem; color: var(--color-parchment); font-size: var(--text-sm); }
   nav.instruments { height: auto; align-self: stretch; gap: .25rem; margin-left: auto; }
@@ -356,5 +356,5 @@
   #altar-main::before, #altar-main::after { display: none; }
   :focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   @media (max-width: 75rem) { .topbar { gap: .65rem; padding-inline: .75rem; } nav.instruments a { padding-inline: .5rem; gap: .4rem; } .offline-status { display: none; } }
-  @media (max-width: 56rem) { .topbar { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) auto; gap: .25rem .5rem; padding: .25rem .75rem 0; } .altar-about { grid-column: 1; grid-row: 1; } nav.instruments { grid-column: 1 / -1; grid-row: 2; width: 100%; margin: 0; justify-content: center; } nav.instruments a { min-height: 2.75rem; flex: 1; justify-content: center; } .topbar .spacer { display: none; } .application-menu { grid-column: 2; grid-row: 1; margin: 0; } .application-menu > summary { min-height: 2.75rem; gap: .4rem; font-size: var(--text-xs); } .application-menu nav { inset-inline-start: 0; inset-inline-end: auto; } .sigil { grid-column: 3; grid-row: 1; margin: 0; max-width: 100%; font-size: var(--text-xs); line-height: 1.3; white-space: normal; } }
+  @media (max-width: 56rem) { .topbar { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr) auto; gap: .25rem .5rem; padding: .25rem .75rem 0; } .altar-about { grid-column: 1; grid-row: 1; } nav.instruments { grid-column: 1 / -1; grid-row: 2; width: 100%; margin: 0; justify-content: center; } nav.instruments a { min-height: 2.75rem; flex: 1; justify-content: center; } .topbar .spacer { display: none; } .application-menu { grid-column: 2; grid-row: 1; margin: 0; } .application-menu > summary { min-height: 2.75rem; gap: .4rem; font-size: var(--text-xs); } .application-menu nav { inset-inline-start: 0; inset-inline-end: auto; } .sigil { grid-column: 3; grid-row: 1; margin: 0; max-width: 100%; font-size: var(--text-xs); line-height: 1.3; white-space: normal; } }
 </style>
