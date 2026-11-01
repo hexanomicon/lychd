@@ -326,8 +326,10 @@ protected projections under the existing rules.
 
 The canonical LychD Dark workbench uses an untextured black work plane, neutral graphite chrome,
 icy-blue interaction and focus, saturated matrix-green confirmation/activity, and quiet
-neutral context surfaces. Text stays neutral and readable. Fixed brand art retains its own
-colours; coloured fills are not the default treatment for panels or navigation. Required control
+neutral context surfaces. Muted cloth-purple accents tie instrument and application icons and
+the active instrument underline to the altar mark; they carry no runtime status. Text stays
+neutral and readable. Fixed brand art retains its own colours; coloured fills are not the
+default treatment for panels or navigation. Required control
 boundaries use a stronger role than passive separators. Context columns respond to the space left
 beside the dock, not just the viewport. Icons supplement visible labels. Surfaces
 use crisp geometry and restrained separators; status, consent and uncertainty remain explicit

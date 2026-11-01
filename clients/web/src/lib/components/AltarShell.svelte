@@ -339,7 +339,7 @@
   .altar-product { margin-top: .35rem; color: var(--color-parchment); font-size: var(--text-sm); }
   nav.instruments { height: auto; align-self: stretch; gap: .25rem; margin-left: auto; }
   nav.instruments a { gap: .6rem; padding: .5rem .7rem; letter-spacing: 0; text-transform: none; color: var(--color-parchment); min-height: 3.5rem; }
-  nav.instruments a :global(svg), .application-menu :global(svg) { color: var(--color-rune); flex: 0 0 auto; }
+  nav.instruments a :global(svg), .application-menu :global(svg) { color: var(--color-accent); flex: 0 0 auto; }
   nav.instruments a[aria-current="page"] { color: var(--color-bone); text-shadow: none; background: var(--color-tertiary); }
   .topbar .spacer { flex: 1 1 0; }
   .sigil { border-radius: var(--radius-glyph); padding: .45rem .6rem; box-shadow: none; animation: none; }

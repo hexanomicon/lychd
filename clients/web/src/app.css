@@ -1,7 +1,8 @@
 /* ══════════════════════════════════════════════════════════════════════
    LychD · The Altar — design tokens (canonical; ADR 15)
    Black work plane · near-black chrome · icy-blue interaction · green
-   confirmation · quiet neutral context. One canonical LychD Dark palette.
+   confirmation · cloth-purple identity · quiet neutral context.
+   One canonical LychD Dark palette.
 
    Native CSS is the styling language. Tokens remain ordinary custom properties;
    semantic component classes consume them without a utility or preprocessing DSL.
@@ -20,6 +21,7 @@
   --color-primary-deep:   #55cce9;  /* saturated icy-blue depth */
   --color-secondary:      #22e68a;  /* matrix green: confirmation and live activity */
   --color-secondary-deep: #14b86c;  /* saturated live activity */
+  --color-accent:         #b08ac4;  /* cloth purple: navigation identity, no runtime state */
   --color-tertiary:       var(--color-obsidian);  /* quiet secondary/context surface */
   --color-tertiary-edge:  var(--color-engraving); /* passive contextual separators */
   --color-control-border: #60717e; /* required control boundaries */
@@ -749,7 +751,7 @@
   nav.instruments a:hover { color: var(--color-bone); }
   nav.instruments a[aria-current="page"] {
     color: var(--color-bone);
-    border-bottom-color: var(--color-rune);
+    border-bottom-color: var(--color-accent);
   }
   nav.instruments a .dot { /* unbuilt marker */
     position: absolute; top: 10px; right: 6px;
