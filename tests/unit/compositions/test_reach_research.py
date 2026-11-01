@@ -6,6 +6,7 @@ import json
 from datetime import timedelta
 from hashlib import sha256
 from typing import Any
+from uuid import uuid4
 
 import pytest
 from pydantic_ai.models import override_allow_model_requests
@@ -18,6 +19,7 @@ from lychd.compositions.reach.operator_model_wire import (
     canonical_json,
     validate_generation_payload,
 )
+from lychd.compositions.reach.operator_trace import ReachTraceEvent, trace_bytes
 from lychd.compositions.reach.operator_wire import ReachHistoryEntry, ReachWorkerResult
 from lychd.compositions.reach.research import (
     ResearchPlan,
@@ -267,6 +269,7 @@ async def test_docs_only_plan_still_requires_acknowledgement_and_no_web_selectio
     binding = research_profile()
     generated = 0
     acknowledged: list[OperatorResearchRequest] = []
+    traces: list[ReachTraceEvent] = []
 
     async def model_relay(operation: str, payload: str) -> str:
         nonlocal generated
@@ -291,15 +294,31 @@ async def test_docs_only_plan_still_requires_acknowledgement_and_no_web_selectio
         research_relay=research_relay,
         started_at=STARTED,
         clock=lambda: NOW,
+        trace=traces.append,
     )
+    request = make_request(action="converse").model_copy(update={"request_id": str(uuid4())})
     try:
         with override_allow_model_requests(True):  # noqa: FBT003 - explicit third-party model permission
-            result = await runtime.process(make_request(action="converse"))
+            result = await runtime.process(request)
         assert result.status == "conversation"
         assert len(acknowledged) == 1
         assert generated == 2
         assert "docs/graph.md" in result.text
         assert "https://example.com/guide" not in result.text
+        source = next(event for event in traces if event.name == "source_read")
+        assert (source.source_id, source.status, source.request_id, source.run_id) == (
+            "doc:docs/graph.md",
+            "ok",
+            request.request_id,
+            result.run_id,
+        )
+        assert source.generation == runtime.generation
+        assert source.occurrence_id is not None
+        assert source.step_id is not None
+        assert source.chars is not None
+        assert source.chars > 0
+        assert [event.trace_seq for event in traces] == list(range(1, len(traces) + 1))
+        assert result.text not in trace_bytes(source).decode()
     finally:
         await runtime.aclose()
 

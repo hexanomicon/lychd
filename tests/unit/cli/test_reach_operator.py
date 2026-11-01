@@ -275,7 +275,10 @@ def test_run_mounts_exact_inputs_and_never_token_bytes(tmp_path: Path, monkeypat
     (corpus / "manifest.json").write_text("{}")
     observed: list[list[str]] = []
 
-    async def supervise(_engine: str, commands: tuple[list[str], list[str]], _ids: tuple[Path, Path]) -> int:
+    async def supervise(
+        _engine: str, commands: tuple[list[str], list[str]], _ids: tuple[Path, Path], *, capture: object | None = None
+    ) -> int:
+        assert capture is not None
         observed.extend(commands)
         return 0
 
@@ -301,6 +304,9 @@ def test_run_mounts_exact_inputs_and_never_token_bytes(tmp_path: Path, monkeypat
     core, edge = observed
     assert "--network=none" in core
     assert "--network=none" not in edge
+    assert "--log-driver=none" in core
+    assert "--log-driver=none" in edge
+    assert str(state / "traces") not in " ".join(core + edge)
     assert SECRET not in " ".join(core + edge)
     assert not any("docker.sock" in item or ":/home" in item or item == "--publish" for item in core + edge)
     assert str(token) not in " ".join(core)

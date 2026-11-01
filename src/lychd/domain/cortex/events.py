@@ -388,6 +388,7 @@ class RunEmitter:
 
     channel: RunChannel
     persist: Callable[[RunEvent], None] = lambda _event: None
+    observer: Callable[[RunEvent], None] | None = None
 
     def emit(self, kind: RunEventKind, data: str, **meta: str) -> RunEvent:
         """Publish one event to the channel and tee it to the ledger sink.
@@ -400,6 +401,10 @@ class RunEmitter:
         event = self.channel.emit(kind, data, **meta)
         if not already_closed:
             self.persist(_detached_event(event))
+            if self.observer is not None:
+                # Observers cannot decide execution or introduce cancellation.
+                with suppress(Exception, asyncio.CancelledError):
+                    self.observer(_detached_event(event))
         return event
 
     def status(self, status: str) -> RunEvent:
@@ -456,14 +461,20 @@ class InProcessEventBus:
     """
 
     def __init__(
-        self, *, ledger: RunLedger | None = None, max_http_streams: int = 32, max_http_streams_per_run: int = 4
+        self,
+        *,
+        ledger: RunLedger | None = None,
+        max_http_streams: int = 32,
+        max_http_streams_per_run: int = 4,
+        observer: Callable[[RunEvent], None] | None = None,
     ) -> None:
-        """Bind event persistence and finite process-local HTTP stream budgets."""
+        """Bind persistence, an isolated synchronous observer and finite stream budgets."""
         if max_http_streams < 1 or max_http_streams_per_run < 1:
             msg = "HTTP stream budgets must be positive."
             raise ValueError(msg)
         self._channels: dict[str, RunChannel] = {}
         self._ledger = ledger
+        self._observer = observer
         self._pending: set[asyncio.Task[None]] = set()
         self._writers: dict[str, _WriterGeneration] = {}
         self._max_http_streams = max_http_streams
@@ -511,7 +522,7 @@ class InProcessEventBus:
 
     def emitter(self, run_id: str) -> RunEmitter:
         """Return an emitter bound to the run (tees non-TOKEN events to the ledger)."""
-        return RunEmitter(channel=self.open(run_id), persist=self._persist)
+        return RunEmitter(channel=self.open(run_id), persist=self._persist, observer=self._observer)
 
     def subscribe(self, run_id: str, *, from_seq: int | None = None) -> AsyncIterator[RunEvent]:
         """Subscribe to a KNOWN run's channel, optionally replaying after ``from_seq``.

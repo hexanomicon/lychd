@@ -1,27 +1,5 @@
 {
-  "schema": "scout-fetch-local-proof@1",
-  "status": "passed",
-  "kernel": "7.1.8-1-default",
-  "python": "3.15.0",
-  "openssl": "OpenSSL 3.5.9 29 Sep 2026",
-  "dependency_versions": {
-    "h11": "0.16.0",
-    "dnspython": "2.8.0"
-  },
-  "network": "isolated-loopback-only",
   "authority": "synthetic-audit-gate-not-durable-production-authority",
-  "source_fingerprints": {
-    "src/lychd/domain/scout/destination.py": "5cd67b1be68397673b86982afe5b36f2d3fbf26ef8c64da4397dc15d0edf683f",
-    "src/lychd/domain/scout/transport.py": "301869408a134330354419508d789de5a561d3d31f08564876a66714d4b3517e",
-    "src/lychd/system/services/scout_dns.py": "9bb3842fd92f35c99331aa14bb46f1250be700de599679454c061e9fba40acc9",
-    "src/lychd/system/services/scout_socket.py": "aa1e0cfefc62fb58368251ce479d3f1219f9ff3d5c976e72fe070689f2d88672",
-    "src/lychd/system/services/scout_http.py": "1f88211dfa04ba0451c43ae592f0294213072246ad7f60228ff3bce016cc4df1",
-    "src/lychd/system/services/scout_fetch.py": "8e042bb9ac69a2446993d7debe0306f9fad18f12aee2077ba2e2092081280d08",
-    "src/lychd/system/services/scout_extraction.py": "cfcca8c6ad5ec9c439934b643e76ce6d096ff5b5ca59ccc0ee9e585ef7c38ad9",
-    "src/lychd/system/scout_worker.py": "01a187f62f8da632c344394d0c1bc8c7f7365eed8c21e530ef6257fef0f1ce7f",
-    "tests/integration/test_scout_fetch_runtime.py": "375c2a14864a17e11e74e607d4e01cf20920f0117ec1221a22623683e8746bd9",
-    "tests/scout_network_fixture.py": "c33849a41d20c764874371161856af660de97db5f40878ee9054332aba4fd46a"
-  },
   "checks": [
     "real_dns_tls_length",
     "real_dns_tls_chunked",
@@ -35,7 +13,29 @@
     "real_fetch_and_network_denied_extract",
     "source_fingerprints_unchanged"
   ],
+  "dependency_versions": {
+    "dnspython": "2.8.0",
+    "h11": "0.16.0"
+  },
   "extraction": "passed_with_explicit_runtime_profile",
+  "kernel": "7.1.8-1-default",
+  "network": "isolated-loopback-only",
+  "openssl": "OpenSSL 3.5.7 9 Jun 2026",
+  "python": "3.15.0",
+  "schema": "scout-fetch-local-proof@1",
+  "source_fingerprints": {
+    "src/lychd/domain/scout/destination.py": "5cd67b1be68397673b86982afe5b36f2d3fbf26ef8c64da4397dc15d0edf683f",
+    "src/lychd/domain/scout/transport.py": "56308c63b38f22180752854771901769bfc04251f94c322102d069112cd5bcc5",
+    "src/lychd/system/scout_worker.py": "01a187f62f8da632c344394d0c1bc8c7f7365eed8c21e530ef6257fef0f1ce7f",
+    "src/lychd/system/services/scout_dns.py": "9bb3842fd92f35c99331aa14bb46f1250be700de599679454c061e9fba40acc9",
+    "src/lychd/system/services/scout_extraction.py": "cfcca8c6ad5ec9c439934b643e76ce6d096ff5b5ca59ccc0ee9e585ef7c38ad9",
+    "src/lychd/system/services/scout_fetch.py": "ed24a6e68149ac18e23006dc1f7667c0aaa09ae141fd85a6e3fc0b7b850e0795",
+    "src/lychd/system/services/scout_http.py": "4b712a3a35e61cd6649e2277b675a97db4af5deebb26af4c0a0854ee49dfbaa0",
+    "src/lychd/system/services/scout_socket.py": "aa1e0cfefc62fb58368251ce479d3f1219f9ff3d5c976e72fe070689f2d88672",
+    "tests/integration/test_scout_fetch_runtime.py": "375c2a14864a17e11e74e607d4e01cf20920f0117ec1221a22623683e8746bd9",
+    "tests/scout_network_fixture.py": "c33849a41d20c764874371161856af660de97db5f40878ee9054332aba4fd46a"
+  },
+  "status": "passed",
   "tls_versions": [
     "TLSv1.3"
   ]

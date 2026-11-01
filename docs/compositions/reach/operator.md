@@ -663,10 +663,39 @@ answer, source and provider bodies and arbitrary exception text. The supervisor 
 only from its Core child, separately from the Edge's fixed diagnostic codes. Diagnostic writes
 drop on backpressure so a stalled log consumer cannot withhold the Run's answer.
 
-This profile keeps its RunLedger and event bus in memory. Its diagnostics describe process-local
-evidence; they are not an Oculus trace store or a recoverable Run archive. Retaining supervisor
-stderr is an operator responsibility. Container-engine stdout logs can incidentally retain private
-wire bodies and must not be treated as a safe structural trace or a completeness guarantee.
+Each running supervisor retains typed structural observations in the owner-only
+`$REACH_ROOT/state/traces/trace.sqlite3` archive. Platform message IDs link adaptive request rounds;
+each request links its native Run and exact model/research call identities. History counts, graph
+stations, model HTTP status and timings, source outcomes, acknowledgements and individual final
+delivery parts remain searchable after restart. An HTTP status is present only when observed;
+missing data never means success. No question, answer, history, source body, URL, provider body,
+arbitrary exception text or credential enters this archive.
+
+The archive retains at most 30 days and 100,000 observations, with a 128 MiB database page ceiling
+and bounded rollback-journal overhead. Queries return a bounded retained suffix, omissions and
+capture counters. Structural producer sequences expose dropped observations separately from native
+sequences, whose missing token events are expected. A missing session close remains an unclosed
+observation, not evidence that every Run failed. Corruption, unsafe paths or unknown schemas refuse
+without erasing the archive. Preserve the original files before manual diagnosis; there is no
+automatic reset or repair command.
+
+Inspect the most recent retained Run, failures, or one Discord message from the repository:
+
+```bash
+uv run --offline --locked python scripts/reach_trace.py show --archive-dir "$REACH_ROOT/state/traces" --latest
+uv run --offline --locked python scripts/reach_trace.py recent --archive-dir "$REACH_ROOT/state/traces" --failures
+uv run --offline --locked python scripts/reach_trace.py show --archive-dir "$REACH_ROOT/state/traces" --platform-event-id MESSAGE_ID
+```
+
+`show` also accepts an exact `--run-id`, `--request-id` or `--call-id`; `query` accepts generation,
+aware `--since`/`--until` times and a result limit of 1–1000 (default 100). These are local,
+read-only metadata queries. Capture is `durable_best_effort`: queue overflow, interruption or disk
+failure can leave gaps, and retained observations never authorize replay or settle an effect.
+The archive is never mounted into either child. Core and Edge container logging is disabled to
+avoid incidentally retaining raw private wire bodies in the container engine.
+
+The RunLedger and event bus themselves remain in memory. The diagnostic archive does not provide
+Oculus ingestion, native Run recovery, conversation memory, or a replacement for the journals below.
 
 Transport attempts live in `$REACH_ROOT/state/effects`. Their private JSON records contain
 method, target class, hashed effect/payload/scope identities, status, and an optional remote ID

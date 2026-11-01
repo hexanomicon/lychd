@@ -10,6 +10,7 @@ from uuid import UUID
 from pydantic import AfterValidator, Field, field_validator, model_validator
 
 from lychd.compositions.reach.expressions import ConversationExpressions
+from lychd.compositions.reach.operator_trace import TraceCorrelation
 from lychd.compositions.reach.operator_wire import strict_json
 from lychd.compositions.reach.research_wire import ResearchOptions
 from lychd.compositions.reach.schemas import PolicyDigest, Record
@@ -81,6 +82,7 @@ class OperatorModelRequest(Record):
     binding_digest: PolicyDigest
     operation: Literal["probe", "generate"]
     payload_json: ModelPayload
+    correlation: TraceCorrelation | None = None
 
     @model_validator(mode="after")
     def probe_is_empty(self) -> OperatorModelRequest:

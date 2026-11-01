@@ -39,7 +39,10 @@ actions = ["answer_docs"]
     operator.write_private(profile, raw)
     observed: list[list[str]] = []
 
-    async def supervise(_engine: str, commands: tuple[list[str], list[str]], _ids: tuple[Path, Path]) -> int:
+    async def supervise(
+        _engine: str, commands: tuple[list[str], list[str]], _ids: tuple[Path, Path], *, capture: object | None = None
+    ) -> int:
+        assert capture is not None
         observed.extend(commands)
         core, edge = commands
         assert not any("onboarding" in item for item in core)

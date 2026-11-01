@@ -28,6 +28,8 @@ MAX_LOCATION_BYTES = 4096
 _FEED_BYTES = 4096
 _MAX_LENGTH_DIGITS = 20
 _OK_STATUS = 200
+_MIN_STATUS = 100
+_MAX_STATUS = 599
 _REDIRECTS = frozenset({301, 302, 303, 307, 308})
 _STATUS = re.compile(rb"HTTP/1\.1 ([0-9]{3})(?: [\x20-\x7e]*)?")
 _FIELD_NAME = re.compile(rb"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
@@ -250,7 +252,12 @@ class _ResponseParser[Media: str, Response](ABC):
 
     def _refuse(self, code: FetchCode) -> NoReturn:
         self._failure = code
-        raise FetchError(code) from None
+        raise FetchError(code, http_status=self._status) from None
+
+    @property
+    def http_status(self) -> int | None:
+        """Return only a valid status from a complete syntactically valid head."""
+        return self._status
 
     def _configure_framing(self, headers: dict[bytes, list[bytes]]) -> None:
         length = _single(headers, b"content-length")
@@ -273,6 +280,9 @@ class _ResponseParser[Media: str, Response](ABC):
 
     def _configure(self, head: bytes) -> None:
         status, headers = _raw_headers(head)
+        if not _MIN_STATUS <= status <= _MAX_STATUS:
+            self._refuse(FetchCode.PROTOCOL)
+        self._status = status
         if status != _OK_STATUS and status not in _REDIRECTS:
             self._refuse(FetchCode.PROTOCOL)
         connection_tokens = b",".join(headers.get(b"connection", [])).lower().split(b",")
@@ -287,7 +297,6 @@ class _ResponseParser[Media: str, Response](ABC):
             if not location or len(location) > MAX_LOCATION_BYTES or _LOCATION.fullmatch(location) is None:
                 self._refuse(FetchCode.PROTOCOL)
             self._location = location.decode("ascii")
-        self._status = status
 
     def _data(self, data: bytes) -> None:
         self.encoded_body_bytes += len(data)
@@ -356,7 +365,7 @@ class _ResponseParser[Media: str, Response](ABC):
     def feed(self, data: bytes) -> None:
         """Consume non-EOF input, enforcing raw head bounds before h11 sees it."""
         if self._failure is not None:
-            raise FetchError(self._failure)
+            raise FetchError(self._failure, http_status=self._status)
         if self._finished or type(data) is not bytes:
             self._refuse(FetchCode.PROTOCOL)
         try:
@@ -383,13 +392,12 @@ class _ResponseParser[Media: str, Response](ABC):
             self._feed_body(tail)
             self._feed_body(data[take:])
         except FetchError as error:
-            self._failure = error.code
-            raise
+            self._refuse(error.code)
 
     def finish(self) -> Response:
         """Mark real transport EOF and return only a complete validated response."""
         if self._failure is not None:
-            raise FetchError(self._failure)
+            raise FetchError(self._failure, http_status=self._status)
         if self._finished or self._status is None:
             self._refuse(FetchCode.PROTOCOL)
         if self._chunks is not None and not self._chunks.complete:

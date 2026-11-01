@@ -78,6 +78,39 @@ Future Oculus exposes typed query and event ports; clients do not inspect its ta
 An Eye receives a one-way allowlisted export, with no canonical read-back. The legacy Phoenix
 service spelling `oculus` is a compatibility name and cannot make that service native Oculus.
 
+### Isolated operator diagnostic archive
+
+The explicit Reach operator profile may retain a private host-only SQLite archive of typed
+structural observations. This is a separate diagnostic store under
+[Persistence's separate-store boundary](06-persistence.md#separate-stores-and-application-partitions),
+not a Phylactery, native Oculus ingestion, or a recoverable Run/Event ledger. It never settles a
+Run, grants access, retries an effect, or replaces the Discord and source-attempt journals.
+
+The host owns archive creation and commits; children receive no archive mount or database
+credentials. Each admitted record binds producer custody, its own event identity and structural
+sequence, producer and receipt times, and explicit request/Run/call/occurrence identities where
+available. Platform message identifiers are private correlation metadata. Queued ingress or
+timestamp proximity cannot manufacture those relationships. Native sequence gaps caused by
+omitted tokens are distinct from gaps in the producer's structural trace sequence.
+
+Only closed metadata records enter: stages, statuses, fixed error categories, source catalogue
+identifiers, actual observed HTTP status, timings, counts and delivery-part outcomes. Questions,
+answers, history, source/provider bodies, URLs, arbitrary exceptions, credentials and payload
+digests remain absent. The archive is local to its owner, has no remote export endpoint, and
+queries use fixed parameterized filters with bounded results and explicit omissions.
+
+The profile retains observations for at most 30 days and 100,000 records, with a 128 MiB database
+page ceiling and bounded rollback-journal overhead. Host receipt time governs retirement; only
+diagnostic rows retire. A bounded nonblocking intake and finite flush cannot delay authoritative
+work indefinitely. Overflow and capture failures remain observable as gaps where capture resumes;
+an interrupted generation or missing closing record remains unknown, never an invented failed Run.
+
+Committed rows survive process restart. Unknown schemas, corruption or unsafe private paths
+refuse without resetting evidence. Local backup or inspection requires the archive's owner and
+SQLite-consistent capture; restoration restores diagnostic observations only and performs no
+effect reconciliation. Query results name capture `durable_best_effort` and their retained bounds;
+neither a successful commit nor a complete-looking chain proves complete execution capture.
+
 ### 3. Interior Evidence Without Mind Reading
 
 Interior evidence needs an attributed source and a declared kind. Progress text is first-person

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
@@ -27,6 +29,7 @@ from lychd.compositions.reach.documents import (
 from lychd.compositions.reach.documents_workflow import DocumentsRefused
 from lychd.compositions.reach.expressions import REACTIONS, ConversationExpressions, GifId, Reaction
 from lychd.compositions.reach.operator_model_wire import OperatorConversationProfile, canonical_json
+from lychd.compositions.reach.operator_trace import ReachTraceEvent, TraceSink
 from lychd.compositions.reach.operator_wire import ReachWorkerRequest, ReachWorkerResult, strict_json
 from lychd.compositions.reach.policy import prepare_turn
 from lychd.compositions.reach.research import (
@@ -38,9 +41,10 @@ from lychd.compositions.reach.research import (
     synthesis_prompt,
     validate_research_response,
 )
-from lychd.compositions.reach.research_wire import OperatorResearchRequest, ResearchRelay, SourceId
+from lychd.compositions.reach.research_wire import OperatorResearchRequest, ResearchRelay, SourceId, SourceReadResult
 from lychd.compositions.reach.schemas import PolicyDigest, PreparedReachTurn, ReachPolicy, Record, require_aware
 from lychd.domain.animation.capabilities import CapabilityGrant
+from lychd.domain.cortex.execution_context import current_occurrence_id, current_step_id
 from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.web.schemas import BridgeTurn
 
@@ -372,6 +376,32 @@ class ConversationDeps:
     clock: Callable[[], datetime]
     spec: AgentSpec
     research_relay: ResearchRelay | None = None
+    trace: TraceSink | None = None
+
+
+def _read_document_source(
+    ctx: GraphRunContext[ConversationState, ConversationDeps], source_id: str
+) -> SourceReadResult:
+    result = read_research_document(ctx.deps.corpus, source_id, question=ctx.state.envelope.request.event.question)
+    if ctx.deps.trace is not None:
+        # Observation cannot decide source consumption or introduce cancellation.
+        with suppress(Exception, asyncio.CancelledError):
+            ctx.deps.trace(
+                ReachTraceEvent(
+                    producer="core",
+                    name="source_read",
+                    status=result.status,
+                    request_id=ctx.state.envelope.request.request_id,
+                    run_id=ctx.state.run_id,
+                    occurrence_id=current_occurrence_id(),
+                    step_id=current_step_id(),
+                    source_id=result.id,
+                    chars=result.source_chars,
+                    bytes_count=len(result.text.encode("utf-8")),
+                    truncated=result.truncated,
+                )
+            )
+    return result
 
 
 def _eligible(ctx: GraphRunContext[ConversationState, ConversationDeps]) -> None:
@@ -537,9 +567,7 @@ class ResearchConversation(BaseNode[ConversationState, ConversationDeps]):
             # Local document reads are gated by the same delivered-plan acknowledgement.
             web_by_id = {source.id: source for source in web_sources}
             sources = tuple(
-                read_research_document(ctx.deps.corpus, item, question=request.event.question)
-                if item.startswith("doc:")
-                else web_by_id[item]
+                _read_document_source(ctx, item) if item.startswith("doc:") else web_by_id[item]
                 for item in plan.source_ids
             )
             prompt = synthesis_prompt(
@@ -615,6 +643,7 @@ def reach_conversation_workflow(
     started_at: datetime,
     clock: Callable[[], datetime],
     research_relay: ResearchRelay | None = None,
+    trace: TraceSink | None = None,
 ) -> Workflow:
     """Bind the explicit disposable conversation profile; never register it on ordinary boot."""
 
@@ -678,6 +707,7 @@ def reach_conversation_workflow(
             clock=clock,
             spec=conversation_agent_spec(profile),
             research_relay=research_relay,
+            trace=trace,
         ),
         manifest=PatternManifest(
             key=SOURCE,

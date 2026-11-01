@@ -8,6 +8,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any, NoReturn, cast
 from uuid import uuid4
 
+from lychd.compositions.reach.operator_trace import TraceEmitter, TraceSink, error_code, platform_id_or_none
 from lychd.compositions.reach.operator_wire import (
     MAX_WIRE_BYTES,
     ReachHistoryEntry,
@@ -40,6 +41,7 @@ class PipeWorker:
         ready: ReachWorkerReady,
         *,
         write_frame: Callable[[bytes], None] | None = None,
+        trace: TraceSink | None = None,
     ) -> None:
         """Bind exactly one worker generation to the private pipe."""
         self.reader = reader
@@ -48,6 +50,7 @@ class PipeWorker:
         self.available = True
         self.progress: Callable[[ReachEvent, ReachResearchProgress], Awaitable[bool]] | None = None
         self._write_frame = write_frame if write_frame is not None else _write_stdio_frame
+        self.trace = TraceEmitter("edge", trace)
 
     @classmethod
     async def open(cls) -> PipeWorker:
@@ -86,8 +89,28 @@ class PipeWorker:
             }
         )
         frame = protocol_bytes(request)
+        binding = {
+            "generation": self.ready.generation,
+            "request_id": request.request_id,
+            "platform": event.platform,
+            "platform_event_id": platform_id_or_none(event.event_id),
+            "conversation_id": platform_id_or_none(event.conversation_id),
+            "context_round": context_round,
+        }
+        self.trace.record(
+            "history",
+            count=len(history),
+            chars=sum(len(item.text) for item in history),
+            code="budget"
+            if history_state == "budget"
+            else "source_unavailable"
+            if history_state == "unavailable"
+            else None,
+            **binding,
+        )
         async with self.lock:
             try:
+                self.trace.record("request_received", status="started", **binding)
                 self._write_frame(frame)
                 async with asyncio.timeout(310 if self.ready.research_enabled else 90):
                     raw = await self._read_result(request)
@@ -104,9 +127,18 @@ class PipeWorker:
                 self.ready.expressions.validate_selection(result.reaction, result.gif_id)
                 if event.trigger == "command" and (result.reaction is not None or result.gif_id is not None):
                     _refuse("worker_expression_audience")
-            except (ValueError, OSError, TimeoutError, asyncio.CancelledError):
+            except (ValueError, OSError, TimeoutError, asyncio.CancelledError) as error:
+                self.trace.record(
+                    "request_finished",
+                    status="cancelled" if isinstance(error, asyncio.CancelledError) else "error",
+                    code=error_code(error),
+                    **binding,
+                )
                 self.available = False
                 raise
+            self.trace.record(
+                "request_finished", status=result.status, run_id=result.run_id, chars=len(result.text), **binding
+            )
             return result
 
     async def _read_result(self, request: ReachWorkerRequest) -> bytes:

@@ -360,7 +360,9 @@ def test_profile_is_frozen_worker_only_and_publication_mount_is_edge_only(
         *,
         broker: OperatorModelBroker,
         research_broker: object | None = None,
+        capture: object | None = None,
     ) -> int:
+        assert capture is not None
         assert research_broker is None
         observed.extend(commands)
         core, edge = commands

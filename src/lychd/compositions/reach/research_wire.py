@@ -15,6 +15,7 @@ from urllib.parse import urlsplit
 
 from pydantic import AfterValidator, AwareDatetime, Field, field_validator, model_validator
 
+from lychd.compositions.reach.operator_trace import TraceCorrelation
 from lychd.compositions.reach.schemas import PolicyDigest, ReachEvent, ReachId, Record
 
 type ResearchId = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,31}$")]
@@ -136,6 +137,7 @@ class SourceReadResult(Record):
     truncated: bool = False
     receipt_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     reason: str | None = Field(default=None, pattern=r"^[a-z][a-z0-9_]{0,63}$")
+    http_status: int | None = Field(default=None, ge=100, le=599)
 
     @model_validator(mode="after")
     def evidence_shape(self) -> Self:
@@ -163,6 +165,7 @@ class OperatorResearchRequest(Record):
     event: ReachEvent = Field(repr=False)
     plan: str = Field(min_length=1, max_length=500, repr=False)
     source_ids: tuple[ResearchId, ...] = Field(default=(), max_length=2)
+    correlation: TraceCorrelation | None = None
 
 
 class OperatorResearchResponse(Record):

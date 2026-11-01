@@ -14,7 +14,8 @@ import os
 import stat
 import sys
 from collections.abc import Callable, MutableMapping
-from contextlib import AbstractAsyncContextManager
+from contextlib import AbstractAsyncContextManager, suppress
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -53,6 +54,16 @@ from lychd.compositions.reach.operator_model_wire import (
     OperatorModelRequest,
     OperatorModelResponse,
 )
+from lychd.compositions.reach.operator_trace import (
+    ReachTraceEvent,
+    TraceCode,
+    TraceCorrelation,
+    TraceName,
+    TraceSink,
+    TraceStatus,
+    error_code,
+    trace_bytes,
+)
 from lychd.compositions.reach.operator_wire import (
     MAX_WIRE_BYTES,
     ReachWorkerReady,
@@ -69,7 +80,8 @@ from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.context import Block, ContextOrchestrator
 from lychd.domain.cortex.dispatcher import Dispatcher
 from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine
-from lychd.domain.cortex.events import InProcessEventBus, RunEventKind
+from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
+from lychd.domain.cortex.execution_context import current_occurrence_id, current_step_id
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.runs import RunStatus
@@ -87,10 +99,32 @@ if TYPE_CHECKING:
 
 MAX_PENDING_INPUTS = 4
 DIAGNOSTIC_TIMEOUT = 0.25
+_TRACE_CORRELATION: ContextVar[TraceCorrelation | None] = ContextVar("reach_trace_correlation", default=None)
 
 
 def _stderr_diagnostic(value: ReachRunDiagnostic) -> None:
     write_diagnostic_line(diagnostic_bytes(value))
+
+
+def _stderr_trace(value: ReachTraceEvent) -> None:
+    write_diagnostic_line(trace_bytes(value))
+
+
+def _current_trace_correlation() -> TraceCorrelation | None:
+    correlation = _TRACE_CORRELATION.get()
+    if correlation is None:
+        return None
+    return correlation.model_copy(update={"occurrence_id": current_occurrence_id(), "step_id": current_step_id()})
+
+
+def _trace_failure_code(error: BaseException | None) -> TraceCode | None:
+    """Classify trusted types without rendering exception arguments or validation input."""
+    if error is None or isinstance(error, asyncio.CancelledError):
+        return None
+    known = _failure_code(error) if isinstance(error, Exception) else None
+    if known in {"model_unavailable", "model_timeout", "model_refused", "model_protocol", "model_failed"}:
+        return cast("TraceCode", known)
+    return error_code(error)
 
 
 def _failure_code(error: Exception | None) -> DiagnosticCode | None:
@@ -240,8 +274,63 @@ class DocumentsRuntime:
     late_response_filter: Callable[[bytes], bool] | None = None
     generation: str = field(default_factory=lambda: str(uuid4()))
     diagnostic: Callable[[ReachRunDiagnostic], None] | None = None
+    trace: TraceSink | None = None
+    _trace_seq: int = 0
     _context_rounds: ContextRounds = field(default_factory=ContextRounds)
     _serial: asyncio.Lock = field(default_factory=asyncio.Lock)
+
+    def observe_trace(self, name: TraceName, *, status: TraceStatus = "observed", **fields: Any) -> None:
+        """Record each capture attempt before validation; later records expose skipped attempts."""
+        if self.trace is None:
+            return
+        self._trace_seq += 1
+        seq = self._trace_seq
+        try:
+            event = ReachTraceEvent.model_validate(
+                {
+                    "producer": "core",
+                    "generation": self.generation,
+                    "observed_at": self.clock(),
+                    "trace_seq": seq,
+                    "name": name,
+                    "status": status,
+                    **fields,
+                }
+            )
+            self.trace(event)
+        except (Exception, asyncio.CancelledError):  # noqa: BLE001 - capture cannot alter execution or cancellation
+            return
+
+    def observe_native(self, event: RunEvent) -> None:
+        """Copy only structural native identities, never arbitrary event bodies or metadata."""
+        names: dict[RunEventKind, TraceName] = {
+            RunEventKind.STATUS: "native_status",
+            RunEventKind.NODE: "native_node",
+            RunEventKind.DISPATCH: "native_dispatch",
+            RunEventKind.TRANSITION: "native_transition",
+            RunEventKind.DONE: "native_done",
+        }
+        name = names.get(event.kind)
+        if name is None:
+            return
+        correlation = _TRACE_CORRELATION.get()
+        request_id = correlation.request_id if correlation is not None and correlation.run_id == event.run_id else None
+        fields: dict[str, Any] = {
+            "run_id": event.run_id,
+            "request_id": request_id,
+            "native_event_id": event.event_id,
+            "native_seq": event.seq,
+            "observed_at": event.ts,
+        }
+        status = "observed"
+        if event.kind is RunEventKind.NODE:
+            fields.update(node=event.data, occurrence_id=event.meta.get("occurrence_id") or None)
+            status = event.meta.get("phase", "observed")
+        elif event.kind in {RunEventKind.STATUS, RunEventKind.DONE}:
+            status = event.data
+        else:
+            fields["occurrence_id"] = event.meta.get("occurrence_id") or None
+        self.observe_trace(name, status=cast("TraceStatus", status), **fields)
 
     @property
     def ready(self) -> ReachWorkerReady:
@@ -367,8 +456,15 @@ class DocumentsRuntime:
             session = await self.sessions.create_session(title="Operator public documents")
             intent = self.intent(request, session.id)
             handle = await self.engine.submit(intent, idempotency_key=f"{self.generation}:{digest}")
+            self.observe_trace(
+                "run_started",
+                status="started",
+                request_id=request.request_id,
+                run_id=handle.run_id,
+                context_round=request.context_round,
+            )
             result = None
-            failure = None
+            failure: BaseException | None = None
             stage: DiagnosticStage = "result_lookup"
             task = None
             try:
@@ -377,9 +473,19 @@ class DocumentsRuntime:
                     result = self.refuse(request.request_id, "run_missing", error=True)
                     return result
                 stage = "execute"
-                task = asyncio.create_task(
-                    perform_run({"run_substrate": self.substrate}, run_id=run.run_id, enqueue_seq=run.enqueue_seq)
-                )
+                correlation = None
+                # Legacy non-UUID fixture requests carry no diagnostic correlation.
+                with suppress(ValueError):
+                    correlation = TraceCorrelation(
+                        generation=self.generation, request_id=request.request_id, run_id=handle.run_id
+                    )
+                token = _TRACE_CORRELATION.set(correlation)
+                try:
+                    task = asyncio.create_task(
+                        perform_run({"run_substrate": self.substrate}, run_id=run.run_id, enqueue_seq=run.enqueue_seq)
+                    )
+                finally:
+                    _TRACE_CORRELATION.reset(token)
                 for job in self.queue.jobs.values():
                     if job.task is None:
                         job.task = task
@@ -401,8 +507,12 @@ class DocumentsRuntime:
                 self._context_rounds.settled(request, result, adaptive=adaptive)
                 return result  # noqa: TRY300 - settlement retrieval shares the guarded failure boundary
             except TimeoutError:
+                failure = TimeoutError()
                 result = self.refuse(request.request_id, "run_timeout", error=True, run_id=handle.run_id)
                 return result
+            except asyncio.CancelledError as error:
+                failure = error
+                raise
             except Exception as error:  # noqa: BLE001 - closed diagnostics never echo input, paths or provider errors
                 failure = error
                 result = self.refuse(request.request_id, "run_failed", error=True, run_id=handle.run_id)
@@ -414,7 +524,29 @@ class DocumentsRuntime:
                     await asyncio.gather(task, return_exceptions=True)
                 self.queue.jobs.clear()
                 if result is not None:
-                    await self.observe_result(request.request_id, handle.run_id, result, stage, failure)
+                    await self.observe_result(
+                        request.request_id,
+                        handle.run_id,
+                        result,
+                        stage,
+                        failure if isinstance(failure, Exception) else None,
+                    )
+                    self.observe_trace(
+                        "run_finished",
+                        status=result.status,
+                        request_id=request.request_id,
+                        run_id=handle.run_id,
+                        context_round=request.context_round,
+                        code=_trace_failure_code(failure),
+                    )
+                elif isinstance(failure, asyncio.CancelledError):
+                    self.observe_trace(
+                        "run_finished",
+                        status="cancelled",
+                        request_id=request.request_id,
+                        run_id=handle.run_id,
+                        context_round=request.context_round,
+                    )
 
     async def aclose(self) -> None:
         """Retire owned tasks before withdrawing the ephemeral event bus."""
@@ -431,12 +563,20 @@ def build_runtime(
     model_relay: ModelRelay | None = None,
     research_relay: ResearchRelay | None = None,
     diagnostic: Callable[[ReachRunDiagnostic], None] | None = None,
+    trace: TraceSink | None = None,
     started_at: datetime | None = None,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> DocumentsRuntime:
     """Compose isolated memory collaborators; never publish a global application substrate."""
     boundary = started_at if started_at is not None else clock()
     require_aware(boundary)
+
+    def observe_workflow_trace(event: ReachTraceEvent) -> None:
+        fields = event.model_dump(
+            exclude={"kind", "schema_version", "producer", "generation", "trace_seq", "name", "status"}
+        )
+        runtime.observe_trace(event.name, status=event.status, **fields)
+
     workflow = reach_documents_workflow(policy, corpus, started_at=boundary, clock=clock)
     workflows = [workflow]
     animator_registry = AnimatorRegistry(declarations=AnimatorDeclarations((), ()))
@@ -454,7 +594,13 @@ def build_runtime(
         animator_registry.load(probe_readiness=False)
         workflows.append(
             reach_conversation_workflow(
-                policy, corpus, profile, started_at=boundary, clock=clock, research_relay=research_relay
+                policy,
+                corpus,
+                profile,
+                started_at=boundary,
+                clock=clock,
+                research_relay=research_relay,
+                trace=observe_workflow_trace if trace is not None else None,
             )
         )
         spec = conversation_agent_spec(profile)
@@ -466,7 +612,11 @@ def build_runtime(
         route_precedence=tuple(item.name for item in workflows[1:]),
     )
     ledger = InMemoryRunLedger()
-    bus = InProcessEventBus(ledger=ledger)
+
+    def observe_native(event: RunEvent) -> None:
+        runtime.observe_native(event)
+
+    bus = InProcessEventBus(ledger=ledger, observer=observe_native if trace is not None else None)
     sessions = BridgeSessionStore(sigil_name="reach.guest")
     queue = LocalQueue()
     substrate = RunSubstrate(
@@ -491,7 +641,7 @@ def build_runtime(
         stasis_store=substrate.stasis_store,
         cancellations=substrate.cancellations,
     )
-    return DocumentsRuntime(
+    runtime = DocumentsRuntime(
         policy,
         corpus,
         boundary,
@@ -503,7 +653,9 @@ def build_runtime(
         bus,
         profile=profile,
         diagnostic=diagnostic,
+        trace=trace,
     )
+    return runtime
 
 
 async def serve(runtime: DocumentsRuntime, reader: asyncio.StreamReader, write: Callable[[bytes], None]) -> None:
@@ -556,6 +708,7 @@ class PipeModelRelay:
             binding_digest=self.profile.digest,
             operation=admitted_operation,
             payload_json=payload_json,
+            correlation=_current_trace_correlation(),
         )
         raw = await self._exchange(
             frame.model_dump_json().encode() + b"\n", call_id=frame.call_id, budget=self.profile.timeout_seconds + 5
@@ -573,6 +726,10 @@ class PipeModelRelay:
         if not self.profile.research.enabled or frame.binding_digest != self.profile.digest:
             msg = "research_binding"
             raise ValueError(msg)
+        correlation = _current_trace_correlation()
+        if correlation is not None and correlation.request_id != frame.request_id:
+            correlation = None
+        frame = frame.model_copy(update={"correlation": correlation})
         raw = await self._exchange(
             frame.model_dump_json().encode() + b"\n",
             call_id=frame.call_id,
@@ -672,6 +829,7 @@ async def run(policy: ReachPolicy, corpus: PublicCorpus, profile: OperatorConver
         model_relay=relay,
         research_relay=relay.research if relay is not None else None,
         diagnostic=_stderr_diagnostic,
+        trace=_stderr_trace,
     )
     if relay is not None:
         runtime.pending_inputs = relay.pending_inputs

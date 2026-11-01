@@ -7,6 +7,9 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Literal, Protocol
 
+_MIN_HTTP_STATUS = 100
+_MAX_HTTP_STATUS = 599
+
 
 class FetchCode(StrEnum):
     """Closed acquisition outcomes without foreign diagnostics or locators."""
@@ -29,11 +32,17 @@ class FetchCode(StrEnum):
 
 
 class FetchError(ValueError):
-    """A content-free refusal, never a transport/provider diagnostic."""
+    """A content-free refusal with an optional observed HTTP status."""
 
-    def __init__(self, code: FetchCode) -> None:
-        """Retain the closed outcome only."""
+    def __init__(self, code: FetchCode, *, http_status: int | None = None) -> None:
+        """Keep only a closed outcome and a valid numeric status, never content."""
+        if http_status is not None and (
+            type(http_status) is not int or not _MIN_HTTP_STATUS <= http_status <= _MAX_HTTP_STATUS
+        ):
+            message = "Scout HTTP status is invalid."
+            raise ValueError(message)
         self.code = code
+        self.http_status = http_status
         super().__init__(f"Scout fetch refused: {code.value}.")
 
 

@@ -14,7 +14,9 @@ import discord
 import httpx
 import pytest
 
+from lychd.compositions.reach.operator_trace import ReachTraceEvent, TraceEmitter
 from lychd.compositions.reach.operator_wire import ReachWorkerResult
+from lychd.interface.discord import live
 from lychd.interface.discord.live import PipeWorker, ReachCog, ReachService, event_from_message
 from lychd.interface.discord.schemas import DiscordPolicy, DiscordRule
 from tests.unit.interface.test_discord_history import SDKPage
@@ -77,9 +79,12 @@ async def test_dm_denial_precedes_acknowledgement_and_native_request(denial: str
 @pytest.mark.parametrize("fail_second_part", [False, True])
 async def test_dm_ack_precedes_native_and_multipart_delivery_stops_on_unknown(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
     *,
     fail_second_part: bool,
 ) -> None:
+    traced: list[ReachTraceEvent] = []
+    monkeypatch.setattr(live, "_EDGE_TRACE", TraceEmitter("edge", traced.append))
     configured, observed = policy(), direct_message()
     event = event_from_message(observed, configured, conversation=True)
     assert event is not None
@@ -135,6 +140,15 @@ async def test_dm_ack_precedes_native_and_multipart_delivery_stops_on_unknown(
         assert all(body["allowed_mentions"] == {"parse": [], "replied_user": False} for body in bodies)
         assert "".join(body["content"] for body in bodies[1:]) == (answer[:3800] if fail_second_part else answer)
         assert sum(record.status == "unknown" for record in records.values()) == int(fail_second_part)
+        delivered = [item for item in traced if item.name == "delivery"]
+        assert [(item.part, item.status) for item in delivered] == [
+            (0, "started"),
+            (0, "succeeded"),
+            (1, "started"),
+            (1, "unknown" if fail_second_part else "succeeded"),
+        ] + ([] if fail_second_part else [(2, "started"), (2, "succeeded")])
+        assert all(item.platform_event_id == "110" for item in traced)
+        assert observed.content not in json.dumps([item.model_dump(mode="json") for item in traced])
     native.request.assert_awaited_once()
 
 

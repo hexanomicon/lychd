@@ -19,6 +19,52 @@ async def _next_event(source: AsyncIterator[RunEvent]) -> RunEvent:
 
 
 @pytest.mark.asyncio
+async def test_observer_receives_detached_events_without_changing_native_evidence() -> None:
+    from lychd.domain.cortex.ledger import InMemoryRunLedger
+
+    observed: list[RunEvent] = []
+
+    def observe(event: RunEvent) -> None:
+        observed.append(event.model_copy(deep=True))
+        event.meta["phase"] = "observer_changed"
+
+    ledger = InMemoryRunLedger()
+    bus = InProcessEventBus(ledger=ledger, observer=observe)
+    try:
+        emitter = bus.emitter("r")
+        entered = emitter.node("station", phase="entered")
+        terminal = emitter.done("done")
+        emitter.node("late", phase="failed")
+        await bus.wait_persisted("r")
+        assert [event.event_id for event in observed] == [entered.event_id, terminal.event_id]
+        assert observed[0].meta == entered.meta == {"phase": "entered"}
+        retained = await ledger.list_events("r")
+        assert retained[0].meta == {"phase": "entered"}
+        assert [event.event_id for event in retained] == [entered.event_id, terminal.event_id]
+    finally:
+        await bus.aclose()
+
+
+@pytest.mark.parametrize("failure", [ValueError, asyncio.CancelledError])
+@pytest.mark.asyncio
+async def test_observer_failure_never_changes_event_or_cancels_execution(failure: type[BaseException]) -> None:
+    def observe(_event: RunEvent) -> None:
+        message = "private observer detail"
+        raise failure(message)
+
+    bus = InProcessEventBus(observer=observe)
+    try:
+        emitter = bus.emitter("r")
+        assert emitter.node("station", phase="entered").seq == 0
+        assert emitter.done("done").seq == 1
+        assert bus.snapshot("r") is not None
+        assert asyncio.current_task() is not None
+        assert not cast("asyncio.Task[object]", asyncio.current_task()).cancelling()
+    finally:
+        await bus.aclose()
+
+
+@pytest.mark.asyncio
 async def test_channel_backfill_then_terminates_on_done() -> None:
     """A pre-seeded channel drains its replay buffer and closes on DONE (no hang)."""
     channel = RunChannel(run_id="r")

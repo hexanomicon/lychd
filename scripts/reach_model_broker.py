@@ -7,6 +7,7 @@ native worker owns cognition; this broker performs only its closed HTTP dialect.
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import Callable
 from typing import Any, cast
 
@@ -21,6 +22,7 @@ from lychd.compositions.reach.operator_model_wire import (
     canonical_json,
     validate_generation_payload,
 )
+from lychd.compositions.reach.operator_trace import TraceEmitter, TraceName, TraceSink
 from lychd.compositions.reach.operator_wire import strict_json
 
 MODEL_ENDPOINT = "http://127.0.0.1:28000"
@@ -57,12 +59,20 @@ class OperatorModelBroker:
         *,
         endpoint: str = MODEL_ENDPOINT,
         transport: httpx.AsyncBaseTransport | None = None,
+        trace: TraceSink | None = None,
     ) -> None:
         """Bind transport to a frozen profile without opening any network connection."""
         self.profile = profile
         self.endpoint = validate_endpoint(endpoint)
         self.transport = transport
         self._busy = False
+        self.trace = TraceEmitter("host", trace)
+        self._active_request: OperatorModelRequest | None = None
+
+    def _observe(self, name: TraceName, **fields: Any) -> None:
+        request = self._active_request
+        binding = request.correlation.model_dump(exclude_none=True) if request and request.correlation else {}
+        self.trace.record(name, call_id=request.call_id if request else None, **binding, **fields)
 
     async def _request(
         self,
@@ -76,18 +86,34 @@ class OperatorModelBroker:
         if authorize is not None:
             authorize()
         extensions = {"lychd_research_authorize": authorize} if authorize is not None else None
-        async with client.stream(method, self.endpoint + route, content=body, extensions=extensions) as response:
-            response.raise_for_status()
-            if response.headers.get("content-encoding", "identity").lower() != "identity":
-                msg = "model_response_encoding"
-                raise ValueError(msg)
-            raw = bytearray()
-            async for chunk in response.aiter_bytes(chunk_size=8192):
-                raw.extend(chunk)
-                if len(raw) > MAX_MODEL_PAYLOAD_BYTES:
-                    msg = "model_response_limit"
+        started, status, size, outcome = time.monotonic(), None, 0, "error"
+        operation = {"/health": "health", "/v1/models": "inventory", "/v1/chat/completions": "completion"}[route]
+        try:
+            async with client.stream(method, self.endpoint + route, content=body, extensions=extensions) as response:
+                status = response.status_code
+                response.raise_for_status()
+                if response.headers.get("content-encoding", "identity").lower() != "identity":
+                    msg = "model_response_encoding"
                     raise ValueError(msg)
-            return strict_json(bytes(raw)) if raw else None
+                raw = bytearray()
+                async for chunk in response.aiter_bytes(chunk_size=8192):
+                    raw.extend(chunk)
+                    size = len(raw)
+                    if size > MAX_MODEL_PAYLOAD_BYTES:
+                        msg = "model_response_limit"
+                        raise ValueError(msg)
+                result = strict_json(bytes(raw)) if raw else None
+                outcome = "ok"
+                return result
+        finally:
+            self._observe(
+                "model_http",
+                status=outcome,
+                operation=operation,
+                http_status=status,
+                bytes_count=size,
+                duration_ms=min(86_400_000, int((time.monotonic() - started) * 1000)),
+            )
 
     async def _probe(self, client: httpx.AsyncClient) -> str:
         await self._request(client, "GET", "/health")
@@ -151,6 +177,10 @@ class OperatorModelBroker:
             msg = "model_binding"
             raise ValueError(msg)
         self._busy = True
+        self._active_request = request
+        started = time.monotonic()
+        result: OperatorModelResponse | None = None
+        self._observe("model_call", status="started", operation=request.operation)
         budget = min(5, self.profile.timeout_seconds) if request.operation == "probe" else self.profile.timeout_seconds
         try:
             async with (
@@ -170,29 +200,41 @@ class OperatorModelBroker:
                 )
             if authorize is not None:
                 authorize()
-            return OperatorModelResponse(
+            result = OperatorModelResponse(
                 call_id=request.call_id, binding_digest=request.binding_digest, status="ok", payload_json=payload
             )
+            return result  # noqa: TRY300 - the finally observer shares this guarded result boundary
         except (TimeoutError, httpx.TimeoutException):
-            return OperatorModelResponse(
+            result = OperatorModelResponse(
                 call_id=request.call_id,
                 binding_digest=request.binding_digest,
                 status="unavailable",
                 reason="model_timeout",
             )
+            return result
         except (httpx.HTTPError, LookupError):
-            return OperatorModelResponse(
+            result = OperatorModelResponse(
                 call_id=request.call_id,
                 binding_digest=request.binding_digest,
                 status="unavailable",
                 reason="model_unavailable",
             )
+            return result
         except (ValueError, TypeError, KeyError):
-            return OperatorModelResponse(
+            result = OperatorModelResponse(
                 call_id=request.call_id,
                 binding_digest=request.binding_digest,
                 status="error",
                 reason="model_protocol",
             )
+            return result
         finally:
+            self._observe(
+                "model_call",
+                status=result.status if result else "cancelled",
+                operation=request.operation,
+                code=result.reason if result else None,
+                duration_ms=min(86_400_000, int((time.monotonic() - started) * 1000)),
+            )
+            self._active_request = None
             self._busy = False

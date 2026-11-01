@@ -28,7 +28,8 @@ from lychd.compositions.reach.research_wire import (
 from lychd.domain.scout.destination import preflight_destination
 from lychd.domain.scout.extraction import ExtractedText, ExtractionCode, ExtractionError
 from lychd.domain.scout.transport import FetchCode, FetchError, NetworkHandoff, NetworkTarget
-from lychd.system.services.scout_fetch import FetchedPage
+from lychd.system.services.scout_fetch import FetchedPage, FetchObservation
+from lychd.system.services.scout_http import HttpResponseParser
 
 
 @pytest.fixture
@@ -87,7 +88,18 @@ def install_acquisition(
 
     async def fetch(*args: object, **kwargs: Any) -> FetchedPage:
         fetched(*args, **kwargs)
-        return FetchedPage("text/plain", body, ())
+        observation = FetchObservation(
+            preflight_destination("https://example.com/guide"),
+            ("93.184.216.34",),
+            "93.184.216.34",
+            200,
+            64,
+            len(body),
+            len(body),
+            len(body),
+            "a" * 64,
+        )
+        return FetchedPage("text/plain", body, (observation,))
 
     async def extract(*args: object, **kwargs: Any) -> ExtractedText:
         extracted(*args, **kwargs)
@@ -116,6 +128,7 @@ async def test_admitted_source_has_bounded_attribution_and_no_body_custody(
     fetched, extracted = install_acquisition(monkeypatch, text=text)
     (result,) = await worker.research(current, state, job())
     assert result.status == "ok"
+    assert result.http_status == 200
     assert result.id == "web:jjk"
     assert result.title == current.profile.catalogue.sources[0].title
     assert result.url == "https://example.com/guide"
@@ -147,6 +160,7 @@ async def test_successful_duplicate_has_receipt_but_never_reconstructs_material(
     (duplicate,) = await worker.research(current, state, job())
     assert fetched.call_count == 1
     assert duplicate.status == "unavailable"
+    assert duplicate.http_status is None
     assert duplicate.reason == "material_unavailable"
     assert duplicate.text == ""
     assert duplicate.source_digest is None
@@ -163,6 +177,7 @@ async def test_empty_successful_extraction_is_explicitly_unavailable_and_stays_c
     (result,) = await worker.research(current, state, job())
     assert result.status == "unavailable"
     assert result.reason == "no_extractable_text"
+    assert result.http_status == 200
     assert result.text == ""
     assert result.source_digest is None
     assert result.text_digest is None
@@ -440,6 +455,7 @@ async def test_profile_change_after_await_fences_next_effect(
     assert result.status == "unavailable"
     assert result.text == ""
     assert extracted.call_count == (0 if phase == "extract" else 1)
+    assert result.http_status == 200
 
 
 def dns_query(hostname: str, family: int) -> bytes:
@@ -587,6 +603,7 @@ async def test_failures_are_closed_and_cleanup_uncertainty_is_not_refunded(
     monkeypatch.setattr(worker, "fetch_static_page" if failure == "fetch" else "extract_static_text", fail)
     (result,) = await worker.research(current, state, job())
     assert result.status == "unavailable"
+    assert result.http_status == (None if failure == "fetch" else 200)
     assert result.text == ""
     assert "foreign" not in result.model_dump_json()
     assert "evil" not in result.model_dump_json()
@@ -597,6 +614,28 @@ async def test_failures_are_closed_and_cleanup_uncertainty_is_not_refunded(
         "unknown" if failure in {"cleanup", "extract"} else "refused"
     )
     assert fetched.call_count == (0 if failure == "fetch" else 1)
+
+
+@pytest.mark.parametrize("head", [b"HTTP/1.1 403 Forbidden\r\n\r\n", b"malformed\r\n\r\n"])
+@pytest.mark.asyncio
+async def test_parser_http_status_reaches_unavailable_source_without_foreign_content(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, head: bytes
+) -> None:
+    current, state = prepare(tmp_path)
+    _, extracted = install_acquisition(monkeypatch)
+
+    async def refused(*_args: object, **_kwargs: object) -> FetchedPage:
+        HttpResponseParser().feed(head)
+        pytest.fail("Refused response unexpectedly accepted")
+
+    monkeypatch.setattr(worker, "fetch_static_page", refused)
+    (result,) = await worker.research(current, state, job())
+    assert result.status == "unavailable"
+    assert result.reason == "fetch_protocol"
+    assert result.http_status == (403 if b"403" in head else None)
+    assert result.text == ""
+    assert "Forbidden" not in result.model_dump_json()
+    extracted.assert_not_called()
 
 
 def test_casefold_focus_preserves_original_unicode_offsets() -> None:

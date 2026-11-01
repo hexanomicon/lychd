@@ -118,6 +118,7 @@ async def test_unlisted_redirect_stops_before_new_dns(monkeypatch: pytest.Monkey
     with pytest.raises(FetchError) as caught:
         await _fetch()
     assert caught.value.code is FetchCode.REDIRECT
+    assert caught.value.http_status == 302
     resolved.assert_awaited_once()
     opened.assert_awaited_once()
     streams[0].close.assert_called_once()
@@ -218,6 +219,51 @@ async def test_cancellation_closes_owned_stream_without_replay(monkeypatch: pyte
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
         await task
+    streams[0].close.assert_called_once()
+    opened.assert_awaited_once()
+
+
+@pytest.mark.parametrize("observed_head", [False, True])
+@pytest.mark.parametrize("failure", ["transport", "timeout"])
+@pytest.mark.asyncio
+async def test_read_failure_keeps_only_status_from_this_validated_head(
+    monkeypatch: pytest.MonkeyPatch, *, observed_head: bool, failure: str
+) -> None:
+    _, _, streams = _install(monkeypatch, _wire())
+    error = FetchError(FetchCode.TRANSPORT) if failure == "transport" else TimeoutError()
+    prefix = [b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 20\r\n\r\n"] if observed_head else []
+    streams[0].receive.side_effect = [*prefix, error]
+    with pytest.raises(FetchError) as caught:
+        await _fetch()
+    assert caught.value.code is (FetchCode.TRANSPORT if failure == "transport" else FetchCode.TIMEOUT)
+    assert caught.value.http_status == (200 if observed_head else None)
+    streams[0].close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_deadline_after_validated_head_keeps_status_and_closes_stream(monkeypatch: pytest.MonkeyPatch) -> None:
+    _, opened, streams = _install(monkeypatch, _wire())
+    calls = 0
+
+    async def receive() -> bytes:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 20\r\n\r\n"
+        await asyncio.Future[None]()
+        return b""
+
+    streams[0].receive.side_effect = receive
+    with pytest.raises(FetchError) as caught:
+        await fetch.fetch_static_page(
+            _PAGE,
+            resolver=ResolverEndpoint("127.0.0.1"),
+            gate=cast("NetworkGate", Mock()),
+            ca_file=Path("/unused-ca"),
+            deadline=time.monotonic() + 0.01,
+        )
+    assert caught.value.code is FetchCode.TIMEOUT
+    assert caught.value.http_status == 200
     streams[0].close.assert_called_once()
     opened.assert_awaited_once()
 

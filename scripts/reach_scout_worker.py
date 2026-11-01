@@ -526,7 +526,9 @@ def project_excerpt(text: str, focus: tuple[str, ...]) -> tuple[str, int]:
     return text[start : start + EXCERPT_CHARS], start
 
 
-def _failure(source: ResearchSource, receipt: str, reason: str, *, refused: bool = False) -> SourceReadResult:
+def _failure(
+    source: ResearchSource, receipt: str, reason: str, *, refused: bool = False, http_status: int | None = None
+) -> SourceReadResult:
     return SourceReadResult(
         id=f"web:{source.id}",
         title=source.title,
@@ -534,14 +536,17 @@ def _failure(source: ResearchSource, receipt: str, reason: str, *, refused: bool
         status="refused" if refused else "unavailable",
         receipt_id=receipt,
         reason=reason,
+        http_status=http_status,
     )
 
 
-def _source_result(source: ResearchSource, receipt: str, extracted: ExtractedText) -> SourceReadResult:
-    """Project verified extraction without treating an empty page as usable evidence."""
+def _source_result(
+    source: ResearchSource, receipt: str, extracted: ExtractedText, *, http_status: int | None = None
+) -> SourceReadResult:
+    """Project extraction and observed HTTP status, preserving empty-page refusal."""
     excerpt, start = project_excerpt(extracted.text, source.focus)
     if not excerpt.strip():
-        return _failure(source, receipt, "no_extractable_text")
+        return _failure(source, receipt, "no_extractable_text", http_status=http_status)
     return SourceReadResult(
         id=f"web:{source.id}",
         title=source.title,
@@ -554,6 +559,7 @@ def _source_result(source: ResearchSource, receipt: str, extracted: ExtractedTex
         excerpt_start=start,
         truncated=start > 0 or start + len(excerpt) < len(extracted.text),
         receipt_id=receipt,
+        http_status=http_status,
     )
 
 
@@ -575,6 +581,7 @@ async def _read_source(  # noqa: C901 - distinct refusal and uncertain settlemen
     gate: CatalogueNetworkGate | None = None
     lifecycle = ExtractionLifecycle()
     status: Literal["succeeded", "refused", "unknown"] = "refused"
+    http_status: int | None = None
     try:
         current.require_current()
         candidate = preflight_destination(source.url)
@@ -589,6 +596,7 @@ async def _read_source(  # noqa: C901 - distinct refusal and uncertain settlemen
                 deadline=deadline,
                 permitted_redirects=(),
             )
+            http_status = page.observations[-1].status if page.observations else None
             current.require_current()
             extracted = await extract_static_text(
                 page.body,
@@ -605,24 +613,26 @@ async def _read_source(  # noqa: C901 - distinct refusal and uncertain settlemen
             or lifecycle.child != "reaped"
         ):
             raise ResearchRefusedError  # noqa: TRY301 - validate exact acquired bytes before projecting them
-        result = _source_result(source, receipt, extracted)
+        result = _source_result(source, receipt, extracted, http_status=http_status)
         status = "succeeded" if result.status == "ok" else "refused"
     except FetchError as exc:
         reason = f"fetch_{exc.code.value}" if type(exc.code) is FetchCode else "fetch_failed"
-        return _failure(source, receipt, reason)
+        return _failure(
+            source, receipt, reason, http_status=exc.http_status if exc.http_status is not None else http_status
+        )
     except ExtractionError as exc:
         if exc.code is ExtractionCode.CLEANUP:
             status = "unknown"
         reason = f"extract_{exc.code.value}" if type(exc.code) is ExtractionCode else "extract_failed"
-        return _failure(source, receipt, reason)
+        return _failure(source, receipt, reason, http_status=http_status)
     except (ResearchRefusedError, TimeoutError):
-        return _failure(source, receipt, "current_authority_or_material")
+        return _failure(source, receipt, "current_authority_or_material", http_status=http_status)
     except asyncio.CancelledError:
         status = "unknown"
         raise
     except Exception:  # noqa: BLE001 - foreign diagnostics are never protocol data
         status = "unknown"
-        return _failure(source, receipt, "acquisition_failed")
+        return _failure(source, receipt, "acquisition_failed", http_status=http_status)
     finally:
         if gate is not None:
             gate.close()

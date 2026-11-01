@@ -22,6 +22,17 @@ from discord.ext import commands
 
 from lychd.compositions.reach.conversation_session import drive_context_turn
 from lychd.compositions.reach.operator_client import PipeWorker
+from lychd.compositions.reach.operator_diagnostics import write_diagnostic_line
+from lychd.compositions.reach.operator_trace import (
+    ReachTraceEvent,
+    TraceEmitter,
+    TraceName,
+    TraceStatus,
+    error_code,
+    platform_id_or_none,
+    trace_bytes,
+    uuid_or_none,
+)
 from lychd.compositions.reach.operator_wire import (
     ReachHistoryEntry,
     ReachWorkerResult,
@@ -44,6 +55,13 @@ MAX_GENERATION_THREADS = 1000
 MAX_ONBOARDING_BYTES = 4096
 MAX_ONBOARDING_MEMBERS = 1000
 _COMMAND_NAME = re.compile(r"[a-z][a-z0-9_]{0,31}\Z")
+
+
+def _write_edge_trace(event: ReachTraceEvent) -> None:
+    write_diagnostic_line(trace_bytes(event))
+
+
+_EDGE_TRACE = TraceEmitter("edge", _write_edge_trace)
 
 
 def _refuse(code: str) -> NoReturn:
@@ -286,6 +304,8 @@ class ReachService:
         self.policy = policy
         self.shared_policy = policy.to_reach_policy()
         self.worker = worker
+        if isinstance(getattr(worker, "trace", None), TraceEmitter):
+            worker.trace.sink = _EDGE_TRACE
         self.rest = rest
         self.admin_users = admin_users
         self.history_enabled = history_enabled
@@ -295,6 +315,18 @@ class ReachService:
         self.bound_threads: set[str] = set()
         self.turn_active = False
         self.expression_blocked: set[str] = set()
+
+    def observe(self, name: TraceName, event: ReachEvent, *, status: TraceStatus = "observed", **fields: Any) -> None:
+        """Keep provider IDs and structural outcomes without retaining message content."""
+        _EDGE_TRACE.record(
+            name,
+            status=status,
+            generation=self.worker.ready.generation,
+            platform=event.platform,
+            platform_event_id=platform_id_or_none(event.event_id),
+            conversation_id=platform_id_or_none(event.conversation_id),
+            **fields,
+        )
 
     def eligible(self, event: ReachEvent | None) -> bool:
         return (
@@ -349,6 +381,12 @@ class ReachService:
         reference: discord.MessageReference | None = None,
     ) -> ReachWorkerResult | None:
         if not self.eligible(event) or event.event_id in self.seen:
+            self.observe(
+                "admission",
+                event,
+                status="refused",
+                code="duplicate" if event.event_id in self.seen else "permission_denied",
+            )
             return None
         # A generation-local fence is in addition to the persistent transport journal.
         if len(self.seen) >= MAX_GENERATION_EVENTS:
@@ -356,7 +394,9 @@ class ReachService:
             raise ValueError(msg)
         self.seen.add(event.event_id)
         if not self.worker.available or self.worker.lock.locked() or self.turn_active:
+            self.observe("admission", event, status="refused", code="worker_unavailable")
             _refuse("worker_busy_or_unavailable")
+        self.observe("admission", event, status="ok")
         self.turn_active = True
         try:
             await self._bind_conversation(event, channel)
@@ -364,6 +404,9 @@ class ReachService:
                 return None
             async with asyncio.timeout(480 if self.worker.ready.research_enabled else 180):
                 return await self._context_turn(event, channel, reference=reference)
+        except Exception as error:
+            self.observe("admission", event, status="error", code=error_code(error))
+            raise
         finally:
             self.turn_active = False
 
@@ -465,8 +508,10 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                 silent=True,
             )
         except (ValueError, OSError, TimeoutError, DiscordRestError):
+            self.service.observe("research_plan", event, status="error")
             diagnostic("research_plan_failed")
             return False
+        self.service.observe("research_plan", event, status=result.status, remote_id=result.remote_id)
         return result.status == "succeeded"
 
     async def _request(self, interaction: discord.Interaction, question: str, action: str) -> None:
@@ -482,6 +527,17 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
             if result is not None:
                 parts = split_message(result_text(result))
                 for index, part in enumerate(parts):
+                    self.service.observe(
+                        "delivery",
+                        event,
+                        status="started",
+                        run_id=uuid_or_none(result.run_id),
+                        request_id=uuid_or_none(result.request_id),
+                        operation="final",
+                        part=index,
+                        parts=len(parts),
+                        chars=len(part),
+                    )
                     outcome = await (
                         self.service.rest.edit_interaction_original(
                             interaction.token, part, event_id=str(interaction.id)
@@ -493,6 +549,17 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                             event_id=str(interaction.id),
                             part=index,
                         )
+                    )
+                    self.service.observe(
+                        "delivery",
+                        event,
+                        status=outcome.status,
+                        run_id=uuid_or_none(result.run_id),
+                        request_id=uuid_or_none(result.request_id),
+                        operation="final",
+                        part=index,
+                        parts=len(parts),
+                        remote_id=outcome.remote_id,
                     )
                     if outcome.status != "succeeded":
                         diagnostic("request_failed")
@@ -562,9 +629,10 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
             result = await self.service.run_event(
                 event, message.channel, acknowledge=lambda: self._acknowledge(event), reference=message.reference
             )
-            if result is not None and await self._send_final(event, result_text(result)):
+            if result is not None and await self._send_final(event, result_text(result), result=result):
                 await self._send_expressions(event, result)
-        except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError):
+        except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError) as error:
+            self.service.observe("delivery", event, status="error", code=error_code(error))
             diagnostic("message_failed")
             if event.trigger == "message":
                 await self.service.rest.bind_direct_channel(event.conversation_id, event.subject_id)
@@ -576,12 +644,16 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
         """Confirm receipt before optional cosmetic acknowledgement and native work."""
         preview = " ".join(event.question.split())[:240]
         text = f"I'll look into your request: “{preview}”. I'll return here with an answer or a clarification question."
+        self.service.observe("acknowledgement", event, status="started", operation="ack")
         outcome = await self.service.rest.send_message(
             event.conversation_id,
             text,
             event_id=event.event_id,
             reply_to=event.event_id,
             phase="ack",
+        )
+        self.service.observe(
+            "acknowledgement", event, status=outcome.status, operation="ack", remote_id=outcome.remote_id
         )
         if outcome.status != "succeeded":
             diagnostic("message_failed")
@@ -590,6 +662,7 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                 seen = await self.service.rest.add_reaction(
                     event.conversation_id, event.event_id, "👀", event_id=event.event_id, phase="seen"
                 )
+                self.service.observe("expression", event, status=seen.status, operation="reaction")
                 if seen.status != "succeeded":
                     self.service.expression_blocked.add(event.event_id)
                     diagnostic("expression_failed")
@@ -598,10 +671,23 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                 diagnostic("expression_failed")
         return outcome.status == "succeeded"
 
-    async def _send_final(self, event: ReachEvent, text: str) -> bool:
+    async def _send_final(self, event: ReachEvent, text: str, *, result: ReachWorkerResult | None = None) -> bool:
         """Freeze bounded parts before the first journaled send; stop on uncertainty."""
         parts = split_message(text)
+        binding = (
+            {"run_id": uuid_or_none(result.run_id), "request_id": uuid_or_none(result.request_id)} if result else {}
+        )
         for index, part in enumerate(parts):
+            self.service.observe(
+                "delivery",
+                event,
+                status="started",
+                operation="final",
+                part=index,
+                parts=len(parts),
+                chars=len(part),
+                **binding,
+            )
             outcome = await self.service.rest.send_message(
                 event.conversation_id,
                 part,
@@ -609,6 +695,16 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                 reply_to=event.event_id,
                 phase="final",
                 part=index,
+            )
+            self.service.observe(
+                "delivery",
+                event,
+                status=outcome.status,
+                operation="final",
+                part=index,
+                parts=len(parts),
+                remote_id=outcome.remote_id,
+                **binding,
             )
             if outcome.status != "succeeded":
                 diagnostic("message_failed")
@@ -631,6 +727,14 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                 outcome = await self.service.rest.add_reaction(
                     event.conversation_id, event.event_id, result.reaction, event_id=event.event_id, phase="reply"
                 )
+                self.service.observe(
+                    "expression",
+                    event,
+                    status=outcome.status,
+                    operation="reaction",
+                    run_id=uuid_or_none(result.run_id),
+                    request_id=uuid_or_none(result.request_id),
+                )
                 if outcome.status != "succeeded":
                     diagnostic("expression_failed")
                     return
@@ -638,6 +742,14 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                 selected = next(item for item in expressions.gifs if item.id == result.gif_id)
                 outcome = await self.service.rest.send_gif(
                     event.conversation_id, selected.url, event_id=event.event_id, reply_to=event.event_id
+                )
+                self.service.observe(
+                    "expression",
+                    event,
+                    status=outcome.status,
+                    operation="gif",
+                    run_id=uuid_or_none(result.run_id),
+                    request_id=uuid_or_none(result.request_id),
                 )
                 if outcome.status != "succeeded":
                     diagnostic("expression_failed")

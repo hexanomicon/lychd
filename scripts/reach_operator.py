@@ -20,7 +20,8 @@ import stat
 import subprocess
 import sys
 import tempfile
-from collections.abc import Callable, Generator, Sequence
+import time
+from collections.abc import Awaitable, Callable, Generator, Sequence
 from contextlib import contextmanager, suppress
 from hashlib import sha256
 from pathlib import Path
@@ -29,16 +30,27 @@ from uuid import uuid4
 
 from lychd.compositions.reach.operator_diagnostics import diagnostic_bytes, parse_diagnostic, write_diagnostic_line
 from lychd.compositions.reach.operator_model_wire import OperatorModelRequest
+from lychd.compositions.reach.operator_trace import ReachTraceEvent, error_code
+from lychd.compositions.reach.operator_wire import ReachWorkerReady, ReachWorkerResult
+from lychd.compositions.reach.research_wire import (
+    OperatorResearchRequest,
+    OperatorResearchResponse,
+    ReachResearchProgress,
+)
 from lychd.interface.discord.operator_io import load_policy
 
 if __package__:
     from scripts.reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker, validate_endpoint
     from scripts.reach_podman_model import PodmanModelTransport
     from scripts.reach_research_broker import OperatorResearchBroker
+    from scripts.reach_trace_archive import TraceArchive
+    from scripts.reach_trace_capture import TraceCapture
 else:
     from reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker, validate_endpoint
     from reach_podman_model import PodmanModelTransport
     from reach_research_broker import OperatorResearchBroker
+    from reach_trace_archive import TraceArchive
+    from reach_trace_capture import TraceCapture
 
 ROOT = Path(__file__).resolve().parents[1]
 WIRE_LIMIT = 65_536
@@ -60,6 +72,8 @@ EDGE_INPUTS = (
             "policy",
             "operator_wire",
             "operator_client",
+            "operator_diagnostics",
+            "operator_trace",
             "conversation_session",
             "expressions",
             "research_wire",
@@ -415,6 +429,7 @@ def container_arguments(engine: str, image: str, cidfile: Path, *, offline: bool
         "--cidfile",
         str(cidfile),
         "--read-only",
+        "--log-driver=none",
         "--cap-drop=ALL",
         "--security-opt=no-new-privileges",
         "--pids-limit",
@@ -440,7 +455,13 @@ def bind(source: Path, destination: str, *, readonly: bool = True) -> list[str]:
     return ["--volume", f"{source}:{destination}:{'ro' if readonly else 'rw'},Z"]
 
 
-async def relay(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, *, requests_only: bool = False) -> None:
+async def relay(
+    reader: asyncio.StreamReader,
+    writer: asyncio.StreamWriter,
+    *,
+    requests_only: bool = False,
+    capture: TraceCapture | None = None,
+) -> None:
     """Forward bounded objects; the conversation edge may submit only typed worker requests."""
     while True:
         try:
@@ -451,11 +472,18 @@ async def relay(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, *, r
             return
         if len(raw) > WIRE_LIMIT:
             _fail("operator_frame_limit")
-        strict_object(raw)
+        value = strict_object(raw)
         if requests_only:
             from lychd.compositions.reach.operator_wire import parse_request_line
 
-            parse_request_line(raw)
+            request = parse_request_line(raw)
+            if capture is not None:
+                capture.request(request)
+        elif capture is not None:
+            if value.get("kind") == "ready":
+                capture.ready(ReachWorkerReady.model_validate_json(raw))
+            elif value.get("kind") == "result":
+                capture.result(ReachWorkerResult.model_validate_json(raw))
         writer.write(raw)
         await writer.drain()
 
@@ -479,15 +507,15 @@ def authorize_research_synthesis(payload: str, broker: OperatorResearchBroker) -
     return None
 
 
-async def model_relay(
+async def model_relay(  # noqa: C901 - closed readiness/result/model/research wire branches
     reader: asyncio.StreamReader,
     edge_writer: asyncio.StreamWriter,
     core_writer: asyncio.StreamWriter,
     broker: OperatorModelBroker,
     research_broker: OperatorResearchBroker | None = None,
+    capture: TraceCapture | None = None,
 ) -> None:
     """Keep model frames on the trusted host pipe and expose only public results."""
-    from lychd.compositions.reach.research_wire import OperatorResearchRequest, ReachResearchProgress
 
     async def progress(value: ReachResearchProgress) -> None:
         edge_writer.write(value.model_dump_json().encode() + b"\n")
@@ -504,6 +532,11 @@ async def model_relay(
             _fail("operator_frame_limit")
         value = strict_object(raw)
         if value.get("kind") in {"ready", "result"}:
+            if capture is not None:
+                if value["kind"] == "ready":
+                    capture.ready(ReachWorkerReady.model_validate_json(raw))
+                else:
+                    capture.result(ReachWorkerResult.model_validate_json(raw))
             if value.get("kind") == "result" and research_broker is not None:
                 research_broker.settled(str(value.get("request_id", "")))
             edge_writer.write(raw)
@@ -514,10 +547,61 @@ async def model_relay(
             await write_core_response(core_writer, response)
         elif value.get("kind") == "research_request" and research_broker is not None:
             research_request = OperatorResearchRequest.model_validate_json(raw)
-            research_response = await research_broker.handle(research_request, progress)
+            research_response = await handle_research_request(research_request, research_broker, progress, capture)
             await write_core_response(core_writer, research_response.model_dump_json())
         else:
             _fail("operator_core_frame")
+
+
+async def handle_research_request(
+    request: OperatorResearchRequest,
+    broker: OperatorResearchBroker,
+    progress: Callable[[ReachResearchProgress], Awaitable[None]],
+    capture: TraceCapture | None,
+) -> OperatorResearchResponse:
+    """Observe the bounded acquisition handoff without retaining its material."""
+    binding = request.correlation.model_dump(exclude_none=True) if request.correlation else {}
+    started = time.monotonic()
+    if capture is not None:
+        capture.host.record("research_call", status="started", call_id=request.call_id, **binding)
+    try:
+        response = await broker.handle(request, progress)
+    except (Exception, asyncio.CancelledError) as error:
+        if capture is not None:
+            capture.host.record(
+                "research_call",
+                status="cancelled" if isinstance(error, asyncio.CancelledError) else "error",
+                code=error_code(error),
+                call_id=request.call_id,
+                duration_ms=min(86_400_000, int((time.monotonic() - started) * 1000)),
+                **binding,
+            )
+        raise
+    if capture is not None:
+        capture.host.record(
+            "research_call",
+            status=response.status,
+            call_id=request.call_id,
+            duration_ms=min(86_400_000, int((time.monotonic() - started) * 1000)),
+            **binding,
+        )
+        for source in response.sources:
+            capture.host.record(
+                "source_read",
+                status=source.status,
+                source_id=source.id,
+                call_id=request.call_id,
+                http_status=source.http_status,
+                chars=len(source.text),
+                truncated=source.truncated,
+                code="fetch_protocol"
+                if source.reason == "fetch_protocol"
+                else "source_unavailable"
+                if source.status != "ok"
+                else None,
+                **binding,
+            )
+    return response
 
 
 async def handle_model_request(
@@ -543,7 +627,10 @@ async def write_core_response(writer: asyncio.StreamWriter, response: str) -> No
 
 
 async def research_edge_relay(
-    reader: asyncio.StreamReader, writer: asyncio.StreamWriter, broker: OperatorResearchBroker
+    reader: asyncio.StreamReader,
+    writer: asyncio.StreamWriter,
+    broker: OperatorResearchBroker,
+    capture: TraceCapture | None = None,
 ) -> None:
     """Consume exact progress acknowledgements and forward only normalized requests."""
     from lychd.compositions.reach.operator_wire import parse_request_line
@@ -562,18 +649,34 @@ async def research_edge_relay(
         if value.get("kind") == "progress_ack":
             broker.acknowledge(ReachResearchAcknowledgement.model_validate_json(raw))
         else:
-            parse_request_line(raw)
+            request = parse_request_line(raw)
+            if capture is not None:
+                capture.request(request)
             writer.write(raw)
             await writer.drain()
 
 
-async def diagnostics(reader: asyncio.StreamReader, *, role: Literal["core", "edge"] = "edge") -> None:
+async def diagnostics(  # noqa: C901 - role custody, legacy diagnostics and closed readiness codes
+    reader: asyncio.StreamReader,
+    *,
+    role: Literal["core", "edge"] = "edge",
+    capture: TraceCapture | None = None,
+) -> None:
     """Admit closed Core observations and fixed codes; reject foreign diagnostic bodies."""
     while True:
         try:
             raw = await reader.readuntil(b"\n")
         except (asyncio.IncompleteReadError, asyncio.LimitOverrunError):
             return
+        if capture is not None and raw.startswith(b"{"):
+            try:
+                value = strict_object(raw)
+                event = ReachTraceEvent.model_validate_json(raw) if value.get("kind") == "reach_trace" else None
+                if event is not None and event.producer == role:
+                    capture.child(event, role)
+                    continue
+            except (ValueError, UnicodeError, RecursionError):
+                pass
         if role == "core" and raw.startswith(b"{"):
             try:
                 record = parse_diagnostic(raw)
@@ -587,6 +690,25 @@ async def diagnostics(reader: asyncio.StreamReader, *, role: Literal["core", "ed
         except UnicodeError:
             code = ""
         admitted = code if re.fullmatch(r"(?:reach_discord:)?[a-z][a-z0-9_]{0,63}", code) else "reach_child_diagnostic"
+        if capture is not None:
+            if role == "edge" and admitted in {
+                "reach_discord:ready",
+                "reach_discord:connecting",
+                "reach_discord:disconnected",
+            }:
+                capture.host.record(
+                    "gateway",
+                    status="ok"
+                    if admitted.endswith(":ready")
+                    else "started"
+                    if admitted.endswith(":connecting")
+                    else "unavailable",
+                    generation=capture.generation,
+                )
+            elif admitted == "reach_child_diagnostic" or admitted.endswith("_failed"):
+                capture.host.record(
+                    "child_diagnostic", status="error", code="protocol_error", generation=capture.generation
+                )
         write_diagnostic_line((admitted + "\n").encode("ascii"))
 
 
@@ -632,6 +754,7 @@ async def supervise(  # noqa: C901, PLR0912 - explicit two-child settlement and 
     *,
     broker: OperatorModelBroker | None = None,
     research_broker: OperatorResearchBroker | None = None,
+    capture: TraceCapture | None = None,
 ) -> int:
     """First EOF, child failure or signal retires both processes and exact owned containers."""
     children: list[asyncio.subprocess.Process] = []
@@ -665,22 +788,22 @@ async def supervise(  # noqa: C901, PLR0912 - explicit two-child settlement and 
             _fail("operator_child_pipe")
         tasks = [
             asyncio.create_task(
-                relay(core.stdout, edge.stdin)
+                relay(core.stdout, edge.stdin, capture=capture)
                 if broker is None
-                else model_relay(core.stdout, edge.stdin, core.stdin, broker, research_broker)
+                else model_relay(core.stdout, edge.stdin, core.stdin, broker, research_broker, capture)
             ),
             asyncio.create_task(
-                relay(edge.stdout, core.stdin, requests_only=broker is not None)
+                relay(edge.stdout, core.stdin, requests_only=True, capture=capture)
                 if research_broker is None
-                else research_edge_relay(edge.stdout, core.stdin, research_broker)
+                else research_edge_relay(edge.stdout, core.stdin, research_broker, capture)
             ),
             asyncio.create_task(core.wait()),
             asyncio.create_task(edge.wait()),
             asyncio.create_task(stopped.wait()),
         ]
         diagnostic_tasks = [
-            asyncio.create_task(diagnostics(core.stderr, role="core")),
-            asyncio.create_task(diagnostics(edge.stderr, role="edge")),
+            asyncio.create_task(diagnostics(core.stderr, role="core", capture=capture)),
+            asyncio.create_task(diagnostics(edge.stderr, role="edge", capture=capture)),
         ]
         tasks.extend(diagnostic_tasks)
         done, _ = await asyncio.wait(tasks[:5], return_when=asyncio.FIRST_COMPLETED)
@@ -692,12 +815,21 @@ async def supervise(  # noqa: C901, PLR0912 - explicit two-child settlement and 
                 if type(value) is int:
                     status = value if value >= 0 else 128 - value
     finally:
-        for task in tasks:
+        for task in tasks[:5]:
             if not task.done():
                 task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
+        await asyncio.gather(*tasks[:5], return_exceptions=True)
         for child in children:
             await retire(child)
+        try:
+            async with asyncio.timeout(2):
+                await asyncio.gather(*tasks[5:], return_exceptions=True)
+        except TimeoutError:
+            for task in tasks[5:]:
+                task.cancel()
+            await asyncio.gather(*tasks[5:], return_exceptions=True)
+        if capture is not None:
+            capture.close(status)
         errors: list[OSError | ValueError] = []
         for cidfile in cidfiles:
             try:
@@ -792,7 +924,14 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
     with (
         instance_lock(args.state_dir),
         generation_workspace(args.state_dir, "generation-") as temporary,
+        TraceArchive(args.state_dir / "traces") as archive,
     ):
+        corpus_manifest = strict_object(read_regular(args.corpus_dir / "manifest.json", CORPUS_LIMIT))
+        document_ids = frozenset(f"doc:{item['path']}" for item in corpus_manifest.get("documents", []))
+        web_ids: frozenset[str] = (
+            frozenset(f"web:{item.id}" for item in profile.research.sources) if profile is not None else frozenset()
+        )
+        capture = TraceCapture(archive.emit, source_ids=document_ids | web_ids)
         generation = Path(temporary)
         generic = generation / "policy.json"
         write_private(generic, policy.to_reach_policy().model_dump_json().encode())
@@ -868,11 +1007,13 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
                         profile,
                         endpoint=args.model_endpoint,
                         transport=PodmanModelTransport() if args.model_transport == "podman" else None,
+                        trace=capture.host,
                     ),
                     research_broker=research_broker,
+                    capture=capture,
                 )
             )
-        return asyncio.run(supervise(args.engine, (core, edge), (core_cid, edge_cid)))
+        return asyncio.run(supervise(args.engine, (core, edge), (core_cid, edge_cid), capture=capture))
 
 
 def admin_containers(args: argparse.Namespace) -> int:

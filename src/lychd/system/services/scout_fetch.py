@@ -144,6 +144,9 @@ async def _response(
 
 
 class _ResponseReader[Response](Protocol):
+    @property
+    def http_status(self) -> int | None: ...
+
     def feed(self, data: bytes) -> None: ...
 
     def finish(self) -> Response: ...
@@ -160,20 +163,26 @@ async def _read_response[Response: (HttpResponse, RssResponse)](
     parser: _ResponseReader[Response],
 ) -> tuple[Response, FetchObservation]:
     digest = sha256()
-    addresses = await resolve_destination(candidate, resolver=resolver, gate=gate, deadline=deadline)
-    # There is one selected address, never a retry or happy-eyeballs race.
-    peer = addresses.addresses[0]
-    stream = await open_pinned_tls(
-        NetworkTarget(peer, 443, candidate.hostname, "origin"), gate=gate, deadline=deadline, ca_file=ca_file
-    )
     try:
-        await stream.send(request)
-        while part := await stream.receive():
-            digest.update(part)
-            parser.feed(part)
-        response = parser.finish()
-    finally:
-        stream.close()
+        async with asyncio.timeout(deadline - time.monotonic()):
+            addresses = await resolve_destination(candidate, resolver=resolver, gate=gate, deadline=deadline)
+            # There is one selected address, never a retry or happy-eyeballs race.
+            peer = addresses.addresses[0]
+            stream = await open_pinned_tls(
+                NetworkTarget(peer, 443, candidate.hostname, "origin"), gate=gate, deadline=deadline, ca_file=ca_file
+            )
+            try:
+                await stream.send(request)
+                while part := await stream.receive():
+                    digest.update(part)
+                    parser.feed(part)
+                response = parser.finish()
+            finally:
+                stream.close()
+    except TimeoutError:
+        raise FetchError(FetchCode.TIMEOUT, http_status=parser.http_status) from None
+    except FetchError as error:
+        raise FetchError(error.code, http_status=error.http_status or parser.http_status) from None
     return response, FetchObservation(
         candidate=candidate,
         addresses=addresses.addresses,
@@ -210,32 +219,31 @@ async def fetch_static_page(
     seen = {current.normalized_url}
     observations: list[FetchObservation] = []
     remaining_wire, remaining_decoded = _MAX_WIRE_BODY, _MAX_DECODED_BODY
-    try:
-        async with asyncio.timeout(end - time.monotonic()):
-            for hop in range(_MAX_REDIRECTS + 1):
-                response, observation = await _response(
-                    current,
-                    resolver=resolver,
-                    gate=gate,
-                    ca_file=ca_file,
-                    deadline=end,
-                    remaining_wire=remaining_wire,
-                    remaining_decoded=remaining_decoded,
-                )
-                observations.append(observation)
-                remaining_wire -= response.wire_body_bytes
-                remaining_decoded -= response.decoded_body_bytes
-                if response.status == HTTPStatus.OK and response.media_type is not None:
-                    return FetchedPage(response.media_type, response.body, tuple(observations))
-                if response.location is None or hop == _MAX_REDIRECTS:
-                    raise FetchError(FetchCode.REDIRECT)
-                following = _redirect(current, response.location)
-                if following.normalized_url in seen or following.normalized_url not in permitted:
-                    raise FetchError(FetchCode.REDIRECT)
-                seen.add(following.normalized_url)
-                current = following
-    except TimeoutError:
-        raise FetchError(FetchCode.TIMEOUT) from None
+    for hop in range(_MAX_REDIRECTS + 1):
+        response, observation = await _response(
+            current,
+            resolver=resolver,
+            gate=gate,
+            ca_file=ca_file,
+            deadline=end,
+            remaining_wire=remaining_wire,
+            remaining_decoded=remaining_decoded,
+        )
+        observations.append(observation)
+        remaining_wire -= response.wire_body_bytes
+        remaining_decoded -= response.decoded_body_bytes
+        if response.status == HTTPStatus.OK and response.media_type is not None:
+            return FetchedPage(response.media_type, response.body, tuple(observations))
+        if response.location is None or hop == _MAX_REDIRECTS:
+            raise FetchError(FetchCode.REDIRECT, http_status=response.status)
+        try:
+            following = _redirect(current, response.location)
+        except FetchError as error:
+            raise FetchError(error.code, http_status=response.status) from None
+        if following.normalized_url in seen or following.normalized_url not in permitted:
+            raise FetchError(FetchCode.REDIRECT, http_status=response.status)
+        seen.add(following.normalized_url)
+        current = following
     raise FetchError(FetchCode.PROTOCOL)
 
 
@@ -250,22 +258,18 @@ async def fetch_rss_feed(
     """Acquire one bounded feed passage without redirects, retries or extraction."""
     current = _candidate(candidate)
     end = _deadline(deadline)
-    try:
-        async with asyncio.timeout(end - time.monotonic()):
-            response, observation = await _read_response(
-                current,
-                resolver=resolver,
-                gate=gate,
-                ca_file=ca_file,
-                deadline=end,
-                request=serialize_rss_get(current),
-                parser=RssResponseParser(remaining_decoded_bytes=_MAX_RSS_DECODED_BODY),
-            )
-            if response.status != HTTPStatus.OK or response.media_type is None:
-                raise FetchError(FetchCode.REDIRECT)
-            return FetchedFeed(response.media_type, response.body, (observation,))
-    except TimeoutError:
-        raise FetchError(FetchCode.TIMEOUT) from None
+    response, observation = await _read_response(
+        current,
+        resolver=resolver,
+        gate=gate,
+        ca_file=ca_file,
+        deadline=end,
+        request=serialize_rss_get(current),
+        parser=RssResponseParser(remaining_decoded_bytes=_MAX_RSS_DECODED_BODY),
+    )
+    if response.status != HTTPStatus.OK or response.media_type is None:
+        raise FetchError(FetchCode.REDIRECT, http_status=response.status)
+    return FetchedFeed(response.media_type, response.body, (observation,))
 
 
 async def acquire_static_text(

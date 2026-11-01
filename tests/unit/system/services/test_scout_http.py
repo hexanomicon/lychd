@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gzip
 from dataclasses import replace
+from typing import cast
 
 import pytest
 
@@ -67,6 +68,7 @@ def test_supported_body_framings_preserve_unicode_and_separate_usage(framing: st
     wire = f"{len(body):X}\r\n".encode() + body + b"\r\n0\r\n\r\n" if framing == "chunked" else body
     response = _response(wire, framing=framing)
     result = _parse(response, fragment=fragment)
+    assert result.status == 200
     assert result.body == body
     assert result.media_type == "text/plain"
     assert result.header_bytes == response.index(b"\r\n\r\n") + 4
@@ -98,6 +100,50 @@ def test_redirect_is_only_an_observation_with_discarded_but_counted_body(status:
     assert result.body == b""
     assert result.media_type is None
     assert result.decoded_body_bytes == len(b"not retained")
+
+
+@pytest.mark.parametrize("status", [403, 404, 429, 503])
+def test_refused_http_status_is_retained_without_consuming_or_exposing_body(status: int) -> None:
+    parser = HttpResponseParser()
+    head = f"HTTP/1.1 {status} Foreign reason\r\nContent-Length: 1000000\r\n\r\n".encode()
+    with pytest.raises(FetchError) as raised:
+        parser.feed(head)
+    assert raised.value.code is FetchCode.PROTOCOL
+    assert raised.value.http_status == status
+    assert parser.wire_body_bytes == parser.encoded_body_bytes == parser.decoded_body_bytes == 0
+    assert str(raised.value) == "Scout fetch refused: protocol."
+    with pytest.raises(FetchError) as repeated:
+        parser.finish()
+    assert repeated.value.http_status == status
+
+
+@pytest.mark.parametrize(
+    "head",
+    [
+        b"HTTP/1.1 malformed\r\n\r\n",
+        b"HTTP/1.1 099 Invalid\r\n\r\n",
+        b"HTTP/1.1 600 Invalid\r\n\r\n",
+        b"HTTP/1.1 403 Forbidden\r\nInvalid field\r\n\r\n",
+        b"HTTP/1.1 403 Forbidden\r\n",
+    ],
+)
+def test_unknown_or_invalid_http_head_does_not_invent_status(head: bytes) -> None:
+    with pytest.raises(FetchError) as raised:
+        _parse(head)
+    assert raised.value.http_status is None
+
+
+def test_post_header_media_refusal_preserves_observed_ok_status() -> None:
+    with pytest.raises(FetchError) as raised:
+        _parse(_response(b"foreign", headers=b"Content-Type: application/json\r\n"))
+    assert raised.value.code is FetchCode.MEDIA
+    assert raised.value.http_status == 200
+
+
+@pytest.mark.parametrize("status", [99, 600, True, "403", 403.0])
+def test_fetch_error_rejects_invalid_numeric_status_without_foreign_diagnostic(status: object) -> None:
+    with pytest.raises(ValueError, match=r"^Scout HTTP status is invalid\.$"):
+        FetchError(FetchCode.PROTOCOL, http_status=cast("int", status))
 
 
 @pytest.mark.parametrize("fragment", [None, 1, 4096])
