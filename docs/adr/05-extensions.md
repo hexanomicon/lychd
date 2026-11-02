@@ -114,6 +114,16 @@ package registers. A minimal contribution is explicit:
 context.runes.add_schema(RuneConfig)
 ```
 
+Oculus owns an additional shaped observation contribution: immutable component and connection
+descriptions plus supported structural source contracts. Weaver owns inspection-only Pattern
+descriptors. Both retain host-assigned Registrant provenance, reject conflicting identities and
+seal with the same assembly generation. Their safe read projections supply Orb and Loom
+automatically for selected contributions. They register no routes, executable workflow, new
+effect authority, or service startup. Existing selected capability definitions may project their
+known identity into the component catalogue while reporting missing activity coverage explicitly.
+Dynamic runtime instances remain owner-reported observations of admitted definitions, not live
+package loading. Inspection and execution registries cannot substitute for one another.
+
 The manager owns the root context and passes each Registrant a registrant-bound
 `ExtensionRegistrationContext`. User activation IDs remain the Settings and filesystem selectors;
 audit provenance uses disjoint trust-domain identities: `core`, `builtin:<activation-id>`, and

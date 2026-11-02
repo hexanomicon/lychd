@@ -137,6 +137,8 @@ class ReachTraceEvent(Record):
     request_id: DiagnosticUuid | None = None
     run_id: DiagnosticUuid | None = None
     call_id: DiagnosticUuid | None = None
+    pattern_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+    pattern_revision: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
     platform: Literal["discord", "telegram"] | None = None
     platform_event_id: PlatformTraceId | None = None
     conversation_id: PlatformTraceId | None = None

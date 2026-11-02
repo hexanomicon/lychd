@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { inspectionSelection, sameInspectionBinding, inspectionQuery, type InspectionSelection } from "$lib/api/inspection";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
@@ -51,10 +52,11 @@
   let sourceContextError = $state("");
   let sourceRunHint = $derived(page.url.searchParams.get("run"));
   let sourceRunId = $derived(navigationId(sourceRunHint));
+  let inspectionContext = $derived(inspectionSelection(page.url.search));
   let returnHref = $derived(sourceRun ? orbReturnHref(sourceRun.run.run_id, page.url.search) : null);
 
   $effect(() => {
-    void load(patternId, revision, sourceRunId, sourceRunHint);
+    void load(patternId, revision, sourceRunId, sourceRunHint, inspectionContext.binding, inspectionContext.error);
   });
 
   onDestroy(() => {
@@ -110,7 +112,9 @@
     requestedPattern?: string,
     requestedRevision?: string,
     requestedRun?: string | null,
-    requestedHint?: string | null
+    requestedHint?: string | null,
+    requestedBinding?: InspectionSelection,
+    bindingError?: string
   ) {
     const version = ++loadVersion;
     loading = true;
@@ -122,6 +126,7 @@
     sourceRun = null;
     sourceContextError = requestedHint && !requestedRun ? "Run context unavailable — the linked identity is invalid." : "";
     try {
+      if (bindingError) throw new Error(bindingError);
       const [patterns, origin] = await Promise.all([
         getLoomCatalogue(),
         requestedRun
@@ -137,8 +142,14 @@
             patterns.find((pattern) => pattern.active) ??
             patterns[0];
       if (!selected) return;
-      const next = await getLoomPatternRevision(selected.pattern_id, selected.revision);
+      const next = requestedBinding
+        ? await getLoomPatternRevision(selected.pattern_id, selected.revision, requestedBinding)
+        : await getLoomPatternRevision(selected.pattern_id, selected.revision);
       if (version !== loadVersion) return;
+      if (next.pattern_id !== selected.pattern_id || next.revision !== selected.revision ||
+          (requestedBinding && !sameInspectionBinding(requestedBinding, next.binding))) {
+        throw new Error("Inspection context unavailable — the returned Pattern does not match the exact requested identity and source profile.");
+      }
       view = next;
       selectedKey = next.nodes.find((node) => node.key === next.entry_node)?.key ?? next.nodes[0]?.key ?? null;
       const originMatches =
@@ -151,7 +162,7 @@
         sourceContextError = "Run context unavailable — this Run could not be verified against the displayed Pattern revision.";
       }
       if ((!requestedPattern || !requestedRevision) && (!requestedHint || requestedRun)) {
-        const exactPath = `/loom/${next.pattern_id}/${next.revision}`;
+        const exactPath = `/loom/${next.pattern_id}/${next.revision}${requestedBinding ? inspectionQuery(requestedBinding) : ""}`;
         await goto(
           requestedRun
             ? loomOriginHref(exactPath, requestedRun, page.url.search) ?? exactPath
@@ -178,14 +189,15 @@
     <details class="loom-catalogue">
       <summary>Pattern library <span>{catalogue.length}</span></summary>
       <nav aria-label="Pattern revisions">
-        {#each catalogue as pattern (`${pattern.pattern_id}@${pattern.revision}`)}
+        {#each catalogue as pattern (pattern.detail_path)}
           <a
-            aria-current={view?.pattern_id === pattern.pattern_id && view?.revision === pattern.revision ? "page" : undefined}
+            aria-current={view?.pattern_id === pattern.pattern_id && view?.revision === pattern.revision && sameInspectionBinding(view?.binding, pattern.binding) ? "page" : undefined}
             class="loom-pattern"
             href={pattern.detail_path}
           >
             <strong>{pattern.title}</strong>
             <code>{pattern.pattern_id}@{pattern.revision}</code>
+            {#if pattern.binding}<span>{pattern.binding.executable ? "Executable in this Vessel" : "Observation only"} · {pattern.binding.profile_id}@{pattern.binding.profile_revision}</span>{/if}
             <span>{pattern.default ? "Default" : pattern.route_rank != null ? `Route ${pattern.route_rank}` : pattern.active ? "Active route" : "Retained"}</span>
           </a>
         {/each}
@@ -203,7 +215,7 @@
       <div class="loom-read-state">
         <h2>Pattern unavailable</h2>
         <p role="alert">{error}</p>
-        <button class="loom-button" type="button" onclick={() => load(patternId, revision, sourceRunId, sourceRunHint)}>Retry reading Pattern</button>
+        <button class="loom-button" type="button" onclick={() => load(patternId, revision, sourceRunId, sourceRunHint, inspectionContext.binding, inspectionContext.error)}>Retry reading Pattern</button>
       </div>
     {:else if view && graph && canvasGraph}
       <header class="loom-identity">
@@ -351,6 +363,10 @@
               <p class="loom-inspector-note">This revision has no declared stations to inspect.</p>
             {/if}
           </aside>
+          {#if view.binding}<section class="loom-source" aria-label="Pattern inspection binding"><h3>Inspection binding</h3><dl>
+            <dt>Availability</dt><dd>{view.binding.executable ? "Executable in this Vessel" : "Observation only · not executable in this Vessel"}</dd>
+            <dt>Publication</dt><dd>{view.binding.publication}</dd><dt>Source</dt><dd>{view.binding.source_id}</dd><dt>Registrant</dt><dd>{view.binding.registrant_id}</dd><dt>Source generation</dt><dd>{view.binding.source_generation}</dd><dt>Profile</dt><dd>{view.binding.profile_id}@{view.binding.profile_revision}</dd>
+          </dl><p class="loom-canvas-note">Inspection grants no routing, admission or resume authority. This binding does not change the Pattern digest.</p></section>{/if}
           <details class="loom-source">
             <summary>Identity &amp; source</summary>
             <dl>
@@ -359,7 +375,7 @@
               <dt>Implementation</dt><dd>{view.implementation_revision}</dd>
               <dt>Digest</dt><dd><code>{view.digest}</code></dd>
               <dt>Trigger</dt><dd>{view.trigger_hint}</dd>
-              <dt>Source</dt><dd><a href="/api/v1/loom/source/patterns/{view.pattern_id}/{view.revision}">Mermaid source →</a></dd>
+              <dt>Source</dt><dd><a href={`/api/v1/loom/source/patterns/${encodeURIComponent(view.pattern_id)}/${encodeURIComponent(view.revision)}${inspectionQuery(view.binding)}`}>Mermaid source →</a></dd>
             </dl>
           </details>
         </div>
@@ -454,6 +470,7 @@
   .loom-no-permission { color: var(--color-parchment); font-size: 0.8125rem; }
   .loom-inspector-note { border-top: 1px solid var(--color-tertiary-edge); padding-top: 0.85rem; color: var(--color-parchment); font-size: 0.75rem; line-height: 1.6; }
   .loom-back { display: block; background: none; border: 0; padding: 0.75rem 0 0; text-align: left; color: var(--color-rune); font-size: 0.8125rem; }
+  .loom-source > h3 { padding:1rem 1rem 0; font:500 .875rem var(--font-body); }
   .loom-source dl { display: grid; gap: 0.4rem; padding: 0 1rem 1rem; font-size: 0.75rem; }
   .loom-source dt { margin-top: 0.5rem; color: var(--color-parchment); }
   .loom-source dd { min-width: 0; margin: 0; color: var(--color-bone); }

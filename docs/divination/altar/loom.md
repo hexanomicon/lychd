@@ -25,6 +25,18 @@ selects `/loom/bridge_chat/4`. An exact revision link continues to open that ret
 
 A direct link takes the form `/loom/{pattern_id}/{revision}`. Both parts are required: `/loom/{pattern_id}` is rejected. This lets a review name the revision it concerns instead of leaving its identity to a later selection.
 
+Selected extensions and connected profiles can add exact inspection-only scores through the same
+catalogue. **Inspection binding** names the source, Registrant, profile, generation and publication
+meaning. **Observation only · not executable in this Vessel** does not change local routing or
+permit admission or resume. An executable native entry is separately labelled **Executable in
+this Vessel**. The complete remote source/profile/generation selection stays in its detail link;
+an unavailable or changed binding is reported instead of opening a similarly named score.
+
+These descriptions come from the same manifest as the source profile. Profile metadata does not
+change that Pattern's checksum. Registering a descriptor does not publish executable code or
+activate an extension. [Oculus](../../sepulcher/extensions/oculus.md#connected-components-and-activity)
+owns the bounded source handoff used by the first connected profile.
+
 ## Read identity, then possibility
 
 Read the views together:

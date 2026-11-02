@@ -697,6 +697,34 @@ avoid incidentally retaining raw private wire bodies in the container engine.
 The RunLedger and event bus themselves remain in memory. The diagnostic archive does not provide
 Oculus ingestion, native Run recovery, conversation memory, or a replacement for the journals below.
 
+### Publish structural observations to Orb and Loom
+
+The separate `run --observation-dir /explicit/private/directory` option publishes a bounded
+`snapshot.json` for the common Oculus source contract. Select the same directory explicitly in
+the receiving Vessel's [observability configuration](../../sepulcher/extensions/oculus.md#connected-components-and-activity).
+Use `source_id = "reach.operator"` and host attribution `registrant_id = "operator:reach"`.
+The directory is owner-only, outside Git checkouts, and independently admitted to the reader's
+deployment. This feature neither exposes nor reads the diagnostic SQLite archive.
+
+The host publishes Core/edge/host and external service descriptions, exact worker Pattern
+descriptors and a finite window of structural observations. A five-second heartbeat updates the
+source snapshot. Producer restart changes its generation; a stopped snapshot becomes stale.
+The native Run's terminal state does not close runtime observation, so final Discord delivery
+can remain visible with its explicitly supplied Run reference.
+
+Actual custom REST requests and Discord SDK HTTP requests use shared driver observations.
+Cached journal results and refusal before transport produce no outgoing attempt. API, gateway
+handshake and CDN classifications use fixed safe target identities; URLs, tokens, platform
+message IDs, bodies and arbitrary exceptions are absent. SDK attempts identify each observed
+header dispatch, before serialization or socket write, including repeated dispatches inside one
+logical request. They do not prove transmitted bytes. Pre-header failures, WebSocket frames and
+full body consumption are not supplied; SDK completion means observed response headers.
+Model HTTP observations retain their existing completion-only coverage, without inventing an
+unobserved start or drawing the synthetic SDK relay URL as an external destination. Status-absent
+broker or IPC failures create no external model activity. Native station/entered-Step identities
+and exact admitted Pattern references remain structural metadata; a bounded Run-reference map
+can attach late delivery to that same score without choosing a current or latest Run.
+
 Transport attempts live in `$REACH_ROOT/state/effects`. Their private JSON records contain
 method, target class, hashed effect/payload/scope identities, status, and an optional remote ID
 or fixed code. They do not retain the token, message text or response body. `attempting` after

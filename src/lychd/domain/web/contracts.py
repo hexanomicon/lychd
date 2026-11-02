@@ -9,6 +9,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from lychd.domain.archive import RecallReceipt
+from lychd.domain.weaver.inspection import InspectionBinding
 from lychd.domain.web.schemas import ConsentCard, LoomView, NexusBoard, SwapTicket
 
 
@@ -307,6 +308,8 @@ class LoomSummary(ClientContract):
     active: bool
     default: bool
     route_rank: int | None
+    publication: Literal["published", "observed"] = "published"
+    binding: InspectionBinding | None = None
 
 
 class PatternReference(ClientContract):

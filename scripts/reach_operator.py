@@ -22,7 +22,7 @@ import sys
 import tempfile
 import time
 from collections.abc import Awaitable, Callable, Generator, Sequence
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager, nullcontext, suppress
 from hashlib import sha256
 from pathlib import Path
 from typing import Any, Literal, NoReturn, cast
@@ -30,6 +30,7 @@ from uuid import uuid4
 
 from lychd.compositions.reach.operator_diagnostics import diagnostic_bytes, parse_diagnostic, write_diagnostic_line
 from lychd.compositions.reach.operator_model_wire import OperatorModelRequest
+from lychd.compositions.reach.operator_observation import ReachPatternObservation
 from lychd.compositions.reach.operator_trace import ReachTraceEvent, error_code
 from lychd.compositions.reach.operator_wire import ReachWorkerReady, ReachWorkerResult
 from lychd.compositions.reach.research_wire import (
@@ -38,15 +39,18 @@ from lychd.compositions.reach.research_wire import (
     ReachResearchProgress,
 )
 from lychd.interface.discord.operator_io import load_policy
+from lychd.interface.observation import OperationObservation
 
 if __package__:
     from scripts.reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker, validate_endpoint
+    from scripts.reach_observation import ReachObservationPublisher
     from scripts.reach_podman_model import PodmanModelTransport
     from scripts.reach_research_broker import OperatorResearchBroker
     from scripts.reach_trace_archive import TraceArchive
     from scripts.reach_trace_capture import TraceCapture
 else:
     from reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker, validate_endpoint
+    from reach_observation import ReachObservationPublisher
     from reach_podman_model import PodmanModelTransport
     from reach_research_broker import OperatorResearchBroker
     from reach_trace_archive import TraceArchive
@@ -64,6 +68,8 @@ EDGE_INPUTS = (
     "clients/discord/pyproject.toml",
     "clients/discord/uv.lock",
     "clients/discord/Containerfile",
+    "src/lychd/interface/observation.py",
+    "src/lychd/interface/http_observation.py",
     *(
         f"src/lychd/compositions/reach/{name}.py"
         for name in (
@@ -455,6 +461,27 @@ def bind(source: Path, destination: str, *, readonly: bool = True) -> list[str]:
     return ["--volume", f"{source}:{destination}:{'ro' if readonly else 'rw'},Z"]
 
 
+def capture_descriptors(value: dict[str, Any], raw: bytes, capture: TraceCapture | None) -> bool:
+    """Consume only a bounded Core inspection frame without forwarding it to the edge."""
+    if value.get("kind") != "reach_pattern_observation":
+        return False
+    with suppress(ValueError, TypeError):
+        declaration = ReachPatternObservation.model_validate_json(raw)
+        if capture is not None:
+            capture.descriptors(declaration)
+    return True
+
+
+def capture_worker_frame(value: dict[str, Any], raw: bytes, capture: TraceCapture | None) -> None:
+    """Record a native worker's typed control frame without changing forwarding."""
+    if capture is None:
+        return
+    if value.get("kind") == "ready":
+        capture.ready(ReachWorkerReady.model_validate_json(raw))
+    elif value.get("kind") == "result":
+        capture.result(ReachWorkerResult.model_validate_json(raw))
+
+
 async def relay(
     reader: asyncio.StreamReader,
     writer: asyncio.StreamWriter,
@@ -473,17 +500,16 @@ async def relay(
         if len(raw) > WIRE_LIMIT:
             _fail("operator_frame_limit")
         value = strict_object(raw)
+        if not requests_only and capture_descriptors(value, raw, capture):
+            continue
         if requests_only:
             from lychd.compositions.reach.operator_wire import parse_request_line
 
             request = parse_request_line(raw)
             if capture is not None:
                 capture.request(request)
-        elif capture is not None:
-            if value.get("kind") == "ready":
-                capture.ready(ReachWorkerReady.model_validate_json(raw))
-            elif value.get("kind") == "result":
-                capture.result(ReachWorkerResult.model_validate_json(raw))
+        else:
+            capture_worker_frame(value, raw, capture)
         writer.write(raw)
         await writer.drain()
 
@@ -531,12 +557,10 @@ async def model_relay(  # noqa: C901 - closed readiness/result/model/research wi
         if len(raw) > WIRE_LIMIT:
             _fail("operator_frame_limit")
         value = strict_object(raw)
+        if capture_descriptors(value, raw, capture):
+            continue
         if value.get("kind") in {"ready", "result"}:
-            if capture is not None:
-                if value["kind"] == "ready":
-                    capture.ready(ReachWorkerReady.model_validate_json(raw))
-                else:
-                    capture.result(ReachWorkerResult.model_validate_json(raw))
+            capture_worker_frame(value, raw, capture)
             if value.get("kind") == "result" and research_broker is not None:
                 research_broker.settled(str(value.get("request_id", "")))
             edge_writer.write(raw)
@@ -656,6 +680,23 @@ async def research_edge_relay(
             await writer.drain()
 
 
+def capture_structured(raw: bytes, role: str, capture: TraceCapture) -> bool:
+    """Validate one closed child record and pass its actual pipe role to custody checks."""
+    try:
+        value = strict_object(raw)
+        if value.get("kind") == "operation_observation":
+            capture.operation(OperationObservation.model_validate_json(raw), role)
+            return True
+        if value.get("kind") == "reach_trace":
+            event = ReachTraceEvent.model_validate_json(raw)
+            if event.producer == role:
+                capture.child(event, role)
+                return True
+    except (ValueError, UnicodeError, RecursionError):
+        return False
+    return False
+
+
 async def diagnostics(  # noqa: C901 - role custody, legacy diagnostics and closed readiness codes
     reader: asyncio.StreamReader,
     *,
@@ -668,15 +709,8 @@ async def diagnostics(  # noqa: C901 - role custody, legacy diagnostics and clos
             raw = await reader.readuntil(b"\n")
         except (asyncio.IncompleteReadError, asyncio.LimitOverrunError):
             return
-        if capture is not None and raw.startswith(b"{"):
-            try:
-                value = strict_object(raw)
-                event = ReachTraceEvent.model_validate_json(raw) if value.get("kind") == "reach_trace" else None
-                if event is not None and event.producer == role:
-                    capture.child(event, role)
-                    continue
-            except (ValueError, UnicodeError, RecursionError):
-                pass
+        if capture is not None and raw.startswith(b"{") and capture_structured(raw, role, capture):
+            continue
         if role == "core" and raw.startswith(b"{"):
             try:
                 record = parse_diagnostic(raw)
@@ -764,6 +798,7 @@ async def supervise(  # noqa: C901, PLR0912 - explicit two-child settlement and 
     for signum in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(signum, stopped.set)
     status = 1
+    heartbeat = asyncio.create_task(capture.heartbeat()) if capture is not None else None
     try:
         for arguments in commands:
             children.append(  # noqa: PERF401 - sequential spawn retains first child if the second fails
@@ -815,6 +850,9 @@ async def supervise(  # noqa: C901, PLR0912 - explicit two-child settlement and 
                 if type(value) is int:
                     status = value if value >= 0 else 128 - value
     finally:
+        if heartbeat is not None:
+            heartbeat.cancel()
+            await asyncio.gather(heartbeat, return_exceptions=True)
         for task in tasks[:5]:
             if not task.done():
                 task.cancel()
@@ -925,13 +963,18 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
         instance_lock(args.state_dir),
         generation_workspace(args.state_dir, "generation-") as temporary,
         TraceArchive(args.state_dir / "traces") as archive,
+        (
+            ReachObservationPublisher(args.observation_dir, model=profile is not None)
+            if args.observation_dir is not None
+            else nullcontext()
+        ) as observation,
     ):
         corpus_manifest = strict_object(read_regular(args.corpus_dir / "manifest.json", CORPUS_LIMIT))
         document_ids = frozenset(f"doc:{item['path']}" for item in corpus_manifest.get("documents", []))
         web_ids: frozenset[str] = (
             frozenset(f"web:{item.id}" for item in profile.research.sources) if profile is not None else frozenset()
         )
-        capture = TraceCapture(archive.emit, source_ids=document_ids | web_ids)
+        capture = TraceCapture(archive.emit, source_ids=document_ids | web_ids, observation=observation)
         generation = Path(temporary)
         generic = generation / "policy.json"
         write_private(generic, policy.to_reach_policy().model_dump_json().encode())
@@ -1090,6 +1133,7 @@ def parser() -> argparse.ArgumentParser:
             child.add_argument(f"--{name}", required=True, type=Path)
         if operation == "run":
             child.add_argument("--corpus-dir", required=True, type=Path)
+            child.add_argument("--observation-dir", type=Path)
             child.add_argument("--sync-commands", action="store_true")
             child.add_argument("--history", action="store_true")
             child.add_argument("--admin-user", action="append", default=[])

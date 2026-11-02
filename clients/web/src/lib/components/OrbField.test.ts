@@ -2,12 +2,15 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OrbEventEnvelope, OrbRunPage } from "$lib/api/models";
 import { fixtureRun } from "$lib/orb/__fixtures__/snapshot";
+vi.mock("$lib/api/orb-runtime", () => ({ getOrbRuntime: vi.fn() }));
 vi.mock("$lib/api/client", () => ({ getOrbRun: vi.fn() }));
 vi.mock("$lib/orb/live", async (original) => ({ ...await original<typeof import("$lib/orb/live")>(), getOrbCatalogue: vi.fn(), listenToOrb: vi.fn() }));
 vi.mock("$lib/graph/orb", async (original) => {
   const module = await original<typeof import("$lib/graph/orb")>();
   return { ...module, projectOrbField: vi.fn(module.projectOrbField) };
 });
+import { runtimeSnapshot } from "$lib/orb/__fixtures__/runtime";
+import { getOrbRuntime } from "$lib/api/orb-runtime";
 import { getOrbRun } from "$lib/api/client";
 import { getOrbCatalogue, listenToOrb, type OrbLiveCallbacks } from "$lib/orb/live";
 import { projectOrbField } from "$lib/graph/orb";
@@ -16,6 +19,7 @@ const page: OrbRunPage = { schema_version: 1, snapshot_at: "2026-09-22T00:00:00Z
   runs: ["run-a", "run-b", "run-c", "run-d"].map((id) => fixtureRun(id).run) };
 beforeEach(() => {
   vi.clearAllMocks(); vi.stubGlobal("EventSource", vi.fn());
+  vi.mocked(getOrbRuntime).mockResolvedValue({ ...runtimeSnapshot([]), sources: [], components: [], relations: [] });
   vi.mocked(getOrbCatalogue).mockResolvedValue(page);
   vi.mocked(getOrbRun).mockImplementation(async (id) => fixtureRun(id));
   vi.mocked(listenToOrb).mockImplementation(() => vi.fn());
@@ -54,16 +58,16 @@ describe("Orb parallel Run field", () => {
     const alert = await screen.findByText(message);
     expect(alert.getAttribute("role")).toBe("alert");
     expect(alert.textContent).toContain("Showing the last received field.");
-    const graph = screen.getByRole("region", { name: "Parallel Run workflow field" });
+    const graph = screen.getByRole("region", { name: "Runtime and parallel Run workflow field" });
     let release!: (value: OrbRunPage) => void;
     vi.mocked(getOrbCatalogue).mockReturnValueOnce(new Promise((accept) => release = accept));
     await fireEvent.click(screen.getByRole("button", { name: "Refresh Runs" }));
     expect(screen.getByText(message)).toBe(alert);
-    expect(screen.getByRole("region", { name: "Parallel Run workflow field" })).toBe(graph);
+    expect(screen.getByRole("region", { name: "Runtime and parallel Run workflow field" })).toBe(graph);
     expect(screen.getByRole("button", { name: "Refresh Runs" }).getAttribute("aria-busy")).toBe("true");
     await act(() => release(structuredClone(page)));
     expect(screen.queryByText(message)).toBeNull();
-    expect(screen.getByRole("region", { name: "Parallel Run workflow field" })).toBe(graph);
+    expect(screen.getByRole("region", { name: "Runtime and parallel Run workflow field" })).toBe(graph);
     view.unmount();
   });
   it("does not overwrite newer streamed metadata with an older in-flight catalogue read", async () => {
@@ -177,12 +181,12 @@ describe("Orb parallel Run field", () => {
     vi.mocked(getOrbRun).mockImplementation((id) => id === "run-a" ? pending : Promise.resolve(fixtureRun(id)));
     const view = await mountField();
     await waitFor(() => expect(getOrbRun).toHaveBeenCalledTimes(3));
-    expect(screen.queryByRole("region", { name: "Parallel Run workflow field" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Runtime and parallel Run workflow field" })).toBeNull();
     await act(() => release(fixtureRun()));
-    const graph = await screen.findByRole("region", { name: "Parallel Run workflow field" });
+    const graph = await screen.findByRole("region", { name: "Runtime and parallel Run workflow field" });
     await fireEvent.click(screen.getByRole("button", { name: "Refresh Runs" }));
     await waitFor(() => expect(getOrbCatalogue).toHaveBeenCalledTimes(2));
-    expect(screen.getByRole("region", { name: "Parallel Run workflow field" })).toBe(graph);
+    expect(screen.getByRole("region", { name: "Runtime and parallel Run workflow field" })).toBe(graph);
     view.unmount();
   });
   it("opens three exact live lenses and requires an explicit close before another", async () => {
@@ -366,4 +370,19 @@ it("polls only while visible, never overlaps catalogue reads, and stops on teard
     warning.mockRestore(); visibility.mockRestore(); vi.useRealTimers();
   }
   expect(duplicateUnmountWarning).toBe(false);
+});
+
+it("displays runtime topology and background attempts when no Run exists", async () => {
+  vi.mocked(getOrbCatalogue).mockResolvedValue({ ...page, runs: [] });
+  vi.mocked(getOrbRuntime).mockResolvedValue(runtimeSnapshot());
+  const view = render(OrbField);
+  const runtimeButton = await screen.findByRole("button", { name: "Runtime 3" });
+  await fireEvent.click(runtimeButton);
+  const inspector = screen.getByRole("complementary", { name: "Runtime evidence" });
+  expect(within(inspector).getByText("Semantic runtime list (4)")).toBeTruthy();
+  await fireEvent.click(within(inspector).getByRole("button", { name: /request.*call attempt/ }));
+  expect(within(inspector).getByText("No Run correlation supplied")).toBeTruthy();
+  expect(getOrbRun).not.toHaveBeenCalled();
+  expect(listenToOrb).not.toHaveBeenCalled();
+  view.unmount();
 });

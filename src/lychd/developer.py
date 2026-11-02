@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from litestar.connection import ASGIConnection
     from litestar.handlers.base import BaseRouteHandler
 
+    from lychd.config.settings.observability import SnapshotSourceSettings
     from lychd.domain.cortex.substrate import RunSubstrate
     from lychd.domain.orchestration.actuator import TransitionIntent
     from lychd.domain.orchestration.containment import SoftActivationRecord
@@ -232,9 +233,19 @@ class DeveloperFixture:
 
 
 def create_developer_app(
-    *, access_password: SecretStr, signing_key: SecretStr, listener_port: int = 8000, canvas_authoring: bool = False
+    *,
+    access_password: SecretStr,
+    signing_key: SecretStr,
+    listener_port: int = 8000,
+    canvas_authoring: bool = False,
+    browser_port: int = _BROWSER_PORT,
+    observation_sources: tuple[SnapshotSourceSettings, ...] = (),
 ) -> Litestar:
-    """Build real HTTP surfaces from explicit credentials without reading Settings sources."""
+    """Build protected read surfaces from explicit inputs without ambient discovery.
+
+    Optional structural observation sources are deliberately selected by the caller;
+    they grant no execution and do not make the synthetic Bridge Run real.
+    """
     from lychd.app import AppInit
     from lychd.interface.server_policy import evaluate_server_runtime_policy
 
@@ -249,11 +260,12 @@ def create_developer_app(
                 "server": {
                     # The configured public authority is Vite; the actual TCP
                     # listener is admitted separately by the common Host policy.
-                    "port": _BROWSER_PORT,
+                    "port": browser_port,
                     "database": {"profile": "memory"},
-                    "web": {"allowed_cors_origins": [f"http://127.0.0.1:{_BROWSER_PORT}"]},
+                    "web": {"allowed_cors_origins": [f"http://127.0.0.1:{browser_port}"]},
                 },
                 "extensions": {"builtins": [], "crypt": []},
+                "observability": {"sources": [source.model_dump(mode="json") for source in observation_sources]},
             }
         ),
         web_access_password=access_password,

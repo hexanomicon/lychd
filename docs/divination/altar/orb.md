@@ -15,6 +15,24 @@ links preserve the account being reviewed.
 
 ## Read the parallel field
 
+The shared field also shows the admitted runtime body: components, declared connections and
+actual observed call attempts. **Runtime** opens its inspector with **Sources & coverage**,
+the **Semantic runtime list**, **Declared and observed connections**, and **Exact inspection
+Patterns**. Known components remain visible when activity instrumentation is unavailable.
+Presentation icons come from supplied safe local assets and have generic fallbacks.
+
+Runtime reads refresh every three seconds while visible. **Refresh runtime** establishes a fresh
+baseline; initial reads, reconnects, source restart and historical reload do not animate old
+calls. A newly received attempt can highlight its source → call → target path. The inspector
+keeps producer, source generation, operation identity, observed HTTP response and separately
+reported effect result readable without motion. A response alone does not establish delivery.
+
+This is a bounded latest runtime window, independent of the Run timeline below. Pausing Run
+history does not create historical runtime playback. Background calls can have no Run, and final
+delivery may be observed after Run completion. The source's capture, freshness, omissions and
+coverage describe what can be inspected. [Oculus source selection](../../sepulcher/extensions/oculus.md#connected-components-and-activity)
+explains how admitted profiles join this common view.
+
 The field starts with a bounded page of Run identities. **Load more retained Runs** extends the
 catalogue; the number shown is the loaded count. Its newest page refreshes every five seconds
 while visible. **Refresh Runs** rereads it immediately, preserving already opened Run lenses.
@@ -71,7 +89,7 @@ status. The Orb shows the bounded trace its sources can supply and cannot replac
 grant, effect, or artifact truth.
 
 **[Oculus](../../sepulcher/extensions/oculus.md)** names the body’s evidence service; **Orb** is
-its Altar surface. Native durable Oculus storage is not delivered. Current evidence is available
+its Altar surface. Native durable Oculus storage is not delivered. Run evidence is available
 through this running Vessel and is labeled `process local` or `durable best effort`.
 `process local` evidence disappears when the Vessel process ends. With `durable best effort`,
 PostgreSQL retains structural records, but failed writes and omitted token deltas can leave

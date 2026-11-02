@@ -48,6 +48,8 @@ from lychd.interface.discord.operator_io import load_policy, read_token
 from lychd.interface.discord.publications import PublicationQueue
 from lychd.interface.discord.rest import DiscordRest, DiscordRestError, EffectJournal
 from lychd.interface.discord.schemas import DiscordPolicy
+from lychd.interface.http_observation import http_trace
+from lychd.interface.observation import OperationObserver, observation_bytes, observation_context
 
 MAX_HISTORY_BYTES = 16_384
 MAX_GENERATION_EVENTS = 10_000
@@ -538,18 +540,21 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                         parts=len(parts),
                         chars=len(part),
                     )
-                    outcome = await (
-                        self.service.rest.edit_interaction_original(
-                            interaction.token, part, event_id=str(interaction.id)
+                    with observation_context(
+                        run_id=uuid_or_none(result.run_id), request_id=uuid_or_none(result.request_id)
+                    ):
+                        outcome = await (
+                            self.service.rest.edit_interaction_original(
+                                interaction.token, part, event_id=str(interaction.id)
+                            )
+                            if index == 0
+                            else self.service.rest.send_interaction_followup(
+                                interaction.token,
+                                part,
+                                event_id=str(interaction.id),
+                                part=index,
+                            )
                         )
-                        if index == 0
-                        else self.service.rest.send_interaction_followup(
-                            interaction.token,
-                            part,
-                            event_id=str(interaction.id),
-                            part=index,
-                        )
-                    )
                     self.service.observe(
                         "delivery",
                         event,
@@ -688,14 +693,18 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                 chars=len(part),
                 **binding,
             )
-            outcome = await self.service.rest.send_message(
-                event.conversation_id,
-                part,
-                event_id=event.event_id,
-                reply_to=event.event_id,
-                phase="final",
-                part=index,
-            )
+            with observation_context(
+                run_id=uuid_or_none(result.run_id) if result else None,
+                request_id=uuid_or_none(result.request_id) if result else None,
+            ):
+                outcome = await self.service.rest.send_message(
+                    event.conversation_id,
+                    part,
+                    event_id=event.event_id,
+                    reply_to=event.event_id,
+                    phase="final",
+                    part=index,
+                )
             self.service.observe(
                 "delivery",
                 event,
@@ -781,6 +790,21 @@ class ReachBot(commands.Bot):
             member_cache_flags=discord.MemberCacheFlags.none(),
             chunk_guilds_at_startup=False,
             max_messages=None,
+            http_trace=http_trace(
+                OperationObserver(
+                    generation=service.worker.ready.generation,
+                    producer_id="reach.discord-sdk",
+                    source="reach.discord-sdk",
+                    target="reach.sdk-unclassified",
+                    sink=lambda event: write_diagnostic_line(observation_bytes(event)),
+                ),
+                targets={
+                    "discord.com": "reach.discord-api",
+                    "gateway.discord.gg": "reach.discord-gateway",
+                    "cdn.discordapp.com": "reach.discord-cdn",
+                    "media.discordapp.net": "reach.discord-cdn",
+                },
+            ),
             allowed_mentions=discord.AllowedMentions.none(),
         )
         self.service = service
@@ -887,6 +911,13 @@ async def run(args: argparse.Namespace) -> None:
         bot_user_id=policy.bot_user_id,
         guild_id=policy.guild_id,
         journal=EffectJournal(args.effects_dir),
+        observer=OperationObserver(
+            generation=worker.ready.generation,
+            producer_id="reach.discord-rest",
+            source="reach.discord-rest",
+            target="reach.discord-api",
+            sink=lambda event: write_diagnostic_line(observation_bytes(event)),
+        ),
     )
     publications = (
         PublicationQueue(args.publications_dir, allowed_channels=frozenset(args.publication_channel))

@@ -1,0 +1,4 @@
+Discord icon from Simple Icons 16.1.0, distributed under CC0 1.0 Universal.
+Source: https://github.com/simple-icons/simple-icons/blob/16.1.0/icons/discord.svg
+License: https://github.com/simple-icons/simple-icons/blob/16.1.0/LICENSE.md
+The icon identifies the connected service. It does not imply endorsement.

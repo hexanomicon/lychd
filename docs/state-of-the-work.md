@@ -1475,7 +1475,12 @@ controls. The outline and inspector remain usable on graph failure. Failed score
 exact-revision retry. Copied Mermaid retains the Pattern's exact key, revision, and manifest
 digest even where two revisions have the same topology. It remains a view, never execution evidence.
 
-**Boundary — Not yet:** Loom is a view over the fixed registry, not a Spellweaver editor, mutation
+Selected extension and same-host source descriptors also enter the read catalogue automatically.
+Their exact source/profile/generation bindings remain separate from local executable availability;
+an inspection-only entry cannot satisfy routing, admission or resume. Existing v2 manifest digests
+and native exact-revision execution lookup are unchanged.
+
+**Boundary — Not yet:** Loom is a view over exact admitted inspection records, not a Spellweaver editor, mutation
 surface, independent Spell identity or catalogue, compatibility or teaching surface, drafting
 canvas, inert unresolved-Spell projection, or Suite executor. The shared renderer's cross-engine
 forced-collection qualification and complete production-browser acceptance remain unproved.
@@ -1488,6 +1493,7 @@ lifecycle, graph-failure, editor or general accessibility acceptance.
 
 - **Source:** [Loom controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/loom.py), [Pattern registry contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/base.py), [Loom client](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/LoomView.svelte), and [shared graph adapter](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/graph/GraphCanvas.svelte)
 - **Verification:** [Loom tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_loom.py), [client lifecycle tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/LoomView.test.ts), and [semantic projection tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/graph/loom.test.ts)
+- **Verification:** [Inspection-only source binding](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_orb_runtime.py) and [sealed descriptor contributions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_observation_context.py)
 - **Law:** [Workflow](./adr/28-workflow.md)
 
 ### Composition Portfolio {#composition-portfolio-delivery}
@@ -2275,6 +2281,14 @@ copy sync remain candidate work.
 
 **State:** Partial
 
+The same field also projects native components, selected extension declarations and explicitly
+selected structural source windows. Its independent runtime reader works without a Run and after
+Run completion. Generic call nodes group exact attempts, keep HTTP responses separate from effect
+outcomes, and use safe contributed icon metadata. Initial history, reconnect, replay and source
+replacement establish silent baselines; only new continuously observed activity can highlight.
+The semantic inspector exposes the same evidence without motion. Runtime is a bounded latest
+window, separate from the Run timeline; it supplies no historical runtime playback.
+
 **Proved now:** Orb opens a paginated Run catalogue and a parallel pan/zoom field. At most three
 live lenses retain 100 records each; the visible catalogue refreshes every five seconds; zoom or explicit controls disclose Run, station/subject,
 supplied occurrence, and loaded records. Exact pinned workflow graphs show declared permissions
@@ -2359,6 +2373,8 @@ It supplies no complete event capture, continuous runtime activity or general re
 - **Source:** [Retained preference projection](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/orb.py) and [preference inspector](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgePreferenceSummary.svelte)
 - **Verification:** [Preference API and settled stream](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_orb_preference.py), [preference inspector controls](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgePreferenceSummary.test.ts), and [typed stream metadata](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/orb/live.test.ts)
 - **Law:** [Observability](./adr/29-observability.md), [Altar projection](./adr/15-frontend.md#snapshots-streams-and-recovery), and [Creation summary](./compositions/creation/index.md#selected-run-summary)
+- **Source:** [Runtime source catalogue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/oculus/runtime.py), [shared field projection](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/graph/runtime.ts), and [runtime inspector](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/RuntimeEvidence.svelte)
+- **Verification:** [Runtime API authorization and exact binding](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_orb_runtime.py), [replay and lifecycle controls](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/orb/runtime.test.ts), and [generic topology/attempt projections](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/graph/runtime.test.ts)
 
 ### Structured logging configuration {#structured-logging}
 
@@ -2381,17 +2397,30 @@ OpenTelemetry export, redaction, retention, resource correlation, or Oculus.
 
 ### Native Oculus {#native-oculus}
 
-**State:** Designed
+**State:** Partial
 
-**Proved now:** Observability law defines LychD's canonical evidence meanings and a native
-read-model boundary; no native Oculus implementation is delivered.
+**Proved now:** A bounded component/activity read model joins the admitted native inventory,
+sealed extension contributions and explicitly selected same-host structural source snapshots.
+Host custody binds external provenance, while descriptors remain separate from executable
+workflows. Source limits, generation changes, stale declarations, source-local sequences and
+omissions are explicit. Two unrelated provider fixtures use the same contracts and rendering;
+no provider-specific browser branch is required. The Reach adapter publishes exact worker graphs,
+native lifecycle observations and actual Discord custom REST/SDK HTTP attempts without reading
+or exporting its private diagnostic archive.
 
-**Do not expect yet:** There is no native ingestion, durable query/read model, retention path, or
-Oculus-backed Svelte service. Orb is a bounded Run projection, not Oculus.
+**Boundary — Not yet:** This is a replaceable process-local observation window, not a durable
+native trace/metric store, complete distributed bus, general retention, health inference or Run
+recovery. Selected source files require independently admitted deployment custody; configuration
+creates no mount or producer. SDK dispatch observations precede socket writes; pre-header failures,
+WebSocket frames and full body consumption are absent. Existing model HTTP coverage supplies
+completion with an observed HTTP status only; status-absent broker failures create no external edge.
+Fixture and transport tests do not qualify a real Discord deployment or full browser journey.
 
 **Evidence**
 
 - **Topic:** [Oculus](./sepulcher/extensions/oculus.md)
+- **Source:** [Typed observations](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/oculus/models.py), [bounded read model](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/oculus/runtime.py), [same-host snapshot custody](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/oculus_snapshot.py), and [driver observation contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/observation.py)
+- **Verification:** [Two-provider and generation cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/oculus/test_runtime.py), [snapshot custody and bounded writer](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_oculus_snapshot.py), [Discord actual-attempt and settlement separation](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_observation.py), and [Reach producer custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_observation.py)
 - **Law:** [Observability](./adr/29-observability.md)
 
 ### Phoenix {#phoenix-eye}

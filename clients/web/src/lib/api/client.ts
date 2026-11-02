@@ -1,4 +1,5 @@
 import createClient from "openapi-fetch";
+import type { InspectionSelection } from "./inspection";
 
 import type { components, paths } from "./openapi";
 import type {
@@ -347,11 +348,12 @@ export async function getLoomCatalogue(): Promise<LoomSummary[]> {
 
 export async function getLoomPatternRevision(
   patternId: string,
-  revision: string
+  revision: string,
+  binding?: InspectionSelection
 ): Promise<LoomView> {
   return unwrap(
     await client.GET("/api/v1/loom/{pattern_id}/{revision}", {
-      params: { path: { pattern_id: patternId, revision } }
+      params: { path: { pattern_id: patternId, revision }, query: binding ? { source_id: binding.source_id, generation: binding.source_generation, profile_id: binding.profile_id, profile_revision: binding.profile_revision } : undefined }
     })
   ) as LoomView;
 }

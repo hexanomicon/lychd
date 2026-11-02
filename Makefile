@@ -51,10 +51,12 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/cli/test_reach_relay_retirement.py tests/unit/cli/test_reach_research_broker.py \
 	tests/unit/cli/test_reach_research_image.py tests/unit/cli/test_reach_scout_worker.py \
 	tests/unit/cli/test_reach_trace_archive.py tests/unit/cli/test_reach_trace_capture.py \
+	tests/unit/cli/test_reach_observation.py tests/unit/system/services/test_oculus_snapshot.py \
 	tests/unit/cli/test_reach_operator_onboarding.py \
 	tests/unit/system/services/test_intercom_http.py \
 	tests/unit/domain/test_artifact_custody.py tests/unit/domain/test_evolution.py \
 	tests/unit/domain/animation tests/unit/domain/cortex tests/unit/domain/delegation \
+	tests/unit/domain/oculus \
 	tests/unit/domain/orchestration tests/unit/domain/privacy tests/unit/domain/web tests/unit/domain/scout \
 	tests/unit/domain/ward \
 	tests/unit/extensions tests/unit/lib tests/unit/compositions tests/agents tests/web \

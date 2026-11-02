@@ -4,10 +4,15 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Protocol, cast
+from uuid import uuid4
 
 from lychd.config.runes.extension import RuneConfigStore
 from lychd.domain.animation.extension import PortalStore, SoulstoneStore
 from lychd.domain.animation.transmute import TransmutationStore
+from lychd.domain.oculus.models import MAX_PATTERNS, MAX_SOURCES, SourceSnapshot
+from lychd.domain.oculus.runtime import RegisteredInspection, RegisteredObservation
+from lychd.domain.weaver.inspection import InspectionContribution
+from lychd.extensions.base import ExtensionStore
 from lychd.extensions.delegation import DelegatedRuntimeStore
 
 if TYPE_CHECKING:
@@ -49,6 +54,94 @@ class DelegatedRuntimeRegistrationStore(Protocol):
     def add(self, definition: DelegatedRuntimeDefinition) -> None: ...
 
 
+class ObservationRegistrationStore(Protocol):
+    """Declare safe component/source metadata without registering any execution."""
+
+    def add(self, snapshot: SourceSnapshot) -> None: ...
+
+
+class InspectionRegistrationStore(Protocol):
+    """Contribute an exact immutable score without a Workflow binding."""
+
+    def add(self, contribution: InspectionContribution) -> None: ...
+
+
+class ObservationStore(ExtensionStore):
+    def __init__(self, *, current_registrant: Callable[[], str], generation: str) -> None:
+        """Bind provenance and process generation independently of contributed data."""
+        super().__init__()
+        self._current_registrant = current_registrant
+        self._generation = generation
+        self._registrations: dict[str, RegisteredObservation] = {}
+
+    @property
+    def registrations(self) -> tuple[RegisteredObservation, ...]:
+        return tuple(self._registrations.values())
+
+    def add(self, snapshot: SourceSnapshot) -> None:
+        self._require_mutable()
+        snapshot = SourceSnapshot.model_validate_json(snapshot.model_dump_json())
+        if snapshot.source_id == "native" or snapshot.source_id in self._registrations:
+            msg = "Observation source identity is reserved or already registered."
+            raise ValueError(msg)
+        if (
+            snapshot.activities
+            or any(component.lifecycle not in {"configured", "unknown"} for component in snapshot.components)
+            or len(self._registrations) >= MAX_SOURCES
+        ):
+            msg = "Registration accepts bounded declarations only, not runtime activity."
+            raise ValueError(msg)
+        snapshot = snapshot.model_copy(update={"generation": self._generation})
+        self._registrations[snapshot.source_id] = RegisteredObservation(
+            registrant_id=self._current_registrant(),
+            snapshot=snapshot,
+        )
+
+
+class InspectionStore(ExtensionStore):
+    def __init__(self, *, current_registrant: Callable[[], str], generation: str) -> None:
+        """Create a sealed profile catalogue, separate from all executable registries."""
+        super().__init__()
+        self._current_registrant = current_registrant
+        self._generation = generation
+        self._registrations: dict[tuple[str, str, str, str, str], RegisteredInspection] = {}
+
+    @property
+    def registrations(self) -> tuple[RegisteredInspection, ...]:
+        return tuple(self._registrations.values())
+
+    def add(self, contribution: InspectionContribution) -> None:
+        self._require_mutable()
+        contribution = InspectionContribution.model_validate_json(contribution.model_dump_json())
+        descriptor = contribution.descriptor
+        identity = (
+            contribution.source_id,
+            contribution.profile_id,
+            contribution.profile_revision,
+            descriptor.pattern_id,
+            descriptor.revision,
+        )
+        if contribution.source_id == "native" or identity in self._registrations:
+            msg = "Inspection identity is reserved or already registered."
+            raise ValueError(msg)
+        if len(self._registrations) >= MAX_PATTERNS or any(
+            item.descriptor.pattern_id == descriptor.pattern_id
+            and item.descriptor.revision == descriptor.revision
+            and item.descriptor != descriptor
+            for item in self._registrations.values()
+        ):
+            msg = "Inspection catalogue limit or exact-revision conflict."
+            raise ValueError(msg)
+        self._registrations[identity] = RegisteredInspection(
+            registrant_id=self._current_registrant(),
+            source_id=contribution.source_id,
+            generation=self._generation,
+            profile_id=contribution.profile_id,
+            profile_revision=contribution.profile_revision,
+            descriptor=descriptor,
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class _ContributionStoreView:
     """Expose only registrant-bound contribution callables named by the host."""
@@ -71,6 +164,8 @@ class ExtensionRegistrationContext:
     portals: PortalRegistrationStore
     transmutation: TransmutationRegistrationStore
     delegated_runtimes: DelegatedRuntimeRegistrationStore
+    observations: ObservationRegistrationStore
+    inspections: InspectionRegistrationStore
 
     def __init__(self, root: ExtensionContext, registrant_id: str) -> None:
         """Bind every shaped contribution store to ``registrant_id``."""
@@ -103,6 +198,8 @@ class ExtensionRegistrationContext:
             "delegated_runtimes",
             cast("DelegatedRuntimeRegistrationStore", bound(root.delegated_runtimes, "add")),
         )
+        object.__setattr__(self, "observations", cast("ObservationRegistrationStore", bound(root.observations, "add")))
+        object.__setattr__(self, "inspections", cast("InspectionRegistrationStore", bound(root.inspections, "add")))
 
 
 class ExtensionContext:
@@ -111,6 +208,7 @@ class ExtensionContext:
     def __init__(self) -> None:
         """Create the extension registration stores for one assembly pass."""
         self._current_registrant_id: str | None = None
+        generation = uuid4().hex
 
         def current_registrant() -> str:
             return self.current_registrant_id
@@ -122,6 +220,8 @@ class ExtensionContext:
         self.delegated_runtimes = DelegatedRuntimeStore(
             current_registrant=current_registrant,
         )
+        self.observations = ObservationStore(current_registrant=current_registrant, generation=generation)
+        self.inspections = InspectionStore(current_registrant=current_registrant, generation=generation)
 
     def freeze(self) -> None:
         """Seal every contribution store after the single assembly pass."""
@@ -131,6 +231,8 @@ class ExtensionContext:
             self.portals,
             self.transmutation,
             self.delegated_runtimes,
+            self.observations,
+            self.inspections,
         ):
             store.freeze()
 

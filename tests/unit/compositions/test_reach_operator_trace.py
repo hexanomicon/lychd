@@ -40,6 +40,12 @@ async def test_core_trace_projects_actual_native_identity_and_never_result_or_lo
             result.run_id,
             runtime.generation,
         )
+        run = await runtime.substrate.ledger.get(result.run_id)
+        assert run is not None
+        assert (started.pattern_id, started.pattern_revision) == (
+            run.pattern_manifest["key"],
+            run.pattern_manifest["revision"],
+        )
         assert (finished.request_id, finished.run_id, finished.status) == (request.request_id, result.run_id, "docs")
         entered = next(event for event in records if event.name == "native_node" and event.status == "entered")
         assert started.trace_seq < entered.trace_seq < finished.trace_seq

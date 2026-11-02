@@ -99,7 +99,12 @@ async def test_initial_readiness_precedes_recovery_after_metadata_binding(
 
     services = SimpleNamespace(registry=registry, substrate=SimpleNamespace(effects=None), aclose=AsyncMock())
     extensions = SimpleNamespace(
-        soulstone_registrations=(), portal_registrations=(), delegated_runtime_adapters={}, delegated_runtime_catalog=()
+        soulstone_registrations=(),
+        portal_registrations=(),
+        delegated_runtime_adapters={},
+        delegated_runtime_catalog=(),
+        observation_registrations=(),
+        inspection_registrations=(),
     )
     settings = SimpleNamespace(orchestration=SimpleNamespace(switching=SimpleNamespace(actuator="none")))
     monkeypatch.setattr("lychd.config.settings.root.get_settings", lambda: settings)

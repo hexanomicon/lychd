@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 
+from lychd.domain.weaver.inspection import InspectionBinding, PatternInspectionEntry
 from lychd.domain.web.consent_reviews import NativeReviewDocument
 
 if TYPE_CHECKING:
@@ -124,13 +125,14 @@ class LoomView:
     entry_node: str
     digest: str
     checkpoint_schema: str
-    publication: Literal["published"]
+    publication: Literal["published", "observed"]
     title: str
     description: str
     trigger_hint: str
     nodes: tuple[LoomNodeView, ...]
     edges: tuple[LoomEdgeView, ...]
     mermaid_source: str
+    binding: InspectionBinding | None = None
 
 
 def _coven_state(*, is_dynamic: bool, phase: str) -> CovenState:
@@ -209,4 +211,26 @@ def build_loom_view(workflow: Workflow, *, highlight: Any | None = None) -> Loom
         nodes=tuple(LoomNodeView(**node.snapshot()) for node in manifest.nodes),
         edges=tuple(LoomEdgeView(**edge.snapshot()) for edge in manifest.edges),
         mermaid_source=workflow.mermaid(highlight=highlight),
+    )
+
+
+def build_inspection_view(entry: PatternInspectionEntry) -> LoomView:
+    """Render exact inert score data without resolving a workflow or executing code."""
+    descriptor = entry.descriptor
+    return LoomView(
+        schema_version=descriptor.schema_version,
+        pattern_id=descriptor.pattern_id,
+        revision=descriptor.revision,
+        implementation_revision=descriptor.implementation_revision,
+        entry_node=descriptor.entry_node,
+        digest=descriptor.digest,
+        checkpoint_schema=descriptor.checkpoint_schema,
+        publication=entry.binding.publication,
+        title=descriptor.title,
+        description=descriptor.description,
+        trigger_hint=descriptor.trigger_hint,
+        nodes=tuple(LoomNodeView(**node.model_dump()) for node in descriptor.nodes),
+        edges=tuple(LoomEdgeView(**edge.model_dump()) for edge in descriptor.edges),
+        mermaid_source=descriptor.mermaid(),
+        binding=entry.binding,
     )

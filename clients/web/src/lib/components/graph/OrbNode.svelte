@@ -37,13 +37,13 @@
 <button type="button" class={["orb-node orb-drag-handle nopan", { chosen: selected, folded, dragging }]}
   data-kind={data.semantic.kind} data-state={data.semantic.state} data-attention={data.semantic.attention}
   style:--node-accent={`var(--color-${data.semantic.accent ?? "rune"})`}
-  aria-label={`${folded ? "Expand" : "Inspect"} ${data.semantic.label} · ${data.semantic.kind}${data.semantic.attention ? ` · ${data.semantic.attention === "cursor" ? "At playback cursor" : "Latest record"}` : ""}`}
+  aria-label={`${folded ? "Expand" : "Inspect"} ${data.semantic.label} · ${data.semantic.kind}${data.semantic.attention ? ` · ${data.semantic.attention === "cursor" ? "At playback cursor" : data.semantic.attention === "received" ? "New observation" : "Latest record"}` : ""}`}
   aria-pressed={selected} aria-describedby={preview && !dragging ? previewId : undefined}
   onpointerenter={showPreview} onpointerleave={hidePreview} onfocus={showPreview} onblur={hidePreview} onkeydown={dismiss}
   onclick={(event) => data.select(data.semantic.id, event.currentTarget, event.detail !== 0)}>
-  <span class="orb-mark" aria-hidden="true"><span>{glyph}</span>{#if folded}<i>+</i>{/if}</span>
+  <span class="orb-mark" aria-hidden="true"><span>{#if data.semantic.icon}<img src={data.semantic.icon} alt="" width="24" height="24" />{:else}{glyph}{/if}</span>{#if folded}<i>+</i>{/if}</span>
   <span class="orb-name">{data.semantic.label}</span>
-  {#if data.semantic.attention}<span class="orb-caption attention">{data.semantic.attention === "cursor" ? "Playback cursor" : "Latest record"}</span>
+  {#if data.semantic.attention}<span class="orb-caption attention">{data.semantic.attention === "cursor" ? "Playback cursor" : data.semantic.attention === "received" ? "New observation" : "Latest record"}</span>
   {:else if folded}<span class="orb-caption">{data.semantic.kind === "run" ? "Run" : data.semantic.kind}{#if data.semantic.count != null} · {data.semantic.count} loaded{/if}</span>
   {:else}<span class="orb-caption">{data.semantic.kind}{#if data.semantic.entry} · entry{/if}</span>{/if}
 </button>
@@ -53,7 +53,7 @@
     <strong>{data.semantic.label}</strong>
     <span>{data.semantic.kind}{data.semantic.state ? ` · last recorded: ${data.semantic.state}` : ""}</span>
     <span>{data.semantic.detail}</span>
-    {#if data.semantic.attention}<span class="attention">{data.semantic.attention === "cursor" ? "At playback cursor" : "Latest loaded record"}</span>{/if}
+    {#if data.semantic.attention}<span class="attention">{data.semantic.attention === "cursor" ? "At playback cursor" : data.semantic.attention === "received" ? "Newly received observation" : "Latest loaded record"}</span>{/if}
     <code>{data.semantic.id}</code>
     <small>Drag to arrange locally · {folded ? "Click to expand" : "Click to inspect"}</small>
   </div>
@@ -62,6 +62,9 @@
 <style>
   .orb-node { width:128px; height:84px; display:flex; flex-direction:column; align-items:center; gap:5px; position:relative; padding:3px 0 0; border:0; background:transparent; color:var(--color-parchment); cursor:grab; text-align:center; touch-action:none; transform:scale(var(--orb-ui-scale,1)); transform-origin:64px 24px; pointer-events:none; }
   .orb-mark { pointer-events:auto; width:40px; height:40px; flex:none; display:grid; place-items:center; position:relative; border:1px solid color-mix(in srgb,var(--node-accent) 38%,var(--color-engraving)); border-radius:50%; background:color-mix(in srgb,var(--node-accent) 5%,var(--color-obsidian)); color:var(--color-ash); font:13px var(--font-glyph); transition:background-color 120ms,border-color 120ms,box-shadow 120ms; }
+  .orb-mark img { width:24px; height:24px; filter:invert(1); }
+  .orb-node[data-attention="received"] .orb-mark { animation:received 1.2s ease-out 1; }
+  @keyframes received { from { outline:3px solid var(--color-rune); outline-offset:12px; } to { outline:0 solid transparent; outline-offset:2px; } }
   .orb-mark > span { position:relative; z-index:1; }
   .orb-name { max-width:128px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font:12px/1.25 var(--font-body); visibility:var(--orb-name-visibility,visible); }
   .orb-caption { max-width:128px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--color-ash); font:9px/1.2 var(--font-body); letter-spacing:.045em; visibility:var(--orb-caption-visibility,visible); }
@@ -92,5 +95,5 @@
   .orb-preview span,.orb-preview code { color:var(--color-parchment); }
   .orb-preview code,.orb-preview small { font-size:10px; color:var(--color-ash); }
   .orb-preview .attention { color:var(--color-primary); }
-  @media(prefers-reduced-motion:reduce) { .orb-mark { transition:none; } }
+  @media(prefers-reduced-motion:reduce) { .orb-mark { transition:none; animation:none !important; } }
 </style>

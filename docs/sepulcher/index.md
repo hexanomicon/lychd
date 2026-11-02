@@ -63,8 +63,9 @@ a contribution or the provider that implements it. Compositions and Products bui
 roles without absorbing their authority.
 
 The [Oculus](extensions/oculus.md) design follows the evidence of an act, showing where each
-observation came from and where evidence is missing. Native Oculus remains **Designed**;
-today's Altar offers a narrower view of the work.
+observation came from and where evidence is missing. Its first native projection shows bounded
+component and runtime activity alongside the Altar's existing Run views; durable distributed
+tracing remains unfinished.
 
 ## Enter the body
 

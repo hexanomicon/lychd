@@ -22,12 +22,18 @@
   });
 </script>
 
-<g>
+<g class={{ received: data?.attention === "received" }}>
   {#if orb}<title>{label}</title>{/if}
 <BaseEdge {id} path={geometry[0]} labelX={geometry[1]} labelY={geometry[2]}
   label={orb ? undefined : loop ? `${label ?? ""} · return` : label} {markerEnd}
   style={orb
-    ? `vector-effect:non-scaling-stroke;stroke:color-mix(in srgb,var(--color-${data?.relation === "selection" ? "tertiary-edge" : "rune-dim"}) ${data?.relation === "contains" ? "40" : "65"}%,transparent);stroke-width:${data?.relation === "contains" ? "0.8" : "1.1"};${data?.relation === "permission" || data?.relation === "selection" ? "stroke-dasharray:3 6;" : ""}`
+    ? `vector-effect:non-scaling-stroke;stroke:color-mix(in srgb,var(--color-${data?.attention === "received" ? "rune" : data?.relation === "activity" ? "frost" : data?.relation === "selection" ? "tertiary-edge" : "rune-dim"}) ${data?.relation === "contains" ? "40" : "65"}%,transparent);stroke-width:${data?.relation === "contains" ? "0.8" : "1.1"};${data?.relation === "permission" || data?.relation === "selection" || data?.relation === "declared" ? "stroke-dasharray:3 6;" : ""}`
     : `stroke:var(--color-rune-dim);stroke-width:1.6;${data?.relation === "order" ? "stroke-dasharray:5 5;" : ""}`}
   labelStyle="fill:var(--color-parchment);font-size:11px" />
 </g>
+
+<style>
+  .received :global(path) { stroke-width:2; animation:activity 1.2s ease-out 1; }
+  @keyframes activity { from { stroke-opacity:1; } to { stroke-opacity:.7; } }
+  @media(prefers-reduced-motion:reduce) { .received :global(path) { animation:none; } }
+</style>

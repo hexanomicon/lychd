@@ -1027,6 +1027,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orb/runtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Runtime */
+        get: operations["getOrbRuntime"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/scavenger": {
         parameters: {
             query?: never;
@@ -1888,6 +1905,36 @@ export interface components {
             state: "active" | "retired";
             version: number;
         };
+        /** InspectionBinding */
+        InspectionBinding: {
+            /** @default false */
+            executable: boolean;
+            profile_id: string;
+            profile_revision: string;
+            /** @enum {string} */
+            publication: "published" | "observed";
+            registrant_id: string;
+            source_generation: string;
+            source_id: string;
+        };
+        /** InspectionEdge */
+        InspectionEdge: {
+            key: string;
+            /**
+             * @default permits
+             * @constant
+             */
+            relation: "permits";
+            source: string;
+            target: string;
+        };
+        /** InspectionNode */
+        InspectionNode: {
+            key: string;
+            /** @enum {string} */
+            kind: "step" | "gate" | "delegate" | "peer" | "terminal";
+            label: string;
+        };
         /** InvestigationRequest */
         InvestigationRequest: {
             base_revision: string;
@@ -1953,6 +2000,7 @@ export interface components {
         /** LoomSummary */
         LoomSummary: {
             active: boolean;
+            binding?: components["schemas"]["InspectionBinding"] | null;
             default: boolean;
             description: string;
             detail_path: string;
@@ -1960,6 +2008,11 @@ export interface components {
             entry_node: string;
             implementation_revision: string;
             pattern_id: string;
+            /**
+             * @default published
+             * @enum {string}
+             */
+            publication: "published" | "observed";
             revision: string;
             route_rank: number | null;
             title: string;
@@ -1967,6 +2020,7 @@ export interface components {
         };
         /** LoomView */
         LoomView: {
+            binding?: components["schemas"]["InspectionBinding"] | null;
             checkpoint_schema: string;
             description: string;
             digest: string;
@@ -1976,8 +2030,8 @@ export interface components {
             mermaid_source: string;
             nodes: components["schemas"]["LoomNodeView"][];
             pattern_id: string;
-            /** @constant */
-            publication: "published";
+            /** @enum {string} */
+            publication: "published" | "observed";
             revision: string;
             schema_version: number;
             title: string;
@@ -2135,6 +2189,35 @@ export interface components {
             run_id: string;
             run_status: components["schemas"]["RunStatus"];
         };
+        /** ObservationCoverage */
+        ObservationCoverage: {
+            /**
+             * @default process_local
+             * @constant
+             */
+            capture: "process_local";
+            /**
+             * @default not_established
+             * @constant
+             */
+            completeness: "not_established";
+            /** @default 0 */
+            dropped: number;
+            first_seq?: number | null;
+            /** @default 0 */
+            gaps: number;
+            last_seq?: number | null;
+            /** @default [] */
+            limitations: string[];
+            /** @default 0 */
+            omitted_activities: number;
+            /** @default 0 */
+            omitted_components: number;
+            /** @default 0 */
+            omitted_patterns: number;
+            /** @default 0 */
+            omitted_relations: number;
+        };
         /** ObservationDeleted */
         ObservationDeleted: {
             /** Format: uuid */
@@ -2195,6 +2278,58 @@ export interface components {
             /** Format: uuid */
             request_id: string;
             seed: components["schemas"]["CampaignSeed"];
+        };
+        /** ObservedActivity */
+        ObservedActivity: {
+            attempt_id?: string | null;
+            /**
+             * @default process_local
+             * @constant
+             */
+            capture: "process_local";
+            /** @enum {null|string} */
+            effect_outcome?: "succeeded" | "failed" | "unknown" | null;
+            elapsed_ms?: number | null;
+            /** @enum {null|string} */
+            error_category?: "timeout" | "cancelled" | "transport" | "protocol" | "refused" | "unavailable" | "unknown" | null;
+            event_id: string;
+            http_status?: number | null;
+            job_id?: string | null;
+            /** @enum {string} */
+            kind: "transport_attempt" | "transport_result" | "operation_result" | "lifecycle";
+            native_event_id?: string | null;
+            native_seq?: number | null;
+            /**
+             * Format: date-time
+             * @description datetime with the constraint that the value must have timezone info
+             */
+            observed_at: string;
+            operation: string;
+            operation_id: string;
+            pattern_id?: string | null;
+            pattern_revision?: string | null;
+            /** @enum {string} */
+            phase: "started" | "succeeded" | "failed" | "cancelled" | "unknown";
+            producer_generation?: string | null;
+            producer_id: string;
+            producer_seq?: number | null;
+            receipt_id?: string | null;
+            /**
+             * Format: date-time
+             * @description datetime with the constraint that the value must have timezone info
+             */
+            received_at: string;
+            registrant_id: string;
+            request_id?: string | null;
+            run_id?: string | null;
+            seq: number;
+            source: string;
+            source_generation: string;
+            source_id: string;
+            station_attempt_id?: string | null;
+            station_key?: string | null;
+            step_id?: string | null;
+            target: string;
         };
         /** OrbBridgePreferenceRoute */
         OrbBridgePreferenceRoute: {
@@ -2321,6 +2456,25 @@ export interface components {
             status: string;
             workflow_name: string;
         };
+        /** OrbRuntimeSnapshot */
+        OrbRuntimeSnapshot: {
+            activities: components["schemas"]["ObservedActivity"][];
+            components: components["schemas"]["RuntimeComponent"][];
+            coverage: components["schemas"]["RuntimeCoverage"];
+            patterns: components["schemas"]["PatternInspectionEntry"][];
+            /**
+             * Format: date-time
+             * @description datetime with the constraint that the value must have timezone info
+             */
+            read_at: string;
+            relations: components["schemas"]["RuntimeRelation"][];
+            /**
+             * @default 1
+             * @constant
+             */
+            schema_version: 1;
+            sources: components["schemas"]["RuntimeSource"][];
+        };
         /** OwnerDecision */
         OwnerDecision: {
             /** @enum {string} */
@@ -2333,6 +2487,31 @@ export interface components {
             distinguishing_observation?: string | null;
             reason: string;
             target: components["schemas"]["FeedbackTarget"];
+        };
+        /** PatternInspectionDescriptor */
+        PatternInspectionDescriptor: {
+            checkpoint_schema: string;
+            description: string;
+            digest: string;
+            edges: components["schemas"]["InspectionEdge"][];
+            entry_node: string;
+            implementation_revision: string;
+            nodes: components["schemas"]["InspectionNode"][];
+            pattern_id: string;
+            revision: string;
+            /**
+             * @default 2
+             * @constant
+             */
+            schema_version: 2;
+            title: string;
+            trigger_hint: string;
+        };
+        /** PatternInspectionEntry */
+        PatternInspectionEntry: {
+            binding: components["schemas"]["InspectionBinding"];
+            descriptor: components["schemas"]["PatternInspectionDescriptor"];
+            detail_path: string;
         };
         /** PatternReference */
         PatternReference: {
@@ -2492,6 +2671,104 @@ export interface components {
          * @enum {string}
          */
         RunStatus: "queued" | "running" | "awaiting_hardware" | "awaiting_consent" | "awaiting_delegate" | "awaiting_peer" | "cancelling" | "done" | "failed" | "cancelled";
+        /** RuntimeComponent */
+        RuntimeComponent: {
+            /**
+             * @default unavailable
+             * @enum {string}
+             */
+            activity_coverage: "unavailable" | "partial" | "instrumented";
+            /**
+             * @default component
+             * @enum {string}
+             */
+            icon: "component" | "service" | "runtime" | "interface" | "resource" | "external" | "capability";
+            icon_asset?: string | null;
+            instance_id?: string | null;
+            key: string;
+            /** @enum {string} */
+            kind: "host" | "service" | "runtime" | "interface" | "resource" | "external" | "capability" | "extension" | "other";
+            label: string;
+            /**
+             * @default configured
+             * @enum {string}
+             */
+            lifecycle: "configured" | "observed" | "running" | "stopped" | "unknown";
+            /** @default oculus */
+            owner: string;
+            registrant_id: string | null;
+            /** @default 1 */
+            revision: string;
+            source_generation: string;
+            source_id: string;
+        };
+        /** RuntimeCoverage */
+        RuntimeCoverage: {
+            /**
+             * @default 256
+             * @constant
+             */
+            activity_limit: 256;
+            /**
+             * @default 128
+             * @constant
+             */
+            component_limit: 128;
+            /** @default 0 */
+            omitted_activities: number;
+            /** @default 0 */
+            omitted_components: number;
+            /** @default 0 */
+            omitted_patterns: number;
+            /** @default 0 */
+            omitted_relations: number;
+            /** @default 0 */
+            omitted_sources: number;
+            /**
+             * @default 32
+             * @constant
+             */
+            pattern_limit: 32;
+            /**
+             * @default 256
+             * @constant
+             */
+            relation_limit: 256;
+            /**
+             * @default 8
+             * @constant
+             */
+            selected_source_limit: 8;
+            /**
+             * @default 9
+             * @constant
+             */
+            source_limit: 9;
+        };
+        /** RuntimeRelation */
+        RuntimeRelation: {
+            key: string;
+            /** @enum {string} */
+            relation: "hosted" | "attached" | "implements" | "serves" | "references";
+            source: string;
+            source_generation: string;
+            source_id: string;
+            target: string;
+        };
+        /** RuntimeSource */
+        RuntimeSource: {
+            coverage: components["schemas"]["ObservationCoverage"];
+            generated_at?: string | null;
+            generation?: string | null;
+            /** @default false */
+            generation_changed: boolean;
+            profile_id?: string | null;
+            profile_revision?: string | null;
+            registrant_id: string | null;
+            source_id: string;
+            /** @enum {string} */
+            status: "current" | "unavailable" | "unsafe" | "invalid" | "stale" | "generation_mismatch" | "oversize" | "conflict";
+        };
         /** ScavengerState */
         ScavengerState: {
             configured: boolean;
@@ -4703,7 +4980,12 @@ export interface operations {
     };
     getLoomPatternRevisionSource: {
         parameters: {
-            query?: never;
+            query?: {
+                source_id?: string | null;
+                generation?: string | null;
+                profile_id?: string | null;
+                profile_revision?: string | null;
+            };
             header?: never;
             path: {
                 pattern_id: string;
@@ -4796,7 +5078,12 @@ export interface operations {
     };
     getLoomPatternRevision: {
         parameters: {
-            query?: never;
+            query?: {
+                source_id?: string | null;
+                generation?: string | null;
+                profile_id?: string | null;
+                profile_revision?: string | null;
+            };
             header?: never;
             path: {
                 pattern_id: string;
@@ -5297,6 +5584,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+        };
+    };
+    getOrbRuntime: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrbRuntimeSnapshot"];
                 };
             };
         };
