@@ -30,7 +30,13 @@ from lychd.compositions.reach.operator_model_wire import (
     validate_generation_payload,
 )
 from lychd.compositions.reach.operator_trace import ReachTraceEvent, TraceCorrelation, trace_bytes
-from lychd.compositions.reach.operator_wire import MAX_WIRE_BYTES, ReachHistoryEntry, ReachWorkerResult, protocol_bytes
+from lychd.compositions.reach.operator_wire import (
+    MAX_WIRE_BYTES,
+    ReachHistoryEntry,
+    ReachWorkerRequest,
+    ReachWorkerResult,
+    protocol_bytes,
+)
 from lychd.compositions.reach.research import (
     ResearchPlan,
     parse_research_answer,
@@ -301,65 +307,239 @@ async def test_native_plan_acknowledgement_read_and_synthesis_settle_once_withou
         await runtime.aclose()
 
 
+def assert_quotation_followup_prompt(
+    body: dict[str, Any],
+    payload: str,
+    request: ReachWorkerRequest,
+    corpus: PublicCorpus,
+    quotations: tuple[str, ...],
+    plan_text: str,
+    *,
+    planning: bool,
+) -> None:
+    instructions = body["messages"][0]["content"]
+    assert "Answer and clarify are terminal replies: no work continues after either reply." in instructions
+    assert "choose research with exact offered source_ids" in instructions
+    assert "earlier paraphrases do not supply it" in instructions
+    assert "Complete the user's requested components and the acknowledged plan in this response." in instructions
+    assert "requested exact quotations only from visible source text" in instructions
+    assert "If a read or projection is partial or truncated" in instructions
+    assert instructions.endswith(
+        "Response protocol: your entire response must be one JSON object, starting with { and ending with }. "
+        "Put every user-visible acknowledgement, plan or explanation inside its text field. "
+        "The host delivers that text; you do not send a separate message. "
+        "Do not add a preface, analysis, Markdown fences or trailing prose outside that object. "
+        "Only a research decision starts source acquisition; answer and clarify end this turn."
+    )
+    prompt = json.loads(body["messages"][-1]["content"])
+    assert prompt["question"] == request.event.question
+    assert request.reply_anchor is not None
+    assert prompt["reply_anchor"]["text"] == request.reply_anchor.text
+    if planning:
+        assert prompt["research_phase"] == "planning"
+        assert prompt["public_document_excerpts"] == ""
+        assert all(quotation not in payload for quotation in quotations)
+        assert "doc:docs/graph.md" in {source["id"] for source in prompt["available_research_sources"]}
+    else:
+        assert prompt["research_phase"] == "synthesis"
+        assert prompt["research_plan"] == plan_text
+        (source,) = prompt["research_sources"]
+        assert source["id"] == "doc:docs/graph.md"
+        assert source["text"] == corpus.texts[0]
+        assert not source["projection_truncated"]
+        assert all(quotation in source["text"] for quotation in quotations)
+
+
+def assert_quotation_followup_source_receipt(
+    event: ReachTraceEvent, runtime: DocumentsRuntime, corpus: PublicCorpus
+) -> None:
+    assert event.generation == runtime.generation
+    assert event.occurrence_id is not None
+    assert event.step_id is not None
+    assert event.chars is not None
+    assert event.chars > 0
+    assert event.excerpt_start == 0
+    assert event.excerpt_chars == len(corpus.texts[0])
+    assert event.source_digest == sha256(corpus.texts[0].encode()).hexdigest()
+    assert event.text_digest == event.source_digest
+
+
+async def assert_quotation_followup_settlement_and_duplicate(
+    runtime: DocumentsRuntime,
+    result: ReachWorkerResult,
+    request: ReachWorkerRequest,
+    traces: list[ReachTraceEvent],
+    answer_text: str,
+) -> None:
+    assert result.status == "conversation"
+    assert result.text.startswith(answer_text)
+    assert "docs/graph.md" in result.text
+    assert "https://example.com/guide" not in result.text
+    source = next(event for event in traces if event.name == "source_read")
+    assert (source.source_id, source.status, source.request_id, source.run_id) == (
+        "doc:docs/graph.md",
+        "ok",
+        request.request_id,
+        result.run_id,
+    )
+    assert [event.trace_seq for event in traces] == list(range(1, len(traces) + 1))
+    assert result.text not in trace_bytes(source).decode()
+    assert result.run_id is not None
+    run = await runtime.substrate.ledger.get(result.run_id)
+    assert run is not None
+    assert run.status is RunStatus.DONE
+    session = await runtime.sessions.session_for_run(result.run_id)
+    assert session is not None
+    assert len([turn for turn in session.turns if turn.role == "agent"]) == 1
+    assert runtime.substrate.leases.active() == []
+    duplicate = await runtime.process(request)
+    assert duplicate.reason == "duplicate"
+    assert duplicate.text == ""
+    assert len([event for event in traces if event.name == "source_read"]) == 1
+
+
 @pytest.mark.asyncio
-async def test_docs_only_plan_still_requires_acknowledgement_and_no_web_selection() -> None:
+async def test_docs_only_omitted_quotation_followup_acknowledges_reads_and_settles_once() -> None:
+    """Control model decisions to verify the correction contract and native choreography, not model obedience."""
     binding = research_profile()
+    quotations = ("Observe the declared station.", "Resume only the admitted continuation.")
+    corpus = make_corpus(
+        "# Graph\n## Observation\n> Observe the declared station.\nMethod: inspect the current station.\n"
+        "\n## Continuation\n> Resume only the admitted continuation.\nMethod: resume the declared continuation."
+    )
+    previous = ReachHistoryEntry(
+        subject_id="bot:one",
+        event_id="earlier:answer",
+        conversation_id="channel:one",
+        occurred_at=NOW - timedelta(seconds=3),
+        text="Observation inspects the current station; continuation resumes the declared continuation.",
+    )
+    request = make_request(
+        action="converse", question="You forgot the quotations. Give both exact quotes alongside their methods."
+    ).model_copy(
+        update={
+            "request_id": str(uuid4()),
+            "reply_to_event_id": previous.event_id,
+            "reply_anchor": previous,
+        }
+    )
+    plan_text = "I will read the Graph source to verify both exact quotations alongside their methods."
+    answer_text = (
+        'Observation: "Observe the declared station." Method: inspect the current station.\n'
+        'Continuation: "Resume only the admitted continuation." Method: resume the declared continuation.'
+    )
     generated = 0
     acknowledged: list[OperatorResearchRequest] = []
     traces: list[ReachTraceEvent] = []
+    phases: list[str] = []
+
+    def trace(event: ReachTraceEvent) -> None:
+        traces.append(event)
+        if event.name == "source_read":
+            assert phases == ["plan", "acknowledge"]
+            assert_quotation_followup_source_receipt(event, runtime, corpus)
+            phases.append("read")
 
     async def model_relay(operation: str, payload: str) -> str:
         nonlocal generated
         if operation == "probe":
             return canonical_json({"healthy": True, "model_ids": [binding.model_id]})
-        validate_generation_payload(binding, payload)
+        body = validate_generation_payload(binding, payload)
         generated += 1
-        return completion(
-            plan_json(("doc:docs/graph.md",)) if generated == 1 else answer_json(citations=("doc:docs/graph.md",))
-        )
+        assert_quotation_followup_prompt(body, payload, request, corpus, quotations, plan_text, planning=generated == 1)
+        if generated == 1:
+            assert phases == []
+            phases.append("plan")
+            return completion(
+                canonical_json({"kind": "research", "text": plan_text, "source_ids": ["doc:docs/graph.md"]})
+            )
+        assert phases == ["plan", "acknowledge", "read"]
+        phases.append("synthesize")
+        return completion(answer_json(text=answer_text, citations=("doc:docs/graph.md",)))
 
-    async def research_relay(request: OperatorResearchRequest) -> OperatorResearchResponse:
-        acknowledged.append(request)
-        assert request.source_ids == ()
-        return relay_response(request, sources=())
+    async def research_relay(acquisition: OperatorResearchRequest) -> OperatorResearchResponse:
+        assert phases == ["plan"]
+        assert not any(event.name == "source_read" for event in traces)
+        assert acquisition.event == request.event
+        assert acquisition.plan == plan_text
+        assert acquisition.source_ids == ()
+        phases.append("acknowledge")
+        acknowledged.append(acquisition)
+        return relay_response(acquisition, sources=())
 
     runtime = build_runtime(
         policy(),
-        make_corpus(),
+        corpus,
         profile=binding,
         model_relay=model_relay,
         research_relay=research_relay,
         started_at=STARTED,
         clock=lambda: NOW,
-        trace=traces.append,
+        trace=trace,
     )
-    request = make_request(action="converse").model_copy(update={"request_id": str(uuid4())})
     try:
         with override_allow_model_requests(True):  # noqa: FBT003 - explicit third-party model permission
             result = await runtime.process(request)
-        assert result.status == "conversation"
-        assert len(acknowledged) == 1
-        assert generated == 2
-        assert "docs/graph.md" in result.text
-        assert "https://example.com/guide" not in result.text
-        source = next(event for event in traces if event.name == "source_read")
-        assert (source.source_id, source.status, source.request_id, source.run_id) == (
-            "doc:docs/graph.md",
-            "ok",
-            request.request_id,
-            result.run_id,
+        assert (generated, len(acknowledged), phases) == (2, 1, ["plan", "acknowledge", "read", "synthesize"])
+        await assert_quotation_followup_settlement_and_duplicate(runtime, result, request, traces, answer_text)
+        assert (generated, len(acknowledged)) == (2, 1)
+    finally:
+        await runtime.aclose()
+
+
+@pytest.mark.asyncio
+async def test_native_synthesis_plan_echo_records_failure_without_adopting_prose_or_another_call() -> None:
+    binding, corpus = research_profile(), make_corpus()
+    plan = ResearchPlan(kind="research", text="I will read the Graph source.", source_ids=("doc:docs/graph.md",))
+    generated = 0
+    acknowledged: list[OperatorResearchRequest] = []
+
+    async def model_relay(operation: str, payload: str) -> str:
+        nonlocal generated
+        if operation == "probe":
+            return canonical_json({"healthy": True, "model_ids": [binding.model_id]})
+        body = validate_generation_payload(binding, payload)
+        generated += 1
+        if generated == 1:
+            return completion(plan.model_dump_json())
+        prompt = json.loads(body["messages"][-1]["content"])
+        assert prompt["research_output_contract"]["rule"].startswith(
+            "The research plan was already delivered and source acquisition is finished."
         )
-        assert source.generation == runtime.generation
-        assert source.occurrence_id is not None
-        assert source.step_id is not None
-        assert source.chars is not None
-        assert source.chars > 0
-        assert source.excerpt_start == 0
-        assert source.excerpt_chars == len(make_corpus().texts[0])
-        assert source.source_digest == sha256(make_corpus().texts[0].encode()).hexdigest()
-        assert source.text_digest == source.source_digest
-        assert [event.trace_seq for event in traces] == list(range(1, len(traces) + 1))
-        assert result.text not in trace_bytes(source).decode()
+        (source,) = prompt["research_sources"]
+        assert (source["id"], source["status"], source["text"]) == ("doc:docs/graph.md", "ok", corpus.texts[0])
+        return completion(answer_json(text=plan.text, citations=plan.source_ids))
+
+    async def research_relay(acquisition: OperatorResearchRequest) -> OperatorResearchResponse:
+        assert acquisition.plan == plan.text
+        acknowledged.append(acquisition)
+        return relay_response(acquisition, sources=())
+
+    runtime = build_runtime(
+        policy(),
+        corpus,
+        profile=binding,
+        model_relay=model_relay,
+        research_relay=research_relay,
+        started_at=STARTED,
+        clock=lambda: NOW,
+    )
+    try:
+        with override_allow_model_requests(True):  # noqa: FBT003 - explicit third-party model permission
+            result = await runtime.process(make_request(action="converse"))
+        assert (result.status, result.text, generated, len(acknowledged)) == ("error", "", 2, 1)
+        assert runtime.substrate.leases.active() == []
+        assert result.run_id is not None
+        run = await runtime.substrate.ledger.get(result.run_id)
+        assert run is not None
+        assert run.status is RunStatus.FAILED
+        terminal = await runtime.sessions.settled_turn_for_run(result.run_id)
+        assert terminal is not None
+        assert terminal.state == "failed"
+        assert plan.text not in terminal.content
+        session = await runtime.sessions.session_for_run(result.run_id)
+        assert session is not None
+        assert not any(turn.role == "agent" and turn.state != "failed" for turn in session.turns)
     finally:
         await runtime.aclose()
 
@@ -592,6 +772,49 @@ def test_synthesis_cannot_invent_citations_or_claim_unread_sources(answer: str) 
         parse_research_answer(answer, (admitted_source(), unavailable_source()))
 
 
+@pytest.mark.parametrize("kind", ["answer", "clarify"])
+@pytest.mark.parametrize(
+    "text",
+    [
+        "I will read the selected source before answering.",
+        " \tI  will read\n the selected source before answering. \n",
+        "I\u00a0will read the selected source before answering.",
+    ],
+    ids=["exact", "whitespace", "unicode-whitespace"],
+)
+def test_synthesis_rejects_acknowledged_plan_echo_before_rendering_valid_citations(kind: str, text: str) -> None:
+    with pytest.raises(ValueError, match=r"^conversation_research_answer$"):
+        parse_research_answer(
+            answer_json(kind=kind, text=text, citations=("web:official",)),
+            (admitted_source(),),
+            acknowledged_plan="I will read the selected source before answering.",
+        )
+
+
+@pytest.mark.parametrize(
+    ("kind", "text"),
+    [("answer", "The source describes the method."), ("clarify", "Which method should I explain?")],
+)
+def test_synthesis_accepts_distinct_terminal_text_after_an_acknowledged_plan(kind: str, text: str) -> None:
+    result = parse_research_answer(
+        answer_json(kind=kind, text=text, citations=("web:official",)),
+        (admitted_source(),),
+        acknowledged_plan="I will read the selected source before answering.",
+    )
+    assert result.status == ("conversation" if kind == "answer" else "clarify")
+    assert result.text.startswith(text)
+
+
+@pytest.mark.parametrize("text", ["I will read this source!", "i will read this source."])
+def test_plan_echo_comparison_changes_only_whitespace(text: str) -> None:
+    result = parse_research_answer(
+        answer_json(text=text, citations=("web:official",)),
+        (admitted_source(),),
+        acknowledged_plan="I will read this source.",
+    )
+    assert result.text.startswith(text)
+
+
 def test_host_renders_only_admitted_citations_and_explicit_unavailable_notice() -> None:
     result = parse_research_answer(answer_json(citations=("web:official",)), (admitted_source(), unavailable_source()))
     assert result.status == "conversation"
@@ -631,7 +854,9 @@ def test_all_unavailable_web_sources_replace_model_narrative_with_fixed_host_cla
     )
     if kind == "answer":
         model.update({"reaction": "👍", "gif_id": "celebrate"})
-    result = parse_research_answer(canonical_json(model), sources, expressions)
+    result = parse_research_answer(
+        canonical_json(model), sources, expressions, acknowledged_plan=HALLUCINATED_RESEARCH_MARKER
+    )
     assert result.status == "clarify"
     assert result.text == f"{UNVERIFIED_WEB_NOTICE}\n\nUnavailable source: Unavailable reference (fetch_protocol)."
     assert HALLUCINATED_RESEARCH_MARKER not in result.text
@@ -643,6 +868,7 @@ def test_all_unavailable_web_sources_replace_model_narrative_with_fixed_host_cla
             kind="clarify" if kind == "answer" else "answer", text="ANOTHER_UNVERIFIED_NARRATIVE", citations=citations
         ),
         sources,
+        acknowledged_plan="ANOTHER_UNVERIFIED_NARRATIVE",
     )
     assert alternative.text == result.text
     assert alternative.status == "clarify"

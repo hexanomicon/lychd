@@ -285,6 +285,9 @@ def synthesis_prompt(
                     "required_keys": ["kind", "text", "citations"],
                     "answer_citation_ids": successful_ids,
                     "rule": (
+                        "The research plan was already delivered and source acquisition is finished. "
+                        "Answer the current question now; do not repeat the plan or promise a future lookup. "
+                        "Use the actual source text or identify the specific missing evidence. "
                         "Return one JSON object. For kind answer, citations MUST contain at least one of the "
                         "answer_citation_ids when that list is nonempty, and may contain ONLY IDs whose read "
                         "evidence supports the answer. For clarify, citations may be empty. Put source IDs in citations, "
@@ -382,8 +385,10 @@ def parse_research_answer(
     output: str,
     sources: tuple[SourceReadResult, ...],
     expressions: ConversationExpressions | None = None,
+    *,
+    acknowledged_plan: str | None = None,
 ) -> ResearchAnswer:
-    """Fence missing web evidence before adopting model prose, then resolve admitted citations."""
+    """Fence missing web evidence and acknowledged-plan echoes before adopting prose and citations."""
     value = strict_json(output.encode("utf-8"))
     decision = _ResearchDecision.model_validate_json(canonical_json(value))
     if len({source.id for source in sources}) != len(sources):
@@ -394,6 +399,9 @@ def parse_research_answer(
         return ResearchAnswer(
             status="clarify", text="\n\n".join([UNVERIFIED_WEB_NOTICE, *_unavailable_notices(sources)])
         )
+    if acknowledged_plan is not None and " ".join(decision.text.split()) == " ".join(acknowledged_plan.split()):
+        msg = "conversation_research_answer"
+        raise ValueError(msg)
     decision.validate_adoption()
     (expressions or ConversationExpressions()).validate_selection(decision.reaction, decision.gif_id)
     admitted = {source.id: source for source in sources if source.status == "ok"}

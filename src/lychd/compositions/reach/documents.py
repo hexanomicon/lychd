@@ -746,9 +746,10 @@ def _research_section_selection(
 
 
 def _research_overview(question: str) -> bool:
+    """Recognize multi-section intent, allowing at most two words to qualify a singular unit."""
     return (
         re.search(
-            r"\b(?:overview|weekly|weeks|chapters|sections|stages)\b|\b(?:per|each|every)\s+(?:week|chapter|section|stage)\b",
+            r"\b(?:overview|weekly|weeks|chapters|sections|stages)\b|\b(?:per|each|every)\s+(?:[^\W\d_]+[ \t]+){0,2}(?:week|chapter|section|stage)\b",
             _normalized(question),
         )
         is not None

@@ -553,6 +553,16 @@ acknowledge a research plan and therefore cannot acquire sources through this br
 optional 👀 receipt remains separate from this interpreted plan; conversation mode sends no
 earlier mechanical text.
 
+An ordinary answer or clarification ends its Run; its text schedules no later work. The model
+instructions require source-dependent follow-ups, including corrections for omitted evidence,
+to select the research branch rather than promise a later lookup in a final answer. Synthesis
+must address the current request and acknowledged plan using the acquired excerpts, distinguish
+exact quotations from paraphrases, and state missing or clipped evidence. Adoption rejects a
+final text that repeats the acknowledged plan after whitespace normalization, before rendering
+citations. That narrow check does not detect differently worded promises or prove semantic
+completeness. The structural trace records observed plan, source-read and final-delivery events
+under its reported capture limits.
+
 The native `research` station obtains its exact no-tool Chat lease, waits for the delivered-plan
 gate, then consumes bounded source excerpts and makes one synthesis call. Web sources remain bounded
 to 4,000 characters; selected multi-section local Markdown reads may admit up to 16,000. Oldest

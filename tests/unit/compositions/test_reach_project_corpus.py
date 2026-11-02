@@ -410,6 +410,62 @@ def test_overview_and_elliptical_reference_retain_the_named_parent_and_all_ten_c
     assert source.truncated
 
 
+@pytest.mark.parametrize(
+    "scope",
+    [
+        "each Formation week",
+        "every Formation week",
+        "per initial Formation week",
+        "EACH FÓRMATION WEEK",
+        "each Formation chapter",
+        "every Formation section",
+        "per Formation stage",
+    ],
+)
+def test_qualified_units_read_the_complete_parent_with_bounded_exact_source_custody(scope: str) -> None:
+    section = programme_sections().replace("Genesis", "Formation").replace("Methods and quotes", "Methods")
+    assert 4000 < len(section) < 16_000
+    text = "# Programme\n## Earlier\n" + "Background.\n" * 400 + section + "## Later\nLater.\n"
+    corpus = project_corpus(("ROADMAP.md", text))
+    source = read_research_document(
+        corpus,
+        "doc:ROADMAP.md",
+        question="You forgot the quotes!",
+        focus=f"I will re-read the roadmap to pull the exact quotations for {scope}.",
+    )
+    assert source.text == section
+    assert source.excerpt_start == text.index(section)
+    assert source.source_chars == len(text)
+    assert source.source_digest == sha256(text.encode()).hexdigest()
+    assert source.text_digest == sha256(section.encode()).hexdigest()
+    assert source.truncated
+
+
+@pytest.mark.parametrize("scope", ["Formation week", "each early initial Formation week"])
+def test_singular_or_distant_units_keep_the_ordinary_read_bound(scope: str) -> None:
+    section = programme_sections().replace("Genesis", "Formation")
+    source = read_research_document(
+        project_corpus(("ROADMAP.md", "# Programme\n" + section)),
+        "doc:ROADMAP.md",
+        question=f"Read {scope}.",
+    )
+    assert source.text == section[:4000]
+    assert source.text_digest == sha256(section[:4000].encode()).hexdigest()
+
+
+@pytest.mark.parametrize("target", ["Week02", "#week-02"])
+def test_explicit_unit_targets_take_precedence_over_a_qualified_parent_overview(target: str) -> None:
+    section = programme_sections().replace("Genesis", "Formation")
+    source = read_research_document(
+        project_corpus(("ROADMAP.md", "# Programme\n" + section)),
+        "doc:ROADMAP.md",
+        question=f"Read {target} from each Formation week.",
+    )
+    expected = section[section.index("### Week 02") : section.index("### Week 03")]
+    assert source.text == expected
+    assert source.text_digest == sha256(expected.encode()).hexdigest()
+
+
 @pytest.mark.parametrize("length", [9000, 4000, 2000, 600])
 def test_long_section_projection_distributes_budget_with_exact_ordered_spans_and_digest(length: int) -> None:
     source = read_research_document(
@@ -494,11 +550,10 @@ def test_ordinary_reads_keep_four_thousand_character_cap_and_projections_are_pre
         project_research_source(source, -1)
 
 
-def test_large_parent_read_is_capped_and_code_does_not_gain_markdown_projection() -> None:
+@pytest.mark.parametrize("question", ["Formation overview", "Read every Formation stage"])
+def test_large_parent_read_is_capped_and_code_does_not_gain_markdown_projection(question: str) -> None:
     text = "# Programme\n## Formation\n" + "### Stage\nAuthored detail.\n" * 1000
-    source = read_research_document(
-        project_corpus(("ROADMAP.md", text)), "doc:ROADMAP.md", question="Formation overview"
-    )
+    source = read_research_document(project_corpus(("ROADMAP.md", text)), "doc:ROADMAP.md", question=question)
     assert len(source.text) == 16_000
     assert source.text == text[source.excerpt_start : source.excerpt_start + len(source.text)]
     code = "# Source\n# Week 01\n" + "value = 1\n" * 800 + "# Week 02\n"
