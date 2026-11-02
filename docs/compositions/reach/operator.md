@@ -159,6 +159,9 @@ Research discovery offers at most sixteen local descriptors, prioritizing exact 
 and relevant paths, titles and lexical content matches. The model selects from that same offered
 set at planning, validation and acquisition. It can read at most three local excerpts per plan,
 each at most 4,000 characters; it must not claim exhaustive inspection of the repository.
+Implicit Markdown reads skip link-only navigation. A kickoff favors welcome or getting-started
+content and retains nearby parent/date context; an explicit source fragment still selects that
+section. Inspect the projected excerpt bounds when source relevance matters.
 The complete catalogue is not injected into the prompt, and an oversized fixed input still
 refuses under the normal Context budget. These files supply evidence, not instructions or
 permission to execute code, edit files or search private mounts.
@@ -675,6 +678,64 @@ Inspect the uncertain external result before taking any further authorized actio
 cannot bypass that uncertainty. The receipt witnesses this local transport path, without
 establishing a durable native outbox, cross-process producer authority or application-level
 release acceptance.
+
+## Test a turn without Discord
+
+The headless helper runs the same native operator conversation Pattern in a disposable,
+networkless Core container with an explicitly selected persona, verified corpus and already
+running local model. It submits a synthetic normalized mention or DM instead of connecting a
+Discord edge. The plan-delivery receipt is simulated and labelled as such. Local document reads,
+native Run/station events and model HTTP calls remain real observations.
+
+Select the exact Core image ID from your retained image record as `CORE_IMAGE`, and copy one
+scenario into the private operator workspace:
+
+```bash
+install -m 600 examples/reach/probes/kickoff.json "$REACH_ROOT/kickoff-probe.json"
+uv run --locked python scripts/reach_probe.py \
+  --engine "$ENGINE" --core-image "$CORE_IMAGE" \
+  --conversation-profile "$REACH_ROOT/conversation-01.json" \
+  --corpus-dir "$REACH_ROOT/project-corpus-01" \
+  --scenario "$REACH_ROOT/kickoff-probe.json" \
+  --output "$REACH_ROOT/probe-kickoff-01" \
+  --model-transport podman
+```
+
+The output must be a new absolute directory outside every Git checkout. Inputs are frozen for
+the occurrence, and the output retains their distinct image identity, persona digest and corpus
+revision/digest. Those pins do not establish parity with a live bot unless its selected inputs
+have been compared separately. The helper starts one bounded Core worker; it neither changes
+model lifecycle nor obtains Discord credentials, starts a web worker or sends a message.
+Model-selected web sources are refused rather than supplied with invented evidence.
+Use a Core image built with the matching helper/source contract: projection validation also
+checks the worker's excerpt against the selected verified corpus.
+
+The supplied scenarios cover a roadmap kickoff, an English DM after Slovak history, and an
+uncertain plan-delivery receipt. The kickoff requires the roadmap/current-status source IDs and
+the `so_it_begins` GIF in the selected profile. Choose a suitable corpus and expression catalogue
+before using those assertions. `plan-not-delivered.json` expects a failed native turn and checks
+that no source read or synthesis followed the uncertain receipt. A passing negative scenario
+means the refusal boundary held; it does not turn that native failure into a successful answer.
+
+The private `report.json` separates scenario assertions, native status, synthetic receipt,
+capture health and cleanup. `turn.json` contains the plan, final answer/GIF selection, exact
+Pattern descriptors, acquired-source observations and metadata from the actual synthesis
+request, including its projection bounds and digests. The acquired excerpt and the shorter
+model-input projection remain distinct. Source bodies and persona/provider payloads are omitted;
+`--capture-model-output` separately opts into bounded synthetic model-decision text for diagnosis.
+`report.md` gives a readable view. Structural observations use the existing private trace archive:
+
+```bash
+uv run --locked python scripts/reach_trace.py show \
+  --archive-dir "$REACH_ROOT/probe-kickoff-01/traces" --latest
+```
+
+Each scenario file can assert an expected native status, required successful source reads and
+an exact GIF ID. A failed assertion returns a nonzero exit code. Inspect the answer and its
+supporting evidence as well: structural checks and one local-model occurrence do not certify
+every future response. Trace capture remains bounded best-effort observation, with gaps and
+failures reported; it is not a durable native Run ledger, source receipt or proof of model
+attention. This probe qualifies neither Discord delivery nor the full live research host path.
 
 ## Handle refusals and uncertain effects
 

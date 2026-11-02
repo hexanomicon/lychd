@@ -47,6 +47,7 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/cli/test_reach_connect_prepare.py \
 	tests/unit/cli/test_reach_worker.py tests/unit/cli/test_reach_operator.py \
 	tests/unit/cli/test_reach_project_export.py \
+	tests/unit/cli/test_reach_probe.py \
 	tests/unit/cli/test_reach_operator_model.py \
 	tests/unit/cli/test_reach_context_rounds.py tests/unit/cli/test_reach_podman_model.py \
 	tests/unit/cli/test_reach_relay_retirement.py tests/unit/cli/test_reach_research_broker.py \

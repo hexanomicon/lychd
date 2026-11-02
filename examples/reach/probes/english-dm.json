@@ -1,0 +1,17 @@
+{
+  "question": "Please greet the team in one short English sentence.",
+  "direct": true,
+  "history": [
+    {
+      "speaker": "operator",
+      "text": "Ahoj, doteraz sme sa rozprávali po slovensky.",
+      "age_seconds": 2
+    },
+    {
+      "speaker": "agent",
+      "text": "Ahoj, som Nadir a som pripravený pomôcť.",
+      "age_seconds": 1
+    }
+  ],
+  "expected_status": "conversation"
+}

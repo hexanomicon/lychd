@@ -33,6 +33,7 @@ MIN_EXCERPT_CHARS = 30
 _REPO = "https://github.com/hexanomicon/lychd/blob/"
 _PUBLIC_SITE = "https://hexanomicon.dev"
 _RESEARCH_EXCERPT_CHARS = 4000
+_RESEARCH_ANCESTOR_CHARS = 600
 _URL = re.compile(r"https?://[^\s<>\[\]()\"']+")
 _PATH = re.compile(r"(?<![A-Za-z0-9_./-])(?:doc:)?([A-Za-z0-9_./-]{1,200})(?![A-Za-z0-9_./-])")
 _PUBLIC_ROOT_FILES = frozenset(
@@ -455,6 +456,16 @@ def _research_title(document: CorpusDocument, text: str) -> str:
     return next((title for _, level, title, _ in _research_headings(text) if level == 1 and title), document.path)[:120]
 
 
+def _research_kickoff(question: str) -> bool:
+    return (
+        re.search(
+            r"\bkick(?: us)?[ -]?off\b|\bstart (?:of )?(?:the )?project\b|\bproject start\b",
+            _normalized(question),
+        )
+        is not None
+    )
+
+
 def research_document_catalogue(
     corpus: PublicCorpus, *, question: str = "", context: tuple[str, ...] = ()
 ) -> tuple[dict[str, str], ...]:
@@ -466,10 +477,7 @@ def research_document_catalogue(
     exact_question = set(research_document_matches(corpus, (question,)))
     exact_context = set(research_document_matches(corpus, context))
     question_terms, context_terms = _tokens(question), _tokens(" ".join(context))
-    kickoff = (
-        re.search(r"\bkick[ -]?off\b|\bstart (?:of )?(?:the )?project\b|\bproject start\b", _normalized(question))
-        is not None
-    )
+    kickoff = _research_kickoff(question)
     if kickoff:
         question_terms |= frozenset({"roadmap", "milestone", "milestones"})
     ranked: list[tuple[int, int, str, dict[str, str]]] = []
@@ -590,32 +598,71 @@ def _research_source_start(text: str, path: str, question: str) -> int:
     return best_start
 
 
+def _research_link_only(body: str) -> bool:
+    """Recognize link lists and their anchor markup without relying on a navigation title."""
+    without_links = re.sub(r"\[[^]\n]+\]\([^\n)]+\)", "", body)
+    without_links = re.sub(r"<a\b[^>\n]*>\s*</a>", "", without_links)
+    without_links = re.sub(r"(?m)^\s*\d+[.)]\s+", "", without_links)
+    return without_links != body and re.search(r"\w", without_links) is None
+
+
+def _research_ranked_heading(
+    text: str, headings: tuple[tuple[int, int, str, str], ...], terms: frozenset[str], *, kickoff: bool
+) -> tuple[int, int, str, str] | None:
+    """Rank substantive headings by opening intent, then ordinary lexical overlap."""
+    ranked: list[tuple[int, int, int, tuple[int, int, str, str]]] = []
+    for index, heading in enumerate(headings):
+        body_end = headings[index + 1][0] if index + 1 < len(headings) else len(text)
+        body = text[heading[0] : body_end].partition("\n")[2]
+        if heading[2].casefold() in _NAVIGATION_HEADINGS or _research_link_only(body):
+            continue
+        heading_terms = _tokens(heading[2])
+        kickoff_rank = 0
+        if kickoff:
+            if heading_terms & {"welcome", "onboarding", "kickoff"} or "getting started" in _normalized(heading[2]):
+                kickoff_rank = 2
+            elif "formation" in heading_terms:
+                kickoff_rank = 1
+        overlap = len(terms & heading_terms)
+        if kickoff_rank or overlap:
+            ranked.append((-kickoff_rank, -overlap, heading[0], heading))
+    return min(ranked, key=lambda item: item[:3])[3] if ranked else None
+
+
+def _research_ancestor_start(
+    headings: tuple[tuple[int, int, str, str], ...], selected: tuple[int, int, str, str]
+) -> int:
+    """Retain a nearby parent's authored heading and preamble as contiguous source context."""
+    parent = next(
+        (heading for heading in reversed(headings) if heading[0] < selected[0] and heading[1] < selected[1]), None
+    )
+    if parent is not None and selected[0] - parent[0] <= _RESEARCH_ANCESTOR_CHARS:
+        return parent[0]
+    return selected[0]
+
+
 def _research_excerpt(text: str, document: CorpusDocument, question: str) -> tuple[int, str]:
+    """Select substantive sections, keeping explicit fragments and nearby kickoff context."""
     if not document.path.endswith(".md"):
         start = _research_source_start(text, document.path, question)
         return start, text[start : start + _RESEARCH_EXCERPT_CHARS]
-    headings = _research_headings(text) if document.path.endswith(".md") else ()
+    headings = _research_headings(text)
     terms = _tokens(_URL.sub(" ", question))
+    kickoff = _research_kickoff(question)
     fragments = {
         urlsplit(value).fragment
         for value in _research_urls((question,))
         if _research_url_matches(document, value) and urlsplit(value).fragment
     }
-    selected: tuple[int, int, str, str] | None = None
-    if fragments:
-        selected = next((heading for heading in headings if heading[3] in fragments), None)
+    selected = next((heading for heading in headings if heading[3] in fragments), None)
     if selected is None:
-        ranked = [
-            (-len(terms & _tokens(heading[2])), heading[0], heading)
-            for heading in headings
-            if heading[2].casefold() not in _NAVIGATION_HEADINGS and terms & _tokens(heading[2])
-        ]
-        if ranked:
-            selected = min(ranked, key=lambda item: (item[0], item[1]))[2]
+        selected = _research_ranked_heading(text, headings, terms, kickoff=kickoff)
     start = selected[0] if selected is not None else 0
     end = len(text)
     if selected is not None:
         end = next((offset for offset, level, _, _ in headings if offset > start and level <= selected[1]), end)
+        if not fragments and kickoff:
+            start = _research_ancestor_start(headings, selected)
     matches = (
         match.start() for match in re.finditer(r"[^\W_]+", text[start:end]) if _normalized(match.group()) in terms
     )

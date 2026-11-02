@@ -195,6 +195,61 @@ def test_project_kickoff_retrieves_an_available_roadmap_under_its_authored_title
     assert offered[0]["title"] == "Metamorphosis"
 
 
+@pytest.mark.parametrize("opening", ["Welcome to the laboratory", "Getting started", "Formation"])
+def test_kickoff_excerpt_retains_opening_context_instead_of_navigation_or_later_delivery(opening: str) -> None:
+    text = (
+        "# Project journey\n" + "Background for the wider programme.\n" * 150 + "## Read the delivery books\n"
+        "- [Opening](#opening)\n- [Implementation](#implementation)\n"
+        '<a id="opening"></a>\n'
+        "## First chapter\nThe opening stage brings participants together.\n"
+        "### Week 00\n**Dates:** 2\N{EN DASH}8 Nov 2026\nWe explore the project together.\n"
+        f"#### {opening}\nMeet the people and follow questions that interest you.\n"
+        "There is no assigned implementation or required demonstration.\n"
+        "### Week 01\n**Dates:** 9\N{EN DASH}15 Nov\n"
+        "#### Project delivery status and first steps\nShip the implementation after its review.\n"
+    )
+    corpus = project_corpus(("docs/journey.md", text))
+    result = read_research_document(
+        corpus,
+        "doc:docs/journey.md",
+        question=(
+            "Can you kick us off? It's the start of the project. Read our roadmap and current delivery status, "
+            "introduce the project and propose our first steps. End with the so_it_begins GIF if it is available."
+        ),
+    )
+    assert result.status == "ok"
+    assert f"#### {opening}" in result.text
+    assert "### Week 00\n**Dates:** 2\N{EN DASH}8 Nov 2026" in result.text
+    assert "There is no assigned implementation or required demonstration." in result.text
+    assert "Ship the implementation" not in result.text
+    assert result.excerpt_start > 4000
+    assert len(result.text) <= 4000
+    assert result.text == text[result.excerpt_start : result.excerpt_start + len(result.text)]
+    assert result.source_digest == sha256(text.encode()).hexdigest()
+    assert result.text_digest == sha256(result.text.encode()).hexdigest()
+
+
+@pytest.mark.parametrize("marker", ["-", "1."])
+def test_read_imperative_does_not_prefer_a_link_only_section_but_explicit_fragment_can(marker: str) -> None:
+    text = (
+        "# Handbook\n## Read current delivery status {#read-status}\n"
+        f"{marker} [Current delivery status](#status)\n"
+        "## Delivery status\nThe reviewed release can be used now.\n"
+    )
+    corpus = project_corpus(("docs/handbook.md", text))
+    result = read_research_document(corpus, "doc:docs/handbook.md", question="Read current delivery status")
+    assert result.text == "## Delivery status\nThe reviewed release can be used now.\n"
+    explicit = read_research_document(
+        corpus,
+        "doc:docs/handbook.md",
+        question=f"Read current delivery status {corpus.manifest.documents[0].url}#read-status",
+    )
+    assert (
+        explicit.text
+        == f"## Read current delivery status {{#read-status}}\n{marker} [Current delivery status](#status)\n"
+    )
+
+
 def test_source_read_finds_an_explicit_function_beyond_opening_imports_and_comments() -> None:
     path = "src/lychd/compositions/reach/documents.py"
     opening = '"""Public research helpers for lychd."""\nfrom research import read_research_document\n'

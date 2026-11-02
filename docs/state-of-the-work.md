@@ -2043,6 +2043,8 @@ bounded committed text from documentation, source, tests and other explicit publ
 the roadmap. It mounts detached verified bytes read-only and offers a deterministic shortlist of
 at most sixteen local source descriptors, retaining exact selected-source validation and explicit
 omissions. It supplies neither arbitrary working-tree reads nor file execution.
+Implicit Markdown selection skips link-only navigation; project kickoffs prefer introductory
+content with nearby parent/date context, while explicit source fragments retain their selection.
 A separately enabled research catalogue adds an explicit
 `generate` → `research` → `settle` branch within the same native Run: one model call proposes a
 bounded interpreted plan and exact document/web IDs, and one later call synthesizes admitted
@@ -2054,6 +2056,16 @@ citations and unavailable outcomes are checked. Detached outbound source project
 acquisition bodies out of checkpoint state, cached Context and native history. The host renders
 supporting citations and explicit unavailable-source notices rather than treating a blocked page
 as read. Humour and expression selection retain those attribution limits.
+
+The explicit headless operator probe exercises that same native conversation Pattern with a
+selected persona, verified corpus and real local model behind a networkless Core worker.
+Synthetic mention/DM inputs and labelled plan-delivery receipts replace the Discord edge;
+web selections refuse. Per-occurrence private reports retain the native result, exact Pattern,
+acquired-source observations and synthesis-input projection metadata, alongside a separate
+bounded structural trace archive. Scenario assertions cover expected status, required successful
+source reads and GIF choice; an uncertain-plan case checks that reading and synthesis stop.
+These probes do not qualify Discord delivery, the complete live research host path, durable
+native history or arbitrary source search.
 
 The current research assembly selects Docker images and the fixed Podman model transport. A
 separate private runtime profile supplies exact public-catalogue authority, initiators and
