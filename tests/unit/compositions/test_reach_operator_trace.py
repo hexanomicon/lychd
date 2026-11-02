@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from hashlib import sha256
 from typing import Any
 from uuid import uuid4
 
@@ -19,6 +20,31 @@ from lychd.domain.cortex.execution_context import bind_occurrence, bind_step, re
 from tests.unit.compositions.test_reach_documents import NOW, STARTED, make_corpus, make_policy, make_request
 
 CANARY = "private prompt /private/source provider-body secret-token"
+
+
+def test_source_trace_retains_exact_read_range_and_digests_without_body() -> None:
+    source = "opening material\n" + CANARY
+    event = ReachTraceEvent(
+        producer="core",
+        name="source_read",
+        status="ok",
+        source_id="doc:docs/roadmap.md",
+        chars=len(source),
+        excerpt_start=17,
+        excerpt_chars=len(CANARY),
+        source_digest=sha256(source.encode()).hexdigest(),
+        text_digest=sha256(CANARY.encode()).hexdigest(),
+        truncated=True,
+    )
+    retained = ReachTraceEvent.model_validate_json(trace_bytes(event))
+    assert retained.excerpt_start == 17
+    assert retained.excerpt_chars == len(CANARY)
+    assert retained.text_digest == sha256(CANARY.encode()).hexdigest()
+    assert CANARY.encode() not in trace_bytes(event)
+    with pytest.raises(ValidationError):
+        ReachTraceEvent(producer="core", name="source_read", text_digest=CANARY)
+    with pytest.raises(ValidationError):
+        ReachTraceEvent(producer="core", name="source_read", excerpt_chars=16_001)
 
 
 @pytest.mark.asyncio

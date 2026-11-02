@@ -2045,13 +2045,18 @@ at most sixteen local source descriptors, retaining exact selected-source valida
 omissions. It supplies neither arbitrary working-tree reads nor file execution.
 Implicit Markdown selection skips link-only navigation; project kickoffs prefer introductory
 content with nearby parent/date context, while explicit source fragments retain their selection.
+Numbered section labels and adjacent authored anchors participate in local selection. The current
+question precedes the acknowledged plan's retrieval focus for elliptical follow-ups.
 A separately enabled research catalogue adds an explicit
 `generate` → `research` → `settle` branch within the same native Run: one model call proposes a
 bounded interpreted plan and exact document/web IDs, and one later call synthesizes admitted
 sources. A mention or admitted DM must receive that plan successfully before local source reads
 or the separate web worker starts; slash commands cannot satisfy this delivered-plan gate.
 At most four sources, including at most three documents and two catalogue web entries, supply
-bounded 4,000-character excerpts. Exact source metadata, occurrence correlation, digests,
+bounded excerpts: ordinary local and all web reads retain 4,000 characters, while explicitly
+requested multi-section local Markdown reads admit at most 16,000. The unchanged model input
+budget trims oldest history first, then distributes long local projections across child sections
+with explicit source-relative spans. Exact source metadata, occurrence correlation, digests,
 citations and unavailable outcomes are checked. Detached outbound source projections keep raw
 acquisition bodies out of checkpoint state, cached Context and native history. The host renders
 supporting citations and explicit unavailable-source notices rather than treating a blocked page

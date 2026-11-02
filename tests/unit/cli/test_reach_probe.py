@@ -15,7 +15,7 @@ from pydantic import ValidationError
 from scripts import reach_probe as probe
 from scripts.reach_trace_archive import TraceArchive, query_archive
 
-from lychd.compositions.reach.documents import read_research_document
+from lychd.compositions.reach.documents import project_research_source, read_research_document
 from lychd.compositions.reach.operator_model_wire import (
     OperatorConversationProfile,
     OperatorModelRequest,
@@ -171,7 +171,7 @@ def planned(turn: probe.Turn, *, text: str = "Read the selected document.") -> O
         request_id=turn.request.request_id,
         binding_digest=turn.profile.digest,
         event=turn.request.event,
-        plan="Read the selected document.",
+        plan=text.strip(),
         correlation=correlation(turn),
     )
 
@@ -263,9 +263,10 @@ def test_any_web_selection_refuses_without_fabricated_evidence(turn: probe.Turn)
 
 def test_synthesis_retains_exact_projection_metadata_without_source_bodies(turn: probe.Turn) -> None:
     turn.research(planned(turn))
-    source = read_research_document(turn.corpus, turn.planned_ids[0], question=turn.scenario.question)
-    record = source.model_dump(mode="json")
-    record.update({"projection_digest": source.text_digest, "projection_truncated": False})
+    source = read_research_document(
+        turn.corpus, turn.planned_ids[0], question=turn.scenario.question, focus=turn.plan or ""
+    )
+    record = project_research_source(source, len(source.text))
     prompt = {
         "question": turn.scenario.question,
         "research_phase": "synthesis",
@@ -280,6 +281,49 @@ def test_synthesis_retains_exact_projection_metadata_without_source_bodies(turn:
     assert turn.reads[0]["projection_digest"] == source.text_digest
     assert "text" not in turn.reads[0]
     assert turn.debug == []
+
+
+@pytest.mark.parametrize("mutation", ["text", "span", "digest", "budget", "boolean", "extra"])
+def test_projection_recomputation_rejects_substituted_evidence(turn: probe.Turn, mutation: str) -> None:
+    turn.research(planned(turn))
+    source = read_research_document(
+        turn.corpus, turn.planned_ids[0], question=turn.scenario.question, focus=turn.plan or ""
+    )
+    record = project_research_source(source, len(source.text))
+    changes: dict[str, Any] = {
+        "text": {"text": "Unacquired text"},
+        "span": {"projection_spans": [{"start": 1, "end": len(source.text)}]},
+        "digest": {"projection_digest": "f" * 64},
+        "budget": {"projection_budget": True},
+        "boolean": {"projection_truncated": 0},
+        "extra": {"invented": True},
+    }
+    with pytest.raises(probe.ProbeError, match="probe_source_metadata"):
+        turn.read_projection(record | changes[mutation])
+
+
+def test_probe_recomputes_balanced_excerpt_from_acknowledged_focus(turn: probe.Turn) -> None:
+    turn.scenario = probe.Scenario(question="docs/graph.md")
+    turn.corpus = make_corpus(
+        "# Project\n"
+        + "Opening context. " * 350
+        + "\n\n## Genesis\n"
+        + "\n\n".join(
+            f"### Week {week:02d}\nMethod and quotation. " + "Authored evidence. " * 35 for week in range(1, 11)
+        )
+    )
+    turn.research(planned(turn, text="Explain Genesis per week, including methods and quotes."))
+    source = read_research_document(
+        turn.corpus, turn.planned_ids[0], question=turn.scenario.question, focus=turn.plan or ""
+    )
+    assert source.text.startswith("## Genesis")
+    assert source.excerpt_start > 4000
+    record = project_research_source(source, 3000)
+    assert len(cast("list[dict[str, int]]", record["projection_spans"])) > 1
+    captured = turn.read_projection(record)
+    assert captured["projection_spans"] == record["projection_spans"]
+    assert captured["projection_budget"] == 3000
+    assert "text" not in captured
 
 
 def test_rejected_plan_forbids_synthesis_and_source_read(turn: probe.Turn) -> None:

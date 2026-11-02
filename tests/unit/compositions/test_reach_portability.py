@@ -169,11 +169,14 @@ class NativeLoop:
         self.reader = asyncio.StreamReader()
         original_read = conversation_workflow.read_research_document
 
-        def read_document(selected: PublicCorpus, source_id: str, *, question: str) -> SourceReadResult:
+        def read_document(
+            selected: PublicCorpus, source_id: str, *, question: str, focus: str = ""
+        ) -> SourceReadResult:
             self.timeline.append("document")
             self.document_reads.append(source_id)
             assert self.timeline[:4] == ["model_plan", "delivered_plan", "ack", "scout"]
-            return original_read(selected, source_id, question=question)
+            assert focus == PLAN
+            return original_read(selected, source_id, question=question, focus=focus)
 
         monkeypatch.setattr(conversation_workflow, "read_research_document", read_document)
         monkeypatch.setattr(self.broker, "_scout", self.scout)

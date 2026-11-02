@@ -9,18 +9,23 @@ from __future__ import annotations
 import re
 from contextlib import asynccontextmanager
 from copy import deepcopy
-from hashlib import sha256
 from typing import TYPE_CHECKING, Any, Literal, Self, cast
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_ai.messages import ModelRequest, UserPromptPart
 from pydantic_ai.models.wrapper import WrapperModel
 
-from lychd.compositions.reach.documents import PublicCorpus, research_document_catalogue
+from lychd.compositions.reach.documents import PublicCorpus, project_research_source, research_document_catalogue
 from lychd.compositions.reach.documents_workflow import DocumentsRefused
 from lychd.compositions.reach.expressions import REACTIONS, ConversationExpressions, GifId, Reaction
-from lychd.compositions.reach.operator_model_wire import OperatorConversationProfile, canonical_json
-from lychd.compositions.reach.operator_wire import ReachWorkerRequest, strict_json
+from lychd.compositions.reach.operator_model_wire import (
+    MAX_MODEL_PAYLOAD_BYTES,
+    OperatorConversationProfile,
+    OperatorModelRequest,
+    canonical_json,
+)
+from lychd.compositions.reach.operator_trace import TraceCorrelation
+from lychd.compositions.reach.operator_wire import MAX_WIRE_BYTES, ReachWorkerRequest, strict_json
 from lychd.compositions.reach.research_wire import (
     OperatorResearchRequest,
     OperatorResearchResponse,
@@ -43,6 +48,7 @@ MAX_RESEARCH_WEB_SOURCES = 2
 MAX_RESEARCH_DOCUMENT_SOURCES = 3
 MAX_RESEARCH_PLAN_CHARS = 500
 MAX_RESEARCH_ANSWER_CHARS = 8000
+_SIZING_UUID = "00000000-0000-0000-0000-000000000000"
 TRANSIENT_RESEARCH_QUERY = "Form the admitted research answer from the transient source envelope."
 UNVERIFIED_WEB_NOTICE = (
     "I couldn't verify the selected web evidence. Please provide a readable source or an excerpt "
@@ -204,16 +210,6 @@ def validate_research_response(
     return response.sources
 
 
-def _project_source(source: SourceReadResult, length: int) -> dict[str, object]:
-    text = source.text[:length]
-    return {
-        **source.model_dump(mode="json"),
-        "text": text,
-        "projection_digest": sha256(text.encode("utf-8")).hexdigest(),
-        "projection_truncated": len(text) < len(source.text),
-    }
-
-
 def synthesis_prompt(
     profile: OperatorConversationProfile,
     corpus: PublicCorpus,
@@ -224,7 +220,7 @@ def synthesis_prompt(
     instructions: str,
     agent_subject_id: str | None = None,
 ) -> str:
-    """Trim oldest history, then source projections; preserve original evidence digests."""
+    """Trim history, then source projections to both input-character and exact relay-byte limits."""
     selected = [
         item.model_dump(mode="json")
         for item in sorted(request.history, key=lambda item: (item.occurred_at, item.event_id))
@@ -251,6 +247,20 @@ def synthesis_prompt(
     successful_ids = [source.id for source in sources if source.status == "ok"]
     web_sources = [source for source in sources if source.id.startswith("web:")]
     answer_example = bool(successful_ids) and (not web_sources or any(source.status == "ok" for source in web_sources))
+    # Full fixed-width correlation conservatively sizes each native occurrence.
+    frame = OperatorModelRequest(
+        call_id=_SIZING_UUID,
+        binding_digest=profile.digest,
+        operation="generate",
+        payload_json="{}",
+        correlation=TraceCorrelation(
+            generation=_SIZING_UUID,
+            request_id=_SIZING_UUID,
+            run_id=_SIZING_UUID,
+            occurrence_id=_SIZING_UUID,
+            step_id=_SIZING_UUID,
+        ),
+    )
     while True:
         prompt = canonical_json(
             {
@@ -263,7 +273,7 @@ def synthesis_prompt(
                 "reply_anchor": anchor,
                 "research_plan": plan.text,
                 "research_sources": [
-                    _project_source(source, length) for source, length in zip(sources, lengths, strict=True)
+                    project_research_source(source, length) for source, length in zip(sources, lengths, strict=True)
                 ],
                 "research_phase": "synthesis",
                 "research_request_id": request.request_id,
@@ -291,8 +301,26 @@ def synthesis_prompt(
                 **expressions,
             }
         )
-        excess = len(instructions) + len(prompt) - budget
-        if excess <= 0:
+        input_chars = len(instructions) + len(prompt)
+        payload = canonical_json(
+            {
+                "model": profile.model_id,
+                "messages": [
+                    {"role": "system", "content": instructions},
+                    {"role": "user", "content": prompt},
+                ],
+                "max_tokens": profile.max_tokens,
+                "temperature": profile.temperature,
+                "stream": False,
+                "chat_template_kwargs": {"enable_thinking": False},
+            }
+        )
+        payload_bytes = len(payload.encode("utf-8"))
+        frame_bytes = len(frame.model_copy(update={"payload_json": payload}).model_dump_json().encode("utf-8")) + 1
+        char_excess = input_chars - budget
+        byte_excess = payload_bytes - MAX_MODEL_PAYLOAD_BYTES
+        frame_excess = frame_bytes - MAX_WIRE_BYTES
+        if char_excess <= 0 and byte_excess <= 0 and frame_excess <= 0:
             return prompt
         if selected:
             selected.pop(0)
@@ -303,7 +331,13 @@ def synthesis_prompt(
             msg = "conversation_budget"
             raise DocumentsRefused(msg)
         longest = max(reducible, key=lengths.__getitem__)
-        lengths[longest] = max(minimum_lengths[longest], lengths[longest] - max(excess, 1))
+        # Estimate characters at the current exact encoding ratio; allocated budgets
+        # still decrease on every pass even when balanced projections underfill.
+        byte_reduction = (max(byte_excess, 0) * input_chars + payload_bytes - 1) // payload_bytes
+        frame_reduction = (max(frame_excess, 0) * input_chars + frame_bytes - 1) // frame_bytes
+        excess = max(char_excess, byte_reduction, frame_reduction, 1)
+        reduction = (excess + len(reducible) - 1) // len(reducible)
+        lengths[longest] = max(minimum_lengths[longest], lengths[longest] - max(reduction, 1))
 
 
 class _ResearchDecision(Record):

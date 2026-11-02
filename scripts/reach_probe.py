@@ -30,6 +30,7 @@ from lychd.compositions.reach.documents import (
     MAX_DOCUMENT_BYTES,
     PublicCorpus,
     parse_corpus_manifest,
+    project_research_source,
     read_research_document,
     verify_corpus,
 )
@@ -39,6 +40,7 @@ from lychd.compositions.reach.operator_model_wire import (
     OperatorConversationProfile,
     OperatorModelRequest,
     OperatorModelResponse,
+    canonical_json,
     validate_generation_payload,
 )
 from lychd.compositions.reach.operator_observation import ReachPatternObservation
@@ -331,22 +333,23 @@ class Turn:
         source_id = item.get("id")
         if not isinstance(source_id, str) or not source_id.startswith("doc:"):
             refuse("probe_web_refused")
-        source = read_research_document(self.corpus, source_id, question=self.request.event.question)
+        source = read_research_document(
+            self.corpus, source_id, question=self.request.event.question, focus=self.plan or ""
+        )
         expected = source.model_dump(mode="json", exclude={"text"})
+        budget = item.get("projection_budget")
+        if type(budget) is not int or not 0 <= budget <= len(source.text):
+            refuse("probe_source_metadata")
+        projection = project_research_source(source, budget)
         text = item.get("text")
-        if (
-            not isinstance(text, str)
-            or not source.text.startswith(text)
-            or {key: item.get(key) for key in expected} != expected
-            or item.get("projection_digest") != sha256(text.encode()).hexdigest()
-            or type(item.get("projection_truncated")) is not bool
-            or item["projection_truncated"] != (len(text) < len(source.text))
-        ):
+        if not isinstance(text, str) or canonical_json(item) != canonical_json(projection):
             refuse("probe_source_metadata")
         return {
             **expected,
             "projection_digest": item["projection_digest"],
             "projection_truncated": item["projection_truncated"],
+            "projection_budget": budget,
+            "projection_spans": item["projection_spans"],
             "projected_chars": len(text),
         }
 

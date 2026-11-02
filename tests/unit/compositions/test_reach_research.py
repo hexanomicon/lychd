@@ -5,22 +5,32 @@ from __future__ import annotations
 import json
 from datetime import timedelta
 from hashlib import sha256
-from typing import Any
+from itertools import pairwise
+from typing import Any, cast
 from uuid import uuid4
 
 import pytest
 from pydantic_ai.models import override_allow_model_requests
 from scripts.reach_worker import DocumentsRuntime, build_runtime
 
-from lychd.compositions.reach.documents import PublicCorpus, read_research_document
+from lychd.compositions.reach.conversation_workflow import persona_text
+from lychd.compositions.reach.documents import (
+    CorpusDocument,
+    CorpusManifest,
+    PublicCorpus,
+    read_research_document,
+    verify_corpus,
+)
 from lychd.compositions.reach.expressions import ConversationExpressions, ExpressionGif
 from lychd.compositions.reach.operator_model_wire import (
+    MAX_MODEL_PAYLOAD_BYTES,
     OperatorConversationProfile,
+    OperatorModelRequest,
     canonical_json,
     validate_generation_payload,
 )
-from lychd.compositions.reach.operator_trace import ReachTraceEvent, trace_bytes
-from lychd.compositions.reach.operator_wire import ReachHistoryEntry, ReachWorkerResult
+from lychd.compositions.reach.operator_trace import ReachTraceEvent, TraceCorrelation, trace_bytes
+from lychd.compositions.reach.operator_wire import MAX_WIRE_BYTES, ReachHistoryEntry, ReachWorkerResult, protocol_bytes
 from lychd.compositions.reach.research import (
     ResearchPlan,
     parse_research_answer,
@@ -89,6 +99,33 @@ def unavailable_source() -> SourceReadResult:
         reason="fetch_protocol",
         receipt_id="b" * 64,
     )
+
+
+@pytest.mark.parametrize(
+    ("source_id", "chars", "accepted"),
+    [
+        ("doc:docs/graph.md", 4001, True),
+        ("doc:docs/graph.md", 16_000, True),
+        ("doc:docs/graph.md", 16_001, False),
+        ("web:official", 4000, True),
+        ("web:official", 4001, False),
+    ],
+)
+def test_source_evidence_budget_expands_only_for_manifest_documents(
+    source_id: str, chars: int, *, accepted: bool
+) -> None:
+    text = "E" * chars
+    payload = admitted_source().model_dump(mode="json") | {
+        "id": source_id,
+        "text": text,
+        "text_digest": sha256(text.encode()).hexdigest(),
+        "source_chars": chars,
+    }
+    if accepted:
+        assert SourceReadResult.model_validate_json(canonical_json(payload)).text == text
+    else:
+        with pytest.raises(ValueError, match=r"research_web_evidence_budget|string_too_long"):
+            SourceReadResult.model_validate_json(canonical_json(payload))
 
 
 def relay_request(**changes: Any) -> OperatorResearchRequest:
@@ -317,8 +354,70 @@ async def test_docs_only_plan_still_requires_acknowledgement_and_no_web_selectio
         assert source.step_id is not None
         assert source.chars is not None
         assert source.chars > 0
+        assert source.excerpt_start == 0
+        assert source.excerpt_chars == len(make_corpus().texts[0])
+        assert source.source_digest == sha256(make_corpus().texts[0].encode()).hexdigest()
+        assert source.text_digest == source.source_digest
         assert [event.trace_seq for event in traces] == list(range(1, len(traces) + 1))
         assert result.text not in trace_bytes(source).decode()
+    finally:
+        await runtime.aclose()
+
+
+@pytest.mark.parametrize(
+    "source_body",
+    ["漢🙂" * 7800, '漢🙂"\\\n' * 3100, '"\\\n' * 3000],
+    ids=["unicode", "unicode-and-escaping", "escaping"],
+)
+@pytest.mark.asyncio
+async def test_native_synthesis_trims_to_actual_utf8_relay_payload_limit(source_body: str) -> None:
+    binding = research_profile(max_input_chars=24_000)
+    corpus = make_corpus("# Genesis\n" + source_body)
+    generated: list[dict[str, Any]] = []
+
+    async def model_relay(operation: str, payload: str) -> str:
+        if operation == "probe":
+            return canonical_json({"healthy": True, "model_ids": [binding.model_id]})
+        body = validate_generation_payload(binding, payload)
+        generated.append(body)
+        assert len(payload.encode("utf-8")) <= MAX_MODEL_PAYLOAD_BYTES
+        request_frame = OperatorModelRequest(
+            call_id=CALL_ID,
+            binding_digest=binding.digest,
+            operation="generate",
+            payload_json=payload,
+            correlation=TraceCorrelation(
+                generation=CALL_ID, request_id=CALL_ID, run_id=CALL_ID, occurrence_id=CALL_ID, step_id=CALL_ID
+            ),
+        )
+        assert len(protocol_bytes(cast("Any", request_frame))) <= MAX_WIRE_BYTES
+        assert body["messages"][0] == {"role": "system", "content": persona_text(binding)}
+        if len(generated) == 1:
+            return completion(plan_json(("doc:docs/graph.md",)))
+        prompt = json.loads(body["messages"][-1]["content"])
+        (source,) = prompt["research_sources"]
+        assert source["projection_truncated"]
+        assert source["text"]
+        assert source["projection_digest"] == sha256(source["text"].encode()).hexdigest()
+        return completion(answer_json(citations=("doc:docs/graph.md",)))
+
+    async def research_relay(request: OperatorResearchRequest) -> OperatorResearchResponse:
+        return relay_response(request, sources=())
+
+    runtime = build_runtime(
+        policy(),
+        corpus,
+        profile=binding,
+        model_relay=model_relay,
+        research_relay=research_relay,
+        started_at=STARTED,
+        clock=lambda: NOW,
+    )
+    try:
+        with override_allow_model_requests(True):  # noqa: FBT003 - explicit third-party model permission
+            result = await runtime.process(make_request(action="converse", question="Explain Genesis overview"))
+        assert result.status == "conversation"
+        assert len(generated) == 2
     finally:
         await runtime.aclose()
 
@@ -654,6 +753,62 @@ def test_synthesis_budget_trims_oldest_history_before_bounded_source_projection(
     assert quoted["source_chars"] == len(source.text)
 
 
+@pytest.mark.parametrize(("source_count", "budget"), [(1, 8000), (3, 24_000)])
+def test_synthesis_budget_preserves_numbered_child_sections_with_truthful_spans(source_count: int, budget: int) -> None:
+    text = "# Genesis\nThe authored sequence of methods and quotations.\n\n" + "\n\n".join(
+        f"## Week {week:02d}\n> QUOTE_{week:02d} "
+        + "A long authored quotation. " * 36
+        + f"\n> — AUTHOR_{week:02d} / [REFERENCE_{week:02d}](https://example.com/"
+        + "segment/" * 35
+        + f")\n\nMEANING_{week:02d}: This method has its own authored interpretation.\n"
+        for week in range(1, 11)
+    )
+    raw = text.encode()
+    revision = "a" * 40
+    documents = tuple(
+        CorpusDocument(
+            path=f"docs/volume{index}.md",
+            url=f"https://github.com/hexanomicon/lychd/blob/{revision}/docs/volume{index}.md",
+            sha256=sha256(raw).hexdigest(),
+            file=f"{index:03d}.md",
+        )
+        for index in range(source_count)
+    )
+    corpus = verify_corpus(CorpusManifest(source_revision=revision, documents=documents), (raw,) * source_count)
+    sources = tuple(
+        read_research_document(corpus, f"doc:{document.path}", question="Explain Genesis per week")
+        for document in documents
+    )
+    assert all(4000 < len(source.text) <= 16_000 for source in sources)
+    binding = research_profile(max_input_chars=budget)
+    plan = ResearchPlan(
+        kind="research",
+        text="Explain Genesis methods and quotes for each week.",
+        source_ids=tuple(s.id for s in sources),
+    )
+    instructions = "Trusted persona instructions."
+    prompt = synthesis_prompt(
+        binding, corpus, make_request(action="converse"), plan, sources, instructions=instructions
+    )
+    assert len(instructions) + len(prompt) <= binding.max_input_chars
+    for source, quoted in zip(sources, json.loads(prompt)["research_sources"], strict=True):
+        assert quoted["projection_truncated"]
+        assert 0 < len(quoted["text"]) <= quoted["projection_budget"] < len(source.text)
+        assert all(f"## Week {week:02d}" in quoted["text"] for week in range(1, 11))
+        assert all(f"QUOTE_{week:02d}" in quoted["text"] for week in range(1, 11))
+        assert all(f"AUTHOR_{week:02d}" in quoted["text"] for week in range(1, 11))
+        assert all(f"REFERENCE_{week:02d}" in quoted["text"] for week in range(1, 11))
+        assert all(f"MEANING_{week:02d}" in quoted["text"] for week in range(1, 11))
+        spans = quoted["projection_spans"]
+        assert 1 <= len(spans) <= 48
+        assert all(0 <= span["start"] < span["end"] <= len(source.text) for span in spans)
+        assert all(left["end"] <= right["start"] for left, right in pairwise(spans))
+        assert quoted["text"] == "\n\n".join(source.text[span["start"] : span["end"]] for span in spans)
+        assert quoted["projection_digest"] == sha256(quoted["text"].encode()).hexdigest()
+        assert quoted["source_digest"] == source.source_digest
+        assert quoted["text_digest"] == source.text_digest
+
+
 def test_budget_cannot_turn_a_read_source_into_citable_empty_evidence() -> None:
     binding, corpus = research_profile(max_input_chars=1000), make_corpus()
     source = admitted_source(text=" " * 3000 + "Evidence starts here.")
@@ -662,3 +817,11 @@ def test_budget_cannot_turn_a_read_source_into_citable_empty_evidence() -> None:
         synthesis_prompt(
             binding, corpus, make_request(action="converse"), plan, (source,), instructions="Fixed instructions"
         )
+
+
+def test_synthesis_refuses_impossible_utf8_fixed_envelope_without_empty_evidence() -> None:
+    binding, corpus = research_profile(max_input_chars=24_000), make_corpus()
+    source = admitted_source()
+    plan = ResearchPlan(kind="research", text="Read the explicit reference", source_ids=(source.id,))
+    with pytest.raises(ValueError, match="conversation_budget"):
+        synthesis_prompt(binding, corpus, make_request(action="converse"), plan, (source,), instructions="🙂" * 13_000)

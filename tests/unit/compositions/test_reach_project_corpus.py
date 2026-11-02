@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from hashlib import sha256
+from itertools import pairwise
 from pathlib import Path
+from typing import cast
 
 import pytest
 from pydantic import ValidationError
@@ -16,6 +18,7 @@ from lychd.compositions.reach.documents import (
     CorpusManifest,
     CorpusOmission,
     PublicCorpus,
+    project_research_source,
     public_project_path,
     read_research_document,
     research_document_catalogue,
@@ -286,3 +289,259 @@ def test_source_read_prefers_a_late_exported_typescript_declaration(declaration:
     assert declaration in result.text
     assert result.excerpt_start > 4000
     assert result.text == text[result.excerpt_start : result.excerpt_start + len(result.text)]
+
+
+@pytest.mark.parametrize("target", ["Week02", "Week 2", "week-02"])
+def test_numbered_section_targets_match_authored_labels_and_override_previous_focus(target: str) -> None:
+    text = (
+        "# Programme\n## First chapter\n### Week 01\nEarlier evidence.\n"
+        + "Earlier background.\n" * 300
+        + "### Week02\nThe requested method and quotation.\n### Week 03\nLater evidence.\n"
+    )
+    corpus = project_corpus(("ROADMAP.md", text))
+    source = read_research_document(
+        corpus, "doc:ROADMAP.md", question=f"Explain {target}", focus="Explain Week 01 in the programme"
+    )
+    assert source.text == "### Week02\nThe requested method and quotation.\n"
+    assert source.excerpt_start == text.index("### Week02")
+    assert source.source_digest == sha256(text.encode()).hexdigest()
+    assert source.text_digest == sha256(source.text.encode()).hexdigest()
+
+
+def test_exact_late_fragment_and_adjacent_anchor_survive_fenced_and_frontmatter_decoys() -> None:
+    text = (
+        '---\n<a id="week-02"></a>\n## False frontmatter\n---\n'
+        '# Programme\n````md\n```\n<a id="week-02"></a>\n## False code\n````\n'
+        '<a id="week-02"></a>\nThis is not adjacent.\n## Unrelated\n'
+        + "Earlier material.\n" * 400
+        + '<a id="week-02"></a>\n\n## Second interval\nThe actual section.\n## Third interval\nLater.\n'
+    )
+    corpus = project_corpus(("ROADMAP.md", text))
+    source = read_research_document(
+        corpus,
+        "doc:ROADMAP.md",
+        question=f"Read {corpus.manifest.documents[0].url}#week-02",
+        focus="Explain Third interval",
+    )
+    assert source.text == "## Second interval\nThe actual section.\n"
+    assert source.excerpt_start == text.index("## Second interval")
+
+
+def test_multiple_numbered_sections_keep_adjacent_authored_sections_in_one_exact_read() -> None:
+    text = (
+        "# Programme\n## Week01\nEarlier.\n## Week02\nMethod two.\n### Notes\nQuotation two.\n"
+        "## Week 03\nMethod three.\n## Week04\nLater.\n"
+    )
+    source = read_research_document(
+        project_corpus(("ROADMAP.md", text)), "doc:ROADMAP.md", question="Compare Week 2 and Week03"
+    )
+    assert source.text == text[text.index("## Week02") : text.index("## Week04")]
+    assert source.text == text[source.excerpt_start : source.excerpt_start + len(source.text)]
+
+
+@pytest.mark.parametrize("question", ["Explain Week02/03", "Compare Week 2 and Week03"])
+def test_numbered_targets_resolve_standalone_week_anchors_with_symbol_only_titles(question: str) -> None:
+    text = (
+        '# Programme\n## Genesis\n<a id="week-01"></a>\n### 01 · __new__\nEarlier.\n'
+        '<a id="week-02"></a>\n### 02 · __init__\nMethod two and its quotation.\n'
+        '<a id="week-03"></a>\n### 03 · __next__\nMethod three and its quotation.\n'
+        '<a id="week-04"></a>\n### 04 · __call__\nLater.\n'
+    )
+    source = read_research_document(
+        project_corpus(("ROADMAP.md", text)), "doc:ROADMAP.md", question=question, focus="Explain Week01"
+    )
+    assert "### 02 · __init__" in source.text
+    assert "### 03 · __next__" in source.text
+    assert "Method two and its quotation." in source.text
+    assert "Method three and its quotation." in source.text
+    assert "### 01 · __new__" not in source.text
+    assert "### 04 · __call__" not in source.text
+    assert source.excerpt_start == text.index("### 02 · __init__")
+    assert source.text == text[source.excerpt_start : source.excerpt_start + len(source.text)]
+
+
+@pytest.mark.parametrize("question", ["Explain Week02", "Explain Week 2", "Explain week-02"])
+def test_catalogue_discovers_numbered_anchor_targets_before_more_than_sixteen_lexical_distractors(
+    question: str,
+) -> None:
+    text = '# Programme\n## Genesis\n<a id="week-02"></a>\n### 02 · `__init__`\nThe authored method.\n'
+    corpus = project_corpus(
+        *(
+            (f"docs/distractor-{index:02}.md", "# Explain\nWeek02 is a plain lexical distractor.")
+            for index in range(20)
+        ),
+        ("ROADMAP.md", text),
+    )
+    catalogue = research_document_catalogue(corpus, question=question)
+    assert len(catalogue) == MAX_RESEARCH_CATALOGUE_DOCUMENTS
+    assert catalogue[0]["id"] == "doc:ROADMAP.md"
+    assert all(set(item) == {"id", "title", "url"} for item in catalogue)
+    source = read_research_document(corpus, catalogue[0]["id"], question=question)
+    assert source.text == "### 02 · `__init__`\nThe authored method.\n"
+    exact = research_document_catalogue(corpus, question=f"{question} in docs/distractor-19.md")
+    assert exact[0]["id"] == "doc:docs/distractor-19.md"
+    pinned = research_document_catalogue(corpus, question=f"{question} {corpus.manifest.documents[19].url}")
+    assert pinned[0]["id"] == "doc:docs/distractor-19.md"
+
+
+def programme_sections() -> str:
+    return "## Genesis\nThe parent explains the programme.\n" + "".join(
+        f"### Week {week:02}\n#### Methods and quotes\nMethod {week}; quotation {week}.\n" + "Authored detail.\n" * 90
+        for week in range(10)
+    )
+
+
+@pytest.mark.parametrize("question", ["Explain Genesis per week with methods and quotes", "ROADMAP.md"])
+def test_overview_and_elliptical_reference_retain_the_named_parent_and_all_ten_children(question: str) -> None:
+    section = programme_sections()
+    assert 4000 < len(section) < 16_000
+    text = "# Programme\n## Earlier\n" + "Background.\n" * 400 + section + "## Next chapter\nLater.\n"
+    source = read_research_document(
+        project_corpus(("ROADMAP.md", text)),
+        "doc:ROADMAP.md",
+        question=question,
+        focus="Explain Genesis over the first ten weeks, including its methods and quotes.",
+    )
+    assert source.text == section
+    assert source.excerpt_start == text.index(section)
+    assert source.source_chars == len(text)
+    assert source.source_digest == sha256(text.encode()).hexdigest()
+    assert source.text_digest == sha256(section.encode()).hexdigest()
+    assert source.truncated
+
+
+@pytest.mark.parametrize("length", [9000, 4000, 2000, 600])
+def test_long_section_projection_distributes_budget_with_exact_ordered_spans_and_digest(length: int) -> None:
+    source = read_research_document(
+        project_corpus(("ROADMAP.md", "# Programme\n" + programme_sections())),
+        "doc:ROADMAP.md",
+        question="Explain Genesis weekly",
+    )
+    projection = project_research_source(source, length)
+    assert projection == project_research_source(source, length)
+    text = projection["text"]
+    spans = cast("list[dict[str, int]]", projection["projection_spans"])
+    assert isinstance(text, str)
+    assert len(text) <= length
+    assert len(spans) <= 48
+    for span in spans:
+        assert 0 <= span["start"] < span["end"] <= len(source.text)
+    assert all(previous["end"] <= current["start"] for previous, current in pairwise(spans))
+    assert text == "\n\n".join(source.text[span["start"] : span["end"]] for span in spans)
+    assert "## Genesis\n" in text
+    for week in range(10):
+        assert f"### Week {week:02}\n" in text
+    assert projection["projection_budget"] == length
+    assert projection["projection_digest"] == sha256(text.encode()).hexdigest()
+    assert projection["projection_truncated"]
+    assert projection["source_digest"] == source.source_digest
+    assert projection["text_digest"] == source.text_digest
+
+
+@pytest.mark.parametrize("length", [2500, 1800])
+@pytest.mark.parametrize("quote_boundary", ["\n\n", "\n>\n\n", "\n>\n"])
+def test_long_quote_projection_keeps_each_child_opening_and_following_narrative_with_exact_spans(
+    length: int, quote_boundary: str
+) -> None:
+    section = "## Formation\nThe parent explains the programme.\n" + "".join(
+        f"### Interval {week:02}\n**Dates:** authored interval {week}.\n\n> Quotation {week:02}: "
+        + "A long authored observation. " * 35
+        + f"\n> — Witness{week:02}, [Ref{week:02}](https://example.com/"
+        + "long-destination/" * 10
+        + f"){quote_boundary}Meaning {week:02}: practise the distinct skill.\n\n"
+        for week in range(10)
+    )
+    source = read_research_document(
+        project_corpus(("ROADMAP.md", "# Programme\n" + section)),
+        "doc:ROADMAP.md",
+        question="Formation overview",
+    )
+    assert source.text == section
+    projection = project_research_source(source, length)
+    assert projection == project_research_source(source, length)
+    text = projection["text"]
+    spans = cast("list[dict[str, int]]", projection["projection_spans"])
+    assert isinstance(text, str)
+    assert len(text) <= length
+    assert len(spans) == 31
+    assert len(spans) <= 48
+    for week in range(10):
+        assert f"### Interval {week:02}\n" in text
+        assert f"> Quotation {week:02}: " in text
+        assert f"> — Witness{week:02}, [Ref{week:02}]" in text
+        assert f"Meaning {week:02}: practise the distinct skill." in text
+    assert all(0 <= span["start"] < span["end"] <= len(source.text) for span in spans)
+    assert all(previous["end"] <= current["start"] for previous, current in pairwise(spans))
+    assert text == "\n\n".join(source.text[span["start"] : span["end"]] for span in spans)
+    assert projection["projection_budget"] == length
+    assert projection["projection_digest"] == sha256(text.encode()).hexdigest()
+    assert projection["projection_truncated"]
+    assert projection["source_digest"] == source.source_digest
+    assert projection["text_digest"] == source.text_digest
+    assert "long-destination/" not in text
+
+
+def test_ordinary_reads_keep_four_thousand_character_cap_and_projections_are_prefixes() -> None:
+    text = "# Ordinary document\n" + "Public source text.\n" * 1000
+    source = read_research_document(project_corpus(("README.md", text)), "doc:README.md", question="Read README.md")
+    assert len(source.text) == 4000
+    for length in (0, 1, 50, 4000, 16_000):
+        projection = project_research_source(source, length)
+        assert projection["text"] == source.text[:length]
+        assert projection["projection_spans"] == ([{"start": 0, "end": min(length, 4000)}] if length else [])
+        assert projection["projection_truncated"] == (length < 4000)
+    with pytest.raises(ValueError, match="research_projection_length"):
+        project_research_source(source, -1)
+
+
+def test_large_parent_read_is_capped_and_code_does_not_gain_markdown_projection() -> None:
+    text = "# Programme\n## Formation\n" + "### Stage\nAuthored detail.\n" * 1000
+    source = read_research_document(
+        project_corpus(("ROADMAP.md", text)), "doc:ROADMAP.md", question="Formation overview"
+    )
+    assert len(source.text) == 16_000
+    assert source.text == text[source.excerpt_start : source.excerpt_start + len(source.text)]
+    code = "# Source\n# Week 01\n" + "value = 1\n" * 800 + "# Week 02\n"
+    ordinary = read_research_document(
+        project_corpus(("src/programme.py", code)), "doc:src/programme.py", question="src/programme.py weekly overview"
+    )
+    assert len(ordinary.text) == 4000
+    assert project_research_source(ordinary, 600)["text"] == ordinary.text[:600]
+
+
+def test_ordinary_next_does_not_misidentify_a_late_dunder_symbol_as_an_explicit_target() -> None:
+    text = "PUBLIC = True\n" + "# Unrelated material\n" * 400 + "def __next__(self):\n    return self.value\n"
+    corpus = project_corpus(("src/iterator.py", text))
+    ordinary = read_research_document(corpus, "doc:src/iterator.py", question="What comes next?")
+    explicit = read_research_document(corpus, "doc:src/iterator.py", question="Explain __next__")
+    assert ordinary.excerpt_start == 0
+    assert "def __next__" not in ordinary.text
+    assert "def __next__" in explicit.text
+
+
+@pytest.mark.parametrize("question", ["What comes next?", "What comes in the next weeks?"])
+def test_markdown_prose_next_keeps_acknowledged_parent_focus_instead_of_a_code_identifier(question: str) -> None:
+    section = (
+        '## Genesis\nThe programme.\n<a id="week-02"></a>\n### 02 · `__init__`\nMethod two.\n'
+        '<a id="week-09"></a>\n### 09 · `__next__`\n#### Methods\nMethod nine.\n'
+    )
+    corpus = project_corpus(("ROADMAP.md", "# Programme\n" + section))
+    source = read_research_document(
+        corpus, "doc:ROADMAP.md", question=question, focus="Explain Genesis per week with its methods"
+    )
+    assert source.text == section
+    explicit = read_research_document(corpus, "doc:ROADMAP.md", question="Explain __next__")
+    assert explicit.text.startswith("### 09 · `__next__`\n")
+    assert "Method nine." in explicit.text
+    assert "Method two." not in explicit.text
+
+
+def test_overlong_numbered_label_does_not_crash_or_override_acknowledged_focus() -> None:
+    text = "# Programme\n## Genesis\n### Week02\nMethod two.\n"
+    source = read_research_document(
+        project_corpus(("ROADMAP.md", text)),
+        "doc:ROADMAP.md",
+        question="Explain Week" + "9" * 5000,
+        focus="Explain Genesis weekly",
+    )
+    assert source.text == "## Genesis\n### Week02\nMethod two.\n"

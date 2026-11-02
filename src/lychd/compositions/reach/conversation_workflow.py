@@ -388,7 +388,12 @@ class ConversationDeps:
 def _read_document_source(
     ctx: GraphRunContext[ConversationState, ConversationDeps], source_id: str
 ) -> SourceReadResult:
-    result = read_research_document(ctx.deps.corpus, source_id, question=ctx.state.envelope.request.event.question)
+    result = read_research_document(
+        ctx.deps.corpus,
+        source_id,
+        question=ctx.state.envelope.request.event.question,
+        focus=ctx.state.research_plan or "",
+    )
     if ctx.deps.trace is not None:
         # Observation cannot decide source consumption or introduce cancellation.
         with suppress(Exception, asyncio.CancelledError):
@@ -404,6 +409,10 @@ def _read_document_source(
                     source_id=result.id,
                     chars=result.source_chars,
                     bytes_count=len(result.text.encode("utf-8")),
+                    excerpt_start=result.excerpt_start,
+                    excerpt_chars=len(result.text),
+                    source_digest=result.source_digest,
+                    text_digest=result.text_digest,
                     truncated=result.truncated,
                 )
             )

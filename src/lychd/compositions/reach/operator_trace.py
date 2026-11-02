@@ -16,7 +16,7 @@ from uuid import UUID, uuid4
 from pydantic import AwareDatetime, Field, ValidationError
 
 from lychd.compositions.reach.operator_diagnostics import DiagnosticId, DiagnosticUuid
-from lychd.compositions.reach.schemas import Record
+from lychd.compositions.reach.schemas import PolicyDigest, Record
 
 MAX_TRACE_BYTES = 2048
 
@@ -149,6 +149,10 @@ class ReachTraceEvent(Record):
     native_event_id: DiagnosticUuid | None = None
     native_seq: int | None = Field(default=None, ge=0, le=2**63 - 1)
     source_id: str | None = Field(default=None, pattern=r"^(?:web:[a-z][a-z0-9_]{0,31}|doc:[A-Za-z0-9_./-]{1,200})$")
+    excerpt_start: int | None = Field(default=None, ge=0)
+    excerpt_chars: int | None = Field(default=None, ge=0, le=16_000)
+    source_digest: PolicyDigest | None = None
+    text_digest: PolicyDigest | None = None
     operation: (
         Literal[
             "probe",

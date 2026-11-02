@@ -17,7 +17,7 @@ from urllib.parse import urlsplit
 from pydantic import Field, model_validator
 
 from lychd.compositions.reach.operator_wire import ReachHistoryEntry, ReachWorkerRequest
-from lychd.compositions.reach.research_wire import SourceReadResult
+from lychd.compositions.reach.research_wire import MAX_DOCUMENT_SOURCE_CHARS, SourceReadResult
 from lychd.compositions.reach.schemas import PolicyDigest, ReachPolicy, Record
 
 MAX_DOCUMENT_BYTES = 524_288
@@ -34,6 +34,10 @@ _REPO = "https://github.com/hexanomicon/lychd/blob/"
 _PUBLIC_SITE = "https://hexanomicon.dev"
 _RESEARCH_EXCERPT_CHARS = 4000
 _RESEARCH_ANCESTOR_CHARS = 600
+_RESEARCH_PROJECTION_PREAMBLE_CHARS = 400
+_RESEARCH_PROJECTION_SPANS = 48
+_RESEARCH_PROJECTION_QUOTE_CHARS = 40
+_RESEARCH_PROJECTION_ATTRIBUTION_CHARS = 120
 _URL = re.compile(r"https?://[^\s<>\[\]()\"']+")
 _PATH = re.compile(r"(?<![A-Za-z0-9_./-])(?:doc:)?([A-Za-z0-9_./-]{1,200})(?![A-Za-z0-9_./-])")
 _PUBLIC_ROOT_FILES = frozenset(
@@ -415,25 +419,29 @@ def _research_heading_title(value: str) -> str:
     value = re.sub(r"\s*\{\s*#[^}]+\}\s*$", "", value)
     value = re.sub(r"(?<!\w):[A-Za-z0-9_-]+:", "", value)
     value = re.sub(r"\[([^]]+)\]\([^)]*\)", r"\1", value)
-    return " ".join(value.strip(" #*_`").split())[:120]
+    return " ".join(value.strip(" #*").split())[:120]
 
 
 def _research_headings(text: str) -> tuple[tuple[int, int, str, str], ...]:
-    """Locate ATX headings outside the YAML header and fenced quotations."""
+    """Locate ATX headings and adjacent authored anchors outside headers and fenced code."""
     headings: list[tuple[int, int, str, str]] = []
     offset = 0
     frontmatter = text.startswith(("---\n", "---\r\n"))
-    fence: str | None = None
+    fence: tuple[str, int] | None = None
+    adjacent_anchor: str | None = None
     for index, line in enumerate(text.splitlines(keepends=True)):
         stripped = line.strip()
         if frontmatter:
             if index and stripped == "---":
                 frontmatter = False
         elif fence is not None:
-            if re.fullmatch(rf"{re.escape(fence)}{{3,}}\s*", stripped):
+            if re.fullmatch(rf"{re.escape(fence[0])}{{{fence[1]},}}\s*", stripped):
                 fence = None
         elif re.match(r"^\s{0,3}(?:`{3,}|~{3,})", line):
-            fence = stripped[0]
+            marker = re.match(r"`+|~+", stripped)
+            if marker is not None:
+                fence = (stripped[0], len(marker.group()))
+            adjacent_anchor = None
         else:
             match = re.match(r"^ {0,3}(#{1,6})[ \t]+(.+?)[ \t]*\r?\n?$", line)
             if match is not None:
@@ -443,9 +451,13 @@ def _research_headings(text: str) -> tuple[tuple[int, int, str, str], ...]:
                 anchor = (
                     explicit.group(1)
                     if explicit is not None
-                    else re.sub(r"[^\w-]", "", title.casefold().replace(" ", "-"))
+                    else adjacent_anchor or re.sub(r"[^\w-]", "", title.casefold().replace(" ", "-"))
                 )
                 headings.append((offset, len(match.group(1)), title, anchor))
+                adjacent_anchor = None
+            elif stripped:
+                anchor_match = re.fullmatch(r"<a\s+(?:id|name)=[\"']([A-Za-z0-9_-]+)[\"']\s*>\s*</a>", stripped)
+                adjacent_anchor = anchor_match.group(1) if anchor_match is not None else None
         offset += len(line)
     return tuple(headings)
 
@@ -469,7 +481,7 @@ def _research_kickoff(question: str) -> bool:
 def research_document_catalogue(
     corpus: PublicCorpus, *, question: str = "", context: tuple[str, ...] = ()
 ) -> tuple[dict[str, str], ...]:
-    """Offer at most sixteen sources by exact reference, then path/title/content lexical rank.
+    """Offer at most sixteen sources by exact reference, authored section target, then lexical rank.
 
     Ranking is local and deterministic. Only identity, title and pinned URL leave
     this function; the model must select an offered ID before an explicit read.
@@ -477,16 +489,29 @@ def research_document_catalogue(
     exact_question = set(research_document_matches(corpus, (question,)))
     exact_context = set(research_document_matches(corpus, context))
     question_terms, context_terms = _tokens(question), _tokens(" ".join(context))
+    numbered_question = _research_numbered_targets(_URL.sub(" ", question))
     kickoff = _research_kickoff(question)
     if kickoff:
         question_terms |= frozenset({"roadmap", "milestone", "milestones"})
-    ranked: list[tuple[int, int, str, dict[str, str]]] = []
+    ranked: list[tuple[int, int, int, str, dict[str, str]]] = []
     for document, text in zip(corpus.manifest.documents, corpus.texts, strict=True):
         title = _research_title(document, text)
         source_id = f"doc:{document.path}"
         path_terms, title_terms, content_terms = _tokens(document.path), _tokens(title), _tokens(text)
         route = kickoff and document.path in {"ROADMAP.md", "docs/roadmap.md"}
         exact = 3 if source_id in exact_question else 2 if source_id in exact_context else int(route)
+        section_matches = (
+            len(
+                numbered_question
+                & frozenset(
+                    target
+                    for _, _, heading, anchor in _research_headings(text)
+                    for target in _research_numbered_targets(f"{heading} {anchor}")
+                )
+            )
+            if numbered_question and document.path.endswith(".md")
+            else 0
+        )
         score = (
             24 * len(question_terms & path_terms)
             + 12 * len(question_terms & title_terms)
@@ -495,12 +520,20 @@ def research_document_catalogue(
             + 2 * len(context_terms & title_terms)
             + len(context_terms & content_terms)
         )
-        if exact or score or not (question or context):
-            ranked.append((-exact, -score, document.path, {"id": source_id, "title": title, "url": document.url}))
+        if exact or section_matches or score or not (question or context):
+            ranked.append(
+                (
+                    -exact,
+                    -section_matches,
+                    -score,
+                    document.path,
+                    {"id": source_id, "title": title, "url": document.url},
+                )
+            )
     # Preserve the small legacy catalogue's authored order for callers without a query.
     if question or context:
-        ranked.sort(key=lambda item: (item[0], item[1], item[2]))
-    return tuple(item[3] for item in ranked[:MAX_RESEARCH_CATALOGUE_DOCUMENTS])
+        ranked.sort(key=lambda item: item[:4])
+    return tuple(item[4] for item in ranked[:MAX_RESEARCH_CATALOGUE_DOCUMENTS])
 
 
 def _research_site_url(path: str) -> str | None:
@@ -579,7 +612,7 @@ def _research_source_start(text: str, path: str, question: str) -> int:
     terms = _tokens(query)
     hits = [
         (match.start(), _normalized(match.group()))
-        for match in re.finditer(r"[^\W_]+", text)
+        for match in re.finditer(r"(?<!\w)[^\W_]+(?!\w)", text)
         if _normalized(match.group()) in terms
     ]
     counts: dict[str, int] = {}
@@ -607,7 +640,7 @@ def _research_link_only(body: str) -> bool:
 
 
 def _research_ranked_heading(
-    text: str, headings: tuple[tuple[int, int, str, str], ...], terms: frozenset[str], *, kickoff: bool
+    text: str, headings: tuple[tuple[int, int, str, str], ...], terms: frozenset[str], *, kickoff: bool, query: str
 ) -> tuple[int, int, str, str] | None:
     """Rank substantive headings by opening intent, then ordinary lexical overlap."""
     ranked: list[tuple[int, int, int, tuple[int, int, str, str]]] = []
@@ -616,10 +649,10 @@ def _research_ranked_heading(
         body = text[heading[0] : body_end].partition("\n")[2]
         if heading[2].casefold() in _NAVIGATION_HEADINGS or _research_link_only(body):
             continue
-        heading_terms = _tokens(heading[2])
+        heading_terms = _research_heading_terms(heading[2], query)
         kickoff_rank = 0
         if kickoff:
-            if heading_terms & {"welcome", "onboarding", "kickoff"} or "getting started" in _normalized(heading[2]):
+            if heading_terms & {"welcome", "onboarding", "kickoff"} or {"getting", "started"} <= heading_terms:
                 kickoff_rank = 2
             elif "formation" in heading_terms:
                 kickoff_rank = 1
@@ -641,44 +674,128 @@ def _research_ancestor_start(
     return selected[0]
 
 
-def _research_excerpt(text: str, document: CorpusDocument, question: str) -> tuple[int, str]:
-    """Select substantive sections, keeping explicit fragments and nearby kickoff context."""
-    if not document.path.endswith(".md"):
-        start = _research_source_start(text, document.path, question)
-        return start, text[start : start + _RESEARCH_EXCERPT_CHARS]
-    headings = _research_headings(text)
-    terms = _tokens(_URL.sub(" ", question))
-    kickoff = _research_kickoff(question)
+def _research_numbered_targets(value: str) -> frozenset[tuple[str, int]]:
+    """Treat authored labels such as Week02, Week 2 and week-02 as the same target."""
+    normalized = _normalized(value)
+    targets: set[tuple[str, int]] = set()
+    for match in re.finditer(r"\b([a-z]+)[ \t_-]*([0-9]{1,6})\b", normalized):
+        targets.add((match.group(1), int(match.group(2))))
+        tail = normalized[match.end() :]
+        while adjacent := re.match(r"\s*/\s*([0-9]{1,6})\b", tail):
+            targets.add((match.group(1), int(adjacent.group(1))))
+            tail = tail[adjacent.end() :]
+    return frozenset(targets)
+
+
+def _research_section_query(document: CorpusDocument, question: str) -> str:
+    query = _URL.sub(" ", question)
+    return re.sub(rf"(?i)(?:doc:)?{re.escape(document.path)}", " ", query)
+
+
+def _research_heading_terms(value: str, query: str) -> frozenset[str]:
+    """Do not interpret an inline code identifier as an ordinary language heading."""
+
+    def literal(match: re.Match[str]) -> str:
+        symbol = match.group().strip("`")
+        return symbol if symbol in query and ("_" in symbol or f"`{symbol}`" in query) else " "
+
+    return _tokens(re.sub(r"`+[^`]+`+|(?<!\w)_[A-Za-z0-9_]+(?!\w)", literal, value))
+
+
+def _research_section_selection(
+    text: str, document: CorpusDocument, headings: tuple[tuple[int, int, str, str], ...], question: str
+) -> tuple[tuple[tuple[int, int, str, str], ...], bool]:
+    """Resolve exact fragments and numbered targets before ordinary heading language."""
     fragments = {
         urlsplit(value).fragment
         for value in _research_urls((question,))
         if _research_url_matches(document, value) and urlsplit(value).fragment
     }
-    selected = next((heading for heading in headings if heading[3] in fragments), None)
-    if selected is None:
-        selected = _research_ranked_heading(text, headings, terms, kickoff=kickoff)
+    query = _research_section_query(document, question)
+    fragments.update(re.findall(r"(?<!\w)#([A-Za-z0-9_-]+)", query))
+    explicit = tuple(
+        heading
+        for heading in headings
+        if heading[3] in fragments or re.sub(r"[^\w-]", "", heading[2].casefold().replace(" ", "-")) in fragments
+    )
+    if explicit:
+        return explicit, True
+    numbered = _research_numbered_targets(query)
+    selected = tuple(
+        heading for heading in headings if numbered & _research_numbered_targets(f"{heading[2]} {heading[3]}")
+    )
+    if selected:
+        return selected, True
+    terms = _tokens(query)
+    if _research_overview(query):
+        parents = [
+            heading
+            for index, heading in enumerate(headings[:-1])
+            if heading[2].casefold() not in _NAVIGATION_HEADINGS
+            and terms & _research_heading_terms(heading[2], query)
+            and headings[index + 1][1] > heading[1]
+        ]
+        if parents:
+            return (
+                min(
+                    parents, key=lambda heading: (-len(terms & _research_heading_terms(heading[2], query)), heading[0])
+                ),
+            ), False
+    heading = _research_ranked_heading(text, headings, terms, kickoff=_research_kickoff(query), query=query)
+    return ((heading,) if heading is not None else ()), False
+
+
+def _research_overview(question: str) -> bool:
+    return (
+        re.search(
+            r"\b(?:overview|weekly|weeks|chapters|sections|stages)\b|\b(?:per|each|every)\s+(?:week|chapter|section|stage)\b",
+            _normalized(question),
+        )
+        is not None
+    )
+
+
+def _research_excerpt(text: str, document: CorpusDocument, question: str, focus: str) -> tuple[int, str]:
+    """Select a bounded contiguous section; the current request takes precedence over prior focus."""
+    if not document.path.endswith(".md"):
+        query = question if _tokens(_research_section_query(document, question)) else focus
+        start = _research_source_start(text, document.path, query)
+        return start, text[start : start + _RESEARCH_EXCERPT_CHARS]
+    headings = _research_headings(text)
+    selected_headings, explicit = _research_section_selection(text, document, headings, question)
+    query = question
+    if not selected_headings and focus:
+        selected_headings, explicit = _research_section_selection(text, document, headings, focus)
+        query = focus
+    selected = selected_headings[0] if selected_headings else None
+    terms = _tokens(_research_section_query(document, query))
+    kickoff = _research_kickoff(query)
     start = selected[0] if selected is not None else 0
     end = len(text)
     if selected is not None:
-        end = next((offset for offset, level, _, _ in headings if offset > start and level <= selected[1]), end)
-        if not fragments and kickoff:
+        last = selected_headings[-1]
+        end = next((offset for offset, level, _, _ in headings if offset > last[0] and level <= last[1]), end)
+        if not explicit and kickoff:
             start = _research_ancestor_start(headings, selected)
+    limit = _RESEARCH_EXCERPT_CHARS
+    if selected is not None and (len(selected_headings) > 1 or _research_overview(query)):
+        limit = MAX_DOCUMENT_SOURCE_CHARS
     matches = (
         match.start() for match in re.finditer(r"[^\W_]+", text[start:end]) if _normalized(match.group()) in terms
     )
     relevant = next(matches, None)
-    if relevant is not None and (selected is None or relevant > _RESEARCH_EXCERPT_CHARS - 300):
+    if relevant is not None and (selected is None or (not explicit and relevant > limit - 300)):
         start = max(start, start + relevant - 300)
-    return start, text[start : min(end, start + _RESEARCH_EXCERPT_CHARS)]
+    return start, text[start : min(end, start + limit)]
 
 
-def read_research_document(corpus: PublicCorpus, source_id: str, *, question: str) -> SourceReadResult:
-    """Read one exact manifest member and bind its bounded excerpt to the complete source bytes."""
+def read_research_document(corpus: PublicCorpus, source_id: str, *, question: str, focus: str = "") -> SourceReadResult:
+    """Bind an exact local read to complete bytes, using acknowledged focus for elliptical requests."""
     for document, text in zip(corpus.manifest.documents, corpus.texts, strict=True):
         if source_id != f"doc:{document.path}":
             continue
         title = _research_title(document, text)
-        start, excerpt = _research_excerpt(text, document, question)
+        start, excerpt = _research_excerpt(text, document, question, focus)
         if not excerpt.strip():
             return SourceReadResult(
                 id=source_id, title=title, url=document.url, status="refused", reason="research_document_empty"
@@ -703,3 +820,155 @@ def read_research_document(corpus: PublicCorpus, source_id: str, *, question: st
         status="refused",
         reason="research_document_unknown",
     )
+
+
+def _research_projection_sections(text: str) -> tuple[tuple[int, int], ...]:
+    """Find sibling sections under the selected parent, keeping nested subsections together."""
+    headings = _research_headings(text)
+    if not headings:
+        return ()
+    root_level = headings[0][1]
+    siblings = [heading for heading in headings if heading[1] == root_level]
+    if len(siblings) <= 1:
+        child_level = min((heading[1] for heading in headings if heading[1] > root_level), default=root_level)
+        siblings = [heading for heading in headings if heading[1] == child_level]
+    if len(siblings) <= 1:
+        return ()
+    starts = [heading[0] for heading in siblings]
+    return tuple(zip(starts, [*starts[1:], len(text)], strict=True))
+
+
+def _research_projection_lines(text: str, start: int, end: int) -> tuple[tuple[int, str], ...]:
+    """Replace fenced lines with paragraph boundaries without changing source offsets."""
+    result: list[tuple[int, str]] = []
+    fence: tuple[str, int] | None = None
+    offset = start
+    for line in text[start:end].splitlines(keepends=True):
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        if fence is not None:
+            result.append((offset, ""))
+            if re.fullmatch(rf"{re.escape(fence[0])}{{{fence[1]},}}\s*", line.strip()):
+                fence = None
+        elif marker is not None:
+            result.append((offset, ""))
+            fence = (marker.group(1)[0], len(marker.group(1)))
+        else:
+            result.append((offset, line))
+        offset += len(line)
+    return tuple(result)
+
+
+def _research_quote_attribution(line: str, offset: int) -> tuple[int, int] | None:
+    if re.match(r"^ {0,3}>\s*(?:\N{EM DASH}|\N{EN DASH}|-)\s+", line) is None:
+        return None
+    destination = re.search(r"\]\(", line)
+    return offset, offset + (destination.start() + 1 if destination is not None else len(line))
+
+
+def _research_quote_narrative(text: str, start: int, end: int) -> tuple[int, tuple[int, int] | None, int, int] | None:
+    """Locate the first narrative paragraph after a blockquote outside fenced code."""
+    quote_start: int | None = None
+    paragraph_start: int | None = None
+    paragraph_end = start
+    attribution: tuple[int, int] | None = None
+    separated = False
+    for offset, line in _research_projection_lines(text, start, end):
+        stripped = line.strip()
+        boundary = not stripped or re.match(r"^ {0,3}(?:>|#{1,6}\s|<a\s)", line) is not None
+        if paragraph_start is not None:
+            if quote_start is not None and boundary:
+                return quote_start, attribution, paragraph_start, paragraph_end
+            paragraph_end = offset + len(line)
+        elif re.fullmatch(r" {0,3}>[ \t]*(?:\r?\n)?", line):
+            separated = quote_start is not None
+        elif re.match(r"^ {0,3}>", line):
+            if quote_start is None:
+                quote_start = offset
+            attribution = _research_quote_attribution(line, offset)
+            separated = False
+        elif quote_start is not None and boundary:
+            separated = True
+        elif quote_start is not None and separated:
+            paragraph_start = offset
+            paragraph_end = offset + len(line)
+    if quote_start is not None and paragraph_start is not None:
+        return quote_start, attribution, paragraph_start, paragraph_end
+    return None
+
+
+def _research_section_spans(text: str, start: int, end: int, length: int) -> list[dict[str, int]]:
+    """Keep quote, attribution and meaning prefixes when a long quote consumes the share."""
+    narrative = _research_quote_narrative(text, start, end)
+    if narrative is not None and narrative[2] >= start + length:
+        quote_start, attribution, paragraph_start, paragraph_end = narrative
+        opening_minimum = quote_start - start + _RESEARCH_PROJECTION_QUOTE_CHARS
+        if attribution is not None:
+            opening_minimum = min(opening_minimum, attribution[0] - start)
+        remaining = max(0, length - opening_minimum)
+        attribution_length = (
+            min(attribution[1] - attribution[0], _RESEARCH_PROJECTION_ATTRIBUTION_CHARS, remaining // 3)
+            if attribution is not None
+            else 0
+        )
+        narrative_length = min(paragraph_end - paragraph_start, length // 2, remaining - attribution_length)
+        if narrative_length:
+            opening_end = start + length - narrative_length - attribution_length
+            if attribution is not None:
+                opening_end = min(opening_end, attribution[0])
+            spans = [{"start": start, "end": opening_end}]
+            if attribution is not None and attribution_length:
+                spans.append({"start": attribution[0], "end": attribution[0] + attribution_length})
+            spans.append({"start": paragraph_start, "end": paragraph_start + narrative_length})
+            return spans
+    return [{"start": start, "end": start + length}]
+
+
+def _research_projection_spans(source: SourceReadResult, length: int) -> list[dict[str, int]]:
+    text = source.text
+    if not text or not length:
+        return []
+    if len(text) <= length or len(text) <= _RESEARCH_EXCERPT_CHARS or not source.id.endswith(".md"):
+        return [{"start": 0, "end": min(length, len(text))}]
+    sections = _research_projection_sections(text)
+    if not sections:
+        return [{"start": 0, "end": min(length, len(text))}]
+    preamble = min(sections[0][0], _RESEARCH_PROJECTION_PREAMBLE_CHARS, length // 5)
+    limit = (_RESEARCH_PROJECTION_SPANS - bool(preamble)) // 3
+    if len(sections) > limit:
+        sections = tuple(sections[index * (len(sections) - 1) // (limit - 1)] for index in range(limit))
+    separators = 2 * (3 * len(sections) + bool(preamble) - 1)
+    available = length - preamble - separators
+    if available < len(sections):
+        return [{"start": 0, "end": min(length, len(text))}]
+    share, remainder = divmod(available, len(sections))
+    sizes = [min(end - start, share + (index < remainder)) for index, (start, end) in enumerate(sections)]
+    remaining = available - sum(sizes)
+    for index, (start, end) in enumerate(sections):
+        extra = min(end - start - sizes[index], remaining)
+        sizes[index] += extra
+        remaining -= extra
+    spans = [{"start": 0, "end": preamble}] if preamble else []
+    for (start, end), size in zip(sections, sizes, strict=True):
+        spans.extend(_research_section_spans(text, start, end, size))
+    return spans
+
+
+def project_research_source(source: SourceReadResult, length: int) -> dict[str, object]:
+    """Project exact source spans within a character budget, balancing Markdown siblings and meanings.
+
+    Offsets are relative to the admitted excerpt. Only the separators between spans
+    are synthetic; the digest binds the exact text offered to synthesis.
+    """
+    if length < 0:
+        msg = "research_projection_length"
+        raise ValueError(msg)
+    spans = _research_projection_spans(source, length)
+    text = "\n\n".join(source.text[span["start"] : span["end"]] for span in spans)
+    return {
+        **source.model_dump(mode="json"),
+        "text": text,
+        "projection_budget": length,
+        "projection_digest": sha256(text.encode("utf-8")).hexdigest(),
+        "projection_truncated": sum(span["end"] - span["start"] for span in spans) < len(source.text),
+        "projection_spans": spans,
+    }

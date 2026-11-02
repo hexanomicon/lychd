@@ -26,6 +26,8 @@ MAX_PUBLIC_URL_CHARS = 4096
 ASCII_SPACE = 32
 ASCII_DELETE = 127
 MAX_SOURCE_FOCUS_CHARS = 80
+MAX_WEB_SOURCE_CHARS = 4_000
+MAX_DOCUMENT_SOURCE_CHARS = 16_000
 
 
 def public_catalogue_url(value: str) -> str:
@@ -129,7 +131,7 @@ class SourceReadResult(Record):
     title: str = Field(min_length=1, max_length=120)
     url: Annotated[str, AfterValidator(public_catalogue_url)]
     status: Literal["ok", "unavailable", "refused"]
-    text: str = Field(default="", max_length=4000, repr=False)
+    text: str = Field(default="", max_length=MAX_DOCUMENT_SOURCE_CHARS, repr=False)
     source_digest: PolicyDigest | None = None
     text_digest: PolicyDigest | None = None
     source_chars: int = Field(default=0, ge=0)
@@ -141,6 +143,9 @@ class SourceReadResult(Record):
 
     @model_validator(mode="after")
     def evidence_shape(self) -> Self:
+        if self.id.startswith("web:") and len(self.text) > MAX_WEB_SOURCE_CHARS:
+            msg = "research_web_evidence_budget"
+            raise ValueError(msg)
         if self.status == "ok":
             if (
                 not self.text.strip()

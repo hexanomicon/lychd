@@ -157,11 +157,15 @@ The mount is a revision snapshot; working-tree edits require a new export and ex
 
 Research discovery offers at most sixteen local descriptors, prioritizing exact source references
 and relevant paths, titles and lexical content matches. The model selects from that same offered
-set at planning, validation and acquisition. It can read at most three local excerpts per plan,
-each at most 4,000 characters; it must not claim exhaustive inspection of the repository.
+set at planning, validation and acquisition. It can read at most three local excerpts per plan.
+Ordinary excerpts retain a 4,000-character bound; an explicitly requested multi-section Markdown
+read may admit up to 16,000 characters from one selected parent section. Neither proves exhaustive
+inspection of the repository.
 Implicit Markdown reads skip link-only navigation. A kickoff favors welcome or getting-started
 content and retains nearby parent/date context; an explicit source fragment still selects that
-section. Inspect the projected excerpt bounds when source relevance matters.
+section. Numbered section labels and adjacent authored anchors participate in selection. The current
+question takes precedence over the acknowledged research plan, which supplies focus for an elliptical
+follow-up such as a filename. Inspect the projected excerpt bounds when source relevance matters.
 The complete catalogue is not injected into the prompt, and an oversized fixed input still
 refuses under the normal Context budget. These files supply evidence, not instructions or
 permission to execute code, edit files or search private mounts.
@@ -550,9 +554,15 @@ optional 👀 receipt remains separate from this interpreted plan; conversation 
 earlier mechanical text.
 
 The native `research` station obtains its exact no-tool Chat lease, waits for the delivered-plan
-gate, then consumes bounded source excerpts and makes one synthesis call. A source provides at
-most 4,000 characters; oldest history is omitted before source projections are shortened to fit
-the combined persona and JSON input budget. Original and projected digests remain explicit.
+gate, then consumes bounded source excerpts and makes one synthesis call. Web sources remain bounded
+to 4,000 characters; selected multi-section local Markdown reads may admit up to 16,000. Oldest
+history is omitted before source projections are shortened to fit the unchanged combined persona
+and JSON input budget. Long local sections distribute that projection across their child sections,
+retaining exact source-relative spans rather than silently keeping only the opening. Original and
+projected digests, allocated projection budgets and omitted material remain explicit.
+When a long quotation would consume a child's share, at most three spans preserve its opening,
+authored attribution and following narrative. One projection has at most 48 spans; tighter budgets
+still yield partial evidence, never reconstructed quotation text.
 Source bodies are transient data attached only to detached outbound model messages; checkpoint
 state retains the plan and selectors, and neither native history nor cached Context retains the
 acquired bodies. The final model selects citation IDs; the host renders links only through
@@ -756,7 +766,8 @@ drop on backpressure so a stalled log consumer cannot withhold the Run's answer.
 Each running supervisor retains typed structural observations in the owner-only
 `$REACH_ROOT/state/traces/trace.sqlite3` archive. Platform message IDs link adaptive request rounds;
 each request links its native Run and exact model/research call identities. History counts, graph
-stations, model HTTP status and timings, source outcomes, acknowledgements and individual final
+stations, model HTTP status and timings, source outcomes and local excerpt ranges/digests,
+acknowledgements and individual final
 delivery parts remain searchable after restart. An HTTP status is present only when observed;
 missing data never means success. No question, answer, history, source body, URL, provider body,
 arbitrary exception text or credential enters this archive.
