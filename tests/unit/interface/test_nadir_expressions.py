@@ -1,4 +1,4 @@
-"""Admitted dialogue decorates only after acknowledgement and successful final delivery."""
+"""Admitted dialogue uses a cosmetic receipt and decorates successful final delivery."""
 
 from __future__ import annotations
 
@@ -72,7 +72,7 @@ async def test_expression_order_and_cosmetic_failures_preserve_the_answer(failur
     cog = ReachCog(service)
     await cog.on_message(message)
     await cog.on_message(message)
-    expected = ["ack", "seen", "native", "final"]
+    expected = ["seen", "native", "final"]
     if failure not in {"seen", "seen_exception", "final"}:
         expected.append("reply")
         if failure != "reaction":
@@ -125,7 +125,8 @@ async def test_disabled_or_command_expressions_do_not_publish_any_decorations(*,
         rest.send_message.assert_not_awaited()
     else:
         await cog.on_message(message)
-        assert rest.send_message.await_count == 2
+        rest.send_message.assert_awaited_once()
+        assert rest.send_message.await_args.kwargs["phase"] == "final"
     native.request.assert_awaited_once()
     rest.add_reaction.assert_not_awaited()
     rest.send_gif.assert_not_awaited()

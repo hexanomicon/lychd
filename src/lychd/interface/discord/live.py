@@ -646,23 +646,25 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
             )
 
     async def _acknowledge(self, event: ReachEvent) -> bool:
-        """Confirm receipt before optional cosmetic acknowledgement and native work."""
-        preview = " ".join(event.question.split())[:240]
-        text = f"I'll look into your request: “{preview}”. I'll return here with an answer or a clarification question."
-        self.service.observe("acknowledgement", event, status="started", operation="ack")
-        outcome = await self.service.rest.send_message(
-            event.conversation_id,
-            text,
-            event_id=event.event_id,
-            reply_to=event.event_id,
-            phase="ack",
-        )
-        self.service.observe(
-            "acknowledgement", event, status=outcome.status, operation="ack", remote_id=outcome.remote_id
-        )
-        if outcome.status != "succeeded":
-            diagnostic("message_failed")
-        elif self.service.worker.ready.expressions.enabled and self.service.worker.ready.expressions.acknowledge:
+        """Keep conversation receipt cosmetic; research supplies its own delivered model plan."""
+        if not self.service.conversation:
+            preview = " ".join(event.question.split())[:240]
+            text = f"I'll look into your request: “{preview}”. I'll return here with an answer or a clarification question."
+            self.service.observe("acknowledgement", event, status="started", operation="ack")
+            outcome = await self.service.rest.send_message(
+                event.conversation_id,
+                text,
+                event_id=event.event_id,
+                reply_to=event.event_id,
+                phase="ack",
+            )
+            self.service.observe(
+                "acknowledgement", event, status=outcome.status, operation="ack", remote_id=outcome.remote_id
+            )
+            if outcome.status != "succeeded":
+                diagnostic("message_failed")
+                return False
+        if self.service.worker.ready.expressions.enabled and self.service.worker.ready.expressions.acknowledge:
             try:
                 seen = await self.service.rest.add_reaction(
                     event.conversation_id, event.event_id, "👀", event_id=event.event_id, phase="seen"
@@ -674,7 +676,7 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
             except (ValueError, OSError, TimeoutError, DiscordRestError):
                 self.service.expression_blocked.add(event.event_id)
                 diagnostic("expression_failed")
-        return outcome.status == "succeeded"
+        return True
 
     async def _send_final(self, event: ReachEvent, text: str, *, result: ReachWorkerResult | None = None) -> bool:
         """Freeze bounded parts before the first journaled send; stop on uncertainty."""

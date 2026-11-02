@@ -33,7 +33,15 @@ from lychd.compositions.reach.conversation_workflow import (
     persona_text,
     reach_conversation_workflow,
 )
-from lychd.compositions.reach.documents import MAX_DOCUMENT_BYTES, CorpusManifest, PublicCorpus, verify_corpus
+from lychd.compositions.reach.documents import (
+    LEGACY_MAX_CORPUS_BYTES,
+    MAX_CORPUS_BYTES,
+    MAX_CORPUS_MANIFEST_BYTES,
+    MAX_DOCUMENT_BYTES,
+    PublicCorpus,
+    parse_corpus_manifest,
+    verify_corpus,
+)
 from lychd.compositions.reach.documents_workflow import (
     DocumentsRefused,
     make_documents_intent,
@@ -176,14 +184,19 @@ def load_corpus(directory: Path) -> PublicCorpus:
     """Detach and verify a bounded public export through one no-follow directory handle."""
     descriptor = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
-        raw = _read_regular(Path("manifest.json"), MAX_WIRE_BYTES, directory_fd=descriptor)
-        strict_json(raw)
-        manifest = CorpusManifest.model_validate_json(raw)
-        contents = tuple(
-            _read_regular(Path(document.file), MAX_DOCUMENT_BYTES, directory_fd=descriptor)
-            for document in manifest.documents
-        )
-        return verify_corpus(manifest, contents)
+        raw = _read_regular(Path("manifest.json"), MAX_CORPUS_MANIFEST_BYTES, directory_fd=descriptor)
+        manifest = parse_corpus_manifest(raw)
+        contents: list[bytes] = []
+        total = 0
+        limit = LEGACY_MAX_CORPUS_BYTES if manifest.schema_version == 1 else MAX_CORPUS_BYTES
+        for document in manifest.documents:
+            content = _read_regular(Path(document.file), MAX_DOCUMENT_BYTES, directory_fd=descriptor)
+            total += len(content)
+            if total > limit:
+                msg = "corpus_limit"
+                raise ValueError(msg)
+            contents.append(content)
+        return verify_corpus(manifest, tuple(contents))
     finally:
         os.close(descriptor)
 

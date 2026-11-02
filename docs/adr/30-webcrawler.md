@@ -622,6 +622,15 @@ attributed excerpts and unavailable-source outcomes to local synthesis. Citation
 through those admitted sources. A blocked page may produce a candid partial explanation; it may
 not be represented as a page that was read. Persona and humour do not weaken source attribution.
 
+An explicitly selected public project export may widen the local document catalogue to committed
+text from the operator-admitted project revision. Its read-only detached bytes, public path policy,
+manifest digests, omissions and finite limits remain distinct from the working checkout and from
+private mounted files. Deterministic bounded discovery offers source metadata before the model
+selects exact IDs; the same offered set governs output, checkpoint and acquisition validation.
+Selected excerpts still cross the delivered-plan gate. This is project knowledge, not a shell,
+arbitrary filesystem tool, source execution, durable memory or authority to publish project bytes
+to a different audience. Conversation mode requires no earlier mechanical textual receipt.
+
 ## Delivery Boundary
 
 The native public-page profile implements bounded Fetch and Extract through opt-in

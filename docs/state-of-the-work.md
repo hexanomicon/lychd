@@ -2021,7 +2021,9 @@ endpoint and supplies no runtime lifecycle control. Exact `allowed_dm_user_ids` 
 subject rule permitting `converse` can admit one-to-one DMs; guild roles confer no DM access.
 Opt-in `adaptive_context` permits at most three generation-local Runs per turn, with exact
 continuation admission and bounded same-conversation history. Admitted mentions and DMs receive
-an acknowledgement; final replies are bounded to six parts, with stable delivery identities and
+an optional cosmetic receipt; research first delivers the model's interpreted plan without an
+earlier mechanical textual acknowledgement. Short ordinary questions may receive a direct answer.
+Final replies are bounded to six parts, with stable delivery identities and
 no continuation after a failed or uncertain part. These additions supply no durable memory,
 private Archive ingestion, cross-place identity or autonomous publication authority.
 The operator context-round driver, continuation admission and correlated private-pipe client
@@ -2035,8 +2037,13 @@ IDs, never acquisition or destination authority. GIFs are separate silent replie
 normal text and ephemeral slash responses retain their existing audience. Cosmetic failures do
 not discard the answer, and stable slots fence changed or uncertain attempts. No ambient
 reaction loop, live GIF search or media upload is supplied.
-The maintained public corpus selection now names 19 documents, including Lich identity,
-Transcendence and Inner Tongue owners. A separately enabled research catalogue adds an explicit
+The maintained default public corpus selection names 19 documents, including Lich identity,
+Transcendence and Inner Tongue owners. A separately selected public project export also admits
+bounded committed text from documentation, source, tests and other explicit public paths, including
+the roadmap. It mounts detached verified bytes read-only and offers a deterministic shortlist of
+at most sixteen local source descriptors, retaining exact selected-source validation and explicit
+omissions. It supplies neither arbitrary working-tree reads nor file execution.
+A separately enabled research catalogue adds an explicit
 `generate` → `research` → `settle` branch within the same native Run: one model call proposes a
 bounded interpreted plan and exact document/web IDs, and one later call synthesizes admitted
 sources. A mention or admitted DM must receive that plan successfully before local source reads

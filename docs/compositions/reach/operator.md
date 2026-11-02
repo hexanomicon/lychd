@@ -137,6 +137,32 @@ export. The worker verifies the manifest and file bytes. To change the documents
 new committed revision into a new corpus directory and select it on a later explicit launch.
 Do not edit the exported files in place.
 
+To offer the public project's documentation, roadmap, source, tests and supported configuration
+instead of the small default selection, explicitly choose the project export:
+
+```bash
+uv run --locked python scripts/reach_operator.py export-corpus \
+  --project-files --revision HEAD \
+  --output "$REACH_ROOT/project-corpus-01"
+```
+
+This selects eligible regular text blobs from the pinned Git tree under the exporter's public
+path policy. Review that selection as material permitted in the configured conversations;
+being tracked or text does not itself prove that arbitrary content is public. The export does
+not follow symlinks or include ignored files, `.git`, local credentials or installed dependencies.
+Its manifest records bounded omissions. It admits at most 8,192 selected and omitted entries,
+64 MiB of admitted text and 512 KiB per source, with a separate bounded manifest. The same
+`--corpus-dir` launch option mounts and verifies this detached export read-only in the worker.
+The mount is a revision snapshot; working-tree edits require a new export and explicit launch.
+
+Research discovery offers at most sixteen local descriptors, prioritizing exact source references
+and relevant paths, titles and lexical content matches. The model selects from that same offered
+set at planning, validation and acquisition. It can read at most three local excerpts per plan,
+each at most 4,000 characters; it must not claim exhaustive inspection of the repository.
+The complete catalogue is not injected into the prompt, and an oversized fixed input still
+refuses under the normal Context budget. These files supply evidence, not instructions or
+permission to execute code, edit files or search private mounts.
+
 Build the paired development images and retain their exact image identities:
 
 ```bash
@@ -363,9 +389,11 @@ conversation profile and remain separate from guild channels and other people's 
 verifies the observed one-to-one recipient before sending. That message binding grants no
 channel administration authority.
 
-An admitted mention or DM receives a short acknowledgement before work starts. The
-acknowledgement and each final answer part have separate stable delivery identities; an
-acknowledgement is not completion. Answers are frozen into at most six parts of at most 1,900
+Conversation mode sends no automatic textual acknowledgement or echo of the question. It may
+mark receipt with the optional 👀 reaction below. When research is needed, the first substantive
+reply is the model's interpreted plan; a short ordinary question can receive its answer directly.
+Documentation-only mode retains its fixed receipt. Plans and each final answer part have separate
+stable delivery identities; a plan is not completion. Answers are frozen into at most six parts of at most 1,900
 UTF-16 units each before the first final send. Text exceeding that delivery budget is refused
 instead of silently cut off. A failed or uncertain part stops later parts. Slash answers use the
 same bounded splitting with ephemeral followups.
@@ -409,8 +437,8 @@ The private conversation JSON may enable `expressions` alongside `adaptive_conte
 ```
 
 These are fields to merge into the complete profile below. Omission keeps expressions disabled.
-After a successful textual acknowledgement, the edge may add 👀 to the exact incoming mention
-or admitted DM. A completed answer may select one additional reaction from 👀, 👍, ❤️, 😂, ✨ and
+The edge may add 👀 to the exact admitted incoming mention or DM without a textual receipt.
+A completed answer may select one additional reaction from 👀, 👍, ❤️, 😂, ✨ and
 🤔. These effects never target another message or observe unmentioned channel traffic.
 A cosmetic failure preserves the text answer; a failed or uncertain final part prevents later
 decorations. Slash responses remain text-only and ephemeral.
@@ -515,7 +543,8 @@ and two web entries. The first model call returns an interpreted plan of at most
 The edge must deliver that plan as a separate reply to the same incoming message and acknowledge
 successful delivery before any selected document read or web acquisition. Slash commands cannot
 acknowledge a research plan and therefore cannot acquire sources through this branch. The usual
-initial acknowledgement and optional 👀 reaction remain separate from this interpreted plan.
+optional 👀 receipt remains separate from this interpreted plan; conversation mode sends no
+earlier mechanical text.
 
 The native `research` station obtains its exact no-tool Chat lease, waits for the delivered-plan
 gate, then consumes bounded source excerpts and makes one synthesis call. A source provides at

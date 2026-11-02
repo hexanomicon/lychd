@@ -28,6 +28,17 @@ from pathlib import Path
 from typing import Any, Literal, NoReturn, cast
 from uuid import uuid4
 
+from lychd.compositions.reach.documents import (
+    LEGACY_MAX_CORPUS_BYTES,
+    LEGACY_MAX_DOCUMENTS,
+    MAX_CORPUS_BYTES,
+    MAX_CORPUS_DOCUMENTS,
+    MAX_CORPUS_MANIFEST_BYTES,
+    MAX_DOCUMENT_BYTES,
+    CorpusManifest,
+    decode_public_text,
+    public_project_path,
+)
 from lychd.compositions.reach.operator_diagnostics import diagnostic_bytes, parse_diagnostic, write_diagnostic_line
 from lychd.compositions.reach.operator_model_wire import OperatorModelRequest
 from lychd.compositions.reach.operator_observation import ReachPatternObservation
@@ -58,9 +69,9 @@ else:
 
 ROOT = Path(__file__).resolve().parents[1]
 WIRE_LIMIT = 65_536
-DOCUMENT_LIMIT = 524_288
-CORPUS_LIMIT = 2_097_152
-MAX_DOCUMENTS = 32
+DOCUMENT_LIMIT = MAX_DOCUMENT_BYTES
+CORPUS_LIMIT = MAX_CORPUS_BYTES
+MAX_DOCUMENTS = MAX_CORPUS_DOCUMENTS
 IMAGE_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
 CONTAINER_ID = re.compile(r"^[0-9a-f]{64}$")
 EDGE_INPUTS = (
@@ -272,21 +283,73 @@ def command(
     return raw
 
 
-def export_corpus(output: Path, revision: str = "HEAD", *, root: Path = ROOT) -> str:
-    """Export only catalogue-listed committed blobs, detached from dirty/private working files."""
+def _corpus_tree(root: Path, revision: str) -> dict[str, tuple[str, str, int]]:
+    """Inspect immutable Git modes and sizes without following checkout links or reading files."""
+    raw = command(
+        ["git", "ls-tree", "--full-tree", "-r", "-z", "-l", revision], root=root, limit=MAX_CORPUS_MANIFEST_BYTES
+    )
+    result: dict[str, tuple[str, str, int]] = {}
+    for record in raw.split(b"\0"):
+        if not record:
+            continue
+        metadata, separator, path_raw = record.partition(b"\t")
+        fields = metadata.decode("ascii").split()
+        if not separator or len(fields) != 4:  # noqa: PLR2004 - fixed Git tree record grammar
+            _fail("corpus_tree")
+        mode, kind, _object_id, size = fields
+        path = path_raw.decode("utf-8", errors="strict")
+        result[path] = (mode, kind, int(size) if size != "-" else -1)
+    return result
+
+
+def _corpus_paths(root: Path, tree: dict[str, tuple[str, str, int]], *, project_files: bool) -> list[str]:
+    if project_files:
+        paths = sorted(path for path in tree if public_project_path(path))
+        limit = MAX_DOCUMENTS
+    else:
+        catalogue = (root / "examples/reach/public-docs.txt").read_text(encoding="utf-8").splitlines()
+        paths = [line.strip() for line in catalogue if line.strip() and not line.lstrip().startswith("#")]
+        limit = LEGACY_MAX_DOCUMENTS
+        if any(
+            re.fullmatch(r"(?:README\.md|CONTRIBUTING\.md|docs/[A-Za-z0-9_./-]+\.md)", path) is None
+            or not public_project_path(path)
+            for path in paths
+        ):
+            _fail("corpus_catalogue")
+    if not 1 <= len(paths) <= limit or len(paths) != len(set(paths)):
+        _fail("corpus_catalogue")
+    if any(path not in tree or tree[path][0] not in {"100644", "100755"} or tree[path][1] != "blob" for path in paths):
+        _fail("corpus_git_mode")
+    return paths
+
+
+def _corpus_source(
+    root: Path, revision: str, path: str, size: int, *, project_files: bool
+) -> tuple[bytes, Literal["document_limit", "not_text"] | None]:
+    """Read one pinned text blob or record its explicit project-profile omission."""
+    if project_files and size > DOCUMENT_LIMIT:
+        return b"", "document_limit"
+    raw = command(["git", "show", f"{revision}:{path}"], root=root, limit=DOCUMENT_LIMIT)
+    try:
+        decode_public_text(raw)
+    except ValueError:
+        if not project_files:
+            raise
+        return b"", "not_text"
+    return raw, None
+
+
+def export_corpus(output: Path, revision: str = "HEAD", *, root: Path = ROOT, project_files: bool = False) -> str:
+    """Export pinned public blobs, with whole-project text explicitly selected by the operator.
+
+    The default retains the small documentation catalogue. The project profile
+    records oversize/non-text omissions, refuses symlinks and aggregate overflow,
+    and never reads dirty, ignored or untracked project files. Neither export
+    contains Git metadata, a directory tree, or executable filesystem authority.
+    """
     external_path(output)
     if output.exists() and (not output.is_dir() or any(output.iterdir())):
         _fail("corpus_output_exists")
-    catalogue = (root / "examples/reach/public-docs.txt").read_text(encoding="utf-8").splitlines()
-    paths = [line.strip() for line in catalogue if line.strip() and not line.lstrip().startswith("#")]
-    if not 1 <= len(paths) <= MAX_DOCUMENTS or len(paths) != len(set(paths)):
-        _fail("corpus_catalogue")
-    if any(
-        re.fullmatch(r"(?:README\.md|CONTRIBUTING\.md|docs/[A-Za-z0-9_./-]+\.md)", path) is None
-        or any(part in {"", ".", ".."} for part in path.split("/"))
-        for path in paths
-    ):
-        _fail("corpus_catalogue")
     resolved = (
         command(["git", "rev-parse", "--verify", "--end-of-options", f"{revision}^{{commit}}"], root=root)
         .decode("ascii")
@@ -294,31 +357,49 @@ def export_corpus(output: Path, revision: str = "HEAD", *, root: Path = ROOT) ->
     )
     if re.fullmatch(r"[0-9a-f]{40}", resolved) is None:
         _fail("corpus_revision")
+    tree = _corpus_tree(root, resolved)
+    paths = _corpus_paths(root, tree, project_files=project_files)
     documents: list[dict[str, str]] = []
+    omissions: list[dict[str, str]] = []
     contents: list[bytes] = []
     total = 0
-    for index, path in enumerate(paths):
-        raw = command(["git", "show", f"{resolved}:{path}"], root=root, limit=DOCUMENT_LIMIT)
+    for path in paths:
+        raw, omission = _corpus_source(root, resolved, path, tree[path][2], project_files=project_files)
+        if omission is not None:
+            omissions.append({"path": path, "reason": omission})
+            continue
         total += len(raw)
-        raw.decode("utf-8", errors="strict")
-        if total > CORPUS_LIMIT:
+        if total > (CORPUS_LIMIT if project_files else LEGACY_MAX_CORPUS_BYTES):
             _fail("corpus_limit")
+        index = len(documents)
         contents.append(raw)
         documents.append(
             {
                 "path": path,
                 "url": f"https://github.com/hexanomicon/lychd/blob/{resolved}/{path}",
                 "sha256": sha256(raw).hexdigest(),
-                "file": f"{index:03}.md",
+                "file": f"{index:04}.txt" if project_files else f"{index:03}.md",
             }
         )
+    manifest = CorpusManifest.model_validate(
+        {
+            "schema_version": 2 if project_files else 1,
+            "source_revision": resolved,
+            "documents": tuple(documents),
+            "omissions": tuple(omissions),
+        }
+    )
+    manifest_value = manifest.model_dump(mode="json")
+    if not project_files:
+        manifest_value.pop("omissions")
+    manifest_raw = json_bytes(manifest_value)
+    if len(manifest_raw) > MAX_CORPUS_MANIFEST_BYTES:
+        _fail("corpus_manifest_limit")
     private_directory(output)
     # The manifest is published last; an interrupted export is never admissible.
     for document, raw in zip(documents, contents, strict=True):
         write_private(output / document["file"], raw)
-    write_private(
-        output / "manifest.json", json_bytes({"schema_version": 1, "source_revision": resolved, "documents": documents})
-    )
+    write_private(output / "manifest.json", manifest_raw)
     return resolved
 
 
@@ -969,7 +1050,7 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
             else nullcontext()
         ) as observation,
     ):
-        corpus_manifest = strict_object(read_regular(args.corpus_dir / "manifest.json", CORPUS_LIMIT))
+        corpus_manifest = strict_object(read_regular(args.corpus_dir / "manifest.json", MAX_CORPUS_MANIFEST_BYTES))
         document_ids = frozenset(f"doc:{item['path']}" for item in corpus_manifest.get("documents", []))
         web_ids: frozenset[str] = (
             frozenset(f"web:{item.id}" for item in profile.research.sources) if profile is not None else frozenset()
@@ -1123,6 +1204,11 @@ def parser() -> argparse.ArgumentParser:
     export = subcommands.add_parser("export-corpus")
     export.add_argument("--output", required=True, type=Path)
     export.add_argument("--revision", default="HEAD")
+    export.add_argument(
+        "--project-files",
+        action="store_true",
+        help="explicitly admit eligible tracked public project text at the pinned revision (64 MiB/8192 paths)",
+    )
     build = subcommands.add_parser("build")
     build.add_argument("--engine", choices=("docker", "podman"), default="podman")
     build.add_argument("--images", required=True, type=Path)
@@ -1162,7 +1248,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.operation == "token":
             token_file(args.file)
         elif args.operation == "export-corpus":
-            print(json.dumps({"source_revision": export_corpus(args.output, args.revision), "path": str(args.output)}))  # noqa: T201
+            revision = export_corpus(args.output, args.revision, project_files=args.project_files)
+            print(json.dumps({"source_revision": revision, "path": str(args.output)}))  # noqa: T201
         elif args.operation == "build":
             build_images(args.engine, args.images)
         elif args.operation == "run":

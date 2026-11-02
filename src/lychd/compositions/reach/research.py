@@ -138,11 +138,19 @@ class ResearchPlan(Record):
         return self
 
 
-def research_catalogue(profile: OperatorConversationProfile, corpus: PublicCorpus) -> tuple[dict[str, str], ...]:
-    """Expose only pinned public document metadata and operator-approved public URLs."""
+def research_catalogue(
+    profile: OperatorConversationProfile, corpus: PublicCorpus, request: ReachWorkerRequest | None = None
+) -> tuple[dict[str, str], ...]:
+    """Offer at most sixteen retrieved document identities and approved web metadata."""
     if not profile.research.enabled:
         return ()
-    return research_document_catalogue(corpus) + tuple(
+    context = tuple(item.text for item in request.history) if request is not None else ()
+    if request is not None and request.reply_anchor is not None:
+        context += (request.reply_anchor.text,)
+    documents = research_document_catalogue(
+        corpus, question=request.event.question if request is not None else "", context=context
+    )
+    return documents + tuple(
         {"id": f"web:{source.id}", "title": source.title, "url": source.url} for source in profile.research.sources
     )
 
@@ -240,6 +248,9 @@ def synthesis_prompt(
                 {"id": item.id, "description": item.description} for item in profile.expressions.gifs if permitted
             ],
         }
+    successful_ids = [source.id for source in sources if source.status == "ok"]
+    web_sources = [source for source in sources if source.id.startswith("web:")]
+    answer_example = bool(successful_ids) and (not web_sources or any(source.status == "ok" for source in web_sources))
     while True:
         prompt = canonical_json(
             {
@@ -260,6 +271,22 @@ def synthesis_prompt(
                     "If selected web sources exist and none has status ok, choose clarify. "
                     "Do not make claims that depend on unread web evidence, even when a local document was read."
                 ),
+                "research_output_contract": {
+                    "required_keys": ["kind", "text", "citations"],
+                    "answer_citation_ids": successful_ids,
+                    "rule": (
+                        "Return one JSON object. For kind answer, citations MUST contain at least one of the "
+                        "answer_citation_ids when that list is nonempty, and may contain ONLY IDs whose read "
+                        "evidence supports the answer. For clarify, citations may be empty. Put source IDs in citations, "
+                        "not just source names in text. Text must contain no HTTP URLs. Optional reaction and "
+                        "gif_id still use only available_expressions."
+                    ),
+                    "shape_example": {
+                        "kind": "answer" if answer_example else "clarify",
+                        "text": "<your source-grounded answer>" if answer_example else "<your clarification question>",
+                        "citations": successful_ids[:1] if answer_example else [],
+                    },
+                },
                 "corpus_digest": corpus.digest,
                 **expressions,
             }
