@@ -40,7 +40,7 @@ snippets, and Mermaid are used when they clarify. Snippets stay short and use re
 | --- | --- |
 | Law | Covenants and accepted Compositions: exact decisions, invariants, failure, recovery, compatibility, consequence. |
 | Iron | Commands, config, troubleshooting, recovery: literal, copyable, observable, recoverable. |
-| Threshold | README, Prophecy, Map, State, indexes: lucid enchantment followed by a next act. |
+| Threshold | README, Prophecy, Overview, State, indexes: lucid enchantment followed by a next act. |
 | Operated doctrine | Sepulcher and Altar: anatomy joined to concrete ownership and use. |
 | Great Work | Transcendence: full mythic voltage, formative movement, correspondence, and vow. |
 

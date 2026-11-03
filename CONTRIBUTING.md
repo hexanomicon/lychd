@@ -13,7 +13,7 @@ Work](docs/state-of-the-work.md) tells you what current evidence supports; the
 
 Looking for a first contribution? Browse the [help-wanted issues](https://github.com/hexanomicon/lychd/issues?q=is%3Aissue+is%3Aopen+label%3A%22help%20wanted%22), then follow the relevant project boundary below.
 
-If you are new to the codebase, follow one request through the [Map](docs/map.md). Then choose
+If you are new to the codebase, follow one request through the [Overview](docs/map.md). Then choose
 the boundary your change crosses:
 
 | Your change concerns… | Read first |

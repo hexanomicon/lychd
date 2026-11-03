@@ -82,7 +82,7 @@ and follow the five seals of Transcendence. For the creative cycle, enter
 [Transmutation](./divination/transmutation/index.md): give an undertaking form, put it to trial,
 and carry its lesson into the next creation. These paths need no installation.
 
-To contribute, follow one request through the **[Map](./map.md)**, then use the
+To contribute, follow one request through the **[Overview](./map.md)**, then use the
 [contribution guide](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md).
 
 !!! tip "The Tongue of the Construct"

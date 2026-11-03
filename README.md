@@ -41,7 +41,7 @@ The knowledge you seek is inscribed in the **[Hexanomicon](https://hexanomicon.d
 
 The higher art of **[Assimilation](docs/adr/35-assimilation.md)** studies foreign craft and forges it anew under local law.
 
-The **[Map](docs/map.md)** shows how the project fits together.
+The **[Overview](docs/map.md)** shows how the project fits together.
 
 The **[Metamorphosis roadmap](ROADMAP.md)** follows the founding year through five books,
 beginning with the shared agentic laboratory and its first public encounters.
