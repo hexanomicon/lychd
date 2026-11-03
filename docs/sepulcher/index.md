@@ -11,7 +11,7 @@ The Sepulcher gives the [Lich](lich/index.md) a runtime body on Linux. Rootless 
 managed by systemd, house its organs; mounts and execution boundaries determine what each can
 reach. Follow these organs to see how an invocation is received, carried out, and remembered.
 
-To follow the body at work, take the [Map](../map.md): one request, from admission through
+To follow the body at work, take the [Overview](../map.md): one request, from admission through
 execution to its return.
 
 ## The Anatomy

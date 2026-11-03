@@ -1,15 +1,15 @@
 ---
-title: Map
+title: Overview
 icon: material/map-marker-path
 ---
 
-# :material-map-marker-path: Map
+# :material-map-marker-path: Overview {#map}
 
 _One body, many roads, one return._
 
 Suppose you want to turn a set of sources into a publication. You need a workflow to prepare it,
 a model or tool to carry out each step, and a record of what happened. You also need someone to
-decide whether the result is fit to publish. Follow that work through LychD below. This map
+decide whether the result is fit to publish. Follow that work through LychD below. This overview
 explains the accepted architecture; [State of Work](./state-of-the-work.md) identifies the parts
 the current revision can actually run.
 

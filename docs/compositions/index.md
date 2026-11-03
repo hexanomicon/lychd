@@ -104,6 +104,6 @@ The companion guides follow the choices involved in shaping and combining applic
 
 <span id="how-a-leaf-should-read"></span>**How a leaf should read:** [authoring criteria](choosing-a-home.md#how-a-leaf-should-read) keep each application rooted in a representative journey and falsifiable result. [Lexicon](../lexicon/index.md) owns terms; [Workflow](../adr/28-workflow.md#compositions-products-suites-and-schedules) owns their architectural law.
 
-Follow the [Map](../map.md#the-application-road) to carry an application's work through the body,
+Follow the [Overview](../map.md#the-application-road) to carry an application's work through the body,
 and [Transmutation](../divination/transmutation/index.md) to follow creation through trial,
 judgment, and return.
