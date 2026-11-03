@@ -22,8 +22,8 @@ icon: material/language-html5
   remote functions, or JavaScript production server.
 - A snapshot plus event cursor must reconstruct browser state. Connection, animation, and canvas
   layout never prove execution.
-- Canvas, Orb, Nexus, and Loom are work routes; Bridge is a shell-owned conversation panel available
-  beside every work route. Existing Bridge URLs retain explicit server fallbacks and exact session,
+- Canvas, Atlas, Orb, Nexus, and Loom are work routes; Bridge is one shell-owned conversation
+  surface, available beside work or as a full-focus page. Bridge URLs retain exact session,
   Run, consent and focused-application navigation. Generated UI is closed descriptors, never model-
   or extension-supplied HTML, JavaScript, Svelte, or imports.
 - Circle is the Invocation-shaped focus within Bridge, not a separate instrument or a claim
@@ -69,8 +69,8 @@ owns delivery.
 
 | Instrument | Browser contract | Current limit |
 | --- | --- | --- |
-| Canvas | Project creation and visual board authorship; Atlas catalogues Projects and their retained records | One primary board per Project; no live microphone, native model transport, autonomous continuation or automatic coverage. |
-| Bridge | Session selection, single-active-Run text admission, reconstruction, semantic stream, consent, closed fragments, and bounded Creation investigation intake/report focus | Partial: text only; live reconstruction and tokens are process-local. |
+| Canvas | Project creation and visual board authorship; Atlas catalogues Projects and their retained records | One primary board per Project; shared Bridge dictation is separately configured; no native model transport, autonomous continuation or automatic coverage. |
+| Bridge | Session selection, single-active-Run text admission, reconstruction, semantic stream, consent, closed fragments, and bounded Creation investigation intake/report focus | Partial: text admission and separately configured finite dictation; live reconstruction and tokens are process-local. |
 | Orb | Paged Run catalogue, parallel graph field, and bounded selected-Run evidence feeds with gaps, capture labels, and links | Partial: no complete trace store, nested subworkflow identity, or annotation. |
 | Nexus | Timestamped capability observations, non-binding plan preview, typed request, and ticket stream | Partial: observations and tickets are process-local and not restart-complete. |
 | Loom | Immutable Scroll/Pattern-revision graph and station/permission outline | Partial: fixed registry reader without independent Spell identities, editing, teaching, or publication. |
@@ -296,13 +296,15 @@ retains that boundary.
 
 #### The shared workbench and Bridge dock
 
-The top masthead presents Canvas, Orb, Loom and Nexus as icon-and-label navigation. Atlas is
-the Canvas Project catalogue, reached from the workspace. Applications
-is a bounded disclosure for other admitted applications; hover, click and keyboard
+The top masthead starts with Bridge as the primary conversation entry, immediately before Atlas,
+then Canvas, Orb, Loom and Nexus, all with icons and visible labels. Canvas and Atlas remain peer
+work destinations. Canvas uses a board icon; Atlas retains its map icon and catalogues Canvas Projects.
+Applications is a bounded disclosure for other admitted applications; hover, click and keyboard
 focus can open it, Escape dismisses it, and moving into the menu keeps it reachable. Bridge is
-an always-available conversation surface, not a competing top-level instrument tab. Existing
-`/bridge` links remain valid compatibility and focus destinations; exact session, Run, consent,
-Project, investigation and public-note intent must survive the composition change.
+an always-available conversation surface with both a dock and an ordinary `/bridge` full-focus
+page. The page shows a conversation archive beside the thread. Existing `/bridge` links remain
+exact focus destinations; session, Run, consent, Project, investigation and public-note intent
+must survive the composition change.
 
 The bare root opens Orb. A fresh wide workbench starts with Bridge open on the left; saved dock
 preferences remain in force. A fresh narrow workbench keeps the graph visible and opens Bridge
@@ -313,9 +315,23 @@ candles opens About; a permanent product wordmark is unnecessary in the masthead
 the LychD identity, version, source and licence provenance. The fixed natural-colour mark is
 decorative identity, never a connection or activity indicator.
 
-The dock's persistent edge chevron opens or collapses it; the masthead has no second toggle.
-New layouts start on the left, preserving a valid saved side. It can occupy either side and resize through a pointer or keyboard
-separator. A wide workbench allocates real width beside it; it does not cover the work. A narrow
+The dock's persistent edge chevron opens or collapses it; the masthead Bridge link opens the
+full-focus page instead of toggling the dock. The dock offers the same focus destination. Both
+presentations retain one mounted conversation, its composer and subscriptions. Full focus suppresses
+the dock modal, resizing and collapse controls without overwriting saved side, width or open state.
+Leaving full focus for a wide work view reveals that conversation as its sidebar without replacing
+the saved open preference. Narrow work views retain the edge control and modal-sheet behavior.
+Public-note and investigation destinations remain separate work views beside the dock.
+
+The conversation rail separates pinned identities from recent supplied sessions. Pins are bounded
+local browser presentation preferences containing only session IDs, never titles, content, drafts or
+authority. An unloaded pin remains an explicit identity link; displaying it does not fetch a thread.
+Archive order remains server-supplied creation order, not inferred last activity. Pinning never
+changes a session or admits an offering.
+
+New layouts start on the left, preserving a valid saved side. The dock can occupy either side and
+resize through a pointer or keyboard separator. A wide workbench allocates real width beside it;
+it does not cover the work. A narrow
 workbench uses an explicitly modal overlay with focus containment, Escape and an opener return.
 Width, side and collapsed state may be remembered as bounded local presentation preferences;
 conversation text, attachment bodies, consent and request identities do not enter that store.
@@ -340,9 +356,9 @@ ink; rectangle and semantic-list selection remain available. A selected scope is
 proposal boundary, never a model transmission or execution permission.
 
 The Altar should read as a quiet observatory. Work holds the focal point; restrained surfaces,
-typography, and fixed brand art provide identity around it. Canvas, Orb, Loom and Nexus retain
-single-word names, with Bridge always available as the conversation dock. Their distinct reading
-tasks determine their form, rather than a repeated dashboard or universal graph. No instrument
+typography, and fixed brand art provide identity around it. Canvas, Atlas, Bridge, Orb, Loom and
+Nexus retain single-word names. Bridge remains available beside the work as well as in full focus.
+Their distinct reading tasks determine their form, rather than a repeated dashboard or universal graph. No instrument
 becomes another owner of an existing action:
 
 | Instrument | Primary reading order | Role of a graph |
@@ -350,7 +366,7 @@ becomes another owner of an existing action:
 | Canvas and its Atlas catalogue | The selected Project's board, catalogue, or retained project record; concerns, assessment basis, brief and next step remain directly addressable | Freehand visual authorship on the board; an optional concern relation lens preserves decomposition, addressing, and citation distinctions. |
 | Bridge | Conversation and offered text; the exact Run's reply, consent or unresolved admission; next draft | No default graph. A future Circle composes authorized lenses around one Invocation. |
 | Orb | Parallel Run groups; selected Run and capture limits; ordered evidence; selected record; bounded delegated jobs | Zoom discloses supplied Run, station, occurrence, and record membership; declared permissions and observed records remain distinct. |
-| Nexus | Snapshot and containment; observed capabilities; explicit preview and request; ticket and physical observations | A native board remains primary. Planned evictions and launches are more useful than an inferred topology map. |
+| Nexus | Snapshot and containment; capability ownership map or equivalent list; selected properties; explicit preview and request; ticket and physical observations | Native DOM/SVG edges mean supplied Animator ownership only. Preview highlights exact planned Animator evictions and launches without asserting physical topology. |
 | Loom | Exact registered revision and entry; stations and allowed successors; selected station; immutable identity | A read-only score can explain declared branches, joins, and loops, using the same permission data as its outline. |
 
 This is the composition target, not a delivery claim or a second implementation specification.
@@ -447,6 +463,35 @@ create fresh revisions. Arrangement is bounded, respects pins and measured dimen
 during gestures and records one deliberate edit. Keyboard object controls and reduced motion
 remain equivalent ways to work. Model transport, microphone capture and generated imagery
 are separate capabilities with explicit unavailable states until independently qualified.
+
+### Bridge voice and work-target commands
+
+The shell-owned Bridge is the shared entry for bounded dictation and contextual
+commands; instruments do not create additional microphones or chat instances.
+[Audio](37-audio.md#bridge-dictation-and-corrected-text) owns recording, transcription
+and correction provenance. Transcript review remains editable, manual submission is
+the default, and any opt-in automatic send retains the existing immutable Bridge
+request and unresolved-outcome rules. An unavailable transcriber remains visibly
+unavailable rather than substituting synthetic speech or an undisclosed service.
+
+An instrument may register a closed presentation-command surface with exact target
+identity and a mount generation. A command captures that surface when invoked;
+navigation, target replacement or a stale revision cannot silently redirect it.
+Only declared commands reach existing instrument handlers. Text never becomes a DOM
+selector, arbitrary JavaScript, API path or generic tool invocation.
+
+Canvas commands may propose native node creation and selected-object changes,
+including creation on an empty scene. Such a proposal captures the complete base
+scene and exact selection, remains inert until explicit acceptance, and becomes one
+ordinary undoable document edit. Original ink and unrelated objects remain intact.
+The normal Project save contract still owns retention. Deterministic command parsing
+must be identified as such; it establishes neither free-form model interpretation nor
+image generation. Loom commands remain read-only navigation and inspection until its
+existing authoring gate is satisfied. Orb commands affect camera, filters or local
+observation-history presentation, never execution or retained timeline truth.
+
+This is the accepted integration contract. Delivery and live-speech qualification
+remain evidence-backed claims in State of Work, independently of command/UI schemas.
 
 ### Atlas and continuity across Invocations
 
@@ -620,7 +665,11 @@ schema; generated clients never infer success-only behavior for those paths.
 
 #### Snapshots, streams, and recovery
 
-Bridge is text JSON only: no voice upload, file/media admission, audio output, or streaming voice.
+Ordinary Bridge Run admission remains text JSON. The separate
+[finite dictation operation](37-audio.md#bridge-dictation-and-corrected-text)
+accepts bounded canonical WAV encoded in JSON and returns attributed text for
+review. This admits neither arbitrary file/media input into a Run, audio output
+nor streaming voice.
 Its named JSON SSE envelope carries `schema_version`, `run_id`, producer-stable `event_id`, `seq`,
 `kind`, `occurred_at`, and `payload`; kinds are `token`, `status`, `node`, `dispatch`,
 `transition`, `fragment`, `consent`, `log`, `done`, and `resync`. The server observes
@@ -839,9 +888,18 @@ read-only projections described above and any later expansion.
   They share immutable TypeScript contracts, identities, commands, selection/camera protocols,
   telemetry, folding, and a model-derived semantic twin. They do not share instrument view models,
   and shared code never lets one instrument's authority reach the other.
-- **Nexus remains a native semantic control board.** Its cards, preview, ticket, and inspector are
-  primary. The first trial for a future body map is a read-only Svelte DOM/SVG projection; it does
-  not need an editor or dense-graph engine without a measured topology requirement.
+- **Nexus remains a native semantic control board.** A read-only Svelte DOM/SVG ownership map
+  and equivalent list share selected properties, explicit preview/request, ticket and physical
+  observations. Wide views start with the map; fresh narrow views start with the list. A bounded
+  browser-local view preference may remember only that choice. The map projects supplied
+  capability-to-Animator identity, with Portals and delegated runtimes separately identified as
+  read-only observations. Coven labels remain display groups rather than physical topology.
+  Preview overlays match exact Animator identities, preserve their textual eviction/launch lists,
+  and never change observed readiness. Selection, pan, zoom and Map/List changes do not admit a
+  transition or replace a prepared request identity. Stable semantic IDs survive refresh; a missing
+  selection stays explicitly unavailable. Unknown/stale data and current-authority refusal remain
+  distinct. There is no hardware topography, configuration editor, graph editor or second dense
+  renderer without a measured requirement and corresponding authoritative contracts.
 
 Reopening requires evidence of a failed product contract. Popularity, hiring pool, model-training
 volume, community enthusiasm, articles, polls, toy examples, source-line count, bundle size and
@@ -906,7 +964,7 @@ Folding is presentation only. It never merges, omits, or reorders retained seque
 unexpanded group whose members were never served is an explicit unknown, exactly like a sequence
 gap. Bounded expansion remains a Vessel contract: authority serves what was asked for, and the
 browser holds only what it was served. Folding belongs to Loom and Orb through their shared supply;
-Nexus folds by disclosure in its own board and inherits no renderer.
+Nexus retains its native ownership map and list disclosures and inherits no shared renderer.
 Current Pattern manifests do not supply nested subworkflow or parent-Run identities. A station,
 delegated job, or shared name cannot manufacture that hierarchy; deeper nesting remains unavailable.
 

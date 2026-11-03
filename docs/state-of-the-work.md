@@ -1201,13 +1201,21 @@ ADR 15's bounded operator-palette contract is design law, not delivered configur
 
 **State:** Partial
 
-**Proved now:** The shared masthead provides icon-and-label instrument navigation, an
+**Proved now:** The shared masthead provides independent Canvas, Atlas, Bridge, Orb, Loom and
+Nexus icon-and-label destinations, with a board icon for Canvas and map icon for Atlas, plus an
 Applications menu reachable by hover, click, or keyboard. A persistent work-area edge chevron
 opens or collapses Bridge; new layouts start on the left while valid saved sides remain. One
 ordinary conversation stays mounted across work navigation and collapse, retaining exact-session
 drafts, unresolved offering identity, and live subscriptions. Explicit Bridge URLs still select
 session, Project, Run, and consent focus. Investigation and public-note applications keep their
-separate composition.
+separate composition. Ordinary `/bridge` and exact-session URLs open full focus: the same
+mounted conversation fills the work area, with one accessible main and no dock modal or resize
+controls. Full focus leaves saved dock preferences intact. The rail separates browser-local pinned
+identities from recent server-supplied sessions. Bridge is the first masthead entry, immediately
+before Atlas. Leaving full chat for a wide work view reveals the same mounted conversation as a
+sidebar without replacing saved openness; narrow work views retain their edge/modal treatment.
+Off-page pins need no speculative thread reads.
+Pins retain IDs only, at most 32, and carry no session or admission authority.
 
 The dock supports left/right placement, bounded pointer/keyboard resizing, and layout-only local
 preferences. Wide windows allocate space beside it; narrow windows provide modal focus
@@ -1216,7 +1224,7 @@ without destroying the conversation. Source-development Canvas opens that shell 
 makes no protected Bridge/status requests until an explicit connection. Production
 authentication remains intact.
 
-**Boundary — Not yet:** The dock supplies no new model context or attachment admission, voice,
+**Boundary — Not yet:** The dock supplies no new model context or attachment admission,
 global conversation merge, cross-instance history, durable browser draft storage or execution
 authority. Viewing a page is not transmitting it to a model. Browser and component checks do not
 qualify every device, bright/dim environment, forced-colour combination or the renderer's separate
@@ -1263,7 +1271,16 @@ actual stroke/connector paths and node silhouettes. The development-only source 
 status/Bridge reads until connection, allowing offline authoring without sign-in. The compiled
 application retains its authenticated shell and API boundaries.
 
-**Boundary — Not yet:** There is no native vision transmission, live microphone, automatic model
+Bridge's closed English work-command path plans native editable nodes and
+connections, including an empty board, and selected-node edits. Preview is inert;
+explicit Apply commits one ordinary undoable edit, and Project save remains
+separate. Exact target, selection and scene fences reject stale work while
+preserving unrelated objects and source ink. Focused synthetic tests cover
+corrected text, command preview, Apply, Undo/Redo and document reopening. Actual
+microphone/model quality remains unqualified under the separate
+[dictation boundary](#audio-admission).
+
+**Boundary — Not yet:** There is no native vision transmission, automatic model
 interpretation, generated-art engine, collaborative editing, registered
 Canvas Pattern or Invocation. The example proposal is manually authored by Codex from a captured
 selection and imported; it is not a live inference receipt. Local PNG envelope validation does
@@ -1274,6 +1291,8 @@ survives process restart only in the PostgreSQL profile; disposable memory does 
 
 **Evidence**
 
+- **Source:** [Canvas command planner](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/canvas/commands.ts) and [exact work-target registry](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/bridge/work-commands.ts).
+- **Verification:** [Closed command tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/canvas/commands.test.ts) and [synthetic voice-to-command journey](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/bridge/voice/acceptance.test.ts).
 - **Source:** [Canvas records](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/canvas/schemas.py), [pure review](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/canvas/operations.py), [stateless API](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/canvas.py), [client engine](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/canvas/engine.ts), and [Canvas surface](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/CanvasView.svelte)
 - **Verification:** [Domain and parity tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_canvas.py), [HTTP admission tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_canvas.py), [client engine tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/canvas/engine.test.ts), [gesture/review tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/canvas/CanvasView.test.ts), [offline preview test](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/routes/canvas/layout.test.ts), and [manual model example](https://github.com/hexanomicon/lychd/blob/main/examples/canvas/README.md)
 - **Verification:** [Workspace domain](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/web/test_canvas_workspace.py), [PostgreSQL retention](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_atlas_pg.py), and [workspace client recovery](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/CanvasWorkspace.test.ts)
@@ -1443,6 +1462,14 @@ unknown outcome's UUID, and navigation guards protect in-flight or unresolved ad
 accidental discard.
 
 Capability disclosures show served health, warmth, and reason independently of the compact chip.
+The native ownership map and equivalent grouped list share selected-object properties. Stable
+namespaced IDs distinguish Animators, managed capabilities, Portals and delegated runtime pools;
+edges show only supplied managed capability ownership. Exact planned Animator evictions and
+launches are labeled on matching objects while full plan identities remain textual. Map/List,
+selection, pan and zoom do not admit a transition or replace a request identity. Properties follow
+fresh snapshots; missing selections remain unavailable, stale observations lose active emphasis,
+and current-authority refusal removes protected projections while preserving local unresolved
+request identities. Only the bounded map/list preference enters browser storage.
 Preview loading belongs to its target, and closing the preview fences late responses. Full
 uncertain request identities remain visible; selecting another preview preserves the previous
 ticket. Containment and no-op conditions explicitly disable the transition action.
@@ -1450,12 +1477,15 @@ ticket. Containment and no-op conditions explicitly disable the transition actio
 **Boundary — Not yet:** Only request admission is durable. Transition observations lack a durable
 owner, complete history, cross-process projection, restart recovery, and production-browser
 receipt. Durable admission prevents duplicate launch, but a lost ticket cannot prove the outcome
-or resume safely; retry refuses to relaunch it.
+or resume safely; retry refuses to relaunch it. The ownership view supplies no GPU/VRAM or physical
+topology measurement and no configuration editor.
 
 **Evidence**
 
 - **Source:** [Nexus controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/nexus.py)
 - **Verification:** [Nexus tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_nexus.py) and [client transition tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/NexusView.test.ts)
+- **Source:** [Native ownership map](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/NexusMap.svelte), [typed projection](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/nexus/map.ts), and [selected properties](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/NexusProperties.svelte)
+- **Verification:** [Projection identity/impact tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/nexus/map.test.ts) and [native camera/selection tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/NexusMap.test.ts)
 - **Law:** [Frontend](./adr/15-frontend.md)
 
 ### Loom workflow instrument {#loom-workflow-views}
@@ -2734,6 +2764,23 @@ A separate trusted Echo helper consumes retained bytes through the explicit
 quarantine-inspection authority, needs a separate admission decision, and obtains fresh read
 authority before consuming an admitted payload.
 
+Bridge has a separate optional finite dictation path: shell-owned browser PCM
+capture, authenticated bounded JSON acquisition, an exact CPU whisper.cpp small
+adapter, owner-scoped attempts, original transcript provenance, optional private
+corrections and separately approved vocabulary suggestions. Unknown outcomes
+recover by GET without redispatch. Voice history includes attempts without saved
+corrections and offers read-only inspection and deletion. PostgreSQL admission
+resamples time after the owner lock; zero raw-audio retention never persists WAV.
+Current authority, private logging suppression, bounded retention and deletion
+apply independently of whether fresh transcription is configured.
+
+Migrations `0025` and `0026` add attempts and vocabulary retention, with downgrade
+guards refusing retained records. Focused synthetic tests exercise capture,
+transcription, correction and history boundaries. No production migration
+application is established. Mocked capture, synthetic PCM and injected
+transcription do not establish a live microphone, model availability, recognition
+accuracy, language quality or runtime latency.
+
 An explicitly invoked local engineering probe's version 1 profile pins one literal-loopback audio.cpp batch endpoint,
 runtime revision, separate model digests and declared languages. It sends inspected canonical WAV
 and retains attributed transcript facts, or requests a stock voice and inspects bounded generated
@@ -2759,7 +2806,8 @@ Synthetic tests exercise this process boundary; no live listening receipt is est
 
 **Boundary — Not yet:** Structural inspection proves neither speech, consent nor provider
 compatibility. Custody helpers remain separate from provider use; the engineering probe issues no
-Animator grant and supplies no native Bridge audio admission, live device qualification, hosted provider,
+Animator grant. The bounded Bridge operation does not qualify live devices,
+the exact speech service or general native STT/TTS admission. There is no hosted provider,
 streaming socket, resonance buffer, selectable Echo extension or Audio Coven.
 
 **Evidence**
@@ -2772,6 +2820,10 @@ streaming socket, resonance buffer, selectable Echo extension or Audio Coven.
 - **Source:** [Explicit finite player](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/voice_playback.py)
 - **Verification:** [Player ownership, expiry and cancellation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_voice_playback.py)
 - **Topic:** [Local qualification](./sepulcher/extensions/echo-local-probe.md)
+
+- **Source:** [Dictation profile](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/dictation.py), [attempt service](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/dictation_service.py), [protected API](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/dictation.py), [CPU adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/dictation_transcriber.py), [retained attempts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/dictation.py), [private vocabulary](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/dictation_lexicon.py).
+- **Verification:** [API tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_dictation.py), [attempt history tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_dictation_history.py), [vocabulary tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_dictation_lexicon.py), [store tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/db/test_dictation.py), [voice controls](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeVoiceInput.test.ts), [history and corrections](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/DictationFeedback.test.ts), [synthetic command journey](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/bridge/voice/acceptance.test.ts).
+- **Topic:** [Bridge dictation](./divination/altar/bridge.md#dictate-and-review)
 - **Law:** [Audio](./adr/37-audio.md)
 
 ### Artifact references and local custody {#artifact-reference-contract}

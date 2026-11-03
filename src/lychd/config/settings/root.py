@@ -40,6 +40,13 @@ class _SettingsValues(SettingsSection):
         _ = self.archive_profile
         return self
 
+    @model_validator(mode="after")
+    def _dictation_persistence(self) -> _SettingsValues:
+        if self.server.web.dictation is not None and self.server.database.profile != "postgres":
+            msg = "Configured dictation requires PostgreSQL persistence."
+            raise ValueError(msg)
+        return self
+
     @property
     def archive_profile(self) -> ArchiveProfile | None:
         legacy = self.weaver.bridge.archive if self.weaver.bridge is not None else None

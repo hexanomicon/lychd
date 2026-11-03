@@ -28,9 +28,12 @@ and optionally capture a finite
 utterance through a separately invoked Linux recorder helper. Explicit Horizon and companion lab
 entries can select bounded local playback after capture, with owned player-group settlement and
 distinct player-exit facts. These helpers issue no native speech grant or playback receipt.
-Bridge does not forward audio modality into dispatch. No
-credential-backed audio admission, speech timeline, streaming transport, native STT/TTS grant,
-selectable Echo extension, or Audio Coven ships. [State of
+Bridge implements the separately configured finite dictation operation below;
+its text result may enter ordinary Bridge admission after review. It does not
+forward audio modality into dispatch. General credential-backed STT/TTS grants,
+a speech timeline, streaming transport, a selectable Echo extension and an Audio
+Coven remain unavailable. Browser microphone operation and the exact live
+binary/model pair still require qualification. [State of
 Work](../state-of-the-work.md#audio-admission) owns this boundary and the
 [local custody limits](../state-of-the-work.md#artifact-reference-contract).
 
@@ -102,6 +105,51 @@ or Translation an ambient feature. Language Edition may alter only declared lang
 master; Broadcast retains editorial recutting, final assembly, and publication.
 
 ## Capture and custody
+
+### Bridge dictation and corrected text
+
+Bridge dictation is a separate, explicitly configured record-and-transcribe operation.
+It does not convert the engineering probe into an ambient Ear or relax the general
+Dispatcher's closed STT/TTS grant boundary. Its optional `server.web.dictation`
+profile admits only an already-running literal-loopback `whisper.cpp-batch-v1`
+service with the `whisper-small` family, CPU backend and `cpu` or `host` device.
+It pins runtime revision, model declaration and digest, language and finite resource
+bounds. Omission makes dictation unavailable. Discovery starts no runtime, downloads
+no model, and performs no inference. Browser-managed speech services and automatic
+provider fallback are outside this profile.
+
+One explicit microphone gesture admits one recording of at most 30 seconds. The browser converts
+the observed device sample rate into the canonical PCM subset, bounds acquisition,
+and releases tracks on stop, cancellation, permission loss or teardown. The authenticated
+server independently bounds and inspects supplied bytes before invoking the configured
+transcriber. Immutable source identity, owner, profile, language and attempt identity
+precede that effect. Reusing an attempt with different material is refused; an unknown
+attempt is not automatically executed again. Cancellation of local waiting does not
+prove that the transcription server stopped its computation. A fresh attempt uses
+UUIDv7. The owner-scoped unknown record is committed before external dispatch;
+recovery reads that exact attempt without repeating inference. Durable admission
+samples current time after acquiring the owner lock, so waiting cannot preserve
+an expired admission window.
+
+The attributed original transcript remains distinct from the operator's edited text.
+Manual submission is the default. Opt-in automatic submission pins the utterance,
+conversation, draft and work-target generations; typing, navigation, cancellation or
+unresolved prior admission revokes it. Automatic text submission never accepts an
+instrument proposal or grants workflow or physical execution authority.
+
+Private correction records preserve original observation lineage and the exact human
+revision under the authenticated owner, with bounded retention and deletion. Raw audio
+retention has its own bound. Zero raw-audio retention permits invocation-lifetime
+memory custody only: WAV bytes must never be persisted, even transiently in a
+committed row. A surviving digest does not establish that source bytes remain available. Neither browser localStorage, generic telemetry, public
+Archive notes nor a Graph event is a private correction store. An edit does not
+automatically become a replacement rule. A separately approved, language-scoped
+vocabulary entry may produce an inspectable text suggestion. This is personalization;
+training and weight promotion still require [Training](33-training.md) admission.
+
+This bounded operation does not open general Dispatcher STT/TTS admission. [State of Work](../state-of-the-work.md#audio-admission)
+records implemented and exercised boundaries; shape validation or synthetic transcripts
+cannot qualify microphone operation, speech accuracy or live runtime latency.
 
 An explicit engineering qualification probe may exercise the selected local runtime before a
 native Ear or Voice is admitted. Its fixed literal-loopback dialect, model identity, bounded

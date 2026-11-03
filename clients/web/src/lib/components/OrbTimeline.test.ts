@@ -148,4 +148,17 @@ describe("Orb tab timeline", () => {
     await act(() => vi.advanceTimersByTime(5000));
     expect(seek).toHaveBeenCalledTimes(2);
   });
+
+  it("cancels playback on an explicit external command even when the cursor stays the same", async () => {
+    vi.useFakeTimers();
+    const seek = vi.fn();
+    const view = render(OrbTimeline, { frames: history(), cursorId: 1, controlRevision: 0, onseeking: seek, onlive: vi.fn() });
+    await fireEvent.click(screen.getByRole("button", { name: "Play captured updates" }));
+    expect(vi.getTimerCount()).toBe(1);
+    await view.rerender({ controlRevision: 1 });
+    expect(vi.getTimerCount()).toBe(0);
+    await act(() => vi.advanceTimersByTime(5000));
+    expect(seek).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
 });

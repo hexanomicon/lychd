@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { blankDocument, exampleDocument } from "$lib/canvas/engine";
 import type { Document as BoardDocument, Packet, Proposal } from "$lib/canvas/types";
+import { createWorkCommandRegistry, workCommandKey } from "$lib/bridge/work-commands";
 import CanvasSurface from "./CanvasSurface.svelte";
 import CanvasView from "../CanvasView.svelte";
 
@@ -203,5 +204,179 @@ describe("Canvas native authoring", () => {
     await screen.findByRole("alert");
     expect((screen.getByLabelText("Board title") as HTMLInputElement).value).toBe(exampleDocument().scene.title);
     expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("Canvas Bridge command review", () => {
+  function commandBoard(document = blankDocument()) {
+    const registry = createWorkCommandRegistry(), onchange = vi.fn(), onbusy = vi.fn();
+    const view = render(CanvasView, { props: { initialDocument: document, onchange, onbusy }, context: new Map([[workCommandKey, registry]]) });
+    return { registry, onchange, onbusy, view };
+  }
+
+  it("previews a blank-board graph inertly, applies once, and retains atomic Undo/Redo in the portable board", async () => {
+    const document = blankDocument();
+    const { registry, onchange, onbusy } = commandBoard(document);
+    const target = registry.capture();
+    expect(target).toMatchObject({ instrument: "canvas", id: document.scene.id, label: document.scene.title, selectionKey: "[]" });
+    expect(target?.commands).toContain("arrange selected");
+    await act(async () => {
+      expect((await registry.execute("add node Vessel then add database Postgres then connect Vessel to Postgres.", target)).status).toBe("preview");
+    });
+    expect(screen.getByRole("region", { name: "Proposal review" }).textContent).toContain("Local command helper");
+    expect(onbusy).toHaveBeenLastCalledWith(true);
+    expect(onchange).not.toHaveBeenCalled();
+    expect(downloads).toHaveLength(0);
+    expect((await downloadBoard()).scene).toEqual(document.scene);
+    const apply = screen.getByRole("button", { name: "Apply change" });
+    await act(() => { apply.click(); apply.click(); });
+    expect(onchange).toHaveBeenCalledTimes(1);
+    expect(onbusy).toHaveBeenLastCalledWith(false);
+    const applied = onchange.mock.calls[0]![0] as BoardDocument;
+    expect(applied.scene.nodes.map((node) => node.label)).toEqual(["Vessel", "Postgres"]);
+    expect(applied.scene.edges).toHaveLength(1);
+    expect(applied.scene.revision).toBe(document.scene.revision + 1);
+    expect(applied.past).toHaveLength(1);
+    expect(registry.isCurrent(target)).toBe(false);
+    await fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect((await downloadBoard()).scene.nodes).toEqual([]);
+    await fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    const saved = await downloadBoard();
+    expect(saved.scene.nodes).toEqual(applied.scene.nodes);
+    expect(saved.scene.edges).toEqual(applied.scene.edges);
+    await fireEvent.change(screen.getByLabelText("Open board document"), { target: { files: [jsonFile(saved)] } });
+    await waitFor(() => expect(screen.getByText(/Opened import.json/)).toBeTruthy());
+    expect((await downloadBoard()).scene).toEqual(saved.scene);
+  });
+
+  it("exposes proposed labels and unlabeled connection endpoints for read-only review before Reject", async () => {
+    const document = blankDocument();
+    const { registry, onchange } = commandBoard(document);
+    await act(async () => { await registry.execute("add node Vessel then add database Postgres then connect Vessel to Postgres", registry.capture()); });
+    const review = screen.getByRole("region", { name: "Proposal review" });
+    const nodes = within(review).getByRole("list", { name: "Proposed nodes" });
+    expect(within(nodes).getByText(/Vessel · box · position/)).toBeTruthy();
+    expect(within(nodes).getByText(/Postgres · database · position/)).toBeTruthy();
+    const connections = within(review).getByRole("list", { name: "Proposed connections" });
+    expect(within(connections).getByText("From Vessel to Postgres · Unlabeled connection")).toBeTruthy();
+    expect(within(nodes).queryByRole("textbox")).toBeNull();
+    expect(within(connections).queryByRole("button")).toBeNull();
+    expect(onchange).not.toHaveBeenCalled();
+    expect((await downloadBoard()).scene).toEqual(document.scene);
+    await fireEvent.click(within(review).getByRole("button", { name: "Reject" }));
+    expect(screen.queryByRole("list", { name: "Proposed nodes" })).toBeNull();
+    expect(onchange).not.toHaveBeenCalled();
+    expect((await downloadBoard()).scene).toEqual(document.scene);
+  });
+
+  it("preserves unrelated ink through rejected and applied commands and refuses undeclared grammar", async () => {
+    const document = exampleDocument();
+    const { registry, onchange, onbusy } = commandBoard(document);
+    await act(async () => {
+      expect((await registry.execute("delete everything", registry.capture())).status).toBe("unsupported");
+    });
+    expect(screen.queryByRole("region", { name: "Proposal review" })).toBeNull();
+    expect(onchange).not.toHaveBeenCalled();
+    await act(async () => { await registry.execute("add service Worker", registry.capture()); });
+    await fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    expect(onchange).not.toHaveBeenCalled();
+    expect(onbusy).toHaveBeenLastCalledWith(false);
+    expect((await downloadBoard()).scene).toEqual(document.scene);
+    await act(async () => { await registry.execute("add service Worker", registry.capture()); });
+    await fireEvent.click(screen.getByRole("button", { name: "Apply change" }));
+    const applied = onchange.mock.calls[0]![0] as BoardDocument;
+    expect(applied.scene.strokes).toEqual(document.scene.strokes);
+    expect(applied.scene.nodes.slice(0, document.scene.nodes.length)).toEqual(document.scene.nodes);
+    await fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    const restored = await downloadBoard();
+    expect(restored.scene.strokes).toEqual(document.scene.strokes);
+    expect(restored.scene.nodes).toEqual(document.scene.nodes);
+  });
+
+  it("fences selection A to B to A synchronously, then permits a fresh selected-node command", async () => {
+    const document = exampleDocument();
+    const { registry, onchange } = commandBoard(document);
+    const list = await objectList();
+    const target = registry.capture();
+    const row = within(list).getByText("Illustrative context").closest("li")!;
+    const checkbox = within(row).getByRole("checkbox");
+    await act(() => { checkbox.click(); checkbox.click(); });
+    expect(registry.current()?.selectionKey).toBe("[]");
+    expect((await registry.execute("add node Stale", target)).status).toBe("stale");
+    expect(onchange).not.toHaveBeenCalled();
+    await selectObject(list, "Illustrative context");
+    expect(registry.current()?.selectionKey).toBe(JSON.stringify([document.scene.nodes[0]!.id]));
+    await act(async () => { expect((await registry.execute("rename selected to Current context", registry.capture())).status).toBe("preview"); });
+    await fireEvent.click(screen.getByRole("button", { name: "Apply change" }));
+    expect((onchange.mock.calls[0]![0] as BoardDocument).scene.nodes[0]!.label).toBe("Current context");
+  });
+
+  it("blocks commands during a gesture, fences completed ink, and ignores camera-only movement", async () => {
+    const { registry, onchange } = commandBoard();
+    const target = registry.capture();
+    const svg = screen.getByRole("application", { name: "Canvas drawing surface" });
+    await fireEvent.wheel(svg, { deltaX: 10, deltaY: 20 });
+    expect(registry.isCurrent(target)).toBe(true);
+    await fireEvent.click(screen.getByRole("button", { name: "Draw tool (D)" }));
+    await fireEvent(svg, pointer("pointerdown", 170, 180));
+    await act(async () => { expect((await registry.execute("add node During ink", target)).status).toBe("unavailable"); });
+    expect(screen.queryByRole("region", { name: "Proposal review" })).toBeNull();
+    await fireEvent(svg, pointer("pointermove", 210, 200));
+    await fireEvent(svg, pointer("pointerup", 210, 200));
+    expect(onchange).toHaveBeenCalledTimes(1);
+    expect((await registry.execute("add node Old revision", target)).status).toBe("stale");
+  });
+
+  it("revalidates Apply after history or shell invalidation and never commits a stale preview", async () => {
+    const { registry, onchange } = commandBoard();
+    await fireEvent.click(screen.getByRole("button", { name: "Add your first node" }));
+    await act(async () => { await registry.execute("add node Preview", registry.capture()); });
+    await fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect((screen.getByRole("button", { name: "Apply change" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(onchange).toHaveBeenCalledTimes(2);
+    await fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    await act(async () => { await registry.execute("add node Invalidated", registry.capture()); });
+    await act(() => registry.invalidate());
+    expect((screen.getByRole("button", { name: "Apply change" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("Stale preview")).toBeTruthy();
+    expect(onchange).toHaveBeenCalledTimes(2);
+    await fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    expect((await downloadBoard()).scene.nodes).toEqual([]);
+  });
+
+  it("fences same-document import and new-board replacement and unregisters on unmount", async () => {
+    const document = blankDocument();
+    const { registry, view } = commandBoard(document);
+    const beforeImport = registry.capture();
+    await fireEvent.change(screen.getByLabelText("Open board document"), { target: { files: [jsonFile(document)] } });
+    await waitFor(() => expect(screen.getByText(/Opened import.json/)).toBeTruthy());
+    expect(registry.current()?.id).toBe(document.scene.id);
+    expect(registry.isCurrent(beforeImport)).toBe(false);
+    const beforeNew = registry.capture();
+    await fireEvent.click(screen.getByRole("button", { name: "Blank board" }));
+    expect(registry.isCurrent(beforeNew)).toBe(false);
+    const beforeUnmount = registry.capture();
+    view.unmount();
+    expect(registry.current()).toBeNull();
+    expect((await registry.execute("add node Gone", beforeUnmount)).status).toBe("stale");
+  });
+
+  it("does not let an older Canvas cleanup clear a newly mounted target", () => {
+    const registry = createWorkCommandRegistry(), document = blankDocument();
+    const first = render(CanvasView, { props: { initialDocument: document }, context: new Map([[workCommandKey, registry]]) });
+    const old = registry.capture();
+    render(CanvasView, { props: { initialDocument: document }, context: new Map([[workCommandKey, registry]]) });
+    const current = registry.capture();
+    first.unmount();
+    expect(registry.isCurrent(old)).toBe(false);
+    expect(registry.isCurrent(current)).toBe(true);
+  });
+
+  it("makes the closed English command vocabulary discoverable in existing help", async () => {
+    commandBoard();
+    await fireEvent.click(screen.getByRole("button", { name: /^How this works/ }));
+    expect(screen.getByText(/English Canvas commands/).textContent).toContain("add node Vessel then add database Postgres then connect Vessel to Postgres");
+    expect(screen.getByText(/Commands never save automatically/)).toBeTruthy();
   });
 });

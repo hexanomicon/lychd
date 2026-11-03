@@ -8,6 +8,31 @@ const children = createRawSnippet(() => ({ render: () => '<div><button type="but
 beforeEach(() => { vi.stubGlobal("PointerEvent", MouseEvent); vi.stubGlobal("innerWidth", 1280); localStorage.clear(); vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false }))); });
 afterEach(() => { vi.unstubAllGlobals(); });
 
+it("uses a normal main in narrow full focus without trapping keys or changing saved dock layout", async () => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+  localStorage.setItem(bridgeDockStorageKey, JSON.stringify({ width: 536, side: "right", open: false }));
+  const view = render(BridgeDock, { children, focused: true });
+  await act(() => Promise.resolve());
+  const draft = screen.getByLabelText("Retained draft");
+  expect(screen.getByRole("main").id).toBe("altar-main");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByRole("separator")).toBeNull();
+  expect(screen.queryByRole("button", { name: /Bridge/ })).toBeNull();
+  draft.focus();
+  const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+  window.dispatchEvent(escape);
+  expect(escape.defaultPrevented).toBe(false);
+  const tab = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+  window.dispatchEvent(tab);
+  expect(tab.defaultPrevented).toBe(false);
+  expect(document.activeElement).toBe(draft);
+  expect(JSON.parse(localStorage.getItem(bridgeDockStorageKey)!)).toEqual({ width: 536, side: "right", open: false });
+  await view.rerender({ children, focused: false });
+  expect(screen.getByRole("button", { name: "Expand Bridge" })).toBeTruthy();
+  expect(document.querySelector("textarea")).toBe(draft);
+  view.unmount();
+});
+
 it("bounds keyboard width, switches sides, and stores layout fields only", async () => {
   const view = render(BridgeDock, { children });
   const separator = screen.getByRole("separator", { name: "Bridge width" });
@@ -127,5 +152,41 @@ it("starts on the left when no side has been saved and still allows docking righ
   await fireEvent.click(screen.getByRole("button", { name: "Dock Bridge right" }));
   expect(toggle.closest(".dock-shell")?.classList.contains("dock-left")).toBe(false);
   expect(toggle.textContent).toBe(">>");
+  view.unmount();
+});
+
+it.each(["button", "escape", "backdrop"] as const)("suspends voice synchronously before %s hides the dock without replacing its draft", async (action) => {
+  if (action !== "button") vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+  const onsuspend = vi.fn(() => {
+    expect(document.querySelector(".dock-frame")?.hasAttribute("hidden")).toBe(false);
+  });
+  const view = render(BridgeDock, { children, forceOpen: true, onsuspend });
+  await act(() => Promise.resolve());
+  const draft = screen.getByLabelText("Retained draft") as HTMLTextAreaElement;
+  draft.value = "Preserve this draft";
+  await act(() => {
+    if (action === "escape") window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    else screen.getByRole("button", { name: action === "button" ? "Collapse Bridge" : "Close Bridge overlay" }).click();
+    // The callback has run before the next Svelte rendering turn.
+    expect(onsuspend).toHaveBeenCalledOnce();
+  });
+  expect(document.querySelector(".dock-frame")?.hasAttribute("hidden")).toBe(true);
+  expect(document.querySelector("textarea")).toBe(draft);
+  await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
+  expect(screen.getByLabelText("Retained draft")).toBe(draft);
+  expect(draft.value).toBe("Preserve this draft");
+  expect(onsuspend).toHaveBeenCalledOnce();
+  view.unmount();
+});
+
+it("keeps full-focus voice active when restoring a collapsed dock preference", async () => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+  localStorage.setItem(bridgeDockStorageKey, JSON.stringify({ width: 440, side: "left", open: false }));
+  const onsuspend = vi.fn();
+  const view = render(BridgeDock, { children, focused: true, onsuspend });
+  await act(() => Promise.resolve());
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(onsuspend).not.toHaveBeenCalled();
+  expect(document.querySelector(".dock-frame")?.hasAttribute("hidden")).toBe(false);
   view.unmount();
 });

@@ -3,7 +3,9 @@
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
   import { navigationId, orbReturnHref, loomOriginHref } from "$lib/navigation/instruments";
-  import { onDestroy, tick } from "svelte";
+  import { getContext, onDestroy, tick, untrack } from "svelte";
+  import { workCommandKey, type CommandTarget, type CommandResult, type WorkCommandRegistry } from "$lib/bridge/work-commands";
+  import { parseLoomCommand } from "$lib/graph/loom-commands";
   import { MediaQuery } from "svelte/reactivity";
   import { loomProjection } from "$lib/graph/loom";
   import { matchesOrbPattern } from "$lib/graph/orb";
@@ -24,6 +26,10 @@
     patternId?: string;
     revision?: string;
   } = $props();
+  const workCommands = getContext<WorkCommandRegistry | undefined>(workCommandKey);
+  let unregisterCommands: (() => void) | undefined;
+  let focusId = $state<string | null>(null);
+  let focusRevision = $state(0);
   let catalogue = $state.raw<LoomSummary[]>([]);
   let view = $state.raw<LoomProjection | null>(null);
   let sourceRun = $state.raw<OrbRunSnapshot | null>(null);
@@ -54,40 +60,102 @@
   let returnHref = $derived(sourceRun ? orbReturnHref(sourceRun.run.run_id, page.url.search) : null);
 
   $effect(() => {
-    void load(patternId, revision, sourceRunId, sourceRunHint);
+    const request = [patternId, revision, sourceRunId, sourceRunHint] as const;
+    untrack(() => { void load(...request); });
   });
 
   onDestroy(() => {
     loadVersion++;
+    unregisterCommands?.();
+    unregisterCommands = undefined;
   });
 
   function stationId(key: string) {
     return `${uid}-station-${encodeURIComponent(key)}`;
   }
 
+  function setCanvasLevel(level: "pattern" | "stations") {
+    canvasLevel = level;
+    workCommands?.refresh();
+  }
+
   function zoomLevel(zoom: number) {
-    if (canvasLevel === "stations" && zoom < 0.55) canvasLevel = "pattern";
-    else if (canvasLevel === "pattern" && zoom > 0.85) canvasLevel = "stations";
+    if (canvasLevel === "stations" && zoom < 0.55) setCanvasLevel("pattern");
+    else if (canvasLevel === "pattern" && zoom > 0.85) setCanvasLevel("stations");
   }
 
   async function selectCanvasNode(key: string, opener?: HTMLElement) {
     if (canvasLevel === "pattern") {
       const version = loadVersion;
-      canvasLevel = "stations";
+      setCanvasLevel("stations");
       await tick();
       if (version === loadVersion) document.getElementById(`${uid}-station-title`)?.focus();
     } else await inspectStation(key, opener);
   }
 
-  async function inspectStation(key: string, opener?: HTMLElement) {
-    if (!nodesByKey.has(key)) return;
+  async function inspectStation(key: string, opener?: HTMLElement, command?: "inspect" | "focus") {
+    if (!nodesByKey.has(key)) return false;
     const version = loadVersion;
     selectedKey = key;
     stationOpener = opener ? { key, element: opener } : null;
-    await tick();
-    if (version === loadVersion && selectedKey === key) {
-      document.getElementById(`${uid}-station-title`)?.focus();
+    if (command) {
+      canvasLevel = "stations";
+      outlineMode = "open";
+      if (command === "focus") {
+        focusId = key;
+        focusRevision++;
+      }
     }
+    if (command) {
+      // The inspector heading is already mounted. Focus in this same guarded
+      // turn; its label updates with selection without a new post-mutation token.
+      document.getElementById(`${uid}-station-title`)?.focus();
+      workCommands?.refresh();
+      return true;
+    }
+    workCommands?.refresh();
+    await tick();
+    if (version !== loadVersion || selectedKey !== key) return false;
+    document.getElementById(`${uid}-station-title`)?.focus();
+    return true;
+  }
+
+  function registerCommands(loaded: LoomProjection, version: number) {
+    if (!workCommands) return;
+    const id = JSON.stringify([loaded.pattern_id, loaded.revision]);
+    const snapshot = () => {
+      if (loading || error || view !== loaded || version !== loadVersion ||
+          (patternId && patternId !== loaded.pattern_id) ||
+          (revision && revision !== loaded.revision)) throw new Error("Loom target is unavailable");
+      return {
+        revisionKey: JSON.stringify([loaded.pattern_id, loaded.revision, loaded.digest, version, sourceRunHint]),
+        selectionKey: JSON.stringify([selectedKey, canvasLevel, outlineMode, focusRevision]),
+        commands: ["inspect STATION", "focus STATION", "show pattern", "show stations"]
+      };
+    };
+    const execute = async (text: string, captured: CommandTarget): Promise<CommandResult> => {
+      const current = () => version === loadVersion && view === loaded &&
+        captured.instrument === "loom" && captured.id === id && workCommands.isCurrent(captured);
+      if (!current()) return { status: "stale", summary: "The Loom Pattern or selection changed. Capture it again." };
+      const command = parseLoomCommand(text, loaded.nodes);
+      if (command.kind === "unsupported") return { status: "unsupported", summary: command.summary };
+      await tick();
+      if (!current()) return { status: "stale", summary: "The Loom Pattern or selection changed. Capture it again." };
+      if (command.kind === "station") {
+        const focused = await inspectStation(command.key, undefined, command.action);
+        if (!focused) return { status: "stale", summary: "Loom inspection changed before focus could settle." };
+        return { status: "applied", summary: `Inspecting station ${command.key} in ${loaded.pattern_id}@${loaded.revision}. Read-only presentation.` };
+      }
+      if (command.level === "stations") outlineMode = "open";
+      // This heading remains mounted across graph levels, so focus and level
+      // change are one synchronous presentation operation after validation.
+      document.getElementById(`${uid}-graph-title`)?.focus();
+      setCanvasLevel(command.level);
+      return { status: "applied", summary: `Showing ${command.level} in ${loaded.pattern_id}@${loaded.revision}. Read-only presentation.` };
+    };
+    unregisterCommands = workCommands.register({
+      instrument: "loom", id, label: `Loom · ${loaded.pattern_id}@${loaded.revision}`, snapshot, execute
+    });
   }
 
   async function returnToStation() {
@@ -98,6 +166,7 @@
       return;
     }
     outlineMode = "open";
+    workCommands?.refresh();
     const key = selectedKey;
     const version = loadVersion;
     await tick();
@@ -113,6 +182,10 @@
     requestedHint?: string | null
   ) {
     const version = ++loadVersion;
+    unregisterCommands?.();
+    unregisterCommands = undefined;
+    focusId = null;
+    focusRevision = 0;
     loading = true;
     error = "";
     view = null;
@@ -139,6 +212,9 @@
       if (!selected) return;
       const next = await getLoomPatternRevision(selected.pattern_id, selected.revision);
       if (version !== loadVersion) return;
+      if (next.pattern_id !== selected.pattern_id || next.revision !== selected.revision) {
+        throw new Error("The registry returned a different Pattern revision.");
+      }
       view = next;
       selectedKey = next.nodes.find((node) => node.key === next.entry_node)?.key ?? next.nodes[0]?.key ?? null;
       const originMatches =
@@ -166,7 +242,10 @@
         error = cause instanceof Error ? cause.message : "The Loom cannot be read.";
       }
     } finally {
-      if (version === loadVersion) loading = false;
+      if (version === loadVersion) {
+        loading = false;
+        if (view && !error) registerCommands(view, version);
+      }
     }
   }
 </script>
@@ -230,27 +309,31 @@
         <div class="loom-graph-column">
           <section class="loom-canvas-panel" aria-labelledby={`${uid}-graph-title`}>
             <header class="loom-section-head">
-              <h3 id={`${uid}-graph-title`}>Pattern graph</h3>
+              <h3 id={`${uid}-graph-title`} tabindex="-1">Pattern graph</h3>
               <p>{graph.nodes.length} stations · {graph.edges.length} permissions</p>
             </header>
             <div class="loom-levels" role="group" aria-label="Graph detail">
-              <button type="button" aria-pressed={canvasLevel === "pattern"} onclick={() => (canvasLevel = "pattern")}>Whole Pattern</button>
+              <button type="button" aria-pressed={canvasLevel === "pattern"} onclick={() => setCanvasLevel("pattern")}>Whole Pattern</button>
               <span aria-hidden="true">/</span>
-              <button type="button" aria-pressed={canvasLevel === "stations"} onclick={() => (canvasLevel = "stations")}>Stations</button>
+              <button type="button" aria-pressed={canvasLevel === "stations"} onclick={() => setCanvasLevel("stations")}>Stations</button>
               <span class="loom-level-hint">{canvasLevel === "pattern" ? "Zoom in to reveal stations" : "Zoom out to fold the Pattern"}</span>
             </div>
             <div class="loom-flow-mount">
               {#if canvasGraph.nodes.length}
-                <GraphCanvas projection={canvasGraph} selectedId={canvasSelectedId} onselect={selectCanvasNode} onzoom={zoomLevel} label={`${view.title} Pattern graph`} --graph-height="clamp(29rem, 59vh, 48rem)" />
+                <GraphCanvas {focusId} {focusRevision} projection={canvasGraph} selectedId={canvasSelectedId} onselect={selectCanvasNode} onzoom={zoomLevel} label={`${view.title} Pattern graph`} --graph-height="clamp(29rem, 59vh, 48rem)" />
               {:else}
                 <p class="loom-empty-graph">No stations declared in this Pattern revision.</p>
               {/if}
             </div>
             <p class="loom-canvas-note">Read-only layout · Connections are declared permissions</p>
+            <p class="loom-canvas-note">Bridge commands (deterministic English): <code>inspect STATION</code>, <code>focus STATION</code>, <code>show pattern</code>, <code>show stations</code>. Use an exact station key or an unambiguous label.</p>
           </section>
           <details class="loom-outline" open={outlineOpen} ontoggle={(event) => {
             if (!event.currentTarget.isConnected) return;
-            if (event.currentTarget.open !== outlineOpen) outlineMode = event.currentTarget.open ? "open" : "closed";
+            if (event.currentTarget.open !== outlineOpen) {
+              outlineMode = event.currentTarget.open ? "open" : "closed";
+              workCommands?.refresh();
+            }
           }}>
             <summary>Graph outline <span>Stations &amp; permissions</span></summary>
             <p class="loom-score-guide">Select a station to inspect its declared permissions.</p>

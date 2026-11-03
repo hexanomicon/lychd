@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { tick } from "svelte";
+  import { tick, untrack } from "svelte";
   import { FIELD_HISTORY_WINDOWS, fieldFrameAt, type FieldFrame } from "$lib/orb/field-history";
 
   let {
     frames, cursorId, onseeking, onlive, onpause, windowSeconds = 90, onwindowchange,
-    connectionLabel = "Transport status unavailable"
+    controlRevision = 0, connectionLabel = "Transport status unavailable"
   }: {
     frames: readonly FieldFrame[];
     cursorId: number | null;
@@ -14,8 +14,10 @@
     windowSeconds?: number;
     onwindowchange?: (seconds: number) => void;
     connectionLabel?: string;
+    controlRevision?: number;
   } = $props();
   let speed = $state(1);
+  let externalControlRevision = $derived(controlRevision);
   interface PlaybackSession { readonly expectedId: number; cancelled: boolean; readonly pending?: boolean }
   let playback = $state.raw<PlaybackSession | null>(null);
   interface DragBounds { readonly min: number; readonly max: number; cancelled: boolean }
@@ -44,6 +46,13 @@
       for (const id of frame.changedRunIds) runs.get(id)?.marks.push(frame);
     }
     return [...runs.values()];
+  });
+
+  // Explicit external presentation controls cancel the owned timer even when
+  // pausing the same already-selected capture.
+  $effect(() => {
+    void externalControlRevision;
+    untrack(() => { if (playback) { playback.cancelled = true; playback = null; } });
   });
 
   // This effect owns only an external timer. Input replacement cancels its pending

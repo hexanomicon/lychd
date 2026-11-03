@@ -214,15 +214,19 @@ describe("Altar consent status", () => {
 
 
 describe("shell contextual navigation", () => {
-  it.each(["/canvas", "/canvas/project-a", "/atlas", "/atlas/project-a"])("keeps Canvas primary and selected at %s", async (path) => {
+  it.each(["/canvas", "/canvas/project-a", "/atlas", "/atlas/project-a"])("selects Canvas and Atlas independently at %s", async (path) => {
     vi.mocked(getAltarStatus).mockResolvedValue(status(0));
     page.url.href = `http://localhost${path}`;
     const view = render(AltarShell, { children });
     const instruments = screen.getByRole("navigation", { name: "Instruments" });
     const canvas = within(instruments).getByRole("link", { name: "Canvas" });
     expect(canvas.getAttribute("href")).toBe("/canvas");
-    expect(canvas.getAttribute("aria-current")).toBe("page");
-    expect(within(instruments).queryByRole("link", { name: "Atlas" })).toBeNull();
+    const atlas = within(instruments).getByRole("link", { name: "Atlas" });
+    expect(atlas.getAttribute("href")).toBe("/atlas");
+    expect(canvas.getAttribute("aria-current")).toBe(path.startsWith("/canvas") ? "page" : null);
+    expect(atlas.getAttribute("aria-current")).toBe(path.startsWith("/atlas") ? "page" : null);
+    expect(canvas.querySelector("svg rect")).toBeTruthy();
+    expect(atlas.querySelector("svg path")).toBeTruthy();
     expect(screen.getAllByRole("link", { name: "Canvas" })).toHaveLength(1);
     view.unmount();
   });
@@ -329,15 +333,26 @@ it("keeps a saved collapsed right-side Bridge when opening Orb", async () => {
   view.unmount();
 });
 
-it.each(["/bridge", "/bridge/session-a?run=run-a&consent=consent-a&event=event-a"])("opens explicit Bridge destination %s despite a collapsed preference", async (destination) => {
+it.each(["/bridge", "/bridge/", "/bridge/session-a?run=run-a&consent=consent-a&event=event-a"])("opens full-focus Bridge at %s without changing a collapsed preference", async (destination) => {
   vi.mocked(getAltarStatus).mockResolvedValue(status(0));
   localStorage.setItem(bridgeDockStorageKey, JSON.stringify({ width: 400, side: "right", open: false }));
   page.url.href = `http://localhost${destination}`;
   const view = render(AltarShell, { children });
   await act(() => Promise.resolve());
-  const toggle = screen.getByRole("button", { name: "Collapse Bridge" });
-  expect(toggle.getAttribute("aria-expanded")).toBe("true");
-  expect(toggle.closest(".dock-shell")?.classList.contains("dock-left")).toBe(false);
+  const main = screen.getByRole("main", { name: "Bridge workspace" });
+  expect(main.id).toBe("altar-main");
+  expect(screen.queryByRole("button", { name: "Collapse Bridge" })).toBeNull();
+  expect(screen.queryByRole("separator", { name: "Bridge width" })).toBeNull();
+  expect(JSON.parse(localStorage.getItem(bridgeDockStorageKey)!)).toEqual({ width: 400, side: "right", open: false });
   expect(`${page.url.pathname}${page.url.search}`).toBe(destination);
+  view.unmount();
+});
+
+it.each(["notes=invalid", "notes=manage&notes=recall", "investigation=invalid"])("keeps the %s application route in the ordinary work area", async (query) => {
+  vi.mocked(getAltarStatus).mockResolvedValue(status(0));
+  page.url.href = `http://localhost/bridge?${query}`;
+  const view = render(AltarShell, { children });
+  expect(screen.getByRole("main").querySelector("p")?.textContent).toBe("Instrument");
+  expect(screen.queryByRole("main", { name: "Bridge workspace" })).toBeNull();
   view.unmount();
 });

@@ -9,7 +9,13 @@ Use Bridge to offer an Intent and stay with the answer as you inspect other Alta
 applications. Its session, or séance, holds the continuing conversation. Each admitted turn opens
 its own [Circle](circle.md), whose Run lets you follow that one request through to its result.
 
-Open it with the **« / »** control at the work area's edge. New layouts start on the left;
+Choose **Bridge** in the top navigation for a full-focus conversation page, with **Pinned** and
+**Recent conversations** beside the thread. The dock's **Full focus** link opens the same selected
+conversation. Pins stay in this browser and store only session identities; an older unloaded pin
+shows its identity until its metadata is supplied. Use **Load more conversations** for older
+archive pages. The order follows creation time, not last activity.
+
+Open the side panel with the **« / »** control at the work area's edge. New layouts start on the left;
 a saved side is preserved. Resize its divider, choose the left or right side,
 or collapse it while retaining the conversation. Ordinary instrument navigation does not destroy
 the selected session, its live reconstruction or a later draft. On a narrow window, the panel is
@@ -62,6 +68,77 @@ The server validates the request, descriptor, reference and decision together. Y
 applies to that pending request. Each Invocation has its own Sigil, Context boundary and
 consequences; permission for another object, wider tools or a later effect needs its own
 admission. Suggesting an action in conversation cannot authorize it.
+
+## Dictate and review {#dictate-and-review}
+
+Bridge supplies one microphone throughout the shell. **Record voice** asks for
+microphone access only when pressed. Choose a declared language in **Voice
+options**, record for at most 30 seconds, then **Stop** or **Cancel**. Capture
+converts device samples to mono 16 kHz, signed 16-bit PCM WAV; the server validates
+the bounded bytes again. Cancellation releases local capture and waiting, but
+cannot prove an already-contacted transcription service stopped.
+
+Review **Original transcript** separately from the editable Bridge draft. If the
+draft changed during capture, review the returned suggestion before inserting it.
+Manual sending is the default. **Automatically send after 2 seconds** is off
+initially and has a visible cancelable countdown; editing, navigation, cancellation
+or an unresolved prior offering prevents automatic sending. Work commands still
+need the instrument's own acceptance: Canvas never applies automatically.
+
+**Voice history** lists all retained attempt metadata, including unknown outcomes
+and attempts without saved corrections. It shows 25 at a time, up to the bounded
+1,000-attempt catalogue. **Inspect attempt** or **Check outcome** reads the retained
+result; it neither inserts text into the current draft nor targets an instrument.
+**Delete attempt** removes the retained attempt and any saved correction. If deletion
+is unconfirmed, refresh history before trying again.
+
+An unknown transcription is not retried. Its attempt UUID identifies the protected
+GET `/api/v1/bridge/dictation/attempts/{attempt_id}` recovery read; this reads the
+retained result and performs no inference. A new recording is a deliberate new
+attempt. Ordinary conversation offering recovery remains the separate protocol
+described above.
+
+**Remember corrections when sending** separately opts into private storage of the
+original transcript and the entire sent draft, including typed text. Voice options
+provide explicit language-scoped vocabulary approval. An edit alone never creates a vocabulary rule. Review any suggested
+replacement and choose to use it; this neither sends text nor trains model weights.
+Deletion removes retained records, without promising erasure from backups or WAL.
+These private records do not go into localStorage, public notes or generic logs.
+
+The work destination accepts only its displayed English commands. Canvas's
+[command journey](../../compositions/canvas/index.md#give-a-bounded-command-through-bridge)
+creates a preview. Loom supports `inspect STATION`, `focus STATION`, `show pattern`
+and `show stations`, without editing or execution. Orb supports `zoom in`,
+`zoom out`, `fit graph`, `pause`, `go live`, and `go back/forward N seconds` within
+actual retained tab observations. A request outside that retained interval refuses;
+it cannot reconstruct missing history or change execution evidence.
+
+### Configure a local transcriber deliberately
+
+Omitting `server.web.dictation` leaves fresh dictation unavailable and ordinary
+Bridge text available. The operator must supply an exact already-running CPU
+whisper.cpp small binding; discovery downloads nothing, starts no runtime and
+calls no model. There is no GPU, browser speech service or cloud fallback.
+
+The [profile schema](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/dictation.py)
+owns the exact fields. Its `transcriber_binding` pins `runtime`, `dialect`, literal
+loopback `endpoint`, `runtime_revision`, `backend`, `device`, and a model declaration
+with identity, family, digest, declared languages and license. Supply real pins for
+the installed service; a declaration does not attest its loaded weights or accuracy.
+The profile uses `schema_version: 1`. Transport timeout defaults to 10 seconds
+(maximum 30), total timeout to 30 (maximum 60), with transport no greater than
+total. Response size is at most 65,536 bytes and text at most 8,192 characters.
+`retention_seconds` defaults to seven days and is bounded to thirty days;
+`max_records_per_owner` defaults to 100 and is bounded to 1,000. Set these limits
+explicitly for the intended operation.
+`raw_audio_retention_seconds` is independent from transcript/correction retention:
+its default is 300 seconds, its maximum is 3600, and zero prevents persisted WAV
+bytes while allowing temporary memory custody during invocation. PostgreSQL owns
+durable private records; fixture memory supplies no restart retention.
+
+Configured availability does not qualify microphone permission, actual speech
+accuracy, supported-language quality or latency. The [delivery record](../../state-of-the-work.md#audio-admission)
+keeps synthetic integration evidence separate from those live observations.
 
 ## Read the result
 

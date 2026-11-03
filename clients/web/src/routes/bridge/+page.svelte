@@ -37,11 +37,7 @@
   {#if selectedNote === "recall"}<PublicNoteRecall />
   {:else}<PublicNotes selection={selectedNote} onSelect={selectNote} />{/if}
 {:else if focus.length === 0}
-  <section class="shell-placeholder" aria-labelledby="bridge-landing-title">
-    <h1 id="bridge-landing-title">The Altar</h1>
-    <p>Your conversation is in the Bridge panel. Choose an instrument to continue your work beside it.</p>
-    <nav aria-label="Start working"><a href="/atlas">Atlas</a><a href="/orb">Orb</a><a href="/loom">Loom</a><a href="/nexus">Nexus</a></nav>
-  </section>
+  <!-- The shell owns the single mounted conversation in both page and dock mode. -->
 {:else if selected === null}
   <section aria-labelledby="invalid-investigation">
     <h1 id="invalid-investigation">Investigation selection unavailable</h1>

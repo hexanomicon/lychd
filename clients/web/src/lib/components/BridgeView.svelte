@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { goto, replaceState } from "$app/navigation";
+  import { beforeNavigate, goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
   import { navigationId, orbReturnHref } from "$lib/navigation/instruments";
-  import { getContext, onDestroy, tick, untrack } from "svelte";
+  import { getContext, onDestroy, onMount, tick, untrack } from "svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
   import {
@@ -32,15 +32,25 @@
   import { atlasHref } from "$lib/atlas/navigation";
   import { bridgeWorkspaceKey, createBridgeWorkspace, type BridgeWorkspace } from "$lib/bridge/workspace.svelte";
   import { delegationStatusLabel } from "$lib/delegation/presentation";
+  import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/bridge/pins";
+  import AltarIcon from "./AltarIcon.svelte";
+  import BridgeVoiceInput from "./BridgeVoiceInput.svelte";
+  import DictationFeedback from "./DictationFeedback.svelte";
+  import { workCommandKey, type CommandTarget, type CommandResult, type WorkCommandRegistry } from "$lib/bridge/work-commands";
+  import type { DictationDraft, DictationOptions } from "$lib/bridge/voice/dictation";
 
   let {
     sessionId,
     embedded = false,
+    visible = true,
+    isVisible,
     search,
     onNavigate
   }: {
     sessionId?: string;
     embedded?: boolean;
+    visible?: boolean;
+    isVisible?: () => boolean;
     search?: string;
     onNavigate?: (sessionId: string, search: string, composerFocus?: boolean) => void | Promise<void>;
   } = $props();
@@ -48,6 +58,30 @@
   const bridgeParams = $derived(new URLSearchParams(bridgeSearch));
   let snapshot = $state<BridgeSnapshot | null>(null);
   const work = getContext<BridgeWorkspace | undefined>(bridgeWorkspaceKey) ?? createBridgeWorkspace();
+  let pins = $state.raw<readonly string[]>([]);
+  let pinNotice = $state("");
+  let compactHistory = $state(false);
+  onMount(() => {
+    try { pins = parsePinnedConversations(localStorage.getItem(bridgePinsStorageKey)); }
+    catch { /* Pinning remains available for this tab when storage is unavailable. */ }
+    const media = window.matchMedia?.("(max-width: 48rem)");
+    compactHistory = media?.matches ?? false;
+    const changed = (event: MediaQueryListEvent) => { compactHistory = event.matches; };
+    media?.addEventListener?.("change", changed);
+    return () => media?.removeEventListener?.("change", changed);
+  });
+  function togglePin(id: string) {
+    const next = togglePinnedConversation(pins, id);
+    if (next === pins) { pinNotice = `You can pin up to ${bridgePinsLimit} conversations. Unpin one first.`; return; }
+    const returnFocus = document.activeElement?.id === `bridge-pin-${id}`;
+    pins = next;
+    pinNotice = "";
+    try { localStorage.setItem(bridgePinsStorageKey, JSON.stringify(next)); }
+    catch { pinNotice = "Pins are kept for this tab; browser storage is unavailable."; }
+    if (returnFocus) void tick().then(() => {
+      if (!destroyed) (document.getElementById(`bridge-pin-${id}`) ?? document.querySelector<HTMLButtonElement>(".new-seance"))?.focus({ preventScroll: true });
+    });
+  }
   const observedSettlements = new Map(work.settlements);
   let projectHint = $derived.by(() => {
     const id = bridgeParams.get("project");
@@ -71,6 +105,7 @@
 
   function setPrompt(text: string) {
     if (selected) work.setDraft(selected.id, text);
+    notifyVoice();
   }
 
   function bridgeHref(id: string) {
@@ -79,6 +114,7 @@
   function selectConversation(event: MouseEvent, id: string) {
     if (!onNavigate || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
+    invalidateVoiceContext();
     void Promise.resolve(onNavigate(id, projectHint ? `?project=${encodeURIComponent(projectHint)}` : ""))
       .catch((cause) => omen(cause instanceof Error ? cause.message : "Conversation navigation failed."));
   }
@@ -122,6 +158,13 @@
   }
 
   let selected = $derived(choosing ? null : snapshot?.session ?? null);
+  const sessionMetadata = $derived(new Map([
+    ...(snapshot?.sessions ?? []).map((session) => [session.id, session] as const),
+    ...(selected ? [[selected.id, selected] as const] : [])
+  ]));
+  const visiblePins = $derived(pins.filter((id) => !attentionOnly || (sessionMetadata.get(id)?.pending_count ?? 0) > 0));
+  const recentSessions = $derived((snapshot?.sessions ?? []).filter((session) =>
+    !pins.includes(session.id) && (!attentionOnly || (session.pending_count ?? 0) > 0)));
   let focusedConsent = $derived(selected && sessionId === selected.id && focusRun && focusConsent && (
     (selected.turns ?? []).some((turn) => turn.run_id === focusRun) ||
     snapshot?.active_runs.some((run) => run.run_id === focusRun && run.session_id === selected.id)
@@ -148,6 +191,111 @@
     snapshot?.pending_consents.filter((card) => card.state === "pending_consent").length ?? 0
   );
 
+  const workCommands = getContext<WorkCommandRegistry | undefined>(workCommandKey);
+  let commandTarget = $state.raw<CommandTarget | null>(null);
+  let commandResult = $state.raw<CommandResult | null>(null);
+  let commandPending = $state(false);
+  let composerMode = $state<"chat" | "work">("chat");
+  let composing = $state(false);
+  let contextEpoch = $state(0);
+  let targetEpoch = $state(0);
+  let voice = $state<ReturnType<typeof BridgeVoiceInput>>();
+  export function suspendVoice() { voice?.suspend(); }
+  $effect(() => {
+    if (!visible) untrack(suspendVoice);
+  });
+  const destination = $derived(commandTarget
+    ? `${commandTarget.instrument[0]?.toUpperCase()}${commandTarget.instrument.slice(1)} · ${commandTarget.label}`
+    : "Work target unavailable");
+
+  function readVoiceSnapshot(): DictationDraft {
+    const id = selected?.id ?? "";
+    return {
+      sessionId: id,
+      draftText: id ? work.drafts.get(id) ?? "" : "",
+      draftRevision: id ? work.draftRevisions.get(id) ?? 0 : 0,
+      mode: composerMode, contextEpoch, targetEpoch, composing,
+      busy: destroyed || !(isVisible?.() ?? visible) || !id || loading || choosing || creatingSession || hasUnsettledRun ||
+        !!work.pending.get(id) || commandPending ||
+        [...work.consentDecisions.values()].some((decision) => decision.sessionId === id && decision.sending)
+    };
+  }
+  const voiceSnapshot = $derived(readVoiceSnapshot());
+  function notifyVoice() { voice?.notifyChanged(readVoiceSnapshot()); }
+  function invalidateVoiceContext() {
+    contextEpoch += 1;
+    commandResult = null;
+    notifyVoice();
+  }
+  beforeNavigate(() => invalidateVoiceContext());
+  onMount(() => workCommands?.subscribe((target) => {
+    commandTarget = target;
+    targetEpoch += 1;
+    notifyVoice();
+  }));
+  $effect(() => {
+    const next = voiceSnapshot;
+    untrack(() => voice?.notifyChanged(next));
+  });
+
+  function sameVoiceDraft(expected: DictationDraft, current: DictationDraft): boolean {
+    return expected.sessionId === current.sessionId && expected.draftText === current.draftText &&
+      expected.draftRevision === current.draftRevision && expected.mode === current.mode &&
+      expected.contextEpoch === current.contextEpoch && expected.targetEpoch === current.targetEpoch &&
+      expected.composing === current.composing;
+  }
+  function adoptVoice(expected: DictationDraft, nextText: string): DictationDraft | null {
+    const current = readVoiceSnapshot();
+    if (!sameVoiceDraft(expected, current) || expected.busy !== current.busy ||
+        current.busy || current.composing || !current.sessionId) return null;
+    work.setDraft(current.sessionId, nextText);
+    const advanced = readVoiceSnapshot();
+    notifyVoice();
+    return advanced;
+  }
+  function changeMode(event: Event) {
+    composerMode = (event.currentTarget as HTMLSelectElement).value === "work" ? "work" : "chat";
+    invalidateVoiceContext();
+  }
+  function changeComposition(value: boolean) { composing = value; notifyVoice(); }
+
+  async function submitWork(draft: DictationDraft, target: CommandTarget | null) {
+    const current = readVoiceSnapshot();
+    if (current.busy || current.composing || !sameVoiceDraft(draft, current)) return;
+    if (!workCommands || !target || !workCommands.isCurrent(target)) {
+      commandResult = { status: "unavailable", summary: "The work target changed or is unavailable. Select the current work target before sending." };
+      return;
+    }
+    commandPending = true;
+    commandResult = null;
+    notifyVoice();
+    try {
+      const result = await workCommands.execute(draft.draftText.trim(), target);
+      if (destroyed || draft.sessionId !== selected?.id || draft.contextEpoch !== contextEpoch) return;
+      commandResult = result;
+      // A late preview must never clear a replacement draft or a changed target.
+      if ((result.status === "preview" || result.status === "applied") &&
+          sameVoiceDraft(draft, readVoiceSnapshot()) && workCommands.isCurrent(target)) {
+        work.setDraft(draft.sessionId, "");
+      }
+    } finally {
+      commandPending = false;
+      if (!destroyed) notifyVoice();
+    }
+  }
+  const submitVoice: DictationOptions["submit"] = (draft, intent) => {
+    const current = readVoiceSnapshot();
+    if (!sameVoiceDraft(draft, current) || draft.busy !== current.busy || current.busy || current.composing) return;
+    return draft.mode === "work" ? submitWork(draft, intent.target) : submit();
+  };
+  function sendComposer() {
+    if (voice?.handleSend()) return;
+    const draft = readVoiceSnapshot();
+    if (draft.busy || draft.composing || !draft.draftText.trim()) return;
+    if (draft.mode === "work") void submitWork(draft, workCommands?.capture() ?? null);
+    else void submit();
+  }
+
   function turnIsTerminal(turn: LiveTurn): boolean {
     return turn.state === "done" || turn.state === "failed" || turn.state === "cancelled";
   }
@@ -162,6 +310,7 @@
   }
 
   async function load(id?: string, preserveReadError = false) {
+    invalidateVoiceContext();
     const version = ++loadVersion;
     sessionsRequest?.abort();
     sessionsRequest = null;
@@ -174,6 +323,7 @@
     const requestedIdentityChanged =
       id !== undefined && activeSessionIdentity !== null && activeSessionIdentity !== id;
     loading = true;
+    notifyVoice();
     error = "";
     if (!preserveReadError) readError = "";
     if (requestedIdentityChanged) {
@@ -249,7 +399,7 @@
         if (!snapshot) readError = error;
       }
     } finally {
-      if (version === loadVersion) loading = false;
+      if (version === loadVersion) { loading = false; notifyVoice(); }
     }
   }
 
@@ -380,6 +530,7 @@
   async function createSession() {
     if (creatingSession) return;
     creatingSession = true;
+    invalidateVoiceContext();
     try {
       const created = await createBridgeSession();
       if (destroyed) return;
@@ -395,7 +546,7 @@
     } catch (cause) {
       if (!destroyed) omen(cause instanceof Error ? cause.message : "A séance could not be opened.");
     } finally {
-      if (!destroyed) creatingSession = false;
+      if (!destroyed) { creatingSession = false; notifyVoice(); }
     }
   }
 
@@ -505,6 +656,7 @@
           }
         }
         renderVersion++;
+        notifyVoice();
       },
       (message) => omen(message, false),
       async () => {
@@ -537,6 +689,7 @@
           }
         }
         renderVersion++;
+        notifyVoice();
         return {
           cursor: refreshed?.cursor ?? projection.cursor,
           terminal: refreshed ? turnIsTerminal(refreshed) : projection.terminal
@@ -556,6 +709,7 @@
             active.activity = "projection stale";
             active.authorityGeneration++;
             renderVersion++;
+            notifyVoice();
           }
           void recoverHardClosedRun(targetRunId, targetSessionId);
         }
@@ -586,6 +740,7 @@
       );
       liveTurns[index] = recovered;
       renderVersion++;
+      notifyVoice();
       if (turnIsTerminal(recovered)) {
         if (snapshot?.session?.id === targetSessionId) {
           scheduleSettledRefresh(runId, targetSessionId);
@@ -605,7 +760,7 @@
     const retained = work.refused.get(selected.id) ?? [];
     const offering = retained.find((item) => item.requestId === requestId);
     if (!offering) return;
-    if (restore) work.setDraft(selected.id, offering.text);
+    if (restore) { work.setDraft(selected.id, offering.text); notifyVoice(); }
     const remaining = retained.filter((item) => item.requestId !== requestId);
     if (remaining.length) work.refused.set(selected.id, remaining);
     else work.refused.delete(selected.id);
@@ -625,6 +780,7 @@
     });
     error = "";
     if (!retry) work.setDraft(targetSessionId, "");
+    notifyVoice();
     try {
       const accepted = await sendBridgeMessage(targetSessionId, text, requestId);
       work.pending.delete(targetSessionId);
@@ -674,6 +830,7 @@
         liveTurns.push(live);
       }
       renderVersion++;
+      notifyVoice();
       attachStream(live);
     } catch (cause) {
       const uncertain = prior?.uncertain || !(cause instanceof ApiError) || cause.status === undefined || cause.status >= 500 || cause.status === 408;
@@ -688,6 +845,8 @@
         ]);
         if (!destroyed && snapshot?.session?.id === targetSessionId) error = message;
       }
+    } finally {
+      if (!destroyed) notifyVoice();
     }
   }
 
@@ -708,6 +867,7 @@
       clearRefreshTimer(runId);
     }
     renderVersion++;
+    notifyVoice();
     return updated;
   }
 
@@ -744,7 +904,7 @@
   function keydown(event: KeyboardEvent) {
     if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
-      void submit();
+      sendComposer();
     }
   }
 
@@ -822,22 +982,35 @@
 </script>
 
 <svelte:head>{#if !embedded}<title>Bridge — LychD</title>{/if}</svelte:head>
-<div class="instrument-deck instrument-deck--bridge" class:instrument-deck--welcome={firstVisit} class:bridge-embedded={embedded}>
-  {#if !firstVisit}
+{#snippet conversationEntry(id: string)}
+  {@const session = sessionMetadata.get(id)}
+  <div class="conversation-row">
+    <a class:current={selected?.id === id} class="seance" href={bridgeHref(id)} onclick={(event) => selectConversation(event, id)} aria-current={selected?.id === id ? "page" : undefined}>
+      <span class="t">{session?.title ?? `Conversation · ${id}`}</span>
+      {#if session?.pending_count}<span class="chip">{session.pending_count} awaiting consent</span>{/if}
+      {#if work.pending.has(id)}<span class="chip">Offering unresolved</span>{:else if work.refused.has(id)}<span class="chip">Refused offering</span>{:else if work.drafts.has(id)}<span class="chip">Draft</span>{/if}
+      {#if !session}<span class="m">Details not loaded</span>{/if}
+    </a>
+    <button id={`bridge-pin-${id}`} class="pin-conversation" type="button" aria-label={`${pins.includes(id) ? "Unpin" : "Pin"} conversation: ${session?.title ?? id}`} aria-pressed={pins.includes(id)} onclick={() => togglePin(id)} title={pins.includes(id) ? "Unpin conversation" : "Pin conversation"}><AltarIcon name="pin" size={16} /></button>
+  </div>
+{/snippet}
+<div class="instrument-deck instrument-deck--bridge" class:instrument-deck--welcome={firstVisit && pins.length === 0} class:bridge-embedded={embedded}>
+  {#if !firstVisit || pins.length > 0}
   <aside class="bridge-rail" aria-label="Conversation history">
-    <details class="conversation-list" open={!embedded}>
+    <details class="conversation-list" open={!embedded && !compactHistory}>
       <summary>Conversations</summary>
     <button class="rune-btn new-seance" type="button" disabled={creatingSession} aria-busy={creatingSession} onclick={createSession}>✦ &nbsp;{creatingSession ? "Opening…" : "New Séance"}</button>
     <nav aria-label="Conversations">
+    <h2 class="archive-label">Pinned</h2>
+    {#each visiblePins as id (id)}{@render conversationEntry(id)}{:else}<p class="rail-empty">No pinned conversations.</p>{/each}
+    {#if selected && !pins.includes(selected.id) && !snapshot?.sessions.some((session) => session.id === selected.id)}
+      <h2 class="archive-label">Selected conversation</h2>
+      {@render conversationEntry(selected.id)}
+    {/if}
+    <h2 class="archive-label">Recent conversations</h2>
+    <p class="archive-order">Newest created first</p>
     {#if snapshot?.sessions.length}
-      {#each snapshot.sessions.filter((session) => !attentionOnly || (session.pending_count ?? 0) > 0) as session (session.id)}
-        <a class:current={selected?.id === session.id} class="seance" href={bridgeHref(session.id)} onclick={(event) => selectConversation(event, session.id)} aria-current={selected?.id === session.id ? "page" : undefined}>
-          <span class="t">{session.title}</span>
-          {#if session.pending_count}<span class="chip">{session.pending_count} awaiting consent</span>{/if}
-          {#if work.pending.has(session.id)}<span class="chip">Offering unresolved</span>{:else if work.refused.has(session.id)}<span class="chip">Refused offering</span>{:else if work.drafts.has(session.id)}<span class="chip">Draft</span>{/if}
-          <span class="m glyph">{new Date(session.created_at).toLocaleString()}</span>
-        </a>
-      {/each}
+      {#each recentSessions as session (session.id)}{@render conversationEntry(session.id)}{/each}
     {:else if !loading && !error}
       <p class="glyph rail-empty">No séance yet — open one to speak.</p>
     {/if}
@@ -847,6 +1020,7 @@
       </button>
     {/if}
     {#if sessionsError}<p class="turn__fault" role="status">{sessionsError}</p>{/if}
+    {#if pinNotice}<p class="rail-empty" role="status">{pinNotice}</p>{/if}
     </nav>
     </details>
   </aside>
@@ -1048,7 +1222,23 @@
           <button class="rune-btn" type="button" disabled={pendingOffering.sending} onclick={() => void submit(true)}>Retry original offering</button>
         </section>
       {/if}
-      <div class="composer-area">
+      <div class="composer-area" role="region" aria-label="Bridge composer">
+      <label class="composer-label" for="bridge-destination">Send to</label>
+      <select id="bridge-destination" value={composerMode} onchange={changeMode}>
+        <option value="chat">Conversation</option>
+        <option value="work">{destination}</option>
+      </select>
+      {#if composerMode === "work"}
+        <div class="command-help">
+          <p>English commands · {destination}</p>
+          {#if commandTarget}
+            <details><summary>Command examples</summary>
+              <ul>{#each commandTarget.commands as command (command)}<li><code>{command}</code></li>{/each}</ul>
+            </details>
+          {:else}<p>Open Canvas, Loom or Orb to choose a work target.</p>{/if}
+          <p>Canvas commands create a preview. Review and Apply on the board.</p>
+        </div>
+      {/if}
       <label class="composer-label" for="bridge-message">Your next offering</label>
       {#if snapshot?.composer?.guidance}
         <p id="composer-instructions" class="composer-instructions">{snapshot.composer.guidance}</p>
@@ -1062,20 +1252,31 @@
           rows="2"
           placeholder="What would you like to explore?"
           onkeydown={keydown}
+          oncompositionstart={() => changeComposition(true)}
+          oncompositionend={() => changeComposition(false)}
           aria-label="Message"
           aria-describedby={snapshot?.composer?.guidance ? "composer-instructions composer-guidance composer-shortcuts" : "composer-guidance composer-shortcuts"}
         ></textarea>
         <button
           class="rune-btn"
-          disabled={loading || !!pendingOffering || hasUnsettledRun || !prompt.trim()}
+          disabled={voiceSnapshot.busy || composing || !prompt.trim()}
           type="button"
-          onclick={() => void submit()}
+          onclick={sendComposer}
         >
-          Offer
+          {composerMode === "work" ? "Send command" : "Offer"}
         </button>
       </div>
+      {#if commandPending}<p role="status">Preparing command…</p>{/if}
+      {#if commandResult}<p class="command-result" role="status">{commandResult.status}: {commandResult.summary}</p>{/if}
+      {#key selected.id}
+        <BridgeVoiceInput bind:this={voice} snapshot={voiceSnapshot} target={commandTarget}
+          readSnapshot={readVoiceSnapshot} onadopt={adoptVoice} onsubmit={submitVoice}
+          isTargetCurrent={(target) => workCommands?.isCurrent(target) === true}>
+          {#snippet feedback(context)}<DictationFeedback {...context} />{/snippet}
+        </BridgeVoiceInput>
+      {/key}
       <div class="composer-footer">
-        <p id="composer-shortcuts">Enter to offer · Shift + Enter for a new line</p>
+        <p id="composer-shortcuts">Enter to {composerMode === "work" ? "send command" : "offer"} · Shift + Enter for a new line</p>
         <p id="composer-guidance" role="status">{loading ? "Refreshing this conversation before another offering." : pendingOffering ? "Resolve the original offering first. This later draft is kept and is not queued." : hasUnsettledRun ? "Wait for this Run to settle before offering again. You can keep writing; this draft is not queued." : "Draft stays in this open tab."}</p>
       </div>
       {#if error}<div class="turn__fault" role="alert">{error}</div>{/if}
@@ -1086,7 +1287,7 @@
 </div>
 
 <style>
-  .instrument-deck--bridge { display: grid; grid-template-columns: 14rem minmax(0, 1fr); gap: 0; padding: 0; min-height: 0; background: var(--color-void); }
+  .instrument-deck--bridge { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: 0; padding: 0; min-height: 0; height: 100%; overflow: hidden; background: var(--color-void); }
   .instrument-deck--welcome { grid-template-columns: minmax(0, 1fr); }
   .bridge-rail { width: auto; min-width: 0; padding: 1.25rem .85rem; border-right: 1px solid var(--color-engraving); overflow-y: auto; }
   .conversation-list { width: 100%; }
@@ -1094,10 +1295,16 @@
   summary::marker { color: var(--color-rune-dim); }
   .conversation-list > summary { margin-bottom: .65rem; color: var(--color-bone); font-family: var(--font-rune); font-size: var(--text-lg); }
   .conversation-list nav { display: flex; flex-direction: column; gap: .4rem; margin-top: 1rem; }
+  .archive-label { margin: 1rem 0 .15rem; font: 600 var(--text-xs)/1.4 var(--font-body); color: var(--color-parchment); }
+  .archive-order, .rail-empty { color: var(--color-ash); font-size: var(--text-xs); line-height: 1.5; }
+  .conversation-row { display: grid; grid-template-columns: minmax(0, 1fr) 2.25rem; align-items: center; gap: .15rem; }
+  .pin-conversation { display: grid; place-items: center; min-height: 2.25rem; border: 0; border-radius: var(--radius-glyph); color: var(--color-ash); background: transparent; cursor: pointer; }
+  .pin-conversation:hover { color: var(--color-bone); background: var(--color-tertiary); }
+  .pin-conversation[aria-pressed="true"] { color: var(--color-accent); }
   .new-seance { min-height: 2.75rem; box-shadow: none; }
-  .seance { min-width: 0; padding: .85rem .75rem; border-radius: var(--radius-rune); overflow-wrap: anywhere; }
+  .seance { min-width: 0; padding: .55rem .5rem; border-radius: var(--radius-rune); overflow-wrap: anywhere; }
   .seance.current { border-color: transparent; border-left: 2px solid var(--color-rune); box-shadow: none; }
-  .seance .t { font-size: var(--text-base); margin-bottom: .35rem; }
+  .seance .t { font-size: var(--text-sm); margin-bottom: .15rem; }
   .seance .m { font-family: var(--font-body); }
   .seance .chip { margin: .2rem .2rem .2rem 0; white-space: normal; }
   .bridge-thread { min-height: 0; }
@@ -1127,7 +1334,12 @@
   .retry-conversation { align-self: flex-start; min-height: 2.75rem; }
   .latest-turn { display: flex; justify-content: center; padding: .35rem 1rem .7rem; }
   .latest-turn button { min-height: 2.75rem; padding: .4rem 1rem; border: 1px solid var(--color-engraving); border-radius: 2rem; color: var(--color-rune); background: var(--color-obsidian); cursor: pointer; }
-  .composer-area { padding: 1rem clamp(1rem, 3vw, 2.5rem); border-top: 1px solid var(--color-engraving); }
+  .composer-area { flex: 0 1 auto; min-height: 9rem; max-height: min(34rem, 65dvh); overflow-y: auto; overscroll-behavior: contain; padding: 1rem clamp(1rem, 3vw, 2.5rem); border-top: 1px solid var(--color-engraving); }
+  #bridge-destination { width: 100%; min-height: 2.75rem; margin-bottom: .6rem; }
+  .command-help, .command-result { font-size: var(--text-sm); overflow-wrap: anywhere; margin-bottom: .6rem; }
+  .command-help ul { padding-left: 1.4rem; }
+  .command-help code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .composer-area:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
   .composer-label { display: block; margin-bottom: .55rem; font-size: var(--text-sm); color: var(--color-parchment); }
   .composer-instructions { margin-bottom: .75rem; color: var(--color-parchment); font-size: var(--text-sm); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
   .composer { margin-top: 0; padding: .85rem 1rem; align-items: flex-end; box-shadow: none; }
@@ -1173,19 +1385,27 @@
   .bridge-embedded .turn__body { font-size: var(--text-base); line-height: 1.6; }
   .bridge-embedded .turn--user .turn__body { background: var(--color-grimoire); }
   @media (max-width: 48rem) {
-    .instrument-deck--bridge { grid-template-columns: minmax(0, 1fr); }
-    .bridge-rail { display: block; padding: .4rem 1rem; border-right: 0; border-bottom: 1px solid var(--color-engraving); overflow: visible; }
+    .instrument-deck--bridge { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+    .bridge-rail { display: block; max-height: 35dvh; padding: 0 .85rem; border-right: 0; border-bottom: 1px solid var(--color-engraving); overflow: auto; }
     .conversation-list > summary { margin: 0; }
     .conversation-list nav { max-height: 12rem; overflow-y: auto; margin-top: .5rem; }
     .new-seance { width: 100%; }
-    .bridge-heading { align-items: flex-start; flex-direction: column; gap: .5rem; padding-top: 1rem; }
-    .seance-details { width: 100%; }
+    .bridge-thread { overflow: auto; }
+    .bridge-heading { align-items: flex-start; gap: .35rem; padding: .5rem .85rem; }
+    .bridge-heading h1 { font-size: 1.25rem; }
+    .conversation-title { margin-top: .25rem; font-size: var(--text-xs); }
+    .seance-details { max-width: 45%; }
     .seance-details summary { white-space: normal; }
     .seance-details .kv { position: static; width: 100%; grid-template-columns: minmax(0, .7fr) minmax(0, 1fr); }
-    .thread-scroll { padding-top: 1.2rem; }
-    .composer { flex-wrap: wrap; }
-    .composer textarea { flex-basis: 100%; width: 100%; }
-    .composer .rune-btn { margin-left: auto; }
+    .thread-scroll { min-height: 4rem; padding: .75rem; }
+    .public-sources, .project-details { padding-inline: .85rem; }
+    .public-sources summary, .project-details summary, .seance-details summary { min-height: 2rem; padding-block: .35rem; }
+    .composer-area { padding: .5rem .85rem; }
+    .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; padding: .45rem; }
+    .composer textarea { width: 100%; min-height: 3rem; }
+    .composer .rune-btn { min-width: 3.5rem; margin-left: 0; }
+    .composer-label { margin-bottom: .3rem; }
+    .composer-footer { margin-top: .35rem; gap: .2rem .5rem; }
     .turn--user { max-width: 95%; }
   }
 </style>

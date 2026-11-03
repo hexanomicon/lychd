@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Literal
 from urllib.parse import urlsplit
 
@@ -9,6 +10,7 @@ from litestar.data_extractors import RequestExtractorField, ResponseExtractorFie
 from pydantic import Field, SecretStr, ValidationInfo, field_validator, model_validator
 
 from lychd.config.settings.section import SettingsSection
+from lychd.domain.dictation import DictationProfile
 from lychd.system.secret_names import validate_podman_secret_name
 
 QUEUE_NAMES = frozenset({"runs", "rites"})
@@ -115,6 +117,22 @@ class WebSettings(SettingsSection):
         return validate_local_access_password(value) if value is not None else None
 
     debug: bool = False
+    dictation: DictationProfile | None = None
+    """Explicit already-running CPU transcription binding; omission disables fresh dictation."""
+
+    @field_validator("dictation", mode="before")
+    @classmethod
+    def validate_dictation_profile(cls, value: object) -> DictationProfile | None:
+        """Use the strict JSON profile contract for settings-source arrays and snapshots."""
+        if value is None or isinstance(value, DictationProfile):
+            return value
+        try:
+            encoded = json.dumps(value, allow_nan=False)
+        except (TypeError, ValueError) as exc:
+            msg = "Dictation configuration must be a JSON-compatible profile."
+            raise ValueError(msg) from exc
+        return DictationProfile.model_validate_json(encoded)
+
     name: str = "lychd"
     image: str = "ghcr.io/hexanomicon/lychd:latest"
     allowed_cors_origins: list[str] = Field(default_factory=list)

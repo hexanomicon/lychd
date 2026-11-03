@@ -59,6 +59,72 @@ function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T
   return result.data;
 }
 
+export async function getDictationDiscovery(signal?: AbortSignal): Promise<components["schemas"]["DictationDiscovery"]> {
+  return unwrap(await client.GET("/api/v1/bridge/dictation", { signal }));
+}
+
+export async function transcribeDictation(
+  body: components["schemas"]["DictationRequest"], signal?: AbortSignal
+): Promise<components["schemas"]["DictationResult"]> {
+  return unwrap(await client.POST("/api/v1/bridge/dictation/transcribe", {
+    body, signal, headers: await csrfHeaders()
+  }));
+}
+
+export async function getDictationAttempt(attemptId: string, signal?: AbortSignal): Promise<components["schemas"]["DictationResult"]> {
+  return unwrap(await client.GET("/api/v1/bridge/dictation/attempts/{attempt_id}", {
+    signal, params: { path: { attempt_id: attemptId } }
+  }));
+}
+
+export async function listDictationAttempts(signal?: AbortSignal): Promise<components["schemas"]["DictationAttemptSummary"][]> {
+  return unwrap(await client.GET("/api/v1/bridge/dictation/attempts", { signal }));
+}
+
+export async function recordDictationCorrection(
+  body: components["schemas"]["DictationCorrectionRequest"]
+): Promise<components["schemas"]["DictationCorrection"]> {
+  return unwrap(await client.POST("/api/v1/bridge/dictation/corrections", {
+    body, headers: await csrfHeaders()
+  }));
+}
+
+export async function listDictationCorrections(signal?: AbortSignal): Promise<components["schemas"]["DictationCorrection"][]> {
+  return unwrap(await client.GET("/api/v1/bridge/dictation/corrections", { signal }));
+}
+
+export async function deleteDictationAttempt(attemptId: string): Promise<components["schemas"]["DictationDeleted"]> {
+  return unwrap(await client.POST("/api/v1/bridge/dictation/attempts/{attempt_id}/delete", {
+    params: { path: { attempt_id: attemptId } }, headers: await csrfHeaders()
+  }));
+}
+
+export async function listDictationLexicon(signal?: AbortSignal): Promise<components["schemas"]["DictationLexiconRule"][]> {
+  return unwrap(await client.GET("/api/v1/bridge/dictation/lexicon", { signal }));
+}
+
+export async function approveDictationLexicon(
+  body: components["schemas"]["DictationLexiconRuleRequest"]
+): Promise<components["schemas"]["DictationLexiconRule"]> {
+  return unwrap(await client.POST("/api/v1/bridge/dictation/lexicon", {
+    body, headers: await csrfHeaders()
+  }));
+}
+
+export async function deleteDictationLexicon(ruleId: string): Promise<components["schemas"]["DictationLexiconDeleted"]> {
+  return unwrap(await client.POST("/api/v1/bridge/dictation/lexicon/{rule_id}/delete", {
+    params: { path: { rule_id: ruleId } }, headers: await csrfHeaders()
+  }));
+}
+
+export async function getDictationSuggestions(
+  body: components["schemas"]["DictationSuggestionRequest"], signal?: AbortSignal
+): Promise<components["schemas"]["DictationSuggestion"]> {
+  return unwrap(await client.POST("/api/v1/bridge/dictation/suggestions", {
+    body, signal, headers: await csrfHeaders()
+  }));
+}
+
 export async function submitCreationInvestigation(
   request: components["schemas"]["InvestigationRequest"]
 ): Promise<components["schemas"]["CaseView"]> {

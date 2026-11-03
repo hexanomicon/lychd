@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.cancellation import RunEffectLifecycle
     from lychd.domain.cortex.engine import RunQueue
     from lychd.domain.orchestration.containment import SoftActivationGuard
+    from lychd.interface.web.altar_services import AltarServices
 
 logger = structlog.get_logger()
 
@@ -42,6 +43,27 @@ _STARTUP_RECONCILIATION_PAGE_SIZE = 128
 _RELAY_RESTART_DELAY_S = 0.1
 _RELAY_RESTART_MAX_DELAY_S = 5.0
 _WORKER_SHUTDOWN_TIMEOUT_S = 30.0
+
+
+async def _purge_dictation(services: AltarServices) -> None:
+    """Expiry is independent of recording and remains active when input is off."""
+    async with asyncio.timeout(15.0):
+        await services.dictation.purge()
+        await services.dictation_lexicon.purge()
+
+
+async def _maintain_dictation(services: AltarServices, stop: asyncio.Event) -> None:
+    while not stop.is_set():
+        try:
+            await asyncio.wait_for(stop.wait(), timeout=30.0)
+        except TimeoutError:
+            pass
+        else:
+            return
+        try:
+            await _purge_dictation(services)
+        except Exception:  # noqa: BLE001 - never log private persistence diagnostics
+            logger.warning("dictation_retention_cleanup_unavailable")
 
 
 def _collect_run_queues(app: Litestar) -> dict[str, RunQueue]:
@@ -114,6 +136,13 @@ async def altar_services_lifespan(app: Litestar) -> AsyncGenerator[None]:
             runes=runes,
             settings=settings,
             boot_cutoff=boot_cutoff,
+        )
+        await _purge_dictation(services)
+        maintenance_tasks.append(
+            asyncio.create_task(
+                _maintain_dictation(services, maintenance_stop),
+                name="lychd-dictation-retention",
+            )
         )
 
         from lychd.ghouls.runs import relay_consents, relay_delegated_runs, relay_run_deliveries

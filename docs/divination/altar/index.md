@@ -56,10 +56,15 @@ identity. Keep that identity in view when changing instruments.
 | Which stations and paths does this exact Scroll permit? | [Loom](./loom.md) |
 | What was observed about readiness or a physical transition? | [Nexus](./nexus.md) |
 
-Canvas, Orb, Loom and Nexus appear in the top navigation. Atlas is reached from Canvas as its
-project catalogue; LychD's own Canvas is pinned first and opens by default. Bridge remains available as a conversation
-panel beside the selected work. Icons accompany their visible names; hover, click or keyboard
-opens the menu. **Applications** opens the other admitted applications, including Scavenger market.
+Canvas and Atlas are equal top-level destinations: the creative board and its project catalogue.
+Bridge is the first navigation entry, immediately to the left of Atlas; Canvas, Orb, Loom and
+Nexus follow. LychD's own Canvas is pinned first
+and opens by default in Canvas. Bridge opens a full-focus conversation page with pinned and recent
+chats, and remains available as a panel beside the selected work. Icons accompany their visible
+names. Leaving full chat for another instrument reveals that same conversation as a sidebar on
+wide windows; narrow windows retain the edge control.
+Hover, click or keyboard opens the menu. **Applications** opens the other admitted
+applications, including Scavenger market.
 
 Atlas gives a larger undertaking continuity across conversations and Runs, and can begin before
 either exists. Inside Bridge, a Circle gathers one Invocation. Its current form is a compact

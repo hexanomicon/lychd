@@ -1,9 +1,10 @@
 <script lang="ts">
   import { SvelteFlowProvider } from "@xyflow/svelte";
+  import type { GraphCameraCommand } from "./camera-command";
   import type { GraphProjection } from "$lib/graph/model";
   import FlowSurface from "./FlowSurface.svelte";
   import "@xyflow/svelte/dist/style.css";
-  let { projection, selectedId = null, onselect, label, focusId = null, focusRevision = 0, onzoom, onviewportinteraction, presentation = "diagram", hideMinimap = false }: {
+  let { projection, selectedId = null, onselect, label, focusId = null, focusRevision = 0, onzoom, onviewportinteraction, presentation = "diagram", hideMinimap = false, cameraCommand = null }: {
     projection: GraphProjection;
     selectedId?: string | null;
     onselect?: (id: string, opener?: HTMLElement) => void;
@@ -14,13 +15,14 @@
     onviewportinteraction?: () => void;
     presentation?: "diagram" | "orb";
     hideMinimap?: boolean;
+    cameraCommand?: GraphCameraCommand | null;
   } = $props();
 </script>
 
 <div class={["graph-canvas", { "orb-canvas": presentation === "orb" }]} role="region" aria-label={label}>
   <svelte:boundary>
     <SvelteFlowProvider>
-      <FlowSurface {projection} {selectedId} {onselect} {label} {focusId} {focusRevision} {onzoom} {onviewportinteraction} {presentation} {hideMinimap} />
+      <FlowSurface {projection} {selectedId} {onselect} {label} {focusId} {focusRevision} {onzoom} {onviewportinteraction} {presentation} {hideMinimap} {cameraCommand} />
     </SvelteFlowProvider>
     {#snippet failed()}
       <div class="graph-failure" role="alert">The graph could not be displayed. The semantic outline and recorded details remain available below.</div>

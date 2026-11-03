@@ -2,7 +2,7 @@
   import { beforeNavigate, goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { tick, untrack } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
 
   import {
     ApiError,
@@ -21,11 +21,55 @@
     TransitionRecordView
   } from "$lib/api/models";
   import DelegateMark from "./DelegateMark.svelte";
+  import NexusMap from "./NexusMap.svelte";
+  import NexusProperties from "./NexusProperties.svelte";
+  import { createNexusMap } from "$lib/nexus/map";
 
   type Preview = { target: string; plan: TransitionPlan };
 
   let snapshot = $state.raw<NexusSnapshot | null>(null);
   let preview = $state.raw<Preview | null>(null);
+  let viewMode = $state<"map" | "list">("map");
+  const viewStorageKey = "lychd.nexus.view.v1";
+  let selectedObjectId = $state<string | null>(null);
+  let objectInspector: HTMLElement | undefined;
+  let objectReturnFocus: HTMLElement | undefined;
+  const mapModel = $derived(snapshot ? createNexusMap(snapshot, preview?.plan ?? null, preview?.target ?? null) : null);
+  const selectedObject = $derived(mapModel?.objects.find((object) => object.id === selectedObjectId) ?? null);
+  onMount(() => {
+    let saved: string | null = null;
+    try { saved = localStorage.getItem(viewStorageKey); } catch { /* Optional view preference. */ }
+    viewMode = saved === "map" || saved === "list" ? saved : window.matchMedia?.("(max-width: 48rem)").matches ? "list" : "map";
+  });
+  function changeView(mode: "map" | "list") {
+    viewMode = mode;
+    try { localStorage.setItem(viewStorageKey, mode); } catch { /* Optional view preference. */ }
+  }
+  function selectObject(id: string, opener?: HTMLElement) {
+    selectedObjectId = id;
+    objectReturnFocus = opener;
+    void tick().then(() => { if (!destroyed) objectInspector?.focus(); });
+  }
+  function inspectCapability(key: string, opener: HTMLElement, scope: "managed" | "portal" = "managed") {
+    const object = mapModel?.objects.find((item) => item.kind === "capability" && item.scope === scope && item.row.capability_key === key);
+    if (object) selectObject(object.id, opener);
+  }
+  function inspectRuntime(id: string, opener: HTMLElement) {
+    const object = mapModel?.objects.find((item) => item.kind === "delegated" && item.runtime.runtime_id === id);
+    if (object) selectObject(object.id, opener);
+  }
+  async function closeObject() {
+    selectedObjectId = null;
+    await tick();
+    const visibleOpener = objectReturnFocus?.isConnected && !objectReturnFocus.closest("[hidden], [inert], details:not([open])");
+    const target = visibleOpener ? objectReturnFocus : document.querySelector<HTMLButtonElement>(".nexus-viewbar button[aria-pressed='true']");
+    target?.focus({ preventScroll: true });
+    objectReturnFocus = undefined;
+  }
+  function captureObjectInspector(node: HTMLElement) {
+    objectInspector = node;
+    return () => { if (objectInspector === node) objectInspector = undefined; };
+  }
   let previewTarget = $state<string | null>(null);
   let previewLoading = $state(false);
   let selectedTransition = $state.raw<TransitionRecordView | null>(null);
@@ -36,6 +80,7 @@
   let refreshing = $state(false);
   let snapshotStale = $state(false);
   let busy = $state(false);
+  let submittingTarget = $state<string | null>(null);
   let error = $state("");
   let transitionNote = $state("");
   let previewVersion = 0;
@@ -129,6 +174,18 @@
     } catch (cause) {
       if (!destroyed) {
         snapshotStale = true;
+        if (cause instanceof ApiError && (cause.status === 401 || cause.status === 403)) {
+          snapshot = null;
+          previewVersion++;
+          preview = null;
+          previewTarget = null;
+          previewLoading = false;
+          transitionVersion++;
+          selectedTransition = null;
+          closeStream?.();
+          closeStream = null;
+          ticket = null;
+        }
         error = cause instanceof Error ? cause.message : "The Nexus cannot be read.";
       }
     } finally {
@@ -202,7 +259,8 @@
     previewTarget = null;
     previewLoading = false;
     await tick();
-    if (target?.isConnected) target.focus();
+    if (target?.isConnected && !target.closest("[hidden], [inert]")) target.focus();
+    else document.querySelector<HTMLButtonElement>(".nexus-viewbar button[aria-pressed='true']")?.focus();
   }
 
   async function focusInspector(element: HTMLElement | undefined) {
@@ -256,6 +314,7 @@
     const requestId = previousRequestId ?? crypto.randomUUID();
     swapAttempts = new Map([...swapAttempts, [selected.target, requestId]]);
     busy = true;
+    submittingTarget = selected.target;
     error = "";
     try {
       const accepted = await createNexusSwap(selected.target, requestId);
@@ -276,7 +335,7 @@
       if (definitiveRejection) forgetAttempt(selected.target);
       error = cause instanceof Error ? cause.message : "The transition was refused.";
     } finally {
-      if (!destroyed) busy = false;
+      if (!destroyed) { busy = false; submittingTarget = null; }
     }
   }
 
@@ -356,10 +415,15 @@
 <svelte:head><title>Nexus — LychD</title></svelte:head>
 
 {#snippet capability(row: NexusCovenRow, readOnly = false)}
-  <article class="capability-row" data-selected={!readOnly && previewTarget === row.capability_key}>
+  {@const inspecting = selectedObject?.kind === "capability" && selectedObject.scope === (readOnly ? "portal" : "managed") && selectedObject.row.capability_key === row.capability_key}
+  <article class="capability-row" data-selected={inspecting} data-preview={!readOnly && previewTarget === row.capability_key}>
     <div class="cap">
-      <span class="key" id={`${readOnly ? "remote" : "managed"}-${row.capability_key}`}>{row.capability_key}</span>
+      <button class="key inspect-object" type="button" id={`${readOnly ? "remote" : "managed"}-${row.capability_key}`}
+        aria-label={`Inspect ${readOnly ? "portal" : "managed"} capability ${row.capability_key}`}
+        aria-pressed={inspecting}
+        onclick={(event) => inspectCapability(row.capability_key, event.currentTarget, readOnly ? "portal" : "managed")}>{row.capability_key}</button>
       <span class="chip" data-state={row.state}>{row.state}</span>
+      {#if !readOnly && previewTarget === row.capability_key}<span class="preview-marker">Preview target</span>{/if}
       <time class="probe-time" datetime={row.checked_at ?? undefined} title={row.checked_at ?? undefined}>
         {row.checked_at ? `checked ${new Date(row.checked_at).toLocaleTimeString()}` : "freshness unknown"}
       </time>
@@ -389,8 +453,8 @@
 <div class="instrument-deck instrument-deck--nexus">
   <section class="nexus-main" aria-label="Capability observations">
     <header class="instrument-header">
-      <div><span class="eyebrow">Observed world</span><h1 class="rune-head">Nexus</h1>
-        <p>Inspect capability. Preview a change. Request a transition.</p></div>
+      <div><h1 class="rune-head">Nexus</h1>
+        <p>Inspect an object. Preview what a change would affect.</p></div>
     </header>
     <div class="snapshot-bar">
       <div>
@@ -404,7 +468,22 @@
     {#if snapshot && snapshotStale}<div class="containment" role="alert">The Nexus board is stale. Lifecycle mutations are unavailable until a fresh snapshot loads.</div>{/if}
     {#if loading}<p class="nexus-empty" role="status">Reading capability observations…</p>
     {:else if snapshot}
+      <div class="nexus-viewbar"><span class="section-label">{mapModel?.objects.length ?? 0} observed objects</span>
+        <div role="group" aria-label="Nexus view"><button type="button" aria-pressed={viewMode === "map"} onclick={() => changeView("map")}>Map</button><button type="button" aria-pressed={viewMode === "list"} onclick={() => changeView("list")}>List</button></div>
+      </div>
+      {#if mapModel}
+      <div class="nexus-map-view" hidden={viewMode !== "map"}>
+        <NexusMap model={mapModel} selectedId={selectedObjectId} onselect={selectObject} stale={snapshotStale} />
+        {#if preview}<p class="nexus-plan-context">Preview target: <code>{preview.target}</code> · {preview.plan.action_type} · planned effects only</p>{/if}
+      </div>
+      {/if}
+      <div hidden={viewMode !== "list"} class="nexus-list">
       <div class="board-introduction"><h2 class="section-label">Observe capabilities</h2><p>Readiness is an observation. It does not grant permission or reserve capacity.</p></div>
+      <div class="animator-index" role="group" aria-label="Observed Animators">
+        {#each mapModel?.objects.filter((object) => object.kind === "animator") ?? [] as object (object.id)}
+          <button type="button" onclick={(event) => selectObject(object.id, event.currentTarget)}>Inspect Animator {object.label}</button>
+        {/each}
+      </div>
       <section class="coven-grid" aria-label="Observed capabilities">
         {#each snapshot.board.covens as [name, rows] (name)}
           <details class="panel coven-card" open>
@@ -425,7 +504,7 @@
           <div class="delegated-runtime-grid">
             {#each snapshot.delegated_runtimes as runtime (runtime.runtime_id)}
               <article class="delegated-runtime" data-state={runtime.delivery}>
-                <header><span class="delegated-runtime__title"><DelegateMark /> {runtime.display_name}</span>
+                <header><button class="delegated-runtime__title inspect-object" type="button" aria-label={`Inspect delegated runtime ${runtime.runtime_id}`} onclick={(event) => inspectRuntime(runtime.runtime_id, event.currentTarget)}><DelegateMark /> {runtime.display_name}</button>
                   <span class="chip" data-state={runtime.runnable ? "awaited" : "cold"}>{runtime.runnable ? "available" : runtime.delivery}</span></header>
                 <dl class="kv">
                   <dt>adapter</dt><dd>{runtime.runtime_id} · {runtime.transport}</dd>
@@ -440,6 +519,7 @@
           </div>
         {:else}<p class="inspector-copy">No delegated runtime extension is selected for this Vessel.</p>{/if}
       </details>
+      </div>
       <section class="transition-ledger panel" aria-labelledby="transition-ledger-title">
         <div class="panel-head"><div><h2 id="transition-ledger-title" class="rune-head">Latest transition observations</h2><p class="section-caption">Up to 24 retained requests · process-local · not complete history</p></div></div>
         {#if snapshot.transitions.length}
@@ -458,6 +538,18 @@
     {:else}<p class="nexus-empty">The capability board could not be read. Refresh to try again.</p>{/if}
   </section>
   <aside class="nexus-side" aria-label="Preview and transition outcomes">
+    <section class="panel nexus-object-inspector" aria-labelledby="nexus-object-title" tabindex="-1" {@attach captureObjectInspector}>
+      <div class="panel-head"><h2 id="nexus-object-title" class="rune-head">Selected object</h2>
+        {#if selectedObjectId}<button class="sheet-dismiss" type="button" onclick={closeObject}>Close object</button>{/if}
+      </div>
+      {#if selectedObject}
+        <NexusProperties object={selectedObject} {busy} {previewTarget} allowPreview={viewMode === "map"} onpreview={previewTransition} oninspect={inspectCapability} />
+      {:else if selectedObjectId}
+        <p class="inspector-copy" role="status">The selected object is not present in the latest available snapshot. Refresh or choose another object.</p>
+      {:else}
+        <p class="inspector-copy">Select an object to inspect its observed properties. Selection does not request a transition.</p>
+      {/if}
+    </section>
     <section id="nexus-preview" class="panel nexus-plan" data-open={previewTarget !== null}
       aria-labelledby="nexus-preview-title" aria-busy={previewLoading} {@attach capturePlanInspector} tabindex="-1">
       <div class="panel-head"><div><span class="section-label">Plan a change</span><h2 id="nexus-preview-title" class="rune-head">Non-binding preview</h2></div>
@@ -489,7 +581,7 @@
       <section class="panel pending-requests" aria-labelledby="pending-requests-title">
         <div class="panel-head"><h2 id="pending-requests-title" class="rune-head">Request outcomes</h2></div>
         <p class="inspector-copy">Keep the original request identity while reconciling the outcome.</p>
-        <ul>{#each swapAttempts as [target, requestId] (requestId)}<li><strong>{target}</strong><span>{busy && preview?.target === target ? "Submitting request…" : "Response uncertain"}</span><code>{requestId}</code></li>{/each}</ul>
+        <ul>{#each swapAttempts as [target, requestId] (requestId)}<li><strong>{target}</strong><span>{submittingTarget === target ? "Submitting request…" : "Response uncertain"}</span><code>{requestId}</code></li>{/each}</ul>
       </section>
     {/if}
     {#if ticket}
@@ -530,15 +622,27 @@
 
 <style>
   .instrument-deck--nexus { display: flex; flex-direction: row; align-items: start; gap: 1.5rem; }
-  .nexus-main { gap: 1rem; }
-  .instrument-header h1 { font-size: clamp(1.8rem, 3vw, 2.2rem); letter-spacing: -0.02em; }
-  .instrument-header p { color: var(--color-parchment); }
+  .nexus-main { gap: .65rem; }
+  .nexus-viewbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+  .nexus-viewbar .section-label { margin: 0; }
+  .nexus-viewbar [role="group"] { display: flex; gap: .25rem; }
+  .nexus-viewbar button { min-height: 2.5rem; padding: .4rem .85rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); color: var(--color-parchment); background: var(--color-obsidian); cursor: pointer; }
+  .nexus-viewbar button[aria-pressed="true"] { border-color: var(--color-rune); color: var(--color-bone); }
+  .nexus-list[hidden], .nexus-map-view[hidden] { display: none; }
+  .animator-index { display: flex; gap: .5rem; flex-wrap: wrap; margin-block: .75rem; }
+  .animator-index button { min-height: 2.5rem; padding: .4rem .7rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); background: var(--color-obsidian); color: var(--color-parchment); cursor: pointer; overflow-wrap: anywhere; }
+  .inspect-object { padding: 0; border: 0; background: none; text-align: start; cursor: pointer; font: inherit; overflow-wrap: anywhere; }
+  .nexus-plan-context { color: var(--color-parchment); font-size: var(--text-xs); overflow-wrap: anywhere; }
+  .nexus-object-inspector { width: 100%; }
+  .nexus-object-inspector:focus { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  .instrument-header h1 { font-size: 1.6rem; letter-spacing: -0.02em; }
+  .instrument-header p { color: var(--color-parchment); font-size: var(--text-sm); }
   .nexus-side { display: flex; flex-direction: column; position: static; width: min(26rem, 34%); min-width: 0; gap: 1rem; padding-top: 0.5rem; }
   .panel { box-shadow: none; background: var(--color-obsidian); }
   .panel-head { padding: 1rem 1.125rem; align-items: center; gap: 0.75rem; }
   .panel-head h2 { line-height: 1.35; }
   .sheet-dismiss { display: inline-block; flex-shrink: 0; min-height: 2.25rem; }
-  .snapshot-bar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.875rem 0; border-block: 1px solid var(--color-engraving); color: var(--color-bone); font-size: var(--text-sm); }
+  .snapshot-bar { display: flex; justify-content: space-between; align-items: center; gap: .65rem; padding: .5rem 0; border-block: 1px solid var(--color-engraving); color: var(--color-bone); font-size: var(--text-sm); }
   .snapshot-caption { display: block; color: var(--color-parchment); margin-top: 0.25rem; }
   .refresh-observations { border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); padding: 0.6rem 0.8rem; background: transparent; color: var(--color-rune); min-height: 2.5rem; }
   .refresh-observations:disabled { color: var(--color-ash); cursor: wait; }
@@ -553,6 +657,7 @@
   .coven-heading .kind { display: block; margin: 0.375rem 0 0 1rem; text-transform: none; letter-spacing: normal; color: var(--color-parchment); font-family: var(--font-body); font-size: var(--text-xs); }
   .capability-row { border-top: 1px solid var(--color-engraving); border-inline-start: 2px solid transparent; }
   .capability-row[data-selected="true"] { border-inline-start-color: var(--color-rune); background: color-mix(in srgb, var(--color-rune) 4%, var(--color-obsidian)); }
+  .preview-marker { color: var(--color-heat); font-size: var(--text-xs); grid-column: 1 / -1; }
   .cap { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.55rem 0.875rem; padding: 1rem 1rem 0.5rem; border: 0; }
   .cap .key { font-size: var(--text-sm); color: var(--color-bone); }
   .cap .chip { justify-self: start; font-size: var(--text-xs); box-shadow: none; animation: none; }

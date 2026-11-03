@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount, tick } from "svelte";
+  import { getContext, onDestroy, onMount, tick, untrack } from "svelte";
   import { resolve } from "$app/paths";
   import { getOrbRun } from "$lib/api/client";
   import type { OrbRunPage, OrbRunSnapshot } from "$lib/api/models";
@@ -9,6 +9,16 @@
   import AnimatorRail from "./AnimatorRail.svelte";
   import OrbTimeline from "./OrbTimeline.svelte";
   import { appendFieldFrame, pruneFieldRun, sameOrbRun, trimFieldFrames, type FieldFrame } from "$lib/orb/field-history";
+
+  import { workCommandKey, type WorkCommandRegistry, type CommandTarget, type CommandResult } from "$lib/bridge/work-commands";
+  import { parseOrbPresentationCommand, seekObservationFrame, orbPresentationExamples } from "$lib/orb/presentation-commands";
+  import type { GraphCameraCommand } from "./graph/camera-command";
+
+  const workCommands = getContext<WorkCommandRegistry | undefined>(workCommandKey);
+  let presentationEpoch = 0;
+  let commandSequence = 0;
+  let cameraCommand = $state.raw<GraphCameraCommand | null>(null);
+  let timelineControlRevision = $state(0);
 
   type Run = OrbRunSnapshot["run"];
   type Lens = OrbFieldLens & { readonly connection: OrbConnection; readonly note: string; readonly trimmed: boolean };
@@ -60,6 +70,66 @@
   let connectionLabel = $derived(lenses.size ? [...new Set([...lenses.values()].map((lens) => lens.connection))].join(" · ") : "No live lenses");
   let record = $derived(activeLens?.snapshot.evidence.find((item) => item.event_id === selectedEvent));
 
+  function commandSnapshot() {
+    return {
+      revisionKey: JSON.stringify([presentationEpoch, pausedFrame?.id ?? "live", historyWindow, level, zoomDriven, following, query, statusFilter, accessBlocked]),
+      selectionKey: JSON.stringify([selectedRun, selectedNode, selectedEvent]),
+      commands: orbPresentationExamples
+    };
+  }
+  function presentationChanged() { presentationEpoch++; workCommands?.refresh(); }
+  function manualCamera() { following = false; presentationChanged(); }
+  function commandCurrent(captured: CommandTarget) {
+    const snapshot = commandSnapshot();
+    return !destroyed && !accessBlocked && captured.instrument === "orb" && captured.id === "orb:tab-observation"
+      && captured.revisionKey === snapshot.revisionKey && captured.selectionKey === snapshot.selectionKey
+      && !!workCommands?.isCurrent(captured);
+  }
+  async function executePresentation(text: string, captured: CommandTarget): Promise<CommandResult> {
+    const command = parseOrbPresentationCommand(text);
+    if (!command) return { status: "unsupported", summary: "Unsupported tab observation presentation command. Use the listed English commands." };
+    if (!commandCurrent(captured)) return { status: "stale", summary: "The tab observation presentation target changed." };
+    if (!initialReady || !history.length) return { status: "unavailable", summary: "No tab observation captures are available." };
+    if (command.kind === "camera") {
+      if (!field.projection.nodes.length) return { status: "unavailable", summary: "No tab observation graph is visible." };
+      const status = await new Promise<"applied" | "stale" | "unavailable">((resolve) => {
+        cameraCommand?.complete("stale");
+        let settled = false;
+        const timeout = setTimeout(() => complete(commandCurrent(captured) ? "unavailable" : "stale"), 1000);
+        const complete: GraphCameraCommand["complete"] = (result) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          resolve(result);
+        };
+        cameraCommand = { id: ++commandSequence, action: command.action, isCurrent: () => !settled && commandCurrent(captured), complete };
+      });
+      return { status, summary: status === "applied" ? "Updated the tab observation camera." : "The tab observation camera command was not completed." };
+    }
+    if (command.kind === "seek") {
+      const frame = seekObservationFrame(history, pausedFrame?.id ?? null, command.seconds);
+      if (!frame) return { status: "unavailable", summary: "Requested tab observation time is outside the retained captures, or the selected capture was trimmed." };
+      timelineControlRevision++;
+      seekField(frame.id);
+      return { status: "applied", summary: `Showing tab observation capture ${frame.id}, received ${new Date(frame.observedAt).toISOString()}. This is the nearest retained capture.` };
+    }
+    timelineControlRevision++;
+    if (command.kind === "pause") { if (!pausedFrame) pauseField(); else presentationChanged(); }
+    else liveField();
+    return { status: "applied", summary: command.kind === "pause" ? "Paused tab observation presentation; incoming updates continue." : "Showing the latest tab observation capture." };
+  }
+  onMount(() => workCommands?.register({
+    instrument: "orb", id: "orb:tab-observation", label: "Orb · tab observation",
+    snapshot: commandSnapshot, execute: executePresentation
+  }));
+  // Incoming live receipts do not change presentation intent. Explicit handlers
+  // also refresh synchronously to fence away-and-back gestures.
+  $effect(() => {
+    void selectedRun; void selectedNode; void selectedEvent; void pausedFrame;
+    void historyWindow; void query; void statusFilter; void level; void zoomDriven; void following;
+    untrack(() => workCommands?.refresh());
+  });
+
   onMount(() => {
     void loadCatalogue();
     const timer = window.setInterval(() => {
@@ -69,6 +139,7 @@
   });
   onDestroy(() => {
     destroyed = true;
+    cameraCommand?.complete("stale");
     catalogueVersion++;
     catalogueController?.abort();
     for (const controller of controllers.values()) controller.abort();
@@ -84,23 +155,28 @@
     captureField();
     pausedFrame = history.at(-1) ?? null;
     following = false;
+    presentationChanged();
   }
   function seekField(id: number) {
     const frame = history.find((candidate) => candidate.id === id);
     if (!frame) return;
     pausedFrame = frame; following = false;
+    presentationChanged();
   }
-  function liveField() { pausedFrame = null; }
+  function liveField() { pausedFrame = null; presentationChanged(); }
   function resizeHistory(seconds: number) {
     historyWindow = seconds;
     history = trimFieldFrames(history, seconds);
+    presentationChanged();
   }
-  function clearHistory() { history = []; pausedFrame = null; captureField(); }
+  function clearHistory() { history = []; pausedFrame = null; captureField(); presentationChanged(); }
   function authorityRefused(cause: unknown): boolean {
     return typeof cause === "object" && cause !== null && "status" in cause && (cause.status === 401 || cause.status === 403);
   }
   function clearProtectedField() {
     accessBlocked = true;
+    presentationChanged();
+    cameraCommand?.complete("stale");
     catalogueVersion++; catalogueController?.abort();
     loading = false; initialReady = true;
     for (const id of new Set([...lenses.keys(), ...loadingIds])) closeLens(id);
@@ -108,6 +184,8 @@
     selectedRun = null; selectedNode = null; selectedEvent = null;
   }
   function clearProtectedRun(id: string) {
+    presentationChanged();
+    cameraCommand?.complete("stale");
     closeLens(id);
     history = pruneFieldRun(history, id);
     if (pausedFrame) pausedFrame = pruneFieldRun([pausedFrame], id)[0] ?? null;
@@ -259,6 +337,7 @@
     if (!selection) return;
     selectedNode = id; selectedRun = selection.runId; selectedEvent = selection.eventId ?? null; following = false; inspectorOpen = true;
     inspectorOpener = opener;
+    presentationChanged();
     const node = field.projection.nodes.find((candidate) => candidate.id === id);
     if (node?.members?.length && node.kind !== "run") {
       if (level === "stations") level = "occurrences";
@@ -273,16 +352,19 @@
   function selectRun(id: string) {
     selectedRun = id; selectedNode = `run:${id}`; selectedEvent = null; inspectorOpen = true; runsOpen = false;
     focusId = selectedNode; focusRevision++;
+    presentationChanged();
   }
   function selectRecord(id: string) {
     selectedEvent = id; following = false; inspectorOpen = true;
     const options = [...field.selections].filter(([, selection]) => selection.runId === selectedRun && selection.eventId === id);
     selectedNode = options.at(-1)?.[0] ?? (selectedRun ? `run:${selectedRun}` : null);
     focusId = selectedNode; focusRevision++;
+    presentationChanged();
   }
-  function chooseLevel(value: OrbDetailLevel) { level = value; zoomDriven = false; }
+  function chooseLevel(value: OrbDetailLevel) { level = value; zoomDriven = false; presentationChanged(); }
   function toggleFollowing() {
     following = !following;
+    presentationChanged();
     if (following && selectedRun) {
       pausedFrame = null;
       focusId = `run:${selectedRun}`; focusRevision++;
@@ -305,6 +387,7 @@
     event.preventDefault();
   }
   function zoomDetail(zoom: number) {
+    presentationChanged();
     if (!zoomDriven) return;
     if (zoom < 0.42) level = "runs";
     else if (zoom > 1.8) level = "records";
@@ -353,7 +436,7 @@
   <div class="field-layout">
     <section class="canvas-area" aria-label="Parallel Run graph">
       {#if viewedRuns.length && initialReady}
-        <GraphCanvas projection={field.projection} selectedId={selectedNode} onselect={selectNode} label="Parallel Run workflow field" presentation="orb" hideMinimap={true} onzoom={zoomDetail} onviewportinteraction={() => following = false} {focusId} {focusRevision} />
+        <GraphCanvas projection={field.projection} selectedId={selectedNode} onselect={selectNode} label="Parallel Run workflow field" presentation="orb" hideMinimap={true} onzoom={zoomDetail} onviewportinteraction={manualCamera} {cameraCommand} {focusId} {focusRevision} />
         {#if !filteredRuns.length}<p class="filter-empty">No Run groups match this filter. <button type="button" onclick={() => { query = ""; statusFilter = "all"; }}>Clear filters</button></p>{/if}
         <div class="field-caption"><span>{pausedFrame ? "Captured field" : "Latest observed field"}</span><span>{lenses.size} evidence lenses · {connectionLabel}</span></div>
       {:else}<div class="field-empty"><h2>{!initialReady ? "Reading the Run field…" : error ? "Run field unavailable" : "No retained Runs in this account"}</h2><p>Open a conversation to create work, then inspect its recorded workflow here.</p><a href={resolve("/bridge")}>Open Bridge →</a></div>{/if}
@@ -383,7 +466,7 @@
       {:else}<p>Select a Run group to inspect its account.</p>{/if}
     </aside>
   </div>
-  <OrbTimeline frames={history} cursorId={pausedFrame?.id ?? null} onseeking={seekField} onlive={liveField} onpause={pauseField} windowSeconds={historyWindow} onwindowchange={resizeHistory} {connectionLabel} />
+  <OrbTimeline controlRevision={timelineControlRevision} frames={history} cursorId={pausedFrame?.id ?? null} onseeking={seekField} onlive={liveField} onpause={pauseField} windowSeconds={historyWindow} onwindowchange={resizeHistory} {connectionLabel} />
 </div>
 
 <style>

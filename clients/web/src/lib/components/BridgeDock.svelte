@@ -2,15 +2,19 @@
   import { onMount, tick, type Snippet } from "svelte";
   import { boundedDockWidth, bridgeDockStorageKey, defaultDockLayout, dockMaximumWidth, dockMinimumWidth, parseDockLayout } from "$lib/navigation/dock";
 
-  let { open = $bindable(true), narrow = $bindable(false), forceOpen = false, available = true, viewing = "Altar", onconnect, onexpand, children }: {
+  let { open = $bindable(true), narrow = $bindable(false), forceOpen = false, focused = false, focusHref = "/bridge", workHref = "/orb", available = true, viewing = "Altar", onconnect, onexpand, onsuspend, children }: {
     open?: boolean; narrow?: boolean; forceOpen?: boolean; available?: boolean;
-    viewing?: string; onconnect?: () => void; onexpand?: () => void; children: Snippet;
+    focused?: boolean; focusHref?: string; workHref?: string;
+    viewing?: string; onconnect?: () => void; onexpand?: () => void; onsuspend?: () => void; children: Snippet;
   } = $props();
   let width = $state(defaultDockLayout.width);
   let side = $state(defaultDockLayout.side);
+  let preferredOpen = $state(defaultDockLayout.open);
   let viewportWidth = $state(1280);
   const maximumWidth = $derived(Math.max(dockMinimumWidth, Math.min(dockMaximumWidth, Math.floor(viewportWidth * .6))));
   const effectiveWidth = $derived(Math.min(width, maximumWidth));
+  const modal = $derived(narrow && open && !focused);
+  const visible = $derived(open || focused);
   let panel: HTMLElement | undefined;
   function capturePanel(element: HTMLElement) {
     panel = element;
@@ -21,6 +25,12 @@
   let wasModal = false;
   let dragging: { x: number; width: number; pointer: number } | null = null;
 
+  function setOpen(value: boolean) {
+    // Suspend while controls are still visible; full focus remains visible when open is false.
+    if (open && !value && !focused) onsuspend?.();
+    open = value;
+  }
+
   onMount(() => {
     const media = window.matchMedia?.("(max-width: 56rem)");
     narrow = media?.matches ?? false;
@@ -30,9 +40,10 @@
       const saved = parseDockLayout(stored);
       width = saved.width;
       side = saved.side;
-      if (!forceOpen) open = stored === null && narrow ? false : saved.open;
+      preferredOpen = stored === null && narrow ? false : saved.open;
+      if (!forceOpen) setOpen(stored === null && narrow ? false : saved.open);
     } catch {
-      if (!forceOpen && narrow) open = false;
+      if (narrow) { preferredOpen = false; if (!forceOpen) setOpen(false); }
     }
     const changed = (event: MediaQueryListEvent) => { narrow = event.matches; };
     media?.addEventListener?.("change", changed);
@@ -42,31 +53,30 @@
 
   $effect(() => {
     if (!mounted) return;
-    try { localStorage.setItem(bridgeDockStorageKey, JSON.stringify({ width, side, open })); }
+    try { localStorage.setItem(bridgeDockStorageKey, JSON.stringify({ width, side, open: preferredOpen })); }
     catch { /* Layout preferences are optional. */ }
   });
 
   // Synchronize the modal's DOM focus without remounting the conversation.
   $effect(() => {
-    const modal = narrow && open;
     const target = panel;
     if (modal && !wasModal && target) {
       opener = document.activeElement instanceof HTMLElement && document.activeElement !== document.body
         ? document.activeElement : document.getElementById("bridge-toggle");
       void tick().then(() => {
-        if (narrow && open && !target.contains(document.activeElement)) {
+        if (narrow && open && !focused && !target.contains(document.activeElement)) {
           target.querySelector<HTMLButtonElement>("[data-dock-close]")?.focus();
         }
       });
     } else if (!modal && wasModal) {
-      if (opener?.isConnected) opener.focus({ preventScroll: true });
+      if (!focused && opener?.isConnected) opener.focus({ preventScroll: true });
       opener = null;
     }
     wasModal = modal;
   });
 
   function keydown(event: KeyboardEvent) {
-    if (!open || !narrow || !panel) return;
+    if (!modal || !panel) return;
     if (event.key === "Escape" && !event.defaultPrevented) {
       event.preventDefault();
       collapse();
@@ -86,12 +96,16 @@
 
   function toggle() {
     if (open) collapse();
-    else if (onexpand) onexpand();
-    else open = true;
+    else {
+      preferredOpen = true;
+      if (onexpand) onexpand();
+      else open = true;
+    }
   }
 
   function collapse() {
-    open = false;
+    preferredOpen = false;
+    setOpen(false);
     void tick().then(() => document.getElementById("bridge-toggle")?.focus({ preventScroll: true }));
   }
 
@@ -120,18 +134,23 @@
 </script>
 
 <svelte:window bind:innerWidth={viewportWidth} onkeydown={keydown} />
-<div class={["dock-shell", { "dock-left": side === "left", "dock-modal": narrow, "dock-collapsed": !open }]} role={narrow && open ? "dialog" : undefined} aria-modal={narrow && open ? true : undefined} aria-labelledby={narrow && open ? "bridge-dock-title" : undefined} tabindex="-1" style:--dock-width={`${effectiveWidth}px`} {@attach capturePanel}>
-  <button id="bridge-toggle" class="dock-toggle" type="button" data-dock-close aria-label={open ? "Collapse Bridge" : "Expand Bridge"} aria-expanded={open} aria-controls="bridge-dock" title={open ? "Collapse Bridge" : "Expand Bridge"} onclick={toggle}><span aria-hidden="true">{(side === "left") === open ? "<<" : ">>"}</span></button>
-  <div class="dock-frame" hidden={!open}>
-    {#if narrow}<button class="dock-backdrop" type="button" tabindex="-1" aria-label="Close Bridge overlay" onclick={collapse}></button>{/if}
-    <section id="bridge-dock" class="bridge-dock" role={narrow ? undefined : "complementary"} aria-labelledby="bridge-dock-title">
+<div id={focused ? "altar-main" : undefined} class={["dock-shell", { "dock-left": side === "left", "dock-modal": narrow && !focused, "dock-collapsed": !visible, "dock-focused": focused }]} role={focused ? "main" : modal ? "dialog" : undefined} aria-label={focused ? "Bridge workspace" : undefined} aria-modal={modal ? true : undefined} aria-labelledby={modal ? "bridge-dock-title" : undefined} tabindex="-1" style:--dock-width={`${effectiveWidth}px`} {@attach capturePanel}>
+  {#if !focused}<button id="bridge-toggle" class="dock-toggle" type="button" data-dock-close aria-label={open ? "Collapse Bridge" : "Expand Bridge"} aria-expanded={open} aria-controls="bridge-dock" title={open ? "Collapse Bridge" : "Expand Bridge"} onclick={toggle}><span aria-hidden="true">{(side === "left") === open ? "<<" : ">>"}</span></button>{/if}
+  <div class="dock-frame" hidden={!visible}>
+    {#if modal}<button class="dock-backdrop" type="button" tabindex="-1" aria-label="Close Bridge overlay" onclick={collapse}></button>{/if}
+    <section id="bridge-dock" class="bridge-dock" role={narrow || focused ? undefined : "complementary"} aria-labelledby={!focused ? "bridge-dock-title" : undefined}>
+      {#if focused}
+        <nav class="focus-heading" aria-label="Bridge workspace"><a href={workHref}>← Back to workspace</a></nav>
+      {:else}
       <header class="dock-heading">
         <div class="dock-location"><h2 id="bridge-dock-title">Bridge</h2><span class="dock-view"><span class="visually-hidden">Viewing: </span>{viewing}</span></div>
         <div class="dock-actions">
+          <a href={focusHref}>Full focus</a>
           <button type="button" onclick={() => { side = side === "left" ? "right" : "left"; }} aria-label={`Dock Bridge ${side === "left" ? "right" : "left"}`}>Dock {side === "left" ? "right" : "left"}</button>
         </div>
       </header>
       <p class="dock-context">Page content is not attached to messages.</p>
+      {/if}
       {#if !available}
         <div class="dock-offline">
           <h3>Bridge is offline</h3>
@@ -141,7 +160,7 @@
       {/if}
       <div class="dock-conversation" hidden={!available}>{@render children()}</div>
     </section>
-    {#if !narrow}
+    {#if !narrow && !focused}
       <!-- The focusable separator owns width only; it never changes conversation state. -->
       <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
       <div class="dock-resizer" role="separator" aria-label="Bridge width" aria-orientation="vertical" aria-valuemin={dockMinimumWidth} aria-valuemax={maximumWidth} aria-valuenow={effectiveWidth} aria-controls="bridge-dock" tabindex="0" onpointerdown={resizeStart} onpointermove={resizeMove} onpointerup={resizeEnd} onpointercancel={resizeEnd} onlostpointercapture={() => { dragging = null; }} onkeydown={resizeKey}><span aria-hidden="true">⋮</span></div>
@@ -153,6 +172,11 @@
   .dock-shell { order: 1; position: relative; z-index:20; display: flex; flex: 0 0 min(var(--dock-width), 60vw); width: min(var(--dock-width), 60vw); min-width: 0; min-height: 0; }
   .dock-shell.dock-left { order: -1; }
   .dock-shell.dock-collapsed { flex-basis: 0; width: 0; }
+  .dock-shell.dock-focused { flex: 1 1 0; width: 100%; order: 0; overflow: hidden; }
+  .dock-focused .dock-frame { border: 0; }
+  .focus-heading { padding: .35rem 1rem; border-bottom: 1px solid var(--color-engraving); }
+  .focus-heading a, .dock-actions a { display: inline-flex; align-items: center; min-height: 2rem; font-size: var(--text-xs); color: var(--color-parchment); }
+  a:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
   .dock-frame { position: relative; display: flex; width: 100%; min-width: 0; min-height: 0; background: var(--color-obsidian); border-left: 1px solid var(--color-engraving); }
   .dock-frame[hidden] { display: none; }
   .dock-left .dock-frame { border-left: 0; border-right: 1px solid var(--color-engraving); }

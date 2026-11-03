@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { tick, untrack } from "svelte";
+  import { getContext, onMount, tick, untrack } from "svelte";
   import { beforeNavigate } from "$app/navigation";
   import { applyProposal, arrangeScene, blankDocument, boundsOfSelection, commit, deleteSelection, exampleDocument, makePacket, moveSelection, pngArtwork, redo, renameNode, replaceDocument, tidyProposal, undo, validateDocument, validateProposal } from "$lib/canvas/engine";
   import type { CanvasNode, Document as BoardDocument, Packet, Proposal, Scene, Tool } from "$lib/canvas/types";
+  import { CANVAS_COMMAND_HELP, isCanvasCommandCurrent, planCanvasCommand, type CanvasCommandPlan } from "$lib/canvas/commands";
+  import { workCommandKey, type CommandResult, type CommandTarget, type WorkCommandRegistry } from "$lib/bridge/work-commands";
   import CanvasSurface from "./canvas/CanvasSurface.svelte";
   import CanvasObjects from "./canvas/CanvasObjects.svelte";
   import AltarIcon from "./AltarIcon.svelte";
@@ -13,7 +15,12 @@
     onchange?: (document: BoardDocument) => void;
     onbusy?: (busy: boolean) => void;
   } = $props();
-  type Review = { scene: Scene; sceneId: string; revision: number; title: string; summary: string; author: string; proposal: Proposal | null; packet: Packet | null };
+  type Review = { scene: Scene; sceneId: string; revision: number; title: string; summary: string; author: string; proposal: Proposal | null; packet: Packet | null; commandPlan?: CanvasCommandPlan; commandTarget?: CommandTarget };
+  const workCommands = getContext<WorkCommandRegistry | undefined>(workCommandKey);
+  let unregisterCommands: (() => void) | undefined;
+  let commandsMounted = false;
+  let registeredIdentity = "";
+  const commandExamples = ["add node Vessel then add database Postgres then connect Vessel to Postgres", "rename selected to New label", "connect selected to Postgres", "move selected by 40, -20", "arrange selected"];
   let board = $state.raw<BoardDocument>(untrack(() => initialDocument ? validateDocument(initialDocument) : exampleDocument()));
   let selected = $state.raw<string[]>([]);
   let tool = $state<Tool>("select");
@@ -27,6 +34,7 @@
   let capturing = $state(false);
   let gestureBusy = $state(false);
   let pending = $state.raw<Review | null>(null);
+  let commandTargetCurrent = $state(true);
   let original = $state(false);
   let packet = $state.raw<Packet | null>(null);
     let surface: CanvasSurface;
@@ -34,7 +42,7 @@
   function attachRoot(element: HTMLElement) { root = element; return () => { root = undefined; }; }
   function chooseFile(kind: "board" | "proposal") { root?.querySelector<HTMLInputElement>(`[data-file="${kind}"]`)?.click(); }
   let scene = $derived(board.scene);
-  let stale = $derived(pending !== null && (pending.sceneId !== scene.id || pending.revision !== scene.revision));
+  let stale = $derived(pending !== null && (pending.sceneId !== scene.id || pending.revision !== scene.revision || (pending.commandPlan !== undefined && (!commandTargetCurrent || !isCanvasCommandCurrent(pending.commandPlan, scene, selected)))));
   let packetStale = $derived(packet !== null && (packet.scene.id !== scene.id || packet.scene.revision !== scene.revision));
   let displayScene = $derived(pending && !original && !stale ? pending.scene : scene);
   let editingLocked = $derived(capturing || pending !== null || gestureBusy);
@@ -44,31 +52,88 @@
     { key: "box", label: "Node", shortcut: "B" }, { key: "connect", label: "Connect", shortcut: "C" }, { key: "pan", label: "Pan", shortcut: "H" }
   ];
 
+  function previewNodeDescription(node: CanvasNode) {
+    return `${node.label || "Untitled node"} · ${node.kind} · position (${node.x}, ${node.y}) · size ${node.width} × ${node.height} · ${node.pinned ? "pinned" : "not pinned"}`;
+  }
+  function previewEndpoint(proposed: Scene, id: string) {
+    return proposed.nodes.find((node) => node.id === id)?.label || "Untitled node";
+  }
+  function selectionKey() { return JSON.stringify([...selected].sort()); }
+  function commandRevision() { return String(scene.revision); }
+  function syncCommands(replace = false) {
+    if (!workCommands || !commandsMounted) return;
+    const identity = JSON.stringify([scene.id, scene.title]);
+    if (replace || identity !== registeredIdentity) {
+      unregisterCommands?.();
+      registeredIdentity = identity;
+      unregisterCommands = workCommands.register({
+        instrument: "canvas", id: scene.id, label: scene.title,
+        snapshot: () => ({ revisionKey: commandRevision(), selectionKey: selectionKey(), commands: commandExamples }),
+        execute: previewCommand
+      });
+    } else workCommands.refresh();
+  }
+  onMount(() => {
+    commandsMounted = true;
+    syncCommands(true);
+    const unsubscribe = workCommands?.subscribe(() => {
+      commandTargetCurrent = !pending?.commandTarget || !!workCommands?.isCurrent(pending.commandTarget);
+    });
+    return () => { commandsMounted = false; unsubscribe?.(); unregisterCommands?.(); unregisterCommands = undefined; };
+  });
+  function previewCommand(text: string, captured: CommandTarget): CommandResult {
+    if (!commandsMounted || !workCommands?.isCurrent(captured) || captured.id !== scene.id ||
+        captured.revisionKey !== commandRevision() || captured.selectionKey !== selectionKey()) {
+      return { status: "stale", summary: "The Canvas scene or selection changed. Capture the current target again." };
+    }
+    if (editingLocked) return { status: "unavailable", summary: "Finish the current Canvas gesture, capture or preview first." };
+    try {
+      const commandPlan = planCanvasCommand(scene, selected, text, { origin: surface?.center() ?? { x: 300, y: 220 } });
+      commandTargetCurrent = true;
+      const review: Review = { scene: commandPlan.scene, sceneId: scene.id, revision: scene.revision,
+        title: "Canvas command preview", summary: commandPlan.summary, author: "Local command helper · no model",
+        proposal: null, packet: null, commandPlan, commandTarget: captured };
+      pending = review;
+      original = false; error = "";
+      busy();
+      if (!scene.nodes.length && !scene.strokes.some((stroke) => !stroke.archived)) {
+        void tick().then(() => {
+          if (commandsMounted && pending === review && !original && workCommands?.isCurrent(captured)) surface?.fit();
+        });
+      }
+      notice = "Preview only. Apply to keep this command as one undoable change.";
+      return { status: "preview", summary: commandPlan.summary };
+    } catch (cause) {
+      fail(cause);
+      return { status: "unsupported", summary: error };
+    }
+  }
+
   beforeNavigate((navigation) => {
     if (managed) return;
     if (!unexported || navigation.willUnload) return;
     if (!window.confirm("This board has changes that have not been downloaded. Leave and discard this draft?")) navigation.cancel();
   });
   function guardUnload(event: BeforeUnloadEvent) { if (!managed && (unexported || capturing)) { event.preventDefault(); event.returnValue = ""; } }
-  function changed() { onchange?.(structuredClone(board)); }
+  function changed() { syncCommands(); onchange?.(structuredClone(board)); }
   function busy() { onbusy?.(capturing || gestureBusy || pending !== null); }
   function fail(cause: unknown) { error = cause instanceof Error ? cause.message : "The change could not be completed."; }
   function select(ids: string[]): boolean {
     if (capturing || pending) return false;
     const unique = [...new Set(ids)];
     if (unique.length > 128) { error = "Select up to 128 objects at a time. Use a smaller region."; return false; }
-    selected = unique; error = ""; return true;
+    selected = unique; syncCommands(); error = ""; return true;
   }
   function change(next: Scene, message: string) {
     if (capturing || pending) return;
-    try { board = commit(board, next); changed(); unexported = true; fileState = managed ? "Edited project document" : "Unsaved changes · download to keep"; notice = message; error = ""; selected = selected.filter((id) => boundsOfSelection(board.scene, [id]) !== null); }
+    try { board = commit(board, next); unexported = true; fileState = managed ? "Edited project document" : "Unsaved changes · download to keep"; notice = message; error = ""; selected = selected.filter((id) => boundsOfSelection(board.scene, [id]) !== null); changed(); }
     catch (cause) { fail(cause); }
   }
   function history(direction: "undo" | "redo") {
     if (capturing || gestureBusy) return;
     try {
       surface?.settleAnimation();
-      board = direction === "undo" ? undo(board) : redo(board); changed(); selected = []; unexported = true; fileState = managed ? "Edited project document" : "Unsaved changes · download to keep";
+      board = direction === "undo" ? undo(board) : redo(board); selected = []; changed(); unexported = true; fileState = managed ? "Edited project document" : "Unsaved changes · download to keep";
       notice = direction === "undo" ? "Change undone. A fresh revision prevents old proposals from being reused." : "Change redone."; error = "";
     } catch (cause) { fail(cause); }
   }
@@ -77,17 +142,17 @@
     if (editingLocked) return;
     const point = surface?.center() ?? { x: 300, y: 220 };
     const node: CanvasNode = { id: crypto.randomUUID(), x: Math.round(point.x - 100), y: Math.round(point.y - 52), width: 200, height: 104, label: `Node ${scene.nodes.length + 1}`, kind: "box", pinned: false, source_stroke_ids: [], artwork: null };
-    change({ ...scene, nodes: [...scene.nodes, node] }, "Node added. Open Objects to edit its label."); selected = [node.id]; objectsOpen = true;
+    change({ ...scene, nodes: [...scene.nodes, node] }, "Node added. Open Objects to edit its label."); selected = [node.id]; syncCommands(); objectsOpen = true;
   }
   function connect(source: string, target: string, label: string) { change({ ...scene, edges: [...scene.edges, { id: crypto.randomUUID(), source, target, label, source_stroke_ids: [] }] }, "Connection added."); }
-  function deleteObjects() { if (!selected.length || editingLocked) return; try { change(deleteSelection(scene, selected), "Selected objects deleted. Undo restores them."); selected = []; } catch (cause) { fail(cause); } }
+  function deleteObjects() { if (!selected.length || editingLocked) return; try { change(deleteSelection(scene, selected), "Selected objects deleted. Undo restores them."); selected = []; syncCommands(); } catch (cause) { fail(cause); } }
   function rename(id: string, label: string) { try { change(renameNode(scene, id, label), "Node label updated."); } catch (cause) { fail(cause); } }
   function edit(id: string) { select([id]); objectsOpen = true; void tick().then(() => root?.querySelector<HTMLInputElement>('[name="label"]')?.focus()); }
   function newBoard(example: boolean) {
     if (capturing || gestureBusy) return;
     if (unexported && !window.confirm("Download your current board first if you want to keep it. Replace this draft?")) return;
     board = example ? exampleDocument() : blankDocument(); selected = []; pending = null; packet = null; unexported = false; instruction = "";
-    changed(); busy();
+    syncCommands(true); changed(); busy();
     fileState = example ? "Temporary example · download to keep" : "Temporary blank board · download to keep";
     notice = example ? "Illustrative example loaded. These objects do not describe running LychD architecture." : "Blank board ready. Draw freely or add an editable node."; error = "";
     void tick().then(() => surface.fit());
@@ -110,7 +175,7 @@
       if (unexported && !window.confirm("Replace the current draft? Changes that have not been downloaded will be lost.")) return;
       if (managed) next = replaceDocument(board, next);
       board = next; selected = []; pending = null; packet = null; unexported = false; fileState = managed ? "Imported local document · save to retain" : "Opened local document · no new edits"; notice = managed ? `Imported ${file.name} into this project board. Save board to retain it. No file was sent to a server.` : `Opened ${file.name}. No file was sent to a server.`; error = "";
-      changed(); busy();
+      syncCommands(true); changed(); busy();
       await tick(); surface.fit();
     } catch (cause) { fail(cause); }
   }
@@ -141,7 +206,7 @@
   }
   function accept() {
     if (!pending || capturing || gestureBusy) return;
-    if (stale) { error = "This preview is stale. Reject it and capture the current revision again."; return; }
+    if (stale || (pending.commandPlan && (!isCanvasCommandCurrent(pending.commandPlan, scene, selected) || !workCommands?.isCurrent(pending.commandTarget ?? null)))) { error = "This preview is stale. Reject it and capture the current revision again."; return; }
     try {
       surface.settleAnimation();
       const next = pending.proposal && pending.packet ? applyProposal(scene, pending.proposal, pending.packet) : pending.scene;
@@ -178,7 +243,7 @@
       if (scene.id !== id || scene.revision !== revision) throw new Error("The board changed while reading the proposal. Capture it again.");
       const proposal = validateProposal(JSON.parse(text), boundPacket);
       const next = applyProposal(scene, proposal, boundPacket);
-      selected = [...boundPacket.selection.object_ids];
+      selected = [...boundPacket.selection.object_ids]; syncCommands();
       pending = { scene: next, sceneId: scene.id, revision: scene.revision, title: "Imported proposal", summary: proposal.summary, author: proposal.author, proposal, packet: boundPacket }; original = false; error = "";
       busy();
       notice = "Manual proposal import. Inspect the proposed objects before applying.";
@@ -204,7 +269,7 @@
     if ((event.ctrlKey || event.metaKey) && key === "s") { event.preventDefault(); saveBoard(); return; }
     if ((event.ctrlKey || event.metaKey) && key === "z") { event.preventDefault(); history(event.shiftKey ? "redo" : "undo"); return; }
     if ((event.ctrlKey || event.metaKey) && key === "y") { event.preventDefault(); history("redo"); return; }
-    if (event.key === "Escape") { if (pending) reject(); else selected = []; return; }
+    if (event.key === "Escape") { if (pending) reject(); else { selected = []; syncCommands(); } return; }
     if (editingLocked || event.ctrlKey || event.metaKey || event.altKey) return;
     const chosen = tools.find((item) => item.shortcut.toLowerCase() === key);
     if (chosen) { event.preventDefault(); tool = chosen.key; return; }
@@ -235,22 +300,45 @@
     <div class="board-host"><div class="floating-tools" role="toolbar" aria-label="Canvas tools">{#each tools as item (item.key)}<button type="button" class="tool" aria-label={`${item.label} tool (${item.shortcut})`} aria-pressed={tool === item.key} title={`${item.label} (${item.shortcut})`} disabled={capturing || gestureBusy} onclick={() => { tool = item.key; surface.focusBoard(); }}><span aria-hidden="true"><AltarIcon name={item.key === "box" ? "node" : item.key} size={18} /></span><span>{item.label}</span><kbd>{item.shortcut}</kbd></button>{/each}<span class="tool-divider"></span><button type="button" class="history" aria-label="Undo" title="Undo (Ctrl/⌘ Z)" disabled={!board.past.length || capturing || gestureBusy} onclick={() => history("undo")}><AltarIcon name="undo" size={18} /></button><button type="button" class="history" aria-label="Redo" title="Redo (Ctrl/⌘ Shift Z)" disabled={!board.future.length || capturing || gestureBusy} onclick={() => history("redo")}><AltarIcon name="redo" size={18} /></button></div>
       <button type="button" class="object-toggle" aria-pressed={objectsOpen} onclick={() => objectsOpen = !objectsOpen}>Objects <span aria-hidden="true">{objectsOpen ? "×" : "☷"}</span></button>
       <CanvasSurface bind:this={surface} scene={displayScene} {tool} {selected} locked={capturing || pending !== null} onselect={select} onchange={change} onbusy={(active) => { gestureBusy = active; busy(); }} onerror={(message) => error = message} onedit={edit} />
-      {#if !count}<div class="empty-board"><span aria-hidden="true">✧</span><h2>Give your idea some room.</h2><p>{managed ? "Draw a first mark or add an editable node." : "Draw a first mark, add a node, or start with the example."}</p><button type="button" onclick={addNode}>Add your first node</button></div>{/if}
+      {#if !count && !pending}<div class="empty-board"><span aria-hidden="true">✧</span><h2>Give your idea some room.</h2><p>{managed ? "Draw a first mark or add an editable node." : "Draw a first mark, add a node, or start with the example."}</p><button type="button" onclick={addNode}>Add your first node</button></div>{/if}
     </div>
     {#if objectsOpen}<CanvasObjects {scene} {selected} disabled={editingLocked} onselect={select} onrename={rename} onpin={(id) => { const node = scene.nodes.find((item) => item.id === id); if (node) patchNode(id, { pinned: !node.pinned }, node.pinned ? "Node unpinned." : "Node pinned during arrangement."); }} onkind={(id, kind) => patchNode(id, { kind }, "Node shape updated.")} onconnect={connect} onadd={addNode} ondelete={deleteObjects} onartwork={artwork} onreveal={(id) => { surface.reveal(id); surface.focusBoard(); }} />{/if}
   </div>
   {#if pending}
-    <section class="review-tray" aria-label="Proposal review"><div class="review-copy"><span class="eyebrow">{stale ? "Stale preview" : "Preview · board unchanged"}</span><h2>{pending.title}</h2><p>{pending.summary}</p><small>Attributed author: {pending.author} · based on revision {pending.revision}</small>{#if pending.proposal}<small>{pending.proposal.nodes.length} node upserts · {pending.proposal.edges.length} connection upserts · {pending.proposal.archive_stroke_ids.length} source strokes archived on Apply</small>{/if}{#if stale}<p class="stale">The board changed. Reject this preview and create a fresh one.</p>{/if}</div><div class="review-actions"><button type="button" aria-pressed={original} onclick={() => { surface.settleAnimation(); original = !original; }} disabled={stale}>{original ? "Show proposal" : "Show original"}</button><button type="button" onclick={reject}>Reject</button><button type="button" class="primary" onclick={accept} disabled={stale || capturing}>Apply change</button></div></section>
+    <section class="review-tray" aria-label="Proposal review"><div class="review-copy"><span class="eyebrow">{stale ? "Stale preview" : "Preview · board unchanged"}</span><h2>{pending.title}</h2><p>{pending.summary}</p><small>Attributed author: {pending.author} · based on revision {pending.revision}</small>{#if pending.proposal}<small>{pending.proposal.nodes.length} node upserts · {pending.proposal.edges.length} connection upserts · {pending.proposal.archive_stroke_ids.length} source strokes archived on Apply</small>{/if}{#if stale}<p class="stale">The board or command target changed. Reject this preview and create a fresh one.</p>{/if}
+      <details class="semantic-preview" open>
+        <summary>Proposed nodes and connections · read-only</summary>
+        <p>Proposed values below have not been applied. The Objects editor still shows the current board.</p>
+        <ul aria-label="Proposed nodes">
+          {#each pending.scene.nodes as node (node.id)}
+            {@const previous = scene.nodes.find((item) => item.id === node.id)}
+            <li><span>{previewNodeDescription(node)}</span>{#if !previous}<small>New node</small>{:else if previewNodeDescription(previous) !== previewNodeDescription(node)}<small>Before: {previewNodeDescription(previous)}</small>{/if}</li>
+          {:else}<li>No proposed nodes.</li>{/each}
+        </ul>
+        <ul aria-label="Proposed connections">
+          {#each pending.scene.edges as edge (edge.id)}
+            {@const previous = scene.edges.find((item) => item.id === edge.id)}
+            <li><span>From {previewEndpoint(pending.scene, edge.source)} to {previewEndpoint(pending.scene, edge.target)} · {edge.label || "Unlabeled connection"}</span>{#if !previous}<small>New connection</small>{:else if previous.label !== edge.label || previewEndpoint(scene, previous.source) !== previewEndpoint(pending.scene, edge.source) || previewEndpoint(scene, previous.target) !== previewEndpoint(pending.scene, edge.target)}<small>Before: from {previewEndpoint(scene, previous.source)} to {previewEndpoint(scene, previous.target)} · {previous.label || "Unlabeled connection"}</small>{/if}</li>
+          {:else}<li>No proposed connections.</li>{/each}
+        </ul>
+      </details>
+      </div><div class="review-actions"><button type="button" aria-pressed={original} onclick={() => { surface.settleAnimation(); original = !original; }} disabled={stale}>{original ? "Show proposal" : "Show original"}</button><button type="button" onclick={reject}>Reject</button><button type="button" class="primary" onclick={accept} disabled={stale || capturing}>Apply change</button></div></section>
   {:else}
     <section class="composer" aria-label="Selection and transformation"><div class="selection-summary"><strong>{selected.length ? `${selected.length} selected` : "Select a region"}</strong><span>Whole objects · original ink retained</span></div><div class="instruction-field"><label for="canvas-instruction">Instruction for a model packet</label><textarea id="canvas-instruction" maxlength="4000" rows="2" bind:value={instruction} disabled={capturing} placeholder="e.g. Clean this up. Move Database under Vessel."></textarea></div><div class="selection-actions"><div><button type="button" disabled={!selected.length || editingLocked} onclick={tidy} title="Local geometry regularizer. Does not interpret your instruction.">Tidy <span>local</span></button><button type="button" disabled={!scene.nodes.length || editingLocked} onclick={arrange}>Arrange <span>preview</span></button></div><button type="button" class="primary" disabled={!selected.length || !instruction.trim() || editingLocked} onclick={capture}>{capturing ? "Capturing PNG…" : "Capture selection packet"} <span aria-hidden="true">↗</span></button></div></section>
   {/if}
   {#if packet}<div class="packet-strip"><div><strong>{packetStale ? "Captured packet is stale" : `Packet · revision ${packet.scene.revision}`}</strong><span>{packet.selection.object_ids.length} objects · {packet.crop ? `${packet.crop.width} × ${packet.crop.height} PNG` : "records only · PNG unavailable"} · full scene context included</span></div><button type="button" onclick={() => download(packet, `canvas-selection-r${packet!.scene.revision}.json`)}>Download packet</button><button type="button" onclick={() => chooseFile("proposal")} disabled={packetStale || capturing || gestureBusy || pending !== null}>Import proposal</button></div>{/if}
   <div class="feedback"><p role="status" aria-live="polite">{notice}</p>{#if error}<p class="error" role="alert">{error}</p>{/if}</div>
-  <footer class="canvas-footer"><span>{managed ? "Project authoring · local CPU helpers" : "Offline authoring · local CPU helpers"}</span><span>Voice, live model interpretation & image generation unavailable</span><button type="button" aria-expanded={helpOpen} onclick={() => helpOpen = !helpOpen}>How this works {helpOpen ? "−" : "+"}</button></footer>
-  {#if helpOpen}<div class="help" id="canvas-gestures"><p><strong>Draw → circle or select → preview → apply.</strong> Tidy is a local geometry helper. It does not read the instruction. Capture downloads nothing automatically and sends nothing to a model. Download the packet, take it to your model yourself, then import its strict proposal JSON for review.</p><p><strong>Keep your board.</strong> {managed ? "Save board retains the complete document and bounded history in this project. Download board makes a separate portable JSON copy. Local edits remain unsaved until the server confirms a save." : "Download board JSON to retain the current scene and bounded history. This browser draft has no automatic storage or server retention."}</p><p><strong>Keyboard.</strong> D Draw, L Lasso, V rectangle Select, B Node, C Connect, H Pan. On the board: Space temporarily pans, arrows move selected objects, Shift + arrows move further, Enter edits a node, Delete removes selection, +/− zoom, 0 fits. Use Objects for checkboxes, label editing and a keyboard connection form. Touch: one finger uses the active tool; two fingers pan and zoom.</p></div>{:else}<p id="canvas-gestures" class="visually-hidden">Use Objects for keyboard selection, node labels and connections. Board shortcuts: D draw, L lasso, V rectangle select, B node, C connect, H pan. Space pans; arrows move selected objects; Enter edits; Delete removes; plus and minus zoom; zero fits.</p>{/if}
+  <footer class="canvas-footer"><span>{managed ? "Project authoring · local CPU helpers" : "Offline authoring · local CPU helpers"}</span><span>{workCommands ? "Canvas commands in Bridge · live model interpretation & image generation unavailable" : "Voice, live model interpretation & image generation unavailable"}</span><button type="button" aria-expanded={helpOpen} onclick={() => helpOpen = !helpOpen}>How this works {helpOpen ? "−" : "+"}</button></footer>
+  {#if helpOpen}<div class="help" id="canvas-gestures"><p><strong>Draw → circle or select → preview → apply.</strong> Tidy is a local geometry helper. It does not read the instruction. Capture downloads nothing automatically and sends nothing to a model. Download the packet, take it to your model yourself, then import its strict proposal JSON for review.</p><p><strong>Canvas commands in Bridge.</strong> Use Bridge’s work command mode to preview editable nodes and connections on this board, then Apply here. Commands never save automatically.</p><p class="command-help">{CANVAS_COMMAND_HELP}</p><p><strong>Keep your board.</strong> {managed ? "Save board retains the complete document and bounded history in this project. Download board makes a separate portable JSON copy. Local edits remain unsaved until the server confirms a save." : "Download board JSON to retain the current scene and bounded history. This browser draft has no automatic storage or server retention."}</p><p><strong>Keyboard.</strong> D Draw, L Lasso, V rectangle Select, B Node, C Connect, H Pan. On the board: Space temporarily pans, arrows move selected objects, Shift + arrows move further, Enter edits a node, Delete removes selection, +/− zoom, 0 fits. Use Objects for checkboxes, label editing and a keyboard connection form. Touch: one finger uses the active tool; two fingers pan and zoom.</p></div>{:else}<p id="canvas-gestures" class="visually-hidden">Use Objects for keyboard selection, node labels and connections. Board shortcuts: D draw, L lasso, V rectangle select, B node, C connect, H pan. Space pans; arrows move selected objects; Enter edits; Delete removes; plus and minus zoom; zero fits.</p>{/if}
 </section>
 
 <style>
+  .semantic-preview { margin-top:12px; font-size:12px; line-height:1.7; overflow-wrap:anywhere; }
+  .semantic-preview summary { cursor:pointer; }
+  .semantic-preview summary:focus-visible { outline:2px solid var(--color-rune); outline-offset:3px; }
+  .semantic-preview ul { padding-left:1.4rem; }
+  .semantic-preview li { margin-block:.4rem; }
+  .command-help { white-space:pre-line; overflow-wrap:anywhere; }
   .canvas-view { width:100%; max-width:1800px; margin:0 auto; container-type:inline-size; padding:18px 20px 14px; color:var(--color-bone); }
   .canvas-header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:12px; }.eyebrow { color:var(--color-rune); font-size:12px; letter-spacing:.15em; text-transform:uppercase; } h1 { margin:5px 0 0; font-size:27px; font-weight:550; letter-spacing:-.04em; line-height:1.3; }.document-actions { display:flex; gap:8px; flex-wrap:wrap; }
   button { min-height:36px; padding:8px 12px; border:1px solid var(--color-control-border); border-radius:var(--radius-rune); background:var(--color-obsidian); color:var(--color-parchment); font:12px var(--font-body); cursor:pointer; white-space:nowrap; } button:hover:not(:disabled) { border-color:var(--color-rune-dim); color:var(--color-rune); background:var(--color-obsidian-2); } button:disabled { opacity:.4; cursor:default; }.primary { background:var(--color-rune); border-color:var(--color-rune); color:#071115; }.primary span { margin-left:8px; } button:focus-visible,input:focus-visible,textarea:focus-visible { outline:2px solid var(--color-rune); outline-offset:3px; }.file-input { display:none; }

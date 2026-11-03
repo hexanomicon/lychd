@@ -1,5 +1,5 @@
 /**
- * Local review destinations under ADR 15's five-instrument contract.
+ * Local review destinations under ADR 15's shared workbench contract.
  * Parsing preserves bounded identity hints only. Destination readers must still
  * validate Run ownership and the entire pinned Pattern before offering a return.
  */

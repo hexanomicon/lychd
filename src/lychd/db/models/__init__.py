@@ -21,6 +21,8 @@ from lychd.db.models.creation import (
 )
 from lychd.db.models.delegated_host import DelegatedHostDispositionRecord
 from lychd.db.models.delegation import DelegatedAgentEventRecord, DelegatedAgentJobRecord
+from lychd.db.models.dictation import BridgeDictationAttempt
+from lychd.db.models.dictation_lexicon import BridgeDictationLexiconRule
 from lychd.db.models.intercom import (
     IntercomCapacity,
     IntercomCredential,
@@ -53,6 +55,8 @@ __all__ = [
     "AtlasRequestRecord",
     "BlockworldPlacementAction",
     "BlockworldPlacementMission",
+    "BridgeDictationAttempt",
+    "BridgeDictationLexiconRule",
     "CodexPreauthorization",
     "CompanionRecipe",
     "Consent",

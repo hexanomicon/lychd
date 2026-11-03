@@ -123,6 +123,8 @@ function deferred<T>() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
+  vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
   vi.mocked(getNexusSnapshot).mockResolvedValue(snapshot);
   vi.mocked(getNexusPlan).mockResolvedValue(plan);
@@ -250,6 +252,7 @@ describe("Nexus projection and focus", () => {
     vi.mocked(getNexusPlan).mockReturnValue(calculation.promise);
     vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false })));
     const view = render(NexusView);
+    await fireEvent.click(await screen.findByRole("button", { name: "Inspect managed capability chat:local" }));
     const opener = await screen.findByRole("button", { name: "Preview" });
 
     await fireEvent.click(opener);
@@ -689,6 +692,144 @@ describe("Nexus projection and focus", () => {
     expect(screen.getByText("projection stale")).toBeTruthy();
     expect(getNexusSwap).toHaveBeenCalledOnce();
     expect(second.close).toHaveBeenCalledOnce();
+    view.unmount();
+  });
+});
+
+describe("Nexus ownership map and selected properties", () => {
+  beforeEach(() => { vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false }))); });
+  const selectedRegion = () => screen.getByRole("region", { name: "Selected object" });
+  const mapRegion = () => screen.getByRole("region", { name: "Capability ownership" });
+  const baseRow = snapshot.board.covens[0]![1][0]!;
+  const twoCapabilities: NexusSnapshot = {
+    ...snapshot, board: { covens: [["display group", [baseRow, { ...baseRow, capability_key: "chat:other", model_id: "model-b" }]]], portals: [] }
+  };
+  async function inspect(key = "chat:local") {
+    await fireEvent.click(await screen.findByRole("button", { name: `Inspect managed capability ${key}` }));
+  }
+
+  it("selects read-only properties and preserves camera and selection through Map/List without planning or admission", async () => {
+    vi.mocked(getNexusSnapshot).mockResolvedValue({ ...twoCapabilities, board: { ...twoCapabilities.board,
+      portals: [{ ...baseRow, capability_key: "remote:chat", health: "unknown", checked_at: null }] } });
+    const view = render(NexusView);
+    await inspect();
+    expect(within(selectedRegion()).getByText("model-a")).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    const zoom = screen.getByLabelText("Map zoom").textContent;
+    await fireEvent.click(screen.getByRole("button", { name: "List" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Inspect portal capability remote:chat" }));
+    expect(within(selectedRegion()).getByText("unknown")).toBeTruthy();
+    expect(within(selectedRegion()).queryByRole("button", { name: "Preview" })).toBeNull();
+    await fireEvent.click(screen.getByRole("button", { name: "Map" }));
+    expect(screen.getByLabelText("Map zoom").textContent).toBe(zoom);
+    expect(within(mapRegion()).getByRole("button", { name: "Inspect portal capability remote:chat" }).getAttribute("aria-pressed")).toBe("true");
+    expect(localStorage.getItem("lychd.nexus.view.v1")).toBe("map");
+    await fireEvent.click(screen.getByRole("button", { name: "List" }));
+    await fireEvent.click(within(selectedRegion()).getByRole("button", { name: "Close object" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "List" }));
+    expect(getNexusPlan).not.toHaveBeenCalled();
+    expect(createNexusSwap).not.toHaveBeenCalled();
+    expect(getNexusTransition).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it("highlights exact planned Animator ownership and keeps the plan target independent of object selection", async () => {
+    vi.mocked(getNexusSnapshot).mockResolvedValue({ ...snapshot, board: { covens: [["victim", [baseRow,
+      { ...baseRow, animator_name: "victim", capability_key: "chat:victim" },
+      { ...baseRow, animator_name: "victim-other", capability_key: "chat:lookalike" }]]], portals: [{ ...baseRow, capability_key: "remote:victim", animator_name: "victim" }] } });
+    vi.mocked(getNexusPlan).mockResolvedValue({ ...plan, evict_coven_ids: ["victim"] });
+    const view = render(NexusView);
+    await inspect();
+    await fireEvent.click(within(selectedRegion()).getByRole("button", { name: "Preview" }));
+    await screen.findByRole("button", { name: "Request transition" });
+    expect(within(mapRegion()).getByRole("button", { name: "Inspect Animator victim" }).getAttribute("data-impact")).toBe("evict");
+    expect(within(mapRegion()).getByRole("button", { name: "Inspect managed capability chat:victim" }).getAttribute("data-impact")).toBe("evict");
+    expect(within(mapRegion()).getByRole("button", { name: "Inspect Animator victim-other" }).getAttribute("data-impact")).toBeNull();
+    expect(within(mapRegion()).getByRole("button", { name: "Inspect portal capability remote:victim" }).getAttribute("data-impact")).toBeNull();
+    await fireEvent.click(within(mapRegion()).getByRole("button", { name: "Inspect managed capability chat:lookalike" }));
+    expect(within(screen.getByRole("region", { name: "Non-binding preview" })).getByText("chat:local")).toBeTruthy();
+    expect(getNexusPlan).toHaveBeenCalledExactlyOnceWith("chat:local");
+    expect(createNexusSwap).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it("retains the original uncertain request across object selection, closing preview and Map/List changes", async () => {
+    vi.mocked(getNexusSnapshot).mockResolvedValue(twoCapabilities);
+    vi.mocked(createNexusSwap).mockRejectedValueOnce(new TypeError("answer lost")).mockResolvedValueOnce({ ticket: ticket() });
+    const view = render(NexusView);
+    await inspect();
+    await fireEvent.click(within(selectedRegion()).getByRole("button", { name: "Preview" }));
+    await fireEvent.click(await screen.findByRole("button", { name: "Request transition" }));
+    await screen.findByText("answer lost");
+    const requestId = vi.mocked(createNexusSwap).mock.calls[0]![1];
+    await inspect("chat:other");
+    await fireEvent.click(within(screen.getByRole("region", { name: "Non-binding preview" })).getByRole("button", { name: "Close" }));
+    await fireEvent.click(screen.getByRole("button", { name: "List" }));
+    expect(screen.getByRole("button", { name: "Inspect managed capability chat:other" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Inspect managed capability chat:local" }).getAttribute("aria-pressed")).toBe("false");
+    await fireEvent.click(screen.getByRole("button", { name: "Map" }));
+    expect(within(screen.getByRole("region", { name: "Request outcomes" })).getByText(requestId)).toBeTruthy();
+    await inspect();
+    await fireEvent.click(within(selectedRegion()).getByRole("button", { name: "Preview" }));
+    await fireEvent.click(await screen.findByRole("button", { name: "Request transition" }));
+    expect(vi.mocked(createNexusSwap).mock.calls[1]).toEqual(["chat:local", requestId]);
+    view.unmount();
+  });
+
+  it("keeps an in-flight request visibly submitting while selecting another object and closing its preview", async () => {
+    const admission = deferred<{ ticket: SwapTicket }>();
+    vi.mocked(getNexusSnapshot).mockResolvedValue(twoCapabilities);
+    vi.mocked(createNexusSwap).mockReturnValue(admission.promise);
+    const view = render(NexusView);
+    await inspect();
+    await fireEvent.click(within(selectedRegion()).getByRole("button", { name: "Preview" }));
+    await fireEvent.click(await screen.findByRole("button", { name: "Request transition" }));
+    await inspect("chat:other");
+    expect((within(selectedRegion()).getByRole("button", { name: "Preview" }) as HTMLButtonElement).disabled).toBe(true);
+    await fireEvent.click(within(screen.getByRole("region", { name: "Non-binding preview" })).getByRole("button", { name: "Close" }));
+    const outcomes = screen.getByRole("region", { name: "Request outcomes" });
+    expect(within(outcomes).getByText("chat:local")).toBeTruthy();
+    expect(within(outcomes).getByText("Submitting request…")).toBeTruthy();
+    expect(createNexusSwap).toHaveBeenCalledTimes(1);
+    expect(getNexusPlan).toHaveBeenCalledTimes(1);
+    await act(() => admission.resolve({ ticket: ticket() }));
+    expect(within(screen.getByRole("region", { name: "Request ticket" })).getByText("chat:local")).toBeTruthy();
+    view.unmount();
+  });
+
+  it("derives selected properties from refreshed authority and keeps a removed selection unavailable", async () => {
+    vi.useFakeTimers();
+    vi.mocked(getNexusSnapshot).mockResolvedValueOnce(snapshot)
+      .mockResolvedValueOnce({ ...snapshot, board: { covens: [["local", [{ ...baseRow, reason: "new observation" }]]], portals: [] } })
+      .mockResolvedValueOnce({ ...snapshot, board: { covens: [], portals: [] } });
+    const view = render(NexusView);
+    await act(() => Promise.resolve());
+    await inspect();
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+    expect(within(selectedRegion()).getByText("new observation")).toBeTruthy();
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+    expect(within(selectedRegion()).getByText(/selected object is not present/)).toBeTruthy();
+    expect(within(selectedRegion()).queryByText("new observation")).toBeNull();
+    expect(getNexusPlan).not.toHaveBeenCalled();
+    expect(createNexusSwap).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it("clears protected map properties on current-authority refusal while retaining an uncertain request identity", async () => {
+    vi.mocked(getNexusSnapshot).mockResolvedValueOnce(snapshot).mockRejectedValueOnce(new ApiError("current access refused", 403));
+    vi.mocked(createNexusSwap).mockRejectedValueOnce(new TypeError("answer lost"));
+    const view = render(NexusView);
+    await inspect();
+    await fireEvent.click(within(selectedRegion()).getByRole("button", { name: "Preview" }));
+    await fireEvent.click(await screen.findByRole("button", { name: "Request transition" }));
+    await screen.findByText("answer lost");
+    const requestId = vi.mocked(createNexusSwap).mock.calls[0]![1];
+    await fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    await screen.findByText("current access refused");
+    expect(screen.queryByRole("region", { name: "Capability ownership" })).toBeNull();
+    expect(within(selectedRegion()).queryByText("model-a")).toBeNull();
+    expect(within(screen.getByRole("region", { name: "Request outcomes" })).getByText(requestId)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Request transition" })).toBeNull();
     view.unmount();
   });
 });

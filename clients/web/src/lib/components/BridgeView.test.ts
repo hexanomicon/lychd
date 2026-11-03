@@ -4,15 +4,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   BridgeSnapshot,
+  DictationDiscovery,
+  DictationResult,
   ConsentCard as ConsentCardModel,
   RunEventEnvelope,
   RunProjectionSnapshot
 } from "$lib/api/models";
-import { goto, replaceState } from "$app/navigation";
+import { beforeNavigate, goto, replaceState } from "$app/navigation";
 
 const mockPage = vi.hoisted(() => ({ state: {} as { bridgeComposerFocus?: string }, url: new URL("http://localhost/bridge") }));
 vi.mock("$app/state", () => ({ page: mockPage }));
-vi.mock("$app/navigation", () => ({ goto: vi.fn(), replaceState: vi.fn() }));
+vi.mock("$app/navigation", () => ({ beforeNavigate: vi.fn(), goto: vi.fn(), replaceState: vi.fn() }));
 vi.mock("$lib/api/client", () => ({
   ApiError: class ApiError extends Error {
     status?: number;
@@ -26,11 +28,23 @@ vi.mock("$lib/api/client", () => ({
   getAtlasProject: vi.fn(),
   getRunSnapshot: vi.fn(),
   listenToRun: vi.fn(),
-  sendBridgeMessage: vi.fn()
+  sendBridgeMessage: vi.fn(),
+  getDictationDiscovery: vi.fn(),
+  getDictationAttempt: vi.fn(),
+  transcribeDictation: vi.fn(),
+  recordDictationCorrection: vi.fn(),
+  listDictationCorrections: vi.fn().mockResolvedValue([]),
+  deleteDictationAttempt: vi.fn(),
+  listDictationLexicon: vi.fn().mockResolvedValue([]),
+  approveDictationLexicon: vi.fn(),
+  deleteDictationLexicon: vi.fn(),
+  getDictationSuggestions: vi.fn()
 }));
 
 import {
   ApiError,
+  getDictationDiscovery,
+  transcribeDictation,
   getAtlasProject,
   cancelBridgeRun,
   createBridgeSession,
@@ -43,6 +57,11 @@ import {
 } from "$lib/api/client";
 import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
 import BridgeView from "./BridgeView.svelte";
+import { createWorkCommandRegistry, workCommandKey, type CommandResult, type CommandTarget } from "$lib/bridge/work-commands";
+import { createVoiceCapture } from "$lib/bridge/voice/capture";
+import type { VoiceCaptureOptions, VoiceRecording } from "$lib/bridge/voice/capture";
+vi.mock("$lib/bridge/voice/capture", () => ({ createVoiceCapture: vi.fn(), VOICE_MAX_WAV_BYTES: 960044 }));
+import { bridgePinsStorageKey } from "$lib/bridge/pins";
 
 const createdAt = "2026-07-28T00:00:00Z";
 const failedStreamNotice = "This Run failed. The text shown here is not a completed answer.";
@@ -196,6 +215,7 @@ function latestRunListener() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   mockPage.state = {};
   mockPage.url = new URL("http://localhost/bridge");
   getSnapshotMock.mockImplementation(async (sessionId) =>
@@ -205,6 +225,56 @@ beforeEach(() => {
   getSessionsMock.mockReset();
   listenMock.mockImplementation(() => vi.fn());
   cancelMock.mockResolvedValue(cancelledProjection());
+  vi.mocked(getDictationDiscovery).mockResolvedValue({
+    status: "unavailable", reason: "unconfigured", profile_digest: null, languages: [],
+    max_audio_bytes: 1048576, max_audio_seconds: 30, sample_rate_hz: 16000, channels: 1,
+    sample_width_bytes: 2, raw_audio_retention_seconds: 300
+  } satisfies DictationDiscovery);
+});
+
+describe("Bridge pinned conversation rail", () => {
+  it("keeps pins separate from recent conversations, survives remount and stores no titles or drafts", async () => {
+    const view = render(BridgeView, { sessionId: "session-a" });
+    const composer = await screen.findByRole("textbox", { name: "Message" });
+    await fireEvent.input(composer, { target: { value: "private draft" } });
+    const pin = screen.getByRole("button", { name: "Pin conversation: Séance B" });
+    pin.focus();
+    await fireEvent.click(pin);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Unpin conversation: Séance B" }));
+    expect(JSON.parse(localStorage.getItem(bridgePinsStorageKey)!)).toEqual(["session-b"]);
+    const nav = screen.getByRole("navigation", { name: "Conversations" });
+    expect(within(nav).getAllByRole("link").map((link) => link.querySelector(".t")?.textContent)).toEqual(["Séance B", "Séance A"]);
+    expect(screen.getByLabelText("Message")).toBe(composer);
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(getSnapshotMock).toHaveBeenCalledTimes(1);
+    view.unmount();
+    const next = render(BridgeView, { sessionId: "session-a" });
+    expect(await screen.findByRole("button", { name: "Unpin conversation: Séance B" })).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Unpin conversation: Séance B" }));
+    expect(localStorage.getItem(bridgePinsStorageKey)).toBe("[]");
+    next.unmount();
+  });
+
+  it("shows unloaded pins as identity links and permits pinning an off-page selection without extra reads", async () => {
+    localStorage.setItem(bridgePinsStorageKey, JSON.stringify(["older-unloaded"]));
+    const response = snapshot("session-b");
+    getSnapshotMock.mockResolvedValue({ ...response, sessions: [response.sessions[0]!] });
+    const view = render(BridgeView, { sessionId: "session-b" });
+    await screen.findByLabelText("Message");
+    expect(screen.getByRole("link", { name: /Conversation · older-unloaded/ }).getAttribute("href")).toBe("/bridge/older-unloaded");
+    expect(screen.getByText("Selected conversation")).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Pin conversation: Séance B" }));
+    expect(screen.queryByText("Selected conversation")).toBeNull();
+    expect(JSON.parse(localStorage.getItem(bridgePinsStorageKey)!)).toEqual(["older-unloaded", "session-b"]);
+    expect(getSnapshotMock).toHaveBeenCalledTimes(1);
+    expect(getSessionsMock).not.toHaveBeenCalled();
+    expect(sendMock).not.toHaveBeenCalled();
+    const unloadedPin = screen.getByRole("button", { name: "Unpin conversation: older-unloaded" });
+    unloadedPin.focus();
+    await fireEvent.click(unloadedPin);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /New Séance/ }));
+    view.unmount();
+  });
 });
 
 afterEach(() => {
@@ -1731,4 +1801,237 @@ it("links the separate source recall focus without moving a session draft, unres
   expect((screen.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("later conversation draft");
   expect(screen.getByRole("region", { name: "Unresolved offering" }).textContent).toContain("unresolved conversation offering");
   expect(sendMock).toHaveBeenCalledTimes(1); expect(decideConsentMock).not.toHaveBeenCalled(); returned.unmount();
+});
+
+
+describe("Bridge command destination and shared voice composer", () => {
+  function mountWork(execute = vi.fn((_text: string, _target: CommandTarget): CommandResult => ({ status: "preview", summary: "Two named nodes and one connection ready for review." }))) {
+    const registry = createWorkCommandRegistry();
+    registry.register({ instrument: "canvas", id: "board-a", label: "Architecture", snapshot: () => ({
+      revisionKey: "1", commands: ["create node Vessel", "connect Vessel to Postgres"]
+    }), execute });
+    const work = createBridgeWorkspace();
+    const view = render(BridgeView, { props: { sessionId: "session-a" },
+      context: new Map<symbol, unknown>([[workCommandKey, registry], [bridgeWorkspaceKey, work]]) });
+    return { view, registry, work, execute };
+  }
+
+  it("keeps Conversation default and sends typed work commands only to the closed preview registry", async () => {
+    const { execute } = mountWork();
+    const message = await screen.findByLabelText("Message");
+    const mode = screen.getByLabelText("Send to") as HTMLSelectElement;
+    expect(mode.value).toBe("chat");
+    expect(screen.getByRole("option", { name: "Canvas · Architecture" })).toBeTruthy();
+    await fireEvent.change(mode, { target: { value: "work" } });
+    expect(screen.getByText("English commands · Canvas · Architecture")).toBeTruthy();
+    expect(screen.getByText("connect Vessel to Postgres")).toBeTruthy();
+    await fireEvent.input(message, { target: { value: "create node Vessel" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Send command" }));
+    expect(execute).toHaveBeenCalledOnce();
+    expect(execute.mock.calls[0]?.[0]).toBe("create node Vessel");
+    expect(await screen.findByText(/preview: Two named nodes/)).toBeTruthy();
+    expect((message as HTMLTextAreaElement).value).toBe("");
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses absent work targets without falling through to conversation", async () => {
+    render(BridgeView, { sessionId: "session-a" });
+    const message = await screen.findByLabelText("Message");
+    await fireEvent.change(screen.getByLabelText("Send to"), { target: { value: "work" } });
+    await fireEvent.input(message, { target: { value: "create node Vessel" } });
+    await fireEvent.keyDown(message, { key: "Enter" });
+    expect(screen.getByText(/unavailable: The work target changed/)).toBeTruthy();
+    expect((message as HTMLTextAreaElement).value).toBe("create node Vessel");
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("does not clear an edited-away-and-back draft after an asynchronous command", async () => {
+    const pending = deferred<CommandResult>();
+    const registry = createWorkCommandRegistry();
+    registry.register({ instrument: "canvas", id: "a", label: "Board", snapshot: () => ({ revisionKey: "1", commands: [] }), execute: () => pending.promise });
+    render(BridgeView, { props: { sessionId: "session-a" }, context: new Map([[workCommandKey, registry]]) });
+    const message = await screen.findByLabelText("Message") as HTMLTextAreaElement;
+    await fireEvent.change(screen.getByLabelText("Send to"), { target: { value: "work" } });
+    await fireEvent.input(message, { target: { value: "create node Vessel" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Send command" }));
+    await fireEvent.input(message, { target: { value: "changed draft" } });
+    await fireEvent.input(message, { target: { value: "create node Vessel" } });
+    await act(() => pending.resolve({ status: "preview", summary: "Original preview ready." }));
+    expect(message.value).toBe("create node Vessel");
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("retries the exact unresolved chat offering and UUID even after choosing work mode", async () => {
+    const { work, execute } = mountWork();
+    await screen.findByLabelText("Message");
+    await act(() => work.pending.set("session-a", {
+      text: "original chat offering", requestId: "original-uuid", uncertain: true, sending: false, error: "Response lost"
+    }));
+    sendMock.mockRejectedValueOnce(new TypeError("Response still lost"));
+    await fireEvent.change(screen.getByLabelText("Send to"), { target: { value: "work" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Retry original offering" }));
+    expect(sendMock).toHaveBeenCalledExactlyOnceWith("session-a", "original chat offering", "original-uuid");
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  let finishCapture: (value: VoiceRecording | null) => void;
+  let captureOptions: VoiceCaptureOptions;
+  function enableVoice() {
+    vi.mocked(getDictationDiscovery).mockResolvedValue({
+      status: "available", reason: null, profile_digest: `sha256:${"a".repeat(64)}`, languages: ["en"],
+      max_audio_bytes: 1048576, max_audio_seconds: 30, sample_rate_hz: 16000, channels: 1,
+      sample_width_bytes: 2, raw_audio_retention_seconds: 300
+    } satisfies DictationDiscovery);
+    vi.mocked(transcribeDictation).mockImplementation(async (body) => ({
+      attempt_id: body.attempt_id, status: "transcribed", original_text: "create node Vessel", language: "en",
+      source_digest: `sha256:${"b".repeat(64)}`, profile_digest: `sha256:${"a".repeat(64)}`, reason: null
+    } satisfies DictationResult));
+    vi.mocked(createVoiceCapture).mockImplementation((options: VoiceCaptureOptions = {}) => {
+      captureOptions = options;
+      return {
+        start: () => { options.onstate?.({ status: "recording", elapsedMs: 0, limitMs: 30000 });
+          return new Promise<VoiceRecording | null>((resolve) => { finishCapture = resolve; }); },
+        stop: vi.fn(async () => null), dispose: vi.fn(), cancel: vi.fn(),
+        state: { status: "idle", elapsedMs: 0, limitMs: 30000 }
+      } as ReturnType<typeof createVoiceCapture>;
+    });
+    vi.stubGlobal("FileReader", class {
+      result: string | null = null;
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      readAsDataURL() { queueMicrotask(() => { this.result = "data:audio/wav;base64,UklGRg=="; this.onload?.(); }); }
+      abort() {}
+    });
+  }
+  async function completeVoice() {
+    await act(async () => {
+      captureOptions.onstate?.({ status: "complete", elapsedMs: 10, limitMs: 30000 });
+      finishCapture({ blob: new Blob([new Uint8Array(48)], { type: "audio/wav" }), channels: 1, sampleRate: 16000, frames: 2, durationMs: .125 });
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    });
+  }
+
+  it("uses the shared voice claim for Enter and click, then keeps the ordinary unknown-send retry", async () => {
+    enableVoice();
+    sendMock.mockRejectedValueOnce(new TypeError("Response lost"));
+    render(BridgeView, { sessionId: "session-a" });
+    const message = await screen.findByLabelText("Message") as HTMLTextAreaElement;
+    await waitFor(() => expect((screen.getByRole("button", { name: "Record voice" }) as HTMLButtonElement).disabled).toBe(false));
+    await fireEvent.click(screen.getByRole("button", { name: "Record voice" }));
+    await completeVoice();
+    expect(message.value).toBe("create node Vessel");
+    await fireEvent.input(message, { target: { value: "corrected offering" } });
+    await fireEvent.keyDown(message, { key: "Enter" });
+    await fireEvent.click(screen.getByRole("button", { name: "Offer" }));
+    expect(sendMock).toHaveBeenCalledOnce();
+    expect(sendMock.mock.calls[0]?.[1]).toBe("corrected offering");
+    expect(screen.getByRole("button", { name: "Retry original offering" })).toBeTruthy();
+  });
+
+  it("dispatches an adopted voice command with its pinned target without recapturing on Send", async () => {
+    enableVoice();
+    const { registry, execute } = mountWork();
+    const message = await screen.findByLabelText("Message");
+    await fireEvent.change(screen.getByLabelText("Send to"), { target: { value: "work" } });
+    await waitFor(() => expect((screen.getByRole("button", { name: "Record voice" }) as HTMLButtonElement).disabled).toBe(false));
+    await fireEvent.click(screen.getByRole("button", { name: "Record voice" }));
+    await completeVoice();
+    const recapture = vi.spyOn(registry, "capture");
+    await fireEvent.keyDown(message, { key: "Enter" });
+    expect(recapture).not.toHaveBeenCalled();
+    expect(execute).toHaveBeenCalledOnce();
+    expect(execute.mock.calls[0]?.[1].id).toBe("board-a");
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("suppresses autosend for a complete IME start/end within one render batch", async () => {
+    enableVoice();
+    render(BridgeView, { sessionId: "session-a" });
+    const message = await screen.findByLabelText("Message");
+    await waitFor(() => expect((screen.getByRole("button", { name: "Record voice" }) as HTMLButtonElement).disabled).toBe(false));
+    const autosend = screen.getByLabelText("Automatically send after 2 seconds");
+    await fireEvent.click(autosend);
+    vi.useFakeTimers();
+    await fireEvent.click(screen.getByRole("button", { name: "Record voice" }));
+    await completeVoice();
+    await act(() => {
+      message.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+      message.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true }));
+    });
+    await act(() => vi.advanceTimersByTimeAsync(2500));
+    expect(sendMock).not.toHaveBeenCalled();
+    expect((message as HTMLTextAreaElement).value).toBe("create node Vessel");
+  });
+
+  it("keeps late speech separate after an edit-away-and-back during capture", async () => {
+    enableVoice();
+    render(BridgeView, { sessionId: "session-a" });
+    const message = await screen.findByLabelText("Message") as HTMLTextAreaElement;
+    await waitFor(() => expect((screen.getByRole("button", { name: "Record voice" }) as HTMLButtonElement).disabled).toBe(false));
+    await fireEvent.click(screen.getByRole("button", { name: "Record voice" }));
+    await fireEvent.input(message, { target: { value: "temporary" } });
+    await fireEvent.input(message, { target: { value: "" } });
+    await completeVoice();
+    expect(message.value).toBe("");
+    expect(screen.getByLabelText("Transcript suggestion")).toBeTruthy();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("fences late capture on navigation even when the route identity returns unchanged", async () => {
+    enableVoice();
+    render(BridgeView, { sessionId: "session-a" });
+    const message = await screen.findByLabelText("Message") as HTMLTextAreaElement;
+    await waitFor(() => expect((screen.getByRole("button", { name: "Record voice" }) as HTMLButtonElement).disabled).toBe(false));
+    await fireEvent.click(screen.getByRole("button", { name: "Record voice" }));
+    await act(() => {
+      const navigation = vi.mocked(beforeNavigate).mock.calls.at(-1)?.[0];
+      navigation?.({} as Parameters<NonNullable<typeof navigation>>[0]);
+      navigation?.({} as Parameters<NonNullable<typeof navigation>>[0]);
+    });
+    await completeVoice();
+    expect(message.value).toBe("");
+    expect(transcribeDictation).not.toHaveBeenCalled();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("suspends a hidden shell capture before prop flush and preserves the draft", async () => {
+    enableVoice();
+    let visible = true;
+    const view = render(BridgeView, { sessionId: "session-a", isVisible: () => visible });
+    const message = await screen.findByLabelText("Message") as HTMLTextAreaElement;
+    await waitFor(() => expect((screen.getByRole("button", { name: "Record voice" }) as HTMLButtonElement).disabled).toBe(false));
+    await fireEvent.input(message, { target: { value: "Keep typed text" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Record voice" }));
+    await act(() => { view.component.suspendVoice(); visible = false; });
+    await completeVoice();
+    expect(message.value).toBe("Keep typed text");
+    expect(transcribeDictation).not.toHaveBeenCalled();
+    expect(sendMock).not.toHaveBeenCalled();
+    // A stale visible prop/button cannot start another microphone while its shell is hidden.
+    await fireEvent.click(screen.getByRole("button", { name: "Record voice" }));
+    expect(createVoiceCapture).toHaveBeenCalledOnce();
+    visible = true;
+    await fireEvent.click(screen.getByRole("button", { name: "Record voice" }));
+    expect(createVoiceCapture).toHaveBeenCalledTimes(2);
+    view.unmount();
+  });
+
+  it("does not revive a suspended autosend after reopening the shell", async () => {
+    enableVoice();
+    let visible = true;
+    const view = render(BridgeView, { sessionId: "session-a", isVisible: () => visible });
+    const message = await screen.findByLabelText("Message") as HTMLTextAreaElement;
+    await waitFor(() => expect((screen.getByRole("button", { name: "Record voice" }) as HTMLButtonElement).disabled).toBe(false));
+    await fireEvent.click(screen.getByLabelText("Automatically send after 2 seconds"));
+    vi.useFakeTimers();
+    await fireEvent.click(screen.getByRole("button", { name: "Record voice" }));
+    await completeVoice();
+    await act(() => { view.component.suspendVoice(); visible = false; });
+    await act(() => vi.advanceTimersByTimeAsync(2500));
+    visible = true;
+    await act(() => vi.advanceTimersByTimeAsync(2500));
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(message.value).toBe("create node Vessel");
+    view.unmount();
+  });
 });

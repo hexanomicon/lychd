@@ -70,6 +70,8 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.delegation.ports import DelegatedAgentRuntime
     from lychd.domain.delegation.routing import DelegatedRuntimeBinding
+    from lychd.domain.dictation_lexicon_service import DictationLexiconService
+    from lychd.domain.dictation_service import DictationService
     from lychd.domain.orchestration.actuator import RuntimeActuator
     from lychd.domain.orchestration.containment import SoftActivationGuard
     from lychd.domain.scout.authority import ScoutHostAuthorizer
@@ -97,6 +99,8 @@ class AltarServices:
     fragments: FragmentRegistry
     bridge_sessions: SessionStorePort
     atlas: AtlasStorePort
+    dictation: DictationService
+    dictation_lexicon: DictationLexiconService
     consents: ConsentLedger
     tickets: TicketStore
     swap_requests: SwapRequestLedger
@@ -126,7 +130,7 @@ class AltarServices:
                 await self.scout.contain_all()
             except BaseException as exc:  # noqa: BLE001 - retain containment uncertainty
                 failures.append(exc)
-        for close in (self.tickets.aclose, self.bus.aclose):
+        for close in (self.dictation.aclose, self.tickets.aclose, self.bus.aclose):
             try:
                 await close()
             except BaseException as exc:  # noqa: BLE001 - drain every owner and preserve cancellation
@@ -186,6 +190,38 @@ def _build_atlas_store(profile: str) -> AtlasStorePort:
     from lychd.db.engine import get_session_factory
 
     return DbAtlasStore(get_session_factory())
+
+
+def _build_dictation_services(profile: str, settings: Settings) -> tuple[DictationService, DictationLexiconService]:
+    """Compose private retention and an optional already-running CPU binding."""
+    from lychd.domain.dictation_lexicon import DictationLexiconStore, MemoryDictationLexiconStore
+    from lychd.domain.dictation_lexicon_service import DictationLexiconService
+    from lychd.domain.dictation_service import DictationService
+    from lychd.domain.dictation_store import DictationStore, MemoryDictationStore
+
+    pinned = settings.server.web.dictation
+    if pinned is not None and profile != "postgres":
+        msg = "Configured dictation requires PostgreSQL persistence."
+        raise ValueError(msg)
+    store: DictationStore
+    lexicon_store: DictationLexiconStore
+    if profile == "memory":
+        store = MemoryDictationStore()
+        lexicon_store = MemoryDictationLexiconStore()
+    else:
+        from lychd.db.dictation import DbDictationStore
+        from lychd.db.dictation_lexicon import DbDictationLexiconStore
+        from lychd.db.engine import get_session_factory
+
+        store = DbDictationStore(get_session_factory())
+        lexicon_store = DbDictationLexiconStore(get_session_factory())
+    adapter = None
+    if pinned is not None:
+        from lychd.system.services.dictation_transcriber import LocalDictationTranscriber
+
+        adapter = LocalDictationTranscriber(pinned)
+    dictation = DictationService(store=store, profile=pinned, transcriber=adapter)
+    return dictation, DictationLexiconService(store=lexicon_store, attempts=store)
 
 
 def _build_consent_ledger(profile: str) -> ConsentLedger:
@@ -477,6 +513,9 @@ def _configured_castings(
     if profile not in ("memory", "postgres"):
         msg = "Unsupported persistence profile."
         raise ValueError(msg)
+    if settings.server.web.dictation is not None and profile != "postgres":
+        msg = "Configured dictation requires PostgreSQL persistence."
+        raise ValueError(msg)
     bridge_casting = settings.weaver.bridge
     scavenger_casting = settings.weaver.scavenger
     if scavenger_casting is not None and workflows is not None:
@@ -636,8 +675,7 @@ def build_altar_services(
     context_orchestrator = ContextOrchestrator(registry=registry)
     fragments = build_fragment_registry()
     bridge_sessions = _build_session_store(profile, sigil_name=default_sigil().name)
-    atlas = _build_atlas_store(profile)
-    consents = _build_consent_ledger(profile)
+    atlas, consents = _build_atlas_store(profile), _build_consent_ledger(profile)
     if scavenger_casting is None:
         scout, scout_admission, consent_reviews = _build_scout(
             persistence=profile,
@@ -738,6 +776,7 @@ def build_altar_services(
         feed_scout_admission=feed_admission,
         effects=scout,
     )
+    dictation, dictation_lexicon = _build_dictation_services(profile, settings)
     return AltarServices(
         scavenger=scavenger,
         feed_admission=feed_admission,
@@ -751,6 +790,8 @@ def build_altar_services(
         fragments=fragments,
         bridge_sessions=bridge_sessions,
         atlas=atlas,
+        dictation=dictation,
+        dictation_lexicon=dictation_lexicon,
         consents=consents,
         tickets=tickets,
         swap_requests=swap_requests,

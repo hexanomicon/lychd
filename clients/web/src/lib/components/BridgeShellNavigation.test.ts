@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/svelte";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { createRawSnippet } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -37,6 +37,7 @@ vi.mock("$lib/api/client", () => ({
 }));
 
 import { page } from "$app/state";
+import { goto } from "$app/navigation";
 import { createBridgeSession, getAltarStatus, getBridgeSnapshot, getOrbRun, sendBridgeMessage, listenToRun, cancelBridgeRun } from "$lib/api/client";
 import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
 import AltarShell from "./AltarShell.svelte";
@@ -105,6 +106,7 @@ afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("shell-lifetime Bridge conversation", () => {
   it("starts a new work page at the top and restores its scroll on history return without remounting Bridge", async () => {
+    await visit("/orb");
     const shell = render(AltarShell, { children });
     const composer = await screen.findByLabelText("Message");
     const main = screen.getByRole("main");
@@ -262,6 +264,7 @@ describe("shell-lifetime Bridge conversation", () => {
     await visit("/bridge?attention=pending");
     await screen.findByRole("heading", { name: "Conversations awaiting consent" });
     expect(screen.queryByLabelText("Message")).toBeNull();
+    await visit("/orb");
     await fireEvent.click(screen.getByRole("button", { name: "Collapse Bridge" }));
     await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
     await screen.findByText("Retained answer for session-b");
@@ -269,4 +272,55 @@ describe("shell-lifetime Bridge conversation", () => {
     expect(sendBridgeMessage).not.toHaveBeenCalled();
     shell.unmount();
   });
+});
+
+it("reveals the same conversation beside work after full focus without overwriting a collapsed preference", async () => {
+  localStorage.setItem("lychd.bridge-dock.layout.v1", JSON.stringify({ side: "right", width: 536, open: false }));
+  await visit("/orb");
+  const shell = render(AltarShell, { children });
+  // Collapsed content stays mounted; this read uses the node rather than the accessibility tree.
+  await waitFor(() => expect(document.getElementById("bridge-message")).toBeTruthy());
+  const composer = document.getElementById("bridge-message") as HTMLTextAreaElement;
+  await fireEvent.input(composer, { target: { value: "Same draft in either presentation" } });
+  const reads = vi.mocked(getBridgeSnapshot).mock.calls.length;
+  await visit("/bridge");
+  expect(screen.getByRole("main", { name: "Bridge workspace" }).id).toBe("altar-main");
+  expect(document.querySelectorAll("#altar-main")).toHaveLength(1);
+  expect(screen.getByLabelText("Message")).toBe(composer);
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Collapse Bridge" })).toBeNull();
+  expect(getBridgeSnapshot).toHaveBeenCalledTimes(reads);
+  await visit("/atlas");
+  expect(screen.getByRole("button", { name: "Collapse Bridge" })).toBeTruthy();
+  expect(screen.getByLabelText("Message")).toBe(composer);
+  expect(document.getElementById("bridge-message")).toBe(composer);
+  expect(composer.value).toBe("Same draft in either presentation");
+  expect(JSON.parse(localStorage.getItem("lychd.bridge-dock.layout.v1")!)).toEqual({ side: "right", width: 536, open: false });
+  expect(getBridgeSnapshot).toHaveBeenCalledTimes(reads);
+  expect(sendBridgeMessage).not.toHaveBeenCalled();
+  shell.unmount();
+});
+
+it("reveals a narrow work view after full focus without overwriting a saved open preference", async () => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+  localStorage.setItem("lychd.bridge-dock.layout.v1", JSON.stringify({ side: "left", width: 440, open: true }));
+  const shell = render(AltarShell, { children });
+  await screen.findByLabelText("Message");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(document.querySelector("header.topbar")?.hasAttribute("inert")).toBe(false);
+  await visit("/atlas");
+  expect(screen.getByRole("main").hasAttribute("inert")).toBe(false);
+  expect(screen.getByRole("button", { name: "Expand Bridge" })).toBeTruthy();
+  expect(JSON.parse(localStorage.getItem("lychd.bridge-dock.layout.v1")!).open).toBe(true);
+  shell.unmount();
+});
+
+it("navigates from the trailing-slash Bridge root to the exact selected conversation", async () => {
+  page.url.href = "http://localhost/bridge/";
+  const shell = render(AltarShell, { children });
+  await screen.findByLabelText("Message");
+  await fireEvent.click(screen.getByRole("link", { name: /Older B/ }));
+  expect(goto).toHaveBeenCalledWith("/bridge/session-b", { keepFocus: true, noScroll: true });
+  expect(sendBridgeMessage).not.toHaveBeenCalled();
+  shell.unmount();
 });

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SvelteFlow, MiniMap, Panel, MarkerType, useSvelteFlow, type Edge, type NodeTargetEventWithPointer } from "@xyflow/svelte";
   import { onDestroy, tick, untrack } from "svelte";
+  import type { GraphCameraCommand } from "./camera-command";
   import type { GraphProjection } from "$lib/graph/model";
   import { reconcileEdges, reconcileNodes, type RenderNode } from "./flow-drafts";
   import { layoutProjection, NODE_WIDTH, NODE_HEIGHT, type Point } from "./layout";
@@ -10,12 +11,13 @@
   import FlowNode from "./FlowNode.svelte";
   import FlowEdge from "./FlowEdge.svelte";
 
-  let { projection, selectedId, onselect, label, focusId, focusRevision, onzoom, onviewportinteraction, presentation = "diagram", hideMinimap = false }: {
+  let { projection, selectedId, onselect, label, focusId, focusRevision, onzoom, onviewportinteraction, presentation = "diagram", hideMinimap = false, cameraCommand = null }: {
     projection: GraphProjection; selectedId: string | null;
     onselect?: (id: string, opener?: HTMLElement) => void; label: string;
     focusId: string | null; focusRevision: number;
     onzoom?: (zoom: number) => void; onviewportinteraction?: () => void;
     presentation?: "diagram" | "orb"; hideMinimap?: boolean;
+    cameraCommand?: GraphCameraCommand | null;
   } = $props();
   const nodeTypes = { semantic: FlowNode, orb: OrbNode };
   const edgeTypes = { semantic: FlowEdge };
@@ -59,23 +61,51 @@
       if (suppressPointerUntil.size > 128) suppressPointerUntil.delete(suppressPointerUntil.keys().next().value!);
     }
   };
-  async function fit() {
-    await viewport.fitView({ padding:0.18, minZoom:0.1, maxZoom:1, duration:0 });
-    if (!disposed) {
+  async function fit(current = () => !disposed) {
+    if (!current()) return false;
+    const applied = await viewport.fitView({ padding:0.18, minZoom:0.1, maxZoom:1, duration:0 });
+    if (applied && current()) {
       fitZoom = viewport.getZoom(); lastZoom = fitZoom; cameraZoom = fitZoom;
       if (presentation === "orb") onzoom?.(cameraZoom);
     }
+    return applied;
   }
-  async function zoom(direction: "in" | "out") {
-    onviewportinteraction?.();
+  async function zoom(direction: "in" | "out", current = () => !disposed, manual = true) {
+    if (manual) onviewportinteraction?.();
+    if (!current()) return false;
     // setZoom resolves the current provider; captured zoomIn/out methods can bind
     // the provider placeholder before the child flow mounts.
-    await viewport.setZoom(viewport.getZoom() * (direction === "in" ? 1.2 : 1 / 1.2), { duration:0 });
-    if (!disposed) {
+    const applied = await viewport.setZoom(viewport.getZoom() * (direction === "in" ? 1.2 : 1 / 1.2), { duration:0 });
+    if (applied && current()) {
       lastZoom = viewport.getZoom(); cameraZoom = lastZoom;
       onzoom?.(presentation === "orb" ? cameraZoom : lastZoom / fitZoom);
     }
+    return applied;
   }
+
+  // Guard after settling and immediately before public renderer access.
+  let lastCameraCommand: GraphCameraCommand | null = null;
+  $effect(() => {
+    const command = cameraCommand;
+    if (!command || command === lastCameraCommand) return;
+    lastCameraCommand = command;
+    let cancelled = false;
+    let authorized = true;
+    const current = () => {
+      authorized = !disposed && !cancelled && cameraCommand === command && command.isCurrent();
+      return authorized;
+    };
+    void tick().then(async () => {
+      if (!current()) { command.complete("stale"); return; }
+      try {
+        const applied = command.action === "fit"
+          ? await fit(current)
+          : await zoom(command.action === "zoom-in" ? "in" : "out", current, false);
+        command.complete(disposed || cancelled || !authorized ? "stale" : applied ? "applied" : "unavailable");
+      } catch { command.complete("unavailable"); }
+    });
+    return () => { cancelled = true; command.complete("stale"); };
+  });
 
   // This effect is the owned external-library synchronization boundary. The raw bound
   // arrays are disposable Svelte Flow drafts, not a second reactive semantic projection.
@@ -143,7 +173,7 @@
     <div class={["canvas-controls", { "orb-controls": presentation === "orb" }]} role="group" aria-label="Graph viewport">
       <button type="button" aria-label="Zoom in" onclick={() => zoom("in")}>+</button>
       <button type="button" aria-label="Zoom out" onclick={() => zoom("out")}>−</button>
-      <button type="button" onclick={() => { void fit(); }}>Fit graph</button>
+      <button type="button" onclick={() => { onviewportinteraction?.(); void fit(); }}>Fit graph</button>
     </div>
   </Panel>
   {#if !hideMinimap}<MiniMap nodeColor="var(--color-rune-dim)" maskColor="color-mix(in srgb,var(--color-void) 72%,transparent)" />{/if}

@@ -53,8 +53,9 @@ closes preference-driven stack selection:
 - Loom and Orb share one DOM renderer adapter. Share ordinary immutable TypeScript contracts,
   semantic projections, and folding, never renderer stores, framework state, or one another's
   authority.
-- Nexus remains a native semantic control board and inherits no renderer; its data is a hierarchy
-  that folds by disclosure. A body map needs a measured topology requirement and the same gates.
+- Nexus remains a native semantic control board with a read-only DOM/SVG ownership map and
+  equivalent list; it inherits no graph renderer. Physical topology and configuration editing
+  require their own authoritative contracts and the same gates.
 - XYFlow is the admitted candidate for that one renderer once a released version passes ADR 15's
   authority and lifecycle matrix; that matrix measures retained heap after forced collection on
   every supported engine, not live observer counts.

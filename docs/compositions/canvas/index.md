@@ -62,6 +62,29 @@ The local **Tidy** helper regularizes geometry. It does not interpret an arbitra
 written request. A proposal authored by Codex and manually imported is attributed as manual
 model transport; it does not establish a live LychD vision-provider integration.
 
+### Give a bounded command through Bridge
+
+Keep this board open and choose Bridge's work command destination. Type a command,
+or use the separately configured [Bridge microphone](../../divination/altar/bridge.md#dictate-and-review).
+The first vocabulary is deterministic English. For example:
+
+```text
+add node Vessel then add database Postgres then connect Vessel to Postgres
+```
+
+The result is a preview of native editable nodes and an explicit connection, even
+on an empty board. Inspect it and choose **Apply** to make one undoable change.
+**Undo** and **Redo** use the ordinary board history; confirm **Save board** in a
+Project workspace, or download the portable document locally. Sending a command,
+including automatic sending, never applies or saves it.
+
+Command help also covers selected-node rename, movement, arrangement and connection.
+Quote ambiguous labels and use unique node names. Selection changes, scene edits
+or a changed work destination make an old preview stale. Unrelated objects and
+original ink survive. These commands do not interpret arbitrary languages, turn
+handwriting into meaning, generate images or publish a workflow.
+
+
 ## Keep the explanation steady
 
 Nodes have editable text, optional symbolic artwork, stable identity and explicit connections.
@@ -110,8 +133,9 @@ recovery before becoming supported.
 
 The executable file and proposal contracts belong to
 [`src/lychd/compositions/canvas/`](https://github.com/hexanomicon/lychd/tree/main/src/lychd/compositions/canvas).
-The first profile does not register an executable Pattern or Invocation. Live microphone capture,
-automatic model interpretation and image generation require separately proved integrations.
+The first profile does not register an executable Pattern or Invocation. Bridge
+dictation has its own configuration and [qualification boundary](../../state-of-the-work.md#audio-admission).
+Automatic model interpretation and image generation require separate integrations.
 
 The [manual Codex example](https://github.com/hexanomicon/lychd/tree/main/examples/canvas)
 provides a selection packet, a proposal bound to the untouched sample, and a reproducible

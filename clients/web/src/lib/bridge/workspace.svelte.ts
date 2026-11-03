@@ -32,6 +32,7 @@ export type ConsentDecision = Readonly<{
  */
 export function createBridgeWorkspace() {
   const drafts = new SvelteMap<string, string>();
+  const draftRevisions = new SvelteMap<string, number>();
   const pending = new SvelteMap<string, PendingOffering>();
   const refused = new SvelteMap<string, ReadonlyArray<{ requestId: string; text: string; error: string }>>();
   // Local response generations fence reads overtaken by a mutation; not Run cursors.
@@ -40,11 +41,14 @@ export function createBridgeWorkspace() {
   const consentDecisions = new SvelteMap<string, ConsentDecision>();
   return {
     drafts,
+    draftRevisions,
     pending,
     settlements,
     consentDecisions,
     refused,
     setDraft(sessionId: string, text: string) {
+      if ((drafts.get(sessionId) ?? "") === text) return;
+      draftRevisions.set(sessionId, (draftRevisions.get(sessionId) ?? 0) + 1);
       if (text) drafts.set(sessionId, text);
       else drafts.delete(sessionId);
     },

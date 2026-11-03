@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BridgeSnapshot, OrbRunSnapshot, RunProjectionSnapshot } from "$lib/api/models";
 
-vi.mock("$app/navigation", () => ({ goto: vi.fn(), replaceState: vi.fn() }));
+vi.mock("$app/navigation", () => ({ beforeNavigate: vi.fn(), goto: vi.fn(), replaceState: vi.fn() }));
 vi.mock("$app/state", async () => {
   const { SvelteURL } = await import("svelte/reactivity");
   return { page: { url: new SvelteURL("http://localhost/bridge/session-b"), state: {} } };
@@ -17,6 +17,7 @@ vi.mock("$lib/api/client", () => ({
   getAtlasReferences: vi.fn().mockResolvedValue([]),
   getBridgeSnapshot: vi.fn(),
   getBridgeSessions: vi.fn(),
+  getDictationDiscovery: vi.fn().mockResolvedValue({ status: "unavailable", reason: "unconfigured", languages: [], profile_digest: null }),
   getOrbRun: vi.fn(),
   getRunSnapshot: vi.fn(),
   listenToRun: vi.fn(),

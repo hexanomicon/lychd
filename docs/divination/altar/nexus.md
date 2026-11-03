@@ -15,6 +15,17 @@ Complete [Altar’s startup and local-access steps](index.md#bring-one-intent), 
 
 ## Read the observation before planning
 
+Choose **Map** to explore supplied capability ownership, or **List** for the equivalent grouped
+observations. Wide windows start with Map and fresh narrow windows with List; the browser can
+remember this view choice. Select an Animator, capability, Portal or delegated runtime to open
+**Selected object**. Selection reads properties only; it does not compute a plan or change
+configuration. Portals and delegated runtimes remain read-only. Missing objects stay explicitly
+unavailable after refresh instead of selecting a different object.
+
+Map edges connect a supplied Animator to its capabilities. Positions and Coven labels organize
+the view; they do not assert a physical host, GPU placement, network link or full group membership.
+Use Fit, zoom and pan to inspect the map; the List supplies the same objects without camera gestures.
+
 The board loads a timestamped snapshot, refreshes every five seconds, and refreshes when a ticket
 settles. Stop if **Runtime admission is contained** appears: runtime admission is fenced.
 
@@ -43,7 +54,7 @@ reservations. A refresh does not reserve a capability for a later Run.
 
 ## Preview the change you intend
 
-Choose **Preview** on the managed capability you intend to use. The target stays visible during
+Choose **Preview** on the selected managed capability, or beside its List row. The target stays visible during
 loading, and closing the preview prevents a late response from reopening it. Read the
 **Non-binding preview** for `action` (`NO_OP`, `SOFT_SWAP`, or `HARD_SWAP`), `target`, Animator ids
 selected for `evict` and `launch`, and `policy cost`.
@@ -57,8 +68,10 @@ cannot promise the same eviction set.
 
 Evictions are named by Animator while board rows are keyed by capability. A Coven cannot hold
 two conflicting Animators, so an eviction lands on another card, not the previewed one. The
-current board does not mark those affected rows from the plan; read the served eviction identities
-directly.
+map marks exactly matched Animators and their managed capabilities as **Planned eviction** or
+**Planned launch**. Those labels describe this nonbinding plan, not the observed state. The full
+Animator lists remain visible even when an identity has no corresponding object in this snapshot.
+Selecting another object or changing Map/List does not retarget an open plan or its prepared request.
 
 ## Keep one request identity through uncertainty
 
@@ -119,12 +132,13 @@ Keep the original request identity while reconciling the physical outcome. A con
 unresolved result needs operator recovery; another transition request cannot clear that uncertainty.
 Reconcile a unit/probe mismatch before retrying.
 
-The current surface is a grouped observation board, preview, request ticket, and latest-observation
-inspector. Narrow screens place details in the reading flow. It shows no queue order, leases,
+The current surface is an ownership map and grouped list, selected properties, preview, request
+ticket, and latest-observation inspector. Narrow screens place details in the reading flow.
+It shows no queue order, leases,
 GPU/VRAM/topology/thermal pressure, durable history, configuration editing, provider accounts,
 billing, or credentials.
 
-Its semantic board remains primary; any future body map starts as a read-only lens over validated observations. The
+Its map is a read-only lens over validated observations within the semantic board. The
 [Frontend Covenant](../../adr/15-frontend.md#decision-lock-and-reopening-gate) owns that design and
 its admission gates.
 
@@ -132,11 +146,11 @@ its admission gates.
 
 For interface review and design, use the following composition and acceptance case.
 
-The current layout keeps snapshot time and containment first, then grouped observations
-with their freshness, one selected preview, and its explicit request. Aligned eviction and
-launch lists make the consequence easier to compare than an inferred topology graph. Preserve
-the distinction between a capability row and the Animator that would be evicted; affected-row
-highlighting requires exact identity mapping from the served data.
+The current layout keeps snapshot time and containment first, then the ownership map or grouped
+list, selected properties, one selected preview and its explicit request. Exact plan overlays and
+aligned eviction/launch lists describe the same supplied Animator identities. Keep inspection
+selection visually distinct from the preview target. Neither position nor a group label establishes
+physical topology, and the capability and its Animator remain different objects.
 
 Ticket outcome and physical observation stay separately identified by request, target and time.
 A recently observed phase is not a complete progress rail, and the latest bounded list is not
