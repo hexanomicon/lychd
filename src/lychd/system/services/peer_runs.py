@@ -554,7 +554,7 @@ class PeerRunService:
             _refuse("native-terminal")
         return "\n".join(cast("list[str]", texts))
 
-    async def reauthorize_existing_run(  # noqa: C901 - preserve ordered authentication and custody checks
+    async def reauthorize_existing_run(  # noqa: C901, PLR0915 - preserve ordered authentication and custody checks
         self,
         authentication: object,
         *,
@@ -564,7 +564,7 @@ class PeerRunService:
         actions: frozenset[str],
         reaffirm_public_source: bool = False,
     ) -> dict[str, object]:
-        """Install a fresh exact live permission; claimed submits remain single-shot."""
+        """Reauthorize exact work, or only local failure settlement after task expiry."""
         self._require_loop()
         if (
             type(authentication) is not LocalOperatorAuthentication
@@ -579,8 +579,20 @@ class PeerRunService:
         binding = run.admitted_peer if run is not None else None
         if binding is None or run is None or binding.digest != expected_binding_digest:
             _refuse("native-binding")
-        for action in actions:
-            self._intercom.check_native(authentication, action, binding)
+        local_expiry = (
+            binding.expires_at.tzinfo is not None
+            and binding.expires_at <= datetime.now(UTC)
+            and actions == frozenset({"adopt", "resume"})
+        )
+
+        def check_actions() -> None:
+            for action in actions:
+                if local_expiry:
+                    self._authority.check(authentication, action, _target(binding))
+                else:
+                    self._intercom.check_native(authentication, action, binding)
+
+        check_actions()
         if (
             run.status not in {RunStatus.AWAITING_PEER, RunStatus.QUEUED}
             or run.peer_task_id != expected_task_id
@@ -588,16 +600,33 @@ class PeerRunService:
         ):
             _refuse("native-binding")
         evidence = await self.evidence(run_id=run_id, task_id=expected_task_id)
-        for action in actions:
-            self._intercom.check_native(authentication, action, binding)
+        check_actions()
         task = evidence.task
         if task.get("adoption_closed") or task.get("local_status") in {"cancelled", "expired", "revoked", "refused"}:
             _refuse("native-closed")
         if "submit" in actions and (not reaffirm_public_source or task.get("submit_claimed")):
             _refuse("native-submit")
+        if local_expiry and (
+            reaffirm_public_source
+            or run.workflow_name != "native_public_peer"
+            or run.source != "peer_public"
+            or evidence.ref.station != _WAIT
+            or evidence.ref.request_id != binding.request_id
+            or evidence.pattern_digest != run.pattern_manifest.get("digest")
+            or str(task.get("task_id")) != expected_task_id
+            or str(task.get("peer_id")) != str(binding.peer_id)
+            or str(task.get("declaration_id")) != str(binding.declaration_id)
+            or str(task.get("operation_id")) != str(binding.operation_id)
+            or task.get("purpose") != binding.purpose
+            or task.get("task_schema") != binding.task_schema
+            or task.get("endpoint") != binding.endpoint
+            or task.get("source_digest") != binding.source_digest
+            or task.get("text_digest") != binding.text_digest
+            or datetime.fromisoformat(str(task.get("expires_at"))) != binding.expires_at
+        ):
+            _refuse("native-binding")
         declaration = await self._store.declaration(binding.declaration_id)
-        for action in actions:
-            self._intercom.check_native(authentication, action, binding)
+        check_actions()
         source_record = declaration.get("source")
         if not isinstance(source_record, dict):
             _refuse("native-source")
@@ -615,22 +644,43 @@ class PeerRunService:
             self._intercom.check_native(authentication, "classify_public", binding)
 
         def current() -> None:
-            for action in actions:
-                self._intercom.check_native(authentication, action, binding)
+            check_actions()
             if self._fence.reason(run_id, run.enqueue_seq) is not None:
                 _refuse("native-permission")
+            if local_expiry:
+                peer, retained = self._resume_custody[expected_task_id]
+                target = PeerObject(
+                    binding.peer_id,
+                    binding.purpose,
+                    binding.category,
+                    binding.task_schema,
+                    binding.endpoint,
+                    UUID(expected_task_id),
+                    binding.text_digest,
+                )
+                for action in actions:
+                    self._intercom.check_current(
+                        authentication,
+                        action,
+                        target,
+                        peer,
+                        retained,
+                        current=check_actions,
+                        allow_expired_native_disposition=True,
+                    )
 
         # This transient read callback is never installed as a live transmission
         # permission. It verifies durable current peer/key/task generations first.
-        await self._intercom.read(
-            authentication,
-            task_id=UUID(expected_task_id),
-            peer_id=binding.peer_id,
-            purpose=binding.purpose,
-            task_schema=binding.task_schema,
-            endpoint=binding.endpoint,
-            current=current,
-        )
+        if not local_expiry:
+            await self._intercom.read(
+                authentication,
+                task_id=UUID(expected_task_id),
+                peer_id=binding.peer_id,
+                purpose=binding.purpose,
+                task_schema=binding.task_schema,
+                endpoint=binding.endpoint,
+                current=current,
+            )
         current()
 
         await self._store.record_native_authorization(

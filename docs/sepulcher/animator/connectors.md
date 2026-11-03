@@ -19,6 +19,16 @@ is not necessarily a live discovery result. It is an available **OpenAI model
 connector**, not a universal implementation of every API beneath an `/v1` root. Audio, Images,
 Videos, OCR, Scout, Form, Kinesis, engine jobs, and live sessions have no delivered connector.
 
+The selected llama.cpp extension adds `LlamacppConnector`, which implements `EmbeddingConnector`
+for the [fixed local embedding profile](../../adr/22-dispatcher.md#explicit-local-embedding-compatibility-profile).
+Its separate grant binds the exact capability key, profile digest, and operation to a bounded
+driver. This extension does not add a general embeddings surface to `OpenAICompatibleConnector`.
+
+The current Connector ABC and its model, toolset, and embedding mixins describe callable adapter
+contracts. `CapabilitySpec` declares a binding, `CapabilityState` observes it, and a grant admits
+its use; none needs a universal executable `Capability` base class. Inheriting a mixin or accepting
+a modality proves neither model competence nor task-quality qualification.
+
 ## OpenAI compatibility is per dialect
 
 "OpenAI-compatible" without a named surface is not a compatibility claim. The designed dialect

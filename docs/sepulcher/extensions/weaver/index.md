@@ -200,7 +200,11 @@ begin a new forward Invocation; a terminal Run is never reopened to continue it.
 [Pattern lifecycle](pattern-lifecycle.md#a-new-score-is-a-new-revision) distinguishes new input
 from a changed score.
 
-Model and engine choice stays in the receiver-owned Resolution Lock. A Comfy graph is an
+Under the Designed portable contract, a Scroll may require an exact model, profile, Provider, or
+driver/dialect. The receiver-owned Resolution Lock closes remaining choices without weakening
+those requirements and retains the selected bindings for the Invocation; an unavailable target
+cannot silently become another runtime. Current Bridge exact-key selection provides the narrower
+binding described above, not artifact or configuration fingerprinting. A Comfy graph is an
 implementation preset, and a portable A2A Scroll remains inert until admitted. Follow
 [Composition Suites](../../../compositions/products-and-suites.md#compositions-relate-without-nesting) when the
 work needs live coordination across application owners.

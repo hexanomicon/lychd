@@ -95,11 +95,13 @@ class NodeOccurrenceEvent:
 
 
 def _extract_signal[T: BaseException](exc: BaseException, kind: type[T], *, max_depth: int = 5) -> T | None:
-    """Find one unambiguous `kind` signal through cause/context or an exception group.
+    """Find one unambiguous `kind` signal through explicit causes or an exception group.
 
     The old walk was depth-1 over ``__cause__`` only — it missed the ``ExceptionGroup``
     wrapping anyio task groups can produce around a tool raised mid-stream. A mixed
     group must remain a failure: parking on one child may not swallow its siblings.
+    Implicit context can instead be a cleanup failure raised while a signal unwinds;
+    only an explicit cause declares that an ordinary exception wraps the signal.
     """
     seen: set[int] = set()
 
@@ -117,13 +119,7 @@ def _extract_signal[T: BaseException](exc: BaseException, kind: type[T], *, max_
                 if first is not None and all(candidate is first for candidate in candidates[1:]):
                     return first
             return None
-        chained = current.__cause__
-        if chained is None and not current.__suppress_context__:
-            chained = current.__context__
-        for nxt in (chained,):
-            if (found := walk(nxt, depth - 1)) is not None:
-                return found
-        return None
+        return walk(current.__cause__, depth - 1)
 
     return walk(exc, max_depth)
 

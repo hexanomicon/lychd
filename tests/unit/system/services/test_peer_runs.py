@@ -9,6 +9,7 @@ import asyncio
 from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import replace
+from datetime import datetime, timedelta, tzinfo
 from typing import Any, cast
 from uuid import UUID, uuid4
 
@@ -220,6 +221,126 @@ async def test_reconstructed_owner_stays_silent_until_explicit_fresh_marker_reau
     assert len(custody.authorizations) == 1
     assert await replacement.drive_wait(handle.run_id)
     assert not await replacement.drive_wait(handle.run_id)
+    await substrate.bus.aclose()
+
+
+def _expire_peer_clock(monkeypatch: pytest.MonkeyPatch, expiry: datetime) -> None:
+    class ExpiredClock(datetime):
+        @classmethod
+        def now(cls, tz: tzinfo | None = None) -> datetime:
+            return (expiry + timedelta(seconds=1)).astimezone(tz)
+
+    for module in ("peer_runs", "intercom"):
+        monkeypatch.setattr(f"lychd.system.services.{module}.datetime", ExpiredClock)
+    monkeypatch.setattr("lychd.domain.cortex.ledger.datetime", ExpiredClock)
+
+
+@pytest.mark.asyncio
+async def test_expired_replacement_owner_settles_once_without_contact(monkeypatch: pytest.MonkeyPatch) -> None:
+    _, engine, substrate, ledger, custody, authority, marker, handle, intercom = await rig()
+    await perform_run({"run_substrate": substrate}, run_id=handle.run_id, enqueue_seq=0)
+    run = await ledger.get(handle.run_id)
+    binding, task_id = run.admitted_peer, run.peer_task_id
+    original = deepcopy(custody.tasks[UUID(task_id)])
+    _expire_peer_clock(monkeypatch, binding.expires_at)
+    replacement = PeerRunService(
+        store=cast("IntercomStore", custody),
+        intercom=intercom,
+        ledger=ledger,
+        authority=authority,
+        fence=RunEffectFence(),
+    )
+    replacement.bind_engine(engine)
+    substrate.peer, substrate.effects, engine.peer = replacement, replacement, replacement
+    assert not await replacement.drive_wait(run.run_id)
+    await replacement.reauthorize_existing_run(
+        marker,
+        run_id=run.run_id,
+        expected_task_id=task_id,
+        expected_binding_digest=binding.digest,
+        actions=frozenset({"adopt", "resume"}),
+    )
+    assert custody.authorizations[0]["actions"] == ["adopt", "resume"]
+    assert await replacement.drive_wait(run.run_id)
+    assert not await replacement.drive_wait(run.run_id)
+    with pytest.raises(PeerTaskOutcomeError, match="expired"):
+        await perform_run({"run_substrate": substrate}, run_id=run.run_id, enqueue_seq=1)
+    assert (await ledger.get(run.run_id)).status is RunStatus.FAILED
+    assert len(engine.queues["runs"].enqueued) == 2
+    assert custody.claims == 0
+    assert not custody.transmissions
+    retained = custody.tasks[UUID(task_id)]
+    for key in ("body", "expires_at", "native_binding_digest", "submit_claimed"):
+        assert retained[key] == original[key]
+    await substrate.bus.aclose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("extra_action", ["submit", "poll", "read"])
+async def test_expired_reauthorization_refuses_remote_or_read_actions(
+    monkeypatch: pytest.MonkeyPatch, extra_action: str
+) -> None:
+    peer, _, substrate, ledger, custody, _, marker, handle, _ = await rig()
+    await perform_run({"run_substrate": substrate}, run_id=handle.run_id, enqueue_seq=0)
+    run = await ledger.get(handle.run_id)
+    _expire_peer_clock(monkeypatch, run.admitted_peer.expires_at)
+    with pytest.raises(PeerAuthorityError, match="native-expiry"):
+        await peer.reauthorize_existing_run(
+            marker,
+            run_id=run.run_id,
+            expected_task_id=run.peer_task_id,
+            expected_binding_digest=run.admitted_peer.digest,
+            actions=frozenset({"adopt", "resume", extra_action}),
+        )
+    assert not custody.authorizations
+    assert custody.claims == 0
+    await substrate.bus.aclose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fault", ["marker", "credential", "source", "target", "expiry", "closed", "fence"])
+async def test_expired_reauthorization_preserves_authority_and_custody_checks(
+    monkeypatch: pytest.MonkeyPatch, fault: str
+) -> None:
+    _, engine, substrate, ledger, custody, authority, marker, handle, intercom = await rig()
+    await perform_run({"run_substrate": substrate}, run_id=handle.run_id, enqueue_seq=0)
+    run = await ledger.get(handle.run_id)
+    binding, task_id = run.admitted_peer, run.peer_task_id
+    _expire_peer_clock(monkeypatch, binding.expires_at)
+    replacement = PeerRunService(
+        store=cast("IntercomStore", custody),
+        intercom=intercom,
+        ledger=ledger,
+        authority=authority,
+        fence=RunEffectFence(),
+    )
+    replacement.bind_engine(engine)
+    task = custody.tasks[UUID(task_id)]
+    if fault == "marker":
+        marker = replace(marker)
+    elif fault == "credential":
+        authority.retire_key(binding.peer_id, 1)
+    elif fault == "source":
+        task["source_digest"] = "c" * 64
+    elif fault == "target":
+        task["endpoint"] = "https://other.example/a2a"
+    elif fault == "expiry":
+        task["expires_at"] = (binding.expires_at - timedelta(seconds=1)).isoformat()
+    elif fault == "closed":
+        task["adoption_closed"] = True
+    else:
+        replacement.fence(run.run_id, "test-fence")
+    with pytest.raises(PeerAuthorityError):
+        await replacement.reauthorize_existing_run(
+            marker,
+            run_id=run.run_id,
+            expected_task_id=task_id,
+            expected_binding_digest=binding.digest,
+            actions=frozenset({"adopt", "resume"}),
+        )
+    assert not custody.authorizations
+    assert not await replacement.drive_wait(run.run_id)
+    assert custody.claims == 0
     await substrate.bus.aclose()
 
 

@@ -76,7 +76,9 @@ completion, the original execution failure, or a checkpointed wait. Cancellation
 Capability nodes ask [Dispatcher](22-dispatcher.md), never bind runtimes directly. On
 HardwareTransitionRequired GraphRunner finds the signal even through a task group, snapshots state
 only when the exception tree resolves unambiguously to that signal; mixed signal/failure groups fail
-closed rather than swallowing a sibling. It snapshots state and current node, marks waiting, sets
+closed rather than swallowing a sibling. Ordinary wrappers must name the signal through an
+explicit cause. Implicit exception context can be a cleanup failure during signal unwinding and
+never authorizes Stasis or another station attempt. It snapshots state and current node, marks waiting, sets
 AWAITING_HARDWARE, asks [Orchestrator](23-orchestrator.md) to
 converge, returns RUNNING, resumes persistence, and dispatches again. Default limits are eight
 hardware resumes per Run and three consecutive requests for one capability; exceeding either fails.

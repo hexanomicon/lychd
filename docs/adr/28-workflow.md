@@ -80,6 +80,14 @@ Agent/Posture requirement, tool/effect contracts, checkpoint codec, and registry
 needed. The Run pins both the Scroll snapshot and Resolution Lock digest. Contract identity,
 implementation identity, and placement identity never substitute for one another.
 
+A portable Scroll may constrain exact model, capability profile, Provider, or driver/dialect
+identities when its contract requires them. Receiver resolution closes the remaining choices
+without relaxing those constraints. For capability-backed placements, the lock records the exact
+selected binding and required implementation revisions; the Invocation retains that selection
+through waits and resume. An unavailable binding cannot silently become another model or runtime.
+This general lock remains Designed: today's v1 capability key identifies Animator, family, and
+model alias, not a durable fingerprint of weights, Connector revision, or runtime configuration.
+
 A one-Spell Scroll is valid. A larger workflow or batch is simply a Scroll with several placements;
 the same Spell may appear more than once under distinct placement identities and bindings. This
 uses the existing workflow identity rather than inventing another batch object.

@@ -212,6 +212,8 @@ async def test_real_workers_drain_before_dependencies_or_preserve_them_on_uncert
         registry=SimpleNamespace(ensure_loaded=lambda: None, list_capabilities=list),
         substrate=SimpleNamespace(effects=None),
         run_engine=object(),
+        dictation=SimpleNamespace(purge=AsyncMock(return_value=None)),
+        dictation_lexicon=SimpleNamespace(purge=AsyncMock(return_value=None)),
     )
     owned: set[asyncio.Task[Any]] = set()
 

@@ -642,6 +642,9 @@ repair are idempotent under these controlled collaborators.
 
 Ordinary node-observer failures preserve successful execution, original failures, and consent,
 delegation, or hardware waits; cancellation remains observable to the caller.
+Cleanup failures raised while a wait signal unwinds remain failures: implicit exception context
+cannot park or retry the station. Direct signals, explicit cause wrappers and pure exception
+groups retain their supported wait behavior.
 
 **Boundary — Not yet:** There is no PostgreSQL Consent-plus-Checkpoint restart receipt. A legacy
 checkpoint from before the hardware-budget field cannot reconstruct attempts that already
@@ -656,6 +659,7 @@ pending cards do not implement that history.
 
 - **Source:** [Graph runner](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/graph_runner.py), [Run engine](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/engine.py), and [Worker settlement](https://github.com/hexanomicon/lychd/blob/main/src/lychd/ghouls/runs.py)
 - **Verification:** [Consent resume tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_consent_resume.py), [Run engine tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_engine.py), [rehydration tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_rehydration.py), [offline recovery windows](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_offline_recovery_workflow.py), [composed Bridge resume and cancellation](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_bridge_casting_workflow.py), and [node-observer failures](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_graph_observer_failures.py)
+- **Verification:** [Wait-signal and cleanup controls](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_stasis_signal.py)
 - **Law:** [Graph](./adr/24-graph.md) and [Human in the Loop](./adr/25-hitl.md)
 
 ### Delegated agent execution {#delegated-agent-execution}
@@ -3653,6 +3657,11 @@ checkpoint/claim/delivery ledger. No-contact preparation precedes checkpoint and
 one exact correlated terminal or explicit local unknown/expiry disposition admits one successor.
 The immutable source, task, original expiry and Step/occurrence relation survive reconstruction,
 while live permission requires fresh authentication and explicit same-task reauthorization.
+Effect-free replacement-owner tests now cover expiry with only local `adopt`/`resume` permission:
+one failed successor, no peer contact and unchanged task identity and lifetime. A separate current
+migrated-PostgreSQL regression verifies that only this exact authorization can be appended after
+expiry; widened actions and closed adoption refuse. It qualifies that custody transaction, not a
+new independent-peer or process-restart receipt.
 Local cancellation closes adoption and awaits owned exchange/socket retirement; foreign execution
 uncertainty stays visible. The 22 October native receipt records six actual SDK/PostgreSQL/process
 cases covering fresh-authority restart,
@@ -3677,6 +3686,7 @@ cannot satisfy the required extension.
 - **Verification:** [Bounded manual peer receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/intercom/operator-public-source.json)
 - **Source:** [Native peer Run service](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/peer_runs.py), [Graph station](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/native_public_peer.py), and [explicit native lab](https://github.com/hexanomicon/lychd/blob/main/scripts/intercom_native_lab.py)
 - **Verification:** [Native ownership and reentry](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_peer_native_wait.py), [native authority and recovery](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_peer_runs.py), and [native migration](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_native_peer_migrations_pg.py)
+- **Verification:** [Expired-task authorization custody](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_native_peer_expiry_pg.py) and [authorization refusal cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/db/test_intercom.py)
 - **Verification:** [Bounded native peer receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/intercom/native-public-source.json), [historical receipt integrity](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/intercom/test_native_receipt.py), and [operator outcome projection](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_intercom_native_lab.py)
 - **Law:** [Agent-to-Agent](./adr/26-a2a.md)
 

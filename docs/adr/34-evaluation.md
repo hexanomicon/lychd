@@ -149,14 +149,19 @@ Drift may derive a scoped claim from a healthy Trial Suite. Each claim pins:
 - creation, expiry, and evidence references.
 
 There is no universal rank: accuracy, latency, VRAM, cost, restraint, and tool behavior
-are distinct policy-valued axes. Dispatcher may consume fresh admitted claims only after Ward,
-compatibility, availability, privacy, and authority construct an eligible set. Missing/stale
-evidence leaves the Dispatcher's documented deterministic readiness order in force rather than
-inventing an intelligence floor. [Dispatcher selection](22-dispatcher.md#candidate-selection)
-owns that order, including the treatment of stale or erroneous cached observations. It selects
-one candidate; failure of that selection does not retry another candidate. Toll may use the same
-measures in spend policy
-without making one local or frontier win universal routing authority.
+are distinct policy-valued axes. The requesting owner declares any mandatory task-quality
+criterion, threshold, evidence scope and freshness; the receiving owner admits the evidence under
+that contract. Missing, stale, inapplicable, or insufficient mandatory evidence excludes a
+candidate. Matching a family, input modality, output schema, or Connector ABC proves no such
+qualification. Drift supplies findings and cannot relax the requirement or select the route.
+
+Optional ranking consumes fresh admitted claims only within the set eligible under those
+requirements, Ward, compatibility, availability, privacy, and authority. Missing optional ranking
+evidence leaves [Dispatcher's deterministic readiness order](22-dispatcher.md#candidate-selection)
+in force; it cannot waive a mandatory qualification or invent an intelligence floor. The current
+matcher selects one candidate and does not retry another after failure. Evaluation-driven
+admission and ranking remain Designed. Toll may use the same measures in spend policy without
+making one local or frontier win universal routing authority.
 
 ## Evaluation before and after training
 

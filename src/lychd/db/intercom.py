@@ -756,7 +756,7 @@ class IntercomStore:
         *,
         current: Callable[[], None],
     ) -> None:
-        """Append attribution evidence; it never restores a process-owned permit."""
+        """Retain authorization, including expiry-only local settlement, before live permission."""
         record = _record(record)
         if set(record) != {
             "subject",
@@ -789,6 +789,13 @@ class IntercomStore:
                 binding = PeerRunBinding.model_validate(run.intent.get("admitted_peer"))
             except ValueError:
                 _refuse("native-binding")
+            expired_settlement = (
+                record["actions"] == ["adopt", "resume"]
+                and record["reaffirm_public_source"] is False
+                and task.expires_at == binding.expires_at
+                and run.status in {"awaiting_peer", "queued"}
+                and run.peer_task_id == task.id
+            )
             if (
                 task.native_run_id != run.id
                 or task.adoption_closed
@@ -797,7 +804,7 @@ class IntercomStore:
                 or task.native_binding_digest != binding.digest
                 or task.native_request_id != binding.request_id
                 or task.native_pattern_digest != run.pattern_manifest.get("digest")
-                or task.expires_at <= datetime.now(UTC)
+                or (task.expires_at <= datetime.now(UTC) and not expired_settlement)
                 or run.status in {"cancelling", "cancelled", "failed", "done"}
             ):
                 _refuse("closed")

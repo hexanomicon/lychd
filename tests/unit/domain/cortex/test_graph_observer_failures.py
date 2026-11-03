@@ -69,6 +69,53 @@ class _InertOrchestrator:
         self.calls += 1
 
 
+@dataclass
+class _CleanupDeps:
+    failure: RuntimeError
+    calls: int = 0
+
+
+@dataclass
+class _CleanupWork(BaseNode[_State, _CleanupDeps, str]):
+    async def run(self, ctx: GraphRunContext[_State, _CleanupDeps]) -> End[str]:
+        ctx.deps.calls += 1
+        if ctx.deps.calls == 1:
+            try:
+                capability_key = "inert:chat:model"
+                raise HardwareTransitionRequired(capability_key)
+            finally:
+                raise ctx.deps.failure
+        return End("must not retry after cleanup failed")
+
+
+@pytest.mark.asyncio
+async def test_cleanup_failure_during_hardware_signal_never_parks_or_retries() -> None:
+    events: list[NodeOccurrenceEvent] = []
+    orchestrator = _InertOrchestrator()
+    persistence = DurableStasisPhylactery(job_id="run-1", store=InMemoryStasisStore())
+    runner = GraphRunner[_State](
+        orchestrator=orchestrator,
+        persistence=persistence,
+        signal_priority=50,
+        on_node_event=events.append,
+        run_id="run-1",
+    )
+    failure = RuntimeError("cleanup failed")
+    deps = _CleanupDeps(failure=failure)
+    state = _State()
+    graph = build_serial_graph(nodes=(_CleanupWork,), state_type=_State, deps_type=_CleanupDeps, output_type=str)
+
+    with pytest.raises(RuntimeError, match="cleanup failed") as caught:
+        await runner.run_graph(graph, _CleanupWork(), state, deps=deps)
+
+    assert caught.value is failure
+    assert deps.calls == 1
+    assert orchestrator.calls == 0
+    assert state.hardware_resume_budget.total_resumes == 0
+    assert [event.phase for event in events] == ["entered", "failed"]
+    assert await persistence.load_next() is None
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("outcome", "broken_phase"),

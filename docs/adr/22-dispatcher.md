@@ -32,6 +32,11 @@ The live Animator is a capability/runtime handle, not a deployment document. It 
 Rune identity, Connector, and typed runtime surfaces while
 [Containers](08-containers.md), Bind, and Scribe retain physical compilation authority.
 
+Capability declarations are value contracts, not a universal `Capability` ABC. Connector mixins
+such as `ModelConnector`, `ToolConnector`, and `EmbeddingConnector` define callable adapter
+surfaces; their inheritance proves neither a model's competence nor admission. Specification,
+evidence, observation, and grant retain their separate offices.
+
 ## Capability Binding Cartography
 
 A capability binding lets the reader trace demand to use: what was requested, what was declared,
@@ -165,6 +170,13 @@ priority. It removes ineligible declarations and orders the rest deterministical
 an admitted selection policy. This is readiness matching, not a judgment of quality, price,
 privacy, or correctness.
 
+Under the Designed evaluation path, a requesting owner may require task-specific qualification.
+The receiving owner admits the supporting evidence under that requirement; missing, stale, or
+inapplicable mandatory evidence excludes the candidate. A family, modality, schema, model name,
+or Connector class cannot substitute for it. Optional quality ranking applies only within the
+eligible set; missing ranking evidence preserves the documented deterministic order.
+[Evaluation](34-evaluation.md#capability-claims-and-routing) owns the scoped claims and their limits.
+
 Current `lease_grant` retains its narrower family/model/modalities/tools
 signature, an optional exact `capability_key` constraint, and deterministic
 open/non-error/active/warm/name/key order. Cached observations rank eligible routes; they are not
@@ -241,8 +253,8 @@ readiness failure returns that exact observation to the same phase decision tabl
 Hydration, policy, and malformed-probe failures remain ordinary failures and never become
 hardware requests merely because issue failed.
 
-The transition signal contains capability key, Animator name, and optional ready estimate—no
-connector, model, lease, or service handle. Graph may release its edge, ask Orchestrator to
+The transition signal contains only the capability key; its Animator is resolved from the
+canonical registry. It carries no connector, model, lease, or service handle. Graph may release its edge, ask Orchestrator to
 converge, and dispatch afresh. Dispatcher never calls `activate_capability` or `await_warm`.
 
 ### The Grant Lease Doctrine
@@ -365,10 +377,15 @@ has no suspension. Safe refusal codes replace provider bodies and transport exce
 Selection is mostly a future enforcement seam, not a complete policy engine. One coarse rule is
 delivered now: every `SourceKind.PORTAL` candidate fails closed before grant, including direct-key
 dispatch and direct registry issue, because no typed egress admission path exists. This quarantine
-is not privacy-safe Portal operation. Sigil visibility, Portal secure mode, Toll arbitration, Censor/Privacy
-Cut/`TransformationReceipt`/Egress Gate, unsupported-modality planning, A2A, and delegated-agent
-choice are unwired. They must compose one typed, fail-closed path before grant; none may create an
-alternate route around Dispatcher.
+is not privacy-safe Portal operation. Sigil visibility, Portal secure mode, Toll arbitration,
+Censor/Privacy Cut/`TransformationReceipt`/Egress Gate, and unsupported-modality planning remain
+unwired in this capability path. Future Portal admission must compose its owners' typed,
+fail-closed decisions without an alternate grant route around Dispatcher.
+
+Sovereign peer tasks follow [A2A](26-a2a.md), including its separate opt-in `PeerTaskNode` road;
+operator-controlled foreign agent runtimes follow [Graph's delegated AgentJob boundary](24-graph.md#3-delegated-agent-macro-nodes).
+Neither is a Dispatcher capability grant. Those roads retain their own exact target, authority,
+egress, and recovery contracts and cannot bypass Portal quarantine for a model inference request.
 
 [Security](09-security.md#portal-privatization-and-egress) requires both admission before a Portal
 grant and a decision over the exact canonical payload immediately before transmission. Dispatcher

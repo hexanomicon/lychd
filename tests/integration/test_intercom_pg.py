@@ -67,7 +67,7 @@ def _revision(connection: Connection, schema: str) -> None:
     )
     with context.begin_transaction(), Operations.context(context):
         context.run_migrations()
-        assert context.get_current_heads() == ("0023",)
+        assert context.get_current_heads() == (scripts.get_current_head(),)
 
 
 @pytest_asyncio.fixture

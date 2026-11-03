@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, tzinfo
 from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
@@ -868,3 +868,54 @@ async def test_native_authorization_terminal_open_is_append_only_and_current_aft
     assert checks == 2
     session.commit.assert_awaited_once()
     assert task.record.get("native_reauthorizations") is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fault", [None, "read", "closed", "owner", "expiry", "reaffirm", "revoked"])
+async def test_expired_native_authorization_is_only_exact_local_settlement(
+    monkeypatch: pytest.MonkeyPatch, fault: str | None
+) -> None:
+    run, _, _, _, _, task, _ = _native_rows()
+    run.status, run.peer_task_id = "awaiting_peer", task.id
+    expiry = task.expires_at
+
+    class ExpiredClock(datetime):
+        @classmethod
+        def now(cls, tz: tzinfo | None = None) -> datetime:
+            return (expiry + timedelta(seconds=1)).astimezone(tz)
+
+    monkeypatch.setattr("lychd.db.intercom.datetime", ExpiredClock)
+    record = {
+        "subject": "local-operator",
+        "authentication_generation": str(uuid4()),
+        "actions": ["adopt", "resume"],
+        "reaffirm_public_source": False,
+        "authorized_at": datetime.now(UTC).isoformat(),
+        "binding_digest": task.native_binding_digest,
+    }
+    if fault == "read":
+        record["actions"] = ["adopt", "read", "resume"]
+    elif fault == "closed":
+        task.adoption_closed = True
+    elif fault == "owner":
+        run.peer_task_id = uuid4()
+    elif fault == "expiry":
+        task.expires_at = expiry - timedelta(seconds=1)
+    elif fault == "reaffirm":
+        record["reaffirm_public_source"] = True
+    store, session = _store([run, task])
+
+    def current() -> None:
+        if fault == "revoked":
+            raise PermissionError
+
+    if fault is None:
+        await store.record_native_authorization(str(run.id), task.id, record, current=current)
+        assert task.native_reauthorizations == [record]
+        assert task.expires_at == expiry
+        session.commit.assert_awaited_once()
+    else:
+        with pytest.raises((IntercomStoreError, PermissionError)):
+            await store.record_native_authorization(str(run.id), task.id, record, current=current)
+        assert task.native_reauthorizations == []
+        session.commit.assert_not_awaited()

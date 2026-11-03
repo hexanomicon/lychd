@@ -17,15 +17,24 @@ operator receipts establish delivery.
 ## The delivered v1 surface
 
 Current `CapabilitySpec` identifies a capability by `{animator}:{family}:{model_id}`. It uses
-seven closed families, coarse input/output modality strings, and one compatibility grant class.
+seven closed families, coarse input modality strings, and one chat/tool compatibility grant class.
 For `chat`, that grant contains a hydrated Pydantic AI model and only explicitly declared
 agent-loop toolsets. For `tool_execution`, a non-empty toolset surface is required. The remaining
-five labels route metadata but fail closed when a grant is issued.
+five labels fail closed through this `lease_grant` path.
 
-This proves the narrow chat/model path, toolset compatibility, and readiness mechanics. It does
-not yet give the transcription example an executable v1 route, nor establish visual, embedding,
-rerank, service-job, or host-tool execution. [State of Work](../../state-of-the-work.md#animator-dispatch-spine)
-records the delivered boundary.
+The separate `lease_embedding` path admits one explicitly selected local llama.cpp embedding
+profile using the exact capability key, profile digest, and `embed_document` or `embed_query`
+operation. It exposes a bounded driver under the same readiness and lease law; an unprofiled
+embedding label supplies no executable surface. See the
+[fixed compatibility profile](../../adr/22-dispatcher.md#explicit-local-embedding-compatibility-profile).
+
+These paths do not give the transcription example an executable route or establish visual,
+rerank, general service-job, or host-tool execution.
+[State of Work](../../state-of-the-work.md#animator-dispatch-spine) records the delivered boundary.
+
+A v1 key pins the declared Animator, family, and model alias. It does not fingerprint weights,
+Connector revision, or runtime configuration across a new process generation. The fixed embedding
+profile adds exact configured inputs, but readiness does not attest externally replaced bytes.
 
 A capability carries the `registrant_id` assigned to its runtime or Portal definition during
 extension assembly. The same identity accompanies its granted specification and Nexus response
@@ -96,6 +105,13 @@ The target interface/profile owner admits or promotes the evidence under its pol
 produce findings and Assimilation can repair foreign craft, but neither thereby acquires that
 owner's decision. Dispatcher consumes the admission when matching a request; it does not become
 a benchmark judge.
+
+In the Designed evaluation path, a required task-quality threshold needs applicable admitted
+evidence; missing or stale mandatory evidence makes the route ineligible. Optional ranking may
+fall back to deterministic readiness order only among otherwise eligible routes. For example,
+accepting image input says nothing about OCR accuracy or precise spatial perception, and a typed
+output schema does not establish the truth of its values. Follow
+[Evaluation](../../adr/34-evaluation.md#capability-claims-and-routing) for the owning contract.
 
 A grant exposes neither its Animator nor its Connector. The designed union separates four
 callable surfaces:
