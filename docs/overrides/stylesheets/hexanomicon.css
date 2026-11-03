@@ -307,3 +307,113 @@ h1, h2, h3 {
     text-shadow: none;
   }
 }
+
+/*
+   ==========================================================================
+   7. METAMORPHOSIS ROADMAP
+   ==========================================================================
+*/
+
+.md-typeset .roadmap-feature,
+.md-typeset .roadmap-hero {
+  margin: 1.5rem 0 2rem;
+  padding: clamp(1rem, 4vw, 1.75rem);
+  border: 1px solid #494064;
+  border-radius: 0.75rem;
+  background: radial-gradient(ellipse at top right, #241a3b, #12121a 70%);
+}
+
+.md-typeset .roadmap-eyebrow {
+  margin: 0 0 0.6rem;
+  color: var(--frost-blue);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.md-typeset .roadmap-feature h2,
+.md-typeset .roadmap-hero h1 {
+  margin: 0;
+  color: #f7f5ff;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.md-typeset .roadmap-hero h1 {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+}
+
+.md-typeset .roadmap-hero__tagline {
+  font-size: 1rem;
+}
+
+.md-typeset .roadmap-dates {
+  color: #b4afc5;
+  font-size: 0.75rem;
+}
+
+.md-typeset .roadmap-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin: 1.25rem 0 0;
+}
+
+.md-typeset .roadmap-actions .md-button {
+  padding: 0.5em 1em;
+}
+
+.md-typeset .roadmap-books {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: 0.65rem;
+  margin: 1rem 0 2rem;
+}
+
+.md-typeset .roadmap-book {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem;
+  border: 1px solid #494064;
+  border-radius: 0.5rem;
+  background: #12121a;
+}
+
+.md-typeset .roadmap-book__weeks {
+  color: var(--necro-green);
+  font-family: var(--md-code-font-family);
+  font-size: 0.7rem;
+}
+
+.md-typeset .roadmap-book strong {
+  color: var(--frost-blue);
+  font-size: 1rem;
+}
+
+.md-typeset .roadmap-book > span:last-child {
+  color: #b4afc5;
+  font-size: 0.75rem;
+}
+
+.md-typeset .roadmap-book:hover {
+  border-color: var(--frost-blue);
+  background: #1c1830;
+}
+
+.md-typeset .roadmap-actions a:focus-visible,
+.md-typeset .roadmap-book:focus-visible {
+  outline: 2px solid var(--frost-blue);
+  outline-offset: 4px;
+}
+
+@media (forced-colors: active) {
+  .md-typeset .roadmap-feature,
+  .md-typeset .roadmap-hero,
+  .md-typeset .roadmap-book {
+    border-color: CanvasText;
+    background: Canvas;
+  }
+}

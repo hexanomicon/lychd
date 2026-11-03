@@ -1,10 +1,21 @@
 ---
 title: Roadmap — Metamorphosis
+icon: material/routes
 ---
 
-# LychD — Metamorphosis
-
-**Five books. Fifty-three names. One year of becoming.**
+<header class="roadmap-hero">
+  <p class="roadmap-eyebrow">The Hexanomicon · Founding-year roadmap</p>
+  <h1 id="lychd-metamorphosis">LychD — Metamorphosis</h1>
+  <p class="roadmap-hero__tagline">Five books. Fifty-three names. One year of becoming.</p>
+  <p class="roadmap-dates">
+    <time datetime="2026-11-02">2 November 2026</time> –
+    <time datetime="2027-11-01">1 November 2027</time>
+  </p>
+  <p class="roadmap-actions">
+    <a class="md-button md-button--primary" href="#genesis-00-09">Begin with Genesis</a>
+    <a href="state-of-the-work.md">What works today <span aria-hidden="true">→</span></a>
+  </p>
+</header>
 
 We are building a laboratory in which people and agents make LychD together. Its first public encounter grows through a speaking companion, a phone, Minecraft and visual creation. The same body must support useful work, careful changes and the freedom to investigate a question whose answer we do not yet know.
 
@@ -13,6 +24,36 @@ epilogue. Python's methods name its transformations. Begin with Genesis for the 
 plan, then read the later books as the year's narrative horizon. Each week retains its complete
 approved quotation and meaning; the planning paragraphs within Genesis explain how that story
 guides the work ahead.
+
+## Read the five books
+
+<nav class="roadmap-books" aria-label="The five books">
+  <a class="roadmap-book" href="#genesis-00-09">
+    <span class="roadmap-book__weeks">00–09</span>
+    <strong>Genesis</strong>
+    <span>Formation</span>
+  </a>
+  <a class="roadmap-book" href="#exodus-10-17">
+    <span class="roadmap-book__weeks">10–17</span>
+    <strong>Exodus</strong>
+    <span>Encounter and deepening</span>
+  </a>
+  <a class="roadmap-book" href="#leviticus-18-26">
+    <span class="roadmap-book__weeks">18–26</span>
+    <strong>Leviticus</strong>
+    <span>Discernment and commitments</span>
+  </a>
+  <a class="roadmap-book" href="#numeri-27-39">
+    <span class="roadmap-book__weeks">27–39</span>
+    <strong>Numeri</strong>
+    <span>Measurement and multiplication</span>
+  </a>
+  <a class="roadmap-book" href="#deuteronomy-40-52">
+    <span class="roadmap-book__weeks">40–52</span>
+    <strong>Deuteronomy</strong>
+    <span>Metamorphosis</span>
+  </a>
+</nav>
 
 ## Where the work stands
 
@@ -34,14 +75,6 @@ Agents can investigate, build alternatives, prepare tests and challenge candidat
 Start with short weekly planning and a laboratory conversation or demonstration, then use asynchronous threads and focused pairing when work benefits. Batch reviews and conversations around real overlap so people can sustain concentration. The exact rhythm is agreed with the team.
 
 Use [GitHub issues](https://github.com/hexanomicon/lychd/issues) for the selected work, its acceptance, dependencies and review links. A weekly title can connect several ongoing issues; it does not create fifty-three compulsory tickets. Show real findings and working material as the campaign grows, and learn directly from early users.
-
-## Read the five books
-
-- [Genesis · formation](#genesis-00-09)
-- [Exodus · encounter and deepening](#exodus-10-17)
-- [Leviticus · discernment and commitments](#leviticus-18-26)
-- [Numeri · measurement and multiplication](#numeri-27-39)
-- [Deuteronomy · metamorphosis](#deuteronomy-40-52)
 
 <a id="genesis-00-09"></a>
 

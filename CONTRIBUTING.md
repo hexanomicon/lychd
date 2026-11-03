@@ -46,6 +46,37 @@ acceptance; the [delivery ledger](docs/state-of-the-work.md) keeps the remaining
 
 ## Branches and everyday collaboration
 
+### Coordinate before starting work
+
+For substantial work, first read the relevant existing issues, assignees, recent coordination
+comments and linked pull requests. Use published branches as supporting evidence of candidate
+work, not proof that a task is claimed, active or abandoned. Record which repository and work
+items were checked and when; inaccessible or stale information remains an explicit gap. An
+operator-assigned task may proceed within its existing authority while reporting that gap;
+missing access does not establish that nobody else is working there.
+
+Announce the intended outcome and approximate area before construction. The initial claim does
+not need an exact file list: exploration establishes the affected contracts, dependencies and
+smallest verifiable slice. Update the scope when those become clear. A claim coordinates work;
+it grants neither exclusive ownership of an area nor unlimited agent write access. A delegated
+writer still needs the bounded input and effect contract in
+[Development bootstrap](docs/sepulcher/extensions/weaver/development-bootstrap.md#establish-the-campaign-before-dispatch).
+
+Use an existing issue when it already owns the outcome; otherwise create a concrete task issue.
+Record the responsible contributor and a short claim comment, with an assignee when repository
+permissions allow. Team members set the board item **In progress** when implementation starts;
+external contributors need neither private-board access nor Discord membership. Small fixes may
+still describe their scope in the PR or commit without a separate issue or prior discussion.
+
+Unsettled proposals can use GitHub Discussions or Discord as described in
+[shared stewardship](#grow-into-shared-stewardship). Carry the agreed implementation scope into
+the issue so the next contributor can find it. Publish a linked draft PR when there is useful
+candidate work to inspect, and update the issue/PR when scope changes, work is handed off,
+paused or abandoned. A branch's existence or inactivity does not replace that update. Refresh
+the relevant coordination before selecting another task or accepting a handoff. Agents use
+the same procedure under their actual account and communication permissions; this rule does
+not itself authorize posting or changing GitHub state.
+
 ### Current phase: direct work on main
 
 **Until the team starts on 2 November 2026, authorised work is committed and pushed directly to
@@ -78,6 +109,13 @@ Keep task branches short and leave disruptive unfinished work there. When shared
 fix or revert the regression before piling on more changes. Preserve shared history: fix forward
 or revert instead of resetting or force-pushing `dev` or `main`. Squashing a disposable task PR
 into `dev` is fine; preserve ancestry when moving work between `dev` and `main`.
+
+Aim to integrate small, independently verified and compatible slices frequently, preferably
+within the working day. Updating a private branch from `dev` does not by itself deliver a slice.
+Split a long change through compatible intermediate states instead of keeping the whole feature
+isolated; an unfinished feature must not break the shared result. When review or CI capacity is
+saturated, finish and verify waiting candidates before admitting more construction. Branch age
+is a reason to inspect scope and dependencies, not permission to merge unready work.
 
 The `@hexanomicon/core` team has repository **Write** access and a shared review/mention target.
 Its membership grows through agreed responsibility; paid and independent contributors can become

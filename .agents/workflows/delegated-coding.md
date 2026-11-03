@@ -15,6 +15,24 @@ For a consequential unresolved direction or construction choice, prepare the tas
 That method can guide an operator campaign under actual platform permissions; its native LychD
 workflow remains Designed. This playbook governs the bounded delegation that follows.
 
+## Coordination before construction
+
+Apply [CONTRIBUTING's coordination preflight](../../CONTRIBUTING.md#coordinate-before-starting-work)
+before recommending repository work or admitting a new writer. Refresh the relevant issue/PR
+observations at task selection and handoff, retaining their source, observation time and access
+gaps. An existing operator assignment retains its authorized scope; missing remote visibility
+must not be presented as an unclaimed task or permission to expand it.
+
+Exploration may start from an intended outcome and approximate area without an exact file list.
+Before construction, bind the actual candidate inputs and permitted write/effect boundary below;
+revise that contract when discovery requires a broader boundary. A published branch is supporting
+evidence, not a durable claim or proof of current execution. Keep claim, scope and disposition
+updates with the issue/PR through the campaign's actual communication authority.
+
+[The GitHub coordination follow-up](../../docs/sepulcher/extensions/weaver/development-bootstrap.md#github-coordination-follow-up)
+records the missing native read and participation slices. This procedure neither delivers a
+Reach connection nor expands its current provider permissions.
+
 ## Admission preflight
 
 Current LychD ships no effectful Coffin adapter. An operator-controlled campaign may use a

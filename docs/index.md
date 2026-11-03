@@ -44,6 +44,20 @@ You have unearthed the pages of an alchemical grimoire built on the ancient secr
 
 > _"While the world slept, content with its reliable illusions, the Magus walked into the dark, seeking a truth that was not yet stable, but was infinitely more real."_
 
+<aside class="roadmap-feature" aria-labelledby="roadmap-feature-title">
+  <p class="roadmap-eyebrow">The founding year · 2026–2027</p>
+  <h2 id="roadmap-feature-title">Metamorphosis roadmap</h2>
+  <p>Five books. Fifty-three names. One year of becoming.</p>
+  <p class="roadmap-dates">
+    <time datetime="2026-11-02">2 November 2026</time> –
+    <time datetime="2027-11-01">1 November 2027</time>
+  </p>
+  <p class="roadmap-actions">
+    <a class="md-button md-button--primary" href="roadmap.md">Explore the five books</a>
+    <a href="roadmap.md#genesis-00-09">Read the Genesis plan <span aria-hidden="true">→</span></a>
+  </p>
+</aside>
+
 ## The Four Gates
 
 To master **[LychD](https://github.com/hexanomicon/lychd)**, pass through the four gates of knowledge.
@@ -70,9 +84,6 @@ and carry its lesson into the next creation. These paths need no installation.
 
 To contribute, follow one request through the **[Map](./map.md)**, then use the
 [contribution guide](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md).
-
-The **[Metamorphosis roadmap](./roadmap.md)** follows the founding year through five books,
-with the complete weekly quotations and the current Genesis plan.
 
 !!! tip "The Tongue of the Construct"
     Keep the **[Lexicon](./lexicon/index.md)** at hand to decipher terms like _Soulstone_,

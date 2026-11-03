@@ -50,6 +50,12 @@ continuation. A successful coding job never appoints itself the next task or pro
 
 ## Establish the campaign before dispatch
 
+First follow the [contribution coordination preflight](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#coordinate-before-starting-work).
+The public intent may precede discovery of exact files; the executable campaign record below
+must close the inputs and effects admitted for its writer. Use existing operator tools under
+their actual permissions until the [native coordination follow-up](#github-coordination-follow-up)
+is implemented and qualified.
+
 Select a small milestone, such as proving one delegation recovery boundary. Name its acceptance
 owner and the work that is deliberately outside it. Use a claimed issue or attributable task
 record; the contributor's private campaign notes may stay outside the checkout. Public delivery
@@ -378,6 +384,47 @@ no automatic merge, compatibility guarantee, credential sharing, or obligation t
 lineage. Future human quorum governance is governed by
 [Evolution](../../../adr/18-evolution.md#future-quorum-roster); it is not an early-development
 approval ceremony.
+
+In the designed native passage, the operator's local Lych helps inspect work, form candidates
+and carry handoffs. Within it, [Synchronic Syncretizer](../../../adr/18-evolution.md#synchronic-syncretizer) owns bounded
+adoption judgment over an exact candidate, obligations, history and evidence; it is not the
+repository's task scheduler, CI executor or a global authority over other installations.
+Upstream maintainers decide admission to shared Core. Each downstream owner separately verifies
+adoption with its local delta, selected extensions, configuration, schema and recovery boundary.
+If upstream incorporates a local fix, reconcile the remaining delta against the exact successor
+and its regression evidence rather than blindly replaying the old patch or assuming equivalence.
+
+Deterministic repository checks and the available offline Evolution comparison need no model
+provider. Actual model-behavior trials or LLM assessments need their own admitted local or remote
+inference, versioned inputs, criteria and budgets under [Evaluation](../../../adr/34-evaluation.md).
+A completed comparison is not candidate acceptance: the
+[offline utility](https://github.com/hexanomicon/lychd/blob/main/scripts/compare_evolution.py)
+can exit successfully after recording rejection and grants no promotion authority. Keep observed
+checks, qualitative findings, adoption judgment and each owner's source or live effect distinct.
+The [current CI and promotion procedure](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#promote-a-tested-snapshot)
+continues to govern; no model gate, merge queue or autonomous activation is introduced here.
+
+## GitHub coordination follow-up
+
+These are pending implementation slices, not a delivered native coordination service. Existing
+operator-controlled GitHub tools can support today's contribution procedure without claiming a
+Reach or LychD execution receipt. Keep GitHub issues and PRs as the public coordination record;
+do not introduce a second task registry merely to project them.
+
+| Slice | Smallest useful work | Required evidence |
+| --- | --- | --- |
+| **Read current work** | Give the local Lych a bounded view of admitted repositories' relevant issues, assignees, coordination comments and linked PRs, with optional branch metadata and accessible board state. | Exact repository/object references, observation times, bounded pagination, access/refusal and stale-state handling; a public contributor works without private-board access. Missing signals never establish that an area is idle, and separately read objects are not an atomic snapshot. |
+| **Record participation** | Under separately granted authority, prepare and deliver an exact claim, scope, handoff or abandonment update in its issue/PR. Assignment, labels, issue state and board mutations each need their own admitted operation and provider permissions. | Current destination and actor authority, exact approved or preauthorized bytes, retained result and reconciliation after an unknown write; reread overlapping work without treating a comment as an exclusive lock. |
+| **Use the handoff** | Feed fresh coordination into candidate selection and writer admission, then link the actual candidate and checks back to the owning task. | Outcome-led exploration without guessed files; a bounded writer contract before construction; visible disposition, compatible small integrations and reviewer/CI capacity limits. Native backlog/scheduling ownership still passes B7/B8 above. |
+
+Start with the read slice. The current [Reach Forge](../../../compositions/reach/forge.md) prepares
+bounded conversation reads and timeline comments offline; it supplies no live authentication or
+transport. Its [GitHub successor study](../../../compositions/reach/connected-work/github.md)
+does not currently admit repository-wide coordination queries, branch/board discovery or issue
+state changes. Resolve each required operation to its owner, explicit profile and permissions
+before implementation; this follow-up does not silently widen the correspondence profile.
+Communications carry requests and observations, while code writes, reviews, merges, releases and
+installation adoption retain their existing owners.
 
 ## Assimilate one mechanism at a time
 

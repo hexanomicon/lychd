@@ -7,6 +7,9 @@ human-facing contribution rules.
 Before choosing a branch, committing, pushing, or opening a pull request, read the
 [current collaboration phase](CONTRIBUTING.md#branches-and-everyday-collaboration).
 
+Before proposing or starting substantial repository work, follow the
+[coordination preflight](CONTRIBUTING.md#coordinate-before-starting-work).
+
 ## Authority
 
 - ADRs own accepted architectural decisions.
