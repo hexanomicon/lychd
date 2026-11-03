@@ -33,7 +33,15 @@ from lychd.compositions.reach.conversation_workflow import (
     persona_text,
     reach_conversation_workflow,
 )
-from lychd.compositions.reach.documents import MAX_DOCUMENT_BYTES, CorpusManifest, PublicCorpus, verify_corpus
+from lychd.compositions.reach.documents import (
+    LEGACY_MAX_CORPUS_BYTES,
+    MAX_CORPUS_BYTES,
+    MAX_CORPUS_MANIFEST_BYTES,
+    MAX_DOCUMENT_BYTES,
+    PublicCorpus,
+    parse_corpus_manifest,
+    verify_corpus,
+)
 from lychd.compositions.reach.documents_workflow import (
     DocumentsRefused,
     make_documents_intent,
@@ -54,6 +62,7 @@ from lychd.compositions.reach.operator_model_wire import (
     OperatorModelRequest,
     OperatorModelResponse,
 )
+from lychd.compositions.reach.operator_observation import ReachPatternObservation
 from lychd.compositions.reach.operator_trace import (
     ReachTraceEvent,
     TraceCode,
@@ -87,6 +96,7 @@ from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.runs import RunStatus
 from lychd.domain.cortex.substrate import RunSubstrate
 from lychd.domain.orchestration.broker import GhoulBroker
+from lychd.domain.weaver.inspection import PatternInspectionDescriptor
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.sessions import BridgeSessionStore
 from lychd.ghouls.runs import perform_run
@@ -174,14 +184,19 @@ def load_corpus(directory: Path) -> PublicCorpus:
     """Detach and verify a bounded public export through one no-follow directory handle."""
     descriptor = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
-        raw = _read_regular(Path("manifest.json"), MAX_WIRE_BYTES, directory_fd=descriptor)
-        strict_json(raw)
-        manifest = CorpusManifest.model_validate_json(raw)
-        contents = tuple(
-            _read_regular(Path(document.file), MAX_DOCUMENT_BYTES, directory_fd=descriptor)
-            for document in manifest.documents
-        )
-        return verify_corpus(manifest, contents)
+        raw = _read_regular(Path("manifest.json"), MAX_CORPUS_MANIFEST_BYTES, directory_fd=descriptor)
+        manifest = parse_corpus_manifest(raw)
+        contents: list[bytes] = []
+        total = 0
+        limit = LEGACY_MAX_CORPUS_BYTES if manifest.schema_version == 1 else MAX_CORPUS_BYTES
+        for document in manifest.documents:
+            content = _read_regular(Path(document.file), MAX_DOCUMENT_BYTES, directory_fd=descriptor)
+            total += len(content)
+            if total > limit:
+                msg = "corpus_limit"
+                raise ValueError(msg)
+            contents.append(content)
+        return verify_corpus(manifest, tuple(contents))
     finally:
         os.close(descriptor)
 
@@ -324,8 +339,15 @@ class DocumentsRuntime:
         }
         status = "observed"
         if event.kind is RunEventKind.NODE:
-            fields.update(node=event.data, occurrence_id=event.meta.get("occurrence_id") or None)
+            fields.update(
+                node=event.data,
+                occurrence_id=event.meta.get("occurrence_id") or None,
+                pattern_id=event.meta.get("pattern_id") or None,
+                pattern_revision=event.meta.get("pattern_revision") or None,
+            )
             status = event.meta.get("phase", "observed")
+            if status == "entered":
+                fields["step_id"] = event.event_id
         elif event.kind in {RunEventKind.STATUS, RunEventKind.DONE}:
             status = event.data
         else:
@@ -461,6 +483,8 @@ class DocumentsRuntime:
                 status="started",
                 request_id=request.request_id,
                 run_id=handle.run_id,
+                pattern_id=handle.pattern_id,
+                pattern_revision=handle.pattern_revision,
                 context_round=request.context_round,
             )
             result = None
@@ -835,6 +859,20 @@ async def run(policy: ReachPolicy, corpus: PublicCorpus, profile: OperatorConver
         runtime.pending_inputs = relay.pending_inputs
         runtime.late_response_filter = relay.discard_late
     try:
+        with suppress(Exception, asyncio.CancelledError):
+            declaration = (
+                ReachPatternObservation(
+                    generation=runtime.generation,
+                    patterns=tuple(
+                        PatternInspectionDescriptor.from_workflow(item) for item in runtime.substrate.workflows.all()
+                    ),
+                )
+                .model_dump_json()
+                .encode()
+                + b"\n"
+            )
+            if len(declaration) <= MAX_WIRE_BYTES:
+                write(declaration)
         await serve(runtime, reader, write)
     finally:
         transport.close()

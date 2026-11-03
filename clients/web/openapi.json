@@ -3506,6 +3506,113 @@
         "title": "GenerationStatus",
         "type": "object"
       },
+      "InspectionBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "executable": {
+            "default": false,
+            "type": "boolean"
+          },
+          "profile_id": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "profile_revision": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "publication": {
+            "enum": [
+              "published",
+              "observed"
+            ],
+            "type": "string"
+          },
+          "registrant_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "type": "string"
+          },
+          "source_generation": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "source_id": {
+            "maxLength": 128,
+            "type": "string"
+          }
+        },
+        "required": [
+          "profile_id",
+          "profile_revision",
+          "publication",
+          "registrant_id",
+          "source_generation",
+          "source_id"
+        ],
+        "title": "InspectionBinding",
+        "type": "object"
+      },
+      "InspectionEdge": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "relation": {
+            "const": "permits",
+            "default": "permits",
+            "type": "string"
+          },
+          "source": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "target": {
+            "maxLength": 128,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "source",
+          "target"
+        ],
+        "title": "InspectionEdge",
+        "type": "object"
+      },
+      "InspectionNode": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "step",
+              "gate",
+              "delegate",
+              "peer",
+              "terminal"
+            ],
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 160,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "label"
+        ],
+        "title": "InspectionNode",
+        "type": "object"
+      },
       "InvestigationRequest": {
         "additionalProperties": false,
         "properties": {
@@ -3729,6 +3836,16 @@
           "active": {
             "type": "boolean"
           },
+          "binding": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InspectionBinding"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "default": {
             "type": "boolean"
           },
@@ -3748,6 +3865,14 @@
             "type": "string"
           },
           "pattern_id": {
+            "type": "string"
+          },
+          "publication": {
+            "default": "published",
+            "enum": [
+              "published",
+              "observed"
+            ],
             "type": "string"
           },
           "revision": {
@@ -3789,6 +3914,16 @@
       },
       "LoomView": {
         "properties": {
+          "binding": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InspectionBinding"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "checkpoint_schema": {
             "type": "string"
           },
@@ -3823,7 +3958,10 @@
             "type": "string"
           },
           "publication": {
-            "const": "published",
+            "enum": [
+              "published",
+              "observed"
+            ],
             "type": "string"
           },
           "revision": {
@@ -4373,6 +4511,93 @@
         "title": "ObservationAdmission",
         "type": "object"
       },
+      "ObservationCoverage": {
+        "additionalProperties": false,
+        "properties": {
+          "capture": {
+            "const": "process_local",
+            "default": "process_local",
+            "type": "string"
+          },
+          "completeness": {
+            "const": "not_established",
+            "default": "not_established",
+            "type": "string"
+          },
+          "dropped": {
+            "default": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "first_seq": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gaps": {
+            "default": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "last_seq": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limitations": {
+            "default": [],
+            "items": {
+              "maxLength": 128,
+              "type": "string"
+            },
+            "maxItems": 32,
+            "type": "array"
+          },
+          "omitted_activities": {
+            "default": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "omitted_components": {
+            "default": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "omitted_patterns": {
+            "default": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "omitted_relations": {
+            "default": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "title": "ObservationCoverage",
+        "type": "object"
+      },
       "ObservationDeleted": {
         "additionalProperties": false,
         "properties": {
@@ -4670,6 +4895,309 @@
           "seed"
         ],
         "title": "ObserveMarketRequest",
+        "type": "object"
+      },
+      "ObservedActivity": {
+        "additionalProperties": false,
+        "properties": {
+          "attempt_id": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capture": {
+            "const": "process_local",
+            "default": "process_local",
+            "type": "string"
+          },
+          "effect_outcome": {
+            "enum": [
+              "succeeded",
+              "failed",
+              "unknown",
+              null
+            ],
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "elapsed_ms": {
+            "maximum": 86400000,
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_category": {
+            "enum": [
+              "timeout",
+              "cancelled",
+              "transport",
+              "protocol",
+              "refused",
+              "unavailable",
+              "unknown",
+              null
+            ],
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "event_id": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "http_status": {
+            "maximum": 599,
+            "minimum": 100,
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "job_id": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "transport_attempt",
+              "transport_result",
+              "operation_result",
+              "lifecycle"
+            ],
+            "type": "string"
+          },
+          "native_event_id": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "native_seq": {
+            "maximum": 9007199254740991,
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observed_at": {
+            "description": "datetime with the constraint that the value must have timezone info",
+            "format": "date-time",
+            "type": "string"
+          },
+          "operation": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "operation_id": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "pattern_id": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pattern_revision": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phase": {
+            "enum": [
+              "started",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          "producer_generation": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "producer_id": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "producer_seq": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "receipt_id": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "received_at": {
+            "description": "datetime with the constraint that the value must have timezone info",
+            "format": "date-time",
+            "type": "string"
+          },
+          "registrant_id": {
+            "type": "string"
+          },
+          "request_id": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "run_id": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seq": {
+            "maximum": 9007199254740991.0,
+            "minimum": 1.0,
+            "type": "integer"
+          },
+          "source": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "source_generation": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "source_id": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "station_attempt_id": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "station_key": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "step_id": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target": {
+            "maxLength": 128,
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "kind",
+          "observed_at",
+          "operation",
+          "operation_id",
+          "phase",
+          "producer_id",
+          "received_at",
+          "registrant_id",
+          "seq",
+          "source",
+          "source_generation",
+          "source_id",
+          "target"
+        ],
+        "title": "ObservedActivity",
         "type": "object"
       },
       "OrbBridgePreferenceRoute": {
@@ -5230,6 +5758,65 @@
         "title": "OrbRunSummary",
         "type": "object"
       },
+      "OrbRuntimeSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/ObservedActivity"
+            },
+            "type": "array"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeComponent"
+            },
+            "type": "array"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/RuntimeCoverage"
+          },
+          "patterns": {
+            "items": {
+              "$ref": "#/components/schemas/PatternInspectionEntry"
+            },
+            "type": "array"
+          },
+          "read_at": {
+            "description": "datetime with the constraint that the value must have timezone info",
+            "format": "date-time",
+            "type": "string"
+          },
+          "relations": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeRelation"
+            },
+            "type": "array"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "type": "integer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeSource"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "activities",
+          "components",
+          "coverage",
+          "patterns",
+          "read_at",
+          "relations",
+          "sources"
+        ],
+        "title": "OrbRuntimeSnapshot",
+        "type": "object"
+      },
       "OwnerDecision": {
         "additionalProperties": false,
         "properties": {
@@ -5277,6 +5864,103 @@
           "target"
         ],
         "title": "OwnerDecision",
+        "type": "object"
+      },
+      "PatternInspectionDescriptor": {
+        "additionalProperties": false,
+        "properties": {
+          "checkpoint_schema": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/InspectionEdge"
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "entry_node": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "implementation_revision": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/InspectionNode"
+            },
+            "maxItems": 128,
+            "minItems": 1,
+            "type": "array"
+          },
+          "pattern_id": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "revision": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 2,
+            "default": 2,
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 160,
+            "minLength": 1,
+            "type": "string"
+          },
+          "trigger_hint": {
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "checkpoint_schema",
+          "description",
+          "digest",
+          "edges",
+          "entry_node",
+          "implementation_revision",
+          "nodes",
+          "pattern_id",
+          "revision",
+          "title",
+          "trigger_hint"
+        ],
+        "title": "PatternInspectionDescriptor",
+        "type": "object"
+      },
+      "PatternInspectionEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "binding": {
+            "$ref": "#/components/schemas/InspectionBinding"
+          },
+          "descriptor": {
+            "$ref": "#/components/schemas/PatternInspectionDescriptor"
+          },
+          "detail_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "binding",
+          "descriptor",
+          "detail_path"
+        ],
+        "title": "PatternInspectionEntry",
         "type": "object"
       },
       "PatternReference": {
@@ -5906,6 +6590,331 @@
         ],
         "title": "RunStatus",
         "type": "string"
+      },
+      "RuntimeComponent": {
+        "additionalProperties": false,
+        "properties": {
+          "activity_coverage": {
+            "default": "unavailable",
+            "enum": [
+              "unavailable",
+              "partial",
+              "instrumented"
+            ],
+            "type": "string"
+          },
+          "icon": {
+            "default": "component",
+            "enum": [
+              "component",
+              "service",
+              "runtime",
+              "interface",
+              "resource",
+              "external",
+              "capability"
+            ],
+            "type": "string"
+          },
+          "icon_asset": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "instance_id": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "key": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "host",
+              "service",
+              "runtime",
+              "interface",
+              "resource",
+              "external",
+              "capability",
+              "extension",
+              "other"
+            ],
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 160,
+            "minLength": 1,
+            "type": "string"
+          },
+          "lifecycle": {
+            "default": "configured",
+            "enum": [
+              "configured",
+              "observed",
+              "running",
+              "stopped",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          "owner": {
+            "default": "oculus",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "registrant_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "default": "1",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "source_generation": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "source_id": {
+            "maxLength": 128,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "label",
+          "registrant_id",
+          "source_generation",
+          "source_id"
+        ],
+        "title": "RuntimeComponent",
+        "type": "object"
+      },
+      "RuntimeCoverage": {
+        "additionalProperties": false,
+        "properties": {
+          "activity_limit": {
+            "const": 256,
+            "default": 256,
+            "type": "integer"
+          },
+          "component_limit": {
+            "const": 128,
+            "default": 128,
+            "type": "integer"
+          },
+          "omitted_activities": {
+            "default": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "omitted_components": {
+            "default": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "omitted_patterns": {
+            "default": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "omitted_relations": {
+            "default": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "omitted_sources": {
+            "default": 0,
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "pattern_limit": {
+            "const": 32,
+            "default": 32,
+            "type": "integer"
+          },
+          "relation_limit": {
+            "const": 256,
+            "default": 256,
+            "type": "integer"
+          },
+          "selected_source_limit": {
+            "const": 8,
+            "default": 8,
+            "type": "integer"
+          },
+          "source_limit": {
+            "const": 9,
+            "default": 9,
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "title": "RuntimeCoverage",
+        "type": "object"
+      },
+      "RuntimeRelation": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "hosted",
+              "attached",
+              "implements",
+              "serves",
+              "references"
+            ],
+            "type": "string"
+          },
+          "source": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "source_generation": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "source_id": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "target": {
+            "maxLength": 128,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "relation",
+          "source",
+          "source_generation",
+          "source_id",
+          "target"
+        ],
+        "title": "RuntimeRelation",
+        "type": "object"
+      },
+      "RuntimeSource": {
+        "additionalProperties": false,
+        "properties": {
+          "coverage": {
+            "$ref": "#/components/schemas/ObservationCoverage"
+          },
+          "generated_at": {
+            "oneOf": [
+              {
+                "description": "datetime with the constraint that the value must have timezone info",
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generation": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generation_changed": {
+            "default": false,
+            "type": "boolean"
+          },
+          "profile_id": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "profile_revision": {
+            "oneOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "registrant_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_id": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "current",
+              "unavailable",
+              "unsafe",
+              "invalid",
+              "stale",
+              "generation_mismatch",
+              "oversize",
+              "conflict"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "coverage",
+          "registrant_id",
+          "source_id",
+          "status"
+        ],
+        "title": "RuntimeSource",
+        "type": "object"
       },
       "ScavengerState": {
         "additionalProperties": false,
@@ -11413,6 +12422,82 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "source_id",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "generation",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "profile_revision",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
           }
         ],
         "responses": {
@@ -11579,6 +12664,82 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "source_id",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "generation",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "profile_revision",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         ],
@@ -12460,6 +13621,26 @@
           }
         },
         "summary": "Events"
+      }
+    },
+    "/api/v1/orb/runtime": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getOrbRuntime",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrbRuntimeSnapshot"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Runtime"
       }
     },
     "/api/v1/scavenger": {

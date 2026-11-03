@@ -65,3 +65,10 @@ export type ArchiveResolveIntent = components["schemas"]["ArchiveResolveIntent"]
 export type ArchiveGenerationStatus = components["schemas"]["GenerationStatus"];
 export type ArchiveDerivationRequest = components["schemas"]["DerivationRequest"];
 export type ArchiveDerivationStatus = components["schemas"]["DerivationStatus"];
+
+export type OrbRuntimeSnapshot = components["schemas"]["OrbRuntimeSnapshot"];
+export type RuntimeComponent = components["schemas"]["RuntimeComponent"];
+export type RuntimeRelation = components["schemas"]["RuntimeRelation"];
+export type ObservedActivity = components["schemas"]["ObservedActivity"];
+export type RuntimeSource = components["schemas"]["RuntimeSource"];
+export type InspectionBinding = components["schemas"]["InspectionBinding"];

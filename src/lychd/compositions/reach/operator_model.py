@@ -9,13 +9,17 @@ from typing import Any, cast
 import httpx2
 from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.profiles import DEFAULT_THINKING_TAGS
 from pydantic_ai.profiles.openai import OpenAIModelProfile
 from pydantic_ai.providers.openai import OpenAIProvider
 
+from lychd.compositions.reach.decision_format import decision_format_phase
 from lychd.compositions.reach.operator_model_wire import (
+    MAX_MODEL_PAYLOAD_BYTES,
     OperatorConversationProfile,
     OperatorModelProbe,
     canonical_json,
+    generation_thinking,
     validate_generation_payload,
 )
 from lychd.compositions.reach.operator_wire import strict_json
@@ -56,22 +60,37 @@ class _RelayTransport(httpx2.AsyncBaseTransport):
         # Pydantic AI's nonstreaming text call has no reason to emit other SDK options.
         body = cast("dict[str, Any]", value)
         body.setdefault("stream", False)
-        body.setdefault("chat_template_kwargs", {"enable_thinking": False})
+        expected = generation_thinking(self.profile, phase=decision_format_phase(body.get("structured_outputs")))
+        body.setdefault("chat_template_kwargs", {"enable_thinking": expected})
         payload = canonical_json(body)
-        validate_generation_payload(self.profile, payload)
+        validated = validate_generation_payload(self.profile, payload)
+        thinking = validated["chat_template_kwargs"]["enable_thinking"]
         raw = await self.relay("generate", payload)
+        if len(raw.encode()) > MAX_MODEL_PAYLOAD_BYTES:
+            msg = "model_response"
+            raise ValueError(msg)
         result = strict_json(raw.encode())
+        if canonical_json(result) != raw:
+            msg = "model_response"
+            raise ValueError(msg)
         try:
             choice = result["choices"][0]
             message = choice["message"]
             valid = (
                 result["model"] == self.profile.model_id
+                and choice.get("finish_reason") != "length"
+                and (not thinking or choice.get("finish_reason") == "stop")
                 and len(result["choices"]) == 1
                 and not message.get("tool_calls")
                 and not message.get("function_call")
                 and message.get("role") == "assistant"
                 and isinstance(message.get("content"), str)
                 and bool(message["content"].strip())
+                and not any(marker in message["content"] for marker in DEFAULT_THINKING_TAGS)
+                and all(
+                    message.get(field) is None or isinstance(message[field], str)
+                    for field in ("reasoning", "reasoning_content")
+                )
             )
         except (KeyError, IndexError, TypeError):
             valid = False

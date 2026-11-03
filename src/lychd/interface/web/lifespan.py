@@ -123,6 +123,8 @@ async def altar_services_lifespan(app: Litestar) -> AsyncGenerator[None]:
             portal_registrations=exts.portal_registrations,
             delegated_runtime_adapters=tuple(exts.delegated_runtime_adapters.values()),
             delegated_runtime_catalog=exts.delegated_runtime_catalog,
+            observation_registrations=exts.observation_registrations,
+            inspection_registrations=exts.inspection_registrations,
             settings=settings,
             systemctl_bin=systemctl_bin,
             soft_activation_guard=soft_activation_guard,

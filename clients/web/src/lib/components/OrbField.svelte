@@ -5,6 +5,9 @@
   import type { OrbRunPage, OrbRunSnapshot } from "$lib/api/models";
   import { getOrbCatalogue, listenToOrb, orbSnapshotSchema, type OrbConnection } from "$lib/orb/live";
   import { matchesOrbPattern, mergeOrbEvidence, mergeOrbGaps, projectOrbField, type OrbDetailLevel, type OrbFieldLens } from "$lib/graph/orb";
+  import { projectRuntime } from "$lib/graph/runtime";
+  import { observeRuntime, emptyRuntimeState, type RuntimeReadState } from "$lib/orb/runtime";
+  import RuntimeEvidence from "./RuntimeEvidence.svelte";
   import GraphCanvas from "./graph/GraphCanvas.svelte";
   import AnimatorRail from "./AnimatorRail.svelte";
   import OrbTimeline from "./OrbTimeline.svelte";
@@ -22,6 +25,9 @@
 
   type Run = OrbRunSnapshot["run"];
   type Lens = OrbFieldLens & { readonly connection: OrbConnection; readonly note: string; readonly trimmed: boolean };
+  let runtime = $state.raw<RuntimeReadState>(emptyRuntimeState);
+  let runtimeReader: ReturnType<typeof observeRuntime> | undefined;
+  let runtimeMode = $state(false);
   let runs = $state.raw<Run[]>([]);
   let catalogue = $state.raw<OrbRunPage | null>(null);
   let lenses = $state.raw<ReadonlyMap<string, Lens>>(new Map());
@@ -63,6 +69,9 @@
     return matches && (statusFilter === "all" || (statusFilter === "active" ? !["done", "failed", "cancelled"].includes(run.status) : statusFilter === "waiting" ? ["awaiting_hardware", "awaiting_consent", "awaiting_delegate", "awaiting_peer"].includes(run.status) : run.status === statusFilter));
   }));
   let field = $derived(projectOrbField(filteredRuns, viewedLenses, level));
+  let runtimeField = $derived(projectRuntime(runtime.snapshot, runtime.received));
+  let runtimeSelection = $derived(selectedNode ? runtimeField.selections.get(selectedNode) : undefined);
+  let combinedProjection = $derived({ identity: field.projection.identity, nodes: [...field.projection.nodes, ...runtimeField.projection.nodes], edges: [...field.projection.edges, ...runtimeField.projection.edges] });
   let activeLens = $derived(selectedRun ? viewedLenses.get(selectedRun) : undefined);
   let currentLens = $derived(selectedRun ? lenses.get(selectedRun) : undefined);
   let activeRun = $derived(runs.find((run) => run.run_id === selectedRun) ?? currentLens?.snapshot.run);
@@ -131,6 +140,7 @@
   });
 
   onMount(() => {
+    runtimeReader = observeRuntime((next) => runtime = next);
     void loadCatalogue();
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible" && !loading && !accessBlocked) void loadCatalogue(false, true);
@@ -138,6 +148,7 @@
     return () => window.clearInterval(timer);
   });
   onDestroy(() => {
+    runtimeReader?.stop();
     destroyed = true;
     cameraCommand?.complete("stale");
     catalogueVersion++;
@@ -174,6 +185,7 @@
     return typeof cause === "object" && cause !== null && "status" in cause && (cause.status === 401 || cause.status === 403);
   }
   function clearProtectedField() {
+    runtimeReader?.clear();
     accessBlocked = true;
     presentationChanged();
     cameraCommand?.complete("stale");
@@ -333,6 +345,12 @@
   }
 
   function selectNode(id: string, opener?: HTMLElement) {
+    if (runtimeField.selections.has(id)) {
+      selectedNode = id; runtimeMode = true; inspectorOpen = true; inspectorOpener = opener; following = false;
+      presentationChanged();
+      return;
+    }
+    runtimeMode = false;
     const selection = field.selections.get(id);
     if (!selection) return;
     selectedNode = id; selectedRun = selection.runId; selectedEvent = selection.eventId ?? null; following = false; inspectorOpen = true;
@@ -350,6 +368,7 @@
     }
   }
   function selectRun(id: string) {
+    runtimeMode = false;
     selectedRun = id; selectedNode = `run:${id}`; selectedEvent = null; inspectorOpen = true; runsOpen = false;
     focusId = selectedNode; focusRevision++;
     presentationChanged();
@@ -396,8 +415,8 @@
   }
 </script>
 
-<svelte:head><title>Orb — workflow field</title></svelte:head>
-<svelte:document onkeydown={dismissPanels} onvisibilitychange={() => { if (document.visibilityState === "visible" && !loading) void loadCatalogue(false, true); }} />
+<svelte:head><title>Orb — runtime and workflow field</title></svelte:head>
+<svelte:document onkeydown={dismissPanels} onvisibilitychange={() => { runtimeReader?.visibility(); if (document.visibilityState === "visible" && !loading) void loadCatalogue(false, true); }} />
 <div class="orb-field">
   <header class="field-header">
     <div class="field-title"><h1>Orb</h1>{#if query.trim() || statusFilter !== "all"}<span>{filteredRuns.length}/{viewedRuns.length} Run groups</span>{/if}</div>
@@ -428,22 +447,25 @@
         <button type="button" onclick={clearHistory}>Clear tab history</button>
       </div>
     </details>
+    <button type="button" aria-pressed={runtimeMode && inspectorOpen} onclick={(event) => { runtimeMode = true; inspectorOpen = true; inspectorOpener = event.currentTarget; }}>Runtime <span>{runtime.snapshot?.components.length ?? 0}</span></button>
     <button class="refresh" type="button" disabled={loading} aria-busy={loading} onclick={() => loadCatalogue()}>{loading && !initialReady ? "Reading…" : "Refresh Runs"}</button>
     <button id="orb-evidence-toggle" type="button" aria-label={inspectorOpen ? "Hide evidence" : "Show evidence"} aria-expanded={inspectorOpen} aria-controls="orb-evidence" onclick={(event) => { if (inspectorOpen) closeEvidence(); else { inspectorOpener = event.currentTarget; inspectorOpen = true; } }}>Evidence</button>
   </header>
   {#if error}<p class="field-fault" role="alert">{error}</p>{/if}
   {#if notice}<p class="field-notice" role="status">{notice}</p>{/if}
   <div class="field-layout">
-    <section class="canvas-area" aria-label="Parallel Run graph">
-      {#if viewedRuns.length && initialReady}
-        <GraphCanvas projection={field.projection} selectedId={selectedNode} onselect={selectNode} label="Parallel Run workflow field" presentation="orb" hideMinimap={true} onzoom={zoomDetail} onviewportinteraction={manualCamera} {cameraCommand} {focusId} {focusRevision} />
-        {#if !filteredRuns.length}<p class="filter-empty">No Run groups match this filter. <button type="button" onclick={() => { query = ""; statusFilter = "all"; }}>Clear filters</button></p>{/if}
-        <div class="field-caption"><span>{pausedFrame ? "Captured field" : "Latest observed field"}</span><span>{lenses.size} evidence lenses · {connectionLabel}</span></div>
+    <section class="canvas-area" aria-label="Runtime and parallel Run graph">
+      {#if runtimeField.projection.nodes.length || (viewedRuns.length && initialReady)}
+        <GraphCanvas projection={combinedProjection} selectedId={selectedNode} onselect={selectNode} label="Runtime and parallel Run workflow field" presentation="orb" hideMinimap={true} onzoom={zoomDetail} onviewportinteraction={manualCamera} {cameraCommand} {focusId} {focusRevision} />
+        {#if viewedRuns.length && !filteredRuns.length}<p class="filter-empty">No Run groups match this filter. <button type="button" onclick={() => { query = ""; statusFilter = "all"; }}>Clear filters</button></p>{/if}
+        <div class="field-caption"><span>{pausedFrame ? "Captured Runs · latest runtime window" : "Latest observed field"}</span><span>{runtime.snapshot?.components.length ?? 0} runtime components · {lenses.size} evidence lenses · {connectionLabel}</span></div>
       {:else}<div class="field-empty"><h2>{!initialReady ? "Reading the Run field…" : error ? "Run field unavailable" : "No retained Runs in this account"}</h2><p>Open a conversation to create work, then inspect its recorded workflow here.</p><a href={resolve("/bridge")}>Open Bridge →</a></div>{/if}
     </section>
-    <aside id="orb-evidence" class="field-feed" aria-label="Run evidence" hidden={!inspectorOpen}>
-      <header><div><h2>{pausedFrame ? "Captured evidence" : "Run evidence"}</h2><p>{pausedFrame ? new Date(pausedFrame.observedAt).toLocaleString() : "Selected Run · bounded ledger feed"}</p></div><button type="button" aria-label="Close evidence inspector" onclick={closeEvidence}>×</button></header>
-      {#if activeRun || viewedRun}
+    <aside id="orb-evidence" class="field-feed" aria-label={runtimeMode ? "Runtime evidence" : "Run evidence"} hidden={!inspectorOpen}>
+      <header><div><h2>{runtimeMode ? "Runtime evidence" : pausedFrame ? "Captured evidence" : "Run evidence"}</h2><p>{runtimeMode ? "Latest runtime window · independent of Run playback" : pausedFrame ? new Date(pausedFrame.observedAt).toLocaleString() : "Selected Run · bounded ledger feed"}</p></div><button type="button" aria-label="Close evidence inspector" onclick={closeEvidence}>×</button></header>
+      {#if runtimeMode}
+        <RuntimeEvidence state={runtime} field={runtimeField} selected={runtimeSelection} onselect={selectNode} onrefresh={() => runtimeReader?.refresh()} />
+      {:else if activeRun || viewedRun}
         {@const run = activeRun ?? viewedRun!}
         <p class="run-name">{run.workflow_name}</p><code class="run-identity">{run.run_id}</code>
         {#if !filteredRuns.some((candidate) => candidate.run_id === run.run_id)}<p class="feed-boundary">Selected Run is outside the current filter.</p>{/if}

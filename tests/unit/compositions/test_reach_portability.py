@@ -169,11 +169,20 @@ class NativeLoop:
         self.reader = asyncio.StreamReader()
         original_read = conversation_workflow.read_research_document
 
-        def read_document(selected: PublicCorpus, source_id: str, *, question: str) -> SourceReadResult:
+        def read_document(
+            selected: PublicCorpus,
+            source_id: str,
+            *,
+            question: str,
+            focus: str = "",
+            reference_labels: tuple[str, ...] = (),
+        ) -> SourceReadResult:
             self.timeline.append("document")
             self.document_reads.append(source_id)
             assert self.timeline[:4] == ["model_plan", "delivered_plan", "ack", "scout"]
-            return original_read(selected, source_id, question=question)
+            assert focus == PLAN
+            assert reference_labels == ()
+            return original_read(selected, source_id, question=question, focus=focus, reference_labels=reference_labels)
 
         monkeypatch.setattr(conversation_workflow, "read_research_document", read_document)
         monkeypatch.setattr(self.broker, "_scout", self.scout)
@@ -324,7 +333,7 @@ async def test_independent_neutral_edges_share_native_research_graph_and_exact_p
         assert run is not None
         assert run.status is RunStatus.DONE
         assert run.pattern_manifest["key"] == "reach.operator_converse"
-        assert run.pattern_manifest["revision"] == "4"
+        assert run.pattern_manifest["revision"] == "5"
         events = await loop.runtime.substrate.ledger.list_events(result.run_id)
         assert {item.data for item in events if item.kind is RunEventKind.NODE} == {
             "revalidate",
@@ -511,6 +520,7 @@ class Requester:
         history_state: str = "exhausted",
         reply_to_event_id: str | None = None,
         reply_anchor: ReachHistoryEntry | None = None,
+        continuation_anchor: ReachHistoryEntry | None = None,
     ) -> ReachWorkerResult:
         request = ReachWorkerRequest.model_validate(
             {
@@ -521,6 +531,7 @@ class Requester:
                 "history_state": history_state,
                 "reply_to_event_id": reply_to_event_id,
                 "reply_anchor": reply_anchor,
+                "continuation_anchor": continuation_anchor,
             }
         )
         self.requests.append(request)

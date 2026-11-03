@@ -683,6 +683,8 @@ async def test_postgres_reconciliation_failure_blocks_publication_and_cleans_up(
         portal_registrations=(),
         delegated_runtime_adapters={},
         delegated_runtime_catalog=(),
+        observation_registrations=(),
+        inspection_registrations=(),
     )
     queues = {"runs": object(), "rites": object()}
     connected_queues = tuple(queues.values())

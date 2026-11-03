@@ -12,6 +12,7 @@ from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, Settings
 
 from lychd.config.settings.archive import ArchiveSettings
 from lychd.config.settings.extensions import ExtensionSettings
+from lychd.config.settings.observability import ObservabilitySettings
 from lychd.config.settings.orchestration import OrchestrationSettings
 from lychd.config.settings.section import SettingsSection
 from lychd.config.settings.server import ServerSettings
@@ -30,6 +31,8 @@ class _SettingsValues(SettingsSection):
     """Run routing and runtime-transition policy."""
     extensions: ExtensionSettings = Field(default_factory=ExtensionSettings)
     """Explicitly activated optional extensions."""
+    observability: ObservabilitySettings = Field(default_factory=ObservabilitySettings)
+    """Explicit same-host structural observation sources; no service activation."""
     weaver: WeaverSettings = Field(default_factory=WeaverSettings)
     """Exact source-registered Bridge casting selection."""
     archive: ArchiveSettings | None = None

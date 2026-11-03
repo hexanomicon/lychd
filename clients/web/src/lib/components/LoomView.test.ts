@@ -19,6 +19,7 @@ import { getLoomCatalogue, getLoomPatternRevision, getOrbRun } from "$lib/api/cl
 import LoomView from "./LoomView.svelte";
 
 const summary: LoomSummary = {
+  publication: "published",
   active: true,
   default: true,
   description: "A test pattern.",
@@ -402,4 +403,24 @@ it("ignores queued outline toggle callbacks after unmount", async () => {
     if (mounted) view.unmount();
     warning.mockRestore();
   }
+});
+
+it("retains the exact remote inspection binding and labels it observation-only", async () => {
+  const binding = { source_id: "fixture", source_generation: "gen-a", profile_id: "remote", profile_revision: "2", registrant_id: "builtin:fixture", publication: "observed" as const, executable: false };
+  page.url.href = "http://localhost/loom/bridge_chat/1?source_id=fixture&generation=gen-a&profile_id=remote&profile_revision=2";
+  vi.mocked(getLoomPatternRevision).mockResolvedValue({ ...projection, publication: "observed", binding });
+  const view = render(LoomView, { patternId: "bridge_chat", revision: "1" });
+  expect(await screen.findByText("Observation only · not executable in this Vessel")).toBeTruthy();
+  expect(getLoomPatternRevision).toHaveBeenCalledWith("bridge_chat", "1", { source_id: "fixture", source_generation: "gen-a", profile_id: "remote", profile_revision: "2" });
+  expect(screen.getByRole("link", { name: "Mermaid source →" }).getAttribute("href")).toContain("generation=gen-a");
+  view.unmount();
+});
+
+it("rejects source-generation substitution without displaying the returned graph", async () => {
+  page.url.href = "http://localhost/loom/bridge_chat/1?source_id=fixture&generation=gen-a&profile_id=remote&profile_revision=2";
+  vi.mocked(getLoomPatternRevision).mockResolvedValue({ ...projection, binding: { source_id: "fixture", source_generation: "gen-b", profile_id: "remote", profile_revision: "2", registrant_id: "builtin:fixture", publication: "observed", executable: false } });
+  const view = render(LoomView, { patternId: "bridge_chat", revision: "1" });
+  expect((await screen.findByRole("alert")).textContent).toContain("does not match the exact requested identity");
+  expect(screen.queryByRole("heading", { name: projection.title })).toBeNull();
+  view.unmount();
 });

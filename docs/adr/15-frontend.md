@@ -834,6 +834,23 @@ changing selection, cursor, authority, or the declared score.
 
 #### Spatial Orb and tab observation history
 
+The shared Orb canvas also projects admitted components, declared attachments and actual runtime
+attempts through one generic metadata contract. A provider name never selects browser logic.
+Build-owned icon assets are resolved from safe logical keys with an ordinary fallback. Source,
+generation and semantic namespaces prevent collisions between components, calls and Run marks.
+Runtime uses an independent bounded source window, including work without a Run and delivery
+after Run settlement. Its semantic inspector separates HTTP observations, effect outcomes,
+freshness and capture omissions. It remains the latest runtime view when the separate Run
+timeline is paused; it does not claim historical runtime replay.
+
+Only new observations received during continuous same-generation reads may trigger a transient
+highlight. Initial reads, explicit refresh, reconnect, restored visibility, stale recovery and
+source replacement establish silent baselines. Polling has a finite deadline, one active request,
+teardown fencing and current-authority refusal clearing. Motion never supplies the only evidence;
+keyboard reading and reduced-motion presentation retain the same information. Inspection-only
+Loom descriptors preserve exact source/profile/generation selection and cannot become local
+executable workflows.
+
 Orb may select a spatial presentation inside the same shared renderer: compact typed marks,
 stable Run territories, and curved relations on an unbounded black viewport. Territory membership
 comes from the supplied Run, never proximity. Repositioning a mark changes only the current

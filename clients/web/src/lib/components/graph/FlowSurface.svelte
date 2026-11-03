@@ -138,8 +138,8 @@
       const nextEdges: Edge[] = input.edges.map(edge => ({ id:edge.id, source:edge.source, target:edge.target,
         type:"semantic", sourceHandle:edge.source === edge.target ? "loop-out" : "out",
         targetHandle:edge.source === edge.target ? "loop-in" : "in", label:edge.label, ariaLabel:edge.label,
-        data:{ relation:edge.relation, presentation:mode }, selectable:false, deletable:false, reconnectable:false,
-        markerEnd:mode === "orb" ? undefined : { type:MarkerType.ArrowClosed, color:"var(--color-rune-dim)" } }));
+        data:{ relation:edge.relation, attention:edge.attention, presentation:mode }, selectable:false, deletable:false, reconnectable:false,
+        markerEnd:mode === "orb" && edge.relation !== "activity" ? undefined : { type:MarkerType.ArrowClosed, color:"var(--color-rune-dim)" } }));
       nodes = reconcileNodes(changedIdentity ? [] : nodes, nextNodes);
       edges = reconcileEdges(changedIdentity ? [] : edges, nextEdges);
       const version = ++generation;

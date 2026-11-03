@@ -1,4 +1,4 @@
-"""Nadir's admitted DM reaches acknowledgement, native handoff and journaled replies."""
+"""Nadir's admitted DM reaches native handoff and journaled replies without a request echo."""
 
 from __future__ import annotations
 
@@ -77,7 +77,7 @@ async def test_dm_denial_precedes_acknowledgement_and_native_request(denial: str
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("fail_second_part", [False, True])
-async def test_dm_ack_precedes_native_and_multipart_delivery_stops_on_unknown(
+async def test_dm_starts_with_native_reply_and_multipart_delivery_stops_on_unknown(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     *,
@@ -103,11 +103,11 @@ async def test_dm_ack_precedes_native_and_multipart_delivery_stops_on_unknown(
             return httpx.Response(200, json={"id": "204", "type": 1, "recipients": [{"id": "105"}]})
         assert request.url.path == "/api/v10/channels/204/messages"
         bodies.append(json.loads(request.content))
-        timeline.append("ack" if len(bodies) == 1 else f"final:{len(bodies) - 2}")
-        return httpx.Response(500 if fail_second_part and len(bodies) == 3 else 201, json={"id": "301"})
+        timeline.append(f"final:{len(bodies) - 1}")
+        return httpx.Response(500 if fail_second_part and len(bodies) == 2 else 201, json={"id": "301"})
 
     async def request_native(*_args: Any, **_kwargs: Any) -> ReachWorkerResult:
-        assert timeline == ["ack"]
+        assert timeline == []
         timeline.append("native")
         return ReachWorkerResult(
             request_id="request",
@@ -127,18 +127,17 @@ async def test_dm_ack_precedes_native_and_multipart_delivery_stops_on_unknown(
         cog = ReachCog(service)
         await cog.on_message(observed)
         await cog.on_message(observed)
-        labels = ["ack:0", "final:0", "final:1"] + ([] if fail_second_part else ["final:2"])
+        labels = ["final:0", "final:1"] + ([] if fail_second_part else ["final:2"])
         records = {record.effect_key_digest: record for record in rest.journal.inspect()}
         assert set(records) == {sha256(f"message:101:110:{label}".encode()).hexdigest() for label in labels}
         assert [body["nonce"] for body in bodies] == [
             sha256(f"101:204:110:{label}".encode()).hexdigest()[:25] for label in labels
         ]
-        assert timeline == ["ack", "native", "final:0", "final:1"] + ([] if fail_second_part else ["final:2"])
-        assert bodies[0]["content"].startswith("I'll look into your request:")
-        assert observed.content in bodies[0]["content"]
+        assert timeline == ["native", "final:0", "final:1"] + ([] if fail_second_part else ["final:2"])
+        assert bodies[0]["content"] == answer[:1900]
         assert all(body["message_reference"]["message_id"] == "110" for body in bodies)
         assert all(body["allowed_mentions"] == {"parse": [], "replied_user": False} for body in bodies)
-        assert "".join(body["content"] for body in bodies[1:]) == (answer[:3800] if fail_second_part else answer)
+        assert "".join(body["content"] for body in bodies) == (answer[:3800] if fail_second_part else answer)
         assert sum(record.status == "unknown" for record in records.values()) == int(fail_second_part)
         delivered = [item for item in traced if item.name == "delivery"]
         assert [(item.part, item.status) for item in delivered] == [
@@ -148,6 +147,7 @@ async def test_dm_ack_precedes_native_and_multipart_delivery_stops_on_unknown(
             (1, "unknown" if fail_second_part else "succeeded"),
         ] + ([] if fail_second_part else [(2, "started"), (2, "succeeded")])
         assert all(item.platform_event_id == "110" for item in traced)
+        assert all(item.name != "acknowledgement" for item in traced)
         assert observed.content not in json.dumps([item.model_dump(mode="json") for item in traced])
     native.request.assert_awaited_once()
 

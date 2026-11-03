@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     )
     from lychd.domain.animation.transmute import QuadletContributor
     from lychd.domain.delegation.ports import DelegatedAgentRuntime
+    from lychd.domain.oculus.runtime import RegisteredInspection, RegisteredObservation
     from lychd.extensions.context import ExtensionContext
     from lychd.extensions.delegation import RegisteredDelegatedRuntime
 
@@ -74,6 +75,16 @@ class AssembledExtensions:
     def delegated_runtime_adapters(self) -> dict[str, DelegatedAgentRuntime]:
         """Runnable delegated adapters admitted by the selected extensions."""
         return dict(self.context.delegated_runtimes.runtime_adapters)
+
+    @property
+    def observation_registrations(self) -> tuple[RegisteredObservation, ...]:
+        """Selected structural declarations with host-bound registration provenance."""
+        return self.context.observations.registrations
+
+    @property
+    def inspection_registrations(self) -> tuple[RegisteredInspection, ...]:
+        """Selected pure Pattern descriptions, never executable workflow registrations."""
+        return self.context.inspections.registrations
 
 
 def assemble_extensions(settings: Settings | None = None) -> AssembledExtensions:

@@ -73,6 +73,7 @@ class PipeWorker:
         history_state: str = "exhausted",
         reply_to_event_id: str | None = None,
         reply_anchor: ReachHistoryEntry | None = None,
+        continuation_anchor: ReachHistoryEntry | None = None,
     ) -> ReachWorkerResult:
         if not self.available or self.lock.locked():
             msg = "worker_busy_or_unavailable"
@@ -86,6 +87,7 @@ class PipeWorker:
                 "history_state": history_state,
                 "reply_to_event_id": reply_to_event_id,
                 "reply_anchor": reply_anchor,
+                "continuation_anchor": continuation_anchor,
             }
         )
         frame = protocol_bytes(request)

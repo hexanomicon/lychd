@@ -27,6 +27,7 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from lychd.compositions.reach.expressions import REACTIONS, Reaction, validate_gif_url
+from lychd.interface.observation import ObservedOperation, OperationObserver
 
 _BASE = "https://discord.com/api/v10"
 _MAX_RESPONSE = 2 * 1024 * 1024
@@ -320,6 +321,46 @@ class EffectJournal:
             self.settle(record, EffectResult(status="unknown", remote_id=record.remote_id, code=code))
 
 
+@contextmanager
+def _observe_request(observed: ObservedOperation | None) -> Generator[None]:
+    if observed is None:
+        yield
+        return
+    observed.start()
+    try:
+        yield
+    except asyncio.CancelledError:
+        observed.finish("cancelled", error="cancelled")
+        raise
+    except httpx.HTTPError as error:
+        observed.finish("failed", error="timeout" if isinstance(error, httpx.TimeoutException) else "transport")
+        raise
+    except BaseException:
+        observed.finish("failed", error="protocol")
+        raise
+    else:
+        observed.finish("succeeded")
+
+
+async def _response_value(response: httpx.Response) -> tuple[int, Any]:
+    """Read one bounded response while preserving non-success HTTP status."""
+    if not HTTPStatus.OK <= response.status_code < HTTPStatus.MULTIPLE_CHOICES:
+        return response.status_code, None
+    raw = bytearray()
+    async for chunk in response.aiter_bytes(chunk_size=65536):
+        if len(raw) + len(chunk) > _MAX_RESPONSE:
+            code = "response_too_large"
+            raise DiscordRestError(code)
+        raw.extend(chunk)
+    if response.status_code == HTTPStatus.NO_CONTENT and not raw:
+        return response.status_code, None
+    try:
+        return response.status_code, json.loads(raw)
+    except (ValueError, UnicodeError, RecursionError):
+        code = "invalid_response"
+        raise DiscordRestError(code) from None
+
+
 class DiscordRest:
     """Bot-authenticated, fixed-origin REST with explicit identity/resource binding."""
 
@@ -332,6 +373,7 @@ class DiscordRest:
         guild_id: str,
         journal: EffectJournal,
         client: httpx.AsyncClient | None = None,
+        observer: OperationObserver | None = None,
     ) -> None:
         """Bind the credential to explicit expected identities and one guild."""
         if type(token) is not str or not re.fullmatch(r"[A-Za-z0-9._-]{1,4096}", token):
@@ -342,6 +384,7 @@ class DiscordRest:
         self.guild_id = _id(guild_id)
         self.journal = journal
         self._token = token
+        self.observer = observer
         self._verified = False
         self._channels: set[str] = set()
         self._direct_channels: dict[str, str] = {}
@@ -434,34 +477,32 @@ class DiscordRest:
             raise DiscordRestError(code)
         return resource
 
-    async def _request(self, method: str, path: str, body: dict[str, Any] | None = None) -> tuple[int, Any]:
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        body: dict[str, Any] | None = None,
+        *,
+        observation: ObservedOperation | None = None,
+    ) -> tuple[int, Any]:
+        """Observe only a real transport entry; retain status even if response decoding fails."""
+        observed = observation or (self.observer.operation(f"http.{method.lower()}") if self.observer else None)
         headers = {"Accept": "application/json", "Accept-Encoding": "identity"}
         if not path.startswith("/webhooks/"):
             headers["Authorization"] = f"Bot {self._token}"
         try:
-            async with self._client.stream(
-                method,
-                _BASE + path,
-                json=body,
-                headers=headers,
-                follow_redirects=False,
-                timeout=_TIMEOUT,
-            ) as response:
-                if not HTTPStatus.OK <= response.status_code < HTTPStatus.MULTIPLE_CHOICES:
-                    return response.status_code, None
-                raw = bytearray()
-                async for chunk in response.aiter_bytes(chunk_size=65536):
-                    if len(raw) + len(chunk) > _MAX_RESPONSE:
-                        code = "response_too_large"
-                        raise DiscordRestError(code)
-                    raw.extend(chunk)
-                if response.status_code == HTTPStatus.NO_CONTENT and not raw:
-                    return response.status_code, None
-                try:
-                    return response.status_code, json.loads(raw)
-                except (ValueError, UnicodeError, RecursionError):
-                    code = "invalid_response"
-                    raise DiscordRestError(code) from None
+            with _observe_request(observed):
+                async with self._client.stream(
+                    method,
+                    _BASE + path,
+                    json=body,
+                    headers=headers,
+                    follow_redirects=False,
+                    timeout=_TIMEOUT,
+                ) as response:
+                    if observed is not None:
+                        observed.http_status = response.status_code
+                    return await _response_value(response)
         except httpx.HTTPError:
             code = "network_error"
             raise DiscordRestError(code) from None
@@ -589,12 +630,15 @@ class DiscordRest:
             )
             if isinstance(claim, EffectResult):
                 return claim
+            observed = self.observer.operation(f"discord.{target}") if self.observer else None
             try:
-                status, data = await self._request(method, path, frozen_body)
+                status, data = await self._request(method, path, frozen_body, observation=observed)
             except DiscordRestError as error:
                 result = EffectResult(status="unknown", code=error.code)
             except asyncio.CancelledError:
                 self.journal.settle(claim, EffectResult(status="unknown", code="cancelled"))
+                if observed is not None:
+                    observed.settle("unknown")
                 raise
             else:
                 result = (
@@ -603,6 +647,8 @@ class DiscordRest:
                     else self._result(status, data)
                 )
             self.journal.settle(claim, result)
+            if observed is not None:
+                observed.settle("failed" if result.status == "rejected" else result.status)
             return result
 
     async def ensure_member_role(self, user_id: str, role_id: str, *, event_id: str) -> EffectResult:

@@ -13,7 +13,7 @@ from lychd.compositions.reach.schemas import PolicyDigest, ReachEvent, ReachId, 
 
 MAX_WIRE_BYTES = 65_536
 type ReachWorkerStatus = Literal[
-    "docs", "context", "conversation", "need_context", "clarify", "empty", "refused", "error"
+    "docs", "context", "conversation", "need_context", "clarify", "empty", "refused", "error", "ignore"
 ]
 type HistoryState = Literal["disabled", "more", "exhausted", "budget", "unavailable"]
 
@@ -47,6 +47,7 @@ class ReachWorkerRequest(Record):
     history_state: HistoryState = "exhausted"
     reply_to_event_id: ReachId | None = None
     reply_anchor: ReachHistoryEntry | None = Field(default=None, repr=False)
+    continuation_anchor: ReachHistoryEntry | None = Field(default=None, repr=False)
 
 
 class ReachWorkerResult(Record):
@@ -66,6 +67,9 @@ class ReachWorkerResult(Record):
 
     @model_validator(mode="after")
     def conversation_expressions_only(self) -> ReachWorkerResult:
+        if self.status == "ignore" and (self.text or self.reaction is not None or self.gif_id is not None):
+            msg = "result_ignore"
+            raise ValueError(msg)
         if (self.reaction is not None or self.gif_id is not None) and (
             self.status != "conversation" or self.model_binding_digest is None
         ):

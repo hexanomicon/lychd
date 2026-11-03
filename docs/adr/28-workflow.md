@@ -668,6 +668,22 @@ Gate. Protected Regions remain live-only.
 
 ## Pattern contribution
 
+Weaver also owns a pure immutable inspection descriptor, derived from the same exact source
+declaration as an executable Pattern. It carries the validated semantic snapshot, title and safe
+projection metadata, owner/provenance and selected profile/source-generation binding, without a
+Graph object, trigger, builder or executable closure. Selected descriptors form a read catalogue
+for Loom and Orb; executable registrations project into that catalogue without changing their
+resolution or admission contracts. A profile in another process may contribute its descriptor
+without making its workflow executable in the receiving Vessel.
+
+An inspection entry cannot satisfy routing, admission, resume or executable revision lookup.
+Publication, inspection availability and profile-specific execution availability remain separate.
+The exact historical manifest is preserved; profile and source-generation metadata do not rewrite
+v2 snapshots or their digest. Conflicting contents for an exact identity refuse rather than
+selecting a newer or similarly named revision. Orb may present an attributed validated descriptor
+when the local executable closure is unavailable, while explicitly withholding local execution
+availability. Visibility does not prove source compatibility, execution or a traversed edge.
+
 A publishable Scroll revision declares:
 
 - identity, revision, owner, provenance, support, and parentage;

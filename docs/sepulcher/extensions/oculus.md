@@ -21,9 +21,45 @@ most **three live lenses of 100 records each**, and a separate route into one ex
 counts describe the account on screen, not complete history; capture limits and gaps remain
 visible. [State of Work](../../state-of-the-work.md#orb-instrument) records that delivery.
 
-Native Oculus remains **Designed**. The Orb has no native Oculus ingestion or durable query/read
-model behind it. [State of Work](../../state-of-the-work.md#native-oculus) keeps that remaining
-boundary, and [ADR 29](../../adr/29-observability.md) owns the evidence contract below.
+Native Oculus now has a bounded component and activity projection alongside those Run reads.
+Selected extensions and explicitly selected same-host source snapshots contribute typed
+descriptions and observations; Orb renders their shared contract. There is no durable native
+trace store or complete distributed account. [State of Work](../../state-of-the-work.md#native-oculus)
+keeps that boundary, and [ADR 29](../../adr/29-observability.md) owns the evidence contract below.
+
+## Connected components and activity
+
+Open the Orb's runtime inspector to read known components, declared connections, exact inspection
+Patterns and source coverage. A component can be configured while its activity remains
+uninstrumented. A call attempt names its actual producer and target; an HTTP result and an
+effect owner's result remain distinct. Background work needs no invented Run, and delivery can
+remain visible after its associated Run ends.
+
+An explicit source selection binds private same-host custody to an attributed projection:
+
+```toml
+[[observability.sources]]
+source_id = "reach.operator"
+registrant_id = "operator:reach"
+path = "/run/lychd-observations/nadir"
+max_age_seconds = 30
+```
+
+This path must already be admitted to the Vessel's deployment as a read-only source. A setting
+does not create a host mount or start a producer. The host publisher owns a private directory
+and an atomically replaced `snapshot.json`; it supplies no credentials or message bodies.
+The source ID must match, and an optional `expected_generation` pins one exact source generation.
+The reader refuses unsafe custody, unsupported data and excessive size. It reads no siblings.
+
+The current bounds are eight selected sources plus the native inventory, 128 displayed
+components, 256 connections, 256 activity records and 32 inspection Patterns. A source snapshot
+is at most 1 MiB. Coverage reports omitted membership and the process-local window; these counts
+are not complete-history totals. Source restart replaces a generation rather than recovering
+the old observation window. An unavailable or stale source never means idle or healthy.
+
+Inspection-only Patterns are safe score descriptions derived from the owner's exact manifest.
+They appear in Loom without adding executable workflows to the receiving Vessel. Their source,
+profile and generation stay pinned in the link; the v2 Pattern digest is unchanged.
 
 ## Meanings of evidence
 

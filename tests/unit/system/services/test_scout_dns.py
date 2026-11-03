@@ -8,7 +8,6 @@ from dataclasses import replace
 from typing import cast
 from unittest.mock import AsyncMock, Mock
 
-import dns.flags
 import dns.message
 import dns.rcode
 import dns.rdata
@@ -16,6 +15,7 @@ import dns.rdataclass
 import dns.rdatatype
 import dns.rrset
 import pytest
+from dns import flags as dns_flags
 
 from lychd.domain.scout.destination import preflight_destination
 from lychd.domain.scout.transport import FetchCode, FetchError, NetworkGate
@@ -27,7 +27,7 @@ _RESOLVER = resolver.ResolverEndpoint("127.0.0.1", 5353)
 
 def _response(query: dns.message.QueryMessage, address: str | None = None) -> dns.message.Message:
     response = dns.message.make_response(query)
-    response.flags |= dns.flags.RA
+    response.flags |= dns_flags.RA
     question = query.question[0]
     if address is not None:
         response.answer.append(dns.rrset.from_text(question.name, 60, "IN", question.rdtype, address))
@@ -110,7 +110,7 @@ def test_incomplete_or_unrelated_responses_refuse(case: str) -> None:
     elif case == "question":
         response.question = dns.message.make_query("different.example.", "A").question
     elif case == "truncated":
-        response.flags |= dns.flags.TC
+        response.flags |= dns_flags.TC
     elif case == "referral":
         response.answer.clear()
     elif case == "nxdomain":
@@ -118,7 +118,7 @@ def test_incomplete_or_unrelated_responses_refuse(case: str) -> None:
     elif case == "servfail":
         response.set_rcode(dns.rcode.SERVFAIL)
     elif case == "not_recursive":
-        response.flags &= ~dns.flags.RA
+        response.flags &= ~dns_flags.RA
     elif case == "unrelated":
         response.answer.append(dns.rrset.from_text("different.example.", 60, "IN", "A", "127.0.0.1"))
     wire = response.to_wire() + (b"tail" if case == "tail" else b"")

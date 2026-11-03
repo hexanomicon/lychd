@@ -14,6 +14,7 @@ from lychd.domain.cortex.dispatcher import Dispatcher
 from lychd.domain.cortex.engine import RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.leases import LeaseLedger
+from lychd.domain.oculus.runtime import RuntimeCatalogue
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.web.atlas import AtlasStorePort
 from lychd.domain.web.fragments import FragmentRegistry
@@ -78,6 +79,12 @@ def provide_workflows(state: State) -> WorkflowRegistry:
     return state.services.workflows
 
 
+def provide_runtime_observations(state: State) -> RuntimeCatalogue:
+    """Return the process observation projection independently of Run lifecycle."""
+    catalogue = getattr(state.services, "runtime_observations", None)
+    return catalogue if catalogue is not None else RuntimeCatalogue()
+
+
 def provide_run_engine(state: State) -> RunEngine:
     """Return the fully queue-bound run engine."""
     return state.services.run_engine
@@ -105,6 +112,7 @@ web_dependencies: dict[str, Provide] = {
     "tickets": Provide(provide_tickets, sync_to_thread=False),
     "swap_requests": Provide(provide_swap_requests, sync_to_thread=False),
     "workflows": Provide(provide_workflows, sync_to_thread=False),
+    "runtime_observations": Provide(provide_runtime_observations, sync_to_thread=False),
     "run_engine": Provide(provide_run_engine, sync_to_thread=False),
     "run_bus": Provide(provide_run_bus, sync_to_thread=False),
     "projector": Provide(provide_projector, sync_to_thread=False),

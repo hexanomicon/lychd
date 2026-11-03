@@ -21,7 +21,18 @@ def _identifier(value: str) -> str:
 type ReachId = Annotated[str, Field(strict=True, min_length=1, max_length=128), AfterValidator(_identifier)]
 type ReachPlatform = Annotated[str, Field(strict=True, pattern=r"^[a-z][a-z0-9-]{0,31}$")]
 type ReachAction = Literal["answer_docs", "summarize_context", "converse"]
-type ReachTrigger = Literal["mention", "command"]
+type ReachTrigger = Literal["mention", "command", "reply", "followup"]
+type ReachReviewIssue = Literal[
+    "missing_component",
+    "unsupported_claim",
+    "quotation_mismatch",
+    "wrong_language",
+    "wrong_target",
+    "future_promise",
+    "unnecessary_clarification",
+    "contradiction",
+    "missing_evidence",
+]
 type PolicyDigest = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 type ReachReason = Literal[
     "prepared",
@@ -42,6 +53,7 @@ type ReachReason = Literal[
     "question_too_large",
     "question_invalid",
     "context_disabled",
+    "relationship_invalid",
 ]
 
 
@@ -95,6 +107,9 @@ class ReachPolicy(Record):
     allowed_conversation_ids: tuple[ReachId, ...] = Field(min_length=1, max_length=100)
     allowed_parent_conversation_ids: tuple[ReachId, ...] = Field(default=(), max_length=100)
     allowed_direct_subject_ids: tuple[ReachId, ...] = Field(default=(), max_length=100)
+    allowed_reply_conversation_ids: tuple[ReachId, ...] = Field(default=(), max_length=100)
+    allowed_adjacent_followup_conversation_ids: tuple[ReachId, ...] = Field(default=(), max_length=100)
+    adjacent_followup_window_seconds: int = Field(default=60, ge=1, le=120)
     rules: tuple[ReachRule, ...] = Field(min_length=1, max_length=100)
     allowed_triggers: tuple[ReachTrigger, ...] = Field(default=("mention", "command"), min_length=1, max_length=2)
     event_ttl_seconds: int = Field(default=300, ge=1, le=3600)
@@ -107,6 +122,18 @@ class ReachPolicy(Record):
         _unique(self.allowed_conversation_ids, "conversation ids")
         _unique(self.allowed_parent_conversation_ids, "parent conversation ids")
         _unique(self.allowed_direct_subject_ids, "direct subject ids")
+        _unique(self.allowed_reply_conversation_ids, "reply conversation ids")
+        _unique(self.allowed_adjacent_followup_conversation_ids, "followup conversation ids")
+        if not set(self.allowed_reply_conversation_ids + self.allowed_adjacent_followup_conversation_ids).issubset(
+            self.allowed_conversation_ids
+        ):
+            msg = "Continuation conversations must be explicitly allowed conversations."
+            raise ValueError(msg)
+        if (self.allowed_reply_conversation_ids or self.allowed_adjacent_followup_conversation_ids) and not (
+            self.context_message_limit
+        ):
+            msg = "Continuation conversations require an explicit positive context limit."
+            raise ValueError(msg)
         _unique(self.allowed_triggers, "triggers")
         _unique(tuple(rule.name for rule in self.rules), "rule names")
         return self
@@ -132,7 +159,10 @@ class ReachEvent(Record):
     group_ids: tuple[ReachId, ...] = Field(default=(), max_length=250)
     is_automated: bool = False
     mention_subject_ids: tuple[ReachId, ...] = Field(default=(), max_length=100)
-    trigger: Literal["mention", "command", "message"]
+    trigger: Literal["mention", "command", "message", "reply", "followup"]
+    related_event_id: ReachId | None = None
+    related_subject_id: ReachId | None = None
+    related_occurred_at: AwareDatetime | None = None
     action: str = Field(min_length=1, max_length=64)
     question: str = Field(max_length=8192, repr=False)
     occurred_at: AwareDatetime
@@ -141,6 +171,12 @@ class ReachEvent(Record):
     def unique_observations(self) -> Self:
         _unique(self.group_ids, "observed group ids")
         _unique(self.mention_subject_ids, "observed mention ids")
+        relationship = (self.related_event_id, self.related_subject_id, self.related_occurred_at)
+        if (self.trigger in {"reply", "followup"}) != all(value is not None for value in relationship) or (
+            self.trigger not in {"reply", "followup"} and any(value is not None for value in relationship)
+        ):
+            msg = "Reach continuation requires an exact observed relationship."
+            raise ValueError(msg)
         return self
 
 
@@ -154,7 +190,7 @@ class ReachEventIdentity(Record):
     conversation_id: ReachId
     parent_conversation_id: ReachId | None = None
     subject_id: ReachId
-    trigger: Literal["mention", "command", "message"]
+    trigger: Literal["mention", "command", "message", "reply", "followup"]
 
     @classmethod
     def from_event(cls, event: ReachEvent) -> Self:

@@ -137,6 +137,45 @@ export. The worker verifies the manifest and file bytes. To change the documents
 new committed revision into a new corpus directory and select it on a later explicit launch.
 Do not edit the exported files in place.
 
+To offer the public project's documentation, roadmap, source, tests and supported configuration
+instead of the small default selection, explicitly choose the project export:
+
+```bash
+uv run --locked python scripts/reach_operator.py export-corpus \
+  --project-files --revision HEAD \
+  --output "$REACH_ROOT/project-corpus-01"
+```
+
+This selects eligible regular text blobs from the pinned Git tree under the exporter's public
+path policy. Review that selection as material permitted in the configured conversations;
+being tracked or text does not itself prove that arbitrary content is public. The export does
+not follow symlinks or include ignored files, `.git`, local credentials or installed dependencies.
+Its manifest records bounded omissions. It admits at most 8,192 selected and omitted entries,
+64 MiB of admitted text and 512 KiB per source, with a separate bounded manifest. The same
+`--corpus-dir` launch option mounts and verifies this detached export read-only in the worker.
+The mount is a revision snapshot; working-tree edits require a new export and explicit launch.
+
+Research discovery offers at most sixteen local descriptors. Exact source references and numbered
+targets retain precedence; a verified named parent with matching authored units ranks before ordinary
+path, title and content overlap. Its optional `section_match` string has at most 320 characters and
+shows authored parent and sampled child headings or anchors, without inventing a range. It is
+untrusted discovery metadata, never acquired body evidence or source authority. The model selects from that same offered
+set at planning, validation and acquisition. It can read at most three local excerpts per plan.
+Ordinary excerpts retain a 4,000-character bound; an explicitly requested multi-section or
+complete-quotation Markdown read may admit up to 16,000 characters from the selected scope. Neither proves exhaustive
+inspection of the repository.
+Implicit Markdown reads skip link-only navigation. A kickoff favors welcome or getting-started
+content and retains nearby parent/date context; an explicit source fragment still selects that
+section. Implicit nested lexical reads retain the nearest non-title parent with meaningful selected
+content inside the existing excerpt bound. A source whose required contiguous section context cannot
+fit is refused rather than presenting the child without its owner. Numbered section labels and
+adjacent authored anchors participate in selection. The current
+question's explicit targets take precedence over the acknowledged research plan, which supplies focus for an elliptical
+follow-up such as a filename. Inspect the projected excerpt bounds when source relevance matters.
+The complete catalogue is not injected into the prompt, and an oversized fixed input still
+refuses under the normal Context budget. These files supply evidence, not instructions or
+permission to execute code, edit files or search private mounts.
+
 Build the paired development images and retain their exact image identities:
 
 ```bash
@@ -363,9 +402,11 @@ conversation profile and remain separate from guild channels and other people's 
 verifies the observed one-to-one recipient before sending. That message binding grants no
 channel administration authority.
 
-An admitted mention or DM receives a short acknowledgement before work starts. The
-acknowledgement and each final answer part have separate stable delivery identities; an
-acknowledgement is not completion. Answers are frozen into at most six parts of at most 1,900
+Conversation mode sends no automatic textual acknowledgement or echo of the question. It may
+mark receipt with the optional 👀 reaction below. When research is needed, the first substantive
+reply is the model's interpreted plan; a short ordinary question can receive its answer directly.
+Documentation-only mode retains its fixed receipt. Plans and each final answer part have separate
+stable delivery identities; a plan is not completion. Answers are frozen into at most six parts of at most 1,900
 UTF-16 units each before the first final send. Text exceeding that delivery budget is refused
 instead of silently cut off. A failed or uncertain part stops later parts. Slash answers use the
 same bounded splitting with ephemeral followups.
@@ -379,7 +420,7 @@ does not implement automatic localization of operational copy.
 Adaptive context is separately opt-in: add `"adaptive_context": true` to the private conversation
 JSON shown below. Omission retains the single-call behavior. Without catalogue research, the model
 returns only an `answer`, `read_more` or `clarify` text decision, never an executable tool call.
-Without catalogue research, at most three model calls share one turn deadline; each uses a fresh
+Without catalogue research or checkback, at most three model calls share one turn deadline; each uses a fresh
 generation-local native Run. Only a settled request for more context admits the exact next round, preserving the event,
 reply reference and earlier evidence. Terminal results cannot open another round.
 
@@ -392,6 +433,143 @@ distinct observations; a missing needed source can produce a concrete clarificat
 DM history admits only that sender and this bot. Cached excerpts last for the bounded request;
 they supply no durable memory, private Archive ingestion, cross-place identity or publication
 authority.
+
+### Quiet replies and adjacent continuations
+
+Explicit mentions and opted-in DMs retain their existing admission. To consider unmentioned
+continuations, select exact existing text channels in the private Discord policy:
+
+```toml
+allowed_reply_channel_ids = ["111111111111111111"]
+allowed_adjacent_followup_channel_ids = ["111111111111111111"]
+adjacent_followup_window_seconds = 60
+```
+
+Both lists default empty and must be subsets of `allowed_channel_ids`; allowed thread parents
+do not activate this feature. Conversation mode, adaptive context and positive bounded history
+are required. Existing person, group and action rules still apply. The edge retains at most 512
+own final-message excerpts in its current generation, after every text part was delivered
+successfully. Plans, failed or uncertain multipart sends, error notices and GIFs create no invitation.
+
+A reply without a ping must reference one of those retained bot finals in the same channel.
+An adjacent candidate must be the next observed message, from the original human, within the
+configured window (at most 120 seconds). Each completed final permits one adjacent candidate.
+Other activity closes the invitation; delayed Gateway echoes of any part of that same final
+or its acknowledged successful GIF preserve an open invitation but cannot reopen a closed one.
+GIF IDs share the 512-entry bound and never become reply targets. An echo arriving before the
+REST acknowledgement is known still closes adjacency. Restart discards this temporary state.
+
+Metadata, selected channel and worker availability checks precede reading an ambient candidate's
+body. Native Reach then judges only that candidate and its attributed bot-answer anchor as
+`addressed` or `ignore`, before history paging, document selection, research or acknowledgement.
+Before a research plan is confirmed delivered, uncertain, malformed, unavailable or ignored
+candidates stay silent, including reactions and generic error replies. Once an addressed
+candidate's interpreted plan has been confirmed delivered, a later worker refusal or failure
+permits one bounded terminal-notice attempt in that same audience. A failed or uncertain final
+send cannot trigger another final attempt. The edge tracks this only for the
+active event and clears it on settlement or cancellation; another event cannot inherit it.
+Error notices create no continuation invitation or decorative expression. Failed or uncertain
+plan delivery does not establish this visible commitment. Actual platform replies keep `reply_anchor`; adjacency has a distinct
+`continuation_anchor` and does not invent a reply reference. Both share the existing age, count
+and 16 KiB history bounds and remain fixed across admitted context rounds. This opt-in supplies
+bounded continuation candidates, not general channel surveillance or durable ambient memory.
+
+### Check an answer before settlement
+
+Add `"checkback": true` to an adaptive private conversation profile to opt into a finite
+self-check. Ordinary terminal answers and clarification candidates, and researched synthesis,
+receive a fresh no-tool review posture before adoption. History requests are not terminal
+candidates. The reviewer receives the current question, attributed context and reply target,
+acknowledged plan, host-approved persona name, proposed answer and the exact source projections
+already used for synthesis. The host calculates request, evidence and candidate digests and binds
+the strict judgment to that exact model call; the model never transcribes these hashes.
+Review resolves references and chronology against the current question and actual anchors, checks
+each requested time horizon, and distinguishes optional suggestions from source-scheduled work.
+The literal current question is also supplied as a separate review task; a model's interpreted plan
+cannot replace it. This task is budgeted and bound with the frozen envelope for review and correction.
+When correcting a prior reply, formation and review also require acknowledging its visible error
+and answering a requested explanation without inventing hidden execution causes.
+A conservative controller guard can veto an accepted answer that demonstrably repeats complete
+sentences from the actual reply or continuation anchor despite an unambiguous English request to
+rephrase, simplify or explain in practice. Literal quotation/repetition requests and ambiguous forms
+do not activate it; quotation followed by a substantive explanation is not an unchanged answer.
+The raw model verdict remains unchanged in trace. A separate Core control receipt records the
+guard observation and effective outcome. A veto uses the existing single correction allowance;
+it cannot adopt a model-rejected draft or obtain additional evidence or calls beyond that ceiling.
+
+Research reviews also report up to four exact candidate-text clauses asserting current operational
+availability or unavailability, at most 240 characters each and 512 UTF-8 bytes for the serialized
+array. Oversized observations refuse rather than being truncated. The field is required in both reviews, independently of the raw
+verdict. The host checks each bounded contiguous excerpt against that exact candidate; omitted or
+invented observations refuse rather than becoming an empty list. Documented capabilities, qualified
+dated observations, future plans, conditional advice and explicitly unknown state are not current
+runtime assertions. When this public-text path supplies no runtime observation, a nonempty claim
+observation returns the draft for same-evidence correction through a separately attributed authority
+guard, including when the model requests proof for those draft assertions. Repair must qualify or
+retract them, or produce a concrete clarification for an actually unavailable requested fact. It
+receives the same exact clauses and frozen evidence within the existing single correction allowance;
+the rejected draft is never adopted. Trace
+keeps only the candidate-bound count and digest. The bounded serialized observation and correction
+metadata cost is reserved before freezing context, accounting separately for Unicode input
+characters, UTF-8 payload bytes and escaped pipe-frame bytes under the existing limits. This
+allocation allowance is not a guarantee that every schema-valid answer fits: each actual review
+and correction is checked again before its model call, and oversized envelopes refuse.
+An empty list means no claim was observed, not that
+the answer is grounded; extraction remains fallible model judgment.
+
+Bounded reference hints may resolve coordinated ordinal references from one explicit numbered list
+or sibling-heading sequence in the actual anchor. They preserve observed item order, labels, aliases
+and spans rather than doing arithmetic on printed numbers. Ambiguous, conflicting or incomplete
+sequences yield no hint. These transient observations identify referents, not factual proof or new
+tasks. Their exact labels may guide selection inside already admitted documents before generic
+ordinal inference; explicit current-question names retain precedence and source grants/caps do not change.
+One narrow English relational form can additionally observe an explicit opening period and its
+named next period in the actual anchor. It preserves the next period's literal label, alias and
+spans; it does not translate labels or infer numbering. Ambiguous, quoted, fenced, incomplete or
+conflicting forms abstain. These successor observations do not change document selectors. If the
+visible admitted source contains that literal target or its observed alias, a terminal clarification
+asking only for a different numbered target may be returned for the existing one correction. The
+original `needs_evidence` judgment remains visible; no rejected candidate is adopted, and the new
+candidate still requires a final accepted review. A clarification about the actual target retains
+its ordinary missing-evidence behavior.
+
+Adding `"request_goals": true` requires checkback and adds one fresh no-tool interpretation before
+planning. It sees the current question, exact anchors and bounded recent messages, with no source
+catalogue, plan or candidate answer. Up to eight short requested outcomes are frozen for that Run.
+They guide planning, synthesis and review, and establish no factual truth or additional authority.
+These outcomes can retain requested components when later source packing omits older messages;
+they do not supply evidence about why a historical response was produced.
+Every goal must receive a coverage status; an accepted answer requires complete coverage and a
+short matching visible answer excerpt for each goal. Only paired bold/inline-code markers and
+whitespace are ignored in excerpt matching; words and method identifiers remain exact. An exact
+frozen goal name may be mapped by the host to its index; unknown or ambiguous references refuse.
+Missing, duplicate or unsupported coverage cannot
+adopt the candidate. An incomplete goal may quote the exact candidate phrase being assessed;
+that does not make it complete. Repair receives the missing-goal statuses without acquiring new evidence.
+Goal text and quoted fulfillment evidence do not enter structural trace; counts, digests and
+closed coverage statuses do. This remains model judgment rather than a semantic proof.
+This optional interpretation needs profile-specific semantic qualification: valid goal syntax does
+not prove that it preserved the user's scope. Leave it disabled when it introduces unrequested work;
+direct checkback still reviews the actual question, anchors, plan and frozen evidence.
+
+`accept` adopts the checked candidate. `revise` permits one correction using that same evidence,
+then requires a final accepted review. `needs_evidence` returns a bounded concrete clarification
+in the requested reply language. An unresolved second review produces a fixed honest limitation;
+malformed or mismatched judgments and timeouts follow the existing failure path. Neither review
+nor repair can acquire a new source, change tools or expand authority. A self-check is model
+judgment, not independent verification or proof of completeness.
+
+Checkback adds at most two reviews and one correction: at most four formation calls for an
+ordinary terminal Run, or five including research planning and synthesis. A continuation
+candidate can add one initial addressing call. Request-goal interpretation adds one call per Run,
+including each admitted history round. Existing three-round, request, whole-turn and
+event-expiry ceilings remain unchanged; additional calls do not guarantee that a slow turn can
+finish within them. Each formation call retains its profile generation cap and exact byte bounds.
+
+These are observed phases inside the shared `generate` or `research` Graph station, before
+`settle`, rather than separate checkpoint stations carrying source bodies. Source projections
+remain transient and identical through all review/repair calls. Structural trace records verdicts,
+closed issue codes, attempts and input digests, without candidates, source bodies or reasoning prose.
 
 ### Optional reactions and GIFs
 
@@ -409,8 +587,8 @@ The private conversation JSON may enable `expressions` alongside `adaptive_conte
 ```
 
 These are fields to merge into the complete profile below. Omission keeps expressions disabled.
-After a successful textual acknowledgement, the edge may add 👀 to the exact incoming mention
-or admitted DM. A completed answer may select one additional reaction from 👀, 👍, ❤️, 😂, ✨ and
+The edge may add 👀 to the exact admitted incoming mention or DM without a textual receipt.
+A completed answer may select one additional reaction from 👀, 👍, ❤️, 😂, ✨ and
 🤔. These effects never target another message or observe unmentioned channel traffic.
 A cosmetic failure preserves the text answer; a failed or uncertain final part prevents later
 decorations. Slash responses remain text-only and ephemeral.
@@ -466,6 +644,70 @@ mounts that snapshot read-only into the worker. Only its validated expression ca
 the Discord edge through readiness; the persona and model frames do not. Changes require a new
 explicit launch.
 
+The private profile may opt into `"enable_thinking": true` for the same already-running local
+model. Omitted or false retains the existing request mode and logical profile digest; true is
+included in the binding. Native and host relays require the one exact profile-selected
+`chat_template_kwargs.enable_thinking` value and refuse conflicting or expanded settings. This
+closed private binding does not add a generic generation policy or model lifecycle authority.
+The existing model server must already support separated reasoning output; no server change or
+automatic fallback follows. Qualify the exact profile and backend before using it.
+
+Reasoning and final content share the profile's completion allowance, bounded to 4,096 tokens,
+which must remain below its declared context window, and its existing timeout. A known length
+finish refuses, and the thinking profile additionally requires an explicit natural stop. It gains
+no retry, extra correction or bypass of the remaining limits. SDK thinking parts stay transient, outside adopted
+text, checkpoint state and settled message history. Private probes may record reasoning presence
+and bounded counts, never thought text. Mode selection and observable final-answer quality remain
+separate evidence; thinking is not independent verification or a correctness certificate.
+
+With structured output enabled, `"thinking_phases": ["checkback"]` can enable reasoning only for
+selected trusted phases. The tuple permits the seven known phase names below, with no duplicates;
+a nonempty tuple requires `json_object_output`. The global `enable_thinking` flag enables every
+phase; otherwise only listed phases use it. Nonempty selections join the immutable binding, while
+an omitted or empty tuple preserves prior digests. Both relays derive the expected mode from the
+exact validated grammar carrier, and natural-stop enforcement uses that actual per-call mode.
+This adds no model, call, completion allowance, timeout or lifecycle authority. Qualify the complete
+selected profile; a useful isolated review replay does not qualify conversation or repair behavior.
+
+An adaptive profile may also opt into `"json_object_output": true`. Its immutable binding then
+selects `decision_schema_version = 3` and includes the exact compact-grammar bundle digest. The
+seven semantic phases are research planning, ordinary conversation, terminal correction,
+synthesis, addressing, checkback and requested goals. Planning has three fixed grammar variants:
+documents, web or mixed sources. One trusted selector uses the actual offered catalogue for both
+prompt accounting and execution; an empty catalogue selects ordinary conversation. All planning
+variants share the `planning` thinking policy. Goal-enabled checkback selects a separate fixed
+`checkback_goals` carrier requiring nonempty coverage and a nonnull matching answer excerpt for
+each complete coverage entry. Native admission still checks the exact goal set, references and
+evidence. These variants make ten source-owned grammars. A goals-enabled binding refuses the
+ordinary checkback carrier; a goals-disabled binding refuses `checkback_goals`. Both checkback
+variants retain the same semantic phase and thinking policy.
+Both relays accept only exact members of that fixed bundle through `structured_outputs.grammar`;
+missing or conflicting settings refuse rather than acquiring a default format. Planning excludes
+synthesis-only citation fields, and terminal correction excludes new research or history requests.
+No phase is inferred from user text, model output or provider metadata. Closed object branches
+exclude input envelopes and host-owned receipts. Research source arrays retain the native limits of three documents, two web sources
+and four sources overall, including valid mixed-source plans. Exact catalogue membership and
+uniqueness remain native admission checks. Accounting charges the selected grammar and any
+review/correction carrier delta before freezing context, within the existing byte and frame limits.
+The compact EBNF strings are generated offline from ordered source schemas by
+[`generate_reach_decision_grammar.py`](../../../scripts/generate_reach_decision_grammar.py),
+with the pinned XGrammar converter and conversion options. A versioned generator normalization
+uses nonempty, recursive JSON strings so escaped newlines, quotation marks and backslashes remain
+representable without expensive bounded-repeat token masks. It excludes raw control characters
+and isolated surrogate escapes. Provider string maxima are an approximation: native parsers
+enforce the existing field maxima and refuse oversized results before adoption. The source schemas,
+native limits, completion allowance, transport limits and turn deadlines remain unchanged.
+Serving requires no XGrammar dependency in Core. The bundle binds the source schemas, converter
+version and options, generator normalization, and exact generated strings.
+Compact object and array separators bound structural whitespace without changing string content.
+Declaration order is preserved by generation and cannot be changed by outer request encoding.
+The profile cannot supply a schema or schema hash. Conflicting carriers or modified grammars
+and unbound format fields refuse. Omitted or false preserves the previous profile digest and request
+dialect, excluding the unused schema version. This requests provider-side structural constraints;
+the native phase parser, field checks, source authority and semantic review still apply. A valid
+object can still be the wrong decision or contain false prose. Qualify this setting against the
+selected backend, including separated reasoning. There is no format-repair retry or permissive JSON recovery.
+
 Add `converse` to the first matching rule's actions. Keep `answer_docs` if you use
 `admin-inspect`; keep `summarize_context` if you use the excerpt-only context command. To admit
 recent surrounding conversation, first enable history using the preceding section. Then run:
@@ -488,9 +730,10 @@ public-document excerpts where relevant. The model receives recent messages and 
 attributed untrusted data, with oldest history omitted first to meet the input bound.
 
 For each admitted context round, the native worker creates a generation-local Run, executes
-`reach.operator_converse@4`, and acquires an exact Dispatcher Chat lease without tools. An ordinary
+`reach.operator_converse@5`, and acquires an exact Dispatcher Chat lease without tools. An ordinary
 Run makes one bounded model request; the optional research branch below makes one planning and
-one synthesis request in the same Run. Adaptive context can admit up to three Runs for one turn.
+one synthesis request in the same Run. Optional checkback and addressing add only the bounded
+calls described above. Adaptive context can admit up to three Runs for one turn.
 The relay supplies no retry, proxy, redirect, arbitrary endpoint or model override. Its reply
 grants no publication or host authority. Model output remains bounded; this profile does not
 qualify general answer quality.
@@ -510,21 +753,105 @@ public locator before launch; a question, pasted link or model decision cannot a
 The [research profile law](../../adr/30-webcrawler.md#explicit-reach-operator-research-profile)
 keeps that standing authority separate from native Bridge consent and Discord identity.
 
+For a conversation request, web metadata becomes eligible when its current question or an
+actually bound reply/continuation anchor names a configured URL or `web:id`, or shares normalized
+topic terms with configured IDs, titles or URL paths. The last two admitted history entries may
+also contribute exact configured references, but cannot activate web through topic words alone.
+Any signal offers the complete standing web catalogue in its authored order, retaining readable
+alternatives; no signal offers none. Catalogue inspection without a request still lists all entries.
+This is approximate retrieval, not a factual or semantic relevance check. A recent explicit link
+may retain eligibility during a topic change, while an unmatched paraphrase may need an exact
+source reference. The standing authority, source limits and native offered-set checks remain
+unchanged. Source `focus` phrases continue to select excerpt positions, not catalogue eligibility.
+
 An admitted mention or one-to-one DM may select at most four sources: at most three documents
 and two web entries. The first model call returns an interpreted plan of at most 500 characters.
+It also supplies a separate bounded `focus` read query naming resolved sections, units or code
+identifiers. The structured planning grammars require a nonempty focus. Only the natural plan text
+is delivered publicly. The focus selects local evidence; it grants no source authority. Explicit
+current section references, numbered ranges, code identifiers, resolved ordinals and whole authored
+heading names retain precedence. A resolved focus can replace an incidental partial-word heading
+match. Legacy unstructured plans without focus retain the existing fallback. The bounded selector and optional requested outcomes are
+checkpointed under conversation schema v6, while acquired source bodies remain transient.
 The edge must deliver that plan as a separate reply to the same incoming message and acknowledge
 successful delivery before any selected document read or web acquisition. Slash commands cannot
 acknowledge a research plan and therefore cannot acquire sources through this branch. The usual
-initial acknowledgement and optional 👀 reaction remain separate from this interpreted plan.
+optional 👀 receipt remains separate from this interpreted plan; conversation mode sends no
+earlier mechanical text.
+
+An ordinary answer or clarification ends its Run; its text schedules no later work. The model
+instructions require source-dependent follow-ups, including corrections for omitted evidence,
+to select the research branch rather than promise a later lookup in a final answer. Synthesis
+must address the current request and acknowledged plan using the acquired excerpts, distinguish
+exact quotations from paraphrases, and state missing or clipped evidence. Adoption rejects a
+final text that repeats the acknowledged plan after whitespace normalization, before rendering
+citations. That narrow check does not detect differently worded promises or prove semantic
+completeness. The structural trace records observed plan, source-read and final-delivery events
+under its reported capture limits.
+Planning and review interpret the current correction rather than repeat a historical acknowledgement.
+An incidental typo must not block the otherwise clear requested result; essential missing context
+still uses the bounded history handoff or a concrete clarification.
 
 The native `research` station obtains its exact no-tool Chat lease, waits for the delivered-plan
-gate, then consumes bounded source excerpts and makes one synthesis call. A source provides at
-most 4,000 characters; oldest history is omitted before source projections are shortened to fit
-the combined persona and JSON input budget. Original and projected digests remain explicit.
+gate, then consumes bounded source excerpts and makes one synthesis call. Web sources remain bounded
+to 4,000 characters; selected multi-section or complete-quotation local Markdown reads may admit
+up to the existing 16,000-character maximum. Oldest
+history is omitted before source projections are shortened to fit the unchanged combined persona
+and JSON input budget. Trimmed multi-section local Markdown distributes that projection across
+authored siblings even when the acquired excerpt is shorter than 4,000 characters, retaining exact
+source-relative spans. Original and projected digests, allocated projection budgets and omitted
+material remain explicit.
+The model view omits the internal `projection_spans` array. The host projector retains it, and the
+probe independently reconstructs the full projection before comparing the exact reduced model view
+and recording the complete span receipt. This recovers task context without changing read, model
+input, review reserve, payload or frame limits.
+The host supplies an `evidence_scope` record beside those attributed sources and preserves it in
+the same frozen synthesis, review and repair context. This public-text path establishes which
+source bytes were obtained; it supplies no observation of the operator's running installation.
+Describe capabilities as documented, retain the dates, inputs and qualification limits of recorded
+occurrences, and describe future targets as plans. A milestone establishes neither present
+availability nor present unavailability. Successful source acquisition is not successful runtime
+execution. An optional exploration suggestion needs no readiness claim. If installed-state
+verification is itself requested, identify the missing observation instead of treating unknown
+state as absent, broken or working. Unsupported positive or negative availability claims require
+correction from the same evidence when a qualified answer suffices; this remains model judgment,
+not an additional deterministic veto or runtime inspection facility.
+When a long quotation would consume a child's share, at most three spans preserve its opening,
+authored attribution and following narrative. One projection has at most 48 spans; tighter budgets
+still yield partial evidence, never reconstructed quotation text. The explicit synthetic marker
+`[omitted]` distinguishes gaps from authored source words and counts toward the same projection budget.
+That balanced mode remains the default for ordinary explanations. An explicit request to give
+quotations selects `complete_quotes`; explicitly shortened quotations or quotation summaries retain
+balanced mode. The current request owns this choice, never source text or the model's focus.
+Complete mode reserves intact quotation bodies, their section identity and authored attribution
+before distributing remaining space to explanation. A quotation that cannot fit remains omitted
+with explicit gaps. For that mode, synthesis, review and correction require the requested visible
+quotations intact, rather than silently replacing them with prefixes or ellipses. This is a model
+fulfillment instruction, not an independent guarantee of exact reproduction. Markdown and verse-label
+styling may change while words, punctuation and endings remain intact. The mode joins the transient projection metadata and the probe independently
+recomputes it; character, UTF-8, frame and span limits remain unchanged.
+Numbered ranges and coordinated lists in the current question select the available matching sections
+without expanding the numeric interval. Qualified opening/first/second/third units use authored source
+order; following requires an opening/first unit of the same kind in that query. An exact document
+fragment retains precedence. Ordinals stay within a uniquely named parent section; rejected named
+scopes are refused. Only an elliptical relative reference may use acknowledged focus to resolve it.
+Requested complete quotations
+must be visible in full, even when a shorter prefix matches the source.
 Source bodies are transient data attached only to detached outbound model messages; checkpoint
 state retains the plan and selectors, and neither native history nor cached Context retains the
 acquired bodies. The final model selects citation IDs; the host renders links only through
-admitted successful sources and appends explicit unavailable-source notices. A blocked page does
+admitted successful sources and appends explicit unavailable-source notices. After validating the
+original closed answer shape and 8,000-character text limit, Reach renders complete simple inline
+HTTP(S) Markdown links as their exact visible labels, preserving attribution words while discarding
+model-selected destinations. Images, escaped, nested, code and other complex links are not reduced.
+Reduction allows one blockquote or list prefix with at most three ordinary spaces after its marker.
+It refuses tabs or four leading spaces, tabs or four spaces after that marker, nested containers,
+and answers containing HTML `pre` or `code` tags. These conservative
+container checks do not implement a complete Markdown parser;
+any remaining HTTP(S) URL refuses the answer. Structured citations still name only admitted
+successful source IDs, and the host citation footer supplies the clickable HTTP(S) links. This
+presentation step leaves the raw candidate, its review binding, and source/projection evidence
+unchanged. A blocked page does
 not become a page that was read. If every selected web source fails, the host returns a fixed
 clarification and its unavailable-source notices, without adopting the model's unsupported comparison.
 Persona, humour, multipart replies and optional GIFs retain the same evidence and delivery bounds.
@@ -647,6 +974,96 @@ cannot bypass that uncertainty. The receipt witnesses this local transport path,
 establishing a durable native outbox, cross-process producer authority or application-level
 release acceptance.
 
+## Test a turn without Discord
+
+The headless helper runs the same native operator conversation Pattern in a disposable,
+networkless Core container with an explicitly selected persona, verified corpus and already
+running local model. It submits a synthetic normalized mention or DM instead of connecting a
+Discord edge. The plan-delivery receipt is simulated and labelled as such. Local document reads,
+native Run/station events and model HTTP calls remain real observations.
+
+Select the exact Core image ID from your retained image record as `CORE_IMAGE`, and copy one
+scenario into the private operator workspace:
+
+```bash
+install -m 600 examples/reach/probes/kickoff.json "$REACH_ROOT/kickoff-probe.json"
+uv run --locked python scripts/reach_probe.py \
+  --engine "$ENGINE" --core-image "$CORE_IMAGE" \
+  --conversation-profile "$REACH_ROOT/conversation-01.json" \
+  --corpus-dir "$REACH_ROOT/project-corpus-01" \
+  --scenario "$REACH_ROOT/kickoff-probe.json" \
+  --output "$REACH_ROOT/probe-kickoff-01" \
+  --model-transport podman
+```
+
+The output must be a new absolute directory outside every Git checkout. Inputs are frozen for
+the occurrence, and the output retains their distinct image identity, persona digest and corpus
+revision/digest. Those pins do not establish parity with a live bot unless its selected inputs
+have been compared separately. The helper starts one bounded Core worker; it neither changes
+model lifecycle nor obtains Discord credentials, starts a web worker or sends a message.
+Model-selected web sources are refused rather than supplied with invented evidence.
+Use a Core image built with the matching helper/source contract: projection validation also
+checks the worker's excerpt against the selected verified corpus.
+
+The supplied scenarios cover a roadmap kickoff, an English DM after Slovak history, and an
+uncertain plan-delivery receipt. The kickoff requires the roadmap/current-status source IDs and
+the `so_it_begins` GIF in the selected profile. Choose a suitable corpus and expression catalogue
+before using those assertions. `plan-not-delivered.json` expects a failed native turn and checks
+that no source read or synthesis followed the uncertain receipt. A passing negative scenario
+means the refusal boundary held; it does not turn that native failure into a successful answer.
+
+The private `report.json` separates scenario assertions, native status, synthetic receipt,
+capture health and cleanup. `turn.json` contains the plan, final answer/GIF selection, exact
+Pattern descriptors, acquired-source observations and metadata from the actual synthesis
+request, including its projection bounds and digests. The acquired excerpt and the shorter
+model-input projection remain distinct. Source bodies and persona/provider payloads are omitted;
+`--capture-model-output` separately opts into bounded synthetic model-decision text for diagnosis.
+`report.md` gives a readable view. Structural observations use the existing private trace archive:
+
+```bash
+uv run --locked python scripts/reach_trace.py show \
+  --archive-dir "$REACH_ROOT/probe-kickoff-01/traces" --latest
+```
+
+Each scenario file can assert an expected native status, required successful source reads,
+an exact GIF ID and bounded `required_text`/`prohibited_text` terms with explicit `text_case`.
+A failed assertion returns a nonzero exit code. Inspect the answer and its
+supporting evidence as well: structural checks and one local-model occurrence do not certify
+every future response. Trace capture remains bounded best-effort observation, with gaps and
+failures reported; it is not a durable native Run ledger, source receipt or proof of model
+attention. This probe qualifies neither Discord delivery nor the full live research host path.
+
+For up to six linked turns, use `scripts/reach_dialogue_probe.py` with the same CLI flags and
+a private scenario such as:
+
+```json
+{
+  "direct": true,
+  "turns": [
+    {
+      "id": "explanation",
+      "question": "Explain request versus response in two points named First and Second.",
+      "expected_status": "conversation",
+      "required_text": ["First", "Second"]
+    },
+    {
+      "id": "followup",
+      "question": "Explain the second point in one simpler sentence.",
+      "reply_to": {"turn": "explanation", "part": 0},
+      "expected_status": "conversation"
+    }
+  ]
+}
+```
+
+Later questions receive the actual prior user text and production-split final answer parts,
+with at most twenty recent entries and an exact selected anchor. `reply_to` identifies a real
+synthetic delivered part; a non-DM `followup_to` tests a distinct adjacent-continuation candidate.
+Future or missing targets refuse. Each turn uses a fresh Core, so this tests explicit transcript
+continuity rather than persistent worker state or the live Discord invitation detector. Reports
+keep structural/literal acceptance separate and leave `semantic_review` as `needs_review` until
+an independent assessment is recorded; a fluent answer or successful source read alone is insufficient.
+
 ## Handle refusals and uncertain effects
 
 The harness intentionally emits fixed diagnostics such as `reach_operator_refused`, and its
@@ -666,7 +1083,8 @@ drop on backpressure so a stalled log consumer cannot withhold the Run's answer.
 Each running supervisor retains typed structural observations in the owner-only
 `$REACH_ROOT/state/traces/trace.sqlite3` archive. Platform message IDs link adaptive request rounds;
 each request links its native Run and exact model/research call identities. History counts, graph
-stations, model HTTP status and timings, source outcomes, acknowledgements and individual final
+stations, model HTTP status and timings, source outcomes and local excerpt ranges/digests,
+acknowledgements and individual final
 delivery parts remain searchable after restart. An HTTP status is present only when observed;
 missing data never means success. No question, answer, history, source body, URL, provider body,
 arbitrary exception text or credential enters this archive.
@@ -696,6 +1114,34 @@ avoid incidentally retaining raw private wire bodies in the container engine.
 
 The RunLedger and event bus themselves remain in memory. The diagnostic archive does not provide
 Oculus ingestion, native Run recovery, conversation memory, or a replacement for the journals below.
+
+### Publish structural observations to Orb and Loom
+
+The separate `run --observation-dir /explicit/private/directory` option publishes a bounded
+`snapshot.json` for the common Oculus source contract. Select the same directory explicitly in
+the receiving Vessel's [observability configuration](../../sepulcher/extensions/oculus.md#connected-components-and-activity).
+Use `source_id = "reach.operator"` and host attribution `registrant_id = "operator:reach"`.
+The directory is owner-only, outside Git checkouts, and independently admitted to the reader's
+deployment. This feature neither exposes nor reads the diagnostic SQLite archive.
+
+The host publishes Core/edge/host and external service descriptions, exact worker Pattern
+descriptors and a finite window of structural observations. A five-second heartbeat updates the
+source snapshot. Producer restart changes its generation; a stopped snapshot becomes stale.
+The native Run's terminal state does not close runtime observation, so final Discord delivery
+can remain visible with its explicitly supplied Run reference.
+
+Actual custom REST requests and Discord SDK HTTP requests use shared driver observations.
+Cached journal results and refusal before transport produce no outgoing attempt. API, gateway
+handshake and CDN classifications use fixed safe target identities; URLs, tokens, platform
+message IDs, bodies and arbitrary exceptions are absent. SDK attempts identify each observed
+header dispatch, before serialization or socket write, including repeated dispatches inside one
+logical request. They do not prove transmitted bytes. Pre-header failures, WebSocket frames and
+full body consumption are not supplied; SDK completion means observed response headers.
+Model HTTP observations retain their existing completion-only coverage, without inventing an
+unobserved start or drawing the synthetic SDK relay URL as an external destination. Status-absent
+broker or IPC failures create no external model activity. Native station/entered-Step identities
+and exact admitted Pattern references remain structural metadata; a bounded Run-reference map
+can attach late delivery to that same score without choosing a current or latest Run.
 
 Transport attempts live in `$REACH_ROOT/state/effects`. Their private JSON records contain
 method, target class, hashed effect/payload/scope identities, status, and an optional remote ID

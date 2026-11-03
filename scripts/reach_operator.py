@@ -22,14 +22,26 @@ import sys
 import tempfile
 import time
 from collections.abc import Awaitable, Callable, Generator, Sequence
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager, nullcontext, suppress
 from hashlib import sha256
 from pathlib import Path
 from typing import Any, Literal, NoReturn, cast
 from uuid import uuid4
 
+from lychd.compositions.reach.documents import (
+    LEGACY_MAX_CORPUS_BYTES,
+    LEGACY_MAX_DOCUMENTS,
+    MAX_CORPUS_BYTES,
+    MAX_CORPUS_DOCUMENTS,
+    MAX_CORPUS_MANIFEST_BYTES,
+    MAX_DOCUMENT_BYTES,
+    CorpusManifest,
+    decode_public_text,
+    public_project_path,
+)
 from lychd.compositions.reach.operator_diagnostics import diagnostic_bytes, parse_diagnostic, write_diagnostic_line
 from lychd.compositions.reach.operator_model_wire import OperatorModelRequest
+from lychd.compositions.reach.operator_observation import ReachPatternObservation
 from lychd.compositions.reach.operator_trace import ReachTraceEvent, error_code
 from lychd.compositions.reach.operator_wire import ReachWorkerReady, ReachWorkerResult
 from lychd.compositions.reach.research_wire import (
@@ -38,15 +50,18 @@ from lychd.compositions.reach.research_wire import (
     ReachResearchProgress,
 )
 from lychd.interface.discord.operator_io import load_policy
+from lychd.interface.observation import OperationObservation
 
 if __package__:
     from scripts.reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker, validate_endpoint
+    from scripts.reach_observation import ReachObservationPublisher
     from scripts.reach_podman_model import PodmanModelTransport
     from scripts.reach_research_broker import OperatorResearchBroker
     from scripts.reach_trace_archive import TraceArchive
     from scripts.reach_trace_capture import TraceCapture
 else:
     from reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker, validate_endpoint
+    from reach_observation import ReachObservationPublisher
     from reach_podman_model import PodmanModelTransport
     from reach_research_broker import OperatorResearchBroker
     from reach_trace_archive import TraceArchive
@@ -54,9 +69,9 @@ else:
 
 ROOT = Path(__file__).resolve().parents[1]
 WIRE_LIMIT = 65_536
-DOCUMENT_LIMIT = 524_288
-CORPUS_LIMIT = 2_097_152
-MAX_DOCUMENTS = 32
+DOCUMENT_LIMIT = MAX_DOCUMENT_BYTES
+CORPUS_LIMIT = MAX_CORPUS_BYTES
+MAX_DOCUMENTS = MAX_CORPUS_DOCUMENTS
 IMAGE_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
 CONTAINER_ID = re.compile(r"^[0-9a-f]{64}$")
 EDGE_INPUTS = (
@@ -64,6 +79,8 @@ EDGE_INPUTS = (
     "clients/discord/pyproject.toml",
     "clients/discord/uv.lock",
     "clients/discord/Containerfile",
+    "src/lychd/interface/observation.py",
+    "src/lychd/interface/http_observation.py",
     *(
         f"src/lychd/compositions/reach/{name}.py"
         for name in (
@@ -94,6 +111,7 @@ EDGE_INPUTS = (
             "onboarding",
             "messages",
             "history",
+            "followups",
         )
     ),
 )
@@ -266,21 +284,73 @@ def command(
     return raw
 
 
-def export_corpus(output: Path, revision: str = "HEAD", *, root: Path = ROOT) -> str:
-    """Export only catalogue-listed committed blobs, detached from dirty/private working files."""
+def _corpus_tree(root: Path, revision: str) -> dict[str, tuple[str, str, int]]:
+    """Inspect immutable Git modes and sizes without following checkout links or reading files."""
+    raw = command(
+        ["git", "ls-tree", "--full-tree", "-r", "-z", "-l", revision], root=root, limit=MAX_CORPUS_MANIFEST_BYTES
+    )
+    result: dict[str, tuple[str, str, int]] = {}
+    for record in raw.split(b"\0"):
+        if not record:
+            continue
+        metadata, separator, path_raw = record.partition(b"\t")
+        fields = metadata.decode("ascii").split()
+        if not separator or len(fields) != 4:  # noqa: PLR2004 - fixed Git tree record grammar
+            _fail("corpus_tree")
+        mode, kind, _object_id, size = fields
+        path = path_raw.decode("utf-8", errors="strict")
+        result[path] = (mode, kind, int(size) if size != "-" else -1)
+    return result
+
+
+def _corpus_paths(root: Path, tree: dict[str, tuple[str, str, int]], *, project_files: bool) -> list[str]:
+    if project_files:
+        paths = sorted(path for path in tree if public_project_path(path))
+        limit = MAX_DOCUMENTS
+    else:
+        catalogue = (root / "examples/reach/public-docs.txt").read_text(encoding="utf-8").splitlines()
+        paths = [line.strip() for line in catalogue if line.strip() and not line.lstrip().startswith("#")]
+        limit = LEGACY_MAX_DOCUMENTS
+        if any(
+            re.fullmatch(r"(?:README\.md|CONTRIBUTING\.md|docs/[A-Za-z0-9_./-]+\.md)", path) is None
+            or not public_project_path(path)
+            for path in paths
+        ):
+            _fail("corpus_catalogue")
+    if not 1 <= len(paths) <= limit or len(paths) != len(set(paths)):
+        _fail("corpus_catalogue")
+    if any(path not in tree or tree[path][0] not in {"100644", "100755"} or tree[path][1] != "blob" for path in paths):
+        _fail("corpus_git_mode")
+    return paths
+
+
+def _corpus_source(
+    root: Path, revision: str, path: str, size: int, *, project_files: bool
+) -> tuple[bytes, Literal["document_limit", "not_text"] | None]:
+    """Read one pinned text blob or record its explicit project-profile omission."""
+    if project_files and size > DOCUMENT_LIMIT:
+        return b"", "document_limit"
+    raw = command(["git", "show", f"{revision}:{path}"], root=root, limit=DOCUMENT_LIMIT)
+    try:
+        decode_public_text(raw)
+    except ValueError:
+        if not project_files:
+            raise
+        return b"", "not_text"
+    return raw, None
+
+
+def export_corpus(output: Path, revision: str = "HEAD", *, root: Path = ROOT, project_files: bool = False) -> str:
+    """Export pinned public blobs, with whole-project text explicitly selected by the operator.
+
+    The default retains the small documentation catalogue. The project profile
+    records oversize/non-text omissions, refuses symlinks and aggregate overflow,
+    and never reads dirty, ignored or untracked project files. Neither export
+    contains Git metadata, a directory tree, or executable filesystem authority.
+    """
     external_path(output)
     if output.exists() and (not output.is_dir() or any(output.iterdir())):
         _fail("corpus_output_exists")
-    catalogue = (root / "examples/reach/public-docs.txt").read_text(encoding="utf-8").splitlines()
-    paths = [line.strip() for line in catalogue if line.strip() and not line.lstrip().startswith("#")]
-    if not 1 <= len(paths) <= MAX_DOCUMENTS or len(paths) != len(set(paths)):
-        _fail("corpus_catalogue")
-    if any(
-        re.fullmatch(r"(?:README\.md|CONTRIBUTING\.md|docs/[A-Za-z0-9_./-]+\.md)", path) is None
-        or any(part in {"", ".", ".."} for part in path.split("/"))
-        for path in paths
-    ):
-        _fail("corpus_catalogue")
     resolved = (
         command(["git", "rev-parse", "--verify", "--end-of-options", f"{revision}^{{commit}}"], root=root)
         .decode("ascii")
@@ -288,31 +358,49 @@ def export_corpus(output: Path, revision: str = "HEAD", *, root: Path = ROOT) ->
     )
     if re.fullmatch(r"[0-9a-f]{40}", resolved) is None:
         _fail("corpus_revision")
+    tree = _corpus_tree(root, resolved)
+    paths = _corpus_paths(root, tree, project_files=project_files)
     documents: list[dict[str, str]] = []
+    omissions: list[dict[str, str]] = []
     contents: list[bytes] = []
     total = 0
-    for index, path in enumerate(paths):
-        raw = command(["git", "show", f"{resolved}:{path}"], root=root, limit=DOCUMENT_LIMIT)
+    for path in paths:
+        raw, omission = _corpus_source(root, resolved, path, tree[path][2], project_files=project_files)
+        if omission is not None:
+            omissions.append({"path": path, "reason": omission})
+            continue
         total += len(raw)
-        raw.decode("utf-8", errors="strict")
-        if total > CORPUS_LIMIT:
+        if total > (CORPUS_LIMIT if project_files else LEGACY_MAX_CORPUS_BYTES):
             _fail("corpus_limit")
+        index = len(documents)
         contents.append(raw)
         documents.append(
             {
                 "path": path,
                 "url": f"https://github.com/hexanomicon/lychd/blob/{resolved}/{path}",
                 "sha256": sha256(raw).hexdigest(),
-                "file": f"{index:03}.md",
+                "file": f"{index:04}.txt" if project_files else f"{index:03}.md",
             }
         )
+    manifest = CorpusManifest.model_validate(
+        {
+            "schema_version": 2 if project_files else 1,
+            "source_revision": resolved,
+            "documents": tuple(documents),
+            "omissions": tuple(omissions),
+        }
+    )
+    manifest_value = manifest.model_dump(mode="json")
+    if not project_files:
+        manifest_value.pop("omissions")
+    manifest_raw = json_bytes(manifest_value)
+    if len(manifest_raw) > MAX_CORPUS_MANIFEST_BYTES:
+        _fail("corpus_manifest_limit")
     private_directory(output)
     # The manifest is published last; an interrupted export is never admissible.
     for document, raw in zip(documents, contents, strict=True):
         write_private(output / document["file"], raw)
-    write_private(
-        output / "manifest.json", json_bytes({"schema_version": 1, "source_revision": resolved, "documents": documents})
-    )
+    write_private(output / "manifest.json", manifest_raw)
     return resolved
 
 
@@ -455,6 +543,27 @@ def bind(source: Path, destination: str, *, readonly: bool = True) -> list[str]:
     return ["--volume", f"{source}:{destination}:{'ro' if readonly else 'rw'},Z"]
 
 
+def capture_descriptors(value: dict[str, Any], raw: bytes, capture: TraceCapture | None) -> bool:
+    """Consume only a bounded Core inspection frame without forwarding it to the edge."""
+    if value.get("kind") != "reach_pattern_observation":
+        return False
+    with suppress(ValueError, TypeError):
+        declaration = ReachPatternObservation.model_validate_json(raw)
+        if capture is not None:
+            capture.descriptors(declaration)
+    return True
+
+
+def capture_worker_frame(value: dict[str, Any], raw: bytes, capture: TraceCapture | None) -> None:
+    """Record a native worker's typed control frame without changing forwarding."""
+    if capture is None:
+        return
+    if value.get("kind") == "ready":
+        capture.ready(ReachWorkerReady.model_validate_json(raw))
+    elif value.get("kind") == "result":
+        capture.result(ReachWorkerResult.model_validate_json(raw))
+
+
 async def relay(
     reader: asyncio.StreamReader,
     writer: asyncio.StreamWriter,
@@ -473,17 +582,16 @@ async def relay(
         if len(raw) > WIRE_LIMIT:
             _fail("operator_frame_limit")
         value = strict_object(raw)
+        if not requests_only and capture_descriptors(value, raw, capture):
+            continue
         if requests_only:
             from lychd.compositions.reach.operator_wire import parse_request_line
 
             request = parse_request_line(raw)
             if capture is not None:
                 capture.request(request)
-        elif capture is not None:
-            if value.get("kind") == "ready":
-                capture.ready(ReachWorkerReady.model_validate_json(raw))
-            elif value.get("kind") == "result":
-                capture.result(ReachWorkerResult.model_validate_json(raw))
+        else:
+            capture_worker_frame(value, raw, capture)
         writer.write(raw)
         await writer.drain()
 
@@ -531,12 +639,10 @@ async def model_relay(  # noqa: C901 - closed readiness/result/model/research wi
         if len(raw) > WIRE_LIMIT:
             _fail("operator_frame_limit")
         value = strict_object(raw)
+        if capture_descriptors(value, raw, capture):
+            continue
         if value.get("kind") in {"ready", "result"}:
-            if capture is not None:
-                if value["kind"] == "ready":
-                    capture.ready(ReachWorkerReady.model_validate_json(raw))
-                else:
-                    capture.result(ReachWorkerResult.model_validate_json(raw))
+            capture_worker_frame(value, raw, capture)
             if value.get("kind") == "result" and research_broker is not None:
                 research_broker.settled(str(value.get("request_id", "")))
             edge_writer.write(raw)
@@ -656,6 +762,23 @@ async def research_edge_relay(
             await writer.drain()
 
 
+def capture_structured(raw: bytes, role: str, capture: TraceCapture) -> bool:
+    """Validate one closed child record and pass its actual pipe role to custody checks."""
+    try:
+        value = strict_object(raw)
+        if value.get("kind") == "operation_observation":
+            capture.operation(OperationObservation.model_validate_json(raw), role)
+            return True
+        if value.get("kind") == "reach_trace":
+            event = ReachTraceEvent.model_validate_json(raw)
+            if event.producer == role:
+                capture.child(event, role)
+                return True
+    except (ValueError, UnicodeError, RecursionError):
+        return False
+    return False
+
+
 async def diagnostics(  # noqa: C901 - role custody, legacy diagnostics and closed readiness codes
     reader: asyncio.StreamReader,
     *,
@@ -668,15 +791,8 @@ async def diagnostics(  # noqa: C901 - role custody, legacy diagnostics and clos
             raw = await reader.readuntil(b"\n")
         except (asyncio.IncompleteReadError, asyncio.LimitOverrunError):
             return
-        if capture is not None and raw.startswith(b"{"):
-            try:
-                value = strict_object(raw)
-                event = ReachTraceEvent.model_validate_json(raw) if value.get("kind") == "reach_trace" else None
-                if event is not None and event.producer == role:
-                    capture.child(event, role)
-                    continue
-            except (ValueError, UnicodeError, RecursionError):
-                pass
+        if capture is not None and raw.startswith(b"{") and capture_structured(raw, role, capture):
+            continue
         if role == "core" and raw.startswith(b"{"):
             try:
                 record = parse_diagnostic(raw)
@@ -764,6 +880,7 @@ async def supervise(  # noqa: C901, PLR0912 - explicit two-child settlement and 
     for signum in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(signum, stopped.set)
     status = 1
+    heartbeat = asyncio.create_task(capture.heartbeat()) if capture is not None else None
     try:
         for arguments in commands:
             children.append(  # noqa: PERF401 - sequential spawn retains first child if the second fails
@@ -815,6 +932,9 @@ async def supervise(  # noqa: C901, PLR0912 - explicit two-child settlement and 
                 if type(value) is int:
                     status = value if value >= 0 else 128 - value
     finally:
+        if heartbeat is not None:
+            heartbeat.cancel()
+            await asyncio.gather(heartbeat, return_exceptions=True)
         for task in tasks[:5]:
             if not task.done():
                 task.cancel()
@@ -889,6 +1009,10 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
         profile_raw = read_regular(args.conversation_profile, WIRE_LIMIT, private=True)
         strict_object(profile_raw)
         profile = OperatorConversationProfile.model_validate_json(profile_raw)
+    if (policy.allowed_reply_channel_ids or policy.allowed_adjacent_followup_channel_ids) and (
+        profile is None or not profile.adaptive_context or not args.history
+    ):
+        _fail("operator_followup_configuration")
     research_broker = None
     if profile is not None and profile.research.enabled:
         if (
@@ -925,13 +1049,18 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
         instance_lock(args.state_dir),
         generation_workspace(args.state_dir, "generation-") as temporary,
         TraceArchive(args.state_dir / "traces") as archive,
+        (
+            ReachObservationPublisher(args.observation_dir, model=profile is not None)
+            if args.observation_dir is not None
+            else nullcontext()
+        ) as observation,
     ):
-        corpus_manifest = strict_object(read_regular(args.corpus_dir / "manifest.json", CORPUS_LIMIT))
+        corpus_manifest = strict_object(read_regular(args.corpus_dir / "manifest.json", MAX_CORPUS_MANIFEST_BYTES))
         document_ids = frozenset(f"doc:{item['path']}" for item in corpus_manifest.get("documents", []))
         web_ids: frozenset[str] = (
             frozenset(f"web:{item.id}" for item in profile.research.sources) if profile is not None else frozenset()
         )
-        capture = TraceCapture(archive.emit, source_ids=document_ids | web_ids)
+        capture = TraceCapture(archive.emit, source_ids=document_ids | web_ids, observation=observation)
         generation = Path(temporary)
         generic = generation / "policy.json"
         write_private(generic, policy.to_reach_policy().model_dump_json().encode())
@@ -1080,6 +1209,11 @@ def parser() -> argparse.ArgumentParser:
     export = subcommands.add_parser("export-corpus")
     export.add_argument("--output", required=True, type=Path)
     export.add_argument("--revision", default="HEAD")
+    export.add_argument(
+        "--project-files",
+        action="store_true",
+        help="explicitly admit eligible tracked public project text at the pinned revision (64 MiB/8192 paths)",
+    )
     build = subcommands.add_parser("build")
     build.add_argument("--engine", choices=("docker", "podman"), default="podman")
     build.add_argument("--images", required=True, type=Path)
@@ -1090,6 +1224,7 @@ def parser() -> argparse.ArgumentParser:
             child.add_argument(f"--{name}", required=True, type=Path)
         if operation == "run":
             child.add_argument("--corpus-dir", required=True, type=Path)
+            child.add_argument("--observation-dir", type=Path)
             child.add_argument("--sync-commands", action="store_true")
             child.add_argument("--history", action="store_true")
             child.add_argument("--admin-user", action="append", default=[])
@@ -1118,7 +1253,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.operation == "token":
             token_file(args.file)
         elif args.operation == "export-corpus":
-            print(json.dumps({"source_revision": export_corpus(args.output, args.revision), "path": str(args.output)}))  # noqa: T201
+            revision = export_corpus(args.output, args.revision, project_files=args.project_files)
+            print(json.dumps({"source_revision": revision, "path": str(args.output)}))  # noqa: T201
         elif args.operation == "build":
             build_images(args.engine, args.images)
         elif args.operation == "run":

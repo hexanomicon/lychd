@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const lockPath = join(frontendRoot, "package-lock.json");
 const outputPath = join(frontendRoot, "static", "THIRD_PARTY_NOTICES.txt");
+const runtimeNotices = await readFile(join(frontendRoot, "src", "lib", "assets", "runtime", "NOTICE.txt"), "utf8");
 const artworkNotices = await readFile(join(frontendRoot, "src", "lib", "assets", "altar", "NOTICE.txt"), "utf8");
 
 const fallbackCopyright = new Map([
@@ -128,10 +129,12 @@ const output = `${[
   "non-optional set; inclusion here does not claim that every package contributes code to every",
   "bundle. Platform-specific optional build packages are not shipped in the browser artifact.",
   "",
-  "Bundled artwork notices are retained from src/lib/assets/altar/NOTICE.txt.",
+  "Bundled artwork notices are retained from src/lib/assets/altar/NOTICE.txt and runtime/NOTICE.txt.",
   "Regenerate with: npm run licenses",
   "",
   normalize(artworkNotices),
+  "",
+  normalize(runtimeNotices),
   ""
 ].join("\n")}${sections.join("\n\n")}\n`;
 

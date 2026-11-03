@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from hashlib import sha256
 from typing import Any
 from uuid import uuid4
 
@@ -19,6 +20,31 @@ from lychd.domain.cortex.execution_context import bind_occurrence, bind_step, re
 from tests.unit.compositions.test_reach_documents import NOW, STARTED, make_corpus, make_policy, make_request
 
 CANARY = "private prompt /private/source provider-body secret-token"
+
+
+def test_source_trace_retains_exact_read_range_and_digests_without_body() -> None:
+    source = "opening material\n" + CANARY
+    event = ReachTraceEvent(
+        producer="core",
+        name="source_read",
+        status="ok",
+        source_id="doc:docs/roadmap.md",
+        chars=len(source),
+        excerpt_start=17,
+        excerpt_chars=len(CANARY),
+        source_digest=sha256(source.encode()).hexdigest(),
+        text_digest=sha256(CANARY.encode()).hexdigest(),
+        truncated=True,
+    )
+    retained = ReachTraceEvent.model_validate_json(trace_bytes(event))
+    assert retained.excerpt_start == 17
+    assert retained.excerpt_chars == len(CANARY)
+    assert retained.text_digest == sha256(CANARY.encode()).hexdigest()
+    assert CANARY.encode() not in trace_bytes(event)
+    with pytest.raises(ValidationError):
+        ReachTraceEvent(producer="core", name="source_read", text_digest=CANARY)
+    with pytest.raises(ValidationError):
+        ReachTraceEvent(producer="core", name="source_read", excerpt_chars=16_001)
 
 
 @pytest.mark.asyncio
@@ -39,6 +65,12 @@ async def test_core_trace_projects_actual_native_identity_and_never_result_or_lo
             request.request_id,
             result.run_id,
             runtime.generation,
+        )
+        run = await runtime.substrate.ledger.get(result.run_id)
+        assert run is not None
+        assert (started.pattern_id, started.pattern_revision) == (
+            run.pattern_manifest["key"],
+            run.pattern_manifest["revision"],
         )
         assert (finished.request_id, finished.run_id, finished.status) == (request.request_id, result.run_id, "docs")
         entered = next(event for event in records if event.name == "native_node" and event.status == "entered")
@@ -224,3 +256,81 @@ async def test_caller_cancellation_stays_cancelled_and_has_no_invented_run_resul
         assert terminal.code is None
     finally:
         await runtime.aclose()
+
+
+def test_adoption_control_and_reference_metadata_are_closed_and_do_not_contain_model_text() -> None:
+    event = ReachTraceEvent(
+        producer="core",
+        name="checkback_control",
+        status="ok",
+        attempt=0,
+        request_digest="a" * 64,
+        evidence_digest="b" * 64,
+        candidate_digest="c" * 64,
+        guard_rule="unchanged_explanation",
+        guard_version="unchanged-explanation-v1",
+        guard_status="unchanged_requested_transformation",
+        effective_verdict="revise",
+    )
+    observed = ReachTraceEvent.model_validate_json(trace_bytes(event))
+    assert observed.verdict is None
+    assert observed.issue_codes is None
+    assert observed.goal_coverage is None
+    assert observed.effective_verdict == "revise"
+    with pytest.raises(ValidationError):
+        ReachTraceEvent.model_validate({"producer": "core", "name": "checkback_control", "guard_status": CANARY})
+    with pytest.raises(ValidationError):
+        ReachTraceEvent.model_validate({"producer": "core", "name": "reference_hints", "reference_version": CANARY})
+    with pytest.raises(ValidationError):
+        ReachTraceEvent(producer="core", name="reference_hints", reference_count=4)
+
+
+@pytest.mark.parametrize("version", ["anchor-order-v1", "anchor-order-v2"])
+def test_reference_trace_keeps_old_and_new_parser_dialects(version: str) -> None:
+    event = ReachTraceEvent.model_validate(
+        {"producer": "core", "name": "reference_hints", "reference_version": version}
+    )
+    assert ReachTraceEvent.model_validate_json(trace_bytes(event)).reference_version == version
+
+
+def test_old_trace_claim_metadata_is_unrecorded_and_new_empty_observation_is_recorded() -> None:
+    old = ReachTraceEvent(producer="core", name="checkback", status="ok", verdict="accept")
+    assert old.runtime_claim_count is None
+    assert old.runtime_claim_digest is None
+    new = old.model_copy(update={"runtime_claim_count": 0, "runtime_claim_digest": "a" * 64})
+    observed = ReachTraceEvent.model_validate_json(trace_bytes(new))
+    assert observed.runtime_claim_count == 0
+    assert observed.runtime_claim_digest == "a" * 64
+    assert observed.verdict == "accept"
+    with pytest.raises(ValidationError):
+        ReachTraceEvent.model_validate({"producer": "core", "name": "checkback", "runtime_claim_count": 5})
+
+
+@pytest.mark.parametrize(
+    ("rule", "version", "status"),
+    [
+        ("unchanged_explanation", "unchanged-explanation-v1", "unchanged_requested_transformation"),
+        ("runtime_evidence_authority", "runtime-evidence-authority-v1", "current_runtime_claim_without_observation"),
+        ("misbound_reference_clarification", "misbound-reference-clarification-v1", "unrequested_target_clarification"),
+    ],
+)
+def test_adoption_trace_reads_separate_guard_dialects_without_claim_clauses(
+    rule: str, version: str, status: str
+) -> None:
+    event = ReachTraceEvent.model_validate(
+        {
+            "producer": "core",
+            "name": "checkback_control",
+            "status": "ok",
+            "guard_rule": rule,
+            "guard_version": version,
+            "guard_status": status,
+            "effective_verdict": "revise",
+            "runtime_claim_count": 2,
+            "runtime_claim_digest": "a" * 64,
+        }
+    )
+    assert ReachTraceEvent.model_validate_json(trace_bytes(event)).guard_rule == rule
+    assert event.verdict is None
+    assert event.issue_codes is None
+    assert "current_runtime_claims" not in event.model_dump()

@@ -36,6 +36,8 @@ from lychd.domain.delegation.services import (
     DelegatedAgentCoordinator,
     InMemoryDelegatedAgentJobStore,
 )
+from lychd.domain.oculus.models import RuntimeComponent
+from lychd.domain.oculus.runtime import RegisteredInspection, RegisteredObservation, RuntimeCatalogue
 from lychd.domain.orchestration.arbiter import TransitionArbiter
 from lychd.domain.orchestration.broker import GhoulBroker
 from lychd.domain.orchestration.manager import OrchestratorManager
@@ -120,6 +122,7 @@ class AltarServices:
     delegated_runtime_catalog: tuple[RegisteredDelegatedRuntime, ...]
     scout: ScoutWorkflowService | None = None
     scout_admission: ScoutAdmissionService | None = None
+    runtime_observations: RuntimeCatalogue | None = None
 
     async def aclose(self) -> None:
         """Cancel tracked tasks and drain pending ledger writes before shutdown."""
@@ -599,6 +602,8 @@ def build_altar_services(
     portal_registrations: Sequence[RegisteredPortalDefinition] = (),
     delegated_runtime_adapters: Sequence[DelegatedAgentRuntime] = (),
     delegated_runtime_catalog: Sequence[RegisteredDelegatedRuntime] = (),
+    observation_registrations: Sequence[RegisteredObservation] = (),
+    inspection_registrations: Sequence[RegisteredInspection] = (),
     workflows: WorkflowRegistry | None = None,
     profile: str | None = None,
     settings: Settings | None = None,
@@ -806,4 +811,110 @@ def build_altar_services(
         delegated_runtime_catalog=tuple(delegated_runtime_catalog),
         scout=scout,
         scout_admission=scout_admission,
+        runtime_observations=_build_runtime_observations(
+            settings=settings,
+            registry=registry,
+            observations=tuple(observation_registrations),
+            inspections=tuple(inspection_registrations),
+            optional_services=tuple(
+                name
+                for name, service in (
+                    ("archive", archive),
+                    ("scout", scout),
+                    ("creation", creation),
+                    ("scavenger", scavenger),
+                    ("delegation", delegates),
+                )
+                if service is not None
+            ),
+            selected_registrants=tuple(
+                sorted(
+                    {
+                        *(f"builtin:{name}" for name in settings.extensions.builtins),
+                        *(f"crypt:{name}" for name in settings.extensions.crypt),
+                        *(item.registrant_id for item in soulstone_registrations),
+                        *(item.registrant_id for item in portal_registrations),
+                        *(item.registrant_id for item in delegated_runtime_catalog),
+                    }
+                )
+            ),
+        ),
+    )
+
+
+def _build_runtime_observations(
+    *,
+    settings: Settings,
+    registry: AnimatorRegistry,
+    observations: tuple[RegisteredObservation, ...],
+    inspections: tuple[RegisteredInspection, ...],
+    optional_services: tuple[str, ...],
+    selected_registrants: tuple[str, ...],
+) -> RuntimeCatalogue:
+    """Project actual assembled services and capability registrations without probes."""
+    from hashlib import sha256
+
+    def native_components() -> tuple[RuntimeComponent, ...]:
+        services = ("altar", "cortex", "weaver", "animator", "orchestrator", *optional_services)
+        components = [
+            RuntimeComponent(
+                key="vessel",
+                label="Vessel",
+                kind="host",
+                owner="core",
+                source_id="native",
+                source_generation="assembly",
+                registrant_id="core",
+            )
+        ]
+        components.extend(
+            RuntimeComponent(
+                key=f"service:{name}",
+                label=name.title(),
+                kind="service",
+                owner=name,
+                source_id="native",
+                source_generation="assembly",
+                registrant_id="core",
+                icon="service",
+            )
+            for name in services
+        )
+        components.extend(
+            RuntimeComponent(
+                key=f"extension:{sha256(registrant.encode()).hexdigest()}",
+                label="".join(char if char.isalnum() or char in " .,:()-" else " " for char in registrant)[:160],
+                kind="extension",
+                owner="extensions",
+                source_id="native",
+                source_generation="assembly",
+                registrant_id=registrant,
+            )
+            for registrant in selected_registrants
+        )
+        # Registry hydration has already completed before lifespan publication.
+        # These are declarations, deliberately not readiness or transport evidence.
+        for capability in registry.list_capabilities():
+            label = "".join(char if char.isalnum() or char in " .,:()-" else " " for char in capability.key)[:160]
+            components.append(
+                RuntimeComponent(
+                    key=f"capability:{sha256(capability.key.encode()).hexdigest()}",
+                    label=label,
+                    kind="capability",
+                    owner="animator",
+                    source_id="native",
+                    source_generation="assembly",
+                    registrant_id=capability.registrant_id,
+                    icon="capability",
+                )
+            )
+        return tuple(components)
+
+    reader = None
+    if settings.observability.sources:
+        from lychd.system.services.oculus_snapshot import SnapshotFileReader
+
+        reader = SnapshotFileReader(selections=settings.observability.sources)
+    return RuntimeCatalogue(
+        reader=reader, observations=observations, inspections=inspections, native_components=native_components
     )

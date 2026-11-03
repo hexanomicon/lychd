@@ -34,13 +34,47 @@ instrument is **Orb**, and using that instrument is **scrying**. An external **[
 may be Phoenix, Logfire, an OpenTelemetry collector, or another viewer. Each supplies a way to
 inspect evidence without becoming a second source of truth.
 
-Structured logging and the bounded Orb have current repository evidence. Native Oculus has no
-ingestion or telemetry adapter, trace/metric store, retention, health query, cross-process bus,
-resource telemetry, or multi-Run query. The optional Phoenix contribution supplies a service;
+Structured logging, bounded Run inspection and a bounded native component/activity projection
+have repository evidence. Native Oculus admits explicitly selected same-host structural source
+snapshots; it has no durable trace/metric store, general retention, health query, cross-process
+completeness, resource telemetry, or general distributed bus. The optional Phoenix contribution supplies a service;
 application trace export remains unproved. [State of Work](../state-of-the-work.md#altar-and-observability)
 owns those delivery boundaries.
 
 ### 1. Evidence Ownership and Correlation
+
+#### System-wide component and activity projection
+
+Orb's scope is the admitted body and its connected work, including operations without a Run and
+external delivery after a Run has settled. A selected extension or deployment profile contributes
+typed component, connection and observation-source descriptions once. The host attributes and
+seals their definitions; the shared query and renderer project them without application-specific
+registration in Orb. A known component remains visible when instrumentation is unavailable.
+Selection does not imply that an instance is running, healthy, or observed.
+
+Declared topology, exact Pattern structure, observed activity and owner-committed outcomes are
+separate meanings. A dynamic call attempt is not a Pattern station. Activity carries an
+owner-bound source and target, producer generation and sequence, its own event and attempt
+identity, observation and receipt times, capture bounds and explicit omissions. Run and station
+references are optional and must be supplied explicitly. A transport response is not an effect
+settlement; cached results and refusal before transport produce no outbound-call activity.
+
+The initial same-host source handoff may publish an atomic, size-bounded structural snapshot in
+an explicitly selected private directory. This is a replaceable observation projection, not the
+private Reach diagnostic archive or a Phylactery transaction. Its owner controls publication,
+permissions and deletion; readers validate custody, schema, references, size and freshness before
+exposing bounded metadata. Replacement and producer restart may retire the previous window and
+must expose generation changes and omissions. Backup restores only a dated observation; it never
+restores live status, execution or effect authority. No automatic replay or reconciliation follows.
+Sources are selected in configuration, never discovered by directory or package scanning.
+
+Runtime owner adapters supply actual instance and transport evidence within a fixed admitted
+code generation. Instrumentation is shared by driver instances, not implemented per bot in the
+browser. Labels and safe local icon references are presentation data. Unknown kinds have a
+generic fallback. An activity highlight identifies a newly received observation; historical
+reload, selection, or replay cannot masquerade as new traffic. The semantic list and reduced-motion
+view carry the same evidence. Queues, snapshot bytes, source count, windows, pages and graph size
+are bounded; observation failure cannot change execution, settle effects or initiate retries.
 
 | Evidence class | What the reader can establish |
 | --- | --- |
@@ -70,11 +104,11 @@ Trace context never authenticates a caller or authorizes an effect.
 | --- | --- | --- |
 | Run events | Process-local channel, 256-event replay, best-effort non-token Step tee | Observation |
 | Logs | Structlog/stdlib human or JSON stderr | Diagnostic |
-| Traces | No producer or export adapter | No native ingestion, export, retention, or read contract |
+| Runtime observations | Typed selected source snapshots and bounded component/activity reads | Attributed observation; no durable trace store or external export |
 | Metrics | No producer, registry, store, or query | Designed |
 | Orb | Bounded Run catalogue, graph lenses, and retained-evidence feeds | Read-only |
 
-Future Oculus exposes typed query and event ports; clients do not inspect its tables directly.
+Oculus exposes typed source/query ports; clients do not inspect source storage directly.
 An Eye receives a one-way allowlisted export, with no canonical read-back. The legacy Phoenix
 service spelling `oculus` is a compatibility name and cannot make that service native Oculus.
 
@@ -139,6 +173,18 @@ Any later raw protocol artifact remains bounded untrusted input. It cannot settl
 authorize an effect, mutate Graph, or become training material by default.
 
 ### 5. Orb Read Models
+
+The runtime field reads the assembled native inventory, sealed extension declarations and
+explicitly selected structural source windows. It uses its own bounded observation cursor and
+does not invent Run records for background or post-Run activity. Source, profile and generation
+remain part of every component/activity identity. A stale source keeps dated known declarations
+with unknown lifecycle and unavailable activity coverage, while withholding current activity and
+inspection bindings. Same-host source custody grants no Core provenance or execution authority.
+
+Loom's inspection catalogue may supply an exact attributed descriptor without a local executable
+closure. Full manifest equality and the exact source/profile/generation binding are required;
+inspection cannot satisfy the executable resolver. Native published descriptors preserve the
+existing execution-registry contract. A missing or conflicting binding stays unavailable.
 
 [Orb](../divination/altar/orb.md) discovers Runs through a bounded metadata catalogue and opens
 one Run by direct URL. It keeps ledger-head and page bounds separate, reports sequence gaps and

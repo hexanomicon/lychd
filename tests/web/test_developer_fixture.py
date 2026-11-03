@@ -22,6 +22,8 @@ from lychd.domain.web.tickets import TicketStore
 from tests.web.conftest import TEST_ACCESS_PASSWORD, TEST_AUTHORIZATION
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from litestar import Litestar
 
     from lychd.interface.web.altar_services import AltarServices
@@ -157,6 +159,34 @@ async def test_fixture_bridge_orb_and_loom_share_one_registered_revision() -> No
         assert "snapshot_required" in stream.text
         assert stream.text.count("event: resync") == 1
         assert "event: token" not in stream.text
+
+
+@pytest.mark.asyncio
+async def test_fixture_explicit_observation_source_keeps_custody_and_read_authority(tmp_path: Path) -> None:
+    from lychd.config.settings.observability import SnapshotSourceSettings
+
+    source = SnapshotSourceSettings(
+        source_id="fixture.connected",
+        registrant_id="operator:fixture",
+        path=tmp_path / "not-published",
+    )
+    app = developer.create_developer_app(
+        access_password=SecretStr(TEST_ACCESS_PASSWORD),
+        signing_key=SecretStr("synthetic-observation-fixture-key"),
+        observation_sources=(source,),
+    )
+    async with app.lifespan(), _client(app) as client:
+        denied = await client.get("/api/v1/orb/runtime", headers={"authorization": ""})
+        assert denied.status_code == 401
+        response = await client.get("/api/v1/orb/runtime")
+        assert response.status_code == 200
+        selected = next(item for item in response.json()["sources"] if item["source_id"] == source.source_id)
+        assert selected["status"] == "unavailable"
+        assert selected["registrant_id"] == "operator:fixture"
+        assert str(tmp_path) not in response.text
+        runs = (await client.get("/api/v1/orb/runs")).json()["runs"]
+        assert len(runs) == 1
+        assert runs[0]["status"] == "failed"
 
 
 @pytest.mark.asyncio

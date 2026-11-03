@@ -226,6 +226,8 @@ async def test_real_workers_drain_before_dependencies_or_preserve_them_on_uncert
         portal_registrations=(),
         delegated_runtime_adapters={},
         delegated_runtime_catalog=(),
+        observation_registrations=(),
+        inspection_registrations=(),
     )
     monkeypatch.setattr("lychd.extensions.host.get_extensions", lambda: extensions)
     monkeypatch.setattr("lychd.system.services.runtime.wait_for_host_reactor_idle", AsyncMock())

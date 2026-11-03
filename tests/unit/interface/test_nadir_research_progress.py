@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Literal
 from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
@@ -14,14 +14,14 @@ import pytest
 from lychd.compositions.reach.operator_wire import ReachWorkerResult, protocol_bytes
 from lychd.compositions.reach.research_wire import ReachResearchProgress
 from lychd.interface.discord import live
-from lychd.interface.discord.rest import EffectResult
+from lychd.interface.discord.rest import DiscordRestError, EffectResult
 from tests.unit.interface.test_nadir_dialogue import direct_message, policy, worker
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("plan_delivered", [False, True])
+@pytest.mark.parametrize("delivery", ["succeeded", "rejected", "unknown", "exception"])
 async def test_research_progress_is_acknowledged_only_after_same_dm_delivery(
-    monkeypatch: pytest.MonkeyPatch, *, plan_delivered: bool
+    monkeypatch: pytest.MonkeyPatch, delivery: Literal["succeeded", "rejected", "unknown", "exception"]
 ) -> None:
     configured, message = policy(), direct_message()
     readiness = worker(configured).ready.model_copy(
@@ -30,6 +30,8 @@ async def test_research_progress_is_acknowledged_only_after_same_dm_delivery(
     reader = asyncio.StreamReader()
     frames: list[dict[str, Any]] = []
     timeline: list[str] = []
+    plan = "I will read the Lich documentation and compare the approved public source."
+    plan_delivered = delivery == "succeeded"
 
     class Output:
         def write(self, data: bytes) -> None:
@@ -41,7 +43,7 @@ async def test_research_progress_is_acknowledged_only_after_same_dm_delivery(
                     call_id=str(uuid4()),
                     request_id=value["request_id"],
                     binding_digest="b" * 64,
-                    text="I will read the Lich documentation and compare the approved public source.",
+                    text=plan,
                 )
                 reader.feed_data(progress.model_dump_json().encode() + b"\n")
             else:
@@ -66,8 +68,12 @@ async def test_research_progress_is_acknowledged_only_after_same_dm_delivery(
         assert kwargs["event_id"] == kwargs["reply_to"] == "110"
         timeline.append(kwargs["phase"])
         if kwargs["phase"] == "plan":
+            assert _text == plan
             assert kwargs["silent"] is True
-            return EffectResult(status="succeeded" if plan_delivered else "unknown")
+            if delivery == "exception":
+                code = "network_error"
+                raise DiscordRestError(code)
+            return EffectResult(status=delivery)
         return EffectResult(status="succeeded")
 
     pipe = live.PipeWorker(reader, readiness)
@@ -79,7 +85,7 @@ async def test_research_progress_is_acknowledged_only_after_same_dm_delivery(
     with monkeypatch.context() as scoped:
         scoped.setattr(live.sys, "stdout", SimpleNamespace(buffer=Output()))
         await cog.on_message(message)
-    assert timeline == ["ack", "request", "plan", "receipt", "final"]
+    assert timeline == ["request", "plan", "receipt", "final"]
     assert [frame["kind"] for frame in frames] == ["request", "progress_ack"]
     assert pipe.available
 

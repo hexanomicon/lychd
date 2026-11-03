@@ -1,0 +1,9 @@
+{
+  "question": "Can you kick us off? It's the start of the project. Read our roadmap and current delivery status, introduce the project and propose our first steps. End with the so_it_begins GIF if it is available in your catalogue.",
+  "expected_status": "conversation",
+  "required_source_ids": [
+    "doc:docs/roadmap.md",
+    "doc:docs/state-of-the-work.md"
+  ],
+  "expected_gif_id": "so_it_begins"
+}

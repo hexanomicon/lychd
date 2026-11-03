@@ -2,6 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
+from contextlib import suppress
+from typing import TYPE_CHECKING
+
+from lychd.compositions.reach.operator_observation import ReachPatternObservation
+from lychd.interface.observation import OperationObservation
+
+if TYPE_CHECKING:
+    from scripts.reach_observation import ReachObservationPublisher
+
 from lychd.compositions.reach.operator_trace import (
     ReachTraceEvent,
     TraceEmitter,
@@ -17,10 +27,17 @@ _INTERRUPTED_EXIT = 130
 class TraceCapture:
     """Keep explicit wire relations without interpreting prompt text or timing proximity."""
 
-    def __init__(self, sink: TraceSink, *, source_ids: frozenset[str] | None = None) -> None:
+    def __init__(
+        self,
+        sink: TraceSink,
+        *,
+        source_ids: frozenset[str] | None = None,
+        observation: ReachObservationPublisher | None = None,
+    ) -> None:
         """Bind local capture to one frozen public source catalogue."""
         self.sink = sink
-        self.host = TraceEmitter("host", sink)
+        self.observation = observation
+        self.host = TraceEmitter("host", self._emit)
         self.generation: str | None = None
         self.source_ids = source_ids
 
@@ -31,7 +48,33 @@ class TraceCapture:
         ):
             self.host.record("child_diagnostic", status="refused", code="protocol_error", generation=self.generation)
             return
-        self.sink(event)
+        self._emit(event)
+
+    def _emit(self, event: ReachTraceEvent) -> None:
+        for sink in (self.sink, self.observation.trace if self.observation is not None else None):
+            if sink is not None:
+                with suppress(Exception, asyncio.CancelledError):
+                    sink(event)
+
+    def operation(self, event: OperationObservation, role: str) -> None:
+        if self.observation is not None:
+            try:
+                self.observation.operation(event, role)
+            except (Exception, asyncio.CancelledError):  # noqa: BLE001 - observer failure never ends a relay
+                return
+
+    def descriptors(self, value: ReachPatternObservation) -> None:
+        if self.observation is not None:
+            try:
+                self.observation.descriptors(value)
+            except (Exception, asyncio.CancelledError):  # noqa: BLE001 - observer failure never ends a relay
+                return
+
+    async def heartbeat(self) -> None:
+        while True:
+            await asyncio.sleep(5)
+            if self.observation is not None:
+                self.observation.publish()
 
     def request(self, request: ReachWorkerRequest) -> None:
         self.host.record(
@@ -49,6 +92,9 @@ class TraceCapture:
 
     def ready(self, value: ReachWorkerReady) -> None:
         self.generation = value.generation
+        if self.observation is not None:
+            with suppress(Exception, asyncio.CancelledError):
+                self.observation.ready(value.generation)
         self.host.record("session_started", status="started", generation=self.generation)
 
     def result(self, result: ReachWorkerResult) -> None:

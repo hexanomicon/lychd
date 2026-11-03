@@ -49,7 +49,32 @@ def prepare_turn(policy: ReachPolicy, event: ReachEvent, *, now: datetime) -> Re
         return refuse("self_event")
     if event.is_automated:
         return refuse("automated_subject")
-    if not direct_message and event.trigger not in policy.allowed_triggers:
+    continuation = event.trigger in {"reply", "followup"}
+    if continuation:
+        selected = (
+            policy.allowed_reply_conversation_ids
+            if event.trigger == "reply"
+            else policy.allowed_adjacent_followup_conversation_ids
+        )
+        if event.conversation_id not in selected or event.parent_conversation_id is not None:
+            return refuse("trigger_not_allowed")
+        if (
+            event.related_event_id is None
+            or event.related_event_id == event.event_id
+            or event.related_subject_id != policy.agent_subject_id
+            or event.related_occurred_at is None
+            or event.related_occurred_at >= event.occurred_at
+            or (event.occurred_at - event.related_occurred_at).total_seconds() > policy.context_max_age_seconds
+            or (
+                event.trigger == "followup"
+                and (event.occurred_at - event.related_occurred_at).total_seconds()
+                > policy.adjacent_followup_window_seconds
+            )
+        ):
+            return refuse("relationship_invalid")
+        if event.action != "converse":
+            return refuse("action_not_allowed")
+    if not direct_message and not continuation and event.trigger not in policy.allowed_triggers:
         return refuse("trigger_not_allowed")
     if event.trigger == "mention" and policy.agent_subject_id not in event.mention_subject_ids:
         return refuse("missing_agent_mention")

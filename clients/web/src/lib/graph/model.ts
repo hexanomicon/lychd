@@ -12,7 +12,9 @@ export interface GraphNode {
   readonly group?: string;
   /** Exact known members of a folded presentation group, never an inferred cluster. */
   readonly members?: readonly string[];
-  readonly attention?: "latest" | "cursor";
+  readonly attention?: "latest" | "cursor" | "received";
+  /** Resolved build-owned asset URL, never a source-supplied URL. */
+  readonly icon?: string;
   readonly accent?: "rune" | "frost" | "heat" | "lich" | "primary";
 }
 
@@ -21,7 +23,8 @@ export interface GraphEdge {
   readonly source: string;
   readonly target: string;
   readonly label: string;
-  readonly relation: "permission" | "order" | "contains" | "selection";
+  readonly relation: "permission" | "order" | "contains" | "selection" | "declared" | "activity";
+  readonly attention?: "received";
 }
 
 export interface GraphProjection {

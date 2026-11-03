@@ -22,6 +22,8 @@ from lychd.agents.workflows import WorkflowRegistry, resolve_pinned_workflow
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.runs import TERMINAL_STATUSES
+from lychd.domain.oculus.models import OrbRuntimeSnapshot
+from lychd.domain.oculus.runtime import RuntimeCatalogue
 from lychd.domain.web.contracts import (
     FrameworkError,
     OrbCreationSummary,
@@ -175,6 +177,15 @@ class OrbController(Controller):
     """Discover bounded Run identities and scry each Run's retained evidence."""
 
     path = "/api/v1/orb"
+
+    @get("/runtime", name="orb:runtime", operation_id="getOrbRuntime", guards=[requires_scopes("altar:read")])
+    async def runtime(
+        self,
+        workflows: NamedDependency[WorkflowRegistry],
+        runtime_observations: NamedDependency[RuntimeCatalogue],
+    ) -> OrbRuntimeSnapshot:
+        """Read bounded topology and non-Run or post-Run activity from selected sources."""
+        return await asyncio.to_thread(runtime_observations.snapshot, workflows)
 
     @get("/runs", name="orb:runs", operation_id="getOrbRuns", guards=[requires_scopes("altar:read")])
     async def runs(

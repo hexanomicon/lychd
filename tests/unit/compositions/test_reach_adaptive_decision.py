@@ -210,7 +210,7 @@ def test_extended_generation_limit_remains_closed_and_bound_to_profile() -> None
     }
     assert validate_generation_payload(binding, canonical_json(body))["max_tokens"] == 2048
     with pytest.raises(ValidationError):
-        OperatorConversationProfile(persona_name="Example", persona_instructions="Be useful.", max_tokens=2049)
+        OperatorConversationProfile(persona_name="Example", persona_instructions="Be useful.", max_tokens=4097)
     patches: tuple[dict[str, Any], ...] = (
         {"max_tokens": 2049},
         {"tools": []},
