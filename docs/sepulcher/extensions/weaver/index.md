@@ -116,6 +116,10 @@ Choose the route that matches the question:
   task handoffs through verification, documentation and authorized VCS effects.
 - **[:material-autorenew: Ouroboros](ouroboros.md)** connects work, evaluation and training through
   correction, memory, Assimilation, Packaging and Evolution.
+- **[Development bootstrap](development-bootstrap.md)** carries an operator-controlled coding
+  campaign through evidence gates toward bounded native delegation and spare-capacity work.
+  [Coding-runtime research](coding-runtime-research.md) compares the dated provider roads behind
+  that procedure.
 - **[Scheduling and service classes](./scheduling-and-service-classes.md)** covers foreground,
   deadline-windowed, and spare-capacity admission, schedule time law, overlap, and explicit misses.
 - **[Stasis and return](stasis-and-return.md)** covers Live and Durable Stasis, checkpoints,

@@ -234,6 +234,9 @@ these, nor does it settle the philosophical question of life.
 
 ## Establish the cycle in small, verifiable steps
 
+[Development bootstrap](development-bootstrap.md) gives the concrete operator campaign, staged
+delegation gates, review-capacity policy and first implementation queue for this passage.
+
 Start by practicing Creation on one bounded change with ordinary development tools. Keep its
 intent, two inquiry dossiers where warranted, acceptance checks, candidate diff, receipts, human
 corrections and final disposition. This establishes a worked example of the method, without

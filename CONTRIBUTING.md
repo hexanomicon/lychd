@@ -70,6 +70,21 @@ is a working agreement. Project access is granted separately; `core` has **Write
 [delivery board](https://github.com/orgs/hexanomicon/projects/1). External contributors use public
 issues and fork PRs without joining the team or needing board access.
 
+### Agent-assisted campaigns
+
+Use [Development bootstrap](docs/sepulcher/extensions/weaver/development-bootstrap.md) for a
+bounded operator campaign and its later native handoffs. Claim a concrete contract, pin the
+actual input closure and allowed paths, reserve verification/reviewer capacity, and give each
+writer a separate candidate surface. A dirty checkout needs an explicit admitted patch and
+selected untracked inputs; a commit alone does not identify it. Preserve unrelated operator work.
+
+Agents return candidate bytes and attributed observations. Inspect the complete diff and verify
+the integrated object against the original acceptance criteria; independent review records its
+exposure and conflicts. Platform sessions use their actual identities and permissions, without
+claiming LychD containment. Idle work selects only eligible tasks under current standing authority
+and stops when review capacity, useful work or its budget is exhausted. The guide's pilot limits
+do not impose a new approval count or change the branch/promotion policy below.
+
 ### Promote a tested snapshot
 
 Record the exact candidate commit, checks and relevant untested boundaries in the linked issue or

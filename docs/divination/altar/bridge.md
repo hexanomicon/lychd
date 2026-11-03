@@ -49,6 +49,33 @@ applies to that pending request. Each Invocation has its own Sigil, Context boun
 consequences; permission for another object, wider tools or a later effect needs its own
 admission. Suggesting an action in conversation cannot authorize it.
 
+## Consent history direction
+
+The planned [consent history](../../adr/25-hitl.md#consent-history-and-proposal-branches) lets you
+follow a proposed action through review, revisions and its reported result. Related proposals
+appear as branches, with your decision shown separately from what the executor actually did:
+
+```text
+Configuration change
+└─ Proposal A
+   ├─ Decision: denied
+   └─ Proposal B: revises A
+      ├─ Review: exact base and diff
+      ├─ Decision: approved
+      └─ Execution receipt: applied
+```
+
+A file proposal links the exact reviewed diff and artifact revision; a page acquisition shows
+its destination and limits. Each type supplies its own review details. You can inspect a refused
+version and a later alternative without approval carrying between them. A missing receipt means
+the result is unavailable, not that an approved action succeeded. Withdrawing approval cannot
+undo an effect that already happened.
+
+This tree and its revision/explanation controls are not available in the current Bridge. The
+current consent card still judges one exact request; denial does not automatically ask an Agent
+to revise it. [State of Work](../../state-of-the-work.md#graph-stasis-consent) records the remaining
+storage, recovery and interface work.
+
 ## Read the result
 
 When the Run settles, follow the strip's link to [Orb](orb.md) to inspect its evidence. A failed

@@ -377,6 +377,35 @@ upgrade that would have to infer an existing consent-wait owner or accept settle
 evidence. Its downgrade refuses while any Run remains `AWAITING_CONSENT`, so exact ownership cannot
 be erased underneath live work.
 
+#### Consent history custody
+
+[Consent history](25-hitl.md#consent-history-and-proposal-branches) retains proposal identities,
+validated revision links and ordered attributable records alongside the current Consent
+projection. Appends use a unique producer/record identity: the same identity and content return
+the retained record, while changed-content reuse refuses. Proposal creation and its initial
+record, and each consent mutation and corresponding judgment record, commit together. Restart
+cannot expose a settled decision without its history or manufacture missing past judgments.
+Existing rows may be imported only as explicitly attributed legacy snapshots; absent proposal
+ancestry, review facts or intermediate events remain unknown.
+
+An effect receipt remains owned by the executor. History adopts its exact reference through an
+idempotent, recoverable delivery or reconciliation path; publication failure cannot authorize
+re-execution. Per-proposal sequence orders admitted records, not remote physical events, and
+does not claim a global order across owners. [Graph](24-graph.md) keeps checkpoint/wait ownership.
+
+History has an explicit retention policy independent of execution cleanup: deleting a Run must
+not cascade through the journal or erase a decision's identity and lineage. Missing execution
+objects leave unavailable references and grant no replay. The current Consent model's cascading
+Run relation does not supply this guarantee; migration must preserve retained bindings and
+refuse unsupported writers before the new journal is admitted.
+
+Append-only governs ordinary updates, not perpetual retention of private material. The history
+stores censored metadata and authorized artifact references, not raw arguments, diffs, secrets or
+review bodies by default. An authorized erasure/retention operation may remove governed content
+and leave only the non-sensitive tombstone and linkage permitted by policy. Reads report
+unavailable evidence without reconstructing erased content or treating a digest as disclosure
+permission. The journal does not bypass an artifact owner's access, revocation or retention law.
+
 #### Native Consent bindings (Designed)
 
 The [native review contract](25-hitl.md#required-review-for-native-actions-designed) adds explicit

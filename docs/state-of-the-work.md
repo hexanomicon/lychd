@@ -498,7 +498,11 @@ delegation, or hardware waits; cancellation remains observable to the caller.
 **Boundary — Not yet:** There is no PostgreSQL Consent-plus-Checkpoint restart receipt. A legacy
 checkpoint from before the hardware-budget field cannot reconstruct attempts that already
 happened. Multiple approval calls in one model response are rejected, and no production toolset
-currently originates approval.
+currently originates approval. The [consent-history contract](./adr/25-hitl.md#consent-history-and-proposal-branches)
+defines immutable proposals, revision branches, attributable decisions and linked effect receipts.
+Its append-only journal, independent retention, supersession/issuance fencing, legacy import,
+authorized paginated history API and Bridge/Orb tree remain Designed; current Consent rows and
+pending cards do not implement that history.
 
 **Evidence**
 
@@ -1753,6 +1757,9 @@ evaluation, model registration, rollback, or production promotion.
 promotion-request → target-owner-effect chain. The Creation workflow and Ouroboros map connect
 candidate work to separately governed evaluation, memory, training and body change; these are
 documented methods with no additional registered Pattern or coordinator.
+The Development bootstrap procedure orders operator-controlled work and incremental native
+qualification; its task queue, pilot limits and provider research are documentation, not an
+implemented scheduler, foreign-runtime host or autonomous development application.
 
 **Do not expect yet:** There is no Creation contract or process-local state-machine implementation,
 workspace, filesystem or command executor, database recovery, safe Forge, autonomous repair,
@@ -1766,7 +1773,9 @@ downstream-mirror cutover.
 
 - **Topic:** [Smith](./sepulcher/extensions/smith.md),
   [Creation](./sepulcher/extensions/weaver/creation.md), and
-  [Ouroboros](./sepulcher/extensions/weaver/ouroboros.md)
+  [Ouroboros](./sepulcher/extensions/weaver/ouroboros.md), with
+  [Development bootstrap](./sepulcher/extensions/weaver/development-bootstrap.md) and
+  [coding-runtime research](./sepulcher/extensions/weaver/coding-runtime-research.md)
 - **Law:** [SDLC](./adr/16-sdlc.md),
   [Packaging](./adr/17-packaging.md#forge-neutral-source-trust), and
   [Evolution](./adr/18-evolution.md#future-quorum-roster)

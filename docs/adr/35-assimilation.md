@@ -113,6 +113,23 @@ credentials/home/undeclared egress, bounds size/recursion/decompression/parser/s
 and records every transform. Typed candidate-author output constrains shape, not truth; prompt injection
 can produce valid-looking schemas.
 
+### Admit the mechanism, preserve its maintenance boundary
+
+The Dossier identifies the smallest foreign mechanism needed by the local contract, the behavior
+claimed to survive re-expression, deliberately excluded authority and defaults, and the receiving
+maintenance owner. Acquisition or a provider's new feature does not admit its credential store,
+router, tool permissions, orchestration or billing fallback. The choice to integrate an existing
+service, delegate bounded labor, or maintain a local expression is explicit before construction.
+
+Conformance evidence compares the claimed behavior at the actual local boundary, including refusal,
+malformed input, limits, interruption and uncertain outcomes where relevant. Foreign tests and
+benchmarks remain attributed inputs; the local candidate and its independent oracle establish
+only the contract actually exercised. An upstream change becomes a new study/adoption decision,
+not an ambient dependency update. Shared-source contribution and downstream activation remain
+separate from admitting the local lesson. The
+[bootstrap procedure](../sepulcher/extensions/weaver/development-bootstrap.md#assimilate-one-mechanism-at-a-time)
+gives the operator-controlled first passage without creating an Assimilation executor.
+
 ## Candidate law and Lab
 
 Assimilation inherits [SDLC](./16-sdlc.md)'s candidate/promotion contract: immutable
