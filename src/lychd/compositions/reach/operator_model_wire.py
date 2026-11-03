@@ -4,11 +4,20 @@ from __future__ import annotations
 
 import json
 from hashlib import sha256
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, cast
 from uuid import UUID
 
 from pydantic import AfterValidator, Field, field_validator, model_validator
 
+from lychd.compositions.reach.decision_format import (
+    DECISION_PHASES,
+    DECISION_SCHEMA_BUNDLE_SHA256,
+    DecisionPhase,
+    DecisionVariant,
+    decision_format_phase,
+    decision_phase,
+    decision_response_format,
+)
 from lychd.compositions.reach.expressions import ConversationExpressions
 from lychd.compositions.reach.operator_trace import TraceCorrelation
 from lychd.compositions.reach.operator_wire import strict_json
@@ -50,24 +59,62 @@ class OperatorConversationProfile(Record):
     animator_id: Literal["night-qwen38"] = "night-qwen38"
     model_id: Literal["Qwen3.8-27B"] = "Qwen3.8-27B"
     adaptive_context: bool = False
+    enable_thinking: bool = False
+    thinking_phases: tuple[DecisionPhase, ...] = Field(default=(), max_length=len(DECISION_PHASES))
+    json_object_output: bool = False
+    decision_schema_version: Literal[3] = 3
+    checkback: bool = False
+    request_goals: bool = False
     expressions: ConversationExpressions = Field(default_factory=ConversationExpressions)
     research: ResearchOptions = Field(default_factory=ResearchOptions)
     max_context: int = Field(default=16_384, ge=4096, le=32_768)
-    max_tokens: int = Field(default=384, ge=32, le=2048)
+    max_tokens: int = Field(default=384, ge=32, le=4096)
     temperature: float = Field(default=0.6, ge=0, le=1)
     max_input_chars: int = Field(default=20_000, ge=1000, le=24_000)
     timeout_seconds: int = Field(default=60, ge=5, le=60)
 
+    @field_validator("decision_schema_version", mode="before")
+    @classmethod
+    def original_decision_schema_version(cls, value: object) -> object:
+        if type(value) is not int:
+            msg = "decision_schema_version"
+            raise ValueError(msg)
+        return value
+
     @model_validator(mode="after")
     def expressions_require_decisions(self) -> OperatorConversationProfile:
-        if (self.expressions.enabled or self.research.enabled) and not self.adaptive_context:
+        if len(set(self.thinking_phases)) != len(self.thinking_phases) or (
+            self.thinking_phases and not self.json_object_output
+        ):
+            msg = "model_thinking_phases"
+            raise ValueError(msg)
+        if self.max_tokens >= self.max_context:
+            msg = "model_completion_context"
+            raise ValueError(msg)
+        if self.request_goals and not self.checkback:
+            msg = "request_goals_require_checkback"
+            raise ValueError(msg)
+        if self.json_object_output and not self.adaptive_context:
+            msg = "json_object_output_requires_adaptive_context"
+            raise ValueError(msg)
+        if (self.expressions.enabled or self.research.enabled or self.checkback) and not self.adaptive_context:
             msg = "expressions_require_adaptive_context"
             raise ValueError(msg)
         return self
 
     @property
     def digest(self) -> str:
-        return sha256(canonical_json(self.model_dump(mode="json")).encode()).hexdigest()
+        values = self.model_dump(mode="json")
+        if not self.thinking_phases:
+            values.pop("thinking_phases")
+        if self.enable_thinking is False:
+            values.pop("enable_thinking")
+        if self.json_object_output is False:
+            values.pop("json_object_output")
+            values.pop("decision_schema_version")
+        else:
+            values["decision_schema_bundle_sha256"] = DECISION_SCHEMA_BUNDLE_SHA256
+        return sha256(canonical_json(values).encode()).hexdigest()
 
     @property
     def capability_key(self) -> str:
@@ -127,26 +174,66 @@ class _Message(Record):
 class _Generation(Record):
     model: Literal["Qwen3.8-27B"]
     messages: tuple[_Message, ...] = Field(min_length=1, max_length=60)
-    max_tokens: int = Field(ge=1, le=2048)
+    max_tokens: int = Field(ge=1, le=4096)
     temperature: float = Field(ge=0, le=1)
     stream: Literal[False] = False
-    chat_template_kwargs: dict[Literal["enable_thinking"], Literal[False]]
+    chat_template_kwargs: dict[Literal["enable_thinking"], bool]
+    structured_outputs: dict[Literal["grammar"], str] | None = None
 
     @field_validator("chat_template_kwargs")
     @classmethod
     def exact_thinking(cls, value: dict[str, bool]) -> dict[str, bool]:
-        if value != {"enable_thinking": False}:
+        if set(value) != {"enable_thinking"} or type(value["enable_thinking"]) is not bool:
             msg = "model_thinking"
             raise ValueError(msg)
         return value
 
 
+def generation_format(profile: OperatorConversationProfile, *, phase: DecisionVariant) -> dict[str, Any]:
+    """Return only the syntax constraint frozen in the private model binding."""
+    if phase == "checkback_goals" and not profile.request_goals:
+        msg = "model_generation_binding"
+        raise ValueError(msg)
+    if phase == "checkback" and profile.request_goals:
+        phase = "checkback_goals"
+    return {"structured_outputs": decision_response_format(phase)} if profile.json_object_output else {}
+
+
+def generation_thinking(profile: OperatorConversationProfile, *, phase: DecisionVariant | None) -> bool:
+    """Map the trusted carrier variant to the private semantic-phase thinking policy."""
+    if profile.thinking_phases and phase is None:
+        msg = "model_generation_binding"
+        raise ValueError(msg)
+    return profile.enable_thinking or (phase is not None and decision_phase(phase) in profile.thinking_phases)
+
+
+def _validate_format_binding(profile: OperatorConversationProfile, payload_json: str) -> DecisionVariant | None:
+    raw = strict_json(payload_json.encode())
+    if not isinstance(raw, dict):
+        msg = "model_generation_binding"
+        raise ValueError(msg)  # noqa: TRY004 - decoded protocol values retain the existing ValueError boundary
+    body = cast("dict[str, Any]", raw)
+    present = "structured_outputs" in body
+    phase = decision_format_phase(body["structured_outputs"]) if present else None
+    if "response_format" in body or present != profile.json_object_output or (present and phase is None):
+        msg = "model_generation_binding"
+        raise ValueError(msg)
+    if (phase == "checkback" and profile.request_goals) or (phase == "checkback_goals" and not profile.request_goals):
+        msg = "model_generation_binding"
+        raise ValueError(msg)
+    return phase
+
+
 def validate_generation_payload(profile: OperatorConversationProfile, payload_json: str) -> dict[str, Any]:
     """Recheck the same closed request at native and host transport boundaries."""
     _payload(payload_json)
+    phase = _validate_format_binding(profile, payload_json)
     value = _Generation.model_validate_json(payload_json)
     if (
         value.model != profile.model_id
+        or value.chat_template_kwargs != {"enable_thinking": generation_thinking(profile, phase=phase)}
+        or ("structured_outputs" in value.model_fields_set) != profile.json_object_output
+        or (profile.json_object_output and value.structured_outputs is None)
         or value.max_tokens != profile.max_tokens
         or value.temperature != profile.temperature
         or sum(len(message.content) for message in value.messages) > profile.max_input_chars
@@ -155,4 +242,4 @@ def validate_generation_payload(profile: OperatorConversationProfile, payload_js
     ):
         msg = "model_generation_binding"
         raise ValueError(msg)
-    return value.model_dump(mode="json")
+    return value.model_dump(mode="json", exclude_none=True)

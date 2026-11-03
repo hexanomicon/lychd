@@ -16,7 +16,7 @@ from uuid import UUID, uuid4
 from pydantic import AwareDatetime, Field, ValidationError
 
 from lychd.compositions.reach.operator_diagnostics import DiagnosticId, DiagnosticUuid
-from lychd.compositions.reach.schemas import PolicyDigest, Record
+from lychd.compositions.reach.schemas import PolicyDigest, ReachReviewIssue, Record
 
 MAX_TRACE_BYTES = 2048
 
@@ -31,6 +31,12 @@ type TraceName = Literal[
     "history",
     "acknowledgement",
     "research_plan",
+    "addressing",
+    "interpretation",
+    "checkback",
+    "checkback_control",
+    "reference_hints",
+    "correction",
     "delivery",
     "expression",
     "run_started",
@@ -75,6 +81,8 @@ type TraceStatus = Literal[
     "need_context",
     "clarify",
     "empty",
+    "addressed",
+    "ignore",
 ]
 type TraceCode = Literal[
     "timeout",
@@ -153,6 +161,39 @@ class ReachTraceEvent(Record):
     excerpt_chars: int | None = Field(default=None, ge=0, le=16_000)
     source_digest: PolicyDigest | None = None
     text_digest: PolicyDigest | None = None
+    issue_codes: tuple[ReachReviewIssue, ...] | None = Field(default=None, max_length=4)
+    request_digest: PolicyDigest | None = None
+    evidence_digest: PolicyDigest | None = None
+    candidate_digest: PolicyDigest | None = None
+    objective_digest: PolicyDigest | None = None
+    reference_digest: PolicyDigest | None = None
+    reference_count: int | None = Field(default=None, ge=0, le=3)
+    reference_version: Literal["anchor-order-v1", "anchor-order-v2"] | None = None
+    runtime_claim_count: int | None = Field(default=None, ge=0, le=4)
+    runtime_claim_digest: PolicyDigest | None = None
+    guard_rule: (
+        Literal["unchanged_explanation", "runtime_evidence_authority", "misbound_reference_clarification"] | None
+    ) = None
+    guard_version: (
+        Literal["unchanged-explanation-v1", "runtime-evidence-authority-v1", "misbound-reference-clarification-v1"]
+        | None
+    ) = None
+    guard_status: (
+        Literal[
+            "not_applicable",
+            "clear",
+            "unchanged_requested_transformation",
+            "current_runtime_claim_without_observation",
+            "no_current_runtime_claim_observed",
+            "unrequested_target_clarification",
+        ]
+        | None
+    ) = None
+    effective_verdict: Literal["accept", "revise", "needs_evidence"] | None = None
+    goal_count: int | None = Field(default=None, ge=0, le=8)
+    goal_coverage: tuple[Literal["complete", "missing", "unsupported"], ...] | None = Field(default=None, max_length=8)
+    verdict: Literal["accept", "revise", "needs_evidence", "addressed", "ignore"] | None = None
+    attempt: int | None = Field(default=None, ge=0, le=1)
     operation: (
         Literal[
             "probe",

@@ -140,6 +140,7 @@ class WorkerRequester(Protocol):
         history_state: str = "exhausted",
         reply_to_event_id: str | None = None,
         reply_anchor: ReachHistoryEntry | None = None,
+        continuation_anchor: ReachHistoryEntry | None = None,
     ) -> ReachWorkerResult:
         """Return the settled result bound to this request and context round."""
         ...
@@ -152,15 +153,18 @@ async def drive_context_turn(
     *,
     reply_to_event_id: str | None = None,
     reply_anchor: ReachHistoryEntry | None = None,
+    continuation_anchor: ReachHistoryEntry | None = None,
 ) -> ReachWorkerResult:
     """Bound page calls for all adapters; request older context only after a native decision."""
     result: ReachWorkerResult | None = None
     pages_read = 0
     for context_round in range(3):
         previous = pager.entries
-        await pager.next_page()
-        pages_read += 1
-        while pager.state == "more" and pager.entries == previous and pages_read < MAX_CONTEXT_PAGES:
+        defer_page = context_round == 0 and event.trigger in {"reply", "followup"}
+        if not defer_page:
+            await pager.next_page()
+            pages_read += 1
+        while not defer_page and pager.state == "more" and pager.entries == previous and pages_read < MAX_CONTEXT_PAGES:
             await pager.next_page()
             pages_read += 1
         effective_state: HistoryState = (
@@ -180,6 +184,7 @@ async def drive_context_turn(
             history_state=effective_state,
             reply_to_event_id=reply_to_event_id,
             reply_anchor=reply_anchor,
+            continuation_anchor=continuation_anchor,
         )
         if result.status != "need_context":
             return result

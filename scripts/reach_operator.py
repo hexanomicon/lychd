@@ -111,6 +111,7 @@ EDGE_INPUTS = (
             "onboarding",
             "messages",
             "history",
+            "followups",
         )
     ),
 )
@@ -1008,6 +1009,10 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
         profile_raw = read_regular(args.conversation_profile, WIRE_LIMIT, private=True)
         strict_object(profile_raw)
         profile = OperatorConversationProfile.model_validate_json(profile_raw)
+    if (policy.allowed_reply_channel_ids or policy.allowed_adjacent_followup_channel_ids) and (
+        profile is None or not profile.adaptive_context or not args.history
+    ):
+        _fail("operator_followup_configuration")
     research_broker = None
     if profile is not None and profile.research.enabled:
         if (

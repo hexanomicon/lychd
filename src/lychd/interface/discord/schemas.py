@@ -45,6 +45,9 @@ class DiscordPolicy(_Value):
     allowed_channel_ids: tuple[DiscordId, ...] = Field(min_length=1, max_length=100)
     allowed_thread_parent_ids: tuple[DiscordId, ...] = Field(default=(), max_length=100)
     allowed_dm_user_ids: tuple[DiscordId, ...] = Field(default=(), max_length=100)
+    allowed_reply_channel_ids: tuple[DiscordId, ...] = Field(default=(), max_length=100)
+    allowed_adjacent_followup_channel_ids: tuple[DiscordId, ...] = Field(default=(), max_length=100)
+    adjacent_followup_window_seconds: int = Field(default=60, ge=1, le=120)
     rules: tuple[DiscordRule, ...] = Field(min_length=1, max_length=100)
     allowed_triggers: tuple[Literal["mention", "slash"], ...] = Field(
         default=("mention", "slash"), min_length=1, max_length=2
@@ -77,6 +80,9 @@ class DiscordPolicy(_Value):
             allowed_conversation_ids=self.allowed_channel_ids,
             allowed_parent_conversation_ids=self.allowed_thread_parent_ids,
             allowed_direct_subject_ids=self.allowed_dm_user_ids,
+            allowed_reply_conversation_ids=self.allowed_reply_channel_ids,
+            allowed_adjacent_followup_conversation_ids=self.allowed_adjacent_followup_channel_ids,
+            adjacent_followup_window_seconds=self.adjacent_followup_window_seconds,
             rules=tuple(rule.to_reach_rule() for rule in self.rules),
             allowed_triggers=tuple("command" if trigger == "slash" else "mention" for trigger in self.allowed_triggers),
             event_ttl_seconds=self.event_ttl_seconds,

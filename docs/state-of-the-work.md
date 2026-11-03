@@ -2015,17 +2015,94 @@ SDK registration, plan ordering, concurrent custody, expiry, reconciliation and 
 
 An explicit private conversation profile selects one static persona and exact local
 `Qwen3.8-27B` binding while document search remains the default. Each OCI-only
-`reach.operator_converse@4` Run/Graph obtains an exact Dispatcher Chat lease without tools.
+`reach.operator_converse@5` Run/Graph obtains an exact Dispatcher Chat lease without tools.
 The closed host relay performs fresh health/model observations against one fixed loopback
-endpoint and supplies no runtime lifecycle control. Exact `allowed_dm_user_ids` plus an explicit
+endpoint and supplies no runtime lifecycle control. An opt-in
+private `enable_thinking` setting can select the same local model's supported separated-reasoning
+request mode under an exact hash-bound relay contract. Omitted/false preserves the old binding;
+an optional nonempty `thinking_phases` tuple can instead select reasoning for known structured
+postures. Both boundaries derive per-call mode from the exact validated grammar carrier; empty
+phase selections preserve earlier digests. Each selected mode remains separately qualified under
+its declared completion allowance, capped at 4,096 tokens,
+and unchanged timeout and call ceilings. Known length
+finishes refuse and this opt-in requires a natural stop; reasoning bodies stay transient and out
+of checkpoints, settled history, trace and probe output. A separately bound adaptive
+`json_object_output` opt-in selects version 3 of a fixed ten-member compact EBNF grammar bundle.
+The seven semantic phases retain their thinking policy; planning has document-only, web-only
+and mixed variants selected from the actual offered catalogue, while no sources select ordinary
+conversation. A separate goals-enabled checkback carrier requires coverage and nonnull excerpts
+for complete entries; native admission still checks the exact frozen goal set and evidence.
+The selected profile excludes the other checkback carrier. Trusted native call sites share that selection for sizing and execution through
+an opaque `structured_outputs.grammar` string;
+both relays refuse missing or foreign members. Strict native phase parsing and semantic checks
+remain decisive. The selected version and bundle digest bind ordered input schemas, the pinned
+offline converter and options, versioned generator normalization for valid escaped nonempty JSON
+strings, and exact generated grammar bytes. The recursive normalization admits valid JSON escape
+units and excludes raw control characters and isolated surrogate escapes. Provider string maxima
+are an approximation; native parsers retain the existing field maxima and refuse oversized
+results before adoption. Completion, transport and deadline limits remain unchanged. Core needs no converter at
+runtime; callers cannot supply or modify grammars. Per-call accounting includes the selected grammar and
+review/correction carrier deltas before freezing context. False/omitted
+retains earlier bindings; backend support
+requires fresh qualification, without retries or permissive repair. Exact `allowed_dm_user_ids` plus an explicit
 subject rule permitting `converse` can admit one-to-one DMs; guild roles confer no DM access.
 Opt-in `adaptive_context` permits at most three generation-local Runs per turn, with exact
 continuation admission and bounded same-conversation history. Admitted mentions and DMs receive
 an optional cosmetic receipt; research first delivers the model's interpreted plan without an
-earlier mechanical textual acknowledgement. Short ordinary questions may receive a direct answer.
+earlier mechanical textual acknowledgement. A separate bounded focus query selects local sections
+without becoming public acknowledgement or source authority. Structured plans require its nonempty
+value; explicit current targets retain precedence over focus, while resolved focus can replace a
+weak partial-word heading match. Conversation checkpoint schema v6
+retains that selector, while source bodies stay transient. Web metadata eligibility uses the current
+question and actual anchors, with exact configured-reference fallback from only the last two
+admitted history entries. A positive signal retains the complete standing web catalogue for readable
+alternatives; it supplies no new destination or semantic relevance proof. Short ordinary questions
+may receive a direct answer.
 Final replies are bounded to six parts, with stable delivery identities and
 no continuation after a failed or uncertain part. These additions supply no durable memory,
 private Archive ingestion, cross-place identity or autonomous publication authority.
+An optional adaptive `checkback` profile adds fresh no-tool review of the current request,
+candidate and exact frozen evidence, at most one correction and a final accepted review before
+adoption. Closed judgments bind request/evidence/candidate digests. Missing evidence produces a
+bounded clarification; invalid or unresolved work cannot adopt the draft. Checkback remains
+same-Run model judgment, not independent acceptance or a correctness guarantee. Bodies remain
+transient; structural events retain verdicts, closed issue codes, attempts and digests.
+A conservative unchanged-explanation guard can veto raw model acceptance for a mechanically
+recognizable anchored English transformation request. Separate Core control receipts preserve
+the raw judgment and effective adoption outcome; model rejection is never promoted to acceptance.
+Bounded anchor-reference observations resolve unambiguous list positions to observed labels and
+may guide local section selection, without supplying factual proof or expanding source grants.
+Their values remain transient; trace retains parser identity, count and digest.
+Research carries host-owned public-text evidence scope through the frozen synthesis, review and
+repair envelope. Recorded observations retain their dates and qualifications; future milestones
+establish neither present availability nor unavailability of the operator's installation. This
+source path supplies no installed-runtime observation or independent semantic certification.
+Research self-checks observe bounded exact current-runtime assertions separately from the raw
+verdict; host adoption can refuse unobserved runtime authority without rewriting that verdict.
+Counts and candidate-bound digests are structural metadata; empty extraction is not proof of
+grounding. Narrow literal opening/next-period observations may also return a misdirected
+clarification for the existing one correction when its actual target is visible, without adopting
+a model-rejected draft or expanding evidence authority.
+Optional `request_goals` adds a fresh pre-planning interpretation of requested outcomes without
+source or candidate exposure. The frozen bounded goals guide formation and require per-goal
+fulfillment excerpts before acceptance; trace keeps only counts, digests and closed statuses.
+This adds one model call per admitted Run and does not supply independent factual certification.
+Requested-scope fidelity still needs profile-specific semantic qualification before activation.
+Default-empty exact-channel policy can also admit current-generation bot-final replies without
+pings and one next same-human adjacent candidate per complete final within at most 120 seconds.
+Native addressing precedes paging, source selection and acknowledgements; ignore, doubt, busy
+and failure remain quiet before a confirmed delivered research plan. A later failure permits one
+terminal-notice attempt for that active event, without expressions or a new continuation invitation;
+a failed or uncertain final send does not trigger another final attempt.
+Other activity closes adjacency, while same-final Gateway echoes cannot
+consume or reopen its invitation. Existing person/action/history bounds and mention/DM paths
+remain intact. These operator candidates do not activate public ambient conversation or durable
+memory. [Native checkback tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_checkback.py),
+[addressing tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_addressing.py),
+[request-goal tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_request_goals.py)
+and [anchor-reference tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_conversation_references.py)
+and [Discord continuation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_followups.py)
+own the focused boundaries.
 The operator context-round driver, continuation admission and correlated private-pipe client
 now live in provider-neutral Reach modules. Discord supplies its SDK observations, admitted
 audience and delivery projection. Synthetic second-platform cases exercise these shared modules
@@ -2043,10 +2120,14 @@ bounded committed text from documentation, source, tests and other explicit publ
 the roadmap. It mounts detached verified bytes read-only and offers a deterministic shortlist of
 at most sixteen local source descriptors, retaining exact selected-source validation and explicit
 omissions. It supplies neither arbitrary working-tree reads nor file execution.
+A verified named parent and matching authored units can rank ahead of ordinary lexical matches,
+after explicit source and numeric targets. Bounded `section_match` metadata exposes the authored
+structure and sampled children to the planner; it supplies neither body evidence nor new source IDs.
 Implicit Markdown selection skips link-only navigation; project kickoffs prefer introductory
 content with nearby parent/date context, while explicit source fragments retain their selection.
 Numbered section labels and adjacent authored anchors participate in local selection. The current
-question precedes the acknowledged plan's retrieval focus for elliptical follow-ups.
+question's explicit targets precede the acknowledged plan's retrieval focus for elliptical follow-ups;
+an incidental word overlap does not establish an explicit section target.
 A separately enabled research catalogue adds an explicit
 `generate` → `research` → `settle` branch within the same native Run: one model call proposes a
 bounded interpreted plan and exact document/web IDs, and one later call synthesizes admitted
@@ -2054,10 +2135,17 @@ sources. A mention or admitted DM must receive that plan successfully before loc
 or the separate web worker starts; slash commands cannot satisfy this delivered-plan gate.
 At most four sources, including at most three documents and two catalogue web entries, supply
 bounded excerpts: ordinary local and all web reads retain 4,000 characters, while explicitly
-requested multi-section local Markdown reads admit at most 16,000. The unchanged model input
+requested multi-section or complete-quotation local Markdown reads admit at most 16,000. The unchanged model input
 budget trims oldest history first, then distributes long local projections across child sections
-with explicit source-relative spans. Exact source metadata, occurrence correlation, digests,
-citations and unavailable outcomes are checked. Detached outbound source projections keep raw
+with explicit source-relative spans. A current request to give quotations selects transient
+`complete_quotes` packing, while explicit quotation summaries retain balanced packing. Complete
+units and authored attribution precede remaining explanation, with omissions when intact units
+cannot fit. Synthesis and self-check instructions require requested visible quotations intact in
+that mode; this remains fallible model fulfillment, not independent acceptance. Probe recomputation binds the closed mode; all existing byte, frame and span limits
+remain. Exact source metadata, occurrence correlation, digests,
+and full span receipts remain with the host and probe; the model view excludes the derived span
+array and is compared exactly against an independently recomputed projection. Citations and
+unavailable outcomes are checked. Detached outbound source projections keep raw
 acquisition bodies out of checkpoint state, cached Context and native history. The host renders
 supporting citations and explicit unavailable-source notices rather than treating a blocked page
 as read. Humour and expression selection retain those attribution limits.
@@ -2069,6 +2157,10 @@ web selections refuse. Per-occurrence private reports retain the native result, 
 acquired-source observations and synthesis-input projection metadata, alongside a separate
 bounded structural trace archive. Scenario assertions cover expected status, required successful
 source reads and GIF choice; an uncertain-plan case checks that reading and synthesis stop.
+The bounded dialogue probe carries actual prior answer parts into later synthetic requests and
+supports exact reply/continuation targets. Literal content assertions are distinct from transport
+success, and reports leave independent semantic review explicit. It starts a fresh Core per turn,
+testing supplied transcript continuity rather than persistent worker state.
 These probes do not qualify Discord delivery, the complete live research host path, durable
 native history or arbitrary source search.
 

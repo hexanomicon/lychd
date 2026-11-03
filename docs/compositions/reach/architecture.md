@@ -89,7 +89,7 @@ provide the transport organization.
 ### Shared operator conversation
 
 The separate operator development profile uses the same Reach-owned
-`reach.operator_converse@4` Pattern behind its process boundary. That Pattern decides whether
+`reach.operator_converse@5` Pattern behind its process boundary. That Pattern decides whether
 to answer, ask for older context, research selected sources, or clarify. Generic Graph supplies
 typed execution and continuation; Reach owns those application decisions.
 
@@ -101,10 +101,23 @@ owns request/result correlation, progress framing and acknowledgement on private
 imports a provider SDK. Discord constructs its pager and reply anchor, delivers progress to the
 admitted audience, and renders the final result using its own size and notification rules.
 
-The interpreted research plan originates in the Pattern. Its host relay returns successful
+The interpreted research plan and its separate bounded read-focus selector originate in the Pattern.
+Only the natural plan is presented to the audience; the selector grants no additional authority.
+An optional fresh request interpretation freezes bounded requested outcomes before planning or
+candidate exposure. Per-goal review remains the same Run's model judgment, not independent truth.
+Its host relay returns successful
 acquisition only after the shared client has acknowledged successful plan delivery; selected
 local document reads also follow that boundary. This is a delivery receipt, not human approval.
 The standing research profile still owns contact authority.
+
+The same operator Pattern can opt into bounded pre-settlement checkback over a frozen candidate
+and evidence envelope. Distinct model postures review, optionally correct once, and review the
+correction; they remain inside the existing station so source bodies cross no checkpoint.
+This is a self-check rather than independent acceptance. Selected-channel unmentioned reply and
+adjacent-message candidates add a separate addressing judgment before context paging or source
+selection. The provider observes the relationship and invitation window; Reach owns the semantic
+judgment and silent `ignore` result. These operator opt-ins do not revise the public Habitat's
+mention-only contract or confer durable monitoring, identity or effect authority.
 
 A later Telegram adapter can consume these same contracts while supplying its own authenticated
 intake, audience, available context and output projection. A synthetic second transport verifies

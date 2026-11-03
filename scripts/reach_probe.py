@@ -14,15 +14,24 @@ import signal
 import sys
 import tempfile
 from collections.abc import Generator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
 from typing import Any, Literal, NoReturn, cast
 from uuid import uuid4
 
-from pydantic import Field
+from pydantic import Field, model_validator
+from pydantic_ai.profiles import DEFAULT_THINKING_TAGS
 
+from lychd.compositions.reach.checkback import CheckbackEnvelope, effective_checkback
+from lychd.compositions.reach.conversation_references import (
+    REFERENCE_PARSER_VERSION,
+    reference_digest,
+    reference_payload,
+    reference_selectors,
+)
+from lychd.compositions.reach.decision_format import decision_format_phase
 from lychd.compositions.reach.documents import (
     LEGACY_MAX_CORPUS_BYTES,
     MAX_CORPUS_BYTES,
@@ -32,6 +41,7 @@ from lychd.compositions.reach.documents import (
     parse_corpus_manifest,
     project_research_source,
     read_research_document,
+    research_projection_mode,
     verify_corpus,
 )
 from lychd.compositions.reach.expressions import GifId
@@ -55,6 +65,8 @@ from lychd.compositions.reach.operator_wire import (
     protocol_bytes,
     strict_json,
 )
+from lychd.compositions.reach.request_goals import parse_request_goals, request_goals_digest, request_goals_prompt
+from lychd.compositions.reach.research import MAX_RESEARCH_FOCUS_CHARS, model_research_source, research_catalogue
 from lychd.compositions.reach.research_wire import OperatorResearchRequest, OperatorResearchResponse, SourceId
 from lychd.compositions.reach.schemas import ReachEvent, ReachPolicy, ReachRule, Record
 
@@ -75,8 +87,12 @@ MAX_STDOUT_FRAMES = 64
 MAX_DIAGNOSTIC_FRAMES = 2048
 MAX_TOTAL_BYTES = 8 * 1024 * 1024
 MAX_MODEL_CALLS = 12
+MAX_CHECKBACKS = 2
+MAX_ASSERTION_CHARS = 2000
 MAX_DEBUG_CHARS = 24_000
 MAX_TIMEOUT_SECONDS = 480
+_REASONING_FIELDS = ("reasoning", "reasoning_content")
+_FINISH_REASONS = frozenset({"stop", "length", "tool_calls", "function_call", "content_filter"})
 SYNTHETIC = {
     "platform": "discord",
     "account_id": "900000000000000001",
@@ -100,6 +116,7 @@ class HistoryItem(Record):
     text: str = Field(min_length=1, max_length=2000, repr=False)
     speaker: Literal["operator", "agent"] = "operator"
     age_seconds: int = Field(default=1, ge=1, le=600)
+    event_id: str | None = Field(default=None, pattern=r"^[1-9][0-9]{0,19}$")
 
 
 class Scenario(Record):
@@ -112,6 +129,38 @@ class Scenario(Record):
     expected_status: ReachWorkerStatus | None = None
     required_source_ids: tuple[SourceId, ...] = Field(default=(), max_length=4)
     expected_gif_id: GifId | None = None
+    trigger: Literal["reply", "followup"] | None = None
+    reply_to_history_index: int | None = Field(default=None, ge=0, le=19)
+    continuation_to_history_index: int | None = Field(default=None, ge=0, le=19)
+    required_text: tuple[str, ...] = Field(default=(), max_length=32)
+    prohibited_text: tuple[str, ...] = Field(default=(), max_length=32)
+    text_case: Literal["sensitive", "casefold"] = "sensitive"
+    event_sequence: int = Field(default=0, ge=0, le=99)
+
+    @model_validator(mode="after")
+    def exact_anchor(self) -> Scenario:
+        indices = (self.reply_to_history_index, self.continuation_to_history_index)
+        if self.direct and self.trigger is not None:
+            msg = "probe_direct_trigger"
+            raise ValueError(msg)
+        if self.trigger == "reply" and self.reply_to_history_index is None:
+            msg = "probe_reply_anchor"
+            raise ValueError(msg)
+        if (self.trigger == "followup") != (self.continuation_to_history_index is not None):
+            msg = "probe_continuation_anchor"
+            raise ValueError(msg)
+        if all(index is not None for index in indices):
+            msg = "probe_ambiguous_anchor"
+            raise ValueError(msg)
+        for index in indices:
+            if index is not None and (index >= len(self.history) or self.history[index].speaker != "agent"):
+                msg = "probe_history_anchor"
+                raise ValueError(msg)
+        for term in self.required_text + self.prohibited_text:
+            if not term or len(term) > MAX_ASSERTION_CHARS:
+                msg = "probe_text_assertion"
+                raise ValueError(msg)
+        return self
 
 
 def make_request(scenario: Scenario, now: datetime) -> tuple[ReachPolicy, ReachWorkerRequest]:
@@ -124,21 +173,35 @@ def make_request(scenario: Scenario, now: datetime) -> tuple[ReachPolicy, ReachW
         space_id=SYNTHETIC["space_id"],
         allowed_conversation_ids=(SYNTHETIC["conversation_id"],),
         allowed_direct_subject_ids=(SYNTHETIC["subject_id"],),
+        allowed_reply_conversation_ids=(SYNTHETIC["conversation_id"],),
+        allowed_adjacent_followup_conversation_ids=(SYNTHETIC["conversation_id"],),
         rules=(ReachRule(name="headless_probe", subject_ids=(SYNTHETIC["subject_id"],), actions=("converse",)),),
         context_message_limit=20,
         context_max_age_seconds=600,
         event_ttl_seconds=600,
     )
+    anchor_index = (
+        scenario.continuation_to_history_index if scenario.trigger == "followup" else scenario.reply_to_history_index
+    )
+    related = scenario.history[anchor_index] if anchor_index is not None and scenario.trigger is not None else None
+    related_id = (
+        related.event_id or str(900000000000000100 + anchor_index)
+        if related is not None and anchor_index is not None
+        else None
+    )
     event = ReachEvent(
         platform="discord",
         account_id=SYNTHETIC["account_id"],
-        event_id=SYNTHETIC["event_id"],
+        event_id=str(int(SYNTHETIC["event_id"]) + scenario.event_sequence * 1000),
         space_id=None if scenario.direct else SYNTHETIC["space_id"],
         conversation_id=place,
         subject_id=SYNTHETIC["subject_id"],
         subject_label="Probe operator",
-        mention_subject_ids=() if scenario.direct else (SYNTHETIC["agent_subject_id"],),
-        trigger="message" if scenario.direct else "mention",
+        mention_subject_ids=() if scenario.direct or scenario.trigger is not None else (SYNTHETIC["agent_subject_id"],),
+        trigger=scenario.trigger or ("message" if scenario.direct else "mention"),
+        related_event_id=related_id,
+        related_subject_id=SYNTHETIC["agent_subject_id"] if related is not None else None,
+        related_occurred_at=now - timedelta(seconds=related.age_seconds) if related is not None else None,
         action="converse",
         question=scenario.question,
         occurred_at=now,
@@ -147,14 +210,35 @@ def make_request(scenario: Scenario, now: datetime) -> tuple[ReachPolicy, ReachW
         ReachHistoryEntry(
             subject_id=SYNTHETIC["agent_subject_id" if item.speaker == "agent" else "subject_id"],
             subject_label="Probe agent" if item.speaker == "agent" else "Probe operator",
-            event_id=str(900000000000000100 + index),
+            event_id=item.event_id or str(900000000000000100 + index),
             conversation_id=place,
             text=item.text,
             occurred_at=now - timedelta(seconds=item.age_seconds),
         )
         for index, item in enumerate(scenario.history)
     )
-    return policy, ReachWorkerRequest(request_id=str(uuid4()), event=event, history=history)
+    reply = history[scenario.reply_to_history_index] if scenario.reply_to_history_index is not None else None
+    continuation = (
+        history[scenario.continuation_to_history_index] if scenario.continuation_to_history_index is not None else None
+    )
+    return policy, ReachWorkerRequest(
+        request_id=str(uuid4()),
+        event=event,
+        history=tuple(item for item in history if item is not reply and item is not continuation),
+        reply_to_event_id=reply.event_id if reply is not None else None,
+        reply_anchor=reply,
+        continuation_anchor=continuation,
+    )
+
+
+def content_assertions(scenario: Scenario, text: str) -> list[str]:
+    """Evaluate literal acceptance criteria separately from source and Run success."""
+    normalize = str.casefold if scenario.text_case == "casefold" else str
+    actual = normalize(text)
+    return [
+        *(f"required_text_{i}" for i, term in enumerate(scenario.required_text) if normalize(term) not in actual),
+        *(f"prohibited_text_{i}" for i, term in enumerate(scenario.prohibited_text) if normalize(term) in actual),
+    ]
 
 
 def freeze_corpus(directory: Path, output: Path) -> PublicCorpus:
@@ -183,6 +267,43 @@ def object_value(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         refuse("probe_protocol")
     return cast("dict[str, Any]", value)
+
+
+def validate_evidence_scope(value: object) -> dict[str, str]:
+    """Require the closed host context independently from model or source claims."""
+    expected = {
+        "version": "public-text-v1",
+        "source_authority": "public_reference_text",
+        "successful_read_proves": "source_bytes_obtained",
+        "operator_runtime_observation": "not_supplied",
+    }
+    if not isinstance(value, dict) or value != expected:
+        refuse("probe_evidence_scope")
+    return expected
+
+
+def completion_finish_reason(choice: dict[str, Any]) -> str:
+    """Normalize provider completion metadata without retaining arbitrary provider words."""
+    if "finish_reason" not in choice:
+        return "missing"
+    value = choice["finish_reason"]
+    if value is None:
+        return "null"
+    if value == "":
+        return "empty"
+    return value if isinstance(value, str) and value in _FINISH_REASONS else "unknown"
+
+
+def reasoning_field_observation(message: dict[str, Any], field: str) -> dict[str, str | int]:
+    """Retain presence and character counts only for the two recognized reasoning fields."""
+    if field not in message:
+        return {"state": "missing"}
+    value = message[field]
+    if value is None:
+        return {"state": "null"}
+    if isinstance(value, str):
+        return {"state": "text", "chars": len(value)}
+    return {"state": "invalid"}
 
 
 class Turn:
@@ -214,9 +335,13 @@ class Turn:
         self.run_id: str | None = None
         self.plan: str | None = None
         self.proposed_plan: str | None = None
+        self.focus: str | None = None
+        self.proposed_focus: str | None = None
+        self.proposed_focus_valid = False
         self.plan_call_id: str | None = None
         self.planned_ids: tuple[str, ...] = ()
         self.offered_ids: frozenset[str] = frozenset()
+        self.offered_sources: list[dict[str, str]] = []
         self.reads: list[dict[str, Any]] = []
         self.calls: list[dict[str, Any]] = []
         self.debug: list[str] = []
@@ -229,6 +354,15 @@ class Turn:
         self.patterns: dict[str, Any] | None = None
         self.cleanup: dict[str, Any] = {"process_retired": False, "container_removed": False, "container_id": None}
         self.projection: dict[str, Any] = {}
+        self.evidence_scope: dict[str, str] | None = None
+        self.formation_context: dict[str, Any] | None = None
+        self.candidate: dict[str, Any] | None = None
+        self.checkbacks: list[dict[str, Any]] = []
+        self.checkback_controls: list[dict[str, Any]] = []
+        self.review_claims: list[tuple[str, ...] | None] = []
+        self.corrections = 0
+        self.goals: tuple[str, ...] = ()
+        self.interpretations = 0
 
     def observe(self, event: ReachTraceEvent) -> None:
         """Retain finite structural metadata independently of best-effort emitter semantics."""
@@ -265,13 +399,8 @@ class Turn:
         self.run_id = value.run_id
         return value.model_dump(exclude_none=True)
 
-    def model_prompt(self, frame: OperatorModelRequest) -> dict[str, Any]:
-        generation = validate_generation_payload(self.profile, frame.payload_json)
-        messages = cast("list[dict[str, Any]]", generation["messages"])
-        return object_value(strict_json(cast("str", messages[-1]["content"]).encode()))
-
     def before_model(self, frame: OperatorModelRequest) -> dict[str, Any]:
-        """Require the native planning/ack/read/synthesis order before any local inference."""
+        """Bind native order and the profile-selected review carrier before local inference."""
         if len(self.calls) >= MAX_MODEL_CALLS or frame.call_id in self.seen_call_ids:
             refuse("probe_model_budget")
         if frame.binding_digest != self.profile.digest:
@@ -284,25 +413,129 @@ class Turn:
         self.seen_call_ids.add(frame.call_id)
         prompt: dict[str, Any] = {}
         phase = "probe"
+        observation: dict[str, Any] = {}
         if frame.operation == "generate":
-            prompt = self.model_prompt(frame)
+            generation = validate_generation_payload(self.profile, frame.payload_json)
+            messages = cast("list[dict[str, Any]]", generation["messages"])
+            prompt = object_value(strict_json(cast("str", messages[-1]["content"]).encode()))
+            schema_phase = decision_format_phase(generation.get("structured_outputs"))
+            if prompt.get("phase") == "checkback" and self.profile.json_object_output:
+                expected = "checkback_goals" if self.profile.request_goals else "checkback"
+                if schema_phase != expected:
+                    refuse("probe_checkback_schema")
             phase = self.generation_phase(prompt)
-        self.calls.append({"call_id": frame.call_id, "operation": frame.operation, "phase": phase})
+            if phase in {"planning", "answer"}:
+                observation["research_source_kinds"] = [
+                    kind
+                    for kind in ("doc", "web")
+                    if any(source_id.startswith(f"{kind}:") for source_id in self.offered_ids)
+                ]
+            observation["enable_thinking"] = generation["chat_template_kwargs"]["enable_thinking"]
+            observation["response_format"] = "structured_json" if "structured_outputs" in generation else "omitted"
+            observation["decision_schema_phase"] = schema_phase
+        self.calls.append({"call_id": frame.call_id, "operation": frame.operation, "phase": phase, **observation})
         return prompt
 
+    def capture_addressing(self, prompt: dict[str, Any]) -> str:
+        """Bind the independent addressing posture before any answer context."""
+        anchor = self.request.reply_anchor or self.request.continuation_anchor
+        if (
+            anchor is None
+            or prompt.get("request_id") != self.request.request_id
+            or prompt.get("question") != self.request.event.question
+            or prompt.get("trigger") != self.request.event.trigger
+            or canonical_json(prompt.get("anchor")) != canonical_json(anchor.model_dump(mode="json"))
+            or self.plan is not None
+            or any(call["phase"] == "addressing" for call in self.calls)
+        ):
+            refuse("probe_addressing_binding")
+        return "addressing"
+
     def generation_phase(self, prompt: dict[str, Any]) -> str:
+        if prompt.get("conversation_phase") == "addressing":
+            return self.capture_addressing(prompt)
+        if prompt.get("phase") in {"checkback", "correction"}:
+            return self.capture_checkback(prompt)
+        if prompt.get("phase") == "interpretation":
+            return self.capture_interpretation(prompt)
         phase = str(prompt.get("research_phase", "answer"))
+        if prompt.get("reference_hints", []) != reference_payload(self.request):
+            refuse("probe_references_binding")
         if prompt.get("question") != self.request.event.question:
             refuse("probe_question_binding")
+        if prompt.get("request_goals", []) != list(self.goals) or (self.profile.request_goals and not self.goals):
+            refuse("probe_objectives_binding")
         if phase == "synthesis":
             self.capture_synthesis(prompt)
         elif self.plan is not None or phase not in {"planning", "answer"}:
             refuse("probe_phase")
         else:
             offered = prompt.get("available_research_sources", [])
-            if not isinstance(offered, list):
+            expected = research_catalogue(self.profile, self.corpus, self.request)
+            if not isinstance(offered, list) or canonical_json(offered) != canonical_json(expected):
                 refuse("probe_catalogue")
-            self.offered_ids = frozenset(str(object_value(item).get("id")) for item in cast("list[Any]", offered))
+            self.offered_sources = [dict(item) for item in expected]
+            self.offered_ids = frozenset(item["id"] for item in expected)
+        self.formation_context = prompt
+        return phase
+
+    def capture_interpretation(self, prompt: dict[str, Any]) -> str:
+        """Admit one independently formed objective list before any answer context."""
+        if (
+            not self.profile.request_goals
+            or self.interpretations
+            or self.formation_context is not None
+            or canonical_json(prompt) != request_goals_prompt(self.profile, self.request)
+        ):
+            refuse("probe_interpretation_binding")
+        self.interpretations += 1
+        return "interpretation"
+
+    def capture_checkback(self, prompt: dict[str, Any]) -> str:
+        """Bind review and repair to the exact previously admitted candidate and evidence."""
+        phase = str(prompt["phase"])
+        context = object_value(prompt.get("context"))
+        candidate = object_value(prompt.get("candidate"))
+        expected = CheckbackEnvelope.prepare(
+            self.request, canonical_json(context), persona_name=self.profile.persona_name
+        ).bindings(canonical_json(candidate))
+        if (
+            self.formation_context is None
+            or self.candidate is None
+            or canonical_json(context) != canonical_json(self.formation_context)
+            or canonical_json(candidate) != canonical_json(self.candidate)
+            or prompt.get("approved_persona_name") != self.profile.persona_name
+            or prompt.get("task") != self.request.event.question
+            or any(key in prompt for key in expected)
+        ):
+            refuse("probe_checkback_binding")
+        if context.get("research_phase") == "synthesis":
+            self.validate_source_projections(context)
+        if phase == "correction":
+            if (
+                self.corrections
+                or not self.checkbacks
+                or len(self.checkback_controls) != len(self.checkbacks)
+                or self.checkback_controls[-1].get("effective_verdict") != "revise"
+            ):
+                refuse("probe_correction_order")
+            control = self.checkback_controls[-1]
+            expected_observation = {key: value for key, value in control.items() if key not in {*expected, "attempt"}}
+            if (
+                prompt.get("issues") != control["effective_issues"]
+                or prompt.get("correction_control") != expected_observation
+            ):
+                refuse("probe_correction_binding")
+            claims = self.review_claims[-1]
+            if ("current_runtime_claims" in prompt) != (claims is not None) or (
+                claims is not None and prompt["current_runtime_claims"] != list(claims)
+            ):
+                refuse("probe_runtime_claims_binding")
+            self.corrections += 1
+        elif len(self.checkbacks) != self.corrections or len(self.checkbacks) >= MAX_CHECKBACKS:
+            refuse("probe_checkback_order")
+        else:
+            self.checkbacks.append(expected)
         return phase
 
     def capture_synthesis(self, prompt: dict[str, Any]) -> None:
@@ -312,21 +545,37 @@ class Turn:
             or self.synthesis
             or prompt.get("research_request_id") != self.request.request_id
             or prompt.get("research_plan") != self.plan
+            or prompt.get("research_focus") != self.focus
             or prompt.get("corpus_digest") != self.corpus.digest
         ):
             refuse("probe_synthesis_binding")
+        reads = self.validate_source_projections(prompt)
+        omitted = prompt.get("omitted_recent_messages")
+        if type(omitted) is not int or not 0 <= omitted <= len(self.request.history):
+            refuse("probe_history_metadata")
         self.synthesis += 1
+        self.reads.extend(reads)
+        self.evidence_scope = validate_evidence_scope(prompt.get("evidence_scope"))
+        self.projection = {"omitted_recent_messages": omitted, "source_count": len(self.reads)}
+
+    def validate_source_projections(self, prompt: dict[str, Any]) -> list[dict[str, Any]]:
+        if (
+            self.plan is None
+            or self.scenario.plan_delivery != "succeeded"
+            or prompt.get("research_request_id") != self.request.request_id
+            or prompt.get("research_plan") != self.plan
+            or prompt.get("research_focus") != self.focus
+            or prompt.get("corpus_digest") != self.corpus.digest
+        ):
+            refuse("probe_synthesis_binding")
+        validate_evidence_scope(prompt.get("evidence_scope"))
         sources = prompt.get("research_sources")
         if not isinstance(sources, list):
             refuse("probe_source_metadata")
         records = [object_value(item) for item in cast("list[Any]", sources)]
         if tuple(item.get("id") for item in records) != self.planned_ids:
             refuse("probe_source_binding")
-        self.reads.extend(self.read_projection(item) for item in records)
-        omitted = prompt.get("omitted_recent_messages")
-        if type(omitted) is not int or not 0 <= omitted <= len(self.request.history):
-            refuse("probe_history_metadata")
-        self.projection = {"omitted_recent_messages": omitted, "source_count": len(records)}
+        return [self.read_projection(item) for item in records]
 
     def read_projection(self, item: dict[str, Any]) -> dict[str, Any]:
         """Verify exact metadata and the actual transient projection against frozen source bytes."""
@@ -334,32 +583,61 @@ class Turn:
         if not isinstance(source_id, str) or not source_id.startswith("doc:"):
             refuse("probe_web_refused")
         source = read_research_document(
-            self.corpus, source_id, question=self.request.event.question, focus=self.plan or ""
+            self.corpus,
+            source_id,
+            question=self.request.event.question,
+            focus=self.focus or self.plan or "",
+            reference_labels=reference_selectors(self.request),
         )
         expected = source.model_dump(mode="json", exclude={"text"})
         budget = item.get("projection_budget")
         if type(budget) is not int or not 0 <= budget <= len(source.text):
             refuse("probe_source_metadata")
-        projection = project_research_source(source, budget)
+        mode = research_projection_mode(self.request.event.question)
+        if item.get("projection_mode") != mode:
+            refuse("probe_source_metadata")
+        projection = project_research_source(source, budget, projection_mode=mode)
         text = item.get("text")
-        if not isinstance(text, str) or canonical_json(item) != canonical_json(projection):
+        if (
+            not isinstance(text, str)
+            or canonical_json(item) != canonical_json(model_research_source(projection))
+            or (mode == "complete_quotes" and source.status == "ok" and not text.strip())
+        ):
             refuse("probe_source_metadata")
         return {
             **expected,
-            "projection_digest": item["projection_digest"],
-            "projection_truncated": item["projection_truncated"],
+            "projection_digest": projection["projection_digest"],
+            "projection_truncated": projection["projection_truncated"],
             "projection_budget": budget,
-            "projection_spans": item["projection_spans"],
+            "projection_mode": mode,
+            "projection_spans": projection["projection_spans"],
             "projected_chars": len(text),
         }
+
+    def capture_completion(self, payload: str) -> str:
+        """Observe bounded provider metadata while returning only final content for cognition capture."""
+        value = object_value(strict_json(payload.encode()))
+        choices = value.get("choices")
+        if not isinstance(choices, list) or len(cast("list[Any]", choices)) != 1:
+            refuse("probe_completion_metadata")
+        choice = object_value(cast("list[Any]", choices)[0])
+        message = object_value(choice.get("message"))
+        content = message.get("content")
+        if not isinstance(content, str):
+            refuse("probe_completion_metadata")
+        reasoning = {field: reasoning_field_observation(message, field) for field in _REASONING_FIELDS}
+        self.calls[-1].update({"finish_reason": completion_finish_reason(choice), "reasoning_fields": reasoning})
+        if any(field["state"] == "invalid" for field in reasoning.values()):
+            refuse("probe_reasoning_metadata")
+        if any(marker in content for marker in DEFAULT_THINKING_TAGS):
+            refuse("probe_reasoning_content")
+        return content
 
     def after_model(self, frame: OperatorModelRequest, response: OperatorModelResponse) -> None:
         self.calls[-1].update({"status": response.status, "reason": response.reason})
         if response.status != "ok" or frame.operation != "generate":
             return
-        value = object_value(strict_json(response.payload_json.encode()))
-        choices = cast("list[dict[str, Any]]", value["choices"])
-        content = cast("str", choices[0]["message"]["content"])
+        content = self.capture_completion(response.payload_json)
         if self.capture_model_output:
             if sum(map(len, self.debug)) + len(content) > MAX_DEBUG_CHARS:
                 refuse("probe_debug_budget")
@@ -368,6 +646,15 @@ class Turn:
             decision = object_value(strict_json(content.encode()))
         except (ValueError, UnicodeError, RecursionError):
             return  # Native validation owns model output; no permissive repair here.
+        phase = self.calls[-1]["phase"]
+        if phase == "interpretation":
+            with suppress(ValueError):
+                self.goals = parse_request_goals(content).goals
+            return
+        if phase == "checkback":
+            self.capture_review(content)
+        elif phase != "addressing" and decision.get("kind") in {"answer", "clarify"}:
+            self.candidate = decision
         if decision.get("kind") == "research":
             ids = decision.get("source_ids")
             if isinstance(ids, list) and all(isinstance(item, str) for item in cast("list[Any]", ids)):
@@ -375,6 +662,60 @@ class Turn:
                 self.calls[-1]["selected_source_ids"] = self.planned_ids
                 text = decision.get("text")
                 self.proposed_plan = text.strip() if isinstance(text, str) else None
+                focus = decision.get("focus")
+                self.proposed_focus_valid = focus is None or (
+                    isinstance(focus, str) and bool(focus.strip()) and len(focus) <= MAX_RESEARCH_FOCUS_CHARS
+                )
+                self.proposed_focus = focus.strip() if isinstance(focus, str) else None
+
+    @staticmethod
+    def claim_metadata(candidate_digest: str, claims: tuple[str, ...] | None) -> dict[str, Any]:
+        """Compute a candidate-bound structural receipt without persisting exact observed clauses."""
+        if claims is None:
+            return {}
+        return {
+            "runtime_claim_count": len(claims),
+            "runtime_claim_digest": sha256(
+                canonical_json(
+                    {
+                        "candidate_digest": candidate_digest,
+                        "current_runtime_claims": claims,
+                    }
+                ).encode()
+            ).hexdigest(),
+        }
+
+    def capture_review(self, content: str) -> None:
+        """Accept only the same strict coverage and evidence binding as native Core."""
+        try:
+            envelope = CheckbackEnvelope.prepare(
+                self.request, canonical_json(self.formation_context), persona_name=self.profile.persona_name
+            )
+            judgment = envelope.parse(content, canonical_json(self.candidate))
+        except ValueError:
+            return  # The native strict parser owns malformed model output.
+        control = effective_checkback(
+            self.request, canonical_json(self.candidate), judgment, context_json=canonical_json(self.formation_context)
+        )
+        self.review_claims.append(judgment.current_runtime_claims)
+        self.checkback_controls.append(
+            {
+                **envelope.bindings(canonical_json(self.candidate)),
+                "attempt": len(self.checkbacks) - 1,
+                **control.observation(),
+            }
+        )
+        self.checkbacks[-1].update(
+            {
+                "verdict": judgment.verdict,
+                "issues": list(judgment.issues),
+                **self.claim_metadata(judgment.candidate_digest, judgment.current_runtime_claims),
+                "coverage": [
+                    {"goal": item.goal, "status": item.status}
+                    for item in sorted(judgment.coverage, key=lambda item: item.goal)
+                ],
+            }
+        )
 
     def research(self, frame: OperatorResearchRequest) -> OperatorResearchResponse:
         """Simulate exactly one audience receipt; never pretend to acquire web material."""
@@ -386,12 +727,13 @@ class Turn:
             or frame.call_id in self.seen_call_ids
             or self.plan is not None
             or frame.plan != self.proposed_plan
+            or not self.proposed_focus_valid
             or not self.planned_ids
             or any(item not in self.offered_ids for item in self.planned_ids)
         ):
             refuse("probe_research_binding")
         self.seen_call_ids.add(frame.call_id)
-        self.plan, self.plan_call_id = frame.plan, frame.call_id
+        self.plan, self.focus, self.plan_call_id = frame.plan, self.proposed_focus, frame.call_id
         self.capture.host.record("research_plan", status=self.scenario.plan_delivery, call_id=frame.call_id, **binding)
         web = frame.source_ids or any(not item.startswith("doc:") for item in self.planned_ids)
         accepted = self.scenario.plan_delivery == "succeeded" and not web
@@ -507,6 +849,7 @@ class Turn:
             result is None or result.gif_id != self.scenario.expected_gif_id
         ):
             failures.append("expected_gif_id")
+        failures.extend(content_assertions(self.scenario, result.text if result is not None else ""))
         read_ids = {item.source_id for item in self.events if item.name == "source_read" and item.status == "ok"}
         if not set(self.scenario.required_source_ids) <= read_ids:
             failures.append("required_source_ids")
@@ -535,6 +878,132 @@ class Turn:
             failures.append("trace_binding")
         if self.patterns is None or not any(item.name == "native_node" for item in self.events):
             failures.append("missing_native_trace")
+        failures.extend(self.checkback_assertions())
+        failures.extend(self.goal_assertions())
+        failures.extend(self.reference_assertions())
+        return failures
+
+    def goal_assertions(self) -> list[str]:
+        """Correlate the frozen independent interpretation without retaining goal text in trace."""
+        observed = [
+            event
+            for event in self.events
+            if event.producer == "core" and event.name == "interpretation" and event.status == "ok"
+        ]
+        if (
+            self.result is None
+            or self.result.status not in {"conversation", "clarify"}
+            or not self.profile.request_goals
+        ):
+            return []
+        if (
+            self.interpretations != 1
+            or not self.goals
+            or len(observed) != 1
+            or observed[0].request_id != self.request.request_id
+            or observed[0].run_id != self.run_id
+            or observed[0].goal_count != len(self.goals)
+            or observed[0].objective_digest != request_goals_digest(self.goals)
+        ):
+            return ["interpretation_trace_binding"]
+        return []
+
+    def reference_assertions(self) -> list[str]:
+        """Bind observed hint metadata independently from model goal interpretation."""
+        observed = [event for event in self.events if event.name == "reference_hints" and event.status == "ok"]
+        if self.formation_context is None:
+            return [] if not observed else ["reference_trace_binding"]
+        if (
+            len(observed) != 1
+            or observed[0].producer != "core"
+            or observed[0].request_id != self.request.request_id
+            or observed[0].run_id != self.run_id
+            or observed[0].reference_version != REFERENCE_PARSER_VERSION
+            or observed[0].reference_count != len(reference_payload(self.request))
+            or observed[0].reference_digest != reference_digest(self.request)
+        ):
+            return ["reference_trace_binding"]
+        return []
+
+    def checkback_assertions(self) -> list[str]:
+        """Require raw judgments and independent effective controls for the exact adopted bytes."""
+        reviews = [event for event in self.events if event.name == "checkback" and event.status == "ok"]
+        controls = [event for event in self.events if event.name == "checkback_control" and event.status == "ok"]
+        parsed = [item for item in self.checkbacks if "verdict" in item]
+        failures: list[str] = []
+        if len(reviews) != len(parsed):
+            failures.append("missing_checkback_trace")
+        if len(controls) != len(self.checkback_controls):
+            failures.append("missing_checkback_control")
+        for index, event in enumerate(reviews):
+            if (
+                index >= len(parsed)
+                or event.producer != "core"
+                or event.request_id != self.request.request_id
+                or event.run_id != self.run_id
+                or event.attempt != index
+                or event.issue_codes != tuple(parsed[index].get("issues", ()))
+                or (event.goal_coverage or ()) != tuple(item["status"] for item in parsed[index].get("coverage", ()))
+                or any(
+                    getattr(event, key) != parsed[index].get(key)
+                    for key in (
+                        "request_digest",
+                        "evidence_digest",
+                        "candidate_digest",
+                        "verdict",
+                        "runtime_claim_count",
+                        "runtime_claim_digest",
+                    )
+                )
+                or any(
+                    getattr(event, key) is not None
+                    for key in ("guard_rule", "guard_version", "guard_status", "effective_verdict")
+                )
+            ):
+                failures.append("checkback_trace_binding")
+        for index, event in enumerate(controls):
+            if (
+                index >= len(self.checkback_controls)
+                or event.producer != "core"
+                or event.request_id != self.request.request_id
+                or event.run_id != self.run_id
+                or event.verdict is not None
+                or event.issue_codes is not None
+                or event.goal_coverage is not None
+                or any(
+                    getattr(event, key) != self.checkback_controls[index].get(key)
+                    for key in (
+                        "request_digest",
+                        "evidence_digest",
+                        "candidate_digest",
+                        "attempt",
+                        "guard_rule",
+                        "guard_version",
+                        "guard_status",
+                        "effective_verdict",
+                        "runtime_claim_count",
+                        "runtime_claim_digest",
+                    )
+                )
+            ):
+                failures.append("checkback_control_binding")
+        if self.result is not None and self.result.status == "conversation" and self.profile.checkback:
+            final_digest = (
+                CheckbackEnvelope.prepare(
+                    self.request, canonical_json(self.formation_context), persona_name=self.profile.persona_name
+                ).bindings(canonical_json(self.candidate))["candidate_digest"]
+                if self.candidate is not None and self.formation_context is not None
+                else None
+            )
+            if (
+                not parsed
+                or parsed[-1].get("verdict") != "accept"
+                or not self.checkback_controls
+                or self.checkback_controls[-1].get("effective_verdict") != "accept"
+                or parsed[-1].get("candidate_digest") != final_digest
+                or self.checkback_controls[-1].get("candidate_digest") != final_digest
+            ):
+                failures.append("missing_accepted_checkback")
         return failures
 
 
@@ -885,12 +1354,31 @@ def publish_reports(
         "run_id": turn.result.run_id if turn.result else turn.run_id,
         "generation": turn.ready.generation if turn.ready else None,
         "model_calls": turn.calls,
+        "checkbacks": turn.checkbacks,
+        "checkback_controls": turn.checkback_controls,
+        "reference_observation": {
+            "parser_version": REFERENCE_PARSER_VERSION,
+            "count": len(reference_payload(turn.request)),
+            "digest": reference_digest(turn.request),
+        },
+        "correction_count": turn.corrections,
+        "structural_outcome": "failed"
+        if any(not item.startswith(("required_text_", "prohibited_text_")) for item in failures)
+        else "passed",
+        "content_assertions": {
+            "case": scenario.text_case,
+            "required_count": len(scenario.required_text),
+            "prohibited_count": len(scenario.prohibited_text),
+            "failures": [item for item in failures if item.startswith(("required_text_", "prohibited_text_"))],
+        },
+        "semantic_review": "needs_review",
         "real_model_generation_succeeded": any(
             call["operation"] == "generate" and call.get("status") == "ok" for call in turn.calls
         ),
         "native_run_observed": any(item.name == "run_started" for item in turn.events),
         "source_read_count": sum(item.name == "source_read" for item in turn.events),
         "source_projection_capture": "metadata_only",
+        "evidence_scope": turn.evidence_scope,
         "trace_archive_health": health,
         "unstructured_diagnostic_lines": turn.unstructured_diagnostics,
         "cleanup": turn.cleanup,
@@ -906,9 +1394,14 @@ def publish_reports(
     }
     value: dict[str, Any] = {
         "plan": turn.plan,
+        "research_focus": turn.focus,
+        "request_goals": turn.goals,
         "selected_source_ids": turn.planned_ids,
+        "offered_research_sources": turn.offered_sources,
         "source_reads": turn.reads,
         "synthesis_projection": turn.projection,
+        "model_calls": turn.calls,
+        "evidence_scope": turn.evidence_scope,
         "acquisition_source_reads": [
             item.model_dump(mode="json", exclude_none=True) for item in turn.events if item.name == "source_read"
         ],

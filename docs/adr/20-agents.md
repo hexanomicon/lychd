@@ -142,6 +142,18 @@ The policy bounds a declared request mode, not separate hard reasoning/final tok
 quality or an entire Agent loop's budget. Any applicable byte-time egress decision still covers
 the final child payload.
 
+A closed private Composition relay may additionally freeze a closed set of supported provider-dialect settings
+in its immutable model binding. Each value must be hash-bound, inspectable and checked exactly at
+both relay boundaries; an explicitly conflicting call refuses. These are properties of the selected
+private model binding, not an additional generic `GenerationProfile` policy or arbitrary request
+body authority. The existing grant still bounds model identity, context, output, tools and calls.
+Provider-side response-format constraints complement strict native parsing; they do not establish
+the factual correctness or authority of the resulting JSON.
+When a binding contains several fixed output grammars, the trusted native posture chooses its
+member explicitly. The complete source-owned set remains hash-bound and exactly checked; user
+text, model output and provider metadata cannot introduce a grammar or select the native posture.
+Input accounting charges the selected member and any reserved review/correction transition.
+
 ## Run dependencies
 
 Every step receives fresh, frozen `LychDDeps`:
@@ -197,6 +209,24 @@ grant. A durable revisioned **Persona** names the actor and may wear different P
 Shadow branch. Expansion, review, repair, and red-team work belong in separate runs when a
 proposal would otherwise grade itself. These distinctions are enforceable only where types,
 grants, settings, and Graph placement preserve the claimed separation.
+
+A bounded conversational **self-check** may remain within its admitted native Run before
+settlement. It uses fresh model calls and distinct review/repair instruction recipes over the
+same explicitly bound question, proposed answer and evidence. It receives no hidden reasoning,
+new tools or effect authority, and cannot represent independent acceptance or satisfy a required
+separate reviewer. Its finite correction ceiling, uncertainty outcome and structural observations
+belong to the Composition's explicit profile. The same-Run placement keeps transient source bodies
+out of checkpoint state; any independent review or promotion still preserves the separation above.
+Deterministic adoption invariants remain separate from model judgments: a controller may veto an
+accepted candidate, while observations preserve the original judgment and attributed control outcome.
+A deterministically misbound clarification may use the same finite correction allowance when the
+actual anchor identifies its target and that target is visible in the admitted evidence. This never
+adopts a rejected candidate: a new candidate still needs an accepted final judgment and every
+adoption check. No additional evidence, repair allowance or execution authority follows.
+A draft containing exact observed current-runtime assertions without admitted runtime authority may
+likewise consume that existing correction allowance when the model requests evidence. Correction
+must qualify or retract the unsupported assertions, or produce a concrete clarification when the
+requested fact remains unavailable. It cannot invent a runtime observation or adopt the rejected draft.
 
 [Crucible](../sepulcher/extensions/weaver/crucible.md) uses explicitly biased Postures to pressure
 one decision from several declared angles. Every advocate receives the same pinned evidence and
