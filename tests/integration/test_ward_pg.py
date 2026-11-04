@@ -60,6 +60,13 @@ TABLES = cast(
 )
 
 
+def _migration_head() -> str:
+    """Resolve the authoritative head while refusing divergent migration branches."""
+    heads = ScriptDirectory.from_config(Config(PATH_MIGRATION_CONFIG)).get_heads()
+    assert len(heads) == 1, f"Expected one migration head, found {heads!r}"
+    return heads[0]
+
+
 @pytest.fixture(scope="module")
 def pg_url() -> Iterator[str]:
     with PostgresContainer("pgvector/pgvector:pg18-trixie", driver="asyncpg") as postgres:
@@ -349,7 +356,7 @@ def test_fullchain_0019_0020_cycle_runtime_roles_and_retained_refusal(database: 
     revision = scripts.get_revision("0020")
     assert revision is not None
     assert revision.down_revision == "0019"
-    assert scripts.get_current_head() == "0023"
+    head = _migration_head()
     db = database.server.database
     admin_url = database_url(db)
     runtime_url = database_url(db, runtime=True)
@@ -357,6 +364,7 @@ def test_fullchain_0019_0020_cycle_runtime_roles_and_retained_refusal(database: 
     runtime_dsn = database_saq_dsn(db, runtime=True)
     # The reused fixture ran the real empty full-chain bootstrap first. Establish
     # the exact pre-Ward baseline through its migration owner before this cycle.
+    _ward_migration_state(admin_url, head, present=True)
     command.downgrade(migration.config(admin_url), "0019")
     _ward_migration_state(admin_url, "0019", present=False)
     command.upgrade(migration.config(admin_url), "0020")
@@ -407,7 +415,7 @@ def test_fullchain_0019_0020_cycle_runtime_roles_and_retained_refusal(database: 
     with pytest.raises(DBAPIError) as denied:
         command.downgrade(migration.config(runtime_url), "0019")
     assert getattr(denied.value.orig, "sqlstate", None) == "42501"
-    _ward_migration_state(admin_url, "0023", present=True)
+    _ward_migration_state(admin_url, head, present=True)
     assert _ward_row_counts(admin_dsn) == {table.name: 0 for table in TABLES}
     principal_id = _ward_runtime_roundtrip(database)
     retained = _ward_row_counts(admin_dsn)
@@ -415,7 +423,7 @@ def test_fullchain_0019_0020_cycle_runtime_roles_and_retained_refusal(database: 
     with pytest.raises(DBAPIError, match="Retained Ward identity or audit prevents downgrade") as retained_error:
         command.downgrade(migration.config(admin_url), "0019")
     assert getattr(retained_error.value.orig, "sqlstate", None) == "P0001"
-    _ward_migration_state(admin_url, "0023", present=True)
+    _ward_migration_state(admin_url, head, present=True)
     assert _ward_row_counts(admin_dsn) == retained
     assert migration.run(admin_url, "SELECT id FROM public.ward_principal WHERE id=:id", {"id": principal_id}) == [
         (principal_id,)

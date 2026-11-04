@@ -77,33 +77,26 @@ the relevant coordination before selecting another task or accepting a handoff. 
 the same procedure under their actual account and communication permissions; this rule does
 not itself authorize posting or changing GitHub state.
 
-### Current phase: direct work on main
+### Current phase: team integration through dev
 
-**Until the team starts on 2 November 2026, authorised work is committed and pushed directly to
-`main`.** Do not open a pull request or create a feature branch by default during this solo
-phase; use one only when the operator explicitly requests it. An isolated checkout may still
-help combine or verify changes without requiring a PR. Preserve unrelated work and shared history.
-
-Read the complete change, run the checks appropriate to it and record the resulting commit and
-evidence. Direct-to-main work retains the same quality, source and delivery boundaries. It adds
-no mandatory reviewer count or founder-only queue.
-
-### Team phase: integration through dev
-
-**From 2 November 2026, when the team starts, send ordinary pull requests to `dev`, including
-contributions from forks.** `main` stays the
+Send ordinary pull requests to `dev`, including contributions from forks. `main` stays the
 default branch and the source of published documentation; it records the last deliberately
-verified snapshot. `dev` is the shared integration branch.
+verified snapshot. `dev` is the shared integration branch. Start short task branches from current
+`dev`; the earlier solo direct-to-main phase has ended.
 
 1. For substantial work, agree a small slice in an issue and claim it. For small fixes, describe
    the change in the PR or commit. Branch from current `dev`.
 2. Open a draft PR to `dev` when work would benefit from visibility or discussion. Link the issue
    with `Refs #N`; describe the result and checks in the PR template.
-3. Read your complete change, including AI-generated code and tests. Request another reviewer
-   when the change needs their expertise. Maintainers may merge their own ready PRs; small fixes
-   may go directly to `dev`. No mandatory approval count or branch protection is configured.
-4. Check the combined result on `dev`. Core Python CI runs on PRs and pushes to both long-lived
-   branches; run the additional checks appropriate to the feature before promotion.
+3. Read your complete change, including AI-generated code and tests. Obtain one approving review
+   from another eligible contributor, resolve review conversations, and pass the required checks.
+   Changed diffs invalidate stale approvals. Human review remains the responsibility of the
+   people involved; an automated review is not a substitute. The author may merge once these
+   conditions hold. Small fixes follow the same PR path.
+4. Check the combined result on `dev`. Required checks are **Core Python 3.14.8 (OCI test image)**,
+   **Core Python 3.15.0 (OCI test image)**, **Altar contracts and build**, and **Hexanomicon build**.
+   They run on PRs and pushes to both long-lived branches. Run additional affected-boundary checks
+   before promotion; these automatic gates do not qualify real host operation.
 
 Keep task branches short and leave disruptive unfinished work there. When shared `dev` breaks,
 fix or revert the regression before piling on more changes. Preserve shared history: fix forward
@@ -119,8 +112,11 @@ is a reason to inspect scope and dependencies, not permission to merge unready w
 
 The `@hexanomicon/core` team has repository **Write** access and a shared review/mention target.
 Its membership grows through agreed responsibility; paid and independent contributors can become
-maintainers. Write applies to the repository, including unprotected `main`, so this branch policy
-is a working agreement. Project access is granted separately; `core` has **Write** on the private
+maintainers. `dev` requires PR review and checks. `main` permits checked updates by the
+`@hexanomicon/release-maintainers` team and repository administrators; classic push restrictions
+do not exclude administrators. Required checks apply to administrators too. Both long-lived
+branches reject force pushes and deletion. Repository Write alone does not permit an ordinary
+developer to update `main`. Project access is granted separately; `core` has **Write** on the private
 [delivery board](https://github.com/orgs/hexanomicon/projects/1). External contributors use public
 issues and fork PRs without joining the team or needing board access.
 
@@ -141,14 +137,14 @@ do not impose a new approval count or change the branch/promotion policy below.
 
 ### Promote a tested snapshot
 
-This promotion procedure applies to the team phase. During the current solo phase, verify the
-authorised change and push it directly to `main` as described above.
-
 Record the exact candidate commit, checks and relevant untested boundaries in the linked issue or
-PR; small direct fixes may use the commit's CI record and an accompanying note. A candidate
-includes all of its earlier changes. Verify that it belongs to `dev`, then advance
-`main` to that exact commit with a **fast-forward** (preserving history). Any maintainer may do this
-under the agreed scope; it does not require a founder-only approval queue.
+PR. Wait for all four required **push-to-dev** checks on that exact commit; a passing PR
+merge-preview or manually dispatched workflow does not establish this result. A candidate includes
+all of its earlier changes. Verify that it belongs to `dev`, then advance `main` to that exact
+commit with a **fast-forward** (preserving history). A release maintainer or repository
+administrator may do this under the agreed scope; keep a working backup so promotion does not
+depend on the founder. `main` deliberately requires checks without requiring a separate PR, which
+would obstruct this exact-commit promotion path.
 
 In a clean checkout, replace `FULL_TESTED_COMMIT_SHA` with the recorded commit:
 
@@ -166,10 +162,11 @@ cherry-picking or squash/rebase promotion between the long-lived branches: that 
 different history and may create an untested combination. Keep `dev` when cleaning up merged
 branches. Main publication updates the documentation site; it is not a package release.
 
-The finite-foundations task of 20 October 2026 used a task-scoped direct-to-main exception.
-The operator's 26 October instruction establishes the current solo-main phase above for
-authorised work generally. Before team integration begins, bring `main` history into `dev`,
-preserve ancestry and verify the combined result.
+Dependabot version updates target `dev`. Security-update PRs can target the default `main` branch
+instead: carry the security fix through a reviewed PR to `dev`, verify the resulting commit and
+promote it, then reconcile the original security PR after `main` contains the fix. Do not give a
+bot permission to bypass these gates. An urgent exception needs an explicit recorded scope and
+verification, followed by synchronization back into `dev`.
 
 ### Issues and the board
 
@@ -297,13 +294,16 @@ make lint format-check type-check
 make test-ci
 ```
 
-The **Repository Checks** workflow remains manually dispatched: full `make check`, disposable
-PostgreSQL, Altar check/build with the generated-diff guard, and a clean documentation build.
-Host-dependent Quadlet/filesystem differences on GitHub runners remain unresolved; a core-CI
-pass does not waive these broader checks for a change that needs them. The Pages workflow builds
+The **Repository Checks** workflow runs **Altar contracts and build** and **Hexanomicon build** on
+every pull request and push to `dev` or `main`. Both jobs always report; there is no path filter
+that can leave a required check pending. The Altar job regenerates contracts, checks/tests/builds
+the client, and rejects unexpected generated changes; the documentation job runs a clean build.
+Manual dispatch additionally runs full `make check` and disposable PostgreSQL jobs.
+Host-dependent Quadlet/filesystem differences on GitHub runners remain unresolved; automatic
+checks do not waive broader acceptance for a change that needs it. The Pages workflow publishes
 documentation on `main`; the tag/manual release-candidate workflow remains a separate
-non-publishing artifact receipt. `make test` and `make check` retain their full `not container` marker
-selection; `make test-ci` does not replace them for final verification.
+non-publishing artifact receipt. `make test` and `make check` retain their full `not container`
+marker selection; `make test-ci` does not replace them for final verification.
 
 Disposable PostgreSQL receipts are an explicit host-integration profile, not part of ordinary
 `make check`:

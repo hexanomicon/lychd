@@ -94,7 +94,7 @@ class JournaledCreation:
         *,
         mode: int,
     ) -> CreatedResources:
-        """Durably publish one new text file without creating its parent."""
+        """Durably publish a new text file with its inode pinned through journaling."""
         settlement.require_safe_file_target(path)
         parent_descriptors = DescriptorSet()
         parent_fd = parent_descriptors.add(settlement.open_existing_directory(path.parent))
@@ -110,6 +110,7 @@ class JournaledCreation:
                 path=path,
                 content=content,
                 mode=mode,
+                retained_descriptors=parent_descriptors,
             )
             if publish_file(publication):
                 attest_public_file(publication)
@@ -177,9 +178,16 @@ def stage_text_file(
     path: Path,
     content: str,
     mode: int,
+    retained_descriptors: DescriptorSet | None = None,
 ) -> FilePublication:
     """Encode text through the shared immutable-byte staging primitive."""
-    return stage_bytes_file(parent_fd=parent_fd, path=path, content=content.encode("utf-8"), mode=mode)
+    return stage_bytes_file(
+        parent_fd=parent_fd,
+        path=path,
+        content=content.encode("utf-8"),
+        mode=mode,
+        retained_descriptors=retained_descriptors,
+    )
 
 
 def stage_bytes_file(
@@ -188,8 +196,9 @@ def stage_bytes_file(
     path: Path,
     content: bytes | Callable[[FileIdentity], bytes],
     mode: int,
+    retained_descriptors: DescriptorSet | None = None,
 ) -> FilePublication:
-    """Stage bytes, optionally binding immutable metadata to the new inode."""
+    """Stage bytes and optionally transfer the inode pin to transaction settlement."""
     descriptors = DescriptorSet()
     descriptor = -1
     staging_name = ""
@@ -228,8 +237,7 @@ def stage_bytes_file(
         if type(payload) is not bytes:
             message = "File publication requires immutable bytes."
             raise TypeError(message)  # noqa: TRY301 - settle the exact newly staged inode
-        stream = os.fdopen(descriptor, "wb")
-        descriptors.transfer(descriptor)
+        stream = os.fdopen(descriptor, "wb", closefd=False)
         with stream:
             stream.write(payload)
             stream.flush()
@@ -241,7 +249,19 @@ def stage_bytes_file(
             identity=identity,
             path=path,
             primary=primary,
-            close_failures=descriptors.settle(),
+            descriptors=descriptors,
+        )
+
+    if retained_descriptors is not None:
+        retained_descriptors.add(descriptors.transfer(descriptor))
+    else:
+        cleanup = settlement.publication_failure_ledger(recovery_paths=(path.parent / staging_name,))
+        cleanup.record_all(descriptors.settle())
+        cleanup.raise_if_any(
+            message=f"Could not release the private staging descriptor for {path}.",
+            outcome="recovery",
+            terminal_note="",
+            verified=False,
         )
 
     return FilePublication(
@@ -310,11 +330,10 @@ def raise_after_staging_failure(
     identity: FileIdentity | None,
     path: Path,
     primary: BaseException,
-    close_failures: tuple[BaseException, ...],
+    descriptors: DescriptorSet,
 ) -> NoReturn:
     """Settle the staging name and descriptor without masking either peer."""
     cleanup = settlement.publication_failure_ledger()
-    cleanup.record_all(close_failures)
     removed = False
     try:
         settlement.remove_private_name(
@@ -333,6 +352,9 @@ def raise_after_staging_failure(
         )
     else:
         removed = True
+    cleanup.record_all(descriptors.settle())
+    if removed:
+        removed = settlement.private_name_is_absent(parent_fd=parent_fd, name=staging_name, cleanup=cleanup)
     if removed:
         cleanup.raise_primary_after_verified_settlement(
             primary,

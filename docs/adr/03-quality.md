@@ -49,12 +49,23 @@ static projection. Review that output with the source that produced it. A genera
 catches disagreement.
 
 Automatic pull-request, `dev` and `main` checks run repository lint, formatting, strict typing and the
-explicit core test selection owned by `make test-ci`. That selection uses in-process substitutes
-and excludes real host and container qualification. The full four-lane Repository Checks workflow
-remains manual while host-runner compatibility is unresolved; changes still require the broader
-gates appropriate to their boundary. The Pages workflow separately supplies the clean documentation
-gate and deployment artifact on `main`. The tag/manual release-candidate workflow remains separate:
-a green core check does not bind release archives or prove installation on a host.
+explicit core test selection owned by `make test-ci`, plus the Altar check/build with its generated
+diff guard and a clean documentation build. These checks always report, including changes outside
+their source directories. The core selection uses in-process substitutes and excludes real host
+and container qualification. Full ordinary Python checks and disposable PostgreSQL receipts remain
+manually dispatched jobs in Repository Checks while host-runner compatibility is unresolved;
+changes still require the broader gates appropriate to their boundary. The Pages workflow
+separately publishes the documentation artifact on `main`. The tag/manual release-candidate
+workflow remains separate: passing ordinary checks does not bind release archives or prove
+installation on a host.
+
+The separate CodeQL workflow analyzes Actions, Python and JavaScript/TypeScript, and compiles
+Android, Minecraft server and Minecraft voice production sources into distinct Java/Kotlin
+analysis categories. Each category must extract, analyze and upload successfully; a setup job or
+successful subset does not establish complete coverage. This scan does not qualify host behavior,
+JVM test source sets, direct Svelte component coverage or Python 3.15-specific syntax support.
+Keep action references pinned to reviewed full commit SHAs and review dependency alerts against
+the actual locked graph and affected execution path.
 
 [Frontend](15-frontend.md#decision-lock-and-reopening-gate) owns the exact Node/npm pins and
 single client vocabulary. Bun, a second lock/runtime, Tailwind, or another styling compiler must

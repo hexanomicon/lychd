@@ -1,13 +1,19 @@
 name: Repository Checks
 
-# Full qualification remains manual. Core Python CI runs its named subset on PRs.
-# Python runs inside the reviewed test image, including its Podman 5 Quadlet
-# generator. Passing this gate does not qualify deployed host services.
+# Altar and documentation gates report on every PR and long-lived branch push.
+# Full Python and PostgreSQL qualification remains manually dispatched. Python
+# runs inside the reviewed test image, including its Podman 5 Quadlet generator.
+# Passing these gates does not qualify deployed host services.
 on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
   workflow_dispatch:
 
 concurrency:
-  group: repository-checks-${{ github.workflow }}-${{ github.ref }}
+  group: repository-checks-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -19,6 +25,7 @@ env:
 jobs:
   python:
     name: Python contracts ${{ matrix.python-version }}
+    if: github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -31,7 +38,7 @@ jobs:
       PYTEST_BASETEMP: .cache/pytest/python-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
@@ -40,6 +47,7 @@ jobs:
 
   postgres:
     name: Disposable PostgreSQL receipts ${{ matrix.python-version }}
+    if: github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -53,7 +61,7 @@ jobs:
       PYTEST_BASETEMP: .cache/pytest/postgres-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
@@ -68,7 +76,7 @@ jobs:
       UV_CACHE_DIR: .cache/uv
     steps:
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
@@ -81,7 +89,7 @@ jobs:
           cache-suffix: checks-altar
 
       - name: Install Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -115,14 +123,13 @@ jobs:
 
   documentation:
     name: Hexanomicon build
-    # Include documentation in manual qualification; Pages builds main separately.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       UV_CACHE_DIR: .cache/uv
     steps:
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
@@ -133,6 +140,8 @@ jobs:
           python-version: "3.15.0"
           enable-cache: true
           cache-suffix: checks-documentation
+          # The clean documentation build can remove the uv cache directory.
+          ignore-nothing-to-cache: true
 
       - name: Build published documentation
         run: uv run --only-group docs zensical build --clean

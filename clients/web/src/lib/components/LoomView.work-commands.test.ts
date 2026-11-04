@@ -20,6 +20,7 @@ import LoomView from "./LoomView.svelte";
 import { createWorkCommandRegistry, workCommandKey } from "$lib/bridge/work-commands";
 
 const summary: LoomSummary = {
+  publication: "published",
   active: true,
   default: true,
   description: "A test pattern.",
@@ -219,7 +220,7 @@ it("leaves a newer surface registered when an older Loom unmounts", async () => 
 it("never registers a failed or mismatched response", async () => {
   vi.mocked(getLoomPatternRevision).mockResolvedValue({ ...score, revision: "other" });
   const { registry, component } = mountCommands();
-  expect((await screen.findByRole("alert")).textContent).toContain("different Pattern revision");
+  expect((await screen.findByRole("alert")).textContent).toContain("does not match the exact requested identity and source profile");
   expect(registry.capture()).toBeNull();
   component.unmount();
 });

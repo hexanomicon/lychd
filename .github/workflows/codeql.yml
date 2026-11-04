@@ -1,0 +1,225 @@
+name: CodeQL
+
+# Advanced setup owns every language. Disable default setup before accepting uploads.
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: codeql-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  # Required for CodeQL uploads; fork PRs retain GitHub's restricted token policy.
+  security-events: write
+
+jobs:
+  interpreted:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [actions, python, javascript-typescript]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          dependency-caching: 'false'
+          trap-caching: 'false'
+
+      - name: Analyze and upload
+        uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        with:
+          category: /language:${{ matrix.language }}
+
+  android:
+    name: CodeQL (Android)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Select preinstalled JDK 17 and verify Android prerequisites
+        shell: bash
+        run: |
+          jdk_home="${JAVA_HOME_17_X64:?Runner must provide preinstalled JDK 17}"
+          if [[ ! -x "$jdk_home/bin/java" || ! -x "$jdk_home/bin/javac" ]]; then
+            echo '::error::Preinstalled JDK 17 is incomplete'
+            exit 1
+          fi
+          compiler_version="$("$jdk_home/bin/javac" -version 2>&1)"
+          if [[ "$compiler_version" != 'javac 17.'* ]]; then
+            echo "::error::Expected javac 17, found $compiler_version"
+            exit 1
+          fi
+          printf 'JAVA_HOME=%s\n' "$jdk_home" >> "$GITHUB_ENV"
+          printf '%s/bin\n' "$jdk_home" >> "$GITHUB_PATH"
+          "$jdk_home/bin/java" -version
+
+          sdk_home="${ANDROID_HOME:?Runner must provide a preinstalled Android SDK}"
+          if [[ ! -f "$sdk_home/platforms/android-36/android.jar" ||
+                ! -x "$sdk_home/build-tools/36.0.0/aapt2" ]]; then
+            echo '::error::Preinstalled Android platform 36 and build-tools 36.0.0 are required'
+            exit 1
+          fi
+          python3 -c 'import sys; sys.exit("Python 3.12+ is required for generate_wire.py" if sys.version_info < (3, 12) else 0)'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        with:
+          languages: java-kotlin
+          build-mode: manual
+          dependency-caching: 'false'
+          trap-caching: 'false'
+
+      - name: Compile Android production sources
+        working-directory: clients/android
+        # Both apps currently use only src/main; debug compiles every production source.
+        # Explicit library targets include generated wire models, core and interaction.
+        run: |
+          ./gradlew --no-daemon --no-build-cache --max-workers=2 --dependency-verification=strict -Dorg.gradle.dependency.verification.console=verbose \
+            -PincludeOfflineApp=true clean :core:classes :interaction:classes \
+            :app:assembleDebug :offline:assembleDebug
+
+      - name: Preserve dependency-verification failure reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dependency-verification-${{ github.job }}-${{ github.run_attempt }}
+          path: clients/android/build/reports/dependency-verification/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Analyze and upload
+        uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        with:
+          category: /language:java-kotlin/project:android
+
+  minecraft:
+    name: CodeQL (Minecraft server)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Select preinstalled JDK 25
+        shell: bash
+        run: |
+          jdk_home="${JAVA_HOME_25_X64:?Runner must provide preinstalled JDK 25}"
+          if [[ ! -x "$jdk_home/bin/java" || ! -x "$jdk_home/bin/javac" ]]; then
+            echo '::error::Preinstalled JDK 25 is incomplete'
+            exit 1
+          fi
+          compiler_version="$("$jdk_home/bin/javac" -version 2>&1)"
+          if [[ "$compiler_version" != 'javac 25.'* ]]; then
+            echo "::error::Expected javac 25, found $compiler_version"
+            exit 1
+          fi
+          printf 'JAVA_HOME=%s\n' "$jdk_home" >> "$GITHUB_ENV"
+          printf '%s/bin\n' "$jdk_home" >> "$GITHUB_PATH"
+          "$jdk_home/bin/java" -version
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        with:
+          languages: java-kotlin
+          build-mode: manual
+          dependency-caching: 'false'
+          trap-caching: 'false'
+
+      - name: Compile Minecraft server production sources
+        working-directory: clients/minecraft
+        # classes does not run tests or opt into any GameTest profile.
+        run: |
+          ./gradlew --no-daemon --no-build-cache --max-workers=2 --dependency-verification=strict -Dorg.gradle.dependency.verification.console=verbose clean classes
+
+      - name: Preserve dependency-verification failure reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dependency-verification-${{ github.job }}-${{ github.run_attempt }}
+          path: clients/minecraft/build/reports/dependency-verification/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Analyze and upload
+        uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        with:
+          category: /language:java-kotlin/project:minecraft
+
+  minecraft-voice:
+    name: CodeQL (Minecraft voice)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Select preinstalled JDK 25
+        shell: bash
+        run: |
+          jdk_home="${JAVA_HOME_25_X64:?Runner must provide preinstalled JDK 25}"
+          if [[ ! -x "$jdk_home/bin/java" || ! -x "$jdk_home/bin/javac" ]]; then
+            echo '::error::Preinstalled JDK 25 is incomplete'
+            exit 1
+          fi
+          compiler_version="$("$jdk_home/bin/javac" -version 2>&1)"
+          if [[ "$compiler_version" != 'javac 25.'* ]]; then
+            echo "::error::Expected javac 25, found $compiler_version"
+            exit 1
+          fi
+          printf 'JAVA_HOME=%s\n' "$jdk_home" >> "$GITHUB_ENV"
+          printf '%s/bin\n' "$jdk_home" >> "$GITHUB_PATH"
+          "$jdk_home/bin/java" -version
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        with:
+          languages: java-kotlin
+          build-mode: manual
+          dependency-caching: 'false'
+          trap-caching: 'false'
+
+      - name: Compile Minecraft voice production sources
+        working-directory: clients/minecraft-voice
+        # Reuse the checksum-pinned wrapper; no client GameTest or EULA acceptance.
+        run: |
+          ../minecraft/gradlew --project-dir . --no-daemon --no-build-cache --max-workers=1 \
+            --dependency-verification=strict -Dorg.gradle.dependency.verification.console=verbose clean classes
+
+      - name: Preserve dependency-verification failure reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dependency-verification-${{ github.job }}-${{ github.run_attempt }}
+          path: clients/minecraft-voice/build/reports/dependency-verification/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Analyze and upload
+        uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        with:
+          category: /language:java-kotlin/project:minecraft-voice

@@ -60,6 +60,12 @@ publish no-clobber, re-attest through the pinned parent, `fsync` the directory, 
 race winner, replacement, ambiguous result, or failed journal is preserved or quarantined as typed
 recovery; it is never broadened into deletion authority.
 
+Journaled file creation keeps the candidate inode open through journaling and rollback, so inode
+reuse cannot make a replacement appear owned. Foreign restoration keeps its captured object open
+until both namespace names have been re-attested, including after a normally returning rename.
+Only that identity evidence permits verified restoration; a mismatch preserves the replacement
+and reports typed recovery.
+
 The Designed [Reliquary profile](06-persistence.md#reliquary-custody-designed) binds an explicitly
 supplied isolated private root to its exact owned identity; it introduces no implicit Crypt path
 or container mount. Artifact identifiers and producer labels never supply unchecked path

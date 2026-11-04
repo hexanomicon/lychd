@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import tomllib
 import zipfile
 from pathlib import Path
@@ -153,7 +154,7 @@ def test_candidate_workflow_cannot_publish_packages_or_images() -> None:
 
     assert "Release Candidate (No Publication)" in workflow
     assert "make release-candidate" in workflow
-    assert "actions/upload-artifact@v7" in workflow
+    assert re.search(r"^\s+uses: actions/upload-artifact@[a-f0-9]{40}(?:\s|$)", workflow, re.MULTILINE)
     assert "contents: read" in workflow
     for forbidden in (
         "packages: write",

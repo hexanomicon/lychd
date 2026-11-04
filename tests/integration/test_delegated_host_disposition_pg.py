@@ -20,6 +20,8 @@ import pytest
 import pytest_asyncio
 from advanced_alchemy.alembic.commands import AlembicCommandConfig
 from alembic import command, op
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
@@ -52,6 +54,13 @@ from tests.support.delegated_cli import cli_request
 
 pytestmark = [pytest.mark.integration, pytest.mark.container]
 _VERSION_TABLE = "lychd_host_disposition_test_version"
+
+
+def _migration_head() -> str:
+    """Resolve the authoritative head while refusing divergent migration branches."""
+    heads = ScriptDirectory.from_config(Config(PATH_MIGRATION_CONFIG)).get_heads()
+    assert len(heads) == 1, f"Expected one migration head, found {heads!r}"
+    return heads[0]
 
 
 def _engine(url: str, schema: str | None = None, *, migration: bool = False) -> AsyncEngine:
@@ -549,6 +558,7 @@ async def test_database_rejects_partial_dispositions(case: _Case, values: dict[s
 @pytest.mark.asyncio
 @pytest.mark.parametrize("disposition", ["closed-only", "prepared", "consumed"])
 async def test_retained_history_blocks_deletion_and_downgrade(case: _Case, disposition: str) -> None:
+    head = _migration_head()
     _request, job = await _seed(case)
     store = DbDelegatedHostDispositionStore(case.factory)
     if disposition == "closed-only":
@@ -570,7 +580,7 @@ async def test_retained_history_blocks_deletion_and_downgrade(case: _Case, dispo
         await asyncio.to_thread(command.downgrade, case.config(), "0014")
     assert await store.get(job) == retained
     async with case.factory() as session:
-        assert await session.scalar(text("SELECT version_num FROM lychd_host_disposition_test_version")) == "0023"
+        assert await session.scalar(text("SELECT version_num FROM lychd_host_disposition_test_version")) == head
 
 
 @pytest.mark.asyncio
@@ -636,6 +646,7 @@ async def test_locked_downgrade_does_not_erase_a_late_successful_writer(
 async def test_writer_parent_lock_precedes_downgrade_and_retains_committed_history(
     case: _Case, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    head = _migration_head()
     _request, job = await _seed(case)
     witness = _LockWitness()
     store = DbDelegatedHostDispositionStore(
@@ -672,4 +683,4 @@ async def test_writer_parent_lock_precedes_downgrade_and_retains_committed_histo
     assert retained is not None
     assert retained.preparation == writer_outcome.preparation
     async with case.factory() as session:
-        assert await session.scalar(text("SELECT version_num FROM lychd_host_disposition_test_version")) == "0023"
+        assert await session.scalar(text("SELECT version_num FROM lychd_host_disposition_test_version")) == head

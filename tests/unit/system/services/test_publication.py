@@ -201,6 +201,50 @@ def test_staging_primary_and_close_failure_remove_exact_private_name(
     assert tuple(tmp_path.glob(".lychd-create-*")) == ()
 
 
+def test_staging_failure_preserves_replacement_created_during_descriptor_close(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A close peer cannot recreate a staging name and redirect exact cleanup."""
+    target = tmp_path / "lychd.toml"
+    primary = OSError("staging chmod failed")
+    close_failure = OSError("staging close failed")
+    real_open = os.open
+    real_close = os.close
+    staging: list[str] = []
+
+    def capture_open(path: str, flags: int, mode: int = 0o777, *, dir_fd: int | None = None) -> int:
+        descriptor = real_open(path, flags, mode, dir_fd=dir_fd)
+        if str(path).startswith(".lychd-create-"):
+            staging.append(str(path))
+        return descriptor
+
+    def fail_chmod(_descriptor: int, _mode: int) -> None:
+        raise primary
+
+    def close_then_replace(descriptor: int) -> None:
+        regular = stat.S_ISREG(os.fstat(descriptor).st_mode)
+        real_close(descriptor)
+        if regular:
+            (tmp_path / staging[0]).write_bytes(b"foreign")
+            raise close_failure
+
+    monkeypatch.setattr("lychd.system.services.file_publication_transaction.os.open", capture_open)
+    monkeypatch.setattr("lychd.system.services.file_publication_transaction.os.fchmod", fail_chmod)
+    monkeypatch.setattr("lychd.system.descriptor_settlement.os.close", close_then_replace)
+
+    with pytest.raises(PublicationRollbackError) as raised:
+        JournaledCreation().create_text_file(target, "candidate", mode=0o600)
+
+    assert primary in tuple(iter_exception_graph(raised.value))
+    assert close_failure in tuple(iter_exception_graph(raised.value))
+    assert raised.value.outcome == "recovery"
+    assert not raised.value.outcome_verified
+    assert (tmp_path / staging[0]).read_bytes() == b"foreign"
+    assert raised.value.recovery_paths == (tmp_path / staging[0],)
+    assert not target.exists()
+
+
 @pytest.mark.parametrize(
     "close_failure",
     [OSError("attestation close failed"), KeyboardInterrupt()],
@@ -575,6 +619,50 @@ def test_callback_replacement_is_preserved_during_rollback(tmp_path: Path) -> No
     assert tuple(tmp_path.glob(".lychd-*")) == ()
 
 
+@pytest.mark.parametrize("replace", [False, True])
+def test_candidate_inode_is_pinned_until_journal_settlement(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    replace: bool,
+) -> None:
+    """Journaling and rollback retain the original inode even without any name."""
+    target = tmp_path / "lychd.toml"
+    real_open = os.open
+    staged: list[int] = []
+
+    def capture_open(path: str, flags: int, mode: int = 0o777, *, dir_fd: int | None = None) -> int:
+        descriptor = real_open(path, flags, mode, dir_fd=dir_fd)
+        if str(path).startswith(".lychd-create-"):
+            staged.append(descriptor)
+        return descriptor
+
+    def journal(_resources: CreatedResources) -> None:
+        pinned = os.fstat(staged[0])
+        assert pinned.st_ino == target.stat().st_ino
+        assert tuple(tmp_path.glob(".lychd-create-*")) == ()
+        if replace:
+            target.unlink()
+            assert os.fstat(staged[0]).st_nlink == 0
+            target.write_bytes(b"peer")
+            assert target.stat().st_ino != pinned.st_ino
+            message = "journal rejected"
+            raise RuntimeError(message)
+
+    monkeypatch.setattr("lychd.system.services.file_publication_transaction.os.open", capture_open)
+    creation = JournaledCreation(on_created=journal)
+    if replace:
+        with pytest.raises(RuntimeError, match="journal rejected"):
+            creation.create_text_file(target, "candidate", mode=0o600)
+    else:
+        creation.create_text_file(target, "candidate", mode=0o600)
+
+    assert len(staged) == 1
+    with pytest.raises(OSError, match="Bad file descriptor"):
+        os.fstat(staged[0])
+    assert target.read_bytes() == (b"peer" if replace else b"candidate")
+
+
 def test_rollback_rename_signal_settles_peers_then_preserves_original_terminal(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -809,9 +897,12 @@ def test_foreign_quarantine_restore_failure_classifies_both_names(
     assert tuple(tmp_path.glob(".lychd-create-*")) == ()
 
 
+@pytest.mark.parametrize("return_successfully", [False, True])
 def test_foreign_restore_source_disappearance_requires_target_identity(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    *,
+    return_successfully: bool,
 ) -> None:
     """A vanished source does not prove which inode reached the public name."""
     target = tmp_path / "lychd.toml"
@@ -851,7 +942,7 @@ def test_foreign_restore_source_disappearance_requires_target_identity(
         if source_name.startswith(".lychd-rollback-") and destination_name == target.name:
             os.unlink(source_name, dir_fd=source_dir_fd)
             descriptor = os.open(
-                destination_name,
+                source_name if return_successfully else destination_name,
                 os.O_WRONLY | os.O_CREAT | os.O_EXCL,
                 0o600,
                 dir_fd=destination_dir_fd,
@@ -860,6 +951,14 @@ def test_foreign_restore_source_disappearance_requires_target_identity(
                 os.write(descriptor, b"unrelated\n")
             finally:
                 os.close(descriptor)
+            if return_successfully:
+                real_rename(
+                    source_name,
+                    destination_name,
+                    source_dir_fd=source_dir_fd,
+                    destination_dir_fd=destination_dir_fd,
+                )
+                return
             raise restore_failure
         real_rename(
             source_name,
@@ -885,10 +984,16 @@ def test_foreign_restore_source_disappearance_requires_target_identity(
 
     graph = tuple(iter_exception_graph(raised.value))
     assert journal_primary in graph
-    assert restore_failure in graph
+    if not return_successfully:
+        assert restore_failure in graph
     assert raised.value.outcome == "recovery"
     assert not raised.value.outcome_verified
-    assert raised.value.recovery_paths == (target,)
+    if return_successfully:
+        assert target in raised.value.recovery_paths
+        assert len(raised.value.recovery_paths) == 2
+        assert any(path.name.startswith(".lychd-rollback-") for path in raised.value.recovery_paths)
+    else:
+        assert raised.value.recovery_paths == (target,)
     assert target.read_bytes() == b"unrelated\n"
     assert tuple(tmp_path.glob(".lychd-*")) == ()
 

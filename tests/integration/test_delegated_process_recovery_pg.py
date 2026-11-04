@@ -29,6 +29,8 @@ pytest.importorskip("testcontainers", reason="optional disposable PostgreSQL rec
 
 from advanced_alchemy.alembic.commands import AlembicCommandConfig
 from alembic import command
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
@@ -88,6 +90,13 @@ _MAX_PAYLOAD = 4092  # One JSON report plus the Pipe header fits Linux PIPE_BUF.
 _CHILD_SECONDS = 45
 _CLEANUP_SECONDS = 5
 _READ_BINDING = DelegatedRuntimeBinding(runtime="reference", profile=DelegatedAgentProfile.READ)
+
+
+def _migration_head() -> str:
+    """Resolve the authoritative head while refusing divergent migration branches."""
+    heads = ScriptDirectory.from_config(Config(PATH_MIGRATION_CONFIG)).get_heads()
+    assert len(heads) == 1, f"Expected one migration head, found {heads!r}"
+    return heads[0]
 
 
 @pytest.fixture(scope="module")
@@ -391,7 +400,8 @@ async def _run_child(url: str, identity: _Identity | None) -> dict[str, Any]:
     boot = await _boot(url, first=identity is None)
     try:
         async with boot.factory() as session:
-            assert await session.scalar(text("SELECT version_num FROM lychd_db_version")) == "0023"
+            versions = await session.execute(text("SELECT version_num FROM lychd_db_version"))
+            assert list(versions.tuples()) == [(_migration_head(),)]
         if identity is None:
             identity = await _first(boot)
         else:
