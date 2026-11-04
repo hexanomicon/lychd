@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 import secrets
 import stat
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Never
 
@@ -64,6 +66,48 @@ def workspace_failure_ledger(
     return FailureLedger(
         error_factory=error_factory,
         subject="Scribe workspace settlement",
+    )
+
+
+@contextmanager
+def _pin_foreign_restore(
+    *,
+    parent_fd: int,
+    name: str,
+    recovery_paths: tuple[Path, ...],
+) -> Generator[os.stat_result]:
+    """Pin any foreign entry without following links or opening its contents."""
+    descriptors = DescriptorSet()
+    primary: BaseException | None = None
+    try:
+        descriptor = descriptors.add(os.open(name, os.O_PATH | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=parent_fd))
+        yield os.fstat(descriptor)
+    except BaseException as exc:  # noqa: BLE001 - every restore path must settle the pin
+        primary = exc
+    cleanup = workspace_failure_ledger(recovery_paths=recovery_paths)
+    cleanup.record_all(descriptors.settle())
+    if primary is not None:
+        if not cleanup.failures:
+            raise primary
+        outcome = find_settlement_outcome(primary)
+        if outcome is not None and outcome.verified:
+            cleanup.raise_primary_after_verified_settlement(
+                primary,
+                outcome=outcome.name,
+                terminal_note="Scribe settled the foreign inode pin after verified restoration.",
+            )
+        cleanup.record(primary)
+        cleanup.raise_if_any(
+            message="Could not settle foreign restoration and its inode pin.",
+            outcome="recovery",
+            terminal_note="",
+            verified=False,
+        )
+    cleanup.raise_if_any(
+        message="Could not release the restored foreign inode pin.",
+        outcome="foreign_restored",
+        terminal_note="Scribe restored the foreign entry before settling its inode pin.",
+        verified=True,
     )
 
 
@@ -500,42 +544,62 @@ class WorkspaceSettlementMixin:
         """Restore an entry moved after its claimed identity drifted."""
         cleanup_path = self.path / cleanup_name
         original_path = self.path / original_name
-        captured = self._entry_identity(cleanup_name)
-        try:
-            rename_noreplace_at(
-                cleanup_name,
-                original_name,
-                source_dir_fd=self.directory_fd,
-                destination_dir_fd=self.directory_fd,
-            )
-        except BaseException as primary:  # noqa: BLE001 - classify both names after return
+        with _pin_foreign_restore(
+            parent_fd=self.directory_fd,
+            name=cleanup_name,
+            recovery_paths=(cleanup_path, original_path),
+        ) as metadata:
+            captured = None if stat.S_ISDIR(metadata.st_mode) else (metadata.st_dev, metadata.st_ino)
+            try:
+                rename_noreplace_at(
+                    cleanup_name,
+                    original_name,
+                    source_dir_fd=self.directory_fd,
+                    destination_dir_fd=self.directory_fd,
+                )
+            except BaseException as primary:  # noqa: BLE001 - classify both names after return
+                try:
+                    source = self._entry_identity(cleanup_name)
+                    target = self._entry_identity(original_name)
+                except BaseException as observation_error:  # noqa: BLE001 - retain both exact names
+                    self._raise_recovery(
+                        "Could not classify foreign staged-entry restoration.",
+                        failures=(primary, observation_error),
+                        recovery_paths=(cleanup_path, original_path),
+                    )
+                if source is None and captured is not None and target == captured:
+                    self.recovery_names.discard(cleanup_name)
+                    ledger = workspace_failure_ledger(
+                        recovery_paths=(original_path,),
+                    )
+                    ledger.record(primary)
+                    ledger.raise_if_any(
+                        message=("Foreign staged entry was restored after adapter failure."),
+                        outcome="foreign_restored",
+                        terminal_note=(f"Scribe restored the captured foreign entry at {original_path}."),
+                        verified=True,
+                    )
+                self._raise_recovery(
+                    "Foreign staged entry remains at a private recovery name.",
+                    failures=(primary,),
+                    recovery_paths=(cleanup_path, original_path),
+                )
             try:
                 source = self._entry_identity(cleanup_name)
                 target = self._entry_identity(original_name)
-            except BaseException as observation_error:  # noqa: BLE001 - retain both exact names
+            except BaseException as observation_error:  # noqa: BLE001 - normal returns also require proof
                 self._raise_recovery(
-                    "Could not classify foreign staged-entry restoration.",
-                    failures=(primary, observation_error),
+                    "Could not attest returned foreign staged-entry restoration.",
+                    failures=(observation_error,),
                     recovery_paths=(cleanup_path, original_path),
                 )
-            if source is None and captured is not None and target == captured:
-                self.recovery_names.discard(cleanup_name)
-                ledger = workspace_failure_ledger(
-                    recovery_paths=(original_path,),
+            if source is not None or captured is None or target != captured:
+                self._raise_recovery(
+                    "Returned foreign staged-entry restoration did not move the pinned inode.",
+                    failures=(),
+                    recovery_paths=(cleanup_path, original_path),
                 )
-                ledger.record(primary)
-                ledger.raise_if_any(
-                    message=("Foreign staged entry was restored after adapter failure."),
-                    outcome="foreign_restored",
-                    terminal_note=(f"Scribe restored the captured foreign entry at {original_path}."),
-                    verified=True,
-                )
-            self._raise_recovery(
-                "Foreign staged entry remains at a private recovery name.",
-                failures=(primary,),
-                recovery_paths=(cleanup_path, original_path),
-            )
-        self.recovery_names.discard(cleanup_name)
+            self.recovery_names.discard(cleanup_name)
 
     def _named_path_matches(self) -> bool:
         """Return whether the public workspace name still identifies the pinned inode."""
@@ -561,38 +625,58 @@ class WorkspaceSettlementMixin:
     def _restore_foreign_cleanup_name(self, cleanup_name: str) -> None:
         """Put a mistakenly moved replacement back without overwriting another path."""
         cleanup_path = self.path.parent / cleanup_name
-        captured = self._relative_identity(cleanup_name)
-        try:
-            rename_noreplace_at(
-                cleanup_name,
-                self.path.name,
-                source_dir_fd=self.parent_fd,
-                destination_dir_fd=self.parent_fd,
-            )
-        except BaseException as primary:  # noqa: BLE001 - classify both names after return
+        with _pin_foreign_restore(
+            parent_fd=self.parent_fd,
+            name=cleanup_name,
+            recovery_paths=(cleanup_path, self.path),
+        ) as metadata:
+            captured = (metadata.st_dev, metadata.st_ino, stat.S_IFMT(metadata.st_mode))
+            try:
+                rename_noreplace_at(
+                    cleanup_name,
+                    self.path.name,
+                    source_dir_fd=self.parent_fd,
+                    destination_dir_fd=self.parent_fd,
+                )
+            except BaseException as primary:  # noqa: BLE001 - classify both names after return
+                try:
+                    source = self._relative_identity(cleanup_name)
+                    target = self._relative_identity(self.path.name)
+                except BaseException as observation_error:  # noqa: BLE001 - retain both exact names
+                    self._raise_recovery(
+                        "Could not classify foreign workspace-name restoration.",
+                        failures=(primary, observation_error),
+                        recovery_paths=(cleanup_path, self.path),
+                    )
+                if source is None and target == captured:
+                    ledger = workspace_failure_ledger(recovery_paths=(self.path,))
+                    ledger.record(primary)
+                    ledger.raise_if_any(
+                        message=("Foreign workspace replacement was restored after adapter failure."),
+                        outcome="foreign_restored",
+                        terminal_note=(f"Scribe restored the captured foreign directory at {self.path}."),
+                        verified=True,
+                    )
+                self._raise_recovery(
+                    "Foreign workspace replacement remains at a cleanup name.",
+                    failures=(primary,),
+                    recovery_paths=(cleanup_path, self.path),
+                )
             try:
                 source = self._relative_identity(cleanup_name)
                 target = self._relative_identity(self.path.name)
-            except BaseException as observation_error:  # noqa: BLE001 - retain both exact names
+            except BaseException as observation_error:  # noqa: BLE001 - normal returns also require proof
                 self._raise_recovery(
-                    "Could not classify foreign workspace-name restoration.",
-                    failures=(primary, observation_error),
+                    "Could not attest returned foreign workspace-name restoration.",
+                    failures=(observation_error,),
                     recovery_paths=(cleanup_path, self.path),
                 )
-            if source is None and captured is not None and target == captured:
-                ledger = workspace_failure_ledger(recovery_paths=(self.path,))
-                ledger.record(primary)
-                ledger.raise_if_any(
-                    message=("Foreign workspace replacement was restored after adapter failure."),
-                    outcome="foreign_restored",
-                    terminal_note=(f"Scribe restored the captured foreign directory at {self.path}."),
-                    verified=True,
+            if source is not None or target != captured:
+                self._raise_recovery(
+                    "Returned foreign workspace-name restoration did not move the pinned inode.",
+                    failures=(),
+                    recovery_paths=(cleanup_path, self.path),
                 )
-            self._raise_recovery(
-                "Foreign workspace replacement remains at a cleanup name.",
-                failures=(primary,),
-                recovery_paths=(cleanup_path, self.path),
-            )
 
     def _relative_identity(self, name: str) -> tuple[int, int, int] | None:
         """Capture descriptor-relative directory identity and file kind."""

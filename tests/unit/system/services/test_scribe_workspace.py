@@ -753,9 +753,12 @@ def test_foreign_child_restore_failure_requires_captured_target_identity(
         workspace.close()
 
 
+@pytest.mark.parametrize("return_successfully", [False, True])
 def test_workspace_restore_source_disappearance_does_not_prove_target_identity(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    *,
+    return_successfully: bool,
 ) -> None:
     """An unrelated public directory cannot satisfy foreign restore settlement."""
     parent = tmp_path / "binding-site"
@@ -775,7 +778,15 @@ def test_workspace_restore_source_disappearance_does_not_prove_target_identity(
         destination_dir_fd: int,
     ) -> None:
         os.rmdir(source_name, dir_fd=source_dir_fd)
-        os.mkdir(destination_name, dir_fd=destination_dir_fd)
+        os.mkdir(source_name if return_successfully else destination_name, dir_fd=destination_dir_fd)
+        if return_successfully:
+            rename_noreplace_at(
+                source_name,
+                destination_name,
+                source_dir_fd=source_dir_fd,
+                destination_dir_fd=destination_dir_fd,
+            )
+            return
         raise primary
 
     monkeypatch.setattr(
@@ -790,7 +801,8 @@ def test_workspace_restore_source_disappearance_does_not_prove_target_identity(
         with pytest.raises(WorkspaceSettlementError) as raised:
             restore(cleanup_name)
 
-        assert primary in tuple(iter_exception_graph(raised.value))
+        if not return_successfully:
+            assert primary in tuple(iter_exception_graph(raised.value))
         assert raised.value.outcome == "recovery"
         assert not raised.value.outcome_verified
         assert workspace.path in raised.value.recovery_paths
@@ -800,9 +812,12 @@ def test_workspace_restore_source_disappearance_does_not_prove_target_identity(
         workspace.close()
 
 
+@pytest.mark.parametrize("return_successfully", [False, True])
 def test_child_restore_source_disappearance_does_not_prove_target_identity(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    *,
+    return_successfully: bool,
 ) -> None:
     """An unrelated target file cannot satisfy foreign child restoration."""
     parent = tmp_path / "binding-site"
@@ -823,7 +838,7 @@ def test_child_restore_source_disappearance_does_not_prove_target_identity(
     ) -> None:
         os.unlink(source_name, dir_fd=source_dir_fd)
         descriptor = os.open(
-            destination_name,
+            source_name if return_successfully else destination_name,
             os.O_WRONLY | os.O_CREAT | os.O_EXCL,
             0o600,
             dir_fd=destination_dir_fd,
@@ -832,6 +847,14 @@ def test_child_restore_source_disappearance_does_not_prove_target_identity(
             os.write(descriptor, b"unrelated")
         finally:
             os.close(descriptor)
+        if return_successfully:
+            rename_noreplace_at(
+                source_name,
+                destination_name,
+                source_dir_fd=source_dir_fd,
+                destination_dir_fd=destination_dir_fd,
+            )
+            return
         raise primary
 
     monkeypatch.setattr(
@@ -846,12 +869,133 @@ def test_child_restore_source_disappearance_does_not_prove_target_identity(
         with pytest.raises(WorkspaceSettlementError) as raised:
             restore(cleanup_name, original_name)
 
-        assert primary in tuple(iter_exception_graph(raised.value))
+        if not return_successfully:
+            assert primary in tuple(iter_exception_graph(raised.value))
         assert raised.value.outcome == "recovery"
         assert not raised.value.outcome_verified
         assert workspace.path / original_name in raised.value.recovery_paths
         assert (workspace.path / original_name).read_bytes() == b"unrelated"
         assert not cleanup_path.exists()
+    finally:
+        workspace.close()
+
+
+def test_foreign_child_directory_cannot_prove_restoration(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An unsupported child kind never turns absent identity tokens into proof."""
+    parent = tmp_path / "binding-site"
+    parent.mkdir()
+    workspace = TransactionWorkspace.create(parent)
+    cleanup_name = ".foreign-directory"
+    cleanup_path = workspace.path / cleanup_name
+    cleanup_path.mkdir()
+    primary = OSError("restore did not run")
+
+    def fail_restore(*_args: object, **_kwargs: object) -> None:
+        raise primary
+
+    monkeypatch.setattr(
+        "lychd.system.services.scribe.workspace_settlement.rename_noreplace_at",
+        fail_restore,
+    )
+    restore = getattr(workspace, "_restore_foreign_entry")  # noqa: B009 - adversarial private boundary
+    try:
+        with pytest.raises(WorkspaceSettlementError) as raised:
+            restore(cleanup_name, "original")
+
+        assert primary in tuple(iter_exception_graph(raised.value))
+        assert raised.value.outcome == "recovery"
+        assert not raised.value.outcome_verified
+        assert cleanup_path.is_dir()
+        assert not (workspace.path / "original").exists()
+    finally:
+        workspace.close()
+
+
+@pytest.mark.parametrize("root", [False, True])
+@pytest.mark.parametrize("restore_failure", [None, OSError("restore return failed")])
+@pytest.mark.parametrize("close_failure", [OSError("pin close failed"), KeyboardInterrupt()])
+def test_foreign_restore_settles_inode_pin_and_close_peers(  # noqa: PLR0915 - compound mutation and descriptor peers
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    restore_failure: BaseException | None,
+    close_failure: BaseException,
+    *,
+    root: bool,
+) -> None:
+    """Both restore boundaries pin the moved inode and settle its close exactly once."""
+    parent = tmp_path / "binding-site"
+    parent.mkdir()
+    workspace = TransactionWorkspace.create(parent)
+    cleanup_name = ".foreign-cleanup"
+    original_name = "original"
+    if root:
+        workspace.path.rename(workspace.path.with_name("relocated"))
+        (parent / cleanup_name).mkdir()
+    else:
+        (workspace.path / cleanup_name).write_bytes(b"foreign")
+    real_open = os.open
+    real_close = os.close
+    pins: list[int] = []
+    closed: list[int] = []
+
+    def capture_open(path: str, flags: int, mode: int = 0o777, *, dir_fd: int | None = None) -> int:
+        descriptor = real_open(path, flags, mode, dir_fd=dir_fd)
+        if flags & os.O_PATH:
+            pins.append(descriptor)
+        return descriptor
+
+    def close_then_fail(descriptor: int) -> None:
+        real_close(descriptor)
+        if descriptor in pins:
+            closed.append(descriptor)
+            raise close_failure
+
+    def restore_then_fail(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        assert len(pins) == 1
+        pinned = os.fstat(pins[0])
+        assert pinned.st_ino == os.stat(source_name, dir_fd=source_dir_fd, follow_symlinks=False).st_ino
+        rename_noreplace_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+        if restore_failure is not None:
+            raise restore_failure
+
+    monkeypatch.setattr("lychd.system.services.scribe.workspace_settlement.os.open", capture_open)
+    monkeypatch.setattr("lychd.system.descriptor_settlement.os.close", close_then_fail)
+    monkeypatch.setattr(
+        "lychd.system.services.scribe.workspace_settlement.rename_noreplace_at",
+        restore_then_fail,
+    )
+    expected = WorkspaceSettlementError if isinstance(close_failure, Exception) else type(close_failure)
+    restore = getattr(workspace, "_restore_foreign_cleanup_name" if root else "_restore_foreign_entry")
+    arguments = (cleanup_name,) if root else (cleanup_name, original_name)
+    try:
+        with pytest.raises(expected) as raised:
+            restore(*arguments)
+
+        graph = tuple(iter_exception_graph(raised.value))
+        assert close_failure in graph
+        if restore_failure is not None:
+            assert restore_failure in graph
+        outcome = find_settlement_outcome(raised.value)
+        assert outcome is not None
+        assert outcome.name == "foreign_restored"
+        assert outcome.verified
+        assert closed == pins
+        with pytest.raises(OSError, match="Bad file descriptor"):
+            os.fstat(pins[0])
     finally:
         workspace.close()
 
