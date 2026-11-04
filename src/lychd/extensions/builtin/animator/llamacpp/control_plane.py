@@ -31,7 +31,7 @@ class LlamaCppControlPlane:
     - a runtime animator whose connector exposes llama.cpp metadata, or
     - an explicit ``(base_url, mode, model_id)`` target.
 
-    All I/O is async httpx (A3-U3: no blocking ``urlopen``). Endpoint logic
+    All I/O is async HTTPX2 (A3-U3: no blocking ``urlopen``). Endpoint logic
     (``/health`` / ``/models`` / ``/models/load``) is kept behind this boundary.
     """
 

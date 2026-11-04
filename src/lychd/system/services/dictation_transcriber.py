@@ -11,11 +11,12 @@ import json
 from http import HTTPStatus
 from typing import Any, cast
 
-import httpx
+import httpx2
 
 from lychd.domain.artifacts import ArtifactRef
 from lychd.domain.dictation import DictationProfile, DictationTranscriberError, validate_text
 from lychd.extensions.builtin.echo.material import PcmInspectionError, inspect_pcm_utterance
+from lychd.lib.http import create_http_ssl_context
 
 
 def _validated_profile(profile: DictationProfile) -> DictationProfile:
@@ -43,7 +44,7 @@ def _invalid_constant(_value: str) -> None:
     raise DictationTranscriberError(msg, "outcome_unknown")
 
 
-def _response_length(response: httpx.Response, limit: int) -> int | None:
+def _response_length(response: httpx2.Response, limit: int) -> int | None:
     if response.status_code != HTTPStatus.OK:
         msg = "unknown"
         raise DictationTranscriberError(msg, "outcome_unknown")
@@ -65,7 +66,7 @@ def _response_length(response: httpx.Response, limit: int) -> int | None:
     return int(length)
 
 
-async def _read_response(response: httpx.Response, profile: DictationProfile) -> str:
+async def _read_response(response: httpx2.Response, profile: DictationProfile) -> str:
     limit = profile.max_response_bytes
     declared_length = _response_length(response, limit)
     body = bytearray()
@@ -102,7 +103,7 @@ class LocalDictationTranscriber:
     waiting only; it makes no claim that remote computation stopped.
     """
 
-    def __init__(self, profile: DictationProfile, transport: httpx.AsyncBaseTransport | None = None) -> None:
+    def __init__(self, profile: DictationProfile, transport: httpx2.AsyncBaseTransport | None = None) -> None:
         """Copy and validate the declared binding without making any request."""
         self.profile = _validated_profile(profile)
         self._transport = transport
@@ -123,11 +124,12 @@ class LocalDictationTranscriber:
         try:
             async with (
                 asyncio.timeout(profile.total_timeout_seconds),
-                httpx.AsyncClient(
+                httpx2.AsyncClient(
+                    verify=create_http_ssl_context(),
                     transport=self._transport,
                     trust_env=False,
                     follow_redirects=False,
-                    timeout=httpx.Timeout(profile.transport_timeout_seconds),
+                    timeout=httpx2.Timeout(profile.transport_timeout_seconds),
                     headers={"Accept": "application/json", "Accept-Encoding": "identity"},
                 ) as client,
             ):

@@ -4,7 +4,7 @@ import asyncio
 from pathlib import Path
 from typing import Any, ClassVar, cast
 
-import httpx
+import httpx2
 import pytest
 import respx
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -47,6 +47,9 @@ from lychd.extensions.builtin.animator.runtimes import (
     LlamaCppRuntimeAdapter,
 )
 
+pytestmark = pytest.mark.httpx2(assert_all_called=False)
+
+
 _SOULSTONE_SCHEMAS = (LlamaCppSoulstoneConfig, VllmSoulstoneConfig, OpenAIPortalConfig)
 _OPENAI_PORTAL = PortalDefinition(
     rune_schema=OpenAIPortalConfig,
@@ -56,10 +59,10 @@ _OPENAI_PORTAL = PortalDefinition(
 
 
 @pytest.fixture(autouse=True)
-def local_runtime_probes_are_offline(respx_mock: respx.MockRouter) -> None:
+def local_runtime_probes_are_offline(httpx2_mock: respx.MockRouter) -> None:
     """Keep registry unit tests deterministic while exercising real probe projection."""
-    respx_mock.route(host="localhost").mock(
-        side_effect=httpx.ConnectError("local runtime intentionally unavailable in unit tests")
+    httpx2_mock.route(host="localhost").mock(
+        side_effect=httpx2.ConnectError("local runtime intentionally unavailable in unit tests")
     )
 
 

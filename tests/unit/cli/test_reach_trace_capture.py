@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 from scripts import reach_operator as operator
 from scripts.reach_model_broker import OperatorModelBroker
@@ -54,10 +54,10 @@ async def test_exact_run_query_joins_model_http_and_delivery_after_restart(tmp_p
         )
     )
 
-    def fail(_request: httpx.Request) -> httpx.Response:
-        return httpx.Response(403, text=CANARY, headers={"x-private": CANARY})
+    def fail(_request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(403, text=CANARY, headers={"x-private": CANARY})
 
-    broker = OperatorModelBroker(profile, transport=httpx.MockTransport(fail), trace=capture.host)
+    broker = OperatorModelBroker(profile, transport=httpx2.MockTransport(fail), trace=capture.host)
     call = OperatorModelRequest(
         call_id=str(uuid4()),
         binding_digest=profile.digest,

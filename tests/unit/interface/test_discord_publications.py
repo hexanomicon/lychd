@@ -9,7 +9,7 @@ from typing import Literal
 from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 
 from lychd.interface.discord.publications import Publication, PublicationQueue, queue_publication
@@ -66,17 +66,17 @@ async def test_wrong_destination_is_rejected_without_http(tmp_path: Path) -> Non
 
 @pytest.mark.asyncio
 async def test_reply_reference_is_channel_bound_and_never_pings(tmp_path: Path) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handle(request: httpx.Request) -> httpx.Response:
+    def handle(request: httpx2.Request) -> httpx2.Response:
         if request.url.path.endswith("/users/@me"):
-            return httpx.Response(200, json={"id": "102", "bot": True})
+            return httpx2.Response(200, json={"id": "102", "bot": True})
         if request.url.path.endswith("/oauth2/applications/@me"):
-            return httpx.Response(200, json={"id": "101"})
+            return httpx2.Response(200, json={"id": "101"})
         requests.append(request)
-        return httpx.Response(200, json={"id": "105"})
+        return httpx2.Response(200, json={"id": "105"})
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(handle)) as client:
         rest = DiscordRest(
             token="synthetic",  # noqa: S106 - synthetic fixture credential
             application_id="101",
@@ -207,24 +207,24 @@ async def test_crash_after_transport_settlement_preserves_prior_result_before_ne
     queue, identifier = queued(tmp_path)
     posts = 0
 
-    def handle(request: httpx.Request) -> httpx.Response:
+    def handle(request: httpx2.Request) -> httpx2.Response:
         nonlocal posts
         if request.url.path.endswith("/users/@me"):
-            return httpx.Response(200, json={"id": "102", "bot": True})
+            return httpx2.Response(200, json={"id": "102", "bot": True})
         if request.url.path.endswith("/oauth2/applications/@me"):
-            return httpx.Response(200, json={"id": "101"})
+            return httpx2.Response(200, json={"id": "101"})
         posts += 1
         if status == "unknown":
             message = "Interrupted after transmission"
-            raise httpx.ReadTimeout(message, request=request)
-        return httpx.Response(200, json={"id": "106"})
+            raise httpx2.ReadTimeout(message, request=request)
+        return httpx2.Response(200, json={"id": "106"})
 
     def crash(_fd: int, _publication: Publication, _result: EffectResult) -> None:
         message = "Crash before queue receipt"
         raise OSError(message)
 
     journal = EffectJournal(tmp_path / "effects")
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(handle)) as client:
         rest = DiscordRest(
             token="synthetic",  # noqa: S106 - synthetic fixture credential
             application_id="101",

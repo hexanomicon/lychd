@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import httpx
+import httpx2
 import pytest
 
 from lychd.config.settings.root import get_settings
@@ -71,7 +72,7 @@ class _BrokenSSE(httpx.AsyncByteStream):
     async def __aiter__(self) -> AsyncIterator[bytes]:
         yield b'data: {"status":"processing","module":1,"modules":2}\n\n'
         message = "tabby process disappeared"
-        raise httpx.ReadError(message)
+        raise httpx2.ReadError(message)
 
     async def aclose(self) -> None:
         return
@@ -284,19 +285,19 @@ async def test_two_tabby_runtimes_keep_data_and_admin_keys_isolated(
 
     first_headers = {"Authorization": f"Bearer {_ADMIN_KEY}"}
     second_headers = {"Authorization": f"Bearer {second_admin}"}
-    with respx.mock:
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
         for port, headers, model_id in (
             (5000, first_headers, "qwen-exl3"),
             (5001, second_headers, "second-exl3"),
         ):
             root = f"http://localhost:{port}"
-            respx.get(f"{root}/health", headers=headers).mock(
+            router.get(f"{root}/health", headers=headers).mock(
                 return_value=httpx.Response(200, json={"status": "healthy"})
             )
-            respx.get(f"{root}/v1/models", headers=headers).mock(
+            router.get(f"{root}/v1/models", headers=headers).mock(
                 return_value=httpx.Response(200, json={"data": [{"id": model_id}]})
             )
-            respx.get(f"{root}/v1/model", headers=headers).mock(
+            router.get(f"{root}/v1/model", headers=headers).mock(
                 return_value=httpx.Response(503, json={"detail": "No models are currently loaded."})
             )
         await control.inspect(base_url=first_connector.base_url)
@@ -374,14 +375,14 @@ async def test_tabbyapi_healthy_without_model_is_activatable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     control = _control_plane(tmp_path, monkeypatch)
-    with respx.mock:
-        respx.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"status": "healthy", "issues": []})
         )
-        respx.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"object": "list", "data": [{"id": "qwen-exl3"}]})
         )
-        respx.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(503, json={"detail": "No models are currently loaded."})
         )
         lifecycle = await control.inspect(base_url=_BASE_URL)
@@ -403,14 +404,14 @@ async def test_tabbyapi_successful_current_model_requires_an_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     control = _control_plane(tmp_path, monkeypatch)
-    with respx.mock:
-        respx.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"status": "healthy", "issues": []})
         )
-        respx.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"data": [{"id": "qwen-exl3"}]})
         )
-        respx.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(return_value=httpx.Response(200, json={}))
+        router.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(return_value=httpx.Response(200, json={}))
         with pytest.raises(TabbyAPIControlPlaneError, match="without a non-empty id") as caught:
             await control.inspect(base_url=_BASE_URL)
 
@@ -423,11 +424,11 @@ async def test_tabbyapi_malformed_inventory_is_protocol_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     control = _control_plane(tmp_path, monkeypatch)
-    with respx.mock:
-        respx.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"status": "healthy", "issues": []})
         )
-        respx.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"data": {"id": "not-a-list"}})
         )
         with pytest.raises(TabbyAPIControlPlaneError, match="no data list") as caught:
@@ -451,11 +452,11 @@ async def test_tabbyapi_rejects_every_malformed_inventory_member(
     data: list[object],
 ) -> None:
     control = _control_plane(tmp_path, monkeypatch)
-    with respx.mock:
-        respx.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"status": "healthy"})
         )
-        respx.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"data": data})
         )
         with pytest.raises(TabbyAPIControlPlaneError, match="entry"):
@@ -470,8 +471,8 @@ async def test_tabbyapi_load_requires_pinned_http_200_acceptance(
     status: int,
 ) -> None:
     control = _control_plane(tmp_path, monkeypatch)
-    with respx.mock:
-        respx.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(status, text="not accepted")
         )
         with pytest.raises(TabbyAPIControlPlaneError, match=f"status {status}"):
@@ -516,21 +517,21 @@ async def test_tabbyapi_preaccept_rejection_does_not_poison_health_or_retry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     control = _control_plane(tmp_path, monkeypatch)
-    with respx.mock:
-        respx.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(401, json={"detail": "bad control key"})
         )
         with pytest.raises(TabbyAPIControlPlaneError, match="status 401"):
             await control.load_model(_BASE_URL, "qwen-exl3")
 
-    with respx.mock:
-        respx.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"status": "healthy"})
         )
-        respx.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"data": [{"id": "old-model"}, {"id": "qwen-exl3"}]})
         )
-        respx.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"id": "old-model"})
         )
         lifecycle = await control.inspect(base_url=_BASE_URL)
@@ -539,8 +540,8 @@ async def test_tabbyapi_preaccept_rejection_does_not_poison_health_or_retry(
     assert lifecycle.active_model == "old-model"
 
     terminal = 'data: {"model_type":"model","module":1,"modules":1,"status":"finished"}\n\n'
-    with respx.mock:
-        respx.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, text=terminal, headers={"content-type": "text/event-stream"})
         )
         assert await control.load_model(_BASE_URL, "qwen-exl3") is True
@@ -556,8 +557,8 @@ async def test_tabbyapi_rejects_inconsistent_finished_model_event(
 ) -> None:
     control = _control_plane(tmp_path, monkeypatch)
     malformed = 'data: {"model_type":"model","module":1,"modules":2,"status":"finished"}\n\n'
-    with respx.mock:
-        respx.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, text=malformed, headers={"content-type": "text/event-stream"})
         )
         assert await control.load_model(_BASE_URL, "qwen-exl3") is True
@@ -580,8 +581,8 @@ async def test_tabbyapi_load_consumes_all_sse_stages_then_confirms_current_model
         'data: {"model_type":"model","module":2,"modules":2,"status":"finished"}\n\n'
     )
     control = _control_plane(tmp_path, monkeypatch)
-    with respx.mock:
-        respx.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, text=sse, headers={"content-type": "text/event-stream"})
         )
         assert await control.load_model(_BASE_URL, "qwen-exl3") is True
@@ -589,13 +590,13 @@ async def test_tabbyapi_load_consumes_all_sse_stages_then_confirms_current_model
         assert operation.task is not None
         await asyncio.wait_for(operation.task, timeout=1.0)
 
-        respx.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"status": "healthy"})
         )
-        respx.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"data": [{"id": "qwen-exl3"}]})
         )
-        respx.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(
                 200,
                 json={"id": "qwen-exl3", "parameters": {"max_batch_size": 4}},
@@ -615,8 +616,8 @@ async def test_tabbyapi_terminal_load_missing_after_restart_releases_fence(
 ) -> None:
     terminal = 'data: {"model_type":"model","module":1,"modules":1,"status":"finished"}\n\n'
     control = _control_plane(tmp_path, monkeypatch)
-    with respx.mock:
-        respx.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, text=terminal, headers={"content-type": "text/event-stream"})
         )
         assert await control.load_model(_BASE_URL, "qwen-exl3") is True
@@ -624,13 +625,13 @@ async def test_tabbyapi_terminal_load_missing_after_restart_releases_fence(
         assert operation.task is not None
         await asyncio.wait_for(operation.task, timeout=1.0)
 
-        respx.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"status": "healthy"})
         )
-        respx.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"data": [{"id": "qwen-exl3"}, {"id": "small-exl3"}]})
         )
-        respx.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(503, json={"detail": "No models are currently loaded."})
         )
         lifecycle = await control.inspect(base_url=_BASE_URL)
@@ -645,8 +646,8 @@ async def test_tabbyapi_midstream_crash_is_contained_until_vessel_restart(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     control = _control_plane(tmp_path, monkeypatch)
-    with respx.mock:
-        respx.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(
                 200,
                 stream=_BrokenSSE(),
@@ -658,13 +659,13 @@ async def test_tabbyapi_midstream_crash_is_contained_until_vessel_restart(
         assert operation.task is not None
         await asyncio.wait_for(operation.task, timeout=1.0)
 
-        respx.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"status": "healthy"})
         )
-        respx.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"data": [{"id": "qwen-exl3"}, {"id": "small-exl3"}]})
         )
-        respx.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(503, json={"detail": "No models are currently loaded."})
         )
         lifecycle = await control.inspect(base_url=_BASE_URL)
@@ -683,8 +684,8 @@ async def test_tabbyapi_stream_error_becomes_error_not_false_warmth(
 ) -> None:
     control = _control_plane(tmp_path, monkeypatch)
     error_sse = 'data: {"error":{"message":"CUDA out of memory","trace":null}}\n\n'
-    with respx.mock:
-        respx.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, text=error_sse, headers={"content-type": "text/event-stream"})
         )
         assert await control.load_model(_BASE_URL, "qwen-exl3") is True
@@ -692,13 +693,13 @@ async def test_tabbyapi_stream_error_becomes_error_not_false_warmth(
         assert operation.task is not None
         await asyncio.wait_for(operation.task, timeout=1.0)
 
-        respx.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"status": "healthy"})
         )
-        respx.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"data": [{"id": "qwen-exl3"}]})
         )
-        respx.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(503, json={"detail": "No models are currently loaded."})
         )
         lifecycle = await control.inspect(base_url=_BASE_URL)
@@ -718,8 +719,8 @@ async def test_tabbyapi_ambiguous_stream_yields_to_verified_current_model(
         'data: {"model_type":"vision","status":"finished","module":1,"modules":1}\n\n'
         'data: {"model_type":"model","status":"processing","module":1,"modules":2}\n\n'
     )
-    with respx.mock:
-        respx.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, text=truncated_sse, headers={"content-type": "text/event-stream"})
         )
         assert await control.load_model(_BASE_URL, "qwen-exl3") is True
@@ -729,13 +730,13 @@ async def test_tabbyapi_ambiguous_stream_yields_to_verified_current_model(
         assert operation.ambiguous is True
         assert operation.error is None
 
-        respx.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"status": "healthy"})
         )
-        respx.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"data": [{"id": "qwen-exl3"}]})
         )
-        respx.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
+        router.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(200, json={"id": "qwen-exl3"})
         )
         lifecycle = await control.inspect(base_url=_BASE_URL)
@@ -751,8 +752,8 @@ async def test_tabbyapi_abandon_cancels_only_observer_and_retains_tombstone(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     control = _control_plane(tmp_path, monkeypatch)
-    with respx.mock:
-        respx.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
+    with respx.mock(using="httpcore2", assert_all_called=False) as router:
+        router.post("http://tabby:5000/v1/model/load", headers=_ADMIN_HEADERS).mock(
             return_value=httpx.Response(
                 200,
                 stream=_HangingSSE(),

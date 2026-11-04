@@ -5,18 +5,18 @@ import json
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2
 import pytest
 from pydantic import ValidationError
 
 from lychd.interface.discord.rest import DiscordRest, DiscordRestError, EffectJournal, EffectResult
 
 
-def transport(handler: Any) -> httpx.AsyncClient:
-    return httpx.AsyncClient(transport=httpx.MockTransport(handler), trust_env=False)
+def transport(handler: Any) -> httpx2.AsyncClient:
+    return httpx2.AsyncClient(transport=httpx2.MockTransport(handler), trust_env=False)
 
 
-def make_rest(tmp_path: Path, client: httpx.AsyncClient) -> DiscordRest:
+def make_rest(tmp_path: Path, client: httpx2.AsyncClient) -> DiscordRest:
     return DiscordRest(
         token="synthetic-bot-secret",  # noqa: S106 - synthetic fixture credential
         application_id="101",
@@ -27,11 +27,11 @@ def make_rest(tmp_path: Path, client: httpx.AsyncClient) -> DiscordRest:
     )
 
 
-def identity(request: httpx.Request) -> httpx.Response | None:
+def identity(request: httpx2.Request) -> httpx2.Response | None:
     if request.url.path == "/api/v10/users/@me":
-        return httpx.Response(200, json={"id": "102", "bot": True})
+        return httpx2.Response(200, json={"id": "102", "bot": True})
     if request.url.path == "/api/v10/oauth2/applications/@me":
-        return httpx.Response(200, json={"id": "101"})
+        return httpx2.Response(200, json={"id": "101"})
     return None
 
 
@@ -47,12 +47,12 @@ def identity(request: httpx.Request) -> httpx.Response | None:
 async def test_separate_user_and_application_identity_checks_allow_zero_writes(
     tmp_path: Path, user: dict[str, Any], application: dict[str, Any]
 ) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         requests.append(request)
         data = user if request.url.path.endswith("/users/@me") else application
-        return httpx.Response(200, json=data)
+        return httpx2.Response(200, json=data)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -66,14 +66,14 @@ async def test_separate_user_and_application_identity_checks_allow_zero_writes(
 
 @pytest.mark.asyncio
 async def test_post_500_attempts_once_and_blocks_restart_and_new_plan_scope(tmp_path: Path) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
-        return httpx.Response(500, json={"message": "do not retain this response"})
+        return httpx2.Response(500, json={"message": "do not retain this response"})
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -100,14 +100,14 @@ async def test_post_500_attempts_once_and_blocks_restart_and_new_plan_scope(tmp_
 
 @pytest.mark.asyncio
 async def test_success_duplicate_is_reused_but_changed_payload_refuses(tmp_path: Path) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
-        return httpx.Response(201, json={"id": "104"})
+        return httpx2.Response(201, json={"id": "104"})
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -126,15 +126,15 @@ async def test_success_duplicate_is_reused_but_changed_payload_refuses(tmp_path:
 
 @pytest.mark.asyncio
 async def test_failed_create_reconciliation_fences_success_and_new_plan(tmp_path: Path) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
         assert rest.journal.inspect()[0].status == "attempting"
-        return httpx.Response(201, json={"id": "104"})
+        return httpx2.Response(201, json={"id": "104"})
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -161,14 +161,14 @@ async def test_failed_create_reconciliation_fences_success_and_new_plan(tmp_path
 @pytest.mark.parametrize("status", [400, 401, 403, 404, 429])
 @pytest.mark.asyncio
 async def test_definite_4xx_rejection_never_retries(tmp_path: Path, status: int) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
-        return httpx.Response(status, text="a secret provider diagnostic")
+        return httpx2.Response(status, text="a secret provider diagnostic")
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -182,14 +182,14 @@ async def test_definite_4xx_rejection_never_retries(tmp_path: Path, status: int)
 @pytest.mark.parametrize("permissions", ["8", "9", 8, True, "18446744073709551616"])
 @pytest.mark.asyncio
 async def test_raw_role_route_refuses_administrator_grant_before_http(tmp_path: Path, permissions: object) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
-        return httpx.Response(201, json={"id": "104"})
+        return httpx2.Response(201, json={"id": "104"})
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -204,23 +204,23 @@ async def test_raw_role_route_refuses_administrator_grant_before_http(tmp_path: 
 @pytest.mark.parametrize("failure", ["timeout", "invalid_json", "invalid_object", "large", "redirect"])
 @pytest.mark.asyncio
 async def test_uncertain_responses_persist_unknown_without_leaking_provider_data(tmp_path: Path, failure: str) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
         if failure == "timeout":
             message = "synthetic-private-url-and-token"
-            raise httpx.ReadTimeout(message, request=request)
+            raise httpx2.ReadTimeout(message, request=request)
         if failure == "invalid_json":
-            return httpx.Response(200, content=b"not json")
+            return httpx2.Response(200, content=b"not json")
         if failure == "invalid_object":
-            return httpx.Response(200, json={"token": "provider-secret"})
+            return httpx2.Response(200, json={"token": "provider-secret"})
         if failure == "large":
-            return httpx.Response(200, content=b" " * (2 * 1024 * 1024 + 1))
-        return httpx.Response(307, headers={"Location": "https://evil.example/private"})
+            return httpx2.Response(200, content=b" " * (2 * 1024 * 1024 + 1))
+        return httpx2.Response(307, headers={"Location": "https://evil.example/private"})
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -247,11 +247,11 @@ async def test_uncertain_responses_persist_unknown_without_leaking_provider_data
 )
 @pytest.mark.asyncio
 async def test_unbound_or_arbitrary_paths_refuse_before_http(tmp_path: Path, path: str) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         requests.append(request)
-        return httpx.Response(200, json={"id": "104"})
+        return httpx2.Response(200, json={"id": "104"})
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -262,16 +262,16 @@ async def test_unbound_or_arbitrary_paths_refuse_before_http(tmp_path: Path, pat
 
 @pytest.mark.asyncio
 async def test_authenticated_guild_snapshot_binds_only_its_channels(tmp_path: Path) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         requests.append(request)
         response = identity(request)
         if response is not None:
             return response
         if request.method == "GET":
-            return httpx.Response(200, json=[{"id": "104", "guild_id": "103"}])
-        return httpx.Response(200, json={"id": "104"})
+            return httpx2.Response(200, json=[{"id": "104", "guild_id": "103"}])
+        return httpx2.Response(200, json={"id": "104"})
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -287,14 +287,14 @@ async def test_authenticated_guild_snapshot_binds_only_its_channels(tmp_path: Pa
 
 @pytest.mark.asyncio
 async def test_message_nonce_and_mentions_and_webhook_secret_absence(tmp_path: Path) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
-        return httpx.Response(200, json={"id": "105"})
+        return httpx2.Response(200, json={"id": "105"})
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)

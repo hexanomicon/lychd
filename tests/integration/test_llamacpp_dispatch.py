@@ -30,6 +30,8 @@ from lychd.extensions.builtin.animator import LlamaCppMode, LlamaCppSoulstoneCon
 from lychd.extensions.builtin.animator.runtimes import LlamaCppRuntimeAdapter
 from tests.runtime_guards import InertSoftActivationGuard
 
+pytestmark = pytest.mark.httpx2(assert_all_called=False)
+
 
 def _router_registry(model_id: str = "target") -> AnimatorRegistry:
     stone = LlamaCppSoulstoneConfig(
@@ -48,7 +50,7 @@ def _router_registry(model_id: str = "target") -> AnimatorRegistry:
 
 
 @pytest.mark.asyncio
-async def test_loading_router_model_converges_without_duplicate_load(respx_mock: respx.MockRouter) -> None:
+async def test_loading_router_model_converges_without_duplicate_load(httpx2_mock: respx.MockRouter) -> None:
     inventory_probes = 0
 
     def inventory(_request: httpx.Request) -> httpx.Response:
@@ -58,9 +60,9 @@ async def test_loading_router_model_converges_without_duplicate_load(respx_mock:
         status = "loaded" if inventory_probes >= 6 else "loading"
         return httpx.Response(200, json={"data": [{"id": "target", "status": {"value": status}}]})
 
-    respx_mock.get("http://localhost:8080/health").respond(200, json={"status": "ok"})
-    respx_mock.get("http://localhost:8080/models").mock(side_effect=inventory)
-    duplicate_load = respx_mock.post("http://localhost:8080/models/load").respond(
+    httpx2_mock.get("http://localhost:8080/health").respond(200, json={"status": "ok"})
+    httpx2_mock.get("http://localhost:8080/models").mock(side_effect=inventory)
+    duplicate_load = httpx2_mock.post("http://localhost:8080/models/load").respond(
         400, json={"error": {"message": "model is already running"}}
     )
     registry = _router_registry()
@@ -97,9 +99,9 @@ async def test_loading_router_model_converges_without_duplicate_load(respx_mock:
 
 
 @pytest.mark.asyncio
-async def test_missing_router_model_cannot_request_hardware(respx_mock: respx.MockRouter) -> None:
-    respx_mock.get("http://localhost:8080/health").respond(200, json={"status": "ok"})
-    respx_mock.get("http://localhost:8080/models").respond(200, json={"data": []})
+async def test_missing_router_model_cannot_request_hardware(httpx2_mock: respx.MockRouter) -> None:
+    httpx2_mock.get("http://localhost:8080/health").respond(200, json={"status": "ok"})
+    httpx2_mock.get("http://localhost:8080/models").respond(200, json={"data": []})
     registry = _router_registry("missing")
     dispatcher = Dispatcher(registry, leases=LeaseLedger())
 
@@ -110,11 +112,11 @@ async def test_missing_router_model_cannot_request_hardware(respx_mock: respx.Mo
 
 @pytest.mark.asyncio
 async def test_router_inference_cannot_autoload_after_losing_warmth(
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    respx_mock.get("http://localhost:8080/health").respond(200, json={"status": "ok"})
-    respx_mock.get("http://localhost:8080/models").respond(
+    httpx2_mock.get("http://localhost:8080/health").respond(200, json={"status": "ok"})
+    httpx2_mock.get("http://localhost:8080/models").respond(
         200, json={"data": [{"id": "target", "status": {"value": "loaded"}}]}
     )
     requests: list[httpx2.Request] = []

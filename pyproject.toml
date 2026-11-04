@@ -40,7 +40,6 @@ dependencies = [
     "dnspython>=2.9.1,<3",
     "h11>=0.16.0,<0.17",
     "http-message-signatures==2.0.1", # exact Intercom message-signature adapter contract
-    "httpx>=0.28.1",
     "httpx2>=2.12.0,<3",
     "jinja2>=3.1.6",
     "litestar[sqlalchemy,structlog,pydantic,opentelemetry]>=2.24.0,<3", # v3 migration not audited
@@ -56,6 +55,7 @@ dependencies = [
     "structlog>=24.4.0",
     "tomlkit>=0.13.3",
     "typing-extensions==4.16.0", # signature package imports this without declaring it
+    "certifi>=2026.10.23",
 ]
 
 [project.optional-dependencies]
@@ -84,6 +84,8 @@ test = [
   "pytest-sugar",
   "respx",
   "selectolax",
+  "httpx>=0.28.1",
+  "pytest-httpx2==1.0.0",
 ]
 container-test = [
   "testcontainers[postgres]>=4.15.0,<5",
@@ -176,6 +178,7 @@ markers = [
     "integration: Tests that hit the DB, Redis, or external APIs. Slower.",
     "container: Explicit disposable-container receipt excluded from the ordinary test/check gate.",
     "slow: Tests that take a long time (e.g., heavy AI inference).",
+    "httpx2: Configure the HTTPX2 RESPX bridge fixture.",
 ]
 
 # Silence noise from dependencies

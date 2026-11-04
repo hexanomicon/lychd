@@ -8,7 +8,7 @@ from email.parser import BytesParser
 from email.policy import default
 from typing import cast
 
-import httpx
+import httpx2
 import pytest
 from pydantic import ValidationError
 
@@ -39,8 +39,10 @@ def source(content: bytes) -> ArtifactRef:
     )
 
 
-def probe(handler: Callable[[httpx.Request], httpx.Response], pinned: LocalSpeechProfile | None = None) -> SpeechProbe:
-    return SpeechProbe(pinned or profile(), transport=httpx.MockTransport(handler))
+def probe(
+    handler: Callable[[httpx2.Request], httpx2.Response], pinned: LocalSpeechProfile | None = None
+) -> SpeechProbe:
+    return SpeechProbe(pinned or profile(), transport=httpx2.MockTransport(handler))
 
 
 @pytest.mark.asyncio
@@ -49,7 +51,7 @@ async def test_actual_multipart_has_exact_audio_model_optional_language_and_prov
     content = wav()
     calls = 0
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         calls += 1
         assert str(request.url) == "http://127.0.0.1:8080/v1/audio/transcriptions"
@@ -66,7 +68,7 @@ async def test_actual_multipart_has_exact_audio_model_optional_language_and_prov
         if language:
             assert fields["language"].get_payload(decode=True) == b"sk"
         assert request.extensions["timeout"] == {"connect": 2.0, "read": 2.0, "write": 2.0, "pool": 2.0}
-        return httpx.Response(200, json={"text": "Postav dom, prosím.", "confidence": 0.99, "language": "en"})
+        return httpx2.Response(200, json={"text": "Postav dom, prosím.", "confidence": 0.99, "language": "en"})
 
     reference = source(content)
     result = await probe(handler).transcribe(reference, content, language=language)
@@ -85,7 +87,7 @@ async def test_actual_multipart_has_exact_audio_model_optional_language_and_prov
 async def test_synthesis_sends_separate_binding_seed_stock_voice_and_validates_non_16k_output() -> None:
     content = wav(44100, 2)
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         assert request.url.path == "/v1/audio/speech"
         assert json.loads(request.content) == {
             "model": "supertonic-test",
@@ -95,7 +97,7 @@ async def test_synthesis_sends_separate_binding_seed_stock_voice_and_validates_n
             "seed": 1234,
             "response_format": "wav",
         }
-        return httpx.Response(200, content=content, headers={"Content-Type": "audio/wav"})
+        return httpx2.Response(200, content=content, headers={"Content-Type": "audio/wav"})
 
     result, returned = await probe(handler).synthesize("Ahoj, svet.", language="sk", voice="F5")
     assert returned == content
@@ -109,7 +111,7 @@ async def test_synthesis_sends_separate_binding_seed_stock_voice_and_validates_n
 
 @pytest.mark.asyncio
 async def test_refusal_before_request_for_wrong_hash_language_text_or_voice() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         pytest.fail("Invalid input reached HTTP transport")
 
     client = probe(handler)
@@ -138,24 +140,24 @@ async def test_refusal_before_request_for_wrong_hash_language_text_or_voice() ->
 @pytest.mark.parametrize(
     "response",
     [
-        httpx.Response(302, headers={"Location": "https://example.com"}),
-        httpx.Response(500, text="private server detail must not be logged"),
-        httpx.Response(200, content=b"bad", headers={"Content-Type": "audio/wav"}),
-        httpx.Response(200, content=b'{"text":"a","text":"b"}', headers={"Content-Type": "application/json"}),
-        httpx.Response(200, json={"text": "x" * 257}),
-        httpx.Response(200, json={"text": 123}),
-        httpx.Response(200, content=b'{"text":"\\ud800"}', headers={"Content-Type": "application/json"}),
-        httpx.Response(200, content=b'{"text":"ok","x":NaN}', headers={"Content-Type": "application/json"}),
-        httpx.Response(200, content=b"x" * 65537, headers={"Content-Type": "application/json"}),
-        httpx.Response(200, content=b"{}", headers={"Content-Type": "application/json", "Content-Encoding": "br"}),
+        httpx2.Response(302, headers={"Location": "https://example.com"}),
+        httpx2.Response(500, text="private server detail must not be logged"),
+        httpx2.Response(200, content=b"bad", headers={"Content-Type": "audio/wav"}),
+        httpx2.Response(200, content=b'{"text":"a","text":"b"}', headers={"Content-Type": "application/json"}),
+        httpx2.Response(200, json={"text": "x" * 257}),
+        httpx2.Response(200, json={"text": 123}),
+        httpx2.Response(200, content=b'{"text":"\\ud800"}', headers={"Content-Type": "application/json"}),
+        httpx2.Response(200, content=b'{"text":"ok","x":NaN}', headers={"Content-Type": "application/json"}),
+        httpx2.Response(200, content=b"x" * 65537, headers={"Content-Type": "application/json"}),
+        httpx2.Response(200, content=b"{}", headers={"Content-Type": "application/json", "Content-Encoding": "br"}),
     ],
 )
 async def test_invalid_status_json_encoding_or_bound_is_content_free_and_never_retried(
-    response: httpx.Response,
+    response: httpx2.Response,
 ) -> None:
     calls = 0
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         calls += 1
         return response
@@ -167,7 +169,7 @@ async def test_invalid_status_json_encoding_or_bound_is_content_free_and_never_r
     assert "private server detail" not in str(failure.value)
 
 
-class Chunks(httpx.AsyncByteStream):
+class Chunks(httpx2.AsyncByteStream):
     async def __aiter__(self) -> AsyncIterator[bytes]:
         yield b"x" * 50
         yield b"x" * 51
@@ -176,7 +178,9 @@ class Chunks(httpx.AsyncByteStream):
 @pytest.mark.asyncio
 async def test_streamed_body_is_bounded_even_without_content_length() -> None:
     pinned = profile().model_copy(update={"max_response_bytes": 100})
-    client = probe(lambda _request: httpx.Response(200, stream=Chunks(), headers={"Content-Type": "audio/wav"}), pinned)
+    client = probe(
+        lambda _request: httpx2.Response(200, stream=Chunks(), headers={"Content-Type": "audio/wav"}), pinned
+    )
     with pytest.raises(SpeechProbeError, match="byte bound"):
         await client.synthesize("words", language="sk", voice="M1")
 
@@ -185,11 +189,11 @@ async def test_streamed_body_is_bounded_even_without_content_length() -> None:
 async def test_transport_timeout_has_unknown_outcome_and_no_retry() -> None:
     calls = 0
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         calls += 1
         msg = "secret input"
-        raise httpx.ReadTimeout(msg, request=request)
+        raise httpx2.ReadTimeout(msg, request=request)
 
     with pytest.raises(SpeechProbeError, match="unknown") as failure:
         await probe(handler).synthesize("private words", language="sk", voice="M1")
@@ -202,14 +206,14 @@ async def test_total_deadline_and_cancellation_stop_local_waiting_only() -> None
     entered = asyncio.Event()
     calls = 0
 
-    async def handler(request: httpx.Request) -> httpx.Response:
+    async def handler(request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         calls += 1
         entered.set()
         await asyncio.Event().wait()
         raise AssertionError
 
-    client = SpeechProbe(profile(), transport=httpx.MockTransport(handler))
+    client = SpeechProbe(profile(), transport=httpx2.MockTransport(handler))
     task = asyncio.create_task(client.synthesize("private words", language="sk", voice="M1"))
     await entered.wait()
     task.cancel()
@@ -219,7 +223,7 @@ async def test_total_deadline_and_cancellation_stop_local_waiting_only() -> None
     assert calls == 1
     short = profile().model_copy(update={"total_timeout_seconds": 0.01})
     with pytest.raises(SpeechProbeError, match="unknown"):
-        await SpeechProbe(short, transport=httpx.MockTransport(handler)).synthesize("words", language="sk", voice="M1")
+        await SpeechProbe(short, transport=httpx2.MockTransport(handler)).synthesize("words", language="sk", voice="M1")
     assert calls == 2
 
 
@@ -268,8 +272,8 @@ async def test_default_transport_ignores_ambient_proxy(monkeypatch: pytest.Monke
             for variable in ("NO_PROXY", "no_proxy"):
                 monkeypatch.setenv(variable, "")
             # This control proves that the environment actually intercepts default HTTPX traffic.
-            async with httpx.AsyncClient(trust_env=True, timeout=0.5) as ambient:
-                with pytest.raises(httpx.ConnectError):
+            async with httpx2.AsyncClient(trust_env=True, timeout=0.5) as ambient:
+                with pytest.raises(httpx2.ConnectError):
                     await ambient.post(endpoint, content=b"control")
             assert requests == []
             pinned = profile().model_copy(update={"endpoint": endpoint})
@@ -289,7 +293,7 @@ async def test_version_two_uses_operation_endpoint_dialect_model_and_revision(tr
     calls: list[str] = []
     content = wav()
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         calls.append(str(request.url))
         assert "authorization" not in request.headers
         assert request.headers["accept-encoding"] == "identity"
@@ -305,10 +309,10 @@ async def test_version_two_uses_operation_endpoint_dialect_model_and_revision(tr
             else:
                 assert set(fields) == {"file", "language", "model"}
                 assert fields["model"].get_payload(decode=True) == b"parakeet-test"
-            return httpx.Response(200, json={"text": " Čakaj!\n"})
+            return httpx2.Response(200, json={"text": " Čakaj!\n"})
         assert str(request.url) == "http://127.0.0.1:8082/v1/audio/speech"
         assert json.loads(request.content)["model"] == "supertonic-test"
-        return httpx.Response(200, content=content, headers={"Content-Type": "audio/wav"})
+        return httpx2.Response(200, content=content, headers={"Content-Type": "audio/wav"})
 
     client = probe(handler, pinned)
     transcript = await client.transcribe(source(content), content, language="sk")
@@ -332,7 +336,7 @@ async def test_version_two_uses_operation_endpoint_dialect_model_and_revision(tr
 @pytest.mark.parametrize("language", [None, "ja", "", "SK"])
 @pytest.mark.asyncio
 async def test_whisper_refuses_missing_or_unsupported_language_before_any_request(language: str | None) -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         pytest.fail("An undeclared or missing Whisper language reached HTTP")
 
     content = wav()
@@ -360,9 +364,9 @@ def test_version_two_copied_binding_tampering_is_revalidated_before_use(role: st
 async def test_whisper_failure_never_selects_the_synthesizer_or_another_runtime(status: int) -> None:
     calls: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         calls.append(str(request.url))
-        return httpx.Response(status, headers={"location": "http://127.0.0.1:8082/v1/audio/transcriptions"})
+        return httpx2.Response(status, headers={"location": "http://127.0.0.1:8082/v1/audio/transcriptions"})
 
     content = wav()
     with pytest.raises(SpeechProbeError, match="unconfirmed"):
@@ -375,7 +379,7 @@ async def test_whisper_total_deadline_and_cancellation_keep_server_work_unknown_
     entered = asyncio.Event()
     calls = 0
 
-    async def handler(request: httpx.Request) -> httpx.Response:
+    async def handler(request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         calls += 1
         entered.set()
@@ -383,7 +387,7 @@ async def test_whisper_total_deadline_and_cancellation_keep_server_work_unknown_
         raise AssertionError
 
     content = wav()
-    client = SpeechProbe(profile_v2(), transport=httpx.MockTransport(handler))
+    client = SpeechProbe(profile_v2(), transport=httpx2.MockTransport(handler))
     task = asyncio.create_task(client.transcribe(source(content), content, language="sk"))
     await entered.wait()
     task.cancel()
@@ -392,7 +396,7 @@ async def test_whisper_total_deadline_and_cancellation_keep_server_work_unknown_
     assert "unknown" in failure.value.__notes__[0]
     short = profile_v2().model_copy(update={"total_timeout_seconds": 0.01})
     with pytest.raises(SpeechProbeError, match="unknown"):
-        await SpeechProbe(short, transport=httpx.MockTransport(handler)).transcribe(
+        await SpeechProbe(short, transport=httpx2.MockTransport(handler)).transcribe(
             source(content), content, language="sk"
         )
     assert calls == 2

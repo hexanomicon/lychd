@@ -16,7 +16,7 @@ from typing import Any, cast
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 from scripts import companion_lab
 from scripts.voice_probe import PrivateWorkspace
@@ -45,7 +45,7 @@ def wav() -> bytes:
     )
 
 
-def speech(transport: httpx.MockTransport | None = None) -> SpeechProbe:
+def speech(transport: httpx2.MockTransport | None = None) -> SpeechProbe:
     return SpeechProbe(
         SpeechProfile(
             endpoint="http://127.0.0.1:18183",
@@ -196,7 +196,7 @@ async def test_console_refuses_input_read_during_stop_and_accepts_fresh_input(
     console = companion_lab.CompanionConsole(
         files,
         cast("CompanionSession", state),
-        speech=speech(httpx.MockTransport(lambda _: httpx.Response(200, json={"text": "state"}))),
+        speech=speech(httpx2.MockTransport(lambda _: httpx2.Response(200, json={"text": "state"}))),
     )
     task = asyncio.create_task(console.run())
     try:
@@ -428,13 +428,13 @@ async def test_settled_recorder_failure_waits_for_fresh_gesture_then_transcribes
     monkeypatch.setattr(voice_capture, "_group_exists", no_owned_group)
     calls: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         calls.append(request.url.path)
-        return httpx.Response(200, json={"text": "stav"})
+        return httpx2.Response(200, json={"text": "stav"})
 
     state = ConsoleSession()
     console = companion_lab.CompanionConsole(
-        files, cast("CompanionSession", state), speech=speech(httpx.MockTransport(handler)), language="sk"
+        files, cast("CompanionSession", state), speech=speech(httpx2.MockTransport(handler)), language="sk"
     )
     await console.begin_voice(seconds=1)
     await asyncio.sleep(0)
@@ -493,7 +493,7 @@ async def test_waiting_reply_is_blocked_after_unsettled_capture(
         raise voice_capture.VoiceCaptureUnsettled(msg)
 
     monkeypatch.setattr(companion_lab, "capture_utterance", capture)
-    client = speech(httpx.MockTransport(lambda _: pytest.fail("Unsettled capture cannot reach synthesis.")))
+    client = speech(httpx2.MockTransport(lambda _: pytest.fail("Unsettled capture cannot reach synthesis.")))
     console = companion_lab.CompanionConsole(
         files, cast("CompanionSession", ConsoleSession()), speech=client, reply_language="sk", play_replies=True
     )
@@ -521,10 +521,10 @@ async def test_waiting_capture_is_blocked_after_unsettled_playback(
     entered, release = asyncio.Event(), asyncio.Event()
     captures: list[int] = []
 
-    async def handler(_: httpx.Request) -> httpx.Response:
+    async def handler(_: httpx2.Request) -> httpx2.Response:
         entered.set()
         await release.wait()
-        return httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"})
+        return httpx2.Response(200, content=wav(), headers={"content-type": "audio/wav"})
 
     async def unsettled(_: bytes) -> None:
         msg = "owned playback unconfirmed"
@@ -539,7 +539,7 @@ async def test_waiting_capture_is_blocked_after_unsettled_playback(
     console = companion_lab.CompanionConsole(
         files,
         cast("CompanionSession", ConsoleSession()),
-        speech=speech(httpx.MockTransport(handler)),
+        speech=speech(httpx2.MockTransport(handler)),
         language="sk",
         reply_language="sk",
         play_replies=True,
@@ -649,9 +649,9 @@ async def test_console_speaks_correlated_pre_run_cause_and_keeps_active_cancella
 ) -> None:
     sent: list[dict[str, Any]] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         sent.append(json.loads(request.content))
-        return httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"})
+        return httpx2.Response(200, content=wav(), headers={"content-type": "audio/wav"})
 
     class CancelledSession(ConsoleSession):
         def enqueue(
@@ -674,7 +674,7 @@ async def test_console_speaks_correlated_pre_run_cause_and_keeps_active_cancella
     console = companion_lab.CompanionConsole(
         files,
         cast("CompanionSession", state),
-        speech=speech(httpx.MockTransport(handler)),
+        speech=speech(httpx2.MockTransport(handler)),
         language=language,
         reply_language=language,
     )
@@ -704,12 +704,12 @@ async def test_state_feedback_is_the_synthesized_answer_and_speech_failure_never
 ) -> None:
     sent: list[dict[str, Any]] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         sent.append(json.loads(request.content))
         if fail_synthesis:
             msg = "unconfirmed speech response"
-            raise httpx.ReadError(msg, request=request)
-        return httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"})
+            raise httpx2.ReadError(msg, request=request)
+        return httpx2.Response(200, content=wav(), headers={"content-type": "audio/wav"})
 
     state = ConsoleSession()
     state.observation = BridgeState.model_validate(
@@ -731,7 +731,7 @@ async def test_state_feedback_is_the_synthesized_answer_and_speech_failure_never
     console = companion_lab.CompanionConsole(
         files,
         cast("CompanionSession", state),
-        speech=speech(httpx.MockTransport(handler)),
+        speech=speech(httpx2.MockTransport(handler)),
         language=language,
         reply_language=language,
     )
@@ -830,7 +830,7 @@ async def test_cpu_host_guard_refuses_each_accelerated_operation_before_probe_co
 
 
 def test_whisper_console_requires_language_before_capture_or_game_control(files: PrivateWorkspace) -> None:
-    client = SpeechProbe(profile_v2(), transport=httpx.MockTransport(lambda _: pytest.fail("Unexpected HTTP")))
+    client = SpeechProbe(profile_v2(), transport=httpx2.MockTransport(lambda _: pytest.fail("Unexpected HTTP")))
     state = ConsoleSession()
     with pytest.raises(SpeechProbeError, match="explicit"):
         companion_lab.CompanionConsole(files, cast("CompanionSession", state), speech=client)
@@ -842,13 +842,13 @@ def test_whisper_console_requires_language_before_capture_or_game_control(files:
 async def test_whisper_voice_framing_preserves_original_observation_and_command_transcript(
     files: PrivateWorkspace, language: str, words: str, kind: str
 ) -> None:
-    calls: list[httpx.Request] = []
+    calls: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         calls.append(request)
-        return httpx.Response(200, json={"text": words})
+        return httpx2.Response(200, json={"text": words})
 
-    client = SpeechProbe(profile_v2(), transport=httpx.MockTransport(handler))
+    client = SpeechProbe(profile_v2(), transport=httpx2.MockTransport(handler))
     state = ConsoleSession()
     console = companion_lab.CompanionConsole(files, cast("CompanionSession", state), speech=client, language=language)
     source = files.root / "source.wav"
@@ -912,18 +912,18 @@ async def test_voice_target_and_request_identity_are_bound_before_async_work(
             await release.wait()
         return wav()
 
-    async def handler(_: httpx.Request) -> httpx.Response:
+    async def handler(_: httpx2.Request) -> httpx2.Response:
         if phase == "transcription":
             entered.set()
             await release.wait()
-        return httpx.Response(200, json={"text": words})
+        return httpx2.Response(200, json={"text": words})
 
     monkeypatch.setattr(companion_lab, "capture_utterance", capture)
     state = ConsoleSession()
     console = companion_lab.CompanionConsole(
         files,
         cast("CompanionSession", state),
-        speech=speech(httpx.MockTransport(handler)),
+        speech=speech(httpx2.MockTransport(handler)),
         language="en",
         target_id=target_a if initial_target == "bound" else None,
     )
@@ -973,7 +973,7 @@ async def test_voice_allocates_identity_synchronously_and_text_captures_current_
     monkeypatch.setattr(companion_lab, "uuid4", allocate)
     target_a, target_b = str(uuid4()), str(uuid4())
     state = ConsoleSession()
-    client = speech(httpx.MockTransport(lambda _: httpx.Response(200, json={"text": "state"})))
+    client = speech(httpx2.MockTransport(lambda _: httpx2.Response(200, json={"text": "state"})))
     console = companion_lab.CompanionConsole(
         files, cast("CompanionSession", state), speech=client, language="en", target_id=target_a
     )
@@ -1001,7 +1001,7 @@ async def test_cancelled_transcription_keeps_captured_identity_without_native_ru
 ) -> None:
     entered = asyncio.Event()
 
-    async def handler(_: httpx.Request) -> httpx.Response:
+    async def handler(_: httpx2.Request) -> httpx2.Response:
         entered.set()
         await asyncio.Event().wait()
         raise AssertionError
@@ -1014,7 +1014,7 @@ async def test_cancelled_transcription_keeps_captured_identity_without_native_ru
     console = companion_lab.CompanionConsole(
         files,
         cast("CompanionSession", state),
-        speech=speech(httpx.MockTransport(handler)),
+        speech=speech(httpx2.MockTransport(handler)),
         language="en",
         target_id=str(uuid4()),
     )
@@ -1037,7 +1037,7 @@ async def test_cancelled_transcription_keeps_captured_identity_without_native_ru
 @pytest.mark.asyncio
 async def test_spoken_stop_records_separate_stop_identity_and_original_voice_identity(files: PrivateWorkspace) -> None:
     state = ConsoleSession()
-    client = speech(httpx.MockTransport(lambda _: httpx.Response(200, json={"text": " Stop\n"})))
+    client = speech(httpx2.MockTransport(lambda _: httpx2.Response(200, json={"text": " Stop\n"})))
     console = companion_lab.CompanionConsole(files, cast("CompanionSession", state), speech=client, language="en")
     source = files.root / "supplied.wav"
     files.write_new(source, wav())
@@ -1153,17 +1153,17 @@ async def test_voice_expiry_and_material_references_survive_transcription_waitin
     entered, release = asyncio.Event(), asyncio.Event()
     words = " Could you wait here please\n" if raw else " State\n"
 
-    async def handler(_: httpx.Request) -> httpx.Response:
+    async def handler(_: httpx2.Request) -> httpx2.Response:
         entered.set()
         await release.wait()
-        return httpx.Response(200, json={"text": words})
+        return httpx2.Response(200, json={"text": words})
 
     state = ConsoleSession()
     target = str(uuid4()) if bound_target else None
     console = companion_lab.CompanionConsole(
         files,
         cast("CompanionSession", state),
-        speech=speech(httpx.MockTransport(handler)),
+        speech=speech(httpx2.MockTransport(handler)),
         language="en",
         target_id=target,
         intent_profile=intent_profile() if raw else None,
@@ -1246,7 +1246,7 @@ async def test_reply_receipt_correlates_generation_retained_bytes_and_player_set
     files: PrivateWorkspace, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], playback: str
 ) -> None:
     client = speech(
-        httpx.MockTransport(lambda _: httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"}))
+        httpx2.MockTransport(lambda _: httpx2.Response(200, content=wav(), headers={"content-type": "audio/wav"}))
     )
     synthesize = client.synthesize
     observations: list[bytes] = []
@@ -1330,7 +1330,7 @@ async def test_reply_receipt_retains_absent_pre_run_and_actual_interpreter_run(
 
     state = SelectedSession()
     client = speech(
-        httpx.MockTransport(lambda _: httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"}))
+        httpx2.MockTransport(lambda _: httpx2.Response(200, content=wav(), headers={"content-type": "audio/wav"}))
     )
     console = companion_lab.CompanionConsole(
         files, cast("CompanionSession", state), speech=client, language="en", reply_language="en"
@@ -1353,7 +1353,7 @@ async def test_stop_joins_reply_before_entry_or_during_synthesis_without_game_re
 ) -> None:
     entered = asyncio.Event()
 
-    async def handler(_: httpx.Request) -> httpx.Response:
+    async def handler(_: httpx2.Request) -> httpx2.Response:
         entered.set()
         await asyncio.Event().wait()
         raise AssertionError
@@ -1362,7 +1362,7 @@ async def test_stop_joins_reply_before_entry_or_during_synthesis_without_game_re
     console = companion_lab.CompanionConsole(
         files,
         cast("CompanionSession", state),
-        speech=speech(httpx.MockTransport(handler)),
+        speech=speech(httpx2.MockTransport(handler)),
         language="en",
         reply_language="en",
         play_replies=True,
@@ -1419,7 +1419,7 @@ async def test_stop_joins_player_despite_repeated_caller_cancellation_and_native
     state = ConsoleSession()
     state.stop_failed = stop_failed
     client = speech(
-        httpx.MockTransport(lambda _: httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"}))
+        httpx2.MockTransport(lambda _: httpx2.Response(200, content=wav(), headers={"content-type": "audio/wav"}))
     )
     console = companion_lab.CompanionConsole(
         files, cast("CompanionSession", state), speech=client, language="en", reply_language="en", play_replies=True
@@ -1513,7 +1513,7 @@ async def test_reply_artifact_or_receipt_failure_keeps_known_game_and_honest_ret
     monkeypatch.setattr(files, "write_new", write)
     state = ConsoleSession()
     client = speech(
-        httpx.MockTransport(lambda _: httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"}))
+        httpx2.MockTransport(lambda _: httpx2.Response(200, content=wav(), headers={"content-type": "audio/wav"}))
     )
     console = companion_lab.CompanionConsole(
         files, cast("CompanionSession", state), speech=client, language="en", reply_language="en", play_replies=False
@@ -1553,14 +1553,14 @@ async def test_cancelled_console_caller_keeps_native_outcome_and_real_run_for_re
     fake.delay = True
     bridge = fake.bridge()
     session = CompanionSession(LocalCompanionRunner(CompanionService(policy(), bridge), bridge), bridge)
-    speech_requests: list[httpx.Request] = []
+    speech_requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         speech_requests.append(request)
-        return httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"})
+        return httpx2.Response(200, content=wav(), headers={"content-type": "audio/wav"})
 
     console = companion_lab.CompanionConsole(
-        files, session, speech=speech(httpx.MockTransport(handler)), language="en", reply_language="en"
+        files, session, speech=speech(httpx2.MockTransport(handler)), language="en", reply_language="en"
     )
     await session.open()
     try:
@@ -1606,7 +1606,7 @@ async def test_console_input_read_during_full_stop_never_reaches_native_transpor
         msg = "A stop-period recording trigger must not arm capture."
         raise ValueError(msg)
 
-    def forbidden_speech(_: httpx.Request) -> httpx.Response:
+    def forbidden_speech(_: httpx2.Request) -> httpx2.Response:
         msg = "Unexpected controlled speech request."
         raise AssertionError(msg)
 
@@ -1645,7 +1645,7 @@ async def test_console_input_read_during_full_stop_never_reaches_native_transpor
             stop_returned.set()
             return result
 
-    console = HeldConsole(files, session, speech=speech(httpx.MockTransport(forbidden_speech)), language="en")
+    console = HeldConsole(files, session, speech=speech(httpx2.MockTransport(forbidden_speech)), language="en")
     await session.open()
     task = asyncio.create_task(console.run())
     try:

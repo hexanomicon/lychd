@@ -40,7 +40,12 @@ from lychd.interface.web.archive_semantic_factory import build_archive_semantic
 from tests.integration import test_archive_pg as notes
 from tests.web.conftest import TEST_ACCESS_PASSWORD, TEST_AUTHORIZATION
 
-pytestmark = [pytest.mark.asyncio, pytest.mark.integration, pytest.mark.container]
+pytestmark = [
+    pytest.mark.asyncio,
+    pytest.mark.integration,
+    pytest.mark.container,
+    pytest.mark.httpx2(assert_all_called=False),
+]
 pg_url = notes.pg_url
 factory = notes.factory
 
@@ -48,7 +53,7 @@ factory = notes.factory
 async def test_explicit_semantic_http_lifecycle_shared_leases_and_historical_receipts(  # noqa: PLR0915 - one composed receipt with real storage and intercepted model wires
     factory: async_sessionmaker[AsyncSession],
     monkeypatch: pytest.MonkeyPatch,
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
 ) -> None:
     stone = LlamaCppSoulstoneConfig.model_validate(
         {
@@ -86,7 +91,7 @@ async def test_explicit_semantic_http_lifecycle_shared_leases_and_historical_rec
     assert semantic.manifest == derivation.manifest
     async with factory() as session:
         assert list(await session.scalars(select(ArchiveEmbeddingGeneration))) == []
-    assert not respx_mock.calls
+    assert not httpx2_mock.calls
     policy = LocalArchivePolicy(profile=notes.PROFILE, caller=caller)
     archive = ArchiveService(profile=notes.PROFILE, store=DbArchiveStore(factory), authorizer=policy)
     candidate = await archive.admit(notes.SUBJECT, notes.proposal(), purpose="archive:manage")
@@ -101,8 +106,8 @@ async def test_explicit_semantic_http_lifecycle_shared_leases_and_historical_rec
         middleware=[DefineMiddleware(SigilAuthMiddleware, access_password=TEST_ACCESS_PASSWORD)],
         state=State({"services": services}),
     )
-    respx_mock.get("http://127.0.0.1:8080/health").respond(200, json={"status": "ok"})
-    respx_mock.get("http://127.0.0.1:8080/v1/models").respond(200, json={"data": [{"id": PROFILE.model_id}]})
+    httpx2_mock.get("http://127.0.0.1:8080/health").respond(200, json={"status": "ok"})
+    httpx2_mock.get("http://127.0.0.1:8080/v1/models").respond(200, json={"data": [{"id": PROFILE.model_id}]})
     observed: list[tuple[str, dict[str, Any]]] = []
 
     def model(request: httpx.Request) -> httpx.Response:
@@ -120,8 +125,8 @@ async def test_explicit_semantic_http_lifecycle_shared_leases_and_historical_rec
             },
         )
 
-    respx_mock.post("http://127.0.0.1:8080/tokenize").mock(side_effect=model)
-    respx_mock.post("http://127.0.0.1:8080/v1/embeddings").mock(side_effect=model)
+    httpx2_mock.post("http://127.0.0.1:8080/tokenize").mock(side_effect=model)
+    httpx2_mock.post("http://127.0.0.1:8080/v1/embeddings").mock(side_effect=model)
     initial = SemanticRecallRequest(
         namespace_id=notes.PROFILE.namespace_id,
         request_id=uuid4(),

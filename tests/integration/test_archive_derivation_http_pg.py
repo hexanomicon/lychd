@@ -39,7 +39,12 @@ from lychd.interface.web.archive_derivation_factory import build_archive_derivat
 from tests.integration import test_archive_pg as notes
 from tests.web.conftest import TEST_ACCESS_PASSWORD, TEST_AUTHORIZATION
 
-pytestmark = [pytest.mark.asyncio, pytest.mark.integration, pytest.mark.container]
+pytestmark = [
+    pytest.mark.asyncio,
+    pytest.mark.integration,
+    pytest.mark.container,
+    pytest.mark.httpx2(assert_all_called=False),
+]
 pg_url = notes.pg_url
 factory = notes.factory
 
@@ -47,7 +52,7 @@ factory = notes.factory
 async def test_http_factory_uses_shared_leases_without_run_event_authority(  # noqa: PLR0915 - one real HTTP lifecycle/lease receipt
     factory: async_sessionmaker[AsyncSession],
     monkeypatch: pytest.MonkeyPatch,
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
 ) -> None:
     stone = LlamaCppSoulstoneConfig.model_validate(
         {
@@ -81,7 +86,7 @@ async def test_http_factory_uses_shared_leases_without_run_event_authority(  # n
     # Assembly has no database registration or readiness/model effects.
     async with factory() as session:
         assert list(await session.scalars(select(ArchiveEmbeddingGeneration))) == []
-    assert not respx_mock.calls
+    assert not httpx2_mock.calls
     caller = [default_local_sigil()]
     policy = LocalArchivePolicy(profile=notes.PROFILE, caller=caller[0], derivations=True)
     archive = ArchiveService(profile=notes.PROFILE, store=DbArchiveStore(factory), authorizer=policy)
@@ -105,8 +110,8 @@ async def test_http_factory_uses_shared_leases_without_run_event_authority(  # n
         middleware=[DefineMiddleware(LocalCaller, access_password=TEST_ACCESS_PASSWORD)],
         state=State({"services": services}),
     )
-    respx_mock.get("http://127.0.0.1:8080/health").respond(200, json={"status": "ok"})
-    respx_mock.get("http://127.0.0.1:8080/v1/models").respond(200, json={"data": [{"id": PROFILE.model_id}]})
+    httpx2_mock.get("http://127.0.0.1:8080/health").respond(200, json={"status": "ok"})
+    httpx2_mock.get("http://127.0.0.1:8080/v1/models").respond(200, json={"data": [{"id": PROFILE.model_id}]})
     observed: list[str] = []
 
     def model(request: httpx.Request) -> httpx.Response:
@@ -123,8 +128,8 @@ async def test_http_factory_uses_shared_leases_without_run_event_authority(  # n
             },
         )
 
-    respx_mock.post("http://127.0.0.1:8080/tokenize").mock(side_effect=model)
-    respx_mock.post("http://127.0.0.1:8080/v1/embeddings").mock(side_effect=model)
+    httpx2_mock.post("http://127.0.0.1:8080/tokenize").mock(side_effect=model)
+    httpx2_mock.post("http://127.0.0.1:8080/v1/embeddings").mock(side_effect=model)
     foreign_run = uuid4()
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=cast("Any", app)),
@@ -136,7 +141,7 @@ async def test_http_factory_uses_shared_leases_without_run_event_authority(  # n
         discovered = await client.get(discovery_path)
         assert discovered.status_code == 200, discovered.text
         assert discovered.json() == service.reference.model_dump(mode="json")
-        assert not respx_mock.calls
+        assert not httpx2_mock.calls
         assert leases.active() == []
         async with factory() as session:
             assert list(await session.scalars(select(ArchiveEmbeddingGeneration))) == []

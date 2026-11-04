@@ -9,7 +9,7 @@ from collections.abc import AsyncIterator
 from typing import Any, cast
 from unittest.mock import AsyncMock
 
-import httpx
+import httpx2
 import pytest
 from scripts import reach_podman_model as podman
 
@@ -79,7 +79,7 @@ async def test_only_closed_argv_and_bounded_stdin_carry_request(
     body = b'{"messages":[{"content":"private prompt"}]}' if method == "POST" else b""
     contents = (body, b"x" * podman.MAX_BODY_BYTES if method == "POST" else b"")
     for process, content in zip(processes, contents, strict=True):
-        request = httpx.Request(method, f"http://127.0.0.1:28000{path}", content=content)
+        request = httpx2.Request(method, f"http://127.0.0.1:28000{path}", content=content)
         response = await transport.handle_async_request(request)
         assert response.status_code == 200
         assert response.content == b'{"status":"ok"}'
@@ -131,8 +131,8 @@ async def test_unadmitted_request_never_starts_process(
     method: str, url: str, headers: dict[str, str], body: bytes
 ) -> None:
     factory = AsyncMock()
-    request = httpx.Request(method, url, headers=headers, content=body)
-    with pytest.raises(httpx.TransportError, match=r"^model_podman_request$"):
+    request = httpx2.Request(method, url, headers=headers, content=body)
+    with pytest.raises(httpx2.TransportError, match=r"^model_podman_request$"):
         await podman.PodmanModelTransport(process_factory=factory).handle_async_request(request)
     factory.assert_not_awaited()
 
@@ -147,8 +147,8 @@ async def test_streamed_request_stops_at_cumulative_limit_before_spawn() -> None
             yield chunk
 
     factory = AsyncMock()
-    request = httpx.Request("POST", "http://127.0.0.1:28000/v1/chat/completions", content=chunks())
-    with pytest.raises(httpx.TransportError, match=r"^model_podman_request$"):
+    request = httpx2.Request("POST", "http://127.0.0.1:28000/v1/chat/completions", content=chunks())
+    with pytest.raises(httpx2.TransportError, match=r"^model_podman_request$"):
         await podman.PodmanModelTransport(process_factory=factory).handle_async_request(request)
     assert consumed == [0, 1]
     factory.assert_not_awaited()
@@ -176,9 +176,9 @@ async def test_streamed_request_stops_at_cumulative_limit_before_spawn() -> None
 async def test_untrusted_response_is_bounded_and_has_content_free_errors(output: bytes) -> None:
     process = Process(output)
     factory = AsyncMock(return_value=process)
-    with pytest.raises(httpx.TransportError, match=r"^model_podman_protocol$"):
+    with pytest.raises(httpx2.TransportError, match=r"^model_podman_protocol$"):
         await podman.PodmanModelTransport(process_factory=factory).handle_async_request(
-            httpx.Request("GET", "http://127.0.0.1:28000/health")
+            httpx2.Request("GET", "http://127.0.0.1:28000/health")
         )
     factory.assert_awaited_once()
 
@@ -188,7 +188,7 @@ async def test_binary_response_at_exact_body_limit_preserves_status() -> None:
     content = b"\x00\xff" * (podman.MAX_BODY_BYTES // 2)
     factory = AsyncMock(return_value=Process(frame(content, status=503)))
     response = await podman.PodmanModelTransport(process_factory=factory).handle_async_request(
-        httpx.Request("GET", "http://127.0.0.1:28000/health")
+        httpx2.Request("GET", "http://127.0.0.1:28000/health")
     )
     assert response.status_code == 503
     assert response.content == content
@@ -200,9 +200,9 @@ async def test_process_failure_does_not_expose_diagnostics_or_retry(failure: str
     process = Process(returncode=7 if failure == "exit" else 0, error=OSError("private") if failure == "io" else None)
     factory = AsyncMock(side_effect=OSError("private")) if failure == "start" else AsyncMock(return_value=process)
     expected = "model_podman_start" if failure == "start" else "model_podman_failed"
-    with pytest.raises(httpx.TransportError, match=rf"^{expected}$"):
+    with pytest.raises(httpx2.TransportError, match=rf"^{expected}$"):
         await podman.PodmanModelTransport(process_factory=factory).handle_async_request(
-            httpx.Request("GET", "http://127.0.0.1:28000/health")
+            httpx2.Request("GET", "http://127.0.0.1:28000/health")
         )
     factory.assert_awaited_once()
 
@@ -210,9 +210,9 @@ async def test_process_failure_does_not_expose_diagnostics_or_retry(failure: str
 @pytest.mark.asyncio
 async def test_timeout_terminates_and_joins_process_before_content_free_error() -> None:
     process = Process(error=TimeoutError("private process diagnostic"))
-    with pytest.raises(httpx.ReadTimeout, match=r"^model_podman_timeout$"):
+    with pytest.raises(httpx2.ReadTimeout, match=r"^model_podman_timeout$"):
         await podman.PodmanModelTransport(process_factory=AsyncMock(return_value=process)).handle_async_request(
-            httpx.Request("GET", "http://127.0.0.1:28000/health")
+            httpx2.Request("GET", "http://127.0.0.1:28000/health")
         )
     assert process.terminated
     assert process.wait_calls >= 1
@@ -225,7 +225,7 @@ async def test_cancellation_joins_process_and_escalates_expired_grace(*, grace_e
     process = Process(block=True)
     process.wait_timeout_once = grace_expires
     transport = podman.PodmanModelTransport(process_factory=AsyncMock(return_value=process))
-    task = asyncio.create_task(transport.handle_async_request(httpx.Request("GET", "http://127.0.0.1:28000/health")))
+    task = asyncio.create_task(transport.handle_async_request(httpx2.Request("GET", "http://127.0.0.1:28000/health")))
     await process.entered.wait()
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
@@ -248,7 +248,7 @@ async def test_cancellation_during_spawn_settles_new_process_before_returning() 
         return cast("asyncio.subprocess.Process", process)
 
     transport = podman.PodmanModelTransport(process_factory=spawn)
-    task = asyncio.create_task(transport.handle_async_request(httpx.Request("GET", "http://127.0.0.1:28000/health")))
+    task = asyncio.create_task(transport.handle_async_request(httpx2.Request("GET", "http://127.0.0.1:28000/health")))
     await entered.wait()
     task.cancel()
     await asyncio.sleep(0)
@@ -282,7 +282,7 @@ async def test_authority_revoked_during_spawn_never_hands_payload_to_helper() ->
             raise ValueError(message)
 
     transport = podman.PodmanModelTransport(process_factory=spawn)
-    request = httpx.Request(
+    request = httpx2.Request(
         "POST",
         "http://127.0.0.1:28000/v1/chat/completions",
         content=b'{"messages":[{"content":"admitted public-source excerpt"}]}',
@@ -333,7 +333,7 @@ async def test_repeated_cancellation_waits_for_late_spawn_and_owned_reaping() ->
         return cast("asyncio.subprocess.Process", process)
 
     transport = podman.PodmanModelTransport(process_factory=spawn)
-    task = asyncio.create_task(transport.handle_async_request(httpx.Request("GET", "http://127.0.0.1:28000/health")))
+    task = asyncio.create_task(transport.handle_async_request(httpx2.Request("GET", "http://127.0.0.1:28000/health")))
     async with asyncio.timeout(3):
         await spawn_entered.wait()
         task.cancel()

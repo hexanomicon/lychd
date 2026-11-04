@@ -50,6 +50,24 @@ unavailable until its own authenticated container lifecycle is implemented and q
 The run-event bus, cancellation coordinator, services, and SAQ workers are process-local. This is a correctness boundary, not a
 scalability claim or permission to use another launcher.
 
+### Outbound HTTP clients
+
+Core-owned general-purpose HTTP clients and operator scripts use HTTPX2. Clients, transports,
+request/response objects and caught exceptions stay in the same library family. Preserve each
+adapter's destination and credential binding, disabled ambient proxies and redirects, bounded
+I/O, retry policy and cancellation/uncertain-outcome semantics. Network-owning clients and
+transports receive an explicit verified TLS context from `lychd.lib.http`, loaded from the
+maintained certifi bundle. Ambient CA and TLS key-log environment variables cannot change that
+context. This retains the migrated clients' public-root trust without inheriting HTTPX2's
+system-store environment behavior; the model factory uses the same policy. Candidate images
+must retain the declared CA dependency and certificate verification.
+
+Legacy HTTPX remains a testing dependency for Litestar's test clients and RESPX mock values.
+Litestar also requires it transitively in the production dependency graph; its presence does
+not authorize new Core-owned uses. HTTPX2 test interception crosses the HTTPCore2 boundary
+without changing process-wide imports. Protocol-specific transports retain their own authority
+contracts rather than inheriting permissions from the HTTP client.
+
 ## Lifespan and ownership
 
 Production initialization creates the typed Settings generation, selected extension assembly, and

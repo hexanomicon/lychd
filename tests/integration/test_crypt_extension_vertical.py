@@ -8,7 +8,8 @@ from textwrap import dedent
 from typing import cast
 from unittest.mock import Mock
 
-import httpx
+import httpx2
+import pytest
 import respx
 from pydantic_ai.models.test import TestModel
 
@@ -30,6 +31,9 @@ from lychd.extensions.host import AssembledExtensions
 from lychd.extensions.manager import ExtensionManager
 from lychd.system.schemas import QuadletContainer
 from tests.runtime_guards import InertSoftActivationGuard
+
+pytestmark = pytest.mark.httpx2(assert_all_called=False)
+
 
 _EXTENSION_ID = "adversarial/vertical"
 _MODEL_ID = "crypt-cipher-model"
@@ -168,10 +172,10 @@ _REGISTER_SOURCE = dedent(
 
 def test_external_crypt_contributes_rune_adapter_capability_to_dispatcher(
     tmp_path: Path,
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
 ) -> None:
-    respx_mock.route(host="localhost").mock(
-        side_effect=httpx.ConnectError("local builtin runtime intentionally unavailable")
+    httpx2_mock.route(host="localhost").mock(
+        side_effect=httpx2.ConnectError("local builtin runtime intentionally unavailable")
     )
     crypt_extensions = tmp_path / "crypt" / "extensions"
     register_file = crypt_extensions / "adversarial" / "vertical" / "register.py"

@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import httpx
 import httpx2
 import pydantic_ai.models
 import pytest
@@ -43,6 +42,9 @@ from tests.scout_feed_fixtures import scenario as feed_scenario
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+
+
+pytestmark = pytest.mark.httpx2(assert_all_called=False)
 
 
 @dataclass(frozen=True)
@@ -90,16 +92,16 @@ def _configured(
     )
 
 
-def _local_http(respx_mock: respx.MockRouter, *, port: int = 20000, models: tuple[str, ...] = ("qwen",)) -> None:
-    respx_mock.get(f"http://localhost:{port}/health").respond(json={"status": "ok"})
+def _local_http(httpx2_mock: respx.MockRouter, *, port: int = 20000, models: tuple[str, ...] = ("qwen",)) -> None:
+    httpx2_mock.get(f"http://localhost:{port}/health").respond(json={"status": "ok"})
     inventory = {"data": [{"id": model, "status": {"value": "loaded"}} for model in models]}
-    respx_mock.get(f"http://localhost:{port}/models").respond(json=inventory)
-    respx_mock.get(f"http://localhost:{port}/v1/models").respond(json=inventory)
+    httpx2_mock.get(f"http://localhost:{port}/models").respond(json=inventory)
+    httpx2_mock.get(f"http://localhost:{port}/v1/models").respond(json=inventory)
 
 
 @pytest.mark.asyncio
 async def test_local_chat_toml_preserves_generation_overlays_through_a_real_grant(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, httpx2_mock: respx.MockRouter
 ) -> None:
     configured = _configured(
         tmp_path,
@@ -120,7 +122,7 @@ temperature = 0.2
 """,
         },
     )
-    _local_http(respx_mock)
+    _local_http(httpx2_mock)
     leases = LeaseLedger()
     dispatcher = Dispatcher(configured.registry, leases=leases)
 
@@ -134,7 +136,7 @@ temperature = 0.2
 
 @pytest.mark.asyncio
 async def test_qwen_model_local_policy_is_captured_by_an_immutable_real_grant(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, httpx2_mock: respx.MockRouter
 ) -> None:
     configured = _configured(
         tmp_path,
@@ -154,7 +156,7 @@ thinking = "qwen3.8-non-thinking"
 """
         },
     )
-    _local_http(respx_mock, models=("Qwen3.8-27B",))
+    _local_http(httpx2_mock, models=("Qwen3.8-27B",))
     leases = LeaseLedger()
     dispatcher = Dispatcher(configured.registry, leases=leases)
     async with dispatcher.lease_grant(family="chat", run_id="policy-turn", requires_tools=True) as grant:
@@ -187,23 +189,23 @@ thinking = "qwen3.8-non-thinking"
     ],
 )
 def test_operator_thinking_policy_refuses_before_any_runtime_http(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter, configuration: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, httpx2_mock: respx.MockRouter, configuration: str
 ) -> None:
     with pytest.raises(ValueError, match="thinking") as raised:
         _configured(tmp_path, monkeypatch, {"vllm/chat.toml": 'name="desk"\n' + configuration})
     assert isinstance(raised.value.__cause__, ValidationError)
-    assert respx_mock.calls.call_count == 0
+    assert httpx2_mock.calls.call_count == 0
 
 
 def test_managed_llamacpp_alias_agrees_with_declared_identity(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, httpx2_mock: respx.MockRouter
 ) -> None:
     configured = _configured(
         tmp_path,
         monkeypatch,
         {"llamacpp/chat.toml": 'name="desk"\nmodel_path="/models/weights.gguf"\nserved_model_id="public-qwen"\n'},
     )
-    _local_http(respx_mock, models=("public-qwen",))
+    _local_http(httpx2_mock, models=("public-qwen",))
     stone = configured.declarations.soulstones[0]
     adapter = configured.extensions.runtime_adapters[0]
     command = adapter.plan(stone).exec_args
@@ -212,14 +214,14 @@ def test_managed_llamacpp_alias_agrees_with_declared_identity(
 
 
 def test_managed_llamacpp_context_matches_its_launch_command(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, httpx2_mock: respx.MockRouter
 ) -> None:
     configured = _configured(
         tmp_path,
         monkeypatch,
         {"llamacpp/chat.toml": 'name="desk"\nmodel_path="/models/qwen.gguf"\nn_ctx=4096\n'},
     )
-    _local_http(respx_mock)
+    _local_http(httpx2_mock)
     command = configured.extensions.runtime_adapters[0].plan(configured.declarations.soulstones[0]).exec_args
     assert command[command.index("-c") + 1] == "4096"
     assert configured.registry.list_capabilities()[0].generation_profile.max_context == 4096
@@ -262,7 +264,7 @@ def test_managed_llamacpp_context_matches_its_launch_command(
 def test_llamacpp_context_is_a_conservative_per_request_bound(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
     configuration: str,
     expected: int | None,
 ) -> None:
@@ -276,7 +278,7 @@ def test_llamacpp_context_is_a_conservative_per_request_bound(
         monkeypatch,
         {"llamacpp/chat.toml": identity + configuration},
     )
-    _local_http(respx_mock)
+    _local_http(httpx2_mock)
     assert configured.registry.list_capabilities()[0].generation_profile.max_context == expected
 
 
@@ -320,7 +322,7 @@ surface = "responses"
 @pytest.mark.asyncio
 @pytest.mark.parametrize("runtime", ["llamacpp", "vllm", "sglang"])
 async def test_local_model_surface_hint_reaches_the_executable_model(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter, runtime: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, httpx2_mock: respx.MockRouter, runtime: str
 ) -> None:
     model_id = "/models/qwen" if runtime == "sglang" else "qwen"
     model_path = "/models/qwen.gguf" if runtime == "llamacpp" else "/models/qwen"
@@ -347,14 +349,14 @@ supports_tools = true
 """,
         },
     )
-    _local_http(respx_mock, models=(model_id,))
+    _local_http(httpx2_mock, models=(model_id,))
     grant = await configured.registry.issue_grant(f"desk:chat:{model_id}", holder="run:operator-turn")
     assert isinstance(grant.model, OpenAIResponsesModel)
 
 
 @pytest.mark.asyncio
 async def test_single_model_health_does_not_grant_an_absent_declared_model(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, httpx2_mock: respx.MockRouter
 ) -> None:
     configured = _configured(
         tmp_path,
@@ -372,7 +374,7 @@ path = "/models/retired.gguf"
 """,
         },
     )
-    _local_http(respx_mock)
+    _local_http(httpx2_mock)
     with pytest.raises(CapabilityUnavailable):
         await configured.registry.issue_grant("desk:chat:retired-model", holder="run:operator-turn")
 
@@ -388,7 +390,7 @@ path = "/models/retired.gguf"
 def test_single_model_inventory_distinguishes_transport_loading_and_invalid_data(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
     inventory: str,
     expected: CapabilityPhase,
 ) -> None:
@@ -397,10 +399,10 @@ def test_single_model_inventory_distinguishes_transport_loading_and_invalid_data
         monkeypatch,
         {"llamacpp/chat.toml": 'name="desk"\nmodel_path="/models/qwen.gguf"\n'},
     )
-    respx_mock.get("http://localhost:20000/health").respond(json={"status": "ok"})
-    route = respx_mock.get("http://localhost:20000/v1/models")
+    httpx2_mock.get("http://localhost:20000/health").respond(json={"status": "ok"})
+    route = httpx2_mock.get("http://localhost:20000/v1/models")
     if inventory == "disconnected":
-        route.mock(side_effect=httpx.ConnectError("runtime stopped between probes"))
+        route.mock(side_effect=httpx2.ConnectError("runtime stopped between probes"))
     elif inventory == "loading":
         route.respond(503, json={"error": {"message": "Loading model"}})
     else:
@@ -413,7 +415,7 @@ def test_single_model_inventory_distinguishes_transport_loading_and_invalid_data
 @pytest.mark.asyncio
 @pytest.mark.parametrize("family", ["vision", "embedding", "rerank", "stt", "tts"])
 async def test_configuring_a_metadata_family_does_not_invent_an_execution_surface(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter, family: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, httpx2_mock: respx.MockRouter, family: str
 ) -> None:
     configured = _configured(
         tmp_path,
@@ -430,7 +432,7 @@ families = ["{family}"]
 """,
         },
     )
-    _local_http(respx_mock)
+    _local_http(httpx2_mock)
     key = f"desk:{family}:qwen"
     state = configured.registry.get_capability_state(key)
     assert state is not None
@@ -440,7 +442,7 @@ families = ["{family}"]
 
 
 def test_multiple_engine_endpoints_preserve_one_port_and_model_generation(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, httpx2_mock: respx.MockRouter
 ) -> None:
     configured = _configured(
         tmp_path,
@@ -451,8 +453,8 @@ def test_multiple_engine_endpoints_preserve_one_port_and_model_generation(
             'exec=["serve","/models/coder","--served-model-name","coder","--port","23000"]\n',
         },
     )
-    _local_http(respx_mock)
-    _local_http(respx_mock, port=23000, models=("coder",))
+    _local_http(httpx2_mock)
+    _local_http(httpx2_mock, port=23000, models=("coder",))
     assert {(stone.name, stone.port) for stone in configured.declarations.soulstones} == {
         ("desk", 20000),
         ("batch", 23000),
@@ -504,7 +506,7 @@ class _Queue:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("runtime", ["llamacpp", "vllm"])
 async def test_operator_text_turn_runs_real_assembly_dispatch_and_openai_stream(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, respx_mock: respx.MockRouter, runtime: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, httpx2_mock: respx.MockRouter, runtime: str
 ) -> None:
     model_id = "qwen" if runtime == "llamacpp" else "Qwen3.8-27B"
     document = (
@@ -536,7 +538,7 @@ temperature = 0.2
         monkeypatch,
         {f"{runtime}/chat.toml": document},
     )
-    _local_http(respx_mock, models=(model_id,))
+    _local_http(httpx2_mock, models=(model_id,))
     requests: list[dict[str, Any]] = []
 
     def answer(request: httpx2.Request) -> httpx2.Response:

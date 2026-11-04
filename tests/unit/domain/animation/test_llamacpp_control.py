@@ -23,6 +23,8 @@ from lychd.extensions.builtin.animator.llamacpp.parser_preset import LlamaCppPre
 from lychd.extensions.builtin.animator.runtimes import LlamaCppRuntimeAdapter
 from lychd.lib.http import HttpJsonError
 
+pytestmark = pytest.mark.httpx2(assert_all_called=False)
+
 
 def _router_animator() -> SoulstoneAnimator[LlamacppConnector, LlamaCppSoulstoneConfig]:
     rune = LlamaCppSoulstoneConfig(
@@ -177,11 +179,11 @@ async def test_llamacpp_control_load_model(monkeypatch: Any) -> None:
     ids=["malformed-entry", "missing-identity", "duplicate-identity", "missing-status"],
 )
 async def test_router_inventory_cannot_publish_partial_warmth(
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
     invalid_entry: object,
 ) -> None:
-    respx_mock.get("http://localhost:8080/health").respond(200, json={"status": "ok"})
-    respx_mock.get("http://localhost:8080/models").respond(
+    httpx2_mock.get("http://localhost:8080/health").respond(200, json={"status": "ok"})
+    httpx2_mock.get("http://localhost:8080/models").respond(
         200,
         json={"data": [{"id": "qwen-next-80b", "status": {"value": "loaded"}}, invalid_entry]},
     )
@@ -209,16 +211,16 @@ async def test_router_inventory_cannot_publish_partial_warmth(
     ],
 )
 async def test_router_inventory_admits_only_proved_model_states(
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
     status: dict[str, object],
     expected: CapabilityPhase,
     health_status: str,
 ) -> None:
-    health = respx_mock.get("http://localhost:8080/health").respond(
+    health = httpx2_mock.get("http://localhost:8080/health").respond(
         200,
         json={"status": "ok"} if health_status == "ok" else {"error": {"message": "Loading model"}},
     )
-    respx_mock.get("http://localhost:8080/models").respond(
+    httpx2_mock.get("http://localhost:8080/models").respond(
         200,
         json={
             "data": [
@@ -227,7 +229,7 @@ async def test_router_inventory_admits_only_proved_model_states(
             ]
         },
     )
-    load = respx_mock.post("http://localhost:8080/models/load").respond(200, json={"success": True})
+    load = httpx2_mock.post("http://localhost:8080/models/load").respond(200, json={"success": True})
     animator = _router_animator()
     adapter = LlamaCppRuntimeAdapter()
     specs = adapter.build_capability_specs(animator)

@@ -15,7 +15,7 @@ from contextlib import suppress
 from http import HTTPStatus
 from typing import Any, NoReturn, cast
 
-import httpx
+import httpx2
 
 MAX_BODY_BYTES = 49_152
 MAX_FRAME_BYTES = 66_048
@@ -109,8 +109,8 @@ except Exception:
 _ARGV = ("podman", "exec", "--interactive", "lychd-night-qwen38", "python3", "-I", "-c", _HELPER)
 
 
-def _fail(code: str, request: httpx.Request) -> NoReturn:
-    raise httpx.TransportError(code, request=request) from None
+def _fail(code: str, request: httpx2.Request) -> NoReturn:
+    raise httpx2.TransportError(code, request=request) from None
 
 
 def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -161,7 +161,7 @@ async def _settle(
         raise asyncio.CancelledError
 
 
-async def _request_frame(request: httpx.Request) -> bytes:
+async def _request_frame(request: httpx2.Request) -> bytes:
     url = request.url
     if (
         url.scheme != "http"
@@ -176,13 +176,13 @@ async def _request_frame(request: httpx.Request) -> bytes:
         _fail("model_podman_request", request)
     body = bytearray()
     try:
-        if not isinstance(request.stream, httpx.AsyncByteStream):
+        if not isinstance(request.stream, httpx2.AsyncByteStream):
             _fail("model_podman_request", request)
         async for chunk in request.stream:
             if len(chunk) > MAX_BODY_BYTES - len(body):
                 _fail("model_podman_request", request)
             body.extend(chunk)
-    except (OSError, ValueError, TypeError, httpx.StreamError):
+    except (OSError, ValueError, TypeError, httpx2.StreamError):
         _fail("model_podman_request", request)
     if request.method == "GET" and body:
         _fail("model_podman_request", request)
@@ -219,7 +219,7 @@ def _decode_response(output: bytes) -> tuple[int, bytes]:
     return status, content
 
 
-def _authorize_payload(request: httpx.Request) -> None:
+def _authorize_payload(request: httpx2.Request) -> None:
     authorize = request.extensions.get("lychd_research_authorize")
     if authorize is not None:
         if not callable(authorize):
@@ -228,7 +228,7 @@ def _authorize_payload(request: httpx.Request) -> None:
         authorize()
 
 
-class PodmanModelTransport(httpx.AsyncBaseTransport):
+class PodmanModelTransport(httpx2.AsyncBaseTransport):
     """Admit the broker's fixed HTTP dialect through a bounded exec helper."""
 
     def __init__(
@@ -239,7 +239,7 @@ class PodmanModelTransport(httpx.AsyncBaseTransport):
         """Bind the fixed executor without starting a process or network call."""
         self._process_factory = process_factory or asyncio.create_subprocess_exec
 
-    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+    async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
         """Return one response without retries, redirects or forwarded headers."""
         frame = await _request_frame(request)
         environment = {
@@ -271,7 +271,7 @@ class PodmanModelTransport(httpx.AsyncBaseTransport):
         except TimeoutError:
             await _settle(started, process)
             code = "model_podman_timeout"
-            raise httpx.ReadTimeout(code, request=request) from None
+            raise httpx2.ReadTimeout(code, request=request) from None
         except OSError:
             await _settle(started, process)
             _fail("model_podman_start" if process is None else "model_podman_failed", request)
@@ -281,4 +281,4 @@ class PodmanModelTransport(httpx.AsyncBaseTransport):
             status, content = _decode_response(output)
         except (ValueError, TypeError):
             _fail("model_podman_protocol", request)
-        return httpx.Response(status, content=content, headers={"Content-Type": "application/json"}, request=request)
+        return httpx2.Response(status, content=content, headers={"Content-Type": "application/json"}, request=request)

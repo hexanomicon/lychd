@@ -36,6 +36,9 @@ from lychd.domain.cortex.leases import LeaseLedger
 from lychd.extensions.builtin.animator.register import build_openai_portal, probe_openai_portal
 from lychd.extensions.context import ExtensionContext
 
+pytestmark = pytest.mark.httpx2(assert_all_called=False)
+
+
 _PORTAL_SCHEMAS: list[type[RuneConfig]] = [
     AnimatorConfig,
     PortalConfig,
@@ -145,8 +148,7 @@ def test_portal_base_url_allows_provider_prefix_paths() -> None:
 # --- opt-in probe (respx: no surprise egress) ------------------------------
 
 
-@respx.mock
-def test_probe_false_portal_performs_no_http(tmp_path: Path) -> None:
+def test_probe_false_portal_performs_no_http(tmp_path: Path, httpx2_mock: respx.MockRouter) -> None:
     runes_dir = tmp_path / "runes"
     _write(
         runes_dir / "animator" / "portals" / "openai" / "quiet.toml",
@@ -163,16 +165,15 @@ def test_probe_false_portal_performs_no_http(tmp_path: Path) -> None:
     )
     registry.load()  # probe=False ⇒ no live probe; respx would raise on any egress
 
-    assert respx.calls.call_count == 0
+    assert httpx2_mock.calls.call_count == 0
     assert len(registry.list_capabilities()) == 1
     state = registry.list_capability_states()[0]
     assert state.phase is CapabilityPhase.UNKNOWN
     assert state.health == "unverified"
 
 
-@respx.mock
-def test_probe_true_portal_exercises_live_probe(tmp_path: Path) -> None:
-    route = respx.get("https://api.openai.com/v1/models").mock(
+def test_probe_true_portal_exercises_live_probe(tmp_path: Path, httpx2_mock: respx.MockRouter) -> None:
+    route = httpx2_mock.get("https://api.openai.com/v1/models").mock(
         return_value=httpx.Response(200, json={"object": "list", "data": []})
     )
     runes_dir = tmp_path / "runes"
@@ -198,9 +199,10 @@ def test_probe_true_portal_exercises_live_probe(tmp_path: Path) -> None:
     assert state.health == "model_missing"
 
 
-@respx.mock
-def test_probe_true_portal_separates_live_link_from_invalid_inventory(tmp_path: Path) -> None:
-    respx.get("https://api.openai.com/v1/models").mock(
+def test_probe_true_portal_separates_live_link_from_invalid_inventory(
+    tmp_path: Path, httpx2_mock: respx.MockRouter
+) -> None:
+    httpx2_mock.get("https://api.openai.com/v1/models").mock(
         return_value=httpx.Response(200, json={"object": "list", "data": [{"object": "model"}]})
     )
     runes_dir = tmp_path / "runes"
@@ -226,8 +228,7 @@ def test_probe_true_portal_separates_live_link_from_invalid_inventory(tmp_path: 
     assert "non-empty string id" in (state.reason or "")
 
 
-@respx.mock
-def test_probe_true_requires_the_exact_portal_probe_strategy(tmp_path: Path) -> None:
+def test_probe_true_requires_the_exact_portal_probe_strategy(tmp_path: Path, httpx2_mock: respx.MockRouter) -> None:
     runes_dir = tmp_path / "runes"
     _write(
         runes_dir / "animator" / "portals" / "openai" / "live.toml",
@@ -252,7 +253,7 @@ def test_probe_true_requires_the_exact_portal_probe_strategy(tmp_path: Path) -> 
     with pytest.raises(RuntimeError, match="has no exact probe strategy"):
         registry.load()
 
-    assert respx.calls.call_count == 0
+    assert httpx2_mock.calls.call_count == 0
 
 
 def test_failed_initial_probe_leaves_registry_retryable_and_unpublished(tmp_path: Path) -> None:
@@ -390,9 +391,9 @@ def test_register_adds_portal_schema_exactly_once() -> None:
 async def test_portal_hydrates_but_dispatch_remains_quarantined(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
 ) -> None:
-    respx_mock.get("https://api.openai.com/v1/models").mock(
+    httpx2_mock.get("https://api.openai.com/v1/models").mock(
         return_value=httpx.Response(200, json={"object": "list", "data": [{"id": "gpt-5.2"}]})
     )
     secrets = tmp_path / "secrets"

@@ -4,7 +4,7 @@ import asyncio
 import json
 from pathlib import Path
 
-import httpx
+import httpx2
 import pytest
 from scripts import blockworld_voice
 
@@ -92,20 +92,20 @@ async def test_failed_optional_tts_preserves_one_effect_native_result_and_events
     files, game, runner, control = host
     calls: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         calls.append(request.url.path)
         if request.url.path.endswith("transcriptions"):
-            return httpx.Response(200, json={"text": "say hello"})
+            return httpx2.Response(200, json={"text": "say hello"})
         body = json.loads(request.content)
         assert body["input"] == feedback_text({"kind": "client_observed"}, "sk")
-        return httpx.Response(
+        return httpx2.Response(
             503 if failure == "http" else 200,
             content=b"PRIVATE provider details",
             headers={"Content-Type": "audio/wav"},
         )
 
     session = blockworld_voice.VoiceSession(
-        files, speech(httpx.MockTransport(handler)), runner, control, reply_language="sk"
+        files, speech(httpx2.MockTransport(handler)), runner, control, reply_language="sk"
     )
     try:
         task = session.begin(wav())
@@ -147,13 +147,13 @@ async def test_programming_and_reply_evidence_failures_still_fail(
 ) -> None:
     files, game, runner, control = host
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         if request.url.path.endswith("transcriptions"):
-            return httpx.Response(200, json={"text": "say hello"})
+            return httpx2.Response(200, json={"text": "say hello"})
         if failure == "bug":
             msg = "programming defect"
             raise RuntimeError(msg)
-        return httpx.Response(200, content=wav(), headers={"Content-Type": "audio/wav"})
+        return httpx2.Response(200, content=wav(), headers={"Content-Type": "audio/wav"})
 
     original_write = files.write_new
 
@@ -166,7 +166,7 @@ async def test_programming_and_reply_evidence_failures_still_fail(
     if failure == "evidence":
         monkeypatch.setattr(files, "write_new", write)
     session = blockworld_voice.VoiceSession(
-        files, speech(httpx.MockTransport(handler)), runner, control, reply_language="en"
+        files, speech(httpx2.MockTransport(handler)), runner, control, reply_language="en"
     )
     try:
         with pytest.raises(RuntimeError if failure == "bug" else OSError):
@@ -184,15 +184,15 @@ async def test_tts_cancellation_propagates_without_erasing_the_game_result(host:
     files, game, runner, control = host
     entered = asyncio.Event()
 
-    async def handler(request: httpx.Request) -> httpx.Response:
+    async def handler(request: httpx2.Request) -> httpx2.Response:
         if request.url.path.endswith("transcriptions"):
-            return httpx.Response(200, json={"text": "say hello"})
+            return httpx2.Response(200, json={"text": "say hello"})
         entered.set()
         await asyncio.Event().wait()
-        return httpx.Response(200, content=wav(), headers={"Content-Type": "audio/wav"})
+        return httpx2.Response(200, content=wav(), headers={"Content-Type": "audio/wav"})
 
     session = blockworld_voice.VoiceSession(
-        files, speech(httpx.MockTransport(handler)), runner, control, reply_language="en"
+        files, speech(httpx2.MockTransport(handler)), runner, control, reply_language="en"
     )
     task = session.begin(wav())
     await asyncio.wait_for(entered.wait(), timeout=2)
@@ -214,12 +214,12 @@ async def test_unchanged_idle_is_quiet_but_keeps_each_native_run_and_private_eve
     files, game, runner, control = host
     calls: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         calls.append(request.url.path)
-        return httpx.Response(200, content=wav(), headers={"Content-Type": "audio/wav"})
+        return httpx2.Response(200, content=wav(), headers={"Content-Type": "audio/wav"})
 
     session = blockworld_voice.VoiceSession(
-        files, speech(httpx.MockTransport(handler)), runner, control, reply_language="en"
+        files, speech(httpx2.MockTransport(handler)), runner, control, reply_language="en"
     )
     assert runner.behaviors is not None
     clock = [100.0]
@@ -258,7 +258,7 @@ async def test_pre_capture_settlement_has_separate_timing_without_changing_four_
 ) -> None:
     files, _game, runner, control = host
     entered, release = asyncio.Event(), asyncio.Event()
-    client = speech(httpx.MockTransport(lambda _: httpx.Response(200, json={"text": "say hello"})))
+    client = speech(httpx2.MockTransport(lambda _: httpx2.Response(200, json={"text": "say hello"})))
     session = blockworld_voice.VoiceSession(files, client, runner, control)
     original_pause = session.supervisor.pause
 

@@ -11,7 +11,7 @@ from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import discord
-import httpx
+import httpx2
 import pytest
 
 from lychd.compositions.reach.operator_trace import ReachTraceEvent, TraceEmitter
@@ -94,17 +94,17 @@ async def test_dm_starts_with_native_reply_and_multipart_delivery_stops_on_unkno
     bodies: list[dict[str, Any]] = []
     answer = "x" * 5000
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         if request.method == "GET":
             assert request.url.path == "/api/v10/channels/204"
-            return httpx.Response(200, json={"id": "204", "type": 1, "recipients": [{"id": "105"}]})
+            return httpx2.Response(200, json={"id": "204", "type": 1, "recipients": [{"id": "105"}]})
         assert request.url.path == "/api/v10/channels/204/messages"
         bodies.append(json.loads(request.content))
         timeline.append(f"final:{len(bodies) - 1}")
-        return httpx.Response(500 if fail_second_part and len(bodies) == 2 else 201, json={"id": "301"})
+        return httpx2.Response(500 if fail_second_part and len(bodies) == 2 else 201, json={"id": "301"})
 
     async def request_native(*_args: Any, **_kwargs: Any) -> ReachWorkerResult:
         assert timeline == []

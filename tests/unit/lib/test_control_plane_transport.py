@@ -6,6 +6,7 @@ import asyncio
 from typing import TYPE_CHECKING, Literal, cast
 
 import httpx
+import httpx2
 import pytest
 import respx
 
@@ -21,15 +22,15 @@ _BASE_URL = "http://127.0.0.1:5000/v1"
 _ADMIN_KEY = "control-plane-test-key-0000000001"
 
 
-def response(request: httpx.Request) -> httpx.Response:
+def response(request: httpx2.Request) -> httpx2.Response:
     if request.url.path == "/health":
-        return httpx.Response(200, json={"status": "healthy"})
+        return httpx2.Response(200, json={"status": "healthy"})
     if request.url.path == "/v1/models":
-        return httpx.Response(200, json={"data": [{"id": "test-model"}]})
+        return httpx2.Response(200, json={"data": [{"id": "test-model"}]})
     if request.url.path == "/v1/model":
-        return httpx.Response(200, json={"id": "test-model"})
+        return httpx2.Response(200, json={"id": "test-model"})
     assert request.url.path == "/v1/model/load"
-    return httpx.Response(
+    return httpx2.Response(
         200,
         text='data: {"model_type":"model","module":1,"modules":1,"status":"finished"}\n\n',
         headers={"content-type": "text/event-stream"},
@@ -45,8 +46,8 @@ async def test_control_plane_never_routes_admin_credential_through_ambient_proxy
     operation: Literal["json", "stream"],
     proxy_env: str,
 ) -> None:
-    direct: list[httpx.Request] = []
-    proxied: list[httpx.Request] = []
+    direct: list[httpx2.Request] = []
+    proxied: list[httpx2.Request] = []
     for name in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
         monkeypatch.delenv(name, raising=False)
         monkeypatch.delenv(name.lower(), raising=False)
@@ -57,25 +58,25 @@ async def test_control_plane_never_routes_admin_credential_through_ambient_proxy
         encoding="utf-8",
     )
 
-    def direct_response(request: httpx.Request) -> httpx.Response:
+    def direct_response(request: httpx2.Request) -> httpx2.Response:
         direct.append(request)
         return response(request)
 
-    def proxy_response(request: httpx.Request) -> httpx.Response:
+    def proxy_response(request: httpx2.Request) -> httpx2.Response:
         proxied.append(request)
         return response(request)
 
-    def direct_transport(*args: object, **kwargs: object) -> httpx.MockTransport:
-        return httpx.MockTransport(direct_response)
+    def direct_transport(*args: object, **kwargs: object) -> httpx2.MockTransport:
+        return httpx2.MockTransport(direct_response)
 
-    def proxy_transport(*args: object, **kwargs: object) -> httpx.MockTransport:
-        return httpx.MockTransport(proxy_response)
+    def proxy_transport(*args: object, **kwargs: object) -> httpx2.MockTransport:
+        return httpx2.MockTransport(proxy_response)
 
     # Keep the client's real environment parsing and route selection. Replacing
     # both transport factories prevents sockets without masking proxy selection,
     # unlike passing transport=MockTransport, which disables environment proxies.
-    monkeypatch.setattr(httpx.AsyncClient, "_init_transport", direct_transport)
-    monkeypatch.setattr(httpx.AsyncClient, "_init_proxy_transport", proxy_transport)
+    monkeypatch.setattr(httpx2.AsyncClient, "_init_transport", direct_transport)
+    monkeypatch.setattr(httpx2.AsyncClient, "_init_proxy_transport", proxy_transport)
     control = TabbyAPIControlPlane()
     control.register_runtime(_BASE_URL, "tabby_test_auth")
     if operation == "json":
@@ -109,7 +110,7 @@ async def test_control_plane_refuses_redirect_without_forwarding_admin_credentia
     control = TabbyAPIControlPlane()
     control.register_runtime(_BASE_URL, "tabby_test_auth")
     target = "https://unapproved-provider.invalid/capture"
-    with respx.mock(assert_all_called=False) as router:
+    with respx.mock(assert_all_called=False, using="httpcore2") as router:
         rejected = router.route(url=target).mock(return_value=httpx.Response(200, json={}))
         url = "http://127.0.0.1:5000/health" if operation == "json" else f"{_BASE_URL}/model/load"
         original = router.route(url=url).mock(

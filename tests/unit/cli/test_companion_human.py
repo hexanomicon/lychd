@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import Any, cast
 
-import httpx
+import httpx2
 import pytest
 from rich.console import Console
 from scripts import companion_lab
@@ -138,7 +138,7 @@ async def test_voice_original_words_are_private_opt_in_before_strict_refusal(
     files: PrivateWorkspace, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], output_mode: str
 ) -> None:
     words = "[bold]unsupported[/]\n\u202e"
-    client = speech(httpx.MockTransport(lambda _: httpx.Response(200, json={"text": words})))
+    client = speech(httpx2.MockTransport(lambda _: httpx2.Response(200, json={"text": words})))
     state = ConsoleSession()
     stream = io.StringIO()
     console = companion_lab.CompanionConsole(
@@ -186,13 +186,15 @@ async def test_stop_clears_waiting_or_held_transcription_without_fake_microphone
 ) -> None:
     entered = asyncio.Event()
 
-    async def handler(_request: httpx.Request) -> httpx.Response:
+    async def handler(_request: httpx2.Request) -> httpx2.Response:
         entered.set()
         await asyncio.Event().wait()
         raise AssertionError
 
     state = ConsoleSession()
-    console, output = human_console(files, cast("CompanionSession", state), speech=speech(httpx.MockTransport(handler)))
+    console, output = human_console(
+        files, cast("CompanionSession", state), speech=speech(httpx2.MockTransport(handler))
+    )
     source = files.root / "input.wav"
     files.write_new(source, wav())
     task = console.begin_voice(source)
@@ -218,7 +220,7 @@ async def test_presentation_and_voice_retention_failure_preserve_one_known_nativ
     fake = FakeBridge()
     bridge = fake.bridge()
     session = CompanionSession(LocalCompanionRunner(CompanionService(policy(), bridge), bridge), bridge)
-    client = speech(httpx.MockTransport(lambda _: httpx.Response(200, json={"text": "state"})))
+    client = speech(httpx2.MockTransport(lambda _: httpx2.Response(200, json={"text": "state"})))
     console, _output = human_console(files, session, speech=client)
     session.record = console.record
     source = files.root / "input.wav"
@@ -277,7 +279,7 @@ async def test_human_output_distinguishes_applied_game_from_native_audio_and_rep
     bridge = fake.bridge()
     session = CompanionSession(LocalCompanionRunner(CompanionService(policy(), bridge), bridge), bridge)
     client = speech(
-        httpx.MockTransport(lambda _: httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"}))
+        httpx2.MockTransport(lambda _: httpx2.Response(200, content=wav(), headers={"content-type": "audio/wav"}))
     )
     console, output = human_console(
         files,
