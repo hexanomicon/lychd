@@ -95,9 +95,18 @@ jobs:
         # Both apps currently use only src/main; debug compiles every production source.
         # Explicit library targets include generated wire models, core and interaction.
         run: |
-          ./gradlew --no-daemon --no-build-cache --max-workers=2 --dependency-verification=strict \
+          ./gradlew --no-daemon --no-build-cache --max-workers=2 --dependency-verification=strict -Dorg.gradle.dependency.verification.console=verbose \
             -PincludeOfflineApp=true clean :core:classes :interaction:classes \
             :app:assembleDebug :offline:assembleDebug
+
+      - name: Preserve dependency-verification failure reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dependency-verification-${{ github.job }}-${{ github.run_attempt }}
+          path: clients/android/build/reports/dependency-verification/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Analyze and upload
         uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
@@ -143,7 +152,16 @@ jobs:
         working-directory: clients/minecraft
         # classes does not run tests or opt into any GameTest profile.
         run: |
-          ./gradlew --no-daemon --no-build-cache --max-workers=2 --dependency-verification=strict clean classes
+          ./gradlew --no-daemon --no-build-cache --max-workers=2 --dependency-verification=strict -Dorg.gradle.dependency.verification.console=verbose clean classes
+
+      - name: Preserve dependency-verification failure reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dependency-verification-${{ github.job }}-${{ github.run_attempt }}
+          path: clients/minecraft/build/reports/dependency-verification/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Analyze and upload
         uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
@@ -190,7 +208,16 @@ jobs:
         # Reuse the checksum-pinned wrapper; no client GameTest or EULA acceptance.
         run: |
           ../minecraft/gradlew --project-dir . --no-daemon --no-build-cache --max-workers=1 \
-            --dependency-verification=strict clean classes
+            --dependency-verification=strict -Dorg.gradle.dependency.verification.console=verbose clean classes
+
+      - name: Preserve dependency-verification failure reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dependency-verification-${{ github.job }}-${{ github.run_attempt }}
+          path: clients/minecraft-voice/build/reports/dependency-verification/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Analyze and upload
         uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
