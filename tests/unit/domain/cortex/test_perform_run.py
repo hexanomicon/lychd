@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
-import pydantic_ai.models
+import pydantic_ai.models as ai_models
 import pytest
 from pydantic_ai.models.test import TestModel
 
@@ -44,7 +44,7 @@ from lychd.ghouls.runs import (
 )
 from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry
 
-pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
+ai_models.ALLOW_MODEL_REQUESTS = False
 
 
 class _Effects:
