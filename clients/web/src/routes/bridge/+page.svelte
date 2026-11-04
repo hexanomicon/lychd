@@ -15,12 +15,12 @@
   function selectCase(caseId: string | null) {
     navigationError = "";
     void goto(caseId ? investigationHref(caseId) : "/bridge?investigation=new", {
-      replaceState: true, keepFocus: true, noScroll: true
+      replace: true, reset: false
     }).catch(() => { navigationError = "Navigation failed. Keep the displayed case UUID to Check it later."; });
   }
   function selectNote(selection: string) {
     navigationError = "";
-    void goto(notesHref(selection), { replaceState: true, keepFocus: true, noScroll: true })
+    void goto(notesHref(selection), { replace: true, reset: false })
       .catch(() => { navigationError = "Navigation failed. Keep the displayed exact source and record identities."; });
   }
 </script>

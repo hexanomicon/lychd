@@ -702,17 +702,19 @@ async def test_actual_sdk_explicit_thinking_conflict_is_refused_before_relay(*, 
         model_settings={"max_tokens": binding.max_tokens, "temperature": binding.temperature},
     )
     async with agent:
-        with override_allow_model_requests(True):  # noqa: FBT003 - installed SDK with an in-memory relay
-            with pytest.raises(ValueError, match="model_generation_binding"):
-                await agent.run(
-                    "Conflict",
-                    model_settings={
-                        "extra_body": {
-                            **generation_format(binding, phase="checkback"),
-                            "chat_template_kwargs": {"enable_thinking": not (enabled or selective)},
-                        }
-                    },
-                )
+        with (
+            override_allow_model_requests(True),  # noqa: FBT003 - installed SDK with an in-memory relay
+            pytest.raises(ValueError, match="model_generation_binding"),
+        ):
+            await agent.run(
+                "Conflict",
+                model_settings={
+                    "extra_body": {
+                        **generation_format(binding, phase="checkback"),
+                        "chat_template_kwargs": {"enable_thinking": not (enabled or selective)},
+                    }
+                },
+            )
     assert calls == 0
 
 
@@ -740,9 +742,11 @@ async def test_actual_sdk_explicit_json_format_conflicts_are_refused_before_rela
         model_settings={"max_tokens": binding.max_tokens, "temperature": binding.temperature},
     )
     async with agent:
-        with override_allow_model_requests(True):  # noqa: FBT003 - installed SDK with an in-memory relay
-            with pytest.raises(ValueError, match=r"model_generation_binding|validation error"):
-                await agent.run("Conflict", model_settings={"extra_body": {"response_format": format_value}})
+        with (
+            override_allow_model_requests(True),  # noqa: FBT003 - installed SDK with an in-memory relay
+            pytest.raises(ValueError, match=r"model_generation_binding|validation error"),
+        ):
+            await agent.run("Conflict", model_settings={"extra_body": {"response_format": format_value}})
     assert calls == 0
 
 

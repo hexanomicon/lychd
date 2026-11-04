@@ -395,15 +395,15 @@ async def test_noncompletion_never_passes_or_advances_the_probe(
     failed = cases[-1]
     assert failed["passed"] is False
     prior_responses = 1 if stage == "final" else 0
-    # Invalid raw enum values are refused by the SDK before it returns a ModelResponse.
-    received = prior_responses + (1 if finish_reason == "content_filter" else 0)
+    # The SDK retains unknown wire reasons with no mapped completion reason.
+    received = prior_responses + 1
     assert failed["responses_received"] == received
     assert failed["response_model_ids"] == [_MODEL] * received
-    reasons = ["tool_call"] if prior_responses else []
-    if finish_reason == "content_filter":
-        assert receipt["error_type"] == "incomplete_response"
-        reasons.append("content_filter")
+    reasons: list[str | None] = ["tool_call"] if prior_responses else []
+    assert receipt["error_type"] == "incomplete_response"
+    reasons.append("content_filter" if finish_reason == "content_filter" else None)
     assert failed["finish_reasons"] == reasons
+    assert failed["provider_finish_reasons"] == (["tool_calls"] if prior_responses else []) + [finish_reason]
 
 
 @pytest.mark.asyncio

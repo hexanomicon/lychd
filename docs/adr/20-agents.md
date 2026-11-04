@@ -29,7 +29,7 @@ icon: material/robot-outline
 
 ## Decision
 
-LychD uses in-process **Pydantic AI**, at lockfile-pinned `pydantic-ai-slim==2.55.0`. The
+LychD uses in-process **Pydantic AI**, at lockfile-pinned `pydantic-ai-slim==2.64.0`. The
 [State](../state-of-the-work.md#pydantic-ai-adapter) owns present cognitive adapter evidence;
 [native Graph integration](../state-of-the-work.md#pydantic-ai-v2-migration) preserves LychD's
 serial checkpoint and wait-owner contract.

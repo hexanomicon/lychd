@@ -22,10 +22,9 @@ from urllib.parse import urlsplit
 
 import h11
 from http_message_signatures import algorithms
-from http_message_signatures.http_sfv.dictionary import Dictionary
-from http_message_signatures.http_sfv.item import InnerList, Item
 from http_message_signatures.resolvers import HTTPSignatureKeyResolver
 from http_message_signatures.signatures import HTTPMessageSigner, HTTPMessageVerifier
+from http_sf.compat import Dictionary, InnerList, Item
 
 from lychd.domain.intercom.codec import decode_response, encode_request, visible_id
 from lychd.domain.intercom.transport import (
@@ -120,6 +119,8 @@ class _Signer(Protocol):
         expires: datetime,
         covered_component_ids: Sequence[str],
         label: str,
+        body: bytes,
+        use_existing_digest: bool,
     ) -> None: ...
 
 
@@ -340,6 +341,8 @@ def prepare_request(
             expires=now + timedelta(seconds=MAX_OPERATION_SECONDS),
             covered_component_ids=REQUEST_COMPONENTS,
             label=SIGNATURE_LABEL,
+            body=body,
+            use_existing_digest=True,
         )
     except Exception:  # noqa: BLE001 - Secret loaders/package errors are intentionally content-free.
         raise IntercomError(IntercomCode.AUTHENTICATION) from None

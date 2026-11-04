@@ -71,7 +71,7 @@ it("creates one identifiable blank draft and moves to its stable route", async (
   const body = vi.mocked(createCanvasProject).mock.calls[0]![0];
   expect(body.canvas_document.scene.nodes).toEqual([]);
   expect(body.canvas_document.scene.strokes).toEqual([]);
-  expect(goto).toHaveBeenCalledWith(`/canvas/${body.id}`, { replaceState: true });
+  expect(goto).toHaveBeenCalledWith(`/canvas/${body.id}`, { replace: true });
   expect(bootstrapCanvasWorkspace).not.toHaveBeenCalled();
   vi.mocked(getAtlasProject).mockResolvedValue(project({ id: body.id, canvas_document: body.canvas_document, workspace_state: "draft" }));
   await view.rerender({ projectId: body.id, newRequested: false });

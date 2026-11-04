@@ -1,7 +1,7 @@
 <script lang="ts">
   import { beforeNavigate, goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
-  import { resolve } from "$app/paths";
+  import { resolvePath as resolve } from "$lib/navigation/paths";
   import { navigationId, orbReturnHref } from "$lib/navigation/instruments";
   import { getContext, onDestroy, onMount, tick, untrack } from "svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
@@ -539,7 +539,7 @@
         await onNavigate(created.session.id, projectHint ? `?project=${encodeURIComponent(projectHint)}` : "", true);
       } else {
         await goto(bridgeHref(created.session.id), {
-          keepFocus: true,
+          reset: false,
           state: { bridgeComposerFocus: created.session.id }
         });
       }

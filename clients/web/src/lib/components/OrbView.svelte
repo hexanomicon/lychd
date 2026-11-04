@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
+  import { resolvePath as resolve } from "$lib/navigation/paths";
   import { page } from "$app/state";
   import { onDestroy, tick } from "svelte";
 
@@ -302,13 +302,12 @@
     following = false;
     pinnedEvidence = evidence;
     selectedEventId = evidence.event_id;
-    const url = new URL(page.url);
+    const url = new URL(page.url.href);
     url.searchParams.set("event", evidence.event_id);
     const orbPath = `/orb/${encodeURIComponent(runId)}${url.search}` as `/orb/${string}`;
     await goto(resolve(orbPath), {
-      replaceState: true,
-      keepFocus: true,
-      noScroll: true
+      replace: true,
+      reset: false
     });
     await tick();
     if (snapshot?.run.run_id === runId && selected?.event_id === evidence.event_id) {
@@ -323,13 +322,12 @@
     selectionReturnFocus = undefined;
     graphSelection = null;
     pinnedEvidence = null;
-    const url = new URL(page.url);
+    const url = new URL(page.url.href);
     url.searchParams.delete("event");
     const orbPath = `/orb/${encodeURIComponent(runId)}${url.search}` as `/orb/${string}`;
     await goto(resolve(orbPath), {
-      replaceState: true,
-      keepFocus: true,
-      noScroll: true
+      replace: true,
+      reset: false
     });
     await tick();
     if (target?.isConnected) target.focus();
@@ -370,9 +368,9 @@
     const record = playbackSource?.evidence.filter((item) => (playbackCursor === null || item.seq <= playbackCursor) && orbEvidenceNodeId(item, pattern) === id).at(-1);
     if (record && opener) await selectEvidence(record, opener);
     else {
-      const url = new URL(page.url);
+      const url = new URL(page.url.href);
       url.searchParams.delete("event");
-      await goto(`/orb/${encodeURIComponent(runId!)}${url.search}` as `/orb/${string}`, { replaceState: true, keepFocus: true, noScroll: true });
+      await goto(`/orb/${encodeURIComponent(runId!)}${url.search}` as `/orb/${string}`, { replace: true, reset: false });
     }
   }
 

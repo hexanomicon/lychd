@@ -1,0 +1,12 @@
+{
+  "name": "@lychd/altar-openapi",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "openapi-typescript ../../openapi.json -o ../../src/lib/api/openapi.d.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3"
+  }
+}

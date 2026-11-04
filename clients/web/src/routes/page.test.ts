@@ -8,7 +8,7 @@ import Page from "./+page.svelte";
 
 it("opens Orb from the static root without retaining a redirect in browser history", async () => {
   const view = render(Page);
-  await waitFor(() => expect(goto).toHaveBeenCalledWith("/orb", { replaceState: true }));
+  await waitFor(() => expect(goto).toHaveBeenCalledWith("/orb", { replace: true }));
   expect(goto).toHaveBeenCalledTimes(1);
   view.unmount();
 });

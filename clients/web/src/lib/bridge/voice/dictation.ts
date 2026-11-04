@@ -234,7 +234,7 @@ export function createDictationCoordinator(options: DictationOptions) {
 
 /** Fresh UUIDv7 only for dictation attempts. Existing Bridge request UUID4s are unchanged. */
 export function newDictationAttemptId(
-  now = Date.now(), random: (bytes: Uint8Array) => void = (bytes) => { globalThis.crypto.getRandomValues(bytes); }
+  now = Date.now(), random: (bytes: Uint8Array<ArrayBuffer>) => void = (bytes) => { globalThis.crypto.getRandomValues(bytes); }
 ): string {
   if (!Number.isSafeInteger(now) || now < 0 || now > 0xffffffffffff) throw new RangeError("Invalid UUIDv7 timestamp");
   const bytes = new Uint8Array(16);

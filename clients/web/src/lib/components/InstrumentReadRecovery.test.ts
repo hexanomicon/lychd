@@ -24,7 +24,8 @@ vi.mock("$lib/api/client", () => ({
   sendBridgeMessage: vi.fn()
 }));
 
-import { page } from "$app/state";
+import { page as appPage } from "$app/state";
+const page = appPage as Omit<typeof appPage, "url"> & { url: import("svelte/reactivity").SvelteURL };
 import { goto, replaceState } from "$app/navigation";
 import {
   cancelBridgeRun, createBridgeSession, decideConsent, getAtlasReferences,

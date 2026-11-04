@@ -5,7 +5,7 @@
     props?: unknown;
   };
 
-  let { descriptor } = $props<{ descriptor: Descriptor }>();
+  let { descriptor }: { descriptor: Descriptor } = $props();
 
   let kind = $derived(typeof descriptor.kind === "string" ? descriptor.kind : "genui.unknown");
   let schemaVersion = $derived(

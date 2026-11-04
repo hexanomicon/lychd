@@ -4,7 +4,7 @@
   import { onMount } from "svelte";
 
   onMount(() => {
-    void goto(resolve("/orb"), { replaceState: true });
+    void goto(resolve("/orb"), { replace: true });
   });
 </script>
 

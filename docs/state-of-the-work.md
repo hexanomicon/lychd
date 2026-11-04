@@ -562,12 +562,12 @@ it. The synthetic PostgreSQL controls use ORM metadata and do not claim migratio
 - **Topic:** [Choose a Bridge capability](./sepulcher/extensions/weaver/index.md#choose-a-bridge-capability) and [prefer a ready route](./sepulcher/extensions/weaver/index.md#prefer-a-ready-route-at-admission)
 - **Law:** [Configuration](./adr/12-configuration.md), [Workflow](./adr/28-workflow.md), and [Dispatcher](./adr/22-dispatcher.md)
 
-### Pydantic AI 2.55.0 cognitive adapter {#pydantic-ai-adapter}
+### Pydantic AI 2.64.0 cognitive adapter {#pydantic-ai-adapter}
 
 **State:** Available
 
 **Proved now:** LychD constructs typed agents and runs Bridge through the exact
-`pydantic-ai-slim==2.55.0` contract with serializable state and fail-closed provider profiles.
+`pydantic-ai-slim==2.64.0` contract with serializable state and fail-closed provider profiles.
 The context window bounds each model request after output reservation, including tool follow-ups
 and validation retries, while cumulative Run usage remains intact. Supported pre-counts and
 completed streamed/non-streamed responses use the same request bound.
@@ -579,7 +579,7 @@ endpoint. Bridge skips that unsupported counter while preserving other counting 
 and reported response-usage checks. Named providers resolve their own model policy.
 Model transport tests use native HTTPX2 mocks, and the repository-wide model-request guard also
 applies when tests outside the agent package are selected alone. Portable agent and core checks
-exercise the locked Pydantic 2.14.0 stack on Python 3.14.8 and 3.15.0.
+exercise the locked Pydantic 2.14.2 stack on Python 3.14.8 and 3.15.0.
 
 **Boundary:** This does not claim automatic child-Agent usage propagation, Pydantic's external
 durability harnesses, or a guaranteed token preflight fence for generic local models. The counting
@@ -593,7 +593,7 @@ or Linux Vessel image, or admit Portal execution. The serial Graph adapter has i
 - **Version:** [Dependency](https://github.com/hexanomicon/lychd/blob/main/pyproject.toml)
 - **Law:** [Agents](./adr/20-agents.md)
 
-### Native Pydantic Graph 2.55.0 adapter {#pydantic-ai-v2-migration}
+### Native Pydantic Graph 2.64.0 adapter {#pydantic-ai-v2-migration}
 
 **State:** Available
 

@@ -46,6 +46,8 @@ class _Signer(Protocol):
         expires: datetime,
         covered_component_ids: Sequence[str],
         label: str,
+        body: bytes,
+        use_existing_digest: bool,
     ) -> None: ...
 
 
@@ -159,6 +161,8 @@ def _reply(
         expires=now + timedelta(seconds=lifetime),
         covered_component_ids=components,
         label="lychd",
+        body=body,
+        use_existing_digest=True,
     )
     return list(headers.items()), body
 
@@ -213,6 +217,25 @@ def test_signed_reply_rejects_tampering_and_ambiguous_critical_headers(keys: tup
         fields = [(k, value if k == name else v) for k, v in fields]
     with pytest.raises(IntercomError):
         verify_response(prepared, 200, fields, body, peer.public, "peer-key-1")
+
+
+@pytest.mark.parametrize("mutation", ["duplicate-label", "duplicate-parameter", "noncanonical-whitespace"])
+def test_structured_field_parser_cannot_normalize_an_ambiguous_signed_input(
+    keys: tuple[_Key, _Key], mutation: str
+) -> None:
+    prepared = _prepared(keys[0])
+    fields, body = _reply(prepared, keys[1])
+    original = dict(fields)["Signature-Input"]
+    changed = (
+        original + ", " + original
+        if mutation == "duplicate-label"
+        else original + ';keyid="peer-key-1"'
+        if mutation == "duplicate-parameter"
+        else original + " "
+    )
+    fields = [(name, changed if name == "Signature-Input" else value) for name, value in fields]
+    with pytest.raises(IntercomError):
+        verify_response(prepared, 200, fields, body, keys[1].public, "peer-key-1")
 
 
 @pytest.mark.parametrize(

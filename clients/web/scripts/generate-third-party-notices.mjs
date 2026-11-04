@@ -79,7 +79,7 @@ const packages = new Map();
 
 for (const [relativePath, lockEntry] of Object.entries(lock.packages ?? {})) {
   if (!relativePath.includes("node_modules/")) continue;
-  if (lockEntry.optional === true) continue;
+  if (lockEntry.optional === true || lockEntry.link === true) continue;
 
   const packageDirectory = join(frontendRoot, relativePath);
   const manifest = JSON.parse(await readFile(join(packageDirectory, "package.json"), "utf8"));
