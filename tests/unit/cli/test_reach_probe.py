@@ -40,6 +40,7 @@ from lychd.compositions.reach.operator_model_wire import (
 from lychd.compositions.reach.operator_trace import ReachTraceEvent, TraceCorrelation, trace_bytes
 from lychd.compositions.reach.operator_wire import ReachWorkerReady, ReachWorkerResult, protocol_bytes
 from lychd.compositions.reach.policy import prepare_turn
+from lychd.compositions.reach.request_goals import context_anchor
 from lychd.compositions.reach.research import model_research_source
 from lychd.compositions.reach.research_wire import (
     OperatorResearchRequest,
@@ -151,8 +152,17 @@ def generation(turn: probe.Turn, prompt: dict[str, Any], *, phase: DecisionVaria
         and "conversation_phase" not in prompt
     ):
         prompt.setdefault(
-            "available_research_sources", list(probe.research_catalogue(turn.profile, turn.corpus, turn.request))
+            "available_research_sources",
+            list(probe.research_catalogue(turn.profile, turn.corpus, turn.request)),
         )
+    if (
+        phase == "checkback"
+        and prompt.get("phase") == "checkback"
+        and turn.formation_context is not None
+        and turn.formation_context.get("research_phase") == "synthesis"
+        and turn.formation_context.get("research_sources")
+    ):
+        phase = "checkback_public"
     return OperatorModelRequest(
         call_id=str(uuid4()),
         binding_digest=turn.profile.digest,
@@ -176,7 +186,10 @@ def generation(turn: probe.Turn, prompt: dict[str, Any], *, phase: DecisionVaria
 
 
 def planned(
-    turn: probe.Turn, *, text: str = "Read the selected document.", focus: str | None = None
+    turn: probe.Turn,
+    *,
+    text: str = "Read the selected document.",
+    focus: str | None = None,
 ) -> OperatorResearchRequest:
     if turn.ready is None:
         ready(turn)
@@ -188,6 +201,7 @@ def planned(
             "question": turn.scenario.question,
             "research_phase": "planning",
             "available_research_sources": list(probe.research_catalogue(turn.profile, turn.corpus, turn.request)),
+            **requirements_context(turn),
         },
         phase="planning_documents",
     )
@@ -234,8 +248,14 @@ def model_projection(
 
 
 def synthesis_context(turn: probe.Turn) -> dict[str, Any]:
+    if turn.profile.context_projection_version == 2:
+        return json.loads(turn.reconstruct_synthesis().prompt)
     source = read_research_document(
-        turn.corpus, turn.planned_ids[0], question=turn.scenario.question, focus=turn.focus or turn.plan or ""
+        turn.corpus,
+        turn.planned_ids[0],
+        question=turn.scenario.question,
+        focus=turn.focus or turn.plan or "",
+        projection_mode=turn.projection_mode,
     )
     return {
         "question": turn.scenario.question,
@@ -244,14 +264,56 @@ def synthesis_context(turn: probe.Turn) -> dict[str, Any]:
         "research_plan": turn.plan,
         "research_focus": turn.focus,
         "corpus_digest": turn.corpus.digest,
-        "research_sources": [
-            model_projection(
-                source, len(source.text), projection_mode=research_projection_mode(turn.request.event.question)
-            )
-        ],
+        "research_sources": [model_projection(source, len(source.text), projection_mode=turn.projection_mode)],
         "evidence_scope": dict(EVIDENCE_SCOPE),
         "omitted_recent_messages": 0,
+        **requirements_context(turn),
     }
+
+
+def requirements_context(turn: probe.Turn) -> dict[str, Any]:
+    context = (
+        probe.resolved_required_context(
+            turn.requirements,
+            turn.request,
+            turn.profile,
+            agent_subject_id=turn.policy.agent_subject_id,
+        )
+        if turn.requirements
+        else ()
+    )
+    return {
+        "request_goals": [],
+        "task_requirements": turn.requirements.model_dump(mode="json") if turn.requirements else None,
+        "required_context": list(context),
+        **({"context_projection_version": 2} if turn.profile.context_projection_version == 2 else {}),
+        **(
+            {
+                name: context_anchor(anchor, context, turn.profile, agent_subject_id=turn.policy.agent_subject_id)
+                for name, anchor in (
+                    ("reply_anchor", turn.request.reply_anchor),
+                    ("continuation_anchor", turn.request.continuation_anchor),
+                )
+            }
+            if turn.profile.request_goals
+            else {}
+        ),
+    }
+
+
+def set_requirements(
+    turn: probe.Turn,
+    *,
+    quotation_presentation: Literal["none", "abbreviated", "full"] = "none",
+) -> None:
+    turn.requirements = probe.TaskRequirements(
+        version=1,
+        goals=("Explain the project",),
+        constraints=(),
+        quotation_presentation=quotation_presentation,
+        required_context=(),
+    )
+    turn.goals = turn.requirements.goals
 
 
 def provider_response(turn: probe.Turn, frame: OperatorModelRequest, choice: dict[str, Any]) -> OperatorModelResponse:
@@ -407,13 +469,19 @@ def test_phase_selected_thinking_metadata_uses_admitted_mode_despite_conflicting
             "json_object_output": True,
             "thinking_phases": ("checkback",),
             "enable_thinking": False,
-            "request_goals": phase == "checkback_goals",
-            "checkback": phase == "checkback_goals",
+            "request_goals": phase in {"checkback_goals", "checkback_public_goals"},
+            "checkback": phase in {"checkback_goals", "checkback_public_goals"},
         }
     )
-    turn.goals = ("Explain the project",) if turn.profile.request_goals else ()
+    if turn.profile.request_goals:
+        set_requirements(turn)
     ready(turn)
-    expected = phase in {"checkback", "checkback_goals"}
+    expected = phase in {
+        "checkback",
+        "checkback_goals",
+        "checkback_public",
+        "checkback_public_goals",
+    }
     frame = generation(
         turn,
         {
@@ -422,7 +490,7 @@ def test_phase_selected_thinking_metadata_uses_admitted_mode_despite_conflicting
             "decision_schema_phase": "conversation" if expected else "checkback",
             "enable_thinking": not expected,
             "thinking_phases": [CANARY],
-            "request_goals": list(turn.goals),
+            **requirements_context(turn),
         },
         phase=phase,
     )
@@ -448,11 +516,12 @@ def test_call_schema_phase_comes_from_the_exact_carrier_independently_of_prompt_
     turn.profile = turn.profile.model_copy(
         update={
             "json_object_output": True,
-            "request_goals": phase == "checkback_goals",
-            "checkback": phase == "checkback_goals",
+            "request_goals": phase in {"checkback_goals", "checkback_public_goals"},
+            "checkback": phase in {"checkback_goals", "checkback_public_goals"},
         }
     )
-    turn.goals = ("Explain the project",) if turn.profile.request_goals else ()
+    if turn.profile.request_goals:
+        set_requirements(turn)
     ready(turn)
     frame = generation(
         turn,
@@ -460,7 +529,7 @@ def test_call_schema_phase_comes_from_the_exact_carrier_independently_of_prompt_
             "question": turn.scenario.question,
             "research_phase": "planning",
             "decision_schema_phase": CANARY,
-            "request_goals": list(turn.goals),
+            **requirements_context(turn),
         },
         phase=phase,
     )
@@ -490,14 +559,24 @@ def review_generation(turn: probe.Turn, *, goals: bool) -> OperatorModelRequest:
             "enable_thinking": False,
         }
     )
-    turn.goals = ("Explain the project",) if goals else ()
+    if goals:
+        set_requirements(turn)
     ready(turn)
-    turn.formation_context = {"question": turn.request.event.question, "request_goals": list(turn.goals)}
+    turn.formation_context = {
+        "question": turn.request.event.question,
+        **requirements_context(turn),
+    }
     turn.candidate = {"kind": "answer", "text": "The project has a documented purpose."}
     envelope = probe.CheckbackEnvelope.prepare(
-        turn.request, canonical_json(turn.formation_context), persona_name=turn.profile.persona_name
+        turn.request,
+        canonical_json(turn.formation_context),
+        persona_name=turn.profile.persona_name,
     )
-    return generation(turn, json.loads(envelope.prompt(canonical_json(turn.candidate))), phase="checkback")
+    return generation(
+        turn,
+        json.loads(envelope.prompt(canonical_json(turn.candidate))),
+        phase="checkback",
+    )
 
 
 @pytest.mark.parametrize("goals", [False, True])
@@ -826,6 +905,220 @@ def test_synthesis_retains_exact_projection_metadata_without_source_bodies(turn:
     assert turn.evidence_scope == EVIDENCE_SCOPE
 
 
+def test_legacy_projection_profile_rejects_a_model_envelope_version_marker(turn: probe.Turn) -> None:
+    assert turn.profile.context_projection_version == 1
+    ready(turn)
+    prompt = {"question": turn.request.event.question, "context_projection_version": 2}
+    with pytest.raises(probe.ProbeError, match="probe_objectives_binding"):
+        turn.before_model(generation(turn, prompt, phase="planning_documents"))
+    assert turn.calls == []
+    assert turn.formation_context is None
+
+
+def test_compact_synthesis_reconstructs_exact_host_projection_and_retains_full_receipts(
+    turn: probe.Turn, tmp_path: Path
+) -> None:
+    turn.profile = turn.profile.model_copy(update={"context_projection_version": 2})
+    interpreted_requirements(turn)
+    turn.research(planned(turn, focus="Graph"))
+    receipt = turn.reconstruct_synthesis()
+    prompt = synthesis_context(turn)
+    turn.before_model(generation(turn, prompt, phase="synthesis"))
+    (full,) = receipt.full_projections
+    assert set(prompt["research_sources"][0]) == {"id", "title", "status", "text", "truncated", "projection_truncated"}
+    assert prompt["context_projection_version"] == 2
+    assert {"research_focus", "research_request_id", "corpus_digest"}.isdisjoint(prompt)
+    assert turn.reads == [probe.Turn.projection_metadata(full)]
+    assert {
+        "source_digest",
+        "text_digest",
+        "projection_digest",
+        "projection_budget",
+        "projection_mode",
+        "projection_spans",
+        "url",
+    } <= turn.reads[0].keys()
+    assert "text" not in turn.reads[0]
+    assert turn.source_projection_assertions() == ["source_projection_capture_gap"]
+    assert turn.source_projection_proof_origin() == "reconstruction_only_native_trace_unmatched"
+    turn.events.extend(projection_trace_fixtures(turn))
+    assert turn.source_projection_assertions() == []
+    assert turn.source_projection_proof_origin() == "native_trace_matched_reconstruction"
+    turn.candidate = {
+        "kind": "answer",
+        "text": "The documented method has a purpose.",
+        "citations": list(turn.planned_ids),
+    }
+    envelope = probe.CheckbackEnvelope.prepare(
+        turn.request, canonical_json(prompt), persona_name=turn.profile.persona_name
+    )
+    turn.before_model(generation(turn, json.loads(envelope.prompt(canonical_json(turn.candidate))), phase="checkback"))
+    assert turn.synthesis == 1
+    assert len(turn.reads) == len(turn.checkbacks) == 1
+    args = Namespace(
+        core_image=IMAGE,
+        engine="docker",
+        model_transport="http",
+        timeout_seconds=1,
+        capture_model_output=False,
+        output=tmp_path,
+    )
+    assert probe.publish_reports(args, turn, b"profile", b"scenario", {}, ["fixture_only"]) == 1
+    recorded = json.loads((tmp_path / "turn.json").read_bytes())
+    assert recorded["source_reads"] == json.loads(canonical_json(turn.reads))
+    assert recorded["source_projection_proof_origin"] == "native_trace_matched_reconstruction"
+
+
+def projection_trace_fixtures(turn: probe.Turn) -> list[ReachTraceEvent]:
+    """Supply synthetic native events independently of the compact model payload in these unit tests."""
+    assert turn.synthesis_correlation is not None
+    return [
+        ReachTraceEvent(
+            producer="core",
+            name="source_projection",
+            status=proof["status"],
+            **turn.synthesis_correlation.model_dump(exclude_none=True),
+            source_id=proof["id"],
+            source_digest=proof["source_digest"],
+            text_digest=proof["text_digest"],
+            projection_budget=proof["projection_budget"],
+            projection_mode=proof["projection_mode"],
+            projection_chars=proof["projected_chars"],
+            projection_truncated=proof["projection_truncated"],
+            projection_digest=proof["projection_digest"],
+            projection_span_count=len(proof["projection_spans"]),
+            projection_spans_digest=sha256(canonical_json(proof["projection_spans"]).encode()).hexdigest(),
+        )
+        for proof in turn.reads
+    ]
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "projection_budget",
+        "projection_mode",
+        "projection_chars",
+        "projection_truncated",
+        "projection_digest",
+        "projection_span_count",
+        "projection_spans_digest",
+        "source_digest",
+        "text_digest",
+        "source_id",
+        "status",
+        "request_id",
+        "run_id",
+        "occurrence_id",
+    ],
+)
+def test_compact_source_receipt_never_claims_actual_proofs_without_matching_native_trace(
+    turn: probe.Turn, field: str
+) -> None:
+    turn.profile = turn.profile.model_copy(update={"context_projection_version": 2})
+    interpreted_requirements(turn)
+    turn.research(planned(turn))
+    turn.before_model(generation(turn, synthesis_context(turn), phase="synthesis"))
+    turn.events.extend(projection_trace_fixtures(turn))
+    assert turn.source_projection_assertions() == []
+    original = turn.events[-1]
+    assert original.projection_budget is not None
+    assert original.projection_chars is not None
+    assert original.projection_span_count is not None
+    changed = {
+        "projection_budget": original.projection_budget + 1,
+        "projection_mode": "balanced" if original.projection_mode == "complete_quotes" else "complete_quotes",
+        "projection_chars": original.projection_chars + 1,
+        "projection_truncated": not original.projection_truncated,
+        "projection_digest": "f" * 64,
+        "projection_span_count": original.projection_span_count + 1,
+        "projection_spans_digest": "f" * 64,
+        "source_digest": "f" * 64,
+        "text_digest": "f" * 64,
+        "source_id": "doc:README.md",
+        "status": "refused",
+        "request_id": "foreign",
+        "run_id": str(uuid4()),
+        "occurrence_id": "foreign",
+    }
+    turn.events[-1] = original.model_copy(update={field: changed[field]})
+    assert turn.source_projection_assertions() == ["source_projection_trace_binding"]
+    assert turn.source_projection_proof_origin() == "reconstruction_only_native_trace_unmatched"
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "text",
+        "title",
+        "source_id",
+        "source_digest",
+        "projection_budget",
+        "projection_mode",
+        "research_focus",
+        "research_request_id",
+        "corpus_digest",
+        "research_plan",
+        "context_version",
+        "coerced_context_version",
+    ],
+)
+def test_compact_synthesis_never_admits_model_selected_proofs_or_changed_host_bindings(
+    turn: probe.Turn, mutation: str
+) -> None:
+    turn.profile = turn.profile.model_copy(update={"context_projection_version": 2})
+    interpreted_requirements(turn)
+    turn.research(planned(turn, focus="Graph"))
+    prompt = synthesis_context(turn)
+    source = prompt["research_sources"][0]
+    if mutation in {"text", "title", "source_id", "source_digest", "projection_budget", "projection_mode"}:
+        changes: dict[str, Any] = {
+            "text": {"text": "Unacquired text"},
+            "title": {"title": "Foreign title"},
+            "source_id": {"id": "doc:README.md"},
+            "source_digest": {"source_digest": "f" * 64},
+            "projection_budget": {"projection_budget": 20},
+            "projection_mode": {"projection_mode": "balanced"},
+        }
+        source.update(changes[mutation])
+    else:
+        prompt.update(
+            {
+                "research_focus": {"research_focus": turn.focus},
+                "research_request_id": {"research_request_id": turn.request.request_id},
+                "corpus_digest": {"corpus_digest": turn.corpus.digest},
+                "research_plan": {"research_plan": "A different public plan"},
+                "context_version": {"context_projection_version": 1},
+                "coerced_context_version": {"context_projection_version": 2.0},
+            }[mutation]
+        )
+    with pytest.raises(probe.ProbeError, match=r"probe_synthesis_binding|probe_objectives_binding"):
+        turn.before_model(generation(turn, prompt, phase="synthesis"))
+    assert turn.synthesis == 0
+    assert turn.reads == []
+
+
+def test_compact_source_budget_is_reconstructed_instead_of_inferred_from_model_text(turn: probe.Turn) -> None:
+    turn.profile = turn.profile.model_copy(update={"context_projection_version": 2})
+    turn.corpus = make_corpus("# Graph\n" + "Complete authored evidence.\n\n" * 80)
+    interpreted_requirements(turn)
+    turn.research(planned(turn))
+    receipt = turn.reconstruct_synthesis()
+    source = read_research_document(
+        turn.corpus,
+        turn.planned_ids[0],
+        question=turn.request.event.question,
+        focus=turn.focus or turn.plan or "",
+        projection_mode=turn.projection_mode,
+    )
+    forged = model_research_source(project_research_source(source, 20), version=2)
+    assert forged != model_research_source(receipt.full_projections[0], version=2)
+    with pytest.raises(probe.ProbeError, match="probe_source_metadata"):
+        turn.read_projection(forged)
+    expected = model_research_source(receipt.full_projections[0], version=2)
+    assert turn.read_projection(expected) == probe.Turn.projection_metadata(receipt.full_projections[0])
+
+
 @pytest.mark.parametrize(
     ("question", "plan_text", "mode"),
     [
@@ -976,12 +1269,23 @@ def test_both_reasoning_fields_are_counts_only_through_review_and_private_artifa
     frame = generation(turn, context, phase="synthesis")
     turn.before_model(frame)
     answer = canonical_json(
-        {"kind": "answer", "text": "A documented description.", "citations": list(turn.planned_ids)}
+        {
+            "kind": "answer",
+            "text": "A documented description.",
+            "citations": list(turn.planned_ids),
+        }
     )
-    reasoning = {"reasoning": REASONING_CANARY, "reasoning_content": REASONING_CANARY + " extra"}
+    reasoning = {
+        "reasoning": REASONING_CANARY,
+        "reasoning_content": REASONING_CANARY + " extra",
+    }
     turn.after_model(
         frame,
-        provider_response(turn, frame, {"finish_reason": "stop", "message": {"content": answer, **reasoning}}),
+        provider_response(
+            turn,
+            frame,
+            {"finish_reason": "stop", "message": {"content": answer, **reasoning}},
+        ),
     )
     assert turn.candidate is not None
     envelope = probe.CheckbackEnvelope.prepare(
@@ -993,14 +1297,22 @@ def test_both_reasoning_fields_are_counts_only_through_review_and_private_artifa
     judgment = canonical_json({"verdict": "accept", "issues": [], "current_runtime_claims": []})
     turn.after_model(
         review_frame,
-        provider_response(turn, review_frame, {"finish_reason": "stop", "message": {"content": judgment, **reasoning}}),
+        provider_response(
+            turn,
+            review_frame,
+            {"finish_reason": "stop", "message": {"content": judgment, **reasoning}},
+        ),
     )
     expected = {field: {"state": "text", "chars": len(value)} for field, value in reasoning.items()}
     assert turn.calls[1]["reasoning_fields"] == expected
     assert turn.calls[2]["reasoning_fields"] == expected
     assert [call["enable_thinking"] for call in turn.calls] == expected_modes
     assert all(call["response_format"] == "structured_json" for call in turn.calls)
-    assert [call["decision_schema_phase"] for call in turn.calls] == ["planning_documents", "synthesis", "checkback"]
+    assert [call["decision_schema_phase"] for call in turn.calls] == [
+        "planning_documents",
+        "synthesis",
+        "checkback_public",
+    ]
     assert turn.calls[0]["research_source_kinds"] == ["doc"]
     assert all("research_source_kinds" not in call for call in turn.calls[1:])
     assert all(call["finish_reason"] == "stop" for call in turn.calls)
@@ -1008,7 +1320,12 @@ def test_both_reasoning_fields_are_counts_only_through_review_and_private_artifa
     assert turn.debug[-2:] == [answer, judgment]
     assert turn.candidate["text"] == "A documented description."
     retained = canonical_json(
-        {"context": captured_review, "reads": turn.reads, "debug": turn.debug, "calls": turn.calls}
+        {
+            "context": captured_review,
+            "reads": turn.reads,
+            "debug": turn.debug,
+            "calls": turn.calls,
+        }
     )
     assert REASONING_CANARY not in retained
     assert sha256(REASONING_CANARY.encode()).hexdigest() not in retained
@@ -1027,7 +1344,11 @@ def test_both_reasoning_fields_are_counts_only_through_review_and_private_artifa
     report = json.loads((tmp_path / "report.json").read_bytes())
     expected_calls = json.loads(canonical_json(turn.calls))
     assert value["model_calls"] == report["model_calls"] == expected_calls
-    for path in (tmp_path / "turn.json", tmp_path / "report.json", tmp_path / "report.md"):
+    for path in (
+        tmp_path / "turn.json",
+        tmp_path / "report.json",
+        tmp_path / "report.md",
+    ):
         assert REASONING_CANARY not in path.read_text()
         assert sha256(REASONING_CANARY.encode()).hexdigest() not in path.read_text()
 
@@ -1418,7 +1739,14 @@ def test_review_receipts_bind_host_hashes_without_model_transcription(
     prompt = json.loads(envelope.prompt(canonical_json(candidate)))
     frame = generation(turn, prompt, phase="checkback")
     turn.before_model(frame)
-    expected = envelope.bindings(canonical_json(candidate))
+    expected = {
+        **envelope.bindings(canonical_json(candidate)),
+        "attempt": 0,
+        "review_attempt": 0,
+        "retry_ordinal": 0,
+        "invalid_review_reason": None,
+        "review_retry_digest": None,
+    }
     assert turn.checkbacks == [expected]
     decision: dict[str, Any] = {"verdict": "accept", "issues": []}
     if foreign_digest:
@@ -1432,7 +1760,7 @@ def test_review_receipts_bind_host_hashes_without_model_transcription(
             payload_json=canonical_json({"choices": [{"message": {"content": canonical_json(decision)}}]}),
         ),
     )
-    assert all(turn.checkbacks[0][key] == value for key, value in expected.items())
+    assert all(turn.checkbacks[0][key] == value for key, value in expected.items() if key != "invalid_review_reason")
     assert (turn.checkbacks[0].get("verdict") == "accept") != foreign_digest
 
 
@@ -1493,21 +1821,47 @@ def test_independent_interpretation_binds_goals_before_planning_and_rejects_chan
             call_id=frame.call_id,
             binding_digest=turn.profile.digest,
             status="ok",
-            payload_json=canonical_json({"choices": [{"message": {"content": '{"goals":["Explain the project"]}'}}]}),
+            payload_json=canonical_json(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": canonical_json(
+                                    {
+                                        "version": 1,
+                                        "goals": ["Explain the project"],
+                                        "constraints": ["Preserve exact words"],
+                                        "quotation_presentation": "full",
+                                        "required_context": [],
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ),
         ),
     )
     assert turn.goals == ("Explain the project",)
-    changed = {"question": turn.scenario.question, "research_phase": "planning", "request_goals": ["Different task"]}
+    changed = {
+        "question": turn.scenario.question,
+        "research_phase": "planning",
+        "request_goals": ["Different task"],
+    }
     with pytest.raises(probe.ProbeError, match="objectives_binding"):
         turn.before_model(generation(turn, changed, phase="planning"))
-    changed["request_goals"] = list(turn.goals)
+    changed.update(requirements_context(turn))
     turn.before_model(generation(turn, changed, phase="planning"))
     assert turn.formation_context == changed
 
 
-def test_interpretation_receipt_requires_the_exact_goal_digest_and_native_identity(turn: probe.Turn) -> None:
+def test_interpretation_receipt_requires_the_exact_goal_digest_and_native_identity(
+    turn: probe.Turn,
+) -> None:
     turn.profile = turn.profile.model_copy(update={"checkback": True, "request_goals": True})
-    turn.goals, turn.interpretations, turn.run_id = ("Explain the project",), 1, str(uuid4())
+    set_requirements(turn)
+    assert turn.requirements is not None
+    turn.interpretations, turn.run_id = 1, str(uuid4())
     turn.result = ReachWorkerResult(
         request_id=turn.request.request_id,
         status="conversation",
@@ -1520,15 +1874,242 @@ def test_interpretation_receipt_requires_the_exact_goal_digest_and_native_identi
         name="interpretation",
         status="ok",
         goal_count=1,
-        objective_digest=probe.request_goals_digest(turn.goals),
+        requirements_version=turn.requirements.version,
+        constraint_count=len(turn.requirements.constraints),
+        required_context_count=len(turn.requirements.required_context),
+        quotation_presentation=turn.requirements.quotation_presentation,
+        objective_digest=probe.request_goals_digest(turn.requirements, request=turn.request, profile=turn.profile),
         request_id=turn.request.request_id,
         run_id=turn.run_id,
     )
     turn.events = [event]
     assert turn.goal_assertions() == []
-    for changed in ({"objective_digest": "f" * 64}, {"request_id": str(uuid4())}, {"run_id": None}):
+    for changed in (
+        {"objective_digest": "f" * 64},
+        {"request_id": str(uuid4())},
+        {"run_id": None},
+        {"requirements_version": None},
+        {"constraint_count": 1},
+        {"required_context_count": 1},
+        {"quotation_presentation": "full"},
+    ):
         turn.events = [event.model_copy(update=changed)]
         assert turn.goal_assertions() == ["interpretation_trace_binding"]
+
+
+def interpreted_requirements(turn: probe.Turn, *, required_context: list[str] | None = None) -> dict[str, Any]:
+    """Independently admit exactly the same complete response seen by native Core."""
+    turn.profile = turn.profile.model_copy(update={"checkback": True, "request_goals": True})
+    if turn.ready is None:
+        ready(turn)
+    prompt = json.loads(probe.request_goals_prompt(turn.profile, turn.request))
+    frame = generation(turn, prompt, phase="goals")
+    turn.before_model(frame)
+    requirements = {
+        "version": 1,
+        "goals": [
+            "Provide the full, untrimmed biblical quote",
+            "Explain the method and its documented purpose",
+        ],
+        "constraints": ["Preserve exact wording"],
+        "quotation_presentation": "full",
+        "required_context": required_context or [],
+    }
+    turn.after_model(
+        frame,
+        provider_response(turn, frame, {"message": {"content": canonical_json(requirements)}}),
+    )
+    return requirements
+
+
+@pytest.mark.parametrize("presentation", ["none", "abbreviated", "full"])
+def test_typed_projection_uses_only_the_admitted_enum_for_acquisition_and_synthesis(
+    turn: probe.Turn, presentation: Literal["none", "abbreviated", "full"]
+) -> None:
+    turn.scenario = probe.Scenario(question="Provide the full, untrimmed biblical quote from Graph.")
+    turn.policy, turn.request = probe.make_request(turn.scenario, datetime.now(UTC))
+    turn.profile = turn.profile.model_copy(update={"checkback": True, "request_goals": True})
+    set_requirements(turn, quotation_presentation=presentation)
+    turn.corpus = make_corpus("# Graph\n> " + "One indivisible biblical quotation. " * 180 + "\n\nMethod and purpose.")
+    turn.research(planned(turn, text="Give full quotes.", focus="Summarize the quotes."))
+    context = synthesis_context(turn)
+    turn.before_model(generation(turn, context, phase="synthesis"))
+    expected = "complete_quotes" if presentation == "full" else "balanced"
+    assert turn.reads[0]["projection_mode"] == expected
+    assert (turn.reads[0]["projected_chars"] > 4000) == (presentation == "full")
+    assert "text" not in turn.reads[0]
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["version", "goals", "constraints", "quotation_presentation", "required_context"],
+)
+def test_probe_refuses_any_changed_requirement_even_when_goal_text_is_preserved(turn: probe.Turn, field: str) -> None:
+    interpreted_requirements(turn)
+    changed: dict[str, Any] = {
+        "question": turn.request.event.question,
+        "research_phase": "planning",
+        **requirements_context(turn),
+    }
+    changes = {
+        "version": 2,
+        "goals": ["Another request"],
+        "constraints": [],
+        "quotation_presentation": "abbreviated",
+        "required_context": ["history:0"],
+    }
+    changed["task_requirements"][field] = changes[field]
+    with pytest.raises(probe.ProbeError, match="probe_objectives_binding"):
+        turn.before_model(generation(turn, changed, phase="planning"))
+    assert turn.formation_context is None
+
+
+def test_probe_binds_required_context_to_the_exact_attributed_interpretation_input(
+    turn: probe.Turn,
+) -> None:
+    turn.scenario = probe.Scenario(
+        question="Finish that.",
+        history=(probe.HistoryItem(text="Every requested week, method and purpose."),),
+    )
+    turn.policy, turn.request = probe.make_request(turn.scenario, datetime.now(UTC))
+    turn.profile = turn.profile.model_copy(update={"checkback": True, "request_goals": True})
+    ready(turn)
+    prompt = json.loads(probe.request_goals_prompt(turn.profile, turn.request))
+    handle = prompt["recent_messages"][0]["handle"]
+    interpreted_requirements(turn, required_context=[handle])
+    context = {
+        "question": turn.request.event.question,
+        "research_phase": "planning",
+        **requirements_context(turn),
+    }
+    assert context["required_context"] == [prompt["recent_messages"][0]]
+    altered = json.loads(canonical_json(context))
+    altered["required_context"][0]["entry"]["text"] = "Model-authored replacement"
+    with pytest.raises(probe.ProbeError, match="probe_objectives_binding"):
+        turn.before_model(generation(turn, altered, phase="planning"))
+    duplicated = {**context, "recent_messages": [prompt["recent_messages"][0]["entry"]]}
+    with pytest.raises(probe.ProbeError, match="probe_objectives_binding"):
+        turn.before_model(generation(turn, duplicated, phase="planning"))
+    turn.before_model(generation(turn, context, phase="planning"))
+    assert turn.formation_context == context
+
+
+@pytest.mark.parametrize("trigger", ["reply", "followup"])
+def test_selected_anchor_body_occurs_once_with_aliased_attribution_and_exact_reference(
+    turn: probe.Turn, tmp_path: Path, trigger: Literal["reply", "followup"]
+) -> None:
+    turn.scenario = probe.Scenario(
+        question="Finish that.",
+        trigger=trigger,
+        history=(
+            probe.HistoryItem(text="Read doc:docs/graph.md and explain every method and purpose.", speaker="agent"),
+        ),
+        reply_to_history_index=0 if trigger == "reply" else None,
+        continuation_to_history_index=0 if trigger == "followup" else None,
+    )
+    turn.policy, turn.request = probe.make_request(turn.scenario, datetime.now(UTC))
+    turn.profile = turn.profile.model_copy(update={"checkback": True, "request_goals": True})
+    ready(turn)
+    handle = "reply_anchor" if trigger == "reply" else "continuation_anchor"
+    other = "continuation_anchor" if trigger == "reply" else "reply_anchor"
+    raw_anchor = turn.request.reply_anchor if trigger == "reply" else turn.request.continuation_anchor
+    assert raw_anchor is not None
+    interpreted_requirements(turn, required_context=[handle])
+    context: dict[str, Any] = {
+        "question": turn.request.event.question,
+        "research_phase": "planning",
+        **requirements_context(turn),
+    }
+    assert context[handle] == {"required_context_handle": handle}
+    assert context[other] is None
+    assert context["required_context"][0]["entry"] == raw_anchor.model_dump(mode="json") | {
+        "subject_label": turn.profile.persona_name
+    }
+    assert canonical_json(context).count(raw_anchor.text) == 1
+    for replacement in (
+        None,
+        raw_anchor.model_dump(mode="json"),
+        {"required_context_handle": "history:99"},
+        {"required_context_handle": handle, "text": raw_anchor.text},
+    ):
+        altered = {**context, handle: replacement}
+        with pytest.raises(probe.ProbeError, match="probe_objectives_binding"):
+            turn.before_model(generation(turn, altered, phase="planning"))
+    with pytest.raises(probe.ProbeError, match="probe_objectives_binding"):
+        turn.before_model(generation(turn, {**context, other: context[handle]}, phase="planning"))
+    wrong_label = json.loads(canonical_json(context))
+    wrong_label["required_context"][0]["entry"]["subject_label"] = raw_anchor.subject_label
+    with pytest.raises(probe.ProbeError, match="probe_objectives_binding"):
+        turn.before_model(generation(turn, wrong_label, phase="planning"))
+    turn.research(planned(turn))
+    synthesis = synthesis_context(turn)
+    turn.before_model(generation(turn, synthesis, phase="synthesis"))
+    assert synthesis[handle] == context[handle]
+    assert synthesis["required_context"] == context["required_context"]
+    assert canonical_json(synthesis).count(raw_anchor.text) == 1
+    args = Namespace(
+        core_image=IMAGE,
+        engine="docker",
+        model_transport="http",
+        timeout_seconds=1,
+        capture_model_output=False,
+        output=tmp_path,
+    )
+    assert probe.publish_reports(args, turn, b"profile", b"scenario", {}, ["fixture_only"]) == 1
+    recorded = json.loads((tmp_path / "turn.json").read_bytes())
+    assert recorded["required_context"] == context["required_context"]
+    assert raw_anchor.subject_label == "Probe agent"
+
+
+@pytest.mark.parametrize("handles", [["history:99"], ["history:0", "history:0"]])
+def test_probe_never_installs_goals_from_unadmitted_context_handles(turn: probe.Turn, handles: list[str]) -> None:
+    interpreted_requirements(turn, required_context=handles)
+    assert turn.requirements is None
+    assert turn.goals == ()
+    with pytest.raises(probe.ProbeError, match="probe_objectives_binding"):
+        turn.before_model(
+            generation(
+                turn,
+                {"question": turn.request.event.question, "research_phase": "planning"},
+                phase="planning",
+            )
+        )
+
+
+@pytest.mark.parametrize("goals", [False, True])
+def test_public_review_variant_is_selected_from_the_frozen_synthesis_context(turn: probe.Turn, *, goals: bool) -> None:
+    turn.profile = turn.profile.model_copy(
+        update={"checkback": True, "request_goals": goals, "json_object_output": True}
+    )
+    if goals:
+        set_requirements(turn)
+    turn.research(planned(turn))
+    context = synthesis_context(turn)
+    turn.before_model(generation(turn, context, phase="synthesis"))
+    turn.candidate = {
+        "kind": "answer",
+        "text": "A documented description.",
+        "citations": list(turn.planned_ids),
+    }
+    envelope = probe.CheckbackEnvelope.prepare(
+        turn.request, canonical_json(context), persona_name=turn.profile.persona_name
+    )
+    prompt = json.loads(envelope.prompt(canonical_json(turn.candidate)))
+    frame = generation(turn, prompt, phase="checkback")
+    body = json.loads(frame.payload_json)
+    body.update(generation_format(turn.profile, phase="checkback"))
+    with pytest.raises(probe.ProbeError, match="probe_checkback_schema"):
+        turn.before_model(frame.model_copy(update={"payload_json": canonical_json(body)}))
+    assert turn.checkbacks == []
+    frame = frame.model_copy(update={"call_id": str(uuid4())})
+    turn.before_model(frame)
+    assert turn.calls[-1]["decision_schema_phase"] == ("checkback_public_goals" if goals else "checkback_public")
+    turn.after_model(
+        frame,
+        provider_response(turn, frame, {"message": {"content": '{"verdict":"accept","issues":[]}'}}),
+    )
+    assert "verdict" not in turn.checkbacks[-1]
+    assert turn.checkback_controls == []
 
 
 def captured_guard_review(
@@ -1573,20 +2154,22 @@ def attach_review_receipts(turn: probe.Turn) -> None:
             ReachTraceEvent(
                 producer="core",
                 name="checkback",
-                status="ok",
+                status="ok" if "verdict" in item else "failed",
                 request_id=turn.request.request_id,
                 run_id=turn.run_id,
-                attempt=index,
+                attempt=item.get("attempt", index),
+                **turn.review_trace_metadata(item, index),
                 request_digest=item["request_digest"],
                 evidence_digest=item["evidence_digest"],
                 candidate_digest=item["candidate_digest"],
-                verdict=item["verdict"],
-                issue_codes=tuple(item["issues"]),
+                verdict=item.get("verdict"),
+                issue_codes=tuple(item["issues"]) if "issues" in item else None,
+                goal_coverage=tuple(entry["status"] for entry in item["coverage"]) if "coverage" in item else None,
                 runtime_claim_count=item.get("runtime_claim_count"),
                 runtime_claim_digest=item.get("runtime_claim_digest"),
             )
         )
-    for item in turn.checkback_controls:
+    for index, item in enumerate(turn.checkback_controls):
         turn.events.append(
             ReachTraceEvent(
                 producer="core",
@@ -1594,6 +2177,7 @@ def attach_review_receipts(turn: probe.Turn) -> None:
                 status="ok",
                 request_id=turn.request.request_id,
                 run_id=turn.run_id,
+                **turn.review_trace_metadata(item, index),
                 **{
                     key: value
                     for key, value in item.items()
@@ -1624,8 +2208,23 @@ def test_effective_veto_permits_one_correction_without_forging_the_raw_model_ver
     observation = {
         key: value
         for key, value in control.items()
-        if key not in {*envelope.bindings(canonical_json(turn.candidate)), "attempt"}
+        if key
+        not in {
+            *envelope.bindings(canonical_json(turn.candidate)),
+            "attempt",
+            "review_attempt",
+            "retry_ordinal",
+            "invalid_review_reason",
+            "review_retry_digest",
+        }
     }
+    raw = envelope.parse(canonical_json({"verdict": "accept", "issues": []}), canonical_json(turn.candidate))
+    assert (
+        observation
+        == probe.effective_checkback(
+            turn.request, canonical_json(turn.candidate), raw, context_json=envelope.context_json
+        ).observation()
+    )
     prompt = json.loads(envelope.prompt(canonical_json(turn.candidate)))
     prompt.update({"phase": "correction", "issues": ["missing_component"], "correction_control": observation})
     turn.before_model(generation(turn, prompt, phase="terminal_correction"))
@@ -1759,3 +2358,230 @@ def test_probe_rejects_forged_or_foreign_candidate_claim_metadata(turn: probe.Tu
     index = 0 if receipt == "raw" else 1
     turn.events[index] = turn.events[index].model_copy(update={field: 0 if field.endswith("count") else "f" * 64})
     assert turn.checkback_assertions()
+
+
+def retry_review_envelope(turn: probe.Turn, *, enabled: bool = True) -> probe.CheckbackEnvelope:
+    turn.profile = turn.profile.model_copy(
+        update={"checkback": True, "request_goals": True, "checkback_invalid_retry": enabled}
+    )
+    set_requirements(turn)
+    ready(turn)
+    turn.formation_context = {"question": turn.request.event.question, **requirements_context(turn)}
+    turn.candidate = {"kind": "answer", "text": "The project\N{RIGHT SINGLE QUOTATION MARK}s first method is __new__."}
+    return probe.CheckbackEnvelope.prepare(
+        turn.request, canonical_json(turn.formation_context), persona_name=turn.profile.persona_name
+    )
+
+
+def retry_review_output(turn: probe.Turn, *, verdict: str = "accept", mismatched_quote: bool = False) -> str:
+    assert turn.candidate is not None
+    quote = turn.candidate["text"]
+    if mismatched_quote:
+        quote = quote.replace("\N{RIGHT SINGLE QUOTATION MARK}", "'")
+    return canonical_json(
+        {
+            "verdict": verdict,
+            "issues": [] if verdict == "accept" else ["missing_component"],
+            "coverage": [{"goal": 0, "status": "complete", "answer_quote": quote}],
+            "current_runtime_claims": [],
+            **({"clarification": "Which exact passage?"} if verdict == "needs_evidence" else {}),
+        }
+    )
+
+
+def capture_retry_review(
+    turn: probe.Turn,
+    envelope: probe.CheckbackEnvelope,
+    output: str,
+    *,
+    reason: Literal["review_shape", "coverage_binding"] | None = None,
+) -> OperatorModelRequest:
+    prompt = json.loads(envelope.prompt(canonical_json(turn.candidate), retry_reason=reason))
+    frame = generation(turn, prompt, phase="checkback")
+    turn.before_model(frame)
+    turn.after_model(frame, provider_response(turn, frame, {"finish_reason": "stop", "message": {"content": output}}))
+    return frame
+
+
+def correct_retry_candidate(turn: probe.Turn, envelope: probe.CheckbackEnvelope, output: str) -> None:
+    candidate = canonical_json(turn.candidate)
+    judgment = envelope.parse(output, candidate)
+    control = probe.effective_checkback(
+        turn.request, candidate, judgment, context_json=canonical_json(turn.formation_context)
+    )
+    prompt = json.loads(envelope.prompt(candidate, correction=judgment, control=control))
+    frame = generation(turn, prompt, phase="terminal_correction")
+    turn.before_model(frame)
+    corrected = canonical_json(
+        {"kind": "answer", "text": "The project\N{RIGHT SINGLE QUOTATION MARK}s corrected method is __new__."}
+    )
+    turn.after_model(
+        frame, provider_response(turn, frame, {"finish_reason": "stop", "message": {"content": corrected}})
+    )
+
+
+@pytest.mark.parametrize("after_correction", [False, True])
+def test_one_global_invalid_review_retry_can_be_used_before_or_after_the_single_correction(
+    turn: probe.Turn, *, after_correction: bool
+) -> None:
+    envelope = retry_review_envelope(turn)
+    if after_correction:
+        first = retry_review_output(turn, verdict="revise")
+        capture_retry_review(turn, envelope, first)
+        correct_retry_candidate(turn, envelope, first)
+    bad = retry_review_output(turn, mismatched_quote=True)
+    invalid_frame = capture_retry_review(turn, envelope, bad)
+    frozen_candidate = canonical_json(turn.candidate)
+    assert turn.checkbacks[-1]["invalid_review_reason"] == "coverage_binding"
+    assert "verdict" not in turn.checkbacks[-1]
+    accepted = retry_review_output(turn, verdict="accept" if after_correction else "revise")
+    retried = capture_retry_review(turn, envelope, accepted, reason="coverage_binding")
+    retry_prompt = json.loads(json.loads(retried.payload_json)["messages"][-1]["content"])
+    assert retry_prompt["review_retry"] == probe.checkback_retry_control("coverage_binding")
+    assert canonical_json(retry_prompt["candidate"]) == frozen_candidate
+    assert bad not in canonical_json(retry_prompt)
+    assert retried.call_id != invalid_frame.call_id
+    if not after_correction:
+        correct_retry_candidate(turn, envelope, accepted)
+        capture_retry_review(turn, envelope, retry_review_output(turn))
+    assert [item["attempt"] for item in turn.checkbacks] == ([0, 1, 1] if after_correction else [0, 0, 1])
+    assert [item["review_attempt"] for item in turn.checkbacks] == [0, 1, 2]
+    assert [item["retry_ordinal"] for item in turn.checkbacks] == ([0, 0, 1] if after_correction else [0, 1, 0])
+    assert turn.invalid_review_retry_used
+    assert turn.corrections == 1
+    assert len(turn.checkback_controls) == 2
+    assert len(turn.calls) == 4
+    assert turn.checkbacks[-1]["verdict"] == "accept"
+    attach_review_receipts(turn)
+    assert turn.checkback_assertions() == []
+
+
+def test_second_invalid_review_exhausts_the_retry_and_never_becomes_a_candidate_correction(turn: probe.Turn) -> None:
+    envelope = retry_review_envelope(turn)
+    capture_retry_review(turn, envelope, retry_review_output(turn, mismatched_quote=True))
+    capture_retry_review(turn, envelope, "{", reason="coverage_binding")
+    assert turn.checkbacks[-1]["invalid_review_reason"] == "review_shape"
+    assert turn.checkbacks[-1]["review_retry_digest"] == probe.checkback_retry_digest("coverage_binding")
+    assert turn.checkback_controls == []
+    assert turn.corrections == 0
+    with pytest.raises(probe.ProbeError, match="probe_checkback_retry_binding"):
+        capture_retry_review(turn, envelope, retry_review_output(turn), reason="review_shape")
+    correction = json.loads(envelope.prompt(canonical_json(turn.candidate)))
+    correction["phase"] = "correction"
+    with pytest.raises(probe.ProbeError, match="probe_correction_order"):
+        turn.before_model(generation(turn, correction, phase="terminal_correction"))
+    attach_review_receipts(turn)
+    assert turn.checkback_assertions() == []
+
+
+@pytest.mark.parametrize("mutation", ["reason", "ordinal", "control_extra", "candidate", "context", "bad_output"])
+def test_retry_control_cannot_change_authority_candidate_context_or_include_bad_output(
+    turn: probe.Turn, mutation: str
+) -> None:
+    envelope = retry_review_envelope(turn)
+    capture_retry_review(turn, envelope, "{")
+    prompt = json.loads(envelope.prompt(canonical_json(turn.candidate), retry_reason="review_shape"))
+    if mutation == "reason":
+        prompt["review_retry"]["reason"] = "runtime_claims"
+    elif mutation == "ordinal":
+        prompt["review_retry"]["ordinal"] = 2
+    elif mutation == "control_extra":
+        prompt["review_retry"]["bad_output"] = "{"
+    elif mutation == "candidate":
+        prompt["candidate"]["text"] = "A foreign candidate."
+    elif mutation == "context":
+        prompt["context"]["question"] = "Another task."
+    else:
+        prompt["bad_output"] = "{"
+    with pytest.raises(probe.ProbeError, match=r"probe_checkback_(retry_binding|binding)"):
+        turn.before_model(generation(turn, prompt, phase="checkback"))
+    assert not turn.invalid_review_retry_used
+    assert len(turn.calls) == 1
+
+
+@pytest.mark.parametrize("verdict", ["accept", "revise", "needs_evidence"])
+def test_valid_review_verdicts_never_authorize_an_extra_review(turn: probe.Turn, verdict: str) -> None:
+    envelope = retry_review_envelope(turn)
+    capture_retry_review(turn, envelope, retry_review_output(turn, verdict=verdict))
+    with pytest.raises(probe.ProbeError, match="probe_checkback_retry_binding"):
+        capture_retry_review(turn, envelope, retry_review_output(turn), reason="coverage_binding")
+    assert not turn.invalid_review_retry_used
+    assert len(turn.checkbacks) == len(turn.checkback_controls) == len(turn.calls) == 1
+
+
+@pytest.mark.parametrize("failure", ["disabled", "runtime_shape", "runtime_excerpt", "transport", "length"])
+def test_disabled_retry_and_terminal_runtime_transport_or_finish_failures_cannot_retry(
+    turn: probe.Turn, failure: str
+) -> None:
+    envelope = retry_review_envelope(turn, enabled=failure != "disabled")
+    output = retry_review_output(turn, mismatched_quote=failure in {"disabled", "transport", "length"})
+    if failure.startswith("runtime"):
+        value = json.loads(output)
+        value["current_runtime_claims"] = "foreign" if failure == "runtime_shape" else ["foreign"]
+        output = canonical_json(value)
+    frame = generation(turn, json.loads(envelope.prompt(canonical_json(turn.candidate))), phase="checkback")
+    turn.before_model(frame)
+    response = (
+        OperatorModelResponse(
+            call_id=frame.call_id, binding_digest=turn.profile.digest, status="unavailable", reason="model_unavailable"
+        )
+        if failure == "transport"
+        else provider_response(
+            turn, frame, {"finish_reason": "length" if failure == "length" else "stop", "message": {"content": output}}
+        )
+    )
+    turn.after_model(frame, response)
+    with pytest.raises(probe.ProbeError, match="probe_checkback_retry_binding"):
+        capture_retry_review(turn, envelope, retry_review_output(turn), reason="coverage_binding")
+    assert not turn.invalid_review_retry_used
+    assert turn.checkback_controls == []
+    assert len(turn.calls) == 1
+
+
+def test_invalid_review_retry_uses_the_unchanged_shared_twelve_operation_counter(turn: probe.Turn) -> None:
+    envelope = retry_review_envelope(turn)
+    capture_retry_review(turn, envelope, "{")
+    for _ in range(probe.MAX_MODEL_CALLS - len(turn.calls)):
+        frame = OperatorModelRequest(
+            call_id=str(uuid4()),
+            binding_digest=turn.profile.digest,
+            operation="probe",
+            payload_json="{}",
+            correlation=correlation(turn),
+        )
+        turn.before_model(frame)
+        turn.after_model(
+            frame, OperatorModelResponse(call_id=frame.call_id, binding_digest=turn.profile.digest, status="ok")
+        )
+    with pytest.raises(probe.ProbeError, match="probe_model_budget"):
+        capture_retry_review(turn, envelope, retry_review_output(turn), reason="review_shape")
+    assert len(turn.calls) == probe.MAX_MODEL_CALLS == 12
+    assert not turn.invalid_review_retry_used
+
+
+def test_disabled_retry_emits_no_new_review_trace_fields(turn: probe.Turn) -> None:
+    captured_guard_review(turn)
+    attach_review_receipts(turn)
+    assert turn.checkback_assertions() == []
+    for event in turn.events:
+        assert {"review_attempt", "retry_ordinal", "invalid_review_reason", "review_retry_digest"}.isdisjoint(
+            json.loads(trace_bytes(event))
+        )
+
+
+@pytest.mark.parametrize("field", ["review_attempt", "retry_ordinal", "invalid_review_reason", "review_retry_digest"])
+def test_retry_review_trace_metadata_is_bound_separately_from_candidate_attempt(turn: probe.Turn, field: str) -> None:
+    envelope = retry_review_envelope(turn)
+    capture_retry_review(turn, envelope, retry_review_output(turn, mismatched_quote=True))
+    capture_retry_review(turn, envelope, retry_review_output(turn), reason="coverage_binding")
+    attach_review_receipts(turn)
+    assert turn.checkback_assertions() == []
+    index = next(index for index, event in enumerate(turn.events) if event.name == "checkback" and event.status == "ok")
+    changed = {
+        "review_attempt": 0,
+        "retry_ordinal": 0,
+        "invalid_review_reason": "review_shape",
+        "review_retry_digest": "f" * 64,
+    }
+    turn.events[index] = turn.events[index].model_copy(update={field: changed[field]})
+    assert "checkback_trace_binding" in turn.checkback_assertions()

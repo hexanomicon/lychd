@@ -2049,7 +2049,7 @@ SDK registration, plan ordering, concurrent custody, expiry, reconciliation and 
 
 An explicit private conversation profile selects one static persona and exact local
 `Qwen3.8-27B` binding while document search remains the default. Each OCI-only
-`reach.operator_converse@5` Run/Graph obtains an exact Dispatcher Chat lease without tools.
+`reach.operator_converse@8` Run/Graph obtains an exact Dispatcher Chat lease without tools.
 The closed host relay performs fresh health/model observations against one fixed loopback
 endpoint and supplies no runtime lifecycle control. An opt-in
 private `enable_thinking` setting can select the same local model's supported separated-reasoning
@@ -2061,7 +2061,7 @@ its declared completion allowance, capped at 4,096 tokens,
 and unchanged timeout and call ceilings. Known length
 finishes refuse and this opt-in requires a natural stop; reasoning bodies stay transient and out
 of checkpoints, settled history, trace and probe output. A separately bound adaptive
-`json_object_output` opt-in selects version 3 of a fixed ten-member compact EBNF grammar bundle.
+`json_object_output` opt-in selects version 4 of a fixed twelve-member compact EBNF grammar bundle.
 The seven semantic phases retain their thinking policy; planning has document-only, web-only
 and mixed variants selected from the actual offered catalogue, while no sources select ordinary
 conversation. A separate goals-enabled checkback carrier requires coverage and nonnull excerpts
@@ -2086,7 +2086,7 @@ an optional cosmetic receipt; research first delivers the model's interpreted pl
 earlier mechanical textual acknowledgement. A separate bounded focus query selects local sections
 without becoming public acknowledgement or source authority. Structured plans require its nonempty
 value; explicit current targets retain precedence over focus, while resolved focus can replace a
-weak partial-word heading match. Conversation checkpoint schema v6
+weak partial-word heading match. Conversation checkpoint schema v8
 retains that selector, while source bodies stay transient. Web metadata eligibility uses the current
 question and actual anchors, with exact configured-reference fallback from only the last two
 admitted history entries. A positive signal retains the complete standing web catalogue for readable
@@ -2117,8 +2117,36 @@ Counts and candidate-bound digests are structural metadata; empty extraction is 
 grounding. Narrow literal opening/next-period observations may also return a misdirected
 clarification for the existing one correction when its actual target is visible, without adopting
 a model-rejected draft or expanding evidence authority.
-Optional `request_goals` adds a fresh pre-planning interpretation of requested outcomes without
-source or candidate exposure. The frozen bounded goals guide formation and require per-goal
+Optional `request_goals` adds a fresh pre-planning typed `TaskRequirements` version 1 interpretation without
+source or candidate exposure. Decision schema 4 separates content goals from presentation constraints,
+selects quotation preservation by enum, and pins at most two exact attributed context units from
+the interpretation input. Explicit profile context projection revision 2 adds up to eight intact paragraph units per
+ordinary history entry alongside whole handles; independent anchors remain whole. The host binds
+full parent/range proofs and retains source projection/citation proofs behind a compact model view.
+Omitted/default revision 1 preserves prior offerings, model views and profile bindings.
+Revision 2 also enables corpus-frequency and body-length-normalized discovery, preserving explicit
+reference, kickoff, numeric and authored-structure precedence, sixteen manifest-bound offers and
+no-query order. This changes selection opportunity rather than proving semantic relevance.
+Unknown, overlapping, trimmed or changed-parent handles refuse; mandatory overflow still refuses
+within unchanged budgets. Existing packers, source ceilings and call/time limits remain unchanged.
+Enabled interpretation or structured-output profiles require an explicit version 4 declaration.
+Version 3 profiles and older conversation checkpoints require an explicit boundary rather than
+silent migration. Public-text review grammars require runtime-claim arrays on every verdict.
+Optional digest-bound `checkback_invalid_retry` admits one malformed-output re-review globally
+across the original and corrected candidates. Omitted/false preserves prior behavior and budgets.
+Only typed shape or coverage-binding failures qualify; runtime observations, exact source guards,
+valid adverse judgments, host/authority/budget failures, transport and cancellation do not. The
+same frozen evidence and candidate receive a concise closed control without the rejected output;
+all three input axes reserve it before freezing and recheck it at dispatch. Two candidate versions
+and one correction remain. Separate review-attempt/retry metadata preserves the first failure
+without private output; false profiles omit the new trace fields. Older closed readers may report
+protocol-error capture gaps for opt-in extensions and continue. No live Orb/Nexus consumption is
+claimed. Pattern revision 8 rejects old manifests; checkpoint shape 8 remains.
+The probe's unchanged twelve-operation cap includes this retry; no native broker turn cap or
+restart replay guarantee is added.
+These candidate mechanics still require actual profile-specific semantic qualification; fixture
+results cannot establish complete quotations or successful continuation in an operational turn.
+The frozen bounded goals guide formation and require per-goal
 fulfillment excerpts before acceptance; trace keeps only counts, digests and closed statuses.
 This adds one model call per admitted Run and does not supply independent factual certification.
 Requested-scope fidelity still needs profile-specific semantic qualification before activation.
@@ -2133,7 +2161,8 @@ consume or reopen its invitation. Existing person/action/history bounds and ment
 remain intact. These operator candidates do not activate public ambient conversation or durable
 memory. [Native checkback tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_checkback.py),
 [addressing tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_addressing.py),
-[request-goal tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_request_goals.py)
+[request-goal tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_request_goals.py),
+[document-ranking tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_document_ranking.py)
 and [anchor-reference tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_conversation_references.py)
 and [Discord continuation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_followups.py)
 own the focused boundaries.
@@ -2178,11 +2207,23 @@ cannot fit. Synthesis and self-check instructions require requested visible quot
 that mode; this remains fallible model fulfillment, not independent acceptance. Probe recomputation binds the closed mode; all existing byte, frame and span limits
 remain. Exact source metadata, occurrence correlation, digests,
 and full span receipts remain with the host and probe; the model view excludes the derived span
-array and is compared exactly against an independently recomputed projection. Citations and
-unavailable outcomes are checked. Detached outbound source projections keep raw
+array and is compared exactly against an independently recomputed projection. Revision 2 adds at
+most four text-free source-projection observations under the existing 2 KiB event limit. The probe
+matches the reconstructed allocation and proof digests to those actual observations; missing
+records remain explicit capture gaps. This is matched reconstruction rather than captured model
+payload. Citations and unavailable outcomes are checked. Detached outbound source projections keep raw
 acquisition bodies out of checkpoint state, cached Context and native history. The host renders
 supporting citations and explicit unavailable-source notices rather than treating a blocked page
 as read. Humour and expression selection retain those attribution limits.
+
+An explicitly prepared profile may now select at most 32,000 combined input characters; the
+default remains 20,000, with unchanged context, completion, timeout, call, 49,152-byte payload and
+65,536-byte frame limits. Planning asks for concise focus keywords/section labels and a public
+plan within the existing 500-character bounds. Finite failed-plan validation counts, exact trusted
+Core budget classification and provider finish/content-state observations distinguish failure
+categories without retaining bodies or authorizing recovery. These mechanics require separate
+profile-specific semantic qualification; successful parsing or a larger allowance does not prove
+complete evidence, correct planning or answer fulfillment.
 
 The explicit headless operator probe exercises that same native conversation Pattern with a
 selected persona, verified corpus and real local model behind a networkless Core worker.

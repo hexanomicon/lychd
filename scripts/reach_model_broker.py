@@ -50,6 +50,45 @@ def _array(value: Any, code: str) -> list[Any]:
     return cast("list[Any]", value)
 
 
+def _completion_content_state(message: dict[str, Any]) -> str:
+    """Reduce an observed message field to a closed state without retaining its value."""
+    content = message.get("content")
+    if "content" not in message:
+        return "missing"
+    if content is None:
+        return "null"
+    if not isinstance(content, str):
+        return "non_string"
+    if not content:
+        return "empty"
+    return "text" if content.strip() else "blank"
+
+
+def _completion_observation(value: dict[str, Any]) -> dict[str, str]:
+    """Observe only finite categories from an actual parsed single-choice completion."""
+    supplied = value.get("choices")
+    if not isinstance(supplied, list):
+        return {}
+    choices = cast("list[object]", supplied)
+    if len(choices) != 1 or not isinstance(choices[0], dict):
+        return {}
+    choice = cast("dict[str, Any]", choices[0])
+    finish = choice.get("finish_reason")
+    if "finish_reason" not in choice:
+        reason = "missing"
+    elif finish is None:
+        reason = "null"
+    elif isinstance(finish, str) and finish in {"stop", "length", "tool_calls", "function_call", "content_filter"}:
+        reason = finish
+    else:
+        reason = "other"
+    observation = {"completion_finish_reason": reason}
+    supplied_message = choice.get("message")
+    if isinstance(supplied_message, dict):
+        observation["content_state"] = _completion_content_state(cast("dict[str, Any]", supplied_message))
+    return observation
+
+
 class OperatorModelBroker:
     """Serialize one bounded call without retries, proxies or lifecycle effects."""
 
@@ -68,6 +107,7 @@ class OperatorModelBroker:
         self._busy = False
         self.trace = TraceEmitter("host", trace)
         self._active_request: OperatorModelRequest | None = None
+        self._completion_metadata: dict[str, str] = {}
 
     def _observe(self, name: TraceName, **fields: Any) -> None:
         request = self._active_request
@@ -149,6 +189,7 @@ class OperatorModelBroker:
         value = _object(
             await self._request(client, "POST", "/v1/chat/completions", body, authorize=authorize), "model_completion"
         )
+        self._completion_metadata = _completion_observation(value)
         if value.get("model") != self.profile.model_id:
             msg = "model_completion"
             raise ValueError(msg)
@@ -178,6 +219,7 @@ class OperatorModelBroker:
             raise ValueError(msg)
         self._busy = True
         self._active_request = request
+        self._completion_metadata = {}
         started = time.monotonic()
         result: OperatorModelResponse | None = None
         self._observe("model_call", status="started", operation=request.operation)
@@ -235,6 +277,8 @@ class OperatorModelBroker:
                 operation=request.operation,
                 code=result.reason if result else None,
                 duration_ms=min(86_400_000, int((time.monotonic() - started) * 1000)),
+                **self._completion_metadata,
             )
+            self._completion_metadata = {}
             self._active_request = None
             self._busy = False

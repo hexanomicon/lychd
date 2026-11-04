@@ -7,11 +7,12 @@ independent-verification authority and contain no free-form reasoning transcript
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 from hashlib import sha256
 from typing import Annotated, Any, Literal, Self, cast
 
-from pydantic import Field, model_validator
+from pydantic import Field, ValidationError, model_validator
 
 from lychd.agents.factory import AgentSpec
 from lychd.compositions.reach.conversation_references import opening_successor
@@ -41,12 +42,181 @@ CHECKBACK_CLARIFICATION = (
     "Please provide the missing source or clarify the requested details."
 )
 type CheckbackVerdict = Literal["accept", "revise", "needs_evidence"]
+type InvalidReviewReason = Literal["review_shape", "coverage_binding"]
+_REVIEW_RETRY_RULE = "Prior review invalid; reassess same candidate; copy exact characters."
+
+
+class InvalidCheckbackOutputError(ValueError):
+    """Only malformed model review output may authorize the explicitly admitted re-review."""
+
+    reason: InvalidReviewReason
+
+    def __init__(self, reason: InvalidReviewReason) -> None:
+        """Retain only the closed parsing category, never rejected model output."""
+        self.reason = reason
+        super().__init__(
+            "conversation_checkback_coverage" if reason == "coverage_binding" else "conversation_checkback_review_shape"
+        )
+
+
+def checkback_retry_control(reason: InvalidReviewReason) -> dict[str, object]:
+    """Return a fixed host control without rejected output or a suggested verdict."""
+    if reason not in {"review_shape", "coverage_binding"}:
+        msg = "conversation_checkback_retry"
+        raise ValueError(msg)
+    return {"ordinal": 1, "reason": reason, "rule": _REVIEW_RETRY_RULE}
+
+
+def checkback_retry_digest(reason: InvalidReviewReason) -> str:
+    return sha256(canonical_json(checkback_retry_control(reason)).encode()).hexdigest()
+
+
+def _parse_review_output(output: str, goals: list[str], *, classify_invalid: bool) -> CheckbackJudgment:
+    """Classify opted-in response errors; preserve the legacy parser's exception contract."""
+    if not classify_invalid:
+        return CheckbackJudgment.model_validate_json(_goal_references(output, goals))
+    reason: InvalidReviewReason = "review_shape"
+    try:
+        return CheckbackJudgment.model_validate_json(_goal_references(output, goals))
+    except ValidationError as error:
+        if any(item["loc"] and item["loc"][0] == "current_runtime_claims" for item in error.errors()):
+            raise
+        raise InvalidCheckbackOutputError(reason) from None
+    except ValueError:
+        raise InvalidCheckbackOutputError(reason) from None
+
+
+_COVERAGE_EMPHASIS_DEPTH = 2
+_COVERAGE_FENCE_INDENT = 3
+_COVERAGE_CODE_WIDTHS = frozenset({1, 2})
+
+
+def _coverage_word_edge(char: str) -> bool:
+    return bool(char) and (char.isalnum() or char == "_" or unicodedata.category(char).startswith("M"))
+
+
+def _coverage_code_runs(line: str) -> tuple[dict[int, str], dict[int, int]]:
+    runs = {match.start(): match.group() for match in re.finditer(r"`+", line)}
+    next_same: dict[int, int] = {}
+    following: dict[int, int] = {}
+    for position, run in reversed(runs.items()):
+        width = len(run)
+        if width in _COVERAGE_CODE_WIDTHS:
+            if width in following:
+                next_same[position] = following[width]
+            following[width] = position
+    return runs, next_same
+
+
+def _coverage_run_end(line: str, index: int) -> int:
+    end = index + 1
+    while end < len(line) and line[end] == line[index]:
+        end += 1
+    return end
+
+
+def _coverage_emphasis(line: str, index: int, end: int, stack: list[str]) -> tuple[str, bool]:
+    """Consume one bounded marker; any ambiguous pairing keeps the complete line literal."""
+    marker = line[index:end]
+    if len(marker) not in _COVERAGE_CODE_WIDTHS:
+        return marker, True
+    before = line[index - 1] if index else ""
+    after = line[end] if end < len(line) else ""
+    opens = bool(after) and not after.isspace() and not _coverage_word_edge(before)
+    closes = bool(before) and not before.isspace() and not _coverage_word_edge(after)
+    if closes and stack and stack[-1] == marker:
+        stack.pop()
+        return "", False
+    if closes and marker in stack:
+        return marker, True
+    if opens:
+        if len(stack) >= _COVERAGE_EMPHASIS_DEPTH or marker in stack:
+            return marker, True
+        stack.append(marker)
+        return "", False
+    return marker, closes
+
+
+def _coverage_indented(line: str) -> bool:
+    leading = line[: len(line) - len(line.lstrip())]
+    return len(leading) > _COVERAGE_FENCE_INDENT or any(char != " " for char in leading)
+
+
+def _coverage_fence_closes(line: str, fence: tuple[str, int]) -> bool:
+    indent = len(line) - len(line.lstrip(" "))
+    if indent > _COVERAGE_FENCE_INDENT:
+        return False
+    body = line[indent:].rstrip(" ")
+    char, width = fence
+    return len(body) >= width and body == char * len(body)
+
+
+def _coverage_line(line: str) -> tuple[str, tuple[str, int] | None]:
+    """Strip bounded paired presentation once, keeping code bodies opaque and ambiguity literal."""
+    if _coverage_indented(line):
+        return line, None
+    runs, next_same = _coverage_code_runs(line)
+    output: list[str] = []
+    stack: list[str] = []
+    literal = False
+    index = 0
+    while index < len(line):
+        char = line[index]
+        if char == "`":
+            run = runs[index]
+            width = len(run)
+            if width not in _COVERAGE_CODE_WIDTHS:
+                # A possible fence conservatively protects following lines too.
+                return line, (char, width)
+            closer = next_same.get(index)
+            if closer is None:
+                literal = True
+                output.append(run)
+                index += width
+            else:
+                output.append(line[index + width : closer])
+                index = closer + width
+            continue
+        if char in {"*", "~"}:
+            end = _coverage_run_end(line, index)
+            marker, ambiguous = line[index:end], False
+            if char == "~":
+                if end - index not in _COVERAGE_CODE_WIDTHS:
+                    return line, (char, end - index)
+            else:
+                marker, ambiguous = _coverage_emphasis(line, index, end, stack)
+            literal = literal or ambiguous
+            output.append(marker)
+            index = end
+            continue
+        literal = literal or char == "\\"
+        output.append(char)
+        index += 1
+    return (line if literal or stack else "".join(output)), None
 
 
 def _coverage_excerpt(value: str) -> str:
-    """Compare visible wording while ignoring paired bold/inline-code presentation markers."""
-    visible = re.sub(r"(\*\*|`+)(.*?)\1", r"\2", value, flags=re.DOTALL)
-    return " ".join(visible.split())
+    """Fold whitespace and the recognized presentation subset without changing visible content."""
+    projected: list[str] = []
+    fence: tuple[str, int] | None = None
+    for line in value.split("\n"):
+        if fence is not None:
+            projected.append(line)
+            if _coverage_fence_closes(line, fence):
+                fence = None
+        else:
+            normalized, fence = _coverage_line(line)
+            projected.append(normalized)
+    return " ".join("\n".join(projected).split())
+
+
+def _context_goals(context: dict[str, Any]) -> Any:
+    requirements = context.get("task_requirements")
+    return (
+        cast("dict[str, Any]", requirements).get("goals", [])
+        if isinstance(requirements, dict)
+        else context.get("request_goals", [])
+    )
 
 
 def _goal_references(output: str, goals: list[str]) -> str:
@@ -118,9 +288,12 @@ _REVIEW_CORE = (
     "fulfillment/evidence without replacing a useful answer with needless caution. "
 )
 _REVIEW_GOALS = (
-    "When context.request_goals is nonempty, include coverage for every zero-based index exactly once: "
+    "When context.task_requirements.goals is nonempty, include coverage for every zero-based index exactly once: "
     "goal, status (complete/missing/unsupported), and answer_quote. Complete requires an exact short candidate "
     "phrase (at most 240 characters) or exact selected citation/reaction/gif_id that supplies that outcome. "
+    "Presentation constraints in task_requirements remain review obligations; never create extra coverage "
+    "entries for them or require a style instruction to appear in the candidate. The literal current question "
+    "still owns requested scope. "
     "Other statuses may quote the assessed candidate phrase or omit answer_quote. A redirect to read elsewhere "
     "does not explain an outcome. Acceptance requires all goals complete; a false-premise correction may "
     "fulfill a goal, which is not itself factual proof. Follow review_output_contract when present. "
@@ -149,7 +322,7 @@ REPAIR_INSTRUCTIONS = (
     "A faithful plainer paraphrase is sufficient and need not add facts. If the opening period is 00 and "
     "the next is 01, after the first period means 01, not 02. Choose one clear first action when asked; "
     "summaries preserve the action actually selected, even if it was option B in an earlier A/B list. "
-    "Cover every separately requested component and time horizon. Satisfy every frozen context.request_goals "
+    "Cover every separately requested component and time horizon. Satisfy every frozen context.task_requirements.goals "
     "item; a redirect to read a document is not its explanation. Resolve the current question's referent "
     "from its actual anchor and bounded history, then match source claims to that entity, stage and period. "
     "Correct earlier mistakes instead of repeating them; a prior answer or acknowledged plan is not proof. "
@@ -383,8 +556,7 @@ def runtime_claim_metadata(decision: CheckbackDecision) -> dict[str, Any]:
     }
 
 
-def _validate_runtime_claims(judgment: CheckbackJudgment, candidate: dict[str, Any], *, required: bool) -> None:
-    claims = judgment.current_runtime_claims
+def _validate_runtime_claims(claims: tuple[str, ...] | None, candidate: dict[str, Any], *, required: bool) -> None:
     if claims is None:
         if required:
             msg = "conversation_checkback_runtime_claims"
@@ -399,6 +571,31 @@ def _validate_runtime_claims(judgment: CheckbackJudgment, candidate: dict[str, A
     ):
         msg = "conversation_checkback_runtime_claims"
         raise ValueError(msg)
+
+
+def _precheck_runtime_output(output: str, candidate: dict[str, Any], *, required: bool) -> None:
+    """Keep runtime-field failures terminal even beside unrelated malformed review fields."""
+    try:
+        raw = strict_json(output.encode())
+    except ValueError:
+        reason: InvalidReviewReason = "review_shape"
+        raise InvalidCheckbackOutputError(reason) from None
+    if not isinstance(raw, dict):
+        return
+    claims: object = cast("dict[str, object]", raw).get("current_runtime_claims")
+    if claims is not None and (
+        not isinstance(claims, list)
+        or len(cast("list[object]", claims)) > MAX_RUNTIME_CLAIMS
+        or any(
+            not isinstance(claim, str) or not 1 <= len(claim) <= MAX_RUNTIME_CLAIM_CHARS
+            for claim in cast("list[object]", claims)
+        )
+    ):
+        msg = "conversation_checkback_runtime_claims"
+        raise ValueError(msg)
+    _validate_runtime_claims(
+        tuple(cast("list[str]", claims)) if claims is not None else None, candidate, required=required
+    )
 
 
 def _source_has_reference(context: dict[str, Any], tokens: tuple[str, ...]) -> bool:
@@ -537,7 +734,16 @@ class CheckbackEnvelope:
             request.event.question,
         )
 
+    @property
+    def decision_variant(self) -> DecisionVariant:
+        """Select the review grammar only from the host's frozen evidence envelope."""
+        context = cast("dict[str, Any]", strict_json(self.context_json.encode()))
+        return "checkback_public" if _public_text_scope(context) else "checkback"
+
     def bindings(self, candidate: str) -> dict[str, str]:
+        if re.fullmatch(r"[a-f0-9]{64}", self.request_digest) is None:
+            msg = "conversation_checkback_binding"
+            raise ValueError(msg)
         return {
             "request_digest": self.request_digest,
             "evidence_digest": sha256(
@@ -558,9 +764,13 @@ class CheckbackEnvelope:
         *,
         correction: CheckbackDecision | None = None,
         control: EffectiveCheckbackControl | None = None,
+        retry_reason: InvalidReviewReason | None = None,
     ) -> str:
+        if retry_reason is not None and correction is not None:
+            msg = "conversation_checkback_retry"
+            raise ValueError(msg)
         context = cast("dict[str, Any]", strict_json(self.context_json.encode()))
-        goals = context.get("request_goals", [])
+        goals = _context_goals(context)
         return canonical_json(
             {
                 "context": context,
@@ -610,19 +820,28 @@ class CheckbackEnvelope:
                     else {}
                 ),
                 **(
-                    {"review_output_contract": {"required_keys": ["current_runtime_claims", "verdict", "issues"]}}
+                    {
+                        "review_output_contract": {
+                            "required_keys": [
+                                "current_runtime_claims",
+                                "verdict",
+                                "issues",
+                            ]
+                        }
+                    }
                     if _public_text_scope(context) and not goals and correction is None
                     else {}
                 ),
+                **({"review_retry": checkback_retry_control(retry_reason)} if retry_reason is not None else {}),
                 "phase": "correction" if correction is not None else "checkback",
                 "task": self.current_question,
             }
         )
 
-    def parse(self, output: str, candidate: str) -> CheckbackDecision:
-        """Reject foreign model fields before attaching the host's exact evidence receipt."""
+    def parse(self, output: str, candidate: str, *, classify_invalid: bool = False) -> CheckbackDecision:
+        """Reject foreign fields; classify only opted-in response failures before host binding."""
         context = cast("dict[str, Any]", strict_json(self.context_json.encode()))
-        raw_goals = context.get("request_goals", [])
+        raw_goals = _context_goals(context)
         values = cast("list[object]", raw_goals) if isinstance(raw_goals, list) else None
         if (
             values is None
@@ -637,9 +856,12 @@ class CheckbackEnvelope:
         if len(set(goals)) != len(goals):
             msg = "conversation_checkback_goals"
             raise ValueError(msg)
-        judgment = CheckbackJudgment.model_validate_json(_goal_references(output, goals))
         proposed = cast("dict[str, Any]", strict_json(candidate.encode()))
-        _validate_runtime_claims(judgment, proposed, required=_public_text_scope(context))
+        bindings = self.bindings(candidate)
+        if classify_invalid:
+            _precheck_runtime_output(output, proposed, required=_public_text_scope(context))
+        judgment = _parse_review_output(output, goals, classify_invalid=classify_invalid)
+        _validate_runtime_claims(judgment.current_runtime_claims, proposed, required=_public_text_scope(context))
         raw_answer = str(proposed.get("text", ""))
         answer = _coverage_excerpt(raw_answer)
         selections = [proposed.get("reaction"), proposed.get("gif_id")]
@@ -663,11 +885,12 @@ class CheckbackEnvelope:
             )
             or (judgment.verdict == "accept" and any(item.status != "complete" for item in judgment.coverage))
         ):
+            if classify_invalid:
+                reason: InvalidReviewReason = "coverage_binding"
+                raise InvalidCheckbackOutputError(reason)
             msg = "conversation_checkback_coverage"
             raise ValueError(msg)
-        return CheckbackDecision.model_validate_json(
-            canonical_json({**judgment.model_dump(mode="json"), **self.bindings(candidate)})
-        )
+        return CheckbackDecision.model_validate_json(canonical_json({**judgment.model_dump(mode="json"), **bindings}))
 
 
 def checkback_spec(profile: OperatorConversationProfile, *, correction: bool = False) -> AgentSpec:
@@ -751,10 +974,23 @@ def checkback_reserve(
             profile,
             checkback_spec(profile, correction=correction).instructions,
             "",
-            phase=correction_phase if correction else "checkback",
+            phase=correction_phase if correction else ("checkback_public" if runtime_claims else "checkback"),
         )
         for correction in (False, True)
     ]
+    if profile.checkback_invalid_retry:
+        # Exact additional object field, including its separating comma; the recipe is unchanged.
+        retry = _component_cost(
+            canonical_json({"review_retry": checkback_retry_control("coverage_binding")})[1:-1] + ","
+        )
+        review = recipes[0]
+        recipes.append(
+            InputBudget(
+                review.input_chars + retry.input_chars,
+                review.payload_bytes + retry.payload_bytes,
+                review.frame_bytes + retry.frame_bytes,
+            )
+        )
     task = _component_cost(canonical_json({"task": question}))
     claims = _runtime_claim_reserve() if runtime_claims else InputBudget()
     return InputBudget(

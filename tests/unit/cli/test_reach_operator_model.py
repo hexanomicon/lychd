@@ -21,6 +21,7 @@ from lychd.compositions.reach.operator_model_wire import (
     OperatorModelRequest,
     canonical_json,
 )
+from lychd.compositions.reach.operator_trace import ReachTraceEvent, trace_bytes
 
 
 def profile() -> OperatorConversationProfile:
@@ -425,3 +426,75 @@ async def test_conversation_edge_cannot_inject_model_frames_or_invalid_requests(
     with pytest.raises(ValueError, match="validation error"):
         await operator.relay(reader, core, requests_only=True)  # type: ignore[arg-type] - write-only pipe fixture
     assert core.raw == b""
+
+
+@pytest.mark.parametrize(
+    ("finish", "content", "finish_state", "content_state", "status"),
+    [
+        ("stop", "answer", "stop", "text", "ok"),
+        ("length", "answer", "length", "text", "ok"),
+        ("tool_calls", "answer", "tool_calls", "text", "error"),
+        ("function_call", "answer", "function_call", "text", "error"),
+        ("content_filter", "", "content_filter", "empty", "ok"),
+        (None, " \t", "null", "blank", "ok"),
+        ("PRIVATE_UNKNOWN_FINISH", None, "other", "null", "error"),
+        (123, {"PRIVATE_BODY": "secret"}, "other", "non_string", "error"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_completion_diagnostics_are_finite_terminal_only_and_do_not_change_control(
+    finish: object, content: object, finish_state: str, content_state: str, status: str
+) -> None:
+    records: list[ReachTraceEvent] = []
+    value = completion(content=content)
+    value["choices"][0]["finish_reason"] = finish
+    broker = OperatorModelBroker(
+        profile(), transport=httpx.MockTransport(lambda _request: httpx.Response(200, json=value)), trace=records.append
+    )
+    result = await broker.handle(request())
+    assert result.status == status
+    terminal = records[-1]
+    assert terminal.name == "model_call"
+    assert terminal.completion_finish_reason == finish_state
+    assert terminal.content_state == content_state
+    assert all(event.completion_finish_reason is None and event.content_state is None for event in records[:-1])
+    assert "PRIVATE" not in b"".join(trace_bytes(event) for event in records).decode()
+
+
+@pytest.mark.asyncio
+async def test_missing_completion_fields_and_unobserved_next_call_do_not_leak_metadata() -> None:
+    records: list[ReachTraceEvent] = []
+    value = completion()
+    del value["choices"][0]["finish_reason"]
+    del value["choices"][0]["message"]["content"]
+    calls = 0
+
+    def handle(_request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(200, json=value) if calls == 1 else httpx.Response(200, content=b"not JSON")
+
+    broker = OperatorModelBroker(profile(), transport=httpx.MockTransport(handle), trace=records.append)
+    assert (await broker.handle(request())).reason == "model_protocol"
+    assert records[-1].completion_finish_reason == "missing"
+    assert records[-1].content_state == "missing"
+    assert (await broker.handle(request())).reason == "model_protocol"
+    assert records[-1].completion_finish_reason is None
+    assert records[-1].content_state is None
+    assert calls == 2
+
+
+@pytest.mark.asyncio
+async def test_probe_has_no_provider_completion_observation() -> None:
+    records: list[ReachTraceEvent] = []
+
+    def handle(value: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, json={"status": "ok"} if value.url.path == "/health" else {"data": [{"id": profile().model_id}]}
+        )
+
+    result = await OperatorModelBroker(profile(), transport=httpx.MockTransport(handle), trace=records.append).handle(
+        request("probe")
+    )
+    assert result.status == "ok"
+    assert all(event.completion_finish_reason is None and event.content_state is None for event in records)

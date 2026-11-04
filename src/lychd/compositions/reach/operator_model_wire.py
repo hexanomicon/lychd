@@ -25,6 +25,7 @@ from lychd.compositions.reach.research_wire import ResearchOptions
 from lychd.compositions.reach.schemas import PolicyDigest, Record
 
 MAX_MODEL_PAYLOAD_BYTES = 49_152
+DECISION_SCHEMA_VERSION = 4
 
 
 def canonical_json(value: Any) -> str:
@@ -62,22 +63,32 @@ class OperatorConversationProfile(Record):
     enable_thinking: bool = False
     thinking_phases: tuple[DecisionPhase, ...] = Field(default=(), max_length=len(DECISION_PHASES))
     json_object_output: bool = False
-    decision_schema_version: Literal[3] = 3
+    decision_schema_version: Literal[4] = 4
     checkback: bool = False
+    checkback_invalid_retry: bool = Field(default=False, strict=True)
     request_goals: bool = False
+    context_projection_version: Literal[1, 2] = 1
     expressions: ConversationExpressions = Field(default_factory=ConversationExpressions)
     research: ResearchOptions = Field(default_factory=ResearchOptions)
     max_context: int = Field(default=16_384, ge=4096, le=32_768)
     max_tokens: int = Field(default=384, ge=32, le=4096)
     temperature: float = Field(default=0.6, ge=0, le=1)
-    max_input_chars: int = Field(default=20_000, ge=1000, le=24_000)
+    max_input_chars: int = Field(default=20_000, ge=1000, le=32_000)
     timeout_seconds: int = Field(default=60, ge=5, le=60)
 
     @field_validator("decision_schema_version", mode="before")
     @classmethod
     def original_decision_schema_version(cls, value: object) -> object:
-        if type(value) is not int:
+        if type(value) is not int or value != DECISION_SCHEMA_VERSION:
             msg = "decision_schema_version"
+            raise ValueError(msg)
+        return value
+
+    @field_validator("context_projection_version", mode="before")
+    @classmethod
+    def original_context_projection_version(cls, value: object) -> object:
+        if type(value) is not int:
+            msg = "context_projection_version"
             raise ValueError(msg)
         return value
 
@@ -91,6 +102,9 @@ class OperatorConversationProfile(Record):
         if self.max_tokens >= self.max_context:
             msg = "model_completion_context"
             raise ValueError(msg)
+        if self.checkback_invalid_retry and not self.checkback:
+            msg = "checkback_invalid_retry_requires_checkback"
+            raise ValueError(msg)
         if self.request_goals and not self.checkback:
             msg = "request_goals_require_checkback"
             raise ValueError(msg)
@@ -100,11 +114,21 @@ class OperatorConversationProfile(Record):
         if (self.expressions.enabled or self.research.enabled or self.checkback) and not self.adaptive_context:
             msg = "expressions_require_adaptive_context"
             raise ValueError(msg)
+        if (self.request_goals or self.json_object_output) and "decision_schema_version" not in self.model_fields_set:
+            msg = "decision_schema_version_required"
+            raise ValueError(msg)
+        if self.context_projection_version != 1 and not (self.request_goals and self.adaptive_context):
+            msg = "context_projection_requires_interpretation"
+            raise ValueError(msg)
         return self
 
     @property
     def digest(self) -> str:
         values = self.model_dump(mode="json")
+        if self.context_projection_version == 1:
+            values.pop("context_projection_version")
+        if self.checkback_invalid_retry is False:
+            values.pop("checkback_invalid_retry")
         if not self.thinking_phases:
             values.pop("thinking_phases")
         if self.enable_thinking is False:
@@ -168,7 +192,7 @@ class OperatorModelProbe(Record):
 
 class _Message(Record):
     role: Literal["system", "user", "assistant"]
-    content: str = Field(min_length=1, max_length=24_000)
+    content: str = Field(min_length=1, max_length=32_000)
 
 
 class _Generation(Record):
@@ -191,11 +215,11 @@ class _Generation(Record):
 
 def generation_format(profile: OperatorConversationProfile, *, phase: DecisionVariant) -> dict[str, Any]:
     """Return only the syntax constraint frozen in the private model binding."""
-    if phase == "checkback_goals" and not profile.request_goals:
+    if phase in {"checkback_goals", "checkback_public_goals"} and not profile.request_goals:
         msg = "model_generation_binding"
         raise ValueError(msg)
-    if phase == "checkback" and profile.request_goals:
-        phase = "checkback_goals"
+    if phase in {"checkback", "checkback_public"} and profile.request_goals:
+        phase = "checkback_public_goals" if phase == "checkback_public" else "checkback_goals"
     return {"structured_outputs": decision_response_format(phase)} if profile.json_object_output else {}
 
 
@@ -218,7 +242,9 @@ def _validate_format_binding(profile: OperatorConversationProfile, payload_json:
     if "response_format" in body or present != profile.json_object_output or (present and phase is None):
         msg = "model_generation_binding"
         raise ValueError(msg)
-    if (phase == "checkback" and profile.request_goals) or (phase == "checkback_goals" and not profile.request_goals):
+    if (phase in {"checkback", "checkback_public"} and profile.request_goals) or (
+        phase in {"checkback_goals", "checkback_public_goals"} and not profile.request_goals
+    ):
         msg = "model_generation_binding"
         raise ValueError(msg)
     return phase

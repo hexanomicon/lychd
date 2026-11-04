@@ -131,6 +131,13 @@ def _trace_failure_code(error: BaseException | None) -> TraceCode | None:
     """Classify trusted types without rendering exception arguments or validation input."""
     if error is None or isinstance(error, asyncio.CancelledError):
         return None
+    if (
+        type(error) is DocumentsRefused
+        and len(error.args) == 1
+        and type(error.args[0]) is str
+        and error.args[0] == "conversation_budget"
+    ):
+        return "budget"
     known = _failure_code(error) if isinstance(error, Exception) else None
     if known in {"model_unavailable", "model_timeout", "model_refused", "model_protocol", "model_failed"}:
         return cast("TraceCode", known)

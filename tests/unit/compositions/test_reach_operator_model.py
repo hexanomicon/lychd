@@ -61,7 +61,7 @@ from lychd.compositions.reach.operator_model_wire import (
 )
 from lychd.compositions.reach.operator_trace import ReachTraceEvent, trace_bytes
 from lychd.compositions.reach.operator_wire import MAX_WIRE_BYTES, strict_json
-from lychd.compositions.reach.request_goals import RequestGoals
+from lychd.compositions.reach.request_goals import TaskRequirements
 from lychd.compositions.reach.research import (
     ResearchPlan,
     _ResearchDecision,  # pyright: ignore[reportPrivateUsage] - drift check against the raw research parser
@@ -182,11 +182,26 @@ def test_private_thinking_binding_preserves_the_known_legacy_digest_and_existing
     assert omitted.digest == explicit_false.digest == LEGACY_PROFILE_DIGEST
     assert thinking.digest != omitted.digest
     thinking_values = thinking.model_dump(
-        mode="json", exclude={"json_object_output", "decision_schema_version", "thinking_phases"}
+        mode="json",
+        exclude={
+            "json_object_output",
+            "decision_schema_version",
+            "thinking_phases",
+            "context_projection_version",
+            "checkback_invalid_retry",
+        },
     )
     assert thinking.digest == sha256(canonical_json(thinking_values).encode()).hexdigest()
     legacy_values = omitted.model_dump(
-        mode="json", exclude={"enable_thinking", "json_object_output", "decision_schema_version", "thinking_phases"}
+        mode="json",
+        exclude={
+            "enable_thinking",
+            "json_object_output",
+            "decision_schema_version",
+            "thinking_phases",
+            "context_projection_version",
+            "checkback_invalid_retry",
+        },
     )
     assert legacy_values["max_tokens"] == 384
     assert legacy_values["research"] == {"enabled": False, "sources": []}
@@ -205,26 +220,35 @@ def test_private_thinking_flag_is_an_original_boolean(value: object) -> None:
 def test_json_object_binding_preserves_legacy_raw_profiles_and_hashes(*, thinking: bool) -> None:
     legacy = profile().model_copy(update={"enable_thinking": thinking})
     values = legacy.model_dump(
-        mode="json", exclude={"json_object_output", "decision_schema_version", "thinking_phases"}
+        mode="json",
+        exclude={
+            "json_object_output",
+            "decision_schema_version",
+            "thinking_phases",
+            "context_projection_version",
+            "checkback_invalid_retry",
+        },
     )
     omitted = OperatorConversationProfile.model_validate_json(canonical_json(values))
     explicit = OperatorConversationProfile.model_validate_json(
-        canonical_json(values | {"json_object_output": False, "decision_schema_version": 3})
+        canonical_json(values | {"json_object_output": False, "decision_schema_version": 4})
     )
     expected = LEGACY_THINKING_PROFILE_DIGEST if thinking else LEGACY_PROFILE_DIGEST
     assert omitted.json_object_output is False
     assert omitted.digest == explicit.digest == expected
     assert generation_format(omitted, phase="conversation") == {}
     enabled = OperatorConversationProfile.model_validate_json(
-        canonical_json(values | {"adaptive_context": True, "json_object_output": True})
+        canonical_json(values | {"adaptive_context": True, "json_object_output": True, "decision_schema_version": 4})
     )
-    enabled_values = enabled.model_dump(mode="json", exclude={"thinking_phases"})
+    enabled_values = enabled.model_dump(
+        mode="json", exclude={"thinking_phases", "context_projection_version", "checkback_invalid_retry"}
+    )
     enabled_values["decision_schema_bundle_sha256"] = DECISION_SCHEMA_BUNDLE_SHA256
     if not thinking:
         enabled_values.pop("enable_thinking")
     assert enabled.digest == sha256(canonical_json(enabled_values).encode()).hexdigest()
     assert enabled.digest != enabled.model_copy(update={"json_object_output": False}).digest
-    assert enabled.decision_schema_version == 3
+    assert enabled.decision_schema_version == 4
     assert generation_format(enabled, phase="conversation") == {
         "structured_outputs": decision_response_format("conversation")
     }
@@ -249,8 +273,8 @@ def test_json_object_output_requires_an_adaptive_decision_profile() -> None:
 
 
 @pytest.mark.parametrize("enabled", [False, True])
-@pytest.mark.parametrize("value", [True, False, 2.0, "2", 3.0, "3", None, 0, 1, 2])
-def test_decision_schema_version_is_exact_original_integer_three(*, enabled: bool, value: object) -> None:
+@pytest.mark.parametrize("value", [True, False, 3.0, "3", 4.0, "4", None, 0, 1, 2, 3])
+def test_decision_schema_version_is_exact_original_integer_four(*, enabled: bool, value: object) -> None:
     with pytest.raises(ValidationError, match="decision_schema_version"):
         OperatorConversationProfile.model_validate(
             {
@@ -735,10 +759,10 @@ async def assert_native_reasoning_custody(
     assert runtime.substrate.leases.active() == []
 
 
-RESEARCH_POSTURE_GRAMMARS: dict[str, DecisionPhase] = {
+RESEARCH_POSTURE_GRAMMARS: dict[str, DecisionVariant] = {
     "planning": "planning",
     "synthesis": "synthesis",
-    "checkback": "checkback",
+    "checkback": "checkback_public",
     "correction": "synthesis",
 }
 
@@ -913,7 +937,7 @@ def _schema_string(value: Any, schema: dict[str, Any]) -> bool:
 
 
 def _schema_integer(value: Any, schema: dict[str, Any]) -> bool:
-    return type(value) is int and schema["minimum"] <= value <= schema["maximum"]
+    return type(value) is int and schema.get("minimum", value) <= value <= schema.get("maximum", value)
 
 
 def _schema_accepts(value: Any, schema: dict[str, Any]) -> bool:
@@ -939,7 +963,12 @@ def _schema_accepts(value: Any, schema: dict[str, Any]) -> bool:
 RAW_DECISION_FIXTURES: tuple[tuple[type[Record], dict[str, Any]], ...] = (
     (
         ConversationDecision,
-        {"kind": "read_more", "text": "Read the earlier message.", "reaction": None, "gif_id": None},
+        {
+            "kind": "read_more",
+            "text": "Read the earlier message.",
+            "reaction": None,
+            "gif_id": None,
+        },
     ),
     (
         ResearchPlan,
@@ -952,9 +981,18 @@ RAW_DECISION_FIXTURES: tuple[tuple[type[Record], dict[str, Any]], ...] = (
     ),
     (
         _ResearchDecision,
-        {"kind": "answer", "text": "Supported answer.", "citations": [], "reaction": "✨", "gif_id": "confetti"},
+        {
+            "kind": "answer",
+            "text": "Supported answer.",
+            "citations": [],
+            "reaction": "✨",
+            "gif_id": "confetti",
+        },
     ),
-    (AddressingDecision, {"kind": "addressed", "request_id": "request-1", "anchor_event_id": "anchor-1"}),
+    (
+        AddressingDecision,
+        {"kind": "addressed", "request_id": "request-1", "anchor_event_id": "anchor-1"},
+    ),
     (
         CheckbackJudgment,
         {
@@ -965,7 +1003,16 @@ RAW_DECISION_FIXTURES: tuple[tuple[type[Record], dict[str, Any]], ...] = (
             "current_runtime_claims": None,
         },
     ),
-    (RequestGoals, {"goals": ["Explain the first idea."]}),
+    (
+        TaskRequirements,
+        {
+            "version": 1,
+            "goals": ["Explain the first idea."],
+            "constraints": [],
+            "quotation_presentation": "none",
+            "required_context": [],
+        },
+    ),
 )
 
 
@@ -980,7 +1027,7 @@ def test_fixed_grammar_admits_raw_parser_families_with_explicit_provider_focus_r
         _ResearchDecision: "synthesis",
         AddressingDecision: "addressing",
         CheckbackJudgment: "checkback",
-        RequestGoals: "goals",
+        TaskRequirements: "goals",
     }
     schema = decision_schema(phase_by_model[model])
     assert _schema_accepts(raw, schema)
@@ -1111,9 +1158,41 @@ def test_source_inputs_keep_declared_order_and_carriers_recognize_only_exact_gra
         "terminal_correction": ["kind", "text", "reaction", "gif_id"],
         "synthesis": ["kind", "text", "citations", "reaction", "gif_id"],
         "addressing": ["kind", "request_id", "anchor_event_id"],
-        "checkback": ["verdict", "issues", "coverage", "clarification", "current_runtime_claims"],
-        "checkback_goals": ["verdict", "issues", "coverage", "clarification", "current_runtime_claims"],
-        "goals": ["goals"],
+        "checkback": [
+            "verdict",
+            "issues",
+            "coverage",
+            "clarification",
+            "current_runtime_claims",
+        ],
+        "checkback_goals": [
+            "verdict",
+            "issues",
+            "coverage",
+            "clarification",
+            "current_runtime_claims",
+        ],
+        "checkback_public": [
+            "verdict",
+            "issues",
+            "coverage",
+            "clarification",
+            "current_runtime_claims",
+        ],
+        "checkback_public_goals": [
+            "verdict",
+            "issues",
+            "coverage",
+            "clarification",
+            "current_runtime_claims",
+        ],
+        "goals": [
+            "version",
+            "goals",
+            "constraints",
+            "quotation_presentation",
+            "required_context",
+        ],
     }
     for variant, ordered in decision_schema_inputs():
         assert json.loads(ordered) == decision_schema(variant)
@@ -1121,7 +1200,7 @@ def test_source_inputs_keep_declared_order_and_carriers_recognize_only_exact_gra
         assert set(carrier) == {"grammar"}
         assert decision_format_phase(carrier) == variant
         assert decision_format_phase({"json": ordered}) is None
-        if variant == "checkback_goals":
+        if variant in {"checkback_goals", "checkback_public_goals"}:
             branches = json.loads(ordered)["anyOf"]
             assert [branch["properties"]["verdict"]["const"] for branch in branches] == [
                 "accept",
@@ -1206,13 +1285,15 @@ def test_source_membership_and_uniqueness_remain_native_admission_requirements()
 
 
 @pytest.mark.parametrize("phase", DECISION_VARIANTS)
-def test_wire_accepts_only_exact_source_fixed_phase_members(phase: DecisionVariant) -> None:
+def test_wire_accepts_only_exact_source_fixed_phase_members(
+    phase: DecisionVariant,
+) -> None:
     binding = profile().model_copy(
         update={
             "adaptive_context": True,
             "json_object_output": True,
             "checkback": True,
-            "request_goals": phase == "checkback_goals",
+            "request_goals": phase in {"checkback_goals", "checkback_public_goals"},
         }
     )
     payload = body() | generation_format(binding, phase=phase)
@@ -1222,7 +1303,9 @@ def test_wire_accepts_only_exact_source_fixed_phase_members(phase: DecisionVaria
 
 
 @pytest.mark.parametrize("phase", DECISION_PHASES)
-def test_phase_grammar_forbids_the_wrong_raw_output_family(phase: DecisionPhase) -> None:
+def test_phase_grammar_forbids_the_wrong_raw_output_family(
+    phase: DecisionPhase,
+) -> None:
     fixtures: dict[str, dict[str, Any]] = {
         "planning": {
             "kind": "research",
@@ -1233,14 +1316,29 @@ def test_phase_grammar_forbids_the_wrong_raw_output_family(phase: DecisionPhase)
         "conversation": {"kind": "read_more", "text": "Read earlier context."},
         "terminal_correction": {"kind": "answer", "text": "Ordinary answer."},
         "synthesis": {"kind": "answer", "text": "Sourced answer.", "citations": []},
-        "addressing": {"kind": "addressed", "request_id": "request", "anchor_event_id": "anchor"},
+        "addressing": {
+            "kind": "addressed",
+            "request_id": "request",
+            "anchor_event_id": "anchor",
+        },
         "checkback": {"verdict": "accept", "issues": []},
-        "goals": {"goals": ["Explain this idea."]},
+        "goals": {
+            "version": 1,
+            "goals": ["Explain this idea."],
+            "constraints": [],
+            "quotation_presentation": "none",
+            "required_context": [],
+        },
     }
     allowed = {
         "planning": {"planning"},
         "conversation": {"planning", "conversation"},
-        "terminal_correction": {"planning", "conversation", "terminal_correction", "synthesis"},
+        "terminal_correction": {
+            "planning",
+            "conversation",
+            "terminal_correction",
+            "synthesis",
+        },
         "synthesis": {"synthesis"},
         "addressing": {"addressing"},
         "checkback": {"checkback"},
@@ -1318,7 +1416,9 @@ def test_empty_thinking_tuple_preserves_existing_profile_digest(*, thinking: boo
     binding = profile().model_copy(
         update={"adaptive_context": True, "enable_thinking": thinking, "json_object_output": json_mode}
     )
-    old_values = binding.model_dump(mode="json", exclude={"thinking_phases"})
+    old_values = binding.model_dump(
+        mode="json", exclude={"thinking_phases", "context_projection_version", "checkback_invalid_retry"}
+    )
     if not thinking:
         old_values.pop("enable_thinking")
     if json_mode:
@@ -1365,7 +1465,7 @@ def test_request_mode_uses_global_flag_or_the_validated_carrier_phase(
             "enable_thinking": globally_enabled,
             "thinking_phases": (selected,),
             "checkback": True,
-            "request_goals": phase == "checkback_goals",
+            "request_goals": phase in {"checkback_goals", "checkback_public_goals"},
         }
     )
     expected = globally_enabled or decision_phase(phase) == selected
@@ -1374,7 +1474,8 @@ def test_request_mode_uses_global_flag_or_the_validated_carrier_phase(
     assert validate_generation_payload(binding, canonical_json(payload)) == payload
     with pytest.raises(ValueError, match="model_generation_binding"):
         validate_generation_payload(
-            binding, canonical_json(payload | {"chat_template_kwargs": {"enable_thinking": not expected}})
+            binding,
+            canonical_json(payload | {"chat_template_kwargs": {"enable_thinking": not expected}}),
         )
 
 
@@ -1415,12 +1516,12 @@ async def test_selective_thinking_completion_gate_uses_the_actual_validated_mode
 @pytest.mark.parametrize("variant", DECISION_VARIANTS)
 def test_variants_map_to_seven_semantic_phases(variant: DecisionVariant) -> None:
     expected = (
-        "planning" if variant.startswith("planning") else "checkback" if variant == "checkback_goals" else variant
+        "planning" if variant.startswith("planning") else "checkback" if variant.startswith("checkback") else variant
     )
     assert decision_phase(variant) == expected
     assert decision_phase(variant) in DECISION_PHASES
     assert len(DECISION_PHASES) == 7
-    assert len(DECISION_VARIANTS) == 10
+    assert len(DECISION_VARIANTS) == 12
 
 
 @pytest.mark.parametrize("kinds", [kinds for size in range(6) for kinds in product(("doc", "web"), repeat=size)])
@@ -1477,13 +1578,15 @@ def test_stale_artifact_refuses_runtime_without_blocking_pure_schema_generation(
 
 
 @pytest.mark.parametrize("variant", DECISION_VARIANTS)
-def test_compact_grammar_carriers_fit_existing_transport_limits(variant: DecisionVariant) -> None:
+def test_compact_grammar_carriers_fit_existing_transport_limits(
+    variant: DecisionVariant,
+) -> None:
     binding = profile().model_copy(
         update={
             "adaptive_context": True,
             "json_object_output": True,
             "checkback": True,
-            "request_goals": variant == "checkback_goals",
+            "request_goals": variant in {"checkback_goals", "checkback_public_goals"},
         }
     )
     payload = canonical_json(body() | generation_format(binding, phase=variant))
@@ -1492,13 +1595,16 @@ def test_compact_grammar_carriers_fit_existing_transport_limits(variant: Decisio
     assert binding.timeout_seconds == 60
     assert len(payload.encode()) < MAX_MODEL_PAYLOAD_BYTES
     frame = OperatorModelRequest(
-        call_id=str(uuid4()), binding_digest=binding.digest, operation="generate", payload_json=payload
+        call_id=str(uuid4()),
+        binding_digest=binding.digest,
+        operation="generate",
+        payload_json=payload,
     ).model_dump_json()
     assert len(frame.encode()) < MAX_WIRE_BYTES
     assert validate_generation_payload(binding, payload)["structured_outputs"] == decision_response_format(variant)
 
 
-def test_converter_output_fingerprints_pin_all_ten_effective_grammars() -> None:
+def test_converter_output_fingerprints_pin_all_twelve_effective_grammars() -> None:
     expected = {
         "planning": "75fb3d496a89fe4bbd0dd03bb5f6a56e35e5a007d5b2695e2d4f28675095cfae",
         "conversation": "e4ca476a27f5ad95416fc96eb3a9690fcd4da9c0ce9a944b3369097cc48f4575",
@@ -1506,10 +1612,12 @@ def test_converter_output_fingerprints_pin_all_ten_effective_grammars() -> None:
         "synthesis": "cf2214656ba92a34aeee91c3b9557a97d95c2b385095892e8cdb225ca405b4f2",
         "addressing": "c12dd303235a0491ad50c16ab1313fb913bf11d44149257fb6a70c214a2fa735",
         "checkback": "5a6967c45a7cb956b72840b36d62b76e76d03a70706fa229736dbdf67fec36f6",
-        "goals": "bf6e0ee617c5d55b6fec7ae443ded44ba6a60e28018e2f99796e4d1dc16c9d2f",
+        "goals": "4db70e632f09d12117f01e7be2ea68f0ba6ef4047de79c39a56720f772cbcac5",
         "planning_documents": "df5ccf01de8c78d4c6748b8efb0f046a6198d23254ba3d5a9e46e350f34d8ac2",
         "planning_web": "d4a7986eba34ad2c9b1c082e77d490a3a02a9b9ab622882813c65ca6025f3186",
         "checkback_goals": "1fdc7330a943c585da92f3c6afca7da363643d7a2f6e41f557d11a774dc46282",
+        "checkback_public": "da8a54df6bee8b3bafd09dd55718bca6681942755351c8c0e4021d6eda575d75",
+        "checkback_public_goals": "da27d866829d0743b0b1949c31c3badfc71a7789613dbd1feb46aeacee461b57",
     }
     assert tuple(expected) == DECISION_VARIANTS
     assert {
@@ -1519,7 +1627,20 @@ def test_converter_output_fingerprints_pin_all_ten_effective_grammars() -> None:
 
 
 def test_bounded_string_normalization_preserves_nonempty_json_with_native_maximum() -> None:
-    source = r'root ::= (("\"" unit{1, 200} "\""))' + "\n" + r"unit ::= (([^\"\\\r\n]))" + "\n"
+    source = (
+        r'root ::= (("\"" unit{1, 200} "\""))'
+        "\n"
+        r"unit ::= (([^\"\\\r\n]))"
+        "\n"
+        r'other ::= (("\"" unit_two{1, 200} "\""))'
+        "\n"
+        r"unit_two ::= (([^\"\\\r\n]))"
+        "\n"
+        r'third ::= (("\"" unit_three{1, 200} "\""))'
+        "\n"
+        r"unit_three ::= (([^\"\\\r\n]))"
+        "\n"
+    )
     normalized = grammar_generator.normalize_bounded_json_strings("goals", source)
     assert normalized.splitlines()[0] == r'root ::= (("\"" reach_json_scalar_v1 reach_json_string_tail_v2))'
     assert normalized.splitlines()[1] == "unit ::= ((reach_json_scalar_v1))"
@@ -1552,15 +1673,30 @@ def test_bounded_string_normalization_preserves_nonempty_json_with_native_maximu
         "unrecognized_leaf",
     ],
 )
-def test_bounded_string_normalization_refuses_unreviewed_converter_shapes(mutation: str) -> None:
-    source = r'root ::= (("\"" unit{1, 200} "\""))' + "\n" + r"unit ::= (([^\"\\\r\n]))" + "\n"
+def test_bounded_string_normalization_refuses_unreviewed_converter_shapes(
+    mutation: str,
+) -> None:
+    source = (
+        r'root ::= (("\"" unit{1, 200} "\""))'
+        "\n"
+        r"unit ::= (([^\"\\\r\n]))"
+        "\n"
+        r'other ::= (("\"" unit_two{1, 200} "\""))'
+        "\n"
+        r"unit_two ::= (([^\"\\\r\n]))"
+        "\n"
+        r'third ::= (("\"" unit_three{1, 200} "\""))'
+        "\n"
+        r"unit_three ::= (([^\"\\\r\n]))"
+        "\n"
+    )
     variant = "goals"
     if mutation == "foreign_variant":
         variant = "foreign"
     elif mutation == "missing_leaf":
-        source = source.splitlines()[0] + "\n"
+        source = "\n".join(line for index, line in enumerate(source.splitlines()) if index != 1) + "\n"
     elif mutation == "extra_leaf":
-        source += r"other ::= (([^\"\\\r\n]))" + "\n"
+        source += r"extra_unit ::= (([^\"\\\r\n]))" + "\n"
     elif mutation == "duplicate_rule":
         source += source.splitlines()[1] + "\n"
     elif mutation == "helper_collision":
@@ -1568,7 +1704,7 @@ def test_bounded_string_normalization_refuses_unreviewed_converter_shapes(mutati
     elif mutation == "foreign_reference":
         source += "foreign ::= unit\n"
     elif mutation == "unused_leaf":
-        source = source.splitlines()[1] + "\n"
+        source = "\n".join(source.splitlines()[1:]) + "\n"
     elif mutation == "unrecognized_leaf":
         source = source.replace(r"[^\"\\\r\n]", r"[^\"\\]")
     else:
@@ -1585,7 +1721,9 @@ def test_bounded_string_normalization_refuses_unreviewed_converter_shapes(mutati
 
 
 @pytest.mark.parametrize("variant", DECISION_VARIANTS)
-def test_generated_normalized_strings_use_recursive_tail_and_native_maximum(variant: DecisionVariant) -> None:
+def test_generated_normalized_strings_use_recursive_tail_and_native_maximum(
+    variant: DecisionVariant,
+) -> None:
     grammar = decision_response_format(variant)["grammar"]
     assert isinstance(grammar, str)
     assert r"(([^\"\\\r\n]))" not in grammar
@@ -1601,10 +1739,12 @@ def test_generated_normalized_strings_use_recursive_tail_and_native_maximum(vari
         "synthesis": 3,
         "addressing": 2,
         "checkback": 4,
-        "goals": 1,
+        "goals": 3,
         "planning_documents": 4,
         "planning_web": 4,
         "checkback_goals": 14,
+        "checkback_public": 4,
+        "checkback_public_goals": 14,
     }[variant]
     rules = dict(line.split(" ::= ", 1) for line in grammar.splitlines())
     leaves = {name for name, body in rules.items() if body == "((reach_json_scalar_v1))"}
@@ -1655,15 +1795,27 @@ def test_native_scalar_maxima_remain_decisive_after_provider_projection(
 
 
 @pytest.mark.parametrize("limit", [200, 240])
-def test_native_array_string_maxima_remain_decisive_after_provider_projection(limit: int) -> None:
+def test_native_array_string_maxima_remain_decisive_after_provider_projection(
+    limit: int,
+) -> None:
     def payload(size: int) -> dict[str, Any]:
         return (
-            {"goals": ["A" * size]}
+            {
+                "version": 1,
+                "goals": ["A" * size],
+                "constraints": [],
+                "quotation_presentation": "none",
+                "required_context": [],
+            }
             if limit == 200
-            else {"verdict": "accept", "issues": [], "current_runtime_claims": ["A" * size]}
+            else {
+                "verdict": "accept",
+                "issues": [],
+                "current_runtime_claims": ["A" * size],
+            }
         )
 
-    model: type[Record] = RequestGoals if limit == 200 else CheckbackJudgment
+    model: type[Record] = TaskRequirements if limit == 200 else CheckbackJudgment
     model.model_validate_json(canonical_json(payload(limit)))
     with pytest.raises(ValidationError, match="string_too_long"):
         model.model_validate_json(canonical_json(payload(limit + 1)))
@@ -1714,7 +1866,8 @@ def test_provider_research_branch_requires_nonnull_bounded_focus(
 
 
 @pytest.mark.parametrize("request_goals", [False, True])
-def test_goal_review_carrier_is_selected_and_bound_by_the_trusted_profile(*, request_goals: bool) -> None:
+@pytest.mark.parametrize("public", [False, True])
+def test_goal_review_carrier_is_selected_and_bound_by_the_trusted_profile(*, request_goals: bool, public: bool) -> None:
     binding = profile().model_copy(
         update={
             "adaptive_context": True,
@@ -1724,20 +1877,37 @@ def test_goal_review_carrier_is_selected_and_bound_by_the_trusted_profile(*, req
             "thinking_phases": ("checkback",),
         }
     )
-    selected: DecisionVariant = "checkback_goals" if request_goals else "checkback"
-    foreign: DecisionVariant = "checkback" if request_goals else "checkback_goals"
-    actual = generation_format(binding, phase="checkback")
+    selected: DecisionVariant = (
+        "checkback_public_goals"
+        if public and request_goals
+        else "checkback_public"
+        if public
+        else "checkback_goals"
+        if request_goals
+        else "checkback"
+    )
+    foreign: DecisionVariant = (
+        "checkback_public"
+        if public and request_goals
+        else "checkback_public_goals"
+        if public
+        else "checkback"
+        if request_goals
+        else "checkback_goals"
+    )
+    actual = generation_format(binding, phase="checkback_public" if public else "checkback")
     assert actual == {"structured_outputs": decision_response_format(selected)}
     payload = body() | actual | {"chat_template_kwargs": {"enable_thinking": True}}
     assert validate_generation_payload(binding, canonical_json(payload)) == payload
     assert generation_thinking(binding, phase=selected) is True
     with pytest.raises(ValueError, match="model_generation_binding"):
         validate_generation_payload(
-            binding, canonical_json(payload | {"structured_outputs": decision_response_format(foreign)})
+            binding,
+            canonical_json(payload | {"structured_outputs": decision_response_format(foreign)}),
         )
     if not request_goals:
         with pytest.raises(ValueError, match="model_generation_binding"):
-            generation_format(binding, phase="checkback_goals")
+            generation_format(binding, phase="checkback_public_goals" if public else "checkback_goals")
 
 
 @pytest.mark.parametrize("request_goals", [False, True])
@@ -1801,6 +1971,44 @@ def test_goal_review_provider_shape_requires_coverage_and_complete_quotes(covera
         raw["coverage"] = coverage
     assert not _schema_accepts(raw, decision_schema("checkback_goals"))
     assert _schema_accepts(raw, decision_schema("checkback"))
+
+
+@pytest.mark.parametrize("variant", ["checkback_public", "checkback_public_goals"])
+@pytest.mark.parametrize("verdict", ["accept", "revise", "needs_evidence"])
+@pytest.mark.parametrize("claims", [{}, {"current_runtime_claims": None}, {"current_runtime_claims": []}])
+def test_public_review_requires_explicit_nonnull_runtime_claims_in_every_verdict(
+    variant: DecisionVariant, verdict: str, claims: dict[str, Any]
+) -> None:
+    goals = ["Explain this idea."] if variant == "checkback_public_goals" else []
+    context = {
+        "research_phase": "synthesis",
+        "research_sources": [{"id": "doc:a", "status": "ok", "text": "Visible answer."}],
+        "evidence_scope": {
+            "version": "public-text-v1",
+            "source_authority": "public_reference_text",
+            "successful_read_proves": "source_bytes_obtained",
+            "operator_runtime_observation": "not_supplied",
+        },
+        "request_goals": goals,
+    }
+    envelope = checkback_module.CheckbackEnvelope.prepare(
+        make_request(action="converse"), canonical_json(context), persona_name="Example"
+    )
+    candidate = canonical_json({"kind": "answer", "text": "Visible answer."})
+    raw = {
+        "verdict": verdict,
+        "issues": [] if verdict == "accept" else ["missing_evidence"],
+        **({"coverage": [{"goal": 0, "status": "complete", "answer_quote": "Visible answer."}]} if goals else {}),
+        **({"clarification": "Which source?"} if verdict == "needs_evidence" else {}),
+        **claims,
+    }
+    expected = claims.get("current_runtime_claims") == []
+    assert _schema_accepts(raw, decision_schema(variant)) is expected
+    if expected:
+        assert envelope.parse(canonical_json(raw), candidate).current_runtime_claims == ()
+    else:
+        with pytest.raises(ValueError, match="conversation_checkback_runtime_claims"):
+            envelope.parse(canonical_json(raw), candidate)
 
 
 @pytest.mark.parametrize("status", ["missing", "unsupported"])
@@ -1908,3 +2116,70 @@ def test_native_legacy_research_parser_preserves_optional_focus(
     assert plan is not None
     assert plan.focus is None
     assert plan.source_ids == (source_id,)
+
+
+@pytest.mark.parametrize("opt_in", ["request_goals", "json_object_output"])
+@pytest.mark.parametrize("version", [None, 3, 4], ids=["omitted", "old-v3", "explicit-v4"])
+@pytest.mark.parametrize("input_mode", ["python", "json"])
+def test_enabled_profiles_require_explicit_v4_without_silent_migration(
+    opt_in: str, version: int | None, input_mode: str
+) -> None:
+    raw: dict[str, Any] = {
+        "persona_name": "Example",
+        "persona_instructions": "Be useful.",
+        "adaptive_context": True,
+        "checkback": True,
+        opt_in: True,
+    }
+    if version is not None:
+        raw["decision_schema_version"] = version
+
+    def admit() -> OperatorConversationProfile:
+        return (
+            OperatorConversationProfile.model_validate_json(canonical_json(raw))
+            if input_mode == "json"
+            else OperatorConversationProfile.model_validate(raw)
+        )
+
+    if version == 4:
+        accepted = admit()
+        assert accepted.decision_schema_version == 4
+        assert "decision_schema_version" in accepted.model_fields_set
+    else:
+        with pytest.raises(ValidationError, match="decision_schema_version"):
+            admit()
+
+
+def test_disabled_legacy_omitted_schema_version_keeps_its_binding() -> None:
+    raw = {"persona_name": "Example", "persona_instructions": "Be useful."}
+    accepted = OperatorConversationProfile.model_validate_json(canonical_json(raw))
+    assert "decision_schema_version" not in accepted.model_fields_set
+    assert accepted.digest == profile().digest == LEGACY_PROFILE_DIGEST
+
+
+def test_explicit_32000_input_bound_preserves_default_and_physical_limits() -> None:
+    legacy = profile()
+    selected = OperatorConversationProfile.model_validate(legacy.model_dump() | {"max_input_chars": 32_000})
+    assert legacy.max_input_chars == 20_000
+    assert selected.digest != legacy.digest
+    assert (selected.max_context, selected.max_tokens, selected.timeout_seconds) == (
+        legacy.max_context,
+        legacy.max_tokens,
+        legacy.timeout_seconds,
+    )
+    assert (MAX_MODEL_PAYLOAD_BYTES, MAX_WIRE_BYTES) == (49_152, 65_536)
+    payload = body() | {"messages": [{"role": "system", "content": "s"}, {"role": "user", "content": "x" * 31_999}]}
+    assert validate_generation_payload(selected, canonical_json(payload))["messages"] == payload["messages"]
+    with pytest.raises(ValueError, match="model_generation_binding"):
+        validate_generation_payload(legacy, canonical_json(payload))
+    payload["messages"][1]["content"] += "x"
+    with pytest.raises(ValueError, match="model_generation_binding"):
+        validate_generation_payload(selected, canonical_json(payload))
+    payload["messages"] = [{"role": "system", "content": "x" * 32_001}]
+    with pytest.raises(ValidationError, match="string_too_long"):
+        validate_generation_payload(selected, canonical_json(payload))
+    with pytest.raises(ValidationError):
+        OperatorConversationProfile.model_validate(legacy.model_dump() | {"max_input_chars": 32_001})
+    payload["messages"] = [{"role": "system", "content": "界" * 20_000}]
+    with pytest.raises(ValueError, match="model_payload"):
+        validate_generation_payload(selected, canonical_json(payload))

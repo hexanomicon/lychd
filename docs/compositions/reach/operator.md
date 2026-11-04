@@ -489,6 +489,31 @@ The literal current question is also supplied as a separate review task; a model
 cannot replace it. This task is budgeted and bound with the frozen envelope for review and correction.
 When correcting a prior reply, formation and review also require acknowledging its visible error
 and answering a requested explanation without inventing hidden execution causes.
+An optional `checkback_invalid_retry = true` profile admits one additional review call across both
+candidate versions, requiring checkback. Omitted or false preserves the previous profile digest,
+review behavior and budget. Only typed model-output failures `review_shape` and `coverage_binding`
+may spend its process-local token, before dispatch. The retry receives the identical frozen evidence,
+candidate, approved persona and raw task, plus one concise host-owned reason/control; it receives
+no invalid output or suggested verdict. Valid adverse verdicts use the existing correction or
+clarification path. Runtime-claim validation, candidate/source quotation guards, host invariants,
+authority, budget, transport, timeout, cancellation and finish failures do not authorize recovery.
+A second malformed review fails normally, including after the one correction. There are still at
+most two candidate versions and one correction. The maximum retry control and unchanged review
+recipe are reserved on character, UTF-8 payload and escaped-frame axes before context freezes;
+the actual retry envelope is checked again without trimming evidence or raising limits.
+
+Candidate `attempt` remains 0 or 1. Separate `review_attempt` 0 through 2, `retry_ordinal` 0 or 1,
+closed invalid reason and retry-control digest preserve each failed and settled review observation;
+invalid verdicts and private response bodies never enter structural trace. These optional fields are
+absent when the retry flag is false. Model relay calls keep
+fresh call IDs and the existing held no-tool lease, deadline and one-request SDK allowance. The
+probe retains one shared twelve-operation ceiling across probes, generations, correction and
+re-review. This is a harness limit, not an existing native broker turn counter. With interpretation
+and addressing, the bounded maximum is seven ordinary or eight research generations; additional
+context/probe operations may exhaust the harness earlier. No restart recovery or hidden replay is
+added. Pattern revision 8 rejects prior manifests; checkpoint schema 8 is unchanged because the
+retry token is transient.
+
 A conservative controller guard can veto an accepted answer that demonstrably repeats complete
 sentences from the actual reply or continuation anchor despite an unambiguous English request to
 rephrase, simplify or explain in practice. Literal quotation/repetition requests and ambiguous forms
@@ -536,12 +561,51 @@ its ordinary missing-evidence behavior.
 Adding `"request_goals": true` requires checkback and adds one fresh no-tool interpretation before
 planning. It sees the current question, exact anchors and bounded recent messages, with no source
 catalogue, plan or candidate answer. Up to eight short requested outcomes are frozen for that Run.
-They guide planning, synthesis and review, and establish no factual truth or additional authority.
+Decision schema version 4 freezes one transient `TaskRequirements` version 1 object: one to eight
+content goals, zero to four presentation constraints, quotation presentation `none`, `abbreviated`
+or `full`, and zero to two essential context handles. Constraints remain review obligations and
+do not create independent content-coverage excerpts. Only `full` selects whole-quotation source
+acquisition and projection; no goal prose, plan, focus or acquired source can select this mode.
+Explicit `context_projection_version = 2` requires typed request interpretation and adaptive context.
+Omitted/default `1` preserves the prior whole-handle offerings, source model view and profile digest.
+Version 1 also retains the original document-discovery score. Version 2 discounts corpus-common
+terms, saturates repeated lexical matches and normalizes body length; a path reused as a display
+label does not receive authored-title credit. Exact current and admitted-context references,
+kickoff routing, numbered targets and authored structure retain precedence. The maximum sixteen
+offered identities, manifest bindings, no-query authored order and delivered-plan acquisition gate
+remain unchanged. Better selection opportunities do not establish relevance, successful reading
+or answer completeness.
+Revision 2 offers each admitted history body once, its whole-message handle,
+and at most eight complete paragraph-unit handles in source order, with an omitted-unit count.
+Blank lines split paragraphs outside fenced blocks; lists, quotations and fenced blocks remain
+intact. Only ordinary history receives paragraph offers: independent reply/continuation anchors,
+and history entries with either anchor's event identity, retain whole handles only. A long mandatory
+anchor can therefore still refuse the budget.
+
+The host resolves handles only through the exact offer map that survived interpretation trimming.
+Unknown, duplicate, overlapping, omitted or stale-parent handles refuse. A whole handle excludes
+paragraphs of that event; two distinct nonoverlapping paragraphs may share the existing two-handle
+ceiling. Selected partial messages contain exact attributed bytes, their handle and an explicit
+partial indication. Complete parent digests and exact character/UTF-8 ranges remain with the host
+and bind the requirements digest. No free offsets, model summary or parent reinsertion follows.
+Interpretation chooses the smallest sufficient units while preserving every referent, contrast and
+visible earlier error needed for a WHY request; it may need a whole message or a budget refusal.
+ Selected entries remain mandatory alongside
+the byte-for-byte current question and complete requirements when optional history is trimmed;
+an overflow refuses within the same input, frame and time ceilings. Their exact identities and
+the complete object bind the Run digest and frozen review context. They grant no source authority.
+The current question, including cancellations and shortening requests, remains authoritative over
+this fallible interpretation. They guide planning, synthesis and review, and establish no factual truth or additional authority.
 These outcomes can retain requested components when later source packing omits older messages;
 they do not supply evidence about why a historical response was produced.
 Every goal must receive a coverage status; an accepted answer requires complete coverage and a
-short matching visible answer excerpt for each goal. Only paired bold/inline-code markers and
-whitespace are ignored in excerpt matching; words and method identifiers remain exact. An exact
+short matching visible answer excerpt for each goal. Coverage matching ignores whitespace and
+only a conservative presentation subset: strictly flanked paired bold/italic at up to two nesting
+levels and balanced one- or two-backtick inline code. Code bodies remain literal. Ambiguous,
+escaped, crossing, deeper or unmatched markup, fenced regions and indented code stay literal.
+Fence closers allow at most three ASCII leading spaces; tab or non-ASCII indentation cannot close them. Letter case,
+Unicode, punctuation and method underscores remain exact; only the candidate or its exact selected
+outputs can supply fulfillment evidence. An exact
 frozen goal name may be mapped by the host to its index; unknown or ambiguous references refuse.
 Missing, duplicate or unsupported coverage cannot
 adopt the candidate. An incomplete goal may quote the exact candidate phrase being assessed;
@@ -638,6 +702,14 @@ synthetic example uses the admitted defaults:
 }
 ```
 
+The default combined instruction/input allowance remains 20,000 characters. An explicitly prepared
+profile may select `max_input_chars` up to 32,000, with the same per-message ceiling; this is still
+bounded by the selected context, 49,152-byte model payload and 65,536-byte escaped pipe frame.
+Unicode and JSON escaping can exhaust the byte limits before the character allowance. The
+4,096-token completion ceiling, 60-second per-call maximum, existing call limits and review reserves
+remain unchanged. A larger explicit allowance changes the profile digest and needs its own
+qualification; it does not make every mandatory context or answer fit.
+
 The profile is a static instruction and exact model binding, not Mirror identity, Persona
 lineage or lasting memory. The supervisor freezes its validated bytes for one generation and
 mounts that snapshot read-only into the worker. Only its validated expression catalogue reaches
@@ -670,7 +742,16 @@ This adds no model, call, completion allowance, timeout or lifecycle authority. 
 selected profile; a useful isolated review replay does not qualify conversation or repair behavior.
 
 An adaptive profile may also opt into `"json_object_output": true`. Its immutable binding then
-selects `decision_schema_version = 3` and includes the exact compact-grammar bundle digest. The
+selects `decision_schema_version = 4` and includes the exact compact-grammar bundle digest. Version
+3 profiles refuse explicitly; they are not silently migrated. Profiles enabling `request_goals` or
+`json_object_output` must explicitly declare `decision_schema_version = 4`; omission refuses.
+Disabled legacy profiles retain their omitted-version behavior. This contract requires a separately
+prepared profile and matching image. The explicit interpretation/context projection revision binds the derived profile and requirements
+digests. The Pattern is revision 8 with checkpoint version 8 in either mode; older version 7
+checkpoints cannot resume under this implementation. The outer decision schema remains version 4:
+controller output fields and their fixed grammar are byte-identical, while offered-handle meaning
+and model input projection are separately versioned. A new paired image/binding is required even
+when the non-secret profile JSON retains its explicit decision version 4. The
 seven semantic phases are research planning, ordinary conversation, terminal correction,
 synthesis, addressing, checkback and requested goals. Planning has three fixed grammar variants:
 documents, web or mixed sources. One trusted selector uses the actual offered catalogue for both
@@ -678,7 +759,9 @@ prompt accounting and execution; an empty catalogue selects ordinary conversatio
 variants share the `planning` thinking policy. Goal-enabled checkback selects a separate fixed
 `checkback_goals` carrier requiring nonempty coverage and a nonnull matching answer excerpt for
 each complete coverage entry. Native admission still checks the exact goal set, references and
-evidence. These variants make ten source-owned grammars. A goals-enabled binding refuses the
+evidence. Public-text synthesis selects separate host-owned checkback variants requiring a nonnull
+`current_runtime_claims` array on every verdict, including `needs_evidence`; an empty array is valid.
+These variants make twelve source-owned grammars. A goals-enabled binding refuses the
 ordinary checkback carrier; a goals-disabled binding refuses `checkback_goals`. Both checkback
 variants retain the same semantic phase and thinking policy.
 Both relays accept only exact members of that fixed bundle through `structured_outputs.grammar`;
@@ -706,7 +789,8 @@ and unbound format fields refuse. Omitted or false preserves the previous profil
 dialect, excluding the unused schema version. This requests provider-side structural constraints;
 the native phase parser, field checks, source authority and semantic review still apply. A valid
 object can still be the wrong decision or contain false prose. Qualify this setting against the
-selected backend, including separated reasoning. There is no format-repair retry or permissive JSON recovery.
+selected backend, including separated reasoning. Ordinary formation has no format-repair retry. Only explicit `checkback_invalid_retry` admits the
+closed malformed-review re-review described above; native parsing never repairs or coerces malformed JSON.
 
 Add `converse` to the first matching rule's actions. Keep `answer_docs` if you use
 `admin-inspect`; keep `summarize_context` if you use the excerpt-only context command. To admit
@@ -730,7 +814,7 @@ public-document excerpts where relevant. The model receives recent messages and 
 attributed untrusted data, with oldest history omitted first to meet the input bound.
 
 For each admitted context round, the native worker creates a generation-local Run, executes
-`reach.operator_converse@5`, and acquires an exact Dispatcher Chat lease without tools. An ordinary
+`reach.operator_converse@8`, and acquires an exact Dispatcher Chat lease without tools. An ordinary
 Run makes one bounded model request; the optional research branch below makes one planning and
 one synthesis request in the same Run. Optional checkback and addressing add only the bounded
 calls described above. Adaptive context can admit up to three Runs for one turn.
@@ -767,12 +851,22 @@ unchanged. Source `focus` phrases continue to select excerpt positions, not cata
 An admitted mention or one-to-one DM may select at most four sources: at most three documents
 and two web entries. The first model call returns an interpreted plan of at most 500 characters.
 It also supplies a separate bounded `focus` read query naming resolved sections, units or code
-identifiers. The structured planning grammars require a nonempty focus. Only the natural plan text
+identifiers. The structured planning grammars require a nonempty focus. The planning input contract asks for
+one concise sentence of focus keywords or section labels within 500 characters and exposes the
+same 500-character maximum for the public plan text. Native bounds remain authoritative; no
+formatting recovery or output-limit increase follows. Only the natural plan text
 is delivered publicly. The focus selects local evidence; it grants no source authority. Explicit
 current section references, numbered ranges, code identifiers, resolved ordinals and whole authored
 heading names retain precedence. A resolved focus can replace an incidental partial-word heading
 match. Legacy unstructured plans without focus retain the existing fallback. The bounded selector and optional requested outcomes are
-checkpointed under conversation schema v6, while acquired source bodies remain transient.
+checkpointed under conversation schema v8, while acquired source bodies remain transient.
+With projection revision 2, the synthesis model view contains only each source's `id`, `title`, `status`, exact projected `text`,
+`truncated` and `projection_truncated`, plus `reason` for a non-success result. The host retains the
+original source, URL, digests, read offsets, projection allocation and exact span proof for citations
+and independent reconstruction. Source focus, corpus digest and research request identity remain
+host bindings rather than repeated model-input keys. The delivered plan, task requirements,
+attributed context and evidence scope remain model-visible. This changes no source packer, reading
+ceiling, call count or transport budget and does not promise every mandatory selection will fit.
 The edge must deliver that plan as a separate reply to the same incoming message and acknowledge
 successful delivery before any selected document read or web acquisition. Slash commands cannot
 acknowledge a research plan and therefore cannot acquire sources through this branch. The usual
@@ -788,6 +882,14 @@ final text that repeats the acknowledged plan after whitespace normalization, be
 citations. That narrow check does not detect differently worded promises or prove semantic
 completeness. The structural trace records observed plan, source-read and final-delivery events
 under its reported capture limits.
+A failed native plan parse may emit a separate `research_plan` observation with `operation = validation`
+and `status = failed`, its closed error code and actual string-field character counts for text/focus.
+It grants no plan-delivery or acquisition evidence. The Core worker distinguishes its exact trusted
+local `conversation_budget` refusal as `budget`; arbitrary error text and subclasses do not gain that
+classification. Host terminal model-call observations may retain only finite provider finish-reason
+and content-state categories from a parsed single-choice completion. Missing observations remain
+unknown; no model body, private reasoning or exception text is added. These optional fields may
+produce explicit protocol gaps in older closed readers; paired readers must match the staged cohort.
 Planning and review interpret the current correction rather than repeat a historical acknowledgement.
 An incidental typo must not block the otherwise clear requested result; essential missing context
 still uses the bounded history handoff or a concrete clarification.
@@ -801,10 +903,17 @@ and JSON input budget. Trimmed multi-section local Markdown distributes that pro
 authored siblings even when the acquired excerpt is shorter than 4,000 characters, retaining exact
 source-relative spans. Original and projected digests, allocated projection budgets and omitted
 material remain explicit.
-The model view omits the internal `projection_spans` array. The host projector retains it, and the
-probe independently reconstructs the full projection before comparing the exact reduced model view
-and recording the complete span receipt. This recovers task context without changing read, model
-input, review reserve, payload or frame limits.
+The model view omits the internal `projection_spans` array. The host projector retains it transiently.
+Projection revision 2 emits at most four text-free `source_projection` observations, each within the
+existing 2 KiB trace-event limit. They record the actual allocation, mode, rendered length,
+truncation, digests and span count; complete span lists remain in transient local receipts. The
+probe independently reconstructs the complete projection and compares the exact reduced model
+view, then matches its allocation and proof digests to the native observations. That receipt is
+labelled matched reconstruction, never captured model payload. Missing best-effort observations
+remain explicit capture gaps. Paired current readers accept these optional observations. Older
+closed readers may record protocol-error capture gaps and continue; no live Orb/Nexus consumption
+is established here. Core and edge readers must be updated together. Read, model input, review
+reserve, payload and frame limits remain unchanged.
 The host supplies an `evidence_scope` record beside those attributed sources and preserves it in
 the same frozen synthesis, review and repair context. This public-text path establishes which
 source bytes were obtained; it supplies no observation of the operator's running installation.

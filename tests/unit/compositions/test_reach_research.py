@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import timedelta
 from hashlib import sha256
@@ -62,12 +63,14 @@ from lychd.compositions.reach.operator_wire import (
     ReachWorkerResult,
     protocol_bytes,
 )
+from lychd.compositions.reach.request_goals import TaskRequirements
 from lychd.compositions.reach.research import (
     ResearchPlan,
     model_research_source,
     parse_research_answer,
     parse_research_plan,
     research_catalogue,
+    synthesis_projection,
     synthesis_prompt,
     validate_research_response,
 )
@@ -593,7 +596,7 @@ def test_research_focus_is_optional_bounded_and_requires_a_checkpoint_plan() -> 
     ).model_copy(update={"run_id": "run"})
     workflow = reach_conversation_workflow(policy(), corpus, binding, started_at=STARTED, clock=lambda: NOW)
     state = workflow.make_state(intent)
-    assert workflow.manifest.checkpoint_schema == "reach-operator-conversation-v6"
+    assert workflow.manifest.checkpoint_schema == "reach-operator-conversation-v8"
     assert workflow.validate_state is not None
     workflow.validate_state(intent, state)
     with pytest.raises(DocumentsRefused, match="conversation_checkpoint"):
@@ -912,7 +915,13 @@ async def test_native_research_review_and_repair_use_only_bound_phase_thinking(
     )
     corpus = make_corpus()
     request = make_request(action="converse").model_copy(update={"request_id": str(uuid4())})
-    expected_phases: tuple[DecisionVariant, ...] = ("planning", "synthesis", "checkback", "synthesis", "checkback")
+    expected_phases: tuple[DecisionVariant, ...] = (
+        "planning",
+        "synthesis",
+        "checkback_public",
+        "synthesis",
+        "checkback_public",
+    )
     initial = "The Graph preserves declared continuation."
     repaired = "The Graph preserves declared continuation and the admitted station."
     outputs = (
@@ -1758,28 +1767,107 @@ def test_model_research_source_removes_only_derived_spans_without_mutating_full_
     assert visible["text"] == render_research_projection(source.text, cast("Any", full["projection_spans"]))
 
 
-def test_synthesis_model_view_keeps_full_quotes_and_purposes_with_exact_wire_cost() -> None:
+@pytest.mark.parametrize("status", ["ok", "unavailable", "refused"])
+def test_compact_source_view_is_an_exact_whitelist_and_preserves_complete_host_proofs(
+    status: Literal["ok", "unavailable", "refused"],
+) -> None:
+    source = (
+        admitted_source(text='Exact "evidence" and __new__ remain intact. 漢字. ' * 20)
+        if status == "ok"
+        else SourceReadResult(
+            id="web:official",
+            title="Public source",
+            url="https://example.com/guide",
+            status=status,
+            reason="source_unavailable",
+        )
+    )
+    full = project_research_source(source, 180)
+    full["foreign_model_field"] = "not part of the selected model view"
+    before = canonical_json(full)
+    visible = model_research_source(full, version=2)
+    expected_keys = {"id", "title", "status", "text", "truncated", "projection_truncated"}
+    if status != "ok":
+        expected_keys.add("reason")
+    assert set(visible) == expected_keys
+    assert all(visible[key] == full[key] for key in expected_keys)
+    assert visible["text"] == render_research_projection(source.text, cast("Any", full["projection_spans"]))
+    assert canonical_json(full) == before
+    assert {
+        "source_digest",
+        "text_digest",
+        "projection_digest",
+        "projection_budget",
+        "projection_mode",
+        "projection_spans",
+    } <= full.keys()
+    assert set(model_research_source(full)) == full.keys() - {"projection_spans"}
+
+
+@pytest.mark.parametrize("version", [1, 2])
+def test_synthesis_model_view_keeps_full_quotes_and_purposes_with_exact_wire_cost(version: Literal[1, 2]) -> None:
     quotes = [f"QUOTE_{week:02}: Every authored word and this ending remain intact." for week in range(10)]
     purposes = [f"PURPOSE_{week:02}: Practice the method and reflect on its documented meaning." for week in range(10)]
     text = "# Graph\n\n" + "\n\n".join(
-        f"## Week {week:02}\n> {quote}\n> — Author {week}\n\n{purpose}\n\n" + "Additional context. " * 30
+        f"## Week {week:02}\n> {quote}\n> — Author {week}\n\n{purpose}\n\n"
+        + "Additional context. " * (30 if version == 1 else 60)
         for week, (quote, purpose) in enumerate(zip(quotes, purposes, strict=True))
     )
     corpus = make_corpus(text)
     request = make_request(action="converse", question="Give Graph full quotes and purposes for each week.")
     source = read_research_document(corpus, "doc:docs/graph.md", question=request.event.question)
-    binding = research_profile(max_input_chars=6000, json_object_output=True)
+    binding = research_profile(
+        max_input_chars=6000 if version == 1 else 24_000,
+        json_object_output=True,
+        checkback=version == 2,
+        request_goals=version == 2,
+    ).model_copy(update={"context_projection_version": version})
     plan = ResearchPlan(kind="research", text="Read Graph.", source_ids=(source.id,))
     instructions = 'Trusted "instructions". 漢字.'
-    prompt = synthesis_prompt(binding, corpus, request, plan, (source,), instructions=instructions)
+    requirements = (
+        TaskRequirements(
+            version=1,
+            goals=("Provide all requested quotations and purposes.",),
+            constraints=(),
+            quotation_presentation="full",
+            required_context=(),
+        )
+        if version == 2
+        else None
+    )
+    receipt = synthesis_projection(
+        binding, corpus, request, plan, (source,), instructions=instructions, task_requirements=requirements
+    )
+    prompt = receipt.prompt
+    assert (
+        synthesis_prompt(
+            binding, corpus, request, plan, (source,), instructions=instructions, task_requirements=requirements
+        )
+        == prompt
+    )
     context = json.loads(prompt)
     (visible,) = context["research_sources"]
-    full = reconstructed_projection(source, visible)
+    (full,) = receipt.full_projections
+    assert full == project_research_source(
+        source, cast("int", full["projection_budget"]), projection_mode="complete_quotes"
+    )
+    assert visible == model_research_source(full, version=version)
+    if version == 2:
+        assert context["context_projection_version"] == 2
+        assert {"research_focus", "research_request_id", "corpus_digest"}.isdisjoint(context)
+        assert {"projection_digest", "projection_budget", "projection_mode", "url", "receipt_id"}.isdisjoint(visible)
+    else:
+        assert "context_projection_version" not in context
+        assert context["research_request_id"] == request.request_id
+        assert context["research_focus"] == plan.focus
+        assert context["corpus_digest"] == corpus.digest
     assert visible["projection_truncated"]
     assert all(quote in visible["text"] for quote in quotes)
     assert all(purpose in visible["text"] for purpose in purposes)
     assert RESEARCH_PROJECTION_OMISSION in visible["text"]
-    assert visible["text"] == render_research_projection(source.text, full["projection_spans"])
+    assert visible["text"] == render_research_projection(
+        source.text, cast("list[dict[str, int]]", full["projection_spans"])
+    )
     payload = canonical_json(
         {
             "model": binding.model_id,
@@ -1969,13 +2057,17 @@ def test_synthesis_keeps_exact_reference_observations_and_anchors_when_budget_tr
     assert source.text_digest == sha256(source.text.encode()).hexdigest()
 
 
-@pytest.mark.parametrize("goals_enabled", [False, True])
+@pytest.mark.parametrize(("version", "goals_enabled"), [(1, False), (1, True), (2, True)])
 def test_three_sources_long_literal_task_and_hints_keep_complete_evidence_through_frozen_checkback(
-    *, goals_enabled: bool
+    *, goals_enabled: bool, version: Literal[1, 2]
 ) -> None:
     binding = research_profile(
-        checkback=True, request_goals=goals_enabled, enable_thinking=True, max_tokens=2048, max_input_chars=24_000
-    )
+        checkback=True,
+        request_goals=goals_enabled,
+        enable_thinking=True,
+        max_tokens=2048,
+        max_input_chars=24_000,
+    ).model_copy(update={"context_projection_version": version})
     question = (
         "Compare the second and third weeks from your answer. "
         + "Preserve the documented distinctions. " * 10
@@ -2003,32 +2095,67 @@ def test_three_sources_long_literal_task_and_hints_keep_complete_evidence_throug
         for index, text in enumerate(texts)
     )
     corpus = verify_corpus(
-        CorpusManifest(source_revision=revision, documents=documents), tuple(text.encode() for text in texts)
+        CorpusManifest(source_revision=revision, documents=documents),
+        tuple(text.encode() for text in texts),
     )
     sources = tuple(
         read_research_document(
-            corpus, f"doc:{document.path}", question=question, reference_labels=reference_selectors(request)
+            corpus,
+            f"doc:{document.path}",
+            question=question,
+            reference_labels=reference_selectors(request),
         )
         for document in documents
     )
     goals = ("Describe the selected periods.",) if goals_enabled else ()
     plan = ResearchPlan(
-        kind="research", text="Read the selected authored periods.", source_ids=tuple(source.id for source in sources)
+        kind="research",
+        text="Read the selected authored periods.",
+        source_ids=tuple(source.id for source in sources),
     )
     instructions = persona_text(binding)
-    context_json = synthesis_prompt(
-        binding, corpus, request, plan, sources, instructions=instructions, request_goals=goals
+    receipt = synthesis_projection(
+        binding,
+        corpus,
+        request,
+        plan,
+        sources,
+        instructions=instructions,
+        task_requirements=(
+            TaskRequirements(
+                version=1,
+                goals=goals,
+                constraints=(),
+                quotation_presentation="none",
+                required_context=(),
+            )
+            if goals
+            else None
+        ),
     )
+    context_json = receipt.prompt
     context = json.loads(context_json)
     assert context["question"] == question
     assert context["reference_hints"] == reference_payload(request)
     assert [source["id"] for source in context["research_sources"]] == list(plan.source_ids)
-    for source, projection, sentence in zip(sources, context["research_sources"], sentences, strict=True):
+    for source, projection, full, sentence in zip(
+        sources, context["research_sources"], receipt.full_projections, sentences, strict=True
+    ):
         assert sentence in projection["text"]
-        full = reconstructed_projection(source, projection)
-        assert projection["text"] == render_research_projection(source.text, full["projection_spans"])
+        assert projection == model_research_source(full, version=version)
+        assert full == project_research_source(
+            source, cast("int", full["projection_budget"]), projection_mode="balanced"
+        )
+        assert projection["text"] == render_research_projection(
+            source.text, cast("list[dict[str, int]]", full["projection_spans"])
+        )
     reserve = checkback_reserve(
-        binding, instructions, phase="synthesis", correction_phase="synthesis", question=question, runtime_claims=True
+        binding,
+        instructions,
+        phase="synthesis",
+        correction_phase="synthesis",
+        question=question,
+        runtime_claims=True,
     )
     assert max(model_input_cost(binding, instructions, context_json, phase="synthesis").excess(binding, reserve)) <= 0
     assert (
@@ -2037,10 +2164,18 @@ def test_three_sources_long_literal_task_and_hints_keep_complete_evidence_throug
     )
     envelope = CheckbackEnvelope.prepare(request, context_json, persona_name=binding.persona_name)
     candidate = canonical_json(
-        {"kind": "answer", "text": "Each selected period has an authored practice.", "citations": plan.source_ids}
+        {
+            "kind": "answer",
+            "text": "Each selected period has an authored practice.",
+            "citations": plan.source_ids,
+        }
     )
     review = envelope.prompt(candidate)
-    verdict: dict[str, Any] = {"verdict": "revise", "issues": ["missing_component"], "current_runtime_claims": []}
+    verdict: dict[str, Any] = {
+        "verdict": "revise",
+        "issues": ["missing_component"],
+        "current_runtime_claims": [],
+    }
     if goals_enabled:
         verdict["coverage"] = [{"goal": 0, "status": "complete", "answer_quote": "authored practice"}]
     raw = envelope.parse(canonical_json(verdict), candidate)
@@ -2092,3 +2227,126 @@ def test_host_evidence_scope_cannot_be_forged_by_attributed_source_or_plan_text(
     assert "unsupported_claim" not in value["research_evidence_rule"]
     assert "needs_evidence" not in value["research_evidence_rule"]
     assert not value["research_sources"][0]["projection_truncated"]
+
+
+@pytest.mark.parametrize("version", [1, 2])
+def test_research_catalogue_forwards_only_admitted_profile_ranking_version(version: Literal[1, 2]) -> None:
+    from lychd.compositions.reach.documents import research_document_catalogue
+
+    binding = research_profile(
+        context_projection_version=version, request_goals=version == 2, decision_schema_version=4
+    )
+    request = make_request(question="Bounded current document method")
+    corpus = make_corpus()
+    expected = research_document_catalogue(corpus, question=request.event.question, context=(), ranking_version=version)
+    assert research_catalogue(binding, corpus, request) == expected
+
+
+@pytest.mark.parametrize(("field", "size"), [("text", 500), ("text", 501), ("focus", 500), ("focus", 501)])
+@pytest.mark.asyncio
+async def test_native_plan_bounds_trace_actual_counts_without_output_body(field: str, size: int) -> None:
+    binding = research_profile()
+    records: list[ReachTraceEvent] = []
+    generated = 0
+    canary = "PRIVATE_PLAN_CANARY"
+    proposal = {"kind": "research", "text": "I will read Graph.", "focus": "Graph", "source_ids": ["doc:docs/graph.md"]}
+    proposal[field] = canary + "x" * (size - len(canary))
+    request = make_request(action="converse").model_copy(update={"request_id": str(uuid4())})
+
+    async def relay(operation: str, payload: str) -> str:
+        nonlocal generated
+        if operation == "probe":
+            return canonical_json({"healthy": True, "model_ids": [binding.model_id]})
+        generated += 1
+        prompt = json.loads(validate_generation_payload(binding, payload)["messages"][-1]["content"])
+        if generated == 1:
+            contract = prompt["research_plan_contract"]
+            assert contract["focus_max_chars"] == contract["text_max_chars"] == 500
+            assert "One concise sentence" in contract["focus_rule"]
+            assert prompt["question"] == request.event.question
+            return completion(canonical_json(proposal))
+        return completion(
+            answer_json(text="The documented Graph is a public example.", citations=("doc:docs/graph.md",))
+        )
+
+    async def acknowledge(acquisition: OperatorResearchRequest) -> OperatorResearchResponse:
+        return relay_response(acquisition, sources=())
+
+    runtime = build_runtime(
+        policy(),
+        make_corpus(),
+        profile=binding,
+        model_relay=relay,
+        research_relay=acknowledge,
+        started_at=STARTED,
+        clock=lambda: NOW,
+        trace=records.append,
+    )
+    try:
+        with override_allow_model_requests(True):  # noqa: FBT003 - explicit third-party model permission
+            result = await runtime.process(request)
+        failed = [event for event in records if event.name == "research_plan" and event.operation == "validation"]
+        if size == 500:
+            assert result.status == "conversation"
+            assert failed == []
+            assert generated == 2
+        else:
+            assert result.reason == "run_failed"
+            assert generated == 1
+            assert len(failed) == 1
+            event = failed[0]
+            assert (event.status, event.code, event.request_id, event.run_id) == (
+                "failed",
+                "validation_error",
+                request.request_id,
+                result.run_id,
+            )
+            assert event.occurrence_id is not None
+            assert event.step_id is not None
+            assert event.research_plan_text_chars == len(proposal["text"])
+            assert event.research_plan_focus_chars == len(proposal["focus"])
+            assert not any(event.name == "source_read" for event in records)
+        assert canary not in b"".join(trace_bytes(event) for event in records).decode()
+    finally:
+        await runtime.aclose()
+
+
+@pytest.mark.parametrize("capture_failure", [False, True])
+@pytest.mark.asyncio
+async def test_invalid_json_plan_capture_does_not_change_failure(*, capture_failure: bool) -> None:
+    binding = research_profile()
+    records: list[ReachTraceEvent] = []
+
+    def capture(event: ReachTraceEvent) -> None:
+        records.append(event)
+        if capture_failure and event.name == "research_plan" and event.operation == "validation":
+            raise asyncio.CancelledError
+
+    async def relay(operation: str, _payload: str) -> str:
+        if operation == "probe":
+            return canonical_json({"healthy": True, "model_ids": [binding.model_id]})
+        return completion("PRIVATE_NON_JSON_PLAN")
+
+    runtime = build_runtime(
+        policy(),
+        make_corpus(),
+        profile=binding,
+        model_relay=relay,
+        started_at=STARTED,
+        clock=lambda: NOW,
+        trace=capture,
+    )
+    try:
+        with override_allow_model_requests(True):  # noqa: FBT003 - explicit third-party model permission
+            result = await runtime.process(
+                make_request(action="converse").model_copy(update={"request_id": str(uuid4())})
+            )
+        assert result.reason == "run_failed"
+        event = next(event for event in records if event.name == "research_plan" and event.operation == "validation")
+        assert event.code == "invalid_json"
+        assert event.research_plan_text_chars is None
+        assert event.research_plan_focus_chars is None
+        assert "PRIVATE_NON_JSON_PLAN" not in b"".join(trace_bytes(event) for event in records).decode()
+        assert not any(event.name == "source_read" for event in records)
+    finally:
+        await runtime.aclose()

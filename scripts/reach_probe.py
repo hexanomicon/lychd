@@ -24,13 +24,20 @@ from uuid import uuid4
 from pydantic import Field, model_validator
 from pydantic_ai.profiles import DEFAULT_THINKING_TAGS
 
-from lychd.compositions.reach.checkback import CheckbackEnvelope, effective_checkback
+from lychd.compositions.reach.checkback import (
+    CheckbackEnvelope,
+    InvalidCheckbackOutputError,
+    checkback_retry_control,
+    checkback_retry_digest,
+    effective_checkback,
+)
 from lychd.compositions.reach.conversation_references import (
     REFERENCE_PARSER_VERSION,
     reference_digest,
     reference_payload,
     reference_selectors,
 )
+from lychd.compositions.reach.conversation_workflow import persona_text
 from lychd.compositions.reach.decision_format import decision_format_phase
 from lychd.compositions.reach.documents import (
     LEGACY_MAX_CORPUS_BYTES,
@@ -65,8 +72,22 @@ from lychd.compositions.reach.operator_wire import (
     protocol_bytes,
     strict_json,
 )
-from lychd.compositions.reach.request_goals import parse_request_goals, request_goals_digest, request_goals_prompt
-from lychd.compositions.reach.research import MAX_RESEARCH_FOCUS_CHARS, model_research_source, research_catalogue
+from lychd.compositions.reach.request_goals import (
+    CONTEXT_PROJECTION_VERSION,
+    TaskRequirements,
+    parse_request_goals,
+    request_goals_digest,
+    request_goals_prompt,
+    resolved_required_context,
+)
+from lychd.compositions.reach.research import (
+    MAX_RESEARCH_FOCUS_CHARS,
+    ResearchPlan,
+    SynthesisProjection,
+    model_research_source,
+    research_catalogue,
+    synthesis_projection,
+)
 from lychd.compositions.reach.research_wire import OperatorResearchRequest, OperatorResearchResponse, SourceId
 from lychd.compositions.reach.schemas import ReachEvent, ReachPolicy, ReachRule, Record
 
@@ -87,12 +108,13 @@ MAX_STDOUT_FRAMES = 64
 MAX_DIAGNOSTIC_FRAMES = 2048
 MAX_TOTAL_BYTES = 8 * 1024 * 1024
 MAX_MODEL_CALLS = 12
-MAX_CHECKBACKS = 2
+MAX_CHECKBACKS = 3
 MAX_ASSERTION_CHARS = 2000
 MAX_DEBUG_CHARS = 24_000
 MAX_TIMEOUT_SECONDS = 480
 _REASONING_FIELDS = ("reasoning", "reasoning_content")
 _FINISH_REASONS = frozenset({"stop", "length", "tool_calls", "function_call", "content_filter"})
+_REVIEW_TRACE_FIELDS = ("review_attempt", "retry_ordinal", "invalid_review_reason", "review_retry_digest")
 SYNTHETIC = {
     "platform": "discord",
     "account_id": "900000000000000001",
@@ -327,7 +349,8 @@ class Turn:
         self.events: list[ReachTraceEvent] = []
         self.trace_failed = False
         self.capture = TraceCapture(
-            self.observe, source_ids=frozenset(f"doc:{d.path}" for d in corpus.manifest.documents)
+            self.observe,
+            source_ids=frozenset(f"doc:{d.path}" for d in corpus.manifest.documents),
         )
         self.capture_model_output = capture_model_output
         self.ready: ReachWorkerReady | None = None
@@ -346,13 +369,18 @@ class Turn:
         self.calls: list[dict[str, Any]] = []
         self.debug: list[str] = []
         self.synthesis = 0
+        self.synthesis_correlation: TraceCorrelation | None = None
         self.total_bytes = 0
         self.stdout_frames = 0
         self.diagnostic_frames = 0
         self.unstructured_diagnostics = 0
         self.seen_call_ids: set[str] = set()
         self.patterns: dict[str, Any] | None = None
-        self.cleanup: dict[str, Any] = {"process_retired": False, "container_removed": False, "container_id": None}
+        self.cleanup: dict[str, Any] = {
+            "process_retired": False,
+            "container_removed": False,
+            "container_id": None,
+        }
         self.projection: dict[str, Any] = {}
         self.evidence_scope: dict[str, str] | None = None
         self.formation_context: dict[str, Any] | None = None
@@ -361,8 +389,19 @@ class Turn:
         self.checkback_controls: list[dict[str, Any]] = []
         self.review_claims: list[tuple[str, ...] | None] = []
         self.corrections = 0
+        self.invalid_review_retry_used = False
+        self.requirements: TaskRequirements | None = None
         self.goals: tuple[str, ...] = ()
         self.interpretations = 0
+
+    @property
+    def projection_mode(self) -> Literal["balanced", "complete_quotes"]:
+        """Use the admitted enum when enabled; preserve the literal-question legacy path."""
+        if self.profile.request_goals:
+            if self.requirements is None:
+                refuse("probe_objectives_binding")
+            return self.requirements.projection_mode
+        return research_projection_mode(self.request.event.question)
 
     def observe(self, event: ReachTraceEvent) -> None:
         """Retain finite structural metadata independently of best-effort emitter semantics."""
@@ -420,10 +459,18 @@ class Turn:
             prompt = object_value(strict_json(cast("str", messages[-1]["content"]).encode()))
             schema_phase = decision_format_phase(generation.get("structured_outputs"))
             if prompt.get("phase") == "checkback" and self.profile.json_object_output:
-                expected = "checkback_goals" if self.profile.request_goals else "checkback"
+                public = (
+                    self.formation_context is not None
+                    and self.formation_context.get("research_phase") == "synthesis"
+                    and bool(self.formation_context.get("research_sources"))
+                )
+                expected = "checkback_public" if public else "checkback"
+                if self.profile.request_goals:
+                    expected += "_goals"
                 if schema_phase != expected:
                     refuse("probe_checkback_schema")
             phase = self.generation_phase(prompt)
+            self.synthesis_correlation = frame.correlation if phase == "synthesis" else self.synthesis_correlation
             if phase in {"planning", "answer"}:
                 observation["research_source_kinds"] = [
                     kind
@@ -433,7 +480,14 @@ class Turn:
             observation["enable_thinking"] = generation["chat_template_kwargs"]["enable_thinking"]
             observation["response_format"] = "structured_json" if "structured_outputs" in generation else "omitted"
             observation["decision_schema_phase"] = schema_phase
-        self.calls.append({"call_id": frame.call_id, "operation": frame.operation, "phase": phase, **observation})
+        self.calls.append(
+            {
+                "call_id": frame.call_id,
+                "operation": frame.operation,
+                "phase": phase,
+                **observation,
+            }
+        )
         return prompt
 
     def capture_addressing(self, prompt: dict[str, Any]) -> str:
@@ -463,8 +517,7 @@ class Turn:
             refuse("probe_references_binding")
         if prompt.get("question") != self.request.event.question:
             refuse("probe_question_binding")
-        if prompt.get("request_goals", []) != list(self.goals) or (self.profile.request_goals and not self.goals):
-            refuse("probe_objectives_binding")
+        self.validate_requirements(prompt)
         if phase == "synthesis":
             self.capture_synthesis(prompt)
         elif self.plan is not None or phase not in {"planning", "answer"}:
@@ -480,7 +533,7 @@ class Turn:
         return phase
 
     def capture_interpretation(self, prompt: dict[str, Any]) -> str:
-        """Admit one independently formed objective list before any answer context."""
+        """Admit one independently formed requirements object before any answer context."""
         if (
             not self.profile.request_goals
             or self.interpretations
@@ -491,13 +544,66 @@ class Turn:
         self.interpretations += 1
         return "interpretation"
 
+    def validate_requirements(self, prompt: dict[str, Any]) -> None:
+        """Bind the full interpretation and the host-resolved attributed context."""
+        if self.profile.request_goals and (self.requirements is None or self.goals != self.requirements.goals):
+            refuse("probe_objectives_binding")
+        expected = self.requirements.model_dump(mode="json") if self.requirements else None
+        context = (
+            resolved_required_context(
+                self.requirements,
+                self.request,
+                self.profile,
+                agent_subject_id=self.policy.agent_subject_id,
+            )
+            if self.requirements
+            else ()
+        )
+        essential_ids = {object_value(item["entry"])["event_id"] for item in context}
+        essential_handles = {object_value(item["entry"])["event_id"]: item["handle"] for item in context}
+        anchors: dict[str, object] = {}
+        if self.profile.request_goals:
+            for name, anchor in (
+                ("reply_anchor", self.request.reply_anchor),
+                ("continuation_anchor", self.request.continuation_anchor),
+            ):
+                if anchor is None:
+                    anchors[name] = None
+                elif anchor.event_id in essential_handles:
+                    anchors[name] = {"required_context_handle": essential_handles[anchor.event_id]}
+                else:
+                    entry = anchor.model_dump(mode="json")
+                    if anchor.subject_id == self.policy.agent_subject_id:
+                        entry["subject_label"] = self.profile.persona_name
+                    anchors[name] = entry
+        recent = prompt.get("recent_messages", [])
+        if (
+            prompt.get("request_goals", []) != []
+            or (
+                self.profile.context_projection_version == CONTEXT_PROJECTION_VERSION
+                and (
+                    type(prompt.get("context_projection_version")) is not int
+                    or prompt["context_projection_version"] != CONTEXT_PROJECTION_VERSION
+                )
+            )
+            or (self.profile.context_projection_version == 1 and "context_projection_version" in prompt)
+            or canonical_json(prompt.get("task_requirements")) != canonical_json(expected)
+            or canonical_json(prompt.get("required_context", [])) != canonical_json(context)
+            or not isinstance(recent, list)
+            or any(object_value(item).get("event_id") in essential_ids for item in cast("list[Any]", recent))
+            or any(canonical_json(prompt.get(name)) != canonical_json(value) for name, value in anchors.items())
+        ):
+            refuse("probe_objectives_binding")
+
     def capture_checkback(self, prompt: dict[str, Any]) -> str:
         """Bind review and repair to the exact previously admitted candidate and evidence."""
         phase = str(prompt["phase"])
         context = object_value(prompt.get("context"))
         candidate = object_value(prompt.get("candidate"))
         expected = CheckbackEnvelope.prepare(
-            self.request, canonical_json(context), persona_name=self.profile.persona_name
+            self.request,
+            canonical_json(context),
+            persona_name=self.profile.persona_name,
         ).bindings(canonical_json(candidate))
         if (
             self.formation_context is None
@@ -515,12 +621,17 @@ class Turn:
             if (
                 self.corrections
                 or not self.checkbacks
-                or len(self.checkback_controls) != len(self.checkbacks)
+                or "review_retry" in prompt
+                or not self.checkback_controls
+                or self.checkback_controls[-1].get("review_attempt", len(self.checkback_controls) - 1)
+                != len(self.checkbacks) - 1
                 or self.checkback_controls[-1].get("effective_verdict") != "revise"
             ):
                 refuse("probe_correction_order")
             control = self.checkback_controls[-1]
-            expected_observation = {key: value for key, value in control.items() if key not in {*expected, "attempt"}}
+            expected_observation = {
+                key: value for key, value in control.items() if key not in {*expected, "attempt", *_REVIEW_TRACE_FIELDS}
+            }
             if (
                 prompt.get("issues") != control["effective_issues"]
                 or prompt.get("correction_control") != expected_observation
@@ -532,21 +643,57 @@ class Turn:
             ):
                 refuse("probe_runtime_claims_binding")
             self.corrections += 1
-        elif len(self.checkbacks) != self.corrections or len(self.checkbacks) >= MAX_CHECKBACKS:
-            refuse("probe_checkback_order")
         else:
-            self.checkbacks.append(expected)
+            self.capture_review_call(prompt, expected)
         return phase
+
+    def capture_review_call(self, prompt: dict[str, Any], bindings: dict[str, Any]) -> None:
+        """Admit one bounded re-review only after the prior candidate's typed parsing failure."""
+        if len(self.checkbacks) >= MAX_CHECKBACKS:
+            refuse("probe_checkback_order")
+        reason = None
+        if "review_retry" in prompt:
+            previous = self.checkbacks[-1] if self.checkbacks else {}
+            reason = previous.get("invalid_review_reason")
+            if (
+                not self.profile.checkback_invalid_retry
+                or self.invalid_review_retry_used
+                or reason not in {"review_shape", "coverage_binding"}
+                or "verdict" in previous
+                or previous.get("attempt") != self.corrections
+                or any(previous.get(key) != value for key, value in bindings.items())
+                or canonical_json(prompt["review_retry"]) != canonical_json(checkback_retry_control(reason))
+            ):
+                refuse("probe_checkback_retry_binding")
+            envelope = CheckbackEnvelope.prepare(
+                self.request, canonical_json(self.formation_context), persona_name=self.profile.persona_name
+            )
+            if canonical_json(prompt) != envelope.prompt(canonical_json(self.candidate), retry_reason=reason):
+                refuse("probe_checkback_retry_binding")
+            self.invalid_review_retry_used = True
+        elif self.checkbacks:
+            previous = self.checkbacks[-1]
+            if previous.get("attempt", len(self.checkbacks) - 1) != self.corrections - 1 or "verdict" not in previous:
+                refuse("probe_checkback_order")
+        elif self.corrections:
+            refuse("probe_checkback_order")
+        self.checkbacks.append(
+            {
+                **bindings,
+                "attempt": self.corrections,
+                "review_attempt": len(self.checkbacks),
+                "retry_ordinal": int(reason is not None),
+                "invalid_review_reason": reason,
+                "review_retry_digest": checkback_retry_digest(reason) if reason is not None else None,
+            }
+        )
 
     def capture_synthesis(self, prompt: dict[str, Any]) -> None:
         if (
             self.plan is None
             or self.scenario.plan_delivery != "succeeded"
             or self.synthesis
-            or prompt.get("research_request_id") != self.request.request_id
             or prompt.get("research_plan") != self.plan
-            or prompt.get("research_focus") != self.focus
-            or prompt.get("corpus_digest") != self.corpus.digest
         ):
             refuse("probe_synthesis_binding")
         reads = self.validate_source_projections(prompt)
@@ -556,19 +703,26 @@ class Turn:
         self.synthesis += 1
         self.reads.extend(reads)
         self.evidence_scope = validate_evidence_scope(prompt.get("evidence_scope"))
-        self.projection = {"omitted_recent_messages": omitted, "source_count": len(self.reads)}
+        self.projection = {
+            "omitted_recent_messages": omitted,
+            "source_count": len(self.reads),
+        }
 
     def validate_source_projections(self, prompt: dict[str, Any]) -> list[dict[str, Any]]:
+        if self.plan is None or self.scenario.plan_delivery != "succeeded" or prompt.get("research_plan") != self.plan:
+            refuse("probe_synthesis_binding")
+        validate_evidence_scope(prompt.get("evidence_scope"))
+        if self.profile.context_projection_version == CONTEXT_PROJECTION_VERSION:
+            expected = self.reconstruct_synthesis()
+            if canonical_json(prompt) != expected.prompt:
+                refuse("probe_synthesis_binding")
+            return [self.projection_metadata(item) for item in expected.full_projections]
         if (
-            self.plan is None
-            or self.scenario.plan_delivery != "succeeded"
-            or prompt.get("research_request_id") != self.request.request_id
-            or prompt.get("research_plan") != self.plan
+            prompt.get("research_request_id") != self.request.request_id
             or prompt.get("research_focus") != self.focus
             or prompt.get("corpus_digest") != self.corpus.digest
         ):
             refuse("probe_synthesis_binding")
-        validate_evidence_scope(prompt.get("evidence_scope"))
         sources = prompt.get("research_sources")
         if not isinstance(sources, list):
             refuse("probe_source_metadata")
@@ -577,23 +731,71 @@ class Turn:
             refuse("probe_source_binding")
         return [self.read_projection(item) for item in records]
 
+    def reconstruct_synthesis(self) -> SynthesisProjection:
+        """Rebuild the compact model envelope solely from bound host inputs and exact local reads."""
+        if self.plan is None or self.scenario.plan_delivery != "succeeded" or not self.planned_ids:
+            refuse("probe_synthesis_binding")
+        if any(not source_id.startswith("doc:") for source_id in self.planned_ids):
+            refuse("probe_web_refused")
+        sources = tuple(
+            read_research_document(
+                self.corpus,
+                source_id,
+                question=self.request.event.question,
+                focus=self.focus or self.plan,
+                reference_labels=reference_selectors(self.request),
+                projection_mode=self.projection_mode,
+            )
+            for source_id in self.planned_ids
+        )
+        plan = ResearchPlan(kind="research", text=self.plan, focus=self.focus, source_ids=self.planned_ids)
+        return synthesis_projection(
+            self.profile,
+            self.corpus,
+            self.request,
+            plan,
+            sources,
+            instructions=persona_text(self.profile),
+            agent_subject_id=self.policy.agent_subject_id,
+            task_requirements=self.requirements,
+        )
+
+    @staticmethod
+    def projection_metadata(projection: dict[str, object]) -> dict[str, Any]:
+        """Retain complete host proof fields without storing the transient evidence body in reports."""
+        return {
+            **{key: value for key, value in projection.items() if key != "text"},
+            "projected_chars": len(cast("str", projection["text"])),
+        }
+
     def read_projection(self, item: dict[str, Any]) -> dict[str, Any]:
         """Verify exact metadata and the actual transient projection against frozen source bytes."""
         source_id = item.get("id")
         if not isinstance(source_id, str) or not source_id.startswith("doc:"):
             refuse("probe_web_refused")
+        if self.profile.context_projection_version == CONTEXT_PROJECTION_VERSION:
+            receipt = self.reconstruct_synthesis()
+            for projection in receipt.full_projections:
+                if projection["id"] == source_id:
+                    if canonical_json(item) != canonical_json(
+                        model_research_source(projection, version=CONTEXT_PROJECTION_VERSION)
+                    ):
+                        refuse("probe_source_metadata")
+                    return self.projection_metadata(projection)
+            refuse("probe_source_binding")
         source = read_research_document(
             self.corpus,
             source_id,
             question=self.request.event.question,
             focus=self.focus or self.plan or "",
             reference_labels=reference_selectors(self.request),
+            projection_mode=self.projection_mode,
         )
         expected = source.model_dump(mode="json", exclude={"text"})
         budget = item.get("projection_budget")
         if type(budget) is not int or not 0 <= budget <= len(source.text):
             refuse("probe_source_metadata")
-        mode = research_projection_mode(self.request.event.question)
+        mode = self.projection_mode
         if item.get("projection_mode") != mode:
             refuse("probe_source_metadata")
         projection = project_research_source(source, budget, projection_mode=mode)
@@ -626,7 +828,12 @@ class Turn:
         if not isinstance(content, str):
             refuse("probe_completion_metadata")
         reasoning = {field: reasoning_field_observation(message, field) for field in _REASONING_FIELDS}
-        self.calls[-1].update({"finish_reason": completion_finish_reason(choice), "reasoning_fields": reasoning})
+        self.calls[-1].update(
+            {
+                "finish_reason": completion_finish_reason(choice),
+                "reasoning_fields": reasoning,
+            }
+        )
         if any(field["state"] == "invalid" for field in reasoning.values()):
             refuse("probe_reasoning_metadata")
         if any(marker in content for marker in DEFAULT_THINKING_TAGS):
@@ -642,18 +849,20 @@ class Turn:
             if sum(map(len, self.debug)) + len(content) > MAX_DEBUG_CHARS:
                 refuse("probe_debug_budget")
             self.debug.append(content)
+        phase = self.calls[-1]["phase"]
+        if phase == "checkback":
+            self.capture_review_completion(content)
+            return
         try:
             decision = object_value(strict_json(content.encode()))
         except (ValueError, UnicodeError, RecursionError):
             return  # Native validation owns model output; no permissive repair here.
-        phase = self.calls[-1]["phase"]
         if phase == "interpretation":
             with suppress(ValueError):
-                self.goals = parse_request_goals(content).goals
+                self.requirements = parse_request_goals(content, request=self.request, profile=self.profile)
+                self.goals = self.requirements.goals
             return
-        if phase == "checkback":
-            self.capture_review(content)
-        elif phase != "addressing" and decision.get("kind") in {"answer", "clarify"}:
+        if phase != "addressing" and decision.get("kind") in {"answer", "clarify"}:
             self.candidate = decision
         if decision.get("kind") == "research":
             ids = decision.get("source_ids")
@@ -685,23 +894,45 @@ class Turn:
             ).hexdigest(),
         }
 
+    def capture_review_completion(self, content: str) -> None:
+        """Only a completion admitted by the native finish gate may reach review parsing."""
+        finish = self.calls[-1].get("finish_reason")
+        if finish != "length" and (not self.calls[-1].get("enable_thinking") or finish == "stop"):
+            self.capture_review(content)
+
     def capture_review(self, content: str) -> None:
         """Accept only the same strict coverage and evidence binding as native Core."""
+        envelope = CheckbackEnvelope.prepare(
+            self.request, canonical_json(self.formation_context), persona_name=self.profile.persona_name
+        )
         try:
-            envelope = CheckbackEnvelope.prepare(
-                self.request, canonical_json(self.formation_context), persona_name=self.profile.persona_name
+            judgment = envelope.parse(
+                content, canonical_json(self.candidate), classify_invalid=self.profile.checkback_invalid_retry
             )
-            judgment = envelope.parse(content, canonical_json(self.candidate))
+        except InvalidCheckbackOutputError as failure:
+            self.checkbacks[-1]["invalid_review_reason"] = failure.reason
+            self.checkbacks[-1]["invalid_review_output"] = True
+            return
         except ValueError:
             return  # The native strict parser owns malformed model output.
         control = effective_checkback(
-            self.request, canonical_json(self.candidate), judgment, context_json=canonical_json(self.formation_context)
+            self.request,
+            canonical_json(self.candidate),
+            judgment,
+            context_json=canonical_json(self.formation_context),
         )
         self.review_claims.append(judgment.current_runtime_claims)
         self.checkback_controls.append(
             {
                 **envelope.bindings(canonical_json(self.candidate)),
-                "attempt": len(self.checkbacks) - 1,
+                "attempt": self.checkbacks[-1].get("attempt", len(self.checkbacks) - 1),
+                **{
+                    key: self.checkbacks[-1].get(
+                        key,
+                        len(self.checkbacks) - 1 if key == "review_attempt" else 0 if key == "retry_ordinal" else None,
+                    )
+                    for key in _REVIEW_TRACE_FIELDS
+                },
                 **control.observation(),
             }
         )
@@ -733,8 +964,17 @@ class Turn:
         ):
             refuse("probe_research_binding")
         self.seen_call_ids.add(frame.call_id)
-        self.plan, self.focus, self.plan_call_id = frame.plan, self.proposed_focus, frame.call_id
-        self.capture.host.record("research_plan", status=self.scenario.plan_delivery, call_id=frame.call_id, **binding)
+        self.plan, self.focus, self.plan_call_id = (
+            frame.plan,
+            self.proposed_focus,
+            frame.call_id,
+        )
+        self.capture.host.record(
+            "research_plan",
+            status=self.scenario.plan_delivery,
+            call_id=frame.call_id,
+            **binding,
+        )
         web = frame.source_ids or any(not item.startswith("doc:") for item in self.planned_ids)
         accepted = self.scenario.plan_delivery == "succeeded" and not web
         response = OperatorResearchResponse(
@@ -879,9 +1119,54 @@ class Turn:
         if self.patterns is None or not any(item.name == "native_node" for item in self.events):
             failures.append("missing_native_trace")
         failures.extend(self.checkback_assertions())
+        failures.extend(self.source_projection_assertions())
         failures.extend(self.goal_assertions())
         failures.extend(self.reference_assertions())
         return failures
+
+    def source_projection_assertions(self) -> list[str]:
+        """Match reconstructed source proofs to late-arriving native observations after capture drains."""
+        if self.profile.context_projection_version != CONTEXT_PROJECTION_VERSION:
+            return []
+        observed = [event for event in self.events if event.producer == "core" and event.name == "source_projection"]
+        if not self.synthesis:
+            return ["source_projection_trace_binding"] if observed else []
+        if len(observed) != len(self.reads):
+            return ["source_projection_capture_gap"]
+        if self.synthesis_correlation is None:
+            return ["source_projection_trace_binding"]
+        for event, proof in zip(observed, self.reads, strict=True):
+            expected = {
+                "source_id": proof["id"],
+                "source_digest": proof["source_digest"],
+                "text_digest": proof["text_digest"],
+                "projection_budget": proof["projection_budget"],
+                "projection_mode": proof["projection_mode"],
+                "projection_chars": proof["projected_chars"],
+                "projection_truncated": proof["projection_truncated"],
+                "projection_digest": proof["projection_digest"],
+                "projection_span_count": len(proof["projection_spans"]),
+                "projection_spans_digest": sha256(canonical_json(proof["projection_spans"]).encode()).hexdigest(),
+            }
+            if (
+                event.status != proof["status"]
+                or any(
+                    canonical_json(getattr(event, name)) != canonical_json(value) for name, value in expected.items()
+                )
+                or (event.generation is not None and event.generation != self.synthesis_correlation.generation)
+                or any(
+                    getattr(event, name) != getattr(self.synthesis_correlation, name)
+                    for name in ("request_id", "run_id", "occurrence_id")
+                )
+            ):
+                return ["source_projection_trace_binding"]
+        return []
+
+    def source_projection_proof_origin(self) -> str:
+        """Describe reconstruction separately from independently observed native projection metadata."""
+        if self.synthesis and not self.source_projection_assertions():
+            return "native_trace_matched_reconstruction"
+        return "reconstruction_only_native_trace_unmatched" if self.synthesis else "not_observed"
 
     def goal_assertions(self) -> list[str]:
         """Correlate the frozen independent interpretation without retaining goal text in trace."""
@@ -898,12 +1183,18 @@ class Turn:
             return []
         if (
             self.interpretations != 1
-            or not self.goals
+            or self.requirements is None
+            or self.goals != self.requirements.goals
             or len(observed) != 1
             or observed[0].request_id != self.request.request_id
             or observed[0].run_id != self.run_id
             or observed[0].goal_count != len(self.goals)
-            or observed[0].objective_digest != request_goals_digest(self.goals)
+            or observed[0].requirements_version != self.requirements.version
+            or observed[0].constraint_count != len(self.requirements.constraints)
+            or observed[0].required_context_count != len(self.requirements.required_context)
+            or observed[0].quotation_presentation != self.requirements.quotation_presentation
+            or observed[0].objective_digest
+            != request_goals_digest(self.requirements, request=self.request, profile=self.profile)
         ):
             return ["interpretation_trace_binding"]
         return []
@@ -930,7 +1221,7 @@ class Turn:
         reviews = [event for event in self.events if event.name == "checkback" and event.status == "ok"]
         controls = [event for event in self.events if event.name == "checkback_control" and event.status == "ok"]
         parsed = [item for item in self.checkbacks if "verdict" in item]
-        failures: list[str] = []
+        failures = self.failed_checkback_assertions()
         if len(reviews) != len(parsed):
             failures.append("missing_checkback_trace")
         if len(controls) != len(self.checkback_controls):
@@ -938,10 +1229,7 @@ class Turn:
         for index, event in enumerate(reviews):
             if (
                 index >= len(parsed)
-                or event.producer != "core"
-                or event.request_id != self.request.request_id
-                or event.run_id != self.run_id
-                or event.attempt != index
+                or not self.review_trace_matches(event, parsed[index], index)
                 or event.issue_codes != tuple(parsed[index].get("issues", ()))
                 or (event.goal_coverage or ()) != tuple(item["status"] for item in parsed[index].get("coverage", ()))
                 or any(
@@ -957,7 +1245,12 @@ class Turn:
                 )
                 or any(
                     getattr(event, key) is not None
-                    for key in ("guard_rule", "guard_version", "guard_status", "effective_verdict")
+                    for key in (
+                        "guard_rule",
+                        "guard_version",
+                        "guard_status",
+                        "effective_verdict",
+                    )
                 )
             ):
                 failures.append("checkback_trace_binding")
@@ -970,6 +1263,10 @@ class Turn:
                 or event.verdict is not None
                 or event.issue_codes is not None
                 or event.goal_coverage is not None
+                or any(
+                    getattr(event, key) != value
+                    for key, value in self.review_trace_metadata(self.checkback_controls[index], index).items()
+                )
                 or any(
                     getattr(event, key) != self.checkback_controls[index].get(key)
                     for key in (
@@ -990,7 +1287,9 @@ class Turn:
         if self.result is not None and self.result.status == "conversation" and self.profile.checkback:
             final_digest = (
                 CheckbackEnvelope.prepare(
-                    self.request, canonical_json(self.formation_context), persona_name=self.profile.persona_name
+                    self.request,
+                    canonical_json(self.formation_context),
+                    persona_name=self.profile.persona_name,
                 ).bindings(canonical_json(self.candidate))["candidate_digest"]
                 if self.candidate is not None and self.formation_context is not None
                 else None
@@ -1005,6 +1304,52 @@ class Turn:
             ):
                 failures.append("missing_accepted_checkback")
         return failures
+
+    def failed_checkback_assertions(self) -> list[str]:
+        observed = [event for event in self.events if event.name == "checkback" and event.status == "failed"]
+        invalid = [item for item in self.checkbacks if "verdict" not in item]
+        failures: list[str] = []
+        if len(observed) != len(invalid):
+            failures.append("missing_failed_checkback_trace")
+        for index, event in enumerate(observed):
+            if (
+                index >= len(invalid)
+                or not self.review_trace_matches(event, invalid[index], index)
+                or any(
+                    getattr(event, key) is not None
+                    for key in (
+                        "verdict",
+                        "issue_codes",
+                        "goal_coverage",
+                        "runtime_claim_count",
+                        "runtime_claim_digest",
+                    )
+                )
+            ):
+                failures.append("failed_checkback_trace_binding")
+        return failures
+
+    def review_trace_matches(self, event: ReachTraceEvent, record: dict[str, Any], index: int) -> bool:
+        """Bind candidate revision separately from global review/retry metadata, including failed attempts."""
+        return (
+            event.producer == "core"
+            and event.request_id == self.request.request_id
+            and event.run_id == self.run_id
+            and event.attempt == record.get("attempt", index)
+            and all(getattr(event, key) == value for key, value in self.review_trace_metadata(record, index).items())
+            and all(
+                getattr(event, key) == record.get(key)
+                for key in ("request_digest", "evidence_digest", "candidate_digest")
+            )
+        )
+
+    def review_trace_metadata(self, record: dict[str, Any], index: int) -> dict[str, Any]:
+        if not self.profile.checkback_invalid_retry:
+            return dict.fromkeys(_REVIEW_TRACE_FIELDS)
+        return {
+            key: record.get(key, index if key == "review_attempt" else 0 if key == "retry_ordinal" else None)
+            for key in _REVIEW_TRACE_FIELDS
+        }
 
 
 async def read_line(reader: asyncio.StreamReader) -> bytes:
@@ -1323,7 +1668,13 @@ def publish_reports(
     health: dict[str, int | bool],
     failures: list[str],
 ) -> int:
-    profile, corpus, policy, request, scenario = turn.profile, turn.corpus, turn.policy, turn.request, turn.scenario
+    profile, corpus, policy, request, scenario = (
+        turn.profile,
+        turn.corpus,
+        turn.policy,
+        turn.request,
+        turn.scenario,
+    )
     report = {
         "schema_version": 1,
         "outcome": "passed" if not failures else "failed",
@@ -1378,6 +1729,11 @@ def publish_reports(
         "native_run_observed": any(item.name == "run_started" for item in turn.events),
         "source_read_count": sum(item.name == "source_read" for item in turn.events),
         "source_projection_capture": "metadata_only",
+        **(
+            {"source_projection_proof_origin": turn.source_projection_proof_origin()}
+            if profile.context_projection_version == CONTEXT_PROJECTION_VERSION
+            else {}
+        ),
         "evidence_scope": turn.evidence_scope,
         "trace_archive_health": health,
         "unstructured_diagnostic_lines": turn.unstructured_diagnostics,
@@ -1390,15 +1746,30 @@ def publish_reports(
             "frame_bytes": MAX_WIRE_BYTES,
             "total_bytes": MAX_TOTAL_BYTES,
         },
-        "claims": {"live_discord": False, "web_acquisition": False, "full_host_broker": False},
+        "claims": {
+            "live_discord": False,
+            "web_acquisition": False,
+            "full_host_broker": False,
+        },
     }
     value: dict[str, Any] = {
         "plan": turn.plan,
         "research_focus": turn.focus,
         "request_goals": turn.goals,
+        "task_requirements": turn.requirements.model_dump(mode="json") if turn.requirements else None,
+        "required_context": resolved_required_context(
+            turn.requirements, request, profile, agent_subject_id=policy.agent_subject_id
+        )
+        if turn.requirements
+        else (),
         "selected_source_ids": turn.planned_ids,
         "offered_research_sources": turn.offered_sources,
         "source_reads": turn.reads,
+        **(
+            {"source_projection_proof_origin": turn.source_projection_proof_origin()}
+            if profile.context_projection_version == CONTEXT_PROJECTION_VERSION
+            else {}
+        ),
         "synthesis_projection": turn.projection,
         "model_calls": turn.calls,
         "evidence_scope": turn.evidence_scope,

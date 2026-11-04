@@ -50,6 +50,7 @@ type TraceName = Literal[
     "model_http",
     "research_call",
     "source_read",
+    "source_projection",
     "child_diagnostic",
 ]
 type TraceStatus = Literal[
@@ -156,11 +157,21 @@ class ReachTraceEvent(Record):
     step_id: DiagnosticUuid | None = None
     native_event_id: DiagnosticUuid | None = None
     native_seq: int | None = Field(default=None, ge=0, le=2**63 - 1)
-    source_id: str | None = Field(default=None, pattern=r"^(?:web:[a-z][a-z0-9_]{0,31}|doc:[A-Za-z0-9_./-]{1,200})$")
+    source_id: str | None = Field(
+        default=None,
+        pattern=r"^(?:web:[a-z][a-z0-9_]{0,31}|doc:[A-Za-z0-9_./-]{1,200})$",
+    )
     excerpt_start: int | None = Field(default=None, ge=0)
     excerpt_chars: int | None = Field(default=None, ge=0, le=16_000)
     source_digest: PolicyDigest | None = None
     text_digest: PolicyDigest | None = None
+    projection_budget: int | None = Field(default=None, ge=0, le=16_000)
+    projection_mode: Literal["balanced", "complete_quotes"] | None = None
+    projection_chars: int | None = Field(default=None, ge=0, le=16_000)
+    projection_truncated: bool | None = None
+    projection_digest: PolicyDigest | None = None
+    projection_span_count: int | None = Field(default=None, ge=0, le=48)
+    projection_spans_digest: PolicyDigest | None = None
     issue_codes: tuple[ReachReviewIssue, ...] | None = Field(default=None, max_length=4)
     request_digest: PolicyDigest | None = None
     evidence_digest: PolicyDigest | None = None
@@ -172,10 +183,19 @@ class ReachTraceEvent(Record):
     runtime_claim_count: int | None = Field(default=None, ge=0, le=4)
     runtime_claim_digest: PolicyDigest | None = None
     guard_rule: (
-        Literal["unchanged_explanation", "runtime_evidence_authority", "misbound_reference_clarification"] | None
+        Literal[
+            "unchanged_explanation",
+            "runtime_evidence_authority",
+            "misbound_reference_clarification",
+        ]
+        | None
     ) = None
     guard_version: (
-        Literal["unchanged-explanation-v1", "runtime-evidence-authority-v1", "misbound-reference-clarification-v1"]
+        Literal[
+            "unchanged-explanation-v1",
+            "runtime-evidence-authority-v1",
+            "misbound-reference-clarification-v1",
+        ]
         | None
     ) = None
     guard_status: (
@@ -190,10 +210,24 @@ class ReachTraceEvent(Record):
         | None
     ) = None
     effective_verdict: Literal["accept", "revise", "needs_evidence"] | None = None
+    requirements_version: Literal[1] | None = None
+    constraint_count: int | None = Field(default=None, ge=0, le=4)
+    required_context_count: int | None = Field(default=None, ge=0, le=2)
+    quotation_presentation: Literal["none", "abbreviated", "full"] | None = None
     goal_count: int | None = Field(default=None, ge=0, le=8)
     goal_coverage: tuple[Literal["complete", "missing", "unsupported"], ...] | None = Field(default=None, max_length=8)
     verdict: Literal["accept", "revise", "needs_evidence", "addressed", "ignore"] | None = None
     attempt: int | None = Field(default=None, ge=0, le=1)
+    review_attempt: int | None = Field(default=None, ge=0, le=2)
+    retry_ordinal: int | None = Field(default=None, ge=0, le=1)
+    invalid_review_reason: Literal["review_shape", "coverage_binding"] | None = None
+    review_retry_digest: PolicyDigest | None = None
+    completion_finish_reason: (
+        Literal["stop", "length", "tool_calls", "function_call", "content_filter", "missing", "null", "other"] | None
+    ) = None
+    content_state: Literal["missing", "null", "empty", "blank", "text", "non_string"] | None = None
+    research_plan_text_chars: int | None = Field(default=None, ge=0, le=49_152)
+    research_plan_focus_chars: int | None = Field(default=None, ge=0, le=49_152)
     operation: (
         Literal[
             "probe",

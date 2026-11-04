@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from contextlib import asynccontextmanager
 from copy import deepcopy
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal, Self, cast
 from urllib.parse import urlsplit
 
@@ -39,6 +40,12 @@ from lychd.compositions.reach.operator_model_wire import (
     canonical_json,
 )
 from lychd.compositions.reach.operator_wire import ReachWorkerRequest, strict_json
+from lychd.compositions.reach.request_goals import (
+    CONTEXT_PROJECTION_VERSION,
+    TaskRequirements,
+    context_anchor,
+    resolved_required_context,
+)
 from lychd.compositions.reach.research_wire import (
     OperatorResearchRequest,
     OperatorResearchResponse,
@@ -242,7 +249,10 @@ def research_catalogue(
     if request is not None and request.continuation_anchor is not None:
         context += (request.continuation_anchor.text,)
     documents = research_document_catalogue(
-        corpus, question=request.event.question if request is not None else "", context=context
+        corpus,
+        question=request.event.question if request is not None else "",
+        context=context,
+        ranking_version=profile.context_projection_version,
     )
     web = tuple(
         {"id": f"web:{source.id}", "title": source.title, "url": source.url} for source in profile.research.sources
@@ -299,9 +309,18 @@ def validate_research_response(
     return response.sources
 
 
-def model_research_source(full_projection: dict[str, object]) -> dict[str, object]:
-    """Keep exact source evidence while leaving derived span proofs with the host projector."""
-    return {key: value for key, value in full_projection.items() if key != "projection_spans"}
+def model_research_source(full_projection: dict[str, object], *, version: Literal[1, 2] = 1) -> dict[str, object]:
+    """Project the selected evidence view without modifying its complete host receipt."""
+    if version == 1:
+        return {key: value for key, value in full_projection.items() if key != "projection_spans"}
+    if version != CONTEXT_PROJECTION_VERSION:
+        msg = "conversation_context_projection"
+        raise ValueError(msg)
+    keys = ("id", "title", "status", "text", "truncated", "projection_truncated")
+    visible = {key: full_projection[key] for key in keys}
+    if full_projection["status"] != "ok":
+        visible["reason"] = full_projection["reason"]
+    return visible
 
 
 def _source_projection(
@@ -312,10 +331,18 @@ def _source_projection(
     if mode == "complete_quotes" and source.status == "ok" and not cast("str", projected["text"]).strip():
         msg = "conversation_budget"
         raise DocumentsRefused(msg)
-    return model_research_source(projected)
+    return projected
 
 
-def synthesis_prompt(
+@dataclass(frozen=True, slots=True)
+class SynthesisProjection:
+    """One transient exact model envelope and its complete host-owned source proofs."""
+
+    prompt: str = field(repr=False)
+    full_projections: tuple[dict[str, object], ...] = field(repr=False)
+
+
+def synthesis_projection(
     profile: OperatorConversationProfile,
     corpus: PublicCorpus,
     request: ReachWorkerRequest,
@@ -324,9 +351,9 @@ def synthesis_prompt(
     *,
     instructions: str,
     agent_subject_id: str | None = None,
-    request_goals: tuple[str, ...] = (),
-) -> str:
-    """Budget exact source projections in the mode selected by the bound current question."""
+    task_requirements: TaskRequirements | None = None,
+) -> SynthesisProjection:
+    """Budget one exact model view while retaining the full source/projection receipt locally."""
     evidence_scope = {
         "version": "public-text-v1",
         "source_authority": "public_reference_text",
@@ -334,20 +361,25 @@ def synthesis_prompt(
         "operator_runtime_observation": "not_supplied",
     }
     reference_hints = reference_payload(request)
-    projection_mode = research_projection_mode(request.event.question)
+    projection_mode = (
+        task_requirements.projection_mode if task_requirements else research_projection_mode(request.event.question)
+    )
+    required_context = (
+        resolved_required_context(task_requirements, request, profile, agent_subject_id=agent_subject_id)
+        if task_requirements
+        else ()
+    )
+    essential_ids = {cast("dict[str, object]", item["entry"])["event_id"] for item in required_context}
     selected = [
         item.model_dump(mode="json")
         for item in sorted(request.history, key=lambda item: (item.occurred_at, item.event_id))
     ]
-    anchor = request.reply_anchor.model_dump(mode="json") if request.reply_anchor is not None else None
-    continuation = (
-        request.continuation_anchor.model_dump(mode="json") if request.continuation_anchor is not None else None
+    selected = [item for item in selected if item["event_id"] not in essential_ids]
+    anchor = context_anchor(request.reply_anchor, required_context, profile, agent_subject_id=agent_subject_id)
+    continuation = context_anchor(
+        request.continuation_anchor, required_context, profile, agent_subject_id=agent_subject_id
     )
-    for item in [
-        *selected,
-        *([anchor] if anchor is not None else []),
-        *([continuation] if continuation is not None else []),
-    ]:
+    for item in selected:
         if item["subject_id"] == agent_subject_id:
             item["subject_label"] = profile.persona_name
     omitted = 0
@@ -355,7 +387,10 @@ def synthesis_prompt(
     minimum_lengths = [
         min(
             len(source.text),
-            next((index + 1 for index, char in enumerate(source.text) if not char.isspace()), 0)
+            next(
+                (index + 1 for index, char in enumerate(source.text) if not char.isspace()),
+                0,
+            )
             + len(RESEARCH_PROJECTION_OMISSION),
         )
         for source in sources
@@ -385,11 +420,21 @@ def synthesis_prompt(
     web_sources = [source for source in sources if source.id.startswith("web:")]
     answer_example = bool(successful_ids) and (not web_sources or any(source.status == "ok" for source in web_sources))
     while True:
+        full_projections = tuple(
+            _source_projection(source, length, projection_mode) for source, length in zip(sources, lengths, strict=True)
+        )
         prompt = canonical_json(
             {
                 "question": request.event.question,
                 "reference_hints": reference_hints,
-                "request_goals": request_goals,
+                **(
+                    {
+                        "task_requirements": task_requirements.model_dump(mode="json"),
+                        "required_context": required_context,
+                    }
+                    if task_requirements
+                    else {"request_goals": ()}
+                ),
                 "speaker_id": request.event.subject_id,
                 "speaker_label": request.event.subject_label,
                 "recent_messages": selected,
@@ -398,14 +443,21 @@ def synthesis_prompt(
                 "reply_anchor": anchor,
                 "continuation_anchor": continuation,
                 "research_plan": plan.text,
-                "research_focus": plan.focus,
+                **(
+                    {"context_projection_version": CONTEXT_PROJECTION_VERSION}
+                    if profile.context_projection_version == CONTEXT_PROJECTION_VERSION
+                    else {
+                        "research_focus": plan.focus,
+                        "research_request_id": request.request_id,
+                        "corpus_digest": corpus.digest,
+                    }
+                ),
                 "evidence_scope": evidence_scope,
                 "research_sources": [
-                    _source_projection(source, length, projection_mode)
-                    for source, length in zip(sources, lengths, strict=True)
+                    model_research_source(projected, version=profile.context_projection_version)
+                    for projected in full_projections
                 ],
                 "research_phase": "synthesis",
-                "research_request_id": request.request_id,
                 "research_evidence_rule": (
                     "Current explicit targets win. Resolve positions by anchor order; plan/focus provisional. "
                     "If all selected web reads fail, clarify. Claims need read support. Never quote omission markers or stitch gaps. "
@@ -429,14 +481,13 @@ def synthesis_prompt(
                         "citations": successful_ids[:1] if answer_example else [],
                     },
                 },
-                "corpus_digest": corpus.digest,
                 **expressions,
             }
         )
         cost = model_input_cost(profile, instructions, prompt, phase="synthesis")
         char_excess, byte_excess, frame_excess = cost.excess(profile, reserve)
         if char_excess <= 0 and byte_excess <= 0 and frame_excess <= 0:
-            return prompt
+            return SynthesisProjection(prompt=prompt, full_projections=full_projections)
         if selected:
             selected.pop(0)
             omitted += 1
@@ -453,6 +504,30 @@ def synthesis_prompt(
         excess = max(char_excess, byte_reduction, frame_reduction, 1)
         reduction = (excess + len(reducible) - 1) // len(reducible)
         lengths[longest] = max(minimum_lengths[longest], lengths[longest] - max(reduction, 1))
+
+
+def synthesis_prompt(
+    profile: OperatorConversationProfile,
+    corpus: PublicCorpus,
+    request: ReachWorkerRequest,
+    plan: ResearchPlan,
+    sources: tuple[SourceReadResult, ...],
+    *,
+    instructions: str,
+    agent_subject_id: str | None = None,
+    task_requirements: TaskRequirements | None = None,
+) -> str:
+    """Return the exact selected model envelope; callers needing proofs retain the projection receipt."""
+    return synthesis_projection(
+        profile,
+        corpus,
+        request,
+        plan,
+        sources,
+        instructions=instructions,
+        agent_subject_id=agent_subject_id,
+        task_requirements=task_requirements,
+    ).prompt
 
 
 class _ResearchDecision(Record):

@@ -89,7 +89,7 @@ provide the transport organization.
 ### Shared operator conversation
 
 The separate operator development profile uses the same Reach-owned
-`reach.operator_converse@5` Pattern behind its process boundary. That Pattern decides whether
+`reach.operator_converse@8` Pattern behind its process boundary. That Pattern decides whether
 to answer, ask for older context, research selected sources, or clarify. Generic Graph supplies
 typed execution and continuation; Reach owns those application decisions.
 

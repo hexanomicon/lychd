@@ -21,13 +21,24 @@ DECISION_PHASES: tuple[DecisionPhase, ...] = (
     "goals",
 )
 
-type DecisionVariant = DecisionPhase | Literal["planning_documents", "planning_web", "checkback_goals"]
+type DecisionVariant = (
+    DecisionPhase
+    | Literal[
+        "planning_documents",
+        "planning_web",
+        "checkback_goals",
+        "checkback_public",
+        "checkback_public_goals",
+    ]
+)
 
 DECISION_VARIANTS: tuple[DecisionVariant, ...] = (
     *DECISION_PHASES,
     "planning_documents",
     "planning_web",
     "checkback_goals",
+    "checkback_public",
+    "checkback_public_goals",
 )
 
 if TYPE_CHECKING:
@@ -72,21 +83,33 @@ def _research_sources() -> dict[str, Any]:
 
 def _schema() -> dict[str, Any]:
     expressions = {
-        "reaction": {"anyOf": [{"type": "string", "enum": ["👀", "👍", "❤️", "😂", "✨", "🤔"]}, {"type": "null"}]},
+        "reaction": {
+            "anyOf": [
+                {"type": "string", "enum": ["👀", "👍", "❤️", "😂", "✨", "🤔"]},
+                {"type": "null"},
+            ]
+        },
         "gif_id": _text(32, nullable=True),
     }
     source = _text(204)
     coverage = _object(
         {
             "goal": {"anyOf": [{"type": "integer", "minimum": 0, "maximum": 7}, _text(200)]},
-            "status": {"type": "string", "enum": ["complete", "missing", "unsupported"]},
+            "status": {
+                "type": "string",
+                "enum": ["complete", "missing", "unsupported"],
+            },
             "answer_quote": _text(240, nullable=True),
         },
         ["goal", "status"],
     )
     branches = [
         _object(
-            {"kind": {"enum": ["answer", "read_more", "clarify"]}, "text": _text(8000), **expressions},
+            {
+                "kind": {"enum": ["answer", "read_more", "clarify"]},
+                "text": _text(8000),
+                **expressions,
+            },
             ["kind", "text"],
         ),
         _object(
@@ -140,7 +163,25 @@ def _schema() -> dict[str, Any]:
             },
             ["verdict", "issues"],
         ),
-        _object({"goals": _array(_text(200), 8, minimum=1)}, ["goals"]),
+        _object(
+            {
+                "version": {"type": "integer", "const": 1},
+                "goals": _array(_text(200), 8, minimum=1),
+                "constraints": _array(_text(200), 4),
+                "quotation_presentation": {
+                    "type": "string",
+                    "enum": ["none", "abbreviated", "full"],
+                },
+                "required_context": _array(_text(128), 2),
+            },
+            [
+                "version",
+                "goals",
+                "constraints",
+                "quotation_presentation",
+                "required_context",
+            ],
+        ),
     ]
     return {"type": "object", "anyOf": branches}
 
@@ -152,7 +193,11 @@ def decision_phase(variant: DecisionVariant) -> DecisionPhase:
         raise ValueError(msg)
     if variant in {"planning_documents", "planning_web"}:
         return "planning"
-    return "checkback" if variant == "checkback_goals" else cast("DecisionPhase", variant)
+    return (
+        "checkback"
+        if variant in {"checkback_goals", "checkback_public", "checkback_public_goals"}
+        else cast("DecisionPhase", variant)
+    )
 
 
 def _goal_review_schema(branch: dict[str, Any]) -> dict[str, Any]:
@@ -161,7 +206,11 @@ def _goal_review_schema(branch: dict[str, Any]) -> dict[str, Any]:
     coverage = properties["coverage"]
     item_properties = coverage["items"]["properties"]
     complete = _object(
-        {**item_properties, "status": {"const": "complete"}, "answer_quote": _text(240)},
+        {
+            **item_properties,
+            "status": {"const": "complete"},
+            "answer_quote": _text(240),
+        },
         ["goal", "status", "answer_quote"],
     )
     incomplete = _object(
@@ -187,7 +236,9 @@ def _goal_review_schema(branch: dict[str, Any]) -> dict[str, Any]:
                     },
                     "clarification": _text(500) if verdict == "needs_evidence" else {"type": "null"},
                 },
-                ["verdict", "issues", "coverage"] + (["clarification"] if verdict == "needs_evidence" else []),
+                ["verdict", "issues", "coverage"]
+                + (["clarification"] if verdict == "needs_evidence" else [])
+                + (["current_runtime_claims"] if "current_runtime_claims" in branch["required"] else []),
             )
             for verdict in ("accept", "revise", "needs_evidence")
         ],
@@ -208,9 +259,19 @@ def _phase_schema(variant: DecisionVariant) -> dict[str, Any]:
         return {"type": "object", "anyOf": branches[:2]}
     if phase == "terminal_correction":
         branches[0]["properties"]["kind"]["enum"] = ["answer", "clarify"]
-    if variant == "checkback_goals":
+    if variant in {"checkback_public", "checkback_public_goals"}:
+        branches[4]["properties"]["current_runtime_claims"] = _array(_text(240), 4)
+        branches[4]["required"].append("current_runtime_claims")
+    if variant in {"checkback_goals", "checkback_public_goals"}:
         return _goal_review_schema(branches[4])
-    index = {"conversation": 0, "terminal_correction": 0, "synthesis": 2, "addressing": 3, "checkback": 4, "goals": 5}
+    index = {
+        "conversation": 0,
+        "terminal_correction": 0,
+        "synthesis": 2,
+        "addressing": 3,
+        "checkback": 4,
+        "goals": 5,
+    }
     return cast("dict[str, Any]", branches[index[phase]])
 
 

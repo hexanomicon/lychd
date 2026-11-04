@@ -10,8 +10,10 @@ import json
 import re
 import unicodedata
 from bisect import bisect_left, bisect_right
+from collections import Counter
 from dataclasses import dataclass
 from hashlib import sha256
+from math import log1p
 from typing import Annotated, Any, Literal, Self
 from urllib.parse import urlsplit
 
@@ -42,6 +44,7 @@ _RESEARCH_PROJECTION_PREAMBLE_CHARS = 400
 _RESEARCH_PROJECTION_SPANS = 48
 _RESEARCH_PROJECTION_QUOTE_CHARS = 40
 _RESEARCH_PROJECTION_ATTRIBUTION_CHARS = 120
+_RESEARCH_NORMALIZED_RANKING_VERSION = 2
 type _ResearchQuoteBlock = tuple[int, int, tuple[int, int] | None]
 _URL = re.compile(r"https?://[^\s<>\[\]()\"']+")
 _PATH = re.compile(r"(?<![A-Za-z0-9_./-])(?:doc:)?([A-Za-z0-9_./-]{1,200})(?![A-Za-z0-9_./-])")
@@ -632,14 +635,77 @@ def _research_section_match(text: str, question: str) -> tuple[int, str]:
     return len(children), description
 
 
+def _research_ranking_fields(
+    document: CorpusDocument, text: str
+) -> tuple[frozenset[str], frozenset[str], Counter[str]]:
+    """Keep authored title credit distinct from a fallback display label."""
+    title = (
+        next((title for _, level, title, _ in _research_headings(text) if level == 1 and title), "")
+        if document.path.endswith(".md")
+        else ""
+    )
+    body = Counter(
+        token for token in re.findall(r"[^\W_]+", _normalized(text)) if len(token) > 1 and token not in _STOP
+    )
+    return retrieval_terms(document.path), retrieval_terms(title), body
+
+
+def _research_normalized_scores(
+    corpus: PublicCorpus, question_terms: frozenset[str], context_terms: frozenset[str]
+) -> tuple[float, ...]:
+    """Compute version 2 lexical scores from this immutable corpus, without retained state.
+
+    Document frequency discounts ubiquitous terms; saturating field frequency and
+    body-length normalization keep repetition from dominating relevance. A path
+    used as a fallback label receives no independent authored-title credit.
+    Two passes retain only query-term statistics, not a second corpus-sized index.
+    """
+    document_count = len(corpus.manifest.documents)
+    if not document_count:
+        return ()
+    query_terms = question_terms | context_terms
+    frequencies: Counter[str] = Counter()
+    total_length = 0
+    for document, text in zip(corpus.manifest.documents, corpus.texts, strict=True):
+        path_terms, title_terms, body = _research_ranking_fields(document, text)
+        total_length += body.total()
+        frequencies.update((path_terms | title_terms | body.keys()) & query_terms)
+    mean_length = total_length / document_count or 1.0
+    # Sorted accumulation makes equal scores independent of process hash order.
+    terms = tuple(sorted(query_terms))
+    weights = {term: 1.0 if term in question_terms else 0.25 for term in terms}
+    inverse_frequency = {
+        term: log1p((document_count - frequencies[term] + 0.5) / (frequencies[term] + 0.5)) for term in terms
+    }
+    scores: list[float] = []
+    for document, text in zip(corpus.manifest.documents, corpus.texts, strict=True):
+        path_terms, title_terms, body = _research_ranking_fields(document, text)
+        normalizer = 0.25 + 0.75 * body.total() / mean_length
+        score = 0.0
+        for term in terms:
+            frequency = 8 * (term in path_terms) + 4 * (term in title_terms) + body[term] / normalizer
+            score += weights[term] * inverse_frequency[term] * frequency / (1 + frequency)
+        scores.append(score)
+    return tuple(scores)
+
+
 def research_document_catalogue(
-    corpus: PublicCorpus, *, question: str = "", context: tuple[str, ...] = ()
+    corpus: PublicCorpus,
+    *,
+    question: str = "",
+    context: tuple[str, ...] = (),
+    ranking_version: Literal[1, 2] = 1,
 ) -> tuple[dict[str, str], ...]:
     """Rank exact references and numeric targets before matching authored unit structure and lexical terms.
 
     Optional section_match is bounded, sampled heading metadata, never read body
     evidence. Source selection and the delivered-plan acquisition gate remain separate.
+    Version 1 preserves the original lexical score; version 2 normalizes frequency
+    and length without changing stronger selection tiers or no-query authored order.
     """
+    if type(ranking_version) is not int or ranking_version not in (1, 2):
+        msg = "research_ranking_version"
+        raise ValueError(msg)
     exact_question = set(research_document_matches(corpus, (question,)))
     exact_context = set(research_document_matches(corpus, context))
     question_terms, context_terms = retrieval_terms(question), retrieval_terms(" ".join(context))
@@ -647,15 +713,15 @@ def research_document_catalogue(
     kickoff = _research_kickoff(question)
     if kickoff:
         question_terms |= frozenset({"roadmap", "milestone", "milestones"})
-    ranked: list[tuple[int, int, int, int, str, dict[str, str]]] = []
-    for document, text in zip(corpus.manifest.documents, corpus.texts, strict=True):
+    normalized_scores = (
+        _research_normalized_scores(corpus, question_terms, context_terms)
+        if ranking_version == _RESEARCH_NORMALIZED_RANKING_VERSION and (question or context)
+        else ()
+    )
+    ranked: list[tuple[int, int, int, float, str, dict[str, str]]] = []
+    for index, (document, text) in enumerate(zip(corpus.manifest.documents, corpus.texts, strict=True)):
         title = _research_title(document, text)
         source_id = f"doc:{document.path}"
-        path_terms, title_terms, content_terms = (
-            retrieval_terms(document.path),
-            retrieval_terms(title),
-            retrieval_terms(text),
-        )
         route = kickoff and document.path in {"ROADMAP.md", "docs/roadmap.md"}
         exact = 3 if source_id in exact_question else 2 if source_id in exact_context else int(route)
         section_matches = (
@@ -675,14 +741,22 @@ def research_document_catalogue(
         structural_matches, section_match = (
             _research_section_match(text, question) if question and document.path.endswith(".md") else (0, "")
         )
-        score = (
-            24 * len(question_terms & path_terms)
-            + 12 * len(question_terms & title_terms)
-            + 3 * len(question_terms & content_terms)
-            + 4 * len(context_terms & path_terms)
-            + 2 * len(context_terms & title_terms)
-            + len(context_terms & content_terms)
-        )
+        if normalized_scores:
+            score = normalized_scores[index]
+        else:
+            path_terms, title_terms, content_terms = (
+                retrieval_terms(document.path),
+                retrieval_terms(title),
+                retrieval_terms(text),
+            )
+            score = (
+                24 * len(question_terms & path_terms)
+                + 12 * len(question_terms & title_terms)
+                + 3 * len(question_terms & content_terms)
+                + 4 * len(context_terms & path_terms)
+                + 2 * len(context_terms & title_terms)
+                + len(context_terms & content_terms)
+            )
         metadata = {"id": source_id, "title": title, "url": document.url}
         if section_match:
             metadata["section_match"] = section_match
@@ -1281,7 +1355,12 @@ def _research_focused_selection(
 
 
 def _research_excerpt(
-    text: str, document: CorpusDocument, question: str, focus: str, reference_labels: tuple[str, ...] = ()
+    text: str,
+    document: CorpusDocument,
+    question: str,
+    focus: str,
+    reference_labels: tuple[str, ...] = (),
+    projection_mode: Literal["balanced", "complete_quotes"] | None = None,
 ) -> tuple[int, str] | None:
     """Select bounded contiguous evidence with its section owner, or refuse incomplete lineage."""
     if not document.path.endswith(".md"):
@@ -1304,12 +1383,15 @@ def _research_excerpt(
     if selected is not None and (
         len(selected_headings) > 1
         or _research_overview(query)
-        or research_projection_mode(question) == "complete_quotes"
+        or (projection_mode if projection_mode is not None else research_projection_mode(question)) == "complete_quotes"
     ):
         limit = MAX_DOCUMENT_SOURCE_CHARS
     if selected_headings:
         last = selected_headings[-1]
-        end = next((offset for offset, level, _, _ in headings if offset > last[0] and level <= last[1]), end)
+        end = next(
+            (offset for offset, level, _, _ in headings if offset > last[0] and level <= last[1]),
+            end,
+        )
         if not explicit:
             ancestor = _research_ancestor_start(text, headings, selected_headings[0], end=end, limit=limit)
             if ancestor is None:
@@ -1331,6 +1413,7 @@ def read_research_document(
     question: str,
     focus: str = "",
     reference_labels: tuple[str, ...] = (),
+    projection_mode: Literal["balanced", "complete_quotes"] | None = None,
 ) -> SourceReadResult:
     """Read an admitted identity with exact provenance and optional observed anchor-label selection.
 
@@ -1339,19 +1422,30 @@ def read_research_document(
     Explicit quotation requests share the existing 16k selected Markdown scope
     ceiling; ordinary reads and non-Markdown evidence retain their 4k ceiling.
     """
+    if projection_mode not in {None, "balanced", "complete_quotes"}:
+        msg = "research_projection_mode"
+        raise ValueError(msg)
     for document, text in zip(corpus.manifest.documents, corpus.texts, strict=True):
         if source_id != f"doc:{document.path}":
             continue
         title = _research_title(document, text)
-        selection = _research_excerpt(text, document, question, focus, reference_labels)
+        selection = _research_excerpt(text, document, question, focus, reference_labels, projection_mode)
         if selection is None:
             return SourceReadResult(
-                id=source_id, title=title, url=document.url, status="refused", reason="research_document_context"
+                id=source_id,
+                title=title,
+                url=document.url,
+                status="refused",
+                reason="research_document_context",
             )
         start, excerpt = selection
         if not excerpt.strip():
             return SourceReadResult(
-                id=source_id, title=title, url=document.url, status="refused", reason="research_document_empty"
+                id=source_id,
+                title=title,
+                url=document.url,
+                status="refused",
+                reason="research_document_empty",
             )
         return SourceReadResult(
             id=source_id,

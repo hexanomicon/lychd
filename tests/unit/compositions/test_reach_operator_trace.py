@@ -12,6 +12,7 @@ import pytest
 from pydantic import ValidationError
 from scripts import reach_worker as worker
 
+from lychd.compositions.reach.documents_workflow import DocumentsRefused
 from lychd.compositions.reach.operator_model_wire import OperatorConversationProfile, OperatorModelResponse
 from lychd.compositions.reach.operator_trace import ReachTraceEvent, TraceCorrelation, trace_bytes
 from lychd.compositions.reach.research_wire import OperatorResearchRequest, OperatorResearchResponse, ResearchOptions
@@ -334,3 +335,63 @@ def test_adoption_trace_reads_separate_guard_dialects_without_claim_clauses(
     assert event.verdict is None
     assert event.issue_codes is None
     assert "current_runtime_claims" not in event.model_dump()
+
+
+class BudgetSubclass(DocumentsRefused):
+    pass
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (DocumentsRefused("conversation_budget"), "budget"),
+        (ValueError("conversation_budget"), "value_error"),
+        (BudgetSubclass("conversation_budget"), "value_error"),
+        (DocumentsRefused(CANARY), "value_error"),
+        (DocumentsRefused("conversation_budget", CANARY), "value_error"),
+        (DocumentsRefused(None), "value_error"),
+    ],
+)
+def test_only_exact_core_budget_refusal_gets_budget_trace(error: Exception, expected: str) -> None:
+    assert worker._trace_failure_code(error) == expected  # pyright: ignore[reportPrivateUsage] - closed Core diagnostic boundary
+
+
+@pytest.mark.asyncio
+async def test_trusted_budget_failure_records_no_exception_body(monkeypatch: pytest.MonkeyPatch) -> None:
+    records: list[ReachTraceEvent] = []
+
+    async def fail(*_args: Any, **_kwargs: Any) -> None:
+        message = "conversation_budget"
+        raise DocumentsRefused(message)
+
+    monkeypatch.setattr(worker, "perform_run", fail)
+    runtime = worker.build_runtime(
+        make_policy(), make_corpus(), started_at=STARTED, clock=lambda: NOW, trace=records.append
+    )
+    try:
+        result = await runtime.process(make_request().model_copy(update={"request_id": str(uuid4())}))
+        assert result.reason == "run_failed"
+        terminal = next(event for event in records if event.name == "run_finished")
+        assert terminal.code == "budget"
+        assert "conversation_budget" not in b"".join(trace_bytes(event) for event in records).decode()
+    finally:
+        await runtime.aclose()
+
+
+@pytest.mark.parametrize("field", ["research_plan_text_chars", "research_plan_focus_chars"])
+def test_plan_validation_counts_are_optional_bounded_and_body_free(field: str) -> None:
+    event = ReachTraceEvent.model_validate(
+        {"producer": "core", "name": "research_plan", "status": "failed", "operation": "validation", field: 501}
+    )
+    assert getattr(ReachTraceEvent.model_validate_json(trace_bytes(event)), field) == 501
+    assert len(trace_bytes(event)) <= 2048
+    for invalid in (-1, 49_153, CANARY):
+        with pytest.raises(ValidationError):
+            ReachTraceEvent.model_validate({"producer": "core", "name": "research_plan", field: invalid})
+    assert field not in ReachTraceEvent(producer="core", name="research_plan").model_dump(exclude_none=True)
+
+
+def test_provider_observation_accepts_only_finite_categories() -> None:
+    for field in ("completion_finish_reason", "content_state"):
+        with pytest.raises(ValidationError):
+            ReachTraceEvent.model_validate({"producer": "host", "name": "model_call", field: CANARY})

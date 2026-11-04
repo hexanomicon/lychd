@@ -107,6 +107,24 @@ response. The character governor and usage limit are therefore independent bound
 cross-provider token equivalence or a universal pre-request fence. Pydantic AI's separate request
 count ceiling remains in force.
 
+### Composition-owned history projection
+
+A Composition may version a transient projection of already admitted history separately from the
+orchestrator's whole settled groups and indivisible continuation. It may offer a bounded catalogue
+of complete semantic units, such as whole paragraphs or an intact list, quotation or fenced block.
+Only the host selects unit boundaries. A model may select exact offered handles; it cannot supply
+free offsets, replacement text or a summary as a retained unit. Offers preserve attribution and
+explicit omissions while avoiding repeated copies of a parent body.
+
+Admission binds each selected unit to the complete parent identity/content digest and its exact
+character and encoded-byte range. The trusted host retains that proof even when the model receives
+only attributed exact bytes, an opaque handle and a partial-message indication. Selection is against
+the exact offer map that survived input-budget trimming. Unknown, overlapping or stale units refuse;
+a whole parent and its subunit cannot both be selected. Independent query, anchor and reference
+obligations remain unchanged, and mandatory selected units either fit in full or refuse. This grants
+no new history acquisition, source authority or durable memory. A changed projection contract binds
+its profile, requirement identity and checkpoint revision rather than reinterpreting a prior wait.
+
 ### Explicit Archive projection
 
 The opt-in `bridge_chat@3` public-note profile resolves an exact durable Archive recall receipt

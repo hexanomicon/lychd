@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import timedelta
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from uuid import uuid4
 
 import pytest
@@ -26,7 +26,10 @@ from lychd.compositions.reach.checkback import (
     RUNTIME_GUARD_VERSION,
     CheckbackEnvelope,
     InputBudget,
+    InvalidCheckbackOutputError,
     checkback_reserve,
+    checkback_retry_control,
+    checkback_retry_digest,
     checkback_spec,
     effective_checkback,
     model_input_cost,
@@ -249,6 +252,228 @@ def test_coverage_accepts_exact_excerpts_inside_nested_markdown(text: str, quote
             envelope.parse(canonical_json(value), candidate)
 
 
+def formatting_coverage_case(text: str, quote: str, *, public: bool) -> tuple[CheckbackEnvelope, str, str]:
+    context: dict[str, Any] = {"request_goals": ["Describe the opening method."]}
+    if public:
+        context.update(
+            {
+                "research_phase": "synthesis",
+                "evidence_scope": PUBLIC_TEXT_SCOPE,
+                "research_sources": [{"id": "doc:docs/graph.md", "status": "ok", "text": "Public project text."}],
+            }
+        )
+    envelope = CheckbackEnvelope.prepare(make_request(action="converse"), canonical_json(context))
+    candidate = canonical_json({"kind": "answer", "text": text})
+    output = canonical_json(
+        {
+            "verdict": "accept",
+            "issues": [],
+            "coverage": [{"goal": 0, "status": "complete", "answer_quote": quote}],
+            **({"current_runtime_claims": []} if public else {}),
+        }
+    )
+    return envelope, candidate, output
+
+
+@pytest.mark.parametrize("public", [False, True])
+@pytest.mark.parametrize(
+    ("text", "quote"),
+    [
+        (
+            "**00 `__new__` (2\N{EN DASH}8 Nov):** *Let there be light.*",
+            "00 `__new__` (2\N{EN DASH}8 Nov): Let there be light.",
+        ),
+        (
+            "**00 `__new__` (2\N{EN DASH}8 Nov):** *Let there be light.*",
+            "00 __new__ (2\N{EN DASH}8 Nov): Let there be light.",
+        ),
+        ("The **first method** is __new__.", "The first method is __new__."),
+        ("The *first method* is __new__.", "The first method is __new__."),
+        ("Use `__new__` for the first method.", "Use __new__ for the first method."),
+        ("Use ``__new__`` for the first method.", "Use __new__ for the first method."),
+        ("Use ``a ` b`` for the first method.", "Use a ` b for the first method."),
+        ("The **first *method* uses `__new__`** now.", "The first method uses __new__ now."),
+        ("The *first **method** uses ``__new__``* now.", "The first method uses __new__ now."),
+        ("**First   method:**\nUse `__new__` now.", "First method: Use __new__ now."),
+        ("Keep `a *b* c` intact.", "a *b* c"),
+    ],
+)
+def test_coverage_recognizes_only_the_closed_presentation_subset(text: str, quote: str, *, public: bool) -> None:
+    envelope, candidate, output = formatting_coverage_case(text, quote, public=public)
+    decision = envelope.parse(output, candidate)
+    assert decision.verdict == "accept"
+    assert decision.coverage[0].answer_quote == quote
+
+
+@pytest.mark.parametrize("public", [False, True])
+@pytest.mark.parametrize(
+    ("text", "quote"),
+    [
+        ("Compute a * b * c now.", "Compute a b c now."),
+        (r"The a \*b\* c method is ready.", "The a b c method is ready."),
+        (r"The **first** method uses a \ path.", r"The first method uses a \ path."),
+        ("The `a *b* c` method is ready.", "The a b c method is ready."),
+        ("The ``a *b* c`` method is ready.", "The a b c method is ready."),
+        ("The **first method is ready.", "The first method is ready."),
+        ("The first method** is ready.", "The first method is ready."),
+        ("The *first method is ready.", "The first method is ready."),
+        ("The `first method is ready.", "The first method is ready."),
+        ("The ``first method` is ready.", "The first method is ready."),
+        ("The **first *method **uses** code* now**.", "The first method uses code now."),
+        ("The **first *method** uses* code.", "The first method uses code."),
+        ("The ***first method*** is ready.", "The first method is ready."),
+        ("The ****first method**** is ready.", "The first method is ready."),
+        ("The a*b*c method is ready.", "The abc method is ready."),
+        ("The ** first method** is ready.", "The first method is ready."),
+        ("The **first method ** is ready.", "The first method is ready."),
+        ("Steps: * First method.", "Steps: First method."),
+        ("The ```first method``` is ready.", "The first method is ready."),
+        ("The ````first method```` is ready.", "The first method is ready."),
+        ("The ~~first method~~ is ready.", "The first method is ready."),
+        ("Before\n```\n**first method**\n```\nAfter", "Before first method After"),
+        ("Before\n~~~\n**first method**\n~~~\nAfter", "Before first method After"),
+        ("Before\n```\n**first method**\nAfter", "Before first method After"),
+        ("Before\n~~~\n**first method**\nAfter", "Before first method After"),
+        ("```text\n**first**\nThe *second* method.", "The second method."),
+    ],
+)
+def test_coverage_keeps_unsupported_or_ambiguous_presentation_literal(text: str, quote: str, *, public: bool) -> None:
+    envelope, candidate, exact_output = formatting_coverage_case(text, text, public=public)
+    assert envelope.parse(exact_output, candidate).verdict == "accept"
+    _, _, changed_output = formatting_coverage_case(text, quote, public=public)
+    with pytest.raises(ValueError, match="conversation_checkback_coverage"):
+        envelope.parse(changed_output, candidate)
+
+
+@pytest.mark.parametrize("public", [False, True])
+@pytest.mark.parametrize("fence", ["```", "~~~"])
+@pytest.mark.parametrize(
+    "indent",
+    [
+        "    ",
+        "\t",
+        " \t",
+        "  \t",
+        "   \t",
+        "\N{NO-BREAK SPACE}",
+        "\N{EM SPACE}",
+        " \N{NO-BREAK SPACE}",
+    ],
+)
+def test_coverage_indented_pseudo_closer_keeps_the_remaining_fence_body_literal(
+    fence: str, indent: str, *, public: bool
+) -> None:
+    text = f"{fence}\n{indent}{fence}\nThe *first* method."
+    envelope, candidate, exact_output = formatting_coverage_case(text, text, public=public)
+    assert envelope.parse(exact_output, candidate).verdict == "accept"
+    _, _, changed_output = formatting_coverage_case(text, "The first method.", public=public)
+    with pytest.raises(ValueError, match="conversation_checkback_coverage"):
+        envelope.parse(changed_output, candidate)
+
+
+@pytest.mark.parametrize("public", [False, True])
+@pytest.mark.parametrize("indent", ["    ", "\t", " \t", "  \t", "   \t"])
+def test_coverage_indented_code_line_preserves_literal_emphasis_stars(indent: str, *, public: bool) -> None:
+    text = f"{indent}The *first* method."
+    envelope, candidate, exact_output = formatting_coverage_case(text, text, public=public)
+    assert envelope.parse(exact_output, candidate).verdict == "accept"
+    _, _, changed_output = formatting_coverage_case(text, "The first method.", public=public)
+    with pytest.raises(ValueError, match="conversation_checkback_coverage"):
+        envelope.parse(changed_output, candidate)
+
+
+@pytest.mark.parametrize("public", [False, True])
+@pytest.mark.parametrize("fence", ["```", "~~~"])
+@pytest.mark.parametrize("indent", ["", " ", "  ", "   "])
+def test_coverage_valid_fence_closers_allow_presentation_on_following_lines(
+    fence: str, indent: str, *, public: bool
+) -> None:
+    text = f"{fence}\nLiteral fenced text.\n{indent}{fence}\nThe *first* method."
+    envelope, candidate, output = formatting_coverage_case(text, "The first method.", public=public)
+    assert envelope.parse(output, candidate).verdict == "accept"
+
+
+@pytest.mark.parametrize("public", [False, True])
+@pytest.mark.parametrize("indent", ["", " ", "  ", "   "])
+def test_coverage_noncode_ascii_indentation_keeps_supported_emphasis(indent: str, *, public: bool) -> None:
+    text = f"{indent}The *first* method."
+    envelope, candidate, output = formatting_coverage_case(text, "The first method.", public=public)
+    assert envelope.parse(output, candidate).verdict == "accept"
+
+
+@pytest.mark.parametrize("public", [False, True])
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "00 __enter__ (2\N{EN DASH}8 Nov): Let there be light.",
+        "00 new (2\N{EN DASH}8 Nov): Let there be light.",
+        "01 __new__ (2\N{EN DASH}8 Nov): Let there be light.",
+        "00 __new__ (2-8 Nov): Let there be light.",
+        "00 __new__ (2\N{EN DASH}8 Nov); Let there be light.",
+        "00 __new__ (2\N{EN DASH}8 Nov): Let there be darkness.",
+        "00 __new__ (2\N{EN DASH}8 Nov): let there be light.",
+        "00 __new__ (2\N{EN DASH}8 Nov): Let there be light!",
+    ],
+)
+def test_coverage_presentation_never_changes_words_identifiers_digits_punctuation_or_case(
+    quote: str, *, public: bool
+) -> None:
+    text = "**00 `__new__` (2\N{EN DASH}8 Nov):** *Let there be light.*"
+    envelope, candidate, output = formatting_coverage_case(text, quote, public=public)
+    with pytest.raises(ValueError, match="conversation_checkback_coverage"):
+        envelope.parse(output, candidate)
+
+
+@pytest.mark.parametrize("public", [False, True])
+@pytest.mark.parametrize(
+    ("text", "quote"),
+    [
+        ("**Café** is ready.", "Cafe\N{COMBINING ACUTE ACCENT} is ready."),
+        ("**First method.** Intervening words. *Second method.*", "First method. Second method."),
+    ],
+)
+def test_coverage_keeps_unicode_and_contiguous_candidate_wording_exact(text: str, quote: str, *, public: bool) -> None:
+    envelope, candidate, output = formatting_coverage_case(text, quote, public=public)
+    with pytest.raises(ValueError, match="conversation_checkback_coverage"):
+        envelope.parse(output, candidate)
+
+
+@pytest.mark.parametrize("public", [False, True])
+def test_formatting_cannot_admit_a_phrase_found_only_in_request_history_or_goals(*, public: bool) -> None:
+    foreign = "Let there be light."
+    request = anchored_request(question=foreign, text=foreign)
+    assert request.reply_anchor is not None
+    context: dict[str, Any] = {
+        "request_goals": [foreign],
+        "question": foreign,
+        "recent_messages": [request.reply_anchor.model_dump(mode="json")],
+    }
+    if public:
+        context.update(
+            {
+                "research_phase": "synthesis",
+                "evidence_scope": PUBLIC_TEXT_SCOPE,
+                "research_sources": [{"id": "doc:docs/graph.md", "status": "ok", "text": "Public project text."}],
+            }
+        )
+    envelope = CheckbackEnvelope.prepare(request, canonical_json(context))
+    candidate = canonical_json({"kind": "answer", "text": "**The first method** creates an object."})
+    _, _, output = formatting_coverage_case("unused", f"*{foreign}*", public=public)
+    with pytest.raises(ValueError, match="conversation_checkback_coverage"):
+        envelope.parse(output, candidate)
+
+
+def test_coverage_presentation_does_not_normalize_runtime_claim_observations() -> None:
+    text = "The **first method** is ready."
+    quote = "The first method is ready."
+    envelope, candidate, output = formatting_coverage_case(text, quote, public=True)
+    assert envelope.parse(output, candidate).verdict == "accept"
+    changed = json.loads(output)
+    changed["current_runtime_claims"] = [quote]
+    with pytest.raises(ValueError, match="conversation_checkback_runtime_claims"):
+        envelope.parse(canonical_json(changed), candidate)
+
+
 def test_exact_frozen_goal_names_are_host_mapped_to_closed_indices() -> None:
     envelope = CheckbackEnvelope.prepare(
         make_request(action="converse"), canonical_json({"request_goals": ["Name today", "Name the outlook"]})
@@ -401,6 +626,8 @@ async def test_native_terminal_checkback_is_bounded_and_settles_once(
         assert "Original answer." not in session.turns[0].content or expected == "Original answer."
         checks = [event for event in events if event.name == "checkback" and event.status == "ok"]
         assert tuple(event.verdict for event in checks) == verdicts
+        assert all(event.review_attempt is None for event in checks)
+        assert all("retry_ordinal" not in json.loads(trace_bytes(event)) for event in checks)
         assert len({event.evidence_digest for event in checks}) == 1
         assert len({event.step_id for event in checks}) == 1
         if count == 4:
@@ -543,7 +770,13 @@ async def test_research_repair_reuses_identical_source_projection_without_new_re
     async def relay(operation: str, payload: str) -> str:
         if operation == "probe":
             return canonical_json({"healthy": True, "model_ids": [binding.model_id]})
-        expected_phase: tuple[DecisionVariant, ...] = ("planning", "synthesis", "checkback", "synthesis", "checkback")
+        expected_phase: tuple[DecisionVariant, ...] = (
+            "planning",
+            "synthesis",
+            "checkback_public",
+            "synthesis",
+            "checkback_public",
+        )
         body = assert_generation_cost(binding, payload, phase=expected_phase[len(prompts)])
         prompt = json.loads(body["messages"][-1]["content"])
         prompts.append(prompt)
@@ -1575,3 +1808,570 @@ async def test_extracted_runtime_claim_with_raw_needs_evidence_uses_only_one_sam
         assert runtime.substrate.leases.active() == []
     finally:
         await runtime.aclose()
+
+
+def retry_profile(**changes: Any) -> OperatorConversationProfile:
+    return OperatorConversationProfile.model_validate_json(
+        canonical_json(
+            {
+                **profile().model_dump(mode="json"),
+                "adaptive_context": True,
+                "checkback": True,
+                "checkback_invalid_retry": True,
+                **changes,
+            }
+        )
+    )
+
+
+def test_invalid_review_retry_is_explicit_digest_bound_and_strict() -> None:
+    original = profile()
+    omitted = OperatorConversationProfile.model_validate_json(
+        canonical_json(original.model_dump(mode="json", exclude={"checkback_invalid_retry"}))
+    )
+    explicit = OperatorConversationProfile.model_validate_json(canonical_json(original.model_dump(mode="json")))
+    assert omitted.digest == explicit.digest == original.digest
+    assert retry_profile().digest != retry_profile(checkback_invalid_retry=False).digest
+    with pytest.raises(ValidationError, match="checkback_invalid_retry_requires_checkback"):
+        retry_profile(checkback=False)
+    for value in (0, 1, "true", None):
+        with pytest.raises(ValidationError):
+            retry_profile(checkback_invalid_retry=value)
+    assert (
+        checkback_spec(retry_profile()).instructions
+        == checkback_spec(retry_profile(checkback_invalid_retry=False)).instructions
+    )
+
+
+@pytest.mark.parametrize("failure", ["json", "schema", "coverage"])
+def test_only_model_review_shape_and_exact_coverage_binding_are_typed_failures(failure: str) -> None:
+    envelope = CheckbackEnvelope.prepare(
+        make_request(action="converse"), canonical_json({"request_goals": ["Name the method"]})
+    )
+    candidate = canonical_json(
+        {"kind": "answer", "text": "The author\N{RIGHT SINGLE QUOTATION MARK}s method is exact."}
+    )
+    review: dict[str, Any] = {
+        "verdict": "accept",
+        "issues": [],
+        "coverage": [
+            {"goal": 0, "status": "complete", "answer_quote": "The author\N{RIGHT SINGLE QUOTATION MARK}s method"}
+        ],
+    }
+    if failure == "coverage":
+        review["coverage"][0]["answer_quote"] = "The author's method"
+    output = "{" if failure == "json" else canonical_json(review | ({"foreign": True} if failure == "schema" else {}))
+    with pytest.raises(InvalidCheckbackOutputError) as caught:
+        envelope.parse(output, candidate, classify_invalid=True)
+    assert caught.value.reason == ("coverage_binding" if failure == "coverage" else "review_shape")
+    correct = envelope.parse(
+        canonical_json(
+            {
+                "verdict": "accept",
+                "issues": [],
+                "coverage": [
+                    {
+                        "goal": 0,
+                        "status": "complete",
+                        "answer_quote": "The author\N{RIGHT SINGLE QUOTATION MARK}s method",
+                    }
+                ],
+            }
+        ),
+        candidate,
+    )
+    assert correct.verdict == "accept"
+
+
+@pytest.mark.parametrize("claims", ["invalid array", [1], ["Foreign assertion."], None])
+def test_runtime_claim_schema_and_excerpt_failures_never_authorize_retry(claims: object) -> None:
+    envelope = CheckbackEnvelope.prepare(
+        make_request(action="converse"),
+        canonical_json({"evidence_scope": PUBLIC_TEXT_SCOPE, "research_phase": "synthesis"}),
+    )
+    candidate = canonical_json({"kind": "answer", "text": "The documentation describes a method."})
+    with pytest.raises(ValueError, match="runtime_claims") as caught:
+        envelope.parse(
+            canonical_json({"verdict": "accept", "issues": [], "current_runtime_claims": claims}),
+            candidate,
+            classify_invalid=True,
+        )
+    assert not isinstance(caught.value, InvalidCheckbackOutputError)
+
+
+@pytest.mark.parametrize("corruption", ["context", "candidate", "goals", "digest"])
+def test_host_envelope_failures_remain_outside_output_retry_classification(corruption: str) -> None:
+    context = (
+        "{" if corruption == "context" else canonical_json({"request_goals": [None] if corruption == "goals" else []})
+    )
+    envelope = CheckbackEnvelope.prepare(make_request(action="converse"), context)
+    if corruption == "digest":
+        envelope = CheckbackEnvelope(context, "bad-host-binding")
+    candidate = "{" if corruption == "candidate" else canonical_json({"kind": "answer", "text": "Bound candidate."})
+    with pytest.raises(ValueError, match=r"Expecting|conversation_") as caught:
+        envelope.parse("{", candidate, classify_invalid=True)
+    assert not isinstance(caught.value, InvalidCheckbackOutputError)
+
+
+@pytest.mark.parametrize("reason", ["review_shape", "coverage_binding"])
+def test_retry_control_changes_only_closed_control_with_exact_small_envelope(
+    reason: Literal["review_shape", "coverage_binding"],
+) -> None:
+    from hashlib import sha256
+
+    envelope = CheckbackEnvelope.prepare(
+        make_request(action="converse"),
+        canonical_json({"request_goals": ["Explain the method"]}),
+        persona_name="Example",
+    )
+    candidate = canonical_json({"kind": "answer", "text": "The method\N{RIGHT SINGLE QUOTATION MARK}s exact purpose."})
+    normal = json.loads(envelope.prompt(candidate))
+    retried = json.loads(envelope.prompt(candidate, retry_reason=reason))
+    assert retried.pop("review_retry") == checkback_retry_control(reason)
+    assert retried == normal
+    serialized = canonical_json({"review_retry": checkback_retry_control(reason)})
+    assert len(serialized) <= 160
+    assert (
+        checkback_retry_digest(reason) == sha256(canonical_json(checkback_retry_control(reason)).encode()).hexdigest()
+    )
+    decision = envelope.parse(
+        canonical_json(
+            {"verdict": "revise", "issues": ["missing_component"], "coverage": [{"goal": 0, "status": "missing"}]}
+        ),
+        candidate,
+    )
+    with pytest.raises(ValueError, match="conversation_checkback_retry"):
+        envelope.prompt(candidate, correction=decision, retry_reason=reason)
+
+
+@pytest.mark.parametrize("axis", ["input_chars", "payload_bytes", "frame_bytes"])
+def test_retry_reserve_accounts_exact_added_control_on_all_axes(axis: str) -> None:
+    binding = retry_profile(max_input_chars=24_000)
+    disabled = retry_profile(checkback_invalid_retry=False, max_input_chars=24_000)
+    envelope = CheckbackEnvelope.prepare(make_request(action="converse"), "{}")
+    candidate = canonical_json(
+        {"kind": "answer", "text": 'An author\N{RIGHT SINGLE QUOTATION MARK}s "漢" method \\ stays exact.'}
+    )
+    spec = checkback_spec(binding)
+    normal = model_input_cost(binding, spec.instructions, envelope.prompt(candidate), phase="checkback")
+    retry = model_input_cost(
+        binding, spec.instructions, envelope.prompt(candidate, retry_reason="coverage_binding"), phase="checkback"
+    )
+    component = canonical_json({"review_retry": checkback_retry_control("coverage_binding")})[1:-1] + ","
+    once = canonical_json(component)[1:-1]
+    twice = canonical_json(once)[1:-1]
+    expected = {"input_chars": len(component), "payload_bytes": len(once.encode()), "frame_bytes": len(twice.encode())}
+    assert getattr(retry, axis) - getattr(normal, axis) == expected[axis]
+    instructions = "Fixed formation recipe"
+    reserved = checkback_reserve(binding, instructions, phase="conversation", correction_phase="terminal_correction")
+    legacy = checkback_reserve(disabled, instructions, phase="conversation", correction_phase="terminal_correction")
+    review_recipe = model_input_cost(binding, spec.instructions, "", phase="checkback")
+    repair_recipe = model_input_cost(
+        binding, checkback_spec(binding, correction=True).instructions, "", phase="terminal_correction"
+    )
+    increase = max(getattr(review_recipe, axis) + expected[axis], getattr(repair_recipe, axis)) - max(
+        getattr(review_recipe, axis), getattr(repair_recipe, axis)
+    )
+    assert getattr(reserved, axis) - getattr(legacy, axis) == increase
+
+
+def test_actual_retry_budget_rechecked_without_trimming_frozen_context() -> None:
+    binding = retry_profile()
+    envelope = CheckbackEnvelope.prepare(make_request(action="converse"), "{}")
+    candidate = canonical_json({"kind": "answer", "text": "A short exact answer."})
+    spec = checkback_spec(binding)
+    normal = envelope.prompt(candidate)
+    cap = model_input_cost(binding, spec.instructions, normal, phase="checkback").input_chars
+    binding = retry_profile(max_input_chars=cap)
+    validate_checkback_budget(binding, spec, normal, phase="checkback")
+    with pytest.raises(DocumentsRefused, match="conversation_budget"):
+        validate_checkback_budget(
+            binding, spec, envelope.prompt(candidate, retry_reason="coverage_binding"), phase="checkback"
+        )
+    assert envelope.context_json == "{}"
+
+
+@pytest.mark.parametrize(
+    ("reviews", "expected", "candidate_attempts", "retry_ordinals"),
+    [
+        (("malformed", "accept"), "Original answer.", (0, 0), (0, 1)),
+        (("revise", "malformed", "accept"), "Corrected answer.", (0, 1, 1), (0, 0, 1)),
+        (("malformed", "revise", "accept"), "Corrected answer.", (0, 0, 1), (0, 1, 0)),
+        (("malformed", "revise", "malformed"), "", (0, 0, 1), (0, 1, 0)),
+        (("malformed", "malformed"), "", (0, 0), (0, 1)),
+        (("accept",), "Original answer.", (0,), (0,)),
+        (("needs_evidence",), MISSING_EVIDENCE_QUESTION, (0,), (0,)),
+        (("revise", "needs_evidence"), MISSING_EVIDENCE_QUESTION, (0, 1), (0, 0)),
+        (("revise", "revise"), CHECKBACK_CLARIFICATION, (0, 1), (0, 0)),
+    ],
+)
+@pytest.mark.asyncio
+async def test_native_one_malformed_retry_is_shared_across_both_candidate_versions(
+    reviews: tuple[str, ...], expected: str, candidate_attempts: tuple[int, ...], retry_ordinals: tuple[int, ...]
+) -> None:
+    binding = retry_profile()
+    pending = iter(reviews)
+    prompts: list[dict[str, Any]] = []
+    events: list[ReachTraceEvent] = []
+
+    async def relay(operation: str, payload: str) -> str:
+        if operation == "probe":
+            return canonical_json({"healthy": True, "model_ids": [binding.model_id]})
+        body = validate_generation_payload(binding, payload)
+        prompt = json.loads(body["messages"][-1]["content"])
+        prompts.append(prompt)
+        if prompt.get("phase") == "checkback":
+            selected = next(pending)
+            return completion("{" if selected == "malformed" else verdict(selected))
+        text = "Corrected answer." if prompt.get("phase") == "correction" else "Original answer."
+        return completion(canonical_json({"kind": "answer", "text": text}))
+
+    runtime = build_runtime(
+        policy(),
+        make_corpus(),
+        profile=binding,
+        model_relay=relay,
+        started_at=STARTED,
+        clock=lambda: NOW,
+        trace=events.append,
+    )
+    try:
+        with override_allow_model_requests(True):  # noqa: FBT003 - isolated admitted relay
+            result = await runtime.process(
+                make_request(action="converse").model_copy(update={"request_id": str(uuid4())})
+            )
+        assert result.text == expected
+        assert result.status == (
+            "error"
+            if not expected
+            else "clarify"
+            if expected in {CHECKBACK_CLARIFICATION, MISSING_EVIDENCE_QUESTION}
+            else "conversation"
+        )
+        started = [event for event in events if event.name == "checkback" and event.status == "started"]
+        assert tuple(event.attempt for event in started) == candidate_attempts
+        assert tuple(event.review_attempt for event in started) == tuple(range(len(reviews)))
+        assert tuple(event.retry_ordinal for event in started) == retry_ordinals
+        assert len({event.evidence_digest for event in started}) == 1
+        assert len({event.request_digest for event in started}) == 1
+        review_prompts = [prompt for prompt in prompts if prompt.get("phase") == "checkback"]
+        assert len(review_prompts) == len(reviews)
+        assert sum("review_retry" in prompt for prompt in review_prompts) <= 1
+        assert all(prompt["context"] == prompts[0] for prompt in review_prompts)
+        for index, ordinal in enumerate(retry_ordinals):
+            if ordinal:
+                assert review_prompts[index]["candidate"] == review_prompts[index - 1]["candidate"]
+                assert started[index].candidate_digest == started[index - 1].candidate_digest
+                assert started[index].review_retry_digest == checkback_retry_digest("review_shape")
+                assert review_prompts[index]["review_retry"] == checkback_retry_control("review_shape")
+        failed = [event for event in events if event.name == "checkback" and event.status == "failed"]
+        assert len(failed) == reviews.count("malformed")
+        assert all(event.verdict is None for event in failed)
+        assert all(event.invalid_review_reason == "review_shape" for event in failed)
+        assert runtime.substrate.leases.active() == []
+        assert "Original answer." not in b"".join(trace_bytes(event) for event in events).decode()
+        assert all(len(trace_bytes(event)) <= 2048 for event in events)
+    finally:
+        await runtime.aclose()
+
+
+@pytest.mark.parametrize(
+    "failure",
+    ["timeout", "cancelled", "transport", "host_typed", "length", "runtime_type", "runtime_excerpt", "runtime_mixed"],
+)
+@pytest.mark.asyncio
+async def test_enabled_retry_does_not_retry_ineligible_failures(failure: str) -> None:
+    binding = retry_profile()
+    calls = 0
+
+    async def relay(operation: str, payload: str) -> str:
+        nonlocal calls
+        if operation == "probe":
+            return canonical_json({"healthy": True, "model_ids": [binding.model_id]})
+        calls += 1
+        if calls == 1:
+            return completion(canonical_json({"kind": "answer", "text": "Unadopted answer."}))
+        if failure == "timeout":
+            raise TimeoutError
+        if failure == "cancelled":
+            raise asyncio.CancelledError
+        if failure == "transport":
+            raise OSError
+        if failure == "host_typed":
+            reason: Literal["review_shape"] = "review_shape"
+            raise InvalidCheckbackOutputError(reason)
+        if failure == "length":
+            value = json.loads(completion(verdict("accept")))
+            value["choices"][0]["finish_reason"] = "length"
+            return canonical_json(value)
+        return completion(
+            canonical_json(
+                {
+                    "verdict": "accept",
+                    "issues": [],
+                    "current_runtime_claims": "bad" if failure == "runtime_type" else ["Foreign assertion."],
+                    **({"foreign": True} if failure == "runtime_mixed" else {}),
+                }
+            )
+        )
+
+    runtime = build_runtime(
+        policy(), make_corpus(), profile=binding, model_relay=relay, started_at=STARTED, clock=lambda: NOW
+    )
+    try:
+        with override_allow_model_requests(True):  # noqa: FBT003 - isolated admitted relay
+            if failure == "cancelled":
+                with pytest.raises(asyncio.CancelledError):
+                    await runtime.process(
+                        make_request(action="converse").model_copy(update={"request_id": str(uuid4())})
+                    )
+            else:
+                result = await runtime.process(
+                    make_request(action="converse").model_copy(update={"request_id": str(uuid4())})
+                )
+                assert result.status == "error"
+                assert result.text == ""
+        assert calls == 2
+        assert runtime.substrate.leases.active() == []
+    finally:
+        await runtime.aclose()
+
+
+@pytest.mark.parametrize(
+    ("unit", "axis", "limit"), [("漢", "payload_bytes", MAX_MODEL_PAYLOAD_BYTES), ("\\", "frame_bytes", MAX_WIRE_BYTES)]
+)
+def test_retry_actual_encoded_boundary_refuses_without_larger_payload_or_frame_cap(
+    unit: str, axis: str, limit: int
+) -> None:
+    binding = retry_profile(max_input_chars=24_000)
+    spec = checkback_spec(binding)
+    request = make_request(action="converse")
+    candidate = canonical_json({"kind": "answer", "text": "Exact answer."})
+
+    def envelope(count: int) -> CheckbackEnvelope:
+        return CheckbackEnvelope.prepare(request, canonical_json({"visible_text": unit * count}))
+
+    first = model_input_cost(binding, spec.instructions, envelope(1).prompt(candidate), phase="checkback")
+    second = model_input_cost(binding, spec.instructions, envelope(2).prompt(candidate), phase="checkback")
+    count = 1 + (limit - getattr(first, axis)) // (getattr(second, axis) - getattr(first, axis))
+    frozen = envelope(count)
+    original = model_input_cost(binding, spec.instructions, frozen.prompt(candidate), phase="checkback")
+    retried = frozen.prompt(candidate, retry_reason="coverage_binding")
+    assert max(original.excess(binding, InputBudget())) <= 0
+    assert getattr(model_input_cost(binding, spec.instructions, retried, phase="checkback"), axis) > limit
+    validate_checkback_budget(binding, spec, frozen.prompt(candidate), phase="checkback")
+    with pytest.raises(DocumentsRefused, match="conversation_budget"):
+        validate_checkback_budget(binding, spec, retried, phase="checkback")
+
+
+@pytest.mark.asyncio
+async def test_native_retry_preserves_exact_apostrophes_and_frozen_goal_bindings() -> None:
+    binding = retry_profile(request_goals=True, decision_schema_version=4)
+    prompts: list[dict[str, Any]] = []
+    events: list[ReachTraceEvent] = []
+    candidate = "The author\N{RIGHT SINGLE QUOTATION MARK}s method has a defined purpose."
+
+    async def relay(operation: str, payload: str) -> str:
+        if operation == "probe":
+            return canonical_json({"healthy": True, "model_ids": [binding.model_id]})
+        prompt = json.loads(validate_generation_payload(binding, payload)["messages"][-1]["content"])
+        prompts.append(prompt)
+        if prompt.get("phase") == "interpretation":
+            return completion(
+                canonical_json(
+                    {
+                        "version": 1,
+                        "goals": ["Name the method"],
+                        "constraints": [],
+                        "quotation_presentation": "none",
+                        "required_context": [],
+                    }
+                )
+            )
+        if prompt.get("phase") == "checkback":
+            return completion(
+                canonical_json(
+                    {
+                        "verdict": "accept",
+                        "issues": [],
+                        "coverage": [
+                            {
+                                "goal": 0,
+                                "status": "complete",
+                                "answer_quote": "The author\N{RIGHT SINGLE QUOTATION MARK}s method"
+                                if "review_retry" in prompt
+                                else "The author's method",
+                            }
+                        ],
+                    }
+                )
+            )
+        return completion(canonical_json({"kind": "answer", "text": candidate}))
+
+    runtime = build_runtime(
+        policy(),
+        make_corpus(),
+        profile=binding,
+        model_relay=relay,
+        started_at=STARTED,
+        clock=lambda: NOW,
+        trace=events.append,
+    )
+    try:
+        with override_allow_model_requests(True):  # noqa: FBT003 - isolated admitted relay
+            result = await runtime.process(
+                make_request(action="converse").model_copy(update={"request_id": str(uuid4())})
+            )
+        assert result.status == "conversation"
+        assert result.text == candidate
+        reviews = [prompt for prompt in prompts if prompt.get("phase") == "checkback"]
+        assert len(reviews) == 2
+        retried = dict(reviews[1])
+        assert retried.pop("review_retry") == checkback_retry_control("coverage_binding")
+        assert retried == reviews[0]
+        settled = [event for event in events if event.name == "checkback" and event.status in {"ok", "failed"}]
+        assert tuple(event.status for event in settled) == ("failed", "ok")
+        assert tuple(event.review_attempt for event in settled) == (0, 1)
+        assert len({event.candidate_digest for event in settled}) == 1
+        assert settled[0].verdict is None
+        assert settled[0].invalid_review_reason == "coverage_binding"
+        assert settled[1].review_retry_digest == checkback_retry_digest("coverage_binding")
+    finally:
+        await runtime.aclose()
+
+
+def test_opted_in_review_observation_has_bounded_metadata_without_hidden_capture_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+
+    from lychd.compositions.reach import conversation_workflow as workflow
+
+    request = make_request(action="converse").model_copy(update={"request_id": str(uuid4())})
+    events: list[ReachTraceEvent] = []
+    context = SimpleNamespace(
+        deps=SimpleNamespace(profile=retry_profile(), trace=events.append),
+        state=SimpleNamespace(envelope=SimpleNamespace(request=request), run_id=str(uuid4())),
+    )
+
+    # Expose a malformed observation at its construction boundary, before best-effort suppression.
+    def expose_capture(*_errors: type[BaseException]) -> nullcontext[None]:
+        return nullcontext()
+
+    monkeypatch.setattr(workflow, "suppress", expose_capture)
+    observe = workflow._checkback_trace  # pyright: ignore[reportPrivateUsage] - focused trace construction boundary
+    observe(
+        cast("Any", context),
+        CheckbackEnvelope.prepare(request, "{}"),
+        canonical_json({"kind": "answer", "text": "Exact candidate."}),
+        name="checkback",
+        status="started",
+        attempt=0,
+        review_attempt=0,
+    )
+    assert len(events) == 1
+    assert events[0].review_attempt == 0
+    assert events[0].retry_ordinal == 0
+
+
+@pytest.mark.parametrize(
+    "general_failure",
+    ["foreign_field", "invalid_coverage", "wrong_goal", "foreign_quote", "invalid_verdict", "inconsistent_verdict"],
+)
+@pytest.mark.parametrize(
+    "runtime_failure", ["foreign", "duplicate", "missing", "null", "array_type", "item_type", "count", "chars", "utf8"]
+)
+def test_runtime_field_failures_precede_other_review_shape_failures(general_failure: str, runtime_failure: str) -> None:
+    context = canonical_json(
+        {"research_phase": "synthesis", "evidence_scope": PUBLIC_TEXT_SCOPE, "request_goals": ["Explain the method"]}
+    )
+    envelope = CheckbackEnvelope.prepare(make_request(action="converse"), context)
+    clauses = ["Documented method.", "One.", "Two.", "Three.", "Four.", "x" * 241, "漢" * 180]
+    candidate = canonical_json({"kind": "answer", "text": " ".join(clauses)})
+    raw: dict[str, Any] = {
+        "verdict": "accept",
+        "issues": [],
+        "coverage": [{"goal": 0, "status": "complete", "answer_quote": "Documented method."}],
+        "current_runtime_claims": [],
+    }
+    if general_failure == "foreign_field":
+        raw["foreign"] = True
+    elif general_failure == "invalid_coverage":
+        raw["coverage"] = "not an array"
+    elif general_failure == "wrong_goal":
+        raw["coverage"][0]["goal"] = 1
+    elif general_failure == "foreign_quote":
+        raw["coverage"][0]["answer_quote"] = "Foreign coverage excerpt."
+    elif general_failure == "invalid_verdict":
+        raw["verdict"] = "unlisted"
+    else:
+        raw["issues"] = ["unsupported_claim"]
+    if runtime_failure == "missing":
+        raw.pop("current_runtime_claims")
+    else:
+        raw["current_runtime_claims"] = {
+            "foreign": ["Foreign assertion."],
+            "duplicate": [clauses[0], clauses[0]],
+            "null": None,
+            "array_type": clauses[0],
+            "item_type": [1],
+            "count": clauses[:5],
+            "chars": [clauses[5]],
+            "utf8": [clauses[6]],
+        }[runtime_failure]
+    with pytest.raises(ValueError, match="conversation_checkback_runtime_claims") as caught:
+        envelope.parse(canonical_json(raw), candidate, classify_invalid=True)
+    assert not isinstance(caught.value, InvalidCheckbackOutputError)
+
+
+@pytest.mark.parametrize("output", ["{", "not JSON"])
+def test_malformed_json_still_has_only_the_closed_shape_recovery(output: str) -> None:
+    envelope = CheckbackEnvelope.prepare(
+        make_request(action="converse"),
+        canonical_json({"research_phase": "synthesis", "evidence_scope": PUBLIC_TEXT_SCOPE}),
+    )
+    with pytest.raises(InvalidCheckbackOutputError) as caught:
+        envelope.parse(output, canonical_json({"kind": "answer", "text": "Documented method."}), classify_invalid=True)
+    assert caught.value.reason == "review_shape"
+
+
+def test_direct_parser_preserves_general_schema_failure_order_without_opt_in() -> None:
+    envelope = CheckbackEnvelope.prepare(
+        make_request(action="converse"),
+        canonical_json({"research_phase": "synthesis", "evidence_scope": PUBLIC_TEXT_SCOPE}),
+    )
+    output = canonical_json(
+        {"verdict": "accept", "issues": [], "current_runtime_claims": ["Foreign assertion."], "foreign": True}
+    )
+    candidate = canonical_json({"kind": "answer", "text": "Documented method."})
+    with pytest.raises(ValidationError, match="foreign"):
+        envelope.parse(output, candidate)
+    with pytest.raises(ValueError, match="conversation_checkback_runtime_claims") as caught:
+        envelope.parse(output, candidate, classify_invalid=True)
+    assert not isinstance(caught.value, InvalidCheckbackOutputError)
+
+
+@pytest.mark.parametrize("output", ["[]", "null", '"review"', "12", "true"])
+@pytest.mark.parametrize("public", [False, True])
+def test_nonobject_json_roots_remain_review_shape_failures_in_each_scope(output: str, *, public: bool) -> None:
+    context = {"research_phase": "synthesis", "evidence_scope": PUBLIC_TEXT_SCOPE} if public else {}
+    envelope = CheckbackEnvelope.prepare(make_request(action="converse"), canonical_json(context))
+    candidate = canonical_json({"kind": "answer", "text": "Documented method."})
+    with pytest.raises(InvalidCheckbackOutputError) as caught:
+        envelope.parse(output, candidate, classify_invalid=True)
+    assert caught.value.reason == "review_shape"
+    with pytest.raises(ValidationError):
+        envelope.parse(output, candidate)
+
+
+@pytest.mark.parametrize("output", ["{}", '{"current_runtime_claims":null}'])
+def test_public_object_missing_or_null_runtime_observation_remains_terminal(output: str) -> None:
+    envelope = CheckbackEnvelope.prepare(
+        make_request(action="converse"),
+        canonical_json({"research_phase": "synthesis", "evidence_scope": PUBLIC_TEXT_SCOPE}),
+    )
+    candidate = canonical_json({"kind": "answer", "text": "Documented method."})
+    with pytest.raises(ValueError, match="conversation_checkback_runtime_claims") as caught:
+        envelope.parse(output, candidate, classify_invalid=True)
+    assert not isinstance(caught.value, InvalidCheckbackOutputError)

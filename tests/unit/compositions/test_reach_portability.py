@@ -176,13 +176,21 @@ class NativeLoop:
             question: str,
             focus: str = "",
             reference_labels: tuple[str, ...] = (),
+            projection_mode: Literal["balanced", "complete_quotes"] | None = None,
         ) -> SourceReadResult:
             self.timeline.append("document")
             self.document_reads.append(source_id)
             assert self.timeline[:4] == ["model_plan", "delivered_plan", "ack", "scout"]
             assert focus == PLAN
             assert reference_labels == ()
-            return original_read(selected, source_id, question=question, focus=focus, reference_labels=reference_labels)
+            return original_read(
+                selected,
+                source_id,
+                question=question,
+                focus=focus,
+                reference_labels=reference_labels,
+                projection_mode=projection_mode,
+            )
 
         monkeypatch.setattr(conversation_workflow, "read_research_document", read_document)
         monkeypatch.setattr(self.broker, "_scout", self.scout)
@@ -324,7 +332,14 @@ async def test_independent_neutral_edges_share_native_research_graph_and_exact_p
         assert result.status == "conversation"
         assert result.run_id is not None
         assert loop.model_run_ids == [result.run_id, result.run_id]
-        assert loop.timeline == ["model_plan", "delivered_plan", "ack", "scout", "document", "model_synthesize"]
+        assert loop.timeline == [
+            "model_plan",
+            "delivered_plan",
+            "ack",
+            "scout",
+            "document",
+            "model_synthesize",
+        ]
         assert [frame["kind"] for frame in loop.frames] == ["request", "progress_ack"]
         assert loop.frames[-1]["accepted"] is True
         assert len(loop.scout_calls) == 1
@@ -333,7 +348,7 @@ async def test_independent_neutral_edges_share_native_research_graph_and_exact_p
         assert run is not None
         assert run.status is RunStatus.DONE
         assert run.pattern_manifest["key"] == "reach.operator_converse"
-        assert run.pattern_manifest["revision"] == "5"
+        assert run.pattern_manifest["revision"] == "8"
         events = await loop.runtime.substrate.ledger.list_events(result.run_id)
         assert {item.data for item in events if item.kind is RunEventKind.NODE} == {
             "revalidate",
