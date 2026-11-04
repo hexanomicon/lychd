@@ -1,0 +1,111 @@
+{
+  "schema": "scout-oci-static-proof@1",
+  "qualification": {
+    "observed_at": "2026-11-04T09:25:22Z",
+    "profile": "trusted-scout-c2",
+    "image": "sha256:b0755306642118dbedd8ae52b4f11415522bc9eee662d53ac7ccd2237a69e27c",
+    "seccomp_sha256": "364494fcdb222ed262f98016de3855c51a15d6e4a6ef9eeb19e8bb6c86cd3c02",
+    "source_sha256": {
+      "Containerfile.tests": "c652244645a3f9e5c7554ba6a7892a4d1990dfc071c0ed96ce0b9bbdb6d5b19e",
+      "Containerfile.scout-qualification": "eb208fae14d8ad41b6c0a87d8fe008c6ae8fa401b2b9d99cd46e8a2ed83a86a5",
+      "scripts/container_scout_qualification.sh": "ba9bf906ac84c32b7c132e9940504629aeaa45e81d01b29454b49c3a3493cbdb",
+      "scripts/scout_qualification.py": "5225a54bd1f8e5173ff9eda0314b1785f0988958011215d3b6accaced06fbd05",
+      "Makefile": "8d7ae35632234d482844caba0b012e397fa71ea24fb9d292bad30b376e6dd5c0",
+      "pyproject.toml": "f77077d0210b34e3bb72c997bfabae0e9e0e38095fb7329b95e1b9ee12e92872",
+      "uv.lock": "dde786b1de721ff284899fbf4d147c567309b0643c552d7427c6245e26a3b9ea"
+    },
+    "network": "isolated-loopback-only",
+    "limits": {
+      "memory_bytes": 2147483648,
+      "cpus": 2,
+      "pids": 256,
+      "proof_seconds": 295,
+      "outer_seconds": 300
+    },
+    "trusted_setup_limitation": "Native user-quota interfaces become visible in a fresh user namespace. This profile qualifies only the fixed trusted setup; the unchanged worker has no procfs and denies nested user namespaces.",
+    "host_namespace_quota_unchanged": true,
+    "owned_containers_removed_and_404_observed": true
+  },
+  "receipt": {
+    "status": "passed",
+    "profile": "scout-static-extract@1",
+    "kernel": "7.1.8-1-default",
+    "python": "3.15.0",
+    "worker_digest": "01a187f62f8da632c344394d0c1bc8c7f7365eed8c21e530ef6257fef0f1ce7f",
+    "runtime": {
+      "bwrap": {
+        "path": "/usr/bin/bwrap",
+        "digest": "573236e5328ac2ebb08f59ae3a9805b4f8d12bdef14be8af4450d5463294985f"
+      },
+      "python_root": "/opt/scout-python",
+      "python_tree_digest": "99e059160c4029771bab8d6a62a00f84164271d189922cd90f67b08c370b18b2",
+      "python_tree_entries": 1132,
+      "python_tree_bytes": 32073680,
+      "libraries": [
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+          "mount_name": "ld-linux-x86-64.so.2",
+          "digest": "c8438e4fde1934e61c88311633f00949ff645d5c04cdb8671fa3d78164d2f307"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "mount_name": "libc.so.6",
+          "digest": "9792e3cbb541c8f44c7acf5f14f4022ea62998ecc787d326bed4d8b6547dfd92"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libdl.so.2",
+          "mount_name": "libdl.so.2",
+          "digest": "295fa521a03cd2faa99974f378c9e23dd622021ec7d32bcad4f8ea61aec8a872"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+          "mount_name": "libgcc_s.so.1",
+          "digest": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "mount_name": "libm.so.6",
+          "digest": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libpthread.so.0",
+          "mount_name": "libpthread.so.0",
+          "digest": "85e21f7dba0394411d00959176fd18b470e575b0b05f1f4f41e5636802ce0500"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/librt.so.1",
+          "mount_name": "librt.so.1",
+          "digest": "7b7b84d1aedda0e0b2bdfc68844362782132180b8f02be1300e21e77572e514b"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libutil.so.1",
+          "mount_name": "libutil.so.1",
+          "digest": "e3981d10efd152a53f083e38f5f9ddde7a049c85d0ab388a5eec91b52fc98a11"
+        }
+      ],
+      "code": {
+        "scout_worker.py": "01a187f62f8da632c344394d0c1bc8c7f7365eed8c21e530ef6257fef0f1ce7f",
+        "scout_extraction.py": "cfcca8c6ad5ec9c439934b643e76ce6d096ff5b5ca59ccc0ee9e585ef7c38ad9",
+        "extraction.py": "107ad489b36d6f87b6439825a4fb17adc5b00feb10b3b0054a1b267780f9219d",
+        "test_scout_extraction_runtime.py": "6a7967b36c56eb97977a025302e6c6163d3bbb76699a9546e2586ada1ce12920"
+      }
+    },
+    "checks": [
+      "real_html_extraction",
+      "real_plain_text_extraction",
+      "real_hostile_extraction_refusals",
+      "network_filesystem_environment_descriptor_namespace_and_process_denial",
+      "address_space_exhaustion",
+      "cpu_exhaustion",
+      "bounded_stdout_and_stderr_floods",
+      "timeout_settles_new_session_descendant",
+      "cancellation_settles_new_session_descendant",
+      "parent_death_settles_new_session_descendant",
+      "runtime_and_code_unchanged"
+    ]
+  },
+  "paired_receipt_sha256": {
+    "tests/fixtures/scout/linux-fetch-runtime.json": "e2f74e1eb335c59f40ba20b5b2fa68e055e5de72811a05ec04f0435dadc49027",
+    "tests/fixtures/scout/linux-authority-runtime.json": "932c6b98dca64616533b444eea05fd0ee682b62ae23905f09fe0d2a7dada4876"
+  }
+}

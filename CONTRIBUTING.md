@@ -89,7 +89,8 @@ verified snapshot. `dev` is the shared integration branch. Start short task bran
 2. Open a draft PR to `dev` when work would benefit from visibility or discussion. Link the issue
    with `Refs #N`; describe the result and checks in the PR template.
 3. Read your complete change, including AI-generated code and tests. Obtain one approving review
-   from another eligible contributor, resolve review conversations, and pass the required checks.
+   from another eligible contributor (subject to the temporary founder exception below), resolve
+   review conversations, and pass the required checks.
    Changed diffs invalidate stale approvals. Human review remains the responsibility of the
    people involved; an automated review is not a substitute. The author may merge once these
    conditions hold. Small fixes follow the same PR path.
@@ -97,6 +98,13 @@ verified snapshot. `dev` is the shared integration branch. Start short task bran
    **Core Python 3.15.0 (OCI test image)**, **Altar contracts and build**, and **Hexanomicon build**.
    They run on PRs and pushes to both long-lived branches. Run additional affected-boundary checks
    before promotion; these automatic gates do not qualify real host operation.
+
+**Temporary founder exception, 4 November 2026:** At the operator's explicit instruction,
+`zenithruneblade` may push to `dev` and `main`, or merge a PR, without another contributor's
+approval. This named-account exception remains until the operator revokes it. The four required
+checks still apply; record the scope, exact source and verification before adopting a change.
+Use the exact tested `dev` commit for promotion to `main`. Other contributors continue through
+the ordinary PR and approving-review path.
 
 Keep task branches short and leave disruptive unfinished work there. When shared `dev` breaks,
 fix or revert the regression before piling on more changes. Preserve shared history: fix forward
@@ -112,7 +120,8 @@ is a reason to inspect scope and dependencies, not permission to merge unready w
 
 The `@hexanomicon/core` team has repository **Write** access and a shared review/mention target.
 Its membership grows through agreed responsibility; paid and independent contributors can become
-maintainers. `dev` requires PR review and checks. `main` permits checked updates by the
+maintainers. `dev` requires PR review and checks, with the named founder exception above.
+`main` permits checked updates by the
 `@hexanomicon/release-maintainers` team and repository administrators; classic push restrictions
 do not exclude administrators. Required checks apply to administrators too. Both long-lived
 branches reject force pushes and deletion. Repository Write alone does not permit an ordinary
@@ -507,40 +516,81 @@ RSS-request output/timeout/cancellation cases; the fresh static proof owns the s
 resource-exhaustion and detached-descendant/death tests. Neither proves native feed admission,
 network acquisition, digest custody or watching.
 
-Scout's DNS/TLS proof uses real local servers inside a fresh Linux user/network namespace. It
-requires `unshare`, `ip`, OpenSSL and the installed Python dependencies. Only loopback exists;
-the public-classified fixture address below is assigned inside that isolated namespace, never
-to a host interface. From the checkout, with a fresh basetemp path:
+### Scout network and extraction qualification
+
+Scout's DNS/TLS and current-authority proofs use real local servers inside a dedicated Linux
+x86-64 OCI qualification adapter. Run the unchanged static, DNS/TLS and authority tests in that
+order from a checkout with Docker,
+`curl`, `sha256sum`, `python3` and `timeout` available. Host Python uses only the standard library
+for isolated metadata and local Unix-socket Docker Engine API control; all Core tests execute in
+the OCI image. This explicitly admitted profile selects Python 3.15.0, Docker 29.7.2/API 1.55 and
+runc 1.5.1 on Linux x86-64. Select an existing artifact directory outside the
+checkout; every invocation allocates a fresh run directory there:
 
 ```bash
-LYCHD_SCOUT_HOST_NETNS="$(readlink /proc/self/ns/net)" \
-LYCHD_REQUIRE_SCOUT_FETCH_PROOF=1 UV_NO_SYNC=1 UV_OFFLINE=1 \
-unshare --user --map-root-user --net sh -c '
-  ip link set lo up &&
-  ip addr add 93.184.216.34/32 dev lo &&
-  make test M=container N=0 PYTEST_TARGETS=tests/integration/test_scout_fetch_runtime.py PYTEST_BASETEMP=/tmp/lychd-scout-fetch-proof
-'
+LYCHD_SCOUT_QUALIFICATION_PROFILE=trusted-scout-c2 \
+LYCHD_SCOUT_QUALIFICATION_OUTPUT=/absolute/existing/artifact-directory \
+  bash scripts/container_scout_qualification.sh
 ```
 
-Set `LYCHD_SCOUT_EXTRACTION_PROFILE` to the reviewed profile above to include the real extraction
-child in the passage. Without it, the receipt explicitly leaves extraction untested. The proof
-checks actual DNS answers, pinned TLS/SNI/Host, certificate refusal, HTTP framing, mixed-address
+The adapter derives from the exact source-bound `Containerfile.tests` image ID, adds Bubblewrap, `ip` and
+OpenSSL, and supplies a dedicated CPython installation with eight individual loader/library
+paths. Builds may download official image, Debian and locked Python dependencies. The launcher
+fetches one immutable, SHA-256-checked official Moby default seccomp profile and permits only the
+additional namespace clone/unshare and mount operations required by Scout's fixed Bubblewrap
+command. Other default restrictions remain. Missing kernel/user-namespace support fails; there is
+no host pytest, privileged-container or unconfined-seccomp fallback. `--build-only` builds the
+images without running qualification. The dedicated interpreter uses the fixed sandbox search
+path `/runtime/lib:/lib64`, matching its unchanged read-only mounts without requiring procfs to
+resolve `$ORIGIN`; its actual bytes require the static proof.
+
+The `trusted-scout-c2` profile explicitly disables SELinux label confinement for its own container.
+It leaves host SELinux enforcement and the ordinary check harness unchanged. The controller first
+captures the daemon's complete default path restrictions in a nonstarted owned container, then
+preserves those defaults except for replacing read-only `/proc/sys` with read-only
+`/proc/sys/kernel` and adding 18 audited masks. Before starting the proof it verifies the actual
+image, command, complete path arrays, security options, environment and resource settings.
+This is a trusted test/setup profile, not default Docker/SELinux or production qualification.
+
+The outer setup sees seven masked non-user sysctl subtrees, native read-only kernel controls and
+11 masked user-quota leaves around the native `max_user_namespaces` interface. The user-quota
+masks do **not** remain field-specific after a fresh user namespace: trusted Bubblewrap setup can
+see its own namespace's quota interfaces. No acquired body chooses setup code or arguments.
+The unchanged static proof must establish that the untrusted worker receives an empty read-only
+mount root with no procfs, unrelated descriptors or authority to create nested namespaces.
+The controller records the actual outer and fresh-child observations plus unchanged host quota
+and namespace identities before/after. It refuses inventory drift rather than adding unknown paths.
+
+The test container has no checkout, HOME or daemon mounts and uses `--network=none`. Setup assigns
+`93.184.216.34/32` only to that container namespace's loopback. It then changes to the ordinary
+check user, clears every capability set and requires `no_new_privs` before executing tests.
+Actual cgroup readback must show 2 GiB memory, two CPUs and 256 PIDs.
+The unchanged fixture independently verifies that the namespace differs from the launcher's,
+only loopback exists and no external route is present. First, the unchanged static extraction
+boundary proof qualifies this actual CPython/Bubblewrap runtime, including its hostile input,
+host-access, resource-limit and descendant-settlement cases. The DNS/TLS test always receives the
+explicit extraction profile; it checks actual DNS answers, pinned TLS/SNI/Host, certificate refusal, HTTP framing, mixed-address
 refusal, redirect admission and the final HTTP handoff gate. Its generated `receipt.json` contains
-source/dependency identities and observed checks; ephemeral certificate keys stay in basetemp.
-The maintained receipt and source-freshness test qualify this isolated mechanism profile, not a
+source/dependency identities and observed checks. The launcher exports only generated sanitized
+receipts, safe logs, exact image identities, the seccomp profile/hash and capability evidence
+outside the checkout before removing its owned container. Basetemps and ephemeral certificate
+keys remain inside the removed container. Review the actual generated receipt files before
+maintained fixture replacement; this command does not update fixtures automatically.
+The [separate OCI static receipt](tests/fixtures/scout/linux-oci-extraction-runtime.json) binds the
+actual runtime, recipe, lock and paired network receipts; its freshness guard does not replace
+the historical static/RSS runtime evidence. These receipts qualify this isolated mechanism profile, not a
 production authorizer, durable Scout attempt, workflow, public website or SearXNG service.
 
 The separate current-authority proof uses the same isolated namespace, but joins the production
-credential owner, policy, Run fence and network gate to those real servers. In the command above,
-use `LYCHD_REQUIRE_SCOUT_AUTHORITY_PROOF=1` and
-`PYTEST_TARGETS=tests/integration/test_scout_authority_runtime.py`, with another fresh basetemp.
-It needs no extraction profile. It checks the exact GET, path/query substitution, authority
+credential owner, policy, Run fence and network gate to those real servers. The adapter runs it
+after DNS/TLS with a separate fresh basetemp. It needs no extraction profile. It checks the exact GET, path/query substitution, authority
 revocation during TLS, finite network budgets and measured gate accounting. Preparation and
 claim values are explicit fixtures: this does not exercise database admission, extraction
 authorization or inference. Its [maintained receipt](tests/fixtures/scout/linux-authority-runtime.json)
 and freshness test bind the authority, transport, fixture and dependency versions actually tested.
 
-The composed Scout proof uses that same namespace command with
+The composed Scout proof requires its own explicitly admitted OCI adaptation of that isolated
+namespace profile; the bounded adapter above runs only the two network proofs. Its selection is
 `LYCHD_REQUIRE_SCOUT_COMPOSED_PROOF=1`,
 `PYTEST_TARGETS=tests/integration/test_scout_composed_runtime.py`, a fresh basetemp, and the
 required `LYCHD_SCOUT_EXTRACTION_PROFILE`. It also requires the installed `container-test`
