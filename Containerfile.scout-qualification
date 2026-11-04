@@ -1,0 +1,20 @@
+# Explicit adapter for the unchanged isolated Scout DNS/TLS qualification tests.
+# CHECK_IMAGE is the exact source-bound Containerfile.tests image ID built
+# by container_scout_qualification.sh; this is never a production Vessel.
+ARG CHECK_IMAGE
+FROM ${CHECK_IMAGE}
+USER root
+RUN apt-get update && \
+    apt-get install --yes --no-install-recommends bubblewrap iproute2 openssl patchelf && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /opt/scout-python/bin /opt/scout-python/lib /qualification/export && \
+    cp -a /usr/local/bin/python3.15 /opt/scout-python/bin/python3 && \
+    cp -a /usr/local/lib/libpython3.15.so.1.0 /opt/scout-python/lib/ && \
+    cp -a /usr/local/lib/python3.15 /opt/scout-python/lib/ && \
+    rm -rf /opt/scout-python/lib/python3.15/site-packages && \
+    patchelf --force-rpath --set-rpath '/runtime/lib:/lib64' /opt/scout-python/bin/python3 && \
+    /opt/scout-python/bin/python3 -I -S -c 'import html.parser, json, resource' && \
+    chown -R checks:checks /qualification && \
+    touch /opt/lychd-scout-qualification
+RUN python -c 'import json; from pathlib import Path; names = ("ld-linux-x86-64.so.2", "libc.so.6", "libdl.so.2", "libgcc_s.so.1", "libm.so.6", "libpthread.so.0", "librt.so.1", "libutil.so.1"); libraries = [str((Path("/usr/lib/x86_64-linux-gnu") / name).resolve(strict=True)) for name in names]; Path("/opt/scout-runtime.json").write_text(json.dumps({"bwrap": "/usr/bin/bwrap", "python_root": "/opt/scout-python", "libraries": libraries}, indent=2) + "\n")'
+ENTRYPOINT ["bash", "/work/scripts/container_scout_qualification.sh", "--inside-setup"]
