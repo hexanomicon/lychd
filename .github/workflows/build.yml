@@ -24,7 +24,7 @@ jobs:
       RELEASE_ARTIFACT_DIR: dist
     steps:
       - name: Check out the immutable candidate source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
@@ -37,7 +37,7 @@ jobs:
           cache-suffix: release-candidate
 
       - name: Install Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -51,8 +51,8 @@ jobs:
       - name: Build and audit the candidate
         run: make release-candidate
 
-      - name: Retain private candidate archives
-        uses: actions/upload-artifact@v7
+      - name: Retain candidate archives for review
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: lychd-${{ github.sha }}
           path: |

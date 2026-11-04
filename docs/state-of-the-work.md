@@ -85,8 +85,9 @@ container start/stop completion remains unavailable. Neither F2 hostile-construc
 enrolled-peer qualification is added.
 
 The combined migration source keeps lineage `0015`–`0020`, then appends disclosure custody at
-`0021`, Intercom at `0022`, and native peer Graph custody at the current head `0023`. Reconciling
-that source does not renew either the 21 October production observation or the imported
+`0021`, Intercom at `0022`, native peer Graph custody at `0023`, private companion aliases at
+`0024`, dictation custody at `0025`, and approved private vocabulary at the current head `0026`.
+Reconciling that source does not renew either the 21 October production observation or the imported
 22–23 October peer and companion observations. Their source maps, migration identities,
 dependencies, and limits remain dated evidence. Qualification of the current combined source
 is a separate obligation.

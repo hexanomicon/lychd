@@ -121,8 +121,9 @@ it("pages all 1,000 retained attempts without truncation and bounds vocabulary t
   await disclosure("Approved vocabulary");
   expect(within(screen.getByRole("list", { name: "Retained voice attempts" })).getAllByRole("listitem")).toHaveLength(25);
   expect(screen.getByText("Showing 25 of 1000 retained attempts.")).toBeTruthy();
+  const showMore = screen.getByRole("button", { name: "Show more attempts" });
   for (let page = 1; page < 40; page += 1) {
-    await fireEvent.click(screen.getByRole("button", { name: "Show more attempts" }));
+    await fireEvent.click(showMore);
   }
   expect(screen.getByRole("button", { name: "Delete retained attempt attempt-999" })).toBeTruthy();
   expect(screen.getByText("Showing 1000 of 1000 retained attempts.")).toBeTruthy();

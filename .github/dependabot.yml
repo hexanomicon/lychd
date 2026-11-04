@@ -1,7 +1,7 @@
 version: 2
 
-# Version-update PRs are paused during the solo-main phase.
-# Restore positive limits when team integration starts (planned 2026-11-02).
+# Keep team integration reviewable: at most two version-update PRs per ecosystem.
+# Group routine updates; review major-version changes separately.
 updates:
   - package-ecosystem: uv
     directory: /
@@ -11,11 +11,14 @@ updates:
       day: monday
       time: "06:00"
       timezone: Europe/Bratislava
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 2
     groups:
       python-dependencies:
         patterns:
           - "*"
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     directory: /clients/web
@@ -25,11 +28,14 @@ updates:
       day: monday
       time: "06:15"
       timezone: Europe/Bratislava
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 2
     groups:
       web-dependencies:
         patterns:
           - "*"
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: github-actions
     directory: /
@@ -39,8 +45,11 @@ updates:
       day: monday
       time: "06:30"
       timezone: Europe/Bratislava
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 2
     groups:
       workflow-actions:
         patterns:
           - "*"
+        update-types:
+          - minor
+          - patch

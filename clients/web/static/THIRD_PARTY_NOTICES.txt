@@ -1304,7 +1304,7 @@ MIT License
     SOFTWARE
 
 ================================================================================
-@vitest/expect@4.1.11
+@vitest/expect@4.1.12
 Declared license: MIT
 Repository: git+https://github.com/vitest-dev/vitest.git
 ================================================================================
@@ -1333,7 +1333,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-@vitest/mocker@4.1.11
+@vitest/mocker@4.1.12
 Declared license: MIT
 Repository: git+https://github.com/vitest-dev/vitest.git
 ================================================================================
@@ -1362,7 +1362,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-@vitest/pretty-format@4.1.11
+@vitest/pretty-format@4.1.12
 Declared license: MIT
 Repository: git+https://github.com/vitest-dev/vitest.git
 ================================================================================
@@ -1391,7 +1391,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-@vitest/runner@4.1.11
+@vitest/runner@4.1.12
 Declared license: MIT
 Repository: git+https://github.com/vitest-dev/vitest.git
 ================================================================================
@@ -1420,7 +1420,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-@vitest/snapshot@4.1.11
+@vitest/snapshot@4.1.12
 Declared license: MIT
 Repository: git+https://github.com/vitest-dev/vitest.git
 ================================================================================
@@ -1449,7 +1449,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-@vitest/spy@4.1.11
+@vitest/spy@4.1.12
 Declared license: MIT
 Repository: git+https://github.com/vitest-dev/vitest.git
 ================================================================================
@@ -1478,7 +1478,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-@vitest/utils@4.1.11
+@vitest/utils@4.1.12
 Declared license: MIT
 Repository: git+https://github.com/vitest-dev/vitest.git
 ================================================================================
@@ -2664,7 +2664,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ================================================================================
-brace-expansion@2.1.4
+brace-expansion@2.1.7
 Declared license: MIT
 Repository: git://github.com/juliangruber/brace-expansion.git
 ================================================================================
@@ -2693,7 +2693,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-chai@6.2.2
+chai@6.3.0
 Declared license: MIT
 Repository: https://github.com/chaijs/chai
 ================================================================================
@@ -3443,7 +3443,7 @@ Apache License
    limitations under the License.
 
 ================================================================================
-devalue@5.9.2
+devalue@5.9.4
 Declared license: MIT
 Repository: sveltejs/devalue
 ================================================================================
@@ -5553,7 +5553,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-source-map-js@1.2.1
+source-map-js@1.2.2
 Declared license: BSD-3-Clause
 Repository: 7rulnik/source-map-js
 ================================================================================
@@ -5808,7 +5808,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-tinyrainbow@3.1.1
+tinyrainbow@3.2.0
 Declared license: MIT
 Repository: git+https://github.com/tinylibs/tinyrainbow.git
 ================================================================================
@@ -6189,7 +6189,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-undici@8.10.2
+undici@8.12.3
 Declared license: MIT
 Repository: git+https://github.com/nodejs/undici.git
 ================================================================================
@@ -6246,7 +6246,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-vite@8.2.2
+vite@8.2.4
 Declared license: MIT
 Repository: git+https://github.com/vitejs/vite.git
 ================================================================================
@@ -8605,7 +8605,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-vitest@4.1.11
+vitest@4.1.12
 Declared license: MIT
 Repository: git+https://github.com/vitest-dev/vitest.git
 ================================================================================
@@ -9861,7 +9861,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-zod@4.6.1
+zod@4.6.6
 Declared license: MIT
 Repository: git+https://github.com/colinhacks/zod.git
 ================================================================================

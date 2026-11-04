@@ -75,8 +75,9 @@ not pass `--cov`. Coverage is an opt-in gate, not an implicitly passed release c
 Pull-request, `dev` and `main` Core Python CI runs the explicit `make test-ci` selection, using
 in-process substitutes inside that OCI image, without a model or daemon socket in the test
 process. The outer build/launch still requires a working OCI engine. Full ordinary tests and
-disposable PostgreSQL receipts remain separate jobs in the manually dispatched Repository Checks
-workflow. A core-CI pass does not establish those broader results or waive affected-boundary
+disposable PostgreSQL receipts remain separate, manually dispatched jobs in Repository Checks;
+that workflow also runs its Altar and documentation jobs automatically on PRs and long-lived
+branch pushes. A core-CI pass does not establish those broader results or waive affected-boundary
 verification. The normal `make test` and `make check` selections remain unchanged.
 
 ### 5. Runtime Surface Probes
