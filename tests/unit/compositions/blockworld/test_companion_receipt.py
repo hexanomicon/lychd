@@ -158,10 +158,13 @@ def test_companion_qualification_preserves_historical_receipt() -> None:
 
 
 def test_historical_companion_receipt_cannot_qualify_the_changed_dialogue_source() -> None:
-    # The original source check now refuses before reaching its also-stale lock.
+    # The dialogue remains stale even when another changed input is checked first.
     # The synthetic lock-only negative control below remains independently exercised.
-    with pytest.raises(AssertionError, match=r"Source inventory is stale: scripts/companion_lab\.py"):
-        _require_current_qualification(json.loads(RECEIPT.read_text()), root=ROOT, sources=qualified_sources())
+    receipt = json.loads(RECEIPT.read_text())
+    dialogue = "scripts/companion_lab.py"
+    assert sha256((ROOT / dialogue).read_bytes()).hexdigest() != receipt["source_fingerprints"][dialogue]
+    with pytest.raises(AssertionError, match="Source inventory is stale: "):
+        _require_current_qualification(receipt, root=ROOT, sources=qualified_sources())
 
 
 @pytest.mark.parametrize("change", ["source", "missing", "inventory", "lock", "dependency"])
