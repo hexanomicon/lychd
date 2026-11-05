@@ -1,7 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
-  import { asset, resolve } from "$app/paths";
+  import { asset } from "$app/paths";
+  import { resolvePath as resolve } from "$lib/navigation/paths";
   import { onMount, setContext, tick, untrack, type Snippet } from "svelte";
   import BridgeDock from "./BridgeDock.svelte";
   import BridgeView from "./BridgeView.svelte";
@@ -116,7 +117,7 @@
     const params = page.url.searchParams;
     const legacy = page.url.pathname === resolve("/bridge") || page.url.pathname === `${resolve("/bridge")}/` || !!selectedBridgeHref(page.url.pathname, resolve("/bridge"));
     if (legacy && !params.has("notes") && !params.has("investigation")) {
-      await goto(resolve(`${destination}${search}`), { keepFocus: true, noScroll: true });
+      await goto(resolve(`${destination}${search}`), { reset: false });
     } else {
       navigation.bridgePath = destination;
       bridgeSession = id;
@@ -290,7 +291,7 @@
 <header class="topbar" inert={bridgeModal} {@attach measureMasthead}>
   <details class="altar-about" {@attach manageAboutDisclosure}>
     <summary class="brand" aria-label="About Altar" title="Altar">
-      <img class="mark" src={asset("/altar-mark.svg")} width="44" height="44" alt="" />
+      <img class="mark" src={asset("altar-mark.svg")} width="44" height="44" alt="" />
     </summary>
     <div class="altar-about__panel">
       <h2>About the Altar</h2>

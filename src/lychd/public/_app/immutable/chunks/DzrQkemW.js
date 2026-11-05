@@ -1,0 +1,1 @@
+import{n as e}from"./Dl--Q2n6.js";import"./Dl-f54hP.js";function t(t){return e(t.slice(1))}export{t};

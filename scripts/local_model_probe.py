@@ -141,7 +141,11 @@ class ProbeResponseModel(WrapperModel):
             code = "response_model_mismatch"
         elif response.finish_reason == "length" or wire_finish == "length":
             code = "output_limit"
-        elif wire_finish is None or admitted_finishes.get(wire_finish) != response.finish_reason:
+        elif (
+            wire_finish is None
+            or wire_finish not in admitted_finishes
+            or admitted_finishes[wire_finish] != response.finish_reason
+        ):
             code = "incomplete_response"
         else:
             return response

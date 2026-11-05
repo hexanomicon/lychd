@@ -501,10 +501,14 @@ class DbArchiveSemanticStore:
                 check(receipt_id, receipt_digest)
                 if pair is None:
                     raise ArchiveRefused("receipt_stale")  # noqa: EM101 - closed safe code
-                current = _selection(manifest, receipt.generation, generation.version, pair[0], pair[1], selected.score)
+                note, embedding = pair
+                content = note.content
+                if content is None:
+                    raise ArchiveRefused("source_integrity")  # noqa: EM101 - closed safe code
+                current = _selection(manifest, receipt.generation, generation.version, note, embedding, selected.score)
                 if current != selected:
                     raise ArchiveRefused("receipt_stale")  # noqa: EM101 - closed safe code
-                items.append(SemanticRecallItem(selection=selected, text=pair[0].content))
+                items.append(SemanticRecallItem(selection=selected, text=content))
             projection = SemanticRecallProjection(receipt=receipt, items=tuple(items))
             check(receipt_id, receipt_digest)
             return projection

@@ -221,9 +221,9 @@ def test_portal_factory_routes_provider_profile(
     model = runtime.connector.get_model(model_id=model_id)
     assert isinstance(model, OpenAIChatModel)
     assert model.system == expected_system
-    # The model narrows native-tool support on a copied profile. Compare every
-    # configured field, excluding that derived set, instead of object identity.
-    expected_local = {**DEFAULT_PROFILE, **LOCAL_COMPAT_PROFILE}
+    # Chat cannot map video inputs and narrows native-tool support on a copy.
+    # Compare all effective fields while normalizing only that derived tool set.
+    expected_local = {**DEFAULT_PROFILE, **LOCAL_COMPAT_PROFILE, "supports_video_input": False}
     configured_profile = {**model.profile, "supported_native_tools": expected_local["supported_native_tools"]}
     assert (configured_profile == expected_local) is (provider_name == "openai-compatible")
 

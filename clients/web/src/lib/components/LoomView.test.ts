@@ -13,7 +13,8 @@ vi.mock("$lib/api/client", () => ({
   getOrbRun: vi.fn()
 }));
 
-import { page } from "$app/state";
+import { page as appPage } from "$app/state";
+const page = appPage as Omit<typeof appPage, "url"> & { url: import("svelte/reactivity").SvelteURL };
 import { goto } from "$app/navigation";
 import { getLoomCatalogue, getLoomPatternRevision, getOrbRun } from "$lib/api/client";
 import LoomView from "./LoomView.svelte";

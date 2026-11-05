@@ -146,7 +146,7 @@ def test_migration_model_parity_and_guarded_downgrade(monkeypatch: pytest.Monkey
     module.upgrade()
     assert module.revision == "0026"
     assert module.down_revision == "0025"
-    model = BridgeDictationLexiconRule.__table__
+    model = cast("Table[Any]", BridgeDictationLexiconRule.__table__)
     assert isinstance(model, Table)
     assert columns(ops.tables[0]) == columns(model)
     assert constraints(ops.tables[0]) == constraints(model)

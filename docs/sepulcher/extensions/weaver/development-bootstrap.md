@@ -19,11 +19,12 @@ native road. This procedure publishes no new Composition, Pattern, executor, or 
 
 ## Choose the first execution road
 
-Use the existing Codex application for the first campaign. Preserve the requested Sol model and
-Ultra selection as explicit campaign inputs; record the exact model identifier and effective
-settings the client reports. [Coding-runtime research](coding-runtime-research.md) distinguishes
-Ultra orchestration from model reasoning, account limits from API billing, and local use from
-a distributed product. A different provider is a measured alternative, never an implicit fallback.
+Use a supported coding client selected by the operator for the first campaign. Preserve the
+requested model and orchestration settings as explicit campaign inputs; record the exact model
+identifier and effective settings the client reports.
+[Coding-runtime research](coding-runtime-research.md) distinguishes client orchestration from model
+reasoning, account limits from API billing, and local use from a distributed product. A different
+provider is a measured alternative, never an implicit fallback.
 
 Begin LychD integration by qualifying a trusted host for the existing one-shot CLI protocol and
 returning one bounded artifact with its terminal receipt. A bidirectional app-server adapter
@@ -35,7 +36,7 @@ private planning and tool loop.
 
 ```mermaid
 flowchart TD
-    A[Operator campaign in Codex] --> B[Verified candidate and retained handoff]
+    A[Operator-controlled coding campaign] --> B[Verified candidate and retained handoff]
     B --> C[Qualify durable delegation and trusted host]
     C --> D[LychD delegates one bounded job]
     D --> E[Independent verification and maintainer integration]
@@ -447,16 +448,16 @@ subagent authority or billing fallback with the framing code.
 
 ## Measure whether the loop helps
 
-Measure the loop against a baseline using the requested Sol setting and existing procedure.
-Change one variable at a time: a fresh reviewer, a Claude reviewer, a context policy or a
-different task decomposition. Match tasks and total budgets, counting failed attempts,
+Measure the loop against a baseline using the declared model settings and existing procedure.
+Change one variable at a time: a fresh reviewer, a reviewer from another provider, a context policy
+or a different task decomposition. Match tasks and total budgets, counting failed attempts,
 verification, review and human attention. [Evaluation](../../../adr/34-evaluation.md) owns the
 native design; ordinary operator comparisons retain their actual identities and limited
 conclusions.
 
 For an initial reviewer comparison, freeze six representative past diffs with known defects and
 clean controls across delegation, persistence, configuration, API, frontend and documentation.
-Keep the answer key out of constructor/reviewer context. Run fresh Sol review as baseline and
+Keep the answer key out of constructor/reviewer context. Run a fresh baseline review and
 then the optional alternative on the same evidence; record order and contamination. Measure
 accepted unique defects, false positives, missed requirements, fix effort, elapsed time and
 actual usage. Six cases are a screening pilot, not statistical proof of universal superiority.
@@ -476,7 +477,7 @@ Use a bounded goal after filling the task record and selecting the actual candid
 ```text
 Complete task B1 from the Development bootstrap guide against its recorded input closure.
 Establish the owning contract and reproduce the missing evidence before editing.
-Use the requested Sol model and record effective settings. Give independent investigators
+Use the requested model and record effective settings. Give independent investigators
 closed packets; keep one writer and a separate verification context. Preserve operator work.
 Run the focused PostgreSQL receipt and required repository gates; retain failures and unrun checks.
 Deliver the exact candidate, test receipts, updated owning documentation and next eligible task.

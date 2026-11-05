@@ -1,1 +1,0 @@
-import{it as e,j as t,lt as n}from"../chunks/LyZq4PqU.js";import"../chunks/xihTtKlq.js";import"../chunks/DihLTWJs.js";function r(r){t(`1n5s2t9`,t=>{e(()=>{n.title=`Bridge — LychD`})})}export{r as component};

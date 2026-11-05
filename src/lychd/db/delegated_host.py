@@ -231,8 +231,9 @@ class DbDelegatedHostDispositionStore:
             self._require_preparing(parent)
             if snapshot.dispatch_id is not None:
                 raise _conflict()
+            now = cast("datetime", await session.scalar(select(func.clock_timestamp())))
             row.dispatch_id = uuid4()
-            row.dispatch_consumed_at = cast("datetime", await session.scalar(select(func.clock_timestamp())))
+            row.dispatch_consumed_at = now
             await session.flush()
             snapshot = _snapshot(parent, row)
             await _commit(session)
@@ -244,9 +245,11 @@ class DbDelegatedHostDispositionStore:
             parent = await self._parent(session, job, lock=True)
             row = await self._row(session, parent)
             if row is None:
+                now = cast("datetime", await session.scalar(select(func.clock_timestamp())))
                 row = DelegatedHostDispositionRecord(job_record_id=parent.id)
+                row.intake_closed_at = now
                 session.add(row)
-            if row.intake_closed_at is None:
+            elif row.intake_closed_at is None:
                 row.intake_closed_at = cast("datetime", await session.scalar(select(func.clock_timestamp())))
             closure = DelegatedHostIntakeClosure(_job_ref(parent), row.intake_closed_at)
             await session.flush()

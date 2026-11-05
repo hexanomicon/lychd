@@ -35,7 +35,8 @@ import {
 } from "$lib/api/client";
 import NexusView from "./NexusView.svelte";
 import { beforeNavigate } from "$app/navigation";
-import { page } from "$app/state";
+import { page as appPage } from "$app/state";
+const page = appPage as Omit<typeof appPage, "url"> & { url: import("svelte/reactivity").SvelteURL };
 
 const snapshot: NexusSnapshot = {
   snapshot_at: "2026-07-30T00:00:00Z",

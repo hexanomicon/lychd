@@ -507,7 +507,7 @@ def test_migration_upgrade_matches_orm_postgresql_shape_and_fixed_bounds(monkeyp
     assert operations.sql == _TIMEOUTS
     assert len(operations.tables) == 1
     generated = operations.tables[0]
-    model_table = CompanionRecipe.__table__
+    model_table = cast("Table[Any]", CompanionRecipe.__table__)
     assert isinstance(model_table, Table)
     assert generated.name == model_table.name == "companion_recipe"
     assert _column_shapes(generated) == _column_shapes(model_table)

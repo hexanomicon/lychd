@@ -282,7 +282,7 @@ format-check: ## Check Ruff formatting without changing files
 .PHONY: type-check
 type-check: ## Run BasedPyright. Usage: make type-check TYPECHECK_TARGETS="src/lychd/app.py"
 	@read -r -a targets <<< "$$TYPECHECK_TARGETS"
-	@$(TYPECHECK) "$${targets[@]}"
+	@NODE_OPTIONS=--max-old-space-size=3072 $(TYPECHECK) "$${targets[@]}"
 	@echo "${OK} Types are strict."
 
 .PHONY: test
