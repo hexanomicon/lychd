@@ -8,11 +8,10 @@ from datetime import timedelta
 import discord
 
 from lychd.compositions.reach.conversation_session import MAX_CONTEXT_PAGES
-from lychd.compositions.reach.operator_wire import HistoryState, ReachHistoryEntry
+from lychd.compositions.reach.operator_wire import MAX_HISTORY_BYTES, HistoryState, ReachHistoryEntry
 from lychd.compositions.reach.schemas import ReachEvent
 from lychd.interface.discord.schemas import DiscordPolicy
 
-MAX_HISTORY_BYTES = 16_384
 HISTORY_PAGE_SIZE = 6
 MAX_HISTORY_PAGE_SIZE = 16
 
@@ -149,7 +148,10 @@ class HistoryPager:
                     raw.append(message)
                     if len(raw) >= self._page_size:
                         break
-            except (discord.HTTPException, OSError, TimeoutError):
+            except discord.HTTPException as error:
+                self.state = "permission_denied" if error.status == 403 else "unavailable"
+                return
+            except (OSError, TimeoutError):
                 self.state = "unavailable"
                 return
 

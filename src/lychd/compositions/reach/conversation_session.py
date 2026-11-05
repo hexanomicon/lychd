@@ -23,6 +23,10 @@ from lychd.compositions.reach.schemas import ReachEvent
 MAX_REQUESTS = 512
 MAX_CONTEXT_PAGES = 3
 _LAST_CONTEXT_ROUND = 2
+_HISTORY_PERMISSION_NOTICE = (
+    "I couldn't read earlier messages in this channel because Discord denied history access (403). "
+    "Ask a maintainer to check Nadir's View Channel and Read Message History permissions, then try again."
+)
 
 
 def request_digest(request: ReachWorkerRequest) -> str:
@@ -187,12 +191,18 @@ async def drive_context_turn(
             continuation_anchor=continuation_anchor,
         )
         if result.status != "need_context":
+            if effective_state == "permission_denied" and result.status == "clarify":
+                return result.model_copy(update={"text": _HISTORY_PERMISSION_NOTICE})
             return result
         if effective_state != "more":
             return result.model_copy(
                 update={
                     "status": "clarify",
-                    "text": "I'm missing relevant context. Please quote the message or clarify your question.",
+                    "text": (
+                        _HISTORY_PERMISSION_NOTICE
+                        if effective_state == "permission_denied"
+                        else "I'm missing relevant context. Please quote the message or clarify your question."
+                    ),
                 }
             )
     if result is None:

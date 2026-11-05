@@ -255,12 +255,13 @@ async def test_history_respects_aggregate_utf8_budget_before_serialization() -> 
     channel = Mock()
     channel.history = messages
     history = await configured.history(channel, observed)
-    assert len(history) == 4
-    assert sum(len(item.text.encode("utf-8")) for item in history) <= 16_384
+    assert len(history) == 50
+    assert sum(len(item.text.encode("utf-8")) for item in history) <= 400_000
 
 
 @pytest.mark.asyncio
-async def test_local_frame_rejection_does_not_poison_worker_connection() -> None:
+async def test_local_frame_rejection_does_not_poison_worker_connection(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("lychd.compositions.reach.operator_wire.MAX_WIRE_BYTES", 1)
     worker = PipeWorker(asyncio.StreamReader(), ready())
     observed = event_from_message(message(), policy())
     assert observed is not None

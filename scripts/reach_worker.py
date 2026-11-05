@@ -144,6 +144,14 @@ def _trace_failure_code(error: BaseException | None) -> TraceCode | None:
     return error_code(error)
 
 
+def _public_failure_reason(error: Exception) -> str:
+    """Carry only recognized answer-preparation failures across the worker boundary."""
+    code = _trace_failure_code(error)
+    if code in {"budget", "model_unavailable", "model_timeout", "model_refused", "model_protocol", "model_failed"}:
+        return code
+    return "run_failed"
+
+
 def _failure_code(error: Exception | None) -> DiagnosticCode | None:
     """Recognize exact trusted codes without rendering any exception."""
     if error is None or len(error.args) != 1:
@@ -546,7 +554,12 @@ class DocumentsRuntime:
                 raise
             except Exception as error:  # noqa: BLE001 - closed diagnostics never echo input, paths or provider errors
                 failure = error
-                result = self.refuse(request.request_id, "run_failed", error=True, run_id=handle.run_id)
+                result = self.refuse(
+                    request.request_id,
+                    _public_failure_reason(error),
+                    error=True,
+                    run_id=handle.run_id,
+                )
                 return result
             finally:
                 if task is not None:
@@ -710,7 +723,13 @@ async def serve(runtime: DocumentsRuntime, reader: asyncio.StreamReader, write: 
             write(protocol_bytes(runtime.refuse("invalid", "invalid_request", error=True)))
             continue
         try:
-            budget = 300 if runtime.profile and runtime.profile.research.enabled else 90 if runtime.profile else 15
+            budget = (
+                900
+                if runtime.profile and runtime.profile.research.enabled
+                else 750
+                if runtime.profile
+                else 15
+            )
             result = await runtime.process(request, timeout=budget)
         except Exception:  # noqa: BLE001 - malformed continuations never echo their diagnostics
             result = runtime.refuse(request.request_id, "run_failed", error=True)

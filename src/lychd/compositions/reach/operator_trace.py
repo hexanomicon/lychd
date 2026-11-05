@@ -162,12 +162,12 @@ class ReachTraceEvent(Record):
         pattern=r"^(?:web:[a-z][a-z0-9_]{0,31}|doc:[A-Za-z0-9_./-]{1,200})$",
     )
     excerpt_start: int | None = Field(default=None, ge=0)
-    excerpt_chars: int | None = Field(default=None, ge=0, le=16_000)
+    excerpt_chars: int | None = Field(default=None, ge=0, le=210_000)
     source_digest: PolicyDigest | None = None
     text_digest: PolicyDigest | None = None
-    projection_budget: int | None = Field(default=None, ge=0, le=16_000)
+    projection_budget: int | None = Field(default=None, ge=0, le=210_000)
     projection_mode: Literal["balanced", "complete_quotes"] | None = None
-    projection_chars: int | None = Field(default=None, ge=0, le=16_000)
+    projection_chars: int | None = Field(default=None, ge=0, le=210_000)
     projection_truncated: bool | None = None
     projection_digest: PolicyDigest | None = None
     projection_span_count: int | None = Field(default=None, ge=0, le=48)

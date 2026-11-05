@@ -24,7 +24,7 @@ from lychd.compositions.reach.operator_wire import strict_json
 from lychd.compositions.reach.research_wire import ResearchOptions
 from lychd.compositions.reach.schemas import PolicyDigest, Record
 
-MAX_MODEL_PAYLOAD_BYTES = 49_152
+MAX_MODEL_PAYLOAD_BYTES = 1_048_576
 DECISION_SCHEMA_VERSION = 4
 
 
@@ -70,11 +70,11 @@ class OperatorConversationProfile(Record):
     context_projection_version: Literal[1, 2] = 1
     expressions: ConversationExpressions = Field(default_factory=ConversationExpressions)
     research: ResearchOptions = Field(default_factory=ResearchOptions)
-    max_context: int = Field(default=16_384, ge=4096, le=32_768)
+    max_context: int = Field(default=16_384, ge=4096, le=262_144)
     max_tokens: int = Field(default=384, ge=32, le=4096)
     temperature: float = Field(default=0.6, ge=0, le=1)
-    max_input_chars: int = Field(default=20_000, ge=1000, le=32_000)
-    timeout_seconds: int = Field(default=60, ge=5, le=60)
+    max_input_chars: int = Field(default=20_000, ge=1000, le=210_000)
+    timeout_seconds: int = Field(default=60, ge=5, le=300)
 
     @field_validator("decision_schema_version", mode="before")
     @classmethod
@@ -192,7 +192,7 @@ class OperatorModelProbe(Record):
 
 class _Message(Record):
     role: Literal["system", "user", "assistant"]
-    content: str = Field(min_length=1, max_length=32_000)
+    content: str = Field(min_length=1, max_length=210_000)
 
 
 class _Generation(Record):

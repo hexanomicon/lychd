@@ -35,6 +35,7 @@ from lychd.compositions.reach.operator_trace import (
     uuid_or_none,
 )
 from lychd.compositions.reach.operator_wire import (
+    MAX_HISTORY_BYTES,
     ReachHistoryEntry,
     ReachWorkerResult,
 )
@@ -53,7 +54,6 @@ from lychd.interface.discord.schemas import DiscordPolicy
 from lychd.interface.http_observation import http_trace
 from lychd.interface.observation import OperationObserver, observation_bytes, observation_context
 
-MAX_HISTORY_BYTES = 16_384
 MAX_GENERATION_EVENTS = 10_000
 MAX_GENERATION_THREADS = 1000
 MAX_ONBOARDING_BYTES = 4096
@@ -186,13 +186,129 @@ def onboarding_profile_for_guild(path: Path | None, guild_id: str) -> Onboarding
     return profile
 
 
+_WORKER_FAILURES = {
+    "budget": (
+        "My configured context budget was too small for this request. I read the available chat context, "
+        "but couldn't fit the instructions and selected sources needed to answer. Please narrow the question."
+    ),
+    "model_unavailable": "The Qwen model service is unavailable. Please try again later; a maintainer should check it.",
+    "model_timeout": "The Qwen model timed out while preparing the answer. Please try again with a shorter request.",
+    "model_refused": "The Qwen model refused this request. A maintainer can check its diagnostics.",
+    "model_protocol": (
+        "The Qwen model returned a response Nadir couldn't safely use. A maintainer should check the model adapter."
+    ),
+    "model_failed": (
+        "The Qwen model failed while preparing the answer. A maintainer should check its diagnostics."
+    ),
+    "run_timeout": "Nadir timed out while preparing the answer. Please try again with a shorter request.",
+    "run_missing": (
+        "Nadir couldn't find the answer run it started (run_missing). A maintainer should check diagnostics."
+    ),
+    "run_incomplete": "Nadir's answer run didn't complete (run_incomplete). A maintainer should check diagnostics.",
+    "result_binding": (
+        "Nadir received a mismatched answer result (result_binding). A maintainer should check diagnostics."
+    ),
+    "run_failed": (
+        "An internal processing step failed (run_failed). Please try again later; "
+        "a maintainer can check diagnostics."
+    ),
+    "worker_unavailable": "Nadir's answer worker is unavailable or busy. Please try again shortly.",
+    "permission_denied": (
+        "Discord denied access to earlier channel messages (403). Ask a maintainer to check Nadir's "
+        "View Channel and Read Message History permissions."
+    ),
+    "conversation_not_allowed": (
+        "Nadir isn't enabled in this channel. Ask a maintainer to add it to the allowed channels."
+    ),
+    "subject_not_allowed": (
+        "You're not included in Nadir's allowed user or role list. Ask a maintainer to check your access."
+    ),
+    "action_not_allowed": "This type of request isn't enabled for your account or this channel.",
+    "action_not_supported": "Nadir doesn't support this request type.",
+    "trigger_not_allowed": "Nadir isn't configured to answer this kind of message here.",
+    "missing_agent_mention": "Please mention Nadir directly in this message.",
+    "wrong_platform": "This request came from an unsupported chat platform.",
+    "wrong_account": "This request came from an account Nadir isn't configured to serve.",
+    "wrong_space": "Nadir isn't configured for this server or workspace.",
+    "self_event": "Nadir can't answer a message sent by the bot itself.",
+    "automated_subject": "Nadir can't answer messages from another bot account.",
+    "event_expired": "This request expired before Nadir could process it. Please send it again.",
+    "event_from_future": "This request has an invalid future timestamp. Please send it again.",
+    "question_empty": "Please include a question for Nadir.",
+    "question_too_large": "This question is over Nadir's configured input limit. Please shorten it.",
+    "question_invalid": "This question contains text Nadir can't safely process. Please edit and resend it.",
+    "context_disabled": "Nadir's chat history access isn't enabled for this request.",
+    "relationship_invalid": "Nadir couldn't verify that this reply belongs to the recent conversation.",
+}
+
+
+def _worker_problem(reason: str | None, *, refused: bool = False) -> str:
+    """Render only closed worker reasons; never display exception or model text."""
+    if reason in _WORKER_FAILURES:
+        return _WORKER_FAILURES[reason]
+    if refused:
+        return (
+            "I can't perform this request (request_refused). "
+            "Ask a maintainer to check Nadir's channel and access rules."
+        )
+    return _WORKER_FAILURES["run_failed"]
+
+
+def failure_text(error: Exception) -> str:
+    """Translate known edge failures without exposing provider bodies or exception text."""
+    if isinstance(error, discord.Forbidden):
+        code = "http_403"
+    elif isinstance(error, discord.NotFound):
+        code = "http_404"
+    elif isinstance(error, discord.HTTPException):
+        code = f"http_{error.status}"
+    elif isinstance(error, DiscordRestError):
+        code = error.code if re.fullmatch(r"[a-z][a-z0-9_]{0,63}", error.code) else "discord_error"
+    elif isinstance(error, TimeoutError):
+        code = "timeout"
+    elif isinstance(error, ValueError) and str(error) in {
+        "worker_busy_or_unavailable",
+        "worker_unavailable",
+    }:
+        code = "worker_unavailable"
+    elif isinstance(error, ValueError) and str(error) == "conversation_budget":
+        code = "budget"
+    else:
+        code = error_code(error)
+
+    messages = {
+        "http_401": "Discord rejected Nadir's bot authentication (401). A maintainer should check the bot token.",
+        "http_403": (
+            "Discord denied one of Nadir's channel operations (403). Ask a maintainer to check View Channel, "
+            "Read Message History, and Send Messages permissions."
+        ),
+        "http_404": (
+            "Discord couldn't find the configured channel or message (404). "
+            "Ask a maintainer to check the channel binding."
+        ),
+        "network_error": (
+            "Nadir couldn't reach Discord. Please try again later; a maintainer should check connectivity."
+        ),
+        "timeout": "Nadir timed out while preparing the answer. Please try again with a shorter request.",
+        "budget": _WORKER_FAILURES["budget"],
+        "worker_unavailable": _WORKER_FAILURES["worker_unavailable"],
+    }
+    return messages.get(
+        code,
+        f"I couldn't prepare an answer. Please try again later (diagnostic code: {code}). "
+        "A maintainer can check Nadir's logs.",
+    )
+
+
 def result_text(result: ReachWorkerResult) -> str:
-    """Render payload-free worker refusals without attempting an empty message."""
+    """Render worker answers and precise safe reasons without attempting an empty message."""
     if result.text.strip():
         return result.text
     if result.status == "refused":
-        return "I can't perform this request. Please check your permissions and the allowed channel."
-    return "I couldn't prepare an answer. Please try a new request later."
+        return _worker_problem(result.reason, refused=True)
+    if result.status == "error":
+        return _worker_problem(result.reason)
+    return "I couldn't prepare an answer. Please try again later (diagnostic code: empty_result)."
 
 
 def _parent(channel: object, policy: DiscordPolicy) -> str | None:
@@ -475,7 +591,13 @@ class ReachService:
             await self._bind_conversation(event, channel)
             if acknowledge is not None and not await acknowledge():
                 return None
-            async with asyncio.timeout(480 if self.worker.ready.research_enabled else 180):
+            async with asyncio.timeout(
+                960
+                if self.worker.ready.research_enabled
+                else 810
+                if self.conversation
+                else 180
+            ):
                 return await self._context_turn(
                     event, channel, reference=reference, continuation_anchor=continuation_anchor
                 )
@@ -639,8 +761,17 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
 
     async def _request(self, interaction: discord.Interaction, question: str, action: str) -> None:
         event = event_from_interaction(interaction, self.service.policy, question=question, action=action)
-        if not self.service.eligible(event):
+        if event is None:
             await interaction.response.send_message("This request isn't allowed here.", ephemeral=True)
+            return
+        if not self.service.eligible(event):
+            decision = prepare_turn(self.service.shared_policy, event, now=datetime.now(UTC))
+            await interaction.response.send_message(
+                _worker_problem(decision.reason, refused=True)
+                if not decision.allowed
+                else _worker_problem(None, refused=True),
+                ephemeral=True,
+            )
             return
         await interaction.response.defer(ephemeral=True, thinking=True)
         if event is None or not isinstance(interaction.channel, discord.abc.Messageable):
@@ -690,11 +821,11 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                     if outcome.status != "succeeded":
                         diagnostic("request_failed")
                         break
-        except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError):
+        except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError) as error:
             diagnostic("request_failed")
             await self.service.rest.edit_interaction_original(
                 interaction.token,
-                "I couldn't prepare an answer, or I'm currently handling another question.",
+                failure_text(error),
                 event_id=str(interaction.id),
             )
 
@@ -775,7 +906,7 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
             if result is None:
                 if state is None or not state.plan_delivered:
                     return
-                text = "I couldn't prepare an answer, or I'm handling another question. Please try again later."
+                text = _WORKER_FAILURES["run_failed"]
             else:
                 text = result_text(result)
             terminal_started = True
@@ -790,9 +921,7 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
             if event.trigger == "message":
                 await self.service.rest.bind_direct_channel(event.conversation_id, event.subject_id)
             terminal_started = True
-            await self._send_final(
-                event, "I couldn't prepare an answer, or I'm handling another question. Please try again later."
-            )
+            await self._send_final(event, failure_text(error))
 
     async def _acknowledge(self, event: ReachEvent) -> bool:
         """Keep conversation receipt cosmetic; research supplies its own delivered model plan."""
