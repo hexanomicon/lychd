@@ -1,0 +1,11 @@
+---
+# Copy outside the checkout. Choose IDs after inspecting the installed host.
+lychd_runtime_name: lychd
+lychd_runtime_uid: 1001
+lychd_runtime_gid: 1001
+lychd_subuid_start: 231072
+lychd_subgid_start: 231072
+# Exactly 65536 IDs per map; existing differing maps are refused, never migrated.
+lychd_subid_count: 65536
+# Required plain public key lines; no private keys, options, paths, or commands.
+lychd_runtime_ssh_public_keys: []

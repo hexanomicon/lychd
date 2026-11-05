@@ -1,0 +1,13 @@
+---
+- name: Observe the installed Tumbleweed host floor without provisioning
+  hosts: lychd_hosts
+  gather_facts: false
+  become: true
+  serial: 1
+  any_errors_fatal: true
+  tasks:
+    - name: Observe the host floor
+      ansible.builtin.import_role:
+        name: tumbleweed_host
+        tasks_from: verify
+      tags: [verify]

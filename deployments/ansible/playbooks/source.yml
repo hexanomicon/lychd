@@ -1,0 +1,13 @@
+---
+# Direct ordinary-user SSH is intentional: sudo does not supply the user manager.
+- name: Stage one exact source CLI without operating the application
+  hosts: lychd_hosts
+  gather_facts: false
+  connection: ssh
+  remote_user: lychd
+  become: false
+  vars:
+    ansible_user: lychd
+    ansible_become: false
+  roles:
+    - role: lychd_source

@@ -39,6 +39,7 @@ Then open the body:
 | [Reanimation](phylactery/reanimation.md) | What can return after death. |
 | [Gateway](gateway.md) | A separate machine to face hostile ingress. Home and Remote are **Designed** placements. |
 | [VPS host provisioning](deployments.md) | A headless MicroOS bootstrap and recovery pilot on AlphaVPS C6G, separate from application acceptance. |
+| [Tumbleweed VPS](../deployments/tumbleweed/index.md) | Repeatable mutable host preparation with Ansible and separate source/application acceptance. |
 
 ### II. The Animating Spark
 

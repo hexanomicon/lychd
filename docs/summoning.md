@@ -89,6 +89,8 @@ repeat the authority, custody, persistence, resource, and recovery checks affect
 For the separate headless MicroOS/AlphaVPS host-preparation pilot, start with
 [VPS host provisioning](sepulcher/deployments.md). Its bootstrap supplies platform prerequisites;
 it does not qualify this GPU/model rite, public ingress, or a complete application lifecycle.
+The mutable [Tumbleweed pilot](deployments/tumbleweed/index.md) uses separate Ansible host and
+source preparation with the same application-ownership boundary.
 
 The [supported host policy](adr/08-containers.md#supported-host-policy) requires a free and
 open-source Linux host stack under operator control. macOS and Windows are unsupported hosting

@@ -1,0 +1,24 @@
+---
+- name: Query every required installed package capability
+  ansible.builtin.command:
+    argv: [/usr/bin/rpm, -q, --whatprovides, "{{ item }}"]
+  loop: "{{ lychd_floor_packages }}"
+  register: lychd_verify_packages
+  check_mode: false
+  changed_when: false
+
+- name: Read host mechanism evidence and enforce the installed floor
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/host_probe.py') }}"
+      - verify
+    stdin: "{{ lychd_floor_intent | to_json }}"
+  register: lychd_verification
+  check_mode: false
+  changed_when: false
+
+- name: Show attributed host mechanism evidence
+  ansible.builtin.debug:
+    var: lychd_verification.stdout
