@@ -10,7 +10,7 @@ import wave
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-import httpx
+import httpx2
 import pytest
 from scripts import companion_lab
 from scripts.voice_probe import PrivateWorkspace
@@ -71,7 +71,7 @@ def released(raw: bytes) -> bytes:
     ).encode()
 
 
-async def post(client: httpx.AsyncClient, path: str, raw: bytes) -> httpx.Response:
+async def post(client: httpx2.AsyncClient, path: str, raw: bytes) -> httpx2.Response:
     return await client.post(path, content=raw, headers={"Content-Type": "application/json"})
 
 
@@ -79,11 +79,11 @@ async def post(client: httpx.AsyncClient, path: str, raw: bytes) -> httpx.Respon
 async def test_held_release_crosses_once_into_same_native_run_after_transcription(
     files: PrivateWorkspace, unused_tcp_port: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    stt: list[httpx.Request] = []
+    stt: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         stt.append(request)
-        return httpx.Response(200, json={"text": "Čakaj."})
+        return httpx2.Response(200, json={"text": "Čakaj."})
 
     async with connected(files, unused_tcp_port, monkeypatch, handler, hold_seconds=15) as (
         control,
@@ -124,11 +124,11 @@ async def test_held_release_crosses_once_into_same_native_run_after_transcriptio
 async def test_release_before_start_keeps_later_http_start_inert(
     files: PrivateWorkspace, unused_tcp_port: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    stt: list[httpx.Request] = []
+    stt: list[httpx2.Request] = []
 
-    def unexpected_stt(request: httpx.Request) -> httpx.Response:
+    def unexpected_stt(request: httpx2.Request) -> httpx2.Response:
         stt.append(request)
-        return httpx.Response(500)
+        return httpx2.Response(500)
 
     async with connected(files, unused_tcp_port, monkeypatch, unexpected_stt, hold_seconds=15) as (
         control,
@@ -153,11 +153,11 @@ async def test_release_before_start_keeps_later_http_start_inert(
 async def test_release_while_waiting_for_audio_never_launches_later(
     files: PrivateWorkspace, unused_tcp_port: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    stt: list[httpx.Request] = []
+    stt: list[httpx2.Request] = []
 
-    def unexpected_stt(request: httpx.Request) -> httpx.Response:
+    def unexpected_stt(request: httpx2.Request) -> httpx2.Response:
         stt.append(request)
-        return httpx.Response(500)
+        return httpx2.Response(500)
 
     async with connected(files, unused_tcp_port, monkeypatch, unexpected_stt, hold_seconds=15) as (
         control,
@@ -188,11 +188,11 @@ async def test_release_while_waiting_for_audio_never_launches_later(
 async def test_hold_stop_or_original_deadline_blocks_transcription(
     files: PrivateWorkspace, unused_tcp_port: int, monkeypatch: pytest.MonkeyPatch, case: str
 ) -> None:
-    stt: list[httpx.Request] = []
+    stt: list[httpx2.Request] = []
 
-    def unexpected_stt(request: httpx.Request) -> httpx.Response:
+    def unexpected_stt(request: httpx2.Request) -> httpx2.Response:
         stt.append(request)
-        return httpx.Response(500)
+        return httpx2.Response(500)
 
     async with connected(files, unused_tcp_port, monkeypatch, unexpected_stt, hold_seconds=15) as (
         control,

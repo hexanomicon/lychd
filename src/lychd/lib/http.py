@@ -10,16 +10,28 @@ async probe primitives.
 from __future__ import annotations
 
 import asyncio
+import ssl
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Any, cast
 
-import httpx
+import certifi
+import httpx2
 
 if TYPE_CHECKING:
     from collections.abc import Coroutine, Mapping
 
 DEFAULT_TIMEOUT_SECONDS = 5.0
 _HTTP_STATUS_BAD_REQUEST = 400
+
+
+def create_http_ssl_context() -> ssl.SSLContext:
+    """Use maintained public roots without ambient CA or key-log configuration."""
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    if sys.version_info >= (3, 13):  # noqa: UP036 - the declared Python 3.12 keeps its stdlib TLS defaults
+        context.verify_flags |= ssl.VERIFY_X509_STRICT | ssl.VERIFY_X509_PARTIAL_CHAIN
+    context.load_verify_locations(cafile=certifi.where())
+    return context
 
 
 class HttpJsonError(RuntimeError):
@@ -39,7 +51,7 @@ async def request_json(
     query: Mapping[str, str] | None = None,
     payload: Mapping[str, Any] | None = None,
     headers: Mapping[str, str] | None = None,
-    timeout: float = DEFAULT_TIMEOUT_SECONDS,  # noqa: ASYNC109 - httpx owns the request timeout natively
+    timeout: float = DEFAULT_TIMEOUT_SECONDS,  # noqa: ASYNC109 - httpx2 owns the request timeout natively
 ) -> dict[str, object]:
     """Issue a direct, non-redirecting JSON request and normalize its response.
 
@@ -53,7 +65,9 @@ async def request_json(
         request_headers.setdefault("Content-Type", "application/json")
 
     try:
-        async with httpx.AsyncClient(timeout=timeout, trust_env=False, follow_redirects=False) as client:
+        async with httpx2.AsyncClient(
+            timeout=timeout, trust_env=False, follow_redirects=False, verify=create_http_ssl_context()
+        ) as client:
             response = await client.request(
                 method,
                 url,
@@ -61,7 +75,7 @@ async def request_json(
                 json=dict(payload) if payload is not None else None,
                 headers=request_headers,
             )
-    except httpx.HTTPError as exc:
+    except httpx2.HTTPError as exc:
         msg = f"{method} {url} failed: {exc}"
         raise HttpJsonError(msg, transport=True) from exc
 
@@ -100,4 +114,4 @@ def run_sync[T](coro: Coroutine[Any, Any, T]) -> T:
         return pool.submit(asyncio.run, coro).result()
 
 
-__all__ = ["DEFAULT_TIMEOUT_SECONDS", "HttpJsonError", "request_json", "run_sync"]
+__all__ = ["DEFAULT_TIMEOUT_SECONDS", "HttpJsonError", "create_http_ssl_context", "request_json", "run_sync"]

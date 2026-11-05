@@ -6,7 +6,7 @@ import asyncio
 from dataclasses import replace
 from typing import Any, cast
 
-import httpx
+import httpx2
 import pytest
 from scripts import companion_lab
 from scripts.voice_probe import PrivateWorkspace
@@ -131,11 +131,11 @@ async def test_busy_voice_and_reply_keep_original_locales_until_retirement(  # n
 ) -> None:
     entered, release = asyncio.Event(), asyncio.Event()
     client = speech(
-        httpx.MockTransport(
+        httpx2.MockTransport(
             lambda request: (
-                httpx.Response(200, json={"text": "state"})
+                httpx2.Response(200, json={"text": "state"})
                 if request.url.path.endswith("/transcriptions")
-                else httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"})
+                else httpx2.Response(200, content=wav(), headers={"content-type": "audio/wav"})
             )
         )
     )
@@ -254,11 +254,11 @@ async def test_same_reader_batch_applies_configuration_before_fresh_record_and_r
     monkeypatch.setattr(companion_lab, "_message", message)
     monkeypatch.setattr(companion_lab, "capture_utterance", capture)
     client = speech(
-        httpx.MockTransport(
+        httpx2.MockTransport(
             lambda request: (
-                httpx.Response(200, json={"text": "state"})
+                httpx2.Response(200, json={"text": "state"})
                 if request.url.path.endswith("/transcriptions")
-                else httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"})
+                else httpx2.Response(200, content=wav(), headers={"content-type": "audio/wav"})
             )
         )
     )

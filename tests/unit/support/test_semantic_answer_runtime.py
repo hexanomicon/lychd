@@ -12,7 +12,6 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-import httpx
 import httpx2
 import pytest
 from pydantic import ValidationError
@@ -191,7 +190,7 @@ async def test_inert_profile_refuses_incomplete_or_unowned_declaration(tmp_path:
 async def test_inert_exact_warm_inventory_get_is_separate_from_inference() -> None:
     profile = boundary().profile
     journal: list[dict[str, Any]] = []
-    entry = answer._warm_inventory(httpx.Request("GET", profile.base_url + "/models"), profile, journal)
+    entry = answer._warm_inventory(httpx2.Request("GET", profile.base_url + "/models"), profile, journal)
     assert journal == [entry]
     assert entry["method"] == "GET"
 
@@ -203,7 +202,7 @@ async def test_inert_warm_inventory_refuses_post_or_other_endpoint(method: str, 
     profile = boundary().profile
     journal: list[dict[str, Any]] = []
     with pytest.raises(AssertionError):
-        answer._warm_inventory(httpx.Request(method, profile.base_url + path), profile, journal)
+        answer._warm_inventory(httpx2.Request(method, profile.base_url + path), profile, journal)
     assert journal == []
 
 
@@ -211,9 +210,9 @@ async def test_inert_warm_inventory_sixth_get_is_refused() -> None:
     profile = boundary().profile
     journal: list[dict[str, Any]] = []
     for _ in range(5):
-        answer._warm_inventory(httpx.Request("GET", profile.base_url + "/models"), profile, journal)
+        answer._warm_inventory(httpx2.Request("GET", profile.base_url + "/models"), profile, journal)
     with pytest.raises(AssertionError, match="warm_inventory_budget"):
-        answer._warm_inventory(httpx.Request("GET", profile.base_url + "/models"), profile, journal)
+        answer._warm_inventory(httpx2.Request("GET", profile.base_url + "/models"), profile, journal)
     assert len(journal) == 5
 
 

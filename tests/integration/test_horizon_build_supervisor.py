@@ -13,7 +13,7 @@ from tempfile import TemporaryDirectory
 from typing import Any
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 import pytest_asyncio
 from scripts.blockworld_voice import VoiceSession
@@ -367,7 +367,7 @@ async def test_voice_file_admits_only_supplied_plan_once_and_retains_native_even
     # Make keeps its ordinary fixtures in the checkout; private voice material cannot live there.
     with TemporaryDirectory(prefix="lhbs-voice-", dir="/tmp") as directory:
         files = PrivateWorkspace(Path(directory), (_CHECKOUT,))
-        probe = speech(httpx.MockTransport(lambda _: httpx.Response(200, json={"text": "Postav schválený plán."})))
+        probe = speech(httpx2.MockTransport(lambda _: httpx2.Response(200, json={"text": "Postav schválený plán."})))
         admitted = plan()
         session = VoiceSession(files, probe, lab.runner, lab.control, build_plan=admitted)
         lab.supervisor = session.supervisor

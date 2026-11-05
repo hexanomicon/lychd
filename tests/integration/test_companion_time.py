@@ -8,7 +8,7 @@ import time
 from typing import Any
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 
 from lychd.compositions.blockworld.companion import (
@@ -67,7 +67,7 @@ class ClockBridgeFixture(FakeBridge):
             "timestamp_ms": int(time.time() * 1000),
         }
 
-    async def handle(self, request: httpx.Request) -> httpx.Response:  # noqa: C901 - distinct wire faults
+    async def handle(self, request: httpx2.Request) -> httpx2.Response:  # noqa: C901 - distinct wire faults
         response = await super().handle(request)
         if request.url.path != "/v1/actions":
             return response
@@ -76,7 +76,7 @@ class ClockBridgeFixture(FakeBridge):
             return response
         if self.fault == "lost_ack":
             msg = "Lost clock acknowledgement after effect"
-            raise httpx.ReadError(msg, request=request)
+            raise httpx2.ReadError(msg, request=request)
         record = response.json()
         observation = self.clock(outgoing["args"].get("mode", "day"))
         record["observation"] = observation
@@ -125,7 +125,7 @@ class ClockBridgeFixture(FakeBridge):
             record.update(status="refused", observation=None)
         elif self.fault == "server_unknown":
             record.update(status="unknown", observation=None)
-        return httpx.Response(202, json=record)
+        return httpx2.Response(202, json=record)
 
 
 def clock_request(text: str = "čas deň") -> CompanionRequest:

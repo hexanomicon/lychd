@@ -7,7 +7,7 @@ import time
 from typing import Any
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 
 from lychd.compositions.blockworld.companion import (
@@ -64,8 +64,8 @@ class CellBridgeFixture(FakeBridge):
         }
 
     async def handle(  # noqa: C901, PLR0912 - independent named wire faults stay visible in one fixture
-        self, request: httpx.Request
-    ) -> httpx.Response:
+        self, request: httpx2.Request
+    ) -> httpx2.Response:
         self.routes.append((request.method, request.url.path))
         response = await super().handle(request)
         if request.url.path != "/v1/actions":
@@ -74,10 +74,10 @@ class CellBridgeFixture(FakeBridge):
         if outgoing["kind"] != "inspect" and self.fault != "cross_kind":
             return response
         if self.fault == "old_server":
-            return httpx.Response(400, json={"detail": "unsupported action kind"})
+            return httpx2.Response(400, json={"detail": "unsupported action kind"})
         if self.fault == "lost_ack":
             msg = "Fixture lost acknowledgement"
-            raise httpx.ReadError(msg, request=request)
+            raise httpx2.ReadError(msg, request=request)
         record = response.json()
         record["observation"] = self.cell()
         cell = record["observation"]
@@ -112,7 +112,7 @@ class CellBridgeFixture(FakeBridge):
             cell["position"][0] = True
         elif self.fault == "extra_authority":
             cell["can_place"] = True
-        return httpx.Response(202, json=record)
+        return httpx2.Response(202, json=record)
 
 
 def cell_request(text: str = "inspect 1 64 0") -> CompanionRequest:

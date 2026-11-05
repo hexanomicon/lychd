@@ -9,7 +9,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, cast
 
-import httpx
+import httpx2
 import pytest
 from scripts import companion_lab
 from scripts.voice_probe import PrivateWorkspace
@@ -59,19 +59,19 @@ def console_for(
     clock = Clock()
     monkeypatch.setattr(companion_lab, "_host_tick", clock)
 
-    def respond(request: httpx.Request) -> httpx.Response:
+    def respond(request: httpx2.Request) -> httpx2.Response:
         if request.url.path.endswith("/transcriptions"):
             clock.advance(23)
-            return httpx.Response(200, json={"text": words})
+            return httpx2.Response(200, json={"text": words})
         clock.advance(41)
-        return httpx.Response(200, content=wav(), headers={"content-type": "audio/wav"})
+        return httpx2.Response(200, content=wav(), headers={"content-type": "audio/wav"})
 
     path = files.root / "input.wav"
     files.write_new(path, wav())
     console = companion_lab.CompanionConsole(
         files,
         cast("CompanionSession", state or ConsoleSession()),
-        speech=speech(httpx.MockTransport(respond)),
+        speech=speech(httpx2.MockTransport(respond)),
         language="sk",
         reply_language="sk" if reply else None,
     )

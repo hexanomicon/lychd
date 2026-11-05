@@ -17,6 +17,7 @@ from typing import Any, cast
 from uuid import uuid4
 
 import httpx
+import httpx2
 import pytest
 from litestar import Litestar
 from litestar.datastructures import State
@@ -80,7 +81,7 @@ async def _workflow(  # noqa: C901, PLR0915 - one ordered eight-operation receip
     )
     wires: list[dict[str, Any]] = []
     api: list[dict[str, Any]] = []
-    clients: dict[int, httpx.AsyncClient] = {}
+    clients: dict[int, httpx2.AsyncClient] = {}
     executions: list[dict[str, Any]] = []
     derivations: list[dict[str, Any]] = []
     leases = LeaseLedger()
@@ -95,7 +96,7 @@ async def _workflow(  # noqa: C901, PLR0915 - one ordered eight-operation receip
         rendered_query,
         rendered_query,
     ]
-    send = httpx.AsyncClient.send
+    send = httpx2.AsyncClient.send
     original_post = LlamaCppEmbeddingDriver._post  # pyright: ignore[reportPrivateUsage]
 
     async def observe_post(
@@ -110,7 +111,7 @@ async def _workflow(  # noqa: C901, PLR0915 - one ordered eight-operation receip
             proof.persist(root, "http-wire-after-read.json", wires)
         return result
 
-    async def observe(client: httpx.AsyncClient, request: httpx.Request, **kwargs: Any) -> httpx.Response:
+    async def observe(client: httpx2.AsyncClient, request: httpx2.Request, **kwargs: Any) -> httpx2.Response:
         if request.url.host == "testserver.local":
             return await send(client, request, **kwargs)
         assert request.url.scheme == "http"
@@ -180,7 +181,7 @@ async def _workflow(  # noqa: C901, PLR0915 - one ordered eight-operation receip
         archive = ArchiveService(profile=profile, store=DbArchiveStore(factory), authorizer=policy)
         with monkeypatch.context() as patch:
             patch.setattr("lychd.db.engine.get_session_factory", lambda: factory)
-            patch.setattr(httpx.AsyncClient, "send", observe)
+            patch.setattr(httpx2.AsyncClient, "send", observe)
             patch.setattr(LlamaCppEmbeddingDriver, "_post", observe_post)
             derivation = build_archive_derivation(settings, registry, leases, caller)
             semantic = build_archive_semantic(settings, registry, leases, caller)

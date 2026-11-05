@@ -8,7 +8,7 @@ from email.parser import BytesParser
 from email.policy import default
 from typing import Any
 
-import httpx
+import httpx2
 import pytest
 
 from lychd.domain.artifacts import ArtifactRef
@@ -71,7 +71,7 @@ def material() -> tuple[ArtifactRef, bytes]:
     ), content
 
 
-class Chunks(httpx.AsyncByteStream):
+class Chunks(httpx2.AsyncByteStream):
     def __init__(self, chunks: list[bytes]) -> None:
         self.chunks = chunks
         self.reads = 0
@@ -97,7 +97,7 @@ async def test_exact_multipart_and_verbatim_text(text: str, endpoint: str) -> No
         update={"transcriber_binding": pinned.transcriber_binding.model_copy(update={"endpoint": endpoint})}
     )
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         calls += 1
         assert str(request.url) == endpoint + "/v1/audio/transcriptions"
@@ -114,9 +114,9 @@ async def test_exact_multipart_and_verbatim_text(text: str, endpoint: str) -> No
         assert parts["language"].get_payload(decode=True) == b"sk"
         assert parts["response_format"].get_payload(decode=True) == b"json"
         assert request.extensions["timeout"] == {"connect": 2.0, "read": 2.0, "write": 2.0, "pool": 2.0}
-        return httpx.Response(200, json={"text": text})
+        return httpx2.Response(200, json={"text": text})
 
-    actual = await LocalDictationTranscriber(pinned, httpx.MockTransport(handler)).transcribe(reference, content, "sk")
+    actual = await LocalDictationTranscriber(pinned, httpx2.MockTransport(handler)).transcribe(reference, content, "sk")
     assert actual == text
     assert calls == 1
 
@@ -143,10 +143,10 @@ def test_constructed_or_copied_profile_is_revalidated(field: str, value: str) ->
 
 @pytest.mark.asyncio
 async def test_effect_revalidates_profile_before_http() -> None:
-    def handler(_request: httpx.Request) -> httpx.Response:
+    def handler(_request: httpx2.Request) -> httpx2.Response:
         pytest.fail("Invalid profile reached transport")
 
-    client = LocalDictationTranscriber(profile(), httpx.MockTransport(handler))
+    client = LocalDictationTranscriber(profile(), httpx2.MockTransport(handler))
     client.profile = client.profile.model_copy(update={"max_response_bytes": 65_537})
     reference, content = material()
     with pytest.raises(DictationTranscriberError) as failure:
@@ -156,10 +156,10 @@ async def test_effect_revalidates_profile_before_http() -> None:
 
 @pytest.mark.asyncio
 async def test_audio_identity_and_language_refuse_before_http() -> None:
-    def handler(_request: httpx.Request) -> httpx.Response:
+    def handler(_request: httpx2.Request) -> httpx2.Response:
         pytest.fail("Invalid material reached transport")
 
-    client = LocalDictationTranscriber(profile(), httpx.MockTransport(handler))
+    client = LocalDictationTranscriber(profile(), httpx2.MockTransport(handler))
     reference, content = material()
     for source, audio, language, reason in (
         (reference.model_copy(update={"digest": "sha256:" + "0" * 64}), content, "en", "invalid_audio"),
@@ -194,14 +194,14 @@ async def test_audio_identity_and_language_refuse_before_http() -> None:
 async def test_malformed_ambiguous_or_unknown_response_is_unknown_without_retry(body: bytes) -> None:
     calls = 0
 
-    def handler(_request: httpx.Request) -> httpx.Response:
+    def handler(_request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         calls += 1
-        return httpx.Response(200, content=body, headers={"Content-Type": "application/json"})
+        return httpx2.Response(200, content=body, headers={"Content-Type": "application/json"})
 
     reference, content = material()
     with pytest.raises(DictationTranscriberError) as failure:
-        await LocalDictationTranscriber(profile(), httpx.MockTransport(handler)).transcribe(reference, content, "en")
+        await LocalDictationTranscriber(profile(), httpx2.MockTransport(handler)).transcribe(reference, content, "en")
     assert calls == 1
     assert (failure.value.outcome, str(failure.value)) == ("unknown", "outcome_unknown")
 
@@ -225,14 +225,14 @@ async def test_bad_headers_never_consume_body_or_redirect(status: int, headers: 
     stream = Chunks([b"private server output"])
     calls = 0
 
-    def handler(_request: httpx.Request) -> httpx.Response:
+    def handler(_request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         calls += 1
-        return httpx.Response(status, stream=stream, headers=headers)
+        return httpx2.Response(status, stream=stream, headers=headers)
 
     reference, content = material()
     with pytest.raises(DictationTranscriberError, match=r"^outcome_unknown$"):
-        await LocalDictationTranscriber(profile(), httpx.MockTransport(handler)).transcribe(reference, content, "en")
+        await LocalDictationTranscriber(profile(), httpx2.MockTransport(handler)).transcribe(reference, content, "en")
     assert stream.reads == 0
     assert stream.closed
     assert calls == 1
@@ -245,7 +245,7 @@ async def test_streamed_limit_enforced_even_with_missing_or_false_length(declare
     headers = {"Content-Type": "application/json"}
     if declared_length is not None:
         headers["Content-Length"] = declared_length
-    transport = httpx.MockTransport(lambda _request: httpx.Response(200, headers=headers, stream=stream))
+    transport = httpx2.MockTransport(lambda _request: httpx2.Response(200, headers=headers, stream=stream))
     reference, content = material()
     with pytest.raises(DictationTranscriberError, match=r"^outcome_unknown$"):
         await LocalDictationTranscriber(profile(max_response_bytes=64), transport).transcribe(reference, content, "en")
@@ -259,12 +259,12 @@ async def test_exact_stream_limit_and_declared_length_are_checked() -> None:
     reference, content = material()
     for length, succeeds in ((str(len(body)), True), (str(len(body) - 1), False)):
         stream = Chunks([body[:4], body[4:]])
-        response = httpx.Response(
+        response = httpx2.Response(
             200,
             stream=stream,
             headers={"Content-Type": "application/json", "Content-Length": length},
         )
-        transport = httpx.MockTransport(lambda _request, response=response: response)
+        transport = httpx2.MockTransport(lambda _request, response=response: response)
         client = LocalDictationTranscriber(profile(max_response_bytes=len(body)), transport)
         if succeeds:
             assert await client.transcribe(reference, content, "en") == "ok"
@@ -275,11 +275,11 @@ async def test_exact_stream_limit_and_declared_length_are_checked() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("error_type", [httpx.ConnectError, httpx.ReadTimeout, httpx.WriteError, RuntimeError])
+@pytest.mark.parametrize("error_type", [httpx2.ConnectError, httpx2.ReadTimeout, httpx2.WriteError, RuntimeError])
 async def test_transport_errors_are_unknown_and_content_free(error_type: type[Exception]) -> None:
     calls = 0
 
-    def handler(_request: httpx.Request) -> httpx.Response:
+    def handler(_request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         calls += 1
         msg = "private input or response"
@@ -287,7 +287,7 @@ async def test_transport_errors_are_unknown_and_content_free(error_type: type[Ex
 
     reference, content = material()
     with pytest.raises(DictationTranscriberError) as failure:
-        await LocalDictationTranscriber(profile(), httpx.MockTransport(handler)).transcribe(reference, content, "en")
+        await LocalDictationTranscriber(profile(), httpx2.MockTransport(handler)).transcribe(reference, content, "en")
     assert (failure.value.outcome, failure.value.reason) == ("unknown", "outcome_unknown")
     assert failure.value.__suppress_context__
     assert calls == 1
@@ -298,7 +298,7 @@ async def test_total_timeout_and_cancellation_leave_unknown_without_retry() -> N
     entered = asyncio.Event()
     calls = 0
 
-    async def handler(_request: httpx.Request) -> httpx.Response:
+    async def handler(_request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         calls += 1
         entered.set()
@@ -306,7 +306,7 @@ async def test_total_timeout_and_cancellation_leave_unknown_without_retry() -> N
         raise AssertionError
 
     reference, content = material()
-    transport = httpx.MockTransport(handler)
+    transport = httpx2.MockTransport(handler)
     client = LocalDictationTranscriber(profile(), transport)
     task = asyncio.create_task(client.transcribe(reference, content, "en"))
     await entered.wait()
@@ -323,17 +323,17 @@ async def test_total_timeout_and_cancellation_leave_unknown_without_retry() -> N
 
 @pytest.mark.asyncio
 async def test_client_disables_ambient_credentials_proxy_and_redirects(monkeypatch: pytest.MonkeyPatch) -> None:
-    original = httpx.AsyncClient
+    original = httpx2.AsyncClient
     observed: list[dict[str, Any]] = []
 
-    def client_factory(**kwargs: Any) -> httpx.AsyncClient:
+    def client_factory(**kwargs: Any) -> httpx2.AsyncClient:
         observed.append(kwargs)
         return original(**kwargs)
 
     monkeypatch.setenv("HTTP_PROXY", "http://proxy.invalid:8080")
     monkeypatch.setenv("NETRC", "/synthetic/credentials-must-not-be-read")
-    monkeypatch.setattr(httpx, "AsyncClient", client_factory)
-    transport = httpx.MockTransport(lambda _request: httpx.Response(200, json={"text": ""}))
+    monkeypatch.setattr(httpx2, "AsyncClient", client_factory)
+    transport = httpx2.MockTransport(lambda _request: httpx2.Response(200, json={"text": ""}))
     reference, content = material()
     assert await LocalDictationTranscriber(profile(), transport).transcribe(reference, content, "en") == ""
     assert len(observed) == 1
@@ -343,11 +343,11 @@ async def test_client_disables_ambient_credentials_proxy_and_redirects(monkeypat
 
 @pytest.mark.asyncio
 async def test_client_setup_failure_is_predispatch_refusal(monkeypatch: pytest.MonkeyPatch) -> None:
-    def unavailable(**_kwargs: Any) -> httpx.AsyncClient:
+    def unavailable(**_kwargs: Any) -> httpx2.AsyncClient:
         msg = "private configuration detail"
         raise RuntimeError(msg)
 
-    monkeypatch.setattr(httpx, "AsyncClient", unavailable)
+    monkeypatch.setattr(httpx2, "AsyncClient", unavailable)
     reference, content = material()
     with pytest.raises(DictationTranscriberError) as failure:
         await LocalDictationTranscriber(profile()).transcribe(reference, content, "en")
@@ -356,7 +356,7 @@ async def test_client_setup_failure_is_predispatch_refusal(monkeypatch: pytest.M
 
 @pytest.mark.asyncio
 async def test_profile_text_limit_refuses_without_truncation() -> None:
-    transport = httpx.MockTransport(lambda _request: httpx.Response(200, json={"text": "abcd"}))
+    transport = httpx2.MockTransport(lambda _request: httpx2.Response(200, json={"text": "abcd"}))
     reference, content = material()
     with pytest.raises(DictationTranscriberError, match=r"^outcome_unknown$"):
         await LocalDictationTranscriber(profile(max_text_chars=3), transport).transcribe(reference, content, "en")

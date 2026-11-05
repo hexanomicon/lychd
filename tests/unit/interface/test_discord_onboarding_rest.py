@@ -6,13 +6,13 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2
 import pytest
 
 from lychd.interface.discord.rest import DiscordRest, DiscordRestError, EffectJournal, EffectResult
 
 
-def make_rest(tmp_path: Path, client: httpx.AsyncClient) -> DiscordRest:
+def make_rest(tmp_path: Path, client: httpx2.AsyncClient) -> DiscordRest:
     return DiscordRest(
         token="synthetic-bot-secret",  # noqa: S106 - synthetic fixture credential
         application_id="101",
@@ -23,15 +23,15 @@ def make_rest(tmp_path: Path, client: httpx.AsyncClient) -> DiscordRest:
     )
 
 
-def transport(handler: Callable[[httpx.Request], httpx.Response]) -> httpx.AsyncClient:
-    return httpx.AsyncClient(transport=httpx.MockTransport(handler), trust_env=False)
+def transport(handler: Callable[[httpx2.Request], httpx2.Response]) -> httpx2.AsyncClient:
+    return httpx2.AsyncClient(transport=httpx2.MockTransport(handler), trust_env=False)
 
 
-def identity(request: httpx.Request) -> httpx.Response | None:
+def identity(request: httpx2.Request) -> httpx2.Response | None:
     if request.url.path == "/api/v10/users/@me":
-        return httpx.Response(200, json={"id": "102", "bot": True})
+        return httpx2.Response(200, json={"id": "102", "bot": True})
     if request.url.path == "/api/v10/oauth2/applications/@me":
-        return httpx.Response(200, json={"id": "101"})
+        return httpx2.Response(200, json={"id": "101"})
     return None
 
 
@@ -58,20 +58,20 @@ def bind_introductions(rest: DiscordRest) -> None:
 
 @pytest.mark.asyncio
 async def test_member_role_put_204_is_success_and_duplicate_is_not_sent(tmp_path: Path) -> None:
-    writes: list[httpx.Request] = []
-    role_reads: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
+    role_reads: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         if request.method == "GET" and request.url.path == "/api/v10/guilds/103/roles":
             role_reads.append(request)
-            return httpx.Response(200, json=member_roles())
+            return httpx2.Response(200, json=member_roles())
         writes.append(request)
         assert role_reads
         assert rest.journal.inspect()[0].status == "attempting"
-        return httpx.Response(204)
+        return httpx2.Response(204)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -90,11 +90,11 @@ async def test_member_role_put_204_is_success_and_duplicate_is_not_sent(tmp_path
 
 @pytest.mark.asyncio
 async def test_member_role_requires_identity_verification_before_http(tmp_path: Path) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         requests.append(request)
-        return httpx.Response(204)
+        return httpx2.Response(204)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -107,16 +107,16 @@ async def test_member_role_requires_identity_verification_before_http(tmp_path: 
 
 @pytest.mark.asyncio
 async def test_unbound_member_role_refuses_without_an_attempt(tmp_path: Path) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         if request.method == "GET" and request.url.path == "/api/v10/guilds/103/roles":
-            return httpx.Response(200, json=member_roles())
+            return httpx2.Response(200, json=member_roles())
         writes.append(request)
-        return httpx.Response(204)
+        return httpx2.Response(204)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -133,17 +133,17 @@ async def test_unbound_member_role_refuses_without_an_attempt(tmp_path: Path) ->
 async def test_role_authority_is_rechecked_after_binding_before_a_new_grant(
     tmp_path: Path, permissions: str, *, managed: bool
 ) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
     current_roles = member_roles()
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         requests.append(request)
         if request.method == "GET" and request.url.path == "/api/v10/guilds/103/roles":
-            return httpx.Response(200, json=current_roles)
-        return httpx.Response(204)
+            return httpx2.Response(200, json=current_roles)
+        return httpx2.Response(204)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -159,19 +159,19 @@ async def test_role_authority_is_rechecked_after_binding_before_a_new_grant(
 @pytest.mark.parametrize("failure", ["server_error", "timeout"])
 @pytest.mark.asyncio
 async def test_unknown_role_grant_blocks_restart_and_new_event(tmp_path: Path, failure: str) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         if request.method == "GET" and request.url.path == "/api/v10/guilds/103/roles":
-            return httpx.Response(200, json=member_roles())
+            return httpx2.Response(200, json=member_roles())
         writes.append(request)
         if failure == "timeout":
             diagnostic = "synthetic response uncertainty"
-            raise httpx.ReadTimeout(diagnostic, request=request)
-        return httpx.Response(500)
+            raise httpx2.ReadTimeout(diagnostic, request=request)
+        return httpx2.Response(500)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -191,7 +191,7 @@ async def test_unknown_role_grant_blocks_restart_and_new_event(tmp_path: Path, f
 
 @pytest.mark.asyncio
 async def test_introduction_binding_requires_a_previously_bound_channel(tmp_path: Path) -> None:
-    async with transport(lambda _request: httpx.Response(200)) as client:
+    async with transport(lambda _request: httpx2.Response(200)) as client:
         rest = make_rest(tmp_path, client)
         with pytest.raises(DiscordRestError):
             rest.bind_introduction_channel("104")
@@ -201,14 +201,14 @@ async def test_introduction_binding_requires_a_previously_bound_channel(tmp_path
 
 @pytest.mark.asyncio
 async def test_introduction_create_then_fresh_ownership_check_and_exact_message_patch(tmp_path: Path) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         requests.append(request)
-        return httpx.Response(200, json=message())
+        return httpx2.Response(200, json=message())
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -247,14 +247,14 @@ async def test_introduction_create_then_fresh_ownership_check_and_exact_message_
 
 @pytest.mark.asyncio
 async def test_introduction_channel_binding_does_not_authorize_other_channels(tmp_path: Path) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
-        return httpx.Response(200, json=message(channel_id="105"))
+        return httpx2.Response(200, json=message(channel_id="105"))
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -272,24 +272,24 @@ async def test_introduction_channel_binding_does_not_authorize_other_channels(tm
 async def test_missing_or_foreign_original_never_causes_patch_or_replacement_post(
     tmp_path: Path, original: str
 ) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         requests.append(request)
         if request.method == "GET":
             if original == "missing":
-                return httpx.Response(404)
-            return httpx.Response(
+                return httpx2.Response(404)
+            return httpx2.Response(
                 200,
                 json=message(
                     author_id="999" if original == "foreign_author" else "102",
                     channel_id="999" if original == "foreign_channel" else "104",
                 ),
             )
-        return httpx.Response(200, json=message())
+        return httpx2.Response(200, json=message())
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -305,19 +305,19 @@ async def test_missing_or_foreign_original_never_causes_patch_or_replacement_pos
 @pytest.mark.parametrize("failure", ["server_error", "timeout", "malformed_success"])
 @pytest.mark.asyncio
 async def test_unknown_introduction_create_fences_new_event_and_changed_body(tmp_path: Path, failure: str) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
         if failure == "timeout":
             diagnostic = "synthetic response uncertainty"
-            raise httpx.ReadTimeout(diagnostic, request=request)
+            raise httpx2.ReadTimeout(diagnostic, request=request)
         if failure == "malformed_success":
-            return httpx.Response(200, json={})
-        return httpx.Response(500)
+            return httpx2.Response(200, json={})
+        return httpx2.Response(500)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -337,16 +337,16 @@ async def test_unknown_introduction_create_fences_new_event_and_changed_body(tmp
 
 @pytest.mark.asyncio
 async def test_unknown_introduction_update_fences_later_events_after_restart(tmp_path: Path) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         requests.append(request)
         if request.method == "PATCH":
-            return httpx.Response(500)
-        return httpx.Response(200, json=message())
+            return httpx2.Response(500)
+        return httpx2.Response(200, json=message())
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -367,14 +367,14 @@ async def test_unknown_introduction_update_fences_later_events_after_restart(tmp
 
 @pytest.mark.asyncio
 async def test_get_message_returns_mapping_only_for_bound_channels(tmp_path: Path) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         requests.append(request)
-        return httpx.Response(200, json=message())
+        return httpx2.Response(200, json=message())
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -400,14 +400,14 @@ async def test_get_message_returns_mapping_only_for_bound_channels(tmp_path: Pat
 )
 @pytest.mark.asyncio
 async def test_generic_write_does_not_inherit_onboarding_privilege(tmp_path: Path, path: str) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
-        return httpx.Response(200, json=message())
+        return httpx2.Response(200, json=message())
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -425,10 +425,10 @@ async def test_generic_write_does_not_inherit_onboarding_privilege(tmp_path: Pat
 async def test_definite_introduction_rejection_can_recover_on_a_new_confirmation(
     tmp_path: Path, rejection_status: int
 ) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
     post_statuses: list[int] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
@@ -436,8 +436,8 @@ async def test_definite_introduction_rejection_can_recover_on_a_new_confirmation
         if request.method == "POST":
             status = rejection_status if not post_statuses else 200
             post_statuses.append(status)
-            return httpx.Response(status, json=message())
-        return httpx.Response(200, json=message())
+            return httpx2.Response(status, json=message())
+        return httpx2.Response(200, json=message())
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -467,9 +467,9 @@ async def test_concurrent_role_grants_and_introduction_wait_for_the_same_adapter
     release_first = asyncio.Event()
     second_started = asyncio.Event()
     introduction_started = asyncio.Event()
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    async def handler(request: httpx.Request) -> httpx.Response:
+    async def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
@@ -477,13 +477,13 @@ async def test_concurrent_role_grants_and_introduction_wait_for_the_same_adapter
             first_suspended.set()
             await release_first.wait()
         if request.method == "GET" and request.url.path == "/api/v10/guilds/103/roles":
-            return httpx.Response(200, json=member_roles())
+            return httpx2.Response(200, json=member_roles())
         writes.append(request)
         if request.method == "PUT":
-            return httpx.Response(204)
-        return httpx.Response(200, json=message())
+            return httpx2.Response(204)
+        return httpx2.Response(200, json=message())
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), trust_env=False) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(handler), trust_env=False) as client:
         rest = make_rest(tmp_path, client)
         await rest.verify_identity()
         rest.bind_member_roles(("106", "107"))

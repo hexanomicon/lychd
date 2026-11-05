@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal, cast
 from urllib.parse import quote
 
-import httpx
+import httpx2
 import pytest
 
 from lychd.compositions.reach.expressions import REACTIONS, Reaction
@@ -25,17 +25,17 @@ OTHER_GIF = "https://media2.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif"
 async def test_reaction_encodes_only_fixed_emoji_and_accepts_empty_204(
     tmp_path: Path, emoji: Reaction, channel_kind: str
 ) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         if request.method == "GET":
             assert request.url.path == "/api/v10/channels/104"
-            return httpx.Response(200, json={"id": "104", "type": 1, "recipients": [{"id": "105"}]})
+            return httpx2.Response(200, json={"id": "104", "type": 1, "recipients": [{"id": "105"}]})
         writes.append(request)
-        return httpx.Response(204)
+        return httpx2.Response(204)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -78,11 +78,11 @@ async def test_invalid_reaction_never_sends_or_claims(
     phase: str,
     code: str,
 ) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         requests.append(request)
-        return httpx.Response(204)
+        return httpx2.Response(204)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -102,17 +102,17 @@ async def test_invalid_reaction_never_sends_or_claims(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("outcome", ["success", "server_error", "timeout"])
 async def test_reaction_restart_reuses_or_fences_slot_and_changed_emoji(tmp_path: Path, outcome: str) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
         if outcome == "timeout":
             message = "synthetic-private-provider-diagnostic"
-            raise httpx.ReadTimeout(message, request=request)
-        return httpx.Response(204 if outcome == "success" else 500)
+            raise httpx2.ReadTimeout(message, request=request)
+        return httpx2.Response(204 if outcome == "success" else 500)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -139,14 +139,14 @@ async def test_reaction_restart_reuses_or_fences_slot_and_changed_emoji(tmp_path
 
 @pytest.mark.asyncio
 async def test_seen_and_reply_are_independent_reaction_slots_and_generic_route_stays_closed(tmp_path: Path) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
-        return httpx.Response(204)
+        return httpx2.Response(204)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -163,11 +163,11 @@ async def test_seen_and_reply_are_independent_reaction_slots_and_generic_route_s
 
 @pytest.mark.asyncio
 async def test_expression_requires_verified_identity_before_journal_or_http(tmp_path: Path) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         requests.append(request)
-        return httpx.Response(204)
+        return httpx2.Response(204)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -184,16 +184,16 @@ async def test_expression_requires_verified_identity_before_journal_or_http(tmp_
 async def test_gif_sends_exact_url_silently_without_mentions_with_independent_nonce(
     tmp_path: Path, channel_kind: str
 ) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         if request.method == "GET":
-            return httpx.Response(200, json={"id": "104", "type": 1, "recipients": [{"id": "105"}]})
+            return httpx2.Response(200, json={"id": "104", "type": 1, "recipients": [{"id": "105"}]})
         writes.append(request)
-        return httpx.Response(201, json={"id": "108"})
+        return httpx2.Response(201, json={"id": "108"})
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -235,14 +235,14 @@ async def test_gif_sends_exact_url_silently_without_mentions_with_independent_no
 
 @pytest.mark.asyncio
 async def test_unknown_gif_remains_fenced_after_restart_and_catalog_choice_change(tmp_path: Path) -> None:
-    writes: list[httpx.Request] = []
+    writes: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         response = identity(request)
         if response is not None:
             return response
         writes.append(request)
-        return httpx.Response(500)
+        return httpx2.Response(500)
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)
@@ -281,11 +281,11 @@ async def test_unknown_gif_remains_fenced_after_restart_and_catalog_choice_chang
 async def test_invalid_gif_never_sends_or_claims(
     tmp_path: Path, channel_id: str, url: str, event_id: str, reply_to: str, code: str
 ) -> None:
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         requests.append(request)
-        return httpx.Response(201, json={"id": "108"})
+        return httpx2.Response(201, json={"id": "108"})
 
     async with transport(handler) as client:
         rest = make_rest(tmp_path, client)

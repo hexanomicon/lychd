@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from typing import Any, Literal
 
-import httpx
+import httpx2
 import pytest
 from rich.console import Console
 from scripts import companion_lab
@@ -51,7 +51,7 @@ def _feedback(value: dict[str, Any], *, language: str, identity: str) -> str:
     return text
 
 
-async def _post(client: httpx.AsyncClient, raw: bytes) -> httpx.Response:
+async def _post(client: httpx2.AsyncClient, raw: bytes) -> httpx2.Response:
     return await client.post("/v1/record", content=raw, headers={"Content-Type": "application/json"})
 
 
@@ -84,11 +84,11 @@ async def test_failed_host_boundary_has_fixed_feedback_without_native_run(  # no
 ) -> None:
     transcriptions: list[str] = []
 
-    def transcribe(request: httpx.Request) -> httpx.Response:
+    def transcribe(request: httpx2.Request) -> httpx2.Response:
         transcriptions.append(request.url.path)
         if stage == "transcription_failed":
-            return httpx.Response(503, json={"detail": _PRIVATE})
-        return httpx.Response(200, json={"text": _WORDS if stage == "instruction_refused" else "state"})
+            return httpx2.Response(503, json={"detail": _PRIVATE})
+        return httpx2.Response(200, json={"text": _WORDS if stage == "instruction_refused" else "state"})
 
     async with connected(files, unused_tcp_port, monkeypatch, transcribe) as (control, console, fake, client, captures):
         events = _events(console, monkeypatch)
@@ -185,11 +185,11 @@ async def test_socket_stt_refusal_is_localized_deduplicated_and_fresh_gesture_re
 ) -> None:
     calls: list[str] = []
 
-    def transcribe(request: httpx.Request) -> httpx.Response:
+    def transcribe(request: httpx2.Request) -> httpx2.Response:
         calls.append(request.url.path)
         if len(calls) == 1:
-            return httpx.Response(503, json={"detail": _PRIVATE})
-        return httpx.Response(200, json={"text": "state" if language == "en" else "stav"})
+            return httpx2.Response(503, json={"detail": _PRIVATE})
+        return httpx2.Response(200, json={"text": "state" if language == "en" else "stav"})
 
     async with connected(files, unused_tcp_port, monkeypatch, transcribe) as (control, console, fake, client, captures):
         console.language = language
@@ -272,9 +272,9 @@ async def test_unknown_recorder_retirement_latches_audio_but_typed_state_keeps_n
 ) -> None:
     stt: list[str] = []
 
-    def transcribe(request: httpx.Request) -> httpx.Response:
+    def transcribe(request: httpx2.Request) -> httpx2.Response:
         stt.append(request.url.path)
-        return httpx.Response(200, json={"text": "state"})
+        return httpx2.Response(200, json={"text": "state"})
 
     async with connected(files, unused_tcp_port, monkeypatch, transcribe) as (control, console, fake, client, captures):
 
@@ -323,9 +323,9 @@ async def test_post_enqueue_value_error_is_unknown_until_one_later_native_result
 ) -> None:
     calls: list[str] = []
 
-    def transcribe(request: httpx.Request) -> httpx.Response:
+    def transcribe(request: httpx2.Request) -> httpx2.Response:
         calls.append(request.url.path)
-        return httpx.Response(200, json={"text": "state"})
+        return httpx2.Response(200, json={"text": "state"})
 
     async with connected(files, unused_tcp_port, monkeypatch, transcribe) as (control, console, fake, client, captures):
         fake.delay = True
@@ -393,7 +393,7 @@ async def test_failed_spoken_stop_is_correlated_unknown_without_server_identity_
     output_mode: Literal["json", "human"],
 ) -> None:
     async with connected(
-        files, unused_tcp_port, monkeypatch, lambda _: httpx.Response(200, json={"text": " Stop\n"})
+        files, unused_tcp_port, monkeypatch, lambda _: httpx2.Response(200, json={"text": " Stop\n"})
     ) as (control, console, fake, client, captures):
         console.output = output_mode
         stream = io.StringIO()
@@ -455,9 +455,9 @@ async def test_expired_voice_waiting_for_audio_reports_input_unavailable_without
 ) -> None:
     stt: list[str] = []
 
-    def transcribe(request: httpx.Request) -> httpx.Response:
+    def transcribe(request: httpx2.Request) -> httpx2.Response:
         stt.append(request.url.path)
-        return httpx.Response(200, json={"text": "state"})
+        return httpx2.Response(200, json={"text": "state"})
 
     async with connected(files, unused_tcp_port, monkeypatch, transcribe) as (control, console, fake, client, captures):
         events = _events(console, monkeypatch)

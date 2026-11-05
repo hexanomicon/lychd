@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import click
-import httpx
+import httpx2
 
 from lychd.compositions.riffmaw.offline.models import RenderRecipe
 from lychd.compositions.riffmaw.offline.recipe import TrackControls, change_track_controls, demo_recipe
@@ -241,7 +241,7 @@ def main() -> None:
     """Return machine-readable output and concise failures, without host startup."""
     try:
         cli()
-    except (OSError, ValueError, RuntimeError, httpx.HTTPError) as exc:
+    except (OSError, ValueError, RuntimeError, httpx2.HTTPError) as exc:
         error = click.ClickException(str(exc))
         error.show()
         raise SystemExit(error.exit_code) from exc

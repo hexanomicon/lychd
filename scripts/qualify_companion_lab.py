@@ -21,7 +21,7 @@ from typing import Any, Literal, cast
 from urllib.parse import urlsplit
 from uuid import uuid4
 
-import httpx
+import httpx2
 
 from lychd.compositions.blockworld.companion import (
     MAX_REQUEST_BYTES,
@@ -36,6 +36,7 @@ from lychd.compositions.blockworld.companion import (
 )
 from lychd.domain.speech_probe import MAX_PROFILE_BYTES
 from lychd.lib.asyncio import complete_under_cancellation
+from lychd.lib.http import create_http_ssl_context
 from lychd.system.services.companion_bridge import BridgeBinding, CompanionBridge
 from lychd.system.services.companion_session import CompanionSession, LocalCompanionRunner, SessionResult
 from scripts.voice_probe import CHECKOUT_ROOT, PrivateWorkspace
@@ -116,16 +117,16 @@ def goto_target(state: BridgeState, policy: CompanionPolicy, home: tuple[int, in
     )
 
 
-class DropAcknowledgement(httpx.AsyncBaseTransport):
+class DropAcknowledgement(httpx2.AsyncBaseTransport):
     """Dispatch once, then lose exactly one complete real action response locally."""
 
     def __init__(self) -> None:
         """Own one no-retry HTTP transport and finite proof counters."""
-        self.inner = httpx.AsyncHTTPTransport(retries=0)
+        self.inner = httpx2.AsyncHTTPTransport(verify=create_http_ssl_context(), retries=0)
         self.drop = False
         self.action_sends = 0
 
-    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+    async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
         action = request.method == "POST" and request.url.path == "/v1/actions"
         self.action_sends += int(action)
         response = await self.inner.handle_async_request(request)
@@ -133,7 +134,7 @@ class DropAcknowledgement(httpx.AsyncBaseTransport):
             self.drop = False
             await response.aclose()
             msg = "Qualification injected acknowledgement loss after dispatch."
-            raise httpx.ReadError(msg, request=request)
+            raise httpx2.ReadError(msg, request=request)
         return response
 
     async def aclose(self) -> None:
@@ -141,7 +142,7 @@ class DropAcknowledgement(httpx.AsyncBaseTransport):
 
 
 async def exchange(
-    client: httpx.AsyncClient, method: Literal["GET", "POST"], path: str, *, content: bytes | None = None
+    client: httpx2.AsyncClient, method: Literal["GET", "POST"], path: str, *, content: bytes | None = None
 ) -> tuple[int, bytes]:
     async with client.stream(method, path, content=content) as response:
         body = bytearray()
@@ -162,7 +163,7 @@ def action_record(raw: bytes, state: BridgeState, action_id: str, run_id: str) -
 
 
 async def settled_record(
-    client: httpx.AsyncClient, raw: bytes, state: BridgeState, action_id: str, run_id: str
+    client: httpx2.AsyncClient, raw: bytes, state: BridgeState, action_id: str, run_id: str
 ) -> ActionRecord:
     record = action_record(raw, state, action_id, run_id)
     async with asyncio.timeout(3):
@@ -175,7 +176,7 @@ async def settled_record(
     return record
 
 
-async def stop_replay_checks(client: httpx.AsyncClient, bridge: CompanionBridge) -> None:
+async def stop_replay_checks(client: httpx2.AsyncClient, bridge: CompanionBridge) -> None:
     """Require historical stop replay to preserve freshly admitted work and retained identity."""
     state = await bridge.observe()
     stops: list[tuple[bytes, ActionRecord]] = []
@@ -238,12 +239,12 @@ async def protocol_checks(binding: BridgeBinding, bridge: CompanionBridge) -> di
         "Content-Type": "application/json",
         "Accept-Encoding": "identity",
     }
-    async with httpx.AsyncClient(
+    async with httpx2.AsyncClient(
         base_url=binding.endpoint.rstrip("/"),
         trust_env=False,
         follow_redirects=False,
         timeout=3,
-        transport=httpx.AsyncHTTPTransport(retries=0),
+        transport=httpx2.AsyncHTTPTransport(verify=create_http_ssl_context(), retries=0),
     ) as client:
         status, _ = await exchange(client, "GET", "/v1/state")
         require(status == HTTPStatus.UNAUTHORIZED, "unauthenticated_state_not_refused")

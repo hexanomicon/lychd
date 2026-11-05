@@ -6,14 +6,14 @@ import asyncio
 from pathlib import Path
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 
 from lychd.interface.discord.rest import DiscordRest, DiscordRestError, EffectJournal
 from lychd.interface.observation import OperationObservation, OperationObserver, observation_context
 
 
-def rest_at(tmp_path: Path, client: httpx.AsyncClient, events: list[OperationObservation]) -> DiscordRest:
+def rest_at(tmp_path: Path, client: httpx2.AsyncClient, events: list[OperationObservation]) -> DiscordRest:
     return DiscordRest(
         token="synthetic-secret",  # noqa: S106 - synthetic fixture credential
         application_id="101",
@@ -31,8 +31,8 @@ def rest_at(tmp_path: Path, client: httpx.AsyncClient, events: list[OperationObs
     )
 
 
-def identity(request: httpx.Request) -> httpx.Response:
-    return httpx.Response(
+def identity(request: httpx2.Request) -> httpx2.Response:
+    return httpx2.Response(
         200, json={"id": "102", "bot": True} if request.url.path.endswith("/users/@me") else {"id": "101"}
     )
 
@@ -40,13 +40,13 @@ def identity(request: httpx.Request) -> httpx.Response:
 @pytest.mark.asyncio
 async def test_non_run_get_cache_refusal_and_late_run_delivery(tmp_path: Path) -> None:
     events: list[OperationObservation] = []
-    requests: list[httpx.Request] = []
+    requests: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         requests.append(request)
-        return identity(request) if request.method == "GET" else httpx.Response(201, json={"id": "104"})
+        return identity(request) if request.method == "GET" else httpx2.Response(201, json={"id": "104"})
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(handler)) as client:
         rest = rest_at(tmp_path, client, events)
         refused = await rest.write("POST", "/guilds/103/roles", {"name": "safe"}, effect_key="one", scope="one")
         assert refused.status == "rejected"
@@ -83,17 +83,17 @@ async def test_non_run_get_cache_refusal_and_late_run_delivery(tmp_path: Path) -
 async def test_failure_preserves_seen_status_and_settlement(tmp_path: Path, failure: str) -> None:
     events: list[OperationObservation] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         if request.method == "GET":
             return identity(request)
         if failure == "timeout":
             msg = "private provider text"
-            raise httpx.ReadTimeout(msg)
+            raise httpx2.ReadTimeout(msg)
         if failure == "cancel":
             raise asyncio.CancelledError
-        return httpx.Response(403 if failure == "http_403" else 201, content=b"not-json private body")
+        return httpx2.Response(403 if failure == "http_403" else 201, content=b"not-json private body")
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(handler)) as client:
         rest = rest_at(tmp_path, client, events)
         await rest.verify_identity()
         events.clear()
@@ -113,8 +113,8 @@ async def test_failure_preserves_seen_status_and_settlement(tmp_path: Path, fail
 @pytest.mark.asyncio
 async def test_read_decode_error_keeps_http_status(tmp_path: Path) -> None:
     events: list[OperationObservation] = []
-    async with httpx.AsyncClient(
-        transport=httpx.MockTransport(lambda _: httpx.Response(200, content=b"bad"))
+    async with httpx2.AsyncClient(
+        transport=httpx2.MockTransport(lambda _: httpx2.Response(200, content=b"bad"))
     ) as client:
         rest = rest_at(tmp_path, client, events)
         with pytest.raises(DiscordRestError, match="invalid_response"):

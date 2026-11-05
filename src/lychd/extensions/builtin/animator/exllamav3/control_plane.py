@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlsplit, urlunsplit
 
-import httpx
+import httpx2
 
 from lychd.domain.animation.animators import RuntimeAnimator
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
@@ -16,7 +16,7 @@ from lychd.extensions.builtin.animator.tabby_auth import (
     TabbyAPIAuthSecretError,
     load_tabbyapi_auth_keys,
 )
-from lychd.lib.http import DEFAULT_TIMEOUT_SECONDS, HttpJsonError, request_json
+from lychd.lib.http import DEFAULT_TIMEOUT_SECONDS, HttpJsonError, create_http_ssl_context, request_json
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Mapping
@@ -177,10 +177,12 @@ class TabbyAPIControlPlane:
         acceptance = operation.acceptance
         key = self._runtime_key(base_url)
         url = self._build_url(base_url, "/v1/model/load")
-        timeout = httpx.Timeout(connect=self._timeout, read=None, write=self._timeout, pool=self._timeout)
+        timeout = httpx2.Timeout(connect=self._timeout, read=None, write=self._timeout, pool=self._timeout)
         try:
             async with (
-                httpx.AsyncClient(timeout=timeout, trust_env=False, follow_redirects=False) as client,
+                httpx2.AsyncClient(
+                    verify=create_http_ssl_context(), timeout=timeout, trust_env=False, follow_redirects=False
+                ) as client,
                 client.stream(
                     "POST",
                     url,
@@ -196,7 +198,7 @@ class TabbyAPIControlPlane:
             if not acceptance.done():
                 acceptance.cancel()
             raise
-        except httpx.HTTPError as exc:
+        except httpx2.HTTPError as exc:
             operation.ambiguous = True
             operation.uncertainty = f"TabbyAPI model-load transport became uncertain: {exc}"
             if not acceptance.done():
@@ -241,7 +243,7 @@ class TabbyAPIControlPlane:
 
     async def _consume_model_load_response(
         self,
-        response: httpx.Response,
+        response: httpx2.Response,
         acceptance: asyncio.Future[None],
     ) -> None:
         """Validate HTTP acceptance and consume every model-load SSE stage."""
@@ -265,7 +267,7 @@ class TabbyAPIControlPlane:
             msg = "TabbyAPI model-load stream ended without a finished model event."
             raise TabbyAPIControlPlaneError(msg, ambiguous=True)
 
-    async def _iter_sse_json(self, response: httpx.Response) -> AsyncIterator[dict[str, object]]:
+    async def _iter_sse_json(self, response: httpx2.Response) -> AsyncIterator[dict[str, object]]:
         """Decode standard SSE data fields into JSON objects, ignoring comments."""
         data_lines: list[str] = []
         async for line in response.aiter_lines():

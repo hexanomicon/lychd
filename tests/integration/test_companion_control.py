@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 from scripts import companion_lab
 from scripts.voice_probe import PrivateWorkspace
@@ -30,15 +30,17 @@ async def connected(
     files: PrivateWorkspace,
     port: int,
     monkeypatch: pytest.MonkeyPatch,
-    handler: Callable[[httpx.Request], httpx.Response]
-    | Callable[[httpx.Request], Coroutine[None, None, httpx.Response]],
+    handler: Callable[[httpx2.Request], httpx2.Response]
+    | Callable[[httpx2.Request], Coroutine[None, None, httpx2.Response]],
     *,
     hold_seconds: int | None = None,
-) -> AsyncGenerator[tuple[CompanionControl, companion_lab.CompanionConsole, FakeBridge, httpx.AsyncClient, list[int]]]:
+) -> AsyncGenerator[tuple[CompanionControl, companion_lab.CompanionConsole, FakeBridge, httpx2.AsyncClient, list[int]]]:
     fake = FakeBridge()
     bridge = fake.bridge()
     session = CompanionSession(LocalCompanionRunner(CompanionService(policy(), bridge), bridge), bridge)
-    console = companion_lab.CompanionConsole(files, session, speech=speech(httpx.MockTransport(handler)), language="en")
+    console = companion_lab.CompanionConsole(
+        files, session, speech=speech(httpx2.MockTransport(handler)), language="en"
+    )
     session.record = console.record
     captures: list[int] = []
 
@@ -60,7 +62,7 @@ async def connected(
     await session.open()
     try:
         await control.open()
-        async with httpx.AsyncClient(
+        async with httpx2.AsyncClient(
             base_url=profile.endpoint,
             headers={"Authorization": "Bearer " + profile.token, "Accept-Encoding": "identity"},
             trust_env=False,
@@ -94,7 +96,7 @@ def gesture(control: CompanionControl, operation: str = "record") -> tuple[str, 
     return identity, json.dumps(body, separators=(",", ":")).encode()
 
 
-async def known(client: httpx.AsyncClient, identity: str) -> dict[str, Any]:
+async def known(client: httpx2.AsyncClient, identity: str) -> dict[str, Any]:
     for _ in range(30):
         response = await client.get("/v1/operations/" + identity)
         assert response.status_code == 200
@@ -110,7 +112,7 @@ async def test_real_control_turn_preserves_original_identity_deadline_native_evi
     files: PrivateWorkspace, unused_tcp_port: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     async with connected(
-        files, unused_tcp_port, monkeypatch, lambda _: httpx.Response(200, json={"text": "state"})
+        files, unused_tcp_port, monkeypatch, lambda _: httpx2.Response(200, json={"text": "state"})
     ) as (control, console, fake, client, captures):
         before = fake.reads, len(fake.requests), len(console.session.run_ids)
         initial = await client.get("/v1/state")
@@ -151,7 +153,7 @@ async def test_first_control_bytes_during_full_stop_cannot_capture_after_retirem
     files: PrivateWorkspace, unused_tcp_port: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     async with connected(
-        files, unused_tcp_port, monkeypatch, lambda _: httpx.Response(200, json={"text": "state"})
+        files, unused_tcp_port, monkeypatch, lambda _: httpx2.Response(200, json={"text": "state"})
     ) as (control, console, fake, _client, captures):
         entered, release, observed = asyncio.Event(), asyncio.Event(), asyncio.Event()
         original_settle = console._settle_stop  # pyright: ignore[reportPrivateUsage]
@@ -214,7 +216,7 @@ async def test_priority_control_stop_joins_held_transcription_and_duplicate_does
 ) -> None:
     entered = asyncio.Event()
 
-    async def transcription(_request: httpx.Request) -> httpx.Response:
+    async def transcription(_request: httpx2.Request) -> httpx2.Response:
         entered.set()
         await asyncio.Event().wait()
         raise AssertionError
@@ -259,7 +261,7 @@ async def test_control_close_retires_partial_http_without_admitting_capture(
     files: PrivateWorkspace, unused_tcp_port: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     async with connected(
-        files, unused_tcp_port, monkeypatch, lambda _: httpx.Response(200, json={"text": "state"})
+        files, unused_tcp_port, monkeypatch, lambda _: httpx2.Response(200, json={"text": "state"})
     ) as (control, _console, fake, _client, captures):
         observed = asyncio.Event()
         original = control.context
@@ -309,7 +311,7 @@ async def test_control_http_refuses_foreign_or_ambiguous_ingress_before_capture(
     expected: int,
 ) -> None:
     async with connected(
-        files, unused_tcp_port, monkeypatch, lambda _: httpx.Response(200, json={"text": "state"})
+        files, unused_tcp_port, monkeypatch, lambda _: httpx2.Response(200, json={"text": "state"})
     ) as (control, console, fake, _client, captures):
         _identity, raw = gesture(control)
         path = "/v1/record?x=1" if violation == "query" else "/v1/record"
@@ -354,7 +356,7 @@ async def test_lost_control_acknowledgement_queries_original_operation_without_r
     files: PrivateWorkspace, unused_tcp_port: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     async with connected(
-        files, unused_tcp_port, monkeypatch, lambda _: httpx.Response(200, json={"text": "state"})
+        files, unused_tcp_port, monkeypatch, lambda _: httpx2.Response(200, json={"text": "state"})
     ) as (control, console, fake, client, captures):
         identity, raw = gesture(control)
         _reader, writer = await asyncio.open_connection("127.0.0.1", unused_tcp_port)
@@ -387,7 +389,7 @@ async def test_record_instruction_must_fit_session_before_waiting_for_capture_lo
     files: PrivateWorkspace, unused_tcp_port: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     async with connected(
-        files, unused_tcp_port, monkeypatch, lambda _: httpx.Response(200, json={"text": "state"})
+        files, unused_tcp_port, monkeypatch, lambda _: httpx2.Response(200, json={"text": "state"})
     ) as (control, console, fake, client, captures):
         identity, raw = gesture(control)
         document = json.loads(raw)
@@ -424,7 +426,7 @@ async def test_final_console_stop_seals_admission_before_its_waiter_resumes(  # 
     exit_mode: str,
 ) -> None:
     async with connected(
-        files, unused_tcp_port, monkeypatch, lambda _: httpx.Response(200, json={"text": "state"})
+        files, unused_tcp_port, monkeypatch, lambda _: httpx2.Response(200, json={"text": "state"})
     ) as (control, console, fake, client, captures):
         settled, release, attempted, returned, release_capture = (asyncio.Event() for _ in range(5))
         observations: dict[str, Any] = {}
@@ -517,7 +519,7 @@ async def test_control_queue_cancellation_keeps_terminal_native_custody_after_ol
 ) -> None:
     transcripts = iter(("say active", "say queued"))
     async with connected(
-        files, unused_tcp_port, monkeypatch, lambda _: httpx.Response(200, json={"text": next(transcripts)})
+        files, unused_tcp_port, monkeypatch, lambda _: httpx2.Response(200, json={"text": next(transcripts)})
     ) as (control, console, fake, client, captures):
         fake.delay = True
         queued_id: str | None = None
@@ -601,7 +603,7 @@ async def test_fresh_same_session_stop_after_control_expiry_fences_and_joins_tra
 ) -> None:
     entered, retiring, release = (asyncio.Event() for _ in range(3))
 
-    async def transcription(_request: httpx.Request) -> httpx.Response:
+    async def transcription(_request: httpx2.Request) -> httpx2.Response:
         entered.set()
         try:
             await asyncio.Event().wait()
