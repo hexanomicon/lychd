@@ -36,7 +36,7 @@ from lychd.compositions.blockworld.companion import (
 )
 from lychd.domain.speech_probe import MAX_PROFILE_BYTES
 from lychd.lib.asyncio import complete_under_cancellation
-from lychd.lib.http import create_http_ssl_context
+from lychd.lib.http import create_async_http_client, create_async_http_transport
 from lychd.system.services.companion_bridge import BridgeBinding, CompanionBridge
 from lychd.system.services.companion_session import CompanionSession, LocalCompanionRunner, SessionResult
 from scripts.voice_probe import CHECKOUT_ROOT, PrivateWorkspace
@@ -122,7 +122,7 @@ class DropAcknowledgement(httpx2.AsyncBaseTransport):
 
     def __init__(self) -> None:
         """Own one no-retry HTTP transport and finite proof counters."""
-        self.inner = httpx2.AsyncHTTPTransport(verify=create_http_ssl_context(), retries=0)
+        self.inner = create_async_http_transport()
         self.drop = False
         self.action_sends = 0
 
@@ -239,12 +239,10 @@ async def protocol_checks(binding: BridgeBinding, bridge: CompanionBridge) -> di
         "Content-Type": "application/json",
         "Accept-Encoding": "identity",
     }
-    async with httpx2.AsyncClient(
+    async with create_async_http_client(
         base_url=binding.endpoint.rstrip("/"),
-        trust_env=False,
-        follow_redirects=False,
         timeout=3,
-        transport=httpx2.AsyncHTTPTransport(verify=create_http_ssl_context(), retries=0),
+        transport=create_async_http_transport(),
     ) as client:
         status, _ = await exchange(client, "GET", "/v1/state")
         require(status == HTTPStatus.UNAUTHORIZED, "unauthenticated_state_not_refused")

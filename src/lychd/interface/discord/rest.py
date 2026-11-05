@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from lychd.compositions.reach.expressions import REACTIONS, Reaction, validate_gif_url
 from lychd.interface.observation import ObservedOperation, OperationObserver
-from lychd.lib.http import create_http_ssl_context
+from lychd.lib.http import create_async_http_client, create_async_http_transport
 
 _BASE = "https://discord.com/api/v10"
 _MAX_RESPONSE = 2 * 1024 * 1024
@@ -393,10 +393,8 @@ class DiscordRest:
         self._introduction_channel: str | None = None
         self._effects_lock = asyncio.Lock()
         self._owns_client = client is None
-        self._client = client or httpx2.AsyncClient(
-            transport=httpx2.AsyncHTTPTransport(verify=create_http_ssl_context(), retries=0, trust_env=False),
-            trust_env=False,
-            follow_redirects=False,
+        self._client = client or create_async_http_client(
+            transport=create_async_http_transport(),
             timeout=_TIMEOUT,
         )
 

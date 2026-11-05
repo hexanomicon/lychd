@@ -55,12 +55,25 @@ scalability claim or permission to use another launcher.
 Core-owned general-purpose HTTP clients and operator scripts use HTTPX2. Clients, transports,
 request/response objects and caught exceptions stay in the same library family. Preserve each
 adapter's destination and credential binding, disabled ambient proxies and redirects, bounded
-I/O, retry policy and cancellation/uncertain-outcome semantics. Network-owning clients and
-transports receive an explicit verified TLS context from `lychd.lib.http`, loaded from the
+I/O, retry policy and cancellation/uncertain-outcome semantics. Construct owned async clients
+and network transports through `lychd.lib.http`, including implementations in native extensions,
+Composition adapters, and operator scripts. Its explicit factories disable ambient configuration
+and redirects, retain zero automatic connection retries, and require the caller's timeout.
+Pool limits, base URL, headers, request hooks, and injected transports remain explicit inputs;
+each adapter owns its client's lifetime. A supplied custom transport retains responsibility for
+its wire behavior and admission; client-level options cannot secure a transport that ignores them.
+The shared mechanism supports HTTP and HTTPS without granting destination or disclosure authority.
+Network-owning clients and transports receive an explicit verified TLS context, loaded from the
 maintained certifi bundle. Ambient CA and TLS key-log environment variables cannot change that
 context. This retains the migrated clients' public-root trust without inheriting HTTPX2's
 system-store environment behavior; the model factory uses the same policy. Candidate images
 must retain the declared CA dependency and certificate verification.
+
+Factories return native HTTPX2 objects: this is one construction policy, not a dependency-neutral
+HTTP protocol. Protocol adapters retain response decoding, streaming, error translation, effect
+fences and uncertain-outcome semantics. The existing JSON helper keeps its control-plane-specific
+normalization; it is not a universal response contract. Application and domain consumers depend
+on typed operations such as transcription or message delivery rather than arbitrary HTTP sends.
 
 Legacy HTTPX remains a testing dependency for Litestar's test clients and RESPX mock values.
 Litestar also requires it transitively in the production dependency graph; its presence does
@@ -132,6 +145,12 @@ receipt boundary; [CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/
 owns the startup and browser workflow when supplied. This design alone establishes neither.
 
 ### Where implementation belongs
+
+`lychd.lib` owns named, reusable mechanisms shared by Core, native extensions, and Composition
+implementations. Extract a mechanism when concrete consumers establish its common contract;
+grow that contract from observed needs. Keep its policy-independent plumbing separate from
+application decisions, credentials, effect authority, and lifecycle ownership. A shared helper
+creates neither a new service container nor a versioned extension SDK promise.
 
 The application layer owns HTTP admission and dependency wiring. Domain code speaks ports,
 repositories, and services; persistence adapters own SQLAlchemy sessions and explicit statements

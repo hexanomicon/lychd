@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import tomllib
 from pathlib import Path
 
@@ -10,6 +11,43 @@ from packaging.requirements import Requirement
 from tests.architecture._python_imports import imported_modules, is_package
 
 _ROOT = Path(__file__).resolve().parents[2]
+
+
+def _raw_http_construction_lines(path: Path) -> list[int]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                aliases[alias.asname or alias.name.split(".")[0]] = (
+                    alias.name if alias.asname else alias.name.split(".")[0]
+                )
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+    lines: list[int] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        root, *rest = ast.unparse(node.func).split(".")
+        qualified = ".".join([aliases.get(root, root), *rest])
+        if qualified.startswith("httpx2.") and qualified.rsplit(".", 1)[-1] in {
+            "AsyncClient",
+            "AsyncHTTPTransport",
+            "Client",
+            "HTTPTransport",
+        }:
+            lines.append(node.lineno)
+    return lines
+
+
+def test_owned_clients_and_network_transports_use_shared_construction() -> None:
+    offenders: dict[str, list[int]] = {}
+    for package_root in (_ROOT / "src", _ROOT / "scripts"):
+        for path in package_root.rglob("*.py"):
+            if path != _ROOT / "src/lychd/lib/http.py" and (lines := _raw_http_construction_lines(path)):
+                offenders[str(path.relative_to(_ROOT))] = lines
+    assert offenders == {}, f"Construct owned HTTP clients/transports in lychd.lib.http: {offenders}"
 
 
 def test_owned_http_clients_do_not_import_the_legacy_stack() -> None:

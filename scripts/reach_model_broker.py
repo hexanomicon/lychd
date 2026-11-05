@@ -24,7 +24,7 @@ from lychd.compositions.reach.operator_model_wire import (
 )
 from lychd.compositions.reach.operator_trace import TraceEmitter, TraceName, TraceSink
 from lychd.compositions.reach.operator_wire import strict_json
-from lychd.lib.http import create_http_ssl_context
+from lychd.lib.http import create_async_http_client
 
 MODEL_ENDPOINT = "http://127.0.0.1:28000"
 MAX_MODEL_IDS = 32
@@ -228,12 +228,9 @@ class OperatorModelBroker:
         try:
             async with (
                 asyncio.timeout(budget),
-                httpx2.AsyncClient(
-                    verify=create_http_ssl_context(),
+                create_async_http_client(
                     transport=self.transport,
                     timeout=httpx2.Timeout(budget),
-                    follow_redirects=False,
-                    trust_env=False,
                     headers={"Content-Type": "application/json", "Accept-Encoding": "identity"},
                 ) as client,
             ):

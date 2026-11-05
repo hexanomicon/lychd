@@ -21,7 +21,7 @@ from lychd.domain.animation.embeddings import (
     embedding_vector_digest,
 )
 from lychd.extensions.builtin.animator.llamacpp.embedding_profile import PROFILE, require_endpoint
-from lychd.lib.http import create_http_ssl_context
+from lychd.lib.http import create_async_http_client
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -54,10 +54,7 @@ class LlamaCppEmbeddingDriver(EmbeddingDriver):
         """Allocate a nonambient transport without any suspension or source read."""
         if self._entered or self._closed:
             raise EmbeddingRefused("scope")  # noqa: EM101 - closed machine-readable refusal code
-        self._client = httpx2.AsyncClient(
-            verify=create_http_ssl_context(),
-            trust_env=False,
-            follow_redirects=False,
+        self._client = create_async_http_client(
             timeout=PROFILE.timeout_seconds,
             limits=httpx2.Limits(max_connections=1, max_keepalive_connections=1),
             headers={"Accept-Encoding": "identity"},
