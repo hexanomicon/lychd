@@ -353,7 +353,7 @@ def synthesis_projection(
     agent_subject_id: str | None = None,
     task_requirements: TaskRequirements | None = None,
 ) -> SynthesisProjection:
-    """Budget one exact model view while retaining the full source/projection receipt locally."""
+    """Keep question time fixed while budgeting evidence and retaining its full local projection receipt."""
     evidence_scope = {
         "version": "public-text-v1",
         "source_authority": "public_reference_text",
@@ -426,6 +426,7 @@ def synthesis_projection(
         prompt = canonical_json(
             {
                 "question": request.event.question,
+                "request_occurred_at": request.event.occurred_at.isoformat(),
                 "reference_hints": reference_hints,
                 **(
                     {

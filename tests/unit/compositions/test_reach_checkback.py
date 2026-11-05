@@ -20,6 +20,7 @@ from lychd.compositions.reach.checkback import (
     GUARD_RULE,
     GUARD_VERSION,
     MAX_RUNTIME_CLAIMS_BYTES,
+    OPERATOR_PROFILE_RULE,
     PUBLIC_TEXT_EVIDENCE_RULE,
     REFERENCE_GUARD_RULE,
     RUNTIME_GUARD_RULE,
@@ -1404,6 +1405,19 @@ def test_empty_observations_are_not_invented_host_detection_or_proof_of_groundin
     assert control.effective_verdict == "accept"
     assert control.guard_status == "no_current_runtime_claim_observed"
     assert runtime_claim_metadata(raw)["runtime_claim_count"] == 0
+
+
+def test_operator_permission_limits_are_distinct_from_unknown_project_runtime() -> None:
+    binding = research_profile(checkback=True)
+    for correction in (False, True):
+        assert OPERATOR_PROFILE_RULE in checkback_spec(binding, correction=correction).instructions
+    assert "host-known limits, not claims about installed project readiness" in checkback_spec(binding).instructions
+    candidate = canonical_json({"kind": "answer", "text": "I cannot execute tools, deploy or publish."})
+    envelope = scoped_checkback()
+    raw = envelope.parse(verdict("accept", claims=()), candidate)
+    control = effective_checkback(make_request(action="converse"), candidate, raw, context_json=envelope.context_json)
+    assert control.effective_verdict == "accept"
+    assert control.guard_status == "no_current_runtime_claim_observed"
 
 
 @pytest.mark.parametrize("raw_verdict", ["accept", "revise", "needs_evidence"])

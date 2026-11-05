@@ -417,6 +417,22 @@ quoted evidence and persona preferences do not choose a different reply language
 acknowledgements, readiness/refusal messages and context-limit notices use English; this profile
 does not implement automatic localization of operational copy.
 
+Planning, request interpretation and synthesis receive mandatory `request_occurred_at`, derived
+from the admitted question event with its original offset. It anchors “today” and current roadmap
+comparisons unless the user asks about another period; dates in history, sources or an interpreted
+plan do not replace it. Context trimming retains this timestamp, and an envelope that cannot fit
+is refused. Review and correction inherit the same frozen context. This time anchor establishes
+neither delivery nor installed runtime availability.
+
+The model's own operator profile supports conversation and drafting with the supplied
+same-conversation context, plus finite read-only catalogue research only when separately enabled
+and offered. General LychD capability descriptions, including `tool_execution`, grant this model
+no agent-loop tools, code execution, host control, deployment or publishing authority. Review
+distinguishes these known permission limits from claims about an installed project's readiness.
+Capability answers describe practical uses in plain language. Hypothetical model changes stay
+within the question's scope without unverified performance claims; an unrelated question does
+not call for unsolicited roadmap or current-phase status.
+
 Adaptive context is separately opt-in: add `"adaptive_context": true` to the private conversation
 JSON shown below. Omission retains the single-call behavior. Without catalogue research, the model
 returns only an `answer`, `read_more` or `clarify` text decision, never an executable tool call.
