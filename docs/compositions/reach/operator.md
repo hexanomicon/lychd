@@ -188,6 +188,9 @@ This creates the Python 3.15.0 native check image and the separately locked Pyth
 Discord edge image. The image record contains their `sha256:` identities; startup selects these
 exact local images with pulling disabled. A failed build or unavailable engine stops the step.
 There is no host worker fallback. This build command does not run the bot or apply server changes.
+Before writing the image record, it checks the Discord entrypoint imports inside the exact edge
+image without network, credentials or host mounts. This establishes import closure, not Gateway
+readiness or delivery.
 
 The edge's credential-bearing process talks to Discord. The native worker has `--network=none`
 and receives the compiled shared policy and corpus read-only. The edge never receives the corpus
