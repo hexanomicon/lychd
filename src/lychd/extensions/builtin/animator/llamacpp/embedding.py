@@ -9,7 +9,7 @@ from hashlib import sha256
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, cast
 
-import httpx
+import httpx2
 
 from lychd.domain.animation.embeddings import (
     EmbeddingBatch,
@@ -21,6 +21,7 @@ from lychd.domain.animation.embeddings import (
     embedding_vector_digest,
 )
 from lychd.extensions.builtin.animator.llamacpp.embedding_profile import PROFILE, require_endpoint
+from lychd.lib.http import create_http_ssl_context
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -43,7 +44,7 @@ class LlamaCppEmbeddingDriver(EmbeddingDriver):
         if operation not in {"embed_document", "embed_query"}:
             raise EmbeddingRefused("operation")  # noqa: EM101 - closed machine-readable refusal code
         self._operation: EmbeddingOperation = operation
-        self._client: httpx.AsyncClient | None = None
+        self._client: httpx2.AsyncClient | None = None
         self._entered = False
         self._closed = False
         self._used = False
@@ -53,11 +54,12 @@ class LlamaCppEmbeddingDriver(EmbeddingDriver):
         """Allocate a nonambient transport without any suspension or source read."""
         if self._entered or self._closed:
             raise EmbeddingRefused("scope")  # noqa: EM101 - closed machine-readable refusal code
-        self._client = httpx.AsyncClient(
+        self._client = httpx2.AsyncClient(
+            verify=create_http_ssl_context(),
             trust_env=False,
             follow_redirects=False,
             timeout=PROFILE.timeout_seconds,
-            limits=httpx.Limits(max_connections=1, max_keepalive_connections=1),
+            limits=httpx2.Limits(max_connections=1, max_keepalive_connections=1),
             headers={"Accept-Encoding": "identity"},
         )
         self._entered = True
@@ -88,7 +90,7 @@ class LlamaCppEmbeddingDriver(EmbeddingDriver):
         try:
             async with asyncio.timeout(PROFILE.timeout_seconds):
                 return await self._embed(inputs, authorize=authorize)
-        except (TimeoutError, httpx.HTTPError):
+        except (TimeoutError, httpx2.HTTPError):
             raise EmbeddingRefused("transport") from None  # noqa: EM101 - closed machine-readable refusal code
         finally:
             self._active.discard(current)

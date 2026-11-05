@@ -84,7 +84,7 @@ async def probe_openai_compatible_link(
     id length, and returns a refreshed ``Link``. Transport failure resolves to
     ``up=False``. A reachable but non-conformant response keeps the physical
     link live and records a separate inventory error; this function never
-    raises (A3-U3: async httpx replaces the blocking ``urlopen``).
+    raises (A3-U3: async HTTPX2 replaces the blocking ``urlopen``).
     """
     normalized_path = path if path.startswith("/") else f"/{path}"
     request_url = f"{connector.base_url.rstrip('/')}{normalized_path}"

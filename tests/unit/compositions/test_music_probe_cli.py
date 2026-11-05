@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Never
 
-import httpx
+import httpx2
 import pytest
 from click import ClickException
 from click.testing import CliRunner
@@ -119,7 +119,7 @@ def test_comfy_cli_repairs_pinned_stage_without_load_or_http(probe_path: Path, m
     def forbid_http_client(**_options: object) -> Never:
         pytest.fail("repair must not construct an HTTP client")
 
-    monkeypatch.setattr(httpx, "AsyncClient", forbid_http_client)
+    monkeypatch.setattr(httpx2, "AsyncClient", forbid_http_client)
     result = CliRunner().invoke(
         cli,
         [

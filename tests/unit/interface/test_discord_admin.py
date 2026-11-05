@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2
 import pytest
 from pydantic import ValidationError
 
@@ -56,7 +56,7 @@ class DiscordFixture:
         self.duplicate_create = False
         self.next_id = 200
 
-    def _read(self, path: str) -> httpx.Response:
+    def _read(self, path: str) -> httpx2.Response:
         values = {
             "/users/@me": {"id": "102", "bot": True},
             "/oauth2/applications/@me": {"id": "101"},
@@ -68,9 +68,9 @@ class DiscordFixture:
         if path not in values:
             message = "Unexpected fixed GET route"
             raise AssertionError(message)
-        return httpx.Response(200, json=values[path])
+        return httpx2.Response(200, json=values[path])
 
-    def _create(self, path: str, body: dict[str, Any]) -> httpx.Response:
+    def _create(self, path: str, body: dict[str, Any]) -> httpx2.Response:
         self.next_id += 1
         created = {"id": str(self.next_id), **body}
         if path == "/guilds/103/roles":
@@ -89,26 +89,26 @@ class DiscordFixture:
         target.append(created)
         if self.duplicate_create:
             target.append({**created, "id": "999"})
-        return httpx.Response(200, json=created)
+        return httpx2.Response(200, json=created)
 
-    def request(self, request: httpx.Request) -> httpx.Response:
+    def request(self, request: httpx2.Request) -> httpx2.Response:
         path = request.url.path.removeprefix("/api/v10")
         if request.method == "GET":
             return self._read(path)
         body = json.loads(request.content)
         self.writes.append((request.method, path, body))
         if self.fail_create:
-            return httpx.Response(500, json={"message": "synthetic failure"})
+            return httpx2.Response(500, json={"message": "synthetic failure"})
         if request.method == "POST":
             return self._create(path, body)
         if request.method == "PATCH" and path == "/channels/104":
             self.channels[0].update(body)
-            return httpx.Response(200, json=self.channels[0])
+            return httpx2.Response(200, json=self.channels[0])
         message = "Unexpected write route"
         raise AssertionError(message)
 
 
-def configured(rest_root: Path, server: DiscordFixture, client: httpx.AsyncClient) -> DiscordRest:
+def configured(rest_root: Path, server: DiscordFixture, client: httpx2.AsyncClient) -> DiscordRest:
     return DiscordRest(
         token=_SYNTHETIC,
         application_id="101",
@@ -128,7 +128,7 @@ def layout() -> DeveloperLayout:
 @pytest.mark.asyncio
 async def test_pure_plan_roundtrip_and_explicit_reach_patch(tmp_path: Path) -> None:
     server = DiscordFixture()
-    async with httpx.AsyncClient(transport=httpx.MockTransport(server.request)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
         snapshot = await snapshot_guild(rest)
         first = plan_layout(layout(), snapshot, now=_NOW)
@@ -146,7 +146,7 @@ async def test_pure_plan_roundtrip_and_explicit_reach_patch(tmp_path: Path) -> N
 @pytest.mark.asyncio
 async def test_default_apply_is_additive_reconciled_and_idempotent(tmp_path: Path) -> None:
     server = DiscordFixture()
-    async with httpx.AsyncClient(transport=httpx.MockTransport(server.request)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
         before = copy.deepcopy(server.channels[0]["permission_overwrites"])
         plan = plan_layout(layout(), await snapshot_guild(rest), now=_NOW)
@@ -168,7 +168,7 @@ async def test_default_apply_is_additive_reconciled_and_idempotent(tmp_path: Pat
 @pytest.mark.asyncio
 async def test_refused_plan_makes_zero_writes(tmp_path: Path, change: str) -> None:
     server = DiscordFixture()
-    async with httpx.AsyncClient(transport=httpx.MockTransport(server.request)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
         plan = plan_layout(layout(), await snapshot_guild(rest), now=_NOW)
         digest, now = plan.digest, _NOW
@@ -189,7 +189,7 @@ async def test_refused_plan_makes_zero_writes(tmp_path: Path, change: str) -> No
 async def test_server_error_fences_the_same_resource_across_new_plans(tmp_path: Path) -> None:
     server = DiscordFixture()
     server.fail_create = True
-    async with httpx.AsyncClient(transport=httpx.MockTransport(server.request)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
         snapshot = await snapshot_guild(rest)
         plan = plan_layout(layout(), snapshot, now=_NOW)
@@ -209,7 +209,7 @@ async def test_server_error_fences_the_same_resource_across_new_plans(tmp_path: 
 async def test_successful_create_with_duplicates_is_unknown_and_durable(tmp_path: Path) -> None:
     server = DiscordFixture()
     server.duplicate_create = True
-    async with httpx.AsyncClient(transport=httpx.MockTransport(server.request)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
         plan = plan_layout(layout(), await snapshot_guild(rest), now=_NOW)
         result = await apply_plan(rest, plan, expected_digest=plan.digest, now=_NOW)
@@ -242,7 +242,7 @@ async def test_explicit_channel_patch_preserves_unrelated_overwrite_bits(tmp_pat
             ),
         ),
     )
-    async with httpx.AsyncClient(transport=httpx.MockTransport(server.request)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
         plan = plan_layout(desired, await snapshot_guild(rest), now=_NOW)
         result = await apply_plan(rest, plan, expected_digest=plan.digest, now=_NOW)
@@ -260,7 +260,7 @@ async def test_ambiguous_names_do_not_authorize_adoption(tmp_path: Path) -> None
         {"id": identity, "name": "Core", "permissions": "0", "position": 1, "managed": False}
         for identity in ("120", "121")
     )
-    async with httpx.AsyncClient(transport=httpx.MockTransport(server.request)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
         with pytest.raises(AdminError, match="ambiguous_role"):
             plan_layout(layout(), await snapshot_guild(rest), now=_NOW)
@@ -289,7 +289,7 @@ async def test_plan_expiry_during_apply_retains_completed_results_and_stops_next
     elapsed = [100.0]
     monkeypatch.setattr(admin, "monotonic", lambda: elapsed[0])
 
-    def delayed(request: httpx.Request) -> httpx.Response:
+    def delayed(request: httpx2.Request) -> httpx2.Response:
         response = server.request(request)
         if request.method == "POST":
             elapsed[0] = 1001.0
@@ -302,7 +302,7 @@ async def test_plan_expiry_during_apply_retains_completed_results_and_stops_next
         owner_id="105",
         roles=(RoleLayout(key="first", name="First"), RoleLayout(key="second", name="Second")),
     )
-    async with httpx.AsyncClient(transport=httpx.MockTransport(delayed)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(delayed)) as client:
         rest = configured(tmp_path / "journal", server, client)
         plan = plan_layout(desired, await snapshot_guild(rest), now=_NOW)
         result = await apply_plan(rest, plan, expected_digest=plan.digest, now=_NOW)
@@ -329,7 +329,7 @@ async def test_explicit_reach_rename_releases_general_without_double_adoption(tm
     desired = default.model_copy(
         update={"channels": tuple(sorted(default.channels, key=lambda item: item.key != "general"))}
     )
-    async with httpx.AsyncClient(transport=httpx.MockTransport(server.request)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
         plan = plan_layout(desired, await snapshot_guild(rest), now=_NOW)
         operations = [item.key for item in plan.operations]

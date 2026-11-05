@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import AsyncMock, Mock
 
-import httpx
+import httpx2
 import pytest
 
 from lychd.domain.animation.capabilities import CapabilityPhase
@@ -31,33 +31,33 @@ class _RecoveryReachedError(Exception):
 
 def _offline_registry(
     monkeypatch: pytest.MonkeyPatch, chat_inventory: str
-) -> tuple[AnimatorRegistry, list[str], list[httpx.AsyncClient]]:
+) -> tuple[AnimatorRegistry, list[str], list[httpx2.AsyncClient]]:
     """Keep real declaration/adapter behavior inside one effect-free transport."""
     calls: list[str] = []
-    clients: list[httpx.AsyncClient] = []
-    original_client = httpx.AsyncClient
+    clients: list[httpx2.AsyncClient] = []
+    original_client = httpx2.AsyncClient
 
-    def respond(request: httpx.Request) -> httpx.Response:
+    def respond(request: httpx2.Request) -> httpx2.Response:
         assert request.method == "GET"
         url = str(request.url)
         calls.append(url)
         if url == "http://127.0.0.1:31842/v1/models":
             if chat_inventory == "down":
                 message = "inert unavailable runtime"
-                raise httpx.ConnectError(message, request=request)
+                raise httpx2.ConnectError(message, request=request)
             model = "assistant" if chat_inventory == "exact" else "other-model"
-            return httpx.Response(200, json={"data": [{"id": model}]})
+            return httpx2.Response(200, json={"data": [{"id": model}]})
         if url == "http://127.0.0.1:31841/health":
-            return httpx.Response(200, json={"status": "ok"})
+            return httpx2.Response(200, json={"status": "ok"})
         assert url == "http://127.0.0.1:31841/v1/models"
-        return httpx.Response(200, json={"data": [{"id": PROFILE.model_id}]})
+        return httpx2.Response(200, json={"data": [{"id": PROFILE.model_id}]})
 
-    def offline_client(**kwargs: Any) -> httpx.AsyncClient:
-        client = original_client(transport=httpx.MockTransport(respond), **kwargs)
+    def offline_client(**kwargs: Any) -> httpx2.AsyncClient:
+        client = original_client(transport=httpx2.MockTransport(respond), **kwargs)
         clients.append(client)
         return client
 
-    monkeypatch.setattr("lychd.lib.http.httpx.AsyncClient", offline_client)
+    monkeypatch.setattr("lychd.lib.http.httpx2.AsyncClient", offline_client)
     chat = VllmSoulstoneConfig.model_validate(
         {"name": "desk-chat", "base_url": "http://127.0.0.1:31842/v1", "port": 31842, "served_model_id": "assistant"}
     )

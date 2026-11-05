@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 
 from lychd.compositions.blockworld.companion import (
@@ -57,8 +57,8 @@ class WeatherBridgeFixture(FakeBridge):
         }
 
     async def handle(  # noqa: C901, PLR0912 - independently named wire faults remain explicit
-        self, request: httpx.Request
-    ) -> httpx.Response:
+        self, request: httpx2.Request
+    ) -> httpx2.Response:
         response = await super().handle(request)
         if request.url.path != "/v1/actions":
             return response
@@ -67,7 +67,7 @@ class WeatherBridgeFixture(FakeBridge):
             return response
         if self.fault == "lost_ack":
             msg = "Fixture lost acknowledgement after effect"
-            raise httpx.ReadError(msg, request=request)
+            raise httpx2.ReadError(msg, request=request)
         record = response.json()
         weather = self.weather(outgoing["args"].get("mode", "clear"))
         record["observation"] = weather
@@ -111,7 +111,7 @@ class WeatherBridgeFixture(FakeBridge):
             weather["duration_ticks"] = True
         elif self.fault == "extra":
             weather["console"] = "/weather clear"
-        return httpx.Response(202, json=record)
+        return httpx2.Response(202, json=record)
 
 
 def weather_request(text: str = "počasie jasno") -> CompanionRequest:

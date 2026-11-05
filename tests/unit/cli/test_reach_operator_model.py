@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Literal
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 from scripts import reach_operator as operator
 from scripts.reach_model_broker import OperatorModelBroker, validate_endpoint
@@ -56,24 +56,24 @@ def completion(**changes: Any) -> dict[str, Any]:
 @pytest.mark.asyncio
 async def test_fresh_probe_exact_model_and_one_closed_generation(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HTTP_PROXY", "http://foreign.invalid")
-    observed: list[httpx.Request] = []
+    observed: list[httpx2.Request] = []
 
-    def handle(value: httpx.Request) -> httpx.Response:
+    def handle(value: httpx2.Request) -> httpx2.Response:
         observed.append(value)
         assert str(value.url).startswith("http://127.0.0.1:28000/")
         assert "authorization" not in value.headers
         if value.url.path == "/health":
-            return httpx.Response(200, json={"status": "ok"})
+            return httpx2.Response(200, json={"status": "ok"})
         if value.url.path == "/v1/models":
-            return httpx.Response(200, json={"data": [{"id": "Qwen3.8-27B"}]})
+            return httpx2.Response(200, json={"data": [{"id": "Qwen3.8-27B"}]})
         assert value.method == "POST"
         assert value.url.path == "/v1/chat/completions"
         body = json.loads(value.content)
         assert set(body) == {"model", "messages", "max_tokens", "temperature", "stream", "chat_template_kwargs"}
         assert body["chat_template_kwargs"] == {"enable_thinking": False}
-        return httpx.Response(200, json=completion())
+        return httpx2.Response(200, json=completion())
 
-    broker = OperatorModelBroker(profile(), transport=httpx.MockTransport(handle))
+    broker = OperatorModelBroker(profile(), transport=httpx2.MockTransport(handle))
     for _ in range(2):
         result = await broker.handle(request("probe"))
         assert result.status == "ok"
@@ -95,10 +95,10 @@ async def test_fresh_probe_exact_model_and_one_closed_generation(monkeypatch: py
 )
 @pytest.mark.asyncio
 async def test_forbidden_generation_fields_never_reach_http(changes: dict[str, Any]) -> None:
-    def handle(_value: httpx.Request) -> httpx.Response:
+    def handle(_value: httpx2.Request) -> httpx2.Response:
         pytest.fail("Unadmitted payload reached HTTP")
 
-    broker = OperatorModelBroker(profile(), transport=httpx.MockTransport(handle))
+    broker = OperatorModelBroker(profile(), transport=httpx2.MockTransport(handle))
     result = await broker.handle(request(**changes))
     assert result.status == "error"
     assert result.reason == "model_protocol"
@@ -110,22 +110,22 @@ async def test_forbidden_generation_fields_never_reach_http(changes: dict[str, A
 async def test_foreign_failure_is_bounded_content_free_and_never_retried(scenario: str) -> None:
     calls = 0
 
-    def handle(value: httpx.Request) -> httpx.Response:
+    def handle(value: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         calls += 1
         if scenario == "redirect":
-            return httpx.Response(307, headers={"Location": "http://foreign.invalid"})
+            return httpx2.Response(307, headers={"Location": "http://foreign.invalid"})
         if scenario == "timeout":
             message = "private foreign diagnostic"
-            raise httpx.ReadTimeout(message, request=value)
+            raise httpx2.ReadTimeout(message, request=value)
         if scenario == "oversized":
-            return httpx.Response(200, content=b"x" * (MAX_MODEL_PAYLOAD_BYTES + 1))
+            return httpx2.Response(200, content=b"x" * (MAX_MODEL_PAYLOAD_BYTES + 1))
         body = completion(tool_calls=[{"function": {"name": "unsafe"}}]) if scenario == "tool_calls" else completion()
         if scenario == "wrong_model":
             body["model"] = "other"
-        return httpx.Response(200, json=body)
+        return httpx2.Response(200, json=body)
 
-    result = await OperatorModelBroker(profile(), transport=httpx.MockTransport(handle)).handle(request())
+    result = await OperatorModelBroker(profile(), transport=httpx2.MockTransport(handle)).handle(request())
     assert calls == 1
     assert result.status in {"unavailable", "error"}
     assert result.payload_json == "{}"
@@ -136,17 +136,17 @@ async def test_foreign_failure_is_bounded_content_free_and_never_retried(scenari
 async def test_cancellation_joins_http_and_releases_single_outstanding_slot() -> None:
     entered, settled = asyncio.Event(), asyncio.Event()
 
-    async def handle(_value: httpx.Request) -> httpx.Response:
+    async def handle(_value: httpx2.Request) -> httpx2.Response:
         if settled.is_set():
-            return httpx.Response(200, json=completion())
+            return httpx2.Response(200, json=completion())
         entered.set()
         try:
             await asyncio.Event().wait()
         finally:
             settled.set()
-        return httpx.Response(200, json=completion())
+        return httpx2.Response(200, json=completion())
 
-    broker = OperatorModelBroker(profile(), transport=httpx.MockTransport(handle))
+    broker = OperatorModelBroker(profile(), transport=httpx2.MockTransport(handle))
     task = asyncio.create_task(broker.handle(request()))
     await entered.wait()
     with pytest.raises(ValueError, match="model_binding"):
@@ -166,16 +166,16 @@ async def test_source_authority_callback_crosses_transport_as_non_wire_state() -
     def authorize() -> None:
         phases.append("authorize")
 
-    def handle(value: httpx.Request) -> httpx.Response:
+    def handle(value: httpx2.Request) -> httpx2.Response:
         phases.append("http")
         assert value.extensions["lychd_research_authorize"] is authorize
         assert all("research" not in name for name in value.headers)
         body = json.loads(value.content)
         assert set(body) == {"model", "messages", "max_tokens", "temperature", "stream", "chat_template_kwargs"}
         assert "lychd_research_authorize" not in value.content.decode()
-        return httpx.Response(200, json=completion())
+        return httpx2.Response(200, json=completion())
 
-    broker = OperatorModelBroker(profile(), transport=httpx.MockTransport(handle))
+    broker = OperatorModelBroker(profile(), transport=httpx2.MockTransport(handle))
     result = await broker.handle(request(), authorize=authorize)
     assert result.status == "ok"
     assert phases.count("http") == 1
@@ -186,17 +186,17 @@ async def test_source_authority_callback_crosses_transport_as_non_wire_state() -
 
 @pytest.mark.asyncio
 async def test_revoked_source_authority_refuses_before_http() -> None:
-    observed: list[httpx.Request] = []
+    observed: list[httpx2.Request] = []
 
     def authorize() -> None:
         message = "research_consume"
         raise ValueError(message)
 
-    def handle(value: httpx.Request) -> httpx.Response:
+    def handle(value: httpx2.Request) -> httpx2.Response:
         observed.append(value)
-        return httpx.Response(200, json=completion())
+        return httpx2.Response(200, json=completion())
 
-    result = await OperatorModelBroker(profile(), transport=httpx.MockTransport(handle)).handle(
+    result = await OperatorModelBroker(profile(), transport=httpx2.MockTransport(handle)).handle(
         request(), authorize=authorize
     )
     assert observed == []
@@ -219,15 +219,15 @@ async def test_revocation_while_awaiting_response_blocks_source_result_adoption(
             message = "research_consume"
             raise ValueError(message)
 
-    async def handle(value: httpx.Request) -> httpx.Response:
+    async def handle(value: httpx2.Request) -> httpx2.Response:
         nonlocal requests
         requests += 1
         assert value.extensions["lychd_research_authorize"] is authorize
         entered.set()
         await release_response.wait()
-        return httpx.Response(200, json=completion(content=provider_answer))
+        return httpx2.Response(200, json=completion(content=provider_answer))
 
-    broker = OperatorModelBroker(profile(), transport=httpx.MockTransport(handle))
+    broker = OperatorModelBroker(profile(), transport=httpx2.MockTransport(handle))
     frame = request()
     task = asyncio.create_task(broker.handle(frame, authorize=authorize))
     async with asyncio.timeout(3):
@@ -269,18 +269,18 @@ async def test_profile_deadline_and_probe_cap_retire_http_before_response(
         async with original_timeout(0):
             yield
 
-    async def handle(value: httpx.Request) -> httpx.Response:
+    async def handle(value: httpx2.Request) -> httpx2.Response:
         assert value.extensions["timeout"] == dict.fromkeys(("connect", "read", "write", "pool"), expected_budget)
         try:
             await asyncio.Event().wait()
         finally:
             settled.set()
-        return httpx.Response(200, json=completion())
+        return httpx2.Response(200, json=completion())
 
     selected = profile().model_copy(update={"timeout_seconds": profile_timeout})
     frame = request(operation).model_copy(update={"binding_digest": selected.digest})
     monkeypatch.setattr("scripts.reach_model_broker.asyncio.timeout", immediate_timeout)
-    response = await OperatorModelBroker(selected, transport=httpx.MockTransport(handle)).handle(frame)
+    response = await OperatorModelBroker(selected, transport=httpx2.MockTransport(handle)).handle(frame)
     assert observed == [expected_budget]
     assert settled.is_set()
     assert response.status == "unavailable"
@@ -306,7 +306,7 @@ async def test_multiplexer_keeps_model_payload_off_discord_pipe_and_refuses_unkn
     reader.feed_eof()
     edge, core = Writer(), Writer()
     broker = OperatorModelBroker(
-        profile(), transport=httpx.MockTransport(lambda _value: httpx.Response(200, json=completion()))
+        profile(), transport=httpx2.MockTransport(lambda _value: httpx2.Response(200, json=completion()))
     )
     await operator.model_relay(reader, edge, core, broker)  # type: ignore[arg-type] - write-only pipe fixtures
     assert edge.raw == b'{"kind":"ready"}\n{"kind":"result"}\n'
@@ -449,7 +449,9 @@ async def test_completion_diagnostics_are_finite_terminal_only_and_do_not_change
     value = completion(content=content)
     value["choices"][0]["finish_reason"] = finish
     broker = OperatorModelBroker(
-        profile(), transport=httpx.MockTransport(lambda _request: httpx.Response(200, json=value)), trace=records.append
+        profile(),
+        transport=httpx2.MockTransport(lambda _request: httpx2.Response(200, json=value)),
+        trace=records.append,
     )
     result = await broker.handle(request())
     assert result.status == status
@@ -469,12 +471,12 @@ async def test_missing_completion_fields_and_unobserved_next_call_do_not_leak_me
     del value["choices"][0]["message"]["content"]
     calls = 0
 
-    def handle(_request: httpx.Request) -> httpx.Response:
+    def handle(_request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         calls += 1
-        return httpx.Response(200, json=value) if calls == 1 else httpx.Response(200, content=b"not JSON")
+        return httpx2.Response(200, json=value) if calls == 1 else httpx2.Response(200, content=b"not JSON")
 
-    broker = OperatorModelBroker(profile(), transport=httpx.MockTransport(handle), trace=records.append)
+    broker = OperatorModelBroker(profile(), transport=httpx2.MockTransport(handle), trace=records.append)
     assert (await broker.handle(request())).reason == "model_protocol"
     assert records[-1].completion_finish_reason == "missing"
     assert records[-1].content_state == "missing"
@@ -488,12 +490,12 @@ async def test_missing_completion_fields_and_unobserved_next_call_do_not_leak_me
 async def test_probe_has_no_provider_completion_observation() -> None:
     records: list[ReachTraceEvent] = []
 
-    def handle(value: httpx.Request) -> httpx.Response:
-        return httpx.Response(
+    def handle(value: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(
             200, json={"status": "ok"} if value.url.path == "/health" else {"data": [{"id": profile().model_id}]}
         )
 
-    result = await OperatorModelBroker(profile(), transport=httpx.MockTransport(handle), trace=records.append).handle(
+    result = await OperatorModelBroker(profile(), transport=httpx2.MockTransport(handle), trace=records.append).handle(
         request("probe")
     )
     assert result.status == "ok"

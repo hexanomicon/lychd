@@ -32,7 +32,6 @@ from typing import Any, cast
 from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
-import httpx
 import httpx2
 import pytest
 from pydantic import SecretStr
@@ -152,7 +151,7 @@ def _chat_profile(path: Path) -> ProbeProfile:
     return profile
 
 
-def _warm_inventory(request: httpx.Request, profile: ProbeProfile, journal: list[dict[str, Any]]) -> dict[str, Any]:
+def _warm_inventory(request: httpx2.Request, profile: ProbeProfile, journal: list[dict[str, Any]]) -> dict[str, Any]:
     """Admit only the real registry's separately bounded warm inventory GET."""
     assert request.method == "GET", "warm_inventory_get_only"
     assert str(request.url) == profile.base_url + "/models", "warm_inventory_exact_endpoint"
@@ -443,8 +442,8 @@ def _native_application(  # noqa: C901, PLR0912, PLR0915 - one fixed ordered HTT
     monkeypatch.setattr(lifespan, "disconnect_run_queues", disconnect_and_dispose)
     wires: list[dict[str, Any]] = []
     warm_inventory: list[dict[str, Any]] = []
-    inventory_clients: dict[int, httpx.AsyncClient] = {}
-    embedding_clients: dict[int, httpx.AsyncClient] = {}
+    inventory_clients: dict[int, httpx2.AsyncClient] = {}
+    embedding_clients: dict[int, httpx2.AsyncClient] = {}
     chat_clients: list[httpx2.AsyncClient] = []
     boundary = _AnswerBoundary(profile)
     assert urlsplit(profile.base_url).port not in {port, 7134}
@@ -493,11 +492,14 @@ def _native_application(  # noqa: C901, PLR0912, PLR0915 - one fixed ordered HTT
         return client
 
     monkeypatch.setattr(model_factory, "_model_http_client", model_client)
-    original_send, original_post = httpx.AsyncClient.send, LlamaCppEmbeddingDriver._post
+    original_send, original_post = httpx2.AsyncClient.send, LlamaCppEmbeddingDriver._post
     inputs = [_SOURCE, *([PROFILE.query_prefix + _QUESTION] * 3)]
     services: Any = None
 
-    async def send(client: httpx.AsyncClient, request: httpx.Request, **kwargs: Any) -> httpx.Response:
+    async def send(client: httpx2.AsyncClient, request: httpx2.Request, **kwargs: Any) -> httpx2.Response:
+        # The model factory owns its separate request-hook fence for these clients.
+        if any(client is chat_client for chat_client in chat_clients):
+            return await original_send(client, request, **kwargs)
         if request.url.port == urlsplit(profile.base_url).port:
             entry = _warm_inventory(request, profile, warm_inventory)
             assert client.follow_redirects is False
@@ -541,7 +543,7 @@ def _native_application(  # noqa: C901, PLR0912, PLR0915 - one fixed ordered HTT
             wires[-1]["native_input_tokens"] = len(result["tokens"])
         return result
 
-    monkeypatch.setattr(httpx.AsyncClient, "send", send)
+    monkeypatch.setattr(httpx2.AsyncClient, "send", send)
     monkeypatch.setattr(LlamaCppEmbeddingDriver, "_post", post)
     states: dict[str, SemanticChatState] = {}
     receipts: dict[str, SemanticRecallReceipt] = {}

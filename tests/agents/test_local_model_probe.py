@@ -17,6 +17,9 @@ from scripts import local_model_probe as probe
 if TYPE_CHECKING:
     import respx
 
+pytestmark = pytest.mark.httpx2(assert_all_called=False)
+
+
 _URL = "http://127.0.0.1:28761/v1"
 _MODEL = "synthetic-probe-model"
 
@@ -86,8 +89,8 @@ def test_profile_requires_exact_identity_and_input_budget() -> None:
 
 
 @pytest.fixture
-def inventory(respx_mock: respx.MockRouter) -> None:
-    respx_mock.get(f"{_URL}/models").mock(return_value=httpx.Response(200, json={"data": [{"id": _MODEL}]}))
+def inventory(httpx2_mock: respx.MockRouter) -> None:
+    httpx2_mock.get(f"{_URL}/models").mock(return_value=httpx.Response(200, json={"data": [{"id": _MODEL}]}))
 
 
 @pytest.mark.asyncio
@@ -138,11 +141,11 @@ async def test_real_registered_dispatch_forge_and_observed_tool_round(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("models", [[], [{"id": "different-model"}]])
 async def test_missing_model_refuses_before_inference(
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
     models: list[dict[str, str]],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    respx_mock.get(f"{_URL}/models").mock(return_value=httpx.Response(200, json={"data": models}))
+    httpx2_mock.get(f"{_URL}/models").mock(return_value=httpx.Response(200, json={"data": models}))
 
     def forbidden() -> Any:
         pytest.fail("Missing inventory model must not construct an inference client")
@@ -157,8 +160,8 @@ async def test_missing_model_refuses_before_inference(
 
 
 @pytest.mark.asyncio
-async def test_unreachable_endpoint_returns_a_bounded_refusal(respx_mock: respx.MockRouter) -> None:
-    respx_mock.get(f"{_URL}/models").mock(side_effect=httpx.ConnectError("private diagnostic"))
+async def test_unreachable_endpoint_returns_a_bounded_refusal(httpx2_mock: respx.MockRouter) -> None:
+    httpx2_mock.get(f"{_URL}/models").mock(side_effect=httpx2.ConnectError("private diagnostic"))
     receipt = await probe.run_probe(profile())
     assert receipt["status"] == "failed"
     assert receipt["error_type"] == "endpoint_unreachable"
@@ -167,8 +170,8 @@ async def test_unreachable_endpoint_returns_a_bounded_refusal(respx_mock: respx.
 
 
 @pytest.mark.asyncio
-async def test_invalid_inventory_is_distinguished_from_unreachable(respx_mock: respx.MockRouter) -> None:
-    respx_mock.get(f"{_URL}/models").mock(return_value=httpx.Response(200, json={"data": "invalid"}))
+async def test_invalid_inventory_is_distinguished_from_unreachable(httpx2_mock: respx.MockRouter) -> None:
+    httpx2_mock.get(f"{_URL}/models").mock(return_value=httpx.Response(200, json={"data": "invalid"}))
     receipt = await probe.run_probe(profile())
     assert receipt["error_type"] == "inventory_invalid"
     assert receipt["observed_phase"] == "error"

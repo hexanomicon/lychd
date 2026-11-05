@@ -9,6 +9,7 @@ from hashlib import sha256
 from typing import Any
 
 import httpx
+import httpx2
 import pytest
 import respx
 from pydantic import ValidationError
@@ -31,6 +32,8 @@ from lychd.extensions.builtin.animator.llamacpp.embedding_profile import IMAGE, 
 from lychd.extensions.builtin.animator.runtimes.llamacpp import LlamaCppRuntimeAdapter
 from lychd.extensions.builtin.animator.soulstones.llamacpp import LlamaCppSoulstoneConfig
 
+pytestmark = pytest.mark.httpx2(assert_all_called=False)
+
 
 def stone(**updates: object) -> LlamaCppSoulstoneConfig:
     values: dict[str, object] = {
@@ -45,9 +48,9 @@ def stone(**updates: object) -> LlamaCppSoulstoneConfig:
     return LlamaCppSoulstoneConfig.model_validate(values)
 
 
-def setup(respx_mock: respx.MockRouter) -> tuple[AnimatorRegistry, Dispatcher, LeaseLedger, EmbeddingBinding]:
-    respx_mock.get("http://127.0.0.1:8080/health").respond(200, json={"status": "ok"})
-    respx_mock.get("http://127.0.0.1:8080/v1/models").respond(200, json={"data": [{"id": PROFILE.model_id}]})
+def setup(httpx2_mock: respx.MockRouter) -> tuple[AnimatorRegistry, Dispatcher, LeaseLedger, EmbeddingBinding]:
+    httpx2_mock.get("http://127.0.0.1:8080/health").respond(200, json={"status": "ok"})
+    httpx2_mock.get("http://127.0.0.1:8080/v1/models").respond(200, json={"data": [{"id": PROFILE.model_id}]})
     registry = AnimatorRegistry(
         declarations=AnimatorDeclarations(soulstones=(stone(),), portals=()),
         runtime_adapters=(LlamaCppRuntimeAdapter(),),
@@ -59,9 +62,9 @@ def setup(respx_mock: respx.MockRouter) -> tuple[AnimatorRegistry, Dispatcher, L
 
 
 @pytest.mark.asyncio
-async def test_fresh_registry_admits_binding_before_probing(respx_mock: respx.MockRouter) -> None:
-    health = respx_mock.get("http://127.0.0.1:8080/health").respond(200, json={"status": "ok"})
-    models = respx_mock.get("http://127.0.0.1:8080/v1/models").respond(200, json={"data": [{"id": PROFILE.model_id}]})
+async def test_fresh_registry_admits_binding_before_probing(httpx2_mock: respx.MockRouter) -> None:
+    health = httpx2_mock.get("http://127.0.0.1:8080/health").respond(200, json={"status": "ok"})
+    models = httpx2_mock.get("http://127.0.0.1:8080/v1/models").respond(200, json={"data": [{"id": PROFILE.model_id}]})
     registry = AnimatorRegistry(
         declarations=AnimatorDeclarations(soulstones=(stone(),), portals=()),
         runtime_adapters=(LlamaCppRuntimeAdapter(),),
@@ -69,9 +72,9 @@ async def test_fresh_registry_admits_binding_before_probing(respx_mock: respx.Mo
     binding = EmbeddingBinding(capability_key=f"embedding:embedding:{PROFILE.model_id}", profile_digest=PROFILE.digest)
     with pytest.raises(EmbeddingRefused, match="binding"):
         registry.require_embedding(binding.model_copy(update={"profile_digest": "0" * 64}), "embed_document")
-    assert not respx_mock.calls
+    assert not httpx2_mock.calls
     registry.require_embedding(binding, "embed_document")
-    assert not respx_mock.calls
+    assert not httpx2_mock.calls
 
     ledger = LeaseLedger()
     async with Dispatcher(registry, leases=ledger).lease_embedding(binding, operation="embed_document", run_id="fresh"):
@@ -94,8 +97,8 @@ def response(vector: list[float] | None = None) -> dict[str, object]:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("operation", ["embed_document", "embed_query"])
-async def test_configured_document_and_query_wire(respx_mock: respx.MockRouter, operation: EmbeddingOperation) -> None:
-    registry, dispatcher, ledger, binding = setup(respx_mock)
+async def test_configured_document_and_query_wire(httpx2_mock: respx.MockRouter, operation: EmbeddingOperation) -> None:
+    registry, dispatcher, ledger, binding = setup(httpx2_mock)
     calls: list[dict[str, object]] = []
     checks: list[int] = []
 
@@ -105,8 +108,8 @@ async def test_configured_document_and_query_wire(respx_mock: respx.MockRouter, 
         calls.append(json.loads(request.content))
         return httpx.Response(200, json={"tokens": [1, 2, 3]} if request.url.path == "/tokenize" else response())
 
-    respx_mock.post("http://127.0.0.1:8080/tokenize").mock(side_effect=receive)
-    respx_mock.post("http://127.0.0.1:8080/v1/embeddings").mock(side_effect=receive)
+    httpx2_mock.post("http://127.0.0.1:8080/tokenize").mock(side_effect=receive)
+    httpx2_mock.post("http://127.0.0.1:8080/v1/embeddings").mock(side_effect=receive)
     async with dispatcher.lease_embedding(binding, operation=operation, run_id="test") as grant:
         assert len(ledger.active()) == 1
         batch = await grant.driver.embed((item(),), authorize=lambda: checks.append(len(calls)))
@@ -124,10 +127,10 @@ async def test_configured_document_and_query_wire(respx_mock: respx.MockRouter, 
 
 
 @pytest.mark.asyncio
-async def test_revocation_after_tokenization_sends_no_embedding(respx_mock: respx.MockRouter) -> None:
-    _, dispatcher, ledger, binding = setup(respx_mock)
-    token = respx_mock.post("http://127.0.0.1:8080/tokenize").respond(200, json={"tokens": [1, 2, 3]})
-    embedding = respx_mock.post("http://127.0.0.1:8080/v1/embeddings").respond(200, json=response())
+async def test_revocation_after_tokenization_sends_no_embedding(httpx2_mock: respx.MockRouter) -> None:
+    _, dispatcher, ledger, binding = setup(httpx2_mock)
+    token = httpx2_mock.post("http://127.0.0.1:8080/tokenize").respond(200, json={"tokens": [1, 2, 3]})
+    embedding = httpx2_mock.post("http://127.0.0.1:8080/v1/embeddings").respond(200, json=response())
 
     def authorize() -> None:
         if token.called:
@@ -142,9 +145,9 @@ async def test_revocation_after_tokenization_sends_no_embedding(respx_mock: resp
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("kind", ["oversize", "compression", "dimension", "norm", "nan", "index", "tokens", "http"])
-async def test_bounded_safe_provider_failure(respx_mock: respx.MockRouter, kind: str) -> None:
-    _, dispatcher, ledger, binding = setup(respx_mock)
-    respx_mock.post("http://127.0.0.1:8080/tokenize").respond(200, json={"tokens": [1, 2, 3]})
+async def test_bounded_safe_provider_failure(httpx2_mock: respx.MockRouter, kind: str) -> None:
+    _, dispatcher, ledger, binding = setup(httpx2_mock)
+    httpx2_mock.post("http://127.0.0.1:8080/tokenize").respond(200, json={"tokens": [1, 2, 3]})
     value = response()
     if kind == "dimension":
         value = response([1.0])
@@ -164,7 +167,7 @@ async def test_bounded_safe_provider_failure(respx_mock: respx.MockRouter, kind:
         content=raw,
         headers={"Content-Encoding": "unexpected"} if kind == "compression" else {},
     )
-    respx_mock.post("http://127.0.0.1:8080/v1/embeddings").mock(return_value=reply)
+    httpx2_mock.post("http://127.0.0.1:8080/v1/embeddings").mock(return_value=reply)
     with pytest.raises(EmbeddingRefused) as error:
         async with dispatcher.lease_embedding(binding, operation="embed_document", run_id="test") as grant:
             await grant.driver.embed((item(),), authorize=lambda: None)
@@ -173,29 +176,29 @@ async def test_bounded_safe_provider_failure(respx_mock: respx.MockRouter, kind:
 
 
 @pytest.mark.asyncio
-async def test_limits_before_embedding_and_tampered_binding_before_probe(respx_mock: respx.MockRouter) -> None:
-    _, dispatcher, _, binding = setup(respx_mock)
-    respx_mock.post("http://127.0.0.1:8080/tokenize").respond(200, json={"tokens": list(range(512))})
-    embedding = respx_mock.post("http://127.0.0.1:8080/v1/embeddings").respond(200, json=response())
+async def test_limits_before_embedding_and_tampered_binding_before_probe(httpx2_mock: respx.MockRouter) -> None:
+    _, dispatcher, _, binding = setup(httpx2_mock)
+    httpx2_mock.post("http://127.0.0.1:8080/tokenize").respond(200, json={"tokens": list(range(512))})
+    embedding = httpx2_mock.post("http://127.0.0.1:8080/v1/embeddings").respond(200, json=response())
     for inputs in ((item(), item()), (item("x" * 4097),), (EmbeddingInput("a", "0" * 64, "text"),), (item(),)):
         with pytest.raises(EmbeddingRefused):
             async with dispatcher.lease_embedding(binding, operation="embed_document", run_id="bounds") as grant:
                 await grant.driver.embed(inputs, authorize=lambda: None)
     assert not embedding.called
-    before = len(respx_mock.calls)
+    before = len(httpx2_mock.calls)
     with pytest.raises(EmbeddingRefused, match="binding"):
         async with dispatcher.lease_embedding(
             binding.model_copy(update={"profile_digest": "0" * 64}), operation="embed_document", run_id="bad"
         ):
             pytest.fail("tampered binding admitted")
-    assert len(respx_mock.calls) == before
+    assert len(httpx2_mock.calls) == before
 
 
 @pytest.mark.asyncio
 async def test_drain_reopen_during_issue_fences_grant(
-    respx_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+    httpx2_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    registry, dispatcher, ledger, binding = setup(respx_mock)
+    registry, dispatcher, ledger, binding = setup(httpx2_mock)
     issue = registry.issue_embedding_grant
 
     async def crossed(binding: EmbeddingBinding, *, operation: EmbeddingOperation, holder: str) -> EmbeddingGrant:
@@ -212,8 +215,8 @@ async def test_drain_reopen_during_issue_fences_grant(
 
 
 @pytest.mark.asyncio
-async def test_scope_exit_cancels_and_joins_escaped_request(respx_mock: respx.MockRouter) -> None:
-    _, dispatcher, ledger, binding = setup(respx_mock)
+async def test_scope_exit_cancels_and_joins_escaped_request(httpx2_mock: respx.MockRouter) -> None:
+    _, dispatcher, ledger, binding = setup(httpx2_mock)
     entered = asyncio.Event()
     stopped = asyncio.Event()
 
@@ -226,7 +229,7 @@ async def test_scope_exit_cancels_and_joins_escaped_request(respx_mock: respx.Mo
             stopped.set()
         return httpx.Response(200, json={"tokens": [1]})
 
-    respx_mock.post("http://127.0.0.1:8080/tokenize").mock(side_effect=blocked)
+    httpx2_mock.post("http://127.0.0.1:8080/tokenize").mock(side_effect=blocked)
     async with dispatcher.lease_embedding(binding, operation="embed_document", run_id="escape") as grant:
         task = asyncio.create_task(grant.driver.embed((item(),), authorize=lambda: None))
         await asyncio.wait_for(entered.wait(), 1)
@@ -263,9 +266,9 @@ def test_cpu_managed_plan() -> None:
 
 
 @pytest.mark.asyncio
-async def test_recursive_body_and_streaming_error_are_bounded(respx_mock: respx.MockRouter) -> None:
-    _, dispatcher, ledger, binding = setup(respx_mock)
-    respx_mock.post("http://127.0.0.1:8080/tokenize").respond(200, json={"tokens": [1, 2, 3]})
+async def test_recursive_body_and_streaming_error_are_bounded(httpx2_mock: respx.MockRouter) -> None:
+    _, dispatcher, ledger, binding = setup(httpx2_mock)
+    httpx2_mock.post("http://127.0.0.1:8080/tokenize").respond(200, json={"tokens": [1, 2, 3]})
     closed: list[bool] = []
     yielded: list[int] = []
 
@@ -278,7 +281,7 @@ async def test_recursive_body_and_streaming_error_are_bounded(respx_mock: respx.
         async def aclose(self) -> None:
             closed.append(True)
 
-    route = respx_mock.post("http://127.0.0.1:8080/v1/embeddings")
+    route = httpx2_mock.post("http://127.0.0.1:8080/v1/embeddings")
     route.mock(return_value=httpx.Response(500, stream=StreamingError()))
     with pytest.raises(EmbeddingRefused, match="response_size"):
         async with dispatcher.lease_embedding(binding, operation="embed_document", run_id="stream") as grant:
@@ -294,9 +297,9 @@ async def test_recursive_body_and_streaming_error_are_bounded(respx_mock: respx.
 
 @pytest.mark.asyncio
 async def test_total_deadline_spans_both_requests(
-    respx_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+    httpx2_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _, dispatcher, ledger, binding = setup(respx_mock)
+    _, dispatcher, ledger, binding = setup(httpx2_mock)
     timeout = asyncio.timeout
 
     def shortened_timeout(_seconds: float | None) -> asyncio.Timeout:
@@ -308,8 +311,8 @@ async def test_total_deadline_spans_both_requests(
         await asyncio.sleep(0.025)
         return httpx.Response(200, json={"tokens": [1, 2, 3]} if request.url.path == "/tokenize" else response())
 
-    respx_mock.post("http://127.0.0.1:8080/tokenize").mock(side_effect=delayed)
-    respx_mock.post("http://127.0.0.1:8080/v1/embeddings").mock(side_effect=delayed)
+    httpx2_mock.post("http://127.0.0.1:8080/tokenize").mock(side_effect=delayed)
+    httpx2_mock.post("http://127.0.0.1:8080/v1/embeddings").mock(side_effect=delayed)
     with pytest.raises(EmbeddingRefused, match="transport"):
         async with dispatcher.lease_embedding(binding, operation="embed_document", run_id="deadline") as grant:
             await grant.driver.embed((item(),), authorize=lambda: None)
@@ -317,15 +320,15 @@ async def test_total_deadline_spans_both_requests(
 
 
 @pytest.mark.asyncio
-async def test_interface_tampering_refused_without_probe(respx_mock: respx.MockRouter) -> None:
-    _, dispatcher, _, binding = setup(respx_mock)
-    count = len(respx_mock.calls)
+async def test_interface_tampering_refused_without_probe(httpx2_mock: respx.MockRouter) -> None:
+    _, dispatcher, _, binding = setup(httpx2_mock)
+    count = len(httpx2_mock.calls)
     with pytest.raises(EmbeddingRefused, match="binding"):
         async with dispatcher.lease_embedding(
             binding.model_copy(update={"interface": "model.chat@1"}), operation="embed_document", run_id="tamper"
         ):
             pytest.fail("tampered interface admitted")
-    assert len(respx_mock.calls) == count
+    assert len(httpx2_mock.calls) == count
 
 
 @pytest.mark.parametrize("updates", [{"port": None}, {"base_url": None}, {"port": 8081}])
@@ -348,8 +351,8 @@ def test_retained_public_manifest_and_float32_digest() -> None:
 
 
 @pytest.mark.asyncio
-async def test_repeated_cancellation_keeps_lease_until_wire_stops(respx_mock: respx.MockRouter) -> None:
-    _, dispatcher, ledger, binding = setup(respx_mock)
+async def test_repeated_cancellation_keeps_lease_until_wire_stops(httpx2_mock: respx.MockRouter) -> None:
+    _, dispatcher, ledger, binding = setup(httpx2_mock)
     entered = asyncio.Event()
     cleanup_started = asyncio.Event()
     finish_cleanup = asyncio.Event()
@@ -364,7 +367,7 @@ async def test_repeated_cancellation_keeps_lease_until_wire_stops(respx_mock: re
             await finish_cleanup.wait()
         return httpx.Response(200, json={"tokens": [1]})
 
-    respx_mock.post("http://127.0.0.1:8080/tokenize").mock(side_effect=blocked)
+    httpx2_mock.post("http://127.0.0.1:8080/tokenize").mock(side_effect=blocked)
 
     async def consume() -> None:
         async with dispatcher.lease_embedding(binding, operation="embed_document", run_id="cancel") as grant:
@@ -395,19 +398,19 @@ async def test_repeated_cancellation_keeps_lease_until_wire_stops(respx_mock: re
 async def test_entry_allocation_failure_and_immediate_cancel(monkeypatch: pytest.MonkeyPatch) -> None:
     from lychd.extensions.builtin.animator.llamacpp.embedding import LlamaCppEmbeddingDriver
 
-    factory = httpx.AsyncClient
-    clients: list[httpx.AsyncClient] = []
+    factory = httpx2.AsyncClient
+    clients: list[httpx2.AsyncClient] = []
 
-    def fail(**_kwargs: object) -> httpx.AsyncClient:
+    def fail(**_kwargs: object) -> httpx2.AsyncClient:
         raise MemoryError
 
-    monkeypatch.setattr("lychd.extensions.builtin.animator.llamacpp.embedding.httpx.AsyncClient", fail)
+    monkeypatch.setattr("lychd.extensions.builtin.animator.llamacpp.embedding.httpx2.AsyncClient", fail)
     driver = LlamaCppEmbeddingDriver(base_url="http://127.0.0.1:8080/v1", operation="embed_document")
     with pytest.raises(MemoryError):
         await driver.__aenter__()
     await driver.__aexit__(None, None, None)
 
-    def cancelling(**_kwargs: object) -> httpx.AsyncClient:
+    def cancelling(**_kwargs: object) -> httpx2.AsyncClient:
         client = factory(trust_env=False)
         clients.append(client)
         current = asyncio.current_task()
@@ -415,7 +418,7 @@ async def test_entry_allocation_failure_and_immediate_cancel(monkeypatch: pytest
         current.cancel()
         return client
 
-    monkeypatch.setattr("lychd.extensions.builtin.animator.llamacpp.embedding.httpx.AsyncClient", cancelling)
+    monkeypatch.setattr("lychd.extensions.builtin.animator.llamacpp.embedding.httpx2.AsyncClient", cancelling)
 
     async def consume() -> None:
         async with LlamaCppEmbeddingDriver(base_url="http://127.0.0.1:8080/v1", operation="embed_document"):

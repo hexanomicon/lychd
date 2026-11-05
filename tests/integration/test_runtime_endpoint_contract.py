@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2
 import pytest
 
 from lychd.config.runes.registry import RuneRegistry
@@ -169,8 +169,8 @@ def test_bind_compilation_builds_runtime_metadata_without_http_or_secret_reads(m
         pytest.fail("Bind compilation attempted a secret/file read or HTTP request")
 
     monkeypatch.setattr(Path, "read_text", unexpected_read)
-    monkeypatch.setattr(httpx.AsyncClient, "request", unexpected_read)
-    monkeypatch.setattr(httpx.Client, "request", unexpected_read)
+    monkeypatch.setattr(httpx2.AsyncClient, "request", unexpected_read)
+    monkeypatch.setattr(httpx2.Client, "request", unexpected_read)
     request = compile_bind_request(
         settings=settings,
         extensions=extensions,

@@ -6,7 +6,7 @@ import asyncio
 import json
 from unittest.mock import AsyncMock
 
-import httpx
+import httpx2
 import pytest
 from scripts import blockworld_voice
 
@@ -17,10 +17,10 @@ from tests.unit.cli.test_blockworld_voice import host as native_host
 host = native_host
 
 
-def transport(request: httpx.Request) -> httpx.Response:
+def transport(request: httpx2.Request) -> httpx2.Response:
     if request.url.path.endswith("transcriptions"):
-        return httpx.Response(200, json={"text": "say hello"})
-    return httpx.Response(200, content=wav(), headers={"Content-Type": "audio/wav"})
+        return httpx2.Response(200, json={"text": "say hello"})
+    return httpx2.Response(200, content=wav(), headers={"Content-Type": "audio/wav"})
 
 
 @pytest.mark.asyncio
@@ -32,7 +32,7 @@ async def test_playback_is_separate_opt_in_with_separate_timing_and_receipt(
     player = AsyncMock(return_value="player_exited")
     monkeypatch.setattr(blockworld_voice, "play_reply", player)
     session = blockworld_voice.VoiceSession(
-        files, speech(httpx.MockTransport(transport)), runner, control, reply_language="en", play_replies=enabled
+        files, speech(httpx2.MockTransport(transport)), runner, control, reply_language="en", play_replies=enabled
     )
     try:
         result = await session.begin(wav())
@@ -65,7 +65,7 @@ async def test_player_failure_keeps_game_result_and_unsettled_player_blocks_capt
     player = AsyncMock(side_effect=error("synthetic player failure"))
     monkeypatch.setattr(blockworld_voice, "play_reply", player)
     session = blockworld_voice.VoiceSession(
-        files, speech(httpx.MockTransport(transport)), runner, control, reply_language="sk", play_replies=True
+        files, speech(httpx2.MockTransport(transport)), runner, control, reply_language="sk", play_replies=True
     )
     try:
         result = await session.begin(wav())
@@ -102,7 +102,7 @@ async def test_stop_during_playback_joins_owned_stage_without_erasing_game_outco
 
     monkeypatch.setattr(blockworld_voice, "play_reply", player)
     session = blockworld_voice.VoiceSession(
-        files, speech(httpx.MockTransport(transport)), runner, control, reply_language="en", play_replies=True
+        files, speech(httpx2.MockTransport(transport)), runner, control, reply_language="en", play_replies=True
     )
     task = session.begin(wav())
     await asyncio.wait_for(entered.wait(), timeout=2)
@@ -120,4 +120,6 @@ async def test_stop_during_playback_joins_owned_stage_without_erasing_game_outco
 async def test_playback_requires_explicit_reply_language(host: Host) -> None:
     files, _game, runner, control = host
     with pytest.raises(ValueError, match="reply language"):
-        blockworld_voice.VoiceSession(files, speech(httpx.MockTransport(transport)), runner, control, play_replies=True)
+        blockworld_voice.VoiceSession(
+            files, speech(httpx2.MockTransport(transport)), runner, control, play_replies=True
+        )

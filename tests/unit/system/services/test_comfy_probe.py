@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 from pydantic import ValidationError
 
@@ -65,13 +65,13 @@ def request_for(profile: ComfyProfile, seed: int = 1) -> ComfyRequest:
 
 
 def probe_for(
-    probe_path: Path, profile: ComfyProfile, handler: Callable[[httpx.Request], httpx.Response]
+    probe_path: Path, profile: ComfyProfile, handler: Callable[[httpx2.Request], httpx2.Response]
 ) -> ComfyProbe:
     return ComfyProbe(
         profile,
         probe_path,
         (Path(__file__).resolve().parents[4],),
-        httpx.MockTransport(handler),
+        httpx2.MockTransport(handler),
     )
 
 
@@ -79,12 +79,12 @@ def probe_for(
 async def test_lost_ack_resume_and_empty_history_never_resubmit(probe_path: Path, profile: ComfyProfile) -> None:
     calls: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         calls.append(request.method + " " + request.url.path)
         if request.url.path == "/prompt":
             msg = "ack lost"
-            raise httpx.ReadTimeout(msg, request=request)
-        return httpx.Response(
+            raise httpx2.ReadTimeout(msg, request=request)
+        return httpx2.Response(
             200,
             json={"queue_running": [], "queue_pending": []} if request.url.path == "/queue" else {},
         )
@@ -106,12 +106,12 @@ async def test_old_dialect_unknown_ack_does_not_query_fabricated_id(probe_path: 
     profile = ComfyProfile.model_validate({**profile.model_dump(), "client_prompt_id_supported": False})
     calls: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         calls.append(request.url.path)
         if request.url.path == "/prompt":
             assert "prompt_id" not in json.loads(request.content)
-            return httpx.Response(200, json={"prompt_id": "not-an-id"})
-        return httpx.Response(200, json={"queue_running": [], "queue_pending": []})
+            return httpx2.Response(200, json={"prompt_id": "not-an-id"})
+        return httpx2.Response(200, json={"queue_running": [], "queue_pending": []})
 
     probe = probe_for(probe_path, profile, handler)
     attempt = await probe.submit(probe.prepare(request_for(profile)))
@@ -120,13 +120,13 @@ async def test_old_dialect_unknown_ack_does_not_query_fabricated_id(probe_path: 
 
 
 def test_replay_changed_input_profile_and_mutable_bounds_refuse(probe_path: Path, profile: ComfyProfile) -> None:
-    probe = probe_for(probe_path, profile, lambda _: httpx.Response(500))
+    probe = probe_for(probe_path, profile, lambda _: httpx2.Response(500))
     attempt = probe.prepare(request_for(profile))
     with pytest.raises(ProbeRefusedError, match="identity changed"):
         probe.prepare(request_for(profile, 2), attempt.occurrence_id)
     changed = ComfyProfile.model_validate({**profile.model_dump(), "deployment_revision": "another-revision"})
     with pytest.raises(ProbeRefusedError):
-        probe_for(probe_path, changed, lambda _: httpx.Response(500)).prepare(
+        probe_for(probe_path, changed, lambda _: httpx2.Response(500)).prepare(
             request_for(changed), attempt.occurrence_id
         )
     with pytest.raises(ValueError, match="bounds"):
@@ -186,13 +186,13 @@ async def exercise_output(
     occurrence = uuid4()
     prompt = profile.prompt(request_for(profile))
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         if request.url.path == "/prompt":
             payload = json.loads(request.content)
             assert payload["prompt_id"] == str(occurrence)
-            return httpx.Response(200, json={"prompt_id": str(occurrence), "node_errors": {}})
+            return httpx2.Response(200, json={"prompt_id": str(occurrence), "node_errors": {}})
         if request.url.path.startswith("/history/"):
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={
                     str(occurrence): {
@@ -204,7 +204,7 @@ async def exercise_output(
             )
         assert request.url.path == "/view"
         assert set(request.url.params) == {"filename", "subfolder", "type"}
-        return httpx.Response(200, content=content)
+        return httpx2.Response(200, content=content)
 
     probe = probe_for(probe_path, profile, handler)
     attempt = await probe.submit(probe.prepare(request_for(profile), occurrence))
@@ -331,10 +331,10 @@ async def test_all_declared_output_openings_are_required(
     if empty:
         outputs["1"]["images"] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         if request.url.path == "/prompt":
-            return httpx.Response(200, json={"prompt_id": str(occurrence)})
-        return httpx.Response(
+            return httpx2.Response(200, json={"prompt_id": str(occurrence)})
+        return httpx2.Response(
             200,
             json={
                 str(occurrence): {
@@ -362,9 +362,9 @@ async def test_partial_fetch_resume_pins_prior_bytes_and_never_refetches(
     second_ready = False
     views: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         if request.url.path == "/prompt":
-            return httpx.Response(200, json={"prompt_id": str(occurrence)})
+            return httpx2.Response(200, json={"prompt_id": str(occurrence)})
         if request.url.path.startswith("/history/"):
             outputs = {
                 "1": {
@@ -373,7 +373,7 @@ async def test_partial_fetch_resume_pins_prior_bytes_and_never_refetches(
                     ]
                 }
             }
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={
                     str(occurrence): {
@@ -386,12 +386,12 @@ async def test_partial_fetch_resume_pins_prior_bytes_and_never_refetches(
         filename = request.url.params["filename"]
         views.append(filename)
         if filename == "first.wav":
-            return httpx.Response(200, content=b"EDIT" if second_ready else b"WAVE")
-        return httpx.Response(200, content=b"GOOD") if second_ready else httpx.Response(503)
+            return httpx2.Response(200, content=b"EDIT" if second_ready else b"WAVE")
+        return httpx2.Response(200, content=b"GOOD") if second_ready else httpx2.Response(503)
 
     probe = probe_for(probe_path, profile, handler)
     attempt = await probe.reconcile(await probe.submit(probe.prepare(request_for(profile), occurrence)))
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(httpx2.HTTPStatusError):
         await probe.fetch_outputs(attempt)
     partial = probe.load(occurrence)
     assert partial.artifacts[0].sha256 == hashlib.sha256(b"WAVE").hexdigest()
@@ -414,12 +414,12 @@ async def test_retained_artifact_damage_refuses_load_and_fetch(
     prompt = profile.prompt(request_for(profile))
     views = 0
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         nonlocal views
         if request.url.path == "/prompt":
-            return httpx.Response(200, json={"prompt_id": str(occurrence)})
+            return httpx2.Response(200, json={"prompt_id": str(occurrence)})
         if request.url.path.startswith("/history/"):
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={
                     str(occurrence): {
@@ -430,7 +430,7 @@ async def test_retained_artifact_damage_refuses_load_and_fetch(
                 },
             )
         views += 1
-        return httpx.Response(200, content=b"WAVE")
+        return httpx2.Response(200, content=b"WAVE")
 
     probe = probe_for(probe_path, profile, handler)
     attempt = await probe.fetch_outputs(
@@ -466,11 +466,11 @@ async def test_interrupted_materialization_receipt_never_claims_retained_bytes(
     occurrence = uuid4()
     prompt = profile.prompt(request_for(profile))
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         if request.url.path == "/prompt":
-            return httpx.Response(200, json={"prompt_id": str(occurrence)})
+            return httpx2.Response(200, json={"prompt_id": str(occurrence)})
         if request.url.path.startswith("/history/"):
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={
                     str(occurrence): {
@@ -480,7 +480,7 @@ async def test_interrupted_materialization_receipt_never_claims_retained_bytes(
                     }
                 },
             )
-        return httpx.Response(200, content=b"WAVE")
+        return httpx2.Response(200, content=b"WAVE")
 
     real_link = os.link
 
@@ -527,9 +527,9 @@ async def test_resume_total_bound_counts_prior_retained_bytes(
     second_ready = False
     views: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         if request.url.path == "/prompt":
-            return httpx.Response(200, json={"prompt_id": str(occurrence)})
+            return httpx2.Response(200, json={"prompt_id": str(occurrence)})
         if request.url.path.startswith("/history/"):
             outputs = {
                 "1": {
@@ -538,7 +538,7 @@ async def test_resume_total_bound_counts_prior_retained_bytes(
                     ]
                 }
             }
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={
                     str(occurrence): {
@@ -551,12 +551,12 @@ async def test_resume_total_bound_counts_prior_retained_bytes(
         filename = request.url.params["filename"]
         views.append(filename)
         if filename == "first.wav":
-            return httpx.Response(200, content=b"WAVE")
-        return httpx.Response(200, content=b"GOOD") if second_ready else httpx.Response(503)
+            return httpx2.Response(200, content=b"WAVE")
+        return httpx2.Response(200, content=b"GOOD") if second_ready else httpx2.Response(503)
 
     probe = probe_for(probe_path, profile, handler)
     attempt = await probe.reconcile(await probe.submit(probe.prepare(request_for(profile), occurrence)))
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(httpx2.HTTPStatusError):
         await probe.fetch_outputs(attempt)
     partial = probe.load(occurrence)
     second_ready = True
@@ -582,8 +582,8 @@ def test_mutable_remote_input_refuses_before_attempt_or_transport(probe_path: Pa
         mutable_inputs=(MutableInput(name="audio", node_id="1", input_name="audio", kind="text"),),
         outputs=(OutputOpening(node_id="1", kind="audio", receiving_owner="riffmaw.music", extensions=(".wav",)),),
     )
-    calls: list[httpx.Request] = []
-    probe = probe_for(probe_path, selected, lambda request: calls.append(request) or httpx.Response(200))
+    calls: list[httpx2.Request] = []
+    probe = probe_for(probe_path, selected, lambda request: calls.append(request) or httpx2.Response(200))
     request = ComfyRequest(profile_sha256=selected.digest, inputs_json=canonical_json({"audio": remote}))
     with pytest.raises(ValueError, match="remote input"):
         probe.prepare(request)
@@ -596,7 +596,7 @@ def test_mutable_remote_input_refuses_before_attempt_or_transport(probe_path: Pa
 def test_copied_unvalidated_profile_refused_before_binding(probe_path: Path, profile: ComfyProfile) -> None:
     invalid = profile.model_copy(update={"endpoint": "https://example.invalid"})
     with pytest.raises(ValueError, match="loopback"):
-        probe_for(probe_path, invalid, lambda _: httpx.Response(200))
+        probe_for(probe_path, invalid, lambda _: httpx2.Response(200))
     assert not list(probe_path.glob("*.json"))
 
 
@@ -754,11 +754,11 @@ async def test_repair_preserves_prior_files_then_fetches_only_unpinned_output(
     assert receipt.read_bytes() == original
     calls: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         assert request.method == "GET"
         assert request.url.path == "/view"
         calls.append(request.url.params["filename"])
-        return httpx.Response(200, content=b"GOOD")
+        return httpx2.Response(200, content=b"GOOD")
 
     result = await probe_for(probe_path, profile, handler).fetch_outputs(repaired)
     assert calls == ["third.wav"]
@@ -788,11 +788,11 @@ async def test_publication_faults_preserve_repairable_or_ambiguous_evidence(  # 
     occurrence = uuid4()
     prompt = profile.prompt(request_for(profile))
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         if request.url.path == "/prompt":
-            return httpx.Response(200, json={"prompt_id": str(occurrence)})
+            return httpx2.Response(200, json={"prompt_id": str(occurrence)})
         if request.url.path.startswith("/history/"):
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 json={
                     str(occurrence): {
@@ -802,7 +802,7 @@ async def test_publication_faults_preserve_repairable_or_ambiguous_evidence(  # 
                     }
                 },
             )
-        return httpx.Response(200, content=b"WAVE")
+        return httpx2.Response(200, content=b"WAVE")
 
     probe = probe_for(probe_path, profile, handler)
     attempt = await probe.reconcile(await probe.submit(probe.prepare(request_for(profile), occurrence)))

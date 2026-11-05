@@ -28,6 +28,8 @@ from lychd.extensions.builtin.animator.runtimes import (
     LlamaCppRuntimeAdapter,
 )
 
+pytestmark = pytest.mark.httpx2(assert_all_called=False)
+
 
 def _vllm_adapter() -> OpenAICompatibleRuntimeAdapter:
     return OpenAICompatibleRuntimeAdapter(runtime="vllm", config_type=VllmSoulstoneConfig)
@@ -440,7 +442,7 @@ def test_vllm_builds_capability_specs_with_concurrency_metadata() -> None:
 
 
 @pytest.mark.asyncio
-async def test_vllm_probe_warms_only_the_exact_observed_model(respx_mock: respx.MockRouter) -> None:
+async def test_vllm_probe_warms_only_the_exact_observed_model(httpx2_mock: respx.MockRouter) -> None:
     soulstone = VllmSoulstoneConfig.model_validate(
         {
             "name": "declaration-name",
@@ -452,7 +454,7 @@ async def test_vllm_probe_warms_only_the_exact_observed_model(respx_mock: respx.
     adapter = _vllm_adapter()
     runtime = adapter.build_runtime(soulstone)
     assert runtime is not None
-    respx_mock.get("http://localhost:8000/v1/models").mock(
+    httpx2_mock.get("http://localhost:8000/v1/models").mock(
         return_value=httpx.Response(200, json={"object": "list", "data": [{"id": "public-model-alias"}]})
     )
 
@@ -464,7 +466,7 @@ async def test_vllm_probe_warms_only_the_exact_observed_model(respx_mock: respx.
 
 
 @pytest.mark.asyncio
-async def test_vllm_probe_rejects_a_declared_model_absent_from_inventory(respx_mock: respx.MockRouter) -> None:
+async def test_vllm_probe_rejects_a_declared_model_absent_from_inventory(httpx2_mock: respx.MockRouter) -> None:
     soulstone = VllmSoulstoneConfig.model_validate(
         {
             "name": "missing-vllm",
@@ -475,7 +477,7 @@ async def test_vllm_probe_rejects_a_declared_model_absent_from_inventory(respx_m
     adapter = _vllm_adapter()
     runtime = adapter.build_runtime(soulstone)
     assert runtime is not None
-    respx_mock.get("http://localhost:8000/v1/models").mock(
+    httpx2_mock.get("http://localhost:8000/v1/models").mock(
         return_value=httpx.Response(200, json={"object": "list", "data": [{"id": "unrelated-model"}]})
     )
 
@@ -486,7 +488,7 @@ async def test_vllm_probe_rejects_a_declared_model_absent_from_inventory(respx_m
 
 
 @pytest.mark.asyncio
-async def test_vllm_probe_fails_closed_on_malformed_inventory(respx_mock: respx.MockRouter) -> None:
+async def test_vllm_probe_fails_closed_on_malformed_inventory(httpx2_mock: respx.MockRouter) -> None:
     soulstone = VllmSoulstoneConfig.model_validate(
         {
             "name": "malformed-vllm",
@@ -497,7 +499,7 @@ async def test_vllm_probe_fails_closed_on_malformed_inventory(respx_mock: respx.
     adapter = _vllm_adapter()
     runtime = adapter.build_runtime(soulstone)
     assert runtime is not None
-    respx_mock.get("http://localhost:8000/v1/models").mock(
+    httpx2_mock.get("http://localhost:8000/v1/models").mock(
         return_value=httpx.Response(200, json={"object": "list", "data": [{"object": "model"}]})
     )
 
@@ -518,7 +520,7 @@ async def test_vllm_probe_fails_closed_on_malformed_inventory(respx_mock: respx.
     ],
 )
 async def test_vllm_probe_bounds_live_model_inventory(
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
     inventory: list[dict[str, str]],
     reason: str,
 ) -> None:
@@ -533,7 +535,7 @@ async def test_vllm_probe_bounds_live_model_inventory(
     runtime = adapter.build_runtime(soulstone)
     assert runtime is not None
     connector = cast("OpenAICompatibleConnector", runtime.connector)
-    respx_mock.get("http://localhost:8000/v1/models").mock(
+    httpx2_mock.get("http://localhost:8000/v1/models").mock(
         return_value=httpx.Response(200, json={"object": "list", "data": inventory})
     )
 

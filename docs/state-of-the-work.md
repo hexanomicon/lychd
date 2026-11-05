@@ -2764,6 +2764,16 @@ denies nested user namespaces. The maintained OCI receipt binds the recipe, harn
 worker/runtime fingerprints and paired network receipts. It does not requalify the separate
 historical static/RSS runtime or the composed PostgreSQL receipt.
 
+A repeat on 5 November 2026 CET passed the same ordered OCI proofs after the HTTPX2 client
+migration changed dependency declarations and lock metadata. The selected Scout dependency
+versions and actual Fetch/authority exports remained unchanged; the renewed OCI record binds
+the new build inputs to that observed runtime and verified cleanup. The same qualification
+limits apply.
+
+A subsequent dependency-update repeat passed with locked Pydantic 2.14.2 and the final
+check harness. The maintained OCI record binds that latest occurrence, its exact declarations
+and lock, actual paired network receipts, and verified cleanup. The same limits remain.
+
 A separate `scout-rss-extract@1` profile now projects strict UTF-8 RSS 2.0 into immutable
 channel/item observations in that same fixed child. It accepts three explicit XML media types;
 the old static header and public-page media contract still refuse XML. Expat declarations,

@@ -23,15 +23,16 @@ from pathlib import Path
 from typing import Any, Literal, cast
 from urllib.parse import quote
 
-import httpx
+import httpx2
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from lychd.compositions.reach.expressions import REACTIONS, Reaction, validate_gif_url
 from lychd.interface.observation import ObservedOperation, OperationObserver
+from lychd.lib.http import create_http_ssl_context
 
 _BASE = "https://discord.com/api/v10"
 _MAX_RESPONSE = 2 * 1024 * 1024
-_TIMEOUT = httpx.Timeout(10.0, connect=5.0, pool=5.0)
+_TIMEOUT = httpx2.Timeout(10.0, connect=5.0, pool=5.0)
 _ID = re.compile(r"[1-9][0-9]{0,19}\Z")
 _RECORD = re.compile(r"[a-f0-9]{64}\.json\Z")
 _DIGEST = r"^[a-f0-9]{64}$"
@@ -332,8 +333,8 @@ def _observe_request(observed: ObservedOperation | None) -> Generator[None]:
     except asyncio.CancelledError:
         observed.finish("cancelled", error="cancelled")
         raise
-    except httpx.HTTPError as error:
-        observed.finish("failed", error="timeout" if isinstance(error, httpx.TimeoutException) else "transport")
+    except httpx2.HTTPError as error:
+        observed.finish("failed", error="timeout" if isinstance(error, httpx2.TimeoutException) else "transport")
         raise
     except BaseException:
         observed.finish("failed", error="protocol")
@@ -342,7 +343,7 @@ def _observe_request(observed: ObservedOperation | None) -> Generator[None]:
         observed.finish("succeeded")
 
 
-async def _response_value(response: httpx.Response) -> tuple[int, Any]:
+async def _response_value(response: httpx2.Response) -> tuple[int, Any]:
     """Read one bounded response while preserving non-success HTTP status."""
     if not HTTPStatus.OK <= response.status_code < HTTPStatus.MULTIPLE_CHOICES:
         return response.status_code, None
@@ -372,7 +373,7 @@ class DiscordRest:
         bot_user_id: str,
         guild_id: str,
         journal: EffectJournal,
-        client: httpx.AsyncClient | None = None,
+        client: httpx2.AsyncClient | None = None,
         observer: OperationObserver | None = None,
     ) -> None:
         """Bind the credential to explicit expected identities and one guild."""
@@ -392,8 +393,8 @@ class DiscordRest:
         self._introduction_channel: str | None = None
         self._effects_lock = asyncio.Lock()
         self._owns_client = client is None
-        self._client = client or httpx.AsyncClient(
-            transport=httpx.AsyncHTTPTransport(retries=0, trust_env=False),
+        self._client = client or httpx2.AsyncClient(
+            transport=httpx2.AsyncHTTPTransport(verify=create_http_ssl_context(), retries=0, trust_env=False),
             trust_env=False,
             follow_redirects=False,
             timeout=_TIMEOUT,
@@ -503,7 +504,7 @@ class DiscordRest:
                     if observed is not None:
                         observed.http_status = response.status_code
                     return await _response_value(response)
-        except httpx.HTTPError:
+        except httpx2.HTTPError:
             code = "network_error"
             raise DiscordRestError(code) from None
 

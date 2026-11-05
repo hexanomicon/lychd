@@ -12,7 +12,7 @@ from typing import Any, Literal
 from urllib.parse import urlsplit
 from uuid import uuid4
 
-import httpx
+import httpx2
 
 from lychd.compositions.blockworld.companion import (
     MAX_REQUEST_BYTES,
@@ -29,6 +29,7 @@ from lychd.compositions.blockworld.companion import (
     strict_json,
 )
 from lychd.lib.asyncio import complete_under_cancellation
+from lychd.lib.http import create_http_ssl_context
 
 MAX_TCP_PORT = 65535
 MIN_TIMEOUT_S = 0.25
@@ -81,7 +82,7 @@ class BridgeBinding:
 class CompanionBridge:
     """One boot/actor binding, process-local fences and one priority stop attempt."""
 
-    def __init__(self, binding: BridgeBinding, *, transport: httpx.AsyncBaseTransport | None = None) -> None:
+    def __init__(self, binding: BridgeBinding, *, transport: httpx2.AsyncBaseTransport | None = None) -> None:
         """Bind one endpoint and finite client; start no network request."""
         self.binding = binding
         self.epoch = 0
@@ -92,17 +93,17 @@ class CompanionBridge:
         self._fenced: set[str] = set()
         self._issued: dict[str, int] = {}
         self._stop_task: asyncio.Task[CompanionResult] | None = None
-        self._client = httpx.AsyncClient(
+        self._client = httpx2.AsyncClient(
             base_url=binding.endpoint.rstrip("/"),
             headers={
                 "Authorization": f"Bearer {binding.token}",
                 "Accept": "application/json",
                 "Accept-Encoding": "identity",
             },
-            timeout=httpx.Timeout(binding.timeout_s),
+            timeout=httpx2.Timeout(binding.timeout_s),
             follow_redirects=False,
             trust_env=False,
-            transport=transport or httpx.AsyncHTTPTransport(retries=0),
+            transport=transport or httpx2.AsyncHTTPTransport(verify=create_http_ssl_context(), retries=0),
         )
 
     async def _http(
@@ -146,7 +147,7 @@ class CompanionBridge:
                     msg = "Response body length differs from its framing."
                     raise CompanionBridgeError(msg)
                 return strict_json(bytes(body), limit=MAX_RESPONSE_BYTES)
-        except (httpx.HTTPError, ValueError, UnicodeError) as exc:
+        except (httpx2.HTTPError, ValueError, UnicodeError) as exc:
             msg = "Bridge transport or strict JSON failed; no completion receipt."
             raise CompanionBridgeError(msg) from exc
 

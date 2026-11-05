@@ -11,7 +11,7 @@ import time
 from collections.abc import Callable
 from typing import Any, cast
 
-import httpx
+import httpx2
 
 from lychd.compositions.reach.operator_model_wire import (
     MAX_MODEL_PAYLOAD_BYTES,
@@ -24,6 +24,7 @@ from lychd.compositions.reach.operator_model_wire import (
 )
 from lychd.compositions.reach.operator_trace import TraceEmitter, TraceName, TraceSink
 from lychd.compositions.reach.operator_wire import strict_json
+from lychd.lib.http import create_http_ssl_context
 
 MODEL_ENDPOINT = "http://127.0.0.1:28000"
 MAX_MODEL_IDS = 32
@@ -97,7 +98,7 @@ class OperatorModelBroker:
         profile: OperatorConversationProfile,
         *,
         endpoint: str = MODEL_ENDPOINT,
-        transport: httpx.AsyncBaseTransport | None = None,
+        transport: httpx2.AsyncBaseTransport | None = None,
         trace: TraceSink | None = None,
     ) -> None:
         """Bind transport to a frozen profile without opening any network connection."""
@@ -116,7 +117,7 @@ class OperatorModelBroker:
 
     async def _request(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         method: str,
         route: str,
         body: bytes | None = None,
@@ -155,7 +156,7 @@ class OperatorModelBroker:
                 duration_ms=min(86_400_000, int((time.monotonic() - started) * 1000)),
             )
 
-    async def _probe(self, client: httpx.AsyncClient) -> str:
+    async def _probe(self, client: httpx2.AsyncClient) -> str:
         await self._request(client, "GET", "/health")
         value = _object(await self._request(client, "GET", "/v1/models"), "model_inventory")
         entries = _array(value.get("data"), "model_inventory")
@@ -180,7 +181,7 @@ class OperatorModelBroker:
         return canonical_json(OperatorModelProbe(healthy=True, model_ids=ids).model_dump(mode="json"))
 
     async def _generate(
-        self, client: httpx.AsyncClient, payload: str, *, authorize: Callable[[], None] | None = None
+        self, client: httpx2.AsyncClient, payload: str, *, authorize: Callable[[], None] | None = None
     ) -> str:
         body = canonical_json(validate_generation_payload(self.profile, payload)).encode()
         if len(body) > MAX_MODEL_PAYLOAD_BYTES:
@@ -227,9 +228,10 @@ class OperatorModelBroker:
         try:
             async with (
                 asyncio.timeout(budget),
-                httpx.AsyncClient(
+                httpx2.AsyncClient(
+                    verify=create_http_ssl_context(),
                     transport=self.transport,
-                    timeout=httpx.Timeout(budget),
+                    timeout=httpx2.Timeout(budget),
                     follow_redirects=False,
                     trust_env=False,
                     headers={"Content-Type": "application/json", "Accept-Encoding": "identity"},
@@ -246,7 +248,7 @@ class OperatorModelBroker:
                 call_id=request.call_id, binding_digest=request.binding_digest, status="ok", payload_json=payload
             )
             return result  # noqa: TRY300 - the finally observer shares this guarded result boundary
-        except (TimeoutError, httpx.TimeoutException):
+        except (TimeoutError, httpx2.TimeoutException):
             result = OperatorModelResponse(
                 call_id=request.call_id,
                 binding_digest=request.binding_digest,
@@ -254,7 +256,7 @@ class OperatorModelBroker:
                 reason="model_timeout",
             )
             return result
-        except (httpx.HTTPError, LookupError):
+        except (httpx2.HTTPError, LookupError):
             result = OperatorModelResponse(
                 call_id=request.call_id,
                 binding_digest=request.binding_digest,

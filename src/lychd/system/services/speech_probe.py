@@ -7,7 +7,7 @@ import json
 from http import HTTPStatus
 from typing import Any, cast
 
-import httpx
+import httpx2
 
 from lychd.domain.artifacts import ArtifactRef
 from lychd.domain.speech_probe import (
@@ -25,6 +25,7 @@ from lychd.domain.speech_probe import (
     load_speech_profile,
 )
 from lychd.extensions.builtin.echo.material import inspect_pcm_utterance
+from lychd.lib.http import create_http_ssl_context
 
 _HEADER_BYTES = 44
 _MAX_DURATION_SECONDS = 120
@@ -108,7 +109,7 @@ def _valid_text(text: str, limit: int, *, allow_empty: bool) -> bool:
     return not any(ord(char) < _FIRST_PRINTABLE and char not in "\n\t\r" for char in text)
 
 
-def _response_length(response: httpx.Response, limit: int, expected_type: str) -> int | None:
+def _response_length(response: httpx2.Response, limit: int, expected_type: str) -> int | None:
     if response.status_code != HTTPStatus.OK:
         msg = "Speech request refused by HTTP status; server work is unconfirmed."
         raise SpeechProbeError(msg)
@@ -134,7 +135,7 @@ class SpeechProbe:
     propagates to the caller and stops local waiting, not proven server work.
     """
 
-    def __init__(self, profile: LocalSpeechProfile, *, transport: httpx.AsyncBaseTransport | None = None) -> None:
+    def __init__(self, profile: LocalSpeechProfile, *, transport: httpx2.AsyncBaseTransport | None = None) -> None:
         """Revalidate even copied profile objects before admitting an endpoint."""
         self.profile = load_speech_profile(profile.model_dump_json())
         self._transport = transport
@@ -157,11 +158,12 @@ class SpeechProbe:
         try:
             async with (
                 asyncio.timeout(self.profile.total_timeout_seconds),
-                httpx.AsyncClient(
+                httpx2.AsyncClient(
+                    verify=create_http_ssl_context(),
                     transport=self._transport,
                     trust_env=False,
                     follow_redirects=False,
-                    timeout=httpx.Timeout(self.profile.transport_timeout_seconds),
+                    timeout=httpx2.Timeout(self.profile.transport_timeout_seconds),
                     headers={"Accept-Encoding": "identity"},
                 ) as client,
                 client.stream(
@@ -187,7 +189,7 @@ class SpeechProbe:
         except asyncio.CancelledError as exc:
             exc.add_note("Local speech waiting cancelled; server inference outcome is unknown. No retry was attempted.")
             raise
-        except (httpx.HTTPError, TimeoutError):
+        except (httpx2.HTTPError, TimeoutError):
             msg = "Speech transport failed or expired; server work is unknown. No retry was attempted."
             raise SpeechProbeError(msg) from None
 

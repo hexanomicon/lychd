@@ -11,7 +11,7 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any, TextIO, cast
 
-import httpx
+import httpx2
 import pytest
 import pytest_asyncio
 from scripts import blockworld_voice
@@ -40,7 +40,7 @@ def wav() -> bytes:
     )
 
 
-def speech(handler: httpx.MockTransport) -> SpeechProbe:
+def speech(handler: httpx2.MockTransport) -> SpeechProbe:
     pinned = SpeechProfile(
         endpoint="http://127.0.0.1:8080",
         runtime_revision="a" * 40,
@@ -95,15 +95,15 @@ async def test_one_transcription_one_native_run_private_evidence_optional_genera
     files, _game, runner, control = host
     calls: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         calls.append(request.url.path)
         if request.url.path.endswith("transcriptions"):
             assert b'filename="utterance.wav"' in request.content
-            return httpx.Response(200, json={"text": "stav"})
-        return httpx.Response(200, content=wav(), headers={"Content-Type": "audio/wav"})
+            return httpx2.Response(200, json={"text": "stav"})
+        return httpx2.Response(200, content=wav(), headers={"Content-Type": "audio/wav"})
 
     session = blockworld_voice.VoiceSession(
-        files, speech(httpx.MockTransport(handler)), runner, control, language="sk", reply_language="sk"
+        files, speech(httpx2.MockTransport(handler)), runner, control, language="sk", reply_language="sk"
     )
     result = await session.begin(wav())
     assert result["kind"] == "client_observed"
@@ -132,7 +132,7 @@ async def test_unknown_recorder_retirement_fences_horizon_without_reporting_off(
         raise error_type(msg)
 
     monkeypatch.setattr(blockworld_voice, "capture_utterance", capture)
-    client = speech(httpx.MockTransport(lambda _: pytest.fail("Unknown capture cannot reach speech.")))
+    client = speech(httpx2.MockTransport(lambda _: pytest.fail("Unknown capture cannot reach speech.")))
     session = blockworld_voice.VoiceSession(files, client, runner, control)
     try:
         with pytest.raises(error_type):
@@ -164,7 +164,7 @@ async def test_settled_recorder_failure_leaves_horizon_available_for_new_gesture
         return wav()
 
     monkeypatch.setattr(blockworld_voice, "capture_utterance", capture)
-    client = speech(httpx.MockTransport(lambda _: httpx.Response(200, json={"text": "stav"})))
+    client = speech(httpx2.MockTransport(lambda _: httpx2.Response(200, json={"text": "stav"})))
     session = blockworld_voice.VoiceSession(files, client, runner, control)
     try:
         with pytest.raises(VoiceCaptureError):
@@ -184,7 +184,7 @@ async def test_settled_recorder_failure_leaves_horizon_available_for_new_gesture
 @pytest.mark.asyncio
 async def test_ambiguous_transcript_has_no_run_or_world_command(host: Host) -> None:
     files, game, runner, control = host
-    client = speech(httpx.MockTransport(lambda _request: httpx.Response(200, json={"text": "build a house"})))
+    client = speech(httpx2.MockTransport(lambda _request: httpx2.Response(200, json={"text": "build a house"})))
     session = blockworld_voice.VoiceSession(files, client, runner, control)
     assert (await session.begin(wav()))["kind"] == "refused"
     assert not runner.queue.jobs
@@ -195,7 +195,7 @@ async def test_ambiguous_transcript_has_no_run_or_world_command(host: Host) -> N
 @pytest.mark.parametrize("phrase", ["postav schválený plán", "postav schvaleny plan", "build approved plan"])
 async def test_build_phrase_does_not_invent_a_missing_plan(host: Host, phrase: str) -> None:
     files, game, runner, control = host
-    client = speech(httpx.MockTransport(lambda _: httpx.Response(200, json={"text": phrase})))
+    client = speech(httpx2.MockTransport(lambda _: httpx2.Response(200, json={"text": phrase})))
     session = blockworld_voice.VoiceSession(files, client, runner, control)
     assert (await session.begin(wav()))["kind"] == "refused"
     assert not runner.queue.jobs
@@ -215,13 +215,13 @@ async def test_priority_stop_during_capture_or_stt_creates_no_run(
         await asyncio.Event().wait()
         return wav()
 
-    async def handler(request: httpx.Request) -> httpx.Response:
+    async def handler(request: httpx2.Request) -> httpx2.Response:
         entered.set()
         await asyncio.Event().wait()
-        return httpx.Response(200, json={"text": "goto 1 64 0"})
+        return httpx2.Response(200, json={"text": "goto 1 64 0"})
 
     monkeypatch.setattr(blockworld_voice, "capture_utterance", capture)
-    session = blockworld_voice.VoiceSession(files, speech(httpx.MockTransport(handler)), runner, control)
+    session = blockworld_voice.VoiceSession(files, speech(httpx2.MockTransport(handler)), runner, control)
     task = session.begin(None if stage == "capture" else wav())
     await entered.wait()
     await session.stop()
@@ -235,7 +235,7 @@ async def test_priority_stop_during_capture_or_stt_creates_no_run(
 @pytest.mark.asyncio
 async def test_priority_stop_drains_waiting_game_action(host: Host) -> None:
     files, game, runner, control = host
-    client = speech(httpx.MockTransport(lambda _request: httpx.Response(200, json={"text": "goto 1 64 0"})))
+    client = speech(httpx2.MockTransport(lambda _request: httpx2.Response(200, json={"text": "goto 1 64 0"})))
     session = blockworld_voice.VoiceSession(files, client, runner, control)
     task = session.begin(wav())
     await game.issued.wait()
@@ -260,7 +260,7 @@ async def test_stop_fences_run_even_when_admission_has_not_returned_its_id(
         return await original(request)
 
     monkeypatch.setattr(runner, "submit", delayed)
-    client = speech(httpx.MockTransport(lambda _request: httpx.Response(200, json={"text": "goto 1 64 0"})))
+    client = speech(httpx2.MockTransport(lambda _request: httpx2.Response(200, json={"text": "goto 1 64 0"})))
     session = blockworld_voice.VoiceSession(files, client, runner, control)
     task = session.begin(wav())
     await entered.wait()
@@ -292,7 +292,7 @@ async def test_slovak_idle_runs_native_graph_and_next_capture_settles_it_first(
 ) -> None:
     files, game, runner, control = host
     words = iter(("Čakaj.", "Stav."))
-    client = speech(httpx.MockTransport(lambda _request: httpx.Response(200, json={"text": next(words)})))
+    client = speech(httpx2.MockTransport(lambda _request: httpx2.Response(200, json={"text": next(words)})))
     session = blockworld_voice.VoiceSession(files, client, runner, control, behavior_seconds=5)
     recorded = asyncio.Event()
     original = session.supervisor.record
@@ -326,7 +326,7 @@ async def test_slovak_idle_runs_native_graph_and_next_capture_settles_it_first(
 @pytest.mark.asyncio
 async def test_follow_transcript_without_exact_target_refuses(host: Host) -> None:
     files, game, runner, control = host
-    client = speech(httpx.MockTransport(lambda _request: httpx.Response(200, json={"text": "Nasleduj ma."})))
+    client = speech(httpx2.MockTransport(lambda _request: httpx2.Response(200, json={"text": "Nasleduj ma."})))
     session = blockworld_voice.VoiceSession(files, client, runner, control)
     try:
         assert (await session.begin(wav()))["kind"] == "refused"
@@ -361,7 +361,7 @@ async def test_operate_explicitly_opts_attached_target_into_finite_read_settleme
 ) -> None:
     files, game, _runner, _control = host
     profile = files.root / "speech.json"
-    client = speech(httpx.MockTransport(lambda _: httpx.Response(200)))
+    client = speech(httpx2.MockTransport(lambda _: httpx2.Response(200)))
     files.write_new(profile, client.profile.model_dump_json().encode())
     binding = game.binding()
 
@@ -412,7 +412,9 @@ async def test_version_two_loader_selects_speech_before_any_game_effect(monkeypa
         selected: list[SpeechProbe] = []
 
         def speech_probe(actual: Any) -> SpeechProbe:
-            client = SpeechProbe(actual, transport=httpx.MockTransport(lambda _: pytest.fail("Unexpected speech HTTP")))
+            client = SpeechProbe(
+                actual, transport=httpx2.MockTransport(lambda _: pytest.fail("Unexpected speech HTTP"))
+            )
             selected.append(client)
             return client
 

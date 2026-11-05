@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 
 from lychd.agents.router import Intent
@@ -71,33 +71,33 @@ class FakeBridge:
             "timestamp_ms": int(time.time() * 1000),
         }
 
-    async def handle(self, request: httpx.Request) -> httpx.Response:  # noqa: PLR0911 - explicit protocol failure branches
+    async def handle(self, request: httpx2.Request) -> httpx2.Response:  # noqa: PLR0911 - explicit protocol failure branches
         assert request.headers["authorization"] == "Bearer " + "a" * 64
         assert request.headers["accept-encoding"] == "identity"
         if request.url.path == "/v1/state":
             self.reads += 1
             if self.bad_response == "redirect":
-                return httpx.Response(302, headers={"location": "http://127.0.0.1:9999/private"})
+                return httpx2.Response(302, headers={"location": "http://127.0.0.1:9999/private"})
             if self.bad_response == "unauthorized":
-                return httpx.Response(401)
+                return httpx2.Response(401)
             if self.bad_response == "oversize":
-                return httpx.Response(200, content=b" " * 65537, headers={"content-type": "application/json"})
+                return httpx2.Response(200, content=b" " * 65537, headers={"content-type": "application/json"})
             state = self.state()
             if self.bad_response == "identity":
                 state["actor_id"] = str(uuid4())
             if self.bad_response == "unknown":
                 state["unexpected"] = "never retained"
             if self.bad_response == "duplicate":
-                return httpx.Response(
+                return httpx2.Response(
                     200, content=b'{"protocol":1,"protocol":1}', headers={"content-type": "application/json"}
                 )
-            return httpx.Response(200, json=state)
+            return httpx2.Response(200, json=state)
         body = json.loads(request.content)
         if request.url.path == "/v1/stop":
             self.generation += 1
             self.stop_ids.append(body["action_id"])
             self.release_action.set()
-            return httpx.Response(
+            return httpx2.Response(
                 202,
                 json={
                     "protocol": 1,
@@ -115,7 +115,7 @@ class FakeBridge:
         self.action_started.set()
         if self.delay:
             await self.release_action.wait()
-        return httpx.Response(
+        return httpx2.Response(
             202,
             json={
                 "protocol": 1,
@@ -131,7 +131,7 @@ class FakeBridge:
 
     def bridge(self) -> CompanionBridge:
         return CompanionBridge(
-            BridgeBinding("http://127.0.0.1:18184", "a" * 64, self.actor), transport=httpx.MockTransport(self.handle)
+            BridgeBinding("http://127.0.0.1:18184", "a" * 64, self.actor), transport=httpx2.MockTransport(self.handle)
         )
 
 
@@ -515,16 +515,16 @@ async def test_lost_post_ack_is_unknown_and_identical_request_never_reposts() ->
     fake = FakeBridge()
     calls = 0
 
-    async def lost(request: httpx.Request) -> httpx.Response:
+    async def lost(request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
         if request.url.path == "/v1/actions":
             calls += 1
             msg = "Synthetic lost acknowledgement."
-            raise httpx.ReadError(msg, request=request)
+            raise httpx2.ReadError(msg, request=request)
         return await fake.handle(request)
 
     bridge = CompanionBridge(
-        BridgeBinding("http://127.0.0.1:18184", "a" * 64, fake.actor), transport=httpx.MockTransport(lost)
+        BridgeBinding("http://127.0.0.1:18184", "a" * 64, fake.actor), transport=httpx2.MockTransport(lost)
     )
     session = CompanionSession(LocalCompanionRunner(CompanionService(policy(), bridge), bridge), bridge)
     await session.open()
@@ -543,16 +543,16 @@ async def test_lost_post_ack_is_unknown_and_identical_request_never_reposts() ->
 async def test_mismatched_action_identity_is_unknown() -> None:
     fake = FakeBridge()
 
-    async def wrong_identity(request: httpx.Request) -> httpx.Response:
+    async def wrong_identity(request: httpx2.Request) -> httpx2.Response:
         response = await fake.handle(request)
         if request.url.path == "/v1/actions":
             document = response.json()
             document["run_id"] = str(uuid4())
-            return httpx.Response(202, json=document)
+            return httpx2.Response(202, json=document)
         return response
 
     bridge = CompanionBridge(
-        BridgeBinding("http://127.0.0.1:18184", "a" * 64, fake.actor), transport=httpx.MockTransport(wrong_identity)
+        BridgeBinding("http://127.0.0.1:18184", "a" * 64, fake.actor), transport=httpx2.MockTransport(wrong_identity)
     )
     session = CompanionSession(LocalCompanionRunner(CompanionService(policy(), bridge), bridge), bridge)
     await session.open()
@@ -1440,7 +1440,7 @@ async def test_model_copy_cannot_bypass_profile_or_input_admission() -> None:
 @pytest.mark.asyncio
 async def test_original_deadline_rechecked_after_physical_observation() -> None:
     class SlowObservation(FakeBridge):
-        async def handle(self, request: httpx.Request) -> httpx.Response:
+        async def handle(self, request: httpx2.Request) -> httpx2.Response:
             if request.url.path == "/v1/state" and self.reads:
                 await asyncio.sleep(0.05)
             return await super().handle(request)
@@ -1606,12 +1606,12 @@ async def test_native_unbound_ambiguous_instruction_has_no_invented_target_cause
 @pytest.mark.asyncio
 async def test_foreign_refusal_diagnostic_never_becomes_a_host_reason() -> None:
     class ForeignRefusal(FakeBridge):
-        async def handle(self, request: httpx.Request) -> httpx.Response:
+        async def handle(self, request: httpx2.Request) -> httpx2.Response:
             response = await super().handle(request)
             if request.url.path == "/v1/actions":
                 document = response.json()
                 document.update(status="refused", detail="target_unavailable: private foreign bounds diagnosis")
-                return httpx.Response(202, json=document)
+                return httpx2.Response(202, json=document)
             return response
 
     fake = ForeignRefusal()

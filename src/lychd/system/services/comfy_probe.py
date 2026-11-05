@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Literal, cast
 from uuid import UUID, uuid4
 
-import httpx
+import httpx2
 
 from lychd.domain.comfy_probe import (
     MAX_JSON_BYTES,
@@ -26,6 +26,7 @@ from lychd.domain.comfy_probe import (
     json_digest,
     safe_component,
 )
+from lychd.lib.http import create_http_ssl_context
 
 MAX_SUBFOLDER_LENGTH = 256
 MIN_QUEUE_COLUMNS = 3
@@ -47,7 +48,7 @@ class ComfyProbe:
         profile: ComfyProfile,
         workspace: Path,
         checkout_roots: tuple[Path, ...],
-        transport: httpx.AsyncBaseTransport | None = None,
+        transport: httpx2.AsyncBaseTransport | None = None,
     ) -> None:
         """Revalidate the reviewed profile and bind its external workspace."""
         if not checkout_roots or not workspace.is_absolute() or not workspace.is_dir():
@@ -242,10 +243,11 @@ class ComfyProbe:
                 raise ProbeRefusedError(msg)
             return self._current(attempt, path)
 
-    def _client(self) -> httpx.AsyncClient:
-        return httpx.AsyncClient(
+    def _client(self) -> httpx2.AsyncClient:
+        return httpx2.AsyncClient(
+            verify=create_http_ssl_context(),
             transport=self.transport,
-            timeout=httpx.Timeout(15.0),
+            timeout=httpx2.Timeout(15.0),
             follow_redirects=False,
             trust_env=False,
             headers={"Accept-Encoding": "identity"},
@@ -295,7 +297,7 @@ class ComfyProbe:
                 return current
             if self.profile.client_prompt_id_supported and provider != str(current.occurrence_id):
                 return current
-        except (httpx.HTTPError, ValueError, TimeoutError):
+        except (httpx2.HTTPError, ValueError, TimeoutError):
             return current
         with self._locked(attempt.occurrence_id) as path:
             current = self._current(attempt, path)

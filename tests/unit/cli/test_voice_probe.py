@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import httpx
+import httpx2
 import pytest
 from click.testing import CliRunner
 from scripts import voice_probe
@@ -47,22 +47,22 @@ def options(workspace: Path) -> list[str]:
     ]
 
 
-def mock_probe(monkeypatch: pytest.MonkeyPatch, response: httpx.Response) -> list[httpx.Request]:
-    calls: list[httpx.Request] = []
+def mock_probe(monkeypatch: pytest.MonkeyPatch, response: httpx2.Response) -> list[httpx2.Request]:
+    calls: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         calls.append(request)
         return response
 
     def factory(pinned: LocalSpeechProfile) -> SpeechProbe:
-        return SpeechProbe(pinned, transport=httpx.MockTransport(handler))
+        return SpeechProbe(pinned, transport=httpx2.MockTransport(handler))
 
     monkeypatch.setattr(voice_probe, "SpeechProbe", factory)
     return calls
 
 
 def test_schema_and_profile_do_not_contact_server(workspace: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    calls = mock_probe(monkeypatch, httpx.Response(500))
+    calls = mock_probe(monkeypatch, httpx2.Response(500))
     runner = CliRunner()
     assert runner.invoke(voice_probe.cli, ["schema"]).exit_code == 0
     result = runner.invoke(voice_probe.cli, ["profile", *options(workspace)])
@@ -75,7 +75,7 @@ def test_transcribe_retains_private_attributed_result_without_printing_words(
     workspace: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     private_words = "Súkromný slovenský prepis."
-    calls = mock_probe(monkeypatch, httpx.Response(200, json={"text": private_words}))
+    calls = mock_probe(monkeypatch, httpx2.Response(200, json={"text": private_words}))
     content = wav()
     source = private_file(workspace / "utterance.wav", content)
     output = workspace / "transcript.json"
@@ -109,7 +109,7 @@ def test_synthesis_retains_wav_and_generation_facts_without_playback(
     workspace: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     audio = wav(44100)
-    calls = mock_probe(monkeypatch, httpx.Response(200, content=audio, headers={"Content-Type": "audio/wav"}))
+    calls = mock_probe(monkeypatch, httpx2.Response(200, content=audio, headers={"Content-Type": "audio/wav"}))
     words = private_file(workspace / "words.txt", "Ahoj, súkromný svet.".encode())
     output, receipt = workspace / "speech.wav", workspace / "receipt.json"
     result = CliRunner().invoke(
@@ -138,7 +138,7 @@ def test_synthesis_retains_wav_and_generation_facts_without_playback(
 
 
 def test_existing_outputs_are_refused_before_any_http(workspace: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    calls = mock_probe(monkeypatch, httpx.Response(500))
+    calls = mock_probe(monkeypatch, httpx2.Response(500))
     output = private_file(workspace / "existing.json", b"preserve")
     source = private_file(workspace / "source.wav", wav())
     result = CliRunner().invoke(
@@ -219,7 +219,7 @@ def test_invalid_profile_error_does_not_print_private_fields(workspace: Path) ->
 def test_version_two_schema_and_private_profile_load_without_http(
     workspace: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    calls = mock_probe(monkeypatch, httpx.Response(500))
+    calls = mock_probe(monkeypatch, httpx2.Response(500))
     args = options(workspace)
     pinned = profile_v2()
     private_file(workspace / "profile.json", pinned.model_dump_json().encode())
@@ -236,7 +236,7 @@ def test_version_two_schema_and_private_profile_load_without_http(
 def test_version_two_transcription_cli_requires_language_and_retains_operation_provenance(
     workspace: Path, monkeypatch: pytest.MonkeyPatch, language: str | None
 ) -> None:
-    calls = mock_probe(monkeypatch, httpx.Response(200, json={"text": " State\n"}))
+    calls = mock_probe(monkeypatch, httpx2.Response(200, json={"text": " State\n"}))
     args = options(workspace)
     pinned = profile_v2()
     private_file(workspace / "profile.json", pinned.model_dump_json().encode())
