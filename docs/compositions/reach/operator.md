@@ -374,7 +374,9 @@ authorize that action. The result is selected context excerpts, explicitly label
 
 The edge fetches only bounded recent messages from the admitted channel before the triggering
 event, skips webhooks, other bots and empty text, truncates each message to 2,000 characters, and caps
-the history payload at 16 KiB. The worker checks its conversation, age, count and byte bounds.
+the history payload at 400,000 UTF-8 bytes. The worker checks its conversation, age, count and byte bounds.
+If Discord returns 403 while reading history, Nadir explains that the maintainer should check
+**View Channel** and **Read Message History** for the configured channel.
 Conversation mode may also include this bot's own recent replies with its configured display name.
 This is per-request context, not durable native conversation history. Do not enable it in a
 channel whose surrounding content you did not intend to admit.
@@ -446,7 +448,7 @@ reply reference and earlier evidence. Terminal results cannot open another round
 History still requires the explicit policy/`--history` opt-in above. The edge reads only the same
 conversation, at most three pages of six recent messages, or sixteen per page when research is
 enabled, within the policy's total count and
-age limits and a shared 16 KiB text budget. A same-place reply anchor consumes those same count
+age limits and a shared 400,000-byte text budget. A same-place reply anchor consumes those same count
 and byte budgets. Disabled history, exhaustion, a spent budget and unavailable history remain
 distinct observations; a missing needed source can produce a concrete clarification question.
 DM history admits only that sender and this bot. Cached excerpts last for the bounded request;
@@ -490,7 +492,7 @@ active event and clears it on settlement or cancellation; another event cannot i
 Error notices create no continuation invitation or decorative expression. Failed or uncertain
 plan delivery does not establish this visible commitment. Actual platform replies keep `reply_anchor`; adjacency has a distinct
 `continuation_anchor` and does not invent a reply reference. Both share the existing age, count
-and 16 KiB history bounds and remain fixed across admitted context rounds. This opt-in supplies
+and 400,000-byte history bounds and remain fixed across admitted context rounds. This opt-in supplies
 bounded continuation candidates, not general channel surveillance or durable ambient memory.
 
 ### Check an answer before settlement
@@ -717,21 +719,21 @@ synthetic example uses the admitted defaults:
   "persona_instructions": "Answer clearly and state uncertainty when evidence is missing.",
   "animator_id": "night-qwen38",
   "model_id": "Qwen3.8-27B",
-  "max_context": 16384,
-  "max_tokens": 384,
+  "max_context": 70000,
+  "max_tokens": 1536,
   "temperature": 0.6,
-  "max_input_chars": 20000,
-  "timeout_seconds": 60
+  "max_input_chars": 210000,
+  "timeout_seconds": 300
 }
 ```
 
 The default combined instruction/input allowance remains 20,000 characters. An explicitly prepared
-profile may select `max_input_chars` up to 32,000, with the same per-message ceiling; this is still
-bounded by the selected context, 49,152-byte model payload and 65,536-byte escaped pipe frame.
-Unicode and JSON escaping can exhaust the byte limits before the character allowance. The
-4,096-token completion ceiling, 60-second per-call maximum, existing call limits and review reserves
-remain unchanged. A larger explicit allowance changes the profile digest and needs its own
-qualification; it does not make every mandatory context or answer fit.
+profile may select `max_context` up to 262,144 tokens and `max_input_chars` up to 210,000 characters,
+with the same per-message ceiling. These limits remain bounded by the 1,048,576-byte model payload
+and 2,097,152-byte escaped pipe frame. Unicode and JSON escaping can exhaust byte limits before the
+character allowance. The 4,096-token completion ceiling, 300-second per-call maximum, existing call
+limits and review reserves remain unchanged. A larger explicit allowance changes the profile digest;
+it does not make every mandatory context or answer fit.
 
 The profile is a static instruction and exact model binding, not Mirror identity, Persona
 lineage or lasting memory. The supervisor freezes its validated bytes for one generation and

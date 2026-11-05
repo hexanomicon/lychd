@@ -126,7 +126,7 @@ _REQUEST_FULFILLMENT = (
 )
 
 type ConversationResultStatus = Literal["conversation", "need_context", "clarify", "ignore"]
-type HistoryState = Literal["disabled", "more", "exhausted", "budget", "unavailable"]
+type HistoryState = Literal["disabled", "more", "exhausted", "budget", "permission_denied", "unavailable"]
 
 
 class ConversationDecision(Record):

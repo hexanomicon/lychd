@@ -45,7 +45,7 @@ def test_source_trace_retains_exact_read_range_and_digests_without_body() -> Non
     with pytest.raises(ValidationError):
         ReachTraceEvent(producer="core", name="source_read", text_digest=CANARY)
     with pytest.raises(ValidationError):
-        ReachTraceEvent(producer="core", name="source_read", excerpt_chars=16_001)
+        ReachTraceEvent(producer="core", name="source_read", excerpt_chars=210_001)
 
 
 @pytest.mark.asyncio

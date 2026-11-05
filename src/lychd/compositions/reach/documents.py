@@ -20,7 +20,7 @@ from urllib.parse import urlsplit
 from pydantic import Field, model_validator
 
 from lychd.compositions.reach.conversation_references import MAX_REFERENCE_SELECTIONS, REFERENCE_ORDINALS
-from lychd.compositions.reach.operator_wire import ReachHistoryEntry, ReachWorkerRequest
+from lychd.compositions.reach.operator_wire import MAX_HISTORY_BYTES, ReachHistoryEntry, ReachWorkerRequest
 from lychd.compositions.reach.research_wire import MAX_DOCUMENT_SOURCE_CHARS, SourceReadResult
 from lychd.compositions.reach.schemas import PolicyDigest, ReachPolicy, Record
 
@@ -33,7 +33,6 @@ MAX_RESEARCH_CATALOGUE_DOCUMENTS = 16
 MAX_RESEARCH_SECTION_MATCH_CHARS = 320
 LEGACY_MAX_CORPUS_BYTES = 2_097_152
 LEGACY_MAX_DOCUMENTS = 32
-MAX_HISTORY_BYTES = 16_384
 MIN_EXCERPT_CHARS = 30
 RESEARCH_PROJECTION_OMISSION = "\n[omitted]\n"
 _REPO = "https://github.com/hexanomicon/lychd/blob/"

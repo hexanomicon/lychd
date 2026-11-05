@@ -43,7 +43,7 @@ from lychd.compositions.reach.operator_diagnostics import diagnostic_bytes, pars
 from lychd.compositions.reach.operator_model_wire import OperatorModelRequest
 from lychd.compositions.reach.operator_observation import ReachPatternObservation
 from lychd.compositions.reach.operator_trace import ReachTraceEvent, error_code
-from lychd.compositions.reach.operator_wire import ReachWorkerReady, ReachWorkerResult
+from lychd.compositions.reach.operator_wire import MAX_WIRE_BYTES, ReachWorkerReady, ReachWorkerResult
 from lychd.compositions.reach.research_wire import (
     OperatorResearchRequest,
     OperatorResearchResponse,
@@ -68,7 +68,7 @@ else:
     from reach_trace_capture import TraceCapture
 
 ROOT = Path(__file__).resolve().parents[1]
-WIRE_LIMIT = 65_536
+WIRE_LIMIT = MAX_WIRE_BYTES
 DOCUMENT_LIMIT = MAX_DOCUMENT_BYTES
 CORPUS_LIMIT = MAX_CORPUS_BYTES
 MAX_DOCUMENTS = MAX_CORPUS_DOCUMENTS

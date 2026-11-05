@@ -1594,8 +1594,8 @@ def test_compact_grammar_carriers_fit_existing_transport_limits(
         }
     )
     payload = canonical_json(body() | generation_format(binding, phase=variant))
-    assert MAX_MODEL_PAYLOAD_BYTES == 49_152
-    assert MAX_WIRE_BYTES == 65_536
+    assert MAX_MODEL_PAYLOAD_BYTES == 1_048_576
+    assert MAX_WIRE_BYTES == 2_097_152
     assert binding.timeout_seconds == 60
     assert len(payload.encode()) < MAX_MODEL_PAYLOAD_BYTES
     frame = OperatorModelRequest(
@@ -2161,9 +2161,9 @@ def test_disabled_legacy_omitted_schema_version_keeps_its_binding() -> None:
     assert accepted.digest == profile().digest == LEGACY_PROFILE_DIGEST
 
 
-def test_explicit_32000_input_bound_preserves_default_and_physical_limits() -> None:
+def test_explicit_210000_input_bound_preserves_default_and_physical_limits() -> None:
     legacy = profile()
-    selected = OperatorConversationProfile.model_validate(legacy.model_dump() | {"max_input_chars": 32_000})
+    selected = OperatorConversationProfile.model_validate(legacy.model_dump() | {"max_input_chars": 210_000})
     assert legacy.max_input_chars == 20_000
     assert selected.digest != legacy.digest
     assert (selected.max_context, selected.max_tokens, selected.timeout_seconds) == (
@@ -2171,19 +2171,21 @@ def test_explicit_32000_input_bound_preserves_default_and_physical_limits() -> N
         legacy.max_tokens,
         legacy.timeout_seconds,
     )
-    assert (MAX_MODEL_PAYLOAD_BYTES, MAX_WIRE_BYTES) == (49_152, 65_536)
-    payload = body() | {"messages": [{"role": "system", "content": "s"}, {"role": "user", "content": "x" * 31_999}]}
+    assert (MAX_MODEL_PAYLOAD_BYTES, MAX_WIRE_BYTES) == (1_048_576, 2_097_152)
+    payload = body() | {
+        "messages": [{"role": "system", "content": "s"}, {"role": "user", "content": "x" * 209_999}]
+    }
     assert validate_generation_payload(selected, canonical_json(payload))["messages"] == payload["messages"]
     with pytest.raises(ValueError, match="model_generation_binding"):
         validate_generation_payload(legacy, canonical_json(payload))
     payload["messages"][1]["content"] += "x"
     with pytest.raises(ValueError, match="model_generation_binding"):
         validate_generation_payload(selected, canonical_json(payload))
-    payload["messages"] = [{"role": "system", "content": "x" * 32_001}]
+    payload["messages"] = [{"role": "system", "content": "x" * 210_001}]
     with pytest.raises(ValidationError, match="string_too_long"):
         validate_generation_payload(selected, canonical_json(payload))
     with pytest.raises(ValidationError):
-        OperatorConversationProfile.model_validate(legacy.model_dump() | {"max_input_chars": 32_001})
+        OperatorConversationProfile.model_validate(legacy.model_dump() | {"max_input_chars": 210_001})
     payload["messages"] = [{"role": "system", "content": "界" * 20_000}]
     with pytest.raises(ValueError, match="model_payload"):
         validate_generation_payload(selected, canonical_json(payload))

@@ -11,11 +11,12 @@ from pydantic import AfterValidator, AwareDatetime, Field, model_validator
 from lychd.compositions.reach.expressions import ConversationExpressions, GifId, Reaction
 from lychd.compositions.reach.schemas import PolicyDigest, ReachEvent, ReachId, Record
 
-MAX_WIRE_BYTES = 65_536
+MAX_WIRE_BYTES = 2_097_152
+MAX_HISTORY_BYTES = 400_000
 type ReachWorkerStatus = Literal[
     "docs", "context", "conversation", "need_context", "clarify", "empty", "refused", "error", "ignore"
 ]
-type HistoryState = Literal["disabled", "more", "exhausted", "budget", "unavailable"]
+type HistoryState = Literal["disabled", "more", "exhausted", "budget", "permission_denied", "unavailable"]
 
 
 def _uuid(value: str) -> str:

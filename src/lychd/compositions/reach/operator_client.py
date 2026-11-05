@@ -105,6 +105,8 @@ class PipeWorker:
             chars=sum(len(item.text) for item in history),
             code="budget"
             if history_state == "budget"
+            else "permission_denied"
+            if history_state == "permission_denied"
             else "source_unavailable"
             if history_state == "unavailable"
             else None,
@@ -114,7 +116,13 @@ class PipeWorker:
             try:
                 self.trace.record("request_received", status="started", **binding)
                 self._write_frame(frame)
-                async with asyncio.timeout(310 if self.ready.research_enabled else 90):
+                async with asyncio.timeout(
+                    910
+                    if self.ready.research_enabled
+                    else 760
+                    if self.ready.model_binding_digest is not None
+                    else 90
+                ):
                     raw = await self._read_result(request)
                 if not raw or len(raw) > MAX_WIRE_BYTES:
                     _refuse("worker_protocol")
