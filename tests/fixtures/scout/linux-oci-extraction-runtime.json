@@ -1,16 +1,16 @@
 {
   "schema": "scout-oci-static-proof@1",
   "qualification": {
-    "observed_at": "2026-11-04T23:43:43Z",
+    "observed_at": "2026-11-05T00:14:13Z",
     "profile": "trusted-scout-c2",
-    "image": "sha256:5636d977d57f96c3df811f9e3851b2d88b6b1e78116eefd70071dc7114e582bf",
+    "image": "sha256:efc83365916657ffa1764e325f178580b4cc268de9c634e1146e574973ab1d19",
     "seccomp_sha256": "364494fcdb222ed262f98016de3855c51a15d6e4a6ef9eeb19e8bb6c86cd3c02",
     "source_sha256": {
       "Containerfile.tests": "c652244645a3f9e5c7554ba6a7892a4d1990dfc071c0ed96ce0b9bbdb6d5b19e",
       "Containerfile.scout-qualification": "eb208fae14d8ad41b6c0a87d8fe008c6ae8fa401b2b9d99cd46e8a2ed83a86a5",
       "scripts/container_scout_qualification.sh": "ba9bf906ac84c32b7c132e9940504629aeaa45e81d01b29454b49c3a3493cbdb",
       "scripts/scout_qualification.py": "5225a54bd1f8e5173ff9eda0314b1785f0988958011215d3b6accaced06fbd05",
-      "Makefile": "8d7ae35632234d482844caba0b012e397fa71ea24fb9d292bad30b376e6dd5c0",
+      "Makefile": "261e0043bc223020e30b8e9e322aa2e20e6ab80827c67762dd5cd91dacb5275c",
       "pyproject.toml": "b58e4c964c2abe8812d9e7882e68334de30385a4d133397f37663327b76309c5",
       "uv.lock": "cd00de4ea0b6d61f39916624736166a4fcdb5d8f8d127c561a6c5c54b49a31bb"
     },
