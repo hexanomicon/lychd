@@ -326,6 +326,13 @@ The dated 0cc0988 installed startup/activation observation is scoped under
 [vLLM](#vllm-integration). A changed compiler or loaded-graph attestor needs a new same-source
 installed profile; that observation contains no Coven and does not qualify the current checkout.
 
+Separate MicroOS/AlphaVPS C6G host-preparation tooling provides closed first-boot input,
+private configuration-ISO packaging, and ordinary-user host-floor observations without owning
+application setup or activation. Pure refusal tests and static checks do not execute privileged
+provisioning. The pinned installer's signed checksum metadata was verified; the full ISO and the
+DVD-to-Combustion initrd/first-boot handoff have not been exercised. Provider configuration-media
+support, installed-host operation, and application lifecycle remain unqualified.
+
 The frozen [trusted installed-hybrid profile](#current-evidence-envelope) recorded its private
 manager, installed native CLI, plain Docker PostgreSQL/migrator dependencies and borrowed warm
 model with inert owned model units. It does not execute the full generated rootless graph or
@@ -336,6 +343,9 @@ loaded-source attestation, forward switch, compensation, crash recovery, startup
 GPU and model proof remains separate. Include image account, actual UID/GID maps, mounted secret
 readability, read-only code, writable scratch, initial database creation, and repeated init/start
 with existing mapped data; compilation and mocked ownership tests do not establish these facts.
+The MicroOS pilot additionally needs an observed installer/initrd/first-boot handoff, private
+configuration-media attachment, real SSH/user-manager access, effective storage placement,
+actual-container prerequisite observations, and a controlled OS update/reboot/recovery cycle.
 
 **Evidence**
 
@@ -343,6 +353,10 @@ with existing mapped data; compilation and mocked ownership tests do not establi
 - **Verification:** [Isolated Quadlet transaction](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_systemd_quadlet_transaction.py), [runtime protocol tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py), [datastore custody tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_datastore_custody.py), and [mount authority tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_mount_authority.py)
 - **Verification:** [Btrfs preparation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_btrfs.py), [descriptor observer tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_btrfs_observer.py), and [deletion identity tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_deletion_storage.py)
 - **Law:** [Containers](./adr/08-containers.md)
+
+- **Source:** [MicroOS first-boot helper](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/combustion/host_bootstrap.py), [host verifier](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/verify_host.py), and [configuration-media builder](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/build_config_iso.py)
+- **Verification:** [Bootstrap refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/tests/test_bootstrap.py), [verification and media refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/tests/test_verify_and_iso.py), and [deployment source checks](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/deployments.yml)
+- **Topic:** [MicroOS VPS host pilot](./sepulcher/deployments.md)
 
 ### Whole-body snapshot and restore {#whole-body-snapshot-restore}
 

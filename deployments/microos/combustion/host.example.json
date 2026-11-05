@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "hostname": "lychd-pilot",
+  "home_min_free_gib": 20,
+  "runtime_user": {
+    "name": "lychd",
+    "uid": 1000,
+    "gid": 1000,
+    "subuid_start": 231072,
+    "subuid_count": 65536,
+    "subgid_start": 231072,
+    "subgid_count": 65536,
+    "ssh_public_keys": ["keys/runtime.pub"]
+  },
+  "recovery_root_ssh": {
+    "enabled": true,
+    "public_keys": ["keys/recovery.pub"]
+  }
+}

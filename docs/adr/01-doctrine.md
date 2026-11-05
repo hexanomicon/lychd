@@ -188,6 +188,11 @@ Each project keeps the source layout native to its toolchain. The current web so
 `clients/android/app/src/main/**`. Repeated inner `src` names express separate build ownership
 rather than one mixed repository source tree.
 
+Reusable operator host preparation lives under `deployments/**`, with its operating procedure
+in the Sepulcher. It owns platform prerequisites, not application configuration or lifecycle.
+Tracked examples contain fictional values only. Private host configuration, credentials,
+configuration media, backups, and raw operator receipts stay outside the checkout.
+
 ## Consequences
 
 !!! quote "The Final Truth"

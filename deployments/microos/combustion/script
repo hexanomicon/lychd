@@ -1,0 +1,24 @@
+#!/bin/bash
+# combustion: network
+# Invoked by Combustion inside its first-boot transactional-update shell only.
+set -euo pipefail
+umask 077
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export LC_ALL=C
+
+refuse() { echo "MicroOS bootstrap refused: $*" >&2; exit 1; }
+[[ $# == 0 ]] || refuse "no arguments are supported"
+[[ $EUID == 0 ]] || refuse "requires Combustion root transaction"
+[[ $PWD == /dev/shm/combustion/config ]] || refuse "requires Combustion config directory"
+[[ ! -e /etc/machine-id && ! -L /etc/machine-id ]] || refuse "requires uninitialized first-boot image (machine-id absent)"
+[[ ! -e /etc/lychd-host-bootstrap.json ]] || refuse "already bootstrapped"
+systemd-detect-virt --quiet --chroot || refuse "requires offline transaction/chroot"
+grep -qx 'ID="\?opensuse-microos"\?' /etc/os-release || refuse "requires openSUSE MicroOS"
+[[ -f host.json && ! -L host.json ]] || refuse "missing regular host.json"
+
+# Minimal parser prerequisite, inside the transaction. No downloaded script or pip.
+command -v python3 >/dev/null || zypper --non-interactive install --no-recommends python3
+python3 ./host_bootstrap.py --check-config ./host.json
+zypper --non-interactive install --no-recommends \
+    podman shadow openssh-server firewalld git policycoreutils btrfsprogs
+python3 ./host_bootstrap.py --apply ./host.json
