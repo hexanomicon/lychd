@@ -129,13 +129,15 @@ def test_altar_notice_is_generated_and_shipped_with_static_client() -> None:
     source_notice = ROOT / "clients" / "web" / "static" / "THIRD_PARTY_NOTICES.txt"
     public_notice = ROOT / "src" / "lychd" / "public" / "THIRD_PARTY_NOTICES.txt"
     notice = source_notice.read_text(encoding="utf-8")
+    package = json.loads((ROOT / "clients" / "web" / "package.json").read_text(encoding="utf-8"))
+    flow_version = package["dependencies"]["@xyflow/svelte"]
+    svelte_version = package["devDependencies"]["svelte"]
 
-    assert "@xyflow/svelte@1.6.6" in notice
-    assert "svelte@5.57.0" in notice
+    assert f"@xyflow/svelte@{flow_version}" in notice
+    assert f"svelte@{svelte_version}" in notice
     assert "Regenerate with: npm run licenses" in notice
     assert public_notice.read_bytes() == source_notice.read_bytes()
 
-    package = json.loads((ROOT / "clients" / "web" / "package.json").read_text(encoding="utf-8"))
     assert package["scripts"]["build"].startswith("npm run licenses && ")
 
 

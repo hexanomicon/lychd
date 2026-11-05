@@ -235,10 +235,15 @@ async def test_service_decision_fences_full_binding_in_pending_update(
 
 def test_legacy_binding_uses_sql_null_and_migration_keeps_refusal_inside_lock() -> None:
     column = Consent.__table__.c.native_binding
-    processor = column.type.bind_processor(postgresql.dialect())
+    dialect = postgresql.asyncpg.dialect()
+    processor = column.type.dialect_impl(dialect).bind_processor(dialect)
     assert processor is not None
     assert processor(None) is None
-    assert processor(binding().document()) is not None
+    assert processor(postgresql.JSONB.NULL) == "null"
+    document = binding().document()
+    serialized = processor(document)
+    assert isinstance(serialized, str)
+    assert json.loads(serialized) == document
     migration = importlib.import_module("lychd.db.migrations.versions.0010_native_consent_binding")
     assert (migration.revision, migration.down_revision) == ("0010", "0009")
     output = io.StringIO()
