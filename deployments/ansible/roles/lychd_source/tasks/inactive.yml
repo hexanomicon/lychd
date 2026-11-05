@@ -1,0 +1,47 @@
+---
+- name: Require a responding ordinary-user systemd manager
+  ansible.builtin.command:
+    argv: [/usr/bin/systemctl, --user, show, --property=Version, --value]
+  register: lychd_source_manager
+  changed_when: false
+  check_mode: false
+
+- name: Require a nonempty manager version
+  ansible.builtin.assert:
+    that: lychd_source_manager.stdout | trim | length > 0
+
+- name: Observe the exact Vessel unit without effects
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/systemctl
+      - --user
+      - show
+      - "{{ item }}"
+      - --property=Id
+      - --property=LoadState
+      - --property=ActiveState
+      - --property=SubState
+      - --property=MainPID
+      - --property=ControlPID
+      - --property=Job
+  register: lychd_source_vessel
+  changed_when: false
+  check_mode: false
+  loop:
+    - lychd-vessel.service
+    - lychd-uncaged-vessel.service
+
+- name: Refuse active or unknown Vessel authority
+  ansible.builtin.assert:
+    that:
+      - "('Id=' + item.item) in item.stdout_lines"
+      - "'LoadState=loaded' in item.stdout_lines or 'LoadState=not-found' in item.stdout_lines"
+      - "'ActiveState=inactive' in item.stdout_lines"
+      - "'SubState=dead' in item.stdout_lines"
+      - "'MainPID=0' in item.stdout_lines"
+      - "'ControlPID=0' in item.stdout_lines"
+      - "'Job=' in item.stdout_lines"
+    fail_msg: "Source staging requires a proven inactive Vessel. Active update/stop/start is unsupported."
+  loop: "{{ lychd_source_vessel.results }}"
+  loop_control:
+    label: "{{ item.item }}"

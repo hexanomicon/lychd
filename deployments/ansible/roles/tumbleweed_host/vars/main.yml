@@ -1,0 +1,24 @@
+---
+# Literal package capabilities, queried through RPM before any install.
+lychd_floor_packages:
+  - podman
+  - git-core
+  - python3
+  - shadow
+  - acl
+  - account-utils
+  - openssh-common
+  - openssh-clients
+  - openssh-server
+  - firewalld
+  - btrfsprogs
+  - snapper
+  - policycoreutils
+lychd_floor_intent:
+  name: "{{ lychd_runtime_name | default(none) }}"
+  uid: "{{ lychd_runtime_uid | default(none) }}"
+  gid: "{{ lychd_runtime_gid | default(none) }}"
+  subuid_start: "{{ lychd_subuid_start | default(none) }}"
+  subgid_start: "{{ lychd_subgid_start | default(none) }}"
+  count: "{{ lychd_subid_count | default(none) }}"
+  keys: "{{ lychd_runtime_ssh_public_keys | default(none) }}"

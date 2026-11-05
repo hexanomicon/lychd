@@ -1,0 +1,9 @@
+---
+# Required controller inputs; no branch or moving-main default is accepted.
+lychd_source_revision: ""
+# Controller-admitted Linux x86_64 uv 0.13.0 executable and binary SHA-256.
+# The controller installs the pinned tool; this role never runs an installer.
+lychd_source_uv_local_binary: ""
+lychd_source_uv_sha256: ""
+# Explicit supported interpreter lane; managed CPython may be downloaded by uv.
+lychd_source_python: "3.14.8"

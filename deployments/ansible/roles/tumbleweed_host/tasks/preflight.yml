@@ -1,0 +1,16 @@
+---
+- name: Inspect distro, mounted subvolumes, SELinux and identity allocations
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/host_probe.py') }}"
+      - preflight
+    stdin: "{{ lychd_floor_intent | to_json }}"
+  register: lychd_preflight
+  check_mode: false
+  changed_when: false
+
+- name: Retain observed floor state for guarded convergence
+  ansible.builtin.set_fact:
+    lychd_floor_before: "{{ lychd_preflight.stdout | from_json }}"

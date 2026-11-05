@@ -333,6 +333,13 @@ provisioning. The pinned installer's signed checksum metadata was verified; the 
 DVD-to-Combustion initrd/first-boot handoff have not been exercised. Provider configuration-media
 support, installed-host operation, and application lifecycle remain unqualified.
 
+The separate Tumbleweed candidate uses Ansible for an already installed headless host and
+inactive-only, exact-revision source/CLI staging. Its refusal helpers and playbook checks do not
+execute a privileged target or establish convergence. First apply, a second no-change apply,
+direct runtime SSH/rootless operation, actual storage placement and controlled OS recovery
+remain unobserved. No model, application secrets, generated units or lifecycle are owned by
+these playbooks; source preparation is not an installed application receipt.
+
 The frozen [trusted installed-hybrid profile](#current-evidence-envelope) recorded its private
 manager, installed native CLI, plain Docker PostgreSQL/migrator dependencies and borrowed warm
 model with inert owned model units. It does not execute the full generated rootless graph or
@@ -346,6 +353,9 @@ with existing mapped data; compilation and mocked ownership tests do not establi
 The MicroOS pilot additionally needs an observed installer/initrd/first-boot handoff, private
 configuration-media attachment, real SSH/user-manager access, effective storage placement,
 actual-container prerequisite observations, and a controlled OS update/reboot/recovery cycle.
+The Tumbleweed pilot additionally needs successful installation, both apply observations,
+effective runtime identity/mapping and container checks, the exact source/CLI/image identities,
+and the same separate application/recovery evidence before another host inherits a ready claim.
 
 **Evidence**
 
@@ -357,6 +367,9 @@ actual-container prerequisite observations, and a controlled OS update/reboot/re
 - **Source:** [MicroOS first-boot helper](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/combustion/host_bootstrap.py), [host verifier](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/verify_host.py), and [configuration-media builder](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/build_config_iso.py)
 - **Verification:** [Bootstrap refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/tests/test_bootstrap.py), [verification and media refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/tests/test_verify_and_iso.py), and [deployment source checks](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/deployments.yml)
 - **Topic:** [MicroOS VPS host pilot](./sepulcher/deployments.md)
+- **Source:** [Tumbleweed host playbook](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/playbooks/host.yml), [host observation helper](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/roles/tumbleweed_host/files/host_probe.py), and [inactive source preparation](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/playbooks/source.yml)
+- **Verification:** [Host refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_host_probe.py), [source refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_source_guard.py), and [deployment checks](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/deployments.yml)
+- **Topic:** [Tumbleweed VPS](./deployments/tumbleweed/index.md)
 
 ### Whole-body snapshot and restore {#whole-body-snapshot-restore}
 

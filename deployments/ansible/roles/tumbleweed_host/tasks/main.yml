@@ -1,0 +1,13 @@
+---
+- name: Validate the installed host before changes
+  ansible.builtin.import_tasks: preflight.yml
+  tags: [always, preflight]
+
+- name: Converge only the host floor
+  ansible.builtin.import_tasks: host.yml
+  tags: [host]
+
+- name: Observe the resulting floor
+  ansible.builtin.import_tasks: verify.yml
+  tags: [verify]
+  when: not ansible_check_mode

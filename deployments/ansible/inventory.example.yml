@@ -1,0 +1,9 @@
+---
+# Documentation-only address. Keep the real inventory outside the checkout.
+lychd_hosts:
+  hosts:
+    pilot:
+      ansible_host: 192.0.2.10
+      ansible_user: existing_admin
+      ansible_become: true
+      ansible_become_method: sudo
