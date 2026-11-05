@@ -1,4 +1,4 @@
 # Verified against the primary PyPI release metadata on 2026-11-05.
 # Isolated deployment controller; not a Core application dependency. Python >=3.13.
 ansible-core==2.22.0
-uv==0.13.0
+uv==0.13.4
