@@ -53,6 +53,7 @@ def _offline_registry(
         return httpx2.Response(200, json={"data": [{"id": PROFILE.model_id}]})
 
     def offline_client(**kwargs: Any) -> httpx2.AsyncClient:
+        assert kwargs.pop("transport", None) is None
         client = original_client(transport=httpx2.MockTransport(respond), **kwargs)
         clients.append(client)
         return client

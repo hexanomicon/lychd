@@ -33,6 +33,7 @@ from lychd.domain.animation.schemas.generation import GenerationProfile
 from lychd.domain.animation.services.adapters.contracts import RuntimeAnimator, RuntimePlan
 from lychd.domain.animation.services.adapters.surfaces import SoulstoneAnimator
 from lychd.extensions.builtin.animator.soulstones.vllm import VllmSoulstoneConfig
+from lychd.lib.http import create_async_http_client
 
 type ModelRelay = Callable[[str, str], Awaitable[str]]
 
@@ -103,10 +104,8 @@ class _RelayTransport(httpx2.AsyncBaseTransport):
 class _RelayProvider(OpenAIProvider):
     def __init__(self, profile: OperatorConversationProfile, relay: ModelRelay) -> None:
         def client() -> httpx2.AsyncClient:
-            return httpx2.AsyncClient(
+            return create_async_http_client(
                 transport=_RelayTransport(profile, relay),
-                trust_env=False,
-                follow_redirects=False,
                 timeout=profile.timeout_seconds,
             )
 

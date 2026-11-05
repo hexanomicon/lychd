@@ -25,7 +25,7 @@ from lychd.domain.speech_probe import (
     load_speech_profile,
 )
 from lychd.extensions.builtin.echo.material import inspect_pcm_utterance
-from lychd.lib.http import create_http_ssl_context
+from lychd.lib.http import create_async_http_client
 
 _HEADER_BYTES = 44
 _MAX_DURATION_SECONDS = 120
@@ -158,11 +158,8 @@ class SpeechProbe:
         try:
             async with (
                 asyncio.timeout(self.profile.total_timeout_seconds),
-                httpx2.AsyncClient(
-                    verify=create_http_ssl_context(),
+                create_async_http_client(
                     transport=self._transport,
-                    trust_env=False,
-                    follow_redirects=False,
                     timeout=httpx2.Timeout(self.profile.transport_timeout_seconds),
                     headers={"Accept-Encoding": "identity"},
                 ) as client,

@@ -20,7 +20,7 @@ from pydantic_ai.profiles.openai import OpenAIModelProfile
 from pydantic_ai.providers import Provider
 from pydantic_ai.providers.openai import OpenAIProvider
 
-from lychd.lib.http import create_http_ssl_context
+from lychd.lib.http import create_async_http_client
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -53,14 +53,11 @@ def _local_compat_profile(_resolved: ModelProfile) -> ModelProfile:
 
 def _model_http_client() -> httpx2.AsyncClient:
     """Keep the pinned provider's timeout policy without ambient network routing."""
-    return httpx2.AsyncClient(
-        verify=create_http_ssl_context(),
-        trust_env=False,
-        follow_redirects=False,
+    return create_async_http_client(
         timeout=httpx2.Timeout(600, connect=5),
         limits=httpx2.Limits(max_connections=1000, max_keepalive_connections=100),
         headers={"User-Agent": get_user_agent()},
-        event_hooks={"request": [ConnectPoolTimeoutCap(connect=5, pool=600)]},
+        request_hooks=[ConnectPoolTimeoutCap(connect=5, pool=600)],
     )
 
 

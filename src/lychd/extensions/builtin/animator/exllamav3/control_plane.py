@@ -16,7 +16,7 @@ from lychd.extensions.builtin.animator.tabby_auth import (
     TabbyAPIAuthSecretError,
     load_tabbyapi_auth_keys,
 )
-from lychd.lib.http import DEFAULT_TIMEOUT_SECONDS, HttpJsonError, create_http_ssl_context, request_json
+from lychd.lib.http import DEFAULT_TIMEOUT_SECONDS, HttpJsonError, create_async_http_client, request_json
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Mapping
@@ -180,9 +180,7 @@ class TabbyAPIControlPlane:
         timeout = httpx2.Timeout(connect=self._timeout, read=None, write=self._timeout, pool=self._timeout)
         try:
             async with (
-                httpx2.AsyncClient(
-                    verify=create_http_ssl_context(), timeout=timeout, trust_env=False, follow_redirects=False
-                ) as client,
+                create_async_http_client(timeout=timeout) as client,
                 client.stream(
                     "POST",
                     url,

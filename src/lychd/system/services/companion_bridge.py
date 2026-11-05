@@ -29,7 +29,7 @@ from lychd.compositions.blockworld.companion import (
     strict_json,
 )
 from lychd.lib.asyncio import complete_under_cancellation
-from lychd.lib.http import create_http_ssl_context
+from lychd.lib.http import create_async_http_client, create_async_http_transport
 
 MAX_TCP_PORT = 65535
 MIN_TIMEOUT_S = 0.25
@@ -93,7 +93,7 @@ class CompanionBridge:
         self._fenced: set[str] = set()
         self._issued: dict[str, int] = {}
         self._stop_task: asyncio.Task[CompanionResult] | None = None
-        self._client = httpx2.AsyncClient(
+        self._client = create_async_http_client(
             base_url=binding.endpoint.rstrip("/"),
             headers={
                 "Authorization": f"Bearer {binding.token}",
@@ -101,9 +101,7 @@ class CompanionBridge:
                 "Accept-Encoding": "identity",
             },
             timeout=httpx2.Timeout(binding.timeout_s),
-            follow_redirects=False,
-            trust_env=False,
-            transport=transport or httpx2.AsyncHTTPTransport(verify=create_http_ssl_context(), retries=0),
+            transport=transport or create_async_http_transport(),
         )
 
     async def _http(

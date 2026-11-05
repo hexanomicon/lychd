@@ -16,7 +16,7 @@ import httpx2
 from lychd.domain.artifacts import ArtifactRef
 from lychd.domain.dictation import DictationProfile, DictationTranscriberError, validate_text
 from lychd.extensions.builtin.echo.material import PcmInspectionError, inspect_pcm_utterance
-from lychd.lib.http import create_http_ssl_context
+from lychd.lib.http import create_async_http_client
 
 
 def _validated_profile(profile: DictationProfile) -> DictationProfile:
@@ -124,11 +124,8 @@ class LocalDictationTranscriber:
         try:
             async with (
                 asyncio.timeout(profile.total_timeout_seconds),
-                httpx2.AsyncClient(
-                    verify=create_http_ssl_context(),
+                create_async_http_client(
                     transport=self._transport,
-                    trust_env=False,
-                    follow_redirects=False,
                     timeout=httpx2.Timeout(profile.transport_timeout_seconds),
                     headers={"Accept": "application/json", "Accept-Encoding": "identity"},
                 ) as client,

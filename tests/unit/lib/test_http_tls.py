@@ -7,7 +7,7 @@ import ipaddress
 import ssl
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Literal
 
 import httpx2
 import pytest
@@ -78,8 +78,9 @@ def _tls_material(tmp_path: Path) -> tuple[ssl.SSLContext, str, Path]:
 
 
 @pytest.mark.asyncio
-async def test_json_client_refuses_ambient_ca_and_accepts_explicit_verified_context(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("mode", ["json", "client", "transport"])
+async def test_http_construction_refuses_ambient_ca_and_accepts_explicit_verified_context(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: Literal["json", "client", "transport"]
 ) -> None:
     server_context, ca_pem, ca_path = _tls_material(tmp_path)
     requests: list[bytes] = []
@@ -105,30 +106,34 @@ async def test_json_client_refuses_ambient_ca_and_accepts_explicit_verified_cont
     server = await asyncio.start_server(respond, "127.0.0.1", 0, ssl=server_context, ssl_handshake_timeout=2)
     async with server, asyncio.timeout(5):
         endpoint = f"https://127.0.0.1:{server.sockets[0].getsockname()[1]}/health"
+
+        async def fetch() -> object:
+            if mode == "json":
+                return await http.request_json("GET", endpoint, timeout=2)
+            transport = http.create_async_http_transport() if mode == "transport" else None
+            async with http.create_async_http_client(timeout=2, transport=transport) as client:
+                return (await client.get(endpoint)).json()
+
         monkeypatch.setenv("SSL_CERT_FILE", str(ca_path))
         monkeypatch.setenv("SSL_CERT_DIR", str(tmp_path))
         key_log = tmp_path / "ambient-tls-keys"
         monkeypatch.setenv("SSLKEYLOGFILE", str(key_log))
-        with pytest.raises(http.HttpJsonError) as refused:
-            await http.request_json("GET", endpoint, timeout=2)
-        assert refused.value.transport is True
-        assert isinstance(refused.value.__cause__, httpx2.ConnectError)
+        if mode == "json":
+            with pytest.raises(http.HttpJsonError) as refused:
+                await fetch()
+            assert refused.value.transport is True
+            assert isinstance(refused.value.__cause__, httpx2.ConnectError)
+        else:
+            with pytest.raises(httpx2.ConnectError):
+                await fetch()
         assert requests == []
         assert not key_log.exists()
 
         monkeypatch.delenv("SSLKEYLOGFILE")
         context = ssl.create_default_context()
         context.load_verify_locations(cadata=ca_pem)
-        original_client = httpx2.AsyncClient
-
-        def verified_client(**kwargs: Any) -> httpx2.AsyncClient:
-            assert kwargs["trust_env"] is False
-            assert kwargs["follow_redirects"] is False
-            kwargs["verify"] = context
-            return original_client(**kwargs)
-
-        monkeypatch.setattr(httpx2, "AsyncClient", verified_client)
-        assert await http.request_json("GET", endpoint, timeout=2) == {"status": "ok"}
+        monkeypatch.setattr(http, "create_http_ssl_context", lambda: context)
+        assert await fetch() == {"status": "ok"}
         await finished.wait()
         assert len(requests) == 1
         assert requests[0].startswith(b"GET /health HTTP/1.1\r\n")

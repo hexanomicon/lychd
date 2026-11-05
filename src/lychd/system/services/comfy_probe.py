@@ -26,7 +26,7 @@ from lychd.domain.comfy_probe import (
     json_digest,
     safe_component,
 )
-from lychd.lib.http import create_http_ssl_context
+from lychd.lib.http import create_async_http_client
 
 MAX_SUBFOLDER_LENGTH = 256
 MIN_QUEUE_COLUMNS = 3
@@ -244,12 +244,9 @@ class ComfyProbe:
             return self._current(attempt, path)
 
     def _client(self) -> httpx2.AsyncClient:
-        return httpx2.AsyncClient(
-            verify=create_http_ssl_context(),
+        return create_async_http_client(
             transport=self.transport,
             timeout=httpx2.Timeout(15.0),
-            follow_redirects=False,
-            trust_env=False,
             headers={"Accept-Encoding": "identity"},
         )
 
