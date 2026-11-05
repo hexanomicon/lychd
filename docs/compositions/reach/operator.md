@@ -547,7 +547,11 @@ array. Oversized observations refuse rather than being truncated. The field is r
 verdict. The host checks each bounded contiguous excerpt against that exact candidate; omitted or
 invented observations refuse rather than becoming an empty list. Documented capabilities, qualified
 dated observations, future plans, conditional advice and explicitly unknown state are not current
-runtime assertions. When this public-text path supplies no runtime observation, a nonempty claim
+runtime assertions. Source-attributed documented limitations and statements that runtime state
+cannot be established or lacks proof remain ordinary evidence claims, not assertions of current
+unavailability. An adopted present-runtime conclusion still counts even with attribution or a
+citation; all excluded statements remain subject to the overall factual review.
+When this public-text path supplies no runtime observation, a nonempty claim
 observation returns the draft for same-evidence correction through a separately attributed authority
 guard, including when the model requests proof for those draft assertions. Repair must qualify or
 retract them, or produce a concrete clarification for an actually unavailable requested fact. It

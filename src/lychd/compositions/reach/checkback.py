@@ -268,16 +268,16 @@ COMPLETE_QUOTES_RULE = (
 
 
 _REVIEW_CLAIMS = (
-    "With context.evidence_scope, FIRST inspect only candidate.text for assertions that software, a feature, "
-    "build or installation currently works, is verified/runnable/usable, or cannot currently be used. "
-    "Return current_runtime_claims: 0-4 unique exact assertion clauses, each <=240 chars, the whole JSON array "
-    "<=512 UTF-8 bytes. Copy small complete clauses with negation/qualifiers unchanged; no normalization. "
-    "Extract independently of source support and the overall verdict, then give that verdict separately. "
-    "Exclude documented capabilities, attributed dated observations retaining limits, future plans without "
-    "present-state inference, conditional/optional advice, unverified installed state, source-read failure "
-    "and quoted/rejected claims not adopted by the candidate. Also exclude truthful statements of this "
-    "operator profile's no-tool/permission boundary; those are host-known limits, not claims about installed "
-    "project readiness. Required on both reviews, even revise/needs_evidence. "
+    "With context.evidence_scope inspect only candidate.text for adopted claims that "
+    "software/features/builds/installations work, are verified/runnable/usable now, or cannot be used now. "
+    "current_runtime_claims: 0-4 unique exact clauses, <=240 chars each, serialized array <=512 UTF-8 bytes. "
+    "Preserve negation/qualifiers; no normalization. Extract independently of support/verdict on both "
+    "reviews, even revise/needs_evidence. Exclude source-attributed documented capabilities/limitations, "
+    "qualified dated observations, future plans, conditional advice, source-read failures, unknown runtime "
+    "state or absent proof ('cannot confirm X' is not 'not X'), and quoted/rejected claims not adopted. "
+    "Truthful operator no-tool/permission boundaries are host-known limits, not claims about installed "
+    "project readiness. Still extract adopted present-runtime conclusions even if attributed/cited; "
+    "excluded statements still need factual review. "
 )
 _REVIEW_CORE = (
     "Assess the candidate against the literal CURRENT task, actual reply/continuation anchor, bounded history "
