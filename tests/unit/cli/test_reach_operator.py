@@ -481,7 +481,35 @@ def test_command_admits_nonzero_output_only_when_explicitly_selected(
             operator.command(["fixture"], root=tmp_path, accepted_exit_codes=accepted)
 
 
-@pytest.mark.parametrize("failed_role", [None, "core", "edge"])
+def assert_edge_import_smoke(args: list[str], edge: str) -> None:
+    assert {
+        "--network=none",
+        "--pull=never",
+        "--read-only",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+        "--rm",
+    } <= set(args)
+    assert {name: args[args.index(name) + 1] for name in ("--memory", "--cpus", "--pids-limit")} == {
+        "--memory": "1g",
+        "--cpus": "1",
+        "--pids-limit": "128",
+    }
+    assert not {"--volume", "--mount", "--env", "--env-file", "--publish", "--privileged"} & set(args)
+    assert not any("token" in item or SECRET in item for item in args)
+    assert args[-5:] == [
+        "--entrypoint",
+        "python",
+        edge,
+        "-c",
+        (
+            "import signal; signal.alarm(30); "
+            "import lychd.interface.discord.live; import lychd.interface.discord.operator_cli"
+        ),
+    ]
+
+
+@pytest.mark.parametrize("failed_role", [None, "core", "edge", "import"])
 def test_build_retains_exact_images_before_shared_tag_changes_and_manifest_publication(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failed_role: str | None
 ) -> None:
@@ -492,14 +520,15 @@ def test_build_retains_exact_images_before_shared_tag_changes_and_manifest_publi
     monkeypatch.setattr(operator, "EDGE_INPUTS", ("clients/discord/Containerfile",))
     output = tmp_path / "images.json"
     core, edge, replacement = ("sha256:" + letter * 64 for letter in ("a", "b", "c"))
-    core_tag = "localhost/lychd-reach-core:" + core.removeprefix("sha256:")
-    edge_tag = "localhost/lychd-reach-edge:" + edge.removeprefix("sha256:")
+    core_tag, edge_tag = (
+        "localhost/lychd-reach-core:" + core.removeprefix("sha256:"),
+        "localhost/lychd-reach-edge:" + edge.removeprefix("sha256:"),
+    )
     tags: dict[str, str] = {}
-    shared = core
-    edge_built = False
+    shared, edge_built, import_checked = core, False, False
 
     def command(arguments: Any, **_kwargs: Any) -> bytes:
-        nonlocal shared, edge_built
+        nonlocal shared, edge_built, import_checked
         args = list(arguments)
         assert not output.exists()
         if args[:3] == ["bash", "scripts/container_checks.sh", "--build-only"]:
@@ -517,22 +546,33 @@ def test_build_retains_exact_images_before_shared_tag_changes_and_manifest_publi
             if tag == f"localhost/lychd-reach-{failed_role}:" + observed.removeprefix("sha256:"):
                 return replacement.encode() + b"\n"
             return observed.encode() + b"\n"
-        assert args[1] == "build"
-        # A later build may replace the shared tag; the selected Core already has its own tag.
-        assert tags[core_tag] == core
-        shared = replacement
-        edge_built = True
-        Path(args[args.index("--iidfile") + 1]).write_text(edge)
+        if args[1] == "run":
+            assert tags[edge_tag] == edge
+            assert_edge_import_smoke(args, edge)
+            import_checked = True
+            if failed_role == "import":
+                message = "operator_command_failed"
+                raise ValueError(message)
+        else:
+            assert args[1] == "build"
+            # A later build may replace the shared tag; the selected Core already has its own tag.
+            assert tags[core_tag] == core
+            shared = replacement
+            edge_built = True
+            Path(args[args.index("--iidfile") + 1]).write_text(edge)
         return b""
 
     monkeypatch.setattr(operator, "command", command)
     if failed_role is not None:
-        with pytest.raises(ValueError, match="operator_image_retention"):
+        code = "operator_command_failed" if failed_role == "import" else "operator_image_retention"
+        with pytest.raises(ValueError, match=code):
             operator.build_images("docker", output, root=root)
         assert not output.exists()
-        assert edge_built == (failed_role == "edge")
+        assert edge_built == (failed_role in {"edge", "import"})
+        assert import_checked == (failed_role == "import")
         return
     operator.build_images("docker", output, root=root)
+    assert import_checked
     assert shared == replacement
     assert operator.load_images(output) == {"core": core, "edge": edge}
     assert tags == {core_tag: core, edge_tag: edge}

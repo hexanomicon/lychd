@@ -81,6 +81,8 @@ EDGE_INPUTS = (
     "clients/discord/Containerfile",
     "src/lychd/interface/observation.py",
     "src/lychd/interface/http_observation.py",
+    "src/lychd/lib/__init__.py",
+    "src/lychd/lib/http.py",
     *(
         f"src/lychd/compositions/reach/{name}.py"
         for name in (
@@ -437,7 +439,11 @@ def _retain_image(engine: str, role: Literal["core", "edge"], identity: str, *, 
 
 
 def build_images(engine: str, output: Path, *, root: Path = ROOT) -> None:
-    """Build and retain exact images; the shared Core build tag requires sequential invocations."""
+    """Build, retain and import-check exact images before publishing their record.
+
+    The shared Core build tag requires sequential invocations. The edge import
+    check has no credentials, host mounts or network access.
+    """
     external_path(output)
     if output.exists():
         _fail("operator_file_exists")
@@ -487,6 +493,24 @@ def build_images(engine: str, output: Path, *, root: Path = ROOT) -> None:
             _fail("operator_image_identity")
         edge = edge if edge.startswith("sha256:") else f"sha256:{edge}"
         _retain_image(engine, "edge", edge, root=root)
+        smoke = container_arguments(engine, edge, context / "smoke.cid", offline=True)
+        command(
+            [
+                *smoke,
+                "--rm",
+                "--entrypoint",
+                "python",
+                edge,
+                "-c",
+                (
+                    "import signal; signal.alarm(30); "
+                    "import lychd.interface.discord.live; import lychd.interface.discord.operator_cli"
+                ),
+            ],
+            root=root,
+            engine=engine,
+            capture=False,
+        )
     write_private(output, json_bytes({"schema_version": 1, "core": core, "edge": edge}))
 
 
