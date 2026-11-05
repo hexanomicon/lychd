@@ -1,0 +1,47 @@
+name: Deployment bootstrap checks
+
+on:
+  pull_request:
+    paths:
+      - deployments/**
+      - .github/workflows/deployments.yml
+  push:
+    branches: [main, dev]
+    paths:
+      - deployments/**
+      - .github/workflows/deployments.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  microos:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install isolated Python tooling
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.0"
+          python-version: "3.13.14"
+          enable-cache: false
+      - name: Check shell syntax
+        run: |
+          bash -n deployments/microos/combustion/script
+          while IFS= read -r -d '' script; do
+            bash -n "$script"
+          done < <(find deployments/microos -type f -name '*.sh' -print0)
+      - name: Check deployment input and refusal contracts
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends xorriso
+          uv run --no-project --python 3.13.14 python -m unittest discover -s deployments/microos/tests -v
+      - name: Check standalone deployment Python
+        run: |
+          uvx --from ruff==0.16.6 ruff check deployments/microos
+          uvx --from ruff==0.16.6 ruff format --check deployments/microos

@@ -142,6 +142,11 @@ or lifecycle channel.
 Operator provisioning supplies the one non-root host account and platform floor; LychD services
 receive no account-creation or cross-user authority.
 
+The [MicroOS VPS pilot](../sepulcher/deployments.md) provides a separate operator bootstrap for
+that platform floor. It must not create LychD application settings, secrets, generated units,
+datastores, or activation authority. First-boot provisioning and OS recovery do not establish
+application deployment, coordinated backup, or Tomb/Coffin qualification.
+
 #### Gateway placement
 
 An exact profile may place Veil on a separate

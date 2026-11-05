@@ -13,6 +13,7 @@ nav:
   - Codex: codex.md
   - Crypt: crypt.md
   - Gateway: gateway.md
+  - VPS host provisioning: deployments.md
   - Intercom: intercom.md
   - Vessel:
       - vessel/index.md
