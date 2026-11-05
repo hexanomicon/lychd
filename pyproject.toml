@@ -39,7 +39,7 @@ dependencies = [
     "click>=8.1.0",
     "dnspython>=2.9.1,<3",
     "h11>=0.16.0,<0.17",
-    "http-message-signatures==2.0.1", # exact Intercom message-signature adapter contract
+    "http-message-signatures==3.0.0", # exact Intercom message-signature adapter contract
     "httpx2>=2.12.0,<3",
     "jinja2>=3.1.6",
     "litestar[sqlalchemy,structlog,pydantic,opentelemetry]>=2.24.0,<3", # v3 migration not audited
