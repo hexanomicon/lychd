@@ -30,16 +30,16 @@ jobs:
           version: "0.13.0"
           python-version: "3.13.14"
           enable-cache: false
-      - name: Check deployment refusals
-        run: uv run --no-project --python 3.13.14 python -m unittest discover -s deployments/ansible/tests -v
-      - name: Check standalone deployment Python
-        run: |
-          uvx --from ruff==0.16.6 ruff check deployments/ansible
-          uvx --from ruff==0.16.6 ruff format --check deployments/ansible
       - name: Prepare the isolated controller
         run: |
           uv venv --python 3.13.14 "$RUNNER_TEMP/deployment-controller"
           uv pip install --python "$RUNNER_TEMP/deployment-controller/bin/python" -r deployments/ansible/requirements-controller.txt
+      - name: Check deployment refusals
+        run: '"$RUNNER_TEMP/deployment-controller/bin/python" -m unittest discover -s deployments/ansible/tests -v'
+      - name: Check standalone deployment Python
+        run: |
+          uvx --from ruff==0.16.6 ruff check deployments/ansible
+          uvx --from ruff==0.16.6 ruff format --check deployments/ansible
       - name: Check playbook syntax and example host selection without contacting a target
         working-directory: deployments/ansible
         env:
