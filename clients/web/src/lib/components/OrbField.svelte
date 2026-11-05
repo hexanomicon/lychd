@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getContext, onDestroy, onMount, tick, untrack } from "svelte";
-  import { resolve } from "$app/paths";
+  import { resolvePath as resolve } from "$lib/navigation/paths";
   import { getOrbRun } from "$lib/api/client";
   import type { OrbRunPage, OrbRunSnapshot } from "$lib/api/models";
   import { getOrbCatalogue, listenToOrb, orbSnapshotSchema, type OrbConnection } from "$lib/orb/live";

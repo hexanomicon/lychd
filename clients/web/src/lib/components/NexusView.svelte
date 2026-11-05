@@ -1,6 +1,6 @@
 <script lang="ts">
   import { beforeNavigate, goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
+  import { resolvePath as resolve } from "$lib/navigation/paths";
   import { page } from "$app/state";
   import { onMount, tick, untrack } from "svelte";
 
@@ -294,14 +294,13 @@
       if (target?.isConnected) target.focus();
       return;
     }
-    const url = new URL(page.url);
+    const url = new URL(page.url.href);
     url.searchParams.delete("transition");
     url.searchParams.delete("event");
     const nexusPath = `/nexus${url.search}` as "/nexus" | `/nexus?${string}`;
     await goto(resolve(nexusPath), {
-      replaceState: true,
-      keepFocus: target !== undefined,
-      noScroll: true
+      replace: true,
+      reset: false
     });
     await tick();
     if (target?.isConnected) target.focus();

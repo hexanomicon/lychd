@@ -13,20 +13,20 @@ and [State of Work](../../../state-of-the-work.md) retains delivery authority.
 
 ## Recommended road and alternatives
 
-Use the existing Codex application and requested Sol setting for the first bounded campaign.
+Select a supported coding client and explicit model settings for the first bounded campaign.
 Qualify the existing serial CLI protocol behind a trusted LychD host before adding a product-facing
 app-server integration. Compare another reviewer on frozen cases before buying ongoing capacity.
-This recommendation fits the present bootstrap constraints; no benchmark establishes a universally
-best agent stack.
+Choose the road against the campaign's requirements; no benchmark establishes a universally best
+agent stack.
 
 | Road | What the primary source establishes | Bootstrap decision |
 | --- | --- | --- |
-| Codex app with a goal | A durable objective continues across turns toward a verifiable stopping condition. [Goal guide](https://learn.chatgpt.com/docs/use-cases/follow-goals). | Start here. |
-| Codex `exec` | Noninteractive jobs, JSONL events, output schemas, explicit sandbox settings and saved CLI authentication. [Guide](https://learn.chatgpt.com/docs/non-interactive-mode). | Smallest first foreign-runtime job. |
+| Codex app with a goal | A durable objective continues across turns toward a verifiable stopping condition. [Goal guide](https://learn.chatgpt.com/docs/use-cases/follow-goals). | Operator-controlled campaign option. |
+| Codex `exec` | Noninteractive jobs, JSONL events, output schemas, explicit sandbox settings and saved CLI authentication. [Guide](https://learn.chatgpt.com/docs/non-interactive-mode). | One-shot protocol option; requires trusted host qualification. |
 | Codex SDK | Programmatic Codex threads and streaming through official TypeScript and Python surfaces. [SDK guide](https://learn.chatgpt.com/docs/codex-sdk). | Consider when typed integration reduces actual work; avoid redundant layers. |
 | Codex app-server | Bidirectional thread/turn protocol, steering, interruption and approval handling. [Protocol](https://learn.chatgpt.com/docs/app-server). | Add for a demonstrated persistent-session or interactive-product requirement. |
 | OpenAI Agents SDK | Application-owned agent loop, handoffs and integration. [Runtime comparison](https://developers.openai.com/api/docs/guides/agents). | A distinct orchestration choice that cannot absorb LychD's owners. |
-| OpenAI Agents API | Managed Codex harness, durable sessions and compaction/recovery; model usage is API-billed, with applicable tool/container costs. [Overview](https://developers.openai.com/api/docs/guides/agents-api/overview). | A later managed-server option, rather than the default way to spend app allowance. |
+| OpenAI Agents API | Managed Codex harness, durable sessions and compaction/recovery; model usage is API-billed, with applicable tool/container costs. [Overview](https://developers.openai.com/api/docs/guides/agents-api/overview). | Managed-server option when the workload requires it. |
 | Claude Code / Agent SDK | Programmatic coding and another provider's harness; supported authentication varies by mode. [Programmatic guide](https://code.claude.com/docs/en/headless), [SDK](https://code.claude.com/docs/en/agent-sdk/overview). | Optional comparison and separately qualified adapter. |
 
 The distinction also appears in OpenAI's
@@ -38,7 +38,7 @@ or lifecycle authority.
 ## Sol, Ultra and allowance
 
 The [model guide](https://learn.chatgpt.com/docs/models) names `gpt-6.1-sol` and distinguishes
-Max's additional single-model reasoning from Ultra's use of subagents. Record the requested Sol
+Max's additional single-model reasoning from Ultra's use of subagents. Record the requested model
 identifier and effective client settings; never silently substitute another model. Availability
 still depends on client rollout and workspace/account controls.
 
@@ -152,10 +152,6 @@ the study delivers no Coffin, Provider Gate, native launcher, or platform qualif
 
 ## Whether to add Claude
 
-Claude's [pricing page](https://claude.com/pricing) lists Pro at US$20 monthly and Max from
-US$100 before applicable checkout differences. These are dated observations. Purchase only for
-independently observed value within the actual total cost envelope.
-
 [Pro/Max Code guidance](https://support.claude.com/en/articles/11145838-use-claude-code-with-your-pro-or-max-plan)
 describes shared Claude/Claude Code usage windows and API keys selecting separate API billing.
 Current [Agent SDK plan guidance](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan)
@@ -174,10 +170,9 @@ from offering claude.ai login/rate limits in products without prior approval. Pe
 use and a distributed LychD authentication offering are separate decisions; isolation flags that
 change billing must be qualified explicitly.
 
-First trial a fresh Sol verifier; then, optionally, compare Claude on the same frozen diffs,
-acceptance criteria, and total-budget envelope. Keep the answer key protected and use separate
-confirmation cases. Another provider needs measured incremental benefit before adoption. This
-research bought or configured neither.
+Compare reviewers on the same frozen diffs, acceptance criteria, and total-budget envelope.
+Keep the answer key protected and use separate confirmation cases. Another provider needs measured
+incremental benefit before adoption. This research bought or configured no capacity.
 
 ## Verify the road before first use
 

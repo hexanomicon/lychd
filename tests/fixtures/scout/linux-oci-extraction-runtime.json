@@ -1,18 +1,18 @@
 {
   "schema": "scout-oci-static-proof@1",
   "qualification": {
-    "observed_at": "2026-11-04T23:58:09Z",
+    "observed_at": "2026-11-05T00:26:07Z",
     "profile": "trusted-scout-c2",
-    "image": "sha256:35d4368df081d66b0f49b4e63def3c9cbed7e0dba1d8240671ba3e8631d152d0",
+    "image": "sha256:dd8055d1e197d09ca98cb82d6f112887037644b61d248a1243b2181e2350defe",
     "seccomp_sha256": "364494fcdb222ed262f98016de3855c51a15d6e4a6ef9eeb19e8bb6c86cd3c02",
     "source_sha256": {
       "Containerfile.tests": "c652244645a3f9e5c7554ba6a7892a4d1990dfc071c0ed96ce0b9bbdb6d5b19e",
       "Containerfile.scout-qualification": "eb208fae14d8ad41b6c0a87d8fe008c6ae8fa401b2b9d99cd46e8a2ed83a86a5",
       "scripts/container_scout_qualification.sh": "ba9bf906ac84c32b7c132e9940504629aeaa45e81d01b29454b49c3a3493cbdb",
       "scripts/scout_qualification.py": "5225a54bd1f8e5173ff9eda0314b1785f0988958011215d3b6accaced06fbd05",
-      "Makefile": "8d7ae35632234d482844caba0b012e397fa71ea24fb9d292bad30b376e6dd5c0",
-      "pyproject.toml": "fe95dd81d306e7b83748d5e4a6647468c8b393175614e59bb91932c163736a22",
-      "uv.lock": "129a82a8d21848e0c7dc8ff0b36570ad8f44b1602744c1e8df99f672d4583240"
+      "Makefile": "261e0043bc223020e30b8e9e322aa2e20e6ab80827c67762dd5cd91dacb5275c",
+      "pyproject.toml": "4a74ad788a424f9e28e2abf2e3016a16893bb0e256dffe72759f1cefc76f9e54",
+      "uv.lock": "5fcc46c8fc61a6203f8f8227441fe8b242ae882c696ed2dad2e8a4acaa68e2e4"
     },
     "network": "isolated-loopback-only",
     "limits": {
@@ -106,6 +106,6 @@
   },
   "paired_receipt_sha256": {
     "tests/fixtures/scout/linux-fetch-runtime.json": "e2f74e1eb335c59f40ba20b5b2fa68e055e5de72811a05ec04f0435dadc49027",
-    "tests/fixtures/scout/linux-authority-runtime.json": "932c6b98dca64616533b444eea05fd0ee682b62ae23905f09fe0d2a7dada4876"
+    "tests/fixtures/scout/linux-authority-runtime.json": "6a21816aaa6e07691855cd187f33a74beb60bcf2697ad88e79b64fc9830e5c5d"
   }
 }

@@ -36,7 +36,8 @@ vi.mock("$lib/api/client", () => ({
   sendBridgeMessage: vi.fn()
 }));
 
-import { page } from "$app/state";
+import { page as appPage } from "$app/state";
+const page = appPage as Omit<typeof appPage, "url"> & { url: import("svelte/reactivity").SvelteURL };
 import { goto } from "$app/navigation";
 import { createBridgeSession, getAltarStatus, getBridgeSnapshot, getOrbRun, sendBridgeMessage, listenToRun, cancelBridgeRun } from "$lib/api/client";
 import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
@@ -320,7 +321,7 @@ it("navigates from the trailing-slash Bridge root to the exact selected conversa
   const shell = render(AltarShell, { children });
   await screen.findByLabelText("Message");
   await fireEvent.click(screen.getByRole("link", { name: /Older B/ }));
-  expect(goto).toHaveBeenCalledWith("/bridge/session-b", { keepFocus: true, noScroll: true });
+  expect(goto).toHaveBeenCalledWith("/bridge/session-b", { reset: false });
   expect(sendBridgeMessage).not.toHaveBeenCalled();
   shell.unmount();
 });

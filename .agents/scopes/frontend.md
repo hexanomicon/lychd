@@ -13,8 +13,8 @@ CSS.
 - [State of Work](../../docs/state-of-the-work.md#altar-and-observability) owns the delivered
   Altar boundary.
 - [CONTRIBUTING.md](../../CONTRIBUTING.md) owns commands and implementation conventions.
-- `clients/web/package.json`, `clients/web/package-lock.json`, `clients/web/svelte.config.js`, and
-  `clients/web/vite.config.ts` own executable toolchain behavior.
+- `clients/web/package.json`, `clients/web/package-lock.json`, and `clients/web/vite.config.ts`
+  own executable toolchain behavior.
 - [Svelte scope](svelte.md) owns official Svelte documentation, MCP/autofixer use, framework
   syntax, and Svelte Flow probes. Upstream advice never overrides ADR 15.
 

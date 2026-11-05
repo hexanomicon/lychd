@@ -2,7 +2,7 @@
   import { inspectionSelection, sameInspectionBinding, inspectionQuery, type InspectionSelection } from "$lib/api/inspection";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { resolve } from "$app/paths";
+  import { resolvePath as resolve } from "$lib/navigation/paths";
   import { navigationId, orbReturnHref, loomOriginHref } from "$lib/navigation/instruments";
   import { getContext, onDestroy, tick, untrack } from "svelte";
   import { workCommandKey, type CommandTarget, type CommandResult, type WorkCommandRegistry } from "$lib/bridge/work-commands";
@@ -241,7 +241,7 @@
             ? loomOriginHref(exactPath, requestedRun, page.url.search) ?? exactPath
             : exactPath,
           {
-          replaceState: true
+          replace: true
           }
         );
       }

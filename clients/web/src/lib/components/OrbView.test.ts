@@ -16,7 +16,8 @@ vi.mock("$lib/api/client", () => ({
   getOrbRun: vi.fn()
 }));
 
-import { page } from "$app/state";
+import { page as appPage } from "$app/state";
+const page = appPage as Omit<typeof appPage, "url"> & { url: import("svelte/reactivity").SvelteURL };
 import { goto } from "$app/navigation";
 import { getArchiveRunRecall, getOrbRun } from "$lib/api/client";
 import OrbView from "./OrbView.svelte";
@@ -635,7 +636,7 @@ describe("Orb loaded evidence browsing", () => {
     expect((screen.getByRole("button", { name: "Previous loaded record" }) as HTMLButtonElement).disabled).toBe(true);
     expect(document.activeElement).toBe(view.container.querySelector(".selected-evidence"));
     await fireEvent.click(screen.getByRole("button", { name: "Next loaded record" }));
-    expect(goto).toHaveBeenLastCalledWith("/orb/run-a?job=job-a&event=dispatch-review", expect.objectContaining({ keepFocus: true, noScroll: true }));
+    expect(goto).toHaveBeenLastCalledWith("/orb/run-a?job=job-a&event=dispatch-review", expect.objectContaining({ reset: false }));
     expect((subjects as HTMLSelectElement).value).toBe("");
     expect(within(view.container.querySelector(".selected-evidence") as HTMLElement).getByText("Review capability granted")).toBeTruthy();
     expect(view.container.querySelector(".run-status")?.textContent).toBe("done");

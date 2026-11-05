@@ -1,3 +1,6 @@
+import { fileURLToPath } from "node:url";
+import adapter from "@sveltejs/adapter-static";
+import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 import { sveltekit } from "@sveltejs/kit/vite";
 import { svelteTesting } from "@testing-library/svelte/vite";
 import { defineConfig } from "vitest/config";
@@ -13,7 +16,20 @@ const sourceLabel = exactSourceRevision
   : "Project source · MPL-2.0";
 
 export default defineConfig({
-  plugins: [sveltekit(), svelteTesting()],
+  plugins: [
+    sveltekit({
+      preprocess: vitePreprocess(),
+      adapter: adapter({
+        fallback: "index.html",
+        pages: "../../src/lychd/public",
+        assets: "../../src/lychd/public",
+        strict: true
+      }),
+      version: { name: sourceRevision, pollInterval: 0 }
+    }),
+    svelteTesting()
+  ],
+  resolve: { alias: { $lib: fileURLToPath(new URL("./src/lib", import.meta.url)) } },
   define: {
     __LYCHD_ALTAR_VERSION__: JSON.stringify(sourceRevision),
     __LYCHD_SOURCE_URL__: JSON.stringify(sourceUrl),

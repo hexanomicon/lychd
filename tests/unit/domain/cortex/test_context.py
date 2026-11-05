@@ -14,11 +14,9 @@ from pydantic_ai.messages import (
     ModelMessagesTypeAdapter,
     ModelRequest,
     ModelResponse,
-    RetryPromptPart,
     TextPart,
     ToolCallPart,
     ToolReturnPart,
-    UserPromptPart,
 )
 
 from lychd.domain.animation.capabilities import CapabilityGrant
@@ -80,7 +78,7 @@ def _assert_complete_tool_pairs(history: list[Any]) -> None:
             if isinstance(part, ToolCallPart):
                 assert part.tool_call_id not in pending
                 pending.add(part.tool_call_id)
-            elif isinstance(part, ToolReturnPart) or (isinstance(part, RetryPromptPart) and part.tool_name is not None):
+            elif isinstance(part, ToolReturnPart):
                 assert part.tool_call_id in pending, f"orphan tool result: {part.tool_call_id}"
                 pending.remove(part.tool_call_id)
     assert not pending, f"unanswered tool calls: {pending}"
@@ -134,16 +132,28 @@ def test_default_context_window_keeps_twenty_complete_legacy_exchanges() -> None
 @pytest.mark.parametrize("turn_window", [1, 2])
 def test_legacy_tool_rounds_and_retries_remain_one_exchange(turn_window: int) -> None:
     old = _exchange("old", "old question", "old answer")
-    messages = _tool_exchange()
-    messages[2:] = [
-        ModelRequest(parts=[RetryPromptPart("try again", tool_name="lookup", tool_call_id="call-1")]),
-        ModelResponse(parts=[ToolCallPart("lookup", {"query": "again"}, tool_call_id="call-2")]),
-        ModelRequest(parts=[ToolReturnPart("lookup", "unavailable", tool_call_id="call-2", outcome="failed")]),
-        ModelResponse(parts=[TextPart("invalid answer")]),
-        ModelRequest(parts=[RetryPromptPart("answer must match the schema")]),
-        ModelResponse(parts=[TextPart("valid answer")]),
-    ]
-    latest = _legacy_messages(messages)
+    latest = _legacy_messages(_tool_exchange()[:2])
+    latest.append(
+        {
+            "kind": "request",
+            "parts": [
+                {"part_kind": "retry-prompt", "content": "try again", "tool_name": "lookup", "tool_call_id": "call-1"}
+            ],
+        }
+    )
+    latest.extend(
+        _legacy_messages(
+            [
+                ModelResponse(parts=[ToolCallPart("lookup", {"query": "again"}, tool_call_id="call-2")]),
+                ModelRequest(parts=[ToolReturnPart("lookup", "unavailable", tool_call_id="call-2", outcome="failed")]),
+                ModelResponse(parts=[TextPart("invalid answer")]),
+            ]
+        )
+    )
+    latest.append(
+        {"kind": "request", "parts": [{"part_kind": "retry-prompt", "content": "answer must match the schema"}]}
+    )
+    latest.extend(_legacy_messages([ModelResponse(parts=[TextPart("valid answer")])]))
     context = ContextOrchestrator(registry=cast("Any", _Registry()), turn_window=turn_window)
 
     assembled = context.assemble(run_id="current", session_id="session", query="next", history=[*old, *latest])
@@ -154,14 +164,13 @@ def test_legacy_tool_rounds_and_retries_remain_one_exchange(turn_window: int) ->
 
 @pytest.mark.parametrize("tool_retry", [False, True])
 def test_legacy_user_prompt_with_tool_result_remains_a_continuation(*, tool_retry: bool) -> None:
-    messages = _tool_exchange()
+    history = _legacy_messages(_tool_exchange())
     result = (
-        RetryPromptPart("try again", tool_name="lookup", tool_call_id="call-1")
+        {"part_kind": "retry-prompt", "content": "try again", "tool_name": "lookup", "tool_call_id": "call-1"}
         if tool_retry
-        else ToolReturnPart("lookup", "found", tool_call_id="call-1")
+        else history[2]["parts"][0]
     )
-    messages[2] = ModelRequest(parts=[result, UserPromptPart("continue with this result")])
-    history = _legacy_messages(messages)
+    history[2]["parts"] = [result, {"part_kind": "user-prompt", "content": "continue with this result"}]
     context = ContextOrchestrator(registry=cast("Any", _Registry()), turn_window=1)
 
     assembled = context.assemble(run_id="current", session_id="session", query="next", history=history)
@@ -419,7 +428,12 @@ def test_required_continuation_is_indivisible_and_rebounds_settled_history() -> 
     context = ContextOrchestrator(
         registry=cast("Any", _Registry()),
         turn_window=20,
-        char_cap=1_350,
+    )
+    baseline = context.assemble(run_id="baseline", session_id="session", query="current")
+    context.char_cap = (
+        sum(len(block.text) for block in baseline.blocks if block.layer < 5)
+        + len("current")
+        + len(json.dumps(continuation, sort_keys=True, separators=(",", ":")))
     )
 
     assembled = context.assemble(
@@ -431,7 +445,11 @@ def test_required_continuation_is_indivisible_and_rebounds_settled_history() -> 
     )
 
     assert assembled.continuation == continuation
+    assert assembled.state_window == []
     assert assembled.model_history()[-len(continuation) :] == continuation
+    context.char_cap -= 1
+    with pytest.raises(ContextBudgetExceededError):
+        context.assemble(run_id="one-character-short", session_id="session", query="current", continuation=continuation)
 
 
 def test_required_continuation_over_budget_fails_loudly() -> None:

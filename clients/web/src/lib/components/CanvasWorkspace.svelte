@@ -1,6 +1,6 @@
 <script lang="ts">
   import { beforeNavigate, goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
+  import { resolvePath as resolve } from "$lib/navigation/paths";
   import { untrack } from "svelte";
   import { ApiError, bootstrapCanvasWorkspace, changeAtlasProject, createCanvasProject, getAtlasProject } from "$lib/api/client";
   import type { AtlasMutation, AtlasProject, CanvasProjectCreate } from "$lib/api/models";
@@ -160,7 +160,7 @@
     notice = request.body.change.kind === "project.keep" ? "Project kept in Atlas." : "Board saved to LychD with its undo and redo history.";
   }
   async function navigate(destination: string, replaceState = false) {
-    try { await goto(destination, replaceState ? { replaceState: true } : undefined); }
+    try { await goto(destination, replaceState ? { replace: true } : undefined); }
     catch (cause) { leaving = false; saveError = message(cause, "The project was saved, but its destination could not be opened."); }
   }
   async function compareSaved() {

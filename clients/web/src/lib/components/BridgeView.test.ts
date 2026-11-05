@@ -576,7 +576,7 @@ describe("Bridge route and stream ownership", () => {
     if (!created) throw new Error("The fixture has no created session.");
     finish({ session: created });
     await waitFor(() => expect(goto).toHaveBeenCalledWith("/bridge/session-b", {
-      keepFocus: true, state: { bridgeComposerFocus: "session-b" }
+      reset: false, state: { bridgeComposerFocus: "session-b" }
     }));
     view.unmount();
     mockPage.state = { bridgeComposerFocus: "session-b" };

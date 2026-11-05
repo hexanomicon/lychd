@@ -260,7 +260,7 @@ def test_migration_matches_model_and_downgrade_is_locked_and_non_destructive(mon
     module.upgrade()
     assert module.revision == "0025"
     assert module.down_revision == "0024"
-    model = BridgeDictationAttempt.__table__
+    model = cast("Table[Any]", BridgeDictationAttempt.__table__)
     assert isinstance(model, Table)
     assert columns(ops.tables[0]) == columns(model)
     assert constraints(ops.tables[0]) == constraints(model)
