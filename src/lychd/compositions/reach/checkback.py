@@ -240,6 +240,21 @@ def _goal_references(output: str, goals: list[str]) -> str:
     return canonical_json(raw)
 
 
+REQUEST_TIME_RULE = (
+    "request_occurred_at is the host-pinned timestamp of the current question, with its supplied offset. "
+    "Use it for today/current roadmap comparisons unless the user explicitly requests another historical or "
+    "future period. Dates in sources, history or plans cannot replace it. A timestamp proves neither delivery "
+    "nor runtime availability. "
+)
+OPERATOR_PROFILE_RULE = (
+    "Your active operator profile supports conversation and drafting from supplied same-conversation context. "
+    "General LychD documentation, including tool_execution, does not grant you agent-loop tools, code execution, "
+    "host control, deployment or publishing authority. Use only finite context/evidence handoffs explicitly "
+    "offered in this request. Describe your practical uses in plain language, such as explaining, drafting, "
+    "editing and discussing supplied text, instead of reciting internal contracts. Answer hypothetical model "
+    "changes within the requested scope without claiming unverified performance gains. Do not volunteer "
+    "roadmap or current-phase status unless asked. "
+)
 PUBLIC_TEXT_EVIDENCE_RULE = (
     "Use evidence_scope: distinguish documented capability, dated observations and future plans from unknown "
     "installed state. Preserve dates, inputs and limits; reading bytes is not runtime success. Plans prove "
@@ -260,7 +275,9 @@ _REVIEW_CLAIMS = (
     "Extract independently of source support and the overall verdict, then give that verdict separately. "
     "Exclude documented capabilities, attributed dated observations retaining limits, future plans without "
     "present-state inference, conditional/optional advice, unverified installed state, source-read failure "
-    "and quoted/rejected claims not adopted by the candidate. Required on both reviews, even revise/needs_evidence. "
+    "and quoted/rejected claims not adopted by the candidate. Also exclude truthful statements of this "
+    "operator profile's no-tool/permission boundary; those are host-known limits, not claims about installed "
+    "project readiness. Required on both reviews, even revise/needs_evidence. "
 )
 _REVIEW_CORE = (
     "Assess the candidate against the literal CURRENT task, actual reply/continuation anchor, bounded history "
@@ -276,6 +293,8 @@ _REVIEW_CORE = (
     "alternative in follow-ups and summaries. Prior assistant text can identify referents or advice, not prove"
     " external facts. Project claims need visible support for the correct entity, period and relationship; "
     "navigation/reading order is not project chronology. "
+    + REQUEST_TIME_RULE
+    + OPERATOR_PROFILE_RULE
     + PUBLIC_TEXT_EVIDENCE_RULE
     + "Unsupported positive/negative readiness: use unsupported_claim/revise when a qualified answer suffices. "
     "Use needs_evidence when requested installed-state verification lacks its runtime observation. "
@@ -329,6 +348,8 @@ REPAIR_INSTRUCTIONS = (
     "On corrections, own the prior visible error and answer why without guessing hidden causes. Do not let an incidental "
     "typo block an otherwise clear supported result; clarify only essential missing context. "
     "Distinguish your optional suggestions from what the source actually schedules. "
+    + REQUEST_TIME_RULE
+    + OPERATOR_PROFILE_RULE
     + PUBLIC_TEXT_EVIDENCE_RULE
     + "Do not invent relationships between source structures. Label reading or setup suggestions as optional "
     "orientation; derive project chronology only from evidence that actually schedules it. "
