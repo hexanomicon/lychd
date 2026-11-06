@@ -197,25 +197,138 @@ class AuthorityTests(unittest.TestCase):
             policy.assert_called_once_with()
 
 
+class NsswitchTests(unittest.TestCase):
+    def check(self, *, override_exists, contents, trusted=True):
+        selected = (
+            "/etc/nsswitch.conf"
+            if override_exists
+            else "/usr/etc/nsswitch.conf"
+        )
+
+        with (
+            patch.object(
+                probe.os.path,
+                "lexists",
+                return_value=override_exists,
+            ),
+            patch.object(
+                probe,
+                "trusted_file",
+                side_effect=(
+                    None if trusted
+                    else probe.Refusal("untrusted NSS file")
+                ),
+            ) as trust,
+            patch.object(
+                probe.Path,
+                "read_text",
+                return_value=contents,
+            ) as read,
+        ):
+            if trusted:
+                probe.validate_nsswitch()
+                trust.assert_called_once_with(
+                    probe.Path(selected), optional=False
+                )
+                read.assert_called_once()
+            else:
+                with self.assertRaises(probe.Refusal):
+                    probe.validate_nsswitch()
+                read.assert_not_called()
+
+    def test_vendor_default_when_override_absent(self):
+        self.check(
+            override_exists=False,
+            contents="passwd: compat systemd\ngroup: compat systemd\n",
+        )
+
+    def test_etc_override_takes_precedence(self):
+        self.check(
+            override_exists=True,
+            contents="subid: files\n",
+        )
+
+    def test_untrusted_override_is_refused(self):
+        self.check(
+            override_exists=True,
+            contents="subid: files\n",
+            trusted=False,
+        )
+
+    def test_nonlocal_subid_source_is_refused(self):
+        for source in ("ldap", "sss", "files ldap"):
+            with self.subTest(source=source):
+                with (
+                    patch.object(
+                        probe.os.path,
+                        "lexists",
+                        return_value=False,
+                    ),
+                    patch.object(probe, "trusted_file"),
+                    patch.object(
+                        probe.Path,
+                        "read_text",
+                        return_value=f"subid: {source}\n",
+                    ),
+                ):
+                    with self.assertRaisesRegex(
+                        probe.Refusal, "subid delegation"
+                    ):
+                        probe.validate_nsswitch()
+
+
 class MountTests(unittest.TestCase):
     def test_distinct_mounted_subvolumes_on_one_filesystem(self):
-        probe.validate_mounts(mounts(), {"/": 256, "/home": 256, "/var": 256})
+        with patch.object(
+            probe.subprocess,
+            "run",
+            return_value=SimpleNamespace(
+                returncode=0,
+                stdout="6e79539e-4cbf-4a44-b0ac-5a83d1fffd4d",
+            ),
+        ):
+            probe.validate_mounts(mounts(), {"/": 256, "/home": 256, "/var": 256})
 
     def test_reject_parent_mount_bind_dir_second_filesystem_readonly_and_duplicate_root(self):
-        for change in ("missing", "bind", "device", "readonly", "root"):
+        for change in ("missing", "bind", "readonly", "root"):
             value, inodes = mounts(), {"/": 256, "/home": 256, "/var": 256}
             if change == "missing":
                 del value["/var"]
             elif change == "bind":
                 inodes["/home"] = 4242
-            elif change == "device":
-                value["/var"]["device"] = "0:42"
             elif change == "readonly":
                 value["/"]["options"] = ["ro"]
             else:
                 value["/home"]["root"] = value["/"]["root"]
             with self.subTest(change=change), self.assertRaises(probe.Refusal):
                 probe.validate_mounts(value, inodes)
+
+    def test_btrfs_virtual_device_ids_may_differ(self):
+        value = mounts()
+        value["/"]["device"] = "0:40"
+        value["/home"]["device"] = "0:47"
+        value["/var"]["device"] = "0:53"
+        with patch.object(
+            probe.subprocess,
+            "run",
+            return_value=SimpleNamespace(
+                returncode=0,
+                stdout="6e79539e-4cbf-4a44-b0ac-5a83d1fffd4d\n",
+            ),
+        ):
+            probe.validate_mounts(value, {"/": 256, "/home": 256, "/var": 256})
+
+    def test_reject_different_btrfs_filesystems(self):
+        uuids = iter([
+            "6e79539e-4cbf-4a44-b0ac-5a83d1fffd4d\n",
+            "6e79539e-4cbf-4a44-b0ac-5a83d1fffd4d\n",
+            "11111111-2222-3333-4444-555555555555\n",
+        ])
+        def fake_run(*args, **kwargs):
+            return SimpleNamespace(returncode=0, stdout=next(uuids))
+        with patch.object(probe.subprocess, "run", side_effect=fake_run):
+            with self.assertRaisesRegex(probe.Refusal, "one existing Btrfs filesystem"):
+                probe.validate_mounts(mounts(), {"/": 256, "/home": 256, "/var": 256})
 
     def test_version_comparison_is_numeric(self):
         for text, expected in (("podman version 5.4.0", True), ("5.10.1", True), ("5.3.9", False), ("invalid", False)):

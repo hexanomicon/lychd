@@ -108,9 +108,28 @@ def parse_mounts(text: str) -> dict:
 def validate_mounts(mounts: dict, inodes: dict) -> None:
     require(set(mounts) == {"/", "/home", "/var"}, "installer must provide explicit /, /home and /var mounts")
     require(all(m["fstype"] == "btrfs" for m in mounts.values()), "root, /home and /var must be Btrfs")
-    require(
-        len({m["device"] for m in mounts.values()}) == 1, "root, /home and /var must use one existing Btrfs filesystem"
-    )
+    # Btrfs subvolume mounts can have different virtual mountinfo device IDs.
+    # Compare the underlying filesystem UUID instead.
+    uuids = []
+    for path in ("/", "/home", "/var"):
+        try:
+            result = subprocess.run(
+                ["findmnt", "-n", "-M", path, "-o", "UUID"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise Refusal(f"cannot determine Btrfs filesystem UUID for {path}: {exc}") from exc
+        require(result.returncode == 0, f"cannot determine Btrfs filesystem UUID for {path}")
+        uuid = result.stdout.strip()
+        require(
+            re.fullmatch(r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}", uuid) is not None,
+            f"invalid Btrfs filesystem UUID for {path}",
+        )
+        uuids.append(uuid.lower())
+    require(len(set(uuids)) == 1, "root, /home and /var must use one existing Btrfs filesystem")
     require(len({m["root"] for m in mounts.values()}) == 3, "root, /home and /var must mount distinct subvolumes")
     require(all("rw" in m["options"] for m in mounts.values()), "host floor requires writable mounted subvolumes")
     require(
@@ -120,6 +139,20 @@ def validate_mounts(mounts: dict, inodes: dict) -> None:
     require(
         all("/.snapshots/" not in mounts[p]["root"] for p in ("/home", "/var")),
         "/home and /var must not be snapshot mounts",
+    )
+
+
+def validate_nsswitch() -> None:
+    """Validate the effective NSS configuration without bypassing an /etc override."""
+    override = Path("/etc/nsswitch.conf")
+    vendor = Path("/usr/etc/nsswitch.conf")
+    selected = override if os.path.lexists(override) else vendor
+    trusted_file(selected, optional=False)
+    contents = selected.read_text()
+    sources = re.findall(r"^\s*subid:\s*([^#\n]+)", contents, re.M)
+    require(
+        not sources or [source.strip() for source in sources] == ["files"],
+        "subid delegation must use local files",
     )
 
 
@@ -349,11 +382,8 @@ def observe(intent: dict, verify: bool) -> dict:
     if skeleton.exists():
         validate_mount_parent(skeleton.stat())
         require(not any(skeleton.iterdir()), "account skeleton must remain empty")
-    nsswitch = Path("/etc/nsswitch.conf").read_text()
-    subid_sources = re.findall(r"^\s*subid:\s*([^#\n]+)", nsswitch, re.M)
-    require(
-        not subid_sources or [s.strip() for s in subid_sources] == ["files"], "subid delegation must use local files"
-    )
+    validate_nsswitch()
+
     marker = Path("/etc/lychd-host-floor.json")
     managed = trusted_file(marker)
     receipt = json.loads(marker.read_text()) if managed else None
