@@ -204,7 +204,6 @@ class NativeLoop:
             clock=lambda: NOW,
         )
         self.client = PipeWorker(self.reader, self.runtime.ready, write_frame=self.write_frame)
-        self.client.progress = self.deliver_plan
 
     async def model(self, operation: str, payload: str) -> str:
         if operation == "probe":
@@ -273,8 +272,7 @@ class NativeLoop:
 
         return await self.broker.handle(request, send_progress)
 
-    async def deliver_plan(self, observed: ReachEvent, progress: ReachResearchProgress) -> bool:
-        assert observed == self.event
+    async def deliver_plan(self, progress: ReachResearchProgress) -> bool:
         assert progress.text == PLAN
         assert self.scout_calls == self.document_reads == []
         self.timeline.append("delivered_plan")
@@ -328,7 +326,10 @@ async def test_independent_neutral_edges_share_native_research_graph_and_exact_p
     loop = native_loop(platform)
     try:
         with override_allow_model_requests(True):  # noqa: FBT003 - all model requests use the in-memory relay
-            result = await drive_context_turn(loop.client, loop.event, Pager([((), "disabled")]))
+            outcome = await drive_context_turn(
+                loop.client, loop.event, Pager([((), "disabled")]), progress=loop.deliver_plan
+            )
+            result = outcome.result
         assert result.status == "conversation"
         assert result.run_id is not None
         assert loop.model_run_ids == [result.run_id, result.run_id]
@@ -348,7 +349,7 @@ async def test_independent_neutral_edges_share_native_research_graph_and_exact_p
         assert run is not None
         assert run.status is RunStatus.DONE
         assert run.pattern_manifest["key"] == "reach.operator_converse"
-        assert run.pattern_manifest["revision"] == "8"
+        assert run.pattern_manifest["revision"] == "9"
         events = await loop.runtime.substrate.ledger.list_events(result.run_id)
         assert {item.data for item in events if item.kind is RunEventKind.NODE} == {
             "revalidate",
@@ -373,7 +374,7 @@ async def test_unconfirmed_plan_delivery_prevents_both_web_and_local_document_re
     loop.delivery = delivery
     try:
         with override_allow_model_requests(True):  # noqa: FBT003 - all model requests use the in-memory relay
-            result = await loop.client.request(loop.event, ())
+            result = await loop.client.request(loop.event, (), progress=loop.deliver_plan)
         assert result.status == "error"
         assert loop.timeline == ["model_plan", "delivered_plan", "ack"]
         assert loop.frames[-1]["accepted"] is False
@@ -394,7 +395,7 @@ async def test_foreign_progress_fences_the_client_without_acknowledgement_or_acq
             override_allow_model_requests(True),  # noqa: FBT003 - all model requests use the in-memory relay
             pytest.raises(ValueError, match="worker_progress_binding"),
         ):
-            await loop.client.request(loop.event, ())
+            await loop.client.request(loop.event, (), progress=loop.deliver_plan)
         assert not loop.client.available
     finally:
         await loop.close()
@@ -415,7 +416,7 @@ async def test_duplicate_progress_fences_the_client_after_the_first_acknowledgem
             override_allow_model_requests(True),  # noqa: FBT003 - all model requests use the in-memory relay
             pytest.raises(ValueError, match="worker_progress_binding"),
         ):
-            await loop.client.request(loop.event, ())
+            await loop.client.request(loop.event, (), progress=loop.deliver_plan)
         assert not loop.client.available
     finally:
         await loop.close()
@@ -437,7 +438,7 @@ async def test_cancelled_plan_delivery_writes_no_ack_and_cannot_acquire(
             override_allow_model_requests(True),  # noqa: FBT003 - all model requests use the in-memory relay
             pytest.raises(asyncio.CancelledError),
         ):
-            await loop.client.request(loop.event, ())
+            await loop.client.request(loop.event, (), progress=loop.deliver_plan)
         assert not loop.client.available
     finally:
         await loop.close()
@@ -536,6 +537,7 @@ class Requester:
         reply_to_event_id: str | None = None,
         reply_anchor: ReachHistoryEntry | None = None,
         continuation_anchor: ReachHistoryEntry | None = None,
+        **_options: Any,
     ) -> ReachWorkerResult:
         request = ReachWorkerRequest.model_validate(
             {
@@ -569,7 +571,8 @@ async def test_shared_context_driver_skips_filtered_pages_and_retains_exact_repl
     anchor = history("anchor", 8, conversation_id=observed.conversation_id)
     pager = Pager([((), "more"), ((recent,), "more"), ((older, recent), "exhausted")])
     worker = Requester(["need_context", "conversation"])
-    result = await drive_context_turn(worker, observed, pager, reply_to_event_id="anchor", reply_anchor=anchor)
+    outcome = await drive_context_turn(worker, observed, pager, reply_to_event_id="anchor", reply_anchor=anchor)
+    result = outcome.result
     assert result.status == "conversation"
     assert pager.reads == 3
     assert [item.context_round for item in worker.requests] == [0, 1]
@@ -586,8 +589,10 @@ async def test_shared_context_driver_does_not_readmit_a_run_when_paging_adds_no_
     recent = history("recent", 3)
     pager = Pager([((recent,), "more"), ((recent,), "exhausted")])
     worker = Requester(["need_context"])
-    result = await drive_context_turn(worker, event(), pager)
-    assert result.status == "clarify"
+    outcome = await drive_context_turn(worker, event(), pager)
+    result = outcome.result
+    assert result.status == "need_context"
+    assert outcome.stop is not None
     assert result.run_id == "run/0"
     assert result.request_id == "round/0"
     assert len(worker.requests) == 1
@@ -601,8 +606,10 @@ async def test_shared_context_driver_returns_bounded_clarification_after_initial
 ) -> None:
     pager = Pager([((), state)])
     worker = Requester(["need_context"])
-    result = await drive_context_turn(worker, event(), pager)
-    assert result.status == "clarify"
+    outcome = await drive_context_turn(worker, event(), pager)
+    result = outcome.result
+    assert result.status == "need_context"
+    assert outcome.stop is not None
     assert result.run_id == "run/0"
     assert result.model_binding_digest == "c" * 64
     assert len(worker.requests) == pager.reads == 1
@@ -613,8 +620,10 @@ async def test_shared_context_driver_stops_after_three_native_context_decisions(
     recent, older, oldest = history("recent", 3), history("older", 5), history("oldest", 7)
     pager = Pager([((recent,), "more"), ((older, recent), "more"), ((oldest, older, recent), "more")])
     worker = Requester(["need_context", "need_context", "need_context"])
-    result = await drive_context_turn(worker, event(), pager)
-    assert result.status == "clarify"
+    outcome = await drive_context_turn(worker, event(), pager)
+    result = outcome.result
+    assert result.status == "need_context"
+    assert outcome.stop is not None
     assert result.run_id == "run/2"
     assert [item.context_round for item in worker.requests] == [0, 1, 2]
     assert pager.reads == 3
@@ -634,12 +643,14 @@ async def test_shared_context_driver_bounds_a_source_that_keeps_offering_filtere
 
     pager = FilteredSource()
     worker = Requester(["need_context"])
-    result = await drive_context_turn(worker, event(), pager)
+    outcome = await drive_context_turn(worker, event(), pager)
+    result = outcome.result
     assert pager.reads == 3
     assert pager.state == "more"
     assert len(worker.requests) == 1
     assert worker.requests[0].history_state == "budget"
-    assert result.status == "clarify"
+    assert result.status == "need_context"
+    assert outcome.stop is not None
     assert result.run_id == "run/0"
 
 

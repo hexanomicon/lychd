@@ -40,7 +40,12 @@ actions = ["answer_docs"]
     observed: list[list[str]] = []
 
     async def supervise(
-        _engine: str, commands: tuple[list[str], list[str]], _ids: tuple[Path, Path], *, capture: object | None = None
+        _engine: str,
+        commands: tuple[list[str], list[str]],
+        _ids: tuple[Path, Path],
+        *,
+        capture: object | None = None,
+        read_identity: object,
     ) -> int:
         assert capture is not None
         observed.extend(commands)

@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from typing import Any, NoReturn, cast
 from uuid import uuid4
 
+from lychd.compositions.reach.conversation_session import ProgressHandler
+from lychd.compositions.reach.operator_limits import TurnDeadline, operator_limits
 from lychd.compositions.reach.operator_trace import TraceEmitter, TraceSink, error_code, platform_id_or_none
 from lychd.compositions.reach.operator_wire import (
     MAX_WIRE_BYTES,
@@ -48,7 +50,6 @@ class PipeWorker:
         self.ready = ready
         self.lock = asyncio.Lock()
         self.available = True
-        self.progress: Callable[[ReachEvent, ReachResearchProgress], Awaitable[bool]] | None = None
         self._write_frame = write_frame if write_frame is not None else _write_stdio_frame
         self.trace = TraceEmitter("edge", trace)
 
@@ -74,6 +75,8 @@ class PipeWorker:
         reply_to_event_id: str | None = None,
         reply_anchor: ReachHistoryEntry | None = None,
         continuation_anchor: ReachHistoryEntry | None = None,
+        progress: ProgressHandler | None = None,
+        deadline: TurnDeadline | None = None,
     ) -> ReachWorkerResult:
         if not self.available or self.lock.locked():
             msg = "worker_busy_or_unavailable"
@@ -105,6 +108,8 @@ class PipeWorker:
             chars=sum(len(item.text) for item in history),
             code="budget"
             if history_state == "budget"
+            else "permission_denied"
+            if history_state == "permission_denied"
             else "source_unavailable"
             if history_state == "unavailable"
             else None,
@@ -112,10 +117,15 @@ class PipeWorker:
         )
         async with self.lock:
             try:
+                if deadline is not None:
+                    deadline.check()
                 self.trace.record("request_received", status="started", **binding)
                 self._write_frame(frame)
-                async with asyncio.timeout(310 if self.ready.research_enabled else 90):
-                    raw = await self._read_result(request)
+                maximum = operator_limits(
+                    conversation=self.ready.model_binding_digest is not None, research=self.ready.research_enabled
+                ).pipe_seconds
+                async with asyncio.timeout(deadline.remaining(maximum) if deadline is not None else maximum):
+                    raw = await self._read_result(request, progress=progress)
                 if not raw or len(raw) > MAX_WIRE_BYTES:
                     _refuse("worker_protocol")
                 result = ReachWorkerResult.model_validate_json(raw)
@@ -143,7 +153,7 @@ class PipeWorker:
             )
             return result
 
-    async def _read_result(self, request: ReachWorkerRequest) -> bytes:
+    async def _read_result(self, request: ReachWorkerRequest, *, progress: ProgressHandler | None) -> bytes:
         """Permit one correlated plan acknowledgement before the terminal result."""
         observed_progress = False
         while True:
@@ -154,20 +164,20 @@ class PipeWorker:
             value = cast("dict[str, Any]", parsed) if isinstance(parsed, dict) else None
             if value is None or value.get("kind") != "progress":
                 return raw
-            progress = ReachResearchProgress.model_validate_json(raw)
+            observed = ReachResearchProgress.model_validate_json(raw)
             if (
                 not self.ready.research_enabled
                 or observed_progress
-                or progress.request_id != request.request_id
-                or progress.binding_digest != self.ready.model_binding_digest
+                or observed.request_id != request.request_id
+                or observed.binding_digest != self.ready.model_binding_digest
             ):
                 _refuse("worker_progress_binding")
             observed_progress = True
-            accepted = await self.progress(request.event, progress) if self.progress is not None else False
+            accepted = await progress(observed) if progress is not None else False
             acknowledgement = ReachResearchAcknowledgement(
-                call_id=progress.call_id,
-                request_id=progress.request_id,
-                binding_digest=progress.binding_digest,
+                call_id=observed.call_id,
+                request_id=observed.request_id,
+                binding_digest=observed.binding_digest,
                 accepted=accepted,
             )
             self._write_frame(acknowledgement.model_dump_json().encode() + b"\n")

@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import pytest
 from scripts import reach_operator as operator
+from scripts import reach_operator_transport as transport
 
 from lychd.compositions.reach.operator_diagnostics import ReachRunDiagnostic, diagnostic_bytes
 from lychd.interface.discord.admin import DeveloperLayout, GuildSnapshot, ServerPlan
@@ -160,7 +161,7 @@ async def test_relay_refuses_oversize_duplicate_and_partial_frames(raw: bytes) -
     reader.feed_eof()
     writer = Writer()
     with pytest.raises((ValueError, asyncio.LimitOverrunError)):
-        await operator.relay(reader, writer)  # type: ignore[arg-type] - structural fixture for a write-only pipe
+        await transport.relay(reader, writer)  # type: ignore[arg-type] - structural fixture for a write-only pipe
     assert writer.raw == b""
 
 
@@ -169,7 +170,7 @@ async def test_diagnostics_preserve_readiness_but_hide_foreign_text(capfd: pytes
     reader = asyncio.StreamReader()
     reader.feed_data(b"reach_discord:ready\nforeign message content\nTraceback (most recent call last):\n")
     reader.feed_eof()
-    await operator.diagnostics(reader)
+    await transport.diagnostics(reader)
     assert capfd.readouterr().err == "reach_discord:ready\nreach_child_diagnostic\nreach_child_diagnostic\n"
 
 
@@ -194,7 +195,7 @@ async def test_structured_diagnostics_require_core_custody(
     reader = asyncio.StreamReader()
     reader.feed_data(raw)
     reader.feed_eof()
-    await operator.diagnostics(reader, role=role)
+    await transport.diagnostics(reader, role=role)
     assert capfd.readouterr().err == (raw.decode() if role == "core" else "reach_child_diagnostic\n")
 
 
@@ -215,7 +216,7 @@ async def test_core_diagnostics_never_sanitize_or_forward_unadmitted_bytes(
     reader = asyncio.StreamReader()
     reader.feed_data(raw)
     reader.feed_eof()
-    await operator.diagnostics(reader, role="core")
+    await transport.diagnostics(reader, role="core")
     assert capfd.readouterr().err == "reach_child_diagnostic\n"
 
 
@@ -255,13 +256,15 @@ async def test_first_child_eof_retires_both_and_cleans_only_owned_ids(
         children.append(child)
         return child
 
-    async def remove(_engine: str, cidfile: Path) -> None:
+    async def remove(_engine: str, cidfile: Path, **_kwargs: Any) -> None:
         removed.append(cidfile)
 
     monkeypatch.setattr(operator.asyncio, "create_subprocess_exec", create)
-    monkeypatch.setattr(operator, "remove_owned", remove)
+    monkeypatch.setattr(transport, "remove_owned", remove)
     identities = (tmp_path / "core.cid", tmp_path / "edge.cid")
-    result = await operator.supervise("docker", (["docker", "core"], ["docker", "edge"]), identities)
+    result = await transport.supervise(
+        "docker", (["docker", "core"], ["docker", "edge"]), identities, read_identity=operator.read_regular
+    )
     assert result == 1
     assert len(children) == 2
     assert all(child.terminated.is_set() for child in children)
@@ -276,7 +279,12 @@ def test_run_mounts_exact_inputs_and_never_token_bytes(tmp_path: Path, monkeypat
     observed: list[list[str]] = []
 
     async def supervise(
-        _engine: str, commands: tuple[list[str], list[str]], _ids: tuple[Path, Path], *, capture: object | None = None
+        _engine: str,
+        commands: tuple[list[str], list[str]],
+        _ids: tuple[Path, Path],
+        *,
+        capture: object | None = None,
+        read_identity: object,
     ) -> int:
         assert capture is not None
         observed.extend(commands)
@@ -378,7 +386,7 @@ def test_generated_admin_plan_envelope_loads_in_apply_cli(tmp_path: Path, monkey
         return
 
     monkeypatch.setattr(operator, "command", command)
-    monkeypatch.setattr(operator, "remove_owned", remove)
+    monkeypatch.setattr(transport, "remove_owned", remove)
     args = operator.parser().parse_args(
         [
             "admin-plan",
@@ -440,7 +448,7 @@ def test_admin_apply_preserves_structured_failure_and_exit_status(
         return
 
     monkeypatch.setattr(operator, "command", command)
-    monkeypatch.setattr(operator, "remove_owned", remove)
+    monkeypatch.setattr(transport, "remove_owned", remove)
     args = operator.parser().parse_args(
         [
             "admin-apply",
@@ -481,7 +489,35 @@ def test_command_admits_nonzero_output_only_when_explicitly_selected(
             operator.command(["fixture"], root=tmp_path, accepted_exit_codes=accepted)
 
 
-@pytest.mark.parametrize("failed_role", [None, "core", "edge"])
+def assert_edge_import_smoke(args: list[str], edge: str) -> None:
+    assert {
+        "--network=none",
+        "--pull=never",
+        "--read-only",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+        "--rm",
+    } <= set(args)
+    assert {name: args[args.index(name) + 1] for name in ("--memory", "--cpus", "--pids-limit")} == {
+        "--memory": "1g",
+        "--cpus": "1",
+        "--pids-limit": "128",
+    }
+    assert not {"--volume", "--mount", "--env", "--env-file", "--publish", "--privileged"} & set(args)
+    assert not any("token" in item or SECRET in item for item in args)
+    assert args[-5:] == [
+        "--entrypoint",
+        "python",
+        edge,
+        "-c",
+        (
+            "import signal; signal.alarm(30); "
+            "import lychd.interface.discord.live; import lychd.interface.discord.operator_cli"
+        ),
+    ]
+
+
+@pytest.mark.parametrize("failed_role", [None, "core", "edge", "import"])
 def test_build_retains_exact_images_before_shared_tag_changes_and_manifest_publication(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failed_role: str | None
 ) -> None:
@@ -492,14 +528,15 @@ def test_build_retains_exact_images_before_shared_tag_changes_and_manifest_publi
     monkeypatch.setattr(operator, "EDGE_INPUTS", ("clients/discord/Containerfile",))
     output = tmp_path / "images.json"
     core, edge, replacement = ("sha256:" + letter * 64 for letter in ("a", "b", "c"))
-    core_tag = "localhost/lychd-reach-core:" + core.removeprefix("sha256:")
-    edge_tag = "localhost/lychd-reach-edge:" + edge.removeprefix("sha256:")
+    core_tag, edge_tag = (
+        "localhost/lychd-reach-core:" + core.removeprefix("sha256:"),
+        "localhost/lychd-reach-edge:" + edge.removeprefix("sha256:"),
+    )
     tags: dict[str, str] = {}
-    shared = core
-    edge_built = False
+    shared, edge_built, import_checked = core, False, False
 
     def command(arguments: Any, **_kwargs: Any) -> bytes:
-        nonlocal shared, edge_built
+        nonlocal shared, edge_built, import_checked
         args = list(arguments)
         assert not output.exists()
         if args[:3] == ["bash", "scripts/container_checks.sh", "--build-only"]:
@@ -517,22 +554,33 @@ def test_build_retains_exact_images_before_shared_tag_changes_and_manifest_publi
             if tag == f"localhost/lychd-reach-{failed_role}:" + observed.removeprefix("sha256:"):
                 return replacement.encode() + b"\n"
             return observed.encode() + b"\n"
-        assert args[1] == "build"
-        # A later build may replace the shared tag; the selected Core already has its own tag.
-        assert tags[core_tag] == core
-        shared = replacement
-        edge_built = True
-        Path(args[args.index("--iidfile") + 1]).write_text(edge)
+        if args[1] == "run":
+            assert tags[edge_tag] == edge
+            assert_edge_import_smoke(args, edge)
+            import_checked = True
+            if failed_role == "import":
+                message = "operator_command_failed"
+                raise ValueError(message)
+        else:
+            assert args[1] == "build"
+            # A later build may replace the shared tag; the selected Core already has its own tag.
+            assert tags[core_tag] == core
+            shared = replacement
+            edge_built = True
+            Path(args[args.index("--iidfile") + 1]).write_text(edge)
         return b""
 
     monkeypatch.setattr(operator, "command", command)
     if failed_role is not None:
-        with pytest.raises(ValueError, match="operator_image_retention"):
+        code = "operator_command_failed" if failed_role == "import" else "operator_image_retention"
+        with pytest.raises(ValueError, match=code):
             operator.build_images("docker", output, root=root)
         assert not output.exists()
-        assert edge_built == (failed_role == "edge")
+        assert edge_built == (failed_role in {"edge", "import"})
+        assert import_checked == (failed_role == "import")
         return
     operator.build_images("docker", output, root=root)
+    assert import_checked
     assert shared == replacement
     assert operator.load_images(output) == {"core": core, "edge": edge}
     assert tags == {core_tag: core, edge_tag: edge}

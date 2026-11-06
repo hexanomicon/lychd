@@ -14,7 +14,8 @@ from typing import Annotated, Any, Literal, Self, cast
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from lychd.interface.discord.rest import DiscordRest, DiscordRestError, EffectResult
+from lychd.interface.discord.ports import AdministrationEffects, GuildInspection
+from lychd.interface.discord.rest import DiscordRestError, EffectResult
 from lychd.interface.discord.schemas import DiscordId
 
 _VIEW = 1 << 10
@@ -329,7 +330,7 @@ def _bits(value: object) -> int:
     return parsed
 
 
-async def snapshot_guild(rest: DiscordRest) -> GuildSnapshot:
+async def snapshot_guild(rest: GuildInspection) -> GuildSnapshot:
     """Read actual identities and the complete relevant permission/resource slice."""
     await rest.verify_identity()
     root = f"/guilds/{rest.guild_id}"
@@ -796,7 +797,7 @@ def _operation_scope(operation: AdminOperation, plan: ServerPlan) -> str:
     return f"admin:{plan.layout.application_id}:{plan.layout.guild_id}:{operation.kind}:{selector}"
 
 
-def _check_plan(rest: DiscordRest, plan: ServerPlan, expected_digest: str, now: datetime) -> None:
+def _check_plan(rest: AdministrationEffects, plan: ServerPlan, expected_digest: str, now: datetime) -> None:
     _aware(now)
     if expected_digest != plan.digest:
         message = "plan_digest_mismatch"
@@ -817,7 +818,7 @@ def _check_plan(rest: DiscordRest, plan: ServerPlan, expected_digest: str, now: 
 
 
 async def _reconcile_operation(
-    rest: DiscordRest,
+    rest: AdministrationEffects,
     operation: AdminOperation,
     body: dict[str, Any],
     result: EffectResult,
@@ -848,7 +849,7 @@ async def _reconcile_operation(
     return result, after
 
 
-async def _apply_locked(rest: DiscordRest, plan: ServerPlan, *, deadline: float) -> AdminApplyResult:
+async def _apply_locked(rest: AdministrationEffects, plan: ServerPlan, *, deadline: float) -> AdminApplyResult:
     current = await snapshot_guild(rest)
     if current.digest != plan.snapshot.digest:
         return AdminApplyResult(status="rejected", code="plan_snapshot_stale")
@@ -892,7 +893,9 @@ async def _apply_locked(rest: DiscordRest, plan: ServerPlan, *, deadline: float)
     return AdminApplyResult(status="succeeded", resources=tuple(resources), operations=tuple(results))
 
 
-async def apply_plan(rest: DiscordRest, plan: ServerPlan, *, expected_digest: str, now: datetime) -> AdminApplyResult:
+async def apply_plan(
+    rest: AdministrationEffects, plan: ServerPlan, *, expected_digest: str, now: datetime
+) -> AdminApplyResult:
     """Apply only an unchanged, reviewed local plan; stop on uncertainty, never retry."""
     try:
         _check_plan(rest, plan, expected_digest, now)

@@ -9,7 +9,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from scripts import reach_operator as operator
+from scripts import reach_operator_transport as transport
 from scripts.reach_observation import ReachObservationPublisher
 from scripts.reach_trace_capture import TraceCapture
 from scripts.reach_worker import build_runtime
@@ -199,11 +199,11 @@ async def test_diagnostic_pipe_requires_bound_edge_role_and_discards_payloads(tm
         stream = asyncio.StreamReader()
         stream.feed_data(frames[0] + json.dumps(malicious).encode() + b"\n")
         stream.feed_eof()
-        await operator.diagnostics(stream, role="edge", capture=capture)
+        await transport.diagnostics(stream, role="edge", capture=capture)
         forged = asyncio.StreamReader()
         forged.feed_data(frames[0])
         forged.feed_eof()
-        await operator.diagnostics(forged, role="core", capture=capture)
+        await transport.diagnostics(forged, role="core", capture=capture)
     snapshot = read(root)
     traffic = [item for item in snapshot.activities if item.kind == "transport_attempt"]
     assert len(traffic) == 1

@@ -45,7 +45,7 @@ def test_source_trace_retains_exact_read_range_and_digests_without_body() -> Non
     with pytest.raises(ValidationError):
         ReachTraceEvent(producer="core", name="source_read", text_digest=CANARY)
     with pytest.raises(ValidationError):
-        ReachTraceEvent(producer="core", name="source_read", excerpt_chars=16_001)
+        ReachTraceEvent(producer="core", name="source_read", excerpt_chars=210_001)
 
 
 @pytest.mark.asyncio
@@ -370,7 +370,7 @@ async def test_trusted_budget_failure_records_no_exception_body(monkeypatch: pyt
     )
     try:
         result = await runtime.process(make_request().model_copy(update={"request_id": str(uuid4())}))
-        assert result.reason == "run_failed"
+        assert result.reason == "budget"
         terminal = next(event for event in records if event.name == "run_finished")
         assert terminal.code == "budget"
         assert "conversation_budget" not in b"".join(trace_bytes(event) for event in records).decode()

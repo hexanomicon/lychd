@@ -39,6 +39,21 @@ The edge retains content-free, fsynced attempt metadata. An unknown result fence
 the journal witnesses transport effects and is not a canonical Run or conversation ledger.
 An uncertain create is inspected, never blindly retried or automatically deleted.
 
+The running edge exclusively leases its effects directory for the generation. It validates retained
+JSON receipts once, then keeps volatile indexes of effect keys and unresolved scopes under that
+lease. Receipt format, effect identities and replay fences are unchanged; standalone administration
+still uses fresh validated receipts. A second writer refuses the leased directory. A failed durable
+save refuses further writes until restart; startup reloads the actual receipts. This index does not
+add retention, native conversation storage or a durable outbox.
+
+Every admitted turn owns its event, deadline, progress confirmation and one terminal attempt.
+Conversation delivery, publications, onboarding, inspection and local administration receive
+separate bound effect ports. Inventory discovery does not authorize sending to a new conversation.
+Shutdown closes business admission, cancels and joins callbacks and background work, closes REST,
+then releases the effects lease. If a callback cannot retire within five seconds, the edge exits
+before releasing dependencies or the lease; process death prevents it from sending later.
+Unexpected background failures produce a fixed diagnostic.
+
 Each launch creates a new generation. Old events are refused; process failure stops both peers.
 The operator effect journal survives, while memory Runs and conversations do not. This is an
 explicit development limitation, not Phylactery recovery or production hosting acceptance.
@@ -188,6 +203,9 @@ This creates the Python 3.15.0 native check image and the separately locked Pyth
 Discord edge image. The image record contains their `sha256:` identities; startup selects these
 exact local images with pulling disabled. A failed build or unavailable engine stops the step.
 There is no host worker fallback. This build command does not run the bot or apply server changes.
+Before writing the image record, it checks the Discord entrypoint imports inside the exact edge
+image without network, credentials or host mounts. This establishes import closure, not Gateway
+readiness or delivery.
 
 The edge's credential-bearing process talks to Discord. The native worker has `--network=none`
 and receives the compiled shared policy and corpus read-only. The edge never receives the corpus
@@ -371,7 +389,9 @@ authorize that action. The result is selected context excerpts, explicitly label
 
 The edge fetches only bounded recent messages from the admitted channel before the triggering
 event, skips webhooks, other bots and empty text, truncates each message to 2,000 characters, and caps
-the history payload at 16 KiB. The worker checks its conversation, age, count and byte bounds.
+the history payload at 400,000 UTF-8 bytes. The worker checks its conversation, age, count and byte bounds.
+If Discord returns 403 while reading history, Nadir explains that the maintainer should check
+**View Channel** and **Read Message History** for the configured channel.
 Conversation mode may also include this bot's own recent replies with its configured display name.
 This is per-request context, not durable native conversation history. Do not enable it in a
 channel whose surrounding content you did not intend to admit.
@@ -417,6 +437,22 @@ quoted evidence and persona preferences do not choose a different reply language
 acknowledgements, readiness/refusal messages and context-limit notices use English; this profile
 does not implement automatic localization of operational copy.
 
+Planning, request interpretation and synthesis receive mandatory `request_occurred_at`, derived
+from the admitted question event with its original offset. It anchors “today” and current roadmap
+comparisons unless the user asks about another period; dates in history, sources or an interpreted
+plan do not replace it. Context trimming retains this timestamp, and an envelope that cannot fit
+is refused. Review and correction inherit the same frozen context. This time anchor establishes
+neither delivery nor installed runtime availability.
+
+The model's own operator profile supports conversation and drafting with the supplied
+same-conversation context, plus finite read-only catalogue research only when separately enabled
+and offered. General LychD capability descriptions, including `tool_execution`, grant this model
+no agent-loop tools, code execution, host control, deployment or publishing authority. Review
+distinguishes these known permission limits from claims about an installed project's readiness.
+Capability answers describe practical uses in plain language. Hypothetical model changes stay
+within the question's scope without unverified performance claims; an unrelated question does
+not call for unsolicited roadmap or current-phase status.
+
 Adaptive context is separately opt-in: add `"adaptive_context": true` to the private conversation
 JSON shown below. Omission retains the single-call behavior. Without catalogue research, the model
 returns only an `answer`, `read_more` or `clarify` text decision, never an executable tool call.
@@ -427,7 +463,7 @@ reply reference and earlier evidence. Terminal results cannot open another round
 History still requires the explicit policy/`--history` opt-in above. The edge reads only the same
 conversation, at most three pages of six recent messages, or sixteen per page when research is
 enabled, within the policy's total count and
-age limits and a shared 16 KiB text budget. A same-place reply anchor consumes those same count
+age limits and a shared 400,000-byte text budget. A same-place reply anchor consumes those same count
 and byte budgets. Disabled history, exhaustion, a spent budget and unavailable history remain
 distinct observations; a missing needed source can produce a concrete clarification question.
 DM history admits only that sender and this bot. Cached excerpts last for the bounded request;
@@ -471,7 +507,7 @@ active event and clears it on settlement or cancellation; another event cannot i
 Error notices create no continuation invitation or decorative expression. Failed or uncertain
 plan delivery does not establish this visible commitment. Actual platform replies keep `reply_anchor`; adjacency has a distinct
 `continuation_anchor` and does not invent a reply reference. Both share the existing age, count
-and 16 KiB history bounds and remain fixed across admitted context rounds. This opt-in supplies
+and 400,000-byte history bounds and remain fixed across admitted context rounds. This opt-in supplies
 bounded continuation candidates, not general channel surveillance or durable ambient memory.
 
 ### Check an answer before settlement
@@ -528,7 +564,11 @@ array. Oversized observations refuse rather than being truncated. The field is r
 verdict. The host checks each bounded contiguous excerpt against that exact candidate; omitted or
 invented observations refuse rather than becoming an empty list. Documented capabilities, qualified
 dated observations, future plans, conditional advice and explicitly unknown state are not current
-runtime assertions. When this public-text path supplies no runtime observation, a nonempty claim
+runtime assertions. Source-attributed documented limitations and statements that runtime state
+cannot be established or lacks proof remain ordinary evidence claims, not assertions of current
+unavailability. An adopted present-runtime conclusion still counts even with attribution or a
+citation; all excluded statements remain subject to the overall factual review.
+When this public-text path supplies no runtime observation, a nonempty claim
 observation returns the draft for same-evidence correction through a separately attributed authority
 guard, including when the model requests proof for those draft assertions. Repair must qualify or
 retract them, or produce a concrete clarification for an actually unavailable requested fact. It
@@ -694,21 +734,21 @@ synthetic example uses the admitted defaults:
   "persona_instructions": "Answer clearly and state uncertainty when evidence is missing.",
   "animator_id": "night-qwen38",
   "model_id": "Qwen3.8-27B",
-  "max_context": 16384,
-  "max_tokens": 384,
+  "max_context": 70000,
+  "max_tokens": 1536,
   "temperature": 0.6,
-  "max_input_chars": 20000,
-  "timeout_seconds": 60
+  "max_input_chars": 210000,
+  "timeout_seconds": 300
 }
 ```
 
 The default combined instruction/input allowance remains 20,000 characters. An explicitly prepared
-profile may select `max_input_chars` up to 32,000, with the same per-message ceiling; this is still
-bounded by the selected context, 49,152-byte model payload and 65,536-byte escaped pipe frame.
-Unicode and JSON escaping can exhaust the byte limits before the character allowance. The
-4,096-token completion ceiling, 60-second per-call maximum, existing call limits and review reserves
-remain unchanged. A larger explicit allowance changes the profile digest and needs its own
-qualification; it does not make every mandatory context or answer fit.
+profile may select `max_context` up to 262,144 tokens and `max_input_chars` up to 210,000 characters,
+with the same per-message ceiling. These limits remain bounded by the 1,048,576-byte model payload
+and 2,097,152-byte escaped pipe frame. Unicode and JSON escaping can exhaust byte limits before the
+character allowance. The 4,096-token completion ceiling, 300-second per-call maximum, existing call
+limits and review reserves remain unchanged. A larger explicit allowance changes the profile digest;
+it does not make every mandatory context or answer fit.
 
 The profile is a static instruction and exact model binding, not Mirror identity, Persona
 lineage or lasting memory. The supervisor freezes its validated bytes for one generation and
@@ -859,7 +899,7 @@ is delivered publicly. The focus selects local evidence; it grants no source aut
 current section references, numbered ranges, code identifiers, resolved ordinals and whole authored
 heading names retain precedence. A resolved focus can replace an incidental partial-word heading
 match. Legacy unstructured plans without focus retain the existing fallback. The bounded selector and optional requested outcomes are
-checkpointed under conversation schema v8, while acquired source bodies remain transient.
+checkpointed under conversation schema v9, while acquired source bodies remain transient.
 With projection revision 2, the synthesis model view contains only each source's `id`, `title`, `status`, exact projected `text`,
 `truncated` and `projection_truncated`, plus `reason` for a non-success result. The host retains the
 original source, URL, digests, read offsets, projection allocation and exact span proof for citations
@@ -1006,12 +1046,32 @@ before contact and rechecks current authority at network and consumption boundar
 retries, discovered links, general web search, browser rendering and durable source storage are
 outside this profile. Restart uncertainty cannot authorize another source attempt.
 
-With research enabled, the native request deadline is 300 seconds, the edge waits at most 310
-seconds for that result, and the whole adaptive turn has a 480-second ceiling. The research relay
-has 150 seconds, including a 20-second delivered-plan gate and a 70-second source-worker bound
-plus cleanup. Ordinary conversation retains its 90-second request and 180-second turn limits;
-each model call retains the selected profile timeout. These ceilings do not extend event
-eligibility: the default 300-second event lifetime can still refuse late consumption or settlement.
+The paired operator ceilings are selected from one shared owner:
+
+| Mode | Native request | Edge pipe result | Whole turn through delivery |
+| --- | --- | --- | --- |
+| Documentation | 15 seconds | 90 seconds | 180 seconds |
+| Conversation | 750 seconds | 760 seconds | 810 seconds |
+| Catalogue research | 900 seconds | 910 seconds | 960 seconds |
+
+Each model call retains its selected profile timeout. The research relay retains 150 seconds,
+including a 20-second delivered-plan gate and a 70-second source-worker bound plus cleanup.
+The whole-turn deadline is captured before binding or acknowledgement and uses monotonic time
+thereafter. It covers history, native/model waits, writer-lock waiting, final message parts and
+cosmetic effects. Every ceiling is capped by remaining event lifetime: the default 300-second
+policy lifetime still limits a long request. Expiry before a claim sends nothing; cancellation
+after a claim retains an unknown effect. Expiry cannot open a second terminal attempt.
+
+The context driver preserves the native result and reports a separate typed stop. Discord renders
+permission denial (403), unavailable history, disabled history and exhausted budgets distinctly;
+an unrelated native clarification remains intact. The exact history-age cutoff is inclusive for
+eager history, pages and reply anchors.
+
+If every selected web source fails, the host settles the existing unverified-web notice directly
+after the gated reads. A successful local source does not override that veto. This path requires
+no synthesis or checkback generation. Late review/correction budget failures retain the public
+`budget` reason; invalid model output reports `model_protocol`. The conversation Pattern is
+revision 9; rebuild the paired images together.
 Live Discord/model/source deployment and host-specific extraction qualification remain separate
 operator evidence obligations in [State of Work](../../state-of-the-work.md#composition-portfolio-delivery).
 

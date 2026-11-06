@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import time
 from typing import Any
 from unittest.mock import AsyncMock, Mock
@@ -42,13 +43,13 @@ def configured(*, elevated_human_role_ids: tuple[str, ...] = ()) -> OnboardingSe
 
 
 def rest_mock(service: OnboardingService) -> Mock:
-    assert isinstance(service.rest, Mock)
-    return service.rest
+    assert isinstance(service.effects, Mock)
+    return service.effects
 
 
 def interaction(service: OnboardingService, *, private: bool = False) -> Any:
     value = Mock(spec=discord.Interaction)
-    value.application_id = int(service.rest.application_id)
+    value.application_id = int(service.effects.application_id)
     value.guild_id = int(service.profile.guild_id)
     value.channel_id = int(service.profile.channel_id)
     value.id = 900000000000000009
@@ -61,7 +62,7 @@ def interaction(service: OnboardingService, *, private: bool = False) -> Any:
     value.message.id = int(service.profile.panel_message_id)
     value.message.guild = Mock(id=value.guild_id)
     value.message.channel = Mock(id=value.channel_id)
-    value.message.author = Mock(id=int(service.rest.bot_user_id), bot=True)
+    value.message.author = Mock(id=int(service.effects.bot_user_id), bot=True)
     value.message.webhook_id = None
     value.message.flags = Mock(ephemeral=private)
     value.response = Mock()
@@ -381,3 +382,31 @@ async def test_bot_baseline_and_guild_binding_override_human_role_exemptions() -
     with pytest.raises(ValueError, match="onboarding_member_binding"):
         await service.ensure_base_role(member, event_id="900000000000000010")
     assert rest_mock(service).ensure_member_role.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_actual_introduction_button_retires_before_effect_dependencies_close() -> None:
+    service = configured()
+    observed = interaction(service, private=True)
+    started = asyncio.Event()
+    retired: list[str] = []
+
+    async def publish(*_args: Any, **_kwargs: Any) -> EffectResult:
+        started.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            retired.append("effect")
+        return EffectResult(status="succeeded")
+
+    rest_mock(service).publish_introduction.side_effect = publish
+    view = _ConfirmationView(service, observed.user.id, time.monotonic() + 300, Introduction(()))
+    callback = asyncio.create_task(click(view, observed, 0))
+    async with asyncio.timeout(2):
+        await started.wait()
+    await service.tasks.close()
+    assert callback.cancelled()
+    assert retired == ["effect"]
+    observed.edit_original_response.assert_not_awaited()
+    with pytest.raises(asyncio.CancelledError):
+        await click(view, observed, 0)

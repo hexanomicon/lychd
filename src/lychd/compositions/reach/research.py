@@ -353,7 +353,7 @@ def synthesis_projection(
     agent_subject_id: str | None = None,
     task_requirements: TaskRequirements | None = None,
 ) -> SynthesisProjection:
-    """Budget one exact model view while retaining the full source/projection receipt locally."""
+    """Keep question time fixed while budgeting evidence and retaining its full local projection receipt."""
     evidence_scope = {
         "version": "public-text-v1",
         "source_authority": "public_reference_text",
@@ -426,6 +426,7 @@ def synthesis_projection(
         prompt = canonical_json(
             {
                 "question": request.event.question,
+                "request_occurred_at": request.event.occurred_at.isoformat(),
                 "reference_hints": reference_hints,
                 **(
                     {
@@ -625,6 +626,19 @@ def _unavailable_notices(sources: tuple[SourceReadResult, ...]) -> list[str]:
     ]
 
 
+def research_abstention(sources: tuple[SourceReadResult, ...]) -> ResearchAnswer | None:
+    """Resolve the host's all-web-failed rule without depending on model output."""
+    if len({source.id for source in sources}) != len(sources):
+        msg = "conversation_research_citations"
+        raise ValueError(msg)
+    web_sources = tuple(source for source in sources if source.id.startswith("web:"))
+    if web_sources and not any(source.status == "ok" for source in web_sources):
+        return ResearchAnswer(
+            status="clarify", text="\n\n".join([UNVERIFIED_WEB_NOTICE, *_unavailable_notices(sources)])
+        )
+    return None
+
+
 def parse_research_answer(
     output: str,
     sources: tuple[SourceReadResult, ...],
@@ -635,14 +649,9 @@ def parse_research_answer(
     """Validate raw shape, render simple link labels, then fence unsupported prose and citations."""
     value = strict_json(output.encode("utf-8"))
     decision = _ResearchDecision.model_validate_json(canonical_json(value))
-    if len({source.id for source in sources}) != len(sources):
-        msg = "conversation_research_citations"
-        raise ValueError(msg)
-    web_sources = tuple(source for source in sources if source.id.startswith("web:"))
-    if web_sources and not any(source.status == "ok" for source in web_sources):
-        return ResearchAnswer(
-            status="clarify", text="\n\n".join([UNVERIFIED_WEB_NOTICE, *_unavailable_notices(sources)])
-        )
+    abstention = research_abstention(sources)
+    if abstention is not None:
+        return abstention
     decision = decision.model_copy(update={"text": _simple_inline_link_labels(decision.text)})
     if acknowledged_plan is not None and " ".join(decision.text.split()) == " ".join(acknowledged_plan.split()):
         msg = "conversation_research_answer"

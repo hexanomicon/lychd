@@ -2282,12 +2282,28 @@ places, resolver custody, expiry/revocation and cumulative attempts. Its content
 journal reserves stable event/source attempts before contact and fences uncertain repetition.
 The explicit source-image builder copies a bounded, fingerprinted public CPython closure onto
 the selected Core image; building it supplies no new host-qualification receipt. Research uses
-300-second native requests, a 310-second edge response bound and a 480-second whole-turn ceiling;
-ordinary conversation retains 90-second requests and 180-second turns. These ceilings do not
-extend the policy's event lifetime. This is catalogue Fetch/Extract and local synthesis, with
+900-second native requests, a 910-second edge response bound and a 960-second whole-turn ceiling;
+ordinary conversation uses 750/760/810 seconds and documentation uses 15/90/180 seconds.
+One shared selector owns these ceilings. Each turn captures a monotonic lifetime before binding
+and acknowledgement, capped by remaining policy event lifetime through final delivery. This is catalogue Fetch/Extract and local synthesis, with
 no general Search, browser, redirects, retries, discovered-link traversal or durable source
 storage. Its source, protocol and authored hostile/positive cases do not yet establish a newly
 qualified live deployment.
+
+The operator turn now owns its progress confirmation, terminal attempt and outcome independently
+of worker capacity. A neutral typed history stop preserves the native result; the Discord edge
+renders the reason without overwriting an unrelated clarification. Late review/correction overflow
+retains `budget`, and all-selected-web failure settles the existing host notice without synthesis
+or review. The conversation Pattern advances to revision 9. Narrow effect ports separate reply,
+onboarding, publication, inspection and local administration authority. A generation task owner
+retires business work before REST and journal release, with process fail-stop if cancellation
+cannot complete. The JSON effect journal keeps its format and replay fences while validating
+once into volatile key/scope indexes under an exclusive generation lease. Restart still reads
+the retained receipts; there is no retention bound or durable native outbox. Host supervision
+now observes every required diagnostic drain and fails the generation if drainage is lost.
+[Native outcome and budget regressions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_operator_redesign.py)
+and [lifecycle, authority and journal regressions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_operator_redesign.py)
+supply authored evidence for these boundaries, without qualifying a live deployment.
 
 Independently selected local publications still carry already authorized producer text through
 an edge-only private queue to exact guild channels. Offline and mock-HTTP cases do not qualify

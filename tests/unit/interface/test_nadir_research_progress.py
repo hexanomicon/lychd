@@ -14,6 +14,7 @@ import pytest
 from lychd.compositions.reach.operator_wire import ReachWorkerResult, protocol_bytes
 from lychd.compositions.reach.research_wire import ReachResearchProgress
 from lychd.interface.discord import live
+from lychd.interface.discord.ports import ReplyEffects
 from lychd.interface.discord.rest import DiscordRestError, EffectResult
 from tests.unit.interface.test_nadir_dialogue import direct_message, policy, worker
 
@@ -79,7 +80,12 @@ async def test_research_progress_is_acknowledged_only_after_same_dm_delivery(
     pipe = live.PipeWorker(reader, readiness)
     rest = Mock(bind_direct_channel=AsyncMock(), send_message=AsyncMock(side_effect=send))
     service = live.ReachService(
-        configured, pipe, rest, admin_users=frozenset(), history_enabled=False, conversation=True
+        configured,
+        pipe,
+        ReplyEffects(rest, configured),
+        admin_users=frozenset(),
+        history_enabled=False,
+        conversation=True,
     )
     cog = live.ReachCog(service)
     with monkeypatch.context() as scoped:
@@ -105,12 +111,11 @@ async def test_foreign_progress_never_reaches_discord_and_fences_pipe(monkeypatc
     )
     pipe = live.PipeWorker(reader, readiness)
     callback = AsyncMock(return_value=True)
-    pipe.progress = callback
     event = live.event_from_message(message, configured, conversation=True)
     assert event is not None
     with monkeypatch.context() as scoped:
         scoped.setattr(live.sys, "stdout", SimpleNamespace(buffer=Mock()))
         with pytest.raises(ValueError, match="worker_progress_binding"):
-            await pipe.request(event, ())
+            await pipe.request(event, (), progress=callback)
     callback.assert_not_awaited()
     assert not pipe.available

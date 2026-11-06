@@ -10,7 +10,6 @@ import pytest
 from pydantic import ValidationError
 
 from lychd.compositions.reach.conversation_workflow import (
-    HistoryState,
     conversation_agent_spec,
     conversation_prompt,
     parse_conversation_output,
@@ -22,7 +21,7 @@ from lychd.compositions.reach.operator_model_wire import (
     canonical_json,
     validate_generation_payload,
 )
-from lychd.compositions.reach.operator_wire import ReachHistoryEntry
+from lychd.compositions.reach.operator_wire import HistoryState, ReachHistoryEntry
 from tests.unit.compositions.test_reach_documents import NOW, make_corpus, make_request
 
 
@@ -36,36 +35,16 @@ def profile() -> OperatorConversationProfile:
 def test_text_decisions_preserve_bounded_content(kind: str) -> None:
     text = "x" * 8000
     result = parse_conversation_output(
-        canonical_json({"kind": kind, "text": text}), history_state="exhausted", context_round=2
+        canonical_json({"kind": kind, "text": text}),
     )
     assert result.status == ("conversation" if kind == "answer" else "clarify")
     assert result.text == text
 
 
-@pytest.mark.parametrize("context_round", [0, 1])
-def test_read_more_only_hands_off_when_another_round_is_available(context_round: int) -> None:
+def test_read_more_preserves_the_decision_for_the_bounded_context_driver() -> None:
     reason = "r" * 500
-    result = parse_conversation_output(
-        canonical_json({"kind": "read_more", "text": reason}), history_state="more", context_round=context_round
-    )
+    result = parse_conversation_output(canonical_json({"kind": "read_more", "text": reason}))
     assert (result.status, result.text) == ("need_context", reason)
-
-
-@pytest.mark.parametrize(
-    ("history_state", "context_round"),
-    [("disabled", 0), ("exhausted", 0), ("budget", 1), ("unavailable", 1), ("more", 2)],
-)
-def test_read_more_without_capacity_becomes_visible_clarification(
-    history_state: HistoryState, context_round: int
-) -> None:
-    result = parse_conversation_output(
-        '{"kind":"read_more","text":"Need an earlier message."}',
-        history_state=history_state,
-        context_round=context_round,
-    )
-    assert result.status == "clarify"
-    assert "quote" in result.text
-    assert "Need an earlier message." not in result.text
 
 
 @pytest.mark.parametrize(
@@ -94,7 +73,9 @@ def test_malformed_or_expanded_decisions_are_rejected(output: str) -> None:
         ValueError,
         match=r"conversation_|validation error|Expecting|Extra data|duplicate_key|invalid_json|model_generation_binding",
     ):
-        parse_conversation_output(output, history_state="more", context_round=0)
+        parse_conversation_output(
+            output,
+        )
 
 
 @pytest.mark.parametrize("history_state", ["disabled", "exhausted", "unavailable"])

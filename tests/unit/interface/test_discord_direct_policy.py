@@ -187,7 +187,10 @@ def test_dm_history_retains_conversation_time_and_text_checks(changes: dict[str,
         validate_history(policy(context_message_limit=3).to_reach_policy(), request)
 
 
-def test_dm_history_retains_duplicate_and_budget_checks() -> None:
+def test_dm_history_retains_duplicate_and_budget_checks(monkeypatch: pytest.MonkeyPatch) -> None:
+    from lychd.compositions.reach import documents
+
+    monkeypatch.setattr(documents, "MAX_HISTORY_BYTES", 16_000)
     entry = history_entry()
     request = ReachWorkerRequest(request_id="request", event=event(), history=(entry,))
     with pytest.raises(ValueError, match="history_limit"):

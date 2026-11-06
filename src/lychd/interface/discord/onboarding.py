@@ -9,7 +9,9 @@ from typing import Any, Self
 import discord
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from lychd.interface.discord.rest import DiscordRest, DiscordRestError, EffectResult
+from lychd.interface.discord.lifecycle import EdgeTasks, service_callback
+from lychd.interface.discord.ports import OnboardingEffects
+from lychd.interface.discord.rest import DiscordRestError, EffectResult
 from lychd.interface.discord.schemas import DiscordId
 
 FORM_SECONDS = 300
@@ -95,20 +97,23 @@ async def _notice(interaction: discord.Interaction, text: str) -> None:
 class OnboardingService:
     """Bind UI admission and the existing journaled single-attempt REST adapter."""
 
-    def __init__(self, profile: OnboardingProfile, rest: DiscordRest) -> None:
+    def __init__(
+        self, profile: OnboardingProfile, effects: OnboardingEffects, *, tasks: EdgeTasks | None = None
+    ) -> None:
         """Bind one explicit profile to the authenticated adapter for the same guild."""
-        if profile.guild_id != rest.guild_id:
+        if profile.guild_id != effects.guild_id:
             msg = "onboarding_guild_binding"
             raise ValueError(msg)
         self.profile = profile
-        self.rest = rest
+        self.effects = effects
+        self.tasks = tasks if tasks is not None else EdgeTasks()
 
     def member_allowed(self, member: object) -> bool:
         return isinstance(member, discord.Member) and str(member.guild.id) == self.profile.guild_id
 
     def allowed(self, interaction: discord.Interaction) -> bool:
         return (
-            str(interaction.application_id) == self.rest.application_id
+            str(interaction.application_id) == self.effects.application_id
             and str(interaction.guild_id) == self.profile.guild_id
             and str(interaction.channel_id) == self.profile.channel_id
             and self.member_allowed(interaction.user)
@@ -124,7 +129,7 @@ class OnboardingService:
             and message.guild is not None
             and str(message.guild.id) == self.profile.guild_id
             and str(message.channel.id) == self.profile.channel_id
-            and str(message.author.id) == self.rest.bot_user_id
+            and str(message.author.id) == self.effects.bot_user_id
             and message.author.bot
             and message.webhook_id is None
         )
@@ -145,7 +150,7 @@ class OnboardingService:
         role_id = self.base_role_id(member)
         if role_id is None:
             return EffectResult(status="succeeded", code="community_role_present")
-        return await self.rest.ensure_member_role(str(member.id), role_id, event_id=event_id)
+        return await self.effects.ensure_member_role(str(member.id), role_id, event_id=event_id)
 
 
 class _PrivateView(discord.ui.View):
@@ -155,6 +160,7 @@ class _PrivateView(discord.ui.View):
         self.actor_id = actor_id
         self.expires = expires
 
+    @service_callback
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         allowed = (
             self.service.allowed(interaction)
@@ -167,6 +173,7 @@ class _PrivateView(discord.ui.View):
             await _notice(interaction, _DENIED)
         return allowed
 
+    @service_callback
     async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item[Any]) -> None:
         del error, item
         await _notice(interaction, "The form could not be completed. Open a new form from start-here.")
@@ -180,6 +187,7 @@ class OnboardingPanel(discord.ui.View):
         super().__init__(timeout=None)
         self.service = service
 
+    @service_callback
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if not self.service.panel_allowed(interaction):
             await _notice(interaction, _DENIED)
@@ -189,6 +197,7 @@ class OnboardingPanel(discord.ui.View):
     @discord.ui.button(
         label="Introduce yourself", style=discord.ButtonStyle.primary, custom_id="lychd:onboarding:open:v1"
     )
+    @service_callback
     async def open_form(self, interaction: discord.Interaction, button: discord.ui.Button[Self]) -> None:
         del button
         await interaction.response.send_message(
@@ -198,6 +207,7 @@ class OnboardingPanel(discord.ui.View):
             allowed_mentions=discord.AllowedMentions.none(),
         )
 
+    @service_callback
     async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item[Any]) -> None:
         del error, item
         await _notice(interaction, "The form could not be opened. Try again later.")
@@ -215,12 +225,14 @@ class _SelectionView(_PrivateView):
         max_values=3,
         options=[discord.SelectOption(label=label, value=key) for key, label in INTERESTS.items()],
     )
+    @service_callback
     async def interests_selected(self, interaction: discord.Interaction, select: discord.ui.Select[Self]) -> None:
         draft = Introduction(tuple(select.values))
         self.interests = draft.interests
         await interaction.response.defer()
 
     @discord.ui.button(label="Continue", style=discord.ButtonStyle.primary)
+    @service_callback
     async def continue_form(self, interaction: discord.Interaction, button: discord.ui.Button[Self]) -> None:
         del button
         if self.advanced:
@@ -247,6 +259,7 @@ class _IntroModal(discord.ui.Modal, title="Optional introduction"):
         self.interests = interests
         self.submitted = False
 
+    @service_callback
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         allowed = (
             self.service.allowed(interaction)
@@ -257,6 +270,7 @@ class _IntroModal(discord.ui.Modal, title="Optional introduction"):
             await _notice(interaction, _DENIED)
         return allowed
 
+    @service_callback
     async def on_submit(self, interaction: discord.Interaction) -> None:
         if self.submitted:
             await _notice(interaction, "This introduction is already awaiting confirmation.")
@@ -274,6 +288,7 @@ class _IntroModal(discord.ui.Modal, title="Optional introduction"):
             view=_ConfirmationView(self.service, self.actor_id, self.expires, draft),
         )
 
+    @service_callback
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
         del error
         await _notice(interaction, "The form could not be completed. Open a new form from start-here.")
@@ -286,6 +301,7 @@ class _ConfirmationView(_PrivateView):
         self.attempted = False
 
     @discord.ui.button(label="Publish my introduction", style=discord.ButtonStyle.primary)
+    @service_callback
     async def publish(self, interaction: discord.Interaction, button: discord.ui.Button[Self]) -> None:
         del button
         if self.attempted:
@@ -295,7 +311,7 @@ class _ConfirmationView(_PrivateView):
         self.stop()
         await interaction.response.defer(ephemeral=True, thinking=True)
         try:
-            result = await self.service.rest.publish_introduction(
+            result = await self.service.effects.publish_introduction(
                 self.service.profile.introduction_channel_id,
                 self.draft.text(interaction.user),
                 subject_id=str(interaction.user.id),
@@ -314,6 +330,7 @@ class _ConfirmationView(_PrivateView):
         )
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
+    @service_callback
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button[Self]) -> None:
         del button
         if self.attempted:

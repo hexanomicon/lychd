@@ -17,9 +17,9 @@ from typing import Any, NoReturn, cast
 
 import httpx2
 
-MAX_BODY_BYTES = 49_152
-MAX_FRAME_BYTES = 66_048
-PROCESS_TIMEOUT_SECONDS = 60
+MAX_BODY_BYTES = 1_048_576
+MAX_FRAME_BYTES = 2_097_152
+PROCESS_TIMEOUT_SECONDS = 300
 TERMINATE_TIMEOUT_SECONDS = 2
 _MODEL_PORT = 28000
 _MAX_HTTP_STATUS = 599
@@ -47,8 +47,8 @@ import sys
 import urllib.error
 import urllib.request
 
-BODY_LIMIT = 49152
-FRAME_LIMIT = 66048
+BODY_LIMIT = 1048576
+FRAME_LIMIT = 2097152
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
@@ -85,7 +85,7 @@ try:
     )
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     try:
-        response = opener.open(request, timeout=60)
+        response = opener.open(request, timeout=300)
     except urllib.error.HTTPError as error:
         response = error
     with response:

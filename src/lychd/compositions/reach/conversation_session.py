@@ -8,21 +8,36 @@ acknowledgement through the host research relay's compound operation.
 from __future__ import annotations
 
 import json
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from hashlib import sha256
-from typing import Protocol
+from typing import Literal, Protocol
 
+from lychd.compositions.reach.operator_limits import TurnDeadline
 from lychd.compositions.reach.operator_wire import (
     HistoryState,
     ReachHistoryEntry,
     ReachWorkerRequest,
     ReachWorkerResult,
 )
+from lychd.compositions.reach.research_wire import ReachResearchProgress
 from lychd.compositions.reach.schemas import ReachEvent
 
 MAX_REQUESTS = 512
 MAX_CONTEXT_PAGES = 3
 _LAST_CONTEXT_ROUND = 2
+type ContextStop = Literal[
+    "permission_denied", "unavailable", "disabled", "exhausted", "budget", "no_progress", "round_limit"
+]
+type ProgressHandler = Callable[[ReachResearchProgress], Awaitable[bool]]
+
+
+@dataclass(frozen=True)
+class ContextTurnOutcome:
+    """An unchanged native result and an optional reason its history request stopped."""
+
+    result: ReachWorkerResult
+    stop: ContextStop | None = None
 
 
 def request_digest(request: ReachWorkerRequest) -> str:
@@ -141,6 +156,8 @@ class WorkerRequester(Protocol):
         reply_to_event_id: str | None = None,
         reply_anchor: ReachHistoryEntry | None = None,
         continuation_anchor: ReachHistoryEntry | None = None,
+        progress: ProgressHandler | None = None,
+        deadline: TurnDeadline | None = None,
     ) -> ReachWorkerResult:
         """Return the settled result bound to this request and context round."""
         ...
@@ -154,11 +171,15 @@ async def drive_context_turn(
     reply_to_event_id: str | None = None,
     reply_anchor: ReachHistoryEntry | None = None,
     continuation_anchor: ReachHistoryEntry | None = None,
-) -> ReachWorkerResult:
+    progress: ProgressHandler | None = None,
+    deadline: TurnDeadline | None = None,
+) -> ContextTurnOutcome:
     """Bound page calls for all adapters; request older context only after a native decision."""
     result: ReachWorkerResult | None = None
     pages_read = 0
     for context_round in range(3):
+        if deadline is not None:
+            deadline.check()
         previous = pager.entries
         defer_page = context_round == 0 and event.trigger in {"reply", "followup"}
         if not defer_page:
@@ -171,12 +192,7 @@ async def drive_context_turn(
             "budget" if pager.state == "more" and pages_read >= MAX_CONTEXT_PAGES else pager.state
         )
         if result is not None and pager.entries == previous:
-            return result.model_copy(
-                update={
-                    "status": "clarify",
-                    "text": "I couldn't load more relevant messages. Please quote the missing material or clarify your question.",
-                }
-            )
+            return ContextTurnOutcome(result, "no_progress" if effective_state == "more" else effective_state)
         result = await worker.request(
             event,
             pager.entries,
@@ -185,22 +201,14 @@ async def drive_context_turn(
             reply_to_event_id=reply_to_event_id,
             reply_anchor=reply_anchor,
             continuation_anchor=continuation_anchor,
+            progress=progress,
+            deadline=deadline,
         )
         if result.status != "need_context":
-            return result
+            return ContextTurnOutcome(result)
         if effective_state != "more":
-            return result.model_copy(
-                update={
-                    "status": "clarify",
-                    "text": "I'm missing relevant context. Please quote the message or clarify your question.",
-                }
-            )
+            return ContextTurnOutcome(result, effective_state)
     if result is None:
         msg = "context_result_missing"
         raise ValueError(msg)
-    return result.model_copy(
-        update={
-            "status": "clarify",
-            "text": "I've reached the history limit. Please quote the relevant part of the conversation.",
-        }
-    )
+    return ContextTurnOutcome(result, "round_limit")

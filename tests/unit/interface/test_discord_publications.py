@@ -12,6 +12,7 @@ from uuid import uuid4
 import httpx2
 import pytest
 
+from lychd.interface.discord.ports import PublicationEffects
 from lychd.interface.discord.publications import Publication, PublicationQueue, queue_publication
 from lychd.interface.discord.rest import DiscordRest, DiscordRestError, EffectJournal, EffectResult
 
@@ -35,8 +36,8 @@ async def test_publication_receipt_fences_repeat_and_hides_body(
     queue, identifier = queued(tmp_path)
     rest = Mock(application_id="111111111111111111", journal=EffectJournal(tmp_path / "effects"))
     rest.write = AsyncMock(return_value=EffectResult(status=status))
-    assert await queue.process_once(rest) == 1
-    assert await queue.process_once(rest) == 0
+    assert await queue.process_once(PublicationEffects(rest, allowed_channels=frozenset({CHANNEL}))) == 1
+    assert await queue.process_once(PublicationEffects(rest, allowed_channels=frozenset({CHANNEL}))) == 0
     rest.write.assert_awaited_once()
     assert rest.write.await_args.args[2]["flags"] == 4
     receipt = json.loads((queue.root / f"{identifier}.receipt").read_text())
@@ -49,7 +50,12 @@ async def test_publication_receipt_fences_repeat_and_hides_body(
 async def test_expiry_and_destination_are_checked_before_http(tmp_path: Path) -> None:
     queue, identifier = queued(tmp_path)
     rest = Mock(application_id="101", journal=EffectJournal(tmp_path / "effects"), write=AsyncMock())
-    assert await queue.process_once(rest, now=datetime.now(UTC) + timedelta(hours=2)) == 1
+    assert (
+        await queue.process_once(
+            PublicationEffects(rest, allowed_channels=frozenset({CHANNEL})), now=datetime.now(UTC) + timedelta(hours=2)
+        )
+        == 1
+    )
     rest.write.assert_not_awaited()
     assert json.loads((queue.root / f"{identifier}.receipt").read_text())["code"] == "publication_expired"
 
@@ -59,7 +65,7 @@ async def test_wrong_destination_is_rejected_without_http(tmp_path: Path) -> Non
     original, identifier = queued(tmp_path)
     queue = PublicationQueue(original.root, allowed_channels=frozenset({"555555555555555555"}))
     rest = Mock(application_id="101", journal=EffectJournal(tmp_path / "effects"), write=AsyncMock())
-    assert await queue.process_once(rest) == 1
+    assert await queue.process_once(PublicationEffects(rest, allowed_channels=frozenset({CHANNEL}))) == 1
     rest.write.assert_not_awaited()
     assert json.loads((queue.root / f"{identifier}.receipt").read_text())["code"] == "publication_scope"
 
@@ -140,7 +146,7 @@ async def test_consumer_rejects_fifo_body_without_http(tmp_path: Path) -> None:
     os.mkfifo(body, 0o600)
     rest = Mock(write=AsyncMock())
     with pytest.raises(ValueError, match="publication_permissions"):
-        await queue.process_once(rest)
+        await queue.process_once(PublicationEffects(rest, allowed_channels=frozenset({CHANNEL})))
     rest.write.assert_not_awaited()
 
 
@@ -191,7 +197,7 @@ async def test_each_effect_refreshes_expiry_clock(tmp_path: Path, monkeypatch: p
         journal=EffectJournal(tmp_path / "effects"),
         write=AsyncMock(return_value=EffectResult(status="succeeded")),
     )
-    assert await queue.process_once(rest) == 2
+    assert await queue.process_once(PublicationEffects(rest, allowed_channels=frozenset({CHANNEL}))) == 2
     rest.write.assert_awaited_once()
 
 
@@ -238,13 +244,16 @@ async def test_crash_after_transport_settlement_preserves_prior_result_before_ne
         with monkeypatch.context() as interrupted:
             interrupted.setattr(PublicationQueue, "_receipt", staticmethod(crash))
             with pytest.raises(OSError, match="Crash before queue receipt"):
-                await queue.process_once(rest)
+                await queue.process_once(PublicationEffects(rest, allowed_channels=frozenset({CHANNEL})))
         assert journal.inspect()[0].status == status
         if boundary == "destination_removed":
             queue = PublicationQueue(queue.root, allowed_channels=frozenset({"555555555555555555"}))
         review_time = datetime.now(UTC) + (timedelta(hours=2) if boundary == "expired" else timedelta(0))
-        assert await queue.process_once(rest, now=review_time) == 1
-        assert await queue.process_once(rest) == 0
+        assert (
+            await queue.process_once(PublicationEffects(rest, allowed_channels=frozenset({CHANNEL})), now=review_time)
+            == 1
+        )
+        assert await queue.process_once(PublicationEffects(rest, allowed_channels=frozenset({CHANNEL}))) == 0
     assert posts == 1
     receipt = json.loads((queue.root / f"{identifier}.receipt").read_text())
     assert receipt["status"] == status
@@ -283,7 +292,12 @@ async def test_partial_manifest_write_never_publishes_a_poisoned_queue_entry(
         journal=EffectJournal(tmp_path / "effects"),
         write=AsyncMock(return_value=EffectResult(status="succeeded")),
     )
-    assert await PublicationQueue(root, allowed_channels=frozenset({CHANNEL})).process_once(rest) == 1
+    assert (
+        await PublicationQueue(root, allowed_channels=frozenset({CHANNEL})).process_once(
+            PublicationEffects(rest, allowed_channels=frozenset({CHANNEL}))
+        )
+        == 1
+    )
     rest.write.assert_awaited_once()
     assert await asyncio.to_thread((root / f"{valid}.receipt").is_file)
 
@@ -299,7 +313,7 @@ async def test_pending_alias_from_crash_after_link_is_retired_before_final_recor
         journal=EffectJournal(tmp_path / "effects"),
         write=AsyncMock(return_value=EffectResult(status="succeeded")),
     )
-    assert await queue.process_once(rest) == 1
+    assert await queue.process_once(PublicationEffects(rest, allowed_channels=frozenset({CHANNEL}))) == 1
     rest.write.assert_awaited_once()
     assert not await asyncio.to_thread(pending.exists)
     assert await asyncio.to_thread((queue.root / f"{identifier}.receipt").is_file)

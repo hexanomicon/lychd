@@ -11,6 +11,7 @@ import pytest
 
 from lychd.compositions.reach.operator_wire import ReachWorkerResult
 from lychd.interface.discord.live import ReachCog, ReachService
+from lychd.interface.discord.ports import ReplyEffects
 from lychd.interface.discord.rest import DiscordRestError, EffectResult
 from tests.unit.compositions.test_reach_expressions import expressions
 from tests.unit.interface.test_nadir_dialogue import direct_message, policy, worker
@@ -68,7 +69,14 @@ async def test_expression_order_and_cosmetic_failures_preserve_the_answer(failur
         add_reaction=AsyncMock(side_effect=add_reaction),
         send_gif=AsyncMock(side_effect=send_gif),
     )
-    service = ReachService(configured, native, rest, admin_users=frozenset(), history_enabled=False, conversation=True)
+    service = ReachService(
+        configured,
+        native,
+        ReplyEffects(rest, configured),
+        admin_users=frozenset(),
+        history_enabled=False,
+        conversation=True,
+    )
     cog = ReachCog(service)
     await cog.on_message(message)
     await cog.on_message(message)
@@ -108,7 +116,14 @@ async def test_disabled_or_command_expressions_do_not_publish_any_decorations(*,
         send_message=AsyncMock(return_value=EffectResult(status="succeeded")),
         edit_interaction_original=AsyncMock(return_value=EffectResult(status="succeeded")),
     )
-    service = ReachService(configured, native, rest, admin_users=frozenset(), history_enabled=False, conversation=True)
+    service = ReachService(
+        configured,
+        native,
+        ReplyEffects(rest, configured),
+        admin_users=frozenset(),
+        history_enabled=False,
+        conversation=True,
+    )
     cog = ReachCog(service)
     if slash:
         interaction = Mock(spec=discord.Interaction)

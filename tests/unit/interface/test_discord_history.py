@@ -139,7 +139,7 @@ async def test_three_pages_reuse_cumulative_cache_and_cursor_by_oldest_raw_snowf
         assert call.kwargs["limit"] == 6
         assert isinstance(call.kwargs["before"], discord.Object)
         assert call.kwargs["before"].id == before
-        assert call.kwargs["after"] == NOW - timedelta(seconds=600)
+        assert call.kwargs["after"].id == discord.utils.time_snowflake(NOW - timedelta(seconds=600)) - 1
         assert call.kwargs["oldest_first"] is False
 
 
@@ -168,15 +168,19 @@ async def test_anchor_can_exhaust_count_without_fetching() -> None:
 @pytest.mark.asyncio
 async def test_utf8_byte_budget_includes_anchor_and_keeps_bounded_whole_excerpts() -> None:
     pinned = anchor(text="💠" * 2000)
-    sdk = channel([message(999 - index, text="ž" * 2500) for index in range(6)])
-    pager = HistoryPager(policy(), event(), sdk, enabled=True, conversation=True, anchor=pinned)
-    await pager.next_page()
-    assert len(snapshot(pager)) == 2
+    pages = [
+        [message(identity, text="💠" * 2000) for identity in range(start, start - 16, -1)] for start in (999, 983, 967)
+    ]
+    sdk = channel(*pages)
+    pager = HistoryPager(policy(), event(), sdk, enabled=True, conversation=True, anchor=pinned, page_size=16)
+    for _ in range(3):
+        await pager.next_page()
+    assert len(snapshot(pager)) == 48
     assert all(len(entry.text) == 2000 for entry in snapshot(pager))
-    assert sum(len(entry.text.encode("utf-8")) for entry in (*snapshot(pager), pinned)) == 16_000
+    assert sum(len(entry.text.encode("utf-8")) for entry in (*snapshot(pager), pinned)) == 392_000
     assert pager.state == "budget"
     await pager.next_page()
-    sdk.history.assert_called_once()
+    assert sdk.history.call_count == 3
 
 
 @pytest.mark.asyncio
@@ -184,7 +188,6 @@ async def test_utf8_byte_budget_includes_anchor_and_keeps_bounded_whole_excerpts
     "rejected",
     [
         {"channel_id": "88"},
-        {"age": 600},
         {"age": 601},
         {"age": 0},
         {"age": -1},
@@ -243,14 +246,14 @@ async def test_duplicate_only_page_stops_without_refetching_or_losing_cache() ->
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("status", [403, 500])
-async def test_permission_or_api_error_is_unavailable_and_retains_previous_cache(status: int) -> None:
+async def test_permission_or_api_error_has_a_closed_state_and_retains_previous_cache(status: int) -> None:
     error = discord.HTTPException(Mock(status=status, reason="failure"), "private foreign payload")
     sdk = channel([message(identity) for identity in range(999, 993, -1)], error)
     pager = HistoryPager(policy(), event(), sdk, enabled=True, conversation=True)
     await pager.next_page()
     cached = snapshot(pager)
     await pager.next_page()
-    assert pager.state == "unavailable"
+    assert pager.state == ("permission_denied" if status == 403 else "unavailable")
     assert snapshot(pager) == cached
     await pager.next_page()
     assert sdk.history.call_count == 2

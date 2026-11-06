@@ -3,18 +3,70 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta
+from http import HTTPStatus
 
 import discord
 
 from lychd.compositions.reach.conversation_session import MAX_CONTEXT_PAGES
-from lychd.compositions.reach.operator_wire import HistoryState, ReachHistoryEntry
+from lychd.compositions.reach.operator_wire import MAX_HISTORY_BYTES, HistoryState, ReachHistoryEntry
 from lychd.compositions.reach.schemas import ReachEvent
 from lychd.interface.discord.schemas import DiscordPolicy
 
-MAX_HISTORY_BYTES = 16_384
 HISTORY_PAGE_SIZE = 6
 MAX_HISTORY_PAGE_SIZE = 16
+_HTTP_FAILURES: dict[int, HistoryState] = {HTTPStatus.FORBIDDEN: "permission_denied"}
+
+
+def history_lower_bound(cutoff: datetime) -> discord.Object:
+    """Include the cutoff millisecond; normalized observations enforce the exact age."""
+    # SDK datetime-after uses the highest snowflake in the millisecond and excludes its messages.
+    return discord.Object(id=discord.utils.time_snowflake(cutoff) - 1)
+
+
+def _subject_allowed(
+    policy: DiscordPolicy, event: ReachEvent, subject_id: str, *, bot: bool, conversation: bool
+) -> bool:
+    if bot and not (conversation and subject_id == policy.bot_user_id):
+        return False
+    return event.space_id is not None or subject_id in {event.subject_id, policy.bot_user_id}
+
+
+def history_entry(
+    policy: DiscordPolicy, event: ReachEvent, message: discord.Message, *, conversation: bool
+) -> ReachHistoryEntry | None:
+    """Normalize one authenticated observation consistently for every history strategy."""
+    cutoff = event.occurred_at - timedelta(seconds=policy.context_max_age_seconds)
+    if (
+        str(message.channel.id) != event.conversation_id
+        or not cutoff <= message.created_at < event.occurred_at
+        or message.webhook_id is not None
+        or not _subject_allowed(
+            policy, event, str(message.author.id), bot=message.author.bot, conversation=conversation
+        )
+        or not message.content
+    ):
+        return None
+    return ReachHistoryEntry(
+        subject_id=str(message.author.id),
+        subject_label=str(message.author.display_name).strip()[:80] or None,
+        event_id=str(message.id),
+        conversation_id=str(message.channel.id),
+        text=message.content[:2000],
+        occurred_at=message.created_at,
+    )
+
+
+def anchor_allowed(policy: DiscordPolicy, event: ReachEvent, anchor: ReachHistoryEntry, *, conversation: bool) -> bool:
+    cutoff = event.occurred_at - timedelta(seconds=policy.context_max_age_seconds)
+    return (
+        anchor.conversation_id == event.conversation_id
+        and anchor.event_id != event.event_id
+        and cutoff <= anchor.occurred_at < event.occurred_at
+        and _subject_allowed(
+            policy, event, anchor.subject_id, bot=anchor.subject_id == policy.bot_user_id, conversation=conversation
+        )
+    )
 
 
 class HistoryPager:
@@ -60,12 +112,7 @@ class HistoryPager:
             self.state = "unavailable"
             return
         if anchor is not None:
-            if (
-                anchor.conversation_id != event.conversation_id
-                or anchor.event_id == event.event_id
-                or not self._cutoff < anchor.occurred_at < event.occurred_at
-                or not self._subject_allowed(anchor.subject_id, bot=anchor.subject_id == policy.bot_user_id)
-            ):
+            if not anchor_allowed(policy, event, anchor, conversation=conversation):
                 self.state = "unavailable"
                 return
             self._bytes = len(anchor.text.encode("utf-8"))
@@ -77,35 +124,12 @@ class HistoryPager:
             if self._anchor_count >= policy.context_message_limit or self._bytes >= MAX_HISTORY_BYTES:
                 self.state = "budget"
 
-    def _subject_allowed(self, subject_id: str, *, bot: bool) -> bool:
-        if bot and not (self._conversation and subject_id == self._policy.bot_user_id):
-            return False
-        return self._event.space_id is not None or subject_id in {
-            self._event.subject_id,
-            self._policy.bot_user_id,
-        }
-
     def _entry(self, message: discord.Message) -> ReachHistoryEntry | None:
         identity = str(message.id)
         if identity in self._seen:
             return None
         self._seen.add(identity)
-        if (
-            str(message.channel.id) != self._event.conversation_id
-            or not self._cutoff < message.created_at < self._event.occurred_at
-            or message.webhook_id is not None
-            or not self._subject_allowed(str(message.author.id), bot=message.author.bot)
-            or not message.content
-        ):
-            return None
-        return ReachHistoryEntry(
-            subject_id=str(message.author.id),
-            subject_label=str(message.author.display_name).strip()[:80] or None,
-            event_id=identity,
-            conversation_id=str(message.channel.id),
-            text=message.content[:2000],
-            occurred_at=message.created_at,
-        )
+        return history_entry(self._policy, self._event, message, conversation=self._conversation)
 
     def _admit_page(self, raw: list[discord.Message]) -> bool:
         """Merge one observed page under the cumulative count and byte budget."""
@@ -129,6 +153,16 @@ class HistoryPager:
         )
         return budget
 
+    async def _read_page(self) -> list[discord.Message]:
+        raw: list[discord.Message] = []
+        async for message in self._channel.history(
+            limit=self._page_size, before=self._cursor, after=history_lower_bound(self._cutoff), oldest_first=False
+        ):
+            raw.append(message)
+            if len(raw) >= self._page_size:
+                break
+        return raw
+
     async def next_page(self) -> None:
         """Extend cached history once, preserving explicit exhaustion and failure states."""
         async with self._lock:
@@ -138,18 +172,12 @@ class HistoryPager:
                 self.state = "budget"
                 return
             self._pages += 1
-            raw: list[discord.Message] = []
             try:
-                async for message in self._channel.history(
-                    limit=self._page_size,
-                    before=self._cursor,
-                    after=self._cutoff,
-                    oldest_first=False,
-                ):
-                    raw.append(message)
-                    if len(raw) >= self._page_size:
-                        break
-            except (discord.HTTPException, OSError, TimeoutError):
+                raw = await self._read_page()
+            except discord.HTTPException as error:
+                self.state = _HTTP_FAILURES.get(error.status, "unavailable")
+                return
+            except (OSError, TimeoutError):
                 self.state = "unavailable"
                 return
 

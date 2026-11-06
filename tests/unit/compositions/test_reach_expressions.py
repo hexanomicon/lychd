@@ -86,17 +86,17 @@ def test_prompt_exposes_ids_and_descriptions_but_no_media_url_or_command_choices
 )
 def test_forged_or_nonterminal_decorations_are_rejected(decision: dict[str, str]) -> None:
     with pytest.raises(ValueError, match=r"conversation_expression|validation error"):
-        parse_conversation_output(
-            canonical_json(decision), history_state="more", context_round=0, expressions=expressions()
-        )
+        parse_conversation_output(canonical_json(decision), expressions=expressions())
 
 
 def test_disabled_expressions_refuse_choices_but_preserve_plain_answers() -> None:
     with pytest.raises(ValueError, match="conversation_expression"):
         parse_conversation_output(
-            '{"kind":"answer","text":"Hello.","reaction":"👍"}', history_state="exhausted", context_round=0
+            '{"kind":"answer","text":"Hello.","reaction":"👍"}',
         )
-    result = parse_conversation_output('{"kind":"answer","text":"Hello."}', history_state="exhausted", context_round=0)
+    result = parse_conversation_output(
+        '{"kind":"answer","text":"Hello."}',
+    )
     assert (result.status, result.text, result.reaction, result.gif_id) == ("conversation", "Hello.", None, None)
     with pytest.raises(ValidationError, match="result_expression"):
         ReachWorkerResult(

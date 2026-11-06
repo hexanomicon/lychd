@@ -123,7 +123,7 @@ async def test_only_closed_argv_and_bounded_stdin_carry_request(
         ("GET", "http://127.0.0.1:28000/health", {"X-API-Key": "private"}, b""),
         ("GET", "http://127.0.0.1:28000/health", {"X-Unadmitted": "private"}, b""),
         ("GET", "http://127.0.0.1:28000/health", {}, b"private"),
-        ("POST", "http://127.0.0.1:28000/v1/chat/completions", {}, b"x" * 49_153),
+        ("POST", "http://127.0.0.1:28000/v1/chat/completions", {}, b"x" * (podman.MAX_BODY_BYTES + 1)),
     ],
 )
 @pytest.mark.asyncio
@@ -168,7 +168,7 @@ async def test_streamed_request_stops_at_cumulative_limit_before_spawn() -> None
         frame(status=99),
         frame(status=600),
         frame(status=302),
-        frame(body=b"x" * 49_153),
+        frame(body=b"x" * (podman.MAX_BODY_BYTES + 1)),
         b" " * 66_049,
     ],
 )

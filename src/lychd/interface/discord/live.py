@@ -11,8 +11,6 @@ import re
 import stat
 import sys
 from collections.abc import Awaitable, Callable
-from contextlib import suppress
-from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal, NoReturn, cast
@@ -21,9 +19,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from lychd.compositions.reach.conversation_session import drive_context_turn
+from lychd.compositions.reach.conversation_session import ContextTurnOutcome, ProgressHandler, drive_context_turn
 from lychd.compositions.reach.operator_client import PipeWorker
 from lychd.compositions.reach.operator_diagnostics import write_diagnostic_line
+from lychd.compositions.reach.operator_limits import TurnDeadline, operator_limits
+from lychd.compositions.reach.operator_session import OperatorSession
 from lychd.compositions.reach.operator_trace import (
     ReachTraceEvent,
     TraceEmitter,
@@ -32,28 +32,33 @@ from lychd.compositions.reach.operator_trace import (
     error_code,
     platform_id_or_none,
     trace_bytes,
-    uuid_or_none,
 )
 from lychd.compositions.reach.operator_wire import (
+    MAX_HISTORY_BYTES,
     ReachHistoryEntry,
-    ReachWorkerResult,
 )
 from lychd.compositions.reach.policy import prepare_turn
-from lychd.compositions.reach.research_wire import ReachResearchProgress
 from lychd.compositions.reach.schemas import ReachEvent
 from lychd.interface.discord.admin import ChannelSnapshot, GuildSnapshot, snapshot_guild
+from lychd.interface.discord.delivery import (
+    WORKER_FAILURES,
+    DiscordTurnDelivery,
+    context_text,
+    failure_text,
+    worker_problem,
+)
 from lychd.interface.discord.followups import FollowupLedger
-from lychd.interface.discord.history import HistoryPager
-from lychd.interface.discord.messages import split_message
+from lychd.interface.discord.history import HistoryPager, history_entry, history_lower_bound
+from lychd.interface.discord.lifecycle import EdgeTasks, service_callback
 from lychd.interface.discord.onboarding import OnboardingPanel, OnboardingProfile, OnboardingService
 from lychd.interface.discord.operator_io import load_policy, read_token
+from lychd.interface.discord.ports import GuildInspection, OnboardingEffects, PublicationEffects, ReplyEffects
 from lychd.interface.discord.publications import PublicationQueue
 from lychd.interface.discord.rest import DiscordRest, DiscordRestError, EffectJournal
 from lychd.interface.discord.schemas import DiscordPolicy
 from lychd.interface.http_observation import http_trace
-from lychd.interface.observation import OperationObserver, observation_bytes, observation_context
+from lychd.interface.observation import OperationObserver, observation_bytes
 
-MAX_HISTORY_BYTES = 16_384
 MAX_GENERATION_EVENTS = 10_000
 MAX_GENERATION_THREADS = 1000
 MAX_ONBOARDING_BYTES = 4096
@@ -149,7 +154,7 @@ async def verify_onboarding(
     service: OnboardingService, snapshot: GuildSnapshot, flags: discord.ApplicationFlags
 ) -> None:
     """Bind public panel and separate introduction destination before Gateway connect."""
-    profile, rest = service.profile, service.rest
+    profile, rest = service.profile, service.effects
     if (
         snapshot.guild_id != profile.guild_id
         or snapshot.application_id != rest.application_id
@@ -184,15 +189,6 @@ def onboarding_profile_for_guild(path: Path | None, guild_id: str) -> Onboarding
     if profile is not None and profile.guild_id != guild_id:
         _refuse("onboarding_guild_binding")
     return profile
-
-
-def result_text(result: ReachWorkerResult) -> str:
-    """Render payload-free worker refusals without attempting an empty message."""
-    if result.text.strip():
-        return result.text
-    if result.status == "refused":
-        return "I can't perform this request. Please check your permissions and the allowed channel."
-    return "I couldn't prepare an answer. Please try a new request later."
 
 
 def _parent(channel: object, policy: DiscordPolicy) -> str | None:
@@ -318,12 +314,14 @@ class ReachService:
         self,
         policy: DiscordPolicy,
         worker: PipeWorker,
-        rest: DiscordRest,
+        replies: ReplyEffects,
         *,
         admin_users: frozenset[str],
         history_enabled: bool,
         conversation: bool = False,
         publications: PublicationQueue | None = None,
+        publication_effects: PublicationEffects | None = None,
+        inspection: GuildInspection | None = None,
     ) -> None:
         """Bind the admitted social policy and separate inspection selectors."""
         self.policy = policy
@@ -331,15 +329,16 @@ class ReachService:
         self.worker = worker
         if isinstance(getattr(worker, "trace", None), TraceEmitter):
             worker.trace.sink = _EDGE_TRACE
-        self.rest = rest
+        self.replies, self.inspection = replies, inspection
         self.admin_users = admin_users
         self.history_enabled = history_enabled
         self.conversation = conversation
         self.publications = publications
+        self.publication_effects = publication_effects
+        self.tasks = EdgeTasks(on_failure=lambda: diagnostic("background_failed"))
         self.seen: set[str] = set()
         self.bound_threads: set[str] = set()
-        self.turn_active = False
-        self.expression_blocked: set[str] = set()
+        self.worker_reserved = False
         self.followups = FollowupLedger()
         if (policy.allowed_reply_channel_ids or policy.allowed_adjacent_followup_channel_ids) and (
             not conversation
@@ -364,6 +363,7 @@ class ReachService:
     def eligible(self, event: ReachEvent | None) -> bool:
         return (
             event is not None
+            and not self.tasks.closing
             and event.occurred_at >= self.worker.ready.started_at
             and prepare_turn(self.shared_policy, event, now=datetime.now(UTC)).allowed
         )
@@ -403,7 +403,7 @@ class ReachService:
         )
         if candidate is None:
             return None
-        if not self.worker.available or self.worker.lock.locked() or self.turn_active:
+        if not self.worker.available or self.worker.lock.locked() or self.worker_reserved:
             return None
         return candidate
 
@@ -414,45 +414,57 @@ class ReachService:
         total_bytes = 0
         cutoff = event.occurred_at - timedelta(seconds=self.policy.context_max_age_seconds)
         async for message in channel.history(
-            limit=self.policy.context_message_limit, before=event.occurred_at, after=cutoff, oldest_first=False
+            limit=self.policy.context_message_limit,
+            before=event.occurred_at,
+            after=history_lower_bound(cutoff),
+            oldest_first=False,
         ):
-            if (
-                str(message.channel.id) != event.conversation_id
-                or message.created_at >= event.occurred_at
-                or message.created_at < cutoff
-                or (
-                    message.author.bot and not (self.conversation and str(message.author.id) == self.policy.bot_user_id)
-                )
-                or message.webhook_id is not None
-                or not message.content
-            ):
+            entry = history_entry(self.policy, event, message, conversation=self.conversation)
+            if entry is None:
                 continue
-            text = message.content[:2000]
-            size = len(text.encode("utf-8"))
+            size = len(entry.text.encode("utf-8"))
             if total_bytes + size > MAX_HISTORY_BYTES:
                 break
             total_bytes += size
-            entries.append(
-                ReachHistoryEntry(
-                    subject_id=str(message.author.id),
-                    subject_label=(str(message.author.display_name).strip()[:80] or None),
-                    event_id=str(message.id),
-                    conversation_id=str(message.channel.id),
-                    text=text,
-                    occurred_at=message.created_at,
-                )
-            )
+            entries.append(entry)
         return tuple(sorted(entries, key=lambda item: (item.occurred_at, int(item.event_id))))
+
+    def session(self, event: ReachEvent) -> OperatorSession:
+        limits = operator_limits(conversation=self.conversation, research=self.worker.ready.research_enabled)
+        return OperatorSession(
+            event,
+            TurnDeadline.start(
+                event.occurred_at, self.policy.event_ttl_seconds, limits.session_seconds, now=datetime.now(UTC)
+            ),
+        )
+
+    def delivery(
+        self, session: OperatorSession, *, interaction_token: str | None = None, failure_diagnostic: str | None = None
+    ) -> DiscordTurnDelivery:
+        return DiscordTurnDelivery(
+            session,
+            self.replies.for_event(session.event, interaction_token=interaction_token),
+            policy=self.policy,
+            expressions=self.worker.ready.expressions,
+            started_at=self.worker.ready.started_at,
+            followups=self.followups,
+            observe=self.observe,
+            diagnostic=diagnostic,
+            conversation=self.conversation,
+            failure_diagnostic=failure_diagnostic,
+        )
 
     async def run_event(
         self,
-        event: ReachEvent,
+        session: OperatorSession,
         channel: discord.abc.Messageable,
         *,
         acknowledge: Callable[[], Awaitable[bool]] | None = None,
         reference: discord.MessageReference | None = None,
         continuation_anchor: ReachHistoryEntry | None = None,
-    ) -> ReachWorkerResult | None:
+        progress: ProgressHandler | None = None,
+    ) -> ContextTurnOutcome | None:
+        event = session.event
         if not self.eligible(event) or event.event_id in self.seen:
             self.observe(
                 "admission",
@@ -466,24 +478,26 @@ class ReachService:
             msg = "generation_event_budget"
             raise ValueError(msg)
         self.seen.add(event.event_id)
-        if not self.worker.available or self.worker.lock.locked() or self.turn_active:
+        if not self.worker.available or self.worker.lock.locked() or self.worker_reserved:
             self.observe("admission", event, status="refused", code="worker_unavailable")
             _refuse("worker_busy_or_unavailable")
         self.observe("admission", event, status="ok")
-        self.turn_active = True
+        self.worker_reserved = True
         try:
-            await self._bind_conversation(event, channel)
-            if acknowledge is not None and not await acknowledge():
-                return None
-            async with asyncio.timeout(480 if self.worker.ready.research_enabled else 180):
-                return await self._context_turn(
-                    event, channel, reference=reference, continuation_anchor=continuation_anchor
+            async with asyncio.timeout(session.deadline.remaining()):
+                session.deadline.check()
+                await self._bind_conversation(event, channel)
+                if acknowledge is not None and not await acknowledge():
+                    return None
+                session.outcome = await self._context_turn(
+                    session, channel, reference=reference, continuation_anchor=continuation_anchor, progress=progress
                 )
+                return session.outcome
         except Exception as error:
             self.observe("admission", event, status="error", code=error_code(error))
             raise
         finally:
-            self.turn_active = False
+            self.worker_reserved = False
 
     async def _bind_conversation(self, event: ReachEvent, channel: discord.abc.Messageable) -> None:
         """Bind the observed place without extending private access to administration."""
@@ -495,22 +509,26 @@ class ReachService:
             if event.conversation_id not in self.bound_threads:
                 if len(self.bound_threads) >= MAX_GENERATION_THREADS:
                     _refuse("generation_thread_budget")
-                self.rest.bind_channels((event.conversation_id,))
                 self.bound_threads.add(event.conversation_id)
-        if event.trigger == "message":
-            await self.rest.bind_direct_channel(event.conversation_id, event.subject_id)
+        await self.replies.bind_conversation(event)
 
     async def _context_turn(
         self,
-        event: ReachEvent,
+        session: OperatorSession,
         channel: discord.abc.Messageable,
         *,
         reference: discord.MessageReference | None,
         continuation_anchor: ReachHistoryEntry | None = None,
-    ) -> ReachWorkerResult:
+        progress: ProgressHandler | None = None,
+    ) -> ContextTurnOutcome:
         """Ask for older pages only when the exact native result requests them."""
+        event = session.event
         if not self.conversation or not self.worker.ready.adaptive_context:
-            return await self.worker.request(event, await self.history(channel, event))
+            return ContextTurnOutcome(
+                await self.worker.request(
+                    event, await self.history(channel, event), progress=progress, deadline=session.deadline
+                )
+            )
         if event.trigger in {"reply", "followup"}:
             if continuation_anchor is None:
                 _refuse("continuation_anchor_missing")
@@ -534,6 +552,8 @@ class ReachService:
             reply_to_event_id=reference_id,
             reply_anchor=anchor,
             continuation_anchor=continuation_anchor if event.trigger == "followup" else None,
+            progress=progress,
+            deadline=session.deadline,
         )
 
     async def _reply_anchor(
@@ -554,149 +574,47 @@ class ReachService:
             message = await channel.fetch_message(reference.message_id)
         except discord.HTTPException:
             return identity, None
-        cutoff = event.occurred_at - timedelta(seconds=self.policy.context_max_age_seconds)
-        if (
-            str(message.channel.id) != event.conversation_id
-            or str(message.id) != identity
-            or not cutoff <= message.created_at < event.occurred_at
-            or message.webhook_id is not None
-            or not message.content
-            or (message.author.bot and str(message.author.id) != self.policy.bot_user_id)
-            or (
-                event.trigger == "message" and str(message.author.id) not in {event.subject_id, self.policy.bot_user_id}
-            )
-        ):
+        if str(message.id) != identity:
             return identity, None
-        return identity, ReachHistoryEntry(
-            subject_id=str(message.author.id),
-            subject_label=str(message.author.display_name).strip()[:80] or None,
-            event_id=identity,
-            conversation_id=event.conversation_id,
-            text=message.content[:2000],
-            occurred_at=message.created_at,
-        )
-
-
-@dataclass
-class _ActiveCandidate:
-    """Temporary ownership of a candidate's confirmed visible plan."""
-
-    event: ReachEvent
-    plan_delivered: bool = False
-
-
-def _candidate_result_visible(result: ReachWorkerResult | None, state: _ActiveCandidate | None) -> bool:
-    if result is not None and result.status in {"conversation", "clarify"}:
-        return True
-    return state is not None and state.plan_delivered and (result is None or result.status in {"error", "refused"})
+        return identity, history_entry(self.policy, event, message, conversation=self.conversation)
 
 
 class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded Reach operator tools"):
     def __init__(self, service: ReachService) -> None:
-        """Bind one explicitly configured edge, never ambient Core settings."""
+        """Delegate invocation state and delivery to their request-local owners."""
         self.service = service
-        self._active_candidate: _ActiveCandidate | None = None
-        self.service.worker.progress = self._research_progress
 
-    def _acquire_candidate(self, event: ReachEvent) -> _ActiveCandidate | None:
-        if event.trigger not in {"reply", "followup"} or self._active_candidate is not None:
-            return None
-        state = _ActiveCandidate(event)
-        self._active_candidate = state
-        return state
-
-    def _release_candidate(self, state: _ActiveCandidate | None) -> None:
-        if state is not None and self._active_candidate is state:
-            self._active_candidate = None
-
-    async def _research_progress(self, event: ReachEvent, progress: ReachResearchProgress) -> bool:
-        """Deliver the interpreted plan in this same admitted audience before source reads."""
-        if event.trigger == "command":
-            return False
-        candidate = self._active_candidate
-        try:
-            result = await self.service.rest.send_message(
-                event.conversation_id,
-                progress.text,
-                event_id=event.event_id,
-                reply_to=event.event_id,
-                phase="plan",
-                silent=True,
-            )
-        except (ValueError, OSError, TimeoutError, DiscordRestError):
-            self.service.observe("research_plan", event, status="error")
-            diagnostic("research_plan_failed")
-            return False
-        self.service.observe("research_plan", event, status=result.status, remote_id=result.remote_id)
-        if (
-            result.status == "succeeded"
-            and candidate is not None
-            and self._active_candidate is candidate
-            and candidate.event == event
-        ):
-            candidate.plan_delivered = True
-        return result.status == "succeeded"
-
+    @service_callback
     async def _request(self, interaction: discord.Interaction, question: str, action: str) -> None:
         event = event_from_interaction(interaction, self.service.policy, question=question, action=action)
-        if not self.service.eligible(event):
+        if event is None:
             await interaction.response.send_message("This request isn't allowed here.", ephemeral=True)
             return
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        if event is None or not isinstance(interaction.channel, discord.abc.Messageable):
-            return
-        try:
-            result = await self.service.run_event(event, interaction.channel)
-            if result is not None:
-                parts = split_message(result_text(result))
-                for index, part in enumerate(parts):
-                    self.service.observe(
-                        "delivery",
-                        event,
-                        status="started",
-                        run_id=uuid_or_none(result.run_id),
-                        request_id=uuid_or_none(result.request_id),
-                        operation="final",
-                        part=index,
-                        parts=len(parts),
-                        chars=len(part),
-                    )
-                    with observation_context(
-                        run_id=uuid_or_none(result.run_id), request_id=uuid_or_none(result.request_id)
-                    ):
-                        outcome = await (
-                            self.service.rest.edit_interaction_original(
-                                interaction.token, part, event_id=str(interaction.id)
-                            )
-                            if index == 0
-                            else self.service.rest.send_interaction_followup(
-                                interaction.token,
-                                part,
-                                event_id=str(interaction.id),
-                                part=index,
-                            )
-                        )
-                    self.service.observe(
-                        "delivery",
-                        event,
-                        status=outcome.status,
-                        run_id=uuid_or_none(result.run_id),
-                        request_id=uuid_or_none(result.request_id),
-                        operation="final",
-                        part=index,
-                        parts=len(parts),
-                        remote_id=outcome.remote_id,
-                    )
-                    if outcome.status != "succeeded":
-                        diagnostic("request_failed")
-                        break
-        except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError):
-            diagnostic("request_failed")
-            await self.service.rest.edit_interaction_original(
-                interaction.token,
-                "I couldn't prepare an answer, or I'm currently handling another question.",
-                event_id=str(interaction.id),
+        if not self.service.eligible(event):
+            decision = prepare_turn(self.service.shared_policy, event, now=datetime.now(UTC))
+            await interaction.response.send_message(
+                worker_problem(decision.reason if not decision.allowed else None, refused=True), ephemeral=True
             )
+            return
+        session = self.service.session(event)
+        delivery = self.service.delivery(session, interaction_token=interaction.token)
+        try:
+            async with asyncio.timeout(session.deadline.remaining()):
+                await interaction.response.defer(ephemeral=True, thinking=True)
+                if not isinstance(interaction.channel, discord.abc.Messageable):
+                    return
+                try:
+                    outcome = await self.service.run_event(session, interaction.channel, progress=delivery.plan)
+                    if outcome is not None and session.visible():
+                        await delivery.final(context_text(outcome), result=outcome.result)
+                except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError) as error:
+                    diagnostic("request_failed")
+                    if session.can_report_failure():
+                        await delivery.final(failure_text(error))
+        except TimeoutError:
+            diagnostic("request_expired")
+        finally:
+            session.retire()
 
     @app_commands.command(description="Ask Reach using this connection's configured mode")
     @app_commands.describe(question="What would you like to ask?")
@@ -708,249 +626,84 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
         await self._request(interaction, "Recent conversation context", "summarize_context")
 
     @app_commands.command(description="Show this operator connection's readiness")
+    @service_callback
     async def status(self, interaction: discord.Interaction) -> None:
-        """Report admitted connection availability without issuing native work."""
         event = event_from_interaction(interaction, self.service.policy, question="status", action="answer_docs")
         if not self.service.eligible(event):
             text = "Access denied."
-        elif self.service.worker.available:
-            text = (
-                "Reach operator: conversation worker is ready."
-                if self.service.conversation
-                else "Reach operator: documentation worker is ready."
-            )
         else:
-            text = (
-                "Reach operator: conversation worker is unavailable."
-                if self.service.conversation
-                else "Reach operator: documentation worker is unavailable."
-            )
+            mode = "conversation" if self.service.conversation else "documentation"
+            state = "ready" if self.service.worker.available else "unavailable"
+            text = f"Reach operator: {mode} worker is {state}."
         await interaction.response.send_message(text, ephemeral=True)
 
     @app_commands.command(name="admin-inspect", description="Inspect server setup; administration applies locally")
+    @service_callback
     async def admin_inspect(self, interaction: discord.Interaction) -> None:
         event = event_from_interaction(interaction, self.service.policy, question="inspect", action="answer_docs")
-        if not self.service.eligible(event) or str(interaction.user.id) not in self.service.admin_users:
+        if (
+            event is None
+            or not self.service.eligible(event)
+            or str(interaction.user.id) not in self.service.admin_users
+            or self.service.inspection is None
+        ):
             await interaction.response.send_message("Access denied.", ephemeral=True)
             return
-        await interaction.response.defer(ephemeral=True, thinking=True)
+        session = self.service.session(event)
+        delivery = self.service.delivery(
+            session, interaction_token=interaction.token, failure_diagnostic="inspection_failed"
+        )
         try:
-            snapshot = await snapshot_guild(self.service.rest)
-            text = f"The server has {len(snapshot.roles)} roles and {len(snapshot.channels)} channels. Changes require a local plan."
-            outcome = await self.service.rest.edit_interaction_original(
-                interaction.token, text, event_id=str(interaction.id)
-            )
-            if outcome.status != "succeeded":
-                diagnostic("inspection_failed")
+            async with asyncio.timeout(session.deadline.remaining()):
+                await interaction.response.defer(ephemeral=True, thinking=True)
+                snapshot = await snapshot_guild(self.service.inspection)
+                text = f"The server has {len(snapshot.roles)} roles and {len(snapshot.channels)} channels. Changes require a local plan."
+                await delivery.final(text)
         except (ValueError, OSError, TimeoutError, DiscordRestError):
             diagnostic("inspection_failed")
+        finally:
+            session.retire()
 
     @commands.Cog.listener()
+    @service_callback
     async def on_message(self, message: discord.Message) -> None:
         continuation = self.service.message_continuation(message)
         event = event_from_message(
             message, self.service.policy, conversation=self.service.conversation, continuation=continuation
         )
-        if not self.service.eligible(event) or event is None:
+        if event is None or not self.service.eligible(event):
             return
-        candidate = event.trigger in {"reply", "followup"}
-        state = self._acquire_candidate(event)
-        terminal_started = False
-
+        session = self.service.session(event)
+        delivery = self.service.delivery(session)
         try:
-            try:
-                result = await self.service.run_event(
-                    event,
-                    message.channel,
-                    acknowledge=None if candidate else lambda: self._acknowledge(event),
-                    reference=message.reference,
-                    continuation_anchor=continuation[1] if candidate and continuation is not None else None,
-                )
-            finally:
-                self._release_candidate(state)
-            if result is not None and result.status == "ignore":
-                return
-            if candidate and not _candidate_result_visible(result, state):
-                return
-            if result is None:
-                if state is None or not state.plan_delivered:
-                    return
-                text = "I couldn't prepare an answer, or I'm handling another question. Please try again later."
-            else:
-                text = result_text(result)
-            terminal_started = True
-            delivered = await self._send_final(event, text, result=result)
-            if delivered and result is not None:
-                await self._send_expressions(event, result)
-        except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError) as error:
-            self.service.observe("delivery", event, status="error", code=error_code(error))
-            diagnostic("message_failed")
-            if terminal_started or (candidate and (state is None or not state.plan_delivered)):
-                return
-            if event.trigger == "message":
-                await self.service.rest.bind_direct_channel(event.conversation_id, event.subject_id)
-            terminal_started = True
-            await self._send_final(
-                event, "I couldn't prepare an answer, or I'm handling another question. Please try again later."
-            )
-
-    async def _acknowledge(self, event: ReachEvent) -> bool:
-        """Keep conversation receipt cosmetic; research supplies its own delivered model plan."""
-        if not self.service.conversation:
-            preview = " ".join(event.question.split())[:240]
-            text = f"I'll look into your request: “{preview}”. I'll return here with an answer or a clarification question."
-            self.service.observe("acknowledgement", event, status="started", operation="ack")
-            outcome = await self.service.rest.send_message(
-                event.conversation_id,
-                text,
-                event_id=event.event_id,
-                reply_to=event.event_id,
-                phase="ack",
-            )
-            self.service.observe(
-                "acknowledgement", event, status=outcome.status, operation="ack", remote_id=outcome.remote_id
-            )
-            if outcome.status != "succeeded":
-                diagnostic("message_failed")
-                return False
-        if self.service.worker.ready.expressions.enabled and self.service.worker.ready.expressions.acknowledge:
-            try:
-                seen = await self.service.rest.add_reaction(
-                    event.conversation_id, event.event_id, "👀", event_id=event.event_id, phase="seen"
-                )
-                self.service.observe("expression", event, status=seen.status, operation="reaction")
-                if seen.status != "succeeded":
-                    self.service.expression_blocked.add(event.event_id)
-                    diagnostic("expression_failed")
-            except (ValueError, OSError, TimeoutError, DiscordRestError):
-                self.service.expression_blocked.add(event.event_id)
-                diagnostic("expression_failed")
-        return True
-
-    async def _send_final(self, event: ReachEvent, text: str, *, result: ReachWorkerResult | None = None) -> bool:
-        """Freeze bounded parts before the first journaled send; stop on uncertainty."""
-        parts = split_message(text)
-        binding = (
-            {"run_id": uuid_or_none(result.run_id), "request_id": uuid_or_none(result.request_id)} if result else {}
-        )
-        anchors: list[ReachHistoryEntry] = []
-        can_retain = (
-            result is not None
-            and result.status in {"conversation", "clarify"}
-            and event.space_id == self.service.policy.guild_id
-            and event.conversation_id
-            in self.service.policy.allowed_reply_channel_ids + self.service.policy.allowed_adjacent_followup_channel_ids
-        )
-        for index, part in enumerate(parts):
-            self.service.observe(
-                "delivery",
-                event,
-                status="started",
-                operation="final",
-                part=index,
-                parts=len(parts),
-                chars=len(part),
-                **binding,
-            )
-            with observation_context(
-                run_id=uuid_or_none(result.run_id) if result else None,
-                request_id=uuid_or_none(result.request_id) if result else None,
-            ):
-                outcome = await self.service.rest.send_message(
-                    event.conversation_id,
-                    part,
-                    event_id=event.event_id,
-                    reply_to=event.event_id,
-                    phase="final",
-                    part=index,
-                )
-            self.service.observe(
-                "delivery",
-                event,
-                status=outcome.status,
-                operation="final",
-                part=index,
-                parts=len(parts),
-                remote_id=outcome.remote_id,
-                **binding,
-            )
-            if outcome.status != "succeeded":
-                diagnostic("message_failed")
-                return False
-            if can_retain:
-                if outcome.remote_id is None or not outcome.remote_id.isdecimal():
-                    can_retain = False
-                    continue
+            async with asyncio.timeout(session.deadline.remaining()):
                 try:
-                    occurred_at = discord.utils.snowflake_time(int(outcome.remote_id))
-                    if not self.service.worker.ready.started_at <= occurred_at <= datetime.now(UTC):
-                        can_retain = False
-                        continue
-                    anchors.append(
-                        ReachHistoryEntry(
-                            subject_id=self.service.policy.bot_user_id,
-                            event_id=outcome.remote_id,
-                            conversation_id=event.conversation_id,
-                            text=part,
-                            occurred_at=occurred_at,
-                        )
+                    outcome = await self.service.run_event(
+                        session,
+                        message.channel,
+                        acknowledge=None if session.candidate else delivery.acknowledge,
+                        reference=message.reference,
+                        continuation_anchor=continuation[1] if session.candidate and continuation is not None else None,
+                        progress=delivery.plan,
                     )
-                except (ValueError, OverflowError):
-                    can_retain = False
-        if can_retain:
-            self.service.followups.delivered(
-                tuple(anchors), human_subject_id=event.subject_id, origin_event_id=event.event_id
-            )
-        return True
-
-    async def _send_expressions(self, event: ReachEvent, result: ReachWorkerResult) -> None:
-        """Decorate a completed message turn from exact frozen choices; failure stays cosmetic."""
-        expressions = self.service.worker.ready.expressions
-        if (
-            not expressions.enabled
-            or event.trigger == "command"
-            or result.status != "conversation"
-            or event.event_id in self.service.expression_blocked
-        ):
-            return
-        try:
-            expressions.validate_selection(result.reaction, result.gif_id)
-            if result.reaction is not None and not (result.reaction == "👀" and expressions.acknowledge):
-                outcome = await self.service.rest.add_reaction(
-                    event.conversation_id, event.event_id, result.reaction, event_id=event.event_id, phase="reply"
-                )
-                self.service.observe(
-                    "expression",
-                    event,
-                    status=outcome.status,
-                    operation="reaction",
-                    run_id=uuid_or_none(result.run_id),
-                    request_id=uuid_or_none(result.request_id),
-                )
-                if outcome.status != "succeeded":
-                    diagnostic("expression_failed")
-                    return
-            if result.gif_id is not None:
-                selected = next(item for item in expressions.gifs if item.id == result.gif_id)
-                outcome = await self.service.rest.send_gif(
-                    event.conversation_id, selected.url, event_id=event.event_id, reply_to=event.event_id
-                )
-                self.service.observe(
-                    "expression",
-                    event,
-                    status=outcome.status,
-                    operation="gif",
-                    run_id=uuid_or_none(result.run_id),
-                    request_id=uuid_or_none(result.request_id),
-                )
-                if outcome.status != "succeeded":
-                    diagnostic("expression_failed")
-                elif outcome.remote_id is not None:
-                    self.service.followups.decorated(
-                        event.conversation_id, outcome.remote_id, origin_event_id=event.event_id
-                    )
-        except (ValueError, OSError, TimeoutError, DiscordRestError):
-            diagnostic("expression_failed")
+                    if not session.visible():
+                        return
+                    result = outcome.result if outcome is not None else None
+                    text = context_text(outcome) if outcome is not None else WORKER_FAILURES["run_failed"]
+                    delivered = await delivery.final(text, result=result)
+                    if delivered and result is not None:
+                        await delivery.expressions(result)
+                except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError) as error:
+                    self.service.observe("delivery", event, status="error", code=error_code(error))
+                    diagnostic("message_failed")
+                    if session.can_report_failure():
+                        if event.trigger == "message":
+                            await self.service.replies.bind_conversation(event)
+                        await delivery.final(failure_text(error))
+        except TimeoutError:
+            diagnostic("request_expired")
+        finally:
+            session.retire()
 
 
 class ReachBot(commands.Bot):
@@ -1009,11 +762,13 @@ class ReachBot(commands.Bot):
             self.add_view(OnboardingPanel(self.onboarding), message_id=int(self.onboarding.profile.panel_message_id))
 
     async def on_ready(self) -> None:
+        if self.service.tasks.closing:
+            return
         diagnostic("ready")
         if self.onboarding is not None and self.onboarding_backfill_task is None:
-            self.onboarding_backfill_task = asyncio.create_task(self._backfill_onboarding())
+            self.onboarding_backfill_task = self.service.tasks.spawn(self._backfill_onboarding())
         if self.service.publications is not None and self.publications_task is None:
-            self.publications_task = asyncio.create_task(self._publications())
+            self.publications_task = self.service.tasks.spawn(self._publications())
 
     async def _ensure_onboarding_role(self, member: discord.Member) -> None:
         onboarding = self.onboarding
@@ -1034,6 +789,7 @@ class ReachBot(commands.Bot):
         except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError):
             diagnostic("onboarding_role_failed")
 
+    @service_callback
     async def on_member_join(self, member: discord.Member) -> None:
         await self._ensure_onboarding_role(member)
 
@@ -1053,21 +809,14 @@ class ReachBot(commands.Bot):
     async def _publications(self) -> None:
         while not self.is_closed():
             try:
-                if self.service.publications is not None:
-                    await self.service.publications.process_once(self.service.rest)
+                if self.service.publications is not None and self.service.publication_effects is not None:
+                    await self.service.publications.process_once(self.service.publication_effects)
             except (ValueError, OSError, DiscordRestError):
                 diagnostic("publication_failed")
             await asyncio.sleep(2)
 
     async def close(self) -> None:
-        if self.onboarding_backfill_task is not None:
-            self.onboarding_backfill_task.cancel()
-            with suppress(asyncio.CancelledError):
-                await self.onboarding_backfill_task
-        if self.publications_task is not None:
-            self.publications_task.cancel()
-            with suppress(asyncio.CancelledError):
-                await self.publications_task
+        await self.service.tasks.close()
         await super().close()
 
     async def on_error(self, event_method: str, /, *args: Any, **kwargs: Any) -> None:
@@ -1075,79 +824,119 @@ class ReachBot(commands.Bot):
         diagnostic("gateway_event_failed")
 
 
-async def run(args: argparse.Namespace) -> None:
-    policy = load_policy(args.policy)
+def _publication_profile(
+    args: argparse.Namespace, rest: DiscordRest
+) -> tuple[PublicationQueue | None, PublicationEffects | None]:
+    if not args.publications_dir:
+        return None, None
+    channels = frozenset(args.publication_channel)
+    return PublicationQueue(args.publications_dir, allowed_channels=channels), PublicationEffects(
+        rest, allowed_channels=channels
+    )
+
+
+def _validate_live_profile(args: argparse.Namespace, policy: DiscordPolicy) -> None:
     if bool(policy.context_message_limit) != args.history:
-        msg = "history_policy_flag_mismatch"
-        raise ValueError(msg)
+        _refuse("history_policy_flag_mismatch")
     if args.conversation and not any("converse" in rule.actions for rule in policy.rules):
         _refuse("conversation_policy_flag_mismatch")
     if bool(args.publications_dir) != bool(args.publication_channel):
         _refuse("publication_configuration")
+
+
+async def run(args: argparse.Namespace) -> None:
+    policy = load_policy(args.policy)
+    _validate_live_profile(args, policy)
     onboarding_profile = onboarding_profile_for_guild(args.onboarding_profile, policy.guild_id)
     token = read_token(args.token_file)
     worker = await PipeWorker.open()
     if args.conversation != (worker.ready.model_binding_digest is not None):
         _refuse("conversation_worker_flag_mismatch")
     if worker.ready.policy_digest != policy.digest:
-        msg = "worker_policy_mismatch"
-        raise ValueError(msg)
-    rest = DiscordRest(
-        token=token,
-        application_id=policy.application_id,
-        bot_user_id=policy.bot_user_id,
-        guild_id=policy.guild_id,
-        journal=EffectJournal(args.effects_dir),
-        observer=OperationObserver(
-            generation=worker.ready.generation,
-            producer_id="reach.discord-rest",
-            source="reach.discord-rest",
-            target="reach.discord-api",
-            sink=lambda event: write_diagnostic_line(observation_bytes(event)),
-        ),
-    )
-    publications = (
-        PublicationQueue(args.publications_dir, allowed_channels=frozenset(args.publication_channel))
-        if args.publications_dir
-        else None
-    )
-    service = ReachService(
-        policy,
-        worker,
-        rest,
-        admin_users=frozenset(args.admin_user),
-        history_enabled=args.history,
-        conversation=args.conversation,
-        publications=publications,
-    )
-    onboarding = OnboardingService(onboarding_profile, rest) if onboarding_profile is not None else None
-    bot = ReachBot(service, command_name=args.command_name, onboarding=onboarding)
+        _refuse("worker_policy_mismatch")
+    journal = EffectJournal(args.effects_dir)
+    service: ReachService | None = None
+    with journal.session():
+        rest = DiscordRest(
+            token=token,
+            application_id=policy.application_id,
+            bot_user_id=policy.bot_user_id,
+            guild_id=policy.guild_id,
+            journal=journal,
+            observer=OperationObserver(
+                generation=worker.ready.generation,
+                producer_id="reach.discord-rest",
+                source="reach.discord-rest",
+                target="reach.discord-api",
+                sink=lambda event: write_diagnostic_line(observation_bytes(event)),
+            ),
+        )
+        try:
+            publications, publication_effects = _publication_profile(args, rest)
+            inspection = GuildInspection(rest)
+            service = ReachService(
+                policy,
+                worker,
+                ReplyEffects(rest, policy),
+                admin_users=frozenset(args.admin_user),
+                history_enabled=args.history,
+                conversation=args.conversation,
+                publications=publications,
+                publication_effects=publication_effects,
+                inspection=inspection,
+            )
+            onboarding = None
+            if onboarding_profile is not None:
+                onboarding = OnboardingService(
+                    onboarding_profile,
+                    OnboardingEffects(
+                        rest,
+                        roles=frozenset((onboarding_profile.magus_role_id, onboarding_profile.bot_role_id)),
+                        panel_channel=onboarding_profile.channel_id,
+                        panel_message=onboarding_profile.panel_message_id,
+                        introduction_channel=onboarding_profile.introduction_channel_id,
+                    ),
+                    tasks=service.tasks,
+                )
+            bot = ReachBot(service, command_name=args.command_name, onboarding=onboarding)
+            async with bot:
+                await bot.login(token)
+                actual = await bot.application_info()
+                if (
+                    bot.user is None
+                    or str(bot.user.id) != policy.bot_user_id
+                    or str(actual.id) != policy.application_id
+                ):
+                    _refuse("discord_identity_mismatch")
+                snapshot = await snapshot_guild(inspection)
+                observed_channels = {channel.id for channel in snapshot.channels}
+                selected_channels = {
+                    *policy.allowed_channel_ids,
+                    *policy.allowed_thread_parent_ids,
+                    *args.publication_channel,
+                }
+                if not selected_channels <= observed_channels:
+                    _refuse("discord_channel_binding")
+                if onboarding is not None:
+                    await verify_onboarding(onboarding, snapshot, actual.flags)
+                if args.sync_commands:
+                    await bot.tree.sync(guild=discord.Object(id=int(policy.guild_id)))
+                diagnostic("connecting")
+                await bot.connect(reconnect=True)
+        finally:
+            if service is not None:
+                await _retire_generation(service.tasks)
+            await rest.close()
+
+
+async def _retire_generation(tasks: EdgeTasks) -> None:
+    """Fail-stop this edge if business work cannot retire before dependency release."""
     try:
-        async with bot:
-            await bot.login(token)
-            actual = await bot.application_info()
-            if bot.user is None or str(bot.user.id) != policy.bot_user_id or str(actual.id) != policy.application_id:
-                msg = "discord_identity_mismatch"
-                raise ValueError(msg)
-            await rest.verify_identity()
-            snapshot = await snapshot_guild(rest)
-            observed_channels = {channel.id for channel in snapshot.channels}
-            selected_channels = {
-                *policy.allowed_channel_ids,
-                *policy.allowed_thread_parent_ids,
-                *args.publication_channel,
-            }
-            if not selected_channels <= observed_channels:
-                msg = "discord_channel_binding"
-                raise ValueError(msg)
-            if onboarding is not None:
-                await verify_onboarding(onboarding, snapshot, actual.flags)
-            if args.sync_commands:
-                await bot.tree.sync(guild=discord.Object(id=int(policy.guild_id)))
-            diagnostic("connecting")
-            await bot.connect(reconnect=True)
-    finally:
-        await rest.close()
+        await tasks.close()
+    except TimeoutError:
+        diagnostic("retirement_failed")
+        # Only kernel process death can safely release the writer lease with live callbacks.
+        os._exit(1)
 
 
 def startup_error_code(error: Exception) -> str:

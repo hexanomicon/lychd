@@ -1520,14 +1520,14 @@ async def test_timeout_retires_process_and_exact_owned_cid(
     spawning = AsyncMock(return_value=process)
     retire, remove = AsyncMock(), AsyncMock()
     monkeypatch.setattr(probe.asyncio, "create_subprocess_exec", spawning)
-    monkeypatch.setattr(probe.operator, "retire", retire)
-    monkeypatch.setattr(probe.operator, "remove_owned", remove)
+    monkeypatch.setattr(probe.transport, "retire", retire)
+    monkeypatch.setattr(probe.transport, "remove_owned", remove)
     cid = tmp_path / "core.cid"
     cid.write_text("a" * 64)
     with pytest.raises(TimeoutError):
         await probe.supervise(turn, ["engine"], cid, engine="docker", model_transport="http", budget_seconds=0.01)
     retire.assert_awaited_once_with(process)
-    remove.assert_awaited_once_with("docker", cid)
+    remove.assert_awaited_once_with("docker", cid, read_identity=probe.operator.read_regular)
     assert turn.cleanup["container_id"] == "a" * 64
     assert turn.cleanup["container_removed"]
 
@@ -1547,8 +1547,8 @@ async def test_missing_cid_after_engine_spawn_retains_uncertainty_without_global
 ) -> None:
     process = cast("asyncio.subprocess.Process", object())
     retire, remove = AsyncMock(), AsyncMock()
-    monkeypatch.setattr(probe.operator, "retire", retire)
-    monkeypatch.setattr(probe.operator, "remove_owned", remove)
+    monkeypatch.setattr(probe.transport, "retire", retire)
+    monkeypatch.setattr(probe.transport, "remove_owned", remove)
     with probe.workspace(tmp_path, turn.cleanup) as frozen:
         probe.operator.write_private(frozen / "policy.json", b"{}")
         with pytest.raises(probe.ProbeError, match="container_identity_missing"):
@@ -1583,8 +1583,8 @@ async def test_repeated_cancellation_joins_spawn_then_cleanup(
 
     remove = AsyncMock()
     monkeypatch.setattr(probe.asyncio, "create_subprocess_exec", spawn)
-    monkeypatch.setattr(probe.operator, "retire", retire)
-    monkeypatch.setattr(probe.operator, "remove_owned", remove)
+    monkeypatch.setattr(probe.transport, "retire", retire)
+    monkeypatch.setattr(probe.transport, "remove_owned", remove)
     cid = tmp_path / "core.cid"
     cid.write_text("a" * 64)
     task = asyncio.create_task(
@@ -1602,7 +1602,7 @@ async def test_repeated_cancellation_joins_spawn_then_cleanup(
     cleanup_release.set()
     with pytest.raises(asyncio.CancelledError):
         await task
-    remove.assert_awaited_once_with("docker", cid)
+    remove.assert_awaited_once_with("docker", cid, read_identity=probe.operator.read_regular)
     assert turn.cleanup["process_retired"]
     assert turn.cleanup["container_removed"]
 

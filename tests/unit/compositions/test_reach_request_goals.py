@@ -123,12 +123,14 @@ def test_interpretation_keeps_anchors_and_trims_only_oldest_history_to_budget() 
     assert set(prompt) == {
         "phase",
         "question",
+        "request_occurred_at",
         "reply_anchor",
         "continuation_anchor",
         "recent_messages",
         "omitted_recent_messages",
     }
     assert prompt["question"] == QUESTION
+    assert prompt["request_occurred_at"] == request.event.occurred_at.isoformat()
     assert prompt["reply_anchor"] == {
         "handle": "reply_anchor",
         "entry": anchor.model_dump(mode="json"),
@@ -159,7 +161,7 @@ def test_goal_checkpoint_rejects_disabled_or_missing_interpretation() -> None:
     ).model_copy(update={"run_id": "run"})
     workflow = reach_conversation_workflow(policy(), corpus, binding, started_at=STARTED, clock=lambda: NOW)
     initial = workflow.make_state(intent)
-    assert workflow.manifest.checkpoint_schema == "reach-operator-conversation-v8"
+    assert workflow.manifest.checkpoint_schema == "reach-operator-conversation-v9"
     assert workflow.validate_state is not None
     workflow.validate_state(intent, initial)
     with pytest.raises(DocumentsRefused, match="conversation_checkpoint"):
@@ -221,7 +223,10 @@ async def test_native_goals_precede_planning_and_reach_the_same_frozen_review_co
     binding = OperatorConversationProfile.model_validate_json(
         canonical_json({**binding.model_dump(mode="json"), "context_projection_version": projection_version})
     )
-    corpus = make_corpus("# Graph\n" + ANSWER)
+    corpus, request = (
+        make_corpus("# Graph\n" + ANSWER),
+        make_request(action="converse", question=QUESTION).model_copy(update={"request_id": str(uuid4())}),
+    )
     prompts: list[dict[str, Any]] = []
     traces: list[ReachTraceEvent] = []
     acquisitions: list[OperatorResearchRequest] = []
@@ -233,13 +238,14 @@ async def test_native_goals_precede_planning_and_reach_the_same_frozen_review_co
         assert "tools" not in body
         prompt = json.loads(body["messages"][-1]["content"])
         prompts.append(prompt)
+        context = prompt.get("context", prompt)
+        assert context["request_occurred_at"] == request.event.occurred_at.isoformat() != NOW.isoformat()
         if prompt.get("phase") == "interpretation":
             assert len(prompts) == 1
             assert "research_sources" not in prompt
             assert "available_research_sources" not in prompt
             assert "candidate" not in prompt
             return completion(REQUIREMENTS.model_dump_json())
-        context = prompt["context"] if prompt.get("phase") == "checkback" else prompt
         assert context["task_requirements"]["goals"] == list(GOALS)
         if prompt.get("phase") == "checkback":
             return completion(accepted_coverage(runtime_claims=research))
@@ -276,13 +282,10 @@ async def test_native_goals_precede_planning_and_reach_the_same_frozen_review_co
     )
     try:
         with override_allow_model_requests(True):  # noqa: FBT003 - isolated admitted model relay
-            result = await runtime.process(
-                make_request(action="converse", question=QUESTION).model_copy(update={"request_id": str(uuid4())})
-            )
+            result = await runtime.process(request)
         assert result.status == "conversation"
         assert ANSWER in result.text
-        assert len(prompts) == (4 if research else 3)
-        assert len(acquisitions) == int(research)
+        assert (len(prompts), len(acquisitions)) == (4 if research else 3, int(research))
         projections = [event for event in traces if event.name == "source_projection"]
         assert len(projections) == int(research and projection_version == 2)
         for projected in projections:
