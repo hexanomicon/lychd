@@ -326,14 +326,7 @@ The dated 0cc0988 installed startup/activation observation is scoped under
 [vLLM](#vllm-integration). A changed compiler or loaded-graph attestor needs a new same-source
 installed profile; that observation contains no Coven and does not qualify the current checkout.
 
-Separate MicroOS/AlphaVPS C6G host-preparation tooling provides closed first-boot input,
-private configuration-ISO packaging, and ordinary-user host-floor observations without owning
-application setup or activation. Pure refusal tests and static checks do not execute privileged
-provisioning. The pinned installer's signed checksum metadata was verified; the full ISO and the
-DVD-to-Combustion initrd/first-boot handoff have not been exercised. Provider configuration-media
-support, installed-host operation, and application lifecycle remain unqualified.
-
-The separate Tumbleweed candidate uses Ansible for an already installed headless host and
+The Tumbleweed host-preparation candidate uses Ansible for an already installed headless host and
 inactive-only, exact-revision source/CLI staging. Its refusal helpers and playbook checks do not
 execute a privileged target or establish convergence. First apply, a second no-change apply,
 direct runtime SSH/rootless operation, actual storage placement and controlled OS recovery
@@ -350,12 +343,10 @@ loaded-source attestation, forward switch, compensation, crash recovery, startup
 GPU and model proof remains separate. Include image account, actual UID/GID maps, mounted secret
 readability, read-only code, writable scratch, initial database creation, and repeated init/start
 with existing mapped data; compilation and mocked ownership tests do not establish these facts.
-The MicroOS pilot additionally needs an observed installer/initrd/first-boot handoff, private
-configuration-media attachment, real SSH/user-manager access, effective storage placement,
-actual-container prerequisite observations, and a controlled OS update/reboot/recovery cycle.
 The Tumbleweed pilot additionally needs successful installation, both apply observations,
 effective runtime identity/mapping and container checks, the exact source/CLI/image identities,
-and the same separate application/recovery evidence before another host inherits a ready claim.
+and a controlled OS update/reboot/recovery cycle. Separate application/recovery evidence is
+required before another host inherits a ready claim.
 
 **Evidence**
 
@@ -364,9 +355,6 @@ and the same separate application/recovery evidence before another host inherits
 - **Verification:** [Btrfs preparation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_btrfs.py), [descriptor observer tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_btrfs_observer.py), and [deletion identity tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_deletion_storage.py)
 - **Law:** [Containers](./adr/08-containers.md)
 
-- **Source:** [MicroOS first-boot helper](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/combustion/host_bootstrap.py), [host verifier](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/verify_host.py), and [configuration-media builder](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/build_config_iso.py)
-- **Verification:** [Bootstrap refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/tests/test_bootstrap.py), [verification and media refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/microos/tests/test_verify_and_iso.py), and [deployment source checks](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/deployments.yml)
-- **Topic:** [MicroOS VPS host pilot](./sepulcher/deployments.md)
 - **Source:** [Tumbleweed host playbook](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/playbooks/host.yml), [host observation helper](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/roles/tumbleweed_host/files/host_probe.py), and [inactive source preparation](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/playbooks/source.yml)
 - **Verification:** [Host refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_host_probe.py), [source refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_source_guard.py), and [deployment checks](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/deployments.yml)
 - **Topic:** [Tumbleweed VPS](./deployments/tumbleweed/index.md)

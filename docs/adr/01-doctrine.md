@@ -190,8 +190,7 @@ Each project keeps the source layout native to its toolchain. The current web so
 rather than one mixed repository source tree.
 
 Reusable operator host preparation lives under `deployments/**`, with target-specific operating
-procedure in `docs/deployments/**`; the existing MicroOS first-boot owner remains in the Sepulcher
-and is routed from that deployment index. Host preparation owns platform prerequisites and
+procedure in `docs/deployments/**`. Host preparation owns platform prerequisites and
 bounded source staging, not application configuration or lifecycle.
 Tracked examples contain fictional values only. Private host configuration, credentials,
 configuration media, backups, and raw operator receipts stay outside the checkout.
