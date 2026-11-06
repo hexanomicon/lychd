@@ -84,8 +84,7 @@ silently disable an existing protection. Record the installed snapshot/version a
 Keep the installer-supported boot partitions and use **one main Btrfs capacity pool**, with
 separately mounted subvolumes for `/`, `/home` and `/var`. Preserve its supported Snapper and
 boot-loader integration. Do not allocate an arbitrary fixed 18 GiB root and 22 GiB home: that
-can strand free space and the earlier MicroOS example's 20 GiB free-home check is not a
-Tumbleweed capacity policy.
+can strand free space. Size the shared pool and reserve against the actual workload.
 
 Btrfs snapshots initially share blocks. Changed or deleted extents retained by old snapshots,
 and metadata, consume additional space; a snapshot is not another full copy of the 55 GB disk.
