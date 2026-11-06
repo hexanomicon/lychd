@@ -164,6 +164,8 @@ class AuthorityTests(unittest.TestCase):
     def test_sudo_policy_accepts_only_explicit_denial(self):
         for code, output, accepted in (
             (1, "User lychd is not allowed to run sudo on pilot.", True),
+            (0, "User lychd is not allowed to run sudo on localhost.", True),
+            (0, "(ALL) ALL", False),
             (0, "(ALL) ALL", False),
             (1, "policy plugin failure", False),
             (2, "unknown user", False),
