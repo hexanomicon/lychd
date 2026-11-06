@@ -28,6 +28,7 @@ const summary: LoomSummary = {
   entry_node: "start",
   implementation_revision: "test",
   pattern_id: "bridge_chat",
+  publication: "published",
   revision: "1",
   route_rank: 0,
   title: "Bridge chat",
@@ -219,7 +220,7 @@ it("leaves a newer surface registered when an older Loom unmounts", async () => 
 it("never registers a failed or mismatched response", async () => {
   vi.mocked(getLoomPatternRevision).mockResolvedValue({ ...score, revision: "other" });
   const { registry, component } = mountCommands();
-  expect((await screen.findByRole("alert")).textContent).toContain("different Pattern revision");
+  expect((await screen.findByRole("alert")).textContent).toContain("does not match the exact requested identity and source profile");
   expect(registry.capture()).toBeNull();
   component.unmount();
 });

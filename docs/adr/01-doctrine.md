@@ -129,6 +129,7 @@ and registers; it does not compete for topology law.
 | Divination / Altar | Meeting the running body. |
 | Transcendence | The Great Work and constitutional meaning. |
 | Summoning | First-life operation. |
+| Deployments | Operator host preparation and deployment experiment procedures. |
 | Directory indexes | Maps to their smallest useful owner. |
 
 Tracked `.agents/scopes/**` cards route agents but own no truth. Tracked `.agents/workflows/**`
@@ -156,7 +157,7 @@ scope discovery to workflow selection and a bounded task handoff.
 | Delivery | State of Work |
 | Direction and founding-year story | Roadmap |
 | Terms | Lexicon |
-| Operation and recovery | Sepulcher or Altar topic |
+| Operation and recovery | Sepulcher, Deployments or Altar topic |
 | Application contract | Composition |
 | Constitution | Transcendence |
 | Routing / choreography | Scope / workflow |
@@ -187,6 +188,12 @@ Each project keeps the source layout native to its toolchain. The current web so
 `clients/web/src/**`; the Android application module uses
 `clients/android/app/src/main/**`. Repeated inner `src` names express separate build ownership
 rather than one mixed repository source tree.
+
+Reusable operator host preparation lives under `deployments/**`, with target-specific operating
+procedure in `docs/deployments/**`. Host preparation owns platform prerequisites and
+bounded source staging, not application configuration or lifecycle.
+Tracked examples contain fictional values only. Private host configuration, credentials,
+configuration media, backups, and raw operator receipts stay outside the checkout.
 
 ## Consequences
 

@@ -94,16 +94,18 @@
 <svelte:head><title>Scavenger market — LychD</title></svelte:head>
 <svelte:window onbeforeunload={guardUnload} />
 <section class="scavenger" aria-labelledby="market-title" aria-busy={busy}>
-  <header>
+  <header class="scavenger-heading">
+    <div class="scavenger-intro">
     <span class="instrument-kicker">Altar · application</span>
     <h1 id="market-title">Scavenger market</h1>
     <p>One bounded Bazoš PC feed observation. Keep the whole field, then inspect it with a literal title/link filter.</p>
     <p class="limits">Title and link only · no seller judgment, price assessment, ranking, learning or automatic continuation.</p>
-  </header>
+    </div>
   <div class="actions">
     <button type="button" class="rune-btn" disabled={busy} onclick={() => { confirmDelete = false; void workspace.refresh(); }}>Refresh retained state</button>
     {#if ui.selectedId}<a href={`/scavenger?observation=${encodeURIComponent(ui.selectedId)}`}>Link to this UUID</a>{/if}
   </div>
+  </header>
   {#if ui.phase === "reading"}<p role="status">Reading current protected state. No source acquisition was requested.</p>{/if}
   {#if ui.phase === "submitting"}<p role="status">Submitting once. No automatic retry will be sent.</p>{/if}
   {#if ui.configured === false}<p role="status">Scavenger is not configured. This page cannot admit an observation.</p>
@@ -137,7 +139,7 @@
     </section>
   {/if}
   {#if document}
-    <section aria-labelledby="field-state-title">
+    <section class="retained-observation" aria-labelledby="field-state-title">
       <h2 id="field-state-title">Retained observation · {document.status}</h2>
       <p class="run-state">Run: {document.run_status ?? "not bound"} · acquisition: {document.acquisition_status ?? "no attempt recorded"} · disposition: {document.terminal_disposition}.
         {#if document.run_id}<a href={`/orb/${encodeURIComponent(document.run_id)}`}>Inspect Run evidence</a>{/if}</p>
@@ -158,7 +160,7 @@
       onrefresh={() => workspace.refresh()} />
   {/if}
   {#if observation && document && view}
-    <section aria-labelledby="whole-field-title">
+    <section class="whole-field" aria-labelledby="whole-field-title">
       <h2 id="whole-field-title">Whole field</h2>
       <dl class="identity">
         <dt>Source</dt><dd><code>{observation.contacted_url}</code></dd>
@@ -200,7 +202,7 @@
     </section>
   {/if}
   {#if document?.run_id && document.run_status && !["done", "failed", "cancelled"].includes(document.run_status)}
-    <section aria-labelledby="cancel-title">
+    <section class="cancel-work" aria-labelledby="cancel-title">
       <h2 id="cancel-title">Cancel pending work</h2>
       <p>The Run owner stops work and withdraws pending consent. Cancellation does not delete retained data or settle an unknown source outcome.</p>
       <label class="confirm"><input type="checkbox" bind:checked={confirmCancel} disabled={busy} /> I intend to cancel this Run.</label>
@@ -224,16 +226,16 @@
     <button type="button" class="rune-btn" disabled={busy || Boolean(ui.unconfirmedId || ui.unconfirmedDeletion || ui.unconfirmedCancel)} onclick={() => workspace.open(null)}>Prepare a new observation</button>
   {/if}
   {#if ui.slotAvailable && ui.configured === true && !document && !ui.deleted && !ui.unconfirmedId && !ui.unconfirmedDeletion && !ui.unconfirmedCancel && !busy}
-    <form onsubmit={submit} aria-label="New feed observation" novalidate>
+    <form class="observation-form" onsubmit={submit} aria-label="New feed observation" novalidate>
       <h2>Prepare a new observation</h2>
       <p>Private drafts stay in this document. The server retains admitted facts until explicit deletion. Every field below is supplied by you; empty lists and unknown budget/region remain explicit.</p>
-      <fieldset><legend>Campaign facts</legend>
+      <fieldset class="campaign-facts"><legend>Campaign facts</legend>
         <label>Subject profile<select bind:value={draft.subject} required><option value="">Choose…</option><option value="Technology@1">Technology</option><option value="Bazaar@1">Bazaar</option></select></label>
         <label>Need<textarea bind:value={draft.need} required rows="3"></textarea></label>
         <label>Inventory<textarea bind:value={draft.inventory} rows="2" aria-describedby="market-lines"></textarea></label>
         <label>Hard criteria<textarea bind:value={draft.criteria} rows="2" aria-describedby="market-lines"></textarea></label>
         <p id="market-lines">One nonempty entry per line, at most 16. Empty fields mean empty arrays; blank lines are ignored.</p>
-        <fieldset><legend>Soft preferences · not ranked by this profile</legend>
+        <fieldset class="soft-preferences"><legend>Soft preferences · not ranked by this profile</legend>
           {#each draft.preferences as preference (preference.key)}
             <div class="preference"><label>Criterion<input bind:value={preference.criterion} /></label><label>Weight<input inputmode="numeric" bind:value={preference.weight} /></label>
               <button type="button" class="rune-btn" aria-label={`Remove preference ${preference.key}`} onclick={() => { draft.preferences = draft.preferences.filter((p) => p.key !== preference.key); }}>Remove</button></div>
@@ -257,32 +259,81 @@
 </section>
 
 <style>
-  .scavenger { width: min(100%, 76rem); margin-inline: auto; padding: clamp(1rem, 3vw, 2.5rem); display: grid; align-content: start; gap: 1rem; min-width: 0; }
+  .scavenger { width: min(100%, 88rem); margin-inline: auto; padding: clamp(1.25rem, 3vw, 2.5rem); display: grid; align-content: start; gap: 1.75rem; min-width: 0; }
+  .scavenger-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem 2.5rem; align-items: end; padding-bottom: 1.75rem; border-bottom: 1px solid var(--color-engraving); }
+  .scavenger-intro { min-width: 0; }
   header p, .limits, caption { color: var(--color-ash); }
-  h1 { margin-block: .25rem .75rem; }
-  h2 { font-size: 1.25rem; margin-block: .25rem .5rem; }
-  p { max-width: 80ch; line-height: 1.6; margin-block: .5rem; }
+  h1 { margin-block: .4rem .85rem; font: 550 clamp(1.8rem, 3.3vw, 2.8rem)/1.2 var(--font-body); letter-spacing: -.03em; }
+  h2 { font-size: 1.25rem; font-weight: 550; margin-block: .25rem .75rem; }
+  p { max-width: 80ch; line-height: 1.65; margin-block: .5rem; }
   .actions, .filter, .preference { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
-  .notice, .deletion { padding: 1rem; border: 1px solid var(--color-engraving); border-inline-start: 3px solid var(--color-rune); }
-  label { display: grid; gap: .4rem; margin-block: .75rem; }
+  .scavenger-heading .actions { flex-direction: column; align-items: flex-start; padding-bottom: .4rem; }
+  .scavenger-heading .actions a { padding-block: .35rem; font-size: var(--text-sm); }
+  .notice { padding: 1.25rem; border: 1px solid var(--color-control-border); border-inline-start: 3px solid var(--color-heat); background: var(--color-obsidian); }
+  .retained-observation { padding: 1.25rem 1.5rem; border-inline-start: 2px solid var(--color-engraving); background: var(--color-obsidian); }
+  .retained-observation h2 { font-size: 1rem; }
+  .whole-field { padding-block: .5rem; }
+  .whole-field > .identity { padding: 1rem 0; border-bottom: 1px solid var(--color-engraving); }
+  .cancel-work, .deletion { border-top: 1px solid var(--color-engraving); padding-top: 1.5rem; margin-top: .5rem; }
+  .cancel-work h2, .deletion h2 { font-size: 1rem; }
+  .cancel-work p, .deletion p { color: var(--color-parchment); font-size: var(--text-sm); }
+  label { display: grid; gap: .5rem; margin-block: .5rem; min-width: 0; font-size: var(--text-sm); }
   .confirm { display: flex; align-items: center; gap: .75rem; }
-  input:not([type="checkbox"]), textarea, select { width: 100%; min-height: 2.75rem; padding: .65rem; color: var(--color-bone); background: var(--color-obsidian); border: 1px solid var(--color-control-border); border-radius: .25rem; font: inherit; }
+  input:not([type="checkbox"]), textarea, select { width: 100%; min-width: 0; min-height: 2.75rem; padding: .75rem; color: var(--color-bone); background: var(--color-obsidian); border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); font: inherit; font-size: 1rem; }
+  input[type="checkbox"] { width: 1.125rem; height: 1.125rem; flex-shrink: 0; accent-color: var(--color-rune); }
   button { align-self: start; justify-self: start; min-height: 2.75rem; max-width: 100%; white-space: normal; }
-  textarea { resize: vertical; }
-  fieldset { min-width: 0; border: 1px solid var(--color-engraving); padding: 1rem; }
+  .rune-btn { color: var(--color-parchment); background: var(--color-obsidian-2); border-color: var(--color-control-border); font-size: var(--text-sm); }
+  .rune-btn--frost { background: var(--color-bone); color: var(--color-void); border-color: var(--color-bone); font-weight: 600; }
+  .rune-btn--ash { color: var(--color-parchment); background: transparent; }
+  button:disabled { opacity: .5; }
+  textarea { resize: vertical; line-height: 1.65; }
+  .observation-form { display: grid; gap: 1.25rem; max-width: 72rem; padding-top: 1rem; }
+  .observation-form > p { margin-top: -.5rem; color: var(--color-parchment); }
+  fieldset { min-width: 0; border: 0; border-top: 1px solid var(--color-engraving); padding: 1.25rem 0 0; margin: .5rem 0 0; }
+  legend { padding: 0 .75rem 0 0; color: var(--color-bone); font-size: var(--text-sm); font-weight: 550; }
+  .campaign-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem 1.5rem; }
+  .campaign-facts > p, .campaign-facts > fieldset, .campaign-facts > .form-grid, .campaign-facts > label:nth-of-type(2), .campaign-facts > label:last-child { grid-column: 1 / -1; }
+  .campaign-facts > p { margin: 0; color: var(--color-ash); font-size: var(--text-sm); }
+  .soft-preferences { padding: 1.25rem; background: var(--color-tertiary); border: 0; margin-block: .75rem; }
+  .soft-preferences legend { padding-inline: .5rem; }
+  .soft-preferences > p { color: var(--color-ash); font-size: var(--text-sm); }
+  .campaign-facts > label:first-of-type { grid-column: 1 / -1; max-width: 24rem; }
+  .preference label:first-child { flex: 1 1 16rem; }
+  .preference label:nth-child(2) { flex: 0 1 8rem; }
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
-  .identity { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(0, 4fr); gap: .5rem 1rem; }
+  .identity { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(0, 4fr); gap: .65rem 1rem; font-size: var(--text-sm); line-height: 1.6; }
   dt { color: var(--color-ash); }
   dd { margin: 0; min-width: 0; }
   code, td, dd, pre { overflow-wrap: anywhere; }
-  pre { white-space: pre-wrap; padding: .75rem; background: var(--color-obsidian); }
-  details { margin-block: .5rem; }
-  summary { cursor: pointer; padding-block: .25rem; }
-  .field-table { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-  caption { text-align: start; margin-block: .75rem; }
-  td, th { padding: .75rem; text-align: start; vertical-align: top; border-block-end: 1px solid var(--color-engraving); }
+  pre { white-space: pre-wrap; padding: 1rem; background: var(--color-obsidian); }
+  details { margin-block: .75rem; }
+  summary { cursor: pointer; min-height: 2.75rem; padding-block: .6rem; color: var(--color-parchment); font-size: var(--text-sm); }
+  .filter { padding: 1rem 0; }
+  .filter label { flex: 1 1 20rem; }
+  .field-table { overflow-x: auto; margin-top: 1.25rem; border-block: 1px solid var(--color-engraving); }
+  table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: var(--text-sm); }
+  caption { text-align: start; padding-block: 1rem; line-height: 1.6; }
+  td, th { padding: 1rem; text-align: start; vertical-align: top; border-block-end: 1px solid var(--color-engraving); }
+  thead { background: var(--color-obsidian); }
+  thead th { color: var(--color-ash); font-weight: 500; }
+  tbody th { color: var(--color-ash); font: var(--text-sm)/1.6 var(--font-glyph); }
+  tbody td { line-height: 1.65; }
   th:first-child { width: 7rem; }
   :focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  @media (max-width: 40rem) { .identity { grid-template-columns: 1fr; } .identity dd { margin-block-end: .5rem; } table { min-width: 42rem; } }
+  @container work-area (max-width: 48rem) {
+    .scavenger-heading { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+    .scavenger-heading .actions { flex-direction: row; align-items: center; }
+    .campaign-facts { grid-template-columns: minmax(0, 1fr); }
+    .identity { grid-template-columns: minmax(0, 1fr); }
+    .identity dd { margin-block-end: .5rem; }
+    table { min-width: 42rem; }
+  }
+  @media (max-width: 40rem) {
+    .scavenger-heading, .campaign-facts, .identity { grid-template-columns: minmax(0, 1fr); }
+    .scavenger-heading .actions { flex-direction: row; align-items: center; }
+    .identity dd { margin-block-end: .5rem; }
+    table { min-width: 42rem; }
+  }
+  @container work-area (max-width: 35rem) { .scavenger { padding: 1rem; } .retained-observation, .soft-preferences { padding: 1rem; } }
+  @media (forced-colors: active) { .field-table, fieldset, .notice, .retained-observation { border-color: CanvasText; } }
 </style>

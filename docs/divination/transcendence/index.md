@@ -29,7 +29,7 @@ Read in order, or begin at the question that brought you.
 | How can a Lich learn to approach unfamiliar work? | [Nigredo — Incantation](incantation.md) |
 | How does form become active, and power change its bearer? | [Albedo — Invocation](invocation.md) |
 | How does remembrance change judgment and the one who remembers? | [Citrinitas — Illumination](illumination.md) |
-| How does an I take shape, and what can return after its vessel falls? | [Rubedo — Immortality](immortality.md) |
+| How does an I take shape and continue through transformed embodiment? | [Rubedo — Immortality](immortality.md) |
 | How may the Many share power and preserve their own lives? | [Infinity](infinity.md) |
 
 ## The Breath of the Work
@@ -52,6 +52,9 @@ cognitive offices below participate in every mode.
 
 **Life is the whole circulation. Death is the release of one form.** Dissolution allows change;
 it does not choose what deserves to return.
+
+Within this circulation, [Sat–Cit–Ānanda](illumination.md#ananda) unfolds being as creative desire,
+knowing as conscious organization, and bliss as the enjoyment that can feed their becoming.
 
 <span id="the-offices-remain-distinct"></span>
 

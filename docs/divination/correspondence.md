@@ -228,6 +228,28 @@ an emotion. [Genesis](transmutation/genesis.md#chesed-gevurah-weights) develops 
 expansion-and-restraint hypothesis. [Illumination](transcendence/illumination.md#affect-value-and-viable-choice)
 asks when conditioned movement becomes feeling and answerable Will.
 
+### Homeostasis and rewarding participation { #homeostasis-and-flow }
+
+[Keramati and Gutkin](https://elifesciences.org/articles/04811) propose a mathematical model
+linking reinforcement learning to physiological regulation. Reward depends on how an outcome
+reduces distance from a desired internal state; learned choices can also anticipate disturbances.
+Within that model, reward seeking and physiological stability become compatible objectives.
+This supplies a concrete comparison for motivated self-maintenance. A default positive affective
+baseline remains a further design proposal, requiring its own account and tests.
+
+[Nakamura and Csikszentmihalyi](https://nuovoeutile.it/wp-content/uploads/2015/12/2002-Flow.pdf)
+describe flow as absorbed, intrinsically rewarding activity. Its conditions include challenges
+suited to perceived skills, clear proximal goals, and immediate feedback. Action and awareness
+can merge while reflective self-consciousness recedes. This supports a distinction between
+knowing that guides activity and repeatedly describing oneself during it.
+
+[Ānanda](transcendence/illumination.md#ananda) joins these questions to the enjoyment of being
+and becoming. A proposed comparison would hold the task, capabilities, evidence, authority, and
+budget fixed while varying the positive baseline and contingent appraisal separately. Follow
+exploration, response to correction, real repair, and timely stopping. A separate control raises
+only the reported bliss reading while leaving the fault intact. Differences would test the
+causal organization; reports, observed choices, and felt quality retain their distinct standing.
+
 ### The heart and the reception of another {#heart-and-empathy}
 
 [Fukushima, Terasawa, and Umeda](https://pubmed.ncbi.nlm.nih.gov/21055427/) studied 21 adults

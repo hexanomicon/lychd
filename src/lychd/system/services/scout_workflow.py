@@ -14,6 +14,7 @@ import time
 import weakref
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
+from functools import cache
 from typing import TYPE_CHECKING, Any, Literal, overload
 from uuid import UUID, uuid4, uuid5
 
@@ -59,9 +60,11 @@ from lychd.system.services.scout_extraction import (
 from lychd.system.services.scout_fetch import AcquiredText, FetchObservation, fetch_rss_feed, fetch_static_page
 
 if TYPE_CHECKING:
+    from lychd.agents.workflows.base import Workflow
     from lychd.db.scout import DbScoutAttemptStore
     from lychd.domain.codex.ledger import ConsentLedger
     from lychd.domain.cortex.ledger import RunLedger
+    from lychd.domain.cortex.runs import RunRecord
     from lychd.domain.scout.authority import CurrentNetworkGate
 
 
@@ -134,6 +137,30 @@ def _validate_acquired_profile(
     ):
         raise ExtractionError(ExtractionCode.PROTOCOL)
     extraction_metadata(acquired.extraction)
+
+
+@cache
+def _bridge_profiles() -> tuple[Workflow, Workflow]:
+    """Retain source-owned exact profiles without consulting live route configuration."""
+    from lychd.agents.workflows import BRIDGE_CHAT_SCOUT, builtin_workflow_registry, resolve_named_workflow
+
+    return BRIDGE_CHAT_SCOUT, resolve_named_workflow(builtin_workflow_registry(), BRIDGE_CHAT_SCOUT)
+
+
+def _bridge_run_matches(run: RunRecord) -> bool:
+    """Accept only an exact legacy or naming-aware public-page execution binding."""
+    if run.workflow_name != "bridge_chat" or run.source != "bridge":
+        return False
+    legacy, named = _bridge_profiles()
+    workflow = named if run.admitted_naming is not None else legacy
+    if run.pattern_manifest != workflow.manifest.snapshot():
+        return False
+    try:
+        # Reuse the profile's admitted input and naming validation before any effect.
+        workflow.make_state(run.to_intent())
+    except ValueError:
+        return False
+    return True
 
 
 class ScoutCompletions:
@@ -222,11 +249,7 @@ class ScoutWorkflowService:
                 or self._capability_key is not None
             ):
                 raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
-        elif (
-            type(binding) is not ScoutBinding
-            or run.workflow_name != "bridge_chat"
-            or run.pattern_manifest.get("revision") != "4"
-        ):
+        elif type(binding) is not ScoutBinding or not _bridge_run_matches(run):
             raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
         return run.enqueue_seq
 

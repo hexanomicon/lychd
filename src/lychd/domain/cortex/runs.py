@@ -23,6 +23,7 @@ from lychd.domain.cortex.bridge_preference import BridgePreferenceDecision
 from lychd.domain.cortex.semantic_answer import SemanticAnswerBinding
 from lychd.domain.delegation.routing import DelegatedRuntimeBinding
 from lychd.domain.intercom.native import PeerRunBinding
+from lychd.domain.naming import NamingSnapshot
 from lychd.domain.scout.feed import ScoutFeedBinding
 from lychd.domain.scout.profile import ScoutBinding
 
@@ -181,6 +182,7 @@ class RunRecord:
     sigil_name: str = "magus"
     sigil_scopes: frozenset[str] = field(default_factory=frozenset)
     requested_priority: int | None = None
+    admitted_naming: NamingSnapshot | None = None
     admitted_capability_key: str | None = None
     admitted_bridge_preference: BridgePreferenceDecision | None = None
     admitted_archive: ArchiveProfile | None = None
@@ -213,6 +215,7 @@ class RunRecord:
             sigil_name=self.sigil_name,
             sigil_scopes=self.sigil_scopes,
             priority=self.priority,
+            admitted_naming=self.admitted_naming,
             admitted_capability_key=self.admitted_capability_key,
             admitted_bridge_preference=self.admitted_bridge_preference,
             admitted_archive=self.admitted_archive,

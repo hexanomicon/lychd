@@ -332,6 +332,7 @@ def _intent_payload(intent: Intent, *, idempotency_key: str | None = None) -> di
         "sigil_name": intent.sigil_name,
         "sigil_scopes": sorted(intent.sigil_scopes),
         "priority": intent.priority,
+        "admitted_naming": intent.admitted_naming.model_dump(mode="json") if intent.admitted_naming else None,
         "admitted_capability_key": intent.admitted_capability_key,
         "admitted_bridge_preference": preference.model_dump(mode="json") if preference is not None else None,
         "admitted_archive": intent.admitted_archive.model_dump(mode="json") if intent.admitted_archive else None,
@@ -618,8 +619,11 @@ def _reject_generic_resume(current: RunStatus, target: RunStatus, *, run_id: str
 def _copy_run_record(record: RunRecord) -> RunRecord:
     """Detach mutable in-memory Run truth at the adapter boundary."""
     from lychd.domain.cortex.bridge_preference import validate_retained_preference
+    from lychd.domain.naming import NamingSnapshot
 
     copied = deepcopy(record)
+    if copied.admitted_naming is not None:
+        copied.admitted_naming = NamingSnapshot.model_validate(copied.admitted_naming.model_dump())
     copied.admitted_bridge_preference = validate_retained_preference(
         copied.admitted_bridge_preference, copied.admitted_capability_key
     )
@@ -759,6 +763,7 @@ class InMemoryRunLedger:
             sigil_name=intent.sigil_name,
             sigil_scopes=intent.sigil_scopes,
             requested_priority=intent.priority,
+            admitted_naming=intent.admitted_naming,
             admitted_capability_key=intent.admitted_capability_key,
             admitted_bridge_preference=preference,
             admitted_archive=intent.admitted_archive,
@@ -2489,6 +2494,7 @@ class DbRunLedger:
                 "sigil_name": str(intent.get("sigil_name", row.sigil_name)),  # type: ignore[attr-defined]
                 "sigil_scopes": scopes,
                 "priority": intent.get("priority"),
+                "admitted_naming": intent.get("admitted_naming"),
                 "admitted_capability_key": intent.get("admitted_capability_key"),
                 "admitted_bridge_preference": validate_retained_preference(
                     intent.get("admitted_bridge_preference"), intent.get("admitted_capability_key")
@@ -2513,6 +2519,7 @@ class DbRunLedger:
             sigil_name=str(intent.get("sigil_name", row.sigil_name)),  # type: ignore[attr-defined]
             sigil_scopes=scopes,
             requested_priority=parsed_intent.priority,
+            admitted_naming=parsed_intent.admitted_naming,
             admitted_capability_key=parsed_intent.admitted_capability_key,
             admitted_bridge_preference=parsed_intent.admitted_bridge_preference,
             admitted_archive=parsed_intent.admitted_archive,

@@ -10,19 +10,22 @@ legacy_inline locks keep exact local lookup bound to that immutable assembly.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
 from lychd.agents.workflows._legacy_inline import LegacyInlineLock, legacy_inline_lock
 from lychd.agents.workflows.archive_chat import BRIDGE_CHAT_ARCHIVE
-from lychd.agents.workflows.base import Trigger, Workflow, pattern_snapshot_is_valid
+from lychd.agents.workflows.base import PatternManifest, Trigger, Workflow, pattern_snapshot_is_valid
 from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT, BRIDGE_CHAT_BOUND
 from lychd.agents.workflows.delegated_rite import DELEGATED_RITE, DELEGATED_RITE_BOUND
 from lychd.agents.workflows.observe_market import OBSERVE_MARKET
 from lychd.agents.workflows.scout_chat import BRIDGE_CHAT_SCOUT
 from lychd.agents.workflows.semantic_chat import BRIDGE_CHAT_SEMANTIC
+from lychd.domain.naming import NamingSnapshot
 
 if TYPE_CHECKING:
+    from pydantic import BaseModel
+
     from lychd.agents.router import Intent
     from lychd.config.settings import WeaverSettings
 
@@ -40,6 +43,7 @@ __all__ = [
     "Workflow",
     "WorkflowRegistry",
     "builtin_workflow_registry",
+    "resolve_named_workflow",
     "resolve_pinned_workflow",
 ]
 
@@ -246,6 +250,70 @@ class BuiltinWorkflowRegistry:
             return None
 
 
+def _naming_manifest(workflow: Workflow) -> PatternManifest:
+    """Fence named execution from workers that only know legacy Bridge revisions."""
+    return replace(
+        workflow.manifest,
+        revision=f"{workflow.manifest.revision}-naming1",
+        implementation_revision=f"{workflow.manifest.implementation_revision}-naming1",
+        checkpoint_schema=f"{workflow.manifest.checkpoint_schema}-naming1",
+    )
+
+
+def _named_bridge_workflow(workflow: Workflow) -> Workflow:
+    """Reuse the exact profile behavior behind a mandatory retained naming binding."""
+
+    def require_naming(intent: Intent) -> NamingSnapshot:
+        if intent.admitted_naming is None:
+            msg = "Named Bridge revision requires its admitted naming snapshot."
+            raise ValueError(msg)
+        return NamingSnapshot.model_validate(intent.admitted_naming.model_dump())
+
+    def make_state(intent: Intent) -> BaseModel:
+        naming = require_naming(intent)
+        legacy_intent = intent.model_copy(update={"admitted_naming": None})
+        return workflow.make_state(legacy_intent).model_copy(update={"naming": naming})
+
+    def validate_state(intent: Intent, state: BaseModel) -> None:
+        naming = require_naming(intent)
+        if getattr(state, "naming", None) != naming:
+            msg = "Named Bridge checkpoint does not match its admitted naming snapshot."
+            raise ValueError(msg)
+        legacy_intent = intent.model_copy(update={"admitted_naming": None})
+        if workflow.validate_state is None:
+            msg = "Named Bridge revision requires a profile checkpoint validator."
+            raise ValueError(msg)
+        workflow.validate_state(legacy_intent, state.model_copy(update={"naming": None}))
+
+    return replace(
+        workflow,
+        trigger=Trigger(hint="selected from accepted naming at admission", match=lambda _intent: False),
+        manifest=_naming_manifest(workflow),
+        make_state=make_state,
+        validate_state=validate_state,
+    )
+
+
+_NAMED_BRIDGE_WORKFLOWS = tuple(
+    _named_bridge_workflow(workflow)
+    for workflow in (BRIDGE_CHAT, BRIDGE_CHAT_BOUND, BRIDGE_CHAT_ARCHIVE, BRIDGE_CHAT_SCOUT, BRIDGE_CHAT_SEMANTIC)
+)
+
+
+def resolve_named_workflow(registry: WorkflowRegistry, workflow: Workflow) -> Workflow:
+    """Select only the registered naming-aware equivalent of a routed base profile."""
+    if workflow.name != "bridge_chat" or workflow.manifest.revision not in {"1", "2", "3", "4", "5"}:
+        msg = "No naming-aware Bridge revision is registered for this profile."
+        raise ValueError(msg)
+    named = resolve_pinned_workflow(
+        registry, workflow_name=workflow.name, snapshot=_naming_manifest(workflow).snapshot()
+    )
+    if named is None:
+        msg = "The selected registry cannot execute retained Bridge naming."
+        raise ValueError(msg)
+    return named
+
+
 def builtin_workflow_registry(*, weaver: WeaverSettings | None = None) -> BuiltinWorkflowRegistry:
     """Select active configured revisions while retaining prior executable revisions."""
     bridge = BRIDGE_CHAT_BOUND if weaver is not None and weaver.bridge is not None else BRIDGE_CHAT
@@ -264,6 +332,7 @@ def builtin_workflow_registry(*, weaver: WeaverSettings | None = None) -> Builti
             BRIDGE_CHAT_ARCHIVE,
             BRIDGE_CHAT_SCOUT,
             BRIDGE_CHAT_SEMANTIC,
+            *_NAMED_BRIDGE_WORKFLOWS,
             DELEGATED_RITE,
             DELEGATED_RITE_BOUND,
             OBSERVE_MARKET,

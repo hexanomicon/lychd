@@ -8,6 +8,10 @@
   import AltarIcon from "./AltarIcon.svelte";
   import { altarNavigationContext, selectedBridgeHref, type AltarNavigation } from "$lib/navigation/instruments";
 
+  import { createSeancesWorkspace, setSeancesWorkspace } from "$lib/seances/workspace.svelte";
+  import { seanceHref } from "$lib/seances/material";
+  import { navigationId } from "$lib/navigation/instruments";
+
   import { getAltarStatus } from "$lib/api/client";
 
   let { children, offline = false }: { children: Snippet; offline?: boolean } = $props();
@@ -21,6 +25,7 @@
       !page.url.searchParams.has("notes") && !page.url.searchParams.has("investigation"))
   );
   const bridgeModal = $derived(narrow && dockOpen && !bridgeFocused);
+  let resolvedBridgeSession = $state<string | null>(null);
   let bridgeView = $state<ReturnType<typeof BridgeView>>();
   function suspendBridgeVoice() { bridgeView?.suspendVoice(); }
   function readBridgeVisibility() {
@@ -32,7 +37,7 @@
     const path = page.url.pathname;
     if (path.startsWith("/bridge")) return page.url.searchParams.has("notes") ? "Public notes" :
       page.url.searchParams.has("investigation") ? "Public source investigation" : "Conversation workspace";
-    return ({ atlas: "Atlas", orb: "Orb", loom: "Loom", nexus: "Nexus", canvas: "Canvas", scavenger: "Scavenger market" } as Record<string, string>)[path.split("/")[1] ?? ""] ?? "Altar";
+    return ({ seances: "Séances", atlas: "Atlas", orb: "Orb", loom: "Loom", nexus: "Nexus", canvas: "Canvas", scavenger: "Scavenger market" } as Record<string, string>)[path.split("/")[1] ?? ""] ?? "Altar";
   });
   let mastheadHeight = $state(56);
   function measureMasthead(element: HTMLElement) {
@@ -57,6 +62,20 @@
   let omens = $state<Array<{ id: number; text: string; fault: boolean }>>([]);
   const navigation = $state<AltarNavigation>({ bridgePath: initialPath ?? "/bridge" });
   setContext(altarNavigationContext, navigation);
+  const seances = setSeancesWorkspace(createSeancesWorkspace(async (id) => {
+    if (navigationId(id) !== id) return;
+    suspendBridgeVoice();
+    bridgeView?.focusSessionComposer(id);
+    navigation.bridgePath = `/bridge/${encodeURIComponent(id)}`;
+    bridgeSession = id;
+    bridgeSearch = "";
+    dockOpen = true;
+  }));
+  function guardMaterialUnload(event: BeforeUnloadEvent) {
+    if (!seances.needsUnloadWarning) return;
+    event.preventDefault();
+    event.returnValue = "";
+  }
 
   const mainScroll = new Map<string, { top: number; left: number }>();
   let mainNavigation = 0;
@@ -188,7 +207,7 @@
   }
 
   const instruments = [
-    { slug: "bridge", label: "Bridge" }, { slug: "atlas", label: "Atlas" },
+    { slug: "seances", label: "Séances" }, { slug: "atlas", label: "Atlas" },
     { slug: "canvas", label: "Canvas" }, { slug: "orb", label: "Orb" },
     { slug: "loom", label: "Loom" }, { slug: "nexus", label: "Nexus" }
   ] as const;
@@ -283,7 +302,7 @@
   });
 </script>
 
-<svelte:window onfocus={refreshAttention} />
+<svelte:window onfocus={refreshAttention} onbeforeunload={guardMaterialUnload} />
 <svelte:document onvisibilitychange={attentionVisibilityChanged} />
 
 <a class="skip-link" href="#altar-main">Skip to instrument</a>
@@ -307,7 +326,7 @@
   <nav class="instruments" aria-label="Instruments">
     {#each instruments as instrument (instrument.slug)}
       <a
-        href={resolve(instrument.slug === "bridge" ? navigation.bridgePath : `/${instrument.slug}`)}
+        href={resolve(`/${instrument.slug}`)}
         aria-current={page.url.pathname.startsWith(`/${instrument.slug}`) ? "page" : undefined}
       >
         <AltarIcon name={instrument.slug} /><span>{instrument.label}</span>
@@ -341,8 +360,8 @@
   <main id={bridgeFocused ? undefined : "altar-main"} tabindex="-1" hidden={bridgeFocused} inert={bridgeModal}>
     {@render children()}
   </main>
-  <BridgeDock bind:open={dockOpen} bind:narrow focused={bridgeFocused} focusHref={resolve(navigation.bridgePath)} {workHref} {available} {viewing} onconnect={connect} onexpand={toggleBridge} onsuspend={suspendBridgeVoice}>
-    {#if available}<BridgeView bind:this={bridgeView} visible={dockOpen || bridgeFocused} isVisible={readBridgeVisibility} embedded={!bridgeFocused} sessionId={bridgeSession} search={bridgeSearch} onNavigate={selectConversation} />{/if}
+  <BridgeDock bind:open={dockOpen} bind:narrow focused={bridgeFocused} focusHref={resolve(resolvedBridgeSession ? seanceHref(resolvedBridgeSession) : "/seances")} focusLabel={resolvedBridgeSession ? "Open Séance" : "Browse séances"} {workHref} {available} {viewing} onconnect={connect} onexpand={toggleBridge} onsuspend={suspendBridgeVoice}>
+    {#if available}<BridgeView bind:this={bridgeView} visible={dockOpen || bridgeFocused} isVisible={readBridgeVisibility} embedded={!bridgeFocused} sessionId={bridgeSession} search={bridgeSearch} onNavigate={selectConversation} onSessionResolved={(id) => { resolvedBridgeSession = id; }} />{/if}
   </BridgeDock>
 </div>
 
@@ -356,20 +375,22 @@
 </div>
 
 <style>
-  .topbar { height: auto; min-height: 3.5rem; padding: 0 1.25rem; gap: 1.25rem; flex: 0 0 auto; flex-wrap: wrap; background: var(--color-void); border: 0; border-bottom: 1px solid var(--color-engraving); border-image: none; box-shadow: none; backdrop-filter: none; position: relative; z-index: 40; }
-  .brand { justify-content: center; width: 3.5rem; min-height: 3.5rem; padding: .375rem; }
+  .topbar { height: auto; min-height: 4rem; padding: .5rem 1.25rem; gap: .75rem; flex: 0 0 auto; flex-wrap: wrap; background: var(--color-obsidian); border: 0; border-bottom: 1px solid var(--color-engraving); border-image: none; box-shadow: none; backdrop-filter: none; position: relative; z-index: 40; }
+  .brand { justify-content: center; width: 3rem; min-height: 3rem; padding: .125rem; }
   .brand:hover { background: var(--color-tertiary); }
   .altar-product { margin-top: .35rem; color: var(--color-parchment); font-size: var(--text-sm); }
-  nav.instruments { height: auto; align-self: stretch; gap: .25rem; margin-left: auto; }
-  nav.instruments a { gap: .6rem; padding: .5rem .7rem; letter-spacing: 0; text-transform: none; color: var(--color-parchment); min-height: 3.5rem; }
-  nav.instruments a :global(svg), .application-menu :global(svg) { color: var(--color-accent); flex: 0 0 auto; }
-  nav.instruments a[aria-current="page"] { color: var(--color-bone); text-shadow: none; background: var(--color-tertiary); }
+  nav.instruments { height: auto; align-self: center; gap: .25rem; margin-left: .5rem; }
+  nav.instruments a { gap: .6rem; padding: .65rem .85rem; letter-spacing: 0; text-transform: none; color: var(--color-ash); min-height: 2.75rem; border: 1px solid transparent; border-radius: var(--radius-rune); }
+  nav.instruments a :global(svg), .application-menu :global(svg) { color: currentColor; flex: 0 0 auto; }
+  nav.instruments a:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
+  nav.instruments a[aria-current="page"] { color: var(--color-accent); text-shadow: none; border-color: color-mix(in srgb,var(--color-accent) 25%,var(--color-engraving)); background: color-mix(in srgb,var(--color-accent) 10%,var(--color-obsidian)); }
   .topbar .spacer { flex: 1 1 0; }
-  .sigil { border-radius: var(--radius-glyph); padding: .45rem .6rem; box-shadow: none; animation: none; }
+  .sigil { border-radius: var(--radius-rune); padding: .55rem .7rem; box-shadow: none; animation: none; border-color: transparent; }
   .sigil-identity { display: none; }
   .offline-status { color: var(--color-ash); font-size: var(--text-xs); }
-  .application-menu { position: relative; flex-shrink: 0; align-self: stretch; }
-  .application-menu > summary { display: flex; align-items: center; gap: .65rem; list-style: none; min-height: 3.5rem; padding: .5rem .25rem; color: var(--color-bone); cursor: pointer; font-size: var(--text-sm); }
+  .application-menu { position: relative; flex-shrink: 0; align-self: center; }
+  .application-menu > summary { display: flex; align-items: center; gap: .5rem; list-style: none; min-height: 2.75rem; padding: .5rem .65rem; border-radius:var(--radius-rune); color: var(--color-ash); cursor: pointer; font-size: var(--text-xs); }
+  .application-menu > summary:hover { color:var(--color-bone); background:var(--color-obsidian-2); }
   .application-menu > summary::-webkit-details-marker { display: none; }
   .application-menu nav { position: absolute; inset-block-start: 100%; inset-inline-start: -.5rem; z-index: 50; min-width: 14rem; padding: .35rem; background: var(--color-tertiary); border: 1px solid var(--color-tertiary-edge); border-radius: var(--radius-glyph); }
   .application-menu a { display: flex; align-items: center; gap: .75rem; min-height: 2.75rem; padding: .65rem; font-size: var(--text-sm); text-decoration: none; color: var(--color-bone); }
@@ -380,6 +401,6 @@
   main[hidden] { display: none; }
   :focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   @media (max-width: 75rem) { .topbar { gap: .65rem; padding-inline: .75rem; } nav.instruments a { padding-inline: .5rem; gap: .4rem; } .offline-status { display: none; } }
-  @media (max-width: 56rem) { .topbar { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr) auto; gap: .25rem .5rem; padding: .25rem .75rem 0; } .altar-about { grid-column: 1; grid-row: 1; } nav.instruments { grid-column: 1 / -1; grid-row: 2; width: 100%; margin: 0; justify-content: center; } nav.instruments a { min-height: 2.75rem; flex: 1; justify-content: center; } .topbar .spacer { display: none; } .application-menu { grid-column: 2; grid-row: 1; margin: 0; } .application-menu > summary { min-height: 2.75rem; gap: .4rem; font-size: var(--text-xs); } .application-menu nav { inset-inline-start: 0; inset-inline-end: auto; } .sigil { grid-column: 3; grid-row: 1; margin: 0; max-width: 100%; font-size: var(--text-xs); line-height: 1.3; white-space: normal; } }
+  @media (max-width: 56rem) { .topbar { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: .25rem .5rem; padding: .25rem .5rem .5rem; } .altar-about { grid-column: 1; grid-row: 1; } nav.instruments { grid-column: 1 / -1; grid-row: 2; width: 100%; margin: 0; justify-content: center; } nav.instruments a { min-height: 2.75rem; flex: 1; justify-content: center; } .topbar .spacer { display: none; } .application-menu { grid-column: 2; grid-row: 1; margin: 0; } .application-menu > summary { min-height: 2.75rem; gap: .4rem; font-size: var(--text-xs); } .application-menu nav { inset-inline-start: 0; inset-inline-end: auto; } .sigil { grid-column: 3; grid-row: 1; margin: 0; max-width: 100%; font-size: var(--text-xs); line-height: 1.3; white-space: normal; } }
   @media (max-width: 36rem) { nav.instruments { gap: 0; } nav.instruments a { flex-direction: column; gap: .2rem; padding: .4rem .2rem; font-size: var(--text-xs); } }
 </style>

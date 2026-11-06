@@ -71,6 +71,16 @@ Unavailable dependency is not subject failure; a hidden validator precondition i
 contract candidate. Refusal on an impossible task is not success unless matched solvable controls
 show action when action is possible.
 
+### Affective reports and improvement { #affective-reports }
+
+An affective report or appraisal is an observation or judgment under its declared contract.
+A claimed change distinguishes the baseline from the change attributed to an action and retains
+uncertainty about that attribution. Claims of repair, truth, Persona congruence, or beneficial
+consequence require their own criteria and supporting evidence. Enjoyment, relief, and confidence
+may inform the inquiry; their presence alone cannot establish those verdicts. The
+[Ānanda inquiry](../divination/transcendence/illumination.md#ananda) gives this distinction a
+motivational purpose without changing Drift's receiving authority.
+
 ## Adversarial evidence and calibration
 
 **Adversarial Cases** pressure a boundary: forbidden authoritative requests, false premises, demanded

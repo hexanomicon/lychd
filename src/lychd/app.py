@@ -143,6 +143,7 @@ class AppInit(InitPluginProtocol):
             DictationController,
             DictationLexiconController,
             LoomController,
+            NamingController,
             NexusController,
             OrbController,
         )
@@ -166,6 +167,7 @@ class AppInit(InitPluginProtocol):
                 DictationLexiconController,
                 CreationController,
                 ScavengerController,
+                NamingController,
                 NexusController,
                 LoomController,
                 OrbController,

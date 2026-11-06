@@ -220,22 +220,44 @@
 </section>
 
 <style>
-  .public-notes { width: min(100%, 58rem); margin: 0 auto; padding: 1.25rem; display: grid; align-content: start; gap: 1.25rem; min-width: 0; }
-  header, section, article, form, fieldset { display: grid; align-content: start; gap: 0.8rem; min-width: 0; }
+  .public-notes { width: min(100%, 64rem); margin: 0 auto; padding: clamp(1rem, 3vw, 2.5rem); display: grid; align-content: start; gap: 2rem; min-width: 0; }
+  header, section, article, form, fieldset { display: grid; align-content: start; gap: 1rem; min-width: 0; }
+  header { gap: 0.75rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--color-engraving); }
+  header > .instrument-kicker { color: var(--color-accent); }
+  header > p { max-width: 48rem; color: var(--color-ash); }
   h1, h2, h3, p { margin: 0; }
-  nav { display: flex; flex-wrap: wrap; gap: 1rem; }
-  fieldset, article, .notice { border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); padding: 1rem; }
-  legend { padding: 0 0.35rem; }
-  label { display: grid; gap: 0.4rem; }
-  input:not([type="checkbox"]), textarea { width: 100%; min-width: 0; min-height: 2.75rem; padding: 0.65rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-void); }
+  h1, h2, h3, legend { color: var(--color-bone); font-family: var(--font-body); font-variant: normal; letter-spacing: normal; }
+  h1 { font-size: clamp(1.6rem, 2.5vw, 2rem); font-weight: 600; line-height: 1.2; }
+  h2 { font-size: var(--text-xl); font-weight: 600; line-height: 1.35; }
+  h3 { font-size: var(--text-base); font-weight: 600; line-height: 1.5; }
+  .public-notes > form, .public-notes > article { border-top: 1px solid var(--color-engraving); padding-top: 1.5rem; }
+  fieldset { margin: 0; padding: 1.25rem 0 0; border: 0; border-top: 1px solid var(--color-engraving); gap: 1.25rem; }
+  legend { padding: 0 0.75rem 0 0; font-size: var(--text-sm); font-weight: 600; }
+  .notice { display: grid; align-content: start; gap: 1rem; min-width: 0; padding: 1.25rem; border: 0; border-left: 2px solid var(--color-control-border); border-radius: 0 var(--radius-panel) var(--radius-panel) 0; background: var(--color-obsidian); }
+  label { display: grid; gap: 0.5rem; color: var(--color-bone); }
+  input:not([type="checkbox"]), textarea { width: 100%; min-width: 0; min-height: 2.75rem; padding: 0.75rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-void); color: var(--color-bone); }
   label span { color: var(--color-ash); font-size: var(--text-sm); }
-  textarea { resize: vertical; font-family: var(--font-glyph); }
+  textarea { resize: vertical; line-height: 1.6; }
   dd, code, a, li { overflow-wrap: anywhere; }
-  dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); gap: 0.4rem 1rem; }
-  dd { margin: 0; }
-  button { align-self: start; justify-self: start; min-height: 2.75rem; max-width: 100%; white-space: normal; }
-  .declaration { display: flex; align-items: start; gap: 0.6rem; }
-  .declaration input { margin-top: 0.4rem; }
+  dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); gap: 0.65rem 1.5rem; margin: 0; padding-block: 0.25rem; }
+  dt { color: var(--color-ash); font-size: var(--text-sm); }
+  dd { margin: 0; min-width: 0; }
+  button { align-self: start; justify-self: start; min-height: 2.75rem; max-width: 100%; white-space: normal; line-height: 1.4; }
+  [role="alert"] { color: var(--color-ember); }
   :is(a, button, input, textarea):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  @media (max-width: 36rem) { .public-notes { padding: 0.75rem; } dl { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 36rem) { .public-notes { padding: 1rem; gap: 1.5rem; } dl { grid-template-columns: minmax(0, 1fr); gap: 0.25rem; } dd + dt { margin-top: 0.65rem; } .notice { padding: 1rem; } }
+
+  nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; padding-top: 0.5rem; font-size: var(--text-sm); }
+  nav a { padding-block: 0.35rem; }
+
+  .declaration { display: flex; align-items: start; gap: 0.75rem; padding-top: 0.25rem; }
+  .declaration input { margin-top: 0.35rem; accent-color: var(--color-rune); }
+
+  ul { margin: 0; padding-left: 1.25rem; }
+  li { padding-block: 0.35rem; }
+
+  textarea { font-family: var(--font-glyph); }
+  .filter { display: flex; flex-wrap: wrap; align-items: end; gap: 0.75rem; }
+  .filter label { flex: 1 1 20rem; }
+  .filter button { align-self: end; }
 </style>

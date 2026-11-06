@@ -38,7 +38,8 @@ vi.mock("$lib/api/client", () => ({
   listDictationLexicon: vi.fn().mockResolvedValue([]),
   approveDictationLexicon: vi.fn(),
   deleteDictationLexicon: vi.fn(),
-  getDictationSuggestions: vi.fn()
+  getDictationSuggestions: vi.fn(),
+  getNaming: vi.fn(), acceptNaming: vi.fn(), getNamingSuggestions: vi.fn()
 }));
 
 import {
@@ -53,7 +54,8 @@ import {
   getBridgeSessions,
   getRunSnapshot,
   listenToRun,
-  sendBridgeMessage
+  sendBridgeMessage,
+  getNaming, acceptNaming
 } from "$lib/api/client";
 import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
 import BridgeView from "./BridgeView.svelte";
@@ -2032,6 +2034,70 @@ describe("Bridge command destination and shared voice composer", () => {
     await act(() => vi.advanceTimersByTimeAsync(2500));
     expect(sendMock).not.toHaveBeenCalled();
     expect(message.value).toBe("create node Vessel");
+    view.unmount();
+  });
+});
+
+
+describe("optional naming ceremony in Bridge", () => {
+  beforeEach(() => { vi.mocked(getNaming).mockResolvedValue({ current: null }); });
+
+  async function openCeremony() {
+    await fireEvent.click(screen.getByText("Tools"));
+    await fireEvent.click(screen.getByRole("button", { name: "Naming ceremony" }));
+    await waitFor(() => expect((screen.getByRole("button", { name: "Review names" }) as HTMLButtonElement).disabled).toBe(false));
+  }
+
+  it("sends a real ordinary naming request without overwriting the composer draft or saving names", async () => {
+    sendMock.mockImplementation(async (_session, prompt) => accepted("naming-run", prompt));
+    const view = render(BridgeView, { sessionId: "session-a" });
+    const composer = await screen.findByRole("textbox", { name: "Message" });
+    await fireEvent.input(composer, { target: { value: "unfinished ordinary work" } });
+    await openCeremony();
+    await fireEvent.input(screen.getByLabelText("Your name · Magus"), { target: { value: "Aster Vale" } });
+    await fireEvent.click(screen.getByText("Explore names together in Bridge"));
+    await fireEvent.click(screen.getByRole("button", { name: "Invite Primus to propose a name" }));
+    await screen.findByText(/Request sent to Bridge/);
+    expect(sendMock).toHaveBeenCalledWith("session-a", expect.stringContaining('"magus_name":"Aster Vale"'), expect.any(String));
+    expect(listenMock).toHaveBeenCalledWith("naming-run", expect.any(Function), expect.any(Function), expect.any(Function), expect.any(Object));
+    expect((composer as HTMLTextAreaElement).value).toBe("unfinished ordinary work");
+    expect(acceptNaming).not.toHaveBeenCalled();
+    await fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Naming ceremony" }));
+    expect((screen.getByLabelText("Your name · Magus") as HTMLInputElement).value).toBe("Aster Vale");
+    expect(getNaming).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it("can open a first ordinary séance for optional AI assistance without requiring naming for New Séance", async () => {
+    getSnapshotMock.mockResolvedValueOnce({ sessions: [], session: null, active_runs: [], pending_consents: [], pending_count: 0 });
+    const session = snapshot("session-b").session!;
+    vi.mocked(createBridgeSession).mockResolvedValueOnce({ session });
+    sendMock.mockImplementation(async (_session, prompt) => accepted("first-naming-run", prompt));
+    const view = render(BridgeView);
+    expect(await screen.findByRole("button", { name: "New Séance" })).toBeTruthy();
+    await fireEvent.click(within(screen.getByRole("region", { name: "Begin a séance." })).getByRole("button", { name: "Naming ceremony" }));
+    await waitFor(() => expect((screen.getByRole("button", { name: "Review names" }) as HTMLButtonElement).disabled).toBe(false));
+    await fireEvent.click(screen.getByText("Explore names together in Bridge"));
+    await fireEvent.click(screen.getByRole("button", { name: "Ask for help with my name" }));
+    await screen.findByText(/Request sent to Bridge/);
+    expect(createBridgeSession).toHaveBeenCalledOnce();
+    expect(sendMock).toHaveBeenCalledWith("session-b", expect.stringContaining("Help me choose my own name"), expect.any(String));
+    expect(acceptNaming).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it("leaves ambiguous AI admission with ordinary Bridge recovery and refuses a duplicate fresh request", async () => {
+    sendMock.mockRejectedValueOnce(new TypeError("connection lost"));
+    const view = render(BridgeView, { sessionId: "session-a" });
+    await screen.findByLabelText("Message"); await openCeremony();
+    await fireEvent.click(screen.getByText("Explore names together in Bridge"));
+    await fireEvent.click(screen.getByRole("button", { name: "Ask for help with my name" }));
+    await screen.findByText(/The naming request was not confirmed/);
+    await fireEvent.click(screen.getByRole("button", { name: "Ask for help with my name" }));
+    expect(sendMock).toHaveBeenCalledOnce();
+    expect(screen.queryByText(/Request sent to Bridge/)).toBeNull();
+    expect(acceptNaming).not.toHaveBeenCalled();
     view.unmount();
   });
 });

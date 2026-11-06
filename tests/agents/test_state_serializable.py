@@ -52,6 +52,7 @@ from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.runs import RunRecord, RunStatus
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore, LiveStasisPhylactery
 from lychd.domain.delegation.routing import DelegatedRuntimeBinding
+from lychd.domain.naming import NamingSnapshot
 from lychd.domain.scout.profile import ScoutWorkflowCode, ScoutWorkflowError
 from lychd.ghouls.runs import _phylactery_for
 from tests.scout_feed_fixtures import scenario as feed_scenario
@@ -68,11 +69,30 @@ def _intent() -> Intent:
 async def test_every_workflow_state_round_trips() -> None:
     for workflow in builtin_workflow_registry().all():
         intent = _intent()
+        profile = {
+            ("bridge_chat", "1-naming1"): BRIDGE_CHAT,
+            ("bridge_chat", "2-naming1"): BRIDGE_CHAT_BOUND,
+            ("bridge_chat", "3-naming1"): BRIDGE_CHAT_ARCHIVE,
+            ("bridge_chat", "4-naming1"): BRIDGE_CHAT_SCOUT,
+            ("bridge_chat", "5-naming1"): BRIDGE_CHAT_SEMANTIC,
+        }.get((workflow.manifest.key, workflow.manifest.revision), workflow)
+        if profile is not workflow:
+            intent = intent.model_copy(
+                update={
+                    "admitted_naming": NamingSnapshot(
+                        magus_name="Zenith Runeweaver",
+                        primus_name="Aster Shadowdancer",
+                        magus_origin="manual",
+                        primus_origin="self_chosen",
+                        revision=1,
+                    ),
+                }
+            )
         if workflow is DELEGATED_RITE_BOUND:
             intent = intent.model_copy(update={"admitted_delegation": DelegatedRuntimeBinding(runtime="reference")})
-        if workflow is BRIDGE_CHAT_BOUND:
+        if profile is BRIDGE_CHAT_BOUND:
             intent = intent.model_copy(update={"admitted_capability_key": "chat:offline"})
-        if workflow is BRIDGE_CHAT_ARCHIVE:
+        if profile is BRIDGE_CHAT_ARCHIVE:
             intent = intent.model_copy(
                 update={
                     "admitted_capability_key": "chat:offline",
@@ -83,11 +103,11 @@ async def test_every_workflow_state_round_trips() -> None:
                     ),
                 }
             )
-        if workflow is BRIDGE_CHAT_SCOUT:
+        if profile is BRIDGE_CHAT_SCOUT:
             intent = intent.model_copy(
                 update={"prompt": PROMPT, "admitted_capability_key": "chat:offline", "admitted_scout": scout_binding()}
             )
-        if workflow is BRIDGE_CHAT_SEMANTIC:
+        if profile is BRIDGE_CHAT_SEMANTIC:
             from tests.unit.domain.cortex.test_semantic_answer_admission import BINDING
 
             intent = intent.model_copy(update={"admitted_capability_key": "chat:offline", "admitted_semantic": BINDING})
@@ -102,6 +122,7 @@ async def test_every_workflow_state_round_trips() -> None:
         state.model_json_schema()
         restored = type(state).model_validate_json(state.model_dump_json())
         assert restored == state
+        assert restored.model_dump_json() == state.model_dump_json()
 
 
 @pytest.mark.parametrize(

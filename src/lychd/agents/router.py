@@ -14,6 +14,7 @@ from lychd.domain.cortex.bridge_preference import BridgePreferenceDecision, vali
 from lychd.domain.cortex.semantic_answer import SemanticAnswerBinding
 from lychd.domain.delegation.routing import DelegatedRuntimeBinding
 from lychd.domain.intercom.native import PeerRunBinding
+from lychd.domain.naming import NamingSnapshot
 from lychd.domain.scout.feed import ScoutFeedBinding
 from lychd.domain.scout.profile import ScoutBinding
 
@@ -37,6 +38,7 @@ class Intent(BaseModel):
     priority: int | None = Field(default=None, ge=0, le=100)  # None → the per-source default
     # Server-owned admission metadata. submit rejects this from callers; only the
     # admission path and RunRecord.to_intent may populate it for durable execution.
+    admitted_naming: NamingSnapshot | None = None
     admitted_capability_key: str | None = Field(default=None, min_length=1)
     admitted_bridge_preference: BridgePreferenceDecision | None = None
     admitted_archive: ArchiveProfile | None = None

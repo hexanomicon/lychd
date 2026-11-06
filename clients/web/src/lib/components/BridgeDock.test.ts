@@ -58,7 +58,7 @@ it("resizes through the pointer without changing the conversation node", async (
   await fireEvent.pointerDown(separator, { button: 0, pointerId: 1, clientX: 700 });
   await fireEvent.pointerMove(separator, { pointerId: 1, clientX: 800 });
   await fireEvent.pointerUp(separator, { pointerId: 1, clientX: 800 });
-  expect(separator.getAttribute("aria-valuenow")).toBe("540");
+  expect(separator.getAttribute("aria-valuenow")).toBe("460");
   expect(screen.getByLabelText("Retained draft")).toBe(textarea);
   view.unmount();
 });
@@ -135,7 +135,7 @@ it.each(["left", "right"] as const)("keeps the %s edge control mounted through c
   expect(screen.getByRole("button", { name: "Expand Bridge" })).toBe(toggle);
   expect(toggle.closest("[hidden]")).toBeNull();
   expect(toggle.getAttribute("aria-expanded")).toBe("false");
-  expect(toggle.textContent).toBe(side === "left" ? ">>" : "<<");
+  expect(toggle.textContent).toBe(side === "left" ? ">>Bridge" : "<<Bridge");
   expect(document.activeElement).toBe(toggle);
   expect(JSON.parse(localStorage.getItem(bridgeDockStorageKey)!)).toEqual({ width: 440, side, open: false });
   await fireEvent.click(toggle);

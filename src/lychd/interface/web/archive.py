@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from litestar import Controller, Request, get, post
@@ -11,7 +11,7 @@ from litestar.exceptions import NotFoundException, ValidationException
 from litestar.params import FromPath, FromQuery
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from lychd.agents.workflows import WorkflowRegistry
+from lychd.agents.workflows import WorkflowRegistry, resolve_named_workflow
 from lychd.agents.workflows.archive_chat import ARCHIVE_ANSWER_PURPOSE, BRIDGE_CHAT_ARCHIVE, archive_recall_request
 from lychd.agents.workflows.base import pattern_snapshot_is_valid
 from lychd.domain.archive import (
@@ -28,6 +28,23 @@ from lychd.domain.archive import (
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.web.contracts import ArchiveBridgeDefault, ArchiveRunRecall, BridgeComposer
 from lychd.interface.web.archive_response import archive_result, require_archive_access
+
+if TYPE_CHECKING:
+    from lychd.domain.cortex.runs import RunRecord
+
+
+def _archive_run_manifest(record: RunRecord, state: State) -> dict[str, Any] | None:
+    """Require exact registered naming execution while preserving the legacy binding."""
+    if record.pattern_manifest["revision"] == "3":
+        return BRIDGE_CHAT_ARCHIVE.manifest.snapshot() if record.admitted_naming is None else None
+    registry = getattr(getattr(state.services, "run_engine", None), "workflows", None)
+    if not isinstance(registry, WorkflowRegistry) or record.admitted_naming is None:
+        return None
+    try:
+        workflow = resolve_named_workflow(registry, BRIDGE_CHAT_ARCHIVE)
+    except ValueError:
+        return None
+    return workflow.manifest.snapshot()
 
 
 class ArchiveLifecycleIntent(BaseModel):
@@ -99,10 +116,10 @@ class ArchiveController(Controller):
         snapshot = record.pattern_manifest
         if record.run_id != str(run_id) or not pattern_snapshot_is_valid(snapshot):
             return await archive_result(_refuse_run_binding())
-        if (snapshot["key"], snapshot["revision"]) != ("bridge_chat", "3"):
+        if snapshot["key"] != "bridge_chat" or snapshot["revision"] not in {"3", "3-naming1"}:
             return ArchiveRunRecall(run_id=run_id, status="not_applicable", receipt=None)
         if (
-            snapshot != BRIDGE_CHAT_ARCHIVE.manifest.snapshot()
+            snapshot != _archive_run_manifest(record, state)
             or record.workflow_name != BRIDGE_CHAT_ARCHIVE.name
             or record.source != "bridge"
             or not isinstance(record.admitted_capability_key, str)

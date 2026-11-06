@@ -143,21 +143,26 @@
 </section>
 
 <style>
-  .archive-recall { min-width: 0; padding: 1rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); background: var(--color-obsidian); color: var(--color-bone); overflow-wrap: anywhere; font-size: var(--text-sm); line-height: 1.6; }
-  h2 { font: 500 var(--text-lg)/1.4 var(--font-body); }
-  h3 { font: 600 var(--text-sm)/1.5 var(--font-body); }
-  p, dl, ol, details { margin-top: .75rem; }
+  .archive-recall { min-width: 0; padding: 1.25rem 0; border-top: 1px solid var(--color-engraving); color: var(--color-parchment); overflow-wrap: anywhere; font-size: var(--text-sm); line-height: 1.65; }
+  h2 { margin: 0; color: var(--color-bone); font: 600 var(--text-lg)/1.4 var(--font-body); }
+  h3 { margin: 0; color: var(--color-bone); font: 600 var(--text-base)/1.5 var(--font-body); }
+  p, dl, ol, details { margin-top: 1rem; }
   p, dt { color: var(--color-parchment); }
   .run, dd { overflow-wrap: anywhere; }
-  .run { font-family: var(--font-glyph); }
-  dl { display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; }
-  dd + dt { margin-top: .4rem; }
+  .run { color: var(--color-ash); font: var(--text-sm)/1.6 var(--font-glyph); }
+  dl { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.3rem; }
+  dt { font-size: var(--text-sm); color: var(--color-ash); }
+  dd + dt { margin-top: 0.65rem; }
   dd { margin: 0; min-width: 0; }
   ol { padding-left: 1.4rem; }
-  li + li { margin-top: 1rem; }
-  button { margin-top: .8rem; min-height: 2.75rem; padding: .5rem .75rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); white-space: normal; }
-  button:disabled { opacity: .65; }
-  summary { cursor: pointer; padding-block: .4rem; }
+  li { padding-top: 1rem; border-top: 1px solid var(--color-engraving); }
+  li + li { margin-top: 1.5rem; }
+  button { margin-top: 1rem; min-height: 2.75rem; max-width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-obsidian-2); color: var(--color-bone); white-space: normal; line-height: 1.4; cursor: pointer; }
+  button:hover { border-color: var(--color-rune); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  details { border-top: 1px solid var(--color-engraving); padding-top: 0.5rem; }
+  summary { cursor: pointer; padding-block: 0.5rem; color: var(--color-parchment); }
   button:focus-visible, summary:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  [role="alert"] { color: var(--color-ember); }
   .status { color: var(--color-bone); font-weight: 600; }
 </style>

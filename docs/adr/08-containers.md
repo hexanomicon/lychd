@@ -142,6 +142,12 @@ or lifecycle channel.
 Operator provisioning supplies the one non-root host account and platform floor; LychD services
 receive no account-creation or cross-user authority.
 
+The [deployment procedures](../deployments/index.md) provide separate operator host preparation
+through the [Tumbleweed Ansible pilot](../deployments/tumbleweed/index.md). Host preparation must
+not create LychD application settings, secrets, generated units, datastores, or activation
+authority. Host provisioning and OS recovery do not establish
+application deployment, coordinated backup, or Tomb/Coffin qualification.
+
 #### Gateway placement
 
 An exact profile may place Veil on a separate

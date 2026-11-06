@@ -128,6 +128,9 @@ continuing, separating what is supported from what is merely persuasive or unsaf
 
 The Altar’s continuing place of communion. One séance may hold many Invocation Circles.
 
+[Séances](../divination/altar/seances.md) opens the retained conversation for inspection and
+source-linked working material; explicit continuation returns it to the live Bridge.
+
 ### [Broadcast](../compositions/broadcast/index.md) { #broadcast }
 
 The Composition that carries editorial work into release and correction. It owns canonical
@@ -189,9 +192,12 @@ to `~/.config/lychd`, with `XDG_CONFIG_HOME` selecting another configuration roo
 
 ### [Coffin](../adr/09-security.md#the-coffin-delegated-agent-profile) { #coffin }
 
-The containment profile for one job entrusted to an opaque delegated-agent runtime. It treats
+The per-`AgentJob` containment profile for one opaque delegated-agent runtime. It treats
 that runtime as lower trust, gives it disposable files, and exposes provider access through a
-revocable Provider Gate.
+revocable Provider Gate. It names neither a fixed container nor a supervisor location; `nono` is
+one enforcement mechanism within the profile.
+[Security's placement contract](../adr/09-security.md#profile-supervision-and-placement)
+distinguishes supervision, guest placement, and the separate Tomb contract.
 
 ### [Cognizance](../divination/transcendence/immortality.md#cognizance) { #cognizance }
 
@@ -681,7 +687,7 @@ contract. In the grimoire, a Scroll.
 
 ### [Persona](../sepulcher/extensions/mirror.md) { #persona }
 
-A durable, revisioned identity. Mirror may hydrate its discourse voice, commitments, boundaries,
+A declared, revisioned part of personal identity. Mirror may hydrate its discourse voice, commitments, boundaries,
 and orientation into a bounded Agent instruction envelope. Acoustic voice and presentation assets
 remain separate from Persona.
 
@@ -727,6 +733,14 @@ Membership is design truth, not executable delivery or a live registry.
 
 A per-run Agent specialization expressed through output schema, tool grant, model settings, and
 prompt frame.
+
+### [Primus](inner-tongue.md#primus) { #primus }
+
+The Lich's first and continuing main personal identity, ordinarily encountered through Bridge.
+Its proper name is the companion's form of address. Persona, AgentSpec, active Sigil, and
+workflow retain their separate contracts.
+
+[Covenant 32](../adr/32-identity.md#primus-and-naming)
 
 ### [Prism](../sepulcher/extensions/prism/index.md) { #prism }
 
@@ -1038,8 +1052,9 @@ external attachments.
 
 ### [The Tomb](../adr/09-security.md#6-tomb-execution-contract) { #the-tomb }
 
-The `lychd-tomb` execution plane for disposable payloads and workspaces under narrow credentials
-and sandboxing.
+The designed `lychd-tomb` non-agent execution plane for disposable payloads and workspaces under
+narrow credentials and sandboxing. It is not synonymous with Coffin and does not, by its name,
+establish a Coffin host or a required container nesting.
 
 ### [Titan](../sepulcher/animator/soulstone/disciplines.md#iii-the-titan-llamacpp) { #titan }
 

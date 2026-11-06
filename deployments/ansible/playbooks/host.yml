@@ -1,0 +1,9 @@
+---
+- name: Converge the installed Tumbleweed host floor
+  hosts: lychd_hosts
+  gather_facts: false
+  become: true
+  serial: 1
+  any_errors_fatal: true
+  roles:
+    - role: tumbleweed_host

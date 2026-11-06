@@ -52,17 +52,19 @@ identity. Keep that identity in view when changing instruments.
 | --- | --- |
 | What can we draw, develop, organize and return to across conversations? | [Canvas](../../compositions/canvas/index.md), with [Atlas](./atlas.md) as its project catalogue |
 | What was offered, what judgment is pending, and what settled? | [Bridge](./bridge.md) |
+| What did this conversation contain, and which words should we carry into later work? | [Séances](./seances.md) |
 | Which Runs are before us, what evidence is arriving, and where does capture run out? | [Orb](./orb.md) |
 | Which stations and paths does this exact Scroll permit? | [Loom](./loom.md) |
 | What was observed about readiness or a physical transition? | [Nexus](./nexus.md) |
 
 Canvas and Atlas are equal top-level destinations: the creative board and its project catalogue.
-Bridge is the first navigation entry, immediately to the left of Atlas; Canvas, Orb, Loom and
+Séances is the first navigation entry, immediately to the left of Atlas; Canvas, Orb, Loom and
 Nexus follow. LychD's own Canvas is pinned first
-and opens by default in Canvas. Bridge opens a full-focus conversation page with pinned and recent
-chats, and remains available as a panel beside the selected work. Icons accompany their visible
-names. Leaving full chat for another instrument reveals that same conversation as a sidebar on
-wide windows; narrow windows retain the edge control.
+and opens by default in Canvas. Séances opens a catalogue and exact retained-conversation workspace.
+Bridge remains the live conversation panel beside the selected work, opened by its named edge
+control. **Open Séance** opens the panel's actual conversation for inspection; **Continue in Bridge**
+explicitly selects an inspected conversation for live exchange. Icons accompany the visible
+navigation names. Existing full-focus Bridge links remain supported.
 Hover, click or keyboard opens the menu. **Applications** opens the other admitted
 applications, including Scavenger market.
 
@@ -88,10 +90,10 @@ request.
 
 ## Keep Bridge beside the work
 
-Use the **« / »** control at the work area's edge to open or collapse Bridge. New layouts start
-on the left; a valid saved side remains in use. Drag its divider to
-change its width, or focus the divider and use its arrow keys. **Dock left** and **Dock right**
-choose the side. A wide window makes room beside the panel; a narrow window opens it as a
+Use the named **Bridge** control at the work area's edge to open or collapse the panel. New layouts start
+on the left at a compact width; valid saved side and width preferences remain in use. Drag its divider to
+change its width, or focus the divider and use its arrow keys. The **⇄** control chooses the
+other side. A wide window makes room beside the panel; a narrow window opens it as a
 modal sheet with Escape and a return to the opener. Layout preferences may be remembered in this
 browser; conversation drafts and unresolved requests retain their existing open-document boundary.
 
@@ -114,8 +116,13 @@ contracts belong to the Frontend Covenant; interface choices preserve retained s
 
 ## Presentation direction
 
-Each page is arranged as a quiet observatory around the work you came to read: an undertaking,
-conversation, account, board, or score. Identity and history unfold as needed, while uncertainty,
+The graphite frame leaves black spatial surfaces to the work. Neutral primary actions, a quiet
+purple instrument identity, cyan manipulation controls, and green observed activity have distinct
+roles. Bridge keeps a compact composer beside the work; Atlas reads as a catalogue, Canvas as a
+drawing board, Séances as a retained-conversation workspace, Orb as an evidence field, Loom as
+a declared score, and Nexus as an inspection board.
+Canvas's **Selection tools** unfold when ink or nodes are selected, or can be opened directly.
+Identity and history unfold as needed, while uncertainty,
 consent, capture limits, and physical consequences stay beside the choices they qualify.
 [Frontend's reading hierarchy](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction)
 owns this shared design. Each instrument's **Reading direction** explains its current composition,

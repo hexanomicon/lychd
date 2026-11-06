@@ -325,6 +325,13 @@ The dated 0cc0988 installed startup/activation observation is scoped under
 [vLLM](#vllm-integration). A changed compiler or loaded-graph attestor needs a new same-source
 installed profile; that observation contains no Coven and does not qualify the current checkout.
 
+The Tumbleweed host-preparation candidate uses Ansible for an already installed headless host and
+inactive-only, exact-revision source/CLI staging. Its refusal helpers and playbook checks do not
+execute a privileged target or establish convergence. First apply, a second no-change apply,
+direct runtime SSH/rootless operation, actual storage placement and controlled OS recovery
+remain unobserved. No model, application secrets, generated units or lifecycle are owned by
+these playbooks; source preparation is not an installed application receipt.
+
 The frozen [trusted installed-hybrid profile](#current-evidence-envelope) recorded its private
 manager, installed native CLI, plain Docker PostgreSQL/migrator dependencies and borrowed warm
 model with inert owned model units. It does not execute the full generated rootless graph or
@@ -335,6 +342,10 @@ loaded-source attestation, forward switch, compensation, crash recovery, startup
 GPU and model proof remains separate. Include image account, actual UID/GID maps, mounted secret
 readability, read-only code, writable scratch, initial database creation, and repeated init/start
 with existing mapped data; compilation and mocked ownership tests do not establish these facts.
+The Tumbleweed pilot additionally needs successful installation, both apply observations,
+effective runtime identity/mapping and container checks, the exact source/CLI/image identities,
+and a controlled OS update/reboot/recovery cycle. Separate application/recovery evidence is
+required before another host inherits a ready claim.
 
 **Evidence**
 
@@ -342,6 +353,10 @@ with existing mapped data; compilation and mocked ownership tests do not establi
 - **Verification:** [Isolated Quadlet transaction](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_systemd_quadlet_transaction.py), [runtime protocol tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py), [datastore custody tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_datastore_custody.py), and [mount authority tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_mount_authority.py)
 - **Verification:** [Btrfs preparation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_btrfs.py), [descriptor observer tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_btrfs_observer.py), and [deletion identity tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_deletion_storage.py)
 - **Law:** [Containers](./adr/08-containers.md)
+
+- **Source:** [Tumbleweed host playbook](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/playbooks/host.yml), [host observation helper](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/roles/tumbleweed_host/files/host_probe.py), and [inactive source preparation](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/playbooks/source.yml)
+- **Verification:** [Host refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_host_probe.py), [source refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_source_guard.py), and [deployment checks](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/deployments.yml)
+- **Topic:** [Tumbleweed VPS](./deployments/tumbleweed/index.md)
 
 ### Whole-body snapshot and restore {#whole-body-snapshot-restore}
 
@@ -1205,9 +1220,9 @@ ADR 15's bounded operator-palette contract is design law, not delivered configur
 
 **State:** Partial
 
-**Proved now:** The shared masthead provides independent Canvas, Atlas, Bridge, Orb, Loom and
+**Proved now:** The shared masthead provides independent Séances, Canvas, Atlas, Orb, Loom and
 Nexus icon-and-label destinations, with a board icon for Canvas and map icon for Atlas, plus an
-Applications menu reachable by hover, click, or keyboard. A persistent work-area edge chevron
+Applications menu reachable by hover, click, or keyboard. A persistent named work-area edge control
 opens or collapses Bridge; new layouts start on the left while valid saved sides remain. One
 ordinary conversation stays mounted across work navigation and collapse, retaining exact-session
 drafts, unresolved offering identity, and live subscriptions. Explicit Bridge URLs still select
@@ -1215,11 +1230,29 @@ session, Project, Run, and consent focus. Investigation and public-note applicat
 separate composition. Ordinary `/bridge` and exact-session URLs open full focus: the same
 mounted conversation fills the work area, with one accessible main and no dock modal or resize
 controls. Full focus leaves saved dock preferences intact. The rail separates browser-local pinned
-identities from recent server-supplied sessions. Bridge is the first masthead entry, immediately
-before Atlas. Leaving full chat for a wide work view reveals the same mounted conversation as a
+identities from recent server-supplied sessions. Séances is the first masthead entry, immediately
+before Atlas. The panel's **Open Séance** uses its actual server-supplied conversation identity;
+an unresolved default instead offers the catalogue. Leaving legacy full chat for a wide work view reveals the same mounted conversation as a
 sidebar without replacing saved openness; narrow work views retain their edge/modal treatment.
 Off-page pins need no speculative thread reads.
 Pins retain IDs only, at most 32, and carry no session or admission authority.
+
+`/seances` pages conversation metadata with a filter explicitly scoped to loaded entries;
+`/seances/{session_id}` reads one exact retained transcript. This inspection does not select the
+live Bridge, open another composer, or add an event subscription. Explicit **Continue in Bridge**
+reuses the existing conversation surface and queues focus for its actual ready composer. Exact
+legacy Bridge session, Run, consent, Project, investigation and public-note paths retain their
+focus and recovery behavior. The same protected static-shell route guards admit Séances deep links.
+
+Manual selections preserve exact quotations, supplied Session/Run references, a topic/question/
+material classification, and an optional user note. Copy and Markdown export keep that provenance.
+The shell retains at most 32 selections and 128,000 quotation-and-note characters across séances
+for the open browser document, with a document-exit warning and no source or note storage in
+localStorage. Current authorization refusal clears protected inspection and staging across both
+read lanes; stale completions cannot restore it. Other unavailable reads preserve user staging
+while withholding source actions until a fresh authorized read. Component regressions cover these
+boundaries, delayed continuation, draft preservation and catalogue recovery; they are not an
+installed production-browser receipt.
 
 The dock supports left/right placement, bounded pointer/keyboard resizing, and layout-only local
 preferences. Wide windows allocate space beside it; narrow windows provide modal focus
@@ -1230,13 +1263,16 @@ authentication remains intact.
 
 **Boundary — Not yet:** The dock supplies no new model context or attachment admission,
 global conversation merge, cross-instance history, durable browser draft storage or execution
-authority. Viewing a page is not transmitting it to a model. Browser and component checks do not
+authority. Séances supplies no automatic analysis, durable working-material store, private
+conversation-to-Archive intake, or Persona authoring. Viewing a page is not transmitting it to a model. Browser and component checks do not
 qualify every device, bright/dim environment, forced-colour combination or the renderer's separate
 cross-engine heap gate. Existing server-held recovery, current-access and consent limits remain.
 
 **Evidence**
 
 - **Source:** [Shell](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/AltarShell.svelte), [Bridge dock](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeDock.svelte), [conversation](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeView.svelte), [bounded layout preferences](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/navigation/dock.ts), and [semantic styling](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/app.css)
+- **Source:** [Séances workspace](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/SeancesWorkspace.svelte), [source material](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/seances/material.ts), and [document-local collection](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/seances/workspace.svelte.ts)
+- **Verification:** [Séances reads and working material](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/SeancesWorkspace.test.ts), [source export](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/seances/material.test.ts), and [Bridge selection and continuation](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeShellNavigation.test.ts)
 - **Verification:** [Server shell fallbacks](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_pages.py), [shell admission/status tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/AltarShell.test.ts), [mounted conversation/navigation tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeShellNavigation.test.ts), [dock interaction tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeDock.test.ts), [layout preference tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/navigation/dock.test.ts), and [offline source profile](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/routes/canvas/layout.test.ts)
 - **Law:** [Shared workbench and Bridge dock](./adr/15-frontend.md#the-shared-workbench-and-bridge-dock)
 - **Topic:** [Altar](./divination/altar/index.md#keep-bridge-beside-the-work)
@@ -3310,13 +3346,47 @@ Generated answers can quote sources; later revocation does not erase earlier out
 **Proved now:** Identity law defines a filtered, revisable binding rather than a second cognitive
 runtime.
 
-**Do not expect yet:** There is no identity store, synthesis loop, hydration adapter, versioned
-Persona, calibration, or promoted persistent identity.
+**Do not expect yet:** There is no Persona registry, synthesis loop, hydration adapter, versioned
+Persona, calibration, or promoted persistent identity. The bounded
+[naming ceremony](#primus-naming) supplies forms of address without these larger contracts.
 
 **Evidence**
 
 - **Topic:** [Mirror](./sepulcher/extensions/mirror.md)
 - **Law:** [Identity](./adr/32-identity.md)
+
+### Primus naming ceremony {#primus-naming}
+
+**State:** Available
+
+**Proved now:** An optional Altar ceremony accepts the Magus's and Primus's reviewed names,
+offers local two-part dictionary suggestions without inference, and can send an ordinary Bridge
+request for help or the companion's own proposal. Explicit acceptance stores an operator-scoped,
+revisioned naming record; stale acceptance is refused. PostgreSQL retains earlier revisions.
+Bridge admission pins the accepted snapshot or its absence, and all five Bridge profiles send
+the same named identity text that Context budgets. A rename cannot change a retained Run's
+instructions. Distinct naming-aware execution revisions fence older workers while legacy
+unnamed Runs keep their prior manifests and checkpoint representation.
+
+**Boundary:** The memory profile loses names on process restart; deployed persistence needs the
+PostgreSQL naming migration. AI proposals use the configured ordinary Bridge route and its
+Context, and require an available admitted model. They are reviewed and copied into the ceremony
+before acceptance. Naming does not deliver Persona lineage, identity-scoped memory, hydration,
+or end-to-end host qualification. Historical speaker labels are not rewritten from current names.
+
+**Evidence**
+
+- **Journey:** [Naming ceremony](./summoning.md#naming-ceremony)
+- **Law:** [Primus and naming](./adr/32-identity.md#primus-and-naming)
+- **Source:** [Names and local suggestions](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/naming.py),
+  [persistent acceptance](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/naming.py),
+  [HTTP surface](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/naming.py), and
+  [ceremony](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/NamingCeremony.svelte)
+- **Verification:** [Admission and replay](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_naming_admission.py),
+  [actual model instructions](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_naming.py),
+  [execution compatibility](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_naming_revisions.py),
+  [PostgreSQL reconstruction and migration](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_naming_pg.py), and
+  [ceremony interactions](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/NamingCeremony.test.ts)
 
 ### Shadow simulation {#shadow-simulation}
 

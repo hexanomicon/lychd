@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════════════════════════════════════
    LychD · The Altar — design tokens (canonical; ADR 15)
-   Black work plane · near-black chrome · icy-blue interaction · green
-   confirmation · cloth-purple identity · quiet neutral context.
+   Black work plane · graphite frame · neutral actions · cyan manipulation
+   Matrix-green activity · cloth-purple identity · readable quiet context.
    One canonical LychD Dark palette.
 
    Native CSS is the styling language. Tokens remain ordinary custom properties;
@@ -12,19 +12,19 @@
 :root {
   /* ── substrate ─────────────────────────────────────────── */
   --color-void:       #000000;  /* page base */
-  --color-obsidian:   #07090b;  /* panel base */
-  --color-obsidian-2: #10161c;  /* raised / hover */
-  --color-engraving:  #29333c;  /* neutral borders and separators */
+  --color-obsidian:   #0d0f12;  /* panel base */
+  --color-obsidian-2: #171a1f;  /* raised / hover */
+  --color-engraving:  #24272e;  /* neutral borders and separators */
 
   /* ── chromatic hierarchy ────────────────────────────────── */
-  --color-primary:        #8be7ff;  /* icy blue: interaction, focus, readiness */
-  --color-primary-deep:   #55cce9;  /* saturated icy-blue depth */
-  --color-secondary:      #22e68a;  /* matrix green: confirmation and live activity */
+  --color-primary:        #9edbe8;  /* icy blue: manipulation, focus, readiness */
+  --color-primary-deep:   #70bed0;  /* saturated icy-blue depth */
+  --color-secondary:      #38df91;  /* matrix green: confirmation and live activity */
   --color-secondary-deep: #14b86c;  /* saturated live activity */
-  --color-accent:         #b08ac4;  /* cloth purple: navigation identity, no runtime state */
+  --color-accent:         #b8a1d0;  /* cloth purple: navigation identity, no runtime state */
   --color-tertiary:       var(--color-obsidian);  /* quiet secondary/context surface */
   --color-tertiary-edge:  var(--color-engraving); /* passive contextual separators */
-  --color-control-border: #60717e; /* required control boundaries */
+  --color-control-border: #4c5663; /* required control boundaries */
   --color-heat:           #f0b379;  /* banked threshold / transition heat */
   --color-heat-deep:      #82512f;  /* low-luminance threshold wash */
 
@@ -36,12 +36,12 @@
   --color-lich-deep:  var(--color-secondary-deep); /* saturated activity */
   --color-frost:      #b7efff;                     /* READY / awaiting Magus */
   --color-frost-deep: var(--color-primary-deep);   /* saturated readiness */
-  --color-ash:        #a3adb5;  /* secondary text and dormant state */
+  --color-ash:        #a0a5b1;  /* secondary text and dormant state */
   --color-ember:      #ff8f9e;  /* fault / refusal — matte, never glows */
 
   /* ── text ──────────────────────────────────────────────── */
-  --color-bone:       #eef1f3;  /* primary text */
-  --color-parchment:  #c8cfd4;  /* body text */
+  --color-bone:       #f2f3f5;  /* primary text */
+  --color-parchment:  #ced1d8;  /* body text */
 
   /* ── type ──────────────────────────────────────────────── */
   --font-rune:  Georgia, 'Times New Roman', serif;              /* ceremonial small-caps */
@@ -49,8 +49,8 @@
   --font-glyph: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, monospace;
 
   /* type scale honors the operator's browser font-size preference */
-  --text-2xs: 0.6875rem; --text-2xs--line-height: 1.4;
-  --text-xs:  0.75rem;   --text-xs--line-height: 1.45;
+  --text-2xs: 0.75rem;   --text-2xs--line-height: 1.4;
+  --text-xs:  0.8125rem; --text-xs--line-height: 1.45;
   --text-sm:  0.875rem; --text-sm--line-height: 1.5;
   --text-base: 0.9375rem; --text-base--line-height: 1.55;
   --text-lg:  1.125rem;  --text-lg--line-height: 1.4;
@@ -58,11 +58,11 @@
   --text-3xl: 1.75rem;   --text-3xl--line-height: 1.2;
 
   /* ── radius (semantic, thematic) ───────────────────────── */
-  --radius-glyph: 3px;   /* kbd keys, layer badges */
-  --radius-rune:  4px;   /* buttons, inspector blocks */
-  --radius-block: 4px;   /* genui, pattern items, tickets, plan rows */
-  --radius-panel: 5px;   /* panels, cards, consent card, composer */
-  --radius-turn:  5px;   /* chat bubbles (asymmetric corner stays 3px literal) */
+  --radius-glyph: 5px;   /* kbd keys, layer badges */
+  --radius-rune:  7px;   /* buttons, inspector blocks */
+  --radius-block: 8px;   /* genui, pattern items, tickets, plan rows */
+  --radius-panel: 10px;  /* panels, cards, consent card, composer */
+  --radius-turn:  10px;  /* conversation turns */
 
   /* ── legacy effect hooks: no diffuse glow ──────────────── */
   --shadow-glow-rune:  none;
@@ -626,6 +626,11 @@
   }
   button:not([class]):hover { border-color: var(--color-rune); }
   button:not([class]):disabled { opacity: .5; cursor: default; }
+  select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea {
+    background: var(--color-obsidian-2);
+    color: var(--color-bone);
+    accent-color: var(--color-rune);
+  }
 
   ::selection { background: color-mix(in srgb, var(--color-rune) 40%, transparent); color: var(--color-bone); }
 
@@ -785,7 +790,7 @@
   /* ── Shared chrome — panels, frosted overlays, dividers, chips ─────── */
   .panel {
     background: var(--color-obsidian);
-    border: 1px solid var(--color-engraving);
+    border: 1px solid transparent;
     border-radius: var(--radius-panel);
     box-shadow: none;
   }
@@ -870,7 +875,7 @@
     min-height: 2.75rem;
     padding: 8px 16px;
     border-radius: var(--radius-rune);
-    border: 1px solid var(--color-rune-dim);
+    border: 1px solid var(--color-control-border);
     background: var(--color-obsidian-2);
     color: var(--color-bone);
     cursor: pointer;
@@ -879,12 +884,12 @@
   .rune-btn:hover { border-color: var(--color-rune); background: color-mix(in srgb, var(--color-rune) 8%, var(--color-obsidian-2)); }
   .rune-btn:disabled { opacity: .4; cursor: default; box-shadow: none; }
   .rune-btn--frost {
-    border-color: var(--color-rune);
-    background: var(--color-rune);
+    border-color: var(--color-bone);
+    background: var(--color-bone);
     color: var(--color-void);
     font-weight: 600;
   }
-  .rune-btn--frost:hover { border-color: var(--color-frost); background: var(--color-frost); }
+  .rune-btn--frost:hover { border-color: white; background: white; }
   .rune-btn--ash { border-color: var(--color-control-border); background: transparent; color: var(--color-ash); }
   .rune-btn--ash:hover { color: var(--color-bone); border-color: var(--color-rune); box-shadow: none; }
 

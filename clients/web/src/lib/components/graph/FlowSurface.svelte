@@ -181,13 +181,13 @@
 </div>
 
 <style>
-  .flow-surface { width:100%; height:100%; min-width:0; min-height:0; position:relative; }
+.flow-surface { width:100%; height:100%; min-width:0; min-height:0; position:relative; }
   .flow-surface[data-density="far"] { --orb-name-visibility:hidden; --orb-caption-visibility:hidden; }
   .flow-surface[data-density="middle"] { --orb-caption-visibility:hidden; }
-  .canvas-controls { display:flex; border:1px solid var(--color-engraving); border-radius:var(--radius-rune); overflow:hidden; background:var(--color-obsidian); }
-  .orb-controls { background:color-mix(in srgb,var(--color-obsidian) 92%,transparent); }
-  button { border:0; border-right:1px solid var(--color-engraving); background:transparent; color:var(--color-bone); padding:9px 12px; min-width:36px; cursor:pointer; font-size:13px; }
-  button:last-child { border-right:0; }
-  button:hover { background:var(--color-obsidian-2); }
+  .canvas-controls { display:flex; border:1px solid var(--color-control-border); border-radius:6px; overflow:hidden; background:var(--color-obsidian); box-shadow:0 6px 24px #0005; }
+  .orb-controls { background:var(--color-obsidian); }
+  button { border:0; border-inline-end:1px solid var(--color-engraving); background:transparent; color:var(--color-bone); padding:.55rem .8rem; min-width:38px; min-height:38px; cursor:pointer; font:500 13px/1.4 var(--font-body); }
+  button:last-child { border-inline-end:0; }
+  button:hover { background:var(--color-obsidian-2); color:var(--color-rune); }
   button:focus-visible { outline:2px solid var(--color-rune); outline-offset:-3px; }
 </style>

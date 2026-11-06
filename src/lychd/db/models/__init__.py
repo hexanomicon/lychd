@@ -33,6 +33,7 @@ from lychd.db.models.intercom import (
     IntercomTransmission,
 )
 from lychd.db.models.karma import Karma
+from lychd.db.models.naming import NamingRecord
 from lychd.db.models.nexus import NexusSwapRequest
 from lychd.db.models.privacy import DisclosureCapacityRecord, DisclosureTransmission
 from lychd.db.models.run import Run
@@ -78,6 +79,7 @@ __all__ = [
     "IntercomTask",
     "IntercomTransmission",
     "Karma",
+    "NamingRecord",
     "NexusSwapRequest",
     "Run",
     "RunCheckpoint",

@@ -38,6 +38,7 @@ Then open the body:
 | [Phylactery](phylactery/index.md) | Committed state that can survive the process. |
 | [Reanimation](phylactery/reanimation.md) | What can return after death. |
 | [Gateway](gateway.md) | A separate machine to face hostile ingress. Home and Remote are **Designed** placements. |
+| [Tumbleweed VPS](../deployments/tumbleweed/index.md) | Repeatable mutable host preparation with Ansible and separate source/application acceptance. |
 
 ### II. The Animating Spark
 

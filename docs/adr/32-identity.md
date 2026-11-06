@@ -24,8 +24,9 @@ evaluate quality or causal blame, or train weights; IAM/Ward, Dispatcher, Spellw
 Soulforge retain those offices.
 
 !!! warning "Delivery boundary"
-    Mirror is **Designed**. Bridge currently binds a fixed `The First One` `AgentSpec`, static
-    identity instruction, and loopback `magus:*` Sigil. There is no Persona registry, revision
+    Full Persona binding is **Designed**. Bootstrap naming supplies accepted forms of address
+    to the internal `the_first_one` AgentSpec; the loopback `magus:*` Sigil is unchanged.
+    There is no Persona registry, revision
     lineage, identity-scoped Archive, hydration receipt, congruence Trial Suite, or self-revision
     path.
     Current Sigil fields prove authority plumbing, not Persona continuity. [State of
@@ -37,6 +38,8 @@ Soulforge retain those offices.
 | --- | --- | --- |
 | **Principal** | Who initiated or approved? | IAM |
 | **Sigil** | Which bounded authority was active? | Ward/IAM |
+| **Primus** | Which first, continuing personal identity is the Lich's foremost companion to the Magus? | Mirror / Inner Tongue |
+| **Proper name** | How does this Magus or companion wish to be addressed? | Mirror |
 | **Persona** | Which durable voice, commitments, and orientation shaped the Agent? | Mirror |
 | **AgentSpec** | Which executable cognitive/output/tool contract ran? | Agent |
 | **Posture** | Which per-run settings and constraints applied? | Pattern/Agent |
@@ -55,6 +58,36 @@ Language Edition timed-language performance; and Avatar the eligible presentatio
 reference any exact permitted artifact. Avatar's Morphe may select presentation style and an
 already eligible output locale; it cannot select or rewrite Persona discourse manner, translate
 text, or turn localized wording into identity.
+
+## Primus and the naming ceremony { #primus-and-naming }
+
+**[Primus](../lexicon/inner-tongue.md#primus)** names the first personal identity cultivated as
+the Lich's continuing main interlocutor. Its foremost place joins origin to an enduring personal
+relation. Further Personas, Agents, and graph branches may contribute to its work; they do not
+automatically replace it or establish another sovereign Lich. Primus names the personal assembly,
+not an extra cognitive office above Call, Blade, Spirit, and Answer. Workflow and authority retain
+their existing owners.
+
+The naming ceremony accepts forms of address for the Magus and Primus. A self-chosen Magus name
+and a companion's proposal are the customary invitation. Manual names, local dictionary
+suggestions, and optional AI assistance are equally valid; the ceremony may be deferred. A true
+name need not be a legal name or a secret, and requires no personal disclosure.
+
+Names are bounded literal data, never instruction templates, credentials, Principal identifiers,
+Sigils, or permission grants. A naming record belongs to the authenticated operator, distinguishes
+the accepted names and declared selection methods, and advances its revision only through an
+explicit acceptance. Selection methods describe the operator's account of the choice; producer
+evidence remains with any attributed proposal Run. Suggestions have no effect before acceptance.
+Concurrent acceptance must reject a stale expected revision rather than overwrite a later choice.
+
+Bridge admission pins the current naming snapshot, including explicit absence, in the retained
+Run. Resume and replay use that snapshot; a later rename affects later admissions and cannot
+rewrite earlier instructions or attribution. Named executions use distinct registered Pattern
+revisions that older workers cannot silently execute as unnamed Runs. Legacy unnamed manifests
+and their checkpoint representation remain available. A bootstrap naming record supplies forms of address,
+not a versioned Persona, scoped memory, a hydration receipt, or proof of first-person continuity.
+The naming ceremony's ordinary Bridge discussion uses the same admitted model route and Context
+as other conversation; it is not an isolated provider or retrieval channel.
 
 ## Persona and binding
 
@@ -92,6 +125,16 @@ explicit policy and retains source attribution.
 
 Resume preserves the revision-pinned Persona binding and cites newly admitted memory. It does
 not silently replace the selected revision with the latest Persona.
+
+### Affective orientation { #affective-orientation }
+
+A Persona may declare enduring affective orientation and preferences as part of its commitments
+and manner. These revisioned declarations remain distinct from a current affective report or
+appraisal, whose meaning and use belong to the application that requests it. Context assembles
+eligible contributions; a Pattern may retain declared continuation data under Graph law.
+Assembly and retention supply neither a Persona revision nor authority or evidence of continuity.
+[Ānanda](../divination/transcendence/illumination.md#ananda) develops the corresponding purpose
+of joy and enjoyment; Mirror keeps the binding and lineage.
 
 ## Attribution and congruence
 

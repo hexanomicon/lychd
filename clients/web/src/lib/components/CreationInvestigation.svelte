@@ -241,24 +241,53 @@
 </section>
 
 <style>
-  .investigation { width: min(100%, 58rem); margin: 0 auto; padding: 1.25rem; display: grid; align-content: start; gap: 1.25rem; min-width: 0; }
-  header, form, article, fieldset, .entry { display: grid; align-content: start; gap: 0.8rem; min-width: 0; }
-  h1, h2, h3, h4, p { margin: 0; }
-  fieldset, article, .notice { border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); padding: 1rem; }
-  legend { color: var(--color-bone); padding: 0 0.35rem; }
-  label { display: grid; gap: 0.4rem; }
-  input:not([type="checkbox"]), textarea { width: 100%; min-width: 0; min-height: 2.75rem; padding: 0.65rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-void); }
-  button { align-self: start; justify-self: start; min-height: 2.75rem; max-width: 100%; white-space: normal; }
-  textarea { resize: vertical; }
-  .source, code, pre { font-family: var(--font-glyph); }
-  pre { white-space: pre-wrap; overflow-wrap: anywhere; }
-  dd, code, a { overflow-wrap: anywhere; }
-  dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); gap: 0.4rem 1rem; }
-  dd { margin: 0; }
+  .investigation { width: min(100%, 64rem); margin: 0 auto; padding: clamp(1rem, 3vw, 2.5rem); display: grid; align-content: start; gap: 2rem; min-width: 0; }
+  header, section, article, form, fieldset { display: grid; align-content: start; gap: 1rem; min-width: 0; }
+  header { gap: 0.75rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--color-engraving); }
+  header > .instrument-kicker { color: var(--color-accent); }
+  header > p { max-width: 48rem; color: var(--color-ash); }
+  h1, h2, h3, p { margin: 0; }
+  h1, h2, h3, legend { color: var(--color-bone); font-family: var(--font-body); font-variant: normal; letter-spacing: normal; }
+  h1 { font-size: clamp(1.6rem, 2.5vw, 2rem); font-weight: 600; line-height: 1.2; }
+  h2 { font-size: var(--text-xl); font-weight: 600; line-height: 1.35; }
+  h3 { font-size: var(--text-base); font-weight: 600; line-height: 1.5; }
+  .investigation > form, .investigation > article { border-top: 1px solid var(--color-engraving); padding-top: 1.5rem; }
+  fieldset { margin: 0; padding: 1.25rem 0 0; border: 0; border-top: 1px solid var(--color-engraving); gap: 1.25rem; }
+  legend { padding: 0 0.75rem 0 0; font-size: var(--text-sm); font-weight: 600; }
+  .notice { display: grid; align-content: start; gap: 1rem; min-width: 0; padding: 1.25rem; border: 0; border-left: 2px solid var(--color-control-border); border-radius: 0 var(--radius-panel) var(--radius-panel) 0; background: var(--color-obsidian); }
+  label { display: grid; gap: 0.5rem; color: var(--color-bone); }
+  input:not([type="checkbox"]), textarea { width: 100%; min-width: 0; min-height: 2.75rem; padding: 0.75rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-void); color: var(--color-bone); }
+  label span { color: var(--color-ash); font-size: var(--text-sm); }
+  textarea { resize: vertical; line-height: 1.6; }
+  dd, code, a, li { overflow-wrap: anywhere; }
+  dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); gap: 0.65rem 1.5rem; margin: 0; padding-block: 0.25rem; }
+  dt { color: var(--color-ash); font-size: var(--text-sm); }
+  dd { margin: 0; min-width: 0; }
+  button { align-self: start; justify-self: start; min-height: 2.75rem; max-width: 100%; white-space: normal; line-height: 1.4; }
+  [role="alert"] { color: var(--color-ember); }
+  :is(a, button, input, textarea):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  @media (max-width: 36rem) { .investigation { padding: 1rem; gap: 1.5rem; } dl { grid-template-columns: minmax(0, 1fr); gap: 0.25rem; } dd + dt { margin-top: 0.65rem; } .notice { padding: 1rem; } }
+
+  .declaration { display: flex; align-items: start; gap: 0.75rem; padding-top: 0.25rem; }
+  .declaration input { margin-top: 0.35rem; accent-color: var(--color-rune); }
+
+  ul { margin: 0; padding-left: 1.25rem; }
+  li { padding-block: 0.35rem; }
+
+  details { padding-block: 0.5rem; border-top: 1px solid var(--color-engraving); }
+  summary { padding-block: 0.4rem; color: var(--color-parchment); cursor: pointer; }
+  details[open] > summary { margin-bottom: 0.75rem; }
+  summary:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; font: var(--text-sm)/1.7 var(--font-glyph); margin: 0; }
+
+  header > a { justify-self: start; padding-block: 0.35rem; font-size: var(--text-sm); }
+  h4 { margin: 0; color: var(--color-bone); font: 600 var(--text-base)/1.5 var(--font-body); }
+  .entry { display: grid; align-content: start; gap: 1rem; min-width: 0; padding: 0.25rem 0 0.25rem 1rem; border-left: 2px solid var(--color-engraving); }
+  article > section { padding-top: 1.5rem; border-top: 1px solid var(--color-engraving); }
+  .source, code { font-family: var(--font-glyph); }
+  details > :is(h3, h4, section, pre, ul, dl) { margin-bottom: 1rem; }
   .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+  .actions:empty { display: none; }
   .actions p { flex-basis: 100%; }
-  .declaration { display: flex; align-items: start; gap: 0.6rem; margin-top: 1rem; }
-  .declaration input { margin-top: 0.4rem; }
-  .read-boundary, label span { font-size: var(--text-sm); color: var(--color-ash); }
-  @media (max-width: 36rem) { .investigation { padding: 0.75rem; } dl { grid-template-columns: minmax(0, 1fr); } }
+  .read-boundary { padding-top: 1.25rem; border-top: 1px solid var(--color-engraving); font-size: var(--text-sm); color: var(--color-ash); }
 </style>

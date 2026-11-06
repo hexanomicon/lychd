@@ -39,6 +39,7 @@ from lychd.domain.cortex.cancellation import RunCancellationCoordinator
 from lychd.domain.cortex.priority import saq_wire_priority, validate_priority
 from lychd.domain.cortex.runs import TERMINAL_STATUSES, RunDeliveryState, RunHandle, RunStatus
 from lychd.domain.cortex.semantic_answer import SemanticAnswerBinding
+from lychd.domain.naming import NamingSnapshot
 from lychd.domain.scout.feed import ScoutFeedBinding, ScoutFeedDeclarationProof
 from lychd.domain.scout.profile import (
     ScoutBinding,
@@ -468,6 +469,7 @@ class RunEngine:
         "feed_scout",
         "feed_scout_admission",
         "ledger",
+        "naming_lookup",
         "peer",
         "peer_admission",
         "queue_router",
@@ -492,6 +494,7 @@ class RunEngine:
         consents: ConsentAuthority | None = None,
         effects: RunEffectLifecycle | None = None,
         release_context: Callable[[str], None] | None = None,
+        naming_lookup: Callable[[str], Awaitable[NamingSnapshot | None]] | None = None,
         bridge_capability_key: str | None = None,
         bridge_preference: BridgePreference | None = None,
         bridge_preference_selector: Callable[[BridgePreference], Awaitable[BridgePreferenceDecision]] | None = None,
@@ -511,6 +514,7 @@ class RunEngine:
         self.ledger = ledger
         self.bus = bus
         self.workflows = workflows
+        self.naming_lookup = naming_lookup
         self.bridge_capability_key = bridge_capability_key
         self.bridge_preference = (
             BridgePreference.model_validate(bridge_preference.model_dump(mode="python"))
@@ -567,7 +571,8 @@ class RunEngine:
         if scout_declaration is not None and feed_declaration is not None:
             raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
         if (
-            intent.admitted_capability_key is not None
+            intent.admitted_naming is not None
+            or intent.admitted_capability_key is not None
             or intent.admitted_bridge_preference is not None
             or intent.admitted_archive is not None
             or intent.admitted_semantic is not None
@@ -575,7 +580,7 @@ class RunEngine:
             or intent.admitted_scout is not None
             or intent.admitted_peer is not None
         ):
-            msg = "Capability, Archive, semantic, Scout, peer and delegation bindings are server-owned admission metadata, not caller Intent."
+            msg = "Naming, capability, Archive, semantic, Scout, peer and delegation bindings are server-owned admission metadata, not caller Intent."
             raise ValueError(msg)
         if exclusive_session:
             session_key = ("exclusive_session", intent.session_id)
@@ -707,6 +712,7 @@ class RunEngine:
         intent = await self._bind_workflow_intent(
             intent, workflow, scout_declaration, feed_declaration, peer_declaration
         )
+        intent, workflow = await self._bind_naming(intent, workflow)
         queue_name, priority = self.queue_router.resolve(intent)
         if queue_name not in self.queues:
             msg = f"Run queue {queue_name!r} is not configured."
@@ -867,6 +873,18 @@ class RunEngine:
             exclude=exclude
         ) != run.admitted_scout.model_dump(exclude=exclude):
             raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+
+    async def _bind_naming(self, intent: Intent, workflow: Workflow) -> tuple[Intent, Workflow]:
+        """Pin current names once and select an execution that preserves their binding."""
+        if workflow.manifest.key != "bridge_chat" or self.naming_lookup is None:
+            return intent, workflow
+        naming = await self.naming_lookup(intent.sigil_name)
+        if naming is None:
+            return intent, workflow
+        from lychd.agents.workflows import resolve_named_workflow
+
+        snapshot = NamingSnapshot.model_validate(naming.model_dump())
+        return intent.model_copy(update={"admitted_naming": snapshot}), resolve_named_workflow(self.workflows, workflow)
 
     async def _bind_workflow_intent(  # noqa: C901 - exact mutually exclusive admitted workflow profiles
         self,

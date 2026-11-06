@@ -242,6 +242,22 @@ export async function revokeArchiveNote(recordId: string, body: components["sche
   }));
 }
 
+export async function getNaming(signal?: AbortSignal): Promise<components["schemas"]["NamingView"]> {
+  return unwrap(await client.GET("/api/v1/altar/naming", { signal }));
+}
+
+export async function acceptNaming(
+  body: components["schemas"]["NamingAcceptance"], signal?: AbortSignal
+): Promise<components["schemas"]["NamingView"]> {
+  return unwrap(await client.PUT("/api/v1/altar/naming", {
+    body, signal, headers: await csrfHeaders()
+  }));
+}
+
+export async function getNamingSuggestions(signal?: AbortSignal): Promise<components["schemas"]["NameSuggestions"]> {
+  return unwrap(await client.GET("/api/v1/altar/naming/suggestions", { signal }));
+}
+
 export async function getAltarStatus(): Promise<AltarStatus> {
   const status = unwrap(await client.GET("/api/v1/altar/status")) as AltarStatus;
   csrfContract = status.csrf;
@@ -312,7 +328,7 @@ export async function getBridgeSnapshot(sessionId?: string): Promise<BridgeSnaps
   return unwrap(await client.GET("/api/v1/bridge")) as BridgeSnapshot;
 }
 
-export async function getBridgeSessions(cursor: string, signal?: AbortSignal): Promise<SessionPage> {
+export async function getBridgeSessions(cursor?: string, signal?: AbortSignal): Promise<SessionPage> {
   return unwrap(await client.GET("/api/v1/bridge/sessions", {
     signal,
     params: { query: { cursor } }

@@ -1,0 +1,188 @@
+---
+- name: Validate immutable inputs and direct SSH policy
+  ansible.builtin.assert:
+    that:
+      - ansible_connection | default('ssh') == 'ssh'
+      - ansible_user == 'lychd'
+      - not (ansible_become | bool)
+      - lychd_source_revision is match('^[0-9a-f]{40}$')
+      - lychd_source_uv_local_binary is match('^/[^\n]+$')
+      - lychd_source_uv_sha256 is match('^[0-9a-f]{64}$')
+      - lychd_source_python in ['3.14.8', '3.15.0']
+    fail_msg: "Supply an exact 40-hex source SHA and a controller-verified uv 0.13.0 binary receipt; connect directly as lychd."
+
+- name: Inspect identity, path ownership, receipt and immutable checkout
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/source_guard.py') }}"
+      - "{{ lychd_source_revision }}"
+      - "{{ lychd_source_uv_sha256 }}"
+      - "{{ lychd_source_python }}"
+  register: lychd_source_guard
+  changed_when: false
+  check_mode: false
+
+- name: Retain the bounded source observation
+  ansible.builtin.set_fact:
+    lychd_source_observed: "{{ lychd_source_guard.stdout | from_json }}"
+    lychd_source_checkout: "/home/lychd/src/lychd-{{ lychd_source_revision }}"
+    lychd_source_uv_binary: /home/lychd/.local/lib/lychd-tools/uv-0.13.0
+
+- name: Inspect the controller-admitted executable without following a symlink
+  ansible.builtin.stat:
+    path: "{{ lychd_source_uv_local_binary }}"
+    follow: false
+    checksum_algorithm: sha256
+  delegate_to: localhost
+  vars:
+    ansible_connection: local
+  register: lychd_source_controller_uv
+
+- name: Require the controller binary receipt to agree
+  ansible.builtin.assert:
+    that:
+      - lychd_source_controller_uv.stat.isreg | default(false)
+      - not (lychd_source_controller_uv.stat.islnk | default(true))
+      - lychd_source_controller_uv.stat.checksum | default('') == lychd_source_uv_sha256
+
+- name: Prove inactive authority before filesystem changes
+  ansible.builtin.include_tasks: inactive.yml
+
+- name: Report the read-only check-mode boundary
+  ansible.builtin.debug:
+    msg: "Inputs and current refusal checks passed; check mode does not clone, install, or qualify a live host."
+  when: ansible_check_mode
+
+- name: End this host before any staging task in check mode
+  ansible.builtin.meta: end_host
+  when: ansible_check_mode
+
+- name: Create the private versioned tool parent
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0700'
+  loop:
+    - /home/lychd/.local
+    - /home/lychd/.local/lib
+    - /home/lychd/.local/lib/lychd-tools
+
+- name: Copy the admitted fixed uv executable without replacing a different binary
+  ansible.builtin.copy:
+    src: "{{ lychd_source_uv_local_binary }}"
+    dest: "{{ lychd_source_uv_binary }}"
+    mode: '0755'
+    force: false
+
+- name: Verify the copied executable checksum
+  ansible.builtin.stat:
+    path: "{{ lychd_source_uv_binary }}"
+    follow: false
+    checksum_algorithm: sha256
+  register: lychd_source_remote_uv
+  when: not ansible_check_mode
+
+- name: Refuse a changed remote binary
+  ansible.builtin.assert:
+    that: lychd_source_remote_uv.stat.checksum == lychd_source_uv_sha256
+  when: not ansible_check_mode
+
+- name: Verify the admitted uv version
+  ansible.builtin.command:
+    argv: ["{{ lychd_source_uv_binary }}", --version]
+  register: lychd_source_uv_version
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Refuse another uv release
+  ansible.builtin.assert:
+    that: lychd_source_uv_version.stdout is match('^uv 0\.13\.0( |$)')
+  when: not ansible_check_mode
+
+- name: Create the ordinary user's source parent
+  ansible.builtin.file:
+    path: /home/lychd/src
+    state: directory
+    mode: '0700'
+
+- name: Clone only an absent versioned checkout from the public source
+  ansible.builtin.git:
+    repo: https://github.com/hexanomicon/lychd.git
+    dest: "{{ lychd_source_checkout }}"
+    version: "{{ lychd_source_revision }}"
+    force: false
+    update: false
+    recursive: false
+  environment:
+    GIT_CONFIG_NOSYSTEM: '1'
+    GIT_CONFIG_GLOBAL: /dev/null
+    GIT_TERMINAL_PROMPT: '0'
+  when: not lychd_source_observed.exists
+
+- name: Record role ownership before dependency preparation
+  ansible.builtin.copy:
+    dest: "{{ lychd_source_checkout }}/.git/lychd-source.json"
+    content: "{{ {'revision': lychd_source_revision, 'uv_sha256': lychd_source_uv_sha256, 'python': lychd_source_python, 'complete': false} | to_nice_json }}\n"
+    mode: '0600'
+    force: false
+  when: not lychd_source_observed.exists
+
+- name: Recheck source and path safety before installing dependencies
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/source_guard.py') }}"
+      - "{{ lychd_source_revision }}"
+      - "{{ lychd_source_uv_sha256 }}"
+      - "{{ lychd_source_python }}"
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Recheck inactive authority immediately before dependency installation
+  ansible.builtin.include_tasks: inactive.yml
+  when: not lychd_source_observed.complete
+
+- name: Install the locked CLI once without replacing an existing environment
+  ansible.builtin.command:
+    argv:
+      - "{{ lychd_source_uv_binary }}"
+      - --no-config
+      - sync
+      - --locked
+      - --no-dev
+      - --extra
+      - postgres-binary
+      - --python
+      - "{{ lychd_source_python }}"
+      - --managed-python
+    chdir: "{{ lychd_source_checkout }}"
+  environment:
+    PYTHONDONTWRITEBYTECODE: '1'
+    UV_PYTHON_DOWNLOADS: automatic
+    UV_PYTHON_INSTALL_MIRROR: https://github.com/astral-sh/python-build-standalone/releases/download
+    UV_PYTHON_INSTALL_DIR: /home/lychd/.local/lib/lychd-tools/python
+    UV_CACHE_DIR: /home/lychd/.local/lib/lychd-tools/cache
+    UV_DEFAULT_INDEX: https://pypi.org/simple
+    UV_PROJECT_ENVIRONMENT: "{{ lychd_source_checkout }}/.venv"
+  when: not lychd_source_observed.complete
+  changed_when: true
+
+- name: Read the installed CLI grammar without application initialization
+  ansible.builtin.command:
+    argv: ["{{ lychd_source_checkout }}/.venv/bin/lychd", --help]
+    chdir: "{{ lychd_source_checkout }}"
+  register: lychd_source_cli_help
+  environment:
+    PYTHONDONTWRITEBYTECODE: '1'
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Record completed source preparation
+  ansible.builtin.copy:
+    dest: "{{ lychd_source_checkout }}/.git/lychd-source.json"
+    content: "{{ {'revision': lychd_source_revision, 'uv_sha256': lychd_source_uv_sha256, 'python': lychd_source_python, 'complete': true} | to_nice_json }}\n"
+    mode: '0600'
+  when: not ansible_check_mode

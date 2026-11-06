@@ -1,0 +1,197 @@
+---
+- name: Query installed package capabilities
+  ansible.builtin.command:
+    argv: [/usr/bin/rpm, -q, --whatprovides, "{{ item }}"]
+  loop: "{{ lychd_floor_packages }}"
+  register: lychd_package_queries
+  failed_when: lychd_package_queries.rc not in [0, 1]
+  check_mode: false
+  changed_when: false
+
+- name: Collect only missing package capabilities
+  ansible.builtin.set_fact:
+    lychd_missing_packages: "{{ lychd_package_queries.results | selectattr('rc', 'equalto', 1) | map(attribute='item') | list }}"
+
+- name: Show packages that would be installed in check mode
+  ansible.builtin.debug:
+    var: lychd_missing_packages
+  when: ansible_check_mode and lychd_missing_packages | length > 0
+  changed_when: true
+
+- name: Install only missing packages from existing repositories
+  ansible.builtin.command:
+    argv: "{{ ['/usr/bin/zypper', '--non-interactive', '--no-refresh', 'install', '--no-recommends', '--'] + lychd_missing_packages }}"
+  when: not ansible_check_mode and lychd_missing_packages | length > 0
+  changed_when: true
+
+- name: Record new identity creation intent without downgrading an existing receipt
+  ansible.builtin.copy:
+    dest: /etc/lychd-host-floor.json
+    content: "{{ {'schema_version': 1, 'stage': 'creating', 'identity': lychd_floor_intent | dict2items | rejectattr('key', 'equalto', 'keys') | items2dict} | to_nice_json }}\n"
+    owner: root
+    group: root
+    mode: '0600'
+  when: not lychd_floor_before.managed_identity
+
+- name: Create the dedicated ordinary primary group
+  ansible.builtin.group:
+    name: "{{ lychd_runtime_name }}"
+    gid: "{{ lychd_runtime_gid }}"
+    state: present
+
+- name: Report pending ordinary account creation in check mode
+  ansible.builtin.debug:
+    msg: Account, home, public keys, subid maps and linger would be created; dependent file checks require a second check after creation.
+  when: ansible_check_mode and not lychd_floor_before.account_exists
+  changed_when: true
+
+- name: Provide an empty root-owned skeleton without inherited SSH access
+  ansible.builtin.file:
+    path: /etc/lychd-host-floor-empty-skel
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Create the account without shadow allocating implicit subordinate IDs
+  ansible.builtin.command:
+    argv:
+      - /usr/sbin/useradd
+      - --uid
+      - "{{ lychd_runtime_uid | string }}"
+      - --gid
+      - "{{ lychd_runtime_gid | string }}"
+      - --home-dir
+      - /home/lychd
+      - --create-home
+      - --skel
+      - /etc/lychd-host-floor-empty-skel
+      - --shell
+      - /bin/bash
+      - --password
+      - "*"
+      - --key
+      - SUB_UID_COUNT=0
+      - --key
+      - SUB_GID_COUNT=0
+      - lychd
+  when: not ansible_check_mode and not lychd_floor_before.account_exists
+  changed_when: true
+
+- name: Assert the actual identity has no sudo before enabling any runtime access
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/host_probe.py') }}"
+      - identity
+    stdin: "{{ lychd_floor_intent | to_json }}"
+  check_mode: false
+  changed_when: false
+  when: not ansible_check_mode or lychd_floor_before.account_exists
+
+- name: Initialize subordinate ranges only for the new identity from this invocation
+  ansible.builtin.lineinfile:
+    path: "/etc/{{ item.kind }}"
+    line: "lychd:{{ item.start }}:{{ lychd_subid_count }}"
+    create: true
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - {kind: subuid, start: "{{ lychd_subuid_start }}"}
+    - {kind: subgid, start: "{{ lychd_subgid_start }}"}
+  when: not ansible_check_mode and not lychd_floor_before.account_exists
+
+- name: Verify both maps before recording initialization
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/host_probe.py') }}"
+      - maps
+    stdin: "{{ lychd_floor_intent | to_json }}"
+  check_mode: false
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Atomically record initialized maps before installing keys or enabling linger
+  ansible.builtin.copy:
+    dest: /etc/lychd-host-floor.json
+    content: "{{ {'schema_version': 1, 'stage': 'maps_initialized', 'identity': lychd_floor_intent | dict2items | rejectattr('key', 'equalto', 'keys') | items2dict} | to_nice_json }}\n"
+    owner: root
+    group: root
+    mode: '0600'
+  when: not ansible_check_mode and lychd_floor_before.receipt_stage != 'configured'
+
+- name: Maintain runtime-owned files with only the runtime account's authority
+  become_user: lychd
+  environment:
+    HOME: /home/lychd
+  when: not ansible_check_mode or lychd_floor_before.account_exists
+  block:
+    - name: Keep the runtime home private
+      ansible.builtin.file:
+        path: /home/lychd
+        state: directory
+        mode: '0700'
+
+    - name: Create the runtime SSH directory
+      ansible.builtin.file:
+        path: /home/lychd/.ssh
+        state: directory
+        mode: '0700'
+
+    - name: Install the supplied public keys exclusively for the runtime account
+      ansible.builtin.copy:
+        dest: /home/lychd/.ssh/authorized_keys
+        content: "{{ lychd_runtime_ssh_public_keys | join('\n') }}\n"
+        mode: '0600'
+
+    - name: Observe SSH labels without changing them
+      ansible.builtin.command:
+        argv: [/usr/sbin/restorecon, -nRv, /home/lychd/.ssh]
+      register: lychd_label_check
+      check_mode: false
+      changed_when: false
+      when: not ansible_check_mode or 'policycoreutils' not in lychd_missing_packages
+
+    - name: Restore default SSH labels with only runtime authority
+      ansible.builtin.command:
+        argv: [/usr/sbin/restorecon, -Rv, /home/lychd/.ssh]
+      when: not ansible_check_mode and lychd_label_check.stdout | default('') | length > 0
+      changed_when: true
+
+- name: Enable linger only when absent after map and key initialization
+  ansible.builtin.command:
+    argv: [/usr/bin/loginctl, enable-linger, lychd]
+    creates: /var/lib/systemd/linger/lychd
+  when: not ansible_check_mode or lychd_floor_before.account_exists
+
+- name: Atomically record the configured host identity
+  ansible.builtin.copy:
+    dest: /etc/lychd-host-floor.json
+    content: "{{ {'schema_version': 1, 'stage': 'configured', 'identity': lychd_floor_intent | dict2items | rejectattr('key', 'equalto', 'keys') | items2dict} | to_nice_json }}\n"
+    owner: root
+    group: root
+    mode: '0600'
+  when: not ansible_check_mode
+
+- name: Set modest retention only in the existing root Snapper config
+  ansible.builtin.lineinfile:
+    path: /etc/snapper/configs/root
+    regexp: '^\s*{{ item.key }}\s*='
+    line: '{{ item.key }}="{{ item.value }}"'
+  loop:
+    - {key: TIMELINE_CREATE, value: 'no'}
+    - {key: NUMBER_CLEANUP, value: 'yes'}
+    - {key: NUMBER_LIMIT, value: '6'}
+    - {key: NUMBER_LIMIT_IMPORTANT, value: '2'}
+  when: lychd_floor_before.root_snapper_config
+
+- name: Report the preserved network and authentication boundary
+  ansible.builtin.debug:
+    msg: >-
+      Existing firewall rules, network settings and sshd authentication settings were preserved.
+      Review and narrow ingress separately while preserving the existing admin connection.
+      Snapper limits are counts, not a hard byte cap; no snapshots were deleted.

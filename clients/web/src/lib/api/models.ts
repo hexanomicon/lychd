@@ -1,5 +1,11 @@
 import type { components } from "./openapi";
 
+export type PersonalNames = components["schemas"]["PersonalNames"];
+export type NamingSnapshot = components["schemas"]["NamingSnapshot"];
+export type NamingView = components["schemas"]["NamingView"];
+export type NamingAcceptance = components["schemas"]["NamingAcceptance"];
+export type NameSuggestions = components["schemas"]["NameSuggestions"];
+
 export type AltarStatus = components["schemas"]["AltarStatus"];
 export type AtlasProject = components["schemas"]["AtlasProject"];
 export type CanvasProjectCreate = components["schemas"]["CanvasProjectCreate"];

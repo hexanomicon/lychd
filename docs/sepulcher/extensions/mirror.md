@@ -10,10 +10,12 @@ contributors bound to an operative identity, so a later reader can ask who spoke
 authority, and through which revision. Every admitted Invocation records an exact Persona revision
 or an explicit no-Persona choice under [Identity](../../adr/32-identity.md).
 
-Mirror remains **Designed**. The fixed `The First One` AgentSpec, static identity instruction,
-and loopback `magus:*` Sigil demonstrate current Agent and authority plumbing. They do not yet
-supply revisioned Personas or reproducible hydration; [State](../../state-of-the-work.md#mirror-identity)
-keeps that delivery boundary.
+Full Persona lineage remains **Designed**. The
+[naming ceremony](../../summoning.md#naming-ceremony) supplies a smaller bootstrap account:
+accepted forms of address for the Magus and Primus, pinned to later Bridge admissions. The
+internal `the_first_one` AgentSpec and loopback `magus:*` Sigil retain their executable and
+authority identities. Naming does not yet supply revisioned Personas or reproducible hydration;
+[State](../../state-of-the-work.md#mirror-identity) keeps that delivery boundary.
 
 ## The mirror and the Mirror
 
@@ -43,6 +45,23 @@ An act may also be shaped by a **Persona**: a durable, revisioned voice, commitm
 and orientation. It is neither the caller nor the producer nor the temporary step. Here voice
 means discourse and manner; acoustic voice, music, timed-language editions and presentation assets
 retain their separate owners. Eligible identity-scoped memory may enter hydration.
+
+**[Primus](../../lexicon/inner-tongue.md#primus)** names the first personal identity cultivated
+as the Lich's continuing main interlocutor. Its proper name addresses the particular companion.
+Further Personas can shape other work without silently taking this place. A Pattern retains
+its exact Persona choice or explicit absence; a subgraph alone establishes neither another
+Persona nor another sovereign Lich.
+
+The bootstrap naming account records the authenticated operator's accepted names, selection
+methods, and revision. A selection method is the operator's declared account; an AI proposal's
+producer evidence remains with its ordinary Bridge Run. Manual names, dictionary suggestions,
+and companion proposals are all welcome. **Save names** accepts a choice; neither a suggestion
+nor a conversational agreement performs that save. A stale simultaneous save is refused so the
+later choice can be reviewed.
+
+Bridge retains the naming snapshot at admission. A rename supplies future turns with a new
+snapshot while earlier and resumed Runs keep the old one. The record gives names an attributable
+use in instructions; full Persona lineage, scoped memory, and hydration remain separate work.
 
 ## III. Attribution Without Laundering
 
