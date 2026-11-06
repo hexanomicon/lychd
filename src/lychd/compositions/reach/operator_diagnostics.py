@@ -58,7 +58,20 @@ type DiagnosticCode = Literal[
 ]
 type DiagnosticStage = Literal["execute", "evidence_flush", "result_lookup", "result_validation"]
 type DiagnosticReason = (
-    ReachReason | Literal["run_missing", "run_incomplete", "result_binding", "run_timeout", "run_failed"]
+    ReachReason
+    | Literal[
+        "run_missing",
+        "run_incomplete",
+        "result_binding",
+        "run_timeout",
+        "run_failed",
+        "budget",
+        "model_unavailable",
+        "model_timeout",
+        "model_refused",
+        "model_protocol",
+        "model_failed",
+    ]
 )
 type DiagnosticRunStatus = Literal[
     "queued",

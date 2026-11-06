@@ -597,7 +597,7 @@ def test_research_focus_is_optional_bounded_and_requires_a_checkpoint_plan() -> 
     ).model_copy(update={"run_id": "run"})
     workflow = reach_conversation_workflow(policy(), corpus, binding, started_at=STARTED, clock=lambda: NOW)
     state = workflow.make_state(intent)
-    assert workflow.manifest.checkpoint_schema == "reach-operator-conversation-v8"
+    assert workflow.manifest.checkpoint_schema == "reach-operator-conversation-v9"
     assert workflow.validate_state is not None
     workflow.validate_state(intent, state)
     with pytest.raises(DocumentsRefused, match="conversation_checkpoint"):
@@ -2024,7 +2024,12 @@ def test_budget_cannot_turn_a_read_source_into_citable_empty_evidence() -> None:
         )
 
 
-def test_synthesis_refuses_impossible_utf8_fixed_envelope_without_empty_evidence() -> None:
+def test_synthesis_refuses_impossible_utf8_fixed_envelope_without_empty_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from lychd.compositions.reach import checkback
+
+    monkeypatch.setattr(checkback, "MAX_MODEL_PAYLOAD_BYTES", 49_152)
     binding, corpus = research_profile(max_input_chars=24_000), make_corpus()
     source = admitted_source()
     plan = ResearchPlan(kind="research", text="Read the explicit reference", source_ids=(source.id,))
@@ -2357,7 +2362,7 @@ async def test_native_plan_bounds_trace_actual_counts_without_output_body(field:
             assert failed == []
             assert generated == 2
         else:
-            assert result.reason == "run_failed"
+            assert result.reason == "model_protocol"
             assert generated == 1
             assert len(failed) == 1
             event = failed[0]
@@ -2407,7 +2412,7 @@ async def test_invalid_json_plan_capture_does_not_change_failure(*, capture_fail
             result = await runtime.process(
                 make_request(action="converse").model_copy(update={"request_id": str(uuid4())})
             )
-        assert result.reason == "run_failed"
+        assert result.reason == "model_protocol"
         event = next(event for event in records if event.name == "research_plan" and event.operation == "validation")
         assert event.code == "invalid_json"
         assert event.research_plan_text_chars is None

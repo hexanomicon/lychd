@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -11,6 +12,7 @@ import pytest
 from pydantic import ValidationError
 
 from lychd.interface.discord.admin import GuildSnapshot
+from lychd.interface.discord.lifecycle import EdgeTasks
 from lychd.interface.discord.live import ReachBot, ReachService, load_onboarding_profile, verify_onboarding
 from lychd.interface.discord.onboarding import OnboardingPanel, OnboardingProfile, OnboardingService
 from lychd.interface.discord.rest import EffectResult
@@ -40,6 +42,8 @@ def onboarding(*, elevated_human_role_ids: tuple[str, ...] = ()) -> OnboardingSe
 
 def reach() -> Any:
     result = Mock(spec=ReachService)
+    result.tasks = EdgeTasks()
+    result.publication_effects = None
     result.worker = Mock()
     result.history_enabled = False
     result.policy = Mock(guild_id="300000000000000003")
@@ -48,8 +52,8 @@ def reach() -> Any:
 
 
 def rest_mock(configured: OnboardingService) -> Mock:
-    assert isinstance(configured.rest, Mock)
-    return configured.rest
+    assert isinstance(configured.effects, Mock)
+    return configured.effects
 
 
 def member(configured: OnboardingService) -> Any:
@@ -66,8 +70,8 @@ def snapshot(configured: OnboardingService) -> Any:
     profile = configured.profile
     result = Mock(spec=GuildSnapshot)
     result.guild_id = profile.guild_id
-    result.application_id = configured.rest.application_id
-    result.bot_user_id = configured.rest.bot_user_id
+    result.application_id = configured.effects.application_id
+    result.bot_user_id = configured.effects.bot_user_id
     result.bot_role_ids = ("900000000000000009",)
     result.roles = [
         Mock(id=profile.guild_id, name="@everyone", permissions=1 << 10, position=0, managed=False),
@@ -364,3 +368,31 @@ async def test_startup_refuses_private_channel_or_unsafe_resource_binding(kind: 
         await verify_onboarding(configured, observed, flags)
     rest_mock(configured).bind_member_roles.assert_not_called()
     rest_mock(configured).bind_introduction_channel.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_actual_publication_background_retires_before_sdk_and_generation_close() -> None:
+    service = reach()
+    started = asyncio.Event()
+    retired: list[str] = []
+
+    async def process(_effects: Any) -> None:
+        started.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            retired.append("publication")
+
+    service.publications = Mock(process_once=AsyncMock(side_effect=process))
+    service.publication_effects = Mock()
+    async with ReachBot(service) as bot:
+        await bot.on_ready()
+        async with asyncio.timeout(2):
+            await started.wait()
+        assert bot.publications_task is not None
+        await bot.close()
+        assert bot.publications_task.cancelled()
+        assert retired == ["publication"]
+        assert service.tasks.retired
+        await bot.on_ready()
+        service.publications.process_once.assert_awaited_once()

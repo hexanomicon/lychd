@@ -18,15 +18,15 @@ from collections.abc import Generator
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from lychd.interface.discord.rest import SUPPRESS_EMBEDS, DiscordRest, EffectResult
+from lychd.interface.discord.ports import MAX_PUBLICATION_TEXT, PublicationEffects
+from lychd.interface.discord.rest import EffectResult
 
 MAX_BACKLOG = 32
-MAX_BODY = 1900
+MAX_BODY = MAX_PUBLICATION_TEXT
 MAX_TTL = 3600
 PRIVATE_FILE_MODE = 0o600
 STAGING_LINK_COUNT = 2
@@ -117,37 +117,6 @@ def _retire_pending_aliases(fd: int) -> None:
         os.fsync(fd)
 
 
-def _retained_result(
-    rest: DiscordRest, *, key: str, path: str, body: dict[str, Any], scope: str
-) -> EffectResult | None:
-    """Adopt exact prior transport evidence before considering a new contact."""
-    key_digest = hashlib.sha256(key.encode()).hexdigest()
-    previous = next((item for item in rest.journal.inspect() if item.effect_key_digest == key_digest), None)
-    if previous is None:
-        return None
-    payload = json.dumps(
-        {"method": "POST", "path": path, "body": body},
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    )
-    if (
-        previous.payload_digest != hashlib.sha256(payload.encode()).hexdigest()
-        or previous.scope_digest != hashlib.sha256(scope.encode()).hexdigest()
-        or previous.method != "POST"
-        or previous.target != "channel_messages"
-    ):
-        return EffectResult(status="unknown", code="publication_binding")
-    if previous.status in {"attempting", "unknown"}:
-        return EffectResult(status="unknown", remote_id=previous.remote_id, code=previous.code or "effect_unresolved")
-    return EffectResult(
-        status="succeeded" if previous.status == "succeeded" else "rejected",
-        remote_id=previous.remote_id,
-        code=previous.code,
-    )
-
-
 class Publication(BaseModel):
     """Bounded local request; no authority is derived from its content."""
 
@@ -224,7 +193,7 @@ class PublicationQueue:
             os.unlink(f"{publication.publication_id}.json", dir_fd=fd)
             os.fsync(fd)
 
-    async def process_once(self, rest: DiscordRest, *, now: datetime | None = None) -> int:
+    async def process_once(self, effects: PublicationEffects, *, now: datetime | None = None) -> int:
         """Consume at most 32 requests; persisted receipts fence every later scan."""
         processed = 0
         with self.lock() as fd:
@@ -246,28 +215,12 @@ class PublicationQueue:
                 text = raw.decode("utf-8")
                 if not 1 <= len(text) <= MAX_BODY or hashlib.sha256(raw).hexdigest() != publication.body_digest:
                     _fail("publication_body")
-                key = f"publication:{rest.application_id}:{identifier}"
-                path = f"/channels/{publication.channel_id}/messages"
-                body: dict[str, Any] = {
-                    "content": text,
-                    "flags": SUPPRESS_EMBEDS,
-                    "allowed_mentions": {"parse": []},
-                    "nonce": hashlib.sha256(key.encode()).hexdigest()[:25],
-                    "enforce_nonce": True,
-                }
-                scope = f"{key}:{publication.channel_id}"
-                result = _retained_result(rest, key=key, path=path, body=body, scope=scope)
+                result = effects.retained(identifier, publication.channel_id, text)
                 effect_time = now if now is not None else datetime.now(UTC)
                 if result is None:
                     result = _new_contact_refusal(publication, self.allowed_channels, effect_time)
                 if result is None:
-                    result = await rest.write(
-                        "POST",
-                        path,
-                        body,
-                        effect_key=key,
-                        scope=scope,
-                    )
+                    result = await effects.publish(identifier, publication.channel_id, text)
                     if result.code in {"effect_unresolved", "scope_unresolved"}:
                         result = EffectResult(status="unknown", code=result.code)
                 self._receipt(fd, publication, result)

@@ -26,6 +26,7 @@ from lychd.interface.discord.admin import (
     plan_layout,
     snapshot_guild,
 )
+from lychd.interface.discord.ports import AdministrationEffects, GuildInspection
 from lychd.interface.discord.rest import DiscordRest, EffectJournal
 
 _NOW = datetime(2026, 10, 27, tzinfo=UTC)
@@ -130,7 +131,7 @@ async def test_pure_plan_roundtrip_and_explicit_reach_patch(tmp_path: Path) -> N
     server = DiscordFixture()
     async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
-        snapshot = await snapshot_guild(rest)
+        snapshot = await snapshot_guild(GuildInspection(rest))
         first = plan_layout(layout(), snapshot, now=_NOW)
         second = plan_layout(layout(), snapshot, now=_NOW)
         assert first == second
@@ -149,8 +150,8 @@ async def test_default_apply_is_additive_reconciled_and_idempotent(tmp_path: Pat
     async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
         before = copy.deepcopy(server.channels[0]["permission_overwrites"])
-        plan = plan_layout(layout(), await snapshot_guild(rest), now=_NOW)
-        result = await apply_plan(rest, plan, expected_digest=plan.digest, now=_NOW)
+        plan = plan_layout(layout(), await snapshot_guild(GuildInspection(rest)), now=_NOW)
+        result = await apply_plan(AdministrationEffects(rest), plan, expected_digest=plan.digest, now=_NOW)
         assert result.status == "succeeded"
         assert len(result.operations) == len(plan.operations)
         assert server.channels[0]["name"] == "the-reach"
@@ -159,7 +160,7 @@ async def test_default_apply_is_additive_reconciled_and_idempotent(tmp_path: Pat
         assert all(
             body.get("permissions", "0") == "0" for _method, path, body in server.writes if path.endswith("/roles")
         )
-        again = plan_layout(layout(), await snapshot_guild(rest), now=_NOW)
+        again = plan_layout(layout(), await snapshot_guild(GuildInspection(rest)), now=_NOW)
         assert again.operations == ()
         assert len({record.effect_key_digest for record in rest.journal.inspect()}) == len(plan.operations)
 
@@ -170,7 +171,7 @@ async def test_refused_plan_makes_zero_writes(tmp_path: Path, change: str) -> No
     server = DiscordFixture()
     async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
-        plan = plan_layout(layout(), await snapshot_guild(rest), now=_NOW)
+        plan = plan_layout(layout(), await snapshot_guild(GuildInspection(rest)), now=_NOW)
         digest, now = plan.digest, _NOW
         if change == "digest":
             digest = "0" * 64
@@ -180,7 +181,7 @@ async def test_refused_plan_makes_zero_writes(tmp_path: Path, change: str) -> No
             server.channels[0]["topic"] = "Changed after review"
         else:
             server.guild["owner_id"] = "999"
-        result = await apply_plan(rest, plan, expected_digest=digest, now=now)
+        result = await apply_plan(AdministrationEffects(rest), plan, expected_digest=digest, now=now)
         assert result.status == "rejected"
         assert not server.writes
 
@@ -191,15 +192,18 @@ async def test_server_error_fences_the_same_resource_across_new_plans(tmp_path: 
     server.fail_create = True
     async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
-        snapshot = await snapshot_guild(rest)
+        snapshot = await snapshot_guild(GuildInspection(rest))
         plan = plan_layout(layout(), snapshot, now=_NOW)
-        result = await apply_plan(rest, plan, expected_digest=plan.digest, now=_NOW)
+        result = await apply_plan(AdministrationEffects(rest), plan, expected_digest=plan.digest, now=_NOW)
         assert result.status == "unknown"
         assert len(server.writes) == 1
         reopened = configured(tmp_path / "journal", server, client)
         next_plan = plan_layout(layout(), snapshot, now=_NOW + timedelta(seconds=1))
         result = await apply_plan(
-            reopened, next_plan, expected_digest=next_plan.digest, now=_NOW + timedelta(seconds=1)
+            AdministrationEffects(reopened),
+            next_plan,
+            expected_digest=next_plan.digest,
+            now=_NOW + timedelta(seconds=1),
         )
         assert result.code == "scope_unresolved"
         assert len(server.writes) == 1
@@ -211,8 +215,8 @@ async def test_successful_create_with_duplicates_is_unknown_and_durable(tmp_path
     server.duplicate_create = True
     async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
-        plan = plan_layout(layout(), await snapshot_guild(rest), now=_NOW)
-        result = await apply_plan(rest, plan, expected_digest=plan.digest, now=_NOW)
+        plan = plan_layout(layout(), await snapshot_guild(GuildInspection(rest)), now=_NOW)
+        result = await apply_plan(AdministrationEffects(rest), plan, expected_digest=plan.digest, now=_NOW)
         assert result.status == "unknown"
         assert result.code == "create_reconciliation_mismatch"
         assert len(server.writes) == 1
@@ -244,8 +248,8 @@ async def test_explicit_channel_patch_preserves_unrelated_overwrite_bits(tmp_pat
     )
     async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
-        plan = plan_layout(desired, await snapshot_guild(rest), now=_NOW)
-        result = await apply_plan(rest, plan, expected_digest=plan.digest, now=_NOW)
+        plan = plan_layout(desired, await snapshot_guild(GuildInspection(rest)), now=_NOW)
+        result = await apply_plan(AdministrationEffects(rest), plan, expected_digest=plan.digest, now=_NOW)
         assert result.status == "succeeded"
         assert len(server.writes) == 1
         assert server.writes[0][0] == "PATCH"
@@ -263,7 +267,7 @@ async def test_ambiguous_names_do_not_authorize_adoption(tmp_path: Path) -> None
     async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
         with pytest.raises(AdminError, match="ambiguous_role"):
-            plan_layout(layout(), await snapshot_guild(rest), now=_NOW)
+            plan_layout(layout(), await snapshot_guild(GuildInspection(rest)), now=_NOW)
         assert not server.writes
 
 
@@ -304,8 +308,8 @@ async def test_plan_expiry_during_apply_retains_completed_results_and_stops_next
     )
     async with httpx2.AsyncClient(transport=httpx2.MockTransport(delayed)) as client:
         rest = configured(tmp_path / "journal", server, client)
-        plan = plan_layout(desired, await snapshot_guild(rest), now=_NOW)
-        result = await apply_plan(rest, plan, expected_digest=plan.digest, now=_NOW)
+        plan = plan_layout(desired, await snapshot_guild(GuildInspection(rest)), now=_NOW)
+        result = await apply_plan(AdministrationEffects(rest), plan, expected_digest=plan.digest, now=_NOW)
         assert result.status == "rejected"
         assert result.code == "plan_expired"
         assert len(server.writes) == 1
@@ -331,11 +335,11 @@ async def test_explicit_reach_rename_releases_general_without_double_adoption(tm
     )
     async with httpx2.AsyncClient(transport=httpx2.MockTransport(server.request)) as client:
         rest = configured(tmp_path / "journal", server, client)
-        plan = plan_layout(desired, await snapshot_guild(rest), now=_NOW)
+        plan = plan_layout(desired, await snapshot_guild(GuildInspection(rest)), now=_NOW)
         operations = [item.key for item in plan.operations]
         assert operations.index("reach") < operations.index("general")
         assert not any(item.key == "general" for item in plan.existing)
-        result = await apply_plan(rest, plan, expected_digest=plan.digest, now=_NOW)
+        result = await apply_plan(AdministrationEffects(rest), plan, expected_digest=plan.digest, now=_NOW)
         assert result.status == "succeeded"
         reach = [item for item in server.channels if item["name"] == "the-reach"]
         general = [item for item in server.channels if item["name"] == "general"]
@@ -343,5 +347,5 @@ async def test_explicit_reach_rename_releases_general_without_double_adoption(tm
         assert len(general) == 1
         assert reach[0]["id"] == "104"
         assert general[0]["id"] != reach[0]["id"]
-        again = plan_layout(desired, await snapshot_guild(rest), now=_NOW)
+        again = plan_layout(desired, await snapshot_guild(GuildInspection(rest)), now=_NOW)
         assert again.operations == ()

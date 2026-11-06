@@ -130,6 +130,12 @@ class EffectJournal:
         self._depth = 0
         self._owner: tuple[int, object | None] | None = None
         self._root_fd: int | None = None
+        self._session_root: int | None = None
+        self._session_lock: int | None = None
+        self._by_key: dict[str, EffectRecord] | None = None
+        self._by_scope: dict[str, dict[str, EffectRecord]] = {}
+        self._unresolved: dict[str, int] = {}
+        self._poisoned = False
         try:
             root.mkdir(mode=0o700)
         except FileExistsError:
@@ -154,19 +160,7 @@ class EffectJournal:
             code = "journal_unsafe_permissions"
             raise DiscordRestError(code)
 
-    @contextmanager
-    def lock(self) -> Generator[None]:
-        owner = _owner()
-        if self._depth:
-            if self._owner != owner:
-                code = "journal_busy"
-                raise DiscordRestError(code)
-            self._depth += 1
-            try:
-                yield
-            finally:
-                self._depth -= 1
-            return
+    def _acquire_root(self) -> tuple[int, int]:
         root_fd = lock_fd = None
         try:
             root_fd = os.open(self.root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
@@ -178,20 +172,90 @@ class EffectJournal:
             except BlockingIOError:
                 code = "journal_busy"
                 raise DiscordRestError(code) from None
+        except OSError:
+            if lock_fd is not None:
+                os.close(lock_fd)
+            if root_fd is not None:
+                os.close(root_fd)
+            code = "journal_unavailable"
+            raise DiscordRestError(code) from None
+        except BaseException:
+            if lock_fd is not None:
+                os.close(lock_fd)
+            if root_fd is not None:
+                os.close(root_fd)
+            raise
+        return root_fd, lock_fd
+
+    @contextmanager
+    def session(self) -> Generator[None]:
+        """Lease one writer generation; reload receipts before creating a volatile index."""
+        if self._session_root is not None or self._depth:
+            code = "journal_busy"
+            raise DiscordRestError(code)
+        self._session_root, self._session_lock = self._acquire_root()
+        self._poisoned = False
+        try:
+            with self.lock():
+                records = self._inspect_locked()
+                self._by_key = {}
+                for record in records:
+                    self._index_record(record)
+            yield
+        finally:
+            self.close()
+
+    def close(self) -> None:
+        """Release a retired generation; an active transaction keeps its lease fenced."""
+        if self._depth:
+            self._poisoned = True
+            code = "journal_busy"
+            raise DiscordRestError(code)
+        if self._session_lock is not None:
+            os.close(self._session_lock)
+        if self._session_root is not None:
+            os.close(self._session_root)
+        self._session_lock = self._session_root = None
+        self._by_key = None
+        self._by_scope.clear()
+        self._unresolved.clear()
+        self._poisoned = False
+
+    @contextmanager
+    def lock(self) -> Generator[None]:
+        """Own a short transaction independently of the generation's process lease."""
+        owner = _owner()
+        if self._poisoned:
+            code = "journal_unavailable"
+            raise DiscordRestError(code)
+        if self._depth:
+            if self._owner != owner:
+                code = "journal_busy"
+                raise DiscordRestError(code)
+            self._depth += 1
+            try:
+                yield
+            finally:
+                self._depth -= 1
+            return
+        root_fd, lock_fd = (self._session_root, None) if self._session_root is not None else self._acquire_root()
+        try:
+            self._private(root_fd, directory=True)
             self._owner, self._root_fd, self._depth = owner, root_fd, 1
             yield
         except OSError:
             code = "journal_unavailable"
             raise DiscordRestError(code) from None
         finally:
-            if self._owner == owner:
-                self._owner, self._root_fd, self._depth = None, None, 0
+            self._owner, self._root_fd, self._depth = None, None, 0
             if lock_fd is not None:
                 os.close(lock_fd)
-            if root_fd is not None:
                 os.close(root_fd)
 
     def _fd(self) -> int:
+        if self._poisoned:
+            code = "journal_unavailable"
+            raise DiscordRestError(code)
         if self._root_fd is None or self._owner != _owner():
             code = "journal_lock_required"
             raise DiscordRestError(code)
@@ -200,7 +264,44 @@ class EffectJournal:
     def inspect(self) -> tuple[EffectRecord, ...]:
         """Read metadata without resetting, acknowledging or replaying attempts."""
         with self.lock():
-            return self._inspect_locked()
+            return (
+                tuple(self._by_key[key] for key in sorted(self._by_key))
+                if self._by_key is not None
+                else self._inspect_locked()
+            )
+
+    def lookup(self, effect_key: str) -> EffectRecord | None:
+        with self.lock():
+            key = _digest(effect_key)
+            if self._by_key is not None:
+                return self._by_key.get(key)
+            return next((record for record in self._inspect_locked() if record.effect_key_digest == key), None)
+
+    def scope_records(self, scope: str) -> tuple[EffectRecord, ...]:
+        with self.lock():
+            key = _digest(scope)
+            if self._by_key is not None:
+                return tuple(self._by_scope.get(key, {}).values())
+            return tuple(record for record in self._inspect_locked() if record.scope_digest == key)
+
+    def scope_unresolved(self, scope: str) -> bool:
+        with self.lock():
+            if self._by_key is not None:
+                return bool(self._unresolved.get(_digest(scope)))
+            return any(record.status in {"attempting", "unknown"} for record in self.scope_records(scope))
+
+    def _index_record(self, record: EffectRecord) -> None:
+        if self._by_key is None:
+            return
+        previous = self._by_key.get(record.effect_key_digest)
+        if previous is not None:
+            self._by_scope[previous.scope_digest].pop(previous.effect_key_digest)
+            if previous.status in {"attempting", "unknown"}:
+                self._unresolved[previous.scope_digest] -= 1
+        self._by_key[record.effect_key_digest] = record
+        self._by_scope.setdefault(record.scope_digest, {})[record.effect_key_digest] = record
+        if record.status in {"attempting", "unknown"}:
+            self._unresolved[record.scope_digest] = self._unresolved.get(record.scope_digest, 0) + 1
 
     def _inspect_locked(self) -> tuple[EffectRecord, ...]:
         root_fd = self._fd()
@@ -239,6 +340,15 @@ class EffectJournal:
         return tuple(records)
 
     def _save(self, record: EffectRecord) -> None:
+        try:
+            self._save_record(record)
+            self._index_record(record)
+        except BaseException:
+            if self._session_root is not None:
+                self._poisoned = True
+            raise
+
+    def _save_record(self, record: EffectRecord) -> None:
         root_fd = self._fd()
         temporary = f".pending-{uuid.uuid4().hex}"
         fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=root_fd)
@@ -276,8 +386,13 @@ class EffectJournal:
         if not effect_key or not scope:
             return EffectResult(status="rejected", code="invalid_effect_identity")
         key_hash, scope_hash = _digest(effect_key), _digest(scope)
-        records = self._inspect_locked()
-        previous = next((record for record in records if record.effect_key_digest == key_hash), None)
+        # A session's index is valid only while its exclusive OS lease remains held.
+        records = self._inspect_locked() if self._by_key is None else ()
+        previous = (
+            self._by_key.get(key_hash)
+            if self._by_key is not None
+            else next((record for record in records if record.effect_key_digest == key_hash), None)
+        )
         if previous is not None:
             if previous.payload_digest != payload_digest or previous.scope_digest != scope_hash:
                 return EffectResult(status="rejected", code="effect_payload_changed")
@@ -285,7 +400,14 @@ class EffectJournal:
                 return EffectResult(status="rejected", code="effect_unresolved")
             status = "succeeded" if previous.status == "succeeded" else "rejected"
             return EffectResult(status=status, remote_id=previous.remote_id, code=previous.code)
-        if any(record.scope_digest == scope_hash and record.status in {"attempting", "unknown"} for record in records):
+        unresolved = (
+            bool(self._unresolved.get(scope_hash))
+            if self._by_key is not None
+            else any(
+                record.scope_digest == scope_hash and record.status in {"attempting", "unknown"} for record in records
+            )
+        )
+        if unresolved:
             return EffectResult(status="rejected", code="scope_unresolved")
         record = EffectRecord(
             effect_key_digest=key_hash,
@@ -314,8 +436,7 @@ class EffectJournal:
             code = "invalid_reconciliation_code"
             raise DiscordRestError(code)
         with self.lock():
-            key_hash = _digest(effect_key)
-            record = next((record for record in self._inspect_locked() if record.effect_key_digest == key_hash), None)
+            record = self.lookup(effect_key)
             if record is None:
                 code = "journal_effect_missing"
                 raise DiscordRestError(code)
@@ -660,12 +781,7 @@ class DiscordRest:
         if not self._verified:
             return EffectResult(status="rejected", code="identity_not_verified")
         async with self._effect():
-            records = self.journal.inspect()
-            retained = any(
-                r.effect_key_digest == _digest(key)
-                or (r.scope_digest == _digest(scope) and r.status in {"attempting", "unknown"})
-                for r in records
-            )
+            retained = self.journal.lookup(key) is not None or self.journal.scope_unresolved(scope)
             if not retained:
                 try:
                     roles = await self.get(f"/guilds/{self.guild_id}/roles")
@@ -698,17 +814,13 @@ class DiscordRest:
             return EffectResult(status="rejected", code="invalid_message")
         key = f"introduction:{self.application_id}:{self.guild_id}:{channel_id}:{subject_id}"
         async with self._effect():
-            records = self.journal.inspect()
-            if any(r.scope_digest == _digest(key) and r.status in {"attempting", "unknown"} for r in records):
+            if self.journal.scope_unresolved(key):
                 return EffectResult(status="rejected", code="introduction_unresolved")
             previous = next(
                 (
                     r
-                    for r in records
-                    if r.scope_digest == _digest(key)
-                    and r.target == "introduction"
-                    and r.method == "POST"
-                    and r.status == "succeeded"
+                    for r in self.journal.scope_records(key)
+                    if r.target == "introduction" and r.method == "POST" and r.status == "succeeded"
                 ),
                 None,
             )

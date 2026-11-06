@@ -10,7 +10,7 @@ from uuid import uuid4
 
 import httpx2
 import pytest
-from scripts import reach_operator as operator
+from scripts import reach_operator_transport as transport
 from scripts.reach_model_broker import OperatorModelBroker
 from scripts.reach_trace_archive import TraceArchive, query_archive
 from scripts.reach_trace_capture import TraceCapture
@@ -110,7 +110,7 @@ async def test_role_custody_rejects_forged_trace_producer(tmp_path: Path, role: 
     forged = ReachTraceEvent(producer="host", name="session_finished", status="ok")
     reader.feed_data(trace_bytes(admitted) + trace_bytes(forged))
     reader.feed_eof()
-    await operator.diagnostics(reader, role=role, capture=capture)
+    await transport.diagnostics(reader, role=role, capture=capture)
     assert archive.close()
     page = query_archive(tmp_path / "trace")
     assert [row["event"]["event_id"] for row in page["records"] if row["event"]["producer"] == role] == [

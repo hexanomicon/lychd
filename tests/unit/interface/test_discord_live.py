@@ -11,6 +11,7 @@ import discord
 import pytest
 
 from lychd.compositions.reach.operator_wire import ReachHistoryEntry, ReachWorkerReady, ReachWorkerResult
+from lychd.interface.discord.delivery import result_text
 from lychd.interface.discord.live import (
     PipeWorker,
     ReachBot,
@@ -18,10 +19,10 @@ from lychd.interface.discord.live import (
     ReachService,
     event_from_interaction,
     event_from_message,
-    result_text,
     startup_error_code,
 )
 from lychd.interface.discord.operator_io import load_policy, read_token
+from lychd.interface.discord.ports import ReplyEffects
 from lychd.interface.discord.rest import DiscordRestError, EffectResult
 from lychd.interface.discord.schemas import DiscordPolicy
 
@@ -74,7 +75,14 @@ def service() -> ReachService:
             corpus_digest="c" * 64,
         )
     )
-    return ReachService(policy(), worker, Mock(), admin_users=frozenset(), history_enabled=False)
+    return ReachService(
+        policy(),
+        worker,
+        ReplyEffects(Mock(), policy()),
+        admin_users=frozenset(),
+        history_enabled=False,
+        inspection=Mock(),
+    )
 
 
 def test_sdk_event_preserves_identity_and_roles() -> None:
@@ -127,8 +135,8 @@ async def test_shared_gate_and_generation_fence_precede_worker_and_history() -> 
     assert event is not None
     channel = Mock(spec=discord.TextChannel)
     channel.id = int(event.conversation_id)
-    assert await configured.run_event(event, channel) is not None
-    assert await configured.run_event(event, channel) is None
+    assert await configured.run_event(configured.session(event), channel) is not None
+    assert await configured.run_event(configured.session(event), channel) is None
     cast("AsyncMock", configured.worker.request).assert_awaited_once()
     channel.history.assert_not_called()
     assert not configured.eligible(event.model_copy(update={"subject_id": "888888888888888888", "group_ids": ()}))
@@ -179,7 +187,7 @@ def test_empty_worker_outcome_renders_fixed_useful_message(status: Literal["empt
     text = result_text(result)
     assert text.strip()
     assert "foreign_failure" not in text
-    assert "permissions" in text if status == "refused" else "later" in text
+    assert "can't perform" in text if status == "refused" else "later" in text
 
 
 @pytest.mark.asyncio
@@ -322,8 +330,9 @@ async def test_effect_outcomes_report_failure_without_retrying(
     outcome = EffectResult(status=status)
     edit = AsyncMock(return_value=outcome)
     send = AsyncMock(return_value=outcome)
-    configured.rest.edit_interaction_original = edit
-    configured.rest.send_message = send
+    underlying = configured.replies._rest  # pyright: ignore[reportPrivateUsage] - injected test spy
+    underlying.edit_interaction_original = edit
+    underlying.send_message = send
     snapshot = AsyncMock(return_value=Mock(roles=(), channels=()))
     monkeypatch.setattr("lychd.interface.discord.live.snapshot_guild", snapshot)
     observed = message()
@@ -428,5 +437,5 @@ async def test_busy_worker_refuses_before_history() -> None:
     channel = Mock(spec=discord.TextChannel)
     channel.id = int(observed.conversation_id)
     with pytest.raises(ValueError, match="worker_busy_or_unavailable"):
-        await configured.run_event(observed, channel)
+        await configured.run_event(configured.session(observed), channel)
     channel.history.assert_not_called()

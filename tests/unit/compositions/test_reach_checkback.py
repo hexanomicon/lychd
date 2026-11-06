@@ -13,6 +13,7 @@ from pydantic import ValidationError
 from pydantic_ai.models import override_allow_model_requests
 from scripts.reach_worker import build_runtime
 
+from lychd.compositions.reach import checkback as checkback_module
 from lychd.compositions.reach.checkback import (
     CHECKBACK_CLARIFICATION,
     CHECKBACK_RESERVE_CHARS,
@@ -66,6 +67,17 @@ from tests.unit.compositions.test_reach_research import (
 )
 
 MISSING_EVIDENCE_QUESTION = "Please quote the missing source passage so I can verify the requested comparison."
+
+
+@pytest.fixture
+def encoded_limits(monkeypatch: pytest.MonkeyPatch) -> tuple[int, int]:
+    """Reach the independent encoded gates without inventing an inadmissible profile."""
+    payload_limit, frame_limit = 49_152, 65_536
+    assert payload_limit < MAX_MODEL_PAYLOAD_BYTES
+    assert frame_limit < MAX_WIRE_BYTES
+    monkeypatch.setattr(checkback_module, "MAX_MODEL_PAYLOAD_BYTES", payload_limit)
+    monkeypatch.setattr(checkback_module, "MAX_WIRE_BYTES", frame_limit)
+    return payload_limit, frame_limit
 
 
 def test_review_spotlights_and_binds_the_literal_request_instead_of_an_interpreted_plan() -> None:
@@ -720,6 +732,7 @@ async def test_correction_cannot_request_context_when_history_is_exhausted() -> 
         with override_allow_model_requests(True):  # noqa: FBT003 - isolated admitted model relay
             result = await runtime.process(request)
         assert result.status == "error"
+        assert result.reason == "model_protocol"
         assert result.text == ""
         assert len(prompts) == 3
         assert runtime.substrate.leases.active() == []
@@ -904,7 +917,10 @@ def test_public_clarification_is_for_missing_evidence_only_and_preserves_its_lan
 
 
 @pytest.mark.parametrize("prompt", ["x" * 24_000, "𐍈" * 12_000, "\\" * 21_000])
-def test_review_checks_character_utf8_and_escaped_frame_limits(prompt: str) -> None:
+def test_review_checks_character_utf8_and_reduced_transport_limits(
+    prompt: str, encoded_limits: tuple[int, int]
+) -> None:
+    assert encoded_limits == (49_152, 65_536)
     binding = profile().model_copy(update={"adaptive_context": True, "checkback": True, "max_input_chars": 24_000})
     with pytest.raises(DocumentsRefused, match="conversation_budget"):
         validate_checkback_budget(binding, checkback_spec(binding), prompt, phase="checkback")
@@ -1483,25 +1499,28 @@ def test_claim_reservation_covers_accepted_unicode_and_nested_json_escaping() ->
     ("text", "payload_limited", "frame_limited"), [("漢" * 16_384, True, False), ("\\" * 17_000, False, True)]
 )
 def test_encoded_payload_and_frame_pressure_remain_distinct_from_character_allocation(
-    text: str, *, payload_limited: bool, frame_limited: bool
+    text: str, encoded_limits: tuple[int, int], *, payload_limited: bool, frame_limited: bool
 ) -> None:
+    payload_limit, frame_limit = encoded_limits
     binding = research_profile(checkback=True, max_input_chars=24_000)
     cost = model_input_cost(binding, "", text, phase="checkback")
     assert cost.input_chars < binding.max_input_chars
-    assert (cost.payload_bytes > MAX_MODEL_PAYLOAD_BYTES) is payload_limited
-    assert (cost.frame_bytes > MAX_WIRE_BYTES) is frame_limited
+    assert (cost.payload_bytes > payload_limit) is payload_limited
+    assert (cost.frame_bytes > frame_limit) is frame_limited
     with pytest.raises(DocumentsRefused, match="conversation_budget"):
         validate_checkback_budget(binding, checkback_spec(binding), text, phase="checkback")
 
 
 @pytest.mark.parametrize(("unit", "payload_axis"), [("漢", True), ("\\", False)])
-def test_json_format_overhead_is_admitted_against_exact_byte_and_frame_caps(unit: str, *, payload_axis: bool) -> None:
+def test_json_format_overhead_is_admitted_against_reduced_transport_caps(
+    unit: str, encoded_limits: tuple[int, int], *, payload_axis: bool
+) -> None:
     legacy = research_profile(checkback=True, max_input_chars=24_000)
     constrained = legacy.model_copy(update={"json_object_output": True})
     spec = checkback_spec(legacy)
     first = model_input_cost(legacy, spec.instructions, unit, phase="checkback")
     second = model_input_cost(legacy, spec.instructions, unit * 2, phase="checkback")
-    limit = MAX_MODEL_PAYLOAD_BYTES if payload_axis else MAX_WIRE_BYTES
+    limit = encoded_limits[0 if payload_axis else 1]
     first_bytes = first.payload_bytes if payload_axis else first.frame_bytes
     second_bytes = second.payload_bytes if payload_axis else second.frame_bytes
     prompt = unit * (1 + (limit - first_bytes) // (second_bytes - first_bytes))
@@ -2062,6 +2081,8 @@ async def test_native_one_malformed_retry_is_shared_across_both_candidate_versio
             if expected in {CHECKBACK_CLARIFICATION, MISSING_EVIDENCE_QUESTION}
             else "conversation"
         )
+        if not expected:
+            assert result.reason == "model_protocol"
         started = [event for event in events if event.name == "checkback" and event.status == "started"]
         assert tuple(event.attempt for event in started) == candidate_attempts
         assert tuple(event.review_attempt for event in started) == tuple(range(len(reviews)))
@@ -2151,12 +2172,11 @@ async def test_enabled_retry_does_not_retry_ineligible_failures(failure: str) ->
         await runtime.aclose()
 
 
-@pytest.mark.parametrize(
-    ("unit", "axis", "limit"), [("漢", "payload_bytes", MAX_MODEL_PAYLOAD_BYTES), ("\\", "frame_bytes", MAX_WIRE_BYTES)]
-)
-def test_retry_actual_encoded_boundary_refuses_without_larger_payload_or_frame_cap(
-    unit: str, axis: str, limit: int
+@pytest.mark.parametrize(("unit", "axis"), [("漢", "payload_bytes"), ("\\", "frame_bytes")])
+def test_retry_reduced_transport_boundary_refuses_without_extending_caps(
+    unit: str, axis: str, encoded_limits: tuple[int, int]
 ) -> None:
+    limit = encoded_limits[0 if axis == "payload_bytes" else 1]
     binding = retry_profile(max_input_chars=24_000)
     spec = checkback_spec(binding)
     request = make_request(action="converse")

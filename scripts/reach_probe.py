@@ -93,12 +93,14 @@ from lychd.compositions.reach.schemas import ReachEvent, ReachPolicy, ReachRule,
 
 if __package__:
     from scripts import reach_operator as operator
+    from scripts import reach_operator_transport as transport
     from scripts.reach_model_broker import OperatorModelBroker
     from scripts.reach_podman_model import PodmanModelTransport
     from scripts.reach_trace_archive import TraceArchive
     from scripts.reach_trace_capture import TraceCapture
 else:
     import reach_operator as operator
+    import reach_operator_transport as transport
     from reach_model_broker import OperatorModelBroker
     from reach_podman_model import PodmanModelTransport
     from reach_trace_archive import TraceArchive
@@ -1061,7 +1063,7 @@ class Turn:
                 self.capture.child(event, "core")
             elif value.get("kind") == "operation_observation":
                 # Existing typed parser verifies this metadata without retaining foreign fields.
-                if not operator.capture_structured(raw, "core", self.capture):
+                if not transport.capture_structured(raw, "core", self.capture):
                     refuse("probe_diagnostic_protocol")
             else:
                 parse_diagnostic(raw)
@@ -1428,7 +1430,7 @@ async def cleanup_owned(
     await asyncio.gather(*tasks, return_exceptions=True)
     try:
         if process is not None:
-            await operator.retire(process)
+            await transport.retire(process)
         turn.cleanup["process_retired"] = True
     finally:
         try:
@@ -1439,7 +1441,7 @@ async def cleanup_owned(
                 turn.cleanup["container_id"] = identity
             elif process is not None:
                 refuse("probe_container_identity_missing")
-            await operator.remove_owned(engine, cidfile)
+            await transport.remove_owned(engine, cidfile, read_identity=operator.read_regular)
             turn.cleanup["container_removed"] = True
         finally:
             if not turn.cleanup["process_retired"] or not turn.cleanup["container_removed"]:

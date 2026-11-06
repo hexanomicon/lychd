@@ -13,6 +13,7 @@ from uuid import uuid4
 import httpx2
 import pytest
 from scripts import reach_operator as operator
+from scripts import reach_operator_transport as transport
 from scripts.reach_model_broker import OperatorModelBroker, validate_endpoint
 
 from lychd.compositions.reach.operator_model_wire import (
@@ -308,7 +309,7 @@ async def test_multiplexer_keeps_model_payload_off_discord_pipe_and_refuses_unkn
     broker = OperatorModelBroker(
         profile(), transport=httpx2.MockTransport(lambda _value: httpx2.Response(200, json=completion()))
     )
-    await operator.model_relay(reader, edge, core, broker)  # type: ignore[arg-type] - write-only pipe fixtures
+    await transport.model_relay(reader, edge, core, broker)  # type: ignore[arg-type] - write-only pipe fixtures
     assert edge.raw == b'{"kind":"ready"}\n{"kind":"result"}\n'
     response = json.loads(core.raw)
     assert response["kind"] == "model_response"
@@ -317,7 +318,7 @@ async def test_multiplexer_keeps_model_payload_off_discord_pipe_and_refuses_unkn
     reader.feed_data(b'{"kind":"execute"}\n')
     reader.feed_eof()
     with pytest.raises(ValueError, match="operator_core_frame"):
-        await operator.model_relay(reader, edge, core, broker)  # type: ignore[arg-type] - write-only pipe fixtures
+        await transport.model_relay(reader, edge, core, broker)  # type: ignore[arg-type] - write-only pipe fixtures
 
 
 @pytest.mark.parametrize(
@@ -360,6 +361,7 @@ def test_profile_is_frozen_worker_only_and_publication_mount_is_edge_only(
         _ids: tuple[Path, Path],
         *,
         broker: OperatorModelBroker,
+        read_identity: object,
         research_broker: object | None = None,
         capture: object | None = None,
     ) -> int:
@@ -424,7 +426,7 @@ async def test_conversation_edge_cannot_inject_model_frames_or_invalid_requests(
     reader.feed_eof()
     core = Writer()
     with pytest.raises(ValueError, match="validation error"):
-        await operator.relay(reader, core, requests_only=True)  # type: ignore[arg-type] - write-only pipe fixture
+        await transport.relay(reader, core, requests_only=True)  # type: ignore[arg-type] - write-only pipe fixture
     assert core.raw == b""
 
 

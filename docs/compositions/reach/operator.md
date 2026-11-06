@@ -39,6 +39,21 @@ The edge retains content-free, fsynced attempt metadata. An unknown result fence
 the journal witnesses transport effects and is not a canonical Run or conversation ledger.
 An uncertain create is inspected, never blindly retried or automatically deleted.
 
+The running edge exclusively leases its effects directory for the generation. It validates retained
+JSON receipts once, then keeps volatile indexes of effect keys and unresolved scopes under that
+lease. Receipt format, effect identities and replay fences are unchanged; standalone administration
+still uses fresh validated receipts. A second writer refuses the leased directory. A failed durable
+save refuses further writes until restart; startup reloads the actual receipts. This index does not
+add retention, native conversation storage or a durable outbox.
+
+Every admitted turn owns its event, deadline, progress confirmation and one terminal attempt.
+Conversation delivery, publications, onboarding, inspection and local administration receive
+separate bound effect ports. Inventory discovery does not authorize sending to a new conversation.
+Shutdown closes business admission, cancels and joins callbacks and background work, closes REST,
+then releases the effects lease. If a callback cannot retire within five seconds, the edge exits
+before releasing dependencies or the lease; process death prevents it from sending later.
+Unexpected background failures produce a fixed diagnostic.
+
 Each launch creates a new generation. Old events are refused; process failure stops both peers.
 The operator effect journal survives, while memory Runs and conversations do not. This is an
 explicit development limitation, not Phylactery recovery or production hosting acceptance.
@@ -884,7 +899,7 @@ is delivered publicly. The focus selects local evidence; it grants no source aut
 current section references, numbered ranges, code identifiers, resolved ordinals and whole authored
 heading names retain precedence. A resolved focus can replace an incidental partial-word heading
 match. Legacy unstructured plans without focus retain the existing fallback. The bounded selector and optional requested outcomes are
-checkpointed under conversation schema v8, while acquired source bodies remain transient.
+checkpointed under conversation schema v9, while acquired source bodies remain transient.
 With projection revision 2, the synthesis model view contains only each source's `id`, `title`, `status`, exact projected `text`,
 `truncated` and `projection_truncated`, plus `reason` for a non-success result. The host retains the
 original source, URL, digests, read offsets, projection allocation and exact span proof for citations
@@ -1031,12 +1046,32 @@ before contact and rechecks current authority at network and consumption boundar
 retries, discovered links, general web search, browser rendering and durable source storage are
 outside this profile. Restart uncertainty cannot authorize another source attempt.
 
-With research enabled, the native request deadline is 300 seconds, the edge waits at most 310
-seconds for that result, and the whole adaptive turn has a 480-second ceiling. The research relay
-has 150 seconds, including a 20-second delivered-plan gate and a 70-second source-worker bound
-plus cleanup. Ordinary conversation retains its 90-second request and 180-second turn limits;
-each model call retains the selected profile timeout. These ceilings do not extend event
-eligibility: the default 300-second event lifetime can still refuse late consumption or settlement.
+The paired operator ceilings are selected from one shared owner:
+
+| Mode | Native request | Edge pipe result | Whole turn through delivery |
+| --- | --- | --- | --- |
+| Documentation | 15 seconds | 90 seconds | 180 seconds |
+| Conversation | 750 seconds | 760 seconds | 810 seconds |
+| Catalogue research | 900 seconds | 910 seconds | 960 seconds |
+
+Each model call retains its selected profile timeout. The research relay retains 150 seconds,
+including a 20-second delivered-plan gate and a 70-second source-worker bound plus cleanup.
+The whole-turn deadline is captured before binding or acknowledgement and uses monotonic time
+thereafter. It covers history, native/model waits, writer-lock waiting, final message parts and
+cosmetic effects. Every ceiling is capped by remaining event lifetime: the default 300-second
+policy lifetime still limits a long request. Expiry before a claim sends nothing; cancellation
+after a claim retains an unknown effect. Expiry cannot open a second terminal attempt.
+
+The context driver preserves the native result and reports a separate typed stop. Discord renders
+permission denial (403), unavailable history, disabled history and exhausted budgets distinctly;
+an unrelated native clarification remains intact. The exact history-age cutoff is inclusive for
+eager history, pages and reply anchors.
+
+If every selected web source fails, the host settles the existing unverified-web notice directly
+after the gated reads. A successful local source does not override that veto. This path requires
+no synthesis or checkback generation. Late review/correction budget failures retain the public
+`budget` reason; invalid model output reports `model_protocol`. The conversation Pattern is
+revision 9; rebuild the paired images together.
 Live Discord/model/source deployment and host-specific extraction qualification remain separate
 operator evidence obligations in [State of Work](../../state-of-the-work.md#composition-portfolio-delivery).
 

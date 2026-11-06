@@ -157,7 +157,7 @@ async def test_real_graph_failure_reports_only_actual_failed_node_and_closed_cod
     monkeypatch.setattr(SearchDocuments, "run", fail)
     try:
         result = await runtime.process(make_request())
-        assert (result.status, result.reason, result.text) == ("error", "run_failed", "")
+        assert (result.status, result.reason, result.text) == ("error", "model_protocol" if safe else "run_failed", "")
         assert len(records) == 1
         record = records[0]
         assert record.stage == "execute"
@@ -276,5 +276,36 @@ async def test_diagnostic_failure_never_changes_settled_result(
             assert records[0].failed_node is None
         else:
             assert records == []
+    finally:
+        await runtime.aclose()
+
+
+@pytest.mark.parametrize(
+    "reason", ["budget", "model_unavailable", "model_timeout", "model_refused", "model_protocol", "model_failed"]
+)
+@pytest.mark.asyncio
+async def test_recognized_public_failure_keeps_its_structural_run_diagnostic(
+    monkeypatch: pytest.MonkeyPatch, reason: str
+) -> None:
+    async def fail(*_args: Any, **_kwargs: Any) -> None:
+        if reason == "budget":
+            code = "conversation_budget"
+            raise DocumentsRefused(code)
+        raise RuntimeError(reason)
+
+    records: list[ReachRunDiagnostic] = []
+    runtime = worker.build_runtime(
+        make_policy(), make_corpus(), started_at=STARTED, clock=lambda: NOW, diagnostic=records.append
+    )
+    monkeypatch.setattr(SearchDocuments, "run", fail)
+    try:
+        result = await runtime.process(make_request())
+        assert (result.status, result.reason, result.text) == ("error", reason, "")
+        assert len(records) == 1
+        record = parse_diagnostic(diagnostic_bytes(records[0]))
+        assert record.reason == reason
+        assert record.failed_node is not None
+        assert record.failed_node.node == "search"
+        assert make_request().event.question not in diagnostic_bytes(record).decode()
     finally:
         await runtime.aclose()

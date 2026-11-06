@@ -24,6 +24,51 @@ The [operator development profile](operator.md) now implements a separate explic
 native documents worker. Its generation-local memory, source excerpts and local administration
 do not supply the public contract's durable conversation, Ward or deployment acceptance.
 
+## Operator turn ownership
+
+The operator profile keeps three custody boundaries: Discord credentials and SDK observations
+at the edge, native admission and formation in the networkless worker, and bounded model/research
+transports in the host supervisor. One request-local session owns an admitted event, its deadline,
+confirmed plan, native context outcome and single terminal-delivery commitment. Worker capacity
+ends when native work settles; the session survives final delivery, so another request may use
+the worker while the earlier answer is being delivered. Progress is bound to that exact request,
+never to a mutable callback on the worker client.
+
+The shared context driver preserves the settled native result and returns a typed stop reason
+when requested history cannot be obtained. Discord renders operational guidance. It does not
+replace an unrelated native clarification with a history error. Eager history, pages and fetched
+anchors use one provider observation rule, including the inclusive maximum-age cutoff; the
+worker independently revalidates every normalized observation.
+
+Formation has one no-tool model executor and one terminal-candidate review/correction controller.
+Parser failures are classified at parser boundaries; budget, cancellation and transport failures
+retain their own causes. A delivered-plan-gated acquisition whose selected web sources all failed
+settles the existing host abstention before synthesis, including when local evidence succeeded.
+Review and correction otherwise retain exactly the frozen evidence and existing finite limits.
+
+Mode deadlines have one shared owner. A session captures the smaller of its mode ceiling and
+remaining event lifetime before binding or acknowledgement, using a monotonic deadline thereafter.
+That deadline covers context, model waits, writer-lock waiting, final parts and decoration. Expiry
+before an effect claim sends nothing; cancellation after a claim preserves uncertainty. It cannot
+open a fallback delivery under a new identity.
+
+Business callbacks and background effects have one generation task owner. Shutdown closes
+admission, stops ingress, retires those tasks, closes REST, then releases the journal lease.
+A callback which resists cancellation beyond the retirement bound causes process-root fail-stop
+before dependency or lease release. Unexpected background failures produce a fixed diagnostic.
+Conversation, publication, onboarding, inspection and local administration receive distinct
+bound effect ports; authenticated inventory alone grants no conversation-send authority.
+
+The live journal holds an exclusive generation lease, validates existing JSON receipts once and
+indexes effect keys and unresolved scopes only while that lease remains held. Short transactions
+remain task-owned and reentrant. Receipts, digests and replay fences keep their format; a failed
+durable save poisons the lease for subsequent writes. Restart reloads the actual receipts, including
+attempting/unknown effects. This supplies no retention bound or native durable outbox.
+
+The host transport supervisor owns every required pipe reader and both child lifetimes. Losing
+a diagnostic drain, including an oversized line, fails the generation and retires its peers;
+bounded malformed diagnostic text is reduced to fixed codes.
+
 ## Keep Reach independent of the platform
 
 Reach's core vocabulary is **platform, account, space, conversation, subject, groups**, and

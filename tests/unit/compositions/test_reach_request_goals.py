@@ -161,7 +161,7 @@ def test_goal_checkpoint_rejects_disabled_or_missing_interpretation() -> None:
     ).model_copy(update={"run_id": "run"})
     workflow = reach_conversation_workflow(policy(), corpus, binding, started_at=STARTED, clock=lambda: NOW)
     initial = workflow.make_state(intent)
-    assert workflow.manifest.checkpoint_schema == "reach-operator-conversation-v8"
+    assert workflow.manifest.checkpoint_schema == "reach-operator-conversation-v9"
     assert workflow.validate_state is not None
     workflow.validate_state(intent, initial)
     with pytest.raises(DocumentsRefused, match="conversation_checkpoint"):

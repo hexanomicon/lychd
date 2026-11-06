@@ -2172,9 +2172,7 @@ def test_explicit_210000_input_bound_preserves_default_and_physical_limits() -> 
         legacy.timeout_seconds,
     )
     assert (MAX_MODEL_PAYLOAD_BYTES, MAX_WIRE_BYTES) == (1_048_576, 2_097_152)
-    payload = body() | {
-        "messages": [{"role": "system", "content": "s"}, {"role": "user", "content": "x" * 209_999}]
-    }
+    payload = body() | {"messages": [{"role": "system", "content": "s"}, {"role": "user", "content": "x" * 209_999}]}
     assert validate_generation_payload(selected, canonical_json(payload))["messages"] == payload["messages"]
     with pytest.raises(ValueError, match="model_generation_binding"):
         validate_generation_payload(legacy, canonical_json(payload))
@@ -2186,6 +2184,6 @@ def test_explicit_210000_input_bound_preserves_default_and_physical_limits() -> 
         validate_generation_payload(selected, canonical_json(payload))
     with pytest.raises(ValidationError):
         OperatorConversationProfile.model_validate(legacy.model_dump() | {"max_input_chars": 210_001})
-    payload["messages"] = [{"role": "system", "content": "界" * 20_000}]
+    payload["messages"] = [{"role": "system", "content": "\x00" * 180_000}]
     with pytest.raises(ValueError, match="model_payload"):
         validate_generation_payload(selected, canonical_json(payload))

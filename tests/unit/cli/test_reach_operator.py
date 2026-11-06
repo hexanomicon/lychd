@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import pytest
 from scripts import reach_operator as operator
+from scripts import reach_operator_transport as transport
 
 from lychd.compositions.reach.operator_diagnostics import ReachRunDiagnostic, diagnostic_bytes
 from lychd.interface.discord.admin import DeveloperLayout, GuildSnapshot, ServerPlan
@@ -160,7 +161,7 @@ async def test_relay_refuses_oversize_duplicate_and_partial_frames(raw: bytes) -
     reader.feed_eof()
     writer = Writer()
     with pytest.raises((ValueError, asyncio.LimitOverrunError)):
-        await operator.relay(reader, writer)  # type: ignore[arg-type] - structural fixture for a write-only pipe
+        await transport.relay(reader, writer)  # type: ignore[arg-type] - structural fixture for a write-only pipe
     assert writer.raw == b""
 
 
@@ -169,7 +170,7 @@ async def test_diagnostics_preserve_readiness_but_hide_foreign_text(capfd: pytes
     reader = asyncio.StreamReader()
     reader.feed_data(b"reach_discord:ready\nforeign message content\nTraceback (most recent call last):\n")
     reader.feed_eof()
-    await operator.diagnostics(reader)
+    await transport.diagnostics(reader)
     assert capfd.readouterr().err == "reach_discord:ready\nreach_child_diagnostic\nreach_child_diagnostic\n"
 
 
@@ -194,7 +195,7 @@ async def test_structured_diagnostics_require_core_custody(
     reader = asyncio.StreamReader()
     reader.feed_data(raw)
     reader.feed_eof()
-    await operator.diagnostics(reader, role=role)
+    await transport.diagnostics(reader, role=role)
     assert capfd.readouterr().err == (raw.decode() if role == "core" else "reach_child_diagnostic\n")
 
 
@@ -215,7 +216,7 @@ async def test_core_diagnostics_never_sanitize_or_forward_unadmitted_bytes(
     reader = asyncio.StreamReader()
     reader.feed_data(raw)
     reader.feed_eof()
-    await operator.diagnostics(reader, role="core")
+    await transport.diagnostics(reader, role="core")
     assert capfd.readouterr().err == "reach_child_diagnostic\n"
 
 
@@ -255,13 +256,15 @@ async def test_first_child_eof_retires_both_and_cleans_only_owned_ids(
         children.append(child)
         return child
 
-    async def remove(_engine: str, cidfile: Path) -> None:
+    async def remove(_engine: str, cidfile: Path, **_kwargs: Any) -> None:
         removed.append(cidfile)
 
     monkeypatch.setattr(operator.asyncio, "create_subprocess_exec", create)
-    monkeypatch.setattr(operator, "remove_owned", remove)
+    monkeypatch.setattr(transport, "remove_owned", remove)
     identities = (tmp_path / "core.cid", tmp_path / "edge.cid")
-    result = await operator.supervise("docker", (["docker", "core"], ["docker", "edge"]), identities)
+    result = await transport.supervise(
+        "docker", (["docker", "core"], ["docker", "edge"]), identities, read_identity=operator.read_regular
+    )
     assert result == 1
     assert len(children) == 2
     assert all(child.terminated.is_set() for child in children)
@@ -276,7 +279,12 @@ def test_run_mounts_exact_inputs_and_never_token_bytes(tmp_path: Path, monkeypat
     observed: list[list[str]] = []
 
     async def supervise(
-        _engine: str, commands: tuple[list[str], list[str]], _ids: tuple[Path, Path], *, capture: object | None = None
+        _engine: str,
+        commands: tuple[list[str], list[str]],
+        _ids: tuple[Path, Path],
+        *,
+        capture: object | None = None,
+        read_identity: object,
     ) -> int:
         assert capture is not None
         observed.extend(commands)
@@ -378,7 +386,7 @@ def test_generated_admin_plan_envelope_loads_in_apply_cli(tmp_path: Path, monkey
         return
 
     monkeypatch.setattr(operator, "command", command)
-    monkeypatch.setattr(operator, "remove_owned", remove)
+    monkeypatch.setattr(transport, "remove_owned", remove)
     args = operator.parser().parse_args(
         [
             "admin-plan",
@@ -440,7 +448,7 @@ def test_admin_apply_preserves_structured_failure_and_exit_status(
         return
 
     monkeypatch.setattr(operator, "command", command)
-    monkeypatch.setattr(operator, "remove_owned", remove)
+    monkeypatch.setattr(transport, "remove_owned", remove)
     args = operator.parser().parse_args(
         [
             "admin-apply",

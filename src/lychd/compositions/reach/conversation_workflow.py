@@ -83,6 +83,7 @@ from lychd.compositions.reach.research import (
     ResearchSynthesisModel,
     parse_research_answer,
     parse_research_plan,
+    research_abstention,
     research_catalogue,
     synthesis_projection,
     validate_research_response,
@@ -98,7 +99,6 @@ SOURCE = "reach.operator_converse"
 GUEST = "reach.guest"
 MAX_ANSWER_CHARS = 8000
 MAX_CONTEXT_REASON_CHARS = 500
-MAX_CONTEXT_ROUND = 2
 _REPLY_LANGUAGE = (
     "The current question determines your reply language: follow any reply language explicitly requested by "
     "its speaker; otherwise use the language of that question. Earlier messages, quoted text, source language "
@@ -126,7 +126,6 @@ _REQUEST_FULFILLMENT = (
 )
 
 type ConversationResultStatus = Literal["conversation", "need_context", "clarify", "ignore"]
-type HistoryState = Literal["disabled", "more", "exhausted", "budget", "permission_denied", "unavailable"]
 
 
 class ConversationDecision(Record):
@@ -169,11 +168,9 @@ class ConversationOutput(Record):
 def parse_conversation_output(
     output: str,
     *,
-    history_state: HistoryState,
-    context_round: int,
     expressions: ConversationExpressions | None = None,
 ) -> ConversationOutput:
-    """Validate one complete JSON decision and enforce the finite history handoff."""
+    """Validate the decision; the context driver owns whether history can continue."""
     decision = ConversationDecision.model_validate(strict_json(output.encode("utf-8")))
     (expressions or ConversationExpressions()).validate_selection(decision.reaction, decision.gif_id)
     if decision.kind == "answer":
@@ -182,12 +179,7 @@ def parse_conversation_output(
         )
     if decision.kind == "clarify":
         return ConversationOutput(status="clarify", text=decision.text)
-    if history_state == "more" and context_round < MAX_CONTEXT_ROUND:
-        return ConversationOutput(status="need_context", text=decision.text)
-    return ConversationOutput(
-        status="clarify",
-        text="I need more context to answer reliably. Please quote the relevant message or clarify your question.",
-    )
+    return ConversationOutput(status="need_context", text=decision.text)
 
 
 def persona_text(profile: OperatorConversationProfile) -> str:
@@ -915,6 +907,17 @@ class _CheckbackReviews:
     last_retry_reason: InvalidReviewReason | None = None
 
 
+def _parse_output[Output](parse: Callable[[str], Output], output: str) -> Output:
+    """Classify pure parser failures without masking admission or execution failures."""
+    try:
+        return parse(output)
+    except DocumentsRefused:
+        raise
+    except ValueError:
+        msg = "conversation_output"
+        raise DocumentsRefused(msg) from None
+
+
 def _review_result(
     envelope: CheckbackEnvelope, review: str, candidate: str, *, classify_invalid: bool
 ) -> CheckbackDecision | InvalidCheckbackOutputError:
@@ -923,6 +926,9 @@ def _review_result(
         return envelope.parse(review, candidate, classify_invalid=classify_invalid)
     except InvalidCheckbackOutputError as error:
         return error
+    except ValueError:
+        msg = "conversation_output"
+        raise DocumentsRefused(msg) from None
 
 
 async def _review_once(
@@ -1005,7 +1011,8 @@ async def _review_candidate(
         if not isinstance(result, InvalidCheckbackOutputError):
             return result
         if not ctx.deps.profile.checkback_invalid_retry or reviews.retry_used:
-            raise result
+            msg = "conversation_output"
+            raise DocumentsRefused(msg) from None
         reviews.retry_used = True  # Spend before the next dispatch, including its budget/authority checks.
         retry_reason = result.reason
 
@@ -1017,11 +1024,11 @@ def _parse_correction(
     value = strict_json(output.encode())
     if not isinstance(value, dict) or cast("dict[str, Any]", value).get("kind") not in {"answer", "clarify"}:
         msg = "conversation_checkback_correction"
-        raise DocumentsRefused(msg)
+        raise ValueError(msg)
     selection = parse(output)
     if selection.status == "need_context":
         msg = "conversation_checkback_correction"
-        raise DocumentsRefused(msg)
+        raise ValueError(msg)
     return selection
 
 
@@ -1041,7 +1048,7 @@ async def _correct_candidate(
     _checkback_trace(ctx, envelope, candidate, name="correction", status="started", attempt=attempt)
     try:
         repaired = await _model_output(ctx, grant, prompt, phase=phase, transient=True, spec=spec)
-        selection = _parse_correction(repaired, parse)
+        selection = _parse_output(lambda value: _parse_correction(value, parse), repaired)
     except asyncio.CancelledError:
         _checkback_trace(ctx, envelope, candidate, name="correction", status="cancelled", attempt=attempt)
         raise
@@ -1064,12 +1071,8 @@ async def _checked_candidate(
     correction_phase: Literal["terminal_correction", "synthesis"],
 ) -> ConversationOutput | ResearchAnswer:
     """Adopt only an accepted terminal candidate after one correction and an explicitly admitted malformed-review retry."""
-    selection = parse(candidate)
-    if (
-        not ctx.deps.profile.checkback
-        or selection.status == "need_context"
-        or strict_json(candidate.encode()).get("kind") == "read_more"
-    ):
+    selection = _parse_output(parse, candidate)
+    if not ctx.deps.profile.checkback or selection.status == "need_context":
         return selection
     envelope = CheckbackEnvelope.prepare(ctx.state.envelope.request, prompt, persona_name=ctx.deps.profile.persona_name)
     reviews = _CheckbackReviews()
@@ -1194,7 +1197,10 @@ async def _interpret_request_goals(
             transient=True,
             spec=request_goals_spec(ctx.deps.profile),
         )
-        requirements = parse_request_goals(output, request=ctx.state.envelope.request, profile=ctx.deps.profile)
+        requirements = _parse_output(
+            lambda value: parse_request_goals(value, request=ctx.state.envelope.request, profile=ctx.deps.profile),
+            output,
+        )
     except asyncio.CancelledError:
         observe("cancelled")
         raise
@@ -1248,35 +1254,30 @@ class GenerateConversation(BaseNode[ConversationState, ConversationDeps]):
                 phase=initial_decision_variant(ctx.deps.profile, ctx.deps.corpus, request),
             )
             if ctx.deps.profile.adaptive_context:
-                try:
-                    if ctx.deps.profile.research.enabled:
-                        catalogue = research_catalogue(ctx.deps.profile, ctx.deps.corpus, request)
-                        try:
-                            plan = parse_research_plan(output, catalogue)
-                        except Exception as error:
-                            _research_plan_validation_trace(ctx, output, error)
-                            raise
-                        if plan is not None:
-                            ctx.state.research_plan = plan.text
-                            ctx.state.research_focus = plan.focus
-                            ctx.state.research_source_ids = plan.source_ids
-                            return ResearchConversation()
-                    selection = await _checked_candidate(
-                        ctx,
-                        grant,
-                        output,
-                        prompt,
-                        lambda value: parse_conversation_output(
-                            value,
-                            history_state=request.history_state,
-                            context_round=request.context_round,
-                            expressions=ctx.deps.profile.expressions if request.event.trigger != "command" else None,
-                        ),
-                        correction_phase="terminal_correction",
-                    )
-                except ValueError:
-                    msg = "conversation_output"
-                    raise DocumentsRefused(msg) from None
+                if ctx.deps.profile.research.enabled:
+                    catalogue = research_catalogue(ctx.deps.profile, ctx.deps.corpus, request)
+                    try:
+                        plan = parse_research_plan(output, catalogue)
+                    except ValueError as error:
+                        _research_plan_validation_trace(ctx, output, error)
+                        msg = "conversation_output"
+                        raise DocumentsRefused(msg) from None
+                    if plan is not None:
+                        ctx.state.research_plan = plan.text
+                        ctx.state.research_focus = plan.focus
+                        ctx.state.research_source_ids = plan.source_ids
+                        return ResearchConversation()
+                selection = await _checked_candidate(
+                    ctx,
+                    grant,
+                    output,
+                    prompt,
+                    lambda value: parse_conversation_output(
+                        value,
+                        expressions=ctx.deps.profile.expressions if request.event.trigger != "command" else None,
+                    ),
+                    correction_phase="terminal_correction",
+                )
                 ctx.state.result_status = selection.status
                 ctx.state.answer = selection.text
                 ctx.state.reaction = selection.reaction
@@ -1344,6 +1345,11 @@ class ResearchConversation(BaseNode[ConversationState, ConversationDeps]):
                 _read_document_source(ctx, item) if item.startswith("doc:") else web_by_id[item]
                 for item in plan.source_ids
             )
+            abstention = research_abstention(sources)
+            if abstention is not None:
+                ctx.state.result_status = abstention.status
+                ctx.state.answer = abstention.text
+                return SettleConversation()
             projection = synthesis_projection(
                 ctx.deps.profile,
                 ctx.deps.corpus,
@@ -1358,32 +1364,23 @@ class ResearchConversation(BaseNode[ConversationState, ConversationDeps]):
             for source_projection in projection.full_projections:
                 _source_projection_trace(ctx, source_projection)
             output = await _model_output(ctx, grant, prompt, phase="synthesis", transient=True)
-            try:
 
-                def parse_answer(value: str) -> ResearchAnswer:
-                    return parse_research_answer(
-                        value,
-                        sources,
-                        ctx.deps.profile.expressions if request.event.trigger != "command" else None,
-                        acknowledged_plan=plan.text,
-                    )
+            def parse_answer(value: str) -> ResearchAnswer:
+                return parse_research_answer(
+                    value,
+                    sources,
+                    ctx.deps.profile.expressions if request.event.trigger != "command" else None,
+                    acknowledged_plan=plan.text,
+                )
 
-                web_sources = tuple(source for source in sources if source.id.startswith("web:"))
-                if web_sources and not any(source.status == "ok" for source in web_sources):
-                    # This is a host-owned abstention, never adoption of candidate prose.
-                    selection = parse_answer(output)
-                else:
-                    selection = await _checked_candidate(
-                        ctx,
-                        grant,
-                        output,
-                        prompt,
-                        parse_answer,
-                        correction_phase="synthesis",
-                    )
-            except ValueError:
-                msg = "conversation_output"
-                raise DocumentsRefused(msg) from None
+            selection = await _checked_candidate(
+                ctx,
+                grant,
+                output,
+                prompt,
+                parse_answer,
+                correction_phase="synthesis",
+            )
             ctx.state.result_status = selection.status
             ctx.state.answer = selection.text
             ctx.state.reaction = selection.reaction
@@ -1518,9 +1515,9 @@ def reach_conversation_workflow(
         ),
         manifest=PatternManifest(
             key=SOURCE,
-            revision="8",
-            implementation_revision="py.8",
-            checkpoint_schema="reach-operator-conversation-v8",
+            revision="9",
+            implementation_revision="py.9",
+            checkpoint_schema="reach-operator-conversation-v9",
             entry_node="revalidate",
             nodes=(
                 PatternNode(

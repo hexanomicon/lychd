@@ -12,9 +12,10 @@ import discord
 import pytest
 from pydantic import ValidationError
 
-from lychd.compositions.reach.conversation_session import ContextRounds, request_digest
+from lychd.compositions.reach.conversation_session import ContextRounds, ContextTurnOutcome, request_digest
 from lychd.compositions.reach.documents import validate_history
 from lychd.compositions.reach.expressions import ConversationExpressions, ExpressionGif
+from lychd.compositions.reach.operator_session import OperatorSession
 from lychd.compositions.reach.operator_wire import (
     ReachHistoryEntry,
     ReachWorkerReady,
@@ -26,6 +27,7 @@ from lychd.compositions.reach.research_wire import ReachResearchProgress
 from lychd.compositions.reach.schemas import ReachEvent
 from lychd.interface.discord.followups import MAX_FINAL_ANCHORS, FollowupLedger
 from lychd.interface.discord.live import ReachCog, ReachService, event_from_message
+from lychd.interface.discord.ports import ReplyEffects
 from lychd.interface.discord.rest import EffectResult
 from lychd.interface.discord.schemas import DiscordPolicy, DiscordRule
 
@@ -104,7 +106,14 @@ def service() -> ReachService:
     rest.send_message = AsyncMock()
     rest.add_reaction = AsyncMock()
     rest.send_gif = AsyncMock()
-    return ReachService(configured, worker, rest, admin_users=frozenset(), history_enabled=True, conversation=True)
+    return ReachService(
+        configured,
+        worker,
+        ReplyEffects(rest, configured),
+        admin_users=frozenset(),
+        history_enabled=True,
+        conversation=True,
+    )
 
 
 def event(kind: Literal["reply", "followup"] = "followup") -> ReachEvent:
@@ -374,9 +383,9 @@ async def test_candidate_is_silent_without_any_history_read_or_acknowledgement(f
     await ReachCog(configured).on_message(observed)
     observed.channel.history.assert_not_called()
     observed.channel.fetch_message.assert_not_called()
-    cast("AsyncMock", configured.rest.send_message).assert_not_awaited()
-    cast("AsyncMock", configured.rest.add_reaction).assert_not_awaited()
-    cast("AsyncMock", configured.rest.send_gif).assert_not_awaited()
+    cast("AsyncMock", reply_rest(configured).send_message).assert_not_awaited()
+    cast("AsyncMock", reply_rest(configured).add_reaction).assert_not_awaited()
+    cast("AsyncMock", reply_rest(configured).send_gif).assert_not_awaited()
     assert not configured.followups.adjacent
     if failure != "busy":
         call = cast("AsyncMock", configured.worker.request).await_args
@@ -386,11 +395,18 @@ async def test_candidate_is_silent_without_any_history_read_or_acknowledgement(f
         assert call.kwargs["reply_to_event_id"] is None
 
 
+def reply_rest(configured: ReachService) -> Mock:
+    """Retrieve the injected transport spy for effect assertions only."""
+    return cast("Mock", configured.replies._rest)  # pyright: ignore[reportPrivateUsage] - injected test spy
+
+
 def commitment_cog() -> tuple[ReachService, ReachCog]:
     configured = service()
     configured.worker.ready = configured.worker.ready.model_copy(update={"research_enabled": True})
     configured.message_continuation = Mock(return_value=("followup", anchor()))
-    cast("AsyncMock", configured.rest.send_message).return_value = EffectResult(status="succeeded", remote_id="200")
+    cast("AsyncMock", reply_rest(configured).send_message).return_value = EffectResult(
+        status="succeeded", remote_id="200"
+    )
     return configured, ReachCog(configured)
 
 
@@ -407,27 +423,45 @@ def terminal_result(
     )
 
 
+def mock_execution(configured: ReachService, run: Any = None, *, result: ReachWorkerResult | None = None) -> None:
+    async def execute(session: OperatorSession, *args: Any, **kwargs: Any) -> ContextTurnOutcome | None:
+        native = await run(session.event, *args, **kwargs) if run is not None else result
+        outcome = ContextTurnOutcome(native) if native is not None else None
+        session.outcome = outcome
+        return outcome
+
+    configured.run_event = AsyncMock(side_effect=execute)
+
+
 async def deliver_plan(configured: ReachService, observed: ReachEvent) -> bool:
-    callback = configured.worker.progress
-    assert callback is not None
+    calls = cast("AsyncMock", configured.run_event).await_args_list
+    callback = next(
+        (
+            call.kwargs["progress"]
+            for call in reversed(calls)
+            if call.args[0].event == observed and not call.args[0].closed
+        ),
+        None,
+    )
+    if callback is None:
+        return False
     return await callback(
-        observed,
         ReachResearchProgress(
             call_id=str(uuid4()),
             request_id="request",
             binding_digest="b" * 64,
             text="I will read the admitted source and return an answer.",
-        ),
+        )
     )
 
 
 def sent_phases(configured: ReachService) -> list[str]:
-    return [call.kwargs["phase"] for call in cast("AsyncMock", configured.rest.send_message).await_args_list]
+    return [call.kwargs["phase"] for call in cast("AsyncMock", reply_rest(configured).send_message).await_args_list]
 
 
 def assert_no_error_decoration_or_invitation(configured: ReachService) -> None:
-    cast("AsyncMock", configured.rest.add_reaction).assert_not_awaited()
-    cast("AsyncMock", configured.rest.send_gif).assert_not_awaited()
+    cast("AsyncMock", reply_rest(configured).add_reaction).assert_not_awaited()
+    cast("AsyncMock", reply_rest(configured).send_gif).assert_not_awaited()
     assert not configured.followups.adjacent
     assert not configured.followups.finals
 
@@ -445,12 +479,13 @@ async def test_confirmed_candidate_plan_gets_one_terminal_failure_notice(failure
             return None
         return terminal_result(configured, "refused" if failure == "refused" else "error")
 
-    configured.run_event = AsyncMock(side_effect=run)
+    mock_execution(configured, run)
     await cog.on_message(message())
     assert sent_phases(configured) == ["plan", "final"]
-    final = cast("AsyncMock", configured.rest.send_message).await_args_list[-1]
+    final = cast("AsyncMock", reply_rest(configured).send_message).await_args_list[-1]
     assert final.kwargs["event_id"] == final.kwargs["reply_to"] == "100"
-    assert "can't perform" in final.args[1] if failure == "refused" else "couldn't prepare" in final.args[1]
+    expected = "can't perform" if failure == "refused" else "timed out" if failure == "exception" else "run_failed"
+    assert expected in final.args[1]
     assert_no_error_decoration_or_invitation(configured)
 
 
@@ -459,9 +494,11 @@ async def test_confirmed_candidate_plan_gets_one_terminal_failure_notice(failure
 async def test_unconfirmed_or_ignored_candidates_stay_quiet(delivery: str) -> None:
     configured, cog = commitment_cog()
     if delivery in {"rejected", "unknown"}:
-        cast("AsyncMock", configured.rest.send_message).return_value = EffectResult.model_validate({"status": delivery})
+        cast("AsyncMock", reply_rest(configured).send_message).return_value = EffectResult.model_validate(
+            {"status": delivery}
+        )
     elif delivery == "exception":
-        cast("AsyncMock", configured.rest.send_message).side_effect = OSError
+        cast("AsyncMock", reply_rest(configured).send_message).side_effect = OSError
 
     async def run(observed: ReachEvent, *_args: Any, **_kwargs: Any) -> ReachWorkerResult:
         if delivery != "none":
@@ -471,9 +508,9 @@ async def test_unconfirmed_or_ignored_candidates_stay_quiet(delivery: str) -> No
             await deliver_plan(configured, progress_event)
         return terminal_result(configured, "ignore" if delivery == "ignore" else "error")
 
-    configured.run_event = AsyncMock(side_effect=run)
+    mock_execution(configured, run)
     await cog.on_message(message())
-    assert sent_phases(configured) == ([] if delivery == "none" else ["plan"])
+    assert sent_phases(configured) == ([] if delivery in {"none", "foreign"} else ["plan"])
     assert_no_error_decoration_or_invitation(configured)
 
 
@@ -493,8 +530,8 @@ async def test_started_final_delivery_never_retries_with_an_error_notice(part: i
         assert await deliver_plan(configured, observed)
         return terminal_result(configured, "conversation", text="A" * 4000)
 
-    cast("AsyncMock", configured.rest.send_message).side_effect = send
-    configured.run_event = AsyncMock(side_effect=run)
+    cast("AsyncMock", reply_rest(configured).send_message).side_effect = send
+    mock_execution(configured, run)
     await cog.on_message(message())
     assert sent_phases(configured) == ["plan", *["final"] * (part + 1)]
     assert_no_error_decoration_or_invitation(configured)
@@ -520,7 +557,7 @@ async def test_other_invocation_neither_inherits_nor_clears_the_active_plan(inte
             assert await deliver_plan(configured, observed)
         return terminal_result(configured)
 
-    configured.run_event = AsyncMock(side_effect=run)
+    mock_execution(configured, run)
     first = asyncio.create_task(cog.on_message(message()))
     try:
         async with asyncio.timeout(3):
@@ -554,8 +591,8 @@ async def test_new_candidate_owns_its_plan_while_previous_final_delivery_is_pend
             assert await deliver_plan(configured, observed)
         return terminal_result(configured)
 
-    cast("AsyncMock", configured.rest.send_message).side_effect = send
-    configured.run_event = AsyncMock(side_effect=run)
+    cast("AsyncMock", reply_rest(configured).send_message).side_effect = send
+    mock_execution(configured, run)
     first = asyncio.create_task(cog.on_message(message()))
     try:
         async with asyncio.timeout(3):
@@ -583,7 +620,7 @@ async def test_cancelled_candidate_propagates_and_releases_its_plan_ownership() 
             await asyncio.Event().wait()
         return terminal_result(configured)
 
-    configured.run_event = AsyncMock(side_effect=run)
+    mock_execution(configured, run)
     first = asyncio.create_task(cog.on_message(message()))
     async with asyncio.timeout(3):
         await entered.wait()
@@ -618,7 +655,7 @@ async def test_only_complete_successful_final_seeds_next_candidate(
 ) -> None:
     configured = service()
     remote_ids = [str(discord.utils.time_snowflake(NOW - timedelta(seconds=1))), str(discord.utils.time_snowflake(NOW))]
-    cast("AsyncMock", configured.rest.send_message).side_effect = [
+    cast("AsyncMock", reply_rest(configured).send_message).side_effect = [
         EffectResult(status="succeeded", remote_id=remote_ids[0]),
         EffectResult(status=last_status, remote_id=remote_ids[1]),
     ]
@@ -629,7 +666,7 @@ async def test_only_complete_successful_final_seeds_next_candidate(
         policy_digest=configured.policy.digest,
         corpus_digest="c" * 64,
     )
-    configured.run_event = AsyncMock(return_value=result)
+    mock_execution(configured, result=result)
     await ReachCog(configured).on_message(message(mentions=[Mock(id=22)]))
     assert bool(configured.followups.adjacent) == (last_status == "succeeded")
     assert len(configured.followups.finals) == (2 if last_status == "succeeded" else 0)
@@ -650,8 +687,10 @@ async def test_only_known_successful_gif_echo_preserves_completed_final(
     configured.worker.ready = configured.worker.ready.model_copy(update={"expressions": expressions})
     final_id = str(discord.utils.time_snowflake(NOW - timedelta(seconds=2)))
     gif_id = str(discord.utils.time_snowflake(NOW - timedelta(seconds=1)))
-    cast("AsyncMock", configured.rest.send_message).return_value = EffectResult(status="succeeded", remote_id=final_id)
-    cast("AsyncMock", configured.rest.send_gif).return_value = EffectResult(status=gif_status, remote_id=gif_id)
+    cast("AsyncMock", reply_rest(configured).send_message).return_value = EffectResult(
+        status="succeeded", remote_id=final_id
+    )
+    cast("AsyncMock", reply_rest(configured).send_gif).return_value = EffectResult(status=gif_status, remote_id=gif_id)
     result = ReachWorkerResult(
         request_id="request",
         status="conversation",
@@ -661,9 +700,9 @@ async def test_only_known_successful_gif_echo_preserves_completed_final(
         corpus_digest="c" * 64,
         model_binding_digest="b" * 64,
     )
-    configured.run_event = AsyncMock(return_value=result)
+    mock_execution(configured, result=result)
     await ReachCog(configured).on_message(message(mentions=[Mock(id=22)], created_at=NOW - timedelta(seconds=3)))
-    cast("AsyncMock", configured.rest.send_gif).assert_awaited_once()
+    cast("AsyncMock", reply_rest(configured).send_gif).assert_awaited_once()
     echoed = message(id=int(gif_id), created_at=NOW - timedelta(seconds=1))
     echoed.author.id = 22
     echoed.author.bot = True

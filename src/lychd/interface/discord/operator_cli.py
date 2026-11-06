@@ -22,7 +22,9 @@ from lychd.interface.discord.admin import (
     snapshot_guild,
 )
 from lychd.interface.discord.operator_io import load_policy, read_token
+from lychd.interface.discord.ports import AdministrationEffects
 from lychd.interface.discord.rest import DiscordRest, EffectJournal
+from lychd.interface.discord.schemas import DiscordPolicy
 
 MAX_PLAN_BYTES = 65_536
 
@@ -51,13 +53,20 @@ def load_plan(path: Path, expected_digest: str) -> ServerPlan:
 
 async def run(args: argparse.Namespace) -> dict[str, Any]:
     policy = load_policy(args.policy)
-    rest = DiscordRest(
+    journal = EffectJournal(args.effects_dir)
+    with journal.session():
+        return await _operation(args, policy, journal)
+
+
+async def _operation(args: argparse.Namespace, policy: DiscordPolicy, journal: EffectJournal) -> dict[str, Any]:
+    executor = DiscordRest(
         token=read_token(args.token_file),
         application_id=policy.application_id,
         bot_user_id=policy.bot_user_id,
         guild_id=policy.guild_id,
-        journal=EffectJournal(args.effects_dir),
+        journal=journal,
     )
+    rest = AdministrationEffects(executor)
     try:
         await rest.verify_identity()
         if args.command == "apply":
@@ -77,7 +86,7 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
         plan = plan_layout(layout, snapshot, now=datetime.now(UTC))
         return {"plan": plan.model_dump(mode="json"), "digest": plan.digest}
     finally:
-        await rest.close()
+        await executor.close()
 
 
 def main(argv: list[str] | None = None) -> int:

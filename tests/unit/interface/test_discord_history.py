@@ -139,7 +139,7 @@ async def test_three_pages_reuse_cumulative_cache_and_cursor_by_oldest_raw_snowf
         assert call.kwargs["limit"] == 6
         assert isinstance(call.kwargs["before"], discord.Object)
         assert call.kwargs["before"].id == before
-        assert call.kwargs["after"] == NOW - timedelta(seconds=600)
+        assert call.kwargs["after"].id == discord.utils.time_snowflake(NOW - timedelta(seconds=600)) - 1
         assert call.kwargs["oldest_first"] is False
 
 
@@ -169,8 +169,7 @@ async def test_anchor_can_exhaust_count_without_fetching() -> None:
 async def test_utf8_byte_budget_includes_anchor_and_keeps_bounded_whole_excerpts() -> None:
     pinned = anchor(text="💠" * 2000)
     pages = [
-        [message(identity, text="💠" * 2000) for identity in range(start, start - 16, -1)]
-        for start in (999, 983, 967)
+        [message(identity, text="💠" * 2000) for identity in range(start, start - 16, -1)] for start in (999, 983, 967)
     ]
     sdk = channel(*pages)
     pager = HistoryPager(policy(), event(), sdk, enabled=True, conversation=True, anchor=pinned, page_size=16)
@@ -189,7 +188,6 @@ async def test_utf8_byte_budget_includes_anchor_and_keeps_bounded_whole_excerpts
     "rejected",
     [
         {"channel_id": "88"},
-        {"age": 600},
         {"age": 601},
         {"age": 0},
         {"age": -1},

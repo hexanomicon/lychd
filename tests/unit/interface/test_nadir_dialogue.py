@@ -17,7 +17,9 @@ import pytest
 from lychd.compositions.reach.operator_trace import ReachTraceEvent, TraceEmitter
 from lychd.compositions.reach.operator_wire import ReachWorkerResult
 from lychd.interface.discord import live
+from lychd.interface.discord.delivery import context_text
 from lychd.interface.discord.live import PipeWorker, ReachCog, ReachService, event_from_message
+from lychd.interface.discord.ports import ReplyEffects
 from lychd.interface.discord.schemas import DiscordPolicy, DiscordRule
 from tests.unit.interface.test_discord_history import SDKPage
 from tests.unit.interface.test_discord_live import NOW, ready
@@ -68,7 +70,14 @@ async def test_dm_denial_precedes_acknowledgement_and_native_request(denial: str
         configured = configured.model_copy(update={"rules": (narrow, *configured.rules)})
     native, rest = worker(configured), Mock()
     rest.send_message, rest.bind_direct_channel = AsyncMock(), AsyncMock()
-    service = ReachService(configured, native, rest, admin_users=frozenset(), history_enabled=False, conversation=True)
+    service = ReachService(
+        configured,
+        native,
+        ReplyEffects(rest, configured),
+        admin_users=frozenset(),
+        history_enabled=False,
+        conversation=True,
+    )
     await ReachCog(service).on_message(observed)
     rest.send_message.assert_not_awaited()
     rest.bind_direct_channel.assert_not_awaited()
@@ -122,7 +131,12 @@ async def test_dm_starts_with_native_reply_and_multipart_delivery_stops_on_unkno
         rest = make_rest(tmp_path, client)
         await rest.verify_identity()
         service = ReachService(
-            configured, native, rest, admin_users=frozenset(), history_enabled=False, conversation=True
+            configured,
+            native,
+            ReplyEffects(rest, configured),
+            admin_users=frozenset(),
+            history_enabled=False,
+            conversation=True,
         )
         cog = ReachCog(service)
         await cog.on_message(observed)
@@ -159,12 +173,19 @@ async def test_busy_event_remains_fenced_after_active_turn_finishes() -> None:
     event = event_from_message(observed, configured, conversation=True)
     assert event is not None
     native, rest, acknowledge = worker(configured), Mock(), AsyncMock(return_value=True)
-    service = ReachService(configured, native, rest, admin_users=frozenset(), history_enabled=False, conversation=True)
-    service.turn_active = True
+    service = ReachService(
+        configured,
+        native,
+        ReplyEffects(rest, configured),
+        admin_users=frozenset(),
+        history_enabled=False,
+        conversation=True,
+    )
+    service.worker_reserved = True
     with pytest.raises(ValueError, match=r"^worker_busy_or_unavailable$"):
-        await service.run_event(event, observed.channel, acknowledge=acknowledge)
-    service.turn_active = False
-    assert await service.run_event(event, observed.channel, acknowledge=acknowledge) is None
+        await service.run_event(service.session(event), observed.channel, acknowledge=acknowledge)
+    service.worker_reserved = False
+    assert await service.run_event(service.session(event), observed.channel, acknowledge=acknowledge) is None
     acknowledge.assert_not_awaited()
     native.request.assert_not_awaited()
     rest.bind_direct_channel.assert_not_called()
@@ -204,11 +225,20 @@ async def test_read_more_skips_full_filtered_page_or_clarifies_on_exhaustion(*, 
         corpus_digest="c" * 64,
     )
     native.request.side_effect = [need, need.model_copy(update={"status": "conversation", "text": "Older answer."})]
-    service = ReachService(configured, native, rest, admin_users=frozenset(), history_enabled=True, conversation=True)
-    result = await service.run_event(event, observed.channel, acknowledge=acknowledge)
-    assert result is not None
-    assert result.status == ("conversation" if older_page else "clarify")
-    assert result.text == "Older answer." if older_page else result.text != need.text and bool(result.text.strip())
+    service = ReachService(
+        configured,
+        native,
+        ReplyEffects(rest, configured),
+        admin_users=frozenset(),
+        history_enabled=True,
+        conversation=True,
+    )
+    outcome = await service.run_event(service.session(event), observed.channel, acknowledge=acknowledge)
+    assert outcome is not None
+    result = outcome.result
+    assert result.status == ("conversation" if older_page else "need_context")
+    assert outcome.stop == (None if older_page else "exhausted")
+    assert result.text == "Older answer." if older_page else "quote the message" in context_text(outcome)
     assert native.request.await_count == (2 if older_page else 1)
     assert observed.channel.history.call_count == (3 if older_page else 2)
     acknowledge.assert_awaited_once()

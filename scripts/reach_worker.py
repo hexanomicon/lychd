@@ -56,6 +56,7 @@ from lychd.compositions.reach.operator_diagnostics import (
     diagnostic_bytes,
     write_diagnostic_line,
 )
+from lychd.compositions.reach.operator_limits import event_seconds_remaining, operator_limits
 from lychd.compositions.reach.operator_model import ModelRelay, OperatorModelAdapter, operator_model_rune
 from lychd.compositions.reach.operator_model_wire import (
     OperatorConversationProfile,
@@ -146,6 +147,10 @@ def _trace_failure_code(error: BaseException | None) -> TraceCode | None:
 
 def _public_failure_reason(error: Exception) -> str:
     """Carry only recognized answer-preparation failures across the worker boundary."""
+    if type(error) is DocumentsRefused and error.args == ("conversation_output",):
+        return "model_protocol"
+    if type(error) is DocumentsRefused and error.args == ("conversation_expired",):
+        return "event_expired"
     code = _trace_failure_code(error)
     if code in {"budget", "model_unavailable", "model_timeout", "model_refused", "model_protocol", "model_failed"}:
         return code
@@ -528,7 +533,10 @@ class DocumentsRuntime:
                 for job in self.queue.jobs.values():
                     if job.task is None:
                         job.task = task
-                async with asyncio.timeout(timeout):
+                remaining = event_seconds_remaining(
+                    request.event.occurred_at, self.policy.event_ttl_seconds, now=self.clock()
+                )
+                async with asyncio.timeout(min(timeout, remaining)):
                     await task
                     stage = "evidence_flush"
                     await self.substrate.bus.wait_persisted(run.run_id)
@@ -723,13 +731,10 @@ async def serve(runtime: DocumentsRuntime, reader: asyncio.StreamReader, write: 
             write(protocol_bytes(runtime.refuse("invalid", "invalid_request", error=True)))
             continue
         try:
-            budget = (
-                900
-                if runtime.profile and runtime.profile.research.enabled
-                else 750
-                if runtime.profile
-                else 15
-            )
+            budget = operator_limits(
+                conversation=runtime.profile is not None,
+                research=runtime.profile.research.enabled if runtime.profile is not None else False,
+            ).native_seconds
             result = await runtime.process(request, timeout=budget)
         except Exception:  # noqa: BLE001 - malformed continuations never echo their diagnostics
             result = runtime.refuse(request.request_id, "run_failed", error=True)
