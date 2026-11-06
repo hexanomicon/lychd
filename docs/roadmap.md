@@ -17,7 +17,7 @@ icon: material/routes
   </p>
 </header>
 
-We are building a laboratory in which people and agents make LychD together. Its first public encounter grows through a speaking companion, a phone, Minecraft and visual creation. The same body must support useful work, careful changes and the freedom to investigate a question whose answer we do not yet know.
+We are building a laboratory in which people and agents make LychD together. The first shared trial begins with a Discord question and one authorized task on the founder's PC, with a reply people can inspect. A speaking companion, a phone, Minecraft and visual creation give the laboratory further directions to explore.
 
 The founding cycle runs from **2 November 2026 to 1 November 2027**: 52 full weeks and a one-day
 epilogue. Python's methods name its transformations. Begin with Genesis for the current practical
@@ -57,7 +57,9 @@ guides the work ahead.
 
 ## Where the work stands
 
-The opening chapter is **Genesis**. Shared agent tasks, history and steering are the first collaboration undertaking. **Phone and voice belong in the Christmas enthusiast release**, planned for **21 December 2026**. Minecraft is the leading showcase, drawing on Blockworld, Atelier and selected Avatar work. The precise user scenes and supported profiles are chosen with the team before the corresponding weekly commitments.
+The opening chapter is **Genesis**. Orientation is complete by the founder's decision on **6 November**; this records the welcome, not technical acceptance. The current undertaking is a small Discord/VPS-to-PC task with an inspectable reply.
+
+**21 December 2026 is the fixed developer-preview date**, with tutorials and at least one useful Composition. Scope remains flexible as evidence develops. Voice is a high priority; Minecraft and Atelier/Broadcast video making are candidate applications. Later weekly scenes illustrate possible journeys: their feature lists guide selection rather than add mandatory release features.
 
 To see what can be used now, read [State of Work](state-of-the-work.md). Follow
 [Compositions](compositions/index.md) for application contracts and [Covenants](adr/index.md) for
@@ -70,38 +72,37 @@ each delivered capability still needs evidence.
 
 Agree a few shared outcomes, then give people space to choose approaches, ask better questions and cross specialties. Protect recurring uninterrupted time for self-directed research, creative experiments and community work inside ordinary capacity. A promising question may continue across several weeks.
 
-Agents can investigate, build alternatives, prepare tests and challenge candidates. Core architecture and code retain human review under the [contribution process](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md). Shared work gets a steward and useful collaborators; research and informal curiosity remain welcome without a weekly invention quota.
+Agents can investigate, build alternatives, prepare tests and challenge candidates. The founder leads architecture and design and reviews and approves all code under the [contribution process](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#branches-and-everyday-collaboration). Shared work gets a steward and useful collaborators; research and informal curiosity remain welcome without a weekly invention quota.
 
 Start with short weekly planning and a laboratory conversation or demonstration, then use asynchronous threads and focused pairing when work benefits. Batch reviews and conversations around real overlap so people can sustain concentration. The exact rhythm is agreed with the team.
 
-Use [GitHub issues](https://github.com/hexanomicon/lychd/issues) for the selected work, its acceptance, dependencies and review links. A weekly title can connect several ongoing issues; it does not create fifty-three compulsory tickets. Show real findings and working material as the campaign grows, and learn directly from early users.
+Use [Start here #52](https://github.com/hexanomicon/lychd/issues/52) to find selected work and its acceptance, dependencies and review links. [Future capabilities #62](https://github.com/hexanomicon/lychd/issues/62) keeps directions for later selection. A weekly title can connect several ongoing issues; it does not create fifty-three compulsory tickets. Show real findings and working material as the campaign grows, and learn directly from early users.
 
 <a id="genesis-00-09"></a>
 
 ## Genesis · 00–09 — Formation
 
-Genesis forms the working laboratory and its first public body. Learn the system broadly, build a runnable path, connect the selected phone and Minecraft experiences, and invite enthusiasts into something they can try. Videos and encounters grow from the work itself. Later week plans stay revisable as the team learns.
+Genesis forms the working laboratory and its first public body. November begins with design, reproduction of the existing baseline and the smallest useful repair. Choose subsequent voice, game and creative encounters from what that work reveals.
 
-Campaign encounters begin in **30 November–6 December**. Release is planned for **Monday 21 December**, with support through **24 December**. The company is off **25 December–2 January**, and the whole **28 December–3 January** Await week has no work duties. Normal work resumes **4 January**.
+Demonstrations and audience building can begin in November or early December. The developer preview is on **Monday 21 December**, with support through **24 December**. The company is off **25 December–2 January**, and the whole **28 December–3 January** Await week has no work duties. Normal work resumes **4 January**.
 
 ### Make the work visible
 
-Genesis includes a creative laboratory for showing the work: a Minecraft encounter, a speaking companion, visual experiments and the phone experience. Real demonstrations, behind-the-scenes material and short clips can explain what works, what people can try and where feedback is useful.
+Real demonstrations, behind-the-scenes material and short clips can explain what works, what people can try and where feedback is useful. Mechanimous YouTube demonstrations and audience building may begin in November or early December, as useful material appears.
 
-From 30 November, this material supports a community campaign toward the 21 December enthusiast release. YouTube, UNIZA, relevant forums and existing communities are routes to choose according to capacity and relevance. Publishing follows the available material and editorial judgment, without a fixed video quota. Support ends on 24 December before the holiday break.
+YouTube, UNIZA, relevant forums and existing communities are routes to choose according to capacity and relevance. Publishing follows the available material and editorial judgment, without a fixed video quota. Atelier and Broadcast are candidates for making videos; existing tools can support the campaign. Support ends on 24 December before the holiday break.
 
 Agents can help prepare alternatives, clips and explanations. Existing qualified tools and human editorial work can carry production while selected native handoffs develop. Personal publishing experiments and community roles are voluntary, with their time included in planning.
 
 ### Related work
 
-Use these links to find the issues and application contracts behind a selected encounter. Each
-keeps its own scope and acceptance criteria. Linking it here does not assign the entire issue to
-a week or promise its completion by that date. Ordinary exploration can begin without a ticket.
+Three Ready issues begin the shared work:
 
-- **Shared agent laboratory:** [Graph #8](https://github.com/hexanomicon/lychd/issues/8), [Atlas #15](https://github.com/hexanomicon/lychd/issues/15), [Creation #40](https://github.com/hexanomicon/lychd/issues/40) and [Ward/IAM #24](https://github.com/hexanomicon/lychd/issues/24) are related execution, planning, candidate and access work.
-- **Phone and voice:** [Android handset qualification #77](https://github.com/hexanomicon/lychd/issues/77), [Echo speech #48](https://github.com/hexanomicon/lychd/issues/48) and [runtime handoffs #50](https://github.com/hexanomicon/lychd/issues/50). The handset issue is local audio work; the selected phone-to-Lich integration needs its own scoped acceptance.
-- **Minecraft, visuals and publication:** start from [Blockworld](compositions/blockworld/index.md), [Atelier](compositions/atelier/index.md), [Avatar](compositions/avatar/index.md) and [Broadcast](compositions/broadcast/index.md), then select a useful scene and any bounded contribution it needs.
-- **Release and recovery:** [clean-host packaging #45](https://github.com/hexanomicon/lychd/issues/45) and [consistent restore #44](https://github.com/hexanomicon/lychd/issues/44).
+- [**Discord/VPS-to-PC design #131**](https://github.com/hexanomicon/lychd/issues/131): Nav and Anshuk design the question, authorized founder-PC task and inspectable reply.
+- [**Complete Altar task design #132**](https://github.com/hexanomicon/lychd/issues/132): Chirayu and Kiran design the whole task, including agent role, Graph and backend, with the voice/phone journey in view.
+- [**Shared reproduction and acceptance #133**](https://github.com/hexanomicon/lychd/issues/133): Debayan prepares baseline reproduction, acceptance evidence and integration checks for review.
+
+Both pairs can contribute approaches and cross boundaries. Start the selected path with [A2A #19](https://github.com/hexanomicon/lychd/issues/19), [VPN #20](https://github.com/hexanomicon/lychd/issues/20) and [Scroll #29](https://github.com/hexanomicon/lychd/issues/29), before broader voice and media work. Their remaining acceptance criteria still apply. Historical issues closed because their planning was replaced retain their acceptance history; closure does not establish delivery.
 
 <a id="week-00"></a>
 
@@ -116,9 +117,7 @@ We meet, talk, ask questions, and explore the code together. We become familiar 
 
 #### Welcome to the laboratory
 
-Meet the people and the idea. Walk through the repository, the Compositions, the lore and the Bell Labs ambition together. Minecraft, a speaking companion, visual creation and the phone give the conversations something tangible to gather around.
-
-People can follow questions that interest them, pair with someone or simply listen. Access help and optional code walks belong here. There is no assigned implementation, required demonstration, outreach quota or test of proficiency.
+The founder marked this orientation complete on **6 November**. Questions, optional code walks and access help can continue as needed. This welcome decision supplies no technical acceptance evidence.
 
 <a id="week-01"></a>
 
@@ -133,9 +132,9 @@ We go deeper into the project: its purpose, structure, questions, and ways of wo
 
 #### Choose the first living thread
 
-Choose the first useful shared agent task and sketch the two public experiences around it: speaking with a Lich through the phone, and meeting or working with it in Minecraft. These may share one encounter. Agree what the person says, what the Lich does and what result the person can recognise.
+Design the Discord bot/VPS path and one explicitly authorized task on the founder's PC. Agree the question a person asks, the task owner and the reply they can inspect. The two pairs explore approaches with the founder; Debayan prepares shared reproduction and acceptance.
 
-Trace the encounter through Companion and Echo, Blockworld, Atelier and selected Avatar work. Choose the small scene and handoffs it actually needs. Map several users, owned home/VPS nodes, sovereign peers, execution, compute and fallback while selecting one operating path. The first shared-task experiment needs an owner, history, result and way for another person to continue or steer it.
+Choose whether the PC is a sovereign peer that owns its task or compute serving the same Lich. These are different relationships. Map the needed A2A, VPN and Scroll boundaries first: today's outbound A2A evidence does not supply an incoming private receiver, and Tether remains designed. Specify what success, refusal, an offline PC and an unknown outcome should look like to the person asking.
 
 <a id="week-02"></a>
 
@@ -150,9 +149,9 @@ We establish a functioning foundation that everyone can run and substantially un
 
 #### Give the laboratory a body
 
-Make the selected foundation runnable and understandable by another participant. A real task goes through request, execution and an inspectable result; its history lets a colleague continue or redirect the work. Existing coding agents can help construct it, with their actual sessions and candidates kept attributable.
+Reproduce the existing baseline together: configure it, run it and execute the relevant tests. Ask the selected Discord question and trace how far the authorized PC task and inspectable reply can actually proceed. Record working behavior, fixtures and missing connections separately.
 
-Use bounded probes to close the hardest phone/audio and Minecraft assumptions now, in parallel where construction and review capacity permit: the selected handset can take part in the intended exchange, and the chosen game connection can support the agreed action. Keep fixtures and partially connected roads explicit. Core contracts and implementation receive human architectural and code review.
+Debayan helps make the observations reproducible and prepares acceptance and integration checks. The pairs compare what they found with their designs, expose the actual gaps and select the smallest useful change with the founder. A runnable test or design alone does not qualify the whole path.
 
 <a id="week-03"></a>
 
@@ -167,9 +166,9 @@ We establish repeatable SDLC cycles: propose, build, run, observe, and repair. P
 
 #### Let it learn through use
 
-Repeat the construction loop: propose, build with agents, run, challenge and integrate with human judgment. Carry a real lesson into the next version, keeping a prior case and a separate check case so improvement can be compared.
+Implement the smallest selected gap, with founder review and approval of all code. Repeat the Discord question and authorized PC task, inspect the reply and test success, refusal, offline and unknown outcomes. Keep the observations and acceptance evidence with the issue, then choose the next iteration.
 
-Connect the first useful speech exchange and bounded Minecraft interaction. Try an interruption, missing capability or failed reply and observe how the person understands the outcome. Begin collecting truthful footage and visual material. Atelier or Avatar experiments can improve the encounter without completing the whole Composition.
+Once the early path is usable, a Minecraft weather request is a candidate next trial, with the game's actual permissions checked first. Voice remains a high priority for subsequent selection. Useful demonstrations can already feed Mechanimous videos without waiting for every candidate Composition to be complete.
 
 <a id="week-04"></a>
 
