@@ -343,7 +343,7 @@
     // Use the same admission, retained offering and stream recovery as ordinary chat.
     if (opened && !destroyed && selected?.id === opened) {
       if (onNavigate) await onNavigate(opened, "");
-      else await goto(bridgeHref(opened), { keepFocus: true });
+      else await goto(bridgeHref(opened), { reset: false });
     }
     if (!admitted) throw new Error("The naming request was not confirmed. Check the conversation for an active reply or an unresolved offering before trying again.");
   }

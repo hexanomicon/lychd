@@ -7,10 +7,10 @@
   import { navigationId } from "$lib/navigation/instruments";
   import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/bridge/pins";
   import { createSeancesWorkspace, getSeancesWorkspace, hasSeancesWorkspace } from "$lib/seances/workspace.svelte";
-  import { materialKinds, materialMarkdown, seanceHref, sourceSignature, type MaterialKind, type SeanceMaterial } from "$lib/seances/material";
+  import { materialKinds, materialMarkdown, sourceSignature, type MaterialKind, type SeanceMaterial } from "$lib/seances/material";
 
   let { sessionId }: { sessionId?: string } = $props();
-  const work = hasSeancesWorkspace() ? getSeancesWorkspace() : createSeancesWorkspace((id) => goto(resolve(`/bridge/${encodeURIComponent(id)}`)));
+  const work = hasSeancesWorkspace() ? getSeancesWorkspace() : createSeancesWorkspace((id) => goto(resolve("/bridge/[session_id]", { session_id: id })));
   let sessions = $state.raw<SessionPage["sessions"]>([]);
   let cursor = $state<string | null>(null);
   let catalogueLoading = $state(false);
@@ -154,11 +154,11 @@
       <label for="seance-search">Find in loaded séances</label><input id="seance-search" type="search" bind:value={query} placeholder="Title or identity" />
       <h2>Pinned</h2>
       {#each matchingPins as id (id)}
-        <div class="catalogue-row"><a href={resolve(seanceHref(id))} aria-current={sessionId === id ? "page" : undefined}>{titles.get(id) ?? `Séance · ${id}`}{#if !titles.has(id)}<small>Details not loaded</small>{/if}</a><button type="button" aria-label={`Unpin séance ${titles.get(id) ?? id}`} onclick={() => pin(id)}>−</button></div>
+        <div class="catalogue-row"><a href={resolve("/seances/[session_id]", { session_id: id })} aria-current={sessionId === id ? "page" : undefined}>{titles.get(id) ?? `Séance · ${id}`}{#if !titles.has(id)}<small>Details not loaded</small>{/if}</a><button type="button" aria-label={`Unpin séance ${titles.get(id) ?? id}`} onclick={() => pin(id)}>−</button></div>
       {:else}<p class="muted">No matching pins.</p>{/each}
       <h2>Recent séances</h2><p class="muted">Newest created first</p>
       {#each matchingSessions.filter((item) => !pins.includes(item.id)) as item (item.id)}
-        <div class="catalogue-row"><a href={resolve(seanceHref(item.id))} aria-current={sessionId === item.id ? "page" : undefined}>{item.title}<small>{new Date(item.created_at).toLocaleDateString()}{item.pending_count ? ` · ${item.pending_count} awaiting consent` : ""}</small></a><button type="button" aria-label={`Pin séance ${item.title}`} onclick={() => pin(item.id)}>+</button></div>
+        <div class="catalogue-row"><a href={resolve("/seances/[session_id]", { session_id: item.id })} aria-current={sessionId === item.id ? "page" : undefined}>{item.title}<small>{new Date(item.created_at).toLocaleDateString()}{item.pending_count ? ` · ${item.pending_count} awaiting consent` : ""}</small></a><button type="button" aria-label={`Pin séance ${item.title}`} onclick={() => pin(item.id)}>+</button></div>
       {:else}{#if !catalogueLoading}<p class="muted">{query ? "No match in the loaded catalogue." : "No recent séances."}</p>{/if}{/each}
       {#if catalogueError}<p role="alert">{catalogueError}</p>{/if}
       {#if cursor || catalogueError}<button type="button" onclick={loadCatalogue} disabled={catalogueLoading}>{catalogueLoading ? "Loading…" : catalogueError ? "Retry catalogue" : "Load more séances"}</button>{:else if catalogueLoading}<p role="status">Loading séances…</p>{/if}
@@ -177,7 +177,7 @@
               <article class={["retained-turn", { "user-turn": turn.role === "user" }]} data-seance-source={sourceSignature(turn)} tabindex="-1">
                 <header><strong>{turn.role === "user" ? "You" : "LychD"}</strong><time datetime={turn.created_at}>{new Date(turn.created_at).toLocaleString()}</time><span>{turn.state}</span></header>
                 <p class="quotation">{turn.content || "No text retained."}</p>
-                <footer><button type="button" onclick={() => select(turn)} disabled={!turn.content}>Select quotation</button>{#if navigationId(turn.run_id)}<a href={resolve(`/orb/${encodeURIComponent(turn.run_id!)}`)}>Run evidence →</a>{/if}</footer>
+                <footer><button type="button" onclick={() => select(turn)} disabled={!turn.content}>Select quotation</button>{#if navigationId(turn.run_id)}<a href={resolve("/orb/[run_id]", { run_id: turn.run_id! })}>Run evidence →</a>{/if}</footer>
                 {#if turn.fragments?.length}<p class="muted">{turn.fragments.length} retained fragments. Continue in Bridge to inspect them.</p>{/if}
               </article>
             {:else}<div class="empty"><h3>No retained turns yet</h3><p>Continue in Bridge to begin, or refresh after a reply settles.</p></div>{/each}

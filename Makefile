@@ -58,6 +58,7 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/system/services/test_intercom_http.py \
 	tests/unit/domain/test_artifact_custody.py tests/unit/domain/test_evolution.py \
 	tests/unit/domain/animation tests/unit/domain/cortex tests/unit/domain/delegation \
+	tests/unit/domain/test_naming.py \
 	tests/unit/domain/oculus \
 	tests/unit/domain/orchestration tests/unit/domain/privacy tests/unit/domain/web tests/unit/domain/scout \
 	tests/unit/domain/ward \
@@ -72,7 +73,7 @@ CONTAINER_TEST_TARGETS ?= tests/integration/test_db_consent_pg.py \
 	tests/integration/test_db_blockworld_pg.py \
 	tests/integration/test_database_authority_pg.py \
 	tests/integration/test_db_atlas_pg.py \
-	tests/integration/test_db_migrations_pg.py \
+	tests/integration/test_db_migrations_pg.py tests/integration/test_naming_pg.py \
 	tests/integration/test_db_nexus_pg.py \
 	tests/integration/test_db_run_ledger_pg.py \
 	tests/integration/test_delegated_process_recovery_pg.py \

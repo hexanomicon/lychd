@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+from typing import Any, cast
 
 import pytest
 from sqlalchemy import Table
@@ -18,7 +19,7 @@ def test_generated_migration_parity_and_guarded_downgrade(monkeypatch: pytest.Mo
     module.upgrade()
     assert module.revision == "0027"
     assert module.down_revision == "0026"
-    model = NamingRecord.__table__
+    model = cast("Table[Any]", NamingRecord.__table__)
     assert isinstance(model, Table)
     assert columns(operations.tables[0]) == columns(model)
     assert constraints(operations.tables[0]) == constraints(model)

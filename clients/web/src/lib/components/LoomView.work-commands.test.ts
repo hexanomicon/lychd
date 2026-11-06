@@ -30,7 +30,6 @@ const summary: LoomSummary = {
   entry_node: "start",
   implementation_revision: "test",
   pattern_id: "bridge_chat",
-  publication: "published",
   revision: "1",
   route_rank: 0,
   title: "Bridge chat",
