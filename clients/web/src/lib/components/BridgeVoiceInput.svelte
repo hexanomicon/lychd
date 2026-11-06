@@ -315,19 +315,45 @@
 }} />
 
 <section class="voice-input" aria-label="Voice input">
-  <div class="voice-row">
-    <button type="button" class="mic" aria-label="Record voice" aria-describedby={`${id}-status`}
-      disabled={!available || recording || processing || recovering || snapshot.busy || snapshot.composing || (snapshot.mode === "work" && !target)}
-      onclick={() => void start()}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-        <rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8" />
-      </svg>
-    </button>
-    {#if recording}<button type="button" onclick={() => void capture?.stop()} disabled={captureState.status !== "recording"}>Stop</button>{/if}
-    {#if recording || processing}<button type="button" onclick={() => cancelCapture()}>{processing ? "Cancel transcription" : "Cancel recording"}</button>{/if}
-    <p id={`${id}-status`} role="status">{status}</p>
+  <div class="voice-toolbar">
+    <div class="voice-row">
+      <button type="button" class="mic" aria-label="Record voice" aria-describedby={`${id}-status`}
+        disabled={!available || recording || processing || recovering || snapshot.busy || snapshot.composing || (snapshot.mode === "work" && !target)}
+        onclick={() => void start()}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8" />
+        </svg>
+        <span class="voice-mic-label">Record voice</span>
+      </button>
+      {#if recording}<button type="button" onclick={() => void capture?.stop()} disabled={captureState.status !== "recording"}>Stop</button>{/if}
+      {#if recording || processing}<button type="button" onclick={() => cancelCapture()}>{processing ? "Cancel transcription" : "Cancel recording"}</button>{/if}
+    </div>
+    <details class="voice-settings" bind:open={optionsOpen} ontoggle={(event) => { if (event.currentTarget.open) feedbackMounted = true; }}>
+      <summary>Voice options</summary>
+      <div class="voice-options" role="region" aria-label="Voice options controls">
+        <label for={`${id}-language`}>Language</label>
+        <select id={`${id}-language`} bind:value={language} disabled={recording || processing || !discovery?.languages?.length}>
+          {#each discovery?.languages ?? [] as declared (declared)}<option value={declared}>{declared}</option>{/each}
+        </select>
+        <label class="check"><input type="checkbox" checked={view.autosend} onchange={(event) => coordinator.setAutosend(event.currentTarget.checked)} /> Automatically send after 2 seconds</label>
+        <label class="check"><input type="checkbox" bind:checked={rememberCorrections} /> Remember corrections when sending</label>
+        <p>Remembers the original transcript and sent draft privately. No automatic vocabulary changes or model training.</p>
+        {#if pinnedTarget && attemptId}<p>{pinnedTarget} · {pinnedLanguage}</p>{/if}
+        {#if view.originalText && attemptId}
+          <label for={`${id}-original`}>Original transcript</label>
+          <textarea id={`${id}-original`} rows="2" readonly value={view.originalText}></textarea>
+          {#if view.adopted}<p>Edit the final text in the Bridge draft above.</p>{/if}
+        {/if}
+        {#if feedbackMounted}
+          {@render feedback?.({ attemptId, originalText: attemptId ? view.originalText : "", finalText: attemptId ? (view.adopted ? snapshot.draftText : view.finalText) : "", language: pinnedLanguage || language, savedRevision, active: optionsOpen, applySuggestion })}
+        {/if}
+      </div>
+    </details>
   </div>
-  {#if !available && !discovering}<button type="button" onclick={() => void discover()}>Check voice again</button>{/if}
+  <div class="voice-status-row">
+    <p class="voice-status" id={`${id}-status`} role="status">{status}</p>
+    {#if !available && !discovering}<button type="button" onclick={() => void discover()}>Check voice again</button>{/if}
+  </div>
   {#if view.deadline !== null}
     <div class="voice-row countdown"><p role="status">Sending in {seconds} seconds</p><button type="button" onclick={() => coordinator.cancelAutosend()}>Cancel automatic send</button></div>
   {/if}
@@ -345,43 +371,33 @@
     <textarea id={`${id}-suggestion`} rows="2" value={view.finalText} oninput={(event) => coordinator.setFinalText(event.currentTarget.value)}></textarea>
     <button type="button" disabled={snapshot.busy || snapshot.composing} onclick={() => coordinator.insert()}>Insert into draft</button>
   {/if}
-  <details bind:open={optionsOpen} ontoggle={(event) => { if (event.currentTarget.open) feedbackMounted = true; }}>
-    <summary>Voice options</summary>
-    <div class="voice-options" role="region" aria-label="Voice options controls">
-      <label for={`${id}-language`}>Language</label>
-      <select id={`${id}-language`} bind:value={language} disabled={recording || processing || !discovery?.languages?.length}>
-        {#each discovery?.languages ?? [] as declared (declared)}<option value={declared}>{declared}</option>{/each}
-      </select>
-      <label class="check"><input type="checkbox" checked={view.autosend} onchange={(event) => coordinator.setAutosend(event.currentTarget.checked)} /> Automatically send after 2 seconds</label>
-      <label class="check"><input type="checkbox" bind:checked={rememberCorrections} /> Remember corrections when sending</label>
-      <p>Remembers the original transcript and sent draft privately. No automatic vocabulary changes or model training.</p>
-      {#if pinnedTarget && attemptId}<p>{pinnedTarget} · {pinnedLanguage}</p>{/if}
-      {#if view.originalText && attemptId}
-        <label for={`${id}-original`}>Original transcript</label>
-        <textarea id={`${id}-original`} rows="2" readonly value={view.originalText}></textarea>
-        {#if view.adopted}<p>Edit the final text in the Bridge draft above.</p>{/if}
-      {/if}
-      {#if feedbackMounted}
-        {@render feedback?.({ attemptId, originalText: attemptId ? view.originalText : "", finalText: attemptId ? (view.adopted ? snapshot.draftText : view.finalText) : "", language: pinnedLanguage || language, savedRevision, active: optionsOpen, applySuggestion })}
-      {/if}
-    </div>
-  </details>
 </section>
 
 <style>
-  .voice-input { min-width: 0; margin-top: .4rem; color: var(--color-parchment); font-size: var(--text-xs); }
-  .voice-row { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem .6rem; }
-  .voice-row p { flex: 1 1 10rem; }
-  p { margin: .35rem 0; overflow-wrap: anywhere; line-height: 1.5; }
-  button, select { min-height: 2.75rem; padding: .35rem .6rem; color: var(--color-bone); border: 1px solid var(--color-engraving); border-radius: var(--radius-glyph); background: var(--color-obsidian); }
+  .voice-input { min-width: 0; margin: 0; color: var(--color-parchment); font: var(--text-sm)/1.5 var(--font-body); }
+  .voice-toolbar { display: flex; align-items: flex-start; flex-wrap: wrap; gap: .15rem .5rem; min-width: 0; min-height: 2.75rem; padding-inline-end: var(--voice-action-reserve, 0px); }
+  .voice-row { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem .5rem; min-width: 0; }
+  .voice-settings { flex: 1 1 auto; min-width: 0; }
+  .voice-settings[open] { flex-basis: 100%; }
+  .voice-mic-label { display: var(--voice-label-display, inline); }
+  .voice-status-row { display: flex; align-items: center; flex-wrap: wrap; gap: .15rem .5rem; min-width: 0; margin-top: .2rem; }
+  .voice-status { flex: 1 1 7rem; min-width: 0; margin: 0; color: var(--color-ash); }
+  .voice-status-row button { flex: 0 0 auto; font-size: var(--text-xs); }
+  p { margin: .4rem 0 0; overflow-wrap: anywhere; line-height: 1.6; }
+  button, select { min-height: 2.75rem; padding: .4rem .65rem; color: var(--color-bone); border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); background: var(--color-obsidian); font: inherit; }
   button { cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--color-rune); background: var(--color-obsidian-2); }
   button:disabled { opacity: .55; cursor: default; }
-  .mic { display: inline-grid; place-items: center; min-width: 2.75rem; }
-  summary { min-height: 2.75rem; align-content: center; cursor: pointer; }
-  .voice-options { display: grid; gap: .4rem; padding: .3rem .2rem; max-height: min(18rem, 38dvh); overflow: auto; overscroll-behavior: contain; min-width: 0; scrollbar-gutter: stable; }
-  label { display: block; }
-  .check { display: flex; gap: .6rem; align-items: center; min-height: 2.75rem; }
-  textarea { display: block; width: 100%; min-height: 3rem; max-height: 12rem; resize: vertical; color: var(--color-bone); background: var(--color-obsidian); border: 1px solid var(--color-engraving); border-radius: var(--radius-glyph); padding: .5rem; font: inherit; }
-  select { width: 100%; }
+  .mic { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-width: 2.75rem; border-color: transparent; padding-inline: .35rem; background: transparent; }
+  .mic svg { flex: 0 0 auto; }
+  summary { min-height: 2.75rem; padding-block: .4rem; align-content: center; cursor: pointer; color: var(--color-parchment); }
+  .voice-options { display: grid; box-sizing: border-box; width: calc(100% + var(--voice-action-reserve, 0px)); gap: .5rem; margin-top: .35rem; padding: .75rem 0 .25rem; max-height: min(22rem, 42dvh); overflow: auto; overscroll-behavior: contain; min-width: 0; scrollbar-gutter: stable; border-top: 1px solid var(--color-engraving); }
+  label { display: block; line-height: 1.5; }
+  .check { display: flex; gap: .6rem; align-items: flex-start; min-height: 2.75rem; padding-block: .5rem; }
+  .check input { flex: 0 0 auto; margin-top: .15rem; }
+  textarea { display: block; width: 100%; min-height: 3rem; max-height: 12rem; resize: vertical; color: var(--color-bone); background: var(--color-obsidian-2); border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); padding: .6rem; font: inherit; line-height: 1.6; }
+  select { width: 100%; background: var(--color-obsidian-2); }
+  .countdown { margin-top: .5rem; padding-left: .65rem; border-left: 2px solid var(--color-rune); }
+  .countdown p { margin: 0; color: var(--color-bone); }
   button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible, .voice-options:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
 </style>

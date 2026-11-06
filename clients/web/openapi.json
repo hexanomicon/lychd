@@ -4162,6 +4162,108 @@
         "title": "MessageIntent",
         "type": "object"
       },
+      "NameSuggestions": {
+        "additionalProperties": false,
+        "properties": {
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "names"
+        ],
+        "title": "NameSuggestions",
+        "type": "object"
+      },
+      "NamingAcceptance": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "exclusiveMaximum": 9.223372036854776e+18,
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "names": {
+            "$ref": "#/components/schemas/PersonalNames"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "names"
+        ],
+        "title": "NamingAcceptance",
+        "type": "object"
+      },
+      "NamingSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "magus_name": {
+            "maxLength": 96,
+            "minLength": 1,
+            "type": "string"
+          },
+          "magus_origin": {
+            "enum": [
+              "manual",
+              "dictionary",
+              "assisted",
+              "self_chosen"
+            ],
+            "type": "string"
+          },
+          "primus_name": {
+            "maxLength": 96,
+            "minLength": 1,
+            "type": "string"
+          },
+          "primus_origin": {
+            "enum": [
+              "manual",
+              "dictionary",
+              "assisted",
+              "self_chosen"
+            ],
+            "type": "string"
+          },
+          "revision": {
+            "maximum": 9.223372036854776e+18,
+            "minimum": 1.0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "magus_name",
+          "magus_origin",
+          "primus_name",
+          "primus_origin",
+          "revision"
+        ],
+        "title": "NamingSnapshot",
+        "type": "object"
+      },
+      "NamingView": {
+        "additionalProperties": false,
+        "properties": {
+          "current": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NamingSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "current"
+        ],
+        "title": "NamingView",
+        "type": "object"
+      },
       "NativeReviewDocument": {
         "properties": {
           "facts": {
@@ -6004,6 +6106,47 @@
           "revision"
         ],
         "title": "PatternReference",
+        "type": "object"
+      },
+      "PersonalNames": {
+        "additionalProperties": false,
+        "properties": {
+          "magus_name": {
+            "maxLength": 96,
+            "minLength": 1,
+            "type": "string"
+          },
+          "magus_origin": {
+            "enum": [
+              "manual",
+              "dictionary",
+              "assisted",
+              "self_chosen"
+            ],
+            "type": "string"
+          },
+          "primus_name": {
+            "maxLength": 96,
+            "minLength": 1,
+            "type": "string"
+          },
+          "primus_origin": {
+            "enum": [
+              "manual",
+              "dictionary",
+              "assisted",
+              "self_chosen"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "magus_name",
+          "magus_origin",
+          "primus_name",
+          "primus_origin"
+        ],
+        "title": "PersonalNames",
         "type": "object"
       },
       "Preference": {
@@ -7862,6 +8005,278 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/altar/naming": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getNaming",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NamingView"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {
+              "cache-control": {
+                "deprecated": false,
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          }
+        },
+        "summary": "Current"
+      },
+      "put": {
+        "deprecated": false,
+        "operationId": "acceptNaming",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NamingAcceptance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NamingView"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {
+              "cache-control": {
+                "deprecated": false,
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          }
+        },
+        "summary": "Accept"
+      }
+    },
+    "/api/v1/altar/naming/suggestions": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getNamingSuggestions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameSuggestions"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {
+              "cache-control": {
+                "deprecated": false,
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkError"
+                }
+              }
+            },
+            "description": "Additional response"
+          }
+        },
+        "summary": "Suggestions"
+      }
+    },
     "/api/v1/altar/status": {
       "get": {
         "deprecated": false,

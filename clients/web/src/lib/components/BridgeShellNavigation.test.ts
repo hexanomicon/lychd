@@ -41,6 +41,7 @@ const page = appPage as Omit<typeof appPage, "url"> & { url: import("svelte/reac
 import { goto } from "$app/navigation";
 import { createBridgeSession, getAltarStatus, getBridgeSnapshot, getOrbRun, sendBridgeMessage, listenToRun, cancelBridgeRun } from "$lib/api/client";
 import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
+import { getSeancesWorkspace, type SeancesWorkspace as SeancesContext } from "$lib/seances/workspace.svelte";
 import AltarShell from "./AltarShell.svelte";
 import BridgePage from "../../routes/bridge/+page.svelte";
 
@@ -323,5 +324,91 @@ it("navigates from the trailing-slash Bridge root to the exact selected conversa
   await fireEvent.click(screen.getByRole("link", { name: /Older B/ }));
   expect(goto).toHaveBeenCalledWith("/bridge/session-b", { reset: false });
   expect(sendBridgeMessage).not.toHaveBeenCalled();
+  shell.unmount();
+});
+
+it("opens the actual default séance and preserves active A while inspecting B", async () => {
+  await visit("/atlas");
+  const shell = render(AltarShell, { children });
+  const composer = await screen.findByLabelText("Message");
+  await fireEvent.input(composer, { target: { value: "Keep A draft" } });
+  expect(screen.getByRole("link", { name: "Open Séance" }).getAttribute("href")).toBe("/seances/session-a");
+  expect(screen.getByRole("link", { name: "Séances" }).getAttribute("href")).toBe("/seances");
+  await visit("/seances/session-b");
+  expect(screen.getByLabelText("Message")).toBe(composer);
+  expect((composer as HTMLTextAreaElement).value).toBe("Keep A draft");
+  expect(screen.getByRole("link", { name: "Open Séance" }).getAttribute("href")).toBe("/seances/session-a");
+  expect(getBridgeSnapshot).toHaveBeenCalledExactlyOnceWith(undefined);
+  expect(sendBridgeMessage).not.toHaveBeenCalled();
+  shell.unmount();
+});
+
+it("continues in inspected B explicitly and focuses its composer after the delayed exact read", async () => {
+  let context: SeancesContext | undefined;
+  const inspect = createRawSnippet(() => {
+    context = getSeancesWorkspace();
+    return { render: () => "<div>Inspected séance B</div>" };
+  });
+  await visit("/seances/session-b");
+  const work = createBridgeWorkspace();
+  const shell = render(AltarShell, { props: { children: inspect }, context: new Map([[bridgeWorkspaceKey, work]]) });
+  const composer = await screen.findByLabelText("Message");
+  await fireEvent.input(composer, { target: { value: "A stays safe" } });
+  let finish!: (value: BridgeSnapshot) => void;
+  vi.mocked(getBridgeSnapshot).mockImplementation((id) => id === "session-b" ? new Promise((resolve) => { finish = resolve; }) : Promise.resolve(snapshot(id)));
+  await act(() => context!.continueInBridge("session-b"));
+  expect(work.drafts.get("session-a")).toBe("A stays safe");
+  expect(page.url.pathname).toBe("/seances/session-b");
+  await act(() => finish(snapshot("session-b")));
+  await screen.findByText("Retained answer for session-b");
+  expect(document.activeElement).toBe(screen.getByLabelText("Message"));
+  expect(document.querySelectorAll("#bridge-message")).toHaveLength(1);
+  expect(screen.getByRole("link", { name: "Open Séance" }).getAttribute("href")).toBe("/seances/session-b");
+  expect(sendBridgeMessage).not.toHaveBeenCalled();
+  shell.unmount();
+});
+
+it("warns before losing document-local material even after leaving Séances", async () => {
+  let context: SeancesContext | undefined;
+  const inspect = createRawSnippet(() => {
+    context = getSeancesWorkspace();
+    return { render: () => "<div>Inspected séance B</div>" };
+  });
+  await visit("/seances/session-b");
+  const shell = render(AltarShell, { children: inspect });
+  await screen.findByLabelText("Message");
+  await act(() => { context!.add("session-b", snapshot("session-b").session!.turns![0]!); });
+  await visit("/atlas");
+  const event = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(event);
+  expect(event.defaultPrevented).toBe(true);
+  expect(context!.materials.get("session-b")).toHaveLength(1);
+  shell.unmount();
+});
+
+it("discards a queued B composer focus when explicit C selection supersedes it", async () => {
+  let context: SeancesContext | undefined;
+  const inspect = createRawSnippet(() => {
+    context = getSeancesWorkspace();
+    return { render: () => "<button type='button'>Workspace focus target</button>" };
+  });
+  await visit("/seances/session-b");
+  const shell = render(AltarShell, { children: inspect });
+  await screen.findByLabelText("Message");
+  let finish!: (value: BridgeSnapshot) => void;
+  vi.mocked(getBridgeSnapshot).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+  await act(() => context!.continueInBridge("session-b"));
+  await visit("/bridge/session-c");
+  await screen.findByText("Retained answer for session-c");
+  await act(() => finish(snapshot("session-b")));
+  expect(screen.queryByText("Retained answer for session-b")).toBeNull();
+  await visit("/atlas");
+  const target = screen.getByRole("button", { name: "Workspace focus target" });
+  target.focus();
+  await fireEvent.click(screen.getByText("Conversations"));
+  await fireEvent.click(screen.getByRole("link", { name: /Older B/ }));
+  await screen.findByText("Retained answer for session-b");
+  expect(document.activeElement).not.toBe(screen.getByLabelText("Message"));
+  expect(page.url.pathname).toBe("/atlas");
   shell.unmount();
 });

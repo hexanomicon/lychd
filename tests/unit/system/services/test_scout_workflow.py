@@ -12,11 +12,13 @@ from uuid import UUID, uuid4
 import pytest
 
 from lychd.agents.router import Intent
+from lychd.agents.workflows import BRIDGE_CHAT_SCOUT, builtin_workflow_registry, resolve_named_workflow
 from lychd.domain.codex.local_access import LocalOperatorAccess, LocalOperatorAuthentication
 from lychd.domain.codex.schemas import ConsentView
 from lychd.domain.codex.sigil import default_local_sigil
 from lychd.domain.cortex.cancellation import RunEffectFence
 from lychd.domain.cortex.runs import RunRecord, RunStatus
+from lychd.domain.naming import NamingSnapshot
 from lychd.domain.scout.attempts import (
     NewScoutClaim,
     ScoutAttemptSnapshot,
@@ -25,7 +27,13 @@ from lychd.domain.scout.attempts import (
     ScoutStoreError,
 )
 from lychd.domain.scout.authority import ScoutAction, ScoutHostAuthorizer, ScoutHostPolicy
-from lychd.domain.scout.profile import SCOUT_ANSWER_PURPOSE, ScoutBinding, ScoutReviewRef, ScoutWorkflowError
+from lychd.domain.scout.profile import (
+    SCOUT_ANSWER_PURPOSE,
+    ScoutBinding,
+    ScoutReviewRef,
+    ScoutWorkflowCode,
+    ScoutWorkflowError,
+)
 from lychd.domain.scout.transport import FetchCode, FetchError
 from lychd.domain.web.consent_reviews import ConsentReviewForbiddenError
 from lychd.interface.web.scout_admission import ScoutAdmissionService
@@ -51,7 +59,7 @@ class Scenario:
     snapshot: ScoutAttemptSnapshot
 
 
-async def scenario() -> Scenario:
+async def scenario(*, naming: NamingSnapshot | None = None) -> Scenario:
     profile = scout_profile()
     credential = "fixture-credential"
     access = LocalOperatorAccess(access_password=credential)
@@ -72,11 +80,17 @@ async def scenario() -> Scenario:
     admission = ScoutAdmissionService(access=access, authorizer=authorizer, profile=profile)
     proof = admission.declare(prompt=PROMPT, request_id=uuid4(), authentication=authentication)
     binding = admission(Intent(session_id="session", prompt=PROMPT, source="bridge"), proof, profile)
+    workflow = (
+        resolve_named_workflow(builtin_workflow_registry(), BRIDGE_CHAT_SCOUT)
+        if naming is not None
+        else BRIDGE_CHAT_SCOUT
+    )
     run = RunRecord(
         run_id=str(uuid4()),
         session_id="session",
         workflow_name="bridge_chat",
-        pattern_manifest={"revision": "4"},
+        pattern_manifest=workflow.manifest.snapshot(),
+        admitted_naming=naming,
         source="bridge",
         queue_name="runs",
         priority=50,
@@ -332,3 +346,56 @@ async def test_unexpected_acquisition_failure_keeps_uncertainty_and_refuses_cont
     s.store.settle.assert_not_awaited()
     with pytest.raises(RuntimeError, match="uncertain"):
         await s.service.contain(s.run.run_id)
+
+
+def _accepted_names() -> NamingSnapshot:
+    return NamingSnapshot(
+        magus_name="Zenith Runeweaver",
+        primus_name="Aster Shadowdancer",
+        magus_origin="manual",
+        primus_origin="self_chosen",
+        revision=1,
+    )
+
+
+@pytest.mark.asyncio
+async def test_named_profile_keeps_preparation_and_consent_under_existing_authority() -> None:
+    s = await scenario(naming=_accepted_names())
+    assert s.run.pattern_manifest["revision"] == "4-naming1"
+    assert await s.service.prepare(run_id=s.run.run_id, binding=s.binding) == s.review
+    s.store.prepare.assert_awaited_once()
+    s.consents.get = AsyncMock(
+        return_value=ConsentView(
+            id=str(s.snapshot.consent_id),
+            run_id=s.run.run_id,
+            tool_name="scout",
+            status="pending",
+            native_binding=s.snapshot.native_binding,
+        )
+    )
+    assert await s.service.consent(run_id=s.run.run_id, binding=s.binding, review=s.review) == "pending"
+    s.access.revoke()
+    with pytest.raises(FetchError) as caught:
+        await s.service.consent(run_id=s.run.run_id, binding=s.binding, review=s.review)
+    assert caught.value.code is FetchCode.EGRESS
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mismatch", ["revision", "manifest", "missing_names", "legacy_with_names", "invalid_names"])
+async def test_named_scout_refuses_binding_substitution_before_store_access(mismatch: str) -> None:
+    s = await scenario(naming=_accepted_names())
+    if mismatch == "revision":
+        s.run.pattern_manifest["revision"] = "4-naming2"
+    elif mismatch == "manifest":
+        s.run.pattern_manifest["implementation_revision"] = "foreign"
+    elif mismatch == "missing_names":
+        s.run.admitted_naming = None
+    elif mismatch == "legacy_with_names":
+        s.run.pattern_manifest = BRIDGE_CHAT_SCOUT.manifest.snapshot()
+    else:
+        s.run.admitted_naming = _accepted_names().model_copy(update={"revision": 0})
+    s.store.reset_mock()
+    with pytest.raises(ScoutWorkflowError) as caught:
+        await s.service.prepare(run_id=s.run.run_id, binding=s.binding)
+    assert caught.value.code is ScoutWorkflowCode.BINDING
+    assert s.store.mock_calls == []

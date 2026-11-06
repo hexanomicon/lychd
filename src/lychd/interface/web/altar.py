@@ -59,7 +59,7 @@ class AltarController(Controller):
         return Response(content=_ALTAR_MARK, media_type="image/svg+xml")
 
     @get(
-        ["/atlas", "/bridge", "/nexus", "/loom", "/orb", "/scavenger", "/canvas"],
+        ["/atlas", "/bridge", "/seances", "/nexus", "/loom", "/orb", "/scavenger", "/canvas"],
         name="altar:instrument",
         guards=[requires_scopes("altar:read")],
         include_in_schema=False,
@@ -72,6 +72,7 @@ class AltarController(Controller):
         [
             "/atlas/{client_path:str}",
             "/bridge/{client_path:str}",
+            "/seances/{client_path:str}",
             "/orb/{client_path:str}",
             "/canvas/{client_path:str}",
         ],

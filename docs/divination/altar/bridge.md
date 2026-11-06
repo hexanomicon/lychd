@@ -9,13 +9,23 @@ Use Bridge to offer an Intent and stay with the answer as you inspect other Alta
 applications. Its session, or séance, holds the continuing conversation. Each admitted turn opens
 its own [Circle](circle.md), whose Run lets you follow that one request through to its result.
 
-Choose **Bridge** in the top navigation for a full-focus conversation page, with **Pinned** and
-**Recent conversations** beside the thread. The dock's **Full focus** link opens the same selected
-conversation. Pins stay in this browser and store only session identities; an older unloaded pin
+Bridge is ordinarily where you return to **[Primus](../../lexicon/inner-tongue.md#primus)**,
+the Lich's first and continuing main personal identity. The optional
+[naming ceremony](../../summoning.md#naming-ceremony) accepts your chosen forms of address.
+Open it from the welcome or **Tools** to enter names, browse local suggestions, or invite a
+proposal in conversation. **Save names** applies the reviewed choice to later admitted turns;
+closing the ceremony leaves conversation available. Further Agents and Personas can contribute
+to the work while this central relation continues.
+
+Choose [**Séances**](seances.md) in the top navigation for the conversation catalogue and retained
+reading workspace. The dock's **Open Séance** link opens its actual supplied conversation there.
+Inspection leaves the live Bridge selection unchanged until **Continue in Bridge** is chosen.
+Existing full-focus `/bridge` links retain **Pinned** and **Recent conversations** beside the
+live thread. Pins stay in this browser and store only session identities; an older unloaded pin
 shows its identity until its metadata is supplied. Use **Load more conversations** for older
 archive pages. The order follows creation time, not last activity.
 
-Open the side panel with the **« / »** control at the work area's edge. New layouts start on the left;
+Open the side panel with the named **Bridge** control at the work area's edge. New layouts start on the left;
 a saved side is preserved. Resize its divider, choose the left or right side,
 or collapse it while retaining the conversation. Ordinary instrument navigation does not destroy
 the selected session, its live reconstruction or a later draft. On a narrow window, the panel is
@@ -41,9 +51,10 @@ Drafts and unresolved offerings remain separate for each session when you visit 
 instrument. They last while this browser document stays open; reload or closing the tab warns
 before losing them. This is not storage across browser restarts.
 
-**Conversations** discloses the session rail; **Séance details** holds secondary identity and
-session attention. **Public sources** groups investigation, public-note management and recall;
-**Project links** discloses explicit project linking. The conversation remains the main reading
+**Conversations** discloses the session rail. Open **Tools** beside the conversation title for
+**Séance details**, **Public sources**, and **Project links**. These hold secondary identity,
+investigation and public-note operations, and explicit project linking. Awaiting-consent attention
+stays beside the title and requests stay in the thread. The conversation remains the main reading
 area. If admission is unresolved or
 another Run is unsettled, the composer explains why **Offer** is unavailable while keeping the
 later draft editable; that draft is not queued.
@@ -71,7 +82,8 @@ admission. Suggesting an action in conversation cannot authorize it.
 
 ## Dictate and review {#dictate-and-review}
 
-Bridge supplies one microphone throughout the shell. **Record voice** asks for
+Bridge supplies one microphone throughout the shell; the compact dock shows its microphone icon.
+**Record voice** asks for
 microphone access only when pressed. Choose a declared language in **Voice
 options**, record for at most 30 seconds, then **Stop** or **Cancel**. Capture
 converts device samples to mono 16 kHz, signed 16-bit PCM WAV; the server validates

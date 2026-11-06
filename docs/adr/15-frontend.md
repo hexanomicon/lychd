@@ -22,8 +22,8 @@ icon: material/language-html5
   remote functions, or JavaScript production server.
 - A snapshot plus event cursor must reconstruct browser state. Connection, animation, and canvas
   layout never prove execution.
-- Canvas, Atlas, Orb, Nexus, and Loom are work routes; Bridge is one shell-owned conversation
-  surface, available beside work or as a full-focus page. Bridge URLs retain exact session,
+- Séances, Canvas, Atlas, Orb, Nexus, and Loom are work routes; Bridge is one shell-owned conversation
+  surface beside work. Existing full-focus Bridge URLs retain exact session,
   Run, consent and focused-application navigation. Generated UI is closed descriptors, never model-
   or extension-supplied HTML, JavaScript, Svelte, or imports.
 - Circle is the Invocation-shaped focus within Bridge, not a separate instrument or a claim
@@ -71,6 +71,7 @@ owns delivery.
 | --- | --- | --- |
 | Canvas | Project creation and visual board authorship; Atlas catalogues Projects and their retained records | One primary board per Project; shared Bridge dictation is separately configured; no native model transport, autonomous continuation or automatic coverage. |
 | Bridge | Session selection, single-active-Run text admission, reconstruction, semantic stream, consent, closed fragments, and bounded Creation investigation intake/report focus | Partial: text admission and separately configured finite dictation; live reconstruction and tokens are process-local. |
+| Séances | Metadata catalogue, exact retained-conversation inspection, source-linked working material, and explicit continuation in Bridge | Retained reads are snapshots; working material is document-local and does not admit Archive memory or create a second live conversation. |
 | Orb | Paged Run catalogue, parallel graph field, and bounded selected-Run evidence feeds with gaps, capture labels, and links | Partial: no complete trace store, nested subworkflow identity, or annotation. |
 | Nexus | Timestamped capability observations, non-binding plan preview, typed request, and ticket stream | Partial: observations and tickets are process-local and not restart-complete. |
 | Loom | Immutable Scroll/Pattern-revision graph and station/permission outline | Partial: fixed registry reader without independent Spell identities, editing, teaching, or publication. |
@@ -296,13 +297,16 @@ retains that boundary.
 
 #### The shared workbench and Bridge dock
 
-The top masthead starts with Bridge as the primary conversation entry, immediately before Atlas,
+The top masthead starts with Séances as the conversation-workspace entry, immediately before Atlas,
 then Canvas, Orb, Loom and Nexus, all with icons and visible labels. Canvas and Atlas remain peer
 work destinations. Canvas uses a board icon; Atlas retains its map icon and catalogues Canvas Projects.
 Applications is a bounded disclosure for other admitted applications; hover, click and keyboard
 focus can open it, Escape dismisses it, and moving into the menu keeps it reachable. Bridge is
-an always-available conversation surface with both a dock and an ordinary `/bridge` full-focus
-page. The page shows a conversation archive beside the thread. Existing `/bridge` links remain
+an always-available conversation dock. Its named edge control opens or collapses the panel;
+**Open Séance** opens the exact currently supplied conversation in `/seances/{session_id}`.
+The control cannot infer that identity from an unresolved default-session route. `/seances`
+opens a metadata-only catalogue; `/seances/{session_id}` inspects that exact retained conversation.
+Existing `/bridge` full-focus links remain
 exact focus destinations; session, Run, consent, Project, investigation and public-note intent
 must survive the composition change.
 
@@ -315,13 +319,46 @@ candles opens About; a permanent product wordmark is unnecessary in the masthead
 the LychD identity, version, source and licence provenance. The fixed natural-colour mark is
 decorative identity, never a connection or activity indicator.
 
-The dock's persistent edge chevron opens or collapses it; the masthead Bridge link opens the
-full-focus page instead of toggling the dock. The dock offers the same focus destination. Both
-presentations retain one mounted conversation, its composer and subscriptions. Full focus suppresses
+The dock's persistent named edge control opens or collapses it. The Séances destination does not
+select a conversation for the live Bridge. One mounted Bridge retains its composer and subscriptions
+across work navigation. Legacy full focus suppresses
 the dock modal, resizing and collapse controls without overwriting saved side, width or open state.
 Leaving full focus for a wide work view reveals that conversation as its sidebar without replacing
 the saved open preference. Narrow work views retain the edge control and modal-sheet behavior.
 Public-note and investigation destinations remain separate work views beside the dock.
+
+#### Séance inspection and working material
+
+Séances reads the existing Session account; it owns no second transcript or conversation store.
+The catalogue pages metadata without hydrating another conversation. Its loaded-title filter and
+browser-local pinned identities describe only supplied pages. Selecting an exact séance reads a
+retained snapshot with explicit refresh, not an additional event stream or composer. Missing,
+refused, failed, and stale reads remain distinct; an unavailable identity never selects another
+conversation. Navigation and refresh fence late responses.
+
+Inspecting séance B leaves live Bridge A and its draft, pending offering, consent, and subscriptions
+unchanged. **Continue in Bridge** explicitly selects B in that same Bridge and opens its panel.
+Creating a séance is an explicit operation; browsing the catalogue creates none. Compatibility
+Bridge session, Run, consent, Project, public-note, and investigation links keep their existing
+focus and recovery semantics.
+
+The reader may select whole supplied turns as **Topic**, **Open question**, or **Selected material**,
+add an attributed working note, inspect the source, and copy or export the collection. A selection
+retains the exact quoted bytes, supplied Session/Run references, role, and timestamp. Presentation
+markers are not invented durable turn identities. A refreshed source that no longer matches is
+reported rather than silently replaced.
+
+Working material lasts only within the open browser document. It is not stored in localStorage,
+submitted to a model, or admitted to Archive. Its lifetime and export action are visible and
+unexported work receives a document-exit warning. Archive retains its own intake, classification,
+promotion, correction, and recall authority; manual selections do not deliver private conversation
+memory, automatic analysis, or Persona authoring. Circle remains the detail of one Invocation;
+Orb continues to expose bounded execution evidence.
+
+The document-local collection is bounded to 32 selections and 128,000 quoted-plus-note characters
+across séances. A selection or edit that would exceed either bound refuses visibly without
+truncating an existing quotation or annotation. A current authorization refusal clears protected
+inspection data rather than keeping an old read available for collection or export.
 
 The conversation rail separates pinned identities from recent supplied sessions. Pins are bounded
 local browser presentation preferences containing only session IDs, never titles, content, drafts or
@@ -341,12 +378,12 @@ cancels a Run nor admits another offering. The selected conversation and its tra
 state remain alive across ordinary work-route changes. Current-authority refusal still clears
 protected projections under the existing rules.
 
-The canonical LychD Dark workbench uses an untextured black work plane, neutral graphite chrome,
-icy-blue interaction and focus, saturated matrix-green confirmation/activity, and quiet
-neutral context surfaces. Muted cloth-purple accents tie instrument and application icons and
-the active instrument underline to the altar mark; they carry no runtime status. Text stays
-neutral and readable. Fixed brand art retains its own colours; coloured fills are not the
-default treatment for panels or navigation. Required control
+The canonical LychD Dark workbench uses an untextured black work plane and readable graphite
+chrome. Light neutral primary actions establish hierarchy; icy blue identifies manipulation,
+links and focus, and matrix green identifies confirmation and actual activity. Muted cloth-purple
+accents tie the selected instrument and application identity to the altar mark; they carry no
+runtime status. Inactive navigation and reading text stay neutral. Fixed brand art retains its
+own colours. A compact selected navigation treatment does not tint whole panels. Required control
 boundaries use a stronger role than passive separators. Context columns respond to the space left
 beside the dock, not just the viewport. Icons supplement visible labels. Surfaces
 use crisp geometry and restrained separators; status, consent and uncertainty remain explicit
@@ -375,6 +412,11 @@ stress scenarios; [State](../state-of-the-work.md#altar-and-observability) disti
 forms from later presentation work.
 
 Use one dominant work area and disclose secondary identity, history, or raw records as needed.
+The shared frame, navigation and compact Bridge composer form a continuous workbench; repeated
+boxed headers and always-expanded secondary tools must not crowd out the work. Canvas selection
+tools may open with selection while preserving explicit proposal review. Catalogue rows, a
+conversation, spatial observation, declared scores and capability ownership retain their own
+reading forms instead of inheriting a universal card dashboard.
 Consent, unknown outcomes, capture gaps, containment, and preview consequences remain visible at
 the point where they affect a choice. A selected inspector starts with the selected object's
 identity and meaning, not an unexplained action. Preserve a valid opener on return, and give
@@ -1090,7 +1132,7 @@ owns the exact material boundary.
 ### Build boundary, security, and reopening
 
 Development runs Vite on `127.0.0.1:5173`, proxying `/api` and `/schema` to the loopback Vessel.
-Production serves static Canvas, Atlas, Bridge, Orb, Nexus, and Loom shells; unknown APIs and retired paths stay
+Production serves static Séances, Canvas, Atlas, Bridge, Orb, Nexus, and Loom shells; unknown APIs and retired paths stay
 404. Every operation that raises a runtime not-found across those verticals declares the shared JSON
 `FrameworkError` contract. `npm ci`, OpenAPI and notice generation, compilation, and Python build share a release source.
 Audit verifies source identity, compiled `index.html`, and archive notices—not a real browser or

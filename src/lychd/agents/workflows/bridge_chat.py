@@ -27,7 +27,7 @@ from lychd.agents.context_limits import limit_model_requests
 from lychd.agents.deps import LychDDeps
 from lychd.agents.outputs import Bottleneck, BridgeReply
 from lychd.agents.services import WorkflowServices
-from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC
+from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC, named_agent_spec
 from lychd.agents.workflows.base import Gate, PatternEdge, PatternManifest, PatternNode, Trigger, Workflow
 from lychd.agents.workflows.nodes import (
     MAX_CONSENT_ROUNDS,
@@ -43,6 +43,7 @@ from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.graph_runner import HardwareResumeBudget
 from lychd.domain.cortex.priority import PRIORITY_DEFAULT
 from lychd.domain.cortex.runs import ConsentPending
+from lychd.domain.naming import NamingSnapshot
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -74,6 +75,7 @@ class BridgeChatState(BaseModel):
     session_id: str
     run_id: str
     prompt: str
+    naming: NamingSnapshot | None = Field(default=None, exclude_if=lambda value: value is None)
     priority: int = PRIORITY_DEFAULT
     capability_key: str | None = None
     hardware_resume_budget: HardwareResumeBudget = Field(default_factory=HardwareResumeBudget)
@@ -201,6 +203,7 @@ class WeaveContext(BaseNode[BridgeChatState, WorkflowServices]):
             run_id=ctx.state.run_id,
             session_id=ctx.state.session_id,
             query=ctx.state.prompt,
+            naming=ctx.state.naming,
             history=await _session_history(ctx.state.session_id, ctx.deps.turns),
         )
         ctx.state.history = assembled.state_window
@@ -228,12 +231,13 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
                 run_id=ctx.state.run_id,
                 session_id=ctx.state.session_id,
                 query=ctx.state.prompt,
+                naming=ctx.state.naming,
                 history=ctx.state.history,
                 grant=grant,
                 grant_epoch=grant.lease.grant_id,
             )
             ctx.state.history = assembled.state_window
-            agent = ctx.deps.forge.agent_for(THE_FIRST_ONE_SPEC)
+            agent = ctx.deps.forge.agent_for(named_agent_spec(THE_FIRST_ONE_SPEC, ctx.state.naming))
             deps = _agent_deps(ctx, grant)
             emit.status("thinking")
             bound_toolset = bind_consent_toolsets(grant.toolsets, capability_key=grant.spec.key)
@@ -306,6 +310,7 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
                 run_id=ctx.state.run_id,
                 session_id=ctx.state.session_id,
                 query=ctx.state.prompt,
+                naming=ctx.state.naming,
                 history=ctx.state.history,
                 continuation=continuation,
                 grant=grant,
@@ -313,7 +318,7 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
             )
             ctx.state.history = assembled.state_window
             history = ModelMessagesTypeAdapter.validate_python(assembled.model_history())
-            agent = ctx.deps.forge.agent_for(THE_FIRST_ONE_SPEC)
+            agent = ctx.deps.forge.agent_for(named_agent_spec(THE_FIRST_ONE_SPEC, ctx.state.naming))
             deps = _agent_deps(ctx, grant)
             emit.status("thinking")
             try:
@@ -418,12 +423,16 @@ BRIDGE_CHAT_GRAPH: Graph[
 
 
 def _make_state(intent: Intent) -> BridgeChatState:
+    if intent.admitted_naming is not None:
+        msg = "Legacy Bridge revision cannot execute admitted naming."
+        raise ValueError(msg)
     # Worker execution reconstructs Intent from the admitted Run, including its
     # canonical id and priority. Direct test construction may omit the id.
     return BridgeChatState(
         session_id=intent.session_id,
         run_id=intent.run_id or "",
         prompt=intent.prompt,
+        naming=intent.admitted_naming,
         priority=intent.priority if intent.priority is not None else PRIORITY_DEFAULT,
     )
 
@@ -431,13 +440,26 @@ def _make_state(intent: Intent) -> BridgeChatState:
 def _validate_state(intent: Intent, state: BaseModel) -> None:
     """Bind every Bridge revision's checkpoint to its admitted input and identity."""
     expected_priority = intent.priority if intent.priority is not None else PRIORITY_DEFAULT
-    if not isinstance(state, BridgeChatState) or (
-        state.run_id,
-        state.session_id,
-        state.prompt,
-        state.capability_key,
-        state.priority,
-    ) != (intent.run_id, intent.session_id, intent.prompt, intent.admitted_capability_key, expected_priority):
+    if (
+        intent.admitted_naming is not None
+        or not isinstance(state, BridgeChatState)
+        or (
+            state.run_id,
+            state.session_id,
+            state.prompt,
+            state.naming,
+            state.capability_key,
+            state.priority,
+        )
+        != (
+            intent.run_id,
+            intent.session_id,
+            intent.prompt,
+            intent.admitted_naming,
+            intent.admitted_capability_key,
+            expected_priority,
+        )
+    ):
         msg = "bridge_chat checkpoint does not match its admitted Run."
         raise ValueError(msg)
 

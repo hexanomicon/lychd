@@ -124,6 +124,13 @@ The Tree spans the whole cycle. These connections prescribe neither an execution
 fixed roster of Agents. A capacity introduced in Genesis may be needed again wherever the work
 encounters a new question.
 
+The return also cultivates [being, knowing, and delight](../transcendence/illumination.md#ananda).
+Creative desire opens a possibility; knowing gives it form; enjoyment can sustain its exploration
+and repair. An experiment may be pleasurable and still defeat its hypothesis. Canon has supplied
+the measure before the attempt; Revelation separates that finding from the pleasure of discovery;
+Distillation carries the conditions that made the lesson useful. This way, the next creation
+can inherit both a sharper understanding and a richer capacity to enjoy its work.
+
 *“Wait… it’s all patterns?” “Always has been.”*
 
 ## Five chapters of the return

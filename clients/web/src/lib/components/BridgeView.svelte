@@ -29,6 +29,7 @@
   import GenUI from "./GenUI.svelte";
   import AtlasLinks from "./AtlasLinks.svelte";
   import AltarWelcome from "./AltarWelcome.svelte";
+  import NamingCeremony from "./NamingCeremony.svelte";
   import { atlasHref } from "$lib/atlas/navigation";
   import { bridgeWorkspaceKey, createBridgeWorkspace, type BridgeWorkspace } from "$lib/bridge/workspace.svelte";
   import { delegationStatusLabel } from "$lib/delegation/presentation";
@@ -45,8 +46,10 @@
     visible = true,
     isVisible,
     search,
-    onNavigate
+    onNavigate,
+    onSessionResolved
   }: {
+    onSessionResolved?: (id: string | null) => void;
     sessionId?: string;
     embedded?: boolean;
     visible?: boolean;
@@ -296,6 +299,55 @@
     else void submit();
   }
 
+  let namingStarted = $state(false);
+  let namingOpen = $state(false);
+  let namingCeremony = $state<ReturnType<typeof NamingCeremony>>();
+  let namingReturn: HTMLElement | null = null;
+  let namingTools: HTMLElement | undefined;
+  function captureNamingTools(node: HTMLElement) {
+    namingTools = node;
+    return () => { namingTools = undefined; };
+  }
+  async function openNaming() {
+    namingReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    namingStarted = true;
+    namingOpen = true;
+    await tick();
+    namingCeremony?.focus();
+  }
+  function closeNaming() {
+    namingOpen = false;
+    if (namingReturn?.isConnected) namingReturn.focus();
+    else namingTools?.focus();
+  }
+
+  async function askForName(text: string) {
+    if (destroyed || loading || choosing || creatingSession) {
+      throw new Error("Open a conversation and let it finish loading, then try the naming request again.");
+    }
+    let opened: string | undefined;
+    if (!selected) {
+      const version = loadVersion;
+      creatingSession = true;
+      try {
+        const created = await createBridgeSession();
+        if (destroyed || loadVersion !== version) throw new Error("The conversation changed. No naming request was sent.");
+        opened = created.session.id;
+        await load(opened);
+        if (destroyed || snapshot?.session?.id !== opened) throw new Error("The new conversation could not be read. No naming request was sent.");
+      } finally {
+        if (!destroyed) creatingSession = false;
+      }
+    }
+    const admitted = await submit(false, text);
+    // Use the same admission, retained offering and stream recovery as ordinary chat.
+    if (opened && !destroyed && selected?.id === opened) {
+      if (onNavigate) await onNavigate(opened, "");
+      else await goto(bridgeHref(opened), { keepFocus: true });
+    }
+    if (!admitted) throw new Error("The naming request was not confirmed. Check the conversation for an active reply or an unresolved offering before trying again.");
+  }
+
   function turnIsTerminal(turn: LiveTurn): boolean {
     return turn.state === "done" || turn.state === "failed" || turn.state === "cancelled";
   }
@@ -310,6 +362,8 @@
   }
 
   async function load(id?: string, preserveReadError = false) {
+    // A later selected session supersedes an earlier explicit composer-focus request.
+    if (focusNewSession !== null && focusNewSession !== id) focusNewSession = null;
     invalidateVoiceContext();
     const version = ++loadVersion;
     sessionsRequest?.abort();
@@ -328,6 +382,7 @@
     if (!preserveReadError) readError = "";
     if (requestedIdentityChanged) {
       snapshot = null;
+      onSessionResolved?.(null);
       releasedRunFocus = null;
       stickToTail = true;
     }
@@ -376,6 +431,7 @@
         clearRefreshTimer(runId);
       }
       snapshot = next;
+      onSessionResolved?.(next.session?.id ?? null);
       readError = "";
       consentAuthorityVersion++;
       liveTurns = merged.liveTurns;
@@ -395,6 +451,7 @@
       window.dispatchEvent(new CustomEvent("altar:attention", { detail: next.pending_count }));
     } catch (cause) {
       if (version === loadVersion) {
+        onSessionResolved?.(null);
         error = cause instanceof Error ? cause.message : "The Bridge stayed dark.";
         if (!snapshot) readError = error;
       }
@@ -550,7 +607,8 @@
     }
   }
 
-  let focusNewSession: string | null = null;
+  let focusNewSession = $state<string | null>(null);
+  export function focusSessionComposer(id: string) { focusNewSession = id; }
   function focusCreatedComposer(node: HTMLTextAreaElement) {
     if (selected?.id && focusNewSession === selected.id) {
       node.focus();
@@ -766,20 +824,20 @@
     else work.refused.delete(selected.id);
   }
 
-  async function submit(retry = false) {
+  async function submit(retry = false, preparedText?: string) {
     if (!selected || choosing) return;
     if (!retry && (loading || hasUnsettledRun)) return;
     const targetSessionId = selected.id;
     const prior = work.pending.get(targetSessionId);
     if (prior?.sending || (prior && !retry) || (retry && !prior)) return;
-    const text = prior?.text ?? prompt.trim();
+    const text = prior?.text ?? preparedText ?? prompt.trim();
     if (!text) return;
     const requestId = prior?.requestId ?? crypto.randomUUID();
     work.pending.set(targetSessionId, {
       text, requestId, uncertain: prior?.uncertain ?? false, sending: true, error: ""
     });
     error = "";
-    if (!retry) work.setDraft(targetSessionId, "");
+    if (!retry && preparedText === undefined) work.setDraft(targetSessionId, "");
     notifyVoice();
     try {
       const accepted = await sendBridgeMessage(targetSessionId, text, requestId);
@@ -832,6 +890,7 @@
       renderVersion++;
       notifyVoice();
       attachStream(live);
+      return true;
     } catch (cause) {
       const uncertain = prior?.uncertain || !(cause instanceof ApiError) || cause.status === undefined || cause.status >= 500 || cause.status === 408;
       const message = cause instanceof Error ? cause.message : "The offering was refused.";
@@ -1027,43 +1086,52 @@
   {/if}
 
   <div class="bridge-thread">
-    <details class="public-sources">
-      <summary>Public sources</summary>
-      <nav class="atlas-links" aria-label="Bridge work"><a href="/bridge?investigation=new">Investigate public source</a><a href="/bridge?notes=manage">Manage public notes</a><a href="/bridge?notes=recall">Recall public sources</a></nav>
-    </details>
-    {#if !firstVisit}
-      <header class="bridge-heading">
-        <div>
+    <header class="bridge-heading">
+      <div>
+        {#if !firstVisit}
           <h1>Bridge</h1>
           {#if selected}<p class="conversation-title">{selected.title}</p>{/if}
-        </div>
-        {#if selected}
-          <details class="seance-details">
-            <summary>Séance details{#if selectedPendingCount}<span class="chip">{selectedPendingCount} awaiting consent</span>{/if}</summary>
-            <dl class="kv">
-              <dt>identity</dt><dd class="glyph">{selected.id}</dd>
-              <dt>title</dt><dd>{selected.title}</dd>
-              <dt>turns</dt><dd>{(selected.turns?.length ?? 0) + selectedLiveTurns.length}</dd>
-              <dt>awaiting consent</dt><dd>{selectedPendingCount}</dd>
-            </dl>
-          </details>
+        {:else}
+          <h1 class="visually-hidden">Bridge — conversations</h1>
         {/if}
-      </header>
-    {:else}
-      <h1 class="visually-hidden">Bridge — conversations</h1>
-    {/if}
+        {#if selected && selectedPendingCount}
+          <p class="conversation-attention">{selectedPendingCount} awaiting consent</p>
+        {/if}
+      </div>
+      <details class="conversation-tools">
+        <summary aria-label="Conversation tools" {@attach captureNamingTools}>Tools</summary>
+        <div class="bridge-tools" role="group" aria-label="Conversation tools">
+          <button class="rune-btn" type="button" onclick={openNaming}>Naming ceremony</button>
+          {#if selected}
+            <details class="seance-details">
+              <summary>Séance details{#if selectedPendingCount}<span class="chip">{selectedPendingCount} awaiting consent</span>{/if}</summary>
+              <dl class="kv">
+                <dt>identity</dt><dd class="glyph">{selected.id}</dd>
+                <dt>title</dt><dd>{selected.title}</dd>
+                <dt>turns</dt><dd>{(selected.turns?.length ?? 0) + selectedLiveTurns.length}</dd>
+                <dt>awaiting consent</dt><dd>{selectedPendingCount}</dd>
+              </dl>
+            </details>
+          {/if}
+          <details class="public-sources">
+            <summary>Public sources</summary>
+            <nav class="atlas-links" aria-label="Bridge work"><a href="/bridge?investigation=new">Investigate public source</a><a href="/bridge?notes=manage">Manage public notes</a><a href="/bridge?notes=recall">Recall public sources</a></nav>
+          </details>
+          {#if selected}
+            <details class="project-details">
+              <summary>Project links</summary>
+              <AtlasLinks kind="session" targetId={selected.id} suggestedProject={hintedProject} />
+            </details>
+          {/if}
+        </div>
+      </details>
+    </header>
     {#if hintedProject}
       <nav class="atlas-links" aria-label="Originating project">
         <a href={atlasHref(hintedProject.id)}>← {hintedProject.title}</a>
         <span>Project context is not sent automatically.</span>
       </nav>
     {:else if projectError}<p class="turn__fault" role="status">{projectError}</p>{/if}
-    {#if selected}
-      <details class="project-details">
-        <summary>Project links</summary>
-        <AtlasLinks kind="session" targetId={selected.id} suggestedProject={hintedProject} />
-      </details>
-    {/if}
     {#if focusConsent !== undefined && !loading && !focusedConsent}
       <p class="turn__fault" role="status">The requested consent is unavailable in this conversation at this read.</p>
     {/if}
@@ -1074,6 +1142,11 @@
     {/if}
     {#if focusRun && !loading && selected && !(selected.turns ?? []).some((turn) => turn.role === "agent" && turn.run_id === focusRun) && !selectedLiveTurns.some((turn) => turn.runId === focusRun)}
       <p class="turn__fault" role="status">The requested Run is not available in this conversation.</p>
+    {/if}
+    {#if namingStarted}
+      <div hidden={!namingOpen}>
+        <NamingCeremony bind:this={namingCeremony} onclose={closeNaming} onask={askForName} />
+      </div>
     {/if}
     <!-- This named overflow region needs native keyboard scrolling. -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -1105,7 +1178,7 @@
           {/if}
         </div>
       {:else if firstVisit}
-        <AltarWelcome onbegin={createSession} pending={creatingSession} />
+        <AltarWelcome onbegin={createSession} onnaming={openNaming} pending={creatingSession} />
       {:else if !selected}
         <div class="shell-placeholder">
           <span class="glyph-big">⬡</span>
@@ -1223,63 +1296,71 @@
         </section>
       {/if}
       <div class="composer-area" role="region" aria-label="Bridge composer">
-      <label class="composer-label" for="bridge-destination">Send to</label>
-      <select id="bridge-destination" value={composerMode} onchange={changeMode}>
-        <option value="chat">Conversation</option>
-        <option value="work">{destination}</option>
-      </select>
-      {#if composerMode === "work"}
-        <div class="command-help">
-          <p>English commands · {destination}</p>
-          {#if commandTarget}
-            <details><summary>Command examples</summary>
-              <ul>{#each commandTarget.commands as command (command)}<li><code>{command}</code></li>{/each}</ul>
-            </details>
-          {:else}<p>Open Canvas, Loom or Orb to choose a work target.</p>{/if}
-          <p>Canvas commands create a preview. Review and Apply on the board.</p>
+        <div class="composer-shell">
+          <div class="composer-destination">
+            <label for="bridge-destination">Send to</label>
+            <select id="bridge-destination" value={composerMode} onchange={changeMode}>
+              <option value="chat">Conversation</option>
+              <option value="work">{destination}</option>
+            </select>
+          </div>
+          {#if composerMode === "work"}
+            <div class="command-help">
+              <p>English commands · {destination}</p>
+              {#if commandTarget}
+                <details><summary>Command examples</summary>
+                  <ul>{#each commandTarget.commands as command (command)}<li><code>{command}</code></li>{/each}</ul>
+                </details>
+              {:else}<p>Open Canvas, Loom or Orb to choose a work target.</p>{/if}
+              <p>Canvas commands create a preview. Review and Apply on the board.</p>
+            </div>
+          {/if}
+          <label class="composer-label" for="bridge-message">Your next offering</label>
+          {#if snapshot?.composer?.guidance}
+            <p id="composer-instructions" class="composer-instructions">{snapshot.composer.guidance}</p>
+          {/if}
+          <div class="composer">
+            <textarea
+              id="bridge-message"
+              bind:value={() => prompt, setPrompt}
+              {@attach focusCreatedComposer}
+              required
+              rows="2"
+              placeholder="What would you like to explore?"
+              onkeydown={keydown}
+              oncompositionstart={() => changeComposition(true)}
+              oncompositionend={() => changeComposition(false)}
+              aria-label="Message"
+              aria-describedby={snapshot?.composer?.guidance ? "composer-instructions composer-guidance composer-shortcuts" : "composer-guidance composer-shortcuts"}
+            ></textarea>
+          </div>
+          <div class="composer-actions" class:composer-actions--work={composerMode === "work"}>
+            <div class="composer-voice">
+              {#key selected.id}
+                <BridgeVoiceInput bind:this={voice} snapshot={voiceSnapshot} target={commandTarget}
+                  readSnapshot={readVoiceSnapshot} onadopt={adoptVoice} onsubmit={submitVoice}
+                  isTargetCurrent={(target) => workCommands?.isCurrent(target) === true}>
+                  {#snippet feedback(context)}<DictationFeedback {...context} />{/snippet}
+                </BridgeVoiceInput>
+              {/key}
+            </div>
+            <button
+              class="rune-btn composer-send"
+              disabled={voiceSnapshot.busy || composing || !prompt.trim()}
+              type="button"
+              onclick={sendComposer}
+            >
+              {composerMode === "work" ? "Send command" : "Offer"}
+            </button>
+          </div>
         </div>
-      {/if}
-      <label class="composer-label" for="bridge-message">Your next offering</label>
-      {#if snapshot?.composer?.guidance}
-        <p id="composer-instructions" class="composer-instructions">{snapshot.composer.guidance}</p>
-      {/if}
-      <div class="composer">
-        <textarea
-          id="bridge-message"
-          bind:value={() => prompt, setPrompt}
-          {@attach focusCreatedComposer}
-          required
-          rows="2"
-          placeholder="What would you like to explore?"
-          onkeydown={keydown}
-          oncompositionstart={() => changeComposition(true)}
-          oncompositionend={() => changeComposition(false)}
-          aria-label="Message"
-          aria-describedby={snapshot?.composer?.guidance ? "composer-instructions composer-guidance composer-shortcuts" : "composer-guidance composer-shortcuts"}
-        ></textarea>
-        <button
-          class="rune-btn"
-          disabled={voiceSnapshot.busy || composing || !prompt.trim()}
-          type="button"
-          onclick={sendComposer}
-        >
-          {composerMode === "work" ? "Send command" : "Offer"}
-        </button>
-      </div>
-      {#if commandPending}<p role="status">Preparing command…</p>{/if}
-      {#if commandResult}<p class="command-result" role="status">{commandResult.status}: {commandResult.summary}</p>{/if}
-      {#key selected.id}
-        <BridgeVoiceInput bind:this={voice} snapshot={voiceSnapshot} target={commandTarget}
-          readSnapshot={readVoiceSnapshot} onadopt={adoptVoice} onsubmit={submitVoice}
-          isTargetCurrent={(target) => workCommands?.isCurrent(target) === true}>
-          {#snippet feedback(context)}<DictationFeedback {...context} />{/snippet}
-        </BridgeVoiceInput>
-      {/key}
-      <div class="composer-footer">
-        <p id="composer-shortcuts">Enter to {composerMode === "work" ? "send command" : "offer"} · Shift + Enter for a new line</p>
-        <p id="composer-guidance" role="status">{loading ? "Refreshing this conversation before another offering." : pendingOffering ? "Resolve the original offering first. This later draft is kept and is not queued." : hasUnsettledRun ? "Wait for this Run to settle before offering again. You can keep writing; this draft is not queued." : "Draft stays in this open tab."}</p>
-      </div>
-      {#if error}<div class="turn__fault" role="alert">{error}</div>{/if}
+        {#if commandPending}<p class="command-result" role="status">Preparing command…</p>{/if}
+        {#if commandResult}<p class="command-result" role="status">{commandResult.status}: {commandResult.summary}</p>{/if}
+        <div class="composer-footer">
+          <p id="composer-shortcuts">Enter to {composerMode === "work" ? "send command" : "offer"} · Shift + Enter for a new line</p>
+          <p id="composer-guidance" class:visually-hidden={!loading && !pendingOffering && !hasUnsettledRun} role="status">{loading ? "Refreshing this conversation before another offering." : pendingOffering ? "Resolve the original offering first. This later draft is kept and is not queued." : hasUnsettledRun ? "Wait for this Run to settle before offering again. You can keep writing; this draft is not queued." : "Draft stays in this open tab."}</p>
+        </div>
+        {#if error}<div class="turn__fault" role="alert">{error}</div>{/if}
       </div>
     {/if}
   </div>
@@ -1287,125 +1368,141 @@
 </div>
 
 <style>
-  .instrument-deck--bridge { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: 0; padding: 0; min-height: 0; height: 100%; overflow: hidden; background: var(--color-void); }
+  .instrument-deck--bridge { display: grid; grid-template-columns: 17rem minmax(0, 1fr); gap: 0; padding: 0; min-height: 0; height: 100%; overflow: hidden; background: var(--color-void); }
   .instrument-deck--welcome { grid-template-columns: minmax(0, 1fr); }
-  .bridge-rail { width: auto; min-width: 0; padding: 1.25rem .85rem; border-right: 1px solid var(--color-engraving); overflow-y: auto; }
+  .bridge-rail { width: auto; min-width: 0; padding: 1.25rem .85rem; border-right: 1px solid var(--color-engraving); overflow-y: auto; background: var(--color-obsidian); }
   .conversation-list { width: 100%; }
-  summary { cursor: pointer; min-height: 2.75rem; padding: .7rem .3rem; color: var(--color-parchment); font-size: var(--text-sm); }
-  summary::marker { color: var(--color-rune-dim); }
-  .conversation-list > summary { margin-bottom: .65rem; color: var(--color-bone); font-family: var(--font-rune); font-size: var(--text-lg); }
-  .conversation-list nav { display: flex; flex-direction: column; gap: .4rem; margin-top: 1rem; }
-  .archive-label { margin: 1rem 0 .15rem; font: 600 var(--text-xs)/1.4 var(--font-body); color: var(--color-parchment); }
-  .archive-order, .rail-empty { color: var(--color-ash); font-size: var(--text-xs); line-height: 1.5; }
-  .conversation-row { display: grid; grid-template-columns: minmax(0, 1fr) 2.25rem; align-items: center; gap: .15rem; }
-  .pin-conversation { display: grid; place-items: center; min-height: 2.25rem; border: 0; border-radius: var(--radius-glyph); color: var(--color-ash); background: transparent; cursor: pointer; }
-  .pin-conversation:hover { color: var(--color-bone); background: var(--color-tertiary); }
+  /* Native details keeps history reachable without making it the dock's first reading task. */
+  .conversation-list > summary { min-height: 2.75rem; margin-bottom: .65rem; color: var(--color-bone); font: 600 var(--text-sm)/1.5 var(--font-body); cursor: pointer; }
+  .conversation-list nav { display: flex; flex-direction: column; gap: .15rem; margin-top: 1rem; }
+  .archive-label { margin: 1.25rem .5rem .35rem; font: 600 var(--text-xs)/1.4 var(--font-body); color: var(--color-parchment); }
+  .archive-order, .rail-empty { color: var(--color-ash); font-size: var(--text-xs); line-height: 1.6; }
+  .archive-order { margin: 0 .5rem .5rem; }
+  .conversation-row { display: grid; grid-template-columns: minmax(0, 1fr) 2.75rem; align-items: center; gap: .15rem; }
+  .pin-conversation { display: grid; place-items: center; min-height: 2.75rem; border: 0; border-radius: var(--radius-glyph); color: var(--color-ash); background: transparent; cursor: pointer; }
+  .pin-conversation:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
   .pin-conversation[aria-pressed="true"] { color: var(--color-accent); }
-  .new-seance { min-height: 2.75rem; box-shadow: none; }
-  .seance { min-width: 0; padding: .55rem .5rem; border-radius: var(--radius-rune); overflow-wrap: anywhere; }
-  .seance.current { border-color: transparent; border-left: 2px solid var(--color-rune); box-shadow: none; }
-  .seance .t { font-size: var(--text-sm); margin-bottom: .15rem; }
+  .new-seance { width: 100%; min-height: 2.75rem; box-shadow: none; background: var(--color-bone); border-color: var(--color-bone); color: var(--color-void); }
+  .new-seance:hover:not(:disabled) { background: var(--color-parchment); border-color: var(--color-parchment); color: var(--color-void); }
+  .seance { min-width: 0; min-height: 2.75rem; padding: .7rem .65rem; border: 0; border-left: 2px solid transparent; border-radius: var(--radius-glyph); overflow-wrap: anywhere; }
+  .seance:hover { background: var(--color-obsidian-2); }
+  .seance.current { border: 0; border-left: 2px solid var(--color-rune); background: var(--color-obsidian-2); box-shadow: none; }
+  .seance .t { font-size: var(--text-sm); line-height: 1.5; margin-bottom: .15rem; color: var(--color-bone); }
   .seance .m { font-family: var(--font-body); }
-  .seance .chip { margin: .2rem .2rem .2rem 0; white-space: normal; }
-  .bridge-thread { min-height: 0; }
-  .bridge-heading { display: flex; justify-content: space-between; align-items: end; gap: 1rem; padding: 1.7rem clamp(1rem, 3vw, 2.5rem) 1rem; border-bottom: 1px solid var(--color-engraving); }
+  .seance .chip { display: inline; margin: .2rem .45rem .2rem 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--color-parchment); font-size: var(--text-xs); white-space: normal; }
+  .bridge-thread { min-height: 0; overflow: hidden; }
+  .bridge-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .25rem 1rem; padding: .8rem clamp(1rem, 3vw, 2rem) .35rem; border-bottom: 1px solid var(--color-engraving); }
   .bridge-heading > div { min-width: 0; }
-  .bridge-heading h1 { color: var(--color-bone); font: 400 clamp(1.8rem, 3vw, 2.6rem)/1.15 var(--font-rune); letter-spacing: -.025em; }
-  .conversation-title { margin-top: .6rem; color: var(--color-parchment); overflow-wrap: anywhere; }
-  .seance-details { position: relative; flex: 0 1 auto; }
-  .seance-details summary { display: list-item; white-space: nowrap; }
+  .bridge-heading h1 { color: var(--color-ash); font: 600 var(--text-xs)/1.5 var(--font-body); letter-spacing: .06em; text-transform: uppercase; }
+  .conversation-title { margin-top: .45rem; color: var(--color-bone); font: 600 clamp(1.125rem, 1.5vw, 1.4rem)/1.4 var(--font-body); overflow-wrap: anywhere; }
+  .conversation-attention { margin-top: .25rem; font-size: var(--text-sm); color: var(--color-bone); line-height: 1.5; }
+  .conversation-tools { min-width: 0; font-size: var(--text-sm); }
+  .conversation-tools > summary { min-width: 2.75rem; min-height: 2.75rem; align-content: center; color: var(--color-parchment); cursor: pointer; }
+  .conversation-tools[open] { grid-column: 1 / -1; }
+  .seance-details { min-width: 0; font-size: var(--text-sm); }
+  .seance-details summary { display: list-item; min-height: 2.75rem; align-content: center; white-space: nowrap; cursor: pointer; }
   .seance-details .chip { margin-left: .5rem; white-space: normal; }
-  .seance-details .kv { position: absolute; right: 0; z-index: 3; width: min(26rem, 65vw); padding: 1rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); background: var(--color-obsidian); }
-  .project-details { padding: 0 clamp(1rem, 3vw, 2.5rem); border-bottom: 1px solid var(--color-engraving); }
-  .thread-scroll { min-height: 10rem; padding: 1.8rem max(1rem, calc((100% - 52rem) / 2)); gap: 1.6rem; scrollbar-gutter: stable; }
+  .seance-details .kv { position: static; width: 100%; padding: .75rem 0; border: 0; border-radius: 0; background: transparent; }
+  .bridge-tools { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: flex-start; gap: 0 1rem; max-height: min(20rem, 40dvh); padding: .25rem 0 0; overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--color-engraving); font-size: var(--text-sm); }
+  .bridge-tools > details { min-width: 0; padding: 0; border: 0; background: transparent; }
+  .bridge-tools > details[open] { flex-basis: 100%; }
+  .bridge-tools summary { min-height: 2.75rem; align-content: center; cursor: pointer; color: var(--color-parchment); }
+  .thread-scroll { min-height: 4rem; padding: 1.5rem max(1rem, calc((100% - 48rem) / 2)); gap: 1.75rem; scrollbar-gutter: stable; }
   .thread-scroll:focus-visible { outline: 1px solid var(--color-rune); outline-offset: -3px; }
   .turn { max-width: 100%; overflow-wrap: anywhere; }
-  .turn--user { max-width: min(43rem, 92%); }
+  .turn--user { max-width: min(42rem, 92%); }
   .turn--user .turn__meta { justify-content: flex-end; }
   .turn__body { white-space: pre-wrap; font-size: 1rem; line-height: 1.75; box-shadow: none; }
-  .turn--user .turn__body { padding: .9rem 1.15rem; background: var(--color-grimoire); border-color: var(--color-engraving); }
-  .turn--agent .turn__body { padding: .9rem 1.15rem; color: var(--color-bone); background: var(--color-obsidian); }
+  .turn--user .turn__body { padding: .85rem 1rem; background: var(--color-obsidian-2); border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); }
+  .turn--agent .turn__body { padding: .25rem 0; color: var(--color-bone); background: transparent; border: 0; border-radius: 0; }
+  .turn--agent[data-state="stale"] .turn__body { padding-left: .85rem; border-left: 2px solid var(--color-control-border); }
+  .turn--agent[data-state="failed"] .turn__body { padding-left: .85rem; border-left: 2px solid var(--color-ember); }
+  .turn--agent[data-state="cancelled"] .turn__body { padding-left: .85rem; border-left: 2px solid var(--color-ash); }
   .turn__meta { flex-wrap: wrap; gap: .4rem .75rem; }
-  .turn__meta .who { color: var(--color-parchment); font-family: var(--font-body); font-variant: normal; letter-spacing: .025em; }
+  .turn__meta .who { color: var(--color-parchment); font: 600 var(--text-sm)/1.5 var(--font-body); font-variant: normal; letter-spacing: 0; }
   .conversation-empty { margin: auto; padding: 3rem 1rem; text-align: center; }
-  .conversation-empty > span { color: var(--color-rune-dim); font-size: 1.6rem; }
-  .conversation-empty h2 { margin: 1rem 0 .7rem; font: 400 1.75rem/1.3 var(--font-rune); color: var(--color-bone); }
+  .conversation-empty > span { color: var(--color-accent); font-size: 1.6rem; }
+  .conversation-empty h2 { margin: 1rem 0 .7rem; font: 500 1.65rem/1.3 var(--font-body); color: var(--color-bone); }
   .conversation-empty p, .bridge-loading { color: var(--color-parchment); }
   .retry-conversation { align-self: flex-start; min-height: 2.75rem; }
-  .latest-turn { display: flex; justify-content: center; padding: .35rem 1rem .7rem; }
-  .latest-turn button { min-height: 2.75rem; padding: .4rem 1rem; border: 1px solid var(--color-engraving); border-radius: 2rem; color: var(--color-rune); background: var(--color-obsidian); cursor: pointer; }
-  .composer-area { flex: 0 1 auto; min-height: 9rem; max-height: min(34rem, 65dvh); overflow-y: auto; overscroll-behavior: contain; padding: 1rem clamp(1rem, 3vw, 2.5rem); border-top: 1px solid var(--color-engraving); }
-  #bridge-destination { width: 100%; min-height: 2.75rem; margin-bottom: .6rem; }
-  .command-help, .command-result { font-size: var(--text-sm); overflow-wrap: anywhere; margin-bottom: .6rem; }
+  .latest-turn { display: flex; justify-content: center; padding: .25rem 1rem .5rem; }
+  .latest-turn button { min-height: 2.75rem; padding: .4rem 1rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); color: var(--color-rune); background: var(--color-obsidian); cursor: pointer; }
+  .composer-area { flex: 0 1 auto; min-height: 0; max-height: min(36rem, 65dvh); overflow-y: auto; overscroll-behavior: contain; padding: .8rem clamp(1rem, 3vw, 2rem) 1rem; border-top: 1px solid var(--color-engraving); }
+  .composer-area:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
+  .composer-shell { max-width: 52rem; margin-inline: auto; padding: .65rem .85rem .75rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-panel); background: var(--color-obsidian); }
+  .composer-shell:focus-within { border-color: var(--color-rune); }
+  .composer-destination { display: flex; align-items: center; gap: .75rem; margin-bottom: .55rem; min-width: 0; font-size: var(--text-sm); }
+  .composer-destination label { flex: 0 0 auto; color: var(--color-parchment); }
+  #bridge-destination { flex: 1 1 auto; width: auto; min-width: 0; max-width: 28rem; min-height: 2.75rem; margin: 0; padding: .4rem .25rem; border: 0; border-radius: 0; background: transparent; color: var(--color-bone); font: inherit; }
+  .command-help, .command-result { font-size: var(--text-sm); line-height: 1.6; overflow-wrap: anywhere; }
+  .command-help { padding: 0 0 .75rem; margin: 0 0 .75rem; border-bottom: 1px solid var(--color-engraving); }
+  .command-help p + p { margin-top: .35rem; }
+  .command-help summary { min-height: 2.75rem; align-content: center; cursor: pointer; }
   .command-help ul { padding-left: 1.4rem; }
   .command-help code { white-space: pre-wrap; overflow-wrap: anywhere; }
-  .composer-area:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
-  .composer-label { display: block; margin-bottom: .55rem; font-size: var(--text-sm); color: var(--color-parchment); }
-  .composer-instructions { margin-bottom: .75rem; color: var(--color-parchment); font-size: var(--text-sm); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .composer { margin-top: 0; padding: .85rem 1rem; align-items: flex-end; box-shadow: none; }
-  .composer:focus-within { box-shadow: none; border-color: var(--color-rune); }
-  .composer textarea { min-width: 0; min-height: 4.5rem; max-height: 16rem; resize: vertical; font-size: 1rem; }
-  .composer .rune-btn { min-width: 5rem; min-height: 2.75rem; box-shadow: none; }
-  .composer-footer { display: flex; justify-content: space-between; gap: .5rem 1.5rem; flex-wrap: wrap; margin-top: .7rem; color: var(--color-parchment); font-size: var(--text-xs); }
+  .command-result { margin: .65rem 0 0; color: var(--color-parchment); }
+  .composer-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  .composer-instructions { margin: .25rem 0 .75rem; color: var(--color-parchment); font-size: var(--text-sm); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .composer { display: flex; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .composer:focus-within { box-shadow: none; border: 0; }
+  .composer textarea { display: block; width: 100%; min-width: 0; min-height: 3rem; max-height: 16rem; padding: 0; resize: vertical; font-size: 1rem; line-height: 1.5; background: transparent; }
+  .composer-actions { position: relative; --voice-action-reserve: 6rem; padding-top: .35rem; border-top: 1px solid var(--color-engraving); }
+  .composer-actions--work { --voice-action-reserve: 9rem; }
+  .composer-voice { min-width: 0; }
+  .composer-send { position: absolute; inset-block-start: .35rem; inset-inline-end: 0; min-width: 5rem; min-height: 2.75rem; margin: 0; padding: .5rem 1rem; border-color: var(--color-bone); background: var(--color-bone); color: var(--color-void); box-shadow: none; }
+  .composer-send:hover:not(:disabled) { background: var(--color-parchment); border-color: var(--color-parchment); color: var(--color-void); }
+  .composer-send:disabled { opacity: .5; }
+  .composer-footer { display: flex; max-width: 52rem; justify-content: space-between; gap: .3rem 1.5rem; flex-wrap: wrap; margin: .35rem auto 0; color: var(--color-ash); font-size: var(--text-xs); line-height: 1.6; }
   .composer-footer p { max-width: 38rem; }
-  summary:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  .offering-recovery { margin: .8rem 1rem; padding: 1rem; border: 1px solid var(--color-rune-dim); border-radius: var(--radius-panel); background: var(--color-obsidian-2); }
-  .offering-recovery p { margin: .5rem 0; color: var(--color-ash); }
+  .offering-recovery { flex: 0 1 auto; min-height: 4rem; margin: .75rem 1rem; padding: .8rem 1rem; border: 0; border-left: 2px solid var(--color-rune); border-radius: 0; background: var(--color-obsidian); max-height: min(22rem, 45dvh); overflow-y: auto; overscroll-behavior: contain; }
+  .offering-recovery p { margin: .5rem 0; color: var(--color-parchment); line-height: 1.6; }
   .offering-recovery .offering-recovery__text { color: var(--color-bone); white-space: pre-wrap; max-height: 12rem; overflow: auto; overflow-wrap: anywhere; }
-  .atlas-links { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; padding: .75rem 1rem; color: var(--color-ash); }
+  .offering-recovery .rune-btn { min-height: 2.75rem; margin: .25rem .35rem .25rem 0; }
+  .atlas-links { display: flex; flex-wrap: wrap; gap: .35rem 1rem; align-items: center; padding: .5rem clamp(1rem, 3vw, 2rem); color: var(--color-parchment); font-size: var(--text-sm); }
   .atlas-links a { color: var(--color-rune); min-height: 2.75rem; display: inline-flex; align-items: center; }
-  .public-sources { flex: 0 0 auto; padding: 0 1rem; border-bottom: 1px solid var(--color-engraving); }
-  .public-sources[open] { background: var(--color-tertiary); border-color: var(--color-tertiary-edge); }
-  .public-sources .atlas-links { padding: 0 0 .4rem; }
-  .turn:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
+  .public-sources .atlas-links { padding: 0 0 .35rem; }
+  .turn:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   .bridge-embedded { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100%; overflow: hidden; }
   .bridge-embedded.instrument-deck--welcome { grid-template-rows: minmax(0, 1fr); }
-  .bridge-embedded .bridge-rail { padding: 0 .85rem; border-right: 0; border-bottom: 0; max-height: 16rem; overflow: auto; }
-  .bridge-embedded summary { min-height: 2rem; padding: .35rem .15rem; }
-  .bridge-embedded .conversation-list > summary { margin: 0; font: 500 var(--text-sm)/1.5 var(--font-body); }
-  .bridge-embedded .bridge-thread { min-height: 0; overflow: hidden; }
-  .bridge-embedded .bridge-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; padding: .4rem .85rem; align-items: start; gap: .15rem .5rem; }
+  .bridge-embedded .bridge-rail { padding: 0 .95rem; border: 0; max-height: min(18rem, 35dvh); overflow: auto; background: transparent; }
+  .bridge-embedded .conversation-list > summary { margin: 0; font-weight: 500; }
+  .bridge-embedded .conversation-list nav { margin-top: .25rem; padding-bottom: .75rem; }
+  .bridge-embedded .bridge-heading { padding: .2rem .95rem; gap: .15rem .5rem; }
   .bridge-embedded .bridge-heading h1 { display: none; }
-  .bridge-embedded .conversation-title { margin: 0; font: 500 var(--text-sm)/1.5 var(--font-body); }
-  .bridge-embedded .seance-details[open] { grid-column: 1 / -1; width: 100%; }
+  .bridge-embedded .conversation-title { margin: 0; font: 600 var(--text-base)/1.5 var(--font-body); }
+  .bridge-embedded .seance-details { font-size: var(--text-xs); }
+  .bridge-embedded .seance-details[open] { width: 100%; }
   .bridge-embedded .seance-details .kv { position: static; width: 100%; }
-  .bridge-embedded .project-details { padding: 0 .85rem; }
-  .bridge-embedded .public-sources { padding: 0 .85rem; }
-  .bridge-embedded .project-details, .bridge-embedded .public-sources { border-bottom: 0; }
-  .bridge-embedded .public-sources .atlas-links { padding: 0 0 .35rem; gap: 0 .65rem; }
-  .bridge-embedded .atlas-links { padding: .25rem 1rem; gap: .4rem; font-size: var(--text-xs); }
-  .bridge-embedded .atlas-links a { min-height: 2rem; }
-  .bridge-embedded .thread-scroll { padding: 1rem; gap: 1rem; flex: 1; min-height: 4rem; }
-  .bridge-embedded .composer-area { padding: .5rem .85rem; }
-  .bridge-embedded .composer-label { margin-bottom: .3rem; }
-  .bridge-embedded .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; padding: .45rem; }
-  .bridge-embedded .composer textarea { width: 100%; min-height: 4rem; }
-  .bridge-embedded .composer .rune-btn { min-width: 4rem; margin-left: 0; padding-inline: .65rem; background: var(--color-rune); color: var(--color-void); border-color: var(--color-rune); }
-  .bridge-embedded .composer-footer { margin-top: .35rem; gap: .2rem .75rem; font-size: var(--text-xs); }
-  .bridge-embedded .turn__body { font-size: var(--text-base); line-height: 1.6; }
-  .bridge-embedded .turn--user .turn__body { background: var(--color-grimoire); }
+  .bridge-embedded .bridge-tools { padding: .25rem 0 0; gap: 0 1rem; font-size: var(--text-xs); }
+  .bridge-embedded .atlas-links { padding: .25rem .95rem; gap: .25rem .75rem; }
+  .bridge-embedded .public-sources .atlas-links { padding-inline: 0; }
+  .bridge-embedded .thread-scroll { padding: 1rem .95rem; gap: 1.5rem; flex: 1; min-height: 4rem; }
+  .bridge-embedded .composer-area { padding: .4rem .65rem .45rem; }
+  .bridge-embedded .composer-shell { padding: .3rem .6rem .4rem; }
+  .bridge-embedded .composer textarea { min-height: 3rem; }
+  .bridge-embedded .composer-destination { margin-bottom: .1rem; gap: .5rem; }
+  .bridge-embedded .composer-voice { --voice-label-display: none; }
+  .bridge-embedded .composer-send { min-width: 4.5rem; padding-inline: .75rem; }
+  .bridge-embedded .turn__body { font-size: var(--text-base); line-height: 1.7; }
   @media (max-width: 48rem) {
     .instrument-deck--bridge { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-    .bridge-rail { display: block; max-height: 35dvh; padding: 0 .85rem; border-right: 0; border-bottom: 1px solid var(--color-engraving); overflow: auto; }
+    .bridge-rail { display: block; max-height: 35dvh; padding: 0 .95rem; border-right: 0; border-bottom: 1px solid var(--color-engraving); overflow: auto; }
     .conversation-list > summary { margin: 0; }
-    .conversation-list nav { max-height: 12rem; overflow-y: auto; margin-top: .5rem; }
-    .new-seance { width: 100%; }
-    .bridge-thread { overflow: auto; }
-    .bridge-heading { align-items: flex-start; gap: .35rem; padding: .5rem .85rem; }
-    .bridge-heading h1 { font-size: 1.25rem; }
-    .conversation-title { margin-top: .25rem; font-size: var(--text-xs); }
-    .seance-details { max-width: 45%; }
+    .conversation-list nav { max-height: 12rem; overflow-y: auto; margin-top: .5rem; padding-bottom: .75rem; }
+    .bridge-heading { gap: .25rem .5rem; padding: .25rem .95rem; }
+    .conversation-title { margin-top: .25rem; font-size: var(--text-base); }
+    .seance-details { font-size: var(--text-xs); }
     .seance-details summary { white-space: normal; }
     .seance-details .kv { position: static; width: 100%; grid-template-columns: minmax(0, .7fr) minmax(0, 1fr); }
-    .thread-scroll { min-height: 4rem; padding: .75rem; }
-    .public-sources, .project-details { padding-inline: .85rem; }
-    .public-sources summary, .project-details summary, .seance-details summary { min-height: 2rem; padding-block: .35rem; }
-    .composer-area { padding: .5rem .85rem; }
-    .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; padding: .45rem; }
-    .composer textarea { width: 100%; min-height: 3rem; }
-    .composer .rune-btn { min-width: 3.5rem; margin-left: 0; }
-    .composer-label { margin-bottom: .3rem; }
-    .composer-footer { margin-top: .35rem; gap: .2rem .5rem; }
+    .bridge-tools { padding-inline: 0; font-size: var(--text-xs); }
+    .thread-scroll { padding: 1rem .95rem; }
+    .composer-area { padding: .4rem .65rem .45rem; }
+    .composer-shell { padding: .3rem .6rem .4rem; }
+    .composer textarea { min-height: 3rem; }
+    .composer-destination { margin-bottom: .1rem; gap: .5rem; }
+    .composer-voice { --voice-label-display: none; }
+    .composer-send { min-width: 4.5rem; padding-inline: .75rem; }
+    .composer-footer { gap: .2rem .5rem; }
     .turn--user { max-width: 95%; }
   }
 </style>

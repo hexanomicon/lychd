@@ -74,6 +74,7 @@ if TYPE_CHECKING:
     from lychd.domain.delegation.routing import DelegatedRuntimeBinding
     from lychd.domain.dictation_lexicon_service import DictationLexiconService
     from lychd.domain.dictation_service import DictationService
+    from lychd.domain.naming import NamingStore
     from lychd.domain.orchestration.actuator import RuntimeActuator
     from lychd.domain.orchestration.containment import SoftActivationGuard
     from lychd.domain.scout.authority import ScoutHostAuthorizer
@@ -112,6 +113,7 @@ class AltarServices:
     ledger: RunLedger
     bus: InProcessEventBus
     substrate: RunSubstrate
+    naming: NamingStore | None = None
     scavenger: ScavengerService | None = None
     feed_admission: ScoutFeedAdmissionService | None = None
     creation: InvestigationService | None = None
@@ -193,6 +195,18 @@ def _build_atlas_store(profile: str) -> AtlasStorePort:
     from lychd.db.engine import get_session_factory
 
     return DbAtlasStore(get_session_factory())
+
+
+def _build_naming_store(profile: str) -> NamingStore:
+    """Use the shared persistence profile for accepted forms of address."""
+    from lychd.domain.naming import InMemoryNamingStore
+
+    if profile == "memory":
+        return InMemoryNamingStore()
+    from lychd.db.engine import get_session_factory
+    from lychd.db.naming import DbNamingStore
+
+    return DbNamingStore(get_session_factory())
 
 
 def _build_dictation_services(profile: str, settings: Settings) -> tuple[DictationService, DictationLexiconService]:
@@ -680,7 +694,7 @@ def build_altar_services(
     context_orchestrator = ContextOrchestrator(registry=registry)
     fragments = build_fragment_registry()
     bridge_sessions = _build_session_store(profile, sigil_name=default_sigil().name)
-    atlas, consents = _build_atlas_store(profile), _build_consent_ledger(profile)
+    atlas, consents, naming = _build_atlas_store(profile), _build_consent_ledger(profile), _build_naming_store(profile)
     if scavenger_casting is None:
         scout, scout_admission, consent_reviews = _build_scout(
             persistence=profile,
@@ -753,6 +767,7 @@ def build_altar_services(
         effects=scout,
     )
     run_engine = RunEngine(
+        naming_lookup=naming.get,
         ledger=ledger,
         bus=bus,
         workflows=workflows,
@@ -795,6 +810,7 @@ def build_altar_services(
         fragments=fragments,
         bridge_sessions=bridge_sessions,
         atlas=atlas,
+        naming=naming,
         dictation=dictation,
         dictation_lexicon=dictation_lexicon,
         consents=consents,

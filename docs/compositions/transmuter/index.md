@@ -92,6 +92,38 @@ Using several Extension mechanisms does not make Transmuter a Suite. A promise t
 coordinates separate Composition-owned Invocations requires a [Suite](../products-and-suites.md#compositions-relate-without-nesting).
 This study supplies no general installation, self-extension, or autonomous evolution coordinator.
 
+### Computer-session capture without a service API
+
+A call or working session could enter this candidate intake through a local recording, without
+integrating the meeting service's API. The operator would select microphone input and playback
+output as separate synchronized tracks, with optional video of one window or monitor. On Linux,
+[PipeWire](https://docs.pipewire.org/group__pw__keys.html) supports playback capture, while the
+[ScreenCast portal](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.ScreenCast.html)
+offers desktop-approved screen sources. This records the selected local experience; it does not
+supply participant identities, separate remote-speaker streams, chat history, or undisplayed
+content. Whole-output audio may also contain unrelated applications and notifications.
+
+The proposed recorder would run as an explicitly authorized helper in the logged-in desktop
+session. Routine capture generally needs the user's session permissions rather than root;
+[PipeWire access control](https://docs.pipewire.org/page_access.html) still applies to each client.
+A containerized or remote Vessel would need a narrow typed device integration under the
+[host-effect boundary](../../adr/10-privilege.md), without acquiring a general shell or ambient
+desktop access. Audio and visual permissions remain separately scoped.
+
+An Altar control or CLI Intent could request the same bounded capture, optionally associated with
+a Project or call. The proposed controls would select sources, a private destination outside the
+checkout, retention, duration and storage limits, and expose active state and explicit stop.
+Finalization would return exact artifact references and locations, with gaps or partial results
+preserved; an unconfirmed stop remains unknown. Saved presets or later event triggers would
+reuse this contract under current authority rather than grant permanent recording permission.
+These are candidate interactions, not an implemented recorder, command grammar, or automation.
+
+Recording and interpretation remain separate. Original tracks would retain their common timeline
+and acquisition facts; admitted speech transcription and visual extraction would produce
+source-located derivatives for Extractor and Synthesizer. Summaries, decisions and proposed tasks
+would link back to exact time intervals. Echo retains its speech boundary, and recording alone
+authorizes neither analysis, remote transmission nor adoption into memory.
+
 ## The processing dossier
 
 The proposed durable dossier lets the operator see what was admitted, what each stage produced, and what remains

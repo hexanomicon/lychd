@@ -31,10 +31,10 @@
 </div>
 
 <style>
-  .graph-canvas { width:100%; min-width:0; height:var(--graph-height,clamp(460px,68vh,900px)); position:relative; overflow:hidden; border:1px solid var(--color-engraving); border-radius:var(--radius-panel); background:var(--color-void); --xy-background-color:var(--color-void); --xy-node-color:var(--color-bone); --xy-minimap-background-color:var(--color-obsidian); --xy-minimap-mask-background-color:color-mix(in srgb,var(--color-void) 72%,transparent); --xy-edge-label-background-color:var(--color-void); --xy-edge-label-color:var(--color-parchment); }
-  .graph-canvas.orb-canvas { height:100%; min-height:0; border:0; border-radius:0; background:var(--color-void); --xy-background-color:var(--color-void); }
+.graph-canvas { width:100%; min-width:0; height:var(--graph-height,clamp(460px,68vh,900px)); position:relative; overflow:hidden; border:0; border-radius:0; background:#000; --xy-background-color:#000; --xy-node-color:var(--color-bone); --xy-minimap-background-color:var(--color-obsidian); --xy-minimap-mask-background-color:color-mix(in srgb,var(--color-void) 72%,transparent); --xy-edge-label-background-color:var(--color-void); --xy-edge-label-color:var(--color-parchment); }
+  .graph-canvas.orb-canvas { height:100%; min-height:0; border:0; border-radius:0; background:#000; --xy-background-color:#000; }
   .orb-canvas :global(.svelte-flow__handle) { opacity:0; }
-  .graph-failure { padding:2rem; color:var(--color-ember); }
+  .graph-failure { padding:2rem; color:var(--color-ember); font:14px/1.6 var(--font-body); }
   .graph-canvas :global(.svelte-flow__edge-textbg) { fill:var(--color-void); }
   /* The media reset's max-width:100% collapses these SVGs against XYFlow's
      zero-sized edge layer. Their paths deliberately overflow their viewport. */

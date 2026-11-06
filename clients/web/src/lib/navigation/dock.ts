@@ -3,7 +3,7 @@ export const bridgeDockStorageKey = "lychd.bridge-dock.layout.v1";
 export const dockMinimumWidth = 320;
 export const dockMaximumWidth = 720;
 export interface DockLayout { width: number; side: "left" | "right"; open: boolean }
-export const defaultDockLayout: DockLayout = { width: 440, side: "left", open: true };
+export const defaultDockLayout: DockLayout = { width: 360, side: "left", open: true };
 export function boundedDockWidth(width: number): number {
   return Math.round(Math.min(dockMaximumWidth, Math.max(dockMinimumWidth, width)));
 }

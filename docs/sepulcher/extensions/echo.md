@@ -93,6 +93,10 @@ remote [Portal](../animator/portal.md) additionally requires eligible classifica
 policy, consent where required, and bounded cost. These are laws of the accepted design, not
 claims of delivered behavior.
 
+For a call recorded locally without a meeting-service API, see Transmuter's candidate
+[computer-session capture](../../compositions/transmuter/index.md#computer-session-capture-without-a-service-api)
+intake. The device integration supplies source artifacts; Echo's contribution remains speech.
+
 ## First engine profile
 
 The first planned native local profile starts with one inference engine:

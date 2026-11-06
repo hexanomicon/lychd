@@ -20,6 +20,7 @@ from lychd.interface.web import (
     DictationController,
     DictationLexiconController,
     LoomController,
+    NamingController,
     NexusController,
     OrbController,
 )
@@ -47,6 +48,7 @@ def main() -> None:
             ScavengerController,
             NexusController,
             LoomController,
+            NamingController,
             OrbController,
         ],
         dependencies=web_dependencies,

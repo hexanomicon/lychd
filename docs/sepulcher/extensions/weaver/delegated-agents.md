@@ -114,11 +114,18 @@ subsidized remote cognition usable without making the remote runtime custodian o
 repository or its authority.
 
 Provider-private commands and credentials stay behind the adapter boundary. Effectful foreign
-labor additionally requires the Security-owned Coffin supervisor, job-scoped `nono` policy, and
-Provider Gate; none belongs inside Pattern law. [The Coffin
+labor additionally requires a trusted supervisor enforcing the Security-owned Coffin profile,
+job-scoped `nono` policy, and Provider Gate; none belongs inside Pattern law. [The Coffin
 profile](../../../adr/09-security.md#the-coffin-delegated-agent-profile) owns those boundaries.
 A runtime that cannot use the exact Provider Gate endpoint, disclose its child model route, or
 disable ambient network/fallback is ineligible. Transparent MITM is not an adapter.
+
+The profile does not name the supervisor's service or the guest's container. Vessel-owned
+supervision does not run the foreign agent in the Vessel process or pass it Vessel authority;
+Tomb's non-agent contract does not itself admit a Coffin host. A concrete placement must satisfy
+[Security's profile and placement contract](../../../adr/09-security.md#profile-supervision-and-placement),
+including the outer boundary as well as `nono`. These are launch requirements, not evidence of a
+delivered host, sandbox, or launcher.
 
 ## Wrap a CLI as a bounded adapter { #cli-adapter-passage }
 

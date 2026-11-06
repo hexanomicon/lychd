@@ -759,6 +759,8 @@ We bring mature capabilities into one coordinated undertaking. We align roles, s
 
 We bind identity, memory, knowledge, and working capabilities into a coherent digital embodiment. We verify continuity across its parts and prepare the foundation for the next stage.
 
+This passage carries a purpose throughout the Great Work. [Immortality — clothed in immortality](divination/transcendence/immortality.md#clothed-in-immortality) develops its central question: how may a particular life continue through transformed embodiment?
+
 <a id="week-49"></a>
 
 ### 49 · `__aenter__` **AGI**

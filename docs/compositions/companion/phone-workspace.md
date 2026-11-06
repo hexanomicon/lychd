@@ -286,6 +286,12 @@ test case for that direction; independently requested Android applications remai
 construction/delivery goal. Local diagnostics are the first observation surface, while remote
 inspection and repair still need their own admitted contracts.
 
+One candidate journey is proactive battery care: notice unusually fast discharge in permitted
+logs and usage history, investigate likely causes, then find a compatible replacement and a
+practical video tutorial when replacement is warranted. Companion explains the finding in
+familiar, useful language and proposes the next step. A recommendation establishes neither a
+purchase nor a completed repair.
+
 For every added feature, distinguish implemented operation/version, observed device support,
 Android access, current application authority, and the required user decision. Keep unavailable,
 unknown, stale, denied and failed conditions visible. An observed capability is not an offered

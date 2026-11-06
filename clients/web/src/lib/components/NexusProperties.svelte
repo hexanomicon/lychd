@@ -22,8 +22,8 @@
   {#if object.kind === "capability"}
     {@const row = object.row}
     <p class="object-kind">{object.scope === "managed" ? "Managed capability" : "Portal capability · read only"}</p>
+    <dl class="property-identity"><dt>Capability</dt><dd><code>{row.capability_key}</code></dd></dl>
     <dl class="property-grid">
-      <dt>Capability</dt><dd class="identity"><code>{row.capability_key}</code></dd>
       <dt>Animator</dt><dd><code>{row.animator_name || "not reported"}</code></dd>
       <dt>Model</dt><dd><code>{row.model_id}</code></dd>
       <dt>Runtime</dt><dd>{row.runtime}</dd>
@@ -49,8 +49,8 @@
     {/if}
   {:else if object.kind === "animator"}
     <p class="object-kind">Animator</p>
+    <dl class="property-identity"><dt>Animator</dt><dd><code>{object.animator}</code></dd></dl>
     <dl class="property-grid">
-      <dt>Animator</dt><dd class="identity"><code>{object.animator}</code></dd>
       <dt>Capabilities</dt><dd>{object.rows.length} reported</dd>
       <dt>Display groups</dt><dd>{object.groups.length} reported</dd>
     </dl>
@@ -67,8 +67,8 @@
     </ul>
   {:else}
     <p class="object-kind">Delegated runtime · read only</p>
+    <dl class="property-identity"><dt>Display name</dt><dd>{object.runtime.display_name}</dd></dl>
     <dl class="property-grid">
-      <dt>Display name</dt><dd class="identity">{object.runtime.display_name}</dd>
       <dt>Runtime</dt><dd><code>{object.runtime.runtime_id}</code></dd>
       <dt>Registrant</dt><dd><code>{object.runtime.registrant_id}</code></dd>
       <dt>Transport</dt><dd>{object.runtime.transport}</dd>
@@ -87,17 +87,21 @@
 </div>
 
 <style>
-  .nexus-properties { min-width: 0; padding: 0 1.125rem 1.125rem; color: var(--color-parchment); font-size: var(--text-sm); }
-  .object-kind { color: var(--color-accent); margin: 0 0 1rem; }
+  .nexus-properties { min-width: 0; padding: 0 1.25rem 1.5rem; color: var(--color-parchment); font-size: var(--text-sm); }
+  .object-kind { color: var(--color-ash); margin: 0 0 .5rem; }
+  .property-identity { display: grid; gap: .35rem; margin: 0 0 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--color-engraving); }
+  .property-identity dt { color: var(--color-ash); font-size: var(--text-sm); }
+  .property-identity dd { margin: 0; color: var(--color-accent); font-size: 1.125rem; line-height: 1.5; overflow-wrap: anywhere; }
+  .property-identity code { font-size: inherit; }
   .property-grid { display: grid; grid-template-columns: minmax(5rem, 0.8fr) minmax(0, 1.2fr); gap: 0.65rem 0.9rem; margin: 0; }
   .property-grid dt { color: var(--color-ash); }
   .property-grid dd { margin: 0; color: var(--color-bone); }
   .property-grid :is(dt, dd), code, time, li { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
-  .property-grid .identity { color: var(--color-accent); }
-  code { font-family: var(--font-glyph); font-size: var(--text-xs); }
+
+  code { font-family: var(--font-glyph); font-size: var(--text-sm); }
   h3 { color: var(--color-bone); margin: 1.25rem 0 0.65rem; font: 500 var(--text-sm)/1.4 var(--font-body); }
   .property-note { color: var(--color-ash); margin: 1rem 0 0; line-height: 1.5; }
-  .more-properties { margin-top: .75rem; }
+  .more-properties { margin-top: 1.25rem; border-top: 1px solid var(--color-engraving); padding-top: .5rem; }
   .more-properties summary { min-height: 2rem; cursor: pointer; padding-block: .35rem; color: var(--color-parchment); }
   .more-properties .property-grid { padding-top: .5rem; }
   .property-list { margin: 0; padding-inline-start: 1.1rem; line-height: 1.5; }
@@ -106,7 +110,7 @@
   .owned-capabilities button { display: grid; gap: 0.35rem; width: 100%; text-align: start; }
   .owned-capabilities button span { color: var(--color-ash); font-size: var(--text-xs); }
   button { min-height: 2.75rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-obsidian-2); color: var(--color-rune); padding: 0.65rem 0.8rem; font: inherit; overflow-wrap: anywhere; }
-  .property-action { margin-top: 1.1rem; }
+  .property-action { margin-top: 1.25rem; color: var(--color-void); background: var(--color-bone); border-color: var(--color-bone); font-weight: 600; }
   button:hover:not(:disabled) { border-color: var(--color-rune); }
   button:disabled { color: var(--color-ash); cursor: wait; }
   button:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }

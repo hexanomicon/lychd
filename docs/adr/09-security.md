@@ -94,9 +94,10 @@ may receive only job claim/settlement database authority; a Coffin receives none
 
 ### The Coffin Delegated-Agent Profile
 
-A Coffin is one foreign runtime for one delegated occurrence. It needs an outer rootless service
-boundary, inner job-scoped `nono` policy, and externally enforced resource ceilings. `read` gets an
-immutable task projection; `candidate` gets a disposable copy-on-write or jj worktree. Workspace,
+A Coffin is the containment profile for one foreign runtime under one `AgentJob`. It needs an
+outer rootless service boundary, inner job-scoped `nono` policy, and externally enforced resource
+ceilings. `read` gets an immutable task projection; `candidate` gets a disposable copy-on-write or
+jj worktree. Workspace,
 scratch, and artifacts are canonical, disjoint strict children of one job root, each granted once;
 only `candidate` makes workspace writable. A `verify` specialization may add audited tools but may
 not widen those roots or authorities.
@@ -104,6 +105,23 @@ not widen those roots or authorities.
 The profiles return only analysis/bounded artifacts, a candidate patch/bounded artifacts, or
 verification receipts respectively. They do not turn a provider name, blocked tool, failed test,
 or expired budget into authority to widen a root, tool, network path, or credential.
+
+#### Profile, supervision, and placement
+
+Coffin names the per-job trust boundary, not a fixed service, container, queue, or SAQ worker.
+Trusted supervision may be owned by the Vessel or an explicitly admitted execution service;
+supervisor ownership and the guest's physical placement are separate decisions. "Launched from
+the Vessel" means supervised from its control plane: the foreign runtime executes outside the
+Vessel's Python process and inherits no Vessel credentials or ambient authority. Invoking `nono`
+inside the secret-bearing Vessel does not, by itself, establish an admitted Coffin boundary.
+
+The profile implies neither mandatory nesting inside Tomb nor mandatory sibling containers.
+Tomb retains its non-agent execution contract. A proposed Tomb-hosted Coffin needs an explicitly
+admitted Coffin host/profile; Tomb's own payload contract supplies no Agent or provider authority.
+Every physical arrangement still requires the outer rootless service boundary, qualified inner
+`nono` policy, externally enforced ceilings, Provider Gate, and containment evidence. `nono` is
+one enforcement mechanism, not the whole Coffin. CPU cost, async scheduling, threads, and process
+creation neither establish nor relax this trust boundary. No physical placement is qualified here.
 
 The command is literal argv with a canonical absolute executable—no shell resolution, traversal,
 controls, relative executable, or unbounded argv. Admission fails closed unless a reviewed

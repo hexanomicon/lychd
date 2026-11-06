@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     [
         "/atlas",
         "/bridge",
+        "/seances",
         "/nexus",
         "/loom",
         "/orb",
@@ -136,6 +137,7 @@ def test_every_explicit_error_operation_publishes_the_shared_framework_error(
     [
         "/atlas/project-x",
         "/bridge/session-x",
+        "/seances/session-x",
         "/loom/pattern-x/revision-1",
         "/orb/run-x",
         "/canvas/project-x",

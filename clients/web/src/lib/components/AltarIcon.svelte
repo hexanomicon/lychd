@@ -8,6 +8,7 @@
   {:else if name === "loom" || name === "connect"}<path d="m7 17 10-10 M7 7l10 10" /><circle cx="5" cy="5" r="2" /><circle cx="19" cy="5" r="2" /><circle cx="5" cy="19" r="2" /><circle cx="19" cy="19" r="2" />
   {:else if name === "nexus"}<rect x="6" y="6" width="12" height="12" rx="2" /><rect x="9" y="9" width="6" height="6" rx="1" /><path d="M8 2v4 M12 2v4 M16 2v4 M8 18v4 M12 18v4 M16 18v4 M2 8h4 M2 12h4 M2 16h4 M18 8h4 M18 12h4 M18 16h4" />
   {:else if name === "applications"}<path d="M3 3h6v6H3z M15 3h6v6h-6z M3 15h6v6H3z M15 15h6v6h-6z" />
+  {:else if name === "seances"}<path d="M4 4h16v12H9l-5 4Z M8 8h8 M8 12h5" />
   {:else if name === "bridge"}<path d="M2 16h20 M6 4v16 M18 4v16 M2 10l4-4q6 12 12 0l4 4 M10 12v4 M14 12v4" />
   {:else if name === "canvas"}<rect x="3" y="4" width="18" height="14" rx="1" /><path d="M8 22l4-4 4 4 M12 2v2" />
   {:else if name === "draw"}<path d="m16 3 5 5-12 12-6 1 1-6Z M13 6l5 5" />

@@ -473,25 +473,28 @@
 </section>
 
 <style>
-  .dictation-feedback { min-width: 0; font-size: var(--text-sm); color: var(--color-parchment); }
+  .dictation-feedback { min-width: 0; font: var(--text-sm)/1.6 var(--font-body); color: var(--color-parchment); }
   details { min-width: 0; border-top: 1px solid var(--color-engraving); }
-  summary { min-height: 2.75rem; align-content: center; cursor: pointer; overflow-wrap: anywhere; }
-  p { margin: .5rem 0; line-height: 1.5; overflow-wrap: anywhere; }
-  label { display: block; margin-block: .4rem; }
-  fieldset { min-width: 0; margin: .6rem 0; padding: .6rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-glyph); }
-  legend { padding-inline: .25rem; }
-  input:not([type="checkbox"]), textarea { box-sizing: border-box; display: block; width: 100%; min-width: 0; min-height: 2.75rem; padding: .5rem; font: inherit; color: var(--color-bone); background: var(--color-obsidian); border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); }
+  summary { min-height: 2.75rem; padding-block: .45rem; align-content: center; color: var(--color-bone); cursor: pointer; overflow-wrap: anywhere; }
+  p { margin: .6rem 0; line-height: 1.6; overflow-wrap: anywhere; }
+  label { display: block; margin-block: .5rem .35rem; color: var(--color-parchment); }
+  fieldset { min-width: 0; margin: .75rem 0; padding: 0; border: 0; border-radius: 0; }
+  legend { margin-bottom: .25rem; padding: 0; color: var(--color-bone); font-weight: 600; }
+  input:not([type="checkbox"]), textarea { box-sizing: border-box; display: block; width: 100%; min-width: 0; min-height: 2.75rem; padding: .6rem; font: inherit; color: var(--color-bone); background: var(--color-obsidian-2); border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); }
   textarea { resize: vertical; max-height: 12rem; }
-  .check { display: flex; align-items: center; gap: .6rem; min-height: 2.75rem; }
-  .check input { flex: 0 0 auto; }
-  button { max-width: 100%; min-height: 2.75rem; margin: .25rem .25rem .25rem 0; padding: .4rem .6rem; font: inherit; overflow-wrap: anywhere; color: var(--color-bone); background: var(--color-obsidian); border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); cursor: pointer; }
+  .check { display: flex; align-items: flex-start; gap: .6rem; min-height: 2.75rem; padding-block: .4rem; }
+  .check input { flex: 0 0 auto; margin-top: .3rem; }
+  button { max-width: 100%; min-height: 2.75rem; margin: .25rem .35rem .25rem 0; padding: .45rem .7rem; font: inherit; overflow-wrap: anywhere; color: var(--color-bone); background: var(--color-obsidian); border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--color-rune); background: var(--color-obsidian-2); }
+  button[type="submit"] { background: var(--color-bone); border-color: var(--color-bone); color: var(--color-void); }
+  button[type="submit"]:hover:not(:disabled) { background: var(--color-parchment); border-color: var(--color-parchment); color: var(--color-void); }
   button:disabled { opacity: .55; cursor: default; }
-  .bounded { max-height: 20rem; overflow-y: auto; padding: .25rem .25rem .25rem 1.3rem; overflow-wrap: anywhere; }
-  .records { list-style: none; padding-left: .25rem; }
-  .records > li { padding-block: .5rem; border-bottom: 1px solid var(--color-engraving); }
-  dl { margin: .5rem 0; }
-  dt { color: var(--color-bone); }
-  dd { margin: .25rem 0 .75rem; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 10rem; overflow-y: auto; }
+  .bounded { max-height: 20rem; overflow-y: auto; padding: .25rem .35rem .25rem 1.3rem; overflow-wrap: anywhere; scrollbar-gutter: stable; }
+  .records { list-style: none; padding-left: 0; }
+  .records > li { padding-block: .85rem; border-bottom: 1px solid var(--color-engraving); }
+  dl { margin: .6rem 0; }
+  dt { color: var(--color-bone); font-weight: 600; }
+  dd { margin: .25rem 0 1rem; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 10rem; overflow-y: auto; }
   span { white-space: pre-wrap; }
   button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
 </style>

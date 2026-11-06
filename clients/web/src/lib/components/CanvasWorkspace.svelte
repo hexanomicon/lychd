@@ -234,19 +234,24 @@
 </section>
 
 <style>
-  .canvas-workspace { min-width: 0; }
-  .workspace-heading { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:.45rem .75rem; padding:.65rem 1rem; border-bottom:1px solid var(--color-engraving); }
-  .workspace-identity { min-width:0; }
-  .workspace-identity h1 { margin:.25rem 0 0; font-size:1rem; line-height:1.3; color:var(--color-bone); overflow-wrap:anywhere; }
-  .workspace-identity a,.workspace-actions a,.map-caption a { color:var(--color-rune); font-size:var(--text-xs); }
-  .workspace-state,.workspace-hint,.retention,.map-caption { color:var(--color-ash); font-size:var(--text-xs); }
-  .workspace-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:.4rem .6rem; max-width:29rem; }
-  button { min-height:2.25rem; padding:.45rem .7rem; border:1px solid var(--color-control-border); border-radius:var(--radius-rune); background:var(--color-obsidian); color:var(--color-parchment); font:inherit; font-size:var(--text-xs); cursor:pointer; }
-  button:disabled { opacity:.45; cursor:default; }.primary { color:var(--color-void); background:var(--color-rune); border-color:var(--color-rune); }
+.canvas-workspace { min-width:0; width:100%; }
+  .workspace-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; padding:1.1rem 1.25rem .75rem; }
+  .workspace-identity { min-width:0; flex:1; }
+  .workspace-identity h1 { margin:.4rem 0 0; font-size:1.25rem; font-weight:600; letter-spacing:-.035em; line-height:1.35; color:var(--color-bone); overflow-wrap:anywhere; }
+  .workspace-identity a,.workspace-actions a,.map-caption a { color:var(--color-ash); font-size:var(--text-xs); text-underline-offset:.2em; }
+  .workspace-identity a:hover,.workspace-actions a:hover,.map-caption a:hover { color:var(--color-rune); }
+  .workspace-state,.workspace-hint,.retention,.map-caption { color:var(--color-ash); font-size:var(--text-2xs); }
+  .workspace-state { color:var(--color-parchment); }
+  .workspace-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:.5rem; max-width:33rem; }
+  button { min-height:2.25rem; padding:.5rem .75rem; border:1px solid var(--color-control-border); border-radius:var(--radius-rune); background:var(--color-obsidian); color:var(--color-parchment); font:var(--text-xs)/1.4 var(--font-body); cursor:pointer; }
+  button:hover:not(:disabled) { color:var(--color-bone); background:var(--color-obsidian-2); }
+  button:disabled { opacity:.45; cursor:default; }
+  .primary { color:var(--color-void); background:var(--color-bone); border-color:var(--color-bone); font-weight:600; }
   button:focus-visible,a:focus-visible { outline:2px solid var(--color-rune); outline-offset:3px; }
-  .workspace-context { display:flex; flex-wrap:wrap; align-items:baseline; gap:.2rem .9rem; padding:.4rem 1rem; line-height:1.5; }
-  .workspace-context > span { margin:0; font-size:11px; }
-  .workspace-notice { margin:.5rem 1rem; color:var(--color-parchment); font-size:var(--text-xs); }
-  .workspace-error,.comparison { margin:1rem 1.25rem; padding:.8rem; border:1px solid var(--color-control-border); color:var(--color-parchment); font-size:var(--text-xs); }.workspace-error { border-left:3px solid var(--color-heat); }
-  @container work-area (max-width:35rem) { .workspace-heading { grid-template-columns:minmax(0,1fr); }.workspace-actions { justify-content:flex-start; max-width:none; gap:.5rem; } }
+  .workspace-context { display:flex; flex-wrap:wrap; align-items:baseline; gap:.35rem .85rem; margin-inline:1.25rem; padding:.25rem 0 .75rem; border-bottom:1px solid var(--color-engraving); line-height:1.6; }
+  .workspace-context > span { margin:0; }
+  .workspace-notice { margin:.5rem 1.25rem; color:var(--color-parchment); font-size:var(--text-xs); }
+  .workspace-error,.comparison { margin:1rem 1.25rem; padding:1rem; border:1px solid var(--color-control-border); border-radius:var(--radius-panel); color:var(--color-parchment); background:var(--color-obsidian); font-size:var(--text-sm); line-height:1.7; }
+  .workspace-error { border-left:3px solid var(--color-heat); }
+  @container work-area (max-width:48rem) { .workspace-heading { align-items:start; flex-direction:column; padding-inline:1rem; }.workspace-actions { justify-content:flex-start; max-width:none; }.workspace-context { margin-inline:1rem; } }
 </style>

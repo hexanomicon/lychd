@@ -122,39 +122,40 @@
 </section>
 
 <style>
-  .nexus-map { min-width: 0; border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); background: var(--color-void); overflow: hidden; }
-  .map-header { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: space-between; padding: .65rem .85rem .4rem; }
-  .map-header h2 { color: var(--color-accent); font-family: var(--font-rune); font-size: var(--text-lg); }
-  .map-header p, .map-help, .map-legend { color: var(--color-ash); font-size: var(--text-xs); }
+  .nexus-map { min-width: 0; border: 0; border-radius: 0; background: var(--color-void); overflow: hidden; }
+  .map-header { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; padding: .5rem 0; }
+  .map-header h2 { color: var(--color-bone); font: 550 1rem/1.5 var(--font-body); }
+  .map-header p, .map-help, .map-legend { color: var(--color-ash); font-size: var(--text-xs); line-height: 1.5; }
   .map-header p { max-width: 35rem; margin-top: .3rem; }
   .map-controls { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; }
-  .map-controls button { min-width: 2rem; min-height: 2rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-obsidian); color: var(--color-rune); cursor: pointer; }
+  .map-controls button { min-width: 2.5rem; min-height: 2.5rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-obsidian); color: var(--color-rune); cursor: pointer; }
   .map-controls output { min-width: 3rem; text-align: center; color: var(--color-ash); font: var(--text-xs) var(--font-glyph); }
-  .map-help { padding: 0 .85rem .5rem; }
-  .map-viewport { position: relative; height: clamp(25rem, 56vh, 34rem); min-height: 25rem; overflow: hidden; border-block: 1px solid var(--color-engraving); cursor: grab; touch-action: none; }
+  .map-help { padding: 0 0 .6rem; }
+  .map-viewport { position: relative; height: clamp(28rem, 62vh, 46rem); min-height: 28rem; overflow: hidden; border-block: 1px solid var(--color-engraving); cursor: grab; touch-action: none; }
   .map-viewport.dragging { cursor: grabbing; }
   .map-plane { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
   .map-edges { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
   .map-edges path { fill: none; stroke: var(--color-control-border); stroke-width: 1.5; }
   .map-section { position: absolute; left: 24px; right: 24px; pointer-events: none; }
   .map-section h3 { font-size: var(--text-sm); font-family: var(--font-body); color: var(--color-parchment); }
-  .map-section p { font-size: var(--text-2xs); color: var(--color-ash); margin-top: .15rem; }
-  .map-object { position: absolute; display: flex; flex-direction: column; gap: .2rem; padding: .5rem .65rem; text-align: left; line-height: 1.25; background: var(--color-obsidian); border: 1px solid var(--color-control-border); border-left: 3px solid var(--color-accent); border-radius: var(--radius-panel); color: var(--color-bone); cursor: pointer; overflow: hidden; }
+  .map-section p { font-size: var(--text-xs); color: var(--color-ash); margin-top: .15rem; }
+  .map-object { position: absolute; display: flex; flex-direction: column; gap: .15rem; padding: .5rem .65rem; text-align: left; line-height: 1.25; background: var(--color-obsidian); border: 1px solid var(--color-control-border); border-left: 3px solid var(--color-engraving); border-radius: var(--radius-panel); color: var(--color-bone); cursor: pointer; overflow: hidden; }
   .map-object > * { flex: 0 0 auto; }
   .map-object[data-kind="animator"] { border-radius: var(--radius-panel) var(--radius-panel) 1rem var(--radius-panel); }
   .map-object[data-kind="delegated"] { border-style: dashed; }
   .map-object:hover, .map-object[aria-pressed="true"] { border-color: var(--color-rune); background: var(--color-obsidian-2); }
   .map-object[aria-pressed="true"] { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  .map-object[aria-pressed="true"] strong { color: var(--color-accent); }
   .map-object strong { font: var(--text-sm)/1.35 var(--font-glyph); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-  .object-kind { color: var(--color-accent); font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: .07em; }
+  .object-kind { color: var(--color-parchment); font-size: var(--text-xs); letter-spacing: .025em; }
   .object-state { color: var(--color-ash); font-size: var(--text-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
   .map-object[data-active="true"] .object-state { color: var(--color-lich); }
-  .object-detail { color: var(--color-ash); font-size: var(--text-2xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-  .object-impact { color: var(--color-heat); font-size: var(--text-2xs); font-weight: 600; }
+  .object-detail { color: var(--color-ash); font-size: var(--text-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .object-impact { color: var(--color-heat); font-size: var(--text-xs); font-weight: 600; }
   .map-object[data-impact="evict"] .object-impact { color: var(--color-ember); }
   .map-object[data-impact] { border-bottom-style: double; border-bottom-width: 3px; }
-  .map-legend { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; padding: .65rem 1rem; }
-  .map-legend span:first-child { color: var(--color-accent); }
+  .map-legend { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; padding: 1rem 0; }
+  .map-legend span:first-child { color: var(--color-parchment); }
   .map-legend span:nth-child(2) { color: var(--color-lich); }
   .map-empty { position: relative; z-index: 1; padding: 5rem 1rem; color: var(--color-ash); font-size: var(--text-sm); }
   button:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }

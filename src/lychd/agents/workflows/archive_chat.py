@@ -14,7 +14,7 @@ from lychd.agents.context_limits import limit_model_requests
 from lychd.agents.deps import LychDDeps
 from lychd.agents.outputs import BridgeReply
 from lychd.agents.services import WorkflowServices
-from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC
+from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC, named_agent_spec
 from lychd.agents.workflows.base import PatternEdge, PatternManifest, PatternNode, Trigger, Workflow
 from lychd.agents.workflows.nodes import bind_messages_to_logical_run, pump_agent_events
 from lychd.domain.archive import (
@@ -28,6 +28,7 @@ from lychd.domain.archive import (
 from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.graph_runner import HardwareResumeBudget
 from lychd.domain.cortex.priority import PRIORITY_DEFAULT
+from lychd.domain.naming import NamingSnapshot
 from lychd.domain.web.schemas import BridgeTurn
 
 if TYPE_CHECKING:
@@ -57,6 +58,7 @@ class ArchiveChatState(BaseModel):
     session_id: str
     run_id: str
     prompt: str
+    naming: NamingSnapshot | None = Field(default=None, exclude_if=lambda value: value is None)
     priority: int
     capability_key: str
     archive: ArchiveProfile
@@ -155,6 +157,7 @@ class AnswerNotes(BaseNode[ArchiveChatState, WorkflowServices]):
                 run_id=ctx.state.run_id,
                 session_id=ctx.state.session_id,
                 query=ctx.state.prompt,
+                naming=ctx.state.naming,
                 history=[],
                 grant=grant,
                 grant_epoch=grant.lease.grant_id,
@@ -182,7 +185,7 @@ class AnswerNotes(BaseNode[ArchiveChatState, WorkflowServices]):
             )
             emit.status("thinking")
             result = await pump_agent_events(
-                ctx.deps.forge.agent_for(ARCHIVE_AGENT_SPEC),
+                ctx.deps.forge.agent_for(named_agent_spec(ARCHIVE_AGENT_SPEC, ctx.state.naming)),
                 ctx.state.prompt,
                 deps=deps,
                 model=model,
@@ -218,6 +221,9 @@ class SettleNoteAnswer(BaseNode[ArchiveChatState, WorkflowServices, BridgeReply]
 
 
 def _make_state(intent: Intent) -> ArchiveChatState:
+    if intent.admitted_naming is not None:
+        msg = "Legacy Bridge revision cannot execute admitted naming."
+        raise ValueError(msg)
     if intent.admitted_archive is None or intent.admitted_capability_key is None or intent.run_id is None:
         msg = "admission_binding"
         raise ArchiveRefused(msg)
@@ -225,6 +231,7 @@ def _make_state(intent: Intent) -> ArchiveChatState:
         session_id=intent.session_id,
         run_id=intent.run_id,
         prompt=intent.prompt,
+        naming=intent.admitted_naming,
         priority=intent.priority if intent.priority is not None else PRIORITY_DEFAULT,
         capability_key=intent.admitted_capability_key,
         archive=intent.admitted_archive,
@@ -233,7 +240,7 @@ def _make_state(intent: Intent) -> ArchiveChatState:
 
 def _validate_state(intent: Intent, state: BaseModel) -> None:
     expected = _make_state(intent)
-    fields = {"session_id", "run_id", "prompt", "priority", "capability_key", "archive"}
+    fields = {"session_id", "run_id", "prompt", "naming", "priority", "capability_key", "archive"}
     if not isinstance(state, ArchiveChatState) or state.model_dump(include=fields) != expected.model_dump(
         include=fields
     ):

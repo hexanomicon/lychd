@@ -12,6 +12,7 @@ from lychd.interface.web.canvas import CanvasController
 from lychd.interface.web.dictation import DictationController
 from lychd.interface.web.dictation_lexicon import DictationLexiconController
 from lychd.interface.web.loom import LoomController
+from lychd.interface.web.naming import NamingController
 from lychd.interface.web.nexus import NexusController
 from lychd.interface.web.orb import OrbController
 
@@ -26,6 +27,7 @@ __all__ = [
     "DictationController",
     "DictationLexiconController",
     "LoomController",
+    "NamingController",
     "NexusController",
     "OrbController",
 ]

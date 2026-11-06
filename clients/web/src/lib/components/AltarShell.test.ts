@@ -307,7 +307,7 @@ it("places the persistent Bridge chevron at the workbench edge and removes the m
   const toggle = screen.getByRole("button", { name: "Collapse Bridge" });
   expect(toggle.closest(".altar-workbench")).toBeTruthy();
   expect(toggle.closest(".dock-shell")?.classList.contains("dock-left")).toBe(true);
-  expect(screen.getByRole("separator", { name: "Bridge width" }).getAttribute("aria-valuenow")).toBe("440");
+  expect(screen.getByRole("separator", { name: "Bridge width" }).getAttribute("aria-valuenow")).toBe("360");
   expect(document.querySelector(".topbar #bridge-toggle")).toBeNull();
   expect(document.querySelectorAll("#bridge-toggle")).toHaveLength(1);
   await fireEvent.click(toggle);

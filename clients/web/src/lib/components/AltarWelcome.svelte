@@ -2,7 +2,7 @@
   import { resolve } from "$app/paths";
   import workingAltar from "$lib/assets/altar/working-altar.png";
 
-  let { onbegin, pending = false }: { onbegin: () => void; pending?: boolean } = $props();
+  let { onbegin, onnaming, pending = false }: { onbegin: () => void; onnaming?: () => void; pending?: boolean } = $props();
   const headingId = $props.id();
 </script>
 
@@ -25,6 +25,11 @@
         <span aria-hidden="true">✦</span>
         {pending ? "Opening séance…" : "New Séance"}
       </button>
+
+      {#if onnaming}
+        <p class="altar-welcome__intro">You may also choose names for yourself and Primus, your continuing companion, whenever you wish.</p>
+        <button class="rune-btn" type="button" onclick={onnaming}>Naming ceremony</button>
+      {/if}
 
       <div class="altar-welcome__continuity">
         <p>For a visual workspace and its projects</p>

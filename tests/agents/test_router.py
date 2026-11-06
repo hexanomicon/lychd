@@ -53,10 +53,19 @@ def test_builtin_registry_has_the_exact_ordered_boot_inventory() -> None:
         ("bridge_chat", "3"),
         ("bridge_chat", "4"),
         ("bridge_chat", "5"),
+        ("bridge_chat", "1-naming1"),
+        ("bridge_chat", "2-naming1"),
+        ("bridge_chat", "3-naming1"),
+        ("bridge_chat", "4-naming1"),
+        ("bridge_chat", "5-naming1"),
         ("delegated_rite", "1"),
         ("delegated_rite", "2"),
         ("scavenger.observe_market", "2"),
     ]
+    for revision in ("1-naming1", "2-naming1", "3-naming1", "4-naming1", "5-naming1"):
+        assert registry.is_active("bridge_chat", revision) is False
+        assert registry.is_default("bridge_chat", revision) is False
+        assert registry.route_rank("bridge_chat", revision) is None
     assert registry.get(OBSERVE_MARKET.name) is None
     assert registry.get_revision(OBSERVE_MARKET.name, "2") is OBSERVE_MARKET
     assert registry.is_active(OBSERVE_MARKET.name, "2") is False

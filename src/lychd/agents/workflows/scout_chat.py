@@ -14,7 +14,7 @@ from lychd.agents.deps import LychDDeps
 from lychd.agents.outputs import BridgeReply
 from lychd.agents.scout_context import ScoutModel
 from lychd.agents.services import WorkflowServices
-from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC
+from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC, named_agent_spec
 from lychd.agents.workflows.base import Gate, PatternEdge, PatternManifest, PatternNode, Trigger, Workflow
 from lychd.agents.workflows.nodes import bind_messages_to_logical_run, pump_agent_events
 from lychd.domain.animation.capabilities import SourceKind
@@ -23,6 +23,7 @@ from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.graph_runner import HardwareResumeBudget
 from lychd.domain.cortex.priority import PRIORITY_DEFAULT
 from lychd.domain.cortex.runs import ConsentPending
+from lychd.domain.naming import NamingSnapshot
 from lychd.domain.scout.profile import (
     ScoutBinding,
     ScoutReviewRef,
@@ -57,6 +58,7 @@ class ScoutChatState(BaseModel):
     session_id: str
     run_id: str
     prompt: str
+    naming: NamingSnapshot | None = Field(default=None, exclude_if=lambda value: value is None)
     priority: int
     capability_key: str
     scout: ScoutBinding
@@ -189,6 +191,7 @@ async def _answer(ctx: GraphRunContext[ScoutChatState, WorkflowServices]) -> Non
             run_id=state.run_id,
             session_id=state.session_id,
             query=state.scout.question,
+            naming=state.naming,
             history=[],
             grant=grant,
             grant_epoch=grant.lease.grant_id,
@@ -215,7 +218,7 @@ async def _answer(ctx: GraphRunContext[ScoutChatState, WorkflowServices]) -> Non
         emit = services.events.emitter(state.run_id)
         emit.status("thinking")
         result = await pump_agent_events(
-            services.forge.agent_for(SCOUT_AGENT_SPEC),
+            services.forge.agent_for(named_agent_spec(SCOUT_AGENT_SPEC, state.naming)),
             state.scout.question,
             deps=deps,
             model=model,
@@ -252,6 +255,9 @@ class SettlePageAnswer(BaseNode[ScoutChatState, WorkflowServices, BridgeReply]):
 
 
 def _make_state(intent: Intent) -> ScoutChatState:
+    if intent.admitted_naming is not None:
+        msg = "Legacy Bridge revision cannot execute admitted naming."
+        raise ValueError(msg)
     binding = intent.admitted_scout
     if type(binding) is not ScoutBinding or intent.admitted_capability_key is None or intent.run_id is None:
         raise ScoutWorkflowError(ScoutWorkflowCode.ADMISSION)
@@ -262,6 +268,7 @@ def _make_state(intent: Intent) -> ScoutChatState:
         session_id=intent.session_id,
         run_id=intent.run_id,
         prompt=intent.prompt,
+        naming=intent.admitted_naming,
         priority=intent.priority if intent.priority is not None else PRIORITY_DEFAULT,
         capability_key=intent.admitted_capability_key,
         scout=binding,
@@ -270,7 +277,7 @@ def _make_state(intent: Intent) -> ScoutChatState:
 
 def _validate_state(intent: Intent, state: BaseModel) -> None:
     expected = _make_state(intent)
-    fields = {"session_id", "run_id", "prompt", "priority", "capability_key", "scout"}
+    fields = {"session_id", "run_id", "prompt", "naming", "priority", "capability_key", "scout"}
     if type(state) is not ScoutChatState or state.model_dump(include=fields) != expected.model_dump(include=fields):
         raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
 

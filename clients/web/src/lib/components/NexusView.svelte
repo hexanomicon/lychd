@@ -63,7 +63,7 @@
     await tick();
     const visibleOpener = objectReturnFocus?.isConnected && !objectReturnFocus.closest("[hidden], [inert], details:not([open])");
     const target = visibleOpener ? objectReturnFocus : document.querySelector<HTMLButtonElement>(".nexus-viewbar button[aria-pressed='true']");
-    target?.focus({ preventScroll: true });
+    target?.focus();
     objectReturnFocus = undefined;
   }
   function captureObjectInspector(node: HTMLElement) {
@@ -452,7 +452,7 @@
 <div class="instrument-deck instrument-deck--nexus">
   <section class="nexus-main" aria-label="Capability observations">
     <header class="instrument-header">
-      <div><h1 class="rune-head">Nexus</h1>
+      <div><span class="instrument-kicker">Capability observations</span><h1 class="rune-head">Nexus</h1>
         <p>Inspect an object. Preview what a change would affect.</p></div>
     </header>
     <div class="snapshot-bar">
@@ -536,7 +536,7 @@
       </section>
     {:else}<p class="nexus-empty">The capability board could not be read. Refresh to try again.</p>{/if}
   </section>
-  <aside class="nexus-side" aria-label="Preview and transition outcomes">
+  <aside class="nexus-side" class:nexus-side--selected={selectedObjectId !== null || previewTarget !== null} aria-label="Preview and transition outcomes">
     <section class="panel nexus-object-inspector" aria-labelledby="nexus-object-title" tabindex="-1" {@attach captureObjectInspector}>
       <div class="panel-head"><h2 id="nexus-object-title" class="rune-head">Selected object</h2>
         {#if selectedObjectId}<button class="sheet-dismiss" type="button" onclick={closeObject}>Close object</button>{/if}
@@ -549,7 +549,7 @@
         <p class="inspector-copy">Select an object to inspect its observed properties. Selection does not request a transition.</p>
       {/if}
     </section>
-    <section id="nexus-preview" class="panel nexus-plan" data-open={previewTarget !== null}
+    <section id="nexus-preview" class="panel nexus-plan" class:nexus-plan--idle={previewTarget === null && !error} data-open={previewTarget !== null}
       aria-labelledby="nexus-preview-title" aria-busy={previewLoading} {@attach capturePlanInspector} tabindex="-1">
       <div class="panel-head"><div><span class="section-label">Plan a change</span><h2 id="nexus-preview-title" class="rune-head">Non-binding preview</h2></div>
         {#if previewTarget}<button class="sheet-dismiss" type="button" onclick={closePreview}>Close</button>{/if}</div>
@@ -595,7 +595,7 @@
         </p>
       </section>
     {/if}
-    <section class="panel transition-inspector" data-open={selectedTransition !== null}
+    <section class="panel transition-inspector" class:transition-inspector--idle={!selectedTransition && !transitionNote} data-open={selectedTransition !== null}
       aria-labelledby="transition-inspector-title" {@attach captureTransitionInspector} tabindex="-1">
       <div class="panel-head"><h2 id="transition-inspector-title" class="rune-head">Selected transition observation</h2>
         {#if selectedTransition}<button class="sheet-dismiss" type="button" onclick={() => void clearTransition()}>Close</button>{/if}</div>
@@ -620,8 +620,8 @@
 </div>
 
 <style>
-  .instrument-deck--nexus { display: flex; flex-direction: row; align-items: start; gap: 1.5rem; }
-  .nexus-main { gap: .65rem; }
+  .instrument-deck--nexus { display: flex; flex-direction: row; align-items: start; gap: 2rem; padding: 1rem clamp(1rem, 2vw, 2rem); }
+  .nexus-main { flex: 1 1 0; min-width: 0; gap: .75rem; }
   .nexus-viewbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
   .nexus-viewbar .section-label { margin: 0; }
   .nexus-viewbar [role="group"] { display: flex; gap: .25rem; }
@@ -633,31 +633,41 @@
   .inspect-object { padding: 0; border: 0; background: none; text-align: start; cursor: pointer; font: inherit; overflow-wrap: anywhere; }
   .nexus-plan-context { color: var(--color-parchment); font-size: var(--text-xs); overflow-wrap: anywhere; }
   .nexus-object-inspector { width: 100%; }
+  .nexus-side.nexus-side--selected { border-inline-start-color: var(--color-control-border); }
+  .nexus-plan.nexus-plan--idle { border: 0; }
+  .nexus-plan--idle .panel-head, .nexus-plan--idle .empty-number, .nexus-plan--idle .preview-empty h3 { display: none; }
+  .nexus-plan--idle .preview-empty { padding-top: 0; }
+  .transition-inspector--idle { display: none; }
   .nexus-object-inspector:focus { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  .instrument-header h1 { font-size: 1.6rem; letter-spacing: -0.02em; }
+  .instrument-header h1 { font: 600 1.5rem/1.3 var(--font-body); letter-spacing: -.035em; margin: 0; }
+  .instrument-header > div { display:flex; align-items:baseline; flex-wrap:wrap; gap:.35rem 1rem; }
+  .instrument-header .instrument-kicker { display:none; }
+  .instrument-header { padding: 0; }
   .instrument-header p { color: var(--color-parchment); font-size: var(--text-sm); }
-  .nexus-side { display: flex; flex-direction: column; position: static; width: min(26rem, 34%); min-width: 0; gap: 1rem; padding-top: 0.5rem; }
-  .panel { box-shadow: none; background: var(--color-obsidian); }
-  .panel-head { padding: 1rem 1.125rem; align-items: center; gap: 0.75rem; }
+  .nexus-side { display: flex; flex-direction: column; flex: 0 0 21rem; position: sticky; top: 1.25rem; width: 21rem; min-width: 0; gap: 0; padding: .25rem 0; border-inline-start: 1px solid var(--color-engraving); background: var(--color-tertiary); }
+  .panel { box-shadow: none; background: transparent; border: 0; border-bottom: 1px solid var(--color-engraving); border-radius: 0; }
+  .nexus-side > .panel:last-child { border-bottom: 0; }
+  .panel-head { padding: 1.25rem 1.25rem 1rem; align-items: center; gap: .75rem; }
+  .panel-head h2 { font-size: 1rem; font-family: var(--font-body); font-weight: 550; }
   .panel-head h2 { line-height: 1.35; }
   .sheet-dismiss { display: inline-block; flex-shrink: 0; min-height: 2.25rem; }
-  .snapshot-bar { display: flex; justify-content: space-between; align-items: center; gap: .65rem; padding: .5rem 0; border-block: 1px solid var(--color-engraving); color: var(--color-bone); font-size: var(--text-sm); }
+  .snapshot-bar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 0; border-block: 1px solid var(--color-engraving); color: var(--color-bone); font-size: var(--text-sm); }
   .snapshot-caption { display: block; color: var(--color-parchment); margin-top: 0.25rem; }
   .refresh-observations { border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); padding: 0.6rem 0.8rem; background: transparent; color: var(--color-rune); min-height: 2.5rem; }
   .refresh-observations:disabled { color: var(--color-ash); cursor: wait; }
   .board-introduction { padding-top: 0.25rem; }
   .section-label { display: block; font-family: var(--font-body); font-size: var(--text-xs); font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-parchment); margin-bottom: 0.375rem; }
   .board-introduction p, .section-caption { margin: 0.25rem 0 0; color: var(--color-parchment); font-size: var(--text-sm); line-height: 1.5; }
-  .coven-grid { grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
+  .coven-grid { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
   .coven-card { display: block; min-width: 0; }
-  .coven-heading { padding: 1rem 1.125rem; cursor: pointer; color: var(--color-parchment); }
+  .coven-heading { padding: 1.25rem .25rem; cursor: pointer; color: var(--color-parchment); }
   .coven-heading::marker { color: var(--color-rune); }
-  .coven-heading h2, .coven-heading h3 { display: inline; font-weight: 400; font-size: var(--text-lg); margin: 0; color: var(--color-bone); }
+  .coven-heading h2, .coven-heading h3 { display: inline; font: 550 var(--text-lg)/1.4 var(--font-body); margin: 0; color: var(--color-bone); }
   .coven-heading .kind { display: block; margin: 0.375rem 0 0 1rem; text-transform: none; letter-spacing: normal; color: var(--color-parchment); font-family: var(--font-body); font-size: var(--text-xs); }
   .capability-row { border-top: 1px solid var(--color-engraving); border-inline-start: 2px solid transparent; }
   .capability-row[data-selected="true"] { border-inline-start-color: var(--color-rune); background: color-mix(in srgb, var(--color-rune) 4%, var(--color-obsidian)); }
   .preview-marker { color: var(--color-heat); font-size: var(--text-xs); grid-column: 1 / -1; }
-  .cap { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.55rem 0.875rem; padding: 1rem 1rem 0.5rem; border: 0; }
+  .cap { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .65rem 1rem; padding: 1.25rem .5rem .5rem; border: 0; }
   .cap .key { font-size: var(--text-sm); color: var(--color-bone); }
   .cap .chip { justify-self: start; font-size: var(--text-xs); box-shadow: none; animation: none; }
   .probe-time { grid-column: 1 / 3; grid-row: 2; font-size: var(--text-xs); color: var(--color-parchment); white-space: normal; }
@@ -665,8 +675,8 @@
   .cap .preview-trigger { min-height: 2.5rem; padding: 0.5rem 0.7rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); color: var(--color-rune); font-family: var(--font-body); }
   .capability-row[data-selected="true"] .preview-trigger { border-color: var(--color-rune); }
   .read-only { color: var(--color-parchment); font-size: var(--text-xs); }
-  .capability-detail { padding: 0 1rem 0.875rem; }
-  .capability-detail summary { cursor: pointer; color: var(--color-parchment); font-size: var(--text-xs); min-height: 1.75rem; padding-top: 0.25rem; }
+  .capability-detail { padding: 0 .5rem 1rem; }
+  .capability-detail summary { cursor: pointer; color: var(--color-parchment); font-size: var(--text-sm); min-height: 2.5rem; padding-top: .5rem; }
   .kv { min-width: 0; grid-template-columns: minmax(4.75rem, auto) minmax(0, 1fr); gap: 0.6rem 0.85rem; font-size: var(--text-sm); }
   .kv dd, .kv dt { min-width: 0; overflow-wrap: anywhere; }
   .kv dt { color: var(--color-parchment); }
@@ -680,11 +690,11 @@
   .transition-ledger time { grid-column: 2 / -1; color: var(--color-parchment); font-size: var(--text-xs); }
   .transition-source { color: var(--color-parchment); }
   .transition-phase { overflow-wrap: anywhere; color: var(--color-bone); font-size: var(--text-xs); }
-  .nexus-plan { width: 100%; position: static; background: var(--color-tertiary); border-color: var(--color-tertiary-edge); }
+  .nexus-plan { width: 100%; position: static; background: transparent; border-color: var(--color-tertiary-edge); }
   .preview-identity { display: grid; gap: 0.5rem; padding: 1rem 1.125rem 0.25rem; }
   .preview-identity span { font-size: var(--text-xs); color: var(--color-parchment); }
   .preview-identity code { font-size: var(--text-sm); overflow-wrap: anywhere; }
-  .plan-verdict { margin: 0.875rem 1.125rem; background: var(--color-obsidian-2); font-family: var(--font-glyph); }
+  .plan-verdict { margin: .5rem 1.125rem 1rem; background: transparent; color: var(--color-bone); font: 600 var(--text-base)/1.5 var(--font-glyph); padding: 0; border: 0; }
   .plan-consequences { display: grid; gap: 1rem; padding: 0.5rem 1.125rem; }
   .plan-consequences h3 { font-family: var(--font-body); font-size: var(--text-sm); font-weight: 500; margin-bottom: 0.5rem; color: var(--color-bone); }
   .animator-list { list-style: none; margin: 0; padding: 0; color: var(--color-parchment); font-size: var(--text-sm); }
@@ -695,7 +705,8 @@
   .policy-cost span { font-size: var(--text-xs); align-self: center; }
   .plan-act { padding: 1rem 1.125rem 1.125rem; gap: 0.75rem; }
   .plan-act .warn, .action-note { margin: 0; font-size: var(--text-sm); color: var(--color-parchment); line-height: 1.55; }
-  .plan-act .rune-btn { min-height: 2.75rem; box-shadow: none; font-size: var(--text-sm); }
+  .plan-act .rune-btn { min-height: 2.75rem; box-shadow: none; font-size: var(--text-sm); color: var(--color-void); background: var(--color-bone); border-color: var(--color-bone); font-weight: 600; }
+  .plan-act .rune-btn:disabled { color: var(--color-ash); background: var(--color-obsidian-2); border-color: var(--color-control-border); }
   .preview-empty { padding: 1rem 1.125rem 1.25rem; }
   .empty-number { color: var(--color-rune-dim); font-family: var(--font-glyph); font-size: var(--text-xs); }
   .preview-empty h3 { font-weight: 400; font-size: var(--text-lg); margin: 1rem 0 0.75rem; }
@@ -714,19 +725,32 @@
   .containment, .turn__fault { overflow-wrap: anywhere; }
   :is(button, summary, a):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   :is(.nexus-plan, .transition-inspector):focus { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  @media (max-width: 1100px) { .nexus-side { width: min(24rem, 40%); } }
+  @container work-area (max-width: 68rem) { .instrument-deck--nexus { gap: 1.25rem; } .nexus-side { flex-basis: 19rem; width: 19rem; } }
   @media (max-width: 900px) {
     .instrument-deck--nexus { display: flex; flex-direction: column; }
     .nexus-main, .nexus-side { width: 100%; }
-    .nexus-side { padding-top: 0; }
+    .nexus-side { flex: auto; position: static; padding-top: 0; border-inline-start: 0; border-top: 1px solid var(--color-engraving); }
     .nexus-plan[data-open="true"], .transition-inspector[data-open="true"] { position: static; max-height: none; overflow: visible; box-shadow: none; }
   }
-  @container work-area (max-width: 56.25rem) {
+  @container work-area (max-width: 68rem) {
     .instrument-deck--nexus { flex-direction: column; }
     .nexus-main, .nexus-side { width: 100%; }
-    .nexus-side { padding-top: 0; }
+    .nexus-side { flex: auto; position: static; padding-top: 0; border-inline-start: 0; border-top: 1px solid var(--color-engraving); }
     .nexus-plan[data-open="true"], .transition-inspector[data-open="true"] { position: static; max-height: none; overflow: visible; box-shadow: none; }
   }
+  @container work-area (max-width: 35rem) {
+    .instrument-deck--nexus { padding: 1rem; }
+    .cap { grid-template-columns: minmax(0, 1fr) auto; }
+    .cap .key { grid-column: 1 / -1; }
+    .cap .chip { grid-column: 1; grid-row: 2; }
+    .cap .preview-trigger, .read-only { grid-column: 2; grid-row: 2 / 4; }
+    .probe-time { grid-column: 1; grid-row: 3; }
+    .transition-ledger a { grid-template-columns: minmax(0, 1fr); }
+    .transition-ledger code, .transition-ledger time { grid-column: 1; }
+  }
+  .snapshot-bar { padding:.35rem 0; border:0; background:transparent; }
+  .snapshot-bar > div { display:flex; align-items:baseline; flex-wrap:wrap; gap:.25rem 1rem; }
+  .containment { padding:.65rem .8rem; font-size:var(--text-xs); line-height:1.5; }
   @media (max-width: 480px) {
     .snapshot-bar { align-items: flex-start; gap: 0.5rem; }
     .cap { grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; }
