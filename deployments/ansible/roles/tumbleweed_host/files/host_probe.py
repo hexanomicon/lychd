@@ -244,7 +244,11 @@ def require_no_sudo() -> None:
             env={**os.environ, "LC_ALL": "C"},
         )
         require(
-            sudo.returncode in (0, 1) and re.fullmatch(r"User lychd is not allowed to run sudo on [^\n]+\.", (sudo.stdout + sudo.stderr).strip(), re.I) is not None,
+            sudo.returncode in (0, 1)
+            and re.fullmatch(
+                r"User lychd is not allowed to run sudo on [^\n]+\.", (sudo.stdout + sudo.stderr).strip(), re.I
+            )
+            is not None,
             "runtime sudo grants or indeterminate sudo policy; administrator must resolve",
         )
 

@@ -1,0 +1,33 @@
+---
+- name: Validate direct runtime SSH and the pinned revision
+  ansible.builtin.assert:
+    that:
+      - ansible_user == 'lychd'
+      - not (ansible_become | default(false) | bool)
+      - lychd_source_revision is match('^[0-9a-f]{40}$')
+    fail_msg: "Application classification requires an exact source SHA and a direct lychd login."
+
+- name: Classify the application without effects
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/app_probe.py') }}"
+      - classify
+    stdin: "{{ {'revision': lychd_source_revision} | to_json }}"
+  register: lychd_app_classify
+  changed_when: false
+  check_mode: false
+
+- name: Retain the observed application state
+  ansible.builtin.set_fact:
+    lychd_app_observed: "{{ lychd_app_classify.stdout | from_json }}"
+
+- name: Show the classification
+  ansible.builtin.debug:
+    msg:
+      state: "{{ lychd_app_observed.state }}"
+      reasons: "{{ lychd_app_observed.reasons }}"
+      config: "{{ lychd_app_observed.config | default('n/a') }}"
+      configured_image: "{{ lychd_app_observed.configured_image | default('n/a') }}"

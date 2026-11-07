@@ -201,11 +201,7 @@ class AuthorityTests(unittest.TestCase):
 
 class NsswitchTests(unittest.TestCase):
     def check(self, *, override_exists, contents, trusted=True):
-        selected = (
-            "/etc/nsswitch.conf"
-            if override_exists
-            else "/usr/etc/nsswitch.conf"
-        )
+        selected = "/etc/nsswitch.conf" if override_exists else "/usr/etc/nsswitch.conf"
 
         with (
             patch.object(
@@ -216,10 +212,7 @@ class NsswitchTests(unittest.TestCase):
             patch.object(
                 probe,
                 "trusted_file",
-                side_effect=(
-                    None if trusted
-                    else probe.Refusal("untrusted NSS file")
-                ),
+                side_effect=(None if trusted else probe.Refusal("untrusted NSS file")),
             ) as trust,
             patch.object(
                 probe.Path,
@@ -229,9 +222,7 @@ class NsswitchTests(unittest.TestCase):
         ):
             if trusted:
                 probe.validate_nsswitch()
-                trust.assert_called_once_with(
-                    probe.Path(selected), optional=False
-                )
+                trust.assert_called_once_with(probe.Path(selected), optional=False)
                 read.assert_called_once()
             else:
                 with self.assertRaises(probe.Refusal):
@@ -273,9 +264,7 @@ class NsswitchTests(unittest.TestCase):
                         return_value=f"subid: {source}\n",
                     ),
                 ):
-                    with self.assertRaisesRegex(
-                        probe.Refusal, "subid delegation"
-                    ):
+                    with self.assertRaisesRegex(probe.Refusal, "subid delegation"):
                         probe.validate_nsswitch()
 
 
@@ -321,13 +310,17 @@ class MountTests(unittest.TestCase):
             probe.validate_mounts(value, {"/": 256, "/home": 256, "/var": 256})
 
     def test_reject_different_btrfs_filesystems(self):
-        uuids = iter([
-            "6e79539e-4cbf-4a44-b0ac-5a83d1fffd4d\n",
-            "6e79539e-4cbf-4a44-b0ac-5a83d1fffd4d\n",
-            "11111111-2222-3333-4444-555555555555\n",
-        ])
+        uuids = iter(
+            [
+                "6e79539e-4cbf-4a44-b0ac-5a83d1fffd4d\n",
+                "6e79539e-4cbf-4a44-b0ac-5a83d1fffd4d\n",
+                "11111111-2222-3333-4444-555555555555\n",
+            ]
+        )
+
         def fake_run(*args, **kwargs):
             return SimpleNamespace(returncode=0, stdout=next(uuids))
+
         with patch.object(probe.subprocess, "run", side_effect=fake_run):
             with self.assertRaisesRegex(probe.Refusal, "one existing Btrfs filesystem"):
                 probe.validate_mounts(mounts(), {"/": 256, "/home": 256, "/var": 256})

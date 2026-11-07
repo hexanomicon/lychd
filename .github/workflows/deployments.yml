@@ -45,8 +45,8 @@ jobs:
         env:
           ANSIBLE_HOME: ${{ runner.temp }}/ansible
         run: |
-          for playbook in host verify source; do
+          for playbook in host verify source deploy app-verify; do
             "$RUNNER_TEMP/deployment-controller/bin/ansible-playbook" -i inventory.example.yml --syntax-check "playbooks/$playbook.yml"
             "$RUNNER_TEMP/deployment-controller/bin/ansible-playbook" -i inventory.example.yml --list-hosts "playbooks/$playbook.yml" | tee "$RUNNER_TEMP/$playbook-hosts.txt"
-            test "$(sed -n 's/.*hosts (\([0-9][0-9]*\)):.*/\1/p' "$RUNNER_TEMP/$playbook-hosts.txt")" = "1"
+            test "$(sed -n 's/.*hosts (\([0-9][0-9]*\)):.*/\1/p' "$RUNNER_TEMP/$playbook-hosts.txt" | sort -u)" = "1"
           done

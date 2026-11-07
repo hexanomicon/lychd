@@ -22,3 +22,28 @@
 - name: Show attributed host mechanism evidence
   ansible.builtin.debug:
     var: lychd_verification.stdout
+
+- name: Observe network-online activation
+  ansible.builtin.command:
+    argv: [/usr/bin/systemctl, show, network-online.target, --property=ActiveState, --value]
+  register: lychd_verify_network_online
+  check_mode: false
+  changed_when: false
+  when: lychd_floor_enable_network_online | default(false) | bool
+
+- name: Observe the boot-time network-online link
+  ansible.builtin.stat:
+    path: /etc/systemd/system/multi-user.target.wants/network-online.target
+    follow: false
+  register: lychd_verify_network_online_link
+  check_mode: false
+  when: lychd_floor_enable_network_online | default(false) | bool
+
+- name: Require network-online to be active now and pulled in at boot
+  ansible.builtin.assert:
+    that:
+      - lychd_verify_network_online.stdout | trim == 'active'
+      - lychd_verify_network_online_link.stat.islnk | default(false)
+      - lychd_verify_network_online_link.stat.lnk_source | default('') == '/usr/lib/systemd/system/network-online.target'
+    fail_msg: "network-online.target is not active or not linked into multi-user.target.wants."
+  when: lychd_floor_enable_network_online | default(false) | bool

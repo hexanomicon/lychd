@@ -68,6 +68,27 @@ class HostAuthorityTests(unittest.TestCase):
         self.assertLess(initialized[0], min(runtime_files))
         self.assertLess(max(runtime_files), linger[0])
 
+    def test_network_online_dependency_is_explicitly_opt_in(self):
+        matches = [
+            task
+            for task, _ in self.tasks
+            if task.get("name") == "Ensure network-online target participates in system boot"
+        ]
+
+        self.assertEqual(len(matches), 1)
+
+        task = matches[0]
+        args = task["ansible.builtin.file"]
+
+        self.assertEqual(args["src"], "/usr/lib/systemd/system/network-online.target")
+        self.assertEqual(
+            args["dest"],
+            "/etc/systemd/system/multi-user.target.wants/network-online.target",
+        )
+        self.assertEqual(args["state"], "link")
+        self.assertIn("default(false)", task["when"])
+        self.assertIn("lychd_floor_enable_network_online", task["when"])
+
 
 if __name__ == "__main__":
     unittest.main()

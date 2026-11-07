@@ -9,3 +9,6 @@ lychd_subgid_start: 231072
 lychd_subid_count: 65536
 # Required plain public key lines; no private keys, options, paths, or commands.
 lychd_runtime_ssh_public_keys: []
+# Opt-in: pull network-online.target into boot and activate it now, so rootless Podman
+# podman-user-wait-network-online.service does not time out (observed on Tumbleweed Server).
+lychd_floor_enable_network_online: true

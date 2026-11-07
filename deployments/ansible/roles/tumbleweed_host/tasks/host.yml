@@ -168,6 +168,24 @@
     creates: /var/lib/systemd/linger/lychd
   when: not ansible_check_mode or lychd_floor_before.account_exists
 
+- name: Ensure network-online target participates in system boot
+  ansible.builtin.file:
+    src: /usr/lib/systemd/system/network-online.target
+    dest: /etc/systemd/system/multi-user.target.wants/network-online.target
+    state: link
+    owner: root
+    group: root
+  when: lychd_floor_enable_network_online | default(false) | bool
+
+# network-online.target has no [Install] section, so the link above is the boot-time pull-in.
+# Starting it once activates the existing NetworkManager-wait-online path on the running system;
+# no network configuration is changed and nothing is restarted.
+- name: Activate network-online on the running system
+  ansible.builtin.systemd_service:
+    name: network-online.target
+    state: started
+  when: lychd_floor_enable_network_online | default(false) | bool
+
 - name: Atomically record the configured host identity
   ansible.builtin.copy:
     dest: /etc/lychd-host-floor.json

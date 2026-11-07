@@ -1,0 +1,134 @@
+---
+# Every effect goes through the installed LychD CLI, except the single proven image-line edit.
+# Each step re-classifies before the next; anything outside the admitted chain stops the host.
+- name: Classify before application effects
+  ansible.builtin.include_tasks: classify.yml
+
+- name: Refuse application effects outside the admitted chain
+  ansible.builtin.assert:
+    that: lychd_app_observed.state in ['absent', 'initialized', 'bound_inactive']
+    fail_msg: "Application state {{ lychd_app_observed.state }} is not mutable by automation: {{ lychd_app_observed.reasons }}"
+
+- name: Report the check-mode boundary for application effects
+  ansible.builtin.debug:
+    msg: "State {{ lychd_app_observed.state }}: init/configure/bind/start would follow; check mode stops here."
+  when: ansible_check_mode
+
+- name: End this host before any application effect in check mode
+  ansible.builtin.meta: end_host
+  when: ansible_check_mode
+
+# Block conditions are re-evaluated per task, so fix the step plan before re-classifying inside it.
+- name: Fix the admitted step plan from the entry state
+  ansible.builtin.set_fact:
+    lychd_app_step_init: "{{ lychd_app_observed.state == 'absent' }}"
+    lychd_app_step_bind: "{{ lychd_app_observed.state in ['absent', 'initialized'] }}"
+
+- name: Initialize an absent installation
+  when: lychd_app_step_init | bool
+  block:
+    - name: Preview initialization
+      ansible.builtin.command:
+        argv: ["{{ lychd_app_cli }}", init, --dry-run]
+        chdir: "{{ lychd_app_source }}"
+      environment: "{{ lychd_app_env }}"
+      register: lychd_app_init_plan
+      changed_when: false
+
+    - name: Require a safe initialization plan
+      ansible.builtin.assert:
+        that: "'Initialization plan is safe' in lychd_app_init_plan.stdout"
+        fail_msg: "lychd init --dry-run did not report a safe plan; resolve its HOST findings first."
+
+    - name: Initialize the Codex and Crypt
+      ansible.builtin.command:
+        argv: ["{{ lychd_app_cli }}", init]
+        chdir: "{{ lychd_app_source }}"
+      environment: "{{ lychd_app_env }}"
+      changed_when: true
+
+    - name: Re-classify after initialization
+      ansible.builtin.include_tasks: classify.yml
+
+    - name: Require the unedited initialized state
+      ansible.builtin.assert:
+        that:
+          - lychd_app_observed.state == 'initialized'
+          - lychd_app_observed.config.state == 'pristine'
+
+- name: Configure and bind an initialized installation
+  when: lychd_app_step_bind | bool
+  block:
+    - name: Require the initialized state before configuration
+      ansible.builtin.assert:
+        that: lychd_app_observed.state == 'initialized'
+
+    - name: Set exactly the [server.web] image line to the admitted full-revision tag
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -I
+          - -c
+          - "{{ lookup('ansible.builtin.file', role_path + '/files/app_probe.py') }}"
+          - configure
+        stdin: "{{ {'revision': lychd_source_revision, 'image_ref': lychd_app_image_ref} | to_json }}"
+      register: lychd_app_configure
+      changed_when: (lychd_app_configure.stdout | from_json).changed
+
+    - name: Preview binding
+      ansible.builtin.command:
+        argv: ["{{ lychd_app_cli }}", bind, --dry-run]
+        chdir: "{{ lychd_app_source }}"
+      environment: "{{ lychd_app_env }}"
+      changed_when: false
+
+    - name: Bind the generated units and create only absent core secrets
+      ansible.builtin.command:
+        argv: ["{{ lychd_app_cli }}", bind]
+        chdir: "{{ lychd_app_source }}"
+      environment: "{{ lychd_app_env }}"
+      changed_when: true
+
+    - name: Re-classify after binding
+      ansible.builtin.include_tasks: classify.yml
+
+    - name: Require a bound, inactive body
+      ansible.builtin.assert:
+        that: lychd_app_observed.state == 'bound_inactive'
+
+- name: Stop before startup unless the recovery plan was approved for this host
+  when: not (lychd_app_start_authorized | bool)
+  block:
+    - name: Report the startup boundary
+      ansible.builtin.debug:
+        msg: >-
+          Bound and inactive. `lychd start` is withheld: pass lychd_app_start_authorized=true only after
+          the host's recovery plan is approved, because active stop/restart is not yet delivered.
+
+    - name: End this host without starting
+      ansible.builtin.meta: end_host
+
+- name: Start through the CLI's guarded inactive bootstrap
+  ansible.builtin.command:
+    argv: ["{{ lychd_app_cli }}", start]
+    chdir: "{{ lychd_app_source }}"
+  environment: "{{ lychd_app_env }}"
+  when: lychd_app_observed.state == 'bound_inactive' and (lychd_app_start_authorized | bool)
+  changed_when: true
+
+- name: Wait read-only for the owned units to converge
+  ansible.builtin.command:
+    argv: [/usr/bin/systemctl, --user, is-active, lychd-pod.service, lychd-phylactery.service, lychd-reactor.path, lychd-vessel.service]
+  register: lychd_app_units
+  until: lychd_app_units.rc == 0
+  retries: "{{ lychd_app_start_poll_retries }}"
+  delay: "{{ lychd_app_start_poll_delay }}"
+  changed_when: false
+  failed_when: false
+
+- name: Report non-convergence without intervening
+  ansible.builtin.assert:
+    that: lychd_app_units.rc == 0
+    fail_msg: >-
+      Owned units did not all become active ({{ lychd_app_units.stdout_lines }}). Automation does not
+      stop, restart or kill anything; follow the approved recovery plan and `lychd logs`.

@@ -1,0 +1,35 @@
+---
+- name: Validate direct runtime SSH and the pinned revision
+  ansible.builtin.assert:
+    that:
+      - ansible_user == 'lychd'
+      - not (ansible_become | default(false) | bool)
+      - lychd_source_revision is match('^[0-9a-f]{40}$')
+
+- name: Observe server-local application acceptance without effects
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/app_probe.py') }}"
+      - verify
+    # Hosts deployed from the admitted archive must run its exact ID; earlier hand-built hosts are
+    # checked by revision label and running-container/settings agreement instead.
+    stdin: "{{ {'revision': lychd_source_revision, 'image_id': lychd_app_expected_image_id | default('')} | to_json }}"
+  register: lychd_app_verify
+  changed_when: false
+  check_mode: false
+
+- name: Retain acceptance evidence
+  ansible.builtin.set_fact:
+    lychd_app_acceptance: "{{ lychd_app_verify.stdout | from_json }}"
+
+- name: Show every acceptance check
+  ansible.builtin.debug:
+    msg: "{{ lychd_app_acceptance.checks | map(attribute='name') | zip(lychd_app_acceptance.checks | map(attribute='ok'), lychd_app_acceptance.checks | map(attribute='detail')) | map('join', ' | ') | list }}"
+
+- name: Require every acceptance check
+  ansible.builtin.assert:
+    that: lychd_app_acceptance.ok
+    fail_msg: "Failed checks: {{ lychd_app_acceptance.checks | rejectattr('ok') | map(attribute='name') | list }}"

@@ -335,6 +335,70 @@ same-host and loopback-only. A Portal row or supplied API key does not enable in
 Portal grants refuse until egress admission is implemented. A running model-free body is
 not a working chat deployment, a complete lifecycle, or a recovery proof.
 
+## Automate one host end to end
+
+`playbooks/deploy.yml` composes the steps above for exactly one `--limit`ed host. It first
+classifies the runtime account read-only (`roles/lychd_app/files/app_probe.py`) and then admits
+only one mode:
+
+| Observed state | Mode |
+| --- | --- |
+| `running`: owned units active, settings equal to the init receipt except the `[server.web]` image line, Vessel and settings agree on an image labelled with the pinned SHA, Reactor bound to the pinned CLI | read-only verification |
+| no `lychd` login yet, `absent`, `initialized` or `bound_inactive` | provisioning, only with `-e lychd_deploy_target=<host>` |
+| `foreign_revision` or anything else (`unknown`) | stop and print the exact reasons |
+
+Provisioning converges the floor, stages the source, loads the admitted image, then runs
+`lychd init --dry-run`/`init`, replaces the single image line in place, and runs
+`lychd bind --dry-run`/`bind`. It re-classifies after each step. Existing PostgreSQL data,
+secrets and settings with any other change are never adopted, regenerated or overwritten.
+`lychd start` runs only with `-e lychd_app_start_authorized=true`, after the recovery plan for that
+host has been approved. Convergence is then observed read-only; nothing is restarted or killed.
+
+Build or select the campaign image once. Then admit its archive on the controller, which verifies
+every blob digest, the revision label and, when given, the expected image ID, and records the
+archive SHA-256:
+
+```bash
+REV=FULL_40_CHARACTER_SHA
+mkdir -p -m 700 "$LYCHD_DEPLOY_WORK/artifacts"
+ssh lychd@BUILD_HOST "podman save --format oci-archive localhost/lychd:$REV" \
+  > "$LYCHD_DEPLOY_WORK/artifacts/lychd-$REV.oci.tar"
+"$LYCHD_DEPLOY_WORK/controller/bin/python" -I \
+  roles/lychd_image/files/admit_oci_archive.py \
+  "$LYCHD_DEPLOY_WORK/artifacts/lychd-$REV.oci.tar" "$REV" \
+  "$LYCHD_DEPLOY_WORK/image-vars.json" EXPECTED_64_HEX_IMAGE_ID
+```
+
+Each host's image role refuses a different image under the campaign tag. It checks the transferred
+SHA-256 before `podman load` and the exact image ID and label afterwards. Set
+`lychd_floor_enable_network_online: true` in the host variables. On Tumbleweed Server nothing else
+pulls `network-online.target` into boot, so rootless Podman's
+`podman-user-wait-network-online.service` times out. The floor links the target into
+`multi-user.target.wants` and starts it once; it changes no network configuration.
+
+```bash
+ANSIBLE_HOME="$LYCHD_DEPLOY_WORK/ansible" \
+  "$LYCHD_DEPLOY_WORK/controller/bin/ansible-playbook" \
+  -i "$LYCHD_DEPLOY_WORK/inventory.yml" playbooks/deploy.yml \
+  -e "@$LYCHD_DEPLOY_WORK/host-vars.yml" -e "@$LYCHD_DEPLOY_WORK/source-vars.json" \
+  -e "@$LYCHD_DEPLOY_WORK/image-vars.json" \
+  --limit NEW_HOST -e lychd_deploy_target=NEW_HOST -K
+```
+
+Repeat the same command with `-e lychd_app_start_authorized=true` to start the bound body. Then
+run it again without either authorization: a healthy host must report `mode=verify` with no
+changes. `playbooks/app-verify.yml` runs the same acceptance without sudo. It reads the local
+credential through `lychd access` into probe memory and sends it only to the loopback Altar. It
+requires 401 for anonymous and wrong-credential requests, authenticated status/orchestrator/queue
+reads, empty capabilities, idle `runs`/`rites`, database tables and a non-superuser runtime role.
+It also requires the receipted Phylactery subvolume identity (or an exact mountpoint) and a
+loopback-only listener.
+
+On Btrfs, `init` creates the PostgreSQL `data` directory as a subvolume and records its ID and
+UUID in the version-2 lifecycle receipt. A subvolume is not a mountpoint, so `lychd status`
+reports `not an exact mountpoint`. That is the expected unmounted-subvolume shape; acceptance
+compares the live subvolume identity with the receipt instead.
+
 ## Repeat on another host
 
 After the pilot passes its declared host and recovery observations, add each fresh Tumbleweed

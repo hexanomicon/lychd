@@ -68,7 +68,9 @@ def inspect_source(home, revision, uv_sha256, python, uid):
             path = Path(parent) / name
             info = path.lstat()
             require(info.st_uid == uid, "foreign inode in source checkout")
-            require(stat.S_ISLNK(info.st_mode) or not info.st_mode & 0o022, "shared-writable source inode")
+            # uv deliberately creates its empty advisory environment lock with mode 0666.
+            uv_lock = path == checkout / ".venv/.lock" and stat.S_ISREG(info.st_mode) and info.st_size == 0
+            require(stat.S_ISLNK(info.st_mode) or uv_lock or not info.st_mode & 0o022, "shared-writable source inode")
             inside_venv = path.relative_to(checkout).parts[0] == ".venv"
             require(not stat.S_ISLNK(info.st_mode) or inside_venv, "source symlink refused")
     require((checkout / ".git").is_dir(), "ordinary Git checkout required")

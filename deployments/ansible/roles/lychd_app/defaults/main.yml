@@ -1,0 +1,10 @@
+---
+# Pinned inputs shared with lychd_source and lychd_image.
+lychd_source_revision: ""
+lychd_image_id: ""
+# `lychd start` is the CLI's own guarded bootstrap. Its active-container stop/restart is not
+# delivered, so startup also requires an operator-approved recovery plan for this exact host.
+lychd_app_start_authorized: false
+# Bounded read-only convergence wait after start; no restart, kill or second lifecycle is attempted.
+lychd_app_start_poll_retries: 36
+lychd_app_start_poll_delay: 10

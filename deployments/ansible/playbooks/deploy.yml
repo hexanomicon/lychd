@@ -1,0 +1,146 @@
+---
+# One host per run. Classification precedes every effect:
+#   running (healthy, pinned revision)        -> read-only verification only
+#   absent / initialized / bound_inactive /
+#   no runtime login yet                      -> guarded provisioning, if this host is the named target
+#   foreign_revision / unknown                -> stop and report the exact reasons
+- name: Admit exactly one deployment target
+  hosts: lychd_hosts
+  gather_facts: false
+  tasks:
+    - name: Require one explicitly limited host and pinned inputs
+      ansible.builtin.assert:
+        that:
+          - ansible_play_hosts_all | length == 1
+          - lychd_source_revision | default('') is match('^[0-9a-f]{40}$')
+        fail_msg: "Run deploy.yml with --limit naming exactly one host, and pass source-vars.json."
+
+- name: Classify the runtime account without effects
+  hosts: lychd_hosts
+  gather_facts: false
+  connection: ssh
+  remote_user: lychd
+  become: false
+  vars:
+    ansible_user: lychd
+    ansible_become: false
+  tasks:
+    - name: Probe the direct runtime login
+      ansible.builtin.command:
+        argv: [/usr/bin/id, -un]
+      register: lychd_deploy_login
+      ignore_unreachable: true
+      changed_when: false
+      check_mode: false
+
+    - name: Classify the application when the runtime login exists
+      ansible.builtin.include_role:
+        name: lychd_app
+        tasks_from: classify
+      when: not (lychd_deploy_login.unreachable | default(false)) and lychd_deploy_login.stdout | default('') == 'lychd'
+
+    - name: Record a host whose runtime login is not yet provisioned
+      ansible.builtin.set_fact:
+        lychd_app_observed:
+          state: no_runtime_login
+          reasons: ["direct SSH as lychd is not available yet; the host floor must be converged first"]
+      when: lychd_deploy_login.unreachable | default(false) or lychd_deploy_login.stdout | default('') != 'lychd'
+
+    - name: Decide the only admitted mode
+      ansible.builtin.set_fact:
+        lychd_deploy_mode: >-
+          {{ 'verify' if lychd_app_observed.state == 'running'
+             else 'mutate' if lychd_app_observed.state in ['absent', 'initialized', 'bound_inactive', 'no_runtime_login']
+             else 'refuse' }}
+
+    - name: Stop on a foreign revision or an unknown installation
+      ansible.builtin.fail:
+        msg: "Refusing {{ inventory_hostname }} in state {{ lychd_app_observed.state }}: {{ lychd_app_observed.reasons }}"
+      when: lychd_deploy_mode == 'refuse'
+
+    - name: Require explicit authorization for provisioning this host
+      ansible.builtin.assert:
+        that:
+          - lychd_deploy_target | default('') == inventory_hostname
+          - "'floor' not in ansible_skip_tags"
+        fail_msg: >-
+          {{ inventory_hostname }} needs provisioning (state {{ lychd_app_observed.state }}).
+          Pass -e lychd_deploy_target={{ inventory_hostname }} to authorize it; do not skip the floor tag.
+      when: lychd_deploy_mode == 'mutate'
+
+    - name: Report the decision
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: state={{ lychd_app_observed.state }} mode={{ lychd_deploy_mode }}"
+
+- name: Converge the host floor for a host that needs provisioning
+  hosts: lychd_hosts
+  gather_facts: false
+  become: true
+  tags: [floor]
+  tasks:
+    - name: Converge the Tumbleweed floor
+      ansible.builtin.include_role:
+        name: tumbleweed_host
+        apply:
+          tags: [floor]
+      when: lychd_deploy_mode == 'mutate'
+
+- name: Stage the exact source CLI, image and application
+  hosts: lychd_hosts
+  gather_facts: false
+  connection: ssh
+  remote_user: lychd
+  become: false
+  vars:
+    ansible_user: lychd
+    ansible_become: false
+    lychd_deploy_runtime_ready: "{{ not (ansible_check_mode and lychd_app_observed.state == 'no_runtime_login') }}"
+  tasks:
+    - name: Stage the pinned source CLI while the body is inactive
+      ansible.builtin.include_role:
+        name: lychd_source
+      when: lychd_deploy_mode == 'mutate' and lychd_deploy_runtime_ready | bool
+
+    - name: Load the admitted image archive
+      ansible.builtin.include_role:
+        name: lychd_image
+      when: lychd_deploy_mode == 'mutate' and lychd_deploy_runtime_ready | bool
+
+    - name: Initialize, configure, bind and (when authorized) start
+      ansible.builtin.include_role:
+        name: lychd_app
+        tasks_from: apply
+      when: lychd_deploy_mode == 'mutate' and lychd_deploy_runtime_ready | bool
+
+- name: Observe the host floor of an already running body
+  hosts: lychd_hosts
+  gather_facts: false
+  become: true
+  tags: [floor]
+  tasks:
+    - name: Observe the floor without provisioning
+      ansible.builtin.include_role:
+        name: tumbleweed_host
+        tasks_from: verify
+        apply:
+          tags: [floor]
+      when: lychd_deploy_mode == 'verify'
+
+- name: Observe application acceptance
+  hosts: lychd_hosts
+  gather_facts: false
+  connection: ssh
+  remote_user: lychd
+  become: false
+  vars:
+    ansible_user: lychd
+    ansible_become: false
+    lychd_app_expected_image_id: "{{ lychd_image_id | default('') if lychd_deploy_mode == 'mutate' else '' }}"
+  tasks:
+    - name: Verify the running body
+      ansible.builtin.include_role:
+        name: lychd_app
+        tasks_from: verify
+      when: >-
+        lychd_deploy_mode == 'verify'
+        or (not ansible_check_mode and lychd_app_start_authorized | default(false) | bool)
