@@ -548,9 +548,13 @@ unchanged: the worker must still have an empty read-only mount root, no procfs, 
 and no authority to create nested namespaces. The measured kernel, actual cgroups, namespace
 readbacks, unchanged host inventory and owned-container settlement must all pass. Missing
 features or a different engine fail; there is no automatic profile negotiation.
+Its measured Azure kernel has no `crypto` sysctl subtree: CI-c1 declares that exact eight-entry
+top-level inventory and masks its six non-user/non-kernel subtrees. The twelve user-quota entries
+and their eleven masks are unchanged. Extra or missing entries still refuse. The fresh-child
+observer receives only the selected registered profile argument, with an empty environment.
 
 The seven-day artifact contains only fixed sanitized JSON exports, engine/image and settlement
-metadata, source/profile hashes and build diagnostics. It excludes test basetemps and ephemeral
+metadata, source/profile hashes, bounded proof logs and build diagnostics. It excludes test basetemps and ephemeral
 TLS keys. Review the actual generated results and settlement before updating maintained fixtures;
 dispatch success does not replace that admission. Local C2's exact engine and LSM rules remain
 separate.
@@ -576,7 +580,7 @@ preserves those defaults except for replacing read-only `/proc/sys` with read-on
 image, command, complete path arrays, security options, environment and resource settings.
 This is a trusted test/setup profile, not default Docker/SELinux or production qualification.
 
-The outer setup sees seven masked non-user sysctl subtrees, native read-only kernel controls and
+Local C2's outer setup sees seven masked non-user sysctl subtrees, native read-only kernel controls and
 11 masked user-quota leaves around the native `max_user_namespaces` interface. The user-quota
 masks do **not** remain field-specific after a fresh user namespace: trusted Bubblewrap setup can
 see its own namespace's quota interfaces. No acquired body chooses setup code or arguments.

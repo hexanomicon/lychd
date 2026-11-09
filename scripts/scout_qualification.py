@@ -53,6 +53,10 @@ API = "/v1.55"
 LABEL = "io.lychd.scout-qualification"
 CAPS = {"CAP_NET_ADMIN", "CAP_SETUID", "CAP_SETGID", "CAP_SETPCAP"}
 TOP = ("abi", "crypto", "debug", "dev", "fs", "kernel", "net", "user", "vm")
+PROFILE_TOP = {
+    PROFILE_NAME: TOP,
+    CI_PROFILE_NAME: ("abi", "debug", "dev", "fs", "kernel", "net", "user", "vm"),
+}
 QUOTAS = (
     "max_cgroup_namespaces",
     "max_fanotify_groups",
@@ -70,6 +74,11 @@ QUOTAS = (
 MASKS = tuple(f"/proc/sys/{name}" for name in TOP if name not in {"user", "kernel"}) + tuple(
     f"/proc/sys/user/{name}" for name in QUOTAS if name != "max_user_namespaces"
 )
+PROFILE_MASKS = {
+    name: tuple(f"/proc/sys/{entry}" for entry in entries if entry not in {"user", "kernel"})
+    + tuple(f"/proc/sys/user/{entry}" for entry in QUOTAS if entry != "max_user_namespaces")
+    for name, entries in PROFILE_TOP.items()
+}
 EXPORTS = {"boundary.json", "static-receipt.json", "fetch-receipt.json", "authority-receipt.json"}
 COMMAND = [
     "--signal=TERM",
@@ -144,19 +153,21 @@ def native_type(path: str | Path) -> int:
     return ctypes.c_long.from_buffer(buffer).value
 
 
-def inventory() -> Json:
+def inventory(profile: str = PROFILE_NAME) -> Json:
     """Read the actual controller namespace; never write any outer quota."""
     root = Path("/proc/sys")
+    require(profile in PROFILE_TOP, "Unknown qualification inventory")
+    top = PROFILE_TOP[profile]
     actual_top = tuple(sorted(path.name for path in root.iterdir()))
     actual_quotas = tuple(sorted(path.name for path in (root / "user").iterdir()))
-    require(actual_top == TOP, f"Kernel sysctl inventory changed: {actual_top!r}")
+    require(actual_top == top, f"Kernel sysctl inventory changed: {actual_top!r}")
     require(actual_quotas == QUOTAS, f"User quota inventory changed: {actual_quotas!r}")
-    for parent, names, expected in ((root, TOP, stat.S_ISDIR), (root / "user", QUOTAS, stat.S_ISREG)):
+    for parent, names, expected in ((root, top, stat.S_ISDIR), (root / "user", QUOTAS, stat.S_ISREG)):
         for name in names:
             path = parent / name
             require(expected(path.lstat().st_mode) and native_type(path) == PROC_MAGIC, "Non-native sysctl inventory")
     return {
-        "top": TOP,
+        "top": top,
         "quotas": QUOTAS,
         "quota": (root / "user/max_user_namespaces").read_text().strip(),
         "userns": str(Path("/proc/self/ns/user").readlink()),
@@ -165,9 +176,11 @@ def inventory() -> Json:
     }
 
 
-def observe() -> Json:
+def observe(profile: str = PROFILE_NAME) -> Json:
     """Record the trusted setup boundary, including its child-quota limitation."""
     status = dict(line.split(":", 1) for line in Path("/proc/self/status").read_text().splitlines() if ":" in line)
+    require(profile in PROFILE_MASKS, "Unknown qualification observation")
+    masks = PROFILE_MASKS[profile]
     mounts = [
         line
         for line in Path("/proc/self/mountinfo").read_text().splitlines()
@@ -175,7 +188,7 @@ def observe() -> Json:
     ]
     kernel = [line for line in mounts if line.split()[4] == "/proc/sys/kernel"]
     paths: list[Json] = []
-    for name in ("/proc/sys/kernel", "/proc/sys/user/max_user_namespaces", *MASKS):
+    for name in ("/proc/sys/kernel", "/proc/sys/user/max_user_namespaces", *masks):
         information = Path(name).lstat()
         paths.append(
             {
@@ -196,8 +209,8 @@ def observe() -> Json:
         and "ro" in kernel[0].split()[5].split(",")
         and native_type("/proc/sys/kernel") == PROC_MAGIC,
         "allowed_leaf_native_procfs": native_type("/proc/sys/user/max_user_namespaces") == PROC_MAGIC,
-        "quota_masks_hold": all(native_type(path) != PROC_MAGIC for path in MASKS if "/user/" in path),
-        "global_masks_hold": all(native_type(path) != PROC_MAGIC for path in MASKS if "/user/" not in path),
+        "quota_masks_hold": all(native_type(path) != PROC_MAGIC for path in masks if "/user/" in path),
+        "global_masks_hold": all(native_type(path) != PROC_MAGIC for path in masks if "/user/" not in path),
         "caps": {name: status[name].strip() for name in ("CapInh", "CapPrm", "CapEff", "CapBnd", "CapAmb")},
         "no_new_privs": status["NoNewPrivs"].strip(),
         "seccomp": status["Seccomp"].strip(),
@@ -211,8 +224,8 @@ def observe() -> Json:
 def inside_boundary() -> None:
     """Check ordinary test authority before any unchanged proof starts."""
     require(Path("/opt/lychd-scout-qualification").is_file(), "Qualification image required")
-    outer = observe()
     profile = selected_profile()
+    outer = observe(profile)
     if profile == CI_PROFILE_NAME:
         require(outer["lsm"].strip() == "unconfined", "CI trusted outer AppArmor boundary differs")
     require(outer["uid"] == outer["gid"] == CHECK_UID, "Tests require ordinary check user")
@@ -232,7 +245,11 @@ def inside_boundary() -> None:
     quota, period = outer["cgroup"]["cpu.max"].split()
     require(int(quota) == 2 * int(period), "Missing two-CPU limit")
     child = subprocess.run(  # noqa: S603 - Fixed metadata script and empty child environment.
-        [sys.executable, "-I", "-S", __file__, "--observe-child"], capture_output=True, timeout=10, check=True, env={}
+        [sys.executable, "-I", "-S", __file__, "--observe-child", profile],
+        capture_output=True,
+        timeout=10,
+        check=True,
+        env={},
     )
     outer["fresh_child"] = json.loads(child.stdout)
     require(outer["fresh_child"]["userns"] != outer["userns"], "Fresh child user namespace unobserved")
@@ -329,7 +346,7 @@ def derive_profile(baseline: Json, profile: str, *, qualification_profile: str =
     )
     host["ReadonlyPaths"] = [path for path in host["ReadonlyPaths"] if path != "/proc/sys"]
     host["ReadonlyPaths"].append("/proc/sys/kernel")
-    host["MaskedPaths"] += [path for path in MASKS if path not in host["MaskedPaths"]]
+    host["MaskedPaths"] += [path for path in PROFILE_MASKS[qualification_profile] if path not in host["MaskedPaths"]]
     host["SecurityOpt"] = ["no-new-privileges=true", "seccomp=" + profile, "label=disable"]
     if qualification_profile == CI_PROFILE_NAME:
         host["SecurityOpt"].append("apparmor=unconfined")
@@ -524,7 +541,7 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
                 "socket": endpoint,
             },
         )
-        before = inventory()
+        before = inventory(profile_name)
         controller.save("host-before.json", before)
         versions = controller.engine.request("GET", "/version")
         controller.save("engine-version.json", versions)
@@ -602,7 +619,9 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
         boundary(observed, image, baseline["Config"]["Env"])
         changed = validate_profile(observed["HostConfig"], baseline["HostConfig"], config["HostConfig"])
         require(not observed["State"]["Running"], "Proof started before inspection")
-        controller.save("prestart-accepted.json", {"changed_fields": sorted(changed), "masks": MASKS})
+        controller.save(
+            "prestart-accepted.json", {"changed_fields": sorted(changed), "masks": PROFILE_MASKS[profile_name]}
+        )
         started = time.monotonic()
         controller.engine.request("POST", f"/containers/{created['Id']}/start", statuses=(204,))
         while True:
@@ -639,7 +658,7 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
                 result = 1
                 controller.summary["receipt_error"] = str(error)
         try:
-            after = inventory()
+            after = inventory(profile_name)
             controller.save("host-after.json", after)
             require(after == before, "Host quota/inventory/namespace changed")
         except BaseException as error:
@@ -668,10 +687,12 @@ if __name__ == "__main__":
         }
         sys.stdout.write(json.dumps(diagnostic, indent=2) + "\n")
         sys.stdout.flush()
-        inventory()
-    elif sys.argv[1:] == ["--observe-child"]:
+        inventory(selected)
+    elif len(sys.argv) in {2, 3} and sys.argv[1] == "--observe-child":
+        child_profile = sys.argv[2] if len(sys.argv) == 3 else PROFILE_NAME
+        require(child_profile in PROFILE_ENGINES, "Unknown qualification child profile")
         require(ctypes.CDLL(None).unshare(0x10000000) == 0, "Fresh child user namespace unavailable")
-        sys.stdout.write(json.dumps(observe()) + "\n")
+        sys.stdout.write(json.dumps(observe(child_profile)) + "\n")
     elif sys.argv[1:] == ["--observe-inside"]:
         inside_boundary()
     else:

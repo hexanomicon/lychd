@@ -88,14 +88,16 @@ def test_each_profile_requires_its_exact_engine_without_cross_adoption(profile: 
         q.validate_engine(measured, profile)
 
 
-def test_ci_outer_lsm_admission_does_not_change_c2_or_other_bootstrap_settings() -> None:
+def test_ci_admission_preserves_c2_and_unrelated_bootstrap_settings() -> None:
     baseline = _host()
     local = q.derive_profile(baseline, "{}")
     ci = q.derive_profile(baseline, "{}", qualification_profile=q.CI_PROFILE_NAME)
     assert "apparmor=unconfined" not in local["SecurityOpt"]
     assert ci["SecurityOpt"] == [*local["SecurityOpt"], "apparmor=unconfined"]
-    assert {key: value for key, value in ci.items() if key != "SecurityOpt"} == {
-        key: value for key, value in local.items() if key != "SecurityOpt"
+    assert "/proc/sys/crypto" in local["MaskedPaths"]
+    assert ci["MaskedPaths"] == [path for path in local["MaskedPaths"] if path != "/proc/sys/crypto"]
+    assert {key: value for key, value in ci.items() if key not in {"SecurityOpt", "MaskedPaths"}} == {
+        key: value for key, value in local.items() if key not in {"SecurityOpt", "MaskedPaths"}
     }
     with pytest.raises(ValueError, match="Unknown qualification"):
         q.derive_profile(baseline, "{}", qualification_profile="unreviewed")
