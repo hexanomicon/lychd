@@ -147,8 +147,10 @@ def native_type(path: str | Path) -> int:
 def inventory() -> Json:
     """Read the actual controller namespace; never write any outer quota."""
     root = Path("/proc/sys")
-    require(tuple(sorted(path.name for path in root.iterdir())) == TOP, "Kernel sysctl inventory changed")
-    require(tuple(sorted(path.name for path in (root / "user").iterdir())) == QUOTAS, "User quota inventory changed")
+    actual_top = tuple(sorted(path.name for path in root.iterdir()))
+    actual_quotas = tuple(sorted(path.name for path in (root / "user").iterdir()))
+    require(actual_top == TOP, f"Kernel sysctl inventory changed: {actual_top!r}")
+    require(actual_quotas == QUOTAS, f"User quota inventory changed: {actual_quotas!r}")
     for parent, names, expected in ((root, TOP, stat.S_ISDIR), (root / "user", QUOTAS, stat.S_ISREG)):
         for name in names:
             path = parent / name
@@ -656,7 +658,17 @@ if __name__ == "__main__":
         socket_path = controller_socket(selected)
         measured = Engine(socket_path).request("GET", "/version")
         validate_engine(measured, selected)
-        sys.stdout.write(json.dumps({"profile": selected, "socket": socket_path, "engine": measured}, indent=2) + "\n")
+        diagnostic = {
+            "profile": selected,
+            "socket": socket_path,
+            "engine": measured,
+            "kernel": os.uname().release,
+            "kernel_sysctl_names": sorted(path.name for path in Path("/proc/sys").iterdir()),
+            "user_quota_names": sorted(path.name for path in Path("/proc/sys/user").iterdir()),
+        }
+        sys.stdout.write(json.dumps(diagnostic, indent=2) + "\n")
+        sys.stdout.flush()
+        inventory()
     elif sys.argv[1:] == ["--observe-child"]:
         require(ctypes.CDLL(None).unshare(0x10000000) == 0, "Fresh child user namespace unavailable")
         sys.stdout.write(json.dumps(observe()) + "\n")
