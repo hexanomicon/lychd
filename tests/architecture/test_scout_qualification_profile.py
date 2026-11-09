@@ -111,7 +111,8 @@ def test_ci_admission_preserves_c2_and_unrelated_bootstrap_settings() -> None:
 
 
 @pytest.mark.parametrize(
-    "endpoint", ["tcp://127.0.0.1:2375", "unix://remote/tmp/docker.sock", "/tmp/docker.sock", "unix:///tmp/%2f.sock"]
+    "endpoint",
+    ["tcp://127.0.0.1:2375", "unix://remote/tmp/docker.sock", "/not-a-uri/docker.sock", "unix:///tmp/%2f.sock"],
 )
 def test_ci_refuses_remote_ambiguous_or_implicit_endpoints(endpoint: str, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("DOCKER_CONTEXT", raising=False)
@@ -180,7 +181,7 @@ def test_named_policy_fingerprint_detects_replacement_mode_and_ambiguous_identit
 
 @pytest.mark.parametrize("labelled", [False, True])
 def test_policy_cleanup_refuses_foreign_profile_users_or_unsettled_owned_containers(
-    tmp_path: Path, labelled: bool
+    tmp_path: Path, *, labelled: bool
 ) -> None:
     class Engine:
         def request(self, _method: str, path: str) -> object:
@@ -202,7 +203,8 @@ def test_policy_cleanup_refuses_missing_terminal_result_before_daemon_queries(tm
 
     class Engine:
         def request(self, *_args: object) -> object:
-            raise AssertionError("An unresolved controller must stop cleanup before daemon effects")
+            message = "An unresolved controller must stop cleanup before daemon effects"
+            raise AssertionError(message)
 
     with pytest.raises(ValueError, match="no terminal result"):
         q.ensure_apparmor_unused(Engine(), tmp_path)

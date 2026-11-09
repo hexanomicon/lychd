@@ -40,6 +40,7 @@ NOT_FOUND = 404
 CONFLICT = 409
 MAX_RUN_SECONDS = 300
 MAIN_ARGC = 4
+METADATA_ARGC = 3
 ARTIFACT_PATH_PARTS = 2
 PROFILE_NAME = "trusted-scout-c2"
 CI_PROFILE_NAME = "trusted-scout-ci-c1"
@@ -302,6 +303,7 @@ class Engine:
     """One admitted local endpoint; no remote endpoint or credential discovery."""
 
     def __init__(self, endpoint: str = SOCKET) -> None:
+        """Bind an admitted local socket path without connecting."""
         self.endpoint = endpoint
 
     def request(
@@ -397,7 +399,7 @@ def custody_save(directory: Path, record: Json) -> None:
         stream.write("\n")
         stream.flush()
         os.fsync(stream.fileno())
-    os.replace(temporary, directory / "state.json")
+    temporary.replace(directory / "state.json")
     descriptor = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
     try:
         os.fsync(descriptor)
@@ -431,7 +433,7 @@ def ensure_apparmor_unused(engine: Any, output: Path) -> None:
         )
 
 
-def manage_apparmor(action: str, directory: Path) -> None:  # noqa: C901, PLR0912, PLR0915 - One named resource custody transaction.
+def manage_apparmor(action: str, directory: Path) -> None:  # noqa: PLR0915 - One named resource custody transaction.
     """Manage only the separately admitted CI policy, never global restrictions."""
     require(os.geteuid() == 0 and selected_profile() == CI_PROFILE_NAME, "Explicit CI policy setup authority required")
     custody_directory(directory)
@@ -526,11 +528,15 @@ def manage_apparmor(action: str, directory: Path) -> None:  # noqa: C901, PLR091
             require(fingerprint == record["kernel"], "Loaded kernel policy changed")
             record["phase"] = "removing"
             custody_save(directory, record)
-            subprocess.run(  # noqa: S603 - Fixed remover after source/binary/kernel ownership checks.
-                [APPARMOR_PARSER, "--binary", "--remove", str(binary_path)],
+            removed = subprocess.run(  # noqa: S603 - Fixed remover after source/binary/kernel ownership checks.
+                [APPARMOR_PARSER, "--skip-cache", "--remove", str(CI_POLICY_FILE)],
                 capture_output=True,
                 timeout=15,
-                check=True,
+                check=False,
+            )
+            require(
+                removed.returncode == 0,
+                "Owned policy removal refused: " + removed.stderr.decode(errors="replace")[:4096],
             )
             require(apparmor_fingerprint() is None, "Owned AppArmor profile remains")
         record["phase"] = "removed"
@@ -912,7 +918,7 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 3 and sys.argv[1] in {"--apparmor-load", "--apparmor-remove"}:
+    if len(sys.argv) == METADATA_ARGC and sys.argv[1] in {"--apparmor-load", "--apparmor-remove"}:
         manage_apparmor(sys.argv[1].removeprefix("--apparmor-"), Path(sys.argv[2]))
     elif sys.argv[1:] == ["--preflight-engine"]:
         selected = selected_profile()
@@ -930,8 +936,8 @@ if __name__ == "__main__":
         sys.stdout.write(json.dumps(diagnostic, indent=2) + "\n")
         sys.stdout.flush()
         inventory(selected)
-    elif len(sys.argv) in {2, 3} and sys.argv[1] == "--observe-child":
-        child_profile = sys.argv[2] if len(sys.argv) == 3 else PROFILE_NAME
+    elif len(sys.argv) in {2, METADATA_ARGC} and sys.argv[1] == "--observe-child":
+        child_profile = sys.argv[2] if len(sys.argv) == METADATA_ARGC else PROFILE_NAME
         require(child_profile in PROFILE_ENGINES, "Unknown qualification child profile")
         require(ctypes.CDLL(None).unshare(0x10000000) == 0, "Fresh child user namespace unavailable")
         sys.stdout.write(json.dumps(observe(child_profile)) + "\n")
