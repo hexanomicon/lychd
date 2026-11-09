@@ -42,6 +42,11 @@ MAX_RUN_SECONDS = 300
 MAIN_ARGC = 4
 ARTIFACT_PATH_PARTS = 2
 PROFILE_NAME = "trusted-scout-c2"
+CI_PROFILE_NAME = "trusted-scout-ci-c1"
+PROFILE_ENGINES = {
+    PROFILE_NAME: ("29.7.2-ce", "1.55", "1.5.1"),
+    CI_PROFILE_NAME: ("29.9.3", "1.56", "1.5.2"),
+}
 PROFILE_SHA256 = "364494fcdb222ed262f98016de3855c51a15d6e4a6ef9eeb19e8bb6c86cd3c02"
 SOCKET = "/var/run/docker.sock"
 API = "/v1.55"
@@ -80,6 +85,54 @@ def require(condition: object, message: str) -> None:
     """Refuse rather than weaken an unsupported or unobserved boundary."""
     if not condition:
         raise ValueError(message)
+
+
+def selected_profile() -> str:
+    """Require one explicitly admitted fixture profile without negotiation."""
+    value = os.environ.get("LYCHD_SCOUT_QUALIFICATION_PROFILE", "")
+    require(value in PROFILE_ENGINES, "Explicit supported Scout qualification profile required")
+    return value
+
+
+def controller_socket(profile: str) -> str:
+    """Bind CLI and controller to one local endpoint; refuse context overrides."""
+    require(profile in PROFILE_ENGINES, "Unknown qualification profile")
+    require(not os.environ.get("DOCKER_CONTEXT"), "Docker context override refused")
+    explicit = os.environ.get("LYCHD_SCOUT_DOCKER_SOCKET", "")
+    if profile == PROFILE_NAME:
+        require(not explicit, "C2 uses only its fixed local Docker socket")
+        endpoint = "unix://" + SOCKET
+        require(os.environ.get("DOCKER_HOST", endpoint) == endpoint, "C2 Docker endpoint mismatch")
+        return SOCKET
+    require(
+        explicit.startswith("unix:///")
+        and "%" not in explicit
+        and "?" not in explicit
+        and "#" not in explicit
+        and "\x00" not in explicit,
+        "CI requires an explicit local Unix socket URI",
+    )
+    path = explicit.removeprefix("unix://")
+    require(
+        str(Path(path)) == path and Path(path).is_absolute() and ".." not in Path(path).parts,
+        "Non-canonical Docker socket",
+    )
+    require(os.environ.get("DOCKER_HOST") == explicit, "CLI/controller Docker endpoints differ")
+    information = Path(path).lstat()
+    require(stat.S_ISSOCK(information.st_mode) and information.st_uid in {0, os.getuid()}, "Unsafe Docker socket")
+    return path
+
+
+def validate_engine(versions: Json, profile: str) -> None:
+    """Check the exact separately admitted vendor engine/API/runc tuple."""
+    require(profile in PROFILE_ENGINES, "Unknown qualification profile")
+    engine, api, runtime = PROFILE_ENGINES[profile]
+    require(
+        versions["ApiVersion"] == api
+        and versions["Version"] == engine
+        and any(item["Name"] == "runc" and item["Version"] == runtime for item in versions["Components"]),
+        "Unsupported Docker/API/runc profile",
+    )
 
 
 def native_type(path: str | Path) -> int:
@@ -157,6 +210,9 @@ def inside_boundary() -> None:
     """Check ordinary test authority before any unchanged proof starts."""
     require(Path("/opt/lychd-scout-qualification").is_file(), "Qualification image required")
     outer = observe()
+    profile = selected_profile()
+    if profile == CI_PROFILE_NAME:
+        require(outer["lsm"].strip() == "unconfined", "CI trusted outer AppArmor boundary differs")
     require(outer["uid"] == outer["gid"] == CHECK_UID, "Tests require ordinary check user")
     require(all(int(value, 16) == 0 for value in outer["caps"].values()), "Tests retained capabilities")
     require(outer["no_new_privs"] == "1" and outer["seccomp"] == "2", "Missing process restrictions")
@@ -182,7 +238,7 @@ def inside_boundary() -> None:
         outer["fresh_child"]["kernel_readonly_procfs"] and outer["fresh_child"]["global_masks_hold"],
         "Child lost global restrictions",
     )
-    outer["profile"] = PROFILE_NAME
+    outer["profile"] = profile
     outer["trusted_setup_limitation"] = "Native user-quota interfaces become visible in a fresh user namespace."
     outer["extraction_profile"] = json.loads(Path("/opt/scout-runtime.json").read_text())
     Path("/qualification/export/boundary.json").write_text(json.dumps(outer, indent=2) + "\n")
@@ -198,7 +254,10 @@ class EngineError(RuntimeError):
 
 
 class Engine:
-    """One fixed local endpoint; no remote endpoint or credential discovery."""
+    """One admitted local endpoint; no remote endpoint or credential discovery."""
+
+    def __init__(self, endpoint: str = SOCKET) -> None:
+        self.endpoint = endpoint
 
     def request(
         self, method: str, path: str, body: Json | None = None, *, statuses: tuple[int, ...] = (200,), raw: bool = False
@@ -207,7 +266,7 @@ class Engine:
         connection.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         connection.sock.settimeout(10)
         try:
-            connection.sock.connect(SOCKET)
+            connection.sock.connect(self.endpoint)
             connection.request(
                 method,
                 API + path,
@@ -258,8 +317,9 @@ def boundary(container: Json, image: str, environment: list[str]) -> None:
     require(host["Sysctls"] == {"net.ipv4.ip_unprivileged_port_start": "0"}, "Unexpected sysctl")
 
 
-def derive_profile(baseline: Json, profile: str) -> Json:
-    """Preserve complete observed defaults, applying only the accepted C2 delta."""
+def derive_profile(baseline: Json, profile: str, *, qualification_profile: str = PROFILE_NAME) -> Json:
+    """Preserve observed defaults with the selected explicit trusted-setup delta."""
+    require(qualification_profile in PROFILE_ENGINES, "Unknown qualification profile")
     host = copy.deepcopy(baseline)
     require(
         host["ReadonlyPaths"].count("/proc/sys") == 1 and bool(host["MaskedPaths"]),
@@ -269,6 +329,8 @@ def derive_profile(baseline: Json, profile: str) -> Json:
     host["ReadonlyPaths"].append("/proc/sys/kernel")
     host["MaskedPaths"] += [path for path in MASKS if path not in host["MaskedPaths"]]
     host["SecurityOpt"] = ["no-new-privileges=true", "seccomp=" + profile, "label=disable"]
+    if qualification_profile == CI_PROFILE_NAME:
+        host["SecurityOpt"].append("apparmor=unconfined")
     return host
 
 
@@ -309,11 +371,11 @@ def export_archive(data: bytes, destination: Path) -> None:
                 output.write(content)
 
 
-def validate_exports(directory: Path) -> None:
+def validate_exports(directory: Path, *, profile: str = PROFILE_NAME) -> None:
     """Require the exact boundary and three distinct actual passed proof receipts."""
     require({path.name for path in directory.iterdir()} == EXPORTS, "Incomplete or extra safe export closure")
     boundary_record = json.loads((directory / "boundary.json").read_text())
-    require(boundary_record.get("profile") == PROFILE_NAME, "Wrong measured boundary profile")
+    require(profile in PROFILE_ENGINES and boundary_record.get("profile") == profile, "Wrong measured boundary profile")
     identities = {
         "static": ("profile", "scout-static-extract@1"),
         "fetch": ("schema", "scout-fetch-local-proof@1"),
@@ -337,14 +399,14 @@ def validate_exports(directory: Path) -> None:
 class Controller:
     """Track only fresh owned identities through failure and cancellation."""
 
-    def __init__(self, output: Path, image: str, engine: Any = None) -> None:
+    def __init__(self, output: Path, image: str, engine: Any = None, *, profile: str = PROFILE_NAME) -> None:
         """Bind a fresh occurrence without creating a container."""
         self.output, self.image = output, image
         self.engine: Any = Engine() if engine is None else engine
         self.occurrence = uuid.uuid4().hex
         self.owned: dict[str, str] = {}
         self.pending: dict[str, str] = {}
-        self.summary: Json = {"occurrence": self.occurrence, "image": image, "profile": PROFILE_NAME, "settlement": {}}
+        self.summary: Json = {"occurrence": self.occurrence, "image": image, "profile": profile, "settlement": {}}
 
     def save(self, name: str, value: object) -> None:
         (self.output / name).write_text(json.dumps(value, indent=2) + "\n")
@@ -435,17 +497,15 @@ def terminal(number: int, _frame: object) -> None:
 
 def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR0912, PLR0915 - One bounded create/start/export/settle occurrence.
     """Build no image, run no host tests, and never update maintained receipts."""
-    require(
-        os.environ.get("LYCHD_SCOUT_QUALIFICATION_PROFILE") == PROFILE_NAME,
-        "Explicit trusted-scout-c2 profile opt-in required",
-    )
+    profile_name = selected_profile()
+    endpoint = controller_socket(profile_name)
     require(re.fullmatch("sha256:[a-f0-9]{64}", image), "Exact existing image ID required")
     require(hashlib.sha256(profile_path.read_bytes()).hexdigest() == PROFILE_SHA256, "Unreviewed seccomp profile")
     require(
         output.is_absolute() and output.is_dir() and profile_path.resolve().parent == output.resolve(),
         "Existing private artifact directory and its profile required",
     )
-    controller = Controller(output, image)
+    controller = Controller(output, image, Engine(endpoint), profile=profile_name)
     signal.signal(signal.SIGTERM, terminal)
     signal.signal(signal.SIGINT, terminal)
     result = 1
@@ -459,26 +519,21 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
                 "names": {phase: controller.name(phase) for phase in ("baseline", "proof")},
                 "controller_pid": os.getpid(),
                 "started_at": time.time(),
-                "socket": SOCKET,
+                "socket": endpoint,
             },
         )
         before = inventory()
         controller.save("host-before.json", before)
         versions = controller.engine.request("GET", "/version")
         controller.save("engine-version.json", versions)
-        require(
-            versions["ApiVersion"] == "1.55"
-            and versions["Version"] == "29.7.2-ce"
-            and any(item["Name"] == "runc" and item["Version"] == "1.5.1" for item in versions["Components"]),
-            "Unsupported Docker/API/runc profile",
-        )
+        validate_engine(versions, profile_name)
         profile = profile_path.read_text()
         controller.save("profile-identity.json", {"sha256": hashlib.sha256(profile.encode()).hexdigest()})
         phase = "baseline"
         cli = [
             "docker",
             "--host",
-            "unix://" + SOCKET,
+            "unix://" + endpoint,
             "create",
             "--pull=never",
             "--name",
@@ -498,6 +553,7 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
             "--user=0:0",
             "--sysctl=net.ipv4.ip_unprivileged_port_start=0",
             "--env=LYCHD_SCOUT_HOST_NETNS=" + before["netns"],
+            "--env=LYCHD_SCOUT_QUALIFICATION_PROFILE=" + profile_name,
             "--entrypoint=/usr/bin/timeout",
             image,
             *COMMAND,
@@ -523,7 +579,7 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
         config = copy.deepcopy(baseline["Config"])
         config["Hostname"] = ""
         config["Labels"][LABEL + ".phase"] = "proof"
-        config["HostConfig"] = derive_profile(baseline["HostConfig"], profile)
+        config["HostConfig"] = derive_profile(baseline["HostConfig"], profile, qualification_profile=profile_name)
         controller.save("proof-create-request.json", config)
         controller.pending["proof"] = controller.name("proof")
         try:
@@ -538,6 +594,8 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
         controller.save("proof-create-response.json", created)
         require(not created.get("Warnings"), "Proof creation emitted warnings")
         observed = controller.inspect(created["Id"], "proof")
+        if profile_name == CI_PROFILE_NAME:
+            require(observed.get("AppArmorProfile") == "unconfined", "CI trusted outer AppArmor setting ignored")
         controller.save("proof-prestart-inspect.json", observed)
         boundary(observed, image, baseline["Config"]["Env"])
         changed = validate_profile(observed["HostConfig"], baseline["HostConfig"], config["HostConfig"])
@@ -574,7 +632,7 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
                 controller.summary.setdefault("unresolved_containers", {})[identity] = str(error)
         if result == 0:
             try:
-                validate_exports(output / "raw")
+                validate_exports(output / "raw", profile=profile_name)
             except BaseException as error:
                 result = 1
                 controller.summary["receipt_error"] = str(error)
@@ -593,7 +651,13 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["--observe-child"]:
+    if sys.argv[1:] == ["--preflight-engine"]:
+        selected = selected_profile()
+        socket_path = controller_socket(selected)
+        measured = Engine(socket_path).request("GET", "/version")
+        validate_engine(measured, selected)
+        sys.stdout.write(json.dumps({"profile": selected, "socket": socket_path, "engine": measured}, indent=2) + "\n")
+    elif sys.argv[1:] == ["--observe-child"]:
         require(ctypes.CDLL(None).unshare(0x10000000) == 0, "Fresh child user namespace unavailable")
         sys.stdout.write(json.dumps(observe()) + "\n")
     elif sys.argv[1:] == ["--observe-inside"]:

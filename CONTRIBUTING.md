@@ -533,17 +533,33 @@ LYCHD_SCOUT_QUALIFICATION_OUTPUT=/absolute/existing/artifact-directory \
   bash scripts/container_scout_qualification.sh
 ```
 
-The manually dispatched **Repository Checks** workflow runs this unchanged adapter with
-`scope=scout` on its selected source revision. The default `scope=contracts` keeps the full
-Python/PostgreSQL checks separate. A runner outside the exact engine/kernel boundary fails rather than
-weakening the profile. Its seven-day artifact contains only the fixed sanitized JSON exports,
-engine and settlement metadata, source/profile hashes and build diagnostics. It excludes test
-basetemps and ephemeral TLS keys. Review the actual generated results and settlement before
-updating maintained fixtures; dispatch success does not replace that admission.
+The manually dispatched **Repository Checks** workflow selects the separate
+`trusted-scout-ci-c1` profile with `scope=scout` on its selected source revision. The default
+`scope=contracts` keeps the full Python/PostgreSQL checks separate. CI uses the pinned official
+Docker setup action and Docker 29.9.3, with an exact API 1.56/runc 1.5.2 preflight. CLI and
+controller must share its explicit local Unix socket; a remote endpoint, context override or
+fallback refuses. The action's runtime directory is under the runner's temporary directory;
+no daemon socket is mounted into a test container.
+
+CI-c1 explicitly selects AppArmor-unconfined for the **trusted outer setup**, in addition to
+the label exception below. This is a separate admission, not a claim of equivalent LSM
+confinement or production safety. The three actual proofs and their negative controls remain
+unchanged: the worker must still have an empty read-only mount root, no procfs, no network,
+and no authority to create nested namespaces. The measured kernel, actual cgroups, namespace
+readbacks, unchanged host inventory and owned-container settlement must all pass. Missing
+features or a different engine fail; there is no automatic profile negotiation.
+
+The seven-day artifact contains only fixed sanitized JSON exports, engine/image and settlement
+metadata, source/profile hashes and build diagnostics. It excludes test basetemps and ephemeral
+TLS keys. Review the actual generated results and settlement before updating maintained fixtures;
+dispatch success does not replace that admission. Local C2's exact engine and LSM rules remain
+separate.
 
 The adapter derives from the exact source-bound `Containerfile.tests` image ID, adds Bubblewrap, `ip` and
 OpenSSL, and supplies a dedicated CPython installation with eight individual loader/library
-paths. Builds may download official image, Debian and locked Python dependencies. The launcher
+paths. A unique owned local tag resolves that base for the adapter build; exact image IDs before
+and after, plus the adapter's base-layer prefix, are verified. A config ID is not used as a
+registry manifest digest. Builds may download official image, Debian and locked Python dependencies. The launcher
 fetches one immutable, SHA-256-checked official Moby default seccomp profile and permits only the
 additional namespace clone/unshare and mount operations required by Scout's fixed Bubblewrap
 command. Other default restrictions remain. Missing kernel/user-namespace support fails; there is

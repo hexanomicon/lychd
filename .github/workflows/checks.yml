@@ -36,12 +36,23 @@ jobs:
     timeout-minutes: 30
     env:
       LYCHD_TEST_ENGINE: docker
-      LYCHD_SCOUT_QUALIFICATION_PROFILE: trusted-scout-c2
+      LYCHD_SCOUT_QUALIFICATION_PROFILE: trusted-scout-ci-c1
+      DOCKER_CONTEXT: ''
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+
+      - name: Start the separately admitted pinned qualification engine
+        id: scout-engine
+        uses: docker/setup-docker-action@3f1ab1ab0e29231562e4db4ca600c1a49653bac6 # v5
+        with:
+          version: v29.9.3
+          context: lychd-scout-qualification
+          set-host: true
+          rootless: false
+          runtime-basedir: ${{ runner.temp }}/lychd-scout-docker
 
       - name: Observe the qualification engine
         run: docker version
@@ -50,6 +61,8 @@ jobs:
         shell: bash
         env:
           LYCHD_SCOUT_QUALIFICATION_OUTPUT: ${{ runner.temp }}/scout-qualification
+          LYCHD_SCOUT_DOCKER_SOCKET: ${{ steps.scout-engine.outputs.sock }}
+          DOCKER_HOST: ${{ steps.scout-engine.outputs.sock }}
         run: |
           umask 077
           mkdir -p "$LYCHD_SCOUT_QUALIFICATION_OUTPUT"
@@ -66,6 +79,8 @@ jobs:
             ${{ runner.temp }}/scout-qualification/scout-qualification.*/raw/*.json
             ${{ runner.temp }}/scout-qualification/scout-qualification.*/result.json
             ${{ runner.temp }}/scout-qualification/scout-qualification.*/engine-version.json
+            ${{ runner.temp }}/scout-qualification/scout-qualification.*/engine-preflight.json
+            ${{ runner.temp }}/scout-qualification/scout-qualification.*/images.json
             ${{ runner.temp }}/scout-qualification/scout-qualification.*/host-before.json
             ${{ runner.temp }}/scout-qualification/scout-qualification.*/host-after.json
             ${{ runner.temp }}/scout-qualification/scout-qualification.*/profile-identity.json

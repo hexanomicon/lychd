@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import io
 import json
+import socket
 import tarfile
 from hashlib import sha256
 from pathlib import Path
@@ -24,7 +25,9 @@ def test_maintained_oci_proof_matches_runtime_source_and_paired_network_receipts
     record = json.loads((root / "tests/fixtures/scout/linux-oci-extraction-runtime.json").read_text())
     assert record["schema"] == "scout-oci-static-proof@1"
     qualification, receipt = record["qualification"], record["receipt"]
-    assert qualification["profile"] == q.PROFILE_NAME
+    assert qualification["profile"] in q.PROFILE_ENGINES
+    if qualification["profile"] == q.CI_PROFILE_NAME:
+        q.validate_engine(qualification["engine"], q.CI_PROFILE_NAME)
     assert qualification["host_namespace_quota_unchanged"]
     assert qualification["owned_containers_removed_and_404_observed"]
     assert receipt["status"] == "passed"
@@ -70,6 +73,78 @@ def _host() -> Json:
         "Sysctls": {"net.ipv4.ip_unprivileged_port_start": "0"},
         "PublishAllPorts": False,
     }
+
+
+@pytest.mark.parametrize("profile", [q.PROFILE_NAME, q.CI_PROFILE_NAME])
+def test_each_profile_requires_its_exact_engine_without_cross_adoption(profile: str) -> None:
+    engine, api, runtime = q.PROFILE_ENGINES[profile]
+    measured: Json = {"Version": engine, "ApiVersion": api, "Components": [{"Name": "runc", "Version": runtime}]}
+    q.validate_engine(measured, profile)
+    other = q.CI_PROFILE_NAME if profile == q.PROFILE_NAME else q.PROFILE_NAME
+    with pytest.raises(ValueError, match="Unsupported"):
+        q.validate_engine(measured, other)
+    measured["Components"][0]["Version"] = "0.0.0"
+    with pytest.raises(ValueError, match="Unsupported"):
+        q.validate_engine(measured, profile)
+
+
+def test_ci_outer_lsm_admission_does_not_change_c2_or_other_bootstrap_settings() -> None:
+    baseline = _host()
+    local = q.derive_profile(baseline, "{}")
+    ci = q.derive_profile(baseline, "{}", qualification_profile=q.CI_PROFILE_NAME)
+    assert "apparmor=unconfined" not in local["SecurityOpt"]
+    assert ci["SecurityOpt"] == [*local["SecurityOpt"], "apparmor=unconfined"]
+    assert {key: value for key, value in ci.items() if key != "SecurityOpt"} == {
+        key: value for key, value in local.items() if key != "SecurityOpt"
+    }
+    with pytest.raises(ValueError, match="Unknown qualification"):
+        q.derive_profile(baseline, "{}", qualification_profile="unreviewed")
+
+
+@pytest.mark.parametrize(
+    "endpoint", ["tcp://127.0.0.1:2375", "unix://remote/tmp/docker.sock", "/tmp/docker.sock", "unix:///tmp/%2f.sock"]
+)
+def test_ci_refuses_remote_ambiguous_or_implicit_endpoints(endpoint: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DOCKER_CONTEXT", raising=False)
+    monkeypatch.setenv("LYCHD_SCOUT_DOCKER_SOCKET", endpoint)
+    monkeypatch.setenv("DOCKER_HOST", endpoint)
+    with pytest.raises(ValueError, match="explicit local Unix"):
+        q.controller_socket(q.CI_PROFILE_NAME)
+
+
+def test_ci_binds_only_matching_actual_socket_and_refuses_context_override(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "engine.sock"
+    endpoint = "unix://" + str(path)
+    monkeypatch.delenv("DOCKER_CONTEXT", raising=False)
+    monkeypatch.setenv("LYCHD_SCOUT_DOCKER_SOCKET", endpoint)
+    monkeypatch.setenv("DOCKER_HOST", endpoint)
+    path.write_text("not a socket")
+    with pytest.raises(ValueError, match="Unsafe Docker socket"):
+        q.controller_socket(q.CI_PROFILE_NAME)
+    path.unlink()
+    with socket.socket(socket.AF_UNIX) as listener:
+        listener.bind(str(path))
+        assert q.controller_socket(q.CI_PROFILE_NAME) == str(path)
+        monkeypatch.setenv("DOCKER_HOST", "unix:///different.sock")
+        with pytest.raises(ValueError, match="endpoints differ"):
+            q.controller_socket(q.CI_PROFILE_NAME)
+        monkeypatch.setenv("DOCKER_HOST", endpoint)
+        monkeypatch.setenv("DOCKER_CONTEXT", "another-engine")
+        with pytest.raises(ValueError, match="context override"):
+            q.controller_socket(q.CI_PROFILE_NAME)
+
+
+def test_c2_does_not_adopt_ci_socket_or_remote_docker_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DOCKER_CONTEXT", raising=False)
+    monkeypatch.setenv("LYCHD_SCOUT_DOCKER_SOCKET", "unix:///tmp/engine.sock")
+    with pytest.raises(ValueError, match="fixed local Docker"):
+        q.controller_socket(q.PROFILE_NAME)
+    monkeypatch.delenv("LYCHD_SCOUT_DOCKER_SOCKET")
+    monkeypatch.setenv("DOCKER_HOST", "tcp://remote:2375")
+    with pytest.raises(ValueError, match="endpoint mismatch"):
+        q.controller_socket(q.PROFILE_NAME)
 
 
 @pytest.mark.parametrize(
