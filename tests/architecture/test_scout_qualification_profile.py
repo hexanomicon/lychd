@@ -28,6 +28,13 @@ def test_maintained_oci_proof_matches_runtime_source_and_paired_network_receipts
     assert qualification["profile"] in q.PROFILE_ENGINES
     if qualification["profile"] == q.CI_PROFILE_NAME:
         q.validate_engine(qualification["engine"], q.CI_PROFILE_NAME)
+        custody = qualification["apparmor_custody"]
+        assert custody["phase"] == "removed"
+        assert custody["restriction_before"] == custody["restriction_after"] == "1"
+        assert custody["kernel"]["name"] == q.CI_APPARMOR_NAME
+        assert custody["kernel"]["mode"] == "unconfined"
+        assert custody["kernel"]["raw_sha256"] == custody["compiled_sha256"]
+        assert custody["source_sha256"] == qualification["source_sha256"]["scripts/scout-qualification.apparmor"]
     assert qualification["host_namespace_quota_unchanged"]
     assert qualification["owned_containers_removed_and_404_observed"]
     assert receipt["status"] == "passed"
@@ -42,7 +49,7 @@ def test_maintained_oci_proof_matches_runtime_source_and_paired_network_receipts
         "Makefile",
         "pyproject.toml",
         "uv.lock",
-    }
+    } | ({"scripts/scout-qualification.apparmor"} if qualification["profile"] == q.CI_PROFILE_NAME else set())
     assert set(record["paired_receipt_sha256"]) == {
         "tests/fixtures/scout/linux-fetch-runtime.json",
         "tests/fixtures/scout/linux-authority-runtime.json",
@@ -93,7 +100,7 @@ def test_ci_admission_preserves_c2_and_unrelated_bootstrap_settings() -> None:
     local = q.derive_profile(baseline, "{}")
     ci = q.derive_profile(baseline, "{}", qualification_profile=q.CI_PROFILE_NAME)
     assert "apparmor=unconfined" not in local["SecurityOpt"]
-    assert ci["SecurityOpt"] == [*local["SecurityOpt"], "apparmor=unconfined"]
+    assert ci["SecurityOpt"] == [*local["SecurityOpt"], "apparmor=" + q.CI_APPARMOR_NAME]
     assert "/proc/sys/crypto" in local["MaskedPaths"]
     assert ci["MaskedPaths"] == [path for path in local["MaskedPaths"] if path != "/proc/sys/crypto"]
     assert {key: value for key, value in ci.items() if key not in {"SecurityOpt", "MaskedPaths"}} == {
@@ -147,6 +154,58 @@ def test_c2_does_not_adopt_ci_socket_or_remote_docker_host(monkeypatch: pytest.M
     monkeypatch.setenv("DOCKER_HOST", "tcp://remote:2375")
     with pytest.raises(ValueError, match="endpoint mismatch"):
         q.controller_socket(q.PROFILE_NAME)
+
+
+def test_named_policy_fingerprint_detects_replacement_mode_and_ambiguous_identity(tmp_path: Path) -> None:
+    profile = tmp_path / "owned.1"
+    profile.mkdir()
+    (profile / "name").write_text(q.CI_APPARMOR_NAME)
+    (profile / "mode").write_text("unconfined")
+    (profile / "raw_data").write_bytes(b"compiled fixture policy")
+    first = q.apparmor_fingerprint(tmp_path)
+    assert first is not None
+    assert first["raw_sha256"] == sha256(b"compiled fixture policy").hexdigest()
+    (profile / "raw_data").write_bytes(b"replaced policy")
+    assert q.apparmor_fingerprint(tmp_path) != first
+    (profile / "mode").write_text("complain")
+    with pytest.raises(ValueError, match="Unexpected AppArmor profile mode"):
+        q.apparmor_fingerprint(tmp_path)
+    (profile / "mode").write_text("unconfined")
+    duplicate = tmp_path / "foreign.2"
+    duplicate.mkdir()
+    (duplicate / "name").write_text(q.CI_APPARMOR_NAME)
+    with pytest.raises(ValueError, match="Ambiguous AppArmor profile"):
+        q.apparmor_fingerprint(tmp_path)
+
+
+@pytest.mark.parametrize("labelled", [False, True])
+def test_policy_cleanup_refuses_foreign_profile_users_or_unsettled_owned_containers(
+    tmp_path: Path, labelled: bool
+) -> None:
+    class Engine:
+        def request(self, _method: str, path: str) -> object:
+            if path == "/containers/json?all=1":
+                return [{"Id": IDENTITY}]
+            return {
+                "Config": {"Labels": {q.LABEL: "owner"} if labelled else {}},
+                "AppArmorProfile": "other" if labelled else q.CI_APPARMOR_NAME,
+            }
+
+    with pytest.raises(ValueError, match="still uses qualification authority"):
+        q.ensure_apparmor_unused(Engine(), tmp_path)
+
+
+def test_policy_cleanup_refuses_missing_terminal_result_before_daemon_queries(tmp_path: Path) -> None:
+    occurrence = tmp_path / "scout-qualification.fixture"
+    occurrence.mkdir()
+    (occurrence / "occurrence.json").write_text("{}")
+
+    class Engine:
+        def request(self, *_args: object) -> object:
+            raise AssertionError("An unresolved controller must stop cleanup before daemon effects")
+
+    with pytest.raises(ValueError, match="no terminal result"):
+        q.ensure_apparmor_unused(Engine(), tmp_path)
 
 
 @pytest.mark.parametrize(

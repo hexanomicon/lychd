@@ -1,0 +1,7 @@
+# Only the trusted CI setup uses this explicit namespace permission.
+# The unchanged worker proofs must still establish its separate denial boundary.
+abi <abi/4.0>,
+
+profile lychd-scout-ci-c1 flags=(unconfined) {
+  userns,
+}

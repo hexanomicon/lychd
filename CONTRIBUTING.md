@@ -541,9 +541,12 @@ controller must share its explicit local Unix socket; a remote endpoint, context
 fallback refuses. The action's runtime directory is under the runner's temporary directory;
 no daemon socket is mounted into a test container.
 
-CI-c1 explicitly selects AppArmor-unconfined for the **trusted outer setup**, in addition to
-the label exception below. This is a separate admission, not a claim of equivalent LSM
-confinement or production safety. The three actual proofs and their negative controls remain
+CI-c1 loads one owned named AppArmor policy with an explicit `userns` permission and
+`flags=(unconfined)` for the **trusted outer setup**, in addition to the label exception below.
+This follows [Ubuntu's documented namespace mechanism](https://documentation.ubuntu.com/release-notes/24.04/).
+Both the outer process and fresh namespace child must retain that exact named label/mode.
+It prevents Ubuntu's implicit restricted-user-namespace transition during trusted sandbox setup;
+it is not a claim of LSM confinement or production safety. The three actual proofs and their negative controls remain
 unchanged: the worker must still have an empty read-only mount root, no procfs, no network,
 and no authority to create nested namespaces. The measured kernel, actual cgroups, namespace
 readbacks, unchanged host inventory and owned-container settlement must all pass. Missing
@@ -552,6 +555,12 @@ Its measured Azure kernel has no `crypto` sysctl subtree: CI-c1 declares that ex
 top-level inventory and masks its six non-user/non-kernel subtrees. The twelve user-quota entries
 and their eleven masks are unchanged. Extra or missing entries still refuse. The fresh-child
 observer receives only the selected registered profile argument, with an empty environment.
+The loader refuses an existing policy, compiles without cache, adds without replacement, and
+compares the actual kernel-exported policy bytes with the owned compiled input. Cleanup requires
+matching source/binary/kernel identities, terminal controller custody and no container using the
+policy, including unexpected unlabelled users. Ambiguity preserves the policy and fails until
+ephemeral runner teardown. The global AppArmor user-namespace restriction stays enabled and is
+observed before and after; no host sysctl or AppArmor service is changed. This setup is CI-only.
 
 The seven-day artifact contains only fixed sanitized JSON exports, engine/image and settlement
 metadata, source/profile hashes, bounded proof logs and build diagnostics. It excludes test basetemps and ephemeral
