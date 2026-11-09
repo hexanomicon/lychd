@@ -533,8 +533,9 @@ LYCHD_SCOUT_QUALIFICATION_OUTPUT=/absolute/existing/artifact-directory \
   bash scripts/container_scout_qualification.sh
 ```
 
-The manually dispatched **Repository Checks** workflow also runs this unchanged adapter on its
-selected source revision. A runner outside the exact engine/kernel boundary fails rather than
+The manually dispatched **Repository Checks** workflow runs this unchanged adapter with
+`scope=scout` on its selected source revision. The default `scope=contracts` keeps the full
+Python/PostgreSQL checks separate. A runner outside the exact engine/kernel boundary fails rather than
 weakening the profile. Its seven-day artifact contains only the fixed sanitized JSON exports,
 engine and settlement metadata, source/profile hashes and build diagnostics. It excludes test
 basetemps and ephemeral TLS keys. Review the actual generated results and settlement before

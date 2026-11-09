@@ -11,6 +11,12 @@ on:
       - main
       - dev
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Run ordinary contracts or the separate isolated Scout qualification
+        type: choice
+        options: [contracts, scout]
+        default: contracts
 
 concurrency:
   group: repository-checks-${{ github.event.pull_request.number || github.ref }}
@@ -25,13 +31,12 @@ env:
 jobs:
   scout-qualification:
     name: Scout isolated network qualification
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'scout'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       LYCHD_TEST_ENGINE: docker
       LYCHD_SCOUT_QUALIFICATION_PROFILE: trusted-scout-c2
-      LYCHD_SCOUT_QUALIFICATION_OUTPUT: ${{ runner.temp }}/scout-qualification
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -43,6 +48,8 @@ jobs:
 
       - name: Run the maintained Scout qualification adapter
         shell: bash
+        env:
+          LYCHD_SCOUT_QUALIFICATION_OUTPUT: ${{ runner.temp }}/scout-qualification
         run: |
           umask 077
           mkdir -p "$LYCHD_SCOUT_QUALIFICATION_OUTPUT"
@@ -69,7 +76,7 @@ jobs:
 
   python:
     name: Python contracts ${{ matrix.python-version }}
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.scope != 'scout'
     strategy:
       fail-fast: false
       matrix:
@@ -91,7 +98,7 @@ jobs:
 
   postgres:
     name: Disposable PostgreSQL receipts ${{ matrix.python-version }}
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.scope != 'scout'
     strategy:
       fail-fast: false
       matrix:
