@@ -1,7 +1,7 @@
 name: Repository Checks
 
 # Altar and documentation gates report on every PR and long-lived branch push.
-# Full Python and PostgreSQL qualification remains manually dispatched. Python
+# Full Python, PostgreSQL and isolated Scout qualification are manually dispatched. Python
 # runs inside the reviewed test image, including its Podman 5 Quadlet generator.
 # Passing these gates does not qualify deployed host services.
 on:
@@ -23,6 +23,50 @@ env:
   UV_LOCKED: "1"
 
 jobs:
+  scout-qualification:
+    name: Scout isolated network qualification
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LYCHD_TEST_ENGINE: docker
+      LYCHD_SCOUT_QUALIFICATION_PROFILE: trusted-scout-c2
+      LYCHD_SCOUT_QUALIFICATION_OUTPUT: ${{ runner.temp }}/scout-qualification
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Observe the qualification engine
+        run: docker version
+
+      - name: Run the maintained Scout qualification adapter
+        shell: bash
+        run: |
+          umask 077
+          mkdir -p "$LYCHD_SCOUT_QUALIFICATION_OUTPUT"
+          bash scripts/container_scout_qualification.sh
+
+      - name: Retain only safe qualification exports and build diagnostics
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: scout-qualification-${{ github.sha }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/scout-qualification/scout-qualification.*/raw/*.json
+            ${{ runner.temp }}/scout-qualification/scout-qualification.*/result.json
+            ${{ runner.temp }}/scout-qualification/scout-qualification.*/engine-version.json
+            ${{ runner.temp }}/scout-qualification/scout-qualification.*/host-before.json
+            ${{ runner.temp }}/scout-qualification/scout-qualification.*/host-after.json
+            ${{ runner.temp }}/scout-qualification/scout-qualification.*/profile-identity.json
+            ${{ runner.temp }}/scout-qualification/scout-qualification.*/source-manifest.sha256
+            ${{ runner.temp }}/scout-qualification/scout-qualification.*/seccomp.sha256
+            ${{ runner.temp }}/scout-qualification/scout-qualification.*/base-build.log
+            ${{ runner.temp }}/scout-qualification/scout-qualification.*/adapter-build.log
+
   python:
     name: Python contracts ${{ matrix.python-version }}
     if: github.event_name == 'workflow_dispatch'

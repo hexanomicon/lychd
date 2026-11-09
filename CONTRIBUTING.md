@@ -533,6 +533,13 @@ LYCHD_SCOUT_QUALIFICATION_OUTPUT=/absolute/existing/artifact-directory \
   bash scripts/container_scout_qualification.sh
 ```
 
+The manually dispatched **Repository Checks** workflow also runs this unchanged adapter on its
+selected source revision. A runner outside the exact engine/kernel boundary fails rather than
+weakening the profile. Its seven-day artifact contains only the fixed sanitized JSON exports,
+engine and settlement metadata, source/profile hashes and build diagnostics. It excludes test
+basetemps and ephemeral TLS keys. Review the actual generated results and settlement before
+updating maintained fixtures; dispatch success does not replace that admission.
+
 The adapter derives from the exact source-bound `Containerfile.tests` image ID, adds Bubblewrap, `ip` and
 OpenSSL, and supplies a dedicated CPython installation with eight individual loader/library
 paths. Builds may download official image, Debian and locked Python dependencies. The launcher
