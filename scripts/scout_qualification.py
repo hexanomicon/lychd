@@ -426,7 +426,7 @@ def ensure_apparmor_unused(engine: Any, output: Path) -> None:
         identity = item["Id"]
         require(re.fullmatch("[a-f0-9]{64}", identity), "Malformed container inventory")
         container = engine.request("GET", f"/containers/{identity}/json")
-        labels = container["Config"].get("Labels") or {}
+        labels: Json = container["Config"].get("Labels") or {}
         require(
             not labels.get(LABEL) and container.get("AppArmorProfile") != CI_APPARMOR_NAME,
             "Owned or foreign container still uses qualification authority",
