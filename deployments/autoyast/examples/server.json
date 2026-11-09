@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "architecture": "x86_64",
+  "role": "server",
+  "firmware": "bios",
+  "disk": {"device": "/dev/disk/by-id/REPLACE_WITH_OBSERVED_WHOLE_DISK", "erase_all": true},
+  "hostname": "pilot",
+  "timezone": "Europe/Bratislava",
+  "keyboard": "us",
+  "swap_gib": 2,
+  "admin": {"name": "operator", "public_key": "REPLACE_WITH_YOUR_PUBLIC_ED25519_KEY"},
+  "network": {"interface": "ens3", "mode": "dhcp"}
+}

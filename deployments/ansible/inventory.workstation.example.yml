@@ -1,0 +1,8 @@
+---
+# Documentation-only address; keep real inventories outside the checkout.
+lychd_workstations:
+  hosts:
+    laptop:
+      ansible_host: 192.0.2.20
+      ansible_user: existing_admin
+      ansible_become_method: sudo

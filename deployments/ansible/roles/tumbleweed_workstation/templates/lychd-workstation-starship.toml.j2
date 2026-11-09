@@ -1,0 +1,27 @@
+# Managed by LychD workstation baseline v1
+format = "$directory$git_branch$git_status$character"
+add_newline = false
+
+[directory]
+read_only = "ro"
+truncation_symbol = ".../"
+
+[git_branch]
+symbol = "git:"
+
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+conflicted = "!"
+ahead = ">"
+behind = "<"
+diverged = "<>"
+untracked = "?"
+stashed = "$"
+modified = "~"
+staged = "+"
+renamed = "r"
+deleted = "-"
+
+[character]
+success_symbol = "[>](bold green)"
+error_symbol = "[>](bold red)"

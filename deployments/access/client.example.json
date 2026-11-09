@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "interface": "lychd-vps",
+  "server_address": "10.203.71.1",
+  "client_address": "10.203.71.2",
+  "endpoint": "REPLACE_WITH_VPS_ADDRESS:51820",
+  "server_wireguard_public_key": "REPLACE_WITH_VERIFIED_VPS_WIREGUARD_PUBLIC_KEY",
+  "server_ssh_host_key": "REPLACE_WITH_VERIFIED_VPS_SSH_HOST_PUBLIC_KEY",
+  "ssh_identity": "/absolute/private/forward_ed25519",
+  "wireguard_private_key_file": "/absolute/private/wireguard.key"
+}

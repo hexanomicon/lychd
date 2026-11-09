@@ -27,26 +27,12 @@ jobs:
       - name: Install isolated Python tooling
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          version: "0.13.0"
+          version: "0.13.4"
           python-version: "3.13.14"
           enable-cache: false
       - name: Prepare the isolated controller
         run: |
           uv venv --python 3.13.14 "$RUNNER_TEMP/deployment-controller"
-          uv pip install --python "$RUNNER_TEMP/deployment-controller/bin/python" -r deployments/ansible/requirements-controller.txt
-      - name: Check deployment refusals
-        run: '"$RUNNER_TEMP/deployment-controller/bin/python" -m unittest discover -s deployments/ansible/tests -v'
-      - name: Check standalone deployment Python
-        run: |
-          uvx --from ruff==0.16.6 ruff check deployments/ansible
-          uvx --from ruff==0.16.6 ruff format --check deployments/ansible
-      - name: Check playbook syntax and example host selection without contacting a target
-        working-directory: deployments/ansible
-        env:
-          ANSIBLE_HOME: ${{ runner.temp }}/ansible
-        run: |
-          for playbook in host verify source; do
-            "$RUNNER_TEMP/deployment-controller/bin/ansible-playbook" -i inventory.example.yml --syntax-check "playbooks/$playbook.yml"
-            "$RUNNER_TEMP/deployment-controller/bin/ansible-playbook" -i inventory.example.yml --list-hosts "playbooks/$playbook.yml" | tee "$RUNNER_TEMP/$playbook-hosts.txt"
-            test "$(sed -n 's/.*hosts (\([0-9][0-9]*\)):.*/\1/p' "$RUNNER_TEMP/$playbook-hosts.txt")" = "1"
-          done
+          uv pip install --python "$RUNNER_TEMP/deployment-controller/bin/python" -r deployments/ansible/requirements-checks.txt
+      - name: Check deployment contracts, formatting, syntax and host selection without contacting a target
+        run: bash deployments/check.sh "$RUNNER_TEMP/deployment-controller"

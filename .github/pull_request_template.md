@@ -17,5 +17,6 @@
 ## Author review
 
 - [ ] I reviewed the full diff, including any AI-assisted changes, and can explain the submitted code and its verification.
+- [ ] I identified any reused upstream material and checked its provenance, changes, license obligations and shipped notices under the [reuse procedure](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#reuse-upstream-material), or confirmed that this change incorporates none.
 
 Follow the [contribution guide](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md) for the checks appropriate to this change.

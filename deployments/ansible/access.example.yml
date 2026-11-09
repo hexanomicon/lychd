@@ -1,0 +1,16 @@
+---
+# Copy outside the checkout. Public inputs only; no private keys or Basic credential.
+lychd_access_enabled: false
+# Use access-verify.yml for observations or access-revoke.yml for durable transport revocation.
+lychd_access_prepare: false
+# Separate opt-in: permits narrowly scoped policy additions and configuration reloads.
+lychd_access_prepare_target: ''
+lychd_access_target: ''
+lychd_access_intent:
+  server_address: 10.203.71.1/32
+  peer_address: 10.203.71.2/32
+  peer_public_key: REPLACE_WITH_LAPTOP_WIREGUARD_PUBLIC_KEY
+  ssh_public_key: ssh-ed25519 REPLACE_WITH_LAPTOP_SSH_PUBLIC_KEY
+  external_interface: eth0
+  external_zone: public
+  udp_port: 51820

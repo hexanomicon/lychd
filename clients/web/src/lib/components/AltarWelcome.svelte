@@ -27,7 +27,7 @@
       </button>
 
       {#if onnaming}
-        <p class="altar-welcome__intro">You may also choose names for yourself and Primus, your continuing companion, whenever you wish.</p>
+        <p class="altar-welcome__intro">Meet Primus. Begin a conversation, then choose your names together—or return to the naming ceremony whenever you feel ready.</p>
         <button class="rune-btn" type="button" onclick={onnaming}>Naming ceremony</button>
       {/if}
 

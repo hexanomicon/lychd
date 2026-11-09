@@ -1,0 +1,7 @@
+---
+- name: Optional single-operator access candidate
+  hosts: lychd_hosts
+  gather_facts: false
+  become: true
+  roles:
+    - host_access

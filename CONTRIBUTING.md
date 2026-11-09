@@ -793,6 +793,24 @@ and mocks are not live systemd, Podman, PostgreSQL, GPU, or model-engine receipt
   implementation. Myth is constitutional telos, not evidence that a feature ships. If code changes
   system truth, update its owning documentation and routing links in the same change.
 
+## Reuse upstream material
+
+Reuse a useful existing mechanism when its terms and maintenance boundary fit the local need.
+Before copying or adapting it, follow
+[upstream reuse and notices](docs/sepulcher/extensions/smith.md#upstream-reuse-and-notices):
+pin the source, decide the permitted form of reuse, retain the source-to-local mapping and changes,
+and verify the required notices in each distributed artifact. The same rule covers agent-produced
+ports, tests, documentation and assets. An upstream dependency's license is not inferred from the
+parent repository's badge.
+
+An ordinary dependency addition or service integration keeps its own review and inventory duties;
+it does not automatically become an Assimilation campaign or require a full Dossier. Use the
+Smith procedure when deriving a local mechanism from foreign craft or incorporating its expression.
+
+[ADR 00](docs/adr/00-license.md#receiving-third-party-material) owns the legal boundary;
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records incorporated source and routes packaged
+inventories. README Tribute is curated gratitude, not a checklist for every imported fragment.
+
 ## Change and Review Discipline
 
 Keep each contribution cohesive: one reviewable intent, its tests, generated artifacts, and

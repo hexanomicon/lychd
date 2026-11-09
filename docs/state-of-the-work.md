@@ -326,12 +326,20 @@ The dated 0cc0988 installed startup/activation observation is scoped under
 [vLLM](#vllm-integration). A changed compiler or loaded-graph attestor needs a new same-source
 installed profile; that observation contains no Coven and does not qualify the current checkout.
 
-The Tumbleweed host-preparation candidate uses Ansible for an already installed headless host and
-inactive-only, exact-revision source/CLI staging. Its refusal helpers and playbook checks do not
-execute a privileged target or establish convergence. First apply, a second no-change apply,
-direct runtime SSH/rootless operation, actual storage placement and controlled OS recovery
-remain unobserved. No model, application secrets, generated units or lifecycle are owned by
-these playbooks; source preparation is not an installed application receipt.
+The Tumbleweed deployment candidate separates headless Server and personal KDE workstation
+entry points, with explicit AutoYaST installation inputs. Server automation stages an exact
+source/CLI and admitted OCI archive, classifies existing state, and invokes the installed CLI's
+initialization, binding and separately authorized startup. Running same-source bodies take a
+read-only verification path. Workstation tooling owns only selected packages and personal
+configuration. Optional host access is infrastructure-owned, separate from native Tether.
+These assets do not own a second application lifecycle, model, secret generator or unit stack.
+
+[PR #136](https://github.com/hexanomicon/lychd/pull/136) reports five VPS startup/reboot trials at
+its candidate revision. The present campaign reviewed that source and added guards; it did not
+reproduce those installed observations. Local generator/refusal/syntax checks establish candidate
+contracts only. Matching-media AutoYaST validation, actual first/second applies, rootless storage,
+workstation hardware, private-road/browser/revocation and OS recovery acceptance remain required
+for this changed source. Source preparation is not an installed application receipt.
 
 The frozen [trusted installed-hybrid profile](#current-evidence-envelope) recorded its private
 manager, installed native CLI, plain Docker PostgreSQL/migrator dependencies and borrowed warm
@@ -357,7 +365,8 @@ required before another host inherits a ready claim.
 
 - **Source:** [Tumbleweed host playbook](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/playbooks/host.yml), [host observation helper](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/roles/tumbleweed_host/files/host_probe.py), and [inactive source preparation](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/playbooks/source.yml)
 - **Verification:** [Host refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_host_probe.py), [source refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_source_guard.py), and [deployment checks](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/deployments.yml)
-- **Topic:** [Tumbleweed VPS](./deployments/tumbleweed/index.md)
+- **Topic:** [Tumbleweed Server](./deployments/tumbleweed/index.md), [KDE workstation](./deployments/tumbleweed/workstation.md), [AutoYaST](./deployments/tumbleweed/install.md), and [private access](./deployments/tumbleweed/access.md)
+- **Verification:** [Deployment candidate checks and unrun boundaries](https://github.com/hexanomicon/lychd/blob/main/deployments/VALIDATION.md)
 
 ### Whole-body snapshot and restore {#whole-body-snapshot-restore}
 
@@ -577,12 +586,12 @@ it. The synthetic PostgreSQL controls use ORM metadata and do not claim migratio
 - **Topic:** [Choose a Bridge capability](./sepulcher/extensions/weaver/index.md#choose-a-bridge-capability) and [prefer a ready route](./sepulcher/extensions/weaver/index.md#prefer-a-ready-route-at-admission)
 - **Law:** [Configuration](./adr/12-configuration.md), [Workflow](./adr/28-workflow.md), and [Dispatcher](./adr/22-dispatcher.md)
 
-### Pydantic AI 2.64.0 cognitive adapter {#pydantic-ai-adapter}
+### Pydantic AI 2.66.0 cognitive adapter {#pydantic-ai-adapter}
 
 **State:** Available
 
 **Proved now:** LychD constructs typed agents and runs Bridge through the exact
-`pydantic-ai-slim==2.64.0` contract with serializable state and fail-closed provider profiles.
+`pydantic-ai-slim==2.66.0` contract with serializable state and fail-closed provider profiles.
 The context window bounds each model request after output reservation, including tool follow-ups
 and validation retries, while cumulative Run usage remains intact. Supported pre-counts and
 completed streamed/non-streamed responses use the same request bound.
@@ -594,7 +603,7 @@ endpoint. Bridge skips that unsupported counter while preserving other counting 
 and reported response-usage checks. Named providers resolve their own model policy.
 Model transport tests use native HTTPX2 mocks, and the repository-wide model-request guard also
 applies when tests outside the agent package are selected alone. Portable agent and core checks
-exercise the locked Pydantic 2.14.2 stack on Python 3.14.8 and 3.15.0.
+exercise the locked Pydantic 2.14.3 stack on Python 3.14.8 and 3.15.0.
 
 **Boundary:** This does not claim automatic child-Agent usage propagation, Pydantic's external
 durability harnesses, or a guaranteed token preflight fence for generic local models. The counting
@@ -608,7 +617,7 @@ or Linux Vessel image, or admit Portal execution. The serial Graph adapter has i
 - **Version:** [Dependency](https://github.com/hexanomicon/lychd/blob/main/pyproject.toml)
 - **Law:** [Agents](./adr/20-agents.md)
 
-### Native Pydantic Graph 2.64.0 adapter {#pydantic-ai-v2-migration}
+### Native Pydantic Graph 2.66.0 adapter {#pydantic-ai-v2-migration}
 
 **State:** Available
 
@@ -2769,8 +2778,10 @@ Vite proxy has a bounded development exception. The [trusted source-browser prof
 retains dated authenticated journey/security-refusal evidence for the retired native profile;
 it does not qualify the current container/Vite fixture, rebuilt image, installed startup, hostile
 browser or general browser security.
-Production access through a proxy, tunnels, non-loopback access, and untrusted-browser use remain
-unsupported.
+Production access through a proxy, general tunnels, non-loopback access, and untrusted-browser use
+remain unsupported. The [single-operator forwarding candidate](./adr/09-security.md#single-operator-forwarding-candidate)
+permits qualification of one private infrastructure road for one instance owner. It has no current
+installed/browser receipt and supplies no shared-user isolation or remote Principal.
 
 **Evidence**
 
@@ -3415,7 +3426,7 @@ or end-to-end host qualification. Historical speaker labels are not rewritten fr
 
 **Evidence**
 
-- **Journey:** [Naming ceremony](./summoning.md#naming-ceremony)
+- **Journey:** [Naming ceremony](./divination/altar/bridge.md#naming-ceremony)
 - **Law:** [Primus and naming](./adr/32-identity.md#primus-and-naming)
 - **Source:** [Names and local suggestions](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/naming.py),
   [persistent acceptance](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/naming.py),
@@ -3884,9 +3895,21 @@ that road from anonymous browsing and provider-visible request content.
 publication, interface or enrollment effect, peer/key custody, live route policy, health,
 reconciliation, revocation effect, or identity proof.
 
+The separate [host access candidate](./deployments/tumbleweed/access.md) can prepare an
+infrastructure-owned WireGuard road and restricted SSH forwarding service. It is not a Tether
+extension, Rune, UDP compiler contribution or IAM implementation. Two-endpoint operation,
+browser refusal, loss, revocation and reboot remain unqualified by this campaign.
+Its reviewed source now includes separate read-only verification and durable transport revocation,
+boot fences for both owned services, semantic firewalld policy checks and private client-profile
+rendering with a pinned SSH host key and explicit WireGuard route preflight. These are candidate
+contracts, not an installed security receipt or a shared remote Altar.
+
 **Evidence**
 
 - **Topic:** [Tether](./sepulcher/extensions/tether.md)
+- **Source:** [Host access candidate](https://github.com/hexanomicon/lychd/tree/main/deployments/ansible/roles/host_access)
+- **Verification:** [Access refusal checks](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_access_host.py)
+- **Verification:** [Policy checks](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_access_policy.py), [revocation checks](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_access_lifecycle.py), and [client checks](https://github.com/hexanomicon/lychd/blob/main/deployments/access/test_client.py)
 - **Law:** [VPN](./adr/39-vpn.md)
 
 ### Proxy Veil {#proxy-veil}

@@ -35,7 +35,7 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           languages: ${{ matrix.language }}
           build-mode: none
@@ -43,7 +43,7 @@ jobs:
           trap-caching: 'false'
 
       - name: Analyze and upload
-        uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           category: /language:${{ matrix.language }}
 
@@ -83,7 +83,7 @@ jobs:
           python3 -c 'import sys; sys.exit("Python 3.12+ is required for generate_wire.py" if sys.version_info < (3, 12) else 0)'
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           languages: java-kotlin
           build-mode: manual
@@ -109,7 +109,7 @@ jobs:
           retention-days: 7
 
       - name: Analyze and upload
-        uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           category: /language:java-kotlin/project:android
 
@@ -141,7 +141,7 @@ jobs:
           "$jdk_home/bin/java" -version
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           languages: java-kotlin
           build-mode: manual
@@ -164,7 +164,7 @@ jobs:
           retention-days: 7
 
       - name: Analyze and upload
-        uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           category: /language:java-kotlin/project:minecraft
 
@@ -196,7 +196,7 @@ jobs:
           "$jdk_home/bin/java" -version
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           languages: java-kotlin
           build-mode: manual
@@ -220,6 +220,6 @@ jobs:
           retention-days: 7
 
       - name: Analyze and upload
-        uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           category: /language:java-kotlin/project:minecraft-voice

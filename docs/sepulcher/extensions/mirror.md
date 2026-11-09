@@ -11,7 +11,7 @@ authority, and through which revision. Every admitted Invocation records an exac
 or an explicit no-Persona choice under [Identity](../../adr/32-identity.md).
 
 Full Persona lineage remains **Designed**. The
-[naming ceremony](../../summoning.md#naming-ceremony) supplies a smaller bootstrap account:
+[naming ceremony](../../divination/altar/bridge.md#naming-ceremony) supplies a smaller bootstrap account:
 accepted forms of address for the Magus and Primus, pinned to later Bridge admissions. The
 internal `the_first_one` AgentSpec and loopback `magus:*` Sigil retain their executable and
 authority identities. Naming does not yet supply revisioned Personas or reproducible hydration;

@@ -1,0 +1,33 @@
+---
+- name: Require the separately named administrator and one explicit target
+  ansible.builtin.assert:
+    that:
+      - ansible_play_hosts_all | length == 1
+      - lychd_admin_policy_target | default('') == inventory_hostname
+      - lychd_admin_name | default('') == ansible_user
+    fail_msg: "Set lychd_admin_name to the existing SSH administrator and lychd_admin_policy_target to this one host."
+
+- name: Admit only the vendor default or the exact named administrator policy
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/admin_probe.py') }}"
+    stdin: "{{ {'admin': lychd_admin_name} | to_json }}"
+  register: lychd_admin_observation
+  changed_when: false
+  check_mode: false
+
+- name: Validate and install the standalone sudo policy with a target-local backup
+  ansible.builtin.copy:
+    dest: /etc/sudoers
+    content: "{{ (lychd_admin_observation.stdout | from_json).policy }}"
+    owner: root
+    group: root
+    mode: '0440'
+    backup: true
+    validate: /usr/sbin/visudo -cf %s
+
+# No further become task: the caller's cached -K password may belong to the old targetpw
+# policy. Verify a fresh administrator session separately with that user's own password.

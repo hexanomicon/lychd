@@ -1,0 +1,6 @@
+---
+lychd_app_source: "/home/lychd/src/lychd-{{ lychd_source_revision }}"
+lychd_app_cli: "{{ lychd_app_source }}/.venv/bin/lychd"
+lychd_app_image_ref: "localhost/lychd:{{ lychd_source_revision }}"
+lychd_app_env:
+  PYTHONDONTWRITEBYTECODE: '1'

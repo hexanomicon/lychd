@@ -1,0 +1,27 @@
+---
+- name: Require explicit prerequisite bootstrap authorization
+  ansible.builtin.assert:
+    that:
+      - lychd_access_prepare_target == inventory_hostname
+    fail_msg: Preparation reloads firewall and NetworkManager configuration; review check output and retain a console before naming the exact prepare target.
+
+- name: Plan or prepare fresh access prerequisites
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/access_host.py') }}"
+      - "{{ 'prepare-plan' if ansible_check_mode else 'prepare-apply' }}"
+    stdin: "{{ lychd_access_intent | to_json }}"
+  register: lychd_access_preparation
+  changed_when: (lychd_access_preparation.stdout | from_json).changed
+  check_mode: false
+
+- name: Show public prerequisite plan
+  ansible.builtin.debug:
+    msg: "{{ lychd_access_preparation.stdout | from_json }}"
+
+- name: Stop check mode before dependent installed-host verification
+  ansible.builtin.meta: end_host
+  when: ansible_check_mode

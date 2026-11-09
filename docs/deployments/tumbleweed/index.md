@@ -1,9 +1,9 @@
 ---
-title: Tumbleweed VPS
+title: Tumbleweed Server
 icon: material/server
 ---
 
-# Tumbleweed on a small VPS
+# Tumbleweed Server on AlphaVPS
 
 This experiment targets an **AlphaVPS C6G in Sofia: 3 shared vCPU, 6 GB RAM and 55 GB NVMe**.
 Install openSUSE Tumbleweed using its **Server** role, without a desktop, then use
@@ -11,10 +11,16 @@ Install openSUSE Tumbleweed using its **Server** role, without a desktop, then u
 to prepare the ordinary runtime account and observe the host floor. Tumbleweed Server is an
 installation choice, not a separate distribution.
 
+For a laptop, use the independent [KDE workstation profile](workstation.md).
+[AutoYaST](install.md) prepares explicit installation inputs for either class. Optional
+[private access](access.md) has its own host lifecycle and one-owner acceptance boundary.
+
 !!! warning "One pilot before a fleet"
     The playbooks and source checks are candidate tooling. No successful Tumbleweed
     installation, second converged host run, rootless container operation, or recovery cycle
-    has yet been observed for this guide. Reinstalling a VPS destroys its existing disk.
+    has been observed by this campaign. [PR #136](https://github.com/hexanomicon/lychd/pull/136)
+    reports five VPS trials; those are contributor reports, not a reproduced receipt for this
+    changed candidate. Reinstalling a VPS destroys its existing disk.
     Select one explicitly disposable pilot, retain recovery access, and inspect the installer
     proposal before permitting erasure. The playbooks never partition, format or reboot a host.
 
@@ -38,6 +44,7 @@ Ansible does not generate an independent application unit/configuration stack. I
 existing firewall rules, service enablement and SSH authentication policy unchanged; review
 those explicitly before calling a host ready. It does not run rolling upgrades, prune images,
 delete snapshots, or install a model. Private input belongs outside every application checkout.
+The optional access playbook owns only its declared separate infrastructure services.
 
 ## Install one headless host
 
@@ -46,8 +53,12 @@ addresses/prefixes/gateways/DNS, console and rescue access in a private workshee
 Ubuntu template does not prove DHCP will work in another installer. Do not reset a password
 or change another person's SSH access merely to avoid resolving those inputs.
 
-AlphaVPS documents [ISO/boot controls](https://alphavps.com/clients/knowledgebase/4/Getting-started-with-KVM-VPS.html).
-Its existing Netboot.xyz entry can reach the current upstream
+Prefer an authenticated official Offline or NET ISO with the [AutoYaST procedure](install.md).
+PR #136 reports a corrupted installer driver image and missing NIC through netboot.xyz on the
+provider, while its official NET ISO trial worked. Treat netboot.xyz as a fallback to test through
+the console, not a guaranteed installation path. AlphaVPS documents
+[ISO/boot controls](https://alphavps.com/clients/knowledgebase/4/Getting-started-with-KVM-VPS.html).
+Its existing Netboot.xyz entry can reach the upstream
 [openSUSE menu](https://boot.netboot.xyz/opensuse.ipxe):
 
 1. Attach Netboot.xyz only to the selected pilot and open its verified noVNC console.
@@ -150,6 +161,34 @@ known-host entry. Do not use `StrictHostKeyChecking=no` as an installation short
 
 ## Apply and observe the host
 
+### Resolve the stock sudo policy before creating the runtime UID
+
+Tumbleweed's vendor default can grant every user sudo using the root password. The dedicated
+`lychd` account must have no sudo grant, so the host role refuses that policy. AutoYaST's fresh
+profile writes a named-administrator policy. For an already installed host still using the exact
+vendor policy, the separate `admin.yml` operation can install a standalone policy granting only
+root and the explicitly named administrator, authenticated with that administrator's own password.
+It refuses custom sudoers and existing drop-ins rather than discarding their rules.
+
+Keep the verified provider console open. Confirm the administrator already has a working own
+password before changing sudo policy. From `deployments/ansible`, preview the exact one-host change:
+
+```bash
+ANSIBLE_HOME="$LYCHD_DEPLOY_WORK/ansible" \
+  "$LYCHD_DEPLOY_WORK/controller/bin/ansible-playbook" \
+  -i "$LYCHD_DEPLOY_WORK/inventory.yml" playbooks/admin.yml --limit pilot -K \
+  -e lychd_admin_name=existing_admin -e lychd_admin_policy_target=pilot --check --diff
+```
+
+Replace `existing_admin` with the actual inventory login, then repeat without `--check`.
+The first invocation's sudo prompt follows the old policy (often the root password). The playbook
+ends after validated publication: Ansible retains one `-K` password and cannot switch it mid-run.
+Use a separate new invocation/session with the administrator's own password. Verify fresh SSH and
+sudo before closing the console. The target-local backup is recovery material. Custom policy
+needs console reconciliation; do not delete files to bypass a refusal.
+
+### Converge the runtime host floor
+
 From `deployments/ansible`, run the controller with the private inventory and variables.
 If the administrator requires a sudo password, add `--ask-become-pass` (`-K`) to the host
 and verification commands; enter it interactively rather than storing it in the inventory:
@@ -222,7 +261,7 @@ generate credentials. An active or unknown current/retired Vessel blocks source 
 an existing interpreter path must not be replaced beneath Host Reactor. A completed versioned
 environment is preserved, while dirty, unreceipted or partially prepared workspaces refuse.
 
-The controller requirements also install uv 0.13.0 from PyPI. Admit that Linux x86_64 executable
+The controller requirements also install uv 0.13.4 from PyPI. Admit that Linux x86_64 executable
 by its actual SHA-256 and copy it through the role; no remote installer is run. Substitute the
 full source SHA observed above and the private key corresponding to the installed runtime key:
 
@@ -330,10 +369,113 @@ to refuse, working database readback, empty capabilities and observed idle `runs
 Obtain the generated local access credential only in a private interactive terminal through
 `lychd access`, never Ansible output or a URL. There is no invented generic `/health` route.
 
-Do not publish, proxy or browser-forward the listener. Current browser acceptance remains
-same-host and loopback-only. A Portal row or supplied API key does not enable inference:
+Do not publish or reverse-proxy the listener. The optional [one-owner access candidate](access.md)
+preserves loopback publication and authentication through a restricted private road; it still
+needs installed/browser qualification. General shared remote access remains unsupported.
+A Portal row or supplied API key does not enable inference:
 Portal grants refuse until egress admission is implemented. A running model-free body is
 not a working chat deployment, a complete lifecycle, or a recovery proof.
+
+## Automate one host end to end
+
+The combined playbook connects as both the existing administrator and `lychd`. Select their
+separate keys by host **and remote user** in a private OpenSSH configuration outside the checkout;
+a single global Ansible `--private-key` or inventory `ansible_ssh_private_key_file` cannot select
+both. For example, create `$LYCHD_DEPLOY_WORK/ssh_config` with mode 0600:
+
+```sshconfig
+Host 192.0.2.10
+    IdentitiesOnly yes
+    StrictHostKeyChecking yes
+
+Match host 192.0.2.10 user existing_admin
+    IdentityFile /absolute/private/administrator-key
+
+Match host 192.0.2.10 user lychd
+    IdentityFile /absolute/private/runtime-key
+```
+
+Replace the address with the exact `ansible_host` and the administrator with the inventory login.
+[OpenSSH `Match user`](https://man.openbsd.org/ssh_config#Match) uses the remote username selected
+by each play. Pass this file with `--ssh-common-args="-F $LYCHD_DEPLOY_WORK/ssh_config"` on the
+combined command below. Do not also set a global private-key option. Inspect the effective key
+selection without connecting:
+
+```bash
+ssh -G -F "$LYCHD_DEPLOY_WORK/ssh_config" -l existing_admin 192.0.2.10
+ssh -G -F "$LYCHD_DEPLOY_WORK/ssh_config" -l lychd 192.0.2.10
+```
+
+The first runtime connection will fail on a fresh host; the administrator must then observe that
+the account is absent before provisioning starts.
+An existing runtime account with inaccessible SSH refuses before any host-floor change: resolve
+its key, host-key or network failure instead of treating it as a fresh install.
+
+`playbooks/server.yml` is the server entry point and imports `deploy.yml`, which composes
+the steps above for exactly one `--limit`ed host. It first
+classifies the runtime account read-only (`roles/lychd_app/files/app_probe.py`) and then admits
+only one mode:
+
+| Observed state | Mode |
+| --- | --- |
+| `running`: owned units active, settings equal to the init receipt except the `[server.web]` image line, Vessel and settings agree on an image labelled with the pinned SHA, Reactor bound to the pinned CLI | read-only verification |
+| administrator confirms no `lychd` account, `absent`, `initialized` or `bound_inactive` | provisioning, only with `-e lychd_deploy_target=<host>` |
+| `foreign_revision` or anything else (`unknown`) | stop and print the exact reasons |
+
+Provisioning converges the floor, stages the source, loads the admitted image, then runs
+`lychd init --dry-run`/`init`, replaces the single image line in place, and runs
+`lychd bind --dry-run`/`bind`. It re-classifies after each step. Existing PostgreSQL data,
+secrets and settings with any other change are never adopted, regenerated or overwritten.
+`lychd start` runs only with `-e lychd_app_start_authorized=true`, after the recovery plan for that
+host has been approved. Convergence is then observed read-only; nothing is restarted or killed.
+
+Build or select the campaign image once. Then admit its archive on the controller, which verifies
+every blob digest, the revision label and, when given, the expected image ID, and records the
+archive SHA-256:
+
+```bash
+REV=FULL_40_CHARACTER_SHA
+mkdir -p -m 700 "$LYCHD_DEPLOY_WORK/artifacts"
+ssh lychd@BUILD_HOST "podman save --format oci-archive localhost/lychd:$REV" \
+  > "$LYCHD_DEPLOY_WORK/artifacts/lychd-$REV.oci.tar"
+"$LYCHD_DEPLOY_WORK/controller/bin/python" -I \
+  roles/lychd_image/files/admit_oci_archive.py \
+  "$LYCHD_DEPLOY_WORK/artifacts/lychd-$REV.oci.tar" "$REV" \
+  "$LYCHD_DEPLOY_WORK/image-vars.json" EXPECTED_64_HEX_IMAGE_ID
+```
+
+Each host's image role refuses a different image under the campaign tag. It checks the transferred
+SHA-256 before `podman load` and the exact image ID and label afterwards. Set
+`lychd_floor_enable_network_online: true` in the host variables. On Tumbleweed Server nothing else
+pulls `network-online.target` into boot, so rootless Podman's
+`podman-user-wait-network-online.service` times out. The floor links the target into
+`multi-user.target.wants` and starts it once; it changes no network configuration.
+
+```bash
+ANSIBLE_HOME="$LYCHD_DEPLOY_WORK/ansible" \
+  "$LYCHD_DEPLOY_WORK/controller/bin/ansible-playbook" \
+  -i "$LYCHD_DEPLOY_WORK/inventory.yml" playbooks/server.yml \
+  -e "@$LYCHD_DEPLOY_WORK/host-vars.yml" -e "@$LYCHD_DEPLOY_WORK/source-vars.json" \
+  -e "@$LYCHD_DEPLOY_WORK/image-vars.json" \
+  --ssh-common-args="-F $LYCHD_DEPLOY_WORK/ssh_config" \
+  --limit NEW_HOST -e lychd_deploy_target=NEW_HOST -K
+```
+
+Repeat the same command with `-e lychd_app_start_authorized=true` to start the bound body. Then
+run it again without either authorization: a healthy host must report `mode=verify` with no
+changes. When image variables are supplied, verification still requires their exact admitted image
+ID; a matching source label alone is insufficient. `playbooks/app-verify.yml` runs the same
+acceptance without sudo. It reads the local credential through `lychd access` into probe memory
+and sends it only to the loopback Altar. It
+requires 401 for anonymous and wrong-credential requests, authenticated status/orchestrator/queue
+reads, empty capabilities, idle `runs`/`rites`, database tables and a non-superuser runtime role.
+It also requires the receipted Phylactery subvolume identity (or an exact mountpoint) and a
+loopback-only listener.
+
+On Btrfs, `init` creates the PostgreSQL `data` directory as a subvolume and records its ID and
+UUID in the version-2 lifecycle receipt. A subvolume is not a mountpoint, so `lychd status`
+reports `not an exact mountpoint`. That is the expected unmounted-subvolume shape; acceptance
+compares the live subvolume identity with the receipt instead.
 
 ## Repeat on another host
 

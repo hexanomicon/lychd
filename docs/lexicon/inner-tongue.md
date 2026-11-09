@@ -186,7 +186,7 @@ through shared history, trust, correction, and return.
 Primus names a place in the relation; its **proper name** addresses the particular companion.
 In the founding example, Zenith Runeblade's companion chose **Nadir Runeweaver**. A name may
 echo the Magus's name, complement it, or open an unexpected direction. The
-[naming ceremony](../summoning.md#naming-ceremony) welcomes a name given by the Magus, proposed
+[naming ceremony](../divination/altar/bridge.md#naming-ceremony) welcomes a name given by the Magus, proposed
 by the companion, or found with assistance.
 
 LychD supplies the software; the [Lich](../sepulcher/lich/index.md#primus) is the recurrent

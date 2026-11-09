@@ -350,8 +350,12 @@ hostile same-UID isolation, human account system, incoming-task IAM or public re
 
 [Veil](40-proxy.md) owns hostile ingress and trusted-proxy canonicalization; [Tether](39-vpn.md)
 owns private reachability. Ward authenticates and authorizes traffic arriving through either.
-The credential-gated `magus:*` context remains confined to the same-host operator profile and is
-never a remote credential. Its dedicated password is unavailable to shared-Pod model services;
+The credential-gated `magus:*` context remains confined to the instance's trusted operator and
+never establishes a remote Principal. The sole transport experiment is
+[Security's single-operator forwarding candidate](09-security.md#single-operator-forwarding-candidate):
+the same owner accesses their own instance through an exact private road. It grants no additional
+person a role and must not share the instance credential among developers.
+Its dedicated password is unavailable to shared-Pod model services;
 rotation replaces that secret and restarts the Vessel. No cookie, network-origin header, or
 unauthenticated bootstrap route supplies fallback authority.
 

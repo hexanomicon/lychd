@@ -89,7 +89,10 @@ traversal require separate trust decisions; recovery cannot introduce them invis
 
 This Covenant is **Designed**. No VPN provider, interface, enrollment, peer registry, key
 rotation, route policy, health, or revocation path ships; generated deployment remains
-IPv4-loopback-only, rejects UDP, and must not be tunnelled or port-forwarded. [State of
+IPv4-loopback-only and rejects UDP. The optional infrastructure-owned
+[single-operator forwarding candidate](09-security.md#single-operator-forwarding-candidate)
+is separate from Tether and has no installed qualification. General tunnelling and shared-user
+access remain unsupported. [State of
 Work](../state-of-the-work.md#vpn-tether) owns that boundary.
 
 Independent revocation is Tether's practical return. Operating that private road requires

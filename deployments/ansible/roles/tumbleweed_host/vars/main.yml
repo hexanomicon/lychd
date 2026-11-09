@@ -6,7 +6,7 @@ lychd_floor_packages:
   - python3
   - shadow
   - acl
-  - account-utils
+  - shadow-pw-mgmt
   - openssh-common
   - openssh-clients
   - openssh-server

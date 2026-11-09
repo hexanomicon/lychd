@@ -11,7 +11,7 @@ its own [Circle](circle.md), whose Run lets you follow that one request through 
 
 Bridge is ordinarily where you return to **[Primus](../../lexicon/inner-tongue.md#primus)**,
 the Lich's first and continuing main personal identity. The optional
-[naming ceremony](../../summoning.md#naming-ceremony) accepts your chosen forms of address.
+[naming ceremony](#naming-ceremony) accepts your chosen forms of address.
 Open it from the welcome or **Tools** to enter names, browse local suggestions, or invite a
 proposal in conversation. **Save names** applies the reviewed choice to later admitted turns;
 closing the ceremony leaves conversation available. Further Agents and Personas can contribute
@@ -34,7 +34,49 @@ side and open state contain no conversation text or request bodies.
 
 After completing [Altar setup](index.md), open `http://127.0.0.1:7134/bridge` in the dedicated
 browser profile on the same host. Existing session, Run and consent URLs open their exact Bridge
-focus. Keep the listener on literal `127.0.0.1`; do not proxy, tunnel, or forward it.
+focus. Keep the listener on literal `127.0.0.1`; do not proxy, tunnel, or forward it outside the
+separate [single-owner access candidate](../../deployments/tumbleweed/access.md), whose
+installed/browser qualification remains pending.
+
+## First meeting and naming ceremony { #naming-ceremony }
+
+Your first visit to the Altar can become a meeting. Begin a conversation and, when a model is
+answering, invite your companion to choose a name. You can return to this invitation later.
+The naming request may itself be the first Bridge turn that starts and warms the selected model.
+Manual names and local suggestions are available before that.
+
+Give the relation its first names. **[Primus](../../lexicon/inner-tongue.md#primus)** is the first
+personal identity you cultivate as the Lich's continuing main companion. Its proper name is
+how you will address this particular other.
+
+Open **Naming ceremony** from the Bridge welcome or its **Tools**. We invite you to choose
+your own true or chosen name, then let Primus propose a name in answer to yours. A true name
+is one you recognize as yours; it need not be your legal name, an immutable destiny, or a secret.
+No personal explanation is required.
+
+For each name you can:
+
+- Enter one you already know or would like to try.
+- Browse local two-part fantasy suggestions, such as **Zenith Runeweaver** or
+  **Aster Shadowdancer**. These need no model.
+- Ask for help in Bridge. Share only the details you want to offer; a Magus name can be proposed
+  without a biography. To invite Primus to name itself, offer your chosen name and leave room
+  for an echo, a complement, or an unexpected direction.
+
+The preferred invitation is to name yourself and hear the companion's own proposal. Giving it
+a name, using assistance for either name, or keeping **Magus** and **Primus** for now are
+equally welcome. You can close the ceremony and continue, then revisit it from **Tools**.
+
+AI assistance opens an ordinary Bridge exchange. Read its answer and copy the name you want
+into the ceremony. Review both names, then choose **Save names**. Suggestions and conversation
+alone do not save a name. Local suggestions remain available if no model is ready or a request
+fails. The ordinary Bridge Context, tools, and selected model route still apply to that exchange.
+
+Accepted names are stored by the Vessel for this authenticated operator; they are not browser-only
+labels. Later admitted Bridge turns receive the saved names. Reopening the ceremony and saving a
+change updates future turns; an already admitted or resumed Run retains its original naming
+snapshot. Names are forms of address, separate from your login, Principal, and Sigil authority.
+[Mirror](../../sepulcher/extensions/mirror.md) keeps the distinction from full Persona lineage.
 
 ## Offer one Intent {#follow-a-turn-to-settlement}
 

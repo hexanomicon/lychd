@@ -18,8 +18,10 @@ below are accepted design.
 
 Generated deployment remains IPv4-loopback-only: the Extension port grammar accepts only
 `127.0.0.1:<host>:<container>` and rejects UDP. Remote, proxied, tunneled, and untrusted-browser
-use is unsupported. Keep the Vessel on the same host, and do not tunnel or port-forward the
-current Altar.
+use is unsupported. The separate infrastructure-owned
+[single-owner access candidate](../../deployments/tumbleweed/access.md) permits an explicit
+qualification experiment while keeping loopback publication. It is not a native Tether
+implementation or a shared remote Altar.
 
 ## Managed path and peer custody
 

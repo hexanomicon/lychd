@@ -9,7 +9,7 @@
       - lychd_source_uv_local_binary is match('^/[^\n]+$')
       - lychd_source_uv_sha256 is match('^[0-9a-f]{64}$')
       - lychd_source_python in ['3.14.8', '3.15.0']
-    fail_msg: "Supply an exact 40-hex source SHA and a controller-verified uv 0.13.0 binary receipt; connect directly as lychd."
+    fail_msg: "Supply an exact 40-hex source SHA and a controller-verified uv 0.13.4 binary receipt; connect directly as lychd."
 
 - name: Inspect identity, path ownership, receipt and immutable checkout
   ansible.builtin.command:
@@ -28,7 +28,7 @@
   ansible.builtin.set_fact:
     lychd_source_observed: "{{ lychd_source_guard.stdout | from_json }}"
     lychd_source_checkout: "/home/lychd/src/lychd-{{ lychd_source_revision }}"
-    lychd_source_uv_binary: /home/lychd/.local/lib/lychd-tools/uv-0.13.0
+    lychd_source_uv_binary: /home/lychd/.local/lib/lychd-tools/uv-0.13.4
 
 - name: Inspect the controller-admitted executable without following a symlink
   ansible.builtin.stat:
@@ -98,7 +98,7 @@
 
 - name: Refuse another uv release
   ansible.builtin.assert:
-    that: lychd_source_uv_version.stdout is match('^uv 0\.13\.0( |$)')
+    that: lychd_source_uv_version.stdout is match('^uv 0[.]13[.]4( |$)')
   when: not ansible_check_mode
 
 - name: Create the ordinary user's source parent

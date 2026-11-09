@@ -1,0 +1,9 @@
+---
+- name: Prepare an existing Tumbleweed KDE personal workstation
+  hosts: lychd_workstations
+  gather_facts: false
+  become: true
+  serial: 1
+  any_errors_fatal: true
+  roles:
+    - role: tumbleweed_workstation

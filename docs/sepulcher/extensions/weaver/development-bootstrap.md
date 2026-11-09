@@ -429,22 +429,15 @@ installation adoption retain their existing owners.
 
 ## Assimilate one mechanism at a time
 
-Use [ADR 35](../../../adr/35-assimilation.md) when the work studies and re-expresses foreign
-craft. An adapter to a service is Integration; bounded foreign labor is Delegation. Do not call
-every dependency or returned patch Assimilation.
+When a campaign studies or re-expresses foreign craft, follow Smith's
+[upstream reuse and notices](../smith.md#upstream-reuse-and-notices). That procedure covers source
+selection, the reuse decision, attribution and the handoff to packaging and Evolution.
 
-For one admitted lesson, retain exact source revision and paths, provenance, license and notices,
-local need/base/target, the mechanism being retained, deliberately excluded authority, generated
-material, acceptance cases, unresolved gaps and a maintenance owner. Read source and tests as
-untrusted evidence. Construct in the candidate surface; compare the claimed behavior locally,
-retain necessary notices and inspect failure and hostile-input cases. Foreign benchmarks or
-tests alone cannot prove local correctness. The result requests source/package admission and,
-where needed, a later Evolution; it never installs itself.
-
-For example, borrow a bounded JSONL framing or receipt mechanism from a reviewed runtime version.
-Keep its exact provenance and prove malformed/truncated input, identity correlation, limits and
-terminal behavior at the LychD boundary. Do not import the foreign credential store, router,
-subagent authority or billing fallback with the framing code.
+Assign one mechanism with an exact source/base, receiving owner, permitted paths and effects,
+reviewer, budget and acceptance cases. The agent returns a bounded candidate, its Dossier,
+source-to-local mapping and changes, required notices, verification and unresolved gaps. Use the
+[bounded assignment](../smith.md#a-bounded-assignment-for-an-agent) as the intake shape; campaign
+coordination and a passing job do not confer promotion or activation authority.
 
 ## Measure whether the loop helps
 

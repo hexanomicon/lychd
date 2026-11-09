@@ -34,8 +34,7 @@ capabilities the trial uses, and where the resulting services can be reached:
 2. [The Desecration](#the-desecration) — build the command and Vessel from one source.
 3. [The Inscription](#the-inscription) — give configuration and durable state their homes.
 4. [The First Soulstone](#the-first-soulstone) — declare and bind the local model service.
-5. [The Awakening](#the-awakening) — start the body, choose your names in the
-   [naming ceremony](#naming-ceremony), and witness its First Invocation.
+5. [The Awakening](#the-awakening) — start the body and witness its First Invocation.
 
 LychD calls the recurrent whole **the Lich**. The model is one of its organs. These commands set
 up that organ and the services around it; the [anatomy](sepulcher/index.md) explains how memory,
@@ -380,7 +379,10 @@ uv run --extra postgres-binary lychd logs --lines 120
 
 !!! danger "Temporary local-browser boundary"
     Use a dedicated browser profile on this host. Keep the listener on `127.0.0.1`; do not publish,
-    proxy, tunnel, or forward it. Keep the optional SAQ diagnostic UI disabled, do not expose
+    proxy, tunnel, or forward it outside the separately admitted
+    [single-owner access candidate](deployments/tumbleweed/access.md). That candidate still needs
+    installed/browser acceptance and cannot be shared among developers.
+    Keep the optional SAQ diagnostic UI disabled, do not expose
     `/schema/scalar`, and do not mix this profile with hostile sites. The two internal SAQ workers
     are required for normal Run execution.
 
@@ -403,41 +405,6 @@ http://127.0.0.1:7134/
 
 The root opens **Orb**, with **Bridge** beside it in a fresh wide layout. On a narrow window,
 open Bridge with the edge chevron.
-
-### The naming ceremony { #naming-ceremony }
-
-Give the relation its first names. **[Primus](lexicon/inner-tongue.md#primus)** is the first
-personal identity you cultivate as the Lich's continuing main companion. Its proper name is
-how you will address this particular other.
-
-Open **Naming ceremony** from the Bridge welcome or its **Tools**. We invite you to choose
-your own true or chosen name, then let Primus propose a name in answer to yours. A true name
-is one you recognize as yours; it need not be your legal name, an immutable destiny, or a secret.
-No personal explanation is required.
-
-For each name you can:
-
-- Enter one you already know or would like to try.
-- Browse local two-part fantasy suggestions, such as **Zenith Runeweaver** or
-  **Aster Shadowdancer**. These need no model.
-- Ask for help in Bridge. Share only the details you want to offer; a Magus name can be proposed
-  without a biography. To invite Primus to name itself, offer your chosen name and leave room
-  for an echo, a complement, or an unexpected direction.
-
-The preferred invitation is to name yourself and hear the companion's own proposal. Giving it
-a name, using assistance for either name, or keeping **Magus** and **Primus** for now are
-equally welcome. You can close the ceremony and continue, then revisit it from **Tools**.
-
-AI assistance opens an ordinary Bridge exchange. Read its answer and copy the name you want
-into the ceremony. Review both names, then choose **Save names**. Suggestions and conversation
-alone do not save a name. Local suggestions remain available if no model is ready or a request
-fails. The ordinary Bridge Context, tools, and selected model route still apply to that exchange.
-
-Accepted names are stored by the Vessel for this authenticated operator; they are not browser-only
-labels. Later admitted Bridge turns receive the saved names. Reopening the ceremony and saving a
-change updates future turns; an already admitted or resumed Run retains its original naming
-snapshot. Names are forms of address, separate from your login, Principal, and Sigil authority.
-[Mirror](sepulcher/extensions/mirror.md) keeps the distinction from full Persona lineage.
 
 ### Make the First Invocation
 
@@ -477,6 +444,13 @@ observations are available through `/orchestrator/status`; they are not addition
 Record all four observations with the source, configuration, image, model, host, and device
 identities. Together they document this installation and its first reply. They do not qualify
 another runtime combination or remove the local-browser restrictions above.
+
+### Continue the meeting in the Altar { #naming-ceremony }
+
+With the body and first reply observed, continue to the Altar's optional
+[naming ceremony](divination/altar/bridge.md#naming-ceremony). Meet Primus, choose names together,
+or keep Magus and Primus for now. Naming belongs to that personal meeting and can wait until
+you feel ready.
 
 ### When the witnesses disagree
 

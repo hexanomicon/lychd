@@ -1,0 +1,25 @@
+# Managed by LychD workstation baseline v1
+if status is-interactive
+    set -g fish_greeting
+    if command -q starship
+        set -l managed_config "$HOME/.config/lychd-workstation-starship.toml"
+        if set -q STARSHIP_CONFIG
+            # Child shells inherit our selection but still need their own prompt functions.
+            if test "$STARSHIP_CONFIG" = "$managed_config"
+                starship init fish | source
+            end
+        else
+            set -l config_root "$HOME/.config"
+            if set -q XDG_CONFIG_HOME
+                set config_root "$XDG_CONFIG_HOME"
+            end
+            if not test -e "$config_root/starship.toml"
+                set -gx STARSHIP_CONFIG "$managed_config"
+                starship init fish | source
+            end
+        end
+    end
+    if command -q zoxide
+        zoxide init fish | source
+    end
+end

@@ -120,7 +120,7 @@ def test_container_carries_project_license_and_notices() -> None:
     assert "psycopg[pool]>=3.2.13,<4" in dependencies
     assert all("psycopg-binary" not in dependency for dependency in dependencies)
     assert project["project"]["optional-dependencies"]["postgres-binary"] == [
-        "psycopg-binary==3.3.6",
+        "psycopg-binary==3.3.8",
     ]
     assert "--no-dev --no-install-project --no-editable" in containerfile
 

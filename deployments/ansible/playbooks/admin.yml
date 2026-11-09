@@ -1,0 +1,9 @@
+---
+- name: Replace only a fresh vendor sudo policy with a named administrator policy
+  hosts: lychd_hosts
+  gather_facts: false
+  become: true
+  serial: 1
+  any_errors_fatal: true
+  roles:
+    - role: tumbleweed_admin

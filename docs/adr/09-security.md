@@ -68,9 +68,38 @@ This local credential does not establish remote identity, object isolation, or e
 revocation. Dedicated-profile browser operation remains subject to its acceptance evidence.
 The [isolated developer fixture](11-backend.md#isolated-developer-fixture-designed) may use its
 configured loopback Vite proxy while retaining the same authentication, Host, CORS, Origin, and
-CSRF checks. Peer access, production access through a proxy, tunnels, and non-loopback operation
-remain refused. The raw SAQ administrative UI is disabled: its traceback and broker-mutation
+CSRF checks. Peer access, production access through a proxy, ad hoc tunnels, and non-loopback operation
+remain refused. The bounded experiment below is the sole forwarding exception. The raw SAQ administrative UI is disabled: its traceback and broker-mutation
 surfaces are not admitted operator projections.
+
+### Single-operator forwarding candidate
+
+An operator may qualify the [Tumbleweed access candidate](../deployments/tumbleweed/access.md)
+for **one fully trusted human owner of one instance**. This is an infrastructure experiment,
+not a supported shared Altar or remote IAM profile. Each developer needs their own instance,
+application credential and per-instance browser profile. Sharing the fixed `magus:*` credential
+with several people cannot supply attribution, object isolation or independently revocable roles.
+
+The host administrator owns WireGuard, its endpoint keys, firewall, restricted forwarding SSH
+service and transport revocation. systemd supervises that road independently of LychD; native
+Tether does not own it. The road admits only an exact peer and forwarding destination. It grants
+no shell, agent, Unix-socket, reverse, LAN, default-route, database or Podman access. Provider
+console recovery remains independent. Existing administrator access is not narrowed until the
+new road has passed acceptance.
+
+Both application publication and the laptop's forwarding listener remain `127.0.0.1:7134`.
+Basic authentication, literal Host/Origin, CORS and CSRF checks remain intact, without header
+rewrites or trusted-proxy assertions. Only the same instance owner retrieves its application
+credential privately. A dedicated browser profile per instance prevents cached loopback Basic
+credentials crossing instance boundaries; no untrusted sites or extensions enter that profile.
+Tunnel loss has no public fallback. Removing a key alone does not revoke an established SSH
+connection: transport removal must close the live road and persist the removal before reuse.
+
+Repository checks authorize no installed-security claim. Qualification requires two-endpoint
+positive/negative reachability, browser/SSE and hostile-origin checks, reboot, loss and live
+revocation observations. Credential compromise requires transport quarantine and an explicit
+application recovery plan; the incomplete active application stop/rotation path is not repaired
+by Ansible. [State of Work](../state-of-the-work.md#vpn-tether) retains these limits.
 
 ### Local installation-stop admission
 

@@ -1,0 +1,47 @@
+---
+- name: Validate direct runtime SSH and the pinned revision
+  ansible.builtin.assert:
+    that:
+      - ansible_user == 'lychd'
+      - not (ansible_become | default(false) | bool)
+      - lychd_source_revision is match('^[0-9a-f]{40}$')
+      - lychd_source_uv_sha256 | default('') is match('^[0-9a-f]{64}$')
+    fail_msg: "Application classification requires source-vars.json (exact source and tool receipt) and direct lychd SSH."
+
+- name: Verify the versioned source before executing any installed CLI
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/../lychd_source/files/source_guard.py') }}"
+      - "{{ lychd_source_revision }}"
+      - "{{ lychd_source_uv_sha256 }}"
+      - "{{ lychd_source_python | default('3.14.8') }}"
+  changed_when: false
+  check_mode: false
+
+- name: Classify the application without effects
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/app_probe.py') }}"
+      - classify
+    stdin: "{{ {'revision': lychd_source_revision} | to_json }}"
+  register: lychd_app_classify
+  changed_when: false
+  check_mode: false
+
+- name: Retain the observed application state
+  ansible.builtin.set_fact:
+    lychd_app_observed: "{{ lychd_app_classify.stdout | from_json }}"
+
+- name: Show the classification
+  ansible.builtin.debug:
+    msg:
+      state: "{{ lychd_app_observed.state }}"
+      reasons: "{{ lychd_app_observed.reasons }}"
+      config: "{{ lychd_app_observed.config | default('n/a') }}"
+      configured_image: "{{ lychd_app_observed.configured_image | default('n/a') }}"

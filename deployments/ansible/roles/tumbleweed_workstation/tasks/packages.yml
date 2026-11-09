@@ -1,0 +1,15 @@
+---
+- name: Query selected installed package names
+  ansible.builtin.command:
+    argv: [/usr/bin/rpm, -q, "{{ item }}"]
+  loop: "{{ lychd_workstation_packages }}"
+  register: lychd_workstation_package_queries
+  failed_when: lychd_workstation_package_queries.rc not in [0, 1]
+  check_mode: false
+  changed_when: false
+
+- name: Collect missing selected packages
+  ansible.builtin.set_fact:
+    lychd_workstation_missing_packages: >-
+      {{ lychd_workstation_package_queries.results | selectattr('rc', 'equalto', 1) |
+         map(attribute='item') | list }}
