@@ -334,10 +334,11 @@ read-only verification path. Workstation tooling owns only selected packages and
 configuration. Optional host access is infrastructure-owned, separate from native Tether.
 These assets do not own a second application lifecycle, model, secret generator or unit stack.
 
-[PR #136](https://github.com/hexanomicon/lychd/pull/136) reports five VPS startup/reboot trials at
-its candidate revision. The present campaign reviewed that source and added guards; it did not
-reproduce those installed observations. Local generator/refusal/syntax checks establish candidate
-contracts only. Matching-media AutoYaST validation, actual first/second applies, rootless storage,
+The [Server guide](./deployments/tumbleweed/index.md) retains PR #136's report of five VPS
+startup/reboot trials at its candidate revision. The present campaign reviewed that source and
+added guards; it did not reproduce those installed observations. Local generator/refusal/syntax
+checks establish candidate contracts only. Matching-media AutoYaST validation, actual first/second
+applies, rootless storage,
 workstation hardware, private-road/browser/revocation and OS recovery acceptance remain required
 for this changed source. Source preparation is not an installed application receipt.
 
