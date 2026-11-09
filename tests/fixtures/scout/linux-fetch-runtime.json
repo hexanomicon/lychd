@@ -1,12 +1,12 @@
 {
   "schema": "scout-fetch-local-proof@1",
   "status": "passed",
-  "kernel": "7.1.8-1-default",
+  "kernel": "7.0.0-1017-azure",
   "python": "3.15.0",
   "openssl": "OpenSSL 3.5.7 9 Jun 2026",
   "dependency_versions": {
     "h11": "0.16.0",
-    "dnspython": "2.9.1"
+    "dnspython": "2.9.2"
   },
   "network": "isolated-loopback-only",
   "authority": "synthetic-audit-gate-not-durable-production-authority",

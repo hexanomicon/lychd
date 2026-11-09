@@ -2830,13 +2830,23 @@ historical static/RSS runtime or the composed PostgreSQL receipt.
 
 A repeat on 5 November 2026 CET passed the same ordered OCI proofs after the HTTPX2 client
 migration changed dependency declarations and lock metadata. The selected Scout dependency
-versions and actual Fetch/authority exports remained unchanged; the renewed OCI record binds
-the new build inputs to that observed runtime and verified cleanup. The same qualification
+versions and actual Fetch/authority exports remained unchanged; that renewed OCI record bound
+the new build inputs to the observed runtime and verified cleanup. The same qualification
 limits apply.
 
-A subsequent dependency-update repeat passed with locked Pydantic 2.14.2 and the final
-check harness. The maintained OCI record binds that latest occurrence, its exact declarations
-and lock, actual paired network receipts, and verified cleanup. The same limits remain.
+A subsequent dependency-update repeat passed with locked Pydantic 2.14.2 and its final
+check harness, binding that occurrence to the exact declarations, lock, actual paired network
+receipts and verified cleanup under the same limits.
+
+On 9 November 2026, the separate `trusted-scout-ci-c1` occurrence passed the same ordered,
+unchanged static, DNS/TLS and current-authority proofs with locked dnspython 2.9.2 and
+Pydantic 2.14.3. Its GitHub-hosted Linux x86-64 runtime uses Docker 29.9.3/API 1.56/runc 1.5.2
+and an owned named unconfined AppArmor policy for trusted outer setup. The global
+user-namespace restriction remained enabled; actual kernel policy bytes matched the compiled
+input, both owned containers were removed with observed 404 responses, and the unused policy
+was removed. The maintained OCI record now binds that actual engine, image, source, paired
+network receipts and policy custody. The same proof limits apply; this does not replace the
+historical static/RSS or composed PostgreSQL qualifications or qualify production operation.
 
 A separate `scout-rss-extract@1` profile now projects strict UTF-8 RSS 2.0 into immutable
 channel/item observations in that same fixed child. It accepts three explicit XML media types;
