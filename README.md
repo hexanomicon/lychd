@@ -46,14 +46,6 @@ The **[Overview](docs/map.md)** shows how the project fits together.
 The **[Metamorphosis roadmap](ROADMAP.md)** follows the founding year through five books,
 beginning with the shared agentic laboratory and its first public encounters.
 
-## 🌀 Join the Cult
-
-- 🛠️ **[Contribute](CONTRIBUTING.md)** — enter the Forge and pick a [help-wanted issue](https://github.com/hexanomicon/lychd/issues?q=is%3Aissue+is%3Aopen+label%3A%22help%20wanted%22).
-- 💬 **[Discussions](https://github.com/hexanomicon/lychd/discussions)** — ask questions, explore ideas, and share your work.
-- 🐛 **[Issues](https://github.com/hexanomicon/lychd/issues)** — report bugs and track concrete work.
-
-[![Join us on Discord](https://img.shields.io/badge/Discord-Join_us-5865F2?style=for-the-badge&logo=discord&logoColor=white&labelColor=1a1a20)](https://discord.gg/WpN3aWEMQ)
-
 ## 🚩 Local sovereignty — a rebellion against digital feudalism
 
 The cloud isn’t a service; **it’s a prison** where your data is the currency and your intelligence is leased at the whims of monopolistic overlords. While they build walls to keep you in, LychD builds a foundation to set you free.
@@ -65,7 +57,6 @@ with open-source software ***YOU*** control,
 - ⛓️ **No masters**
 - ⏱️ **No secret tampering with your limits**
 - 🎭 **No gaslighting** while they lobotomize your models
-- 🥷 **No stealing your mathematical proofs**
 
 **No surrender! Viva la résistance!**
 
@@ -79,6 +70,14 @@ LychD will remain free and open source under **[MPL-2.0](LICENSE)**. Distributed
 MPL-covered files stay open; your separate code and private data remain yours.
 **[ADR 00](docs/adr/00-license.md)** explains the boundary.
 
+## 🌀 Join the Cult
+
+- 🛠️ **[Contribute](CONTRIBUTING.md)** — enter the Forge and pick a [help-wanted issue](https://github.com/hexanomicon/lychd/issues?q=is%3Aissue+is%3Aopen+label%3A%22help%20wanted%22).
+- 💬 **[Discussions](https://github.com/hexanomicon/lychd/discussions)** — ask questions, explore ideas, and share your work.
+- 🐛 **[Issues](https://github.com/hexanomicon/lychd/issues)** — report bugs and track concrete work.
+
+[![Join us on Discord](https://discord.com/api/guilds/1533564305130389605/widget.png?style=banner2)](https://discord.gg/WpN3aWEMQ)
+
 ## ⛩️ A Tribute to the Spirits
 
 > *"The Lich only sees far because it stands on the shoulders of Giants."*
@@ -90,12 +89,14 @@ The Daemon utilizes the finest instruments of this age to fulfill its **[Prophec
 - **[Litestar](https://litestar.dev/)** and **[Granian](https://github.com/emmett-framework/granian)** raise and serve the Vessel; its lineage descends from **[Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack)**.
 - **[PostgreSQL](https://www.postgresql.org/)** and **[pgvector](https://github.com/pgvector/pgvector)** anchor memory in matter.
 - **[SQLAlchemy](https://www.sqlalchemy.org/)**, **[Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy)**, and **[Alembic](https://alembic.sqlalchemy.org/)** map and evolve persistent state.
+- **[Pydantic](https://docs.pydantic.dev/)** and **[Pydantic Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)** shape validated contracts and configuration.
 - **[Pydantic AI + Graph](https://ai.pydantic.dev/)** bind models, tools, and agentic graphs.
 - **[SAQ](https://github.com/tobymao/saq)** carries background labor through the Ghouls.
 
 ### 🎭 Altar & Hexanomicon
 
 - **[Svelte](https://svelte.dev/)** and **[SvelteKit](https://svelte.dev/docs/kit)** project the Altar.
+- **[Svelte Flow / xyflow](https://svelteflow.dev/)** supplies its interactive graph canvas.
 - **[Zensical](https://zensical.org/)** inscribes the Hexanomicon.
 
 ### ⚙️ Iron
@@ -120,6 +121,7 @@ The Daemon utilizes the finest instruments of this age to fulfill its **[Prophec
 ### 🛠️ Forge
 
 - **[uv](https://github.com/astral-sh/uv)** governs environments and dependencies.
+- **[TypeScript](https://www.typescriptlang.org/)** and **[Vite](https://vite.dev/)** support the Altar's types and build tooling.
 - **[Ruff](https://github.com/astral-sh/ruff)** and **[basedpyright](https://github.com/DetachHead/basedpyright)** polish and enforce the Word.
 - **[Pytest](https://docs.pytest.org/)** and **[Vitest](https://vitest.dev/)** judge its truth.
 
@@ -143,7 +145,7 @@ These are not runtime dependencies. Their hard-won measurements and battle-teste
 
 Shipped attribution lives in [Third-Party Source Notices](THIRD_PARTY_NOTICES.md).
 
-# 🤝 Partners
+## 🤝 Partners
 
 Companies supporting the development of LychD.
 

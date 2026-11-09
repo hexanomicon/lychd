@@ -1,0 +1,42 @@
+---
+- name: Observe selected package state after preparation
+  ansible.builtin.import_tasks: packages.yml
+
+- name: Require all selected packages to be installed
+  ansible.builtin.assert:
+    that: lychd_workstation_missing_packages | length == 0
+    fail_msg: "Missing packages: {{ lychd_workstation_missing_packages }}"
+
+- name: Verify reserved personal files as their owner
+  become_user: "{{ lychd_workstation_user }}"
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/workstation.py') }}"
+      - verify
+    stdin: >-
+      {{ {'kind': 'user', 'user': lychd_workstation_user, 'identity': lychd_workstation_identity,
+          'files': lychd_workstation_files} | to_json }}
+  check_mode: false
+  changed_when: false
+
+- name: Verify selected machine-wide policy without opening Firefox
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/workstation.py') }}"
+      - verify
+    stdin: '{"kind": "policy"}'
+  check_mode: false
+  changed_when: false
+  when: lychd_workstation_dark_reader
+
+- name: Report the remaining session acceptance boundary
+  ansible.builtin.debug:
+    msg: >-
+      Package and reserved-file observations passed. Verify a fresh interactive fish session,
+      noninteractive silence, the named Konsole profile/font, and (when selected) restart RPM
+      Firefox and inspect about:policies plus about:addons. No GUI, extension download,
+      runtime account, GPU, application activation or recovery was qualified.

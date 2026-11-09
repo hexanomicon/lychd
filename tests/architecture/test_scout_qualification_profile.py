@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import io
 import json
+import socket
 import tarfile
 from hashlib import sha256
 from pathlib import Path
@@ -24,7 +25,16 @@ def test_maintained_oci_proof_matches_runtime_source_and_paired_network_receipts
     record = json.loads((root / "tests/fixtures/scout/linux-oci-extraction-runtime.json").read_text())
     assert record["schema"] == "scout-oci-static-proof@1"
     qualification, receipt = record["qualification"], record["receipt"]
-    assert qualification["profile"] == q.PROFILE_NAME
+    assert qualification["profile"] in q.PROFILE_ENGINES
+    if qualification["profile"] == q.CI_PROFILE_NAME:
+        q.validate_engine(qualification["engine"], q.CI_PROFILE_NAME)
+        custody = qualification["apparmor_custody"]
+        assert custody["phase"] == "removed"
+        assert custody["restriction_before"] == custody["restriction_after"] == "1"
+        assert custody["kernel"]["name"] == q.CI_APPARMOR_NAME
+        assert custody["kernel"]["mode"] == "unconfined"
+        assert custody["kernel"]["raw_sha256"] == custody["compiled_sha256"]
+        assert custody["source_sha256"] == qualification["source_sha256"]["scripts/scout-qualification.apparmor"]
     assert qualification["host_namespace_quota_unchanged"]
     assert qualification["owned_containers_removed_and_404_observed"]
     assert receipt["status"] == "passed"
@@ -39,7 +49,7 @@ def test_maintained_oci_proof_matches_runtime_source_and_paired_network_receipts
         "Makefile",
         "pyproject.toml",
         "uv.lock",
-    }
+    } | ({"scripts/scout-qualification.apparmor"} if qualification["profile"] == q.CI_PROFILE_NAME else set())
     assert set(record["paired_receipt_sha256"]) == {
         "tests/fixtures/scout/linux-fetch-runtime.json",
         "tests/fixtures/scout/linux-authority-runtime.json",
@@ -70,6 +80,134 @@ def _host() -> Json:
         "Sysctls": {"net.ipv4.ip_unprivileged_port_start": "0"},
         "PublishAllPorts": False,
     }
+
+
+@pytest.mark.parametrize("profile", [q.PROFILE_NAME, q.CI_PROFILE_NAME])
+def test_each_profile_requires_its_exact_engine_without_cross_adoption(profile: str) -> None:
+    engine, api, runtime = q.PROFILE_ENGINES[profile]
+    measured: Json = {"Version": engine, "ApiVersion": api, "Components": [{"Name": "runc", "Version": runtime}]}
+    q.validate_engine(measured, profile)
+    other = q.CI_PROFILE_NAME if profile == q.PROFILE_NAME else q.PROFILE_NAME
+    with pytest.raises(ValueError, match="Unsupported"):
+        q.validate_engine(measured, other)
+    measured["Components"][0]["Version"] = "0.0.0"
+    with pytest.raises(ValueError, match="Unsupported"):
+        q.validate_engine(measured, profile)
+
+
+def test_ci_admission_preserves_c2_and_unrelated_bootstrap_settings() -> None:
+    baseline = _host()
+    local = q.derive_profile(baseline, "{}")
+    ci = q.derive_profile(baseline, "{}", qualification_profile=q.CI_PROFILE_NAME)
+    assert "apparmor=unconfined" not in local["SecurityOpt"]
+    assert ci["SecurityOpt"] == [*local["SecurityOpt"], "apparmor=" + q.CI_APPARMOR_NAME]
+    assert "/proc/sys/crypto" in local["MaskedPaths"]
+    assert ci["MaskedPaths"] == [path for path in local["MaskedPaths"] if path != "/proc/sys/crypto"]
+    assert {key: value for key, value in ci.items() if key not in {"SecurityOpt", "MaskedPaths"}} == {
+        key: value for key, value in local.items() if key not in {"SecurityOpt", "MaskedPaths"}
+    }
+    with pytest.raises(ValueError, match="Unknown qualification"):
+        q.derive_profile(baseline, "{}", qualification_profile="unreviewed")
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    ["tcp://127.0.0.1:2375", "unix://remote/tmp/docker.sock", "/not-a-uri/docker.sock", "unix:///tmp/%2f.sock"],
+)
+def test_ci_refuses_remote_ambiguous_or_implicit_endpoints(endpoint: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DOCKER_CONTEXT", raising=False)
+    monkeypatch.setenv("LYCHD_SCOUT_DOCKER_SOCKET", endpoint)
+    monkeypatch.setenv("DOCKER_HOST", endpoint)
+    with pytest.raises(ValueError, match="explicit local Unix"):
+        q.controller_socket(q.CI_PROFILE_NAME)
+
+
+def test_ci_binds_only_matching_actual_socket_and_refuses_context_override(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "engine.sock"
+    endpoint = "unix://" + str(path)
+    monkeypatch.delenv("DOCKER_CONTEXT", raising=False)
+    monkeypatch.setenv("LYCHD_SCOUT_DOCKER_SOCKET", endpoint)
+    monkeypatch.setenv("DOCKER_HOST", endpoint)
+    path.write_text("not a socket")
+    with pytest.raises(ValueError, match="Unsafe Docker socket"):
+        q.controller_socket(q.CI_PROFILE_NAME)
+    path.unlink()
+    with socket.socket(socket.AF_UNIX) as listener:
+        listener.bind(str(path))
+        assert q.controller_socket(q.CI_PROFILE_NAME) == str(path)
+        monkeypatch.setenv("DOCKER_HOST", "unix:///different.sock")
+        with pytest.raises(ValueError, match="endpoints differ"):
+            q.controller_socket(q.CI_PROFILE_NAME)
+        monkeypatch.setenv("DOCKER_HOST", endpoint)
+        monkeypatch.setenv("DOCKER_CONTEXT", "another-engine")
+        with pytest.raises(ValueError, match="context override"):
+            q.controller_socket(q.CI_PROFILE_NAME)
+
+
+def test_c2_does_not_adopt_ci_socket_or_remote_docker_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DOCKER_CONTEXT", raising=False)
+    monkeypatch.setenv("LYCHD_SCOUT_DOCKER_SOCKET", "unix:///tmp/engine.sock")
+    with pytest.raises(ValueError, match="fixed local Docker"):
+        q.controller_socket(q.PROFILE_NAME)
+    monkeypatch.delenv("LYCHD_SCOUT_DOCKER_SOCKET")
+    monkeypatch.setenv("DOCKER_HOST", "tcp://remote:2375")
+    with pytest.raises(ValueError, match="endpoint mismatch"):
+        q.controller_socket(q.PROFILE_NAME)
+
+
+def test_named_policy_fingerprint_detects_replacement_mode_and_ambiguous_identity(tmp_path: Path) -> None:
+    profile = tmp_path / "owned.1"
+    profile.mkdir()
+    (profile / "name").write_text(q.CI_APPARMOR_NAME)
+    (profile / "mode").write_text("unconfined")
+    (profile / "raw_data").write_bytes(b"compiled fixture policy")
+    first = q.apparmor_fingerprint(tmp_path)
+    assert first is not None
+    assert first["raw_sha256"] == sha256(b"compiled fixture policy").hexdigest()
+    (profile / "raw_data").write_bytes(b"replaced policy")
+    assert q.apparmor_fingerprint(tmp_path) != first
+    (profile / "mode").write_text("complain")
+    with pytest.raises(ValueError, match="Unexpected AppArmor profile mode"):
+        q.apparmor_fingerprint(tmp_path)
+    (profile / "mode").write_text("unconfined")
+    duplicate = tmp_path / "foreign.2"
+    duplicate.mkdir()
+    (duplicate / "name").write_text(q.CI_APPARMOR_NAME)
+    with pytest.raises(ValueError, match="Ambiguous AppArmor profile"):
+        q.apparmor_fingerprint(tmp_path)
+
+
+@pytest.mark.parametrize("labelled", [False, True])
+def test_policy_cleanup_refuses_foreign_profile_users_or_unsettled_owned_containers(
+    tmp_path: Path, *, labelled: bool
+) -> None:
+    class Engine:
+        def request(self, _method: str, path: str) -> object:
+            if path == "/containers/json?all=1":
+                return [{"Id": IDENTITY}]
+            return {
+                "Config": {"Labels": {q.LABEL: "owner"} if labelled else {}},
+                "AppArmorProfile": "other" if labelled else q.CI_APPARMOR_NAME,
+            }
+
+    with pytest.raises(ValueError, match="still uses qualification authority"):
+        q.ensure_apparmor_unused(Engine(), tmp_path)
+
+
+def test_policy_cleanup_refuses_missing_terminal_result_before_daemon_queries(tmp_path: Path) -> None:
+    occurrence = tmp_path / "scout-qualification.fixture"
+    occurrence.mkdir()
+    (occurrence / "occurrence.json").write_text("{}")
+
+    class Engine:
+        def request(self, *_args: object) -> object:
+            message = "An unresolved controller must stop cleanup before daemon effects"
+            raise AssertionError(message)
+
+    with pytest.raises(ValueError, match="no terminal result"):
+        q.ensure_apparmor_unused(Engine(), tmp_path)
 
 
 @pytest.mark.parametrize(

@@ -1,7 +1,7 @@
 ---
 # Required controller inputs; no branch or moving-main default is accepted.
 lychd_source_revision: ""
-# Controller-admitted Linux x86_64 uv 0.13.0 executable and binary SHA-256.
+# Controller-admitted Linux x86_64 uv 0.13.4 executable and binary SHA-256.
 # The controller installs the pinned tool; this role never runs an installer.
 lychd_source_uv_local_binary: ""
 lychd_source_uv_sha256: ""

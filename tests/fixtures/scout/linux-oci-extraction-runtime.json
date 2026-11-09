@@ -1,18 +1,22 @@
 {
   "schema": "scout-oci-static-proof@1",
   "qualification": {
-    "observed_at": "2026-11-05T00:26:07Z",
-    "profile": "trusted-scout-c2",
-    "image": "sha256:dd8055d1e197d09ca98cb82d6f112887037644b61d248a1243b2181e2350defe",
+    "observed_at": "2026-11-09T10:03:14Z",
+    "profile": "trusted-scout-ci-c1",
+    "source_commit": "71e020b7d4d132584a9303051f2c9910a6ef48f3",
+    "workflow_run": "https://github.com/hexanomicon/lychd/actions/runs/42597781510",
+    "workflow_artifact_sha256": "efee2d9f5456ffc060b87f29998bfdb1b456a2cffd8a2642cde5621a9a9d65d8",
+    "image": "sha256:98683c22d68d561b0d6532185d1ca761274f12a995f7c39eae85e1717f4f8957",
     "seccomp_sha256": "364494fcdb222ed262f98016de3855c51a15d6e4a6ef9eeb19e8bb6c86cd3c02",
     "source_sha256": {
       "Containerfile.tests": "c652244645a3f9e5c7554ba6a7892a4d1990dfc071c0ed96ce0b9bbdb6d5b19e",
       "Containerfile.scout-qualification": "eb208fae14d8ad41b6c0a87d8fe008c6ae8fa401b2b9d99cd46e8a2ed83a86a5",
-      "scripts/container_scout_qualification.sh": "ba9bf906ac84c32b7c132e9940504629aeaa45e81d01b29454b49c3a3493cbdb",
-      "scripts/scout_qualification.py": "5225a54bd1f8e5173ff9eda0314b1785f0988958011215d3b6accaced06fbd05",
-      "Makefile": "261e0043bc223020e30b8e9e322aa2e20e6ab80827c67762dd5cd91dacb5275c",
-      "pyproject.toml": "4a74ad788a424f9e28e2abf2e3016a16893bb0e256dffe72759f1cefc76f9e54",
-      "uv.lock": "5fcc46c8fc61a6203f8f8227441fe8b242ae882c696ed2dad2e8a4acaa68e2e4"
+      "scripts/container_scout_qualification.sh": "fb00566dbfd8e859eeca31d02887ee47547fd92039b488a57ebc04aa0bf0113a",
+      "scripts/scout_qualification.py": "5a69acda24151e1929c5aa8b399ed7a0c035da2460dd3f37d09b6e627f8ba750",
+      "Makefile": "150ca8db9ec33ef3bac58d456351fed5678aee155ffbaaa2f82851fc41304c21",
+      "pyproject.toml": "095d221a87e2b01302112874995305fb0db3e6f1d3d5c5607764dc0ec345e9a9",
+      "uv.lock": "f1796b8e22f177750c353fd81fd28dd9af65a36eb1f8dbbe4e9aa7758e66fb9a",
+      "scripts/scout-qualification.apparmor": "d06b29c3e2e43a46edb0324213e63ebe7634f1b10fa3788782a94b9660d26c59"
     },
     "network": "isolated-loopback-only",
     "limits": {
@@ -24,12 +28,84 @@
     },
     "trusted_setup_limitation": "Native user-quota interfaces become visible in a fresh user namespace. This profile qualifies only the fixed trusted setup; the unchanged worker has no procfs and denies nested user namespaces.",
     "host_namespace_quota_unchanged": true,
-    "owned_containers_removed_and_404_observed": true
+    "owned_containers_removed_and_404_observed": true,
+    "engine": {
+      "Platform": {
+        "Name": "Docker Engine - Community"
+      },
+      "Version": "29.9.3",
+      "ApiVersion": "1.56",
+      "MinAPIVersion": "1.40",
+      "Os": "linux",
+      "Arch": "amd64",
+      "Components": [
+        {
+          "Name": "Engine",
+          "Version": "29.9.3",
+          "Details": {
+            "ApiVersion": "1.56",
+            "Arch": "amd64",
+            "BuildTime": "2026-11-03T21:44:43.000000000+00:00",
+            "Experimental": "false",
+            "GitCommit": "70efc0e",
+            "GoVersion": "go1.26.10",
+            "KernelVersion": "7.0.0-1017-azure",
+            "MinAPIVersion": "1.40",
+            "Module": "github.com/moby/moby/v2",
+            "ModuleVersion": "v2.0.0+unknown",
+            "Os": "linux"
+          }
+        },
+        {
+          "Name": "containerd",
+          "Version": "v2.4.2",
+          "Details": {
+            "GitCommit": "b7a25261e029d68978bbf290df0a62fc819b3c51"
+          }
+        },
+        {
+          "Name": "runc",
+          "Version": "1.5.2",
+          "Details": {
+            "GitCommit": "v1.5.2-0-g29dd3dc"
+          }
+        },
+        {
+          "Name": "docker-init",
+          "Version": "0.19.0",
+          "Details": {
+            "GitCommit": "de40ad0"
+          }
+        }
+      ],
+      "GitCommit": "70efc0e",
+      "GoVersion": "go1.26.10",
+      "KernelVersion": "7.0.0-1017-azure",
+      "BuildTime": "2026-11-03T21:44:43.000000000+00:00"
+    },
+    "apparmor_custody": {
+      "schema": "scout-ci-apparmor-custody@1",
+      "phase": "removed",
+      "name": "lychd-scout-ci-c1",
+      "source_sha256": "d06b29c3e2e43a46edb0324213e63ebe7634f1b10fa3788782a94b9660d26c59",
+      "compiled_sha256": "e6fbc0ad523a5245c9ce241d2c5ef995550b04b87e15f70cd87ada370399cf57",
+      "compiled_bytes": 1338,
+      "kernel": {
+        "directory": "lychd-scout-ci-c1.123",
+        "inode": 15864,
+        "name": "lychd-scout-ci-c1",
+        "mode": "unconfined",
+        "raw_sha256": "e6fbc0ad523a5245c9ce241d2c5ef995550b04b87e15f70cd87ada370399cf57",
+        "raw_bytes": 1338
+      },
+      "restriction_before": "1",
+      "restriction_after": "1"
+    }
   },
   "receipt": {
     "status": "passed",
     "profile": "scout-static-extract@1",
-    "kernel": "7.1.8-1-default",
+    "kernel": "7.0.0-1017-azure",
     "python": "3.15.0",
     "worker_digest": "01a187f62f8da632c344394d0c1bc8c7f7365eed8c21e530ef6257fef0f1ce7f",
     "runtime": {
@@ -38,7 +114,7 @@
         "digest": "573236e5328ac2ebb08f59ae3a9805b4f8d12bdef14be8af4450d5463294985f"
       },
       "python_root": "/opt/scout-python",
-      "python_tree_digest": "99e059160c4029771bab8d6a62a00f84164271d189922cd90f67b08c370b18b2",
+      "python_tree_digest": "5e654a87cff3a16ead8a2e970e289433b1da5fb737e1c669cd531b568eb644a7",
       "python_tree_entries": 1132,
       "python_tree_bytes": 32073680,
       "libraries": [
@@ -105,7 +181,7 @@
     ]
   },
   "paired_receipt_sha256": {
-    "tests/fixtures/scout/linux-fetch-runtime.json": "e2f74e1eb335c59f40ba20b5b2fa68e055e5de72811a05ec04f0435dadc49027",
-    "tests/fixtures/scout/linux-authority-runtime.json": "6a21816aaa6e07691855cd187f33a74beb60bcf2697ad88e79b64fc9830e5c5d"
+    "tests/fixtures/scout/linux-fetch-runtime.json": "0229bd91dbff873feddf0ac0f8081d83174cd59fcf768fa7f9cb9b46a67d4272",
+    "tests/fixtures/scout/linux-authority-runtime.json": "d9ffad67015a82e06e8d1d7461636e2e217792f414c9332add0f48f6110778ed"
   }
 }

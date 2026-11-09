@@ -64,11 +64,40 @@ Independent implementations of an architecture or protocol remain possible becau
 not make abstract ideas proprietary. Copying covered expression is a different act, governed by
 the license. Calling copied core code an Extension does not change that boundary.
 
+## Receiving third-party material
+
+Upstream rights and obligations survive incorporation into LychD. The project's MPL declaration
+neither grants missing reuse rights nor removes obligations on third-party code, tests,
+documentation, fixtures or assets. Admission identifies the exact revision and material, its
+applicable terms and exceptions, the local use and distribution boundary, and the notices and
+source obligations that must travel with it. A public repository or an automated rewrite
+supplies no missing permission.
+
+Review distinguishes a dependency or service integration, copied or adapted expression, and an
+independent implementation of an idea. Renaming, translation or model assistance does not by
+itself establish independence. Unclear provenance or incompatible obligations block incorporation
+until resolved; a maintainer's approval cannot waive third-party obligations without the relevant
+rightsholder's authorization. GPL/AGPL, custom and source-available terms require a concrete
+combination and deployment review rather than an
+assumption that they fit an MPL-only distribution.
+
+Prefer a central source-to-destination record and shipped license/notice material. Preserve
+inherited notices and satisfy any requirement for notices in the changed files themselves;
+central records and Git history cannot replace those duties. README acknowledgements are an
+editorial choice, not a licensing condition or a complete legal inventory.
+
+[Assimilation](35-assimilation.md#candidate-author-and-admission) owns the candidate's provenance
+contract; [the reuse procedure](../sepulcher/extensions/smith.md#upstream-reuse-and-notices)
+shows how contributors retain it. [Packaging](17-packaging.md) owns distribution evidence.
+
 ## Contribution terms
 
 Contributions are inbound under MPL-2.0 and distributed outbound under MPL-2.0. There is no CLA,
 no relicensing grant, and presently no DCO or required `Signed-off-by` trailer. Any future DCO
 must add its certification, instructions, and enforcement together.
+
+Contributors must identify incorporated third-party material and preserve its applicable terms;
+the contribution rule grants no rights over upstream material they cannot license.
 
 The repository does not use MPL Exhibit B. Secondary License compatibility is therefore available
 under MPL section 3.3 unless a later Covenant deliberately changes that position.

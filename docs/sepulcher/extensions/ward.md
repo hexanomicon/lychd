@@ -90,5 +90,7 @@ operative identity and attribution; Ward authenticates and authorizes the initia
 Principal. [Intercom](../../adr/26-a2a.md) peer scopes likewise cannot enter a local Sigil unchanged.
 
 Keep the Vessel and Altar on same-host loopback. Do not proxy, tunnel, port-forward, or remotely
-publish them. [ADR 38](../../adr/38-iam.md) owns Ward law; [Security](../../adr/09-security.md)
+publish them outside the explicit
+[single-owner qualification candidate](../../deployments/tumbleweed/access.md), which grants no
+second person a role. [ADR 38](../../adr/38-iam.md) owns Ward law; [Security](../../adr/09-security.md)
 owns the wider boundary.

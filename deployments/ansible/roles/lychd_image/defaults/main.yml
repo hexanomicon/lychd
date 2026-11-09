@@ -1,0 +1,9 @@
+---
+# Required controller inputs written by files/admit_oci_archive.py; never a remote registry tag.
+lychd_image_archive: ""
+lychd_image_archive_sha256: ""
+lychd_image_id: ""
+lychd_image_ref: ""
+lychd_image_revision: ""
+# Private runtime-user staging outside every LychD-owned root; the copy is removed after loading.
+lychd_image_staging_dir: /home/lychd/.local/state/lychd-deploy

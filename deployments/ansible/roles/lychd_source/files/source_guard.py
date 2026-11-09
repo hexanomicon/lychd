@@ -51,7 +51,7 @@ def inspect_source(home, revision, uv_sha256, python, uid):
     require(re.fullmatch(r"[0-9a-f]{64}", uv_sha256), "uv checksum required")
     require(python in ("3.14.8", "3.15.0"), "unsupported interpreter lane")
     checkout = home / "src" / f"lychd-{revision}"
-    uv = home / ".local/lib/lychd-tools/uv-0.13.0"
+    uv = home / ".local/lib/lychd-tools/uv-0.13.4"
     for path in (home, home / "src", checkout, uv.parent, uv.parent / "python", uv.parent / "cache"):
         safe_path(path, uid)
     safe_path(uv, uid, directory=False)
@@ -68,7 +68,9 @@ def inspect_source(home, revision, uv_sha256, python, uid):
             path = Path(parent) / name
             info = path.lstat()
             require(info.st_uid == uid, "foreign inode in source checkout")
-            require(stat.S_ISLNK(info.st_mode) or not info.st_mode & 0o022, "shared-writable source inode")
+            # uv deliberately creates its empty advisory environment lock with mode 0666.
+            uv_lock = path == checkout / ".venv/.lock" and stat.S_ISREG(info.st_mode) and info.st_size == 0
+            require(stat.S_ISLNK(info.st_mode) or uv_lock or not info.st_mode & 0o022, "shared-writable source inode")
             inside_venv = path.relative_to(checkout).parts[0] == ".venv"
             require(not stat.S_ISLNK(info.st_mode) or inside_venv, "source symlink refused")
     require((checkout / ".git").is_dir(), "ordinary Git checkout required")

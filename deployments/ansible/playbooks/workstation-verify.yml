@@ -1,0 +1,12 @@
+---
+- name: Observe the existing workstation baseline without changing it
+  hosts: lychd_workstations
+  gather_facts: false
+  become: true
+  serial: 1
+  any_errors_fatal: true
+  tasks:
+    - name: Load workstation defaults and read-only verification
+      ansible.builtin.include_role:
+        name: tumbleweed_workstation
+        tasks_from: verification

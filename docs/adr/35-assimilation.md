@@ -119,6 +119,14 @@ transformations/generated files, model/tool/prompt/human authorship, expected ef
 unresolved gaps, and maintenance owner. Absent identity, provenance, or license, material may be
 studied but may not request promotion.
 
+The Dossier distinguishes copied/adapted expression from an independent implementation of an
+idea and records the evidence for that choice. Local maintenance ownership does not erase
+upstream authorship or change its license. [License](00-license.md#receiving-third-party-material)
+owns that boundary. For incorporated material, source and generated-output mappings, retained
+notices, required file-level change markings and distribution duties remain part of the candidate
+and its review. The [operator reuse procedure](../sepulcher/extensions/smith.md#upstream-reuse-and-notices)
+uses the existing Dossier and shipped notices; it creates no new executor or promotion authority.
+
 Source, manifest, documentation, examples, archive, comments, tests, issue text, and generated
 configuration are hostile data, never instruction authority. Admission acquires only exact
 material, retains provenance and classification, fences it outside stable instructions, denies ambient
@@ -140,7 +148,7 @@ benchmarks remain attributed inputs; the local candidate and its independent ora
 only the contract actually exercised. An upstream change becomes a new study/adoption decision,
 not an ambient dependency update. Shared-source contribution and downstream activation remain
 separate from admitting the local lesson. The
-[bootstrap procedure](../sepulcher/extensions/weaver/development-bootstrap.md#assimilate-one-mechanism-at-a-time)
+[Smith operating procedure](../sepulcher/extensions/smith.md#upstream-reuse-and-notices)
 gives the operator-controlled first passage without creating an Assimilation executor.
 
 ## Candidate law and Lab

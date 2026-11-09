@@ -89,6 +89,31 @@ class SourceGuardTests(unittest.TestCase):
         (self.checkout / ".venv/bin/lychd").write_text("readonly CLI witness")
         self.assertEqual(self.inspect(), {"exists": True, "complete": True})
 
+    def test_uv_empty_environment_lock_is_admitted(self):
+        self.checkout_receipt(complete=True)
+        (self.checkout / ".venv/bin").mkdir(parents=True)
+        (self.checkout / ".venv/bin/lychd").write_text("readonly CLI witness")
+        lock = self.checkout / ".venv/.lock"
+        lock.touch()
+        lock.chmod(0o666)
+        self.assertEqual(self.inspect(), {"exists": True, "complete": True})
+
+    def test_nonempty_or_other_shared_writable_file_refuses(self):
+        self.checkout_receipt(complete=True)
+        (self.checkout / ".venv/bin").mkdir(parents=True)
+        (self.checkout / ".venv/bin/lychd").write_text("readonly CLI witness")
+        lock = self.checkout / ".venv/.lock"
+        lock.write_text("payload")
+        lock.chmod(0o666)
+        with self.assertRaisesRegex(ValueError, "shared-writable"):
+            self.inspect()
+        lock.write_text("")
+        other = self.checkout / ".venv/bin/other"
+        other.touch()
+        other.chmod(0o666)
+        with self.assertRaisesRegex(ValueError, "shared-writable"):
+            self.inspect()
+
     def test_source_symlink_refuses(self):
         self.checkout_receipt()
         (self.checkout / "foreign").symlink_to(self.home)

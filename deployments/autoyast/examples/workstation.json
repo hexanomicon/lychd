@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "architecture": "x86_64",
+  "role": "workstation",
+  "firmware": "uefi",
+  "disk": {"device": "/dev/disk/by-id/REPLACE_WITH_OBSERVED_WHOLE_DISK", "erase_all": true},
+  "hostname": "workstation",
+  "timezone": "Europe/Bratislava",
+  "keyboard": "sk",
+  "swap_gib": 2,
+  "admin": {"name": "operator", "public_key": "REPLACE_WITH_YOUR_PUBLIC_ED25519_KEY"},
+  "network": {"interface": "enp0s31f6", "mode": "dhcp"}
+}

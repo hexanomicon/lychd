@@ -40,14 +40,30 @@ NOT_FOUND = 404
 CONFLICT = 409
 MAX_RUN_SECONDS = 300
 MAIN_ARGC = 4
+METADATA_ARGC = 3
 ARTIFACT_PATH_PARTS = 2
 PROFILE_NAME = "trusted-scout-c2"
+CI_PROFILE_NAME = "trusted-scout-ci-c1"
+CI_APPARMOR_NAME = "lychd-scout-ci-c1"
+CI_APPARMOR_LABEL = CI_APPARMOR_NAME + " (unconfined)"
+CI_POLICY_FILE = Path(__file__).with_name("scout-qualification.apparmor")
+APPARMOR_PROFILES = Path("/sys/kernel/security/apparmor/policy/profiles")
+APPARMOR_RESTRICTION = Path("/proc/sys/kernel/apparmor_restrict_unprivileged_userns")
+APPARMOR_PARSER = "/usr/sbin/apparmor_parser"
+PROFILE_ENGINES = {
+    PROFILE_NAME: ("29.7.2-ce", "1.55", "1.5.1"),
+    CI_PROFILE_NAME: ("29.9.3", "1.56", "1.5.2"),
+}
 PROFILE_SHA256 = "364494fcdb222ed262f98016de3855c51a15d6e4a6ef9eeb19e8bb6c86cd3c02"
 SOCKET = "/var/run/docker.sock"
 API = "/v1.55"
 LABEL = "io.lychd.scout-qualification"
 CAPS = {"CAP_NET_ADMIN", "CAP_SETUID", "CAP_SETGID", "CAP_SETPCAP"}
 TOP = ("abi", "crypto", "debug", "dev", "fs", "kernel", "net", "user", "vm")
+PROFILE_TOP = {
+    PROFILE_NAME: TOP,
+    CI_PROFILE_NAME: ("abi", "debug", "dev", "fs", "kernel", "net", "user", "vm"),
+}
 QUOTAS = (
     "max_cgroup_namespaces",
     "max_fanotify_groups",
@@ -65,6 +81,11 @@ QUOTAS = (
 MASKS = tuple(f"/proc/sys/{name}" for name in TOP if name not in {"user", "kernel"}) + tuple(
     f"/proc/sys/user/{name}" for name in QUOTAS if name != "max_user_namespaces"
 )
+PROFILE_MASKS = {
+    name: tuple(f"/proc/sys/{entry}" for entry in entries if entry not in {"user", "kernel"})
+    + tuple(f"/proc/sys/user/{entry}" for entry in QUOTAS if entry != "max_user_namespaces")
+    for name, entries in PROFILE_TOP.items()
+}
 EXPORTS = {"boundary.json", "static-receipt.json", "fetch-receipt.json", "authority-receipt.json"}
 COMMAND = [
     "--signal=TERM",
@@ -82,6 +103,63 @@ def require(condition: object, message: str) -> None:
         raise ValueError(message)
 
 
+def selected_profile() -> str:
+    """Require one explicitly admitted fixture profile without negotiation."""
+    value = os.environ.get("LYCHD_SCOUT_QUALIFICATION_PROFILE", "")
+    require(value in PROFILE_ENGINES, "Explicit supported Scout qualification profile required")
+    return value
+
+
+def actor_uids() -> set[int]:
+    """Identify the ordinary caller when this metadata helper is run via sudo."""
+    values = {0, os.getuid()}
+    original = os.environ.get("SUDO_UID", "")
+    if os.geteuid() == 0 and original.isdecimal():
+        values.add(int(original))
+    return values
+
+
+def controller_socket(profile: str) -> str:
+    """Bind CLI and controller to one local endpoint; refuse context overrides."""
+    require(profile in PROFILE_ENGINES, "Unknown qualification profile")
+    require(not os.environ.get("DOCKER_CONTEXT"), "Docker context override refused")
+    explicit = os.environ.get("LYCHD_SCOUT_DOCKER_SOCKET", "")
+    if profile == PROFILE_NAME:
+        require(not explicit, "C2 uses only its fixed local Docker socket")
+        endpoint = "unix://" + SOCKET
+        require(os.environ.get("DOCKER_HOST", endpoint) == endpoint, "C2 Docker endpoint mismatch")
+        return SOCKET
+    require(
+        explicit.startswith("unix:///")
+        and "%" not in explicit
+        and "?" not in explicit
+        and "#" not in explicit
+        and "\x00" not in explicit,
+        "CI requires an explicit local Unix socket URI",
+    )
+    path = explicit.removeprefix("unix://")
+    require(
+        str(Path(path)) == path and Path(path).is_absolute() and ".." not in Path(path).parts,
+        "Non-canonical Docker socket",
+    )
+    require(os.environ.get("DOCKER_HOST") == explicit, "CLI/controller Docker endpoints differ")
+    information = Path(path).lstat()
+    require(stat.S_ISSOCK(information.st_mode) and information.st_uid in actor_uids(), "Unsafe Docker socket")
+    return path
+
+
+def validate_engine(versions: Json, profile: str) -> None:
+    """Check the exact separately admitted vendor engine/API/runc tuple."""
+    require(profile in PROFILE_ENGINES, "Unknown qualification profile")
+    engine, api, runtime = PROFILE_ENGINES[profile]
+    require(
+        versions["ApiVersion"] == api
+        and versions["Version"] == engine
+        and any(item["Name"] == "runc" and item["Version"] == runtime for item in versions["Components"]),
+        "Unsupported Docker/API/runc profile",
+    )
+
+
 def native_type(path: str | Path) -> int:
     """Observe filesystem identity without testing write access."""
     buffer = ctypes.create_string_buffer(256)
@@ -91,28 +169,37 @@ def native_type(path: str | Path) -> int:
     return ctypes.c_long.from_buffer(buffer).value
 
 
-def inventory() -> Json:
+def inventory(profile: str = PROFILE_NAME) -> Json:
     """Read the actual controller namespace; never write any outer quota."""
     root = Path("/proc/sys")
-    require(tuple(sorted(path.name for path in root.iterdir())) == TOP, "Kernel sysctl inventory changed")
-    require(tuple(sorted(path.name for path in (root / "user").iterdir())) == QUOTAS, "User quota inventory changed")
-    for parent, names, expected in ((root, TOP, stat.S_ISDIR), (root / "user", QUOTAS, stat.S_ISREG)):
+    require(profile in PROFILE_TOP, "Unknown qualification inventory")
+    top = PROFILE_TOP[profile]
+    actual_top = tuple(sorted(path.name for path in root.iterdir()))
+    actual_quotas = tuple(sorted(path.name for path in (root / "user").iterdir()))
+    require(actual_top == top, f"Kernel sysctl inventory changed: {actual_top!r}")
+    require(actual_quotas == QUOTAS, f"User quota inventory changed: {actual_quotas!r}")
+    for parent, names, expected in ((root, top, stat.S_ISDIR), (root / "user", QUOTAS, stat.S_ISREG)):
         for name in names:
             path = parent / name
             require(expected(path.lstat().st_mode) and native_type(path) == PROC_MAGIC, "Non-native sysctl inventory")
-    return {
-        "top": TOP,
+    result = {
+        "top": top,
         "quotas": QUOTAS,
         "quota": (root / "user/max_user_namespaces").read_text().strip(),
         "userns": str(Path("/proc/self/ns/user").readlink()),
         "netns": str(Path("/proc/self/ns/net").readlink()),
         "kernel": os.uname().release,
     }
+    if profile == CI_PROFILE_NAME:
+        result["apparmor_userns_restriction"] = apparmor_restriction()
+    return result
 
 
-def observe() -> Json:
+def observe(profile: str = PROFILE_NAME) -> Json:
     """Record the trusted setup boundary, including its child-quota limitation."""
     status = dict(line.split(":", 1) for line in Path("/proc/self/status").read_text().splitlines() if ":" in line)
+    require(profile in PROFILE_MASKS, "Unknown qualification observation")
+    masks = PROFILE_MASKS[profile]
     mounts = [
         line
         for line in Path("/proc/self/mountinfo").read_text().splitlines()
@@ -120,7 +207,7 @@ def observe() -> Json:
     ]
     kernel = [line for line in mounts if line.split()[4] == "/proc/sys/kernel"]
     paths: list[Json] = []
-    for name in ("/proc/sys/kernel", "/proc/sys/user/max_user_namespaces", *MASKS):
+    for name in ("/proc/sys/kernel", "/proc/sys/user/max_user_namespaces", *masks):
         information = Path(name).lstat()
         paths.append(
             {
@@ -141,8 +228,8 @@ def observe() -> Json:
         and "ro" in kernel[0].split()[5].split(",")
         and native_type("/proc/sys/kernel") == PROC_MAGIC,
         "allowed_leaf_native_procfs": native_type("/proc/sys/user/max_user_namespaces") == PROC_MAGIC,
-        "quota_masks_hold": all(native_type(path) != PROC_MAGIC for path in MASKS if "/user/" in path),
-        "global_masks_hold": all(native_type(path) != PROC_MAGIC for path in MASKS if "/user/" not in path),
+        "quota_masks_hold": all(native_type(path) != PROC_MAGIC for path in masks if "/user/" in path),
+        "global_masks_hold": all(native_type(path) != PROC_MAGIC for path in masks if "/user/" not in path),
         "caps": {name: status[name].strip() for name in ("CapInh", "CapPrm", "CapEff", "CapBnd", "CapAmb")},
         "no_new_privs": status["NoNewPrivs"].strip(),
         "seccomp": status["Seccomp"].strip(),
@@ -156,7 +243,13 @@ def observe() -> Json:
 def inside_boundary() -> None:
     """Check ordinary test authority before any unchanged proof starts."""
     require(Path("/opt/lychd-scout-qualification").is_file(), "Qualification image required")
-    outer = observe()
+    profile = selected_profile()
+    outer = observe(profile)
+    if profile == CI_PROFILE_NAME:
+        require(
+            outer["lsm"].strip() == CI_APPARMOR_LABEL,
+            f"CI trusted outer AppArmor boundary differs: {outer['lsm']!r}",
+        )
     require(outer["uid"] == outer["gid"] == CHECK_UID, "Tests require ordinary check user")
     require(all(int(value, 16) == 0 for value in outer["caps"].values()), "Tests retained capabilities")
     require(outer["no_new_privs"] == "1" and outer["seccomp"] == "2", "Missing process restrictions")
@@ -174,15 +267,24 @@ def inside_boundary() -> None:
     quota, period = outer["cgroup"]["cpu.max"].split()
     require(int(quota) == 2 * int(period), "Missing two-CPU limit")
     child = subprocess.run(  # noqa: S603 - Fixed metadata script and empty child environment.
-        [sys.executable, "-I", "-S", __file__, "--observe-child"], capture_output=True, timeout=10, check=True, env={}
+        [sys.executable, "-I", "-S", __file__, "--observe-child", profile],
+        capture_output=True,
+        timeout=10,
+        check=True,
+        env={},
     )
     outer["fresh_child"] = json.loads(child.stdout)
+    if profile == CI_PROFILE_NAME:
+        require(
+            outer["fresh_child"]["lsm"].strip() == CI_APPARMOR_LABEL,
+            f"CI child AppArmor boundary differs: {outer['fresh_child']['lsm']!r}",
+        )
     require(outer["fresh_child"]["userns"] != outer["userns"], "Fresh child user namespace unobserved")
     require(
         outer["fresh_child"]["kernel_readonly_procfs"] and outer["fresh_child"]["global_masks_hold"],
         "Child lost global restrictions",
     )
-    outer["profile"] = PROFILE_NAME
+    outer["profile"] = profile
     outer["trusted_setup_limitation"] = "Native user-quota interfaces become visible in a fresh user namespace."
     outer["extraction_profile"] = json.loads(Path("/opt/scout-runtime.json").read_text())
     Path("/qualification/export/boundary.json").write_text(json.dumps(outer, indent=2) + "\n")
@@ -198,7 +300,11 @@ class EngineError(RuntimeError):
 
 
 class Engine:
-    """One fixed local endpoint; no remote endpoint or credential discovery."""
+    """One admitted local endpoint; no remote endpoint or credential discovery."""
+
+    def __init__(self, endpoint: str = SOCKET) -> None:
+        """Bind an admitted local socket path without connecting."""
+        self.endpoint = endpoint
 
     def request(
         self, method: str, path: str, body: Json | None = None, *, statuses: tuple[int, ...] = (200,), raw: bool = False
@@ -207,7 +313,7 @@ class Engine:
         connection.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         connection.sock.settimeout(10)
         try:
-            connection.sock.connect(SOCKET)
+            connection.sock.connect(self.endpoint)
             connection.request(
                 method,
                 API + path,
@@ -222,6 +328,222 @@ class Engine:
             return data if raw else json.loads(data) if data else None
         finally:
             connection.close()
+
+
+def apparmor_restriction() -> str:
+    """Observe the host restriction; never change a global AppArmor sysctl."""
+    require(native_type(APPARMOR_RESTRICTION) == PROC_MAGIC, "Non-native AppArmor restriction")
+    value = APPARMOR_RESTRICTION.read_text().strip()
+    require(value == "1", f"CI requires the host user-namespace restriction enabled: {value!r}")
+    return value
+
+
+def apparmor_fingerprint(root: Path = APPARMOR_PROFILES) -> Json | None:
+    """Bind custody to the actual named kernel policy and its exported bytes."""
+    matches = [entry for entry in root.iterdir() if (entry / "name").read_text().strip() == CI_APPARMOR_NAME]
+    require(len(matches) <= 1, "Ambiguous AppArmor profile identity")
+    if not matches:
+        return None
+    entry = matches[0]
+    require((entry / "mode").read_text().strip() == "unconfined", "Unexpected AppArmor profile mode")
+    with (entry / "raw_data").open("rb") as stream:
+        data = stream.read(1024**2 + 1)
+    require(0 < len(data) <= 1024**2, "Unbounded or unavailable kernel policy export")
+    return {
+        "directory": entry.name,
+        "inode": entry.stat().st_ino,
+        "name": CI_APPARMOR_NAME,
+        "mode": "unconfined",
+        "raw_sha256": hashlib.sha256(data).hexdigest(),
+        "raw_bytes": len(data),
+    }
+
+
+def custody_directory(path: Path) -> None:
+    """Require a caller-owned private artifact directory outside this checkout."""
+    information = path.lstat()
+    require(
+        path.is_absolute()
+        and path.resolve() == path
+        and not path.is_relative_to(Path(__file__).resolve().parents[1])
+        and stat.S_ISDIR(information.st_mode)
+        and information.st_uid in actor_uids()
+        and information.st_mode & 0o077 == 0,
+        "Private external custody directory required",
+    )
+
+
+def custody_read(path: Path, ceiling: int = 65536) -> bytes:
+    """Refuse substituted or writable custody inputs before a privileged effect."""
+    information = path.lstat()
+    require(
+        stat.S_ISREG(information.st_mode)
+        and information.st_nlink == 1
+        and information.st_uid in actor_uids()
+        and information.st_mode & 0o022 == 0
+        and information.st_size <= ceiling,
+        "Unsafe custody input",
+    )
+    with path.open("rb") as stream:
+        data = stream.read(ceiling + 1)
+    require(len(data) <= ceiling, "Oversized custody input")
+    return data
+
+
+def custody_save(directory: Path, record: Json) -> None:
+    """Publish a complete phase before the corresponding policy effect."""
+    temporary = directory / "state.new"
+    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o644)
+    with os.fdopen(descriptor, "w") as stream:
+        json.dump(record, stream, indent=2)
+        stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    temporary.replace(directory / "state.json")
+    descriptor = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def ensure_apparmor_unused(engine: Any, output: Path) -> None:
+    """Refuse unresolved owners or any container using the named policy."""
+    for occurrence in output.glob("scout-qualification.*/occurrence.json"):
+        result_path = occurrence.with_name("result.json")
+        require(result_path.is_file(), "Qualification controller has no terminal result")
+        result = json.loads(custody_read(result_path))
+        require(
+            result.get("pending_identities") == {}
+            and result.get("owned_identities") == {}
+            and not result.get("unresolved_creates")
+            and not result.get("unresolved_containers"),
+            "Qualification identities remain unresolved",
+        )
+    containers = engine.request("GET", "/containers/json?all=1")
+    require(isinstance(containers, list), "Docker container inventory unavailable")
+    for item in containers:
+        identity = item["Id"]
+        require(re.fullmatch("[a-f0-9]{64}", identity), "Malformed container inventory")
+        container = engine.request("GET", f"/containers/{identity}/json")
+        labels: Json = container["Config"].get("Labels") or {}
+        require(
+            not labels.get(LABEL) and container.get("AppArmorProfile") != CI_APPARMOR_NAME,
+            "Owned or foreign container still uses qualification authority",
+        )
+
+
+def manage_apparmor(action: str, directory: Path) -> None:  # noqa: PLR0915 - One named resource custody transaction.
+    """Manage only the separately admitted CI policy, never global restrictions."""
+    require(os.geteuid() == 0 and selected_profile() == CI_PROFILE_NAME, "Explicit CI policy setup authority required")
+    custody_directory(directory)
+    endpoint = controller_socket(CI_PROFILE_NAME)
+    engine = Engine(endpoint)
+    validate_engine(engine.request("GET", "/version"), CI_PROFILE_NAME)
+    state_path, binary_path = directory / "state.json", directory / "profile.bin"
+    source_digest = hashlib.sha256(custody_read(CI_POLICY_FILE)).hexdigest()
+    if action == "load":
+        output = Path(os.environ.get("LYCHD_SCOUT_QUALIFICATION_OUTPUT", ""))
+        custody_directory(output)
+        require(not list(output.iterdir()), "Fresh qualification output required")
+        require(not state_path.exists() and not binary_path.exists(), "Existing policy custody refuses")
+        require(apparmor_fingerprint() is None, "Existing AppArmor profile refuses")
+        restriction = apparmor_restriction()
+        names = subprocess.run(  # noqa: S603 - Fixed parser and tracked policy path.
+            [APPARMOR_PARSER, "--names", "--skip-cache", "--skip-kernel-load", str(CI_POLICY_FILE)],
+            capture_output=True,
+            timeout=15,
+            check=True,
+        )
+        require(names.stdout.decode().strip() == CI_APPARMOR_NAME, "Policy declares an unexpected name")
+        compiled = subprocess.run(  # noqa: S603 - Fixed compiler and tracked policy path.
+            [
+                APPARMOR_PARSER,
+                "--stdout",
+                "--skip-cache",
+                "--skip-kernel-load",
+                "--Werror",
+                "--jobs=1",
+                str(CI_POLICY_FILE),
+            ],
+            capture_output=True,
+            timeout=15,
+            check=True,
+        ).stdout
+        require(0 < len(compiled) <= 1024**2, "Compiled policy exceeds its boundary")
+        require(hashlib.sha256(custody_read(CI_POLICY_FILE)).hexdigest() == source_digest, "Policy source changed")
+        descriptor = os.open(binary_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(compiled)
+            stream.flush()
+            os.fsync(stream.fileno())
+        record: Json = {
+            "schema": "scout-ci-apparmor-custody@1",
+            "phase": "load-intent",
+            "name": CI_APPARMOR_NAME,
+            "source_sha256": source_digest,
+            "compiled_sha256": hashlib.sha256(compiled).hexdigest(),
+            "compiled_bytes": len(compiled),
+            "endpoint": endpoint,
+            "output": str(output),
+            "restriction_before": restriction,
+        }
+        custody_save(directory, record)
+        subprocess.run(  # noqa: S603 - Fixed loader and exclusively created owned binary.
+            [APPARMOR_PARSER, "--binary", "--add", str(binary_path)], capture_output=True, timeout=15, check=True
+        )
+        fingerprint = apparmor_fingerprint()
+        record["observed_kernel"] = fingerprint
+        custody_save(directory, record)
+        require(
+            fingerprint is not None and fingerprint["raw_sha256"] == record["compiled_sha256"],
+            "Loaded policy does not match the compiled input",
+        )
+        record.update(phase="loaded", kernel=fingerprint)
+        custody_save(directory, record)
+        require(apparmor_restriction() == restriction, "Global AppArmor restriction changed")
+        return
+    require(action == "remove", "Unknown policy custody action")
+    record = json.loads(custody_read(state_path))
+    require(
+        record["schema"] == "scout-ci-apparmor-custody@1"
+        and record["name"] == CI_APPARMOR_NAME
+        and record["source_sha256"] == source_digest
+        and record["endpoint"] == endpoint
+        and record["compiled_sha256"] == hashlib.sha256(custody_read(binary_path, 1024**2)).hexdigest(),
+        "Policy custody identity changed",
+    )
+    output = Path(record["output"])
+    custody_directory(output)
+    require(apparmor_restriction() == record["restriction_before"], "Global AppArmor restriction changed")
+    ensure_apparmor_unused(engine, output)
+    fingerprint = apparmor_fingerprint()
+    if record["phase"] == "load-intent":
+        require(fingerprint is None, "Ambiguous policy load; preserve until runner teardown")
+        record["phase"] = "not-loaded"
+    elif record["phase"] in {"loaded", "removing"}:
+        if fingerprint is None:
+            require(record["phase"] == "removing", "Loaded policy unexpectedly disappeared")
+        else:
+            require(fingerprint == record["kernel"], "Loaded kernel policy changed")
+            record["phase"] = "removing"
+            custody_save(directory, record)
+            removed = subprocess.run(  # noqa: S603 - Fixed remover after source/binary/kernel ownership checks.
+                [APPARMOR_PARSER, "--skip-cache", "--remove", str(CI_POLICY_FILE)],
+                capture_output=True,
+                timeout=15,
+                check=False,
+            )
+            require(
+                removed.returncode == 0,
+                "Owned policy removal refused: " + removed.stderr.decode(errors="replace")[:4096],
+            )
+            require(apparmor_fingerprint() is None, "Owned AppArmor profile remains")
+        record["phase"] = "removed"
+    else:
+        require(record["phase"] in {"removed", "not-loaded"} and fingerprint is None, "Foreign policy reappeared")
+    record["restriction_after"] = apparmor_restriction()
+    custody_save(directory, record)
 
 
 def security(options: list[str]) -> Json:
@@ -258,8 +580,9 @@ def boundary(container: Json, image: str, environment: list[str]) -> None:
     require(host["Sysctls"] == {"net.ipv4.ip_unprivileged_port_start": "0"}, "Unexpected sysctl")
 
 
-def derive_profile(baseline: Json, profile: str) -> Json:
-    """Preserve complete observed defaults, applying only the accepted C2 delta."""
+def derive_profile(baseline: Json, profile: str, *, qualification_profile: str = PROFILE_NAME) -> Json:
+    """Preserve observed defaults with the selected explicit trusted-setup delta."""
+    require(qualification_profile in PROFILE_ENGINES, "Unknown qualification profile")
     host = copy.deepcopy(baseline)
     require(
         host["ReadonlyPaths"].count("/proc/sys") == 1 and bool(host["MaskedPaths"]),
@@ -267,8 +590,10 @@ def derive_profile(baseline: Json, profile: str) -> Json:
     )
     host["ReadonlyPaths"] = [path for path in host["ReadonlyPaths"] if path != "/proc/sys"]
     host["ReadonlyPaths"].append("/proc/sys/kernel")
-    host["MaskedPaths"] += [path for path in MASKS if path not in host["MaskedPaths"]]
+    host["MaskedPaths"] += [path for path in PROFILE_MASKS[qualification_profile] if path not in host["MaskedPaths"]]
     host["SecurityOpt"] = ["no-new-privileges=true", "seccomp=" + profile, "label=disable"]
+    if qualification_profile == CI_PROFILE_NAME:
+        host["SecurityOpt"].append("apparmor=" + CI_APPARMOR_NAME)
     return host
 
 
@@ -309,11 +634,11 @@ def export_archive(data: bytes, destination: Path) -> None:
                 output.write(content)
 
 
-def validate_exports(directory: Path) -> None:
+def validate_exports(directory: Path, *, profile: str = PROFILE_NAME) -> None:
     """Require the exact boundary and three distinct actual passed proof receipts."""
     require({path.name for path in directory.iterdir()} == EXPORTS, "Incomplete or extra safe export closure")
     boundary_record = json.loads((directory / "boundary.json").read_text())
-    require(boundary_record.get("profile") == PROFILE_NAME, "Wrong measured boundary profile")
+    require(profile in PROFILE_ENGINES and boundary_record.get("profile") == profile, "Wrong measured boundary profile")
     identities = {
         "static": ("profile", "scout-static-extract@1"),
         "fetch": ("schema", "scout-fetch-local-proof@1"),
@@ -337,14 +662,14 @@ def validate_exports(directory: Path) -> None:
 class Controller:
     """Track only fresh owned identities through failure and cancellation."""
 
-    def __init__(self, output: Path, image: str, engine: Any = None) -> None:
+    def __init__(self, output: Path, image: str, engine: Any = None, *, profile: str = PROFILE_NAME) -> None:
         """Bind a fresh occurrence without creating a container."""
         self.output, self.image = output, image
         self.engine: Any = Engine() if engine is None else engine
         self.occurrence = uuid.uuid4().hex
         self.owned: dict[str, str] = {}
         self.pending: dict[str, str] = {}
-        self.summary: Json = {"occurrence": self.occurrence, "image": image, "profile": PROFILE_NAME, "settlement": {}}
+        self.summary: Json = {"occurrence": self.occurrence, "image": image, "profile": profile, "settlement": {}}
 
     def save(self, name: str, value: object) -> None:
         (self.output / name).write_text(json.dumps(value, indent=2) + "\n")
@@ -435,17 +760,15 @@ def terminal(number: int, _frame: object) -> None:
 
 def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR0912, PLR0915 - One bounded create/start/export/settle occurrence.
     """Build no image, run no host tests, and never update maintained receipts."""
-    require(
-        os.environ.get("LYCHD_SCOUT_QUALIFICATION_PROFILE") == PROFILE_NAME,
-        "Explicit trusted-scout-c2 profile opt-in required",
-    )
+    profile_name = selected_profile()
+    endpoint = controller_socket(profile_name)
     require(re.fullmatch("sha256:[a-f0-9]{64}", image), "Exact existing image ID required")
     require(hashlib.sha256(profile_path.read_bytes()).hexdigest() == PROFILE_SHA256, "Unreviewed seccomp profile")
     require(
         output.is_absolute() and output.is_dir() and profile_path.resolve().parent == output.resolve(),
         "Existing private artifact directory and its profile required",
     )
-    controller = Controller(output, image)
+    controller = Controller(output, image, Engine(endpoint), profile=profile_name)
     signal.signal(signal.SIGTERM, terminal)
     signal.signal(signal.SIGINT, terminal)
     result = 1
@@ -459,26 +782,21 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
                 "names": {phase: controller.name(phase) for phase in ("baseline", "proof")},
                 "controller_pid": os.getpid(),
                 "started_at": time.time(),
-                "socket": SOCKET,
+                "socket": endpoint,
             },
         )
-        before = inventory()
+        before = inventory(profile_name)
         controller.save("host-before.json", before)
         versions = controller.engine.request("GET", "/version")
         controller.save("engine-version.json", versions)
-        require(
-            versions["ApiVersion"] == "1.55"
-            and versions["Version"] == "29.7.2-ce"
-            and any(item["Name"] == "runc" and item["Version"] == "1.5.1" for item in versions["Components"]),
-            "Unsupported Docker/API/runc profile",
-        )
+        validate_engine(versions, profile_name)
         profile = profile_path.read_text()
         controller.save("profile-identity.json", {"sha256": hashlib.sha256(profile.encode()).hexdigest()})
         phase = "baseline"
         cli = [
             "docker",
             "--host",
-            "unix://" + SOCKET,
+            "unix://" + endpoint,
             "create",
             "--pull=never",
             "--name",
@@ -498,6 +816,7 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
             "--user=0:0",
             "--sysctl=net.ipv4.ip_unprivileged_port_start=0",
             "--env=LYCHD_SCOUT_HOST_NETNS=" + before["netns"],
+            "--env=LYCHD_SCOUT_QUALIFICATION_PROFILE=" + profile_name,
             "--entrypoint=/usr/bin/timeout",
             image,
             *COMMAND,
@@ -523,7 +842,7 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
         config = copy.deepcopy(baseline["Config"])
         config["Hostname"] = ""
         config["Labels"][LABEL + ".phase"] = "proof"
-        config["HostConfig"] = derive_profile(baseline["HostConfig"], profile)
+        config["HostConfig"] = derive_profile(baseline["HostConfig"], profile, qualification_profile=profile_name)
         controller.save("proof-create-request.json", config)
         controller.pending["proof"] = controller.name("proof")
         try:
@@ -538,11 +857,15 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
         controller.save("proof-create-response.json", created)
         require(not created.get("Warnings"), "Proof creation emitted warnings")
         observed = controller.inspect(created["Id"], "proof")
+        if profile_name == CI_PROFILE_NAME:
+            require(observed.get("AppArmorProfile") == CI_APPARMOR_NAME, "CI trusted outer AppArmor setting ignored")
         controller.save("proof-prestart-inspect.json", observed)
         boundary(observed, image, baseline["Config"]["Env"])
         changed = validate_profile(observed["HostConfig"], baseline["HostConfig"], config["HostConfig"])
         require(not observed["State"]["Running"], "Proof started before inspection")
-        controller.save("prestart-accepted.json", {"changed_fields": sorted(changed), "masks": MASKS})
+        controller.save(
+            "prestart-accepted.json", {"changed_fields": sorted(changed), "masks": PROFILE_MASKS[profile_name]}
+        )
         started = time.monotonic()
         controller.engine.request("POST", f"/containers/{created['Id']}/start", statuses=(204,))
         while True:
@@ -574,18 +897,20 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
                 controller.summary.setdefault("unresolved_containers", {})[identity] = str(error)
         if result == 0:
             try:
-                validate_exports(output / "raw")
+                validate_exports(output / "raw", profile=profile_name)
             except BaseException as error:
                 result = 1
                 controller.summary["receipt_error"] = str(error)
         try:
-            after = inventory()
+            after = inventory(profile_name)
             controller.save("host-after.json", after)
             require(after == before, "Host quota/inventory/namespace changed")
         except BaseException as error:
             result = 1
             controller.summary["host_observation_error"] = str(error)
         controller.summary["exit_code"] = result
+        controller.summary["pending_identities"] = controller.pending
+        controller.summary["owned_identities"] = controller.owned
         controller.save("result.json", controller.summary)
         sys.stdout.write(json.dumps(controller.summary, indent=2) + "\n")
         sys.stdout.flush()
@@ -593,9 +918,29 @@ def run(image: str, output: Path, profile_path: Path) -> int:  # noqa: C901, PLR
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["--observe-child"]:
+    if len(sys.argv) == METADATA_ARGC and sys.argv[1] in {"--apparmor-load", "--apparmor-remove"}:
+        manage_apparmor(sys.argv[1].removeprefix("--apparmor-"), Path(sys.argv[2]))
+    elif sys.argv[1:] == ["--preflight-engine"]:
+        selected = selected_profile()
+        socket_path = controller_socket(selected)
+        measured = Engine(socket_path).request("GET", "/version")
+        validate_engine(measured, selected)
+        diagnostic = {
+            "profile": selected,
+            "socket": socket_path,
+            "engine": measured,
+            "kernel": os.uname().release,
+            "kernel_sysctl_names": sorted(path.name for path in Path("/proc/sys").iterdir()),
+            "user_quota_names": sorted(path.name for path in Path("/proc/sys/user").iterdir()),
+        }
+        sys.stdout.write(json.dumps(diagnostic, indent=2) + "\n")
+        sys.stdout.flush()
+        inventory(selected)
+    elif len(sys.argv) in {2, METADATA_ARGC} and sys.argv[1] == "--observe-child":
+        child_profile = sys.argv[2] if len(sys.argv) == METADATA_ARGC else PROFILE_NAME
+        require(child_profile in PROFILE_ENGINES, "Unknown qualification child profile")
         require(ctypes.CDLL(None).unshare(0x10000000) == 0, "Fresh child user namespace unavailable")
-        sys.stdout.write(json.dumps(observe()) + "\n")
+        sys.stdout.write(json.dumps(observe(child_profile)) + "\n")
     elif sys.argv[1:] == ["--observe-inside"]:
         inside_boundary()
     else:

@@ -1146,9 +1146,14 @@ still receive the fixed bootstrap Sigil. The foreground launcher can expose conf
 cannot observe, security-header and production-browser receipts are absent, and no remote
 principal exists. The [isolated developer fixture](11-backend.md#isolated-developer-fixture-designed)
 may use its configured loopback Vite proxy under [Security's](09-security.md) bounded exception.
-Remote access, production access through a proxy, tunnels, direct-image-public access, and
+General remote access, production access through a proxy, ad hoc tunnels, direct-image-public access, and
 untrusted-browser use remain unsupported. Authenticated browser acceptance of the fixture
 remains pending.
+
+[Security's single-operator forwarding candidate](09-security.md#single-operator-forwarding-candidate)
+permits a separately qualified infrastructure experiment for one trusted owner of one VPS.
+It preserves loopback Host/Origin and application authentication, requires a browser profile
+per instance, and supplies no shared-user authority or installed/browser qualification.
 
 Focused checks cover Svelte/TypeScript; frontend API, cursor, remount, stream, focus-return, and
 GenUI tests; Python routes, controllers, consent, SSE, fixed root assets, and the instruments;

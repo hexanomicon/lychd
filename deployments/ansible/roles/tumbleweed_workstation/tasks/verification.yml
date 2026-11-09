@@ -1,0 +1,6 @@
+---
+- name: Observe workstation and safe destinations without changing them
+  ansible.builtin.import_tasks: preflight.yml
+
+- name: Observe installed configuration
+  ansible.builtin.import_tasks: verify.yml

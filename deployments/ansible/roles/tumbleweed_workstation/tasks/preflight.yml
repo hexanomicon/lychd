@@ -1,0 +1,69 @@
+---
+- name: Require explicit typed workstation intent
+  ansible.builtin.assert:
+    that:
+      - lychd_workstation_user is string
+      - lychd_workstation_user | length > 0
+      - lychd_workstation_dark_reader is boolean
+      - lychd_workstation_packages is sequence
+      - lychd_workstation_packages is not string
+      - lychd_workstation_packages | length > 0
+      - "['fish', 'starship', 'zoxide', 'konsole', 'MozillaFirefox', 'fira-code-fonts'] | difference(lychd_workstation_packages) | length == 0"
+    fail_msg: Supply an existing personal user and a boolean Dark Reader opt-in.
+
+- name: Validate package names before passing them to rpm or zypper
+  ansible.builtin.assert:
+    that:
+      - item is string
+      - item is match('^[A-Za-z0-9][A-Za-z0-9+_.-]*$')
+  loop: "{{ lychd_workstation_packages }}"
+
+- name: Observe Tumbleweed, existing KDE and personal account
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/workstation.py') }}"
+      - preflight
+    stdin: "{{ {'user': lychd_workstation_user} | to_json }}"
+  register: lychd_workstation_observation
+  check_mode: false
+  changed_when: false
+
+- name: Retain resolved account identity and reserved configuration content
+  ansible.builtin.set_fact:
+    lychd_workstation_identity: >-
+      {{ lychd_workstation_observation.stdout | from_json | dict2items |
+         selectattr('key', 'in', ['name', 'uid', 'gid', 'home']) | items2dict }}
+    lychd_workstation_files:
+      .config/fish/conf.d/60-lychd-workstation.fish: "{{ lookup('ansible.builtin.template', '60-lychd-workstation.fish.j2') }}"
+      .config/lychd-workstation-starship.toml: "{{ lookup('ansible.builtin.template', 'lychd-workstation-starship.toml.j2') }}"
+      .local/share/konsole/LychD-Workstation.profile: "{{ lookup('ansible.builtin.template', 'LychD-Workstation.profile.j2') }}"
+
+- name: Inspect all personal destinations with only personal-user authority
+  become_user: "{{ lychd_workstation_user }}"
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/workstation.py') }}"
+      - plan
+    stdin: >-
+      {{ {'kind': 'user', 'user': lychd_workstation_user, 'identity': lychd_workstation_identity,
+          'files': lychd_workstation_files} | to_json }}
+  register: lychd_workstation_file_plan
+  check_mode: false
+  changed_when: false
+
+- name: Refuse conflicting machine-wide Firefox policy before package changes
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/workstation.py') }}"
+      - plan
+    stdin: '{"kind": "policy"}'
+  register: lychd_workstation_policy_plan
+  check_mode: false
+  changed_when: false
+  when: lychd_workstation_dark_reader

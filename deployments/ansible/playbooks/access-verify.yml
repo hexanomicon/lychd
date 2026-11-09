@@ -1,0 +1,17 @@
+---
+- name: Explicit single-operator transport verify
+  hosts: lychd_hosts
+  gather_facts: false
+  become: true
+  vars:
+    lychd_access_action: verify
+  pre_tasks:
+    - name: Refuse a silently skipped verification
+      ansible.builtin.assert:
+        that:
+          - lychd_access_enabled | default(false) | bool
+          - lychd_access_action == 'verify'
+          - lychd_access_target | default('') == inventory_hostname
+        fail_msg: "Supply the enabled private access intent and exact target. Verification never starts transport."
+  roles:
+    - host_access

@@ -89,6 +89,8 @@ promotion decision. Smith, Shadow, and Drift cannot promote their own conclusion
 or eligible policy supplies authorization; packaging, migration, activation, and verification
 remain separately owned effects. Follow the [Assimilation passage](smith.md) to prepare that
 handoff with its failures and uncertainty still attributed.
+For today's contributor and coding-agent work, start with
+[upstream reuse and notices](smith.md#upstream-reuse-and-notices).
 
 Automated Smith and Forge promotion is **Designed**, not delivered. [State of
 Work](../../state-of-the-work.md#smith-forge-promotion) owns delivery; the [Assimilation

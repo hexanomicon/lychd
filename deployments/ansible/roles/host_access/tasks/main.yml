@@ -1,0 +1,32 @@
+---
+- name: Require a single explicitly selected host
+  ansible.builtin.assert:
+    that:
+      - ansible_play_hosts_all | length == 1
+      - lychd_access_target == inventory_hostname
+      - lychd_access_action in ['apply', 'verify', 'revoke']
+    fail_msg: Access is optional; explicitly name exactly one authorized target.
+  when: lychd_access_enabled | bool
+
+- name: Optionally prepare the fresh pilot's prerequisites
+  ansible.builtin.include_tasks: prepare.yml
+  when: lychd_access_enabled | bool and lychd_access_prepare | bool and lychd_access_action == 'apply'
+
+- name: Observe or install the bounded host access profile
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/access_host.py') }}"
+      - "{{ ('revoke-plan' if ansible_check_mode else 'revoke') if lychd_access_action == 'revoke' else ('verify' if lychd_access_action == 'verify' else ('plan' if ansible_check_mode else 'apply')) }}"
+    stdin: "{{ lychd_access_intent | to_json }}"
+  register: lychd_access_result
+  changed_when: (lychd_access_result.stdout | from_json).changed
+  check_mode: false
+  when: lychd_access_enabled | bool
+
+- name: Report only public access material and qualification boundary
+  ansible.builtin.debug:
+    msg: "{{ lychd_access_result.stdout | from_json }}"
+  when: lychd_access_enabled | bool

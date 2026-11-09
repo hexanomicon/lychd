@@ -1,2 +1,5 @@
 nav:
-  - Tumbleweed VPS: index.md
+  - Server: index.md
+  - Installation and AutoYaST: install.md
+  - KDE workstation: workstation.md
+  - Private access: access.md

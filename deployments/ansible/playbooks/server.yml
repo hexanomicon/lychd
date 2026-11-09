@@ -1,0 +1,5 @@
+---
+# OS installation and optional admin-policy remediation precede this entry point.
+# Keep the established classify -> host floor -> exact source/image -> CLI chain.
+- name: Deploy one headless Tumbleweed LychD instance
+  ansible.builtin.import_playbook: deploy.yml

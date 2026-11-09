@@ -164,6 +164,7 @@
   </header>
   <p>Begin with the true or chosen name you want to use. It need not be your legal name, and you need share nothing personal.</p>
   <p>Primus is your continuing main companion. You may invite a name in response to yours, give one yourself, or explore the local dictionary. Every path is equally welcome; there is no hurry.</p>
+  <p>You can begin a conversation first and return when a model is answering. You can enter names or browse local suggestions before that.</p>
   {#if reading}<p role="status">Reading saved names…</p>{/if}
   {#if current}
     <p class="saved">Currently: <b>{current.current?.magus_name ?? "Magus"}</b> &amp; <b>{current.current?.primus_name ?? "Primus"}</b>{current.current ? "" : " · no names saved yet"}</p>

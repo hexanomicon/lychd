@@ -1,0 +1,27 @@
+---
+# Read-only application acceptance over direct runtime SSH; no sudo, no effects.
+- name: Observe one LychD body without changing it
+  hosts: lychd_hosts
+  gather_facts: false
+  connection: ssh
+  remote_user: lychd
+  become: false
+  serial: 1
+  vars:
+    ansible_user: lychd
+    ansible_become: false
+  tasks:
+    - name: Classify the application
+      ansible.builtin.include_role:
+        name: lychd_app
+        tasks_from: classify
+
+    - name: Require a running body for acceptance
+      ansible.builtin.assert:
+        that: lychd_app_observed.state == 'running'
+        fail_msg: "State {{ lychd_app_observed.state }}: {{ lychd_app_observed.reasons }}"
+
+    - name: Observe acceptance
+      ansible.builtin.include_role:
+        name: lychd_app
+        tasks_from: verify

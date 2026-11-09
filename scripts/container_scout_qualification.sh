@@ -58,8 +58,10 @@ if [[ ${1:-} == --build-only ]]; then
     shift
 fi
 [[ $# == 0 ]] || fail 'No arbitrary test, command, or runtime selection is accepted.'
-[[ ${LYCHD_SCOUT_QUALIFICATION_PROFILE:-} == trusted-scout-c2 ]] ||
-    fail 'Explicit LYCHD_SCOUT_QUALIFICATION_PROFILE=trusted-scout-c2 admission is required.'
+case ${LYCHD_SCOUT_QUALIFICATION_PROFILE:-} in
+    trusted-scout-c2|trusted-scout-ci-c1) ;;
+    *) fail 'Explicit supported LYCHD_SCOUT_QUALIFICATION_PROFILE admission is required.' ;;
+esac
 [[ $(uname -m) == x86_64 ]] || fail 'This explicit seccomp/runtime profile supports Linux x86-64 only.'
 [[ ${LYCHD_TEST_ENGINE:-docker} == docker ]] || fail 'This qualification adapter currently requires Docker.'
 for tool in docker curl sha256sum timeout python3; do
@@ -73,6 +75,8 @@ output=$(realpath -e -- "$output")
 run_dir=$(mktemp -d "$output/scout-qualification.XXXXXX")
 context="$run_dir/context"
 mkdir "$context" "$run_dir/raw"
+python3 -I -S "$root/scripts/scout_qualification.py" --preflight-engine >"$run_dir/engine-preflight.json"
+export DOCKER_HOST=${DOCKER_HOST:-unix:///var/run/docker.sock}
 child_pid=
 control_active=0
 supervise() {
@@ -130,12 +134,25 @@ supervise timeout --signal=TERM --kill-after=15s 900s docker build \
     --iidfile "$run_dir/base-image.id" "$context" >"$run_dir/base-build.log" 2>&1
 base_image_id=$(< "$run_dir/base-image.id")
 [[ "$base_image_id" =~ ^sha256:[a-f0-9]{64}$ ]] || fail 'Core check build did not return an exact image ID.'
+[[ $(docker image inspect "$base_image" --format '{{.Id}}') == "$base_image_id" ]] ||
+    fail 'Owned base image tag changed before adapter build.'
 supervise timeout --signal=TERM --kill-after=15s 300s docker build \
     --resource memory=4g --resource cpu-period=100000 --resource cpu-quota=200000 \
-    --file "$context/Containerfile.scout-qualification" --build-arg "CHECK_IMAGE=$base_image@$base_image_id" \
+    --file "$context/Containerfile.scout-qualification" --build-arg "CHECK_IMAGE=$base_image" \
     --iidfile "$run_dir/image.id" "$context" >"$run_dir/adapter-build.log" 2>&1
 image_id=$(< "$run_dir/image.id")
 [[ "$image_id" =~ ^sha256:[a-f0-9]{64}$ ]] || fail 'Qualification build did not return an exact image ID.'
+[[ $(docker image inspect "$base_image" --format '{{.Id}}') == "$base_image_id" ]] ||
+    fail 'Owned base image tag changed during adapter build.'
+docker image inspect "$base_image_id" "$image_id" >"$run_dir/images.json"
+python3 -I -S - "$run_dir/images.json" "$base_image_id" "$image_id" <<'PY'
+import json, sys
+base, adapter = json.load(open(sys.argv[1]))
+assert base["Id"] == sys.argv[2] and adapter["Id"] == sys.argv[3]
+layers = base["RootFS"]["Layers"]
+assert layers and len(adapter["RootFS"]["Layers"]) > len(layers)
+assert adapter["RootFS"]["Layers"][:len(layers)] == layers, "Adapter did not retain the exact base layers"
+PY
 if [[ "$build_only" == 1 ]]; then
     exit 0
 fi

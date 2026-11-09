@@ -1,0 +1,23 @@
+---
+# Supply the existing personal user explicitly; never infer it from become or controller HOME.
+lychd_workstation_user: ''
+lychd_workstation_dark_reader: false
+lychd_workstation_packages:
+  - fish
+  - starship
+  - zoxide
+  - fzf
+  - eza
+  - bat
+  - fd
+  - ripgrep
+  - git
+  - curl
+  - jq
+  - wget
+  - konsole
+  - MozillaFirefox
+  - fira-code-fonts
+  - hack-fonts
+  - google-noto-sans-fonts
+  - google-noto-coloremoji-fonts

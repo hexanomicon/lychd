@@ -533,9 +533,46 @@ LYCHD_SCOUT_QUALIFICATION_OUTPUT=/absolute/existing/artifact-directory \
   bash scripts/container_scout_qualification.sh
 ```
 
+The manually dispatched **Repository Checks** workflow selects the separate
+`trusted-scout-ci-c1` profile with `scope=scout` on its selected source revision. The default
+`scope=contracts` keeps the full Python/PostgreSQL checks separate. CI uses the pinned official
+Docker setup action and Docker 29.9.3, with an exact API 1.56/runc 1.5.2 preflight. CLI and
+controller must share its explicit local Unix socket; a remote endpoint, context override or
+fallback refuses. The action's runtime directory is under the runner's temporary directory;
+no daemon socket is mounted into a test container.
+
+CI-c1 loads one owned named AppArmor policy with an explicit `userns` permission and
+`flags=(unconfined)` for the **trusted outer setup**, in addition to the label exception below.
+This follows [Ubuntu's documented namespace mechanism](https://documentation.ubuntu.com/release-notes/24.04/).
+Both the outer process and fresh namespace child must retain that exact named label/mode.
+It prevents Ubuntu's implicit restricted-user-namespace transition during trusted sandbox setup;
+it is not a claim of LSM confinement or production safety. The three actual proofs and their negative controls remain
+unchanged: the worker must still have an empty read-only mount root, no procfs, no network,
+and no authority to create nested namespaces. The measured kernel, actual cgroups, namespace
+readbacks, unchanged host inventory and owned-container settlement must all pass. Missing
+features or a different engine fail; there is no automatic profile negotiation.
+Its measured Azure kernel has no `crypto` sysctl subtree: CI-c1 declares that exact eight-entry
+top-level inventory and masks its six non-user/non-kernel subtrees. The twelve user-quota entries
+and their eleven masks are unchanged. Extra or missing entries still refuse. The fresh-child
+observer receives only the selected registered profile argument, with an empty environment.
+The loader refuses an existing policy, compiles without cache, adds without replacement, and
+compares the actual kernel-exported policy bytes with the owned compiled input. Cleanup requires
+matching source/binary/kernel identities, terminal controller custody and no container using the
+policy, including unexpected unlabelled users. Ambiguity preserves the policy and fails until
+ephemeral runner teardown. The global AppArmor user-namespace restriction stays enabled and is
+observed before and after; no host sysctl or AppArmor service is changed. This setup is CI-only.
+
+The seven-day artifact contains only fixed sanitized JSON exports, engine/image and settlement
+metadata, source/profile hashes, bounded proof logs and build diagnostics. It excludes test basetemps and ephemeral
+TLS keys. Review the actual generated results and settlement before updating maintained fixtures;
+dispatch success does not replace that admission. Local C2's exact engine and LSM rules remain
+separate.
+
 The adapter derives from the exact source-bound `Containerfile.tests` image ID, adds Bubblewrap, `ip` and
 OpenSSL, and supplies a dedicated CPython installation with eight individual loader/library
-paths. Builds may download official image, Debian and locked Python dependencies. The launcher
+paths. A unique owned local tag resolves that base for the adapter build; exact image IDs before
+and after, plus the adapter's base-layer prefix, are verified. A config ID is not used as a
+registry manifest digest. Builds may download official image, Debian and locked Python dependencies. The launcher
 fetches one immutable, SHA-256-checked official Moby default seccomp profile and permits only the
 additional namespace clone/unshare and mount operations required by Scout's fixed Bubblewrap
 command. Other default restrictions remain. Missing kernel/user-namespace support fails; there is
@@ -552,7 +589,7 @@ preserves those defaults except for replacing read-only `/proc/sys` with read-on
 image, command, complete path arrays, security options, environment and resource settings.
 This is a trusted test/setup profile, not default Docker/SELinux or production qualification.
 
-The outer setup sees seven masked non-user sysctl subtrees, native read-only kernel controls and
+Local C2's outer setup sees seven masked non-user sysctl subtrees, native read-only kernel controls and
 11 masked user-quota leaves around the native `max_user_namespaces` interface. The user-quota
 masks do **not** remain field-specific after a fresh user namespace: trusted Bubblewrap setup can
 see its own namespace's quota interfaces. No acquired body chooses setup code or arguments.
@@ -792,6 +829,24 @@ and mocks are not live systemd, Podman, PostgreSQL, GPU, or model-engine receipt
   xDDD establishes vocabulary and boundaries in the owning documentation before
   implementation. Myth is constitutional telos, not evidence that a feature ships. If code changes
   system truth, update its owning documentation and routing links in the same change.
+
+## Reuse upstream material
+
+Reuse a useful existing mechanism when its terms and maintenance boundary fit the local need.
+Before copying or adapting it, follow
+[upstream reuse and notices](docs/sepulcher/extensions/smith.md#upstream-reuse-and-notices):
+pin the source, decide the permitted form of reuse, retain the source-to-local mapping and changes,
+and verify the required notices in each distributed artifact. The same rule covers agent-produced
+ports, tests, documentation and assets. An upstream dependency's license is not inferred from the
+parent repository's badge.
+
+An ordinary dependency addition or service integration keeps its own review and inventory duties;
+it does not automatically become an Assimilation campaign or require a full Dossier. Use the
+Smith procedure when deriving a local mechanism from foreign craft or incorporating its expression.
+
+[ADR 00](docs/adr/00-license.md#receiving-third-party-material) owns the legal boundary;
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records incorporated source and routes packaged
+inventories. README Tribute is curated gratitude, not a checklist for every imported fragment.
 
 ## Change and Review Discipline
 

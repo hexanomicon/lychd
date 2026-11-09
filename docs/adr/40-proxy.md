@@ -109,5 +109,9 @@ the browser boundary is unsafe to publish: no ad hoc reverse proxy, tunnel, or p
 stand in for the missing contract. [State of Work](../state-of-the-work.md#proxy-veil) owns the
 delivery boundary.
 
+The [single-operator forwarding candidate](09-security.md#single-operator-forwarding-candidate)
+is an explicit infrastructure experiment without an HTTP reverse proxy or shared remote authority;
+it neither implements Veil nor changes its delivery boundary.
+
 Operating Veil adds certificate, DNS, firewall, abuse, and availability duties alongside its
 dedicated remote-transport role. A loopback-only deployment avoids those duties.

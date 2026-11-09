@@ -32,7 +32,9 @@ window, use the edge chevron to open Bridge; saved panel preferences remain in u
 On a fresh Phylactery, choose **New Séance** in Bridge and offer a bounded Intent.
 Answer an inline consent card only when the Run asks for judgment.
 
-Keep the listener on literal loopback, with no proxy, tunnel, or forwarding. Loopback and the
+Keep the listener on literal loopback, with no ad hoc proxy, tunnel, or forwarding. The separate
+[single-owner access candidate](../../deployments/tumbleweed/access.md) is an explicit qualification
+experiment, not shared remote access. Loopback and the
 fixed `magus:*` Sigil alone do not authenticate a caller. The separate credential proves local
 possession; it supplies no remote person identity or hostile-browser isolation. The full current
 boundary lives in [The Awakening](../../summoning.md#the-awakening); [State of

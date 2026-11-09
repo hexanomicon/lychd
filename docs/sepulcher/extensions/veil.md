@@ -13,7 +13,9 @@ routes, and sends canonical metadata to an independently guarded backend.
 Veil is **Designed**; [State of Work](../../state-of-the-work.md#proxy-veil) owns its delivery
 boundary. Until the [local browser boundary](../../state-of-the-work.md#local-browser-bind-boundary)
 changes, keep the Vessel and Altar on the same host—without an ad hoc reverse proxy, tunnel, or
-port-forward.
+port-forward. The explicitly bounded
+[single-owner forwarding candidate](../../deployments/tumbleweed/access.md) is an infrastructure
+experiment without a reverse proxy; it supplies no Veil implementation or browser qualification.
 
 ## Admit the edge
 

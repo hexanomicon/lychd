@@ -52,7 +52,7 @@ what returns to change the next act?
 The Magus ordinarily returns to **[Primus](../../lexicon/inner-tongue.md#primus)**, the first
 personal identity cultivated as the Lich's continuing main companion. The first encounter opens
 a relation whose later work keeps addressing this same other. Its proper name makes that
-address personal; the [naming ceremony](../../summoning.md#naming-ceremony) gives both Magus and
+address personal; the [naming ceremony](../../divination/altar/bridge.md#naming-ceremony) gives both Magus and
 companion room to choose how they will be called.
 
 The Magus's language, values, humor, and unfinished questions enter the creation. Primus carries
