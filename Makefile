@@ -31,6 +31,14 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/cli/test_deletion_retirement.py \
 	tests/unit/system/services/test_binding_preflight.py \
 	tests/unit/system/services/test_init_binding_sites.py tests/unit/system/services/test_bind_compilation.py \
+	tests/unit/system/services/test_bind.py tests/unit/system/services/test_bind_assembly.py \
+	tests/unit/system/services/test_binding_lifecycle.py \
+	tests/unit/system/services/test_deployment.py tests/unit/system/services/test_deployment_acceptance.py \
+	tests/unit/cli/test_tether.py tests/unit/domain/tether \
+	tests/unit/system/services/test_tether_closure.py tests/unit/system/services/test_tether_custody.py \
+	tests/unit/system/services/test_tether_operations.py tests/unit/system/services/test_tether_runtime.py \
+	tests/unit/system/services/test_tether_secrets.py \
+	tests/unit/system/services/test_scribe.py tests/unit/system/services/test_scribe_render.py \
 	tests/unit/system/test_schemas.py tests/unit/system/services/test_artifact_custody.py \
 	tests/unit/system/services/test_artifact_publication.py \
 	tests/unit/system/services/test_native_candidate_custody.py \
