@@ -29,7 +29,7 @@
       - -c
       - "{{ lookup('ansible.builtin.file', role_path + '/files/app_probe.py') }}"
       - classify
-    stdin: "{{ {'revision': lychd_source_revision} | to_json }}"
+    stdin: "{{ {'revision': lychd_source_revision, 'image_id': lychd_image_id | default('')} | to_json }}"
   register: lychd_app_classify
   changed_when: false
   check_mode: false
@@ -43,5 +43,5 @@
     msg:
       state: "{{ lychd_app_observed.state }}"
       reasons: "{{ lychd_app_observed.reasons }}"
-      config: "{{ lychd_app_observed.config | default('n/a') }}"
-      configured_image: "{{ lychd_app_observed.configured_image | default('n/a') }}"
+      config: "{{ lychd_app_observed.facts.configuration | default('n/a') }}"
+      configured_image: "{{ lychd_app_observed.facts.image | default('n/a') }}"

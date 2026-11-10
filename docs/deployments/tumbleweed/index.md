@@ -16,6 +16,8 @@ For a laptop, use the independent [KDE workstation profile](workstation.md).
 administrator, separately from the runtime account; the guarded provisioning branch includes it.
 [AutoYaST](install.md) prepares explicit installation inputs for either class. Optional
 [private access](access.md) has its own host lifecycle and one-owner acceptance boundary.
+[Snapshot upgrade qualification](qualification.md) separately tests one exact OS transition in
+an owned disposable QEMU guest; ordinary host apply still performs no rolling upgrade or reboot.
 
 !!! warning "One pilot before a fleet"
     The playbooks and source checks are candidate tooling. No successful Tumbleweed
@@ -411,16 +413,16 @@ LYCHD_SOURCE_REV=FULL_40_CHARACTER_SHA
 LYCHD_SOURCE="$HOME/src/lychd-$LYCHD_SOURCE_REV"
 LYCHD_CLI="$LYCHD_SOURCE/.venv/bin/lychd"
 cd "$LYCHD_SOURCE"
-"$LYCHD_CLI" init --dry-run
-"$LYCHD_CLI" init
+"$LYCHD_CLI" init --web-image "localhost/lychd:$LYCHD_SOURCE_REV" --dry-run
+"$LYCHD_CLI" init --web-image "localhost/lychd:$LYCHD_SOURCE_REV"
 ```
 
-Inspect the generated private `lychd.toml` in the effective XDG config root. Preserve its
-creation receipt, mode and other generated fields. Edit the existing `[server.web]` table's
-`image` to `localhost/lychd:<the recorded full SHA>`; do not append duplicate tables. Keep
-`[extensions]` `builtins=[]` and `crypt=[]`, with no model or Portal declarations for this
-bounded body trial. Keep the generated PostgreSQL profile, Host Reactor actuator and disabled
-raw SAQ admin UI. This is deliberate application configuration, outside the Ansible host role.
+Inspect the generated private `lychd.toml` in the effective XDG config root. The pinned image
+is part of its original creation digest. Preserve that receipt, identity, private mode and all
+generated fields. The bounded profile keeps `[extensions]` `builtins=[]` and `crypt=[]`, with no
+model or Portal declarations, the generated PostgreSQL profile and Host Reactor actuator, and
+the disabled raw SAQ admin UI. Existing settings are preserved by init; a different or edited
+configuration requires separate operator reconciliation rather than automated adoption.
 
 Then inspect and apply binding through the same CLI:
 
@@ -490,18 +492,21 @@ its key, host-key or network failure instead of treating it as a fresh install.
 
 `playbooks/server.yml` is the server entry point and imports `deploy.yml`, which composes
 the steps above for exactly one `--limit`ed host. It first
-classifies the runtime account read-only (`roles/lychd_app/files/app_probe.py`) and then admits
+asks the source-admitted CLI for its native deployment assessment through a small protocol-checking
+JSON adapter (`roles/lychd_app/files/app_probe.py`), then admits
 only one mode:
 
 | Observed state | Mode |
 | --- | --- |
-| `running`: owned units active, settings equal to the init receipt except the `[server.web]` image line, Vessel and settings agree on an image labelled with the pinned SHA, Reactor bound to the pinned CLI | read-only verification |
+| `running`: owned units active, settings retain their original init identity and digest with the pinned image selected during init, Vessel and settings agree on an image labelled with the pinned SHA, Reactor bound to the pinned CLI | read-only verification |
 | administrator confirms no `lychd` account, `absent`, `initialized` or `bound_inactive` | provisioning, only with `-e lychd_deploy_target=<host>` |
 | `foreign_revision` or anything else (`unknown`) | stop and print the exact reasons |
 
 Provisioning converges the floor, stages the source, loads the admitted image, then runs
-`lychd init --dry-run`/`init`, replaces the single image line in place, and runs
-`lychd bind --dry-run`/`bind`. It re-classifies after each step. Existing PostgreSQL data,
+`lychd init --web-image localhost/lychd:SHA --dry-run`/`init --web-image localhost/lychd:SHA`,
+then runs `lychd bind --dry-run`/`bind`. The image is part of the original generated settings and
+creation digest; the controller never edits settings or reads lifecycle receipts. It re-classifies
+after each step. Existing PostgreSQL data,
 secrets and settings with any other change are never adopted, regenerated or overwritten.
 `lychd start` runs only with `-e lychd_app_start_authorized=true`, after the recovery plan for that
 host has been approved. Convergence is then observed read-only; nothing is restarted or killed.
@@ -542,8 +547,9 @@ Repeat the same command with `-e lychd_app_start_authorized=true` to start the b
 run it again without either authorization: a healthy host must report `mode=verify` with no
 changes. When image variables are supplied, verification still requires their exact admitted image
 ID; a matching source label alone is insufficient. `playbooks/app-verify.yml` runs the same
-acceptance without sudo. It reads the local credential through `lychd access` into probe memory
-and sends it only to the loopback Altar. It
+acceptance without sudo. Its native assessment reads the local credential through the owned
+access service into memory and sends it only to the loopback Altar, using the shared nonambient
+HTTP client without redirects. It
 requires 401 for anonymous and wrong-credential requests, authenticated status/orchestrator/queue
 reads, empty capabilities, idle `runs`/`rites`, database tables and a non-superuser runtime role.
 It also requires the receipted Phylactery subvolume identity (or an exact mountpoint) and a
@@ -552,7 +558,27 @@ loopback-only listener.
 On Btrfs, `init` creates the PostgreSQL `data` directory as a subvolume and records its ID and
 UUID in the version-2 lifecycle receipt. A subvolume is not a mountpoint, so `lychd status`
 reports `not an exact mountpoint`. That is the expected unmounted-subvolume shape; acceptance
-compares the live subvolume identity with the receipt instead.
+joins the typed receipt authority to the existing isolated live subvolume observer instead.
+
+### Native deployment protocol 1
+
+Use matching controller and installed CLI revisions that implement protocol 1. The public machine
+entrypoint is `lychd status --json --deployment-revision SHA`; `--deployment-image-id ID` pins the
+admitted exact image and `--deployment-verify` adds bounded server-local acceptance. Ordinary
+`status --json` retains its existing shape. The envelope identifies `schema=lychd.deployment`,
+`version=1`, the observed state, explicit next action, safe refusal codes and acceptance checks.
+Only LychD interprets its configuration, ownership, generated bindings and lifecycle state.
+A failed or incompatible response stops automation; human output is never parsed.
+
+The profile accepts only original pinned settings for the empty-extension container body.
+Default-image initialized bodies and the earlier pilot's post-init image-line edit are refused.
+Keep that pilot's previous private controller for read-only observation; this change does not
+migrate its settings or rewrite its creation receipt. Reconcile an existing installation through
+an independently reviewed recovery/migration procedure before adopting it into this profile.
+An active body remains observation-only, even when all acceptance checks pass. The native
+[assessment owner](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/deployment.py)
+and [focused refusal tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_deployment.py)
+are source evidence; installed host qualification remains a separate receipt.
 
 ## Repeat on another host
 

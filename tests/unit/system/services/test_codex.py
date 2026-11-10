@@ -121,3 +121,32 @@ def test_inscribe_returns_the_same_exact_batches_sent_to_the_journal(
     assert resources == CreatedResources.combine(*journal)
     assert resources.files
     assert {identity.path for identity in resources.directory_identities} == set(resources.directories)
+
+
+def test_prepared_image_is_part_of_original_inscription_and_never_rewrites_existing_settings(
+    codex_paths: dict[str, Path],
+) -> None:
+    from lychd.config.settings import SettingsSnapshot
+    from lychd.system.services.lifecycle.paths import digest_file
+
+    settings = SettingsSnapshot(payload="{}").materialize()
+    image = "localhost/lychd:" + "a" * 40
+    settings.server.web.image = image
+    service = CodexService(
+        toml_path=codex_paths["toml"],
+        runes_path=codex_paths["runes"],
+        postgres_root_path=codex_paths["postgres"],
+        rune_schemas=[],
+        settings=settings,
+    )
+    created = service.inscribe()
+    path = codex_paths["toml"]
+    assert path in created.files
+    before = path.stat()
+    original_digest = digest_file(path, expected=before)
+    assert tomllib.loads(path.read_text())["server"]["web"]["image"] == image
+    settings.server.web.image = "another-image"
+    repeated = service.inscribe()
+    assert not repeated.files
+    assert digest_file(path, expected=path.stat()) == original_digest
+    assert path.stat().st_ino == before.st_ino

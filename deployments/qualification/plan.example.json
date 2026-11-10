@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "run_id": "REPLACE_WITH_NEW_UUID",
+  "controller_source_sha256": "REPLACE_WITH_SOURCE_DIGEST",
+  "baseline": {
+    "snapshot": "BASELINE_YYYYMMDD",
+    "baseline_id": "REPLACE_WITH_PREPARED_MARKER_UUID",
+    "machine_id": "REPLACE_WITH_BASELINE_MACHINE_ID",
+    "image": {
+      "path": "/private/prepared-baseline.qcow2",
+      "sha256": "REPLACE_WITH_SHA256"
+    },
+    "provenance": {
+      "url": "https://download.opensuse.org/tumbleweed/appliances/REPLACE_WITH_EXACT_OFFICIAL_IMAGE.qcow2",
+      "image_sha256": "REPLACE_WITH_ORIGINAL_IMAGE_SHA256",
+      "checksum": {
+        "path": "/private/official-image.qcow2.sha256",
+        "sha256": "REPLACE_WITH_SHA256"
+      },
+      "signature": {
+        "path": "/private/official-image.qcow2.sha256.asc",
+        "sha256": "REPLACE_WITH_SHA256"
+      },
+      "keyring": {
+        "path": "/private/authenticated-opensuse-keyring.gpg",
+        "sha256": "REPLACE_WITH_SHA256"
+      },
+      "signer_fingerprint": "REPLACE_WITH_INDEPENDENTLY_AUTHENTICATED_FINGERPRINT"
+    },
+    "repositories": [
+      {
+        "name": "oss",
+        "url": "https://download.opensuse.org/history/BASELINE_YYYYMMDD/tumbleweed/repo/oss/",
+        "repomd_sha256": "REPLACE_WITH_SHA256",
+        "key": {
+          "path": "/private/opensuse-repository-key.asc",
+          "sha256": "REPLACE_WITH_SHA256"
+        },
+        "fingerprint": "REPLACE_WITH_AUTHENTICATED_SIGNING_FINGERPRINT"
+      }
+    ]
+  },
+  "candidate": {
+    "snapshot": "CANDIDATE_YYYYMMDD",
+    "repositories": [
+      {
+        "name": "oss",
+        "url": "https://download.opensuse.org/history/CANDIDATE_YYYYMMDD/tumbleweed/repo/oss/",
+        "repomd_sha256": "REPLACE_WITH_SHA256",
+        "key": {
+          "path": "/private/opensuse-repository-key.asc",
+          "sha256": "REPLACE_WITH_SHA256"
+        },
+        "fingerprint": "REPLACE_WITH_AUTHENTICATED_SIGNING_FINGERPRINT"
+      }
+    ]
+  },
+  "application": {
+    "revision": "REPLACE_WITH_SAME_FULL_SOURCE_SHA_BEFORE_AND_AFTER",
+    "image_id": "REPLACE_WITH_SAME_64_HEX_IMAGE_ID_BEFORE_AND_AFTER"
+  },
+  "ssh": {
+    "port": 22222,
+    "host_key": "ssh-ed25519 REPLACE_WITH_BASELINE_PUBLIC_HOST_KEY",
+    "admin_key": {
+      "path": "/private/disposable-root-key",
+      "sha256": "REPLACE_WITH_SHA256"
+    },
+    "runtime_key": {
+      "path": "/private/disposable-runtime-key",
+      "sha256": "REPLACE_WITH_SHA256"
+    }
+  },
+  "inputs": {
+    "host_vars": {
+      "path": "/private/host-vars.json",
+      "sha256": "REPLACE_WITH_SHA256"
+    },
+    "source_vars": {
+      "path": "/private/source-vars.json",
+      "sha256": "REPLACE_WITH_SHA256"
+    },
+    "image_vars": {
+      "path": "/private/image-vars.json",
+      "sha256": "REPLACE_WITH_SHA256"
+    }
+  },
+  "access": null
+}

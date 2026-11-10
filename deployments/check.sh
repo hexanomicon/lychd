@@ -14,6 +14,7 @@ cd "$LYCHD_CHECK_ROOT"
 "$LYCHD_CHECK_TOOLS/bin/python" -m unittest discover -s deployments/ansible/tests
 "$LYCHD_CHECK_TOOLS/bin/python" -m unittest discover -s deployments/autoyast/tests
 "$LYCHD_CHECK_TOOLS/bin/python" -m unittest discover -s deployments/access -p 'test_*.py'
+"$LYCHD_CHECK_TOOLS/bin/python" -m unittest discover -s deployments/qualification/tests -p 'test_*.py'
 "$LYCHD_CHECK_TOOLS/bin/ruff" check deployments
 "$LYCHD_CHECK_TOOLS/bin/ruff" format --check deployments
 

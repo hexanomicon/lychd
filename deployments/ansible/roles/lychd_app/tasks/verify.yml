@@ -5,6 +5,20 @@
       - ansible_user == 'lychd'
       - not (ansible_become | default(false) | bool)
       - lychd_source_revision is match('^[0-9a-f]{40}$')
+      - lychd_source_uv_sha256 | default('') is match('^[0-9a-f]{64}$')
+
+- name: Verify the pinned source before native application acceptance
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/../lychd_source/files/source_guard.py') }}"
+      - "{{ lychd_source_revision }}"
+      - "{{ lychd_source_uv_sha256 }}"
+      - "{{ lychd_source_python | default('3.14.8') }}"
+  changed_when: false
+  check_mode: false
 
 - name: Observe server-local application acceptance without effects
   ansible.builtin.command:

@@ -13,6 +13,7 @@ from lychd.cli.base import get_console, ritual_command
 if TYPE_CHECKING:
     from rich.console import Console
 
+    from lychd.config.settings import Settings
     from lychd.system.services.binding_preflight import BindingPreflightReport
     from lychd.system.services.scribe import BindingReconcilePlan
 
@@ -21,6 +22,19 @@ def _raise_missing_portal_secrets_error(secret_names: Sequence[str]) -> None:
     missing = ", ".join(secret_names)
     msg = f"Missing required Podman secrets: {missing}. Create them with `podman secret create <name> -` before bind."
     raise RuntimeError(msg)
+
+
+def _with_web_image(settings: Settings, image: str) -> Settings:
+    """Validate a new inscription value without mutating cached Settings."""
+    from lychd.system.schemas import QuadletContainer
+
+    if not image or any(character.isspace() for character in image):
+        message = "expected one nonempty OCI image reference"
+        raise click.BadParameter(message, param_hint="--web-image")
+    QuadletContainer(description="Vessel image selection", image=image, container_name="lychd-vessel")
+    prepared = settings.model_copy(deep=True)
+    prepared.server.web.image = image
+    return prepared
 
 
 @ritual_command(
@@ -35,6 +49,11 @@ def _raise_missing_portal_secrets_error(secret_names: Sequence[str]) -> None:
     help="Show the exact plan without LychD-managed changes; host probes may update tool-owned metadata.",
 )
 @click.option(
+    "--web-image",
+    default=None,
+    help="Select the Vessel image for newly created settings; existing settings are preserved.",
+)
+@click.option(
     "-v",
     "--verbose",
     is_flag=True,
@@ -44,6 +63,7 @@ def _raise_missing_portal_secrets_error(secret_names: Sequence[str]) -> None:
 def init_codex(
     dry_run: bool,  # noqa: FBT001 - Click owns these boolean option contracts
     verbose: bool,  # noqa: FBT001
+    web_image: str | None,
 ) -> None:
     """Plan, attest, and converge the complete host inscription.
 
@@ -76,6 +96,8 @@ def init_codex(
     lifecycle_lock = nullcontext() if dry_run else lock.LifecycleLock()
     with lifecycle_lock:
         settings = get_settings()
+        if web_image is not None:
+            settings = _with_web_image(settings, web_image)
         extensions = get_extensions()
         schemas = list(extensions.rune_schemas)
         writer = ConfigWriter(runes_dir=PATH_RUNES_DIR)
@@ -122,7 +144,7 @@ def init_codex(
 
         def inscribe_codex(record: initialization.InitializationRecorder) -> models.CreatedResources:
             console.print("[dim]  Inscribing the Prime Directive (lychd.toml)...[/]")
-            return CodexService(rune_schemas=schemas).inscribe(on_created=record)
+            return CodexService(rune_schemas=schemas, settings=settings).inscribe(on_created=record)
 
         initialization.InitializationExecutor(
             planner=planner,

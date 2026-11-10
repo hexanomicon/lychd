@@ -1,5 +1,5 @@
 ---
-# Every effect goes through the installed LychD CLI, except the single proven image-line edit.
+# Every application effect and deployment decision belongs to the pinned native CLI.
 # Each step re-classifies before the next; anything outside the admitted chain stops the host.
 - name: Classify before application effects
   ansible.builtin.include_tasks: classify.yml
@@ -11,7 +11,7 @@
 
 - name: Report the check-mode boundary for application effects
   ansible.builtin.debug:
-    msg: "State {{ lychd_app_observed.state }}: init/configure/bind/start would follow; check mode stops here."
+    msg: "State {{ lychd_app_observed.state }}: init/bind/start would follow; check mode stops here."
   when: ansible_check_mode
 
 - name: End this host before any application effect in check mode
@@ -29,20 +29,15 @@
   block:
     - name: Preview initialization
       ansible.builtin.command:
-        argv: ["{{ lychd_app_cli }}", init, --dry-run]
+        argv: ["{{ lychd_app_cli }}", init, --web-image, "{{ lychd_app_image_ref }}", --dry-run]
         chdir: "{{ lychd_app_source }}"
       environment: "{{ lychd_app_env }}"
       register: lychd_app_init_plan
       changed_when: false
 
-    - name: Require a safe initialization plan
-      ansible.builtin.assert:
-        that: "'Initialization plan is safe' in lychd_app_init_plan.stdout"
-        fail_msg: "lychd init --dry-run did not report a safe plan; resolve its HOST findings first."
-
     - name: Initialize the Codex and Crypt
       ansible.builtin.command:
-        argv: ["{{ lychd_app_cli }}", init]
+        argv: ["{{ lychd_app_cli }}", init, --web-image, "{{ lychd_app_image_ref }}"]
         chdir: "{{ lychd_app_source }}"
       environment: "{{ lychd_app_env }}"
       changed_when: true
@@ -54,26 +49,14 @@
       ansible.builtin.assert:
         that:
           - lychd_app_observed.state == 'initialized'
-          - lychd_app_observed.config.state == 'pristine'
+          - lychd_app_observed.facts.configuration.state == 'original'
 
-- name: Configure and bind an initialized installation
+- name: Bind an initialized installation
   when: lychd_app_step_bind | bool
   block:
-    - name: Require the initialized state before configuration
+    - name: Require the original pinned initialized state before binding
       ansible.builtin.assert:
         that: lychd_app_observed.state == 'initialized'
-
-    - name: Set exactly the [server.web] image line to the admitted full-revision tag
-      ansible.builtin.command:
-        argv:
-          - /usr/bin/python3
-          - -I
-          - -c
-          - "{{ lookup('ansible.builtin.file', role_path + '/files/app_probe.py') }}"
-          - configure
-        stdin: "{{ {'revision': lychd_source_revision, 'image_ref': lychd_app_image_ref} | to_json }}"
-      register: lychd_app_configure
-      changed_when: (lychd_app_configure.stdout | from_json).changed
 
     - name: Preview binding
       ansible.builtin.command:
@@ -116,12 +99,13 @@
   when: lychd_app_observed.state == 'bound_inactive' and (lychd_app_start_authorized | bool)
   changed_when: true
 
-- name: Wait read-only for the owned units to converge
+- name: Wait read-only for the native deployment assessment to converge
   ansible.builtin.command:
-    argv: [/usr/bin/systemctl, --user, is-active, lychd-pod.service, lychd-phylactery.service, lychd-reactor.path, lychd-vessel.service]
+    argv: ["{{ lychd_app_cli }}", status, --json, --deployment-revision, "{{ lychd_source_revision }}", --deployment-image-id, "{{ lychd_image_id }}"]
+    chdir: "{{ lychd_app_source }}"
+  environment: "{{ lychd_app_env }}"
   register: lychd_app_units
-  # is-active returns zero when ANY named unit is active. Require all four observations.
-  until: lychd_app_units.rc == 0 and lychd_app_units.stdout_lines == ['active', 'active', 'active', 'active']
+  until: lychd_app_units.rc == 0 and (lychd_app_units.stdout | from_json).schema == 'lychd.deployment' and (lychd_app_units.stdout | from_json).version == 1 and (lychd_app_units.stdout | from_json).state == 'running'
   retries: "{{ lychd_app_start_poll_retries }}"
   delay: "{{ lychd_app_start_poll_delay }}"
   changed_when: false
@@ -129,7 +113,7 @@
 
 - name: Report non-convergence without intervening
   ansible.builtin.assert:
-    that: lychd_app_units.rc == 0 and lychd_app_units.stdout_lines == ['active', 'active', 'active', 'active']
+    that: lychd_app_units.rc == 0 and (lychd_app_units.stdout | from_json).schema == 'lychd.deployment' and (lychd_app_units.stdout | from_json).version == 1 and (lychd_app_units.stdout | from_json).state == 'running'
     fail_msg: >-
-      Owned units did not all become active ({{ lychd_app_units.stdout_lines }}). Automation does not
-      stop, restart or kill anything; follow the approved recovery plan and `lychd logs`.
+      Native deployment assessment did not reach running. Automation does not stop, restart or
+      kill anything; follow the approved recovery plan and `lychd logs`.

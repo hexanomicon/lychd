@@ -1053,3 +1053,15 @@ def test_bind_rejects_removed_native_options_before_loading_or_effects(
     scribe.assert_not_called()
     secret_store.assert_not_called()
     systemd.assert_not_called()
+
+
+def test_web_image_selection_does_not_mutate_cached_settings() -> None:
+    from lychd.cli.commands import _with_web_image
+    from lychd.config.settings import SettingsSnapshot
+
+    settings = SettingsSnapshot(payload="{}").materialize()
+    original = settings.server.web.image
+    image = "localhost/lychd:" + "a" * 40
+    prepared = _with_web_image(settings, image)
+    assert prepared.server.web.image == image
+    assert settings.server.web.image == original

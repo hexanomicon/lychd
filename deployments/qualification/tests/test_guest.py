@@ -1,0 +1,167 @@
+"""Offline guest action contracts; no real VM, package transaction or reboot occurs."""
+
+import base64
+import hashlib
+import importlib.util
+import json
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+SPEC = importlib.util.spec_from_file_location("qualification_guest", Path(__file__).parents[1] / "guest.py")
+guest = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(guest)
+
+
+class GuestTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix="qualification-guest-contract-")
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        directory = patch.object(guest, "directory")
+        directory.start()
+        self.addCleanup(directory.stop)
+        self.metadata = b"<repomd>admitted test metadata</repomd>"
+        key = b"public key fixture"
+        self.payload = {
+            "run_id": "9f9942a8-c93a-4eaf-8c89-7732d82a1932",
+            "snapshot": "20261101",
+            "candidate_snapshot": "20261108",
+            "repositories": [
+                {
+                    "name": "oss",
+                    "url": "https://download.opensuse.org/history/20261108/tumbleweed/repo/oss/",
+                    "repomd_sha256": hashlib.sha256(self.metadata).hexdigest(),
+                    "key": {"sha256": hashlib.sha256(key).hexdigest()},
+                    "key_data": base64.b64encode(key).decode(),
+                }
+            ],
+        }
+
+    def fake_transaction(self, argv, timeout=120):
+        self.calls.append(argv)
+        if "refresh" in argv:
+            cached = self.root / self.payload["run_id"] / "raw/oss/repodata"
+            cached.mkdir(parents=True)
+            (cached / "repomd.xml").write_bytes(self.metadata)
+        return "fixture transaction output"
+
+    def test_upgrade_uses_only_isolated_dated_repositories_with_signatures_and_no_refresh(self):
+        self.calls = []
+        with (
+            patch.object(guest, "guard"),
+            patch.object(guest, "metadata"),
+            patch.object(guest, "Path", return_value=self.root),
+            patch.object(guest, "run", side_effect=self.fake_transaction),
+        ):
+            result = guest.upgrade(self.payload)
+        self.assertTrue(result["upgrade_completed"])
+        refresh, upgrade = self.calls[-2:]
+        for command in (refresh, upgrade):
+            self.assertIn("--reposd-dir", command)
+            self.assertIn("--servicesd-dir", command)
+            self.assertNotIn("--gpg-auto-import-keys", command)
+            self.assertNotIn("--no-gpg-checks", command)
+            self.assertNotIn("--releasever", command)
+        self.assertEqual(upgrade[-3:], ["--no-refresh", "dup", "--no-allow-vendor-change"])
+        config = (self.root / self.payload["run_id"] / "repos/oss.repo").read_text()
+        self.assertIn("baseurl=" + self.payload["repositories"][0]["url"], config)
+        for setting in ("gpgcheck=1", "repo_gpgcheck=1", "pkg_gpgcheck=1", "autorefresh=0"):
+            self.assertIn(setting + "\n", config)
+
+    def test_refreshed_metadata_drift_stops_before_dup(self):
+        self.calls = []
+        self.payload["repositories"][0]["repomd_sha256"] = "0" * 64
+        with (
+            patch.object(guest, "guard"),
+            patch.object(guest, "metadata"),
+            patch.object(guest, "Path", return_value=self.root),
+            patch.object(guest, "run", side_effect=self.fake_transaction),
+            self.assertRaises(ValueError),
+        ):
+            guest.upgrade(self.payload)
+        self.assertFalse(any("dup" in command for command in self.calls))
+
+    def test_repeated_or_interrupted_upgrade_occurrence_is_not_automatically_retried(self):
+        (self.root / self.payload["run_id"]).mkdir()
+        with (
+            patch.object(guest, "guard"),
+            patch.object(guest, "metadata"),
+            patch.object(guest, "Path", return_value=self.root),
+            patch.object(guest, "run") as command,
+            self.assertRaises(ValueError),
+        ):
+            guest.upgrade(self.payload)
+        command.assert_not_called()
+
+    def test_failed_refresh_never_reaches_dup(self):
+        calls = []
+
+        def failed(argv, timeout=120):
+            calls.append(argv)
+            if "refresh" in argv:
+                raise subprocess.CalledProcessError(1, argv)
+            return ""
+
+        with (
+            patch.object(guest, "guard"),
+            patch.object(guest, "metadata"),
+            patch.object(guest, "Path", return_value=self.root),
+            patch.object(guest, "run", side_effect=failed),
+            self.assertRaises(subprocess.CalledProcessError),
+        ):
+            guest.upgrade(self.payload)
+        self.assertFalse(any("dup" in command for command in calls))
+
+    def test_metadata_pin_and_https_are_required_before_any_transaction(self):
+        for final_url, content in (
+            ("http://mirror.invalid/repomd.xml", self.metadata),
+            ("https://mirror.invalid/repomd.xml", b"different"),
+        ):
+            response = Mock()
+            response.url = final_url
+            response.read.return_value = content
+            response.__enter__ = Mock(return_value=response)
+            response.__exit__ = Mock(return_value=False)
+            with (
+                patch.object(guest, "guard"),
+                patch.object(guest, "urlopen", return_value=response),
+                self.assertRaises(ValueError),
+            ):
+                guest.metadata(self.payload, "20261108")
+
+    def test_privileged_guard_failure_precedes_network_and_all_mutation(self):
+        with (
+            patch.object(guest, "guard", side_effect=ValueError("foreign guest")),
+            patch.object(guest, "urlopen") as network,
+            patch.object(guest, "run") as command,
+            self.assertRaises(ValueError),
+        ):
+            guest.upgrade(self.payload)
+        network.assert_not_called()
+        command.assert_not_called()
+
+    def test_runtime_observation_refuses_root_and_nonrootless_podman(self):
+        with (
+            patch.object(guest.os, "geteuid", return_value=0),
+            patch.object(guest, "run") as command,
+            self.assertRaises(ValueError),
+        ):
+            guest.runtime()
+        command.assert_not_called()
+        identity = Mock(pw_name="lychd")
+        with (
+            patch.object(guest.os, "geteuid", return_value=1001),
+            patch.object(guest.pwd, "getpwuid", return_value=identity),
+            patch.object(
+                guest, "run", side_effect=["systemd-version", json.dumps({"host": {"security": {"rootless": False}}})]
+            ),
+            self.assertRaises(ValueError),
+        ):
+            guest.runtime()
+
+
+if __name__ == "__main__":
+    unittest.main()

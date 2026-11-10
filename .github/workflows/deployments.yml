@@ -2,14 +2,8 @@ name: Deployment bootstrap checks
 
 on:
   pull_request:
-    paths:
-      - deployments/**
-      - .github/workflows/deployments.yml
   push:
     branches: [main, dev]
-    paths:
-      - deployments/**
-      - .github/workflows/deployments.yml
   workflow_dispatch:
 
 permissions:
