@@ -174,8 +174,10 @@ uv run --extra postgres-binary lychd --help
 podman image inspect localhost/lychd:dev --format '{{.Id}}'
 ```
 
-Help exposes `init`, `bind`, `start`, `stop`, `status` (with exact alias `st`), `logs`, `access`, and `del`.
-There is no public `run` verb. Image inspection must return an ID. If construction fails, start
+Help exposes `init`, `bind`, `start`, `stop`, `status` (with exact alias `st`), `logs`, `access`,
+`run`, and `del`. The closed `run tether prepare|enroll|inspect|revoke` namespace is present in
+this source candidate; the separate [native Tether pilot](deployments/tumbleweed/tether.md)
+remains Designed pending installed qualification. Image inspection must return an ID. If construction fails, start
 with the first failed step and the supported Python range `>=3.12,<3.16`; a different package or
 image would abandon the source agreement this movement establishes.
 

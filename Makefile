@@ -26,6 +26,7 @@ PYTEST_TARGETS ?= tests
 CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/architecture/test_release_legal_artifacts.py tests/architecture/test_ward_native_postgres_receipt.py \
 	tests/architecture/test_core_check_entrypoints.py tests/architecture/test_container_only_receipt.py \
+	tests/architecture/test_state_of_work.py \
 	tests/unit/test_app.py tests/unit/cli/test_cli.py \
 	tests/unit/system/operator tests/unit/cli/test_operator.py \
 	tests/unit/cli/test_deletion_retirement.py \

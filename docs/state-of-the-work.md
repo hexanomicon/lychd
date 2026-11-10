@@ -218,8 +218,11 @@ container lifecycle completion. The old inert native TCP/private-manager stop tr
 Scavenger readback/stops and installed-hybrid stops remain dated history under the
 [current evidence envelope](#current-evidence-envelope), with all original failures and limits.
 
-**Boundary — Not yet:** Status omits full readiness and durable-run health; no run-operation command
-or authenticated Run submission route is delivered. Active container stop/start completion,
+The source candidate exposes the closed native `run tether prepare|enroll|inspect|revoke`
+grammar. [VPN Tether](#vpn-tether) retains its separate Designed qualification boundary.
+
+**Boundary — Not yet:** Status omits full readiness and durable-run health; no generic extension
+operation catalogue or authenticated Run submission route is delivered. Active container stop/start completion,
 active-work shutdown, rebuilt-image lifecycle and managed GPU/model operation remain unqualified.
 Unknown unit or mount truth blocks; deletion preserves objects without owned creation provenance.
 No direct-manager or native fallback is admitted.
@@ -3908,9 +3911,15 @@ artifact transfer, durable spool, cancellation, or settlement.
 authority, with exact peer and route intent and separate lifecycle ownership. It distinguishes
 that road from anonymous browsing and provider-visible request content.
 
-**Do not expect yet:** There is no Tether Domain contract, Rune or provider, generated service, UDP
-publication, interface or enrollment effect, peer/key custody, live route policy, health,
-reconciliation, revocation effect, or identity proof.
+The source candidate implements a typed Domain envelope, builtin Rune and compiler contribution,
+fixed native units with explicit UDP publication, receipt-backed server-secret and peer custody,
+and closed `lychd run tether prepare|enroll|inspect|revoke` operations. These source paths and
+their focused tests do not establish installed acceptance. The
+[native Tether pilot](./deployments/tumbleweed/tether.md) owns the bounded qualification procedure.
+
+**Do not expect yet:** A qualified installed interface, enrollment or revocation effect, live route
+policy, health, reconciliation, browser/SSE access, hostile-origin refusal or reboot recovery.
+Tunnel identity supplies no application authority or general remote IAM.
 
 The separate [host access candidate](./deployments/tumbleweed/access.md) can prepare an
 infrastructure-owned WireGuard road and restricted SSH forwarding service. It is not a Tether
@@ -3924,6 +3933,8 @@ contracts, not an installed security receipt or a shared remote Altar.
 **Evidence**
 
 - **Topic:** [Tether](./sepulcher/extensions/tether.md)
+- **Source:** [Native CLI](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/tether.py), [Tether Domain](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/tether/models.py), [builtin](https://github.com/hexanomicon/lychd/tree/main/src/lychd/extensions/builtin/tether), and [native services](https://github.com/hexanomicon/lychd/tree/main/src/lychd/system/services/tether)
+- **Verification:** [Native CLI tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_tether.py) and [operation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_tether_operations.py) (in-process coverage, not installed qualification)
 - **Source:** [Host access candidate](https://github.com/hexanomicon/lychd/tree/main/deployments/ansible/roles/host_access)
 - **Verification:** [Access refusal checks](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_access_host.py)
 - **Verification:** [Policy checks](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_access_policy.py), [revocation checks](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_access_lifecycle.py), and [client checks](https://github.com/hexanomicon/lychd/blob/main/deployments/access/test_client.py)

@@ -212,9 +212,12 @@ traversal require separate trust decisions; recovery cannot introduce them invis
 
 ## Delivery and consequences
 
-This Covenant is **Designed**. No VPN provider, interface, enrollment, peer registry, key
-rotation, route policy, health, or revocation path ships; generated deployment remains
-IPv4-loopback-only and rejects UDP. The optional infrastructure-owned
+This Covenant remains **Designed** pending installed qualification. The source candidate
+implements the bounded native profile, including its exact UDP compiler contribution, server-secret
+and peer custody, and closed operations under the [CLI grammar](19-cli.md). Core remains
+loopback-published; the general Extension port grammar still rejects UDP. Source implementation
+does not qualify live interface, enrollment, route policy, health, revocation, browser or reboot
+behavior, and supplies no general key-rotation path. The optional infrastructure-owned
 [single-operator forwarding candidate](09-security.md#single-operator-forwarding-candidate)
 is separate from Tether and has no installed qualification. General tunnelling and shared-user
 access remain unsupported. [State of

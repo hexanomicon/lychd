@@ -39,8 +39,9 @@ not public compatibility. The managed image uses the fixed process entrypoint
 defined by [Backend](11-backend.md#process-and-listener-boundary). There is no host Vessel `serve`
 entrypoint. Database commands retain their
 lazy framework delegation. The root verbs are `init`, `bind`, `start`, `stop`, `status`/`st`,
-`logs`, `access`, and `del`; no run-operation, snapshot, restore, selector shorthand, recovery, promotion, or
-consent spelling is reserved by the grammar.
+`logs`, `access`, `run`, and `del`. The `run` namespace admits only the closed native Tether
+operations below; no snapshot, restore, selector shorthand, recovery, promotion, or consent
+spelling is reserved by the grammar.
 
 ### Inscribe, then bind
 
@@ -145,15 +146,15 @@ a browser. Ordinary help, status, logs, startup, generated units, and URLs never
 password. Replace its external secret and restart the Vessel to rotate access. This is a local
 operator credential, not Ward enrollment or a remote CLI admission interface.
 
-A future host-owned run-operation verb may become the sole extension execution namespace.
+A future extension operation catalogue may use the host-owned `run` namespace.
 Registration would contribute inert, typed identity, inputs, authority/scope, mutation and consent
 characteristics, and progress/result shape; it must never grant an extension-owned Click callback
 or arbitrary host execution. No run-operation catalogue, schema help, injected client seam, or
 Ward-authenticated CLI admission route is delivered today.
 
-The first designed admission is the closed grammar `lychd run tether prepare|enroll|inspect|revoke`
-for [the single-operator profile](39-vpn.md#native-peer-operations). `run` remains absent from
-delivered help until implemented; this decision adds no extension-owned root verb. The native
+The source candidate exposes the closed grammar `lychd run tether prepare|enroll|inspect|revoke`
+for [the single-operator profile](39-vpn.md#native-peer-operations), including public help.
+The profile remains Designed pending installed qualification; this adds no extension-owned root verb. The native
 host adapter owns the finite operation mapping and typed requests/results. It accepts neither
 an arbitrary extension callback nor a command, path, unit, or raw transport argument. This first
 slice requires no dynamic operation registry or remote Ward transport.

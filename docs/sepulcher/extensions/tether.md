@@ -11,13 +11,15 @@ icon: material/shield-link-variant-outline
 It may eventually appear as a LychD-managed WireGuard service or as an attachment to an externally
 managed private network.
 
-Tether is **Designed**; no managed VPN or peer-operation path ships. [State of
-Work](../../state-of-the-work.md#vpn-tether) records that delivery boundary. The public peer intent,
+Tether remains **Designed** pending installed qualification. This source candidate implements
+the closed native peer-operation path below; [State of
+Work](../../state-of-the-work.md#vpn-tether) records its evidence and limits. Public peer intent,
 secret references, endpoint and route checks, revision fences, and retained revocation tombstones
-below are accepted design.
+remain subject to that qualification boundary.
 
-Generated deployment remains IPv4-loopback-only: the Extension port grammar accepts only
-`127.0.0.1:<host>:<container>` and rejects UDP. Remote, proxied, tunneled, and untrusted-browser
+The general Extension port grammar accepts only `127.0.0.1:<host>:<container>` and rejects UDP.
+The native Tether compiler contribution separately admits its exact UDP listener; Core remains
+loopback-published. Remote, proxied, tunneled, and untrusted-browser
 use is unsupported. The separate infrastructure-owned
 [single-owner access candidate](../../deployments/tumbleweed/access.md) permits an explicit
 qualification experiment while keeping loopback publication. It is not a native Tether
@@ -44,9 +46,9 @@ and routes, endpoint and keepalive policy, enabled or revoked state, and creatio
 metadata. Keep private and preshared keys with the secret owner, outside ordinary documentation,
 logs, QR history, and public peer records.
 
-Future typed operations under a host-owned run-operation verb may generate, admit, inspect,
-revoke, rotate, or export short-lived client configuration or QR projections. They would use
-that governed operation path without adding a root CLI verb.
+The host-owned `run tether` namespace exposes only `prepare`, `enroll`, `inspect`, and `revoke`
+in this source candidate. General rotation, client-configuration export and QR projections remain
+future operations; no extension-owned root verb or arbitrary callback is admitted.
 
 ## First native operator profile (Designed) {#first-native-operator-profile}
 
