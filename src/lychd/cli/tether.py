@@ -45,6 +45,20 @@ def _native(function: Callable[..., BaseModel]) -> Callable[..., None]:
     return wrapped
 
 
+def _show_declared_plan(ctx: click.Context, _parameter: click.Parameter, value: bool) -> None:  # noqa: FBT001 - Click owns the positional eager-option callback signature
+    if not value or ctx.resilient_parsing:
+        return
+    try:
+        from lychd.system.services.tether.composition import declared_tether_plan
+
+        public_plan = declared_tether_plan().model_dump_json(indent=2)
+    except Exception:  # noqa: BLE001 - declared configuration validation may include sensitive input
+        msg = "Declared Tether plan is unavailable; check the selected builtin and public Rune"
+        raise click.ClickException(msg) from None
+    click.echo(public_plan)
+    ctx.exit()
+
+
 @click.group(name="run")
 def run() -> None:
     """Execute closed native host operations."""
@@ -125,6 +139,14 @@ def enroll(
 
 
 @tether.command(name="inspect")
+@click.option(
+    "--declared",
+    is_flag=True,
+    is_eager=True,
+    expose_value=False,
+    callback=_show_declared_plan,
+    help="Print the public declared plan and digest before preparation or bind.",
+)
 @_request_options
 @click.option("--intent-digest", required=True)
 @_native

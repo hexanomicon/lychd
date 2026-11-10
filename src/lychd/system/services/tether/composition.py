@@ -45,6 +45,13 @@ def _tether_plan(request: BindRequest) -> CompiledTetherPlan:
     return request.tether_plans[0]
 
 
+def declared_tether_plan() -> CompiledTetherPlan:
+    """Compile public declared intent before preparation or binding is available."""
+    from lychd.cli.binding import BindingCommandSession
+
+    return _tether_plan(_binding_request(BindingCommandSession.inspect()))
+
+
 def _tool(name: str, *locations: str) -> str:
     tool = trusted_host_tool(name, fallbacks=tuple(Path(location) for location in locations) or None)
     if tool is None:

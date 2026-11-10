@@ -69,6 +69,17 @@ server tunnel material; the forwarding role owns its server SSH host key, which 
 Neither container receives the application password. The server does not export client private
 keys or modify the operator's device.
 
+For this source candidate, discover the public declaration before the first preparation:
+
+```bash
+lychd run tether inspect --declared
+```
+
+Use the returned `envelope.installation_id` and `envelope_digest` for preparation's
+`--installation-id` and `--envelope-digest`, with `--expected-generation 0` and a fresh
+`--operation-id` UUID. This read-only query works before prepared secrets, Tether custody or
+bindings exist. It reports declared intent; installed readiness still requires qualification.
+
 The designed operator sequence is:
 
 1. Prepare the Linux/rootless substrate and explicit UDP firewall opening. Qualify the exact
