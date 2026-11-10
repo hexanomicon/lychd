@@ -304,8 +304,15 @@ def test_broker_socket_requires_exact_owned_private_metadata(
         paths["network"]: SimpleNamespace(st_mode=stat.S_IFDIR | 0o700, st_uid=uid),
         paths["socket"]: SimpleNamespace(st_mode=stat.S_IFSOCK | 0o600, st_uid=uid),
     }
-    monkeypatch.setattr(os, "statvfs", lambda _path: SimpleNamespace(f_flag=os.ST_RDONLY))
-    monkeypatch.setattr(Path, "lstat", lambda observed: metadata[observed])
+
+    def statvfs(_path: Path) -> SimpleNamespace:
+        return SimpleNamespace(f_flag=os.ST_RDONLY)
+
+    def lstat(observed: Path) -> SimpleNamespace:
+        return metadata[observed]
+
+    monkeypatch.setattr(os, "statvfs", statvfs)
+    monkeypatch.setattr(Path, "lstat", lstat)
     TetherConnector._check_socket(path)
     metadata[paths[level]] = SimpleNamespace(st_mode=kind | mode, st_uid=uid + owner_delta)
     with pytest.raises(FetchError):
@@ -349,7 +356,10 @@ async def test_shared_http_factory_sends_only_identity_encoding(monkeypatch: pyt
 
 
 def test_broker_socket_refuses_a_writable_consumer_mount(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(os, "statvfs", lambda _path: SimpleNamespace(f_flag=0))
+    def statvfs(_path: Path) -> SimpleNamespace:
+        return SimpleNamespace(f_flag=0)
+
+    monkeypatch.setattr(os, "statvfs", statvfs)
     with pytest.raises(FetchError):
         TetherConnector._check_socket(Path(_route().socket_path))
 

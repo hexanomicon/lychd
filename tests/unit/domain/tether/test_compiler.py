@@ -29,6 +29,12 @@ KEY2 = base64.b64encode(bytes(range(1, 33))).decode()
 SSH_KEY = "ssh-ed25519 " + base64.b64encode(b"\x00\x00\x00\x0bssh-ed25519\x00\x00\x00\x20" + bytes(range(32))).decode()
 
 
+class _TransmuterProbe(Transmuter):
+    @classmethod
+    def normalize(cls, contribution: QuadletContribution) -> QuadletContribution:
+        return cls._normalize_contribution(contribution)
+
+
 def attachment(name: str) -> ImportedAttachment:
     return ImportedAttachment(
         id=name,
@@ -247,7 +253,7 @@ def test_generic_contributor_cannot_claim_tether_capabilities() -> None:
         wanted_by=[],
     )
     with pytest.raises(ValueError, match="host admission"):
-        Transmuter._normalize_contribution(QuadletContribution(containers=(body,)))
+        _TransmuterProbe.normalize(QuadletContribution(containers=(body,)))
 
 
 def test_tether_profile_refuses_core_pod_and_generic_port_widening() -> None:
@@ -369,7 +375,7 @@ def test_offered_only_core_manifest_stays_identical_when_first_import_is_admitte
     added = initial.model_copy(update={"attachments": (attachment("b"),)})
     before = TetherSnapshot(installation_epoch=EPOCH)
     after = before.model_copy(update={"attachments": (AttachmentAdmission(attachment_id="b", generation=1),)})
-    results = []
+    results: list[QuadletContainer] = []
     for rune, snapshot in ((initial, before), (added, after)):
         request = compile_bind_request(
             settings=settings,

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
@@ -14,6 +15,9 @@ from click.testing import CliRunner
 from lychd.cli.commands import _initial_profile
 from lychd.cli.tether import tether_group
 from lychd.config.settings import SettingsSnapshot
+
+if TYPE_CHECKING:
+    from lychd.config.settings import Settings
 
 
 @pytest.mark.parametrize(
@@ -56,10 +60,15 @@ def test_tether_profile_prepares_settings_without_mutating_cached_values(monkeyp
     original = settings.model_dump()
     rune = object()
     assembly = object()
-    monkeypatch.setattr(
-        "lychd.system.services.tether.models.load_intent", lambda _path: SimpleNamespace(rune=rune, web_port=9123)
-    )
-    monkeypatch.setattr("lychd.extensions.host.assemble_extensions", lambda _prepared: assembly)
+
+    def load_intent(_path: Path) -> SimpleNamespace:
+        return SimpleNamespace(rune=rune, web_port=9123)
+
+    def assemble_extensions(_prepared: Settings) -> object:
+        return assembly
+
+    monkeypatch.setattr("lychd.system.services.tether.models.load_intent", load_intent)
+    monkeypatch.setattr("lychd.extensions.host.assemble_extensions", assemble_extensions)
     prepared, runes, extensions = _initial_profile(settings, profile="tether-container-v1", intent=Path("/public.json"))
     assert settings.model_dump() == original
     assert prepared.server.port == 9123

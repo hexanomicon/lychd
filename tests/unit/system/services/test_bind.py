@@ -781,7 +781,7 @@ def test_second_owner_attestation_preserves_confirmed_secret_creation() -> None:
         desired_generation="desired",
     )
     present = {"operator-token"}
-    secrets.exists.side_effect = lambda name: name in present
+    secrets.exists.side_effect = present.__contains__
 
     def create(name: str, value: str) -> bool:
         assert value == "generated"
@@ -822,8 +822,15 @@ def test_host_assembly_forwards_owner_attestation(monkeypatch: pytest.MonkeyPatc
         observed_generation="before",
         desired_generation="desired",
     )
-    monkeypatch.setattr("lychd.system.services.secrets.PodmanSecretStore", lambda _binary: secrets)
-    monkeypatch.setattr("lychd.system.services.scribe.facade.ScribeService", lambda **_kwargs: scribe)
+
+    def secret_store(_binary: str) -> MagicMock:
+        return secrets
+
+    def scribe_service(**_kwargs: object) -> MagicMock:
+        return scribe
+
+    monkeypatch.setattr("lychd.system.services.secrets.PodmanSecretStore", secret_store)
+    monkeypatch.setattr("lychd.system.services.scribe.facade.ScribeService", scribe_service)
     monkeypatch.setattr("lychd.system.services.lifecycle.lock.LifecycleLock", nullcontext)
     attestor = MagicMock(side_effect=BindingPlanDriftError("owner_identity_changed"))
     use_case = assemble_bind_use_case(

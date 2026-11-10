@@ -183,7 +183,11 @@ def gateway(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[keys.Tethe
     (graph_root / "secrets").mkdir(mode=0o700)
     (graph_root / "secrets" / "filedriver").mkdir(mode=0o700)
     custody, runner = Custody(tmp_path / "custody"), Runner(graph_root)
-    monkeypatch.setattr(keys, "trusted_host_tool", lambda name, **_kwargs: "/tools/" + name)
+
+    def fake_trusted_host_tool(name: str, **_kwargs: object) -> str:
+        return "/tools/" + name
+
+    monkeypatch.setattr(keys, "trusted_host_tool", fake_trusted_host_tool)
     return keys.TetherKeys(cast("TetherCustody", custody), EPOCH, runner), custody, runner
 
 

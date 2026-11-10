@@ -81,29 +81,45 @@ class Runner:
 @pytest.fixture
 def port(monkeypatch: pytest.MonkeyPatch) -> tuple[host.TetherHost, Runner]:
     runner = Runner()
-    monkeypatch.setattr(host, "trusted_host_tool", lambda name: "/tools/" + name)
+
+    def fake_trusted_host_tool(name: str) -> str:
+        return "/tools/" + name
+
+    monkeypatch.setattr(host, "trusted_host_tool", fake_trusted_host_tool)
     service = host.TetherHost(runner)
-    monkeypatch.setattr(
-        service,
-        "owned_unit",
-        lambda _name: {
+
+    def fake_owned_unit(_name: str) -> dict[str, str]:
+        return {
             "LoadState": "loaded",
             "ActiveState": "inactive",
             "SubState": "dead",
             "MainPID": "0",
             "ControlPID": "0",
             "Job": "0",
-        },
+        }
+
+    monkeypatch.setattr(
+        service,
+        "owned_unit",
+        fake_owned_unit,
     )
+
+    def fake_unit_incarnation(name: str) -> dict[str, str]:
+        return {
+            "InvocationID": INVOCATION,
+            "ControlGroup": UNIT_GROUP if name == NAME + ".service" else UNIT_GROUP.rsplit("/", 1)[0] + "/" + name,
+        }
+
     monkeypatch.setattr(
         service,
         "unit_incarnation",
-        lambda name: {
-            "InvocationID": INVOCATION,
-            "ControlGroup": UNIT_GROUP if name == NAME + ".service" else UNIT_GROUP.rsplit("/", 1)[0] + "/" + name,
-        },
+        fake_unit_incarnation,
     )
-    monkeypatch.setattr(service, "_unit_closed", lambda _name: False)
+
+    def fake_unit_closed(_name: str) -> bool:
+        return False
+
+    monkeypatch.setattr(service, "_unit_closed", fake_unit_closed)
     return service, runner
 
 
@@ -161,9 +177,21 @@ def test_stop_refuses_named_replacement_when_retained_id_is_absent(
     port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     service, runner = port
-    monkeypatch.setattr(service, "exists", lambda _kind, identity: identity == NAME)
-    monkeypatch.setattr(service, "row", lambda _kind, _identity: {**container(), "Id": OTHER})
-    monkeypatch.setattr(service, "cgroup_empty", lambda _group: True)
+
+    def fake_exists(_kind: str, identity: str) -> bool:
+        return identity == NAME
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_row(_kind: str, _identity: str) -> dict[str, Any]:
+        return {**container(), "Id": OTHER}
+
+    monkeypatch.setattr(service, "row", fake_row)
+
+    def fake_cgroup_empty(_group: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "cgroup_empty", fake_cgroup_empty)
     with pytest.raises(TetherError):
         service.stop(retained())
     assert not runner.calls
@@ -173,9 +201,21 @@ def test_stop_refuses_foreign_unit_before_any_effect(
     port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     service, runner = port
-    monkeypatch.setattr(service, "exists", lambda _kind, _identity: True)
-    monkeypatch.setattr(service, "row", lambda _kind, _identity: container())
-    monkeypatch.setattr(service, "cgroup_empty", lambda _group: True)
+
+    def fake_exists(_kind: str, _identity: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_row(_kind: str, _identity: str) -> dict[str, Any]:
+        return container()
+
+    monkeypatch.setattr(service, "row", fake_row)
+
+    def fake_cgroup_empty(_group: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "cgroup_empty", fake_cgroup_empty)
     record = retained()
     record["unit_name"] = "lychd-vessel.service"
     with pytest.raises(TetherError):
@@ -190,8 +230,16 @@ def test_stop_refuses_changed_incarnation_before_effect(
     service, runner = port
     row = container()
     row[field] = OTHER
-    monkeypatch.setattr(service, "exists", lambda _kind, _identity: True)
-    monkeypatch.setattr(service, "row", lambda _kind, _identity: row)
+
+    def fake_exists(_kind: str, _identity: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_row(_kind: str, _identity: str) -> dict[str, Any]:
+        return row
+
+    monkeypatch.setattr(service, "row", fake_row)
     with pytest.raises(TetherError):
         service.stop(retained())
     assert not runner.calls
@@ -201,11 +249,19 @@ def test_stop_refuses_name_rebound_to_other_container(
     port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     service, runner = port
-    monkeypatch.setattr(service, "exists", lambda _kind, _identity: True)
+
+    def fake_exists(_kind: str, _identity: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_row(_kind: str, identity: str) -> dict[str, Any]:
+        return container() if identity == IDENTITY else {**container(), "Id": OTHER}
+
     monkeypatch.setattr(
         service,
         "row",
-        lambda _kind, identity: container() if identity == IDENTITY else {**container(), "Id": OTHER},
+        fake_row,
     )
     with pytest.raises(TetherError):
         service.stop(retained())
@@ -216,8 +272,16 @@ def test_repeated_stop_of_absent_incarnation_cancels_restart(
     port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     service, runner = port
-    monkeypatch.setattr(service, "exists", lambda _kind, _identity: False)
-    monkeypatch.setattr(service, "cgroup_empty", lambda _group: True)
+
+    def fake_exists(_kind: str, _identity: str) -> bool:
+        return False
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_cgroup_empty(_group: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "cgroup_empty", fake_cgroup_empty)
     service.stop(retained())
     service.stop(retained())
     assert runner.calls == [("/tools/systemctl", "--user", "stop", NAME + ".service")] * 2
@@ -228,15 +292,27 @@ def test_stop_waits_for_entire_retained_cgroup(
 ) -> None:
     service, runner = port
     observations: list[str] = []
-    monkeypatch.setattr(service, "exists", lambda _kind, _identity: not runner.calls)
-    monkeypatch.setattr(service, "row", lambda _kind, _identity: container())
+
+    def fake_exists(_kind: str, _identity: str) -> bool:
+        return not runner.calls
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_row(_kind: str, _identity: str) -> dict[str, Any]:
+        return container()
+
+    monkeypatch.setattr(service, "row", fake_row)
 
     def empty(group: str) -> bool:
         observations.append(group)
         return len(observations) > 1
 
     monkeypatch.setattr(service, "cgroup_empty", empty)
-    monkeypatch.setattr(host.time, "sleep", lambda _seconds: None)
+
+    def fake_sleep(_seconds: float) -> None:
+        return None
+
+    monkeypatch.setattr(host.time, "sleep", fake_sleep)
     service.stop(retained())
     assert observations == [retained()["cgroup"], retained()["cgroup"]]
     assert runner.calls == [("/tools/systemctl", "--user", "stop", NAME + ".service")]
@@ -246,9 +322,21 @@ def test_stop_does_not_claim_closure_while_descendants_survive(
     port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     service, runner = port
-    monkeypatch.setattr(service, "exists", lambda _kind, _identity: True)
-    monkeypatch.setattr(service, "row", lambda _kind, _identity: container())
-    monkeypatch.setattr(service, "cgroup_empty", lambda _group: False)
+
+    def fake_exists(_kind: str, _identity: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_row(_kind: str, _identity: str) -> dict[str, Any]:
+        return container()
+
+    monkeypatch.setattr(service, "row", fake_row)
+
+    def fake_cgroup_empty(_group: str) -> bool:
+        return False
+
+    monkeypatch.setattr(service, "cgroup_empty", fake_cgroup_empty)
     times = iter((0.0, 11.0))
     monkeypatch.setattr(host.time, "monotonic", lambda: next(times))
     with pytest.raises(TetherError, match="closure"):
@@ -264,10 +352,14 @@ def test_cgroup_observer_includes_descendant_tasks(tmp_path: Path, monkeypatch: 
     (root / "cgroup.procs").write_text("")
     (child / "cgroup.procs").write_text("1234\n")
     original = Path
+
+    def fake_path(value: str) -> Path:
+        return tmp_path if str(value) == "/sys/fs/cgroup" else original(value)
+
     monkeypatch.setattr(
         host,
         "Path",
-        lambda value: tmp_path if str(value) == "/sys/fs/cgroup" else original(value),
+        fake_path,
     )
     assert not host.TetherHost.cgroup_empty(group)
     (child / "cgroup.procs").write_text("")
@@ -289,27 +381,47 @@ def test_capture_rejects_host_or_core_namespace(
         ("container", IDENTITY): container(),
         ("container", "lychd-vessel"): {"State": {"Pid": 4321}},
     }
-    monkeypatch.setattr(service, "row", lambda kind, identity: rows[kind, identity])
-    monkeypatch.setattr(service, "exists", lambda _kind, _identity: True)
-    monkeypatch.setattr(service, "process_cgroup", lambda _pid: retained()["cgroup"])
+
+    def fake_row(kind: str, identity: str) -> dict[str, Any]:
+        return rows[kind, identity]
+
+    monkeypatch.setattr(service, "row", fake_row)
+
+    def fake_exists(_kind: str, _identity: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_process_cgroup(_pid: int) -> str:
+        return retained()["cgroup"]
+
+    monkeypatch.setattr(service, "process_cgroup", fake_process_cgroup)
+
+    def fake_unit_incarnation(_name: str) -> dict[str, str]:
+        return {"InvocationID": INVOCATION, "ControlGroup": UNIT_GROUP}
+
     monkeypatch.setattr(
         service,
         "unit_incarnation",
-        lambda _name: {"InvocationID": INVOCATION, "ControlGroup": UNIT_GROUP},
+        fake_unit_incarnation,
     )
     namespaces = {
         "/proc/self/ns/net": 10,
         "/proc/1234/ns/net": 10,
         "/proc/4321/ns/net": 30,
     }
-    monkeypatch.setattr(
-        host,
-        "Path",
-        lambda *values: (
+
+    def fake_path(*values: str) -> Path | SimpleNamespace:
+        return (
             SimpleNamespace(stat=lambda: SimpleNamespace(st_ino=namespaces[values[0]]))
             if len(values) == 1 and values[0] in namespaces
             else Path(*values)
-        ),
+        )
+
+    monkeypatch.setattr(
+        host,
+        "Path",
+        fake_path,
     )
     with pytest.raises(TetherError, match="host network"):
         service.capture(config, image)
@@ -334,7 +446,11 @@ def test_observe_requires_exact_generation_and_policy(
     }
     config = cast("RuntimeConfig", SimpleNamespace(name=NAME, payload=payload))
     response = {**payload, "enabled": True}
-    monkeypatch.setattr(service, "command", lambda *_args: json.dumps(response))
+
+    def fake_command(*_args: str) -> str:
+        return json.dumps(response)
+
+    monkeypatch.setattr(service, "command", fake_command)
     assert service.observe(config) == response
     response["generation"] = 2
     with pytest.raises(TetherError, match="acknowledged"):
@@ -349,7 +465,7 @@ def test_observe_requires_exact_generation_and_policy(
 def test_exact_payload_subtree_includes_nested_children(suffix: str) -> None:
     prefix = UNIT_GROUP.rsplit("/", 1)[0]
     expected = prefix + "/" + suffix
-    assert host._container_group(expected + "/nested", IDENTITY, UNIT_GROUP) == expected
+    assert host._container_group(expected + "/nested", IDENTITY, UNIT_GROUP) == expected  # pyright: ignore[reportPrivateUsage] - exact subtree boundary probe
 
 
 @pytest.mark.parametrize(
@@ -362,19 +478,31 @@ def test_exact_payload_subtree_includes_nested_children(suffix: str) -> None:
 )
 def test_foreign_or_broad_cgroup_refused(group: str) -> None:
     with pytest.raises(TetherError):
-        host._container_group(group, IDENTITY, UNIT_GROUP)
+        host._container_group(group, IDENTITY, UNIT_GROUP)  # pyright: ignore[reportPrivateUsage] - direct negative boundary probe
 
 
 def test_stop_refuses_new_unit_invocation(
     port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     service, runner = port
-    monkeypatch.setattr(service, "exists", lambda _kind, _identity: False)
-    monkeypatch.setattr(service, "cgroup_empty", lambda _group: True)
+
+    def fake_exists(_kind: str, _identity: str) -> bool:
+        return False
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_cgroup_empty(_group: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "cgroup_empty", fake_cgroup_empty)
+
+    def fake_unit_incarnation(_name: str) -> dict[str, str]:
+        return {"InvocationID": "1" * 32, "ControlGroup": UNIT_GROUP}
+
     monkeypatch.setattr(
         service,
         "unit_incarnation",
-        lambda _name: {"InvocationID": "1" * 32, "ControlGroup": UNIT_GROUP},
+        fake_unit_incarnation,
     )
     with pytest.raises(TetherError):
         service.stop(retained())
@@ -387,7 +515,11 @@ def test_unit_incarnation_refuses_ambiguous_fields(
 ) -> None:
     service, _runner = port
     content = f"Id={NAME}.service\nInvocationID={INVOCATION}\nControlGroup={UNIT_GROUP}\n" + extra
-    monkeypatch.setattr(service, "command", lambda *_args: content)
+
+    def fake_command(*_args: str) -> str:
+        return content
+
+    monkeypatch.setattr(service, "command", fake_command)
     with pytest.raises(TetherError):
         host.TetherHost.unit_incarnation(service, NAME + ".service")
 
@@ -397,7 +529,11 @@ def test_unit_incarnation_retains_exact_values(
 ) -> None:
     service, _runner = port
     content = f"Id={NAME}.service\nInvocationID={INVOCATION}\nControlGroup={UNIT_GROUP}\n"
-    monkeypatch.setattr(service, "command", lambda *_args: content)
+
+    def fake_command(*_args: str) -> str:
+        return content
+
+    monkeypatch.setattr(service, "command", fake_command)
     assert host.TetherHost.unit_incarnation(service, NAME + ".service") == {
         "InvocationID": INVOCATION,
         "ControlGroup": UNIT_GROUP,
@@ -423,14 +559,22 @@ def test_pod_stop_refuses_foreign_members(
 ) -> None:
     service, runner = port
     record = pod_retained()
-    monkeypatch.setattr(service, "exists", lambda _kind, _identity: True)
+
+    def fake_exists(_kind: str, _identity: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "exists", fake_exists)
     row = {
         "Id": POD,
         "Name": record["pod_name"],
         "InfraContainerID": IDENTITY,
         "Containers": [{"Id": IDENTITY}, {"Id": OTHER}],
     }
-    monkeypatch.setattr(service, "row", lambda _kind, _identity: row)
+
+    def fake_row(_kind: str, _identity: str) -> dict[str, Any]:
+        return row
+
+    monkeypatch.setattr(service, "row", fake_row)
     with pytest.raises(TetherError):
         service.stop_pod(record)
     assert not runner.calls
@@ -441,8 +585,16 @@ def test_pod_stop_refuses_name_replacement(
 ) -> None:
     service, runner = port
     record = pod_retained()
-    monkeypatch.setattr(service, "exists", lambda _kind, identity: identity == record["pod_name"])
-    monkeypatch.setattr(service, "row", lambda _kind, _identity: {"Id": OTHER})
+
+    def fake_exists(_kind: str, identity: str) -> bool:
+        return identity == record["pod_name"]
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_row(_kind: str, _identity: str) -> dict[str, Any]:
+        return {"Id": OTHER}
+
+    monkeypatch.setattr(service, "row", fake_row)
     with pytest.raises(TetherError):
         service.stop_pod(record)
     assert not runner.calls
@@ -453,10 +605,26 @@ def test_repeated_stop_after_binding_retired_has_no_effect(
     port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch, *, pod: bool
 ) -> None:
     service, runner = port
-    monkeypatch.setattr(service, "exists", lambda _kind, _identity: False)
-    monkeypatch.setattr(service, "cgroup_empty", lambda _group: True)
-    monkeypatch.setattr(service, "_unit_closed", lambda _name: True)
-    monkeypatch.setattr(service, "owned_unit", lambda _name: pytest.fail("Retired binding must not need ownership"))
+
+    def fake_exists(_kind: str, _identity: str) -> bool:
+        return False
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_cgroup_empty(_group: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "cgroup_empty", fake_cgroup_empty)
+
+    def fake_unit_closed(_name: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "_unit_closed", fake_unit_closed)
+
+    def fake_owned_unit(_name: str) -> dict[str, str]:
+        return pytest.fail("Retired binding must not need ownership")
+
+    monkeypatch.setattr(service, "owned_unit", fake_owned_unit)
     if pod:
         assert service.pod_closed(pod_retained())
         service.stop_pod(pod_retained())
@@ -485,7 +653,7 @@ def test_closed_unit_observation_requires_no_pending_restart(
     runner.outcomes[argv] = ProcessResult(
         (), code, "".join(key + "=" + value + "\n" for key, value in zip(props, values, strict=True))
     )
-    assert host.TetherHost._unit_closed(service, NAME + ".service") is expected
+    assert host.TetherHost._unit_closed(service, NAME + ".service") is expected  # pyright: ignore[reportPrivateUsage] - bypass fixture replacement to exercise observation
 
 
 @pytest.mark.parametrize("body_exists", [True, False])
@@ -493,8 +661,16 @@ def test_unretained_stop_never_adopts_a_body(
     port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch, *, body_exists: bool
 ) -> None:
     service, runner = port
-    monkeypatch.setattr(service, "exists", lambda _kind, _identity: body_exists)
-    monkeypatch.setattr(service, "cgroup_empty", lambda _group: True)
+
+    def fake_exists(_kind: str, _identity: str) -> bool:
+        return body_exists
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_cgroup_empty(_group: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "cgroup_empty", fake_cgroup_empty)
     if body_exists:
         with pytest.raises(TetherError):
             service.stop_unretained(NAME)
@@ -508,9 +684,21 @@ def test_unretained_stop_quiescent_retired_unit_has_no_effect(
     port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     service, runner = port
-    monkeypatch.setattr(service, "exists", lambda _kind, _identity: False)
-    monkeypatch.setattr(service, "_unit_closed", lambda _name: True)
-    monkeypatch.setattr(service, "unit_incarnation", lambda _name: pytest.fail("No authority required for no effect"))
+
+    def fake_exists(_kind: str, _identity: str) -> bool:
+        return False
+
+    monkeypatch.setattr(service, "exists", fake_exists)
+
+    def fake_unit_closed(_name: str) -> bool:
+        return True
+
+    monkeypatch.setattr(service, "_unit_closed", fake_unit_closed)
+
+    def fake_unit_incarnation(_name: str) -> dict[str, str]:
+        return pytest.fail("No authority required for no effect")
+
+    monkeypatch.setattr(service, "unit_incarnation", fake_unit_incarnation)
     service.stop_unretained(NAME)
     assert not runner.calls
 
@@ -522,13 +710,21 @@ def test_core_requires_image_and_current_owned_payload(
     service, runner = port
     core_group = UNIT_GROUP.rsplit("/", 1)[0] + "/lychd-vessel.service"
     row = {**container(), "Name": "lychd-vessel", "Image": OTHER if fault == "foreign-image" else IMAGE}
-    monkeypatch.setattr(service, "row", lambda kind, _identity: {"Id": IMAGE} if kind == "image" else row)
+
+    def fake_row(kind: str, _identity: str) -> dict[str, Any]:
+        return {"Id": IMAGE} if kind == "image" else row
+
+    monkeypatch.setattr(service, "row", fake_row)
+
+    def fake_owned_unit(_name: str) -> dict[str, str]:
+        return {"LoadState": "loaded", "ActiveState": "inactive" if fault == "inactive" else "active"}
+
     monkeypatch.setattr(
         service,
         "owned_unit",
-        lambda _name: {"LoadState": "loaded", "ActiveState": "inactive" if fault == "inactive" else "active"},
+        fake_owned_unit,
     )
-    calls = []
+    calls: list[str] = []
 
     def incarnation(_name: str) -> dict[str, str]:
         calls.append(_name)
@@ -538,10 +734,14 @@ def test_core_requires_image_and_current_owned_payload(
         }
 
     monkeypatch.setattr(service, "unit_incarnation", incarnation)
+
+    def fake_process_cgroup(_pid: int) -> str:
+        return (UNIT_GROUP if fault == "foreign-cgroup" else core_group) + "/libpod-payload-" + IDENTITY
+
     monkeypatch.setattr(
         service,
         "process_cgroup",
-        lambda _pid: (UNIT_GROUP if fault == "foreign-cgroup" else core_group) + "/libpod-payload-" + IDENTITY,
+        fake_process_cgroup,
     )
     if fault == "none":
         service.require_core("example/core:admitted")

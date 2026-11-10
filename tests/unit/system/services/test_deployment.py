@@ -318,7 +318,7 @@ def test_tether_configuration_compares_public_fields_independently_of_source_bin
     runes_dir = tmp_path / "runes"
     rune_path = TetherRune.anchor_dir(runes_dir) / "default.toml"
     rune_path.parent.mkdir(parents=True)
-    public = {
+    public: dict[str, dict[str, str | int]] = {
         "quadlet": {"image": "example/tether@sha256:" + "c" * 64},
         "offered": {
             "id": "home",

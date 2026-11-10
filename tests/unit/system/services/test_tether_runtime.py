@@ -8,7 +8,7 @@ import json
 import os
 import socket
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -230,7 +230,11 @@ async def test_active_stream_fence_prevents_future_upstream_bytes(monkeypatch: p
     }
     f = fences(p)
     f["peers"] = [{"id": "peer-b", "generation": 1, "enabled": True}]
-    monkeypatch.setattr(runtime, "load_fences", lambda _p: f)
+
+    def fake_load_fences(_p: dict[str, Any]) -> dict[str, Any]:
+        return f
+
+    monkeypatch.setattr(runtime, "load_fences", fake_load_fences)
     incoming, outgoing = asyncio.StreamReader(), asyncio.StreamReader()
     client, upstream = Writer(), Writer()
     connected = asyncio.Event()
@@ -242,7 +246,11 @@ async def test_active_stream_fence_prevents_future_upstream_bytes(monkeypatch: p
     monkeypatch.setattr(asyncio, "open_connection", connect)
     relay = runtime.Relay(p)
     task = asyncio.create_task(
-        relay.handle(incoming, client, {"service_id": "tasks", "backend_address": "192.0.2.3", "backend_port": 443})
+        relay.handle(
+            incoming,
+            cast("asyncio.StreamWriter", client),
+            {"service_id": "tasks", "backend_address": "192.0.2.3", "backend_port": 443},
+        )
     )
     await asyncio.wait_for(connected.wait(), 1)
     incoming.feed_data(b"before")
@@ -260,8 +268,12 @@ async def test_active_stream_fence_prevents_future_upstream_bytes(monkeypatch: p
 
 @pytest.mark.asyncio
 async def test_offered_wrong_peer_never_opens_backend(monkeypatch: pytest.MonkeyPatch) -> None:
-    p = {**common("offered-relay"), "peers": []}
-    monkeypatch.setattr(runtime, "load_fences", lambda _p: fences(p))
+    p: dict[str, Any] = {**common("offered-relay"), "peers": []}
+
+    def fake_load_fences(_p: dict[str, Any]) -> dict[str, Any]:
+        return fences(p)
+
+    monkeypatch.setattr(runtime, "load_fences", fake_load_fences)
     opened = False
 
     async def connect(*_args: object, **_kwargs: object) -> None:
@@ -270,7 +282,7 @@ async def test_offered_wrong_peer_never_opens_backend(monkeypatch: pytest.Monkey
 
     monkeypatch.setattr(asyncio, "open_connection", connect)
     writer = Writer()
-    await runtime.Relay(p).handle(asyncio.StreamReader(), writer, {"service_id": "tasks"})
+    await runtime.Relay(p).handle(asyncio.StreamReader(), cast("asyncio.StreamWriter", writer), {"service_id": "tasks"})
     assert not opened
     assert writer.closed
 
@@ -299,7 +311,11 @@ def test_nft_comparison_keeps_interface_negation_significant() -> None:
 def test_restart_adopts_only_exact_marked_table(monkeypatch: pytest.MonkeyPatch) -> None:
     p = wg()
     table = {"family": "inet", "name": "lychd_tether", "comment": runtime.ownership_marker(p)}
-    monkeypatch.setattr(runtime, "run", lambda _argv: json.dumps({"nftables": [{"table": table}]}))
+
+    def fake_run(_argv: tuple[str, ...]) -> str:
+        return json.dumps({"nftables": [{"table": table}]})
+
+    monkeypatch.setattr(runtime, "run", fake_run)
     assert runtime.existing_owned_table(p)
     table["comment"] = "foreign-installation"
     with pytest.raises(ValueError, match="refused"):
@@ -389,20 +405,36 @@ async def test_wireguard_routes_require_up_device_under_denial(
 ) -> None:
     p = runtime.validate_config(wg())
     fence = fences(p, enabled=enabled)
-    initial_routes = {"10.77.0.99/32"} if recovered else set()
+    initial_routes: set[str] = {"10.77.0.99/32"} if recovered else set()
     kernel = WireGuardKernel(p, fence, initial_routes)
 
     async def stop_after_reconciliation(_seconds: float) -> None:
         raise asyncio.CancelledError
 
     monkeypatch.setattr(runtime, "run", kernel.run)
-    monkeypatch.setattr(runtime, "existing_owned_table", lambda _p: recovered)
-    monkeypatch.setattr(runtime, "owned_interface_routes", lambda _p: initial_routes if recovered else None)
+
+    def fake_existing_owned_table(_p: dict[str, Any]) -> bool:
+        return recovered
+
+    monkeypatch.setattr(runtime, "existing_owned_table", fake_existing_owned_table)
+
+    def fake_owned_interface_routes(_p: dict[str, Any]) -> set[str] | None:
+        return initial_routes if recovered else None
+
+    monkeypatch.setattr(runtime, "owned_interface_routes", fake_owned_interface_routes)
     monkeypatch.setattr(runtime, "load_config", lambda: p)
-    monkeypatch.setattr(runtime, "load_fences", lambda _p: fence)
+
+    def fake_load_fences(_p: dict[str, Any]) -> dict[str, Any]:
+        return fence
+
+    monkeypatch.setattr(runtime, "load_fences", fake_load_fences)
     monkeypatch.setattr(runtime, "configure_peers", kernel.configure_peers)
     monkeypatch.setattr(runtime, "notify_ready", kernel.notify_ready)
-    monkeypatch.setattr(runtime, "public_status", lambda _p, **_kwargs: None)
+
+    def fake_public_status(_p: dict[str, Any], **_kwargs: object) -> None:
+        return None
+
+    monkeypatch.setattr(runtime, "public_status", fake_public_status)
     monkeypatch.setattr(runtime.asyncio, "sleep", stop_after_reconciliation)
     with pytest.raises(asyncio.CancelledError):
         await runtime.wireguard(p)
