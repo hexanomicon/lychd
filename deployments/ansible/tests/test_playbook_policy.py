@@ -129,5 +129,20 @@ class HostAuthorityTests(unittest.TestCase):
         self.assertFalse(preflight[0]["check_mode"])
 
 
+class DeploymentWorkflowTests(unittest.TestCase):
+    def test_core_source_changes_receive_deployment_contract_checks(self):
+        workflow = TASKS.parents[5] / ".github/workflows/deployments.yml"
+        # BaseLoader preserves the GitHub Actions `on` key under YAML 1.1.
+        triggers = yaml.load(workflow.read_text(), Loader=yaml.BaseLoader)["on"]
+        self.assertIn("pull_request", triggers)
+        self.assertIn("push", triggers)
+        self.assertEqual(set(triggers["push"]["branches"]), {"main", "dev"})
+        for event in ("pull_request", "push"):
+            with self.subTest(event=event, changed_path="src/lychd/app.py"):
+                filters = triggers[event] or {}
+                self.assertNotIn("paths", filters)
+                self.assertNotIn("paths-ignore", filters)
+
+
 if __name__ == "__main__":
     unittest.main()

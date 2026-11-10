@@ -59,13 +59,15 @@ class CodexService:
         runes_path: Path | None = None,
         templates_dir: Path | None = None,
         postgres_root_path: Path | None = None,
+        settings: Settings | None = None,
     ) -> None:
-        """Create a codex service bound to concrete codex/runes paths."""
+        """Bind inscription paths and optional prepared Settings for new files only."""
         self.toml_path = toml_path or PATH_LYCHD_TOML
         self.runes_path = runes_path or PATH_RUNES_DIR
         self.templates_dir = templates_dir or PATH_RUNE_TEMPLATES_DIR
         self.postgres_root_path = postgres_root_path or PATH_POSTGRES_ROOT_DIR
         self.rune_schemas = list(rune_schemas)
+        self._settings = settings
 
         self._env = Environment(
             loader=FileSystemLoader(self.templates_dir),
@@ -94,8 +96,8 @@ class CodexService:
         return creation.resources
 
     def _inscribe_lychd_toml(self, creation: JournaledCreation) -> None:
-        """Generate `lychd.toml` from Pydantic Settings defaults."""
-        settings = get_settings()
+        """Publish newly prepared Settings without overwriting existing configuration."""
+        settings = self._settings if self._settings is not None else get_settings()
         content = _render_default_settings_toml(settings)
         resources = creation.create_text_file(
             self.toml_path,

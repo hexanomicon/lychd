@@ -4,3 +4,4 @@ nav:
   - KDE workstation: workstation.md
   - Personal and administrator shells: shells.md
   - Private access: access.md
+  - Snapshot upgrade qualification: qualification.md

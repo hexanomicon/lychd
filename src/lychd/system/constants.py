@@ -135,6 +135,9 @@ processes ``.container/.volume/.network/.kube/.image/
 directory are silently ignored, so they must live in ``PATH_SYSTEMD_USER_UNITS_DIR``.
 """
 
+PATH_SYSTEMD_USER_GENERATOR_DIR: Final[Path] = Path("/run/user") / str(os.getuid()) / "systemd" / "generator"
+"""Canonical generated-unit site for the Linux user-manager deployment profile."""
+
 PATH_SYSTEMD_CONFIG_DIR: Final[Path] = PATH_XDG_CONFIG_HOME / "systemd"
 """Shared systemd user-configuration root; never a LychD-owned tree."""
 

@@ -63,7 +63,24 @@ class DeployPolicyTests(unittest.TestCase):
             if "ansible.builtin.command" in task
             and str(task["ansible.builtin.command"]["argv"][0]).endswith("lychd_app_cli }}")
         ]
-        self.assertEqual(commands, [["init", "--dry-run"], ["init"], ["bind", "--dry-run"], ["bind"], ["start"]])
+        self.assertEqual(
+            commands,
+            [
+                ["init", "--web-image", "{{ lychd_app_image_ref }}", "--dry-run"],
+                ["init", "--web-image", "{{ lychd_app_image_ref }}"],
+                ["bind", "--dry-run"],
+                ["bind"],
+                ["start"],
+                [
+                    "status",
+                    "--json",
+                    "--deployment-revision",
+                    "{{ lychd_source_revision }}",
+                    "--deployment-image-id",
+                    "{{ lychd_image_id }}",
+                ],
+            ],
+        )
         self.assertLess(
             names.index("Refuse application effects outside the admitted chain"),
             names.index("Initialize the Codex and Crypt"),
@@ -170,16 +187,51 @@ class DeployPolicyTests(unittest.TestCase):
         self.assertEqual(task["ansible.builtin.systemd_service"], {"name": "network-online.target", "state": "started"})
         self.assertIn("lychd_floor_enable_network_online", task["when"])
 
-    def test_start_wait_does_not_accept_one_active_unit(self):
-        tasks = list(walk(load("roles/lychd_app/tasks/apply.yml")))
-        wait = next(task for task in tasks if task.get("name") == "Wait read-only for the owned units to converge")
-        # systemctl's exit code alone accepts a running pod with a failed Vessel.
-        expression = wait["until"]
-        from jinja2 import Environment
+    def test_start_wait_requires_successful_native_running_assessment(self):
+        import json
 
-        check = Environment().compile_expression(expression)
-        self.assertFalse(check(lychd_app_units={"rc": 0, "stdout_lines": ["active", "active", "active", "failed"]}))
-        self.assertTrue(check(lychd_app_units={"rc": 0, "stdout_lines": ["active"] * 4}))
+        tasks = list(walk(load("roles/lychd_app/tasks/apply.yml")))
+        wait = next(
+            task
+            for task in tasks
+            if task.get("name") == "Wait read-only for the native deployment assessment to converge"
+        )
+        environment = Environment()
+        environment.filters["from_json"] = json.loads
+        check = environment.compile_expression(wait["until"])
+        self.assertFalse(
+            check(
+                lychd_app_units={
+                    "rc": 0,
+                    "stdout": json.dumps({"schema": "lychd.deployment", "version": 1, "state": "unknown"}),
+                }
+            )
+        )
+        self.assertFalse(
+            check(
+                lychd_app_units={
+                    "rc": 1,
+                    "stdout": json.dumps({"schema": "lychd.deployment", "version": 1, "state": "running"}),
+                }
+            )
+        )
+        self.assertTrue(
+            check(
+                lychd_app_units={
+                    "rc": 0,
+                    "stdout": json.dumps({"schema": "lychd.deployment", "version": 1, "state": "running"}),
+                }
+            )
+        )
+
+        self.assertFalse(
+            check(
+                lychd_app_units={
+                    "rc": 0,
+                    "stdout": json.dumps({"schema": "lychd.deployment", "version": 0, "state": "running"}),
+                }
+            )
+        )
 
     def test_read_only_classification_checks_source_before_running_cli(self):
         tasks = load("roles/lychd_app/tasks/classify.yml")

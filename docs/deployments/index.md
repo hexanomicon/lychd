@@ -19,6 +19,8 @@ working application merely because a playbook finishes.
   reviewed whole-disk installation proposal, using official media or a network installer.
 - [Private access](tumbleweed/access.md): optional infrastructure-owned WireGuard and a restricted
   forwarding service for one trusted owner of one VPS; native Tether remains Designed.
+- [Snapshot upgrade qualification](tumbleweed/qualification.md): a real disposable QEMU
+  baseline-to-candidate OS transition with exact artifacts, a controlled reboot and retained evidence.
 
 | Stage | Owner | Verification |
 | --- | --- | --- |

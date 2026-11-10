@@ -18,6 +18,9 @@ personal/administrator login shell; the runtime identity remains separate.
 The access profile is for one trusted owner per instance; it is not a shared multiuser Altar.
 The [access guide](../docs/deployments/tumbleweed/access.md) covers local key preparation,
 `access/client.py` rendering and the pinned `access/forward.py --profile ...` browser road.
+The separate [snapshot upgrade qualification](../docs/deployments/tumbleweed/qualification.md)
+boots an admitted prepared baseline in one disposable QEMU guest; fixture tests do not establish
+a successful OS transition.
 
 For offline source checks, create a separate controller environment with Python 3.13+ and install
 `ansible/requirements-checks.txt`, then run from this checkout:

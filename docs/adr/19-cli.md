@@ -115,6 +115,20 @@ bindings, workers, and locally visible runs. It does not attest HTTP/database he
 currency, queue readiness, durable run health, model warmth, or extension status; silence is not
 proof.
 
+The optional `--deployment-revision SHA` projection requires `--json` and the `system` target.
+Its version-1 envelope assesses only the empty-extension container deployment profile against
+`localhost/lychd:SHA`, the invoking installed CLI, original initialization identities and digests,
+and exact Scribe ownership. `--deployment-image-id` additionally pins the admitted image ID;
+`--deployment-verify` adds bounded server-local acceptance without exposing access credentials.
+An observation is not mutation authority: active installations permit observation only; foreign,
+mixed, transitional, altered, or unproven material refuses automated adoption. Controllers must
+require the matching protocol version instead of interpreting human output, receipts, or units.
+Ordinary `status --json` retains its existing shape. Deployment observation returns status 0
+with its explicit state and refusal codes; unavailable observation returns a secret-free JSON
+error and status 1; invalid options retain Click status 2. Failed deployment acceptance is status 1.
+`init --web-image REF` selects the image in newly inscribed Settings before their original
+creation digest is journaled; it never rewrites existing settings or rebases a receipt.
+
 `lychd logs [TARGET]` maps a target to exact owned units and takes one bounded journald tail; Click
 validates and help advertises the line bound. It has no follow mode or joined container, run-event,
 or Oculus evidence view.

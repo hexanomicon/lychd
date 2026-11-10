@@ -17,11 +17,16 @@ setup, private inventory and variables, check/apply commands, limitations and ho
 | `access-revoke.yml` | administrator, exact private intent | Persist revocation, disable/stop both dedicated transports, verify closure. |
 
 `deploy.yml` drives the installed LychD CLI (`init`, `bind`, `start`); it generates no units or
-configuration of its own, never stops, restarts, updates or kills a running body, and edits
-exactly one settings line whose relation to the init receipt it proves first. `start` also
+configuration of its own and never stops, restarts, updates or kills a running body. It consumes
+native deployment protocol 1 from `status --json --deployment-revision SHA` and selects the exact
+image during `init --web-image REF`, before its original creation digest is recorded. `start` also
 requires `lychd_app_start_authorized=true` once the host's recovery plan is approved. The
 application image comes from one admitted OCI archive (`roles/lychd_image/files/admit_oci_archive.py`).
 
 The [deployment index](../../docs/deployments/index.md) routes installation, Server, Workstation,
 private access and acceptance. Private inventories, password hashes, endpoint keys, generated
 AutoYaST profiles and image archives belong outside the checkout, including ignored directories.
+
+Controller and installed CLI must both implement deployment protocol 1. An older pilot whose
+settings were edited after init is deliberately refused; retain its previous private controller
+for read-only observation. No automated settings migration or receipt rewrite is provided.
