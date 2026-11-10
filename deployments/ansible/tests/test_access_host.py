@@ -26,6 +26,115 @@ def intent():
     }
 
 
+SSH_RESTRICTIONS = {
+    "MaxSessions": "0",
+    "AllowTcpForwarding": "local",
+    "PermitOpen": "127.0.0.1:7134",
+    "PermitListen": "none",
+    "AllowStreamLocalForwarding": "no",
+    "PasswordAuthentication": "no",
+    "KbdInteractiveAuthentication": "no",
+    "AllowAgentForwarding": "no",
+    "X11Forwarding": "no",
+    "PermitTTY": "no",
+    "PermitTunnel": "no",
+    "AllowUsers": "lychd-forward",
+}
+
+
+def ssh_transcript(*, lowercase=False, changes=None, omitted=None):
+    settings = {**SSH_RESTRICTIONS, **(changes or {})}
+    # dump_config emits these unrelated list directives on multiple lines.
+    extra = "HostKey /test/key-one\nHostKey /test/key-two\nAcceptEnv LANG\nAcceptEnv LC_*\n"
+    if lowercase:
+        extra = extra.replace("HostKey", "hostkey").replace("AcceptEnv", "acceptenv")
+    return (
+        extra
+        + "\n".join(f"{key.lower() if lowercase else key} {value}" for key, value in settings.items() if key != omitted)
+        + "\n"
+    )
+
+
+class EffectiveSSHTests(unittest.TestCase):
+    def observe(self, output):
+        def response(args):
+            return SimpleNamespace(stdout=output if "-T" in args else "")
+
+        return patch.object(host, "run", side_effect=response)
+
+    def test_lowercase_and_camelcase_equivalent_with_legitimate_repeated_lists(self):
+        for lowercase in (False, True):
+            with self.subTest(lowercase=lowercase), self.observe(ssh_transcript(lowercase=lowercase)) as run:
+                host.effective_ssh()
+            self.assertEqual(
+                [call.args[0] for call in run.call_args_list],
+                [["sshd", flag, "-f", str(host.ROOT / "sshd_config")] for flag in ("-t", "-T")],
+            )
+
+    def test_every_restriction_mismatch_refuses_in_both_output_styles(self):
+        changes = {
+            "MaxSessions": "1",
+            "AllowTcpForwarding": "yes",
+            "PermitOpen": "any",
+            "PermitListen": "any",
+            "AllowStreamLocalForwarding": "yes",
+            "PasswordAuthentication": "yes",
+            "KbdInteractiveAuthentication": "yes",
+            "AllowAgentForwarding": "yes",
+            "X11Forwarding": "yes",
+            "PermitTTY": "yes",
+            "PermitTunnel": "yes",
+            "AllowUsers": "root",
+        }
+        for lowercase in (False, True):
+            for key, value in changes.items():
+                with (
+                    self.subTest(lowercase=lowercase, key=key),
+                    self.observe(ssh_transcript(lowercase=lowercase, changes={key: value})),
+                    self.assertRaises(host.Refusal),
+                ):
+                    host.effective_ssh()
+
+    def test_every_missing_restriction_refuses(self):
+        for key in SSH_RESTRICTIONS:
+            with self.subTest(key=key), self.observe(ssh_transcript(omitted=key)), self.assertRaises(host.Refusal):
+                host.effective_ssh()
+
+    def test_case_insensitive_duplicates_of_checked_settings_refuse_even_if_equal(self):
+        for key, value in SSH_RESTRICTIONS.items():
+            for duplicate in (value, "foreign"):
+                output = ssh_transcript() + f"{key.lower()} {duplicate}\n"
+                with self.subTest(key=key, duplicate=duplicate), self.observe(output), self.assertRaises(host.Refusal):
+                    host.effective_ssh()
+
+    def test_malformed_required_values_refuse(self):
+        for key in SSH_RESTRICTIONS:
+            for malformed in (key, key + " \t", key + "=no"):
+                output = ssh_transcript(omitted=key) + malformed + "\n"
+                with self.subTest(key=key, malformed=malformed), self.observe(output), self.assertRaises(host.Refusal):
+                    host.effective_ssh()
+
+    def test_values_keep_exact_case_and_destination_semantics(self):
+        for changes in (
+            {"AllowUsers": "LYCHD-FORWARD"},
+            {"AllowUsers": "lychd-forward root"},
+            {"AllowTcpForwarding": "LOCAL"},
+            {"PermitOpen": "localhost:7134"},
+            {"PermitOpen": "127.0.0.1:7134 127.0.0.1:22"},
+        ):
+            with (
+                self.subTest(changes=changes),
+                self.observe(ssh_transcript(changes=changes)),
+                self.assertRaises(host.Refusal),
+            ):
+                host.effective_ssh()
+
+    def test_mixed_case_keys_and_whitespace_keep_the_same_restrictions(self):
+        output = "\n" + "\n".join(f"\t{key.swapcase()}\t{value}  " for key, value in SSH_RESTRICTIONS.items()) + "\n"
+        with self.observe(output):
+            host.effective_ssh()
+
+
 class HostAccessTests(unittest.TestCase):
     def test_exact_public_intent(self):
         self.assertEqual(host.validate(intent()), intent())

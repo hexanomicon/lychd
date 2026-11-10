@@ -477,10 +477,7 @@ def digest(path):
 
 def effective_ssh():
     run(["sshd", "-t", "-f", str(ROOT / "sshd_config")])
-    values = dict(
-        line.split(" ", 1) for line in run(["sshd", "-T", "-f", str(ROOT / "sshd_config")]).stdout.splitlines()
-    )
-    for key, expected in {
+    restrictions = {
         "maxsessions": "0",
         "allowtcpforwarding": "local",
         "permitopen": "127.0.0.1:7134",
@@ -493,7 +490,20 @@ def effective_ssh():
         "permittty": "no",
         "permittunnel": "no",
         "allowusers": ACCOUNT,
-    }.items():
+    }
+    values = {}
+    for line in run(["sshd", "-T", "-f", str(ROOT / "sshd_config")]).stdout.splitlines():
+        parts = line.split(None, 1)
+        if not parts:
+            continue
+        key = parts[0].lower()
+        if key not in restrictions:
+            # OpenSSH can legitimately repeat unrelated directives such as HostKey.
+            continue
+        require(len(parts) == 2 and parts[1].strip(), "effective SSH restriction has no value")
+        require(key not in values, "effective SSH restriction is ambiguous")
+        values[key] = parts[1].strip()
+    for key, expected in restrictions.items():
         require(values.get(key) == expected, "effective SSH restrictions differ")
 
 
