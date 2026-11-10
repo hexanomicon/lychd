@@ -11,7 +11,7 @@ import asyncio
 import base64
 import json
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlsplit
 
 from lychd.system import btrfs_observer, constants
@@ -58,7 +58,7 @@ async def _http_get_async(url: str, token: str | None) -> tuple[int, bytes]:
         return 0, b""
 
 
-def _http_get(url: str, token: str | None = None) -> tuple[int, bytes]:
+def observe_local_http(url: str, token: str | None = None) -> tuple[int, bytes]:
     """Use the shared nonambient HTTP client; never follow a redirect."""
     address = urlsplit(url)
     if (
@@ -83,9 +83,9 @@ def api_checks() -> list[dict[str, Any]]:
     checks: list[dict[str, Any]] = []
     bodies: dict[str, Any] = {}
     for path in _API_PATHS:
-        anonymous, _ = _http_get(base + path)
-        refused, _ = _http_get(base + path, wrong)
-        status, body = _http_get(base + path, token)
+        anonymous, _ = observe_local_http(base + path)
+        refused, _ = observe_local_http(base + path, wrong)
+        status, body = observe_local_http(base + path, token)
         checks.append(
             {
                 "name": f"api{path}",
@@ -115,11 +115,22 @@ def api_checks() -> list[dict[str, Any]]:
         }
     )
     rows = bodies.get(_API_PATHS[2], {}).get("queues", [])
-    queues = {row.get("name"): row for row in rows if isinstance(row, dict)} if isinstance(rows, list) else {}
+    queues: dict[str, dict[str, object]] = {}
+    if isinstance(rows, list):
+        for raw_row in cast("list[object]", rows):
+            if not isinstance(raw_row, dict):
+                continue
+            row = cast("dict[str, object]", raw_row)
+            name = row.get("name")
+            if isinstance(name, str):
+                queues[name] = row
     checks.append(
         {
             "name": "api.queues_idle",
-            "ok": all(queues.get(name, {}).get("active") == 0 for name in ("runs", "rites")),
+            "ok": all(
+                type(queues.get(name, {}).get("active")) is int and queues[name]["active"] == 0
+                for name in ("runs", "rites")
+            ),
             "detail": "runs_and_rites_idle",
         }
     )
@@ -217,7 +228,7 @@ def verify_deployment(
                 "detail": network if network in {"active", "inactive", "failed"} else "unknown",
             }
         )
-        listeners = []
+        listeners: list[str] = []
         for line in service.run("ss", "-Hltn").splitlines():
             fields = line.split()
             if len(fields) > _SS_LOCAL_ADDRESS_INDEX and fields[_SS_LOCAL_ADDRESS_INDEX].endswith(

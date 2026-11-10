@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from lychd.config.settings import SettingsSnapshot, get_settings
 from lychd.system import constants
+from lychd.system.binding_sites import inspect_binding_site
 from lychd.system.host_tools import trusted_host_tool
 from lychd.system.operator import OperatorTarget, build_operator_services
 from lychd.system.operator.process import ProcessRunner, SubprocessRunner
@@ -41,7 +42,17 @@ SCHEMA = "lychd.deployment"
 VERSION = 1
 _REVISION = re.compile(r"[0-9a-f]{40}")
 _IMAGE_ID = re.compile(r"(?:sha256:)?([0-9a-f]{64})")
-_COMMON_PROPERTIES = ("Id", "LoadState", "ActiveState", "SubState", "Job")
+_COMMON_PROPERTIES = (
+    "Id",
+    "LoadState",
+    "ActiveState",
+    "SubState",
+    "Job",
+    "FragmentPath",
+    "SourcePath",
+    "DropInPaths",
+    "NeedDaemonReload",
+)
 _SERVICE_PROPERTIES = ("MainPID", "ControlPID", "Result", "ExecMainStatus")
 _MAX_CONFIG_BYTES = 1024 * 1024
 _MAX_TREE_ENTRIES = 4096
@@ -138,7 +149,7 @@ class DeploymentInspectionService:
             return report
         bindings = self.scribe.inspect_owned_bindings()
         units = self._unit_names(bindings)
-        observed = {name: self._unit(name) for name in units}
+        observed = {name: self.observe_unit(name) for name in units}
         footprint = self._footprint(bindings)
         report.facts.update(units=observed, footprint=footprint, cli=str(Path(sys.prefix) / "bin" / "lychd"))
         material = (
@@ -157,7 +168,7 @@ class DeploymentInspectionService:
             report.reasons.append("inventory_warnings")
             return report
         report.facts["inventory"] = inventory.as_dict()
-        manifests, plain_units = self._desired(settings)
+        manifests, plain_units = self.desired_bindings(settings)
         expected_names = self._runtime_names(manifests, plain_units)
         if any(name not in expected_names for name, value in observed.items() if value["LoadState"] != "not-found"):
             report.reasons.append("foreign_runtime_unit")
@@ -200,6 +211,7 @@ class DeploymentInspectionService:
         if set(bindings.runtime_units) != expected_names:
             report.reasons.append("unsupported_owned_unit_set")
             return report
+        self._require_effective_bindings(bindings, observed)
         reactor = next((path for path in bindings.systemd_sources if path.name == "lychd-reactor.service"), None)
         if reactor is None or self._source_bytes(reactor) != plain_units["lychd-reactor.service"].encode():
             report.state = "foreign_revision"
@@ -341,28 +353,59 @@ class DeploymentInspectionService:
                     pending.append(path)
 
     @staticmethod
-    def _desired(settings: Settings) -> tuple[list[QuadletBase], dict[str, str]]:
-        from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
-        from lychd.domain.animation.transmute import Transmuter
-        from lychd.system.services.reactor import render_reactor_path_unit, render_reactor_service_unit
+    def desired_bindings(settings: Settings) -> tuple[list[QuadletBase], dict[str, str]]:
+        """Project the canonical complete bind compiler without a second recipe."""
+        from lychd.config.runes.registry import RuneRegistry
+        from lychd.extensions.host import assemble_extensions
+        from lychd.system.services.bind_compilation import compile_bind_request
 
-        manifests = Transmuter(settings=settings, runtime_planner=RuntimeAdapterRegistry()).transmute_all(())
-        plain = {
-            "lychd-reactor.service": render_reactor_service_unit(
-                executable=Path(sys.prefix) / "bin" / "lychd",
-                environment={
-                    "HOME": str(Path.home()),
-                    "XDG_CONFIG_HOME": str(constants.PATH_XDG_CONFIG_HOME),
-                    "XDG_DATA_HOME": str(constants.PATH_XDG_DATA_HOME),
-                    "XDG_CACHE_HOME": str(constants.PATH_XDG_CACHE_HOME),
-                },
-            ),
-            "lychd-reactor.path": render_reactor_path_unit(
-                inbox_dir=settings.orchestration.switching.host_reactor_dir,
-                journal_dir=settings.orchestration.switching.host_reactor_journal_dir,
-            ),
-        }
-        return manifests, plain
+        request = compile_bind_request(
+            settings=settings,
+            extensions=assemble_extensions(settings),
+            runes=RuneRegistry(()),
+            soulstones=(),
+            portals=(),
+        )
+        return list(request.manifests), request.plain_unit_mapping()
+
+    @staticmethod
+    def _require_effective_bindings(bindings: OwnedBindings, observed: dict[str, dict[str, str]]) -> None:
+        """Refuse overrides and shadows before an inactive body can be started."""
+        for source in (*bindings.systemd_sources, *bindings.quadlet_sources):
+            name = runtime_unit_for_source(source.name)
+            if name not in observed:
+                msg = "effective_binding_unit_missing"
+                raise DeploymentObservationError(msg)
+            unit = observed[name]
+            if unit["LoadState"] != "loaded" or unit["DropInPaths"] or unit["NeedDaemonReload"] != "no":
+                msg = "effective_binding_override_or_reload"
+                raise DeploymentObservationError(msg)
+            if source in bindings.systemd_sources:
+                valid = (
+                    unit["FragmentPath"] == str(source)
+                    and unit["SourcePath"] == ""
+                    and not path_has_symlink_component(source)
+                )
+            else:
+                fragment = constants.PATH_SYSTEMD_USER_GENERATOR_DIR / name
+                valid = (
+                    unit["SourcePath"] == str(source)
+                    and unit["FragmentPath"] == str(fragment)
+                    and not path_has_symlink_component(fragment)
+                    and inspect_binding_site(fragment.parent, current_uid=os.getuid()).prepared
+                )
+                if valid:
+                    metadata = fragment.lstat()
+                    valid = (
+                        stat.S_ISREG(metadata.st_mode)
+                        and metadata.st_uid == os.getuid()
+                        and metadata.st_nlink == 1
+                        and not metadata.st_mode & (stat.S_IWGRP | stat.S_IWOTH)
+                    )
+
+            if not valid:
+                msg = "effective_binding_definition_mismatch"
+                raise DeploymentObservationError(msg)
 
     @staticmethod
     def _runtime_names(manifests: list[QuadletBase], plain: dict[str, str]) -> set[str]:
@@ -386,7 +429,7 @@ class DeploymentInspectionService:
 
     def _unit_names(self, bindings: OwnedBindings) -> set[str]:
         baseline = SettingsSnapshot(payload="{}").materialize()
-        manifests, plain = self._desired(baseline)
+        manifests, plain = self.desired_bindings(baseline)
         names = self._runtime_names(manifests, plain) | set(bindings.runtime_units) | {"lychd-uncaged-vessel.service"}
         for line in self.run(
             "systemctl", "--user", "list-units", "--all", "--plain", "--no-legend", "lychd*"
@@ -396,7 +439,8 @@ class DeploymentInspectionService:
                 names.add(fields[0])
         return names
 
-    def _unit(self, name: str) -> dict[str, str]:
+    def observe_unit(self, name: str) -> dict[str, str]:
+        """Read exactly the properties applicable to the named unit type."""
         properties = (*_COMMON_PROPERTIES, *(_SERVICE_PROPERTIES if name.endswith(".service") else ()))
         content = self.run("systemctl", "--user", "show", name, *(f"--property={key}" for key in properties))
         fields: dict[str, str] = {}
@@ -463,16 +507,21 @@ class DeploymentInspectionService:
 
     def _image(self, request: DeploymentRequest) -> dict[str, str]:
         payload: object = json.loads(self.run("podman", "image", "inspect", request.image_ref))
-        if not isinstance(payload, list) or len(payload) != 1 or not isinstance(payload[0], dict):
+        if not isinstance(payload, list):
             msg = "malformed_image_identity"
             raise DeploymentObservationError(msg)
-        value = cast("dict[str, Any]", payload[0])
-        identifier = str(value.get("Id", ""))
-        match = _IMAGE_ID.fullmatch(identifier)
-        labels = value.get("Labels")
-        if match is None or not isinstance(labels, dict):
+        entries = cast("list[object]", payload)
+        if len(entries) != 1 or not isinstance(entries[0], dict):
+            msg = "malformed_image_identity"
+            raise DeploymentObservationError(msg)
+        value = cast("dict[str, object]", entries[0])
+        identifier = value.get("Id")
+        raw_labels = value.get("Labels")
+        match = _IMAGE_ID.fullmatch(identifier) if isinstance(identifier, str) else None
+        if match is None or not isinstance(raw_labels, dict):
             msg = "missing_image_identity"
             raise DeploymentObservationError(msg)
+        labels = cast("dict[str, object]", raw_labels)
         revision = labels.get("org.opencontainers.image.revision", "")
         return {
             "id": match.group(1),

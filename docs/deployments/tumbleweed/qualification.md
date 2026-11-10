@@ -64,6 +64,11 @@ guarantee. Preserve required artifacts before they disappear or stop. For each r
 admit the exact public signing-key file, SHA-256 and fingerprint. This explicit trust decision
 is distinct from trusting a key offered during an upgrade.
 
+The harness refuses replaceable or untrusted ancestor directories. It copies admitted inputs,
+including the archive and uv binary referenced by variables, into its own private work directory
+through checked file descriptors and verifies the copied hashes. Later consumers use those copies.
+Keep the work parent owned by the controller user with mode `0700`.
+
 The harness verifies signed checksum provenance with `gpgv`, verifies all file hashes, and
 checks public-key fingerprints before launch. The controller-source digest covers the exact
 Ansible and qualification implementation; obtain it with `qualify.py --source-digest` after

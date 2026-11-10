@@ -88,6 +88,22 @@ class NativeContractTests(unittest.TestCase):
             probe.observe("verify", {"revision": REVISION}, "/home/lychd")
         self.assertNotIn(secret, str(caught.exception))
 
+    def test_unknown_native_json_never_invokes_or_admits_start(self):
+        document = response("unknown")
+        document["reasons"] = ["effective_binding_override_or_reload"]
+        with (
+            patch.object(probe.Path, "is_file", return_value=True),
+            patch.object(
+                probe.subprocess, "run", return_value=subprocess.CompletedProcess([], 1, json.dumps(document), "")
+            ) as run,
+        ):
+            actual, status = probe.observe("classify", {"revision": REVISION}, "/home/lychd")
+        self.assertEqual(status, 1)
+        self.assertEqual(actual["next_action"], "refuse")
+        self.assertNotIn("start", run.call_args.args[0])
+        with self.assertRaises(probe.Refusal):
+            probe.validate_response(dict(document, next_action="start"))
+
     def test_no_core_or_human_render_parser_is_in_controller(self):
         source = PROBE_PATH.read_text()
         for obsolete in (

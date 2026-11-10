@@ -98,6 +98,7 @@ def digest(path):
 def trusted_file(value, private=False):
     require(isinstance(value, str) and Path(value).is_absolute(), "absolute file path required")
     path = Path(value)
+    trusted_directory(path.parent)
     require(path.resolve(strict=True) == path, "symlinked file path refused")
     info = path.stat()
     require(stat.S_ISREG(info.st_mode) and info.st_nlink == 1, "single-link regular file required")
@@ -106,6 +107,102 @@ def trusted_file(value, private=False):
         require(info.st_uid == os.getuid() and not info.st_mode & 0o077, "private operator-owned file required")
         require(not path.is_relative_to(ROOT), "private inputs belong outside the checkout")
     return path
+
+
+def trusted_directory(path, private=False):
+    """A sticky system temp root is safe only below a trusted owned child."""
+    require(path.is_absolute(), "absolute directory required")
+    for parent in (path, *path.parents):
+        info = parent.lstat()
+        require(stat.S_ISDIR(info.st_mode), "symlinked or non-directory ancestor refused")
+        sticky_temp = (
+            parent in {Path("/tmp"), Path("/var/tmp")}
+            and info.st_uid == 0
+            and bool(info.st_mode & stat.S_ISVTX)
+            and parent != path
+        )
+        require(info.st_uid in {0, os.getuid()}, "untrusted ancestor owner")
+        require(not info.st_mode & 0o022 or sticky_temp, "replaceable ancestor refused")
+    if private:
+        info = path.stat()
+        require(info.st_uid == os.getuid() and not info.st_mode & 0o077, "private owned directory required")
+    return path
+
+
+def snapshot_artifact(value, directory, name):
+    """Copy from one checked descriptor; consumers reopen only our private copy."""
+    source = admitted_file(value)
+    target = directory / name
+    flags = os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW
+    descriptor = os.open(source, flags)
+    try:
+        before = os.fstat(descriptor)
+        require(
+            stat.S_ISREG(before.st_mode)
+            and before.st_nlink == 1
+            and before.st_uid in {0, os.getuid()}
+            and not before.st_mode & 0o022,
+            "snapshot source identity refused",
+        )
+        require(before.st_size <= 64 * 1024**3, "snapshot artifact size limit")
+        checksum = hashlib.sha256()
+        with os.fdopen(descriptor, "rb", closefd=False) as original, target.open("xb") as copied:
+            target.chmod(0o600)
+            for block in iter(lambda: original.read(1024 * 1024), b""):
+                checksum.update(block)
+                if not any(block):
+                    copied.seek(len(block), os.SEEK_CUR)
+                else:
+                    copied.write(block)
+            copied.truncate()
+            copied.flush()
+            os.fsync(copied.fileno())
+        after = os.fstat(descriptor)
+        require(
+            (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns)
+            == (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns),
+            "snapshot source changed while reading",
+        )
+        require(checksum.hexdigest() == value["sha256"], "snapshot artifact hash mismatch")
+    finally:
+        os.close(descriptor)
+    return {"path": str(target), "sha256": value["sha256"]}
+
+
+def snapshot_inputs(plan, work):
+    """Freeze admitted inputs and the archive/tool referenced by private vars."""
+    directory = work / "inputs"
+    directory.mkdir(mode=0o700)
+    sequence = 0
+
+    def copy(value):
+        nonlocal sequence
+        if isinstance(value, dict):
+            if set(value) == {"path", "sha256"}:
+                sequence += 1
+                return snapshot_artifact(value, directory, f"artifact-{sequence}")
+            return {key: copy(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [copy(item) for item in value]
+        return value
+
+    result = copy(plan)
+    for kind, path_key, hash_key in (
+        ("source_vars", "lychd_source_uv_local_binary", "lychd_source_uv_sha256"),
+        ("image_vars", "lychd_image_archive", "lychd_image_archive_sha256"),
+    ):
+        pin = result["inputs"][kind]
+        content = load_json(Path(pin["path"]))
+        if path_key in content or hash_key in content:
+            sequence += 1
+            artifact = snapshot_artifact(
+                {"path": content[path_key], "sha256": content[hash_key]}, directory, f"artifact-{sequence}"
+            )
+            content[path_key] = artifact["path"]
+            path = Path(pin["path"])
+            path.write_text(json.dumps(content, sort_keys=True) + "\n")
+            pin["sha256"] = digest(path)
+    return result
 
 
 def admitted_file(value, private=False):
@@ -117,11 +214,12 @@ def admitted_file(value, private=False):
 
 
 def source_digest():
+    trusted_directory(ROOT)
     result = hashlib.sha256()
     for directory in (ROOT / "deployments/ansible", ROOT / "deployments/qualification"):
         for path in sorted(directory.rglob("*")):
             if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
-                require(not path.is_symlink(), "symlinked controller source refused")
+                trusted_file(str(path))
                 result.update(str(path.relative_to(ROOT)).encode() + b"\0")
                 result.update(bytes.fromhex(digest(path)))
     return result.hexdigest()
@@ -703,6 +801,7 @@ def main():
             not work.exists() and work.parent.resolve(strict=True) == work.parent,
             "new nonsymlinked work directory required",
         )
+        trusted_directory(work.parent, private=True)
         require(args.controller and Path(args.controller).is_absolute(), "absolute controller required")
         controller = Path(args.controller)
         trusted_file(str((controller / "bin/ansible-playbook").resolve(strict=True)))
@@ -717,6 +816,11 @@ def main():
         qualification = Qualification(plan, work, controller)
         qualification.save()
         try:
+            qualification.plan = snapshot_inputs(plan, work)
+            qualification.receipt["snapshot_inputs_sha256"] = {
+                key: value["sha256"] for key, value in qualification.plan["inputs"].items()
+            }
+            qualification.save()
             qualification.run()
         finally:
             if qualification.process is not None and qualification.identity is not None:

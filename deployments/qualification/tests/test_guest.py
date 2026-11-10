@@ -4,10 +4,12 @@ import base64
 import hashlib
 import importlib.util
 import json
+import stat
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 SPEC = importlib.util.spec_from_file_location("qualification_guest", Path(__file__).parents[1] / "guest.py")
@@ -142,6 +144,40 @@ class GuestTests(unittest.TestCase):
             guest.upgrade(self.payload)
         network.assert_not_called()
         command.assert_not_called()
+
+    def test_real_guard_rejects_wrong_marker_machine_and_qemu_before_transaction(self):
+        baseline = "d7076f7b-b09e-4727-8ef8-5aef501cb30a"
+        machine = "c" * 32
+        payload = {**self.payload, "baseline_id": baseline, "machine_id": machine}
+        correct = {
+            "/etc/lychd-qualification.json": json.dumps({"schema": 1, "disposable": True, "baseline_id": baseline}),
+            "/etc/machine-id": machine,
+            "/sys/class/dmi/id/product_uuid": payload["run_id"],
+        }
+        for path, replacement in (
+            ("/etc/lychd-qualification.json", '{"schema":1,"disposable":false}'),
+            ("/etc/machine-id", "e" * 32),
+            ("/sys/class/dmi/id/product_uuid", "d7076f7b-b09e-4727-8ef8-5aef501cb30a"),
+        ):
+            values = {**correct, path: replacement}
+
+            def guest_path(name):
+                result = Mock()
+                result.read_text.return_value = values[name]
+                result.lstat.return_value = SimpleNamespace(st_mode=stat.S_IFREG | 0o600, st_uid=0, st_nlink=1)
+                return result
+
+            with (
+                self.subTest(changed_identity=path),
+                patch.object(guest.os, "geteuid", return_value=0),
+                patch.object(guest, "Path", side_effect=guest_path),
+                patch.object(guest, "urlopen") as network,
+                patch.object(guest, "run") as command,
+                self.assertRaises(ValueError),
+            ):
+                guest.upgrade(payload)
+            network.assert_not_called()
+            command.assert_not_called()
 
     def test_runtime_observation_refuses_root_and_nonrootless_podman(self):
         with (

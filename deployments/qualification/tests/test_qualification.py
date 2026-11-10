@@ -146,6 +146,44 @@ class PlanTests(unittest.TestCase):
         with self.assertRaises(qualification.Refusal):
             qualification.load_json(path)
 
+    def test_replaceable_ancestor_refuses_even_when_private_leaf_hash_matches(self):
+        parent = self.root / "replaceable"
+        parent.mkdir(mode=0o777)
+        parent.chmod(0o777)
+        path = parent / "private-key"
+        path.write_bytes(b"private fixture")
+        path.chmod(0o600)
+        with self.assertRaisesRegex(qualification.Refusal, "replaceable ancestor"):
+            qualification.trusted_file(str(path), private=True)
+        with self.assertRaisesRegex(qualification.Refusal, "replaceable ancestor"):
+            qualification.trusted_directory(parent)
+
+    def test_safe_sticky_temp_requires_private_owned_work_parent(self):
+        qualification.trusted_directory(self.root, private=True)
+        self.root.chmod(0o755)
+        with self.assertRaisesRegex(qualification.Refusal, "private owned directory"):
+            qualification.trusted_directory(self.root, private=True)
+
+    def test_snapshot_consumers_retain_admitted_bytes_after_original_replacement(self):
+        work = self.root / "snapshots"
+        work.mkdir(mode=0o700)
+        frozen = qualification.snapshot_inputs(self.plan, work)
+        original = Path(self.plan["ssh"]["runtime_key"]["path"])
+        original.unlink()
+        original.write_bytes(b"substituted later")
+        admitted = Path(frozen["ssh"]["runtime_key"]["path"])
+        self.assertNotEqual(admitted, original)
+        self.assertEqual(admitted.read_bytes(), b"disposable fake private key")
+        self.assertEqual(admitted.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(qualification.digest(admitted), frozen["ssh"]["runtime_key"]["sha256"])
+
+    def test_changed_artifact_cannot_be_snapshotted(self):
+        value = self.plan["ssh"]["runtime_key"]
+        Path(value["path"]).write_bytes(b"substitution before admission")
+        with self.assertRaisesRegex(qualification.Refusal, "hash mismatch"):
+            qualification.snapshot_artifact(value, self.root, "refused-copy")
+        self.assertFalse((self.root / "refused-copy").exists())
+
     def test_access_lane_cannot_prepare_or_redirect_the_target(self):
         for value in (
             {"lychd_access_enabled": True, "lychd_access_prepare": True},
