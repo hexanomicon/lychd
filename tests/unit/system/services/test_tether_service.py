@@ -228,7 +228,7 @@ def lifecycle(monkeypatch: pytest.MonkeyPatch) -> Any:
         root = Path(temporary)
         host = HostPort()
         service = ServiceHarness(custody=MemoryCustody(root / "custody"), host=host, runtime_root=root / "run")
-        service.rune = rune
+        service.rune = TetherRune.model_validate_json(rune.model_dump_json()).bind_source_file(root / "tether.toml")
         service._save(
             NativeState(
                 intent=intent,
@@ -245,11 +245,49 @@ def lifecycle(monkeypatch: pytest.MonkeyPatch) -> Any:
 def test_json_reload_and_materialization_preserve_admission(lifecycle: Any) -> None:
     service, _ = lifecycle
     state = service._load()
+    assert service.rune.source_file is not None
+    assert state.intent.rune.source_file is None
+    assert service.rune != state.intent.rune
     service._materialize(state)
     service._materialize(state)
     assert service._load() == state
     assert service.custody.modes["runtime"] is True
     assert len(service._projection(state).networks) == 2
+
+
+@pytest.mark.parametrize("prepared", [False, True])
+def test_prepare_accepts_loader_bound_rune_and_public_json_intent(
+    lifecycle: Any, monkeypatch: pytest.MonkeyPatch, *, prepared: bool
+) -> None:
+    service, host = lifecycle
+    before = service._load()
+    intent_path = service.custody.root.parent / "intent.json"
+    intent_path.write_text(before.intent.model_dump_json(by_alias=True))
+    intent_path.chmod(0o600)
+    monkeypatch.setattr(service, "_empty_preparation", lambda: not prepared)
+    result = service.prepare(intent_path, dry_run=True)
+    assert result == {"state": "prepared" if prepared else "absent", "changed": not prepared, "dry_run": True}
+    assert service._load() == before
+    assert not host.starts
+
+
+@pytest.mark.parametrize("operation", ["load", "prepare"])
+def test_public_rune_field_drift_is_refused_despite_matching_source_provenance(lifecycle: Any, operation: str) -> None:
+    service, host = lifecycle
+    before = service._load()
+    source_file = service.rune.source_file
+    assert source_file is not None
+    intent_path = service.custody.root.parent / "intent.json"
+    intent_path.write_text(before.intent.model_dump_json(by_alias=True))
+    intent_path.chmod(0o600)
+    changed = service.rune.model_dump(mode="json")
+    changed["attachments"][0]["endpoint_port"] += 1
+    service.rune = TetherRune.model_validate_json(json.dumps(changed)).bind_source_file(source_file)
+    operation_call = service._load if operation == "load" else lambda: service.prepare(intent_path, dry_run=True)
+    with pytest.raises(TetherError, match="differs"):
+        operation_call()
+    assert service._load_retained() == before
+    assert not host.starts
 
 
 def test_repeated_activation_preserves_epoch_routes_and_incarnations(lifecycle: Any) -> None:
@@ -473,7 +511,7 @@ def test_register_new_road_without_rewriting_original_or_starting(lifecycle: Any
     assert service.register_attachment(attachment)["changed"] is False
     after = service._load()
     assert after.intent == before.intent
-    assert service.rune == before.intent.rune
+    assert service.rune.model_dump(mode="json") == before.intent.rune.model_dump(mode="json")
     assert after.snapshot == before.snapshot
     assert after.active == before.active
     assert after.incarnations == before.incarnations

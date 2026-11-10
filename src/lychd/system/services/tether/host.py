@@ -88,12 +88,13 @@ class TetherHost:
         self.runner = runner or SubprocessRunner()
 
     def command(self, tool: str, *arguments: str) -> str:
-        """Execute one finite literal command without reflecting captured diagnostics."""
+        """Use local Podman for host effects and suppress captured diagnostics."""
         try:
             _require(tool in {"podman", "systemctl", "ip"})
             executable = trusted_host_tool(tool)
             _require(executable is not None)
-            result = self.runner.run((cast("str", executable), *arguments), timeout_s=45)
+            options = ("--remote=false",) if tool == "podman" else ()
+            result = self.runner.run((cast("str", executable), *options, *arguments), timeout_s=45)
             _require(not result.returncode and len(result.stdout.encode()) <= _MAX_OUTPUT)
         except Exception:  # noqa: BLE001 - quarantine process/observation diagnostics
             message = "Tether host command failed; private diagnostics suppressed"
@@ -162,7 +163,7 @@ class TetherHost:
         )
 
     def exists(self, kind: str, identity: str) -> bool:
-        """Distinguish exact absence from an unsuccessful Podman observation."""
+        """Distinguish exact local absence from an unsuccessful Podman observation."""
         if kind not in {"container", "pod"}:
             message = "Unsupported Tether runtime kind"
             raise TetherError(message)
@@ -170,7 +171,7 @@ class TetherHost:
         if executable is None:
             message = "A trusted Podman executable is unavailable"
             raise TetherError(message)
-        result = self.runner.run((executable, kind, "exists", identity), timeout_s=5)
+        result = self.runner.run((executable, "--remote=false", kind, "exists", identity), timeout_s=5)
         if result.returncode not in {0, 1}:
             message = "Tether runtime absence is uncertain"
             raise TetherError(message)

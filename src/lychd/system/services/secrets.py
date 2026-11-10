@@ -59,7 +59,7 @@ class PodmanSecretStore:
         *,
         runner: InputProcessRunner | None = None,
     ) -> None:
-        """Bind every command to the preflight-attested Podman executable."""
+        """Bind every command to the preflight-attested executable's local engine."""
         self._podman = podman_bin
         self._runner = runner or SubprocessRunner()
 
@@ -68,7 +68,7 @@ class PodmanSecretStore:
         validate_podman_secret_name(name, field_name="Podman secret name")
         try:
             result = self._runner.run(
-                (self._podman, "secret", "inspect", "--showsecret", name),
+                (self._podman, "--remote=false", "secret", "inspect", "--showsecret", name),
                 timeout_s=_PODMAN_PROBE_TIMEOUT_SECONDS,
             )
             value = _exact_secret_value(result.stdout if result.returncode == 0 else "null", name)
@@ -80,7 +80,7 @@ class PodmanSecretStore:
     def exists(self, name: str) -> bool:
         """Return exact presence, distinguishing absence from probe failure."""
         result = self._run(
-            (self._podman, "secret", "exists", name),
+            (self._podman, "--remote=false", "secret", "exists", name),
             timeout_s=_PODMAN_PROBE_TIMEOUT_SECONDS,
             operation=f"inspect Podman secret {name!r}",
         )
@@ -113,7 +113,7 @@ class PodmanSecretStore:
     ) -> ProcessResult:
         """Invoke Podman's create primitive without exposing secret material."""
         replace_args = ("--replace",) if replace else ()
-        argv = (self._podman, "secret", "create", *replace_args, name, "-")
+        argv = (self._podman, "--remote=false", "secret", "create", *replace_args, name, "-")
         try:
             return self._runner.run_with_input(
                 argv,

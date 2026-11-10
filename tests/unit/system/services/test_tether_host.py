@@ -61,7 +61,11 @@ class Runner:
     def run(self, argv: tuple[str, ...], *, timeout_s: float) -> ProcessResult:
         assert timeout_s > 0
         self.calls.append(argv)
-        return self.outcomes.get(argv[1:], ProcessResult(argv, 0))
+        command = argv[1:]
+        if argv[0] == "/tools/podman":
+            assert command[0] == "--remote=false"
+            command = command[1:]
+        return self.outcomes.get(command, ProcessResult(argv, 0))
 
     def run_with_input(
         self,
@@ -101,6 +105,33 @@ def port(monkeypatch: pytest.MonkeyPatch) -> tuple[host.TetherHost, Runner]:
     )
     monkeypatch.setattr(service, "_unit_closed", lambda _name: False)
     return service, runner
+
+
+@pytest.mark.parametrize(
+    ("variable", "value"),
+    [("CONTAINER_HOST", "ssh://foreign.invalid/run/podman.sock"), ("CONTAINER_CONNECTION", "foreign-engine")],
+)
+def test_host_observations_force_local_engine_despite_ambient_connections(
+    port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch, variable: str, value: str
+) -> None:
+    service, runner = port
+    monkeypatch.setenv(variable, value)
+    runner.outcomes[("container", "inspect", IDENTITY)] = ProcessResult((), 0, json.dumps([container()]))
+    runner.outcomes[("pod", "exists", POD)] = ProcessResult((), 1)
+    assert service.row("container", IDENTITY) == container()
+    assert service.exists("container", IDENTITY)
+    assert not service.exists("pod", POD)
+    service.command("podman", "exec", IDENTITY, "true")
+    service.command("systemctl", "--user", "show", NAME + ".service")
+    service.command("ip", "-j", "-4", "address", "show")
+    assert runner.calls == [
+        ("/tools/podman", "--remote=false", "container", "inspect", IDENTITY),
+        ("/tools/podman", "--remote=false", "container", "exists", IDENTITY),
+        ("/tools/podman", "--remote=false", "pod", "exists", POD),
+        ("/tools/podman", "--remote=false", "exec", IDENTITY, "true"),
+        ("/tools/systemctl", "--user", "show", NAME + ".service"),
+        ("/tools/ip", "-j", "-4", "address", "show"),
+    ]
 
 
 def test_absence_distinguishes_uncertainty(

@@ -179,6 +179,32 @@ def _private_file(path: Path) -> str:
         os.close(parent)
 
 
+def _default_driver_directory(graph_root: str, configured: str) -> None:
+    """Prove the default local secret directory without following another storage owner."""
+    root = Path(graph_root)
+    _require(root.is_absolute() and root.anchor == "/" and str(root) == graph_root and ".." not in root.parts)
+    _require(configured == str(root / "secrets" / "filedriver"))
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+    parent = os.open("/", flags)
+    try:
+        for component in root.parts[1:]:
+            following = os.open(component, flags, dir_fd=parent)
+            os.close(parent)
+            parent = following
+            metadata = os.fstat(parent)
+            sticky_system = metadata.st_uid == 0 and bool(metadata.st_mode & stat.S_ISVTX)
+            _require(metadata.st_uid in {0, os.getuid()} and (not metadata.st_mode & 0o022 or sticky_system))
+        _require(os.fstat(parent).st_uid == os.getuid())
+        for component in ("secrets", "filedriver"):
+            following = os.open(component, flags, dir_fd=parent)
+            os.close(parent)
+            parent = following
+            metadata = os.fstat(parent)
+            _require(metadata.st_uid == os.getuid() and stat.S_IMODE(metadata.st_mode) == _DIRECTORY_MODE)
+    finally:
+        os.close(parent)
+
+
 class TetherKeys:
     """Exact-reference factories and attestations; no replace, ignore, or deletion."""
 
@@ -195,7 +221,8 @@ class TetherKeys:
 
     def _call(self, name: str, *arguments: str, value: str | None = None, absence: bool = False) -> str | None:
         try:
-            argv = (self._tool(name), *arguments)
+            local_engine = ("--remote=false",) if name == "podman" else ()
+            argv = (self._tool(name), *local_engine, *arguments)
             result = (
                 self.runner.run(argv, timeout_s=30)
                 if value is None
@@ -254,6 +281,15 @@ class TetherKeys:
         encoded = _raw32(output)
         return base64.b64encode(encoded).decode(), _fingerprint(encoded), material
 
+    def _file_driver(self, driver: Any) -> None:
+        """Admit only the file backend's freshly proved default storage descriptor."""
+        _require(type(driver) is dict and driver.get("Name") == "file")
+        options = driver.get("Options")
+        _require(type(options) is dict and set(options) == {"path"} and type(options["path"]) is str)
+        graph_root = self._call("podman", "info", "--format", "{{.Store.GraphRoot}}")
+        _require(graph_root is not None)
+        _default_driver_directory(cast("str", graph_root).removesuffix("\n"), cast("dict[str, str]", options)["path"])
+
     def _inspect(self, record: dict[str, Any]) -> tuple[dict[str, Any], str, bytes]:
         reference = record["reference"]
         target = record.get("secret_id", reference)
@@ -266,8 +302,7 @@ class TetherKeys:
         spec = row.get("Spec")
         _require(type(spec) is dict and spec.get("Name") == reference and spec.get("Labels") == self._labels(record))
         spec = cast("dict[str, Any]", spec)
-        driver = spec.get("Driver")
-        _require(type(driver) is dict and driver.get("Name") == "file" and driver.get("Options") in ({}, None))
+        self._file_driver(spec.get("Driver"))
         secret_id = row.get("ID")
         _require(type(secret_id) is str and re.fullmatch(r"[a-zA-Z0-9]{12,128}", secret_id) is not None)
         _require("secret_id" not in record or record["secret_id"] == secret_id)

@@ -28,9 +28,10 @@ owns that disclosure decision.
 
 The Tether manifests rootless services with only the network capability each needs and explicit
 UDP publication. Interface name, listen port, address space, DNS behaviour, routes, and peer limits
-are typed configuration, not hard-coded topology. Native `lychd tether` operations own preparation,
-key import, attachment registration and admission, peer enrollment, binding, activation, inspection
-and generation-fenced revocation. Client configuration and QR export remain separate work.
+are typed configuration, not hard-coded topology. The fixed host-owned
+[`lychd tether` group](19-cli.md#decision-outcome) owns preparation, key import, attachment
+registration and admission, peer enrollment, binding, activation, inspection and generation-fenced
+revocation. Client configuration and QR export remain separate work.
 
 The Rune embeds the code-level `QuadletConfig` value under `quadlet`. That does not rename Tether
 to a kind of Stone, make it an

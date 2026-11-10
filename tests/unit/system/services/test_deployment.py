@@ -305,6 +305,71 @@ def test_old_default_image_configuration_refuses(mocker: MockerFixture, tmp_path
         service._configuration(DeploymentRequest(REVISION))
 
 
+@pytest.mark.parametrize("change", [None, "image", "listen_port", "private_key_ref"])
+def test_tether_configuration_compares_public_fields_independently_of_source_binding(
+    mocker: MockerFixture, tmp_path: Path, change: str | None
+) -> None:
+    from tomlkit import dumps
+
+    from lychd.config.runes.loader import ConfigLoader
+    from lychd.domain.tether.models import TetherRune
+    from lychd.system.services.tether.models import TetherIntent
+
+    runes_dir = tmp_path / "runes"
+    rune_path = TetherRune.anchor_dir(runes_dir) / "default.toml"
+    rune_path.parent.mkdir(parents=True)
+    public = {
+        "quadlet": {"image": "example/tether@sha256:" + "c" * 64},
+        "offered": {
+            "id": "home",
+            "interface": "wg0",
+            "address": "10.55.0.1/24",
+            "listen_address": "192.0.2.10",
+            "listen_port": 51820,
+            "private_key_ref": "lychd-tether-home-private",
+        },
+    }
+    rune_path.write_text(dumps(public))
+    loaded = ConfigLoader(runes_dir=runes_dir).load_all([TetherRune])[0]
+    assert isinstance(loaded, TetherRune)
+    assert loaded.source_file == rune_path
+    intent = TetherIntent(rune=loaded)
+    if change == "image":
+        public["quadlet"]["image"] = "example/changed@sha256:" + "d" * 64
+    elif change == "listen_port":
+        public["offered"]["listen_port"] = 51821
+    elif change == "private_key_ref":
+        public["offered"]["private_key_ref"] = "lychd-tether-changed-private"
+    settings = SettingsSnapshot(payload="{}").materialize()
+    settings.extensions.builtins = ("tether",)
+    settings.server.web.image = DeploymentRequest(REVISION).image_ref
+    settings.server.port = intent.web_port
+    service: Any = object.__new__(DeploymentInspectionService)
+    original_files = mocker.patch.object(service, "_require_original_files")
+    service.receipt = mocker.Mock()
+    service.receipt.read_original_file.side_effect = [
+        dumps(settings.model_dump(mode="json", exclude_none=True)).encode(),
+        dumps(public).encode(),
+    ]
+    mocker.patch("lychd.system.services.deployment.constants.PATH_RUNES_DIR", runes_dir)
+    mocker.patch("lychd.system.services.deployment.get_settings", return_value=settings)
+    mocker.patch("lychd.system.services.tether.models.load_intent", return_value=intent)
+    request = DeploymentRequest(
+        REVISION,
+        IMAGE,
+        profile="tether-container-v1",
+        intent_path=tmp_path / "intent.json",
+        tether_image_id="c" * 64,
+    )
+    if change is None:
+        assert service._configuration(request).model_dump() == settings.model_dump()
+    else:
+        with pytest.raises(DeploymentObservationError, match="tether_original_intent_mismatch"):
+            service._configuration(request)
+    original_files.assert_called_once_with()
+    service.receipt.read_original_file.assert_any_call(rune_path, expected_mode=0o600, max_bytes=1024 * 1024)
+
+
 def test_one_active_owned_unit_with_other_inactive_refuses(mocker: MockerFixture, tmp_path: Path) -> None:
     service = world(mocker, tmp_path)
     original = service.observe_unit.side_effect

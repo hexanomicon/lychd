@@ -9,7 +9,7 @@ import json
 import os
 import struct
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import pytest
 
@@ -92,22 +92,27 @@ class Custody:
 
 
 class Runner:
-    def __init__(self) -> None:
+    def __init__(self, graph_root: Path) -> None:
         """Model an exact secret store and tools without running host commands."""
         self.secrets: dict[str, dict[str, Any]] = {}
         self.commands: list[tuple[str, ...]] = []
+        self.inputs: list[tuple[tuple[str, ...], str]] = []
         self.generated = 0
         self.fail_create: str | None = None
         self.private = PRIVATE
         self.ssh_private, self.ssh_public = ssh_fixture(b"s" * 32)
+        self.graph_root = str(graph_root)
+        self.driver_options: Any = {"path": str(graph_root / "secrets" / "filedriver")}
+        self.fail_info = False
 
     def run(self, argv: tuple[str, ...], *, timeout_s: float) -> ProcessResult:
         return self._run(argv, timeout_s=timeout_s, value=None)
 
     def run_with_input(self, argv: tuple[str, ...], *, timeout_s: float, input_text: str) -> ProcessResult:
+        self.inputs.append((argv, input_text))
         return self._run(argv, timeout_s=timeout_s, value=input_text)
 
-    def _run(self, argv: tuple[str, ...], *, timeout_s: float, value: str | None) -> ProcessResult:  # noqa: PLR0911 - explicit tool-result fixtures
+    def _run(self, argv: tuple[str, ...], *, timeout_s: float, value: str | None) -> ProcessResult:
         assert timeout_s > 0
         self.commands.append(argv)
         command = argv[1:]
@@ -130,6 +135,13 @@ class Runner:
             assert value == self.ssh_private
             return ProcessResult(argv, 0, self.ssh_public + "\n")
         assert argv[0] == "/tools/podman"
+        return self._podman(argv, value)
+
+    def _podman(self, argv: tuple[str, ...], value: str | None) -> ProcessResult:
+        assert argv[1] == "--remote=false"
+        command = argv[2:]
+        if command == ("info", "--format", "{{.Store.GraphRoot}}"):
+            return ProcessResult(argv, 1) if self.fail_info else ProcessResult(argv, 0, self.graph_root + "\n")
         assert command[0] == "secret"
         if command[1] == "exists":
             return ProcessResult(argv, 0 if command[2] in self.secrets else 1)
@@ -152,7 +164,11 @@ class Runner:
         secret_id = f"{len(self.secrets) + 1:032x}"
         self.secrets[reference] = {
             "ID": secret_id,
-            "Spec": {"Name": reference, "Labels": labels, "Driver": {"Name": "file", "Options": {}}},
+            "Spec": {
+                "Name": reference,
+                "Labels": labels,
+                "Driver": {"Name": "file", "Options": copy.deepcopy(self.driver_options)},
+            },
             "SecretData": value,
         }
         if self.fail_create == "after":
@@ -162,7 +178,11 @@ class Runner:
 
 @pytest.fixture
 def gateway(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[keys.TetherKeys, Custody, Runner]:
-    custody, runner = Custody(tmp_path / "custody"), Runner()
+    graph_root = tmp_path / "storage"
+    graph_root.mkdir(mode=0o755)
+    (graph_root / "secrets").mkdir(mode=0o700)
+    (graph_root / "secrets" / "filedriver").mkdir(mode=0o700)
+    custody, runner = Custody(tmp_path / "custody"), Runner(graph_root)
     monkeypatch.setattr(keys, "trusted_host_tool", lambda name, **_kwargs: "/tools/" + name)
     return keys.TetherKeys(cast("TetherCustody", custody), EPOCH, runner), custody, runner
 
@@ -180,6 +200,126 @@ def test_ensure_is_absent_only_and_public_receipts_exclude_private(
     assert private not in json.dumps(custody.records)
     assert private not in json.dumps(first)
     assert all(private not in " ".join(argv) for argv in runner.commands)
+
+
+def test_default_file_descriptor_is_proved_for_both_key_purposes(
+    gateway: tuple[keys.TetherKeys, Custody, Runner],
+) -> None:
+    service, _custody, runner = gateway
+    references: dict[str, Literal["wireguard", "ssh-host"]] = {REFERENCE: "wireguard", "lychd-tether-ssh": "ssh-host"}
+    for reference, purpose in references.items():
+        identity = service.ensure(reference, purpose)
+        assert service.attest(reference) == identity
+        assert service.ensure(reference, purpose) == identity
+    assert service.owned_references() == tuple(sorted(references))
+    assert ("/tools/podman", "--remote=false", "info", "--format", "{{.Store.GraphRoot}}") in runner.commands
+    assert runner.generated == len(references)
+
+
+def test_key_operations_pin_local_engine_before_sending_private_material(
+    gateway: tuple[keys.TetherKeys, Custody, Runner], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    service, _custody, runner = gateway
+    monkeypatch.setenv("CONTAINER_HOST", "ssh://foreign.invalid/run/podman.sock")
+    monkeypatch.setenv("CONTAINER_CONNECTION", "foreign-qualification")
+    service.ensure(REFERENCE, "wireguard")
+    service.ensure("lychd-tether-ssh", "ssh-host")
+    service.attest(REFERENCE)
+    service.owned_references()
+    podman = [argv for argv in runner.commands if argv[0] == "/tools/podman"]
+    assert podman
+    assert all(argv[1] == "--remote=false" for argv in podman)
+    assert all("--remote=false" not in argv for argv in runner.commands if argv[0] != "/tools/podman")
+    for private in (encoded(PRIVATE).strip(), runner.ssh_private):
+        assert all(private not in " ".join(argv) for argv in runner.commands)
+    created = [
+        value for argv, value in runner.inputs if argv[:4] == ("/tools/podman", "--remote=false", "secret", "create")
+    ]
+    assert created == [encoded(PRIVATE), runner.ssh_private]
+
+
+@pytest.mark.parametrize("options", [None, {}, {"path": None}, {"path": "/foreign"}, {"path": "relative"}])
+def test_file_driver_refuses_unproved_descriptor_shapes(
+    gateway: tuple[keys.TetherKeys, Custody, Runner], options: Any
+) -> None:
+    service, _custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    runner.secrets[REFERENCE]["Spec"]["Driver"]["Options"] = options
+    with pytest.raises(TetherError, match="refused"):
+        service.attest(REFERENCE)
+
+
+def test_file_driver_refuses_additional_options(gateway: tuple[keys.TetherKeys, Custody, Runner]) -> None:
+    service, _custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    runner.secrets[REFERENCE]["Spec"]["Driver"]["Options"]["foreign"] = "unsupported"
+    with pytest.raises(TetherError, match="refused"):
+        service.owned_references()
+
+
+@pytest.mark.parametrize("suffix", ["/", "/.", "/../storage"])
+def test_file_driver_refuses_noncanonical_graph_root(
+    gateway: tuple[keys.TetherKeys, Custody, Runner], suffix: str
+) -> None:
+    service, _custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    runner.graph_root += suffix
+    with pytest.raises(TetherError, match="refused"):
+        service.attest(REFERENCE)
+
+
+@pytest.mark.parametrize("component", [".", "secrets", "secrets/filedriver"])
+@pytest.mark.parametrize("tamper", ["symlink", "writable"])
+def test_file_driver_refuses_unsafe_default_directory(
+    gateway: tuple[keys.TetherKeys, Custody, Runner], component: str, tamper: str
+) -> None:
+    service, _custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    path = Path(runner.graph_root) / component
+    if tamper == "symlink":
+        renamed = path.with_name(path.name + "-original")
+        path.rename(renamed)
+        path.symlink_to(renamed, target_is_directory=True)
+    else:
+        path.chmod(0o777)
+    with pytest.raises(TetherError, match="refused"):
+        service.attest(REFERENCE)
+
+
+@pytest.mark.parametrize("component", ["secrets", "secrets/filedriver"])
+def test_file_driver_requires_private_secret_directories(
+    gateway: tuple[keys.TetherKeys, Custody, Runner], component: str
+) -> None:
+    service, _custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    (Path(runner.graph_root) / component).chmod(0o755)
+    with pytest.raises(TetherError, match="refused"):
+        service.attest(REFERENCE)
+
+
+def test_file_driver_refuses_different_runtime_owner(
+    gateway: tuple[keys.TetherKeys, Custody, Runner], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    service, _custody, _runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    foreign_uid = os.getuid() + 1
+    monkeypatch.setattr(keys.os, "getuid", lambda: foreign_uid)
+    with pytest.raises(TetherError, match="refused"):
+        service.attest(REFERENCE)
+
+
+@pytest.mark.parametrize("failure", ["unavailable", "changed"])
+def test_file_driver_requires_current_backend_information(
+    gateway: tuple[keys.TetherKeys, Custody, Runner], failure: str
+) -> None:
+    service, _custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    if failure == "unavailable":
+        runner.fail_info = True
+    else:
+        runner.graph_root = str(Path(runner.graph_root).with_name("other-storage"))
+    with pytest.raises(TetherError, match="refused"):
+        service.attest(REFERENCE)
 
 
 def test_foreign_existing_name_is_never_adopted(gateway: tuple[keys.TetherKeys, Custody, Runner]) -> None:

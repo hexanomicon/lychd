@@ -385,7 +385,7 @@ class DeploymentInspectionService:
             path = TetherRune.anchor_dir(constants.PATH_RUNES_DIR) / "default.toml"
             original = self.receipt.read_original_file(path, expected_mode=_CONFIG_MODE, max_bytes=_MAX_CONFIG_BYTES)
             rune = TetherRune.model_validate(tomllib.loads(original.decode()))
-            if rune != intent.rune:
+            if rune.model_dump(mode="json") != intent.rune.model_dump(mode="json"):
                 msg = "tether_original_intent_mismatch"
                 raise DeploymentObservationError(msg)
         if declared.model_dump(mode="json", exclude_none=True) != baseline.model_dump(mode="json", exclude_none=True):

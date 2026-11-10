@@ -60,6 +60,7 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/system/services/test_tether_runtime.py tests/unit/system/services/test_tether_consumer.py \
 	tests/unit/system/services/test_tether_custody.py tests/unit/system/services/test_tether_keys.py \
 	tests/unit/system/services/test_tether_host.py tests/unit/system/services/test_tether_service.py \
+	tests/unit/system/services/test_secrets.py tests/unit/system/test_container_security.py \
 	tests/unit/system/services/test_bind.py tests/unit/system/services/test_codex.py \
 	tests/unit/domain/test_artifact_custody.py tests/unit/domain/test_evolution.py \
 	tests/unit/domain/animation tests/unit/domain/cortex tests/unit/domain/delegation \

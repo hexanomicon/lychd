@@ -111,7 +111,8 @@ class NativeTetherService:
     def _load(self) -> NativeState:
         state = self._load_retained()
         settings, _extensions, _runes, rune = self._declared()
-        if rune != state.intent.rune or settings.server.port != state.intent.web_port:
+        # Loader source provenance is not serialized into the public preparation intent.
+        if canonical_bytes(rune) != canonical_bytes(state.intent.rune) or settings.server.port != state.intent.web_port:
             msg = "Tether topology differs from its admitted preparation"
             raise TetherError(msg)
         if self.host.image(rune.quadlet.image) != state.image:
@@ -370,7 +371,7 @@ class NativeTetherService:
         intent = load_intent(intent_path)
         with nullcontext() if dry_run else LifecycleLock():
             settings, _extensions, _runes, rune = self._declared()
-            if rune != intent.rune or settings.server.port != intent.web_port:
+            if canonical_bytes(rune) != canonical_bytes(intent.rune) or settings.server.port != intent.web_port:
                 msg = "Preparation intent differs from original initialization"
                 raise TetherError(msg)
             if not self._empty_preparation():
