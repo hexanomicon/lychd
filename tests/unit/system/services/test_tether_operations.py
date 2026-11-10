@@ -23,8 +23,10 @@ from lychd.domain.tether.models import (
     compile_tether_plan,
 )
 from lychd.system.operator.process import ProcessResult
+from lychd.system.services.tether.closure import TetherStopAdapter
 from lychd.system.services.tether.custody import TetherCustody
 from lychd.system.services.tether.models import (
+    ActivationAttempt,
     ClosureLatch,
     ClosureObservation,
     EnrollRequest,
@@ -97,6 +99,7 @@ def stack(tmp_path: Path) -> tuple[TetherOperations, TetherCustody, MagicMock, M
         return ProcessResult(argv, 0, "active\n" if "show" in argv else "")
 
     runner.run.side_effect = run
+    stop.boot_id.return_value = TetherStopAdapter.boot_id()
     stop.observe.return_value = closed()
     stop.stop.return_value = closed()
     operations = TetherOperations(
@@ -413,3 +416,174 @@ def test_revoke_preserves_retained_authority_when_desired_rune_is_removed(tmp_pa
     assert custody.read("private", "closed.json") is not None
     assert custody.read("revocations", "1.json") is not None
     stop.stop.assert_called_once()
+
+
+def test_peer_publication_crash_cannot_be_promoted_to_enrollment_by_reboot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    operations, custody, runner, _, stop = stack(tmp_path)
+    peer = make_peer()
+    original = custody.write
+
+    def crash(role: str, name: str, value: BaseModel, **kwargs: bool) -> None:
+        original(role, name, value, **kwargs)
+        if role == "operations" and "generation-published" in getattr(value, "stages", ()):
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(custody, "write", crash)
+    with pytest.raises(KeyboardInterrupt):
+        operations.enroll(enroll_request(peer))
+    monkeypatch.setattr(custody, "write", original)
+    stop.boot_id.return_value = UUID(int=99)
+    runner.reset_mock()
+    with pytest.raises(TetherError, match="current-boot startup admission"):
+        operations.startup_preflight()
+    assert custody.read("public", "peer.json") == peer.model_dump_json().encode()
+    assert not runner.run.called
+
+
+def test_incomplete_native_admission_is_exact_and_current_boot_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    operations, custody, runner, _, stop = stack(tmp_path)
+    peer = make_peer()
+    request = enroll_request(peer)
+    original = custody.write
+
+    def crash(role: str, name: str, value: BaseModel, **kwargs: bool) -> None:
+        original(role, name, value, **kwargs)
+        if role == "operations" and "wireguard-start-requested" in getattr(value, "stages", ()):
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(custody, "write", crash)
+    with pytest.raises(KeyboardInterrupt):
+        operations.enroll(request)
+    monkeypatch.setattr(custody, "write", original)
+    operations.startup_preflight()
+    stop.boot_id.return_value = UUID(int=99)
+    with pytest.raises(TetherError, match="current-boot startup admission"):
+        operations.startup_preflight()
+    runner.reset_mock()
+    assert not operations.enroll(request).complete
+    assert custody.read("private", "closed.json") is not None
+    assert not runner.run.called
+
+
+def test_completed_exact_enrollment_remains_admitted_after_kernel_reboot(tmp_path: Path) -> None:
+    operations, _, _, _, stop = stack(tmp_path)
+    assert operations.enroll(enroll_request(make_peer())).complete
+    stop.boot_id.return_value = UUID(int=99)
+    operations.startup_preflight()
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        "request-kind",
+        "peer",
+        "operation",
+        "installation",
+        "generation",
+        "intent",
+        "envelope",
+        "binding",
+        "request-digest",
+        "completion-flag",
+        "fenced-complete",
+    ],
+)
+def test_startup_requires_exact_correlated_successful_enrollment(tmp_path: Path, fault: str) -> None:
+    operations, custody, _, _, _ = stack(tmp_path)
+    peer = make_peer()
+    receipt = operations.enroll(enroll_request(peer))
+    assert isinstance(receipt.request, EnrollRequest)
+    request = receipt.request
+    request_changes: dict[str, dict[str, object]] = {
+        "peer": {"peer": peer.model_copy(update={"peer_id": "another"})},
+        "operation": {"operation_id": uuid4()},
+        "installation": {"installation_id": UUID(int=99)},
+        "generation": {"expected_generation": peer.generation},
+        "intent": {"intent_digest": "f" * 64},
+        "envelope": {"envelope_digest": "f" * 64},
+    }
+    receipt_changes: dict[str, dict[str, object]] = {
+        "request-kind": {"request": revoke_request(peer)},
+        "binding": {"binding_generation": "foreign"},
+        "request-digest": {"request_digest": "f" * 64},
+        "completion-flag": {"stages": ("generation-published",)},
+        "fenced-complete": {"stages": ("activation-fenced", "forwarder-active")},
+    }
+    updates = receipt_changes.get(fault, {})
+    request_updates = request_changes.get(fault, {})
+    if request_updates:
+        updates["request"] = request.model_copy(update=request_updates)
+    if "request" in updates:
+        changed = updates["request"]
+        assert isinstance(changed, (EnrollRequest, RevokeRequest))
+        updates["request_digest"] = digest(changed)
+    corrupted = OperationReceipt.model_validate(receipt.model_copy(update=updates).model_dump())
+    custody.write("operations", f"{peer.operation_id}.json", corrupted)
+    with pytest.raises(TetherError):
+        operations.startup_preflight()
+
+
+def test_later_enrollment_recovers_after_intermediate_grant_dies_before_begin_pod(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    operations, custody, runner, _, _ = stack(tmp_path)
+    first = make_peer()
+    admit_peer(custody, first)
+    attempt = ActivationAttempt(
+        installation_id=first.installation_id,
+        generation=1,
+        envelope_digest=operations.plan.envelope_digest,
+        binding_generation="binding-1",
+        boot_id=UUID(int=1),
+        invocation_id=uuid4(),
+        service_cgroup="/old-attempt",
+    )
+    old_name = f"attempt-{attempt.boot_id.hex}-{attempt.invocation_id.hex}.json"
+    custody.write("generations", old_name, attempt, immutable=True)
+    custody.write("private", "activation.json", attempt)
+    adapter = TetherStopAdapter(
+        operations.plan, runner, podman_bin="/usr/bin/podman", systemctl_bin="/usr/bin/systemctl", custody=custody
+    )
+    monkeypatch.setattr(adapter, "observe", MagicMock(return_value=closed()))
+    monkeypatch.setattr(adapter, "capture_runtime", MagicMock())
+    monkeypatch.setattr(adapter, "boot_id", lambda: UUID(int=2))
+    monkeypatch.setattr(adapter, "_manager_invocation", MagicMock(return_value=(uuid4(), "/new-attempt")))
+    operations.stop_adapter = adapter
+    assert operations.revoke(revoke_request(first)).complete
+    second = make_peer(2)
+    original = custody.write
+
+    def crash(role: str, name: str, value: BaseModel, **kwargs: bool) -> None:
+        original(role, name, value, **kwargs)
+        if role == "operations" and "wireguard-start-requested" in getattr(value, "stages", ()):
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(custody, "write", crash)
+    with pytest.raises(KeyboardInterrupt):
+        operations.enroll(enroll_request(second))
+    monkeypatch.setattr(custody, "write", original)
+    assert adapter.activation() == attempt
+    monkeypatch.setattr(adapter, "boot_id", lambda: UUID(int=3))
+    with pytest.raises(TetherError, match="current-boot startup admission"):
+        operations.startup_preflight()
+    assert operations.revoke(revoke_request(second)).complete
+
+    def manager_start(argv: tuple[str, ...], **_: object) -> ProcessResult:
+        if argv[2] == "start" and operations.plan.pod_unit in argv:
+            operations.role_preflight("pod")
+            adapter.begin_pod(3, "binding-1")
+        return ProcessResult(argv, 0, "active\n" if "show" in argv else "")
+
+    runner.run.side_effect = manager_start
+    assert operations.enroll(enroll_request(make_peer(3))).complete
+    current = adapter.activation()
+    assert current is not None
+    assert current.generation == 3
+    assert current.boot_id == UUID(int=3)
+    assert custody.read("generations", old_name) == attempt.model_dump_json().encode()
+    assert custody.read("revocations", "1.json") is not None
+    assert custody.read("revocations", "2.json") is not None

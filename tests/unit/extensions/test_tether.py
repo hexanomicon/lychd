@@ -81,7 +81,7 @@ def test_tether_cannot_change_core_or_join_its_pod() -> None:
     assert all(item.pod == "lychd-tether.pod" and item.user == "0" for item in roles)
     assert roles[1].binds_to == ["lychd-tether-guard.path", "lychd-tether-wg.service"]
     assert roles[1].requires == ["lychd-tether-wg.service"]
-    assert all(item.restart_policy == "no" and not item.wanted_by for item in roles)
+    assert all(item.restart_policy == "no" and item.wanted_by == ["default.target"] for item in roles)
     assert [item.secrets[0].split(",")[0] for item in roles] == ["tether-wg", "tether-ssh"]
 
 
@@ -194,7 +194,7 @@ def test_scribe_renders_tether_with_one_complete_manifest(tmp_path: Path) -> Non
     assert "Secret=tether-ssh,type=mount,target=/run/secrets/tether-ssh-host,mode=0400" in ssh
     assert "Pod=lychd.pod" not in wg
     assert "Pod=lychd.pod" not in ssh
-    assert "WantedBy=default.target" not in pod + wg + ssh
+    assert all("WantedBy=default.target" in source.splitlines() for source in (pod, wg, ssh))
     assert (output / "lychd.pod").is_file()
 
 
@@ -307,3 +307,57 @@ def test_tether_renderer_refuses_unsafe_installed_python_tokens(
         scribe.reconcile_all(manifests, plain_units={})
     assert not tuple(output.iterdir())
     assert not tuple(systemd.iterdir())
+
+
+def test_tether_boot_requests_are_conditioned_on_exact_native_custody_paths(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from lychd.system import constants
+
+    compiler = _compiler()
+    manifests = compiler.transmute_all((), runes=RuneRegistry((_rune(),)))
+    codex = tmp_path / 'custom codex "quoted" $literal %n'
+    crypt = tmp_path / 'custom crypt "quoted" $literal %n'
+    monkeypatch.setattr(constants, "PATH_CODEX_ROOT", codex)
+    monkeypatch.setattr(constants, "PATH_CRYPT_ROOT", crypt)
+    output, systemd = tmp_path / "quadlet", tmp_path / "systemd"
+    output.mkdir()
+    systemd.mkdir()
+    ScribeService(output_dir=output, systemd_dir=systemd).reconcile_all(manifests, plain_units={})
+    expected_conditions = [
+        "ConditionPathExists=" + str(codex / "tether/peer.json").replace("%", "%%"),
+        "ConditionPathExists=!" + str(crypt / "tether/closed.json").replace("%", "%%"),
+    ]
+    for name in ("lychd-tether.pod", "lychd-tether-wg.container", "lychd-tether-ssh.container"):
+        lines = (output / name).read_text().splitlines()
+        assert [line for line in lines if line.startswith("ConditionPathExists=")] == expected_conditions
+        assert "WantedBy=default.target" in lines
+        assert "BindsTo=lychd-tether-guard.path" in lines or (
+            "BindsTo=lychd-tether-guard.path lychd-tether-wg.service" in lines
+        )
+        assert any(line.startswith("After=lychd-tether-guard.path") for line in lines)
+        assert any("composition preflight-" in line for line in lines)
+        assert any("composition attest-" in line for line in lines)
+    pod = (output / "lychd-tether.pod").read_text()
+    assert pod.index("composition preflight-pod") < pod.index("composition begin-pod")
+    assert pod.index("composition begin-pod") < pod.index("composition attest-pod")
+    for name in ("lychd.pod", "lychd-vessel.container", "lychd-phylactery.container", "lychd-migrate.container"):
+        content = (output / name).read_text()
+        assert "ConditionPathExists=" not in content
+        assert "lychd-tether" not in content
+
+
+def test_without_selected_tether_the_rendered_complete_fileset_is_unchanged(tmp_path: Path) -> None:
+    baseline = _compiler().transmute_all((), runes=RuneRegistry(()))
+    selected = _compiler().transmute_all((), runes=RuneRegistry((_rune(),)))
+    rendered: list[dict[str, bytes]] = []
+    for index, manifests in enumerate((baseline, selected)):
+        output, systemd = tmp_path / f"quadlet-{index}", tmp_path / f"systemd-{index}"
+        output.mkdir()
+        systemd.mkdir()
+        ScribeService(output_dir=output, systemd_dir=systemd).reconcile_all(manifests, plain_units={})
+        rendered.append({path.name: path.read_bytes() for path in output.glob("*.container")})
+        rendered[-1]["lychd.pod"] = (output / "lychd.pod").read_bytes()
+    assert rendered[0]
+    assert all(rendered[1][name] == content for name, content in rendered[0].items())

@@ -86,6 +86,13 @@ class ClosureObservation(Record):
     handler_state: str = "unknown"
 
 
+class EnrollmentStartupAdmission(Record):
+    """A native enrollment's exact request may first activate in this kernel boot."""
+
+    boot_id: UUID
+    request_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
 class OperationReceipt(Record):
     request_digest: str
     request: PrepareRequest | EnrollRequest | RevokeRequest
@@ -93,6 +100,44 @@ class OperationReceipt(Record):
     complete: bool = False
     binding_generation: str | None = None
     closure: ClosureObservation | None = None
+    startup_admission: EnrollmentStartupAdmission | None = None
+
+    def require_enrollment_startup(
+        self, peer: TetherPeerIntent, *, envelope_digest: str, binding_generation: str, boot_id: UUID
+    ) -> None:
+        """Require completed enrollment or its exact native first-start admission."""
+        request = self.request
+        if (
+            not isinstance(request, EnrollRequest)
+            or request.installation_id != peer.installation_id
+            or request.operation_id != peer.operation_id
+            or request.peer != peer
+            or request.expected_generation != peer.generation - 1
+            or request.intent_digest != digest(peer)
+            or request.envelope_digest != envelope_digest
+            or self.request_digest != digest(request)
+            or self.binding_generation != binding_generation
+        ):
+            msg = "Tether startup lacks exact correlated native enrollment authority"
+            raise TetherError(msg)
+        fenced = {"activation-fenced", "interrupted-activation-fenced", "handler-closure-observed"}
+        if self.closure is not None or fenced.intersection(self.stages):
+            msg = "Interrupted or fenced Tether enrollment cannot authorize startup"
+            raise TetherError(msg)
+        if self.complete:
+            if not self.stages or self.stages[-1] != "forwarder-active":
+                msg = "Tether enrollment completion lacks its successful terminal stage"
+                raise TetherError(msg)
+            return
+        admission = self.startup_admission
+        if (
+            admission is None
+            or admission.boot_id != boot_id
+            or admission.request_digest != self.request_digest
+            or "wireguard-start-requested" not in self.stages
+        ):
+            msg = "Incomplete Tether enrollment lacks its exact current-boot startup admission"
+            raise TetherError(msg)
 
 
 class RevocationRecord(Record):

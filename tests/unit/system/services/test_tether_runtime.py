@@ -117,3 +117,39 @@ def test_nft_transaction_uses_exclusive_create_and_failure_never_adds_interface(
     with pytest.raises(RuntimeError, match="already exists"):
         runtime.wireguard()
     assert calls == [("/usr/sbin/nft", "-f", "-")]
+
+
+def test_guard_boot_condition_skips_before_peer_but_still_observes_a_cold_fence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from lychd.system.services.tether import units
+
+    plan = make_plan()
+    codex, crypt = tmp_path / 'Codex "quoted" $literal %n', tmp_path / 'Crypt "quoted" $literal %n'
+    monkeypatch.setattr(units, "PATH_CODEX_ROOT", codex)
+    peer, latch = codex / plan.intent_relative_path, crypt / plan.closure_relative_path
+    before = units.render_tether_units(plan, crypt_root=crypt, executable=Path("/trusted/bin/python"))
+    guard = before[plan.guard_unit]
+    expected_condition = "ConditionPathExists=" + str(peer).replace("%", "%%")
+    assert [line for line in guard.splitlines() if line.startswith("Condition")] == [expected_condition]
+    assert not peer.exists()
+    assert "ConditionPathExists=!" not in guard
+    assert [line for line in guard.splitlines() if line.startswith("PathExists=")] == [
+        "PathExists=" + str(latch).replace("%", "%%"),
+    ]
+    assert any(line.startswith("PathExists=/") for line in guard.splitlines())
+    assert 'PathExists="' not in guard
+    assert "WantedBy=default.target" in guard.splitlines()
+    peer.parent.mkdir(parents=True)
+    peer.write_text("public intent is validated by preflight")
+    latch.parent.mkdir(parents=True)
+    latch.write_text("durable cold fence")
+    assert peer.exists()
+    assert latch.exists()
+    assert units.render_tether_units(plan, crypt_root=crypt, executable=Path("/trusted/bin/python")) == before
+    handler = before[plan.closure_unit]
+    assert "Conflicts=" + " ".join(plan.transport_units) in handler.splitlines()
+    assert "Requires=" not in handler
+    assert "BindsTo=" not in handler
+    assert "lychd-pod.service" not in guard + handler

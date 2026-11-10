@@ -4,4 +4,5 @@ nav:
   - KDE workstation: workstation.md
   - Personal and administrator shells: shells.md
   - Private access: access.md
+  - Native Tether pilot: tether.md
   - Snapshot upgrade qualification: qualification.md

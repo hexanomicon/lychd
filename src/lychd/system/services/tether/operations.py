@@ -14,6 +14,7 @@ from lychd.domain.tether.models import (
 )
 from lychd.system.services.tether.models import (
     ClosureLatch,
+    EnrollmentStartupAdmission,
     EnrollRequest,
     Inspection,
     InspectRequest,
@@ -173,6 +174,16 @@ class TetherOperations:
         if self.custody.read("revocations", f"{peer.generation}.json") is not None:
             msg = "Tether generation has retained revocation evidence and cannot restart"
             raise TetherError(msg)
+        raw_receipt = self.custody.read("operations", f"{peer.operation_id}.json")
+        if raw_receipt is None:
+            msg = "Tether current peer lacks its correlated native enrollment receipt"
+            raise TetherError(msg)
+        OperationReceipt.model_validate_json(raw_receipt).require_enrollment_startup(
+            peer,
+            envelope_digest=self.plan.envelope_digest,
+            binding_generation=binding,
+            boot_id=self.stop_adapter.boot_id(),
+        )
         self.secrets.attest()
         expected = {
             ("wireguard", "public.json"): render_wireguard_public(self.plan, peer).model_dump_json().encode(),
@@ -195,7 +206,7 @@ class TetherOperations:
             raise TetherError(msg)
         incarnation = self.stop_adapter.incarnation()
         if role == "pod":
-            self.stop_adapter.require_prior_activation_attested()
+            self.stop_adapter.require_prior_activation_attested(binding_generation=self.binding_probe())
             if incarnation is not None and not self.stop_adapter.incarnation_closed(incarnation):
                 msg = "Same-boot Tether restart requires exact old-incarnation cold proof"
                 raise TetherError(msg)
@@ -383,13 +394,20 @@ class TetherOperations:
             if old_latch_bytes is not None:
                 self.custody.clear_latch(old_latch_bytes)
             receipt = self._record(receipt, "active-latch-cleared")
+            receipt = self._record(
+                receipt,
+                "wireguard-start-requested",
+                startup_admission=EnrollmentStartupAdmission(
+                    boot_id=self.stop_adapter.boot_id(),
+                    request_digest=digest(request),
+                ),
+            )
             try:
                 self._control("start", self.plan.guard_unit)
                 self.startup_preflight(binding)
                 receipt = self._record(receipt, "guard-attested")
                 # systemd's WG Notify readiness gates the forwarder; no one-shot
                 # exit is used as evidence of a configured transport.
-                receipt = self._record(receipt, "wireguard-start-requested")
                 self._control("start", self.plan.pod_unit, self.plan.wireguard_unit)
                 self._require_active(self.plan.wireguard_unit)
                 receipt = self._record(receipt, "wireguard-ready")

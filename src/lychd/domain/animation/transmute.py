@@ -527,7 +527,7 @@ class Transmuter:
                     wants=[],
                     after=[plan.guard_unit, plan.pod_unit, *extra_dependencies],
                     restart_policy="no",
-                    wanted_by=[],
+                    wanted_by=["default.target"],
                 )
             )
         return (pod, *containers)

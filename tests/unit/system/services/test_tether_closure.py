@@ -16,7 +16,9 @@ from lychd.system.services.tether.closure import TetherStopAdapter
 from lychd.system.services.tether.models import (
     ActivationAttempt,
     ClosureLatch,
+    EnrollmentStartupAdmission,
     IncarnationIdentity,
+    OperationReceipt,
     RevocationRecord,
     RoleIdentity,
     RuntimeIdentity,
@@ -221,7 +223,7 @@ def test_current_boot_unattested_attempt_cannot_be_hidden_by_another_start(
     ]
 
 
-def test_new_kernel_boot_allows_a_new_attempt_without_erasing_old_evidence(
+def test_new_kernel_boot_cannot_hide_an_unmatched_prior_attempt(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     custody, plan = make_custody(tmp_path), make_plan()
@@ -241,12 +243,13 @@ def test_new_kernel_boot_allows_a_new_attempt_without_erasing_old_evidence(
         plan, MagicMock(), podman_bin="/usr/bin/podman", systemctl_bin="/usr/bin/systemctl", custody=custody
     )
     monkeypatch.setattr(adapter, "boot_id", lambda: UUID(int=2))
-    monkeypatch.setattr(adapter, "_manager_invocation", lambda: (UUID(int=3), "/new-attempt"))
-    current = adapter.begin_pod(1, "binding-1")
-    assert current.boot_id == UUID(int=2)
-    assert current.invocation_id == UUID(int=3)
+    manager = MagicMock(return_value=(UUID(int=3), "/new-attempt"))
+    monkeypatch.setattr(adapter, "_manager_invocation", manager)
+    with pytest.raises(TetherError, match=r"retained.*poststart"):
+        adapter.begin_pod(1, "binding-1")
+    manager.assert_not_called()
     assert custody.read("generations", name) == old.model_dump_json().encode()
-    assert adapter.activation() == current
+    assert adapter.activation() == old
 
 
 @pytest.mark.parametrize("fault", [None, "pod-id", "container-id", "namespace-membership"])
@@ -337,3 +340,177 @@ def test_new_boot_cannot_restart_a_retained_revoked_generation(tmp_path: Path, m
         adapter.begin_pod(1, "binding-1")
     manager.assert_not_called()
     assert custody.read("private", "activation.json") is None
+
+
+def test_successfully_matched_old_attempt_remains_valid_for_completed_reboot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    custody, plan = make_custody(tmp_path), make_plan()
+    attempt = ActivationAttempt(
+        installation_id=plan.envelope.installation_id,
+        generation=1,
+        envelope_digest=plan.envelope_digest,
+        binding_generation="binding-1",
+        boot_id=UUID(int=1),
+        invocation_id=uuid4(),
+        service_cgroup="/old",
+    )
+    incarnation = IncarnationIdentity(
+        installation_id=attempt.installation_id,
+        generation=attempt.generation,
+        envelope_digest=attempt.envelope_digest,
+        binding_generation=attempt.binding_generation,
+        boot_id=attempt.boot_id,
+        invocation_id=attempt.invocation_id,
+        pod_id="a" * 64,
+        infra_id="b" * 64,
+        netns_inode=1,
+        infra_cgroup="/old-infra",
+        host_uid_ranges=((os.getuid(), 1),),
+    )
+    custody.write("private", "activation.json", attempt)
+    custody.write("private", "incarnation.json", incarnation)
+    adapter = TetherStopAdapter(
+        plan, MagicMock(), podman_bin="/usr/bin/podman", systemctl_bin="/usr/bin/systemctl", custody=custody
+    )
+    monkeypatch.setattr(adapter, "boot_id", lambda: UUID(int=2))
+    adapter.require_prior_activation_attested(binding_generation="binding-1")
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        None,
+        "latch-digest",
+        "intent",
+        "installation",
+        "generation",
+        "envelope",
+        "binding",
+        "admission-boot",
+        "cold-proof",
+    ],
+)
+def test_old_unmatched_attempt_requires_exact_revocation_and_fresh_next_generation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fault: str | None
+) -> None:
+    from tests.unit.system.services.test_tether_operations import enroll_request
+
+    custody, plan = make_custody(tmp_path), make_plan()
+    old = make_peer()
+    admit_peer(custody, old)
+    attempt = ActivationAttempt(
+        installation_id=old.installation_id,
+        generation=old.generation,
+        envelope_digest=plan.envelope_digest,
+        binding_generation="binding-1",
+        boot_id=UUID(int=1),
+        invocation_id=uuid4(),
+        service_cgroup="/old",
+    )
+    attempt_name = f"attempt-{attempt.boot_id.hex}-{attempt.invocation_id.hex}.json"
+    custody.write("generations", attempt_name, attempt, immutable=True)
+    custody.write("private", "activation.json", attempt)
+    latch = ClosureLatch(
+        installation_id=old.installation_id,
+        operation_id=uuid4(),
+        generation=old.generation,
+        intent_digest=digest(old),
+        envelope_digest=plan.envelope_digest,
+        binding_generation="binding-1",
+    )
+    latch_changes: dict[str, dict[str, object]] = {
+        "intent": {"intent_digest": "f" * 64},
+        "installation": {"installation_id": UUID(int=99)},
+        "generation": {"generation": 99},
+        "envelope": {"envelope_digest": "f" * 64},
+        "binding": {"binding_generation": "foreign"},
+    }
+    latch = latch.model_copy(update=latch_changes.get(fault or "", {}))
+    record = RevocationRecord(latch=latch, latch_digest="f" * 64 if fault == "latch-digest" else digest(latch))
+    custody.write("revocations", "1.json", record, immutable=True)
+    peer = make_peer(2)
+    admit_peer(custody, peer)
+    request = enroll_request(peer)
+    admission = EnrollmentStartupAdmission(
+        boot_id=UUID(int=1 if fault == "admission-boot" else 2), request_digest=digest(request)
+    )
+    receipt = OperationReceipt(
+        request_digest=digest(request),
+        request=request,
+        binding_generation="binding-1",
+        stages=("wireguard-start-requested",)
+        if fault == "cold-proof"
+        else ("cold-proven", "wireguard-start-requested"),
+        startup_admission=admission,
+    )
+    custody.write("operations", f"{peer.operation_id}.json", receipt)
+    adapter = TetherStopAdapter(
+        plan, MagicMock(), podman_bin="/usr/bin/podman", systemctl_bin="/usr/bin/systemctl", custody=custody
+    )
+    monkeypatch.setattr(adapter, "boot_id", lambda: UUID(int=2))
+    manager = MagicMock(return_value=(UUID(int=3), "/new"))
+    monkeypatch.setattr(adapter, "_manager_invocation", manager)
+    if fault is None:
+        assert adapter.begin_pod(2, "binding-1").generation == 2
+        manager.assert_called_once()
+    else:
+        with pytest.raises(TetherError, match=r"retained.*poststart"):
+            adapter.begin_pod(2, "binding-1")
+        manager.assert_not_called()
+        assert adapter.activation() == attempt
+    assert custody.read("generations", attempt_name) == attempt.model_dump_json().encode()
+    assert custody.read("revocations", "1.json") == record.model_dump_json().encode()
+
+
+@pytest.mark.parametrize("current_generation", [1, 2])
+def test_reconciled_enrollment_must_be_strictly_later_than_the_old_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, current_generation: int
+) -> None:
+    from tests.unit.system.services.test_tether_operations import enroll_request
+
+    custody, plan = make_custody(tmp_path), make_plan()
+    old = make_peer(2)
+    admit_peer(custody, old)
+    attempt = ActivationAttempt(
+        installation_id=old.installation_id,
+        generation=2,
+        envelope_digest=plan.envelope_digest,
+        binding_generation="binding-1",
+        boot_id=UUID(int=1),
+        invocation_id=uuid4(),
+        service_cgroup="/old",
+    )
+    name = f"attempt-{attempt.boot_id.hex}-{attempt.invocation_id.hex}.json"
+    custody.write("generations", name, attempt, immutable=True)
+    custody.write("private", "activation.json", attempt)
+    latch = ClosureLatch(
+        installation_id=old.installation_id,
+        operation_id=uuid4(),
+        generation=2,
+        intent_digest=digest(old),
+        envelope_digest=plan.envelope_digest,
+        binding_generation="binding-1",
+    )
+    revoked = RevocationRecord(latch=latch, latch_digest=digest(latch))
+    custody.write("revocations", "2.json", revoked, immutable=True)
+    peer = old if current_generation == 2 else make_peer(1)
+    admit_peer(custody, peer)
+    request = enroll_request(peer)
+    receipt = OperationReceipt(
+        request_digest=digest(request),
+        request=request,
+        binding_generation="binding-1",
+        stages=("cold-proven", "wireguard-start-requested"),
+        startup_admission=EnrollmentStartupAdmission(boot_id=UUID(int=2), request_digest=digest(request)),
+    )
+    custody.write("operations", f"{peer.operation_id}.json", receipt)
+    adapter = TetherStopAdapter(
+        plan, MagicMock(), podman_bin="/usr/bin/podman", systemctl_bin="/usr/bin/systemctl", custody=custody
+    )
+    monkeypatch.setattr(adapter, "boot_id", lambda: UUID(int=2))
+    with pytest.raises(TetherError, match=r"retained.*poststart"):
+        adapter.require_prior_activation_attested(binding_generation="binding-1")
+    assert adapter.activation() == attempt
+    assert custody.read("generations", name) == attempt.model_dump_json().encode()
+    assert custody.read("revocations", "2.json") == revoked.model_dump_json().encode()

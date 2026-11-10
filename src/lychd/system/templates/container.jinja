@@ -1,5 +1,9 @@
 [Unit]
 Description={{ description }}
+{% if tether_role %}
+ConditionPathExists={{ tether_peer_path }}
+ConditionPathExists=!{{ tether_closed_path }}
+{% endif %}
 {% if pod_service %}
 BindsTo={{ pod_service }}
 {% endif %}

@@ -1,5 +1,7 @@
 [Unit]
 Description=LychD isolated single-operator Tether
+ConditionPathExists={{ tether_peer_path }}
+ConditionPathExists=!{{ tether_closed_path }}
 BindsTo=lychd-tether-guard.path
 After=lychd-tether-guard.path
 
@@ -22,3 +24,4 @@ TimeoutStopSec=30
 KillMode=control-group
 
 [Install]
+WantedBy=default.target

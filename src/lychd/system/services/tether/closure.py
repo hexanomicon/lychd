@@ -12,9 +12,12 @@ from lychd.system.services.tether.models import (
     ActivationAttempt,
     ClosureObservation,
     IncarnationIdentity,
+    OperationReceipt,
+    RevocationRecord,
     RoleIdentity,
     RuntimeIdentity,
     TetherError,
+    digest,
 )
 
 if TYPE_CHECKING:
@@ -175,11 +178,72 @@ class TetherStopAdapter:
             or incarnation.generation != attempt.generation
         )
 
-    def require_prior_activation_attested(self) -> None:
-        """Preserve an unmatched current-boot attempt until exact reconciliation."""
-        if self._unattested_activation():
-            msg = "Prior current-boot Tether activation lacks Pod poststart attestation"
-            raise TetherError(msg)
+    def require_prior_activation_attested(self, *, binding_generation: str | None = None) -> None:
+        """Reject unmatched attempts across boots until exact fenced reconciliation."""
+        attempt = self.activation()
+        if attempt is None:
+            return
+        incarnation = self.incarnation()
+        if incarnation is not None and (
+            incarnation.invocation_id == attempt.invocation_id
+            and incarnation.boot_id == attempt.boot_id
+            and incarnation.generation == attempt.generation
+            and incarnation.installation_id == attempt.installation_id
+            and incarnation.envelope_digest == attempt.envelope_digest
+            and incarnation.binding_generation == attempt.binding_generation
+        ):
+            return
+        if self._reconciled_later_generation(attempt, binding_generation):
+            return
+        msg = "Prior current-boot or retained Tether activation lacks Pod poststart attestation"
+        raise TetherError(msg)
+
+    def _reconciled_later_generation(self, attempt: ActivationAttempt, binding_generation: str | None) -> bool:
+        if self.custody is None or binding_generation is None or attempt.boot_id == self.boot_id():
+            return False
+        from lychd.domain.tether.models import TetherPeerIntent
+
+        old_raw = self.custody.read("generations", f"{attempt.generation}.json")
+        revoked_raw = self.custody.read("revocations", f"{attempt.generation}.json")
+        current_raw = self.custody.read("public", "peer.json")
+        if old_raw is None or revoked_raw is None or current_raw is None:
+            return False
+        old = TetherPeerIntent.model_validate_json(old_raw)
+        record = RevocationRecord.model_validate_json(revoked_raw)
+        peer = TetherPeerIntent.model_validate_json(current_raw)
+        latch = record.latch
+        if (
+            record.latch_digest != digest(latch)
+            or old.generation != attempt.generation
+            or old.installation_id != attempt.installation_id
+            or attempt.installation_id != self.plan.envelope.installation_id
+            or attempt.envelope_digest != self.plan.envelope_digest
+            or latch.installation_id != old.installation_id
+            or latch.generation != old.generation
+            or latch.intent_digest != digest(old)
+            or latch.envelope_digest != attempt.envelope_digest
+            or latch.binding_generation != attempt.binding_generation
+            or peer.installation_id != old.installation_id
+            or peer.generation <= old.generation
+        ):
+            return False
+        raw_receipt = self.custody.read("operations", f"{peer.operation_id}.json")
+        if raw_receipt is None:
+            return False
+        receipt = OperationReceipt.model_validate_json(raw_receipt)
+        if (
+            "cold-proven" not in receipt.stages
+            or receipt.startup_admission is None
+            or receipt.startup_admission.boot_id != self.boot_id()
+        ):
+            return False
+        receipt.require_enrollment_startup(
+            peer,
+            envelope_digest=self.plan.envelope_digest,
+            binding_generation=binding_generation,
+            boot_id=self.boot_id(),
+        )
+        return True
 
     @staticmethod
     def _cgroup_empty(group: str) -> bool:
@@ -304,7 +368,7 @@ class TetherStopAdapter:
         if self.custody is None:
             msg = "Pod startup journaling requires native custody"
             raise TetherError(msg)
-        self.require_prior_activation_attested()
+        self.require_prior_activation_attested(binding_generation=binding_generation)
         if self.custody.read("revocations", f"{generation}.json") is not None:
             msg = "Tether generation has retained revocation evidence and cannot restart"
             raise TetherError(msg)

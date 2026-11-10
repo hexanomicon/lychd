@@ -98,7 +98,10 @@ The designed operator sequence is:
    road. Confirm terminal settlement. An incomplete result stays fenced and needs reconciliation;
    it is not permission to clear the fence or repeat enrollment blindly.
 
-These command names describe the accepted first grammar; current CLI help does not implement them.
+The source candidate implements these closed CLI operations. Follow the
+[fresh Tumbleweed pilot](../../deployments/tumbleweed/tether.md) for the concrete sequence,
+including Core startup before peer enrollment. Installed qualification remains incomplete and
+the profile remains Designed.
 Preparation creates server secrets before bind; later peer operations change only Tether's public
 intent and operation evidence, leaving prepared secret identities and compiled units unchanged.
 Changing the image, interface, UDP endpoint binding or forwarding destination requires normal bind.
@@ -113,6 +116,14 @@ the fixed latch persists. Re-enrollment first proves transport cold, stops the w
 old revocation evidence, stops/resets the handler and watcher, publishes the new generation,
 clears only the active latch durably, then starts the watcher before transport. Recovery after a
 fence never restarts the revoked generation.
+Boot requests require public peer intent and an absent closure latch, followed by the same native
+preflight as explicit activation. A completed, exactly correlated enrollment permits a new boot
+incarnation. An incomplete enrollment admits only its native first-start request in the same
+kernel boot; merely publishing peer intent never grants reboot authority. An unmatched retained
+Pod activation attempt blocks automatic recovery across boots. Reconciliation may advance only to
+a fresh generation after exact retained revocation evidence and cold proof; it preserves the old
+attempt and generation evidence.
+
 Reboot cannot restart a fenced generation. Whole-state rollback can also roll back its fence,
 so restoration needs independent revocation evidence or fresh server identity and client
 re-enrollment; a generation number alone is not rollback protection.
