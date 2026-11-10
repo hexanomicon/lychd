@@ -9,7 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-PATH = Path(__file__).parents[1] / "roles/tumbleweed_workstation/files/workstation.py"
+PATH = Path(__file__).parents[1] / "files/user_config.py"
 SPEC = importlib.util.spec_from_file_location("workstation", PATH)
 workstation = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(workstation)
@@ -172,7 +172,7 @@ class IdentityTests(unittest.TestCase):
 
     def test_execution_requires_exact_account_and_personal_authority(self):
         identity = {"name": "person", "uid": 1000, "gid": 1000, "home": "/home/person"}
-        intent = {"kind": "user", "user": "person", "identity": identity, "files": {}}
+        intent = {"kind": "user", "shell": "zsh", "user": "person", "identity": identity, "files": {}}
         with (
             patch.object(workstation, "account", return_value=identity),
             patch.object(workstation.os, "geteuid", return_value=0),
@@ -189,7 +189,7 @@ class IdentityTests(unittest.TestCase):
             patch.object(workstation, "account", return_value=identity),
             patch.object(workstation.os, "geteuid", return_value=1000),
         ):
-            with self.assertRaisesRegex(workstation.Refusal, "three marked"):
+            with self.assertRaisesRegex(workstation.Refusal, "selected marked"):
                 workstation.execute("apply", intent)
 
     def test_wrong_distro_and_missing_kde_fail_before_user_lookup(self):

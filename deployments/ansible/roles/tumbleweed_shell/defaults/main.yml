@@ -1,0 +1,4 @@
+---
+lychd_shell: zsh
+lychd_shell_user: "{{ ansible_user | default('') }}"
+lychd_shell_set_login: true

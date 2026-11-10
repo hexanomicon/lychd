@@ -1,0 +1,6 @@
+---
+- name: Observe shell intent and destinations without mutation
+  ansible.builtin.import_tasks: preflight.yml
+
+- name: Verify the installed selection without mutation
+  ansible.builtin.import_tasks: verify.yml

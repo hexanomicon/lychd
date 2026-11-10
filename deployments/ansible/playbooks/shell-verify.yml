@@ -1,0 +1,12 @@
+---
+- name: Observe the existing administrator interactive shell
+  hosts: lychd_hosts
+  gather_facts: false
+  become: true
+  serial: 1
+  any_errors_fatal: true
+  tasks:
+    - name: Load the shared ordinary-user shell role
+      ansible.builtin.include_role:
+        name: tumbleweed_shell
+        tasks_from: verification

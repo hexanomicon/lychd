@@ -3,7 +3,6 @@
 lychd_workstation_user: ''
 lychd_workstation_dark_reader: false
 lychd_workstation_packages:
-  - fish
   - starship
   - zoxide
   - fzf

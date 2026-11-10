@@ -12,6 +12,8 @@ to prepare the ordinary runtime account and observe the host floor. Tumbleweed S
 installation choice, not a separate distribution.
 
 For a laptop, use the independent [KDE workstation profile](workstation.md).
+[Personal and administrator shells](shells.md) selects Zsh by default or Fish for the existing
+administrator, separately from the runtime account; the guarded provisioning branch includes it.
 [AutoYaST](install.md) prepares explicit installation inputs for either class. Optional
 [private access](access.md) has its own host lifecycle and one-owner acceptance boundary.
 

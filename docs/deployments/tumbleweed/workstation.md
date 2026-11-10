@@ -6,14 +6,19 @@ title: Tumbleweed KDE workstation
 
 This candidate prepares a small personal baseline on an **already installed openSUSE Tumbleweed
 KDE Plasma 6 workstation**. It does not install an operating system or desktop, create an account,
-change its login shell or groups, configure a runtime identity, or activate LychD. The separate
+change its groups, configure a runtime identity, or activate LychD.
+The shared [shell profile](shells.md) selects Zsh by default, or Fish, and changes the selected
+personal account's login shell unless `lychd_shell_set_login: false` is explicit. The separate
 [host preparation](index.md) procedure owns the server floor. [State of Work](../../state-of-the-work.md)
 owns delivery evidence; syntax and fixture checks are not a live-workstation receipt.
 
-The workstation playbook installs selected packages from existing repositories and adds three
-reserved files for one explicitly named existing non-root user: a fish `conf.d` fragment, a small
-ASCII Starship configuration, and a named Konsole profile. It preserves existing fish and Starship
+The workstation playbook installs selected packages from existing repositories and adds reserved
+workstation files for one explicitly named existing non-root user: a Fish `conf.d` fragment when
+Fish is selected, a small ASCII Starship configuration, and a named Konsole profile. It preserves existing fish and Starship
 configuration, terminal defaults, desktop layout, history, credentials, and browser profiles.
+The shared shell role adds Zsh startup defaults when selected; Fish retains native history and
+completion. Only the selected shell package is required. Existing Fish fragments remain untouched
+when selecting Zsh and are available when switching back to Fish.
 The fragment selects its prompt only when no explicit `STARSHIP_CONFIG` and no ordinary
 `starship.toml` exists, and initializes it again in child shells inheriting that managed choice.
 Existing personal prompt choices win. Fish reads `config.fish` after
@@ -29,7 +34,7 @@ This first profile uses the ordinary home-relative XDG defaults. Users with relo
 in their session, and no environment override is imposed.
 
 No NVIDIA packages, drivers, repositories, initramfs, firewall, SSH, partition, Snapper, reboot,
-login-shell, or full-distribution-upgrade operation belongs to this playbook. It does not pull in
+or full-distribution-upgrade operation belongs to this playbook. It does not pull in
 the server role. Fira Code and Hack are ordinary packaged fonts, not Nerd Fonts; the supplied
 prompt uses text symbols. The optional Konsole profile is selected manually with
 `konsole --profile LychD-Workstation`; it does not become the desktop default.
@@ -77,7 +82,8 @@ operator action after inspecting its contents; it does not uninstall a user exte
 
 Record source revision, controller version, inventory intent, Tumbleweed snapshot, repository list,
 package versions, first and second apply results, and verification output. Verify in a fresh user
-session that `fish -c 'printf ok'` produces only `ok`, interactive fish initializes the selected
+session that the selected shell's noninteractive invocation produces only `ok`, its native
+history and completion work, and the interactive shell initializes the selected
 prompt and zoxide, the named Konsole profile renders its font, and Firefox policy works when opted
 in. Test pre-existing personal configuration, missing/root user, foreign reserved file, symlink,
 wrong OS, missing KDE, conflicting policy, check-before-apply, and offline Firefox refusal/pending
@@ -85,7 +91,8 @@ cases. The read-only verification play checks configuration bytes and installed 
 behavior or application deployment.
 
 A root Snapper rollback generally excludes home; retain a separate personal-data backup. Remove
-only the three explicitly managed files to retire these defaults; preserve shared directories and
+only the explicitly managed files to retire these defaults; follow [shell recovery](shells.md)
+for the account login shell and startup hook, and preserve shared directories and
 all unrelated user files. Installed packages are not automatically removed.
 
 Upstream contracts: [fish configuration](https://fishshell.com/docs/current/language.html#configuration-files),

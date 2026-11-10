@@ -1,0 +1,22 @@
+# Managed by LychD interactive shell v1
+[[ -o interactive ]] || return
+HISTFILE="$HOME/.local/state/lychd-shell/history"
+HISTSIZE=10000
+SAVEHIST=10000
+setopt APPEND_HISTORY INC_APPEND_HISTORY EXTENDED_HISTORY HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_SAVE_BY_COPY
+autoload -Uz compinit
+compinit -i -D
+bindkey -e
+PROMPT='%n@%m:%~%# '
+# Reuse the workstation prompt only when the owner has not chosen a personal one.
+if (( $+commands[starship] )) && [[ -r "$HOME/.config/lychd-workstation-starship.toml" ]]; then
+    if [[ ${STARSHIP_CONFIG-} == "$HOME/.config/lychd-workstation-starship.toml" ]]; then
+        eval "$(starship init zsh)"
+    elif [[ -z ${STARSHIP_CONFIG+x} && ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml" ]]; then
+        export STARSHIP_CONFIG="$HOME/.config/lychd-workstation-starship.toml"
+        eval "$(starship init zsh)"
+    fi
+fi
+if (( $+commands[zoxide] )); then
+    eval "$(zoxide init zsh)"
+fi

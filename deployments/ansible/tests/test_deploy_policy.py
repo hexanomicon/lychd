@@ -126,7 +126,10 @@ class DeployPolicyTests(unittest.TestCase):
             with self.subTest(state=observed):
                 self.assertEqual(mode.render(lychd_app_observed={"state": observed}), expected)
         # The refusal and absence checkpoint precede the first effectful floor play.
-        self.assertEqual(plays[3]["tasks"][0]["ansible.builtin.include_role"]["name"], "tumbleweed_host")
+        self.assertEqual(
+            [task["ansible.builtin.include_role"]["name"] for task in plays[3]["tasks"]],
+            ["tumbleweed_shell", "tumbleweed_host"],
+        )
         staging = plays[4]
         ready = environment.from_string(staging["vars"]["lychd_deploy_runtime_ready"])
         self.assertEqual(ready.render(ansible_check_mode=True, lychd_app_observed={"state": state}), "False")

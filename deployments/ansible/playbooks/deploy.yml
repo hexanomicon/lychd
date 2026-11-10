@@ -105,6 +105,13 @@
   become: true
   tags: [floor]
   tasks:
+    - name: Prepare the ordinary administrator shell only during authorized provisioning
+      ansible.builtin.include_role:
+        name: tumbleweed_shell
+        apply:
+          tags: [floor]
+      when: lychd_deploy_mode == 'mutate'
+
     - name: Converge the Tumbleweed floor
       ansible.builtin.include_role:
         name: tumbleweed_host

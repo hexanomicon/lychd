@@ -11,8 +11,10 @@ working application merely because a playbook finishes.
 
 - [Tumbleweed Server](tumbleweed/index.md): headless AlphaVPS, one exact source and OCI image,
   guarded CLI activation and read-only acceptance; qualify one pilot before adding hosts.
-- [KDE workstation](tumbleweed/workstation.md): a separate personal-user baseline with fish,
+- [KDE workstation](tumbleweed/workstation.md): a separate personal-user baseline with configurable Zsh or Fish,
   Starship, CLI tools, packaged fonts and optional Firefox Dark Reader policy. NVIDIA is excluded.
+- [Personal and administrator shells](tumbleweed/shells.md): shared Zsh default or Fish,
+  with native history and completion; runtime identity remains separate.
 - [AutoYaST installation](tumbleweed/install.md): explicit server/workstation inputs and a
   reviewed whole-disk installation proposal, using official media or a network installer.
 - [Private access](tumbleweed/access.md): optional infrastructure-owned WireGuard and a restricted

@@ -2,5 +2,12 @@
 - name: Observe workstation and safe destinations without changing them
   ansible.builtin.import_tasks: preflight.yml
 
+- name: Observe the selected personal shell without changing it
+  ansible.builtin.include_role:
+    name: tumbleweed_shell
+    tasks_from: verification
+  vars:
+    lychd_shell_user: "{{ lychd_workstation_user }}"
+
 - name: Observe installed configuration
   ansible.builtin.import_tasks: verify.yml

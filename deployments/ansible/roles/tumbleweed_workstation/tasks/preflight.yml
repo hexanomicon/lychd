@@ -8,8 +8,13 @@
       - lychd_workstation_packages is sequence
       - lychd_workstation_packages is not string
       - lychd_workstation_packages | length > 0
-      - "['fish', 'starship', 'zoxide', 'konsole', 'MozillaFirefox', 'fira-code-fonts'] | difference(lychd_workstation_packages) | length == 0"
+      - "['starship', 'zoxide', 'konsole', 'MozillaFirefox', 'fira-code-fonts'] | difference(lychd_workstation_packages) | length == 0"
     fail_msg: Supply an existing personal user and a boolean Dark Reader opt-in.
+
+- name: Validate selected shell before any workstation mutation
+  ansible.builtin.assert:
+    that:
+      - lychd_shell | default('zsh') in ['zsh', 'fish']
 
 - name: Validate package names before passing them to rpm or zypper
   ansible.builtin.assert:
@@ -22,8 +27,9 @@
   ansible.builtin.command:
     argv:
       - /usr/bin/python3
+      - -I
       - -c
-      - "{{ lookup('ansible.builtin.file', role_path + '/files/workstation.py') }}"
+      - "{{ lookup('ansible.builtin.file', playbook_dir + '/../files/user_config.py') }}"
       - preflight
     stdin: "{{ {'user': lychd_workstation_user} | to_json }}"
   register: lychd_workstation_observation
@@ -35,21 +41,23 @@
     lychd_workstation_identity: >-
       {{ lychd_workstation_observation.stdout | from_json | dict2items |
          selectattr('key', 'in', ['name', 'uid', 'gid', 'home']) | items2dict }}
-    lychd_workstation_files:
-      .config/fish/conf.d/60-lychd-workstation.fish: "{{ lookup('ansible.builtin.template', '60-lychd-workstation.fish.j2') }}"
-      .config/lychd-workstation-starship.toml: "{{ lookup('ansible.builtin.template', 'lychd-workstation-starship.toml.j2') }}"
-      .local/share/konsole/LychD-Workstation.profile: "{{ lookup('ansible.builtin.template', 'LychD-Workstation.profile.j2') }}"
+    lychd_workstation_files: >-
+      {{ {'.config/lychd-workstation-starship.toml': lookup('ansible.builtin.template', 'lychd-workstation-starship.toml.j2'),
+          '.local/share/konsole/LychD-Workstation.profile': lookup('ansible.builtin.template', 'LychD-Workstation.profile.j2')} |
+         combine({'.config/fish/conf.d/60-lychd-workstation.fish': lookup('ansible.builtin.template', '60-lychd-workstation.fish.j2')}
+                 if lychd_shell | default('zsh') == 'fish' else {}) }}
 
 - name: Inspect all personal destinations with only personal-user authority
   become_user: "{{ lychd_workstation_user }}"
   ansible.builtin.command:
     argv:
       - /usr/bin/python3
+      - -I
       - -c
-      - "{{ lookup('ansible.builtin.file', role_path + '/files/workstation.py') }}"
+      - "{{ lookup('ansible.builtin.file', playbook_dir + '/../files/user_config.py') }}"
       - plan
     stdin: >-
-      {{ {'kind': 'user', 'user': lychd_workstation_user, 'identity': lychd_workstation_identity,
+      {{ {'kind': 'user', 'shell': lychd_shell | default('zsh'), 'user': lychd_workstation_user, 'identity': lychd_workstation_identity,
           'files': lychd_workstation_files} | to_json }}
   register: lychd_workstation_file_plan
   check_mode: false
@@ -59,8 +67,9 @@
   ansible.builtin.command:
     argv:
       - /usr/bin/python3
+      - -I
       - -c
-      - "{{ lookup('ansible.builtin.file', role_path + '/files/workstation.py') }}"
+      - "{{ lookup('ansible.builtin.file', playbook_dir + '/../files/user_config.py') }}"
       - plan
     stdin: '{"kind": "policy"}'
   register: lychd_workstation_policy_plan
