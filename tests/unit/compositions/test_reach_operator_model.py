@@ -2242,4 +2242,6 @@ def test_served_model_accepts_only_the_exact_id_or_its_gateway_route_suffix(
 )
 def test_model_binding_identifiers_are_closed(field: str, value: str) -> None:
     with pytest.raises(ValidationError):
-        OperatorConversationProfile(persona_name="Example", persona_instructions="Be useful.", **{field: value})
+        OperatorConversationProfile.model_validate(
+            {"persona_name": "Example", "persona_instructions": "Be useful.", field: value}
+        )

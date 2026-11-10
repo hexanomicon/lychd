@@ -490,9 +490,13 @@ async def test_admitted_portal_probes_with_its_credential_and_grants(
     monkeypatch: pytest.MonkeyPatch,
     httpx2_mock: respx.MockRouter,
 ) -> None:
-    route = httpx2_mock.get("https://gateway.example/v1/models").mock(
-        return_value=httpx.Response(200, json={"object": "list", "data": [{"id": "vendor/small"}]})
-    )
+    authorizations: list[str | None] = []
+
+    def inventory(request: httpx.Request) -> httpx.Response:
+        authorizations.append(request.headers.get("Authorization"))
+        return httpx.Response(200, json={"object": "list", "data": [{"id": "vendor/small"}]})
+
+    route = httpx2_mock.get("https://gateway.example/v1/models").mock(side_effect=inventory)
     secrets = tmp_path / "secrets"
     secrets.mkdir(parents=True, exist_ok=True)
     (secrets / "portal_gateway").write_text("sk-test\n", encoding="utf-8")
@@ -534,13 +538,18 @@ async def test_admitted_portal_probes_with_its_credential_and_grants(
         assert grant.model is not None
     assert leases.active() == []
     assert route.called
-    assert all(call.request.headers["Authorization"] == "Bearer sk-test" for call in route.calls)
+    assert authorizations
+    assert set(authorizations) == {"Bearer sk-test"}
 
 
 def test_unadmitted_portal_probe_stays_unauthenticated(tmp_path: Path, httpx2_mock: respx.MockRouter) -> None:
-    route = httpx2_mock.get("https://api.openai.com/v1/models").mock(
-        return_value=httpx.Response(200, json={"object": "list", "data": [{"id": "gpt-x"}]})
-    )
+    authorizations: list[str | None] = []
+
+    def inventory(request: httpx.Request) -> httpx.Response:
+        authorizations.append(request.headers.get("Authorization"))
+        return httpx.Response(200, json={"object": "list", "data": [{"id": "gpt-x"}]})
+
+    route = httpx2_mock.get("https://api.openai.com/v1/models").mock(side_effect=inventory)
     runes_dir = tmp_path / "runes"
     _write(
         runes_dir / "animator" / "portals" / "openai" / "live.toml",
@@ -560,7 +569,7 @@ def test_unadmitted_portal_probe_stays_unauthenticated(tmp_path: Path, httpx2_mo
     registry.load()
 
     assert route.called
-    assert "Authorization" not in route.calls[0].request.headers
+    assert authorizations == [None]
     assert registry.list_capability_states()[0].phase is CapabilityPhase.WARM
 
 
