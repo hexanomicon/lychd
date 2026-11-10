@@ -1,34 +1,11 @@
 ---
-- name: Validate immutable inputs and direct SSH policy
+- name: Inspect source authority without application classification
+  ansible.builtin.include_tasks: inspect.yml
+
+- name: Require the controller-admitted tool path for staging
   ansible.builtin.assert:
-    that:
-      - ansible_connection | default('ssh') == 'ssh'
-      - ansible_user == 'lychd'
-      - not (ansible_become | bool)
-      - lychd_source_revision is match('^[0-9a-f]{40}$')
-      - lychd_source_uv_local_binary is match('^/[^\n]+$')
-      - lychd_source_uv_sha256 is match('^[0-9a-f]{64}$')
-      - lychd_source_python in ['3.14.8', '3.15.0']
-    fail_msg: "Supply an exact 40-hex source SHA and a controller-verified uv 0.13.4 binary receipt; connect directly as lychd."
-
-- name: Inspect identity, path ownership, receipt and immutable checkout
-  ansible.builtin.command:
-    argv:
-      - /usr/bin/python3
-      - -c
-      - "{{ lookup('ansible.builtin.file', role_path + '/files/source_guard.py') }}"
-      - "{{ lychd_source_revision }}"
-      - "{{ lychd_source_uv_sha256 }}"
-      - "{{ lychd_source_python }}"
-  register: lychd_source_guard
-  changed_when: false
-  check_mode: false
-
-- name: Retain the bounded source observation
-  ansible.builtin.set_fact:
-    lychd_source_observed: "{{ lychd_source_guard.stdout | from_json }}"
-    lychd_source_checkout: "/home/lychd/src/lychd-{{ lychd_source_revision }}"
-    lychd_source_uv_binary: /home/lychd/.local/lib/lychd-tools/uv-0.13.4
+    that: lychd_source_uv_local_binary is match('^/[^\n]+$')
+    fail_msg: "Source staging requires the controller-admitted uv binary path."
 
 - name: Inspect the controller-admitted executable without following a symlink
   ansible.builtin.stat:
@@ -124,7 +101,7 @@
 - name: Record role ownership before dependency preparation
   ansible.builtin.copy:
     dest: "{{ lychd_source_checkout }}/.git/lychd-source.json"
-    content: "{{ {'revision': lychd_source_revision, 'uv_sha256': lychd_source_uv_sha256, 'python': lychd_source_python, 'complete': false} | to_nice_json }}\n"
+    content: "{{ {'revision': lychd_source_revision, 'uv_sha256': lychd_source_uv_sha256, 'python': lychd_source_python, 'install_mode': 'non-editable', 'complete': false} | to_nice_json }}\n"
     mode: '0600'
     force: false
   when: not lychd_source_observed.exists
@@ -153,6 +130,7 @@
       - sync
       - --locked
       - --no-dev
+      - --no-editable
       - --extra
       - postgres-binary
       - --python
@@ -180,9 +158,9 @@
   changed_when: false
   when: not ansible_check_mode
 
-- name: Record completed source preparation
+- name: Record newly completed source preparation
   ansible.builtin.copy:
     dest: "{{ lychd_source_checkout }}/.git/lychd-source.json"
-    content: "{{ {'revision': lychd_source_revision, 'uv_sha256': lychd_source_uv_sha256, 'python': lychd_source_python, 'complete': true} | to_nice_json }}\n"
+    content: "{{ {'revision': lychd_source_revision, 'uv_sha256': lychd_source_uv_sha256, 'python': lychd_source_python, 'install_mode': 'non-editable', 'complete': true} | to_nice_json }}\n"
     mode: '0600'
-  when: not ansible_check_mode
+  when: not ansible_check_mode and not lychd_source_observed.complete

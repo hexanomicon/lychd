@@ -67,7 +67,20 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/integration/test_bridge_casting_workflow.py \
 	tests/integration/test_blockworld_placement_vertical.py \
 	tests/integration/test_crypt_extension_vertical.py \
-	tests/integration/test_extension_configuration.py
+	tests/integration/test_extension_configuration.py \
+	tests/unit/system/services/test_btrfs.py \
+	tests/unit/system/services/test_datastore_custody.py \
+	tests/unit/system/services/test_deletion.py \
+	tests/unit/system/services/test_deletion_storage.py \
+	tests/unit/system/services/test_deployment.py \
+	tests/unit/system/services/test_initialization.py \
+	tests/unit/system/services/test_layout.py \
+	tests/unit/system/services/test_lifecycle.py \
+	tests/unit/system/services/test_publication.py \
+	tests/unit/system/services/test_runtime_guard_initialization.py \
+	tests/unit/system/test_path_identity.py \
+	tests/unit/system/services/test_deployment_acceptance.py \
+	tests/architecture/test_state_of_work.py
 CONTAINER_TEST_TARGETS ?= tests/integration/test_db_consent_pg.py \
 	tests/integration/test_ward_pg.py tests/integration/test_native_candidate_authority_pg.py \
 	tests/integration/test_db_blockworld_pg.py \

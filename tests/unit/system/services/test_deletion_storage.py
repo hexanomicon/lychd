@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from lychd.system import path_identity
 from lychd.system.operator.process import (
     ProcessInvocationError,
     ProcessResult,
@@ -133,6 +134,14 @@ def _created_subvolume(path: Path) -> CreatedBtrfsSubvolume:
         inode=metadata.st_ino,
         subvolume_uuid=_SUBVOLUME_UUID,
         subvolume_id=259,
+        persistent_identity=path_identity.PersistentPathIdentity(
+            filesystem="btrfs",
+            filesystem_uuid=_FILESYSTEM_UUID,
+            inode=metadata.st_ino,
+            generation=1,
+            subvolume_id=259,
+            subvolume_uuid=_SUBVOLUME_UUID,
+        ),
     )
 
 
@@ -532,3 +541,6 @@ def test_descriptor_probe_converts_process_invocation_error_to_unverifiable(
 
     assert probe.inspect(target) is None
     assert runner.calls == 1
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")

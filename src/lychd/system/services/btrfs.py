@@ -14,6 +14,7 @@ from typing import Final, NoReturn
 
 import structlog
 
+from lychd.system import path_identity
 from lychd.system.btrfs_identity import (
     BtrfsSubvolumeObservation,
     observe_subvolume_fd,
@@ -68,6 +69,7 @@ class PreparedBtrfsSubvolume:
     device: int
     inode: int
     nocow: bool
+    persistent_identity: path_identity.PersistentPathIdentity | None = None
 
 
 class BtrfsCreationState(StrEnum):
@@ -262,6 +264,7 @@ class Btrfs:
                 device=metadata.st_dev,
                 inode=metadata.st_ino,
                 nocow=nocow,
+                persistent_identity=path_identity.observe_identity_fd(descriptor),
             )
         finally:
             os.close(descriptor)

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import os
 import stat
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 
 from lychd.system.services.lifecycle.models import LifecycleError
@@ -34,8 +36,9 @@ def mount_id_for_fd(descriptor: int) -> int:
     return int(values[0])
 
 
-def directory_identity_on_parent_mount(path: Path) -> os.stat_result:
-    """Return a stable directory identity only when it shares its parent's mount."""
+@contextmanager
+def open_directory_on_parent_mount(path: Path) -> Generator[tuple[int, os.stat_result]]:
+    """Keep the inspected directory pinned while its caller attests authority."""
     parent_descriptor = -1
     descriptor = -1
     try:
@@ -70,7 +73,7 @@ def directory_identity_on_parent_mount(path: Path) -> os.stat_result:
         msg = f"Cannot inspect lifecycle mount identity safely: {path}"
         raise LifecycleError(msg) from exc
     else:
-        return observed
+        yield descriptor, observed
     finally:
         if descriptor >= 0:
             os.close(descriptor)
@@ -78,4 +81,10 @@ def directory_identity_on_parent_mount(path: Path) -> os.stat_result:
             os.close(parent_descriptor)
 
 
-__all__ = ("directory_identity_on_parent_mount", "mount_id_for_fd")
+def directory_identity_on_parent_mount(path: Path) -> os.stat_result:
+    """Return live directory identity only when it shares its parent's mount."""
+    with open_directory_on_parent_mount(path) as (_, metadata):
+        return metadata
+
+
+__all__ = ("directory_identity_on_parent_mount", "mount_id_for_fd", "open_directory_on_parent_mount")

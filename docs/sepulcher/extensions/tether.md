@@ -48,6 +48,49 @@ Future typed operations under a host-owned run-operation verb may generate, admi
 revoke, rotate, or export short-lived client configuration or QR projections. They would use
 that governed operation path without adding a root CLI verb.
 
+## One offered network, many received accesses
+
+[ADR 39](../../adr/39-vpn.md#offered-and-imported-roads) separates the network a Lich offers from
+the independent VPN attachments it receives. This is a design example, not an available command,
+Rune schema, or expansion of the first single-peer deployment profile.
+
+Suppose Lich A offers `A-home` to an admitted Lich D. A also receives `B-private` from Lich B and
+`C-private` from Lich C, whose application endpoints are private. B and C independently choose
+the same inner service address:
+
+| Intended service | Selected attachment | Inner destination | Routing context |
+| --- | --- | --- | --- |
+| B's Intercom | `B-private` | `10.77.0.2:443` | isolated B context |
+| C's Intercom | `C-private` | `10.77.0.2:443` | isolated C context |
+
+A selects `(B, B-private, Intercom)` or `(C, C-private, Intercom)`, together with the current
+attachment generation and admitted service policy. The equal addresses are valid because the
+routing contexts are separate. The remote WireGuard UDP contact has its own coordinates; the
+table names the application service inside each tunnel. TLS and Intercom still verify the
+selected remote application identity.
+
+If B's road fails or is revoked, A's connection to B fails. It is never sent to C or to a public
+replacement. C's independent attachment remains unchanged. Pools and any profile-permitted DNS
+or reconnect behavior retain the same selected road; the first A2A profile's stricter rules still
+apply. A tunnel handshake alone establishes no authenticated Intercom readiness.
+
+D's admission to `A-home` gives D no route into `B-private` or `C-private`. Receiving B's or C's
+VPN configuration neither enrolls them into `A-home` nor grants access to A's other services.
+Application-mediated work remains subject to its own caller, destination, disclosure, and effect
+authorization; turning A into a transit router is a separate decision.
+
+For each received access, locally admit the exact remote service, tunnel key references, route
+scope, and required DNS behavior. Imported configurations do not authorize executable hooks,
+default routes, or changes to host DNS. Keep each network's credentials and revocation intent
+separate. A peer with an admitted public endpoint needs no VPN attachment; a private-only peer
+still needs a reachable tunnel endpoint or a separately accepted relay/traversal arrangement.
+
+Separate routing contexts can be embodied by dedicated rootless services; a container is not
+required for every peer. Native namespace services remain a technical alternative requiring their
+own accepted privilege and lifecycle contract. Tether stays outside the application Pod and
+Vessel. Neither approach has a measured universal per-attachment RAM or throughput cost; capacity
+qualification must include the selected forwarding helpers and simultaneous workload.
+
 ## Reach attachment
 
 The [Reach deployment matrix](../../compositions/reach/deployments/index.md) gives Tether one exact
@@ -82,9 +125,9 @@ container and Host lifecycle control, Oculus, audio, and
 
 ## Revocation, rotation, and recovery
 
-Before changing the service, binding validates peer-address overlap, route conflicts, key
-references, port collisions, and the generated contribution. Revocation then removes a peer from
-the live interface and persists the revised intent. Rotation may overlap old and new credentials
+Before changing the service, binding validates peer-address overlap and route conflicts within
+each routing domain, key references, port collisions, and the generated contribution. Revocation
+then removes a peer from the live interface and persists the revised intent. Rotation may overlap old and new credentials
 only with explicit operator authorization.
 
 Version the public peer and routing intent so restore or reconciliation cannot revive stale or

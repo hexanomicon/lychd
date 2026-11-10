@@ -87,7 +87,45 @@ class SourceGuardTests(unittest.TestCase):
         self.checkout_receipt(complete=True)
         (self.checkout / ".venv/bin").mkdir(parents=True)
         (self.checkout / ".venv/bin/lychd").write_text("readonly CLI witness")
+        receipt_path = self.checkout / ".git/lychd-source.json"
+        before = receipt_path.read_bytes()
         self.assertEqual(self.inspect(), {"exists": True, "complete": True})
+        self.assertEqual(receipt_path.read_bytes(), before)
+
+    def test_noneditable_receipt_is_accepted_without_changing_source_admission(self):
+        responses = self.checkout_receipt(complete=True)
+        bytecode = ".venv/lib/python3.14/site-packages/lychd/__pycache__/__init__.cpython-314.pyc"
+        (self.checkout / bytecode).parent.mkdir(parents=True)
+        (self.checkout / bytecode).write_bytes(b"synthetic bytecode fixture")
+        responses[("ls-files", "--others", "--ignored", "--exclude-standard")] = bytecode
+        (self.checkout / ".venv/bin").mkdir(parents=True)
+        (self.checkout / ".venv/bin/lychd").write_text("readonly CLI witness")
+        path = self.checkout / ".git/lychd-source.json"
+        receipt = json.loads(path.read_text())
+        receipt["install_mode"] = "non-editable"
+        path.write_text(json.dumps(receipt))
+        before = path.read_bytes()
+        self.assertEqual(self.inspect(), {"exists": True, "complete": True})
+        self.assertEqual(path.read_bytes(), before)
+
+    def test_unknown_or_null_install_mode_refuses(self):
+        self.checkout_receipt()
+        path = self.checkout / ".git/lychd-source.json"
+        receipt = json.loads(path.read_text())
+        for mode in (None, "editable", "unknown", True, ["non-editable"]):
+            with self.subTest(mode=mode):
+                receipt["install_mode"] = mode
+                path.write_text(json.dumps(receipt))
+                with self.assertRaisesRegex(ValueError, "unsupported source install mode"):
+                    self.inspect()
+
+    def test_legacy_source_bytecode_remains_foreign_ignored_material(self):
+        responses = self.checkout_receipt()
+        responses[("ls-files", "--others", "--ignored", "--exclude-standard")] = (
+            "src/lychd/__pycache__/__init__.cpython-314.pyc"
+        )
+        with self.assertRaisesRegex(ValueError, "foreign ignored"):
+            self.inspect()
 
     def test_uv_empty_environment_lock_is_admitted(self):
         self.checkout_receipt(complete=True)

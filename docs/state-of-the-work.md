@@ -3906,11 +3906,14 @@ artifact transfer, durable spool, cancellation, or settlement.
 
 **Proved now:** VPN law defines Tether as private reachability over WireGuard without application
 authority, with exact peer and route intent and separate lifecycle ownership. It distinguishes
-that road from anonymous browsing and provider-visible request content.
+one offered network from independent received VPN attachments, including isolated overlapping
+addresses and attachment-scoped service selection without implicit transit or fallback. It also
+distinguishes that road from anonymous browsing and provider-visible request content.
 
 **Do not expect yet:** There is no Tether Domain contract, Rune or provider, generated service, UDP
 publication, interface or enrollment effect, peer/key custody, live route policy, health,
-reconciliation, revocation effect, or identity proof.
+reconciliation, revocation effect, or identity proof. Multi-attachment selection and routing
+isolation have no implementation or capacity qualification.
 
 The separate [host access candidate](./deployments/tumbleweed/access.md) can prepare an
 infrastructure-owned WireGuard road and restricted SSH forwarding service. It is not a Tether

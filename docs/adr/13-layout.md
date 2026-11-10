@@ -76,8 +76,26 @@ outcomes remain recovery evidence rather than deletion authority.
 
 ### Retire only recorded identities
 
-After a complete transaction, the receipt may adopt the exact device/inode identities of the
-dedicated Codex, Crypt, and Forge roots. Shared XDG parents, mounts, source checkouts, and external
+After a complete transaction, the version-3 lifecycle receipt seals the persistent filesystem
+and object identities of the dedicated Codex, Crypt, and Forge roots, generated files, created
+directories and created PostgreSQL subvolumes. Persistent authority is distinct from a live
+operation's device/inode and mount-ID checks: Linux can renumber devices across a reboot.
+The shared descriptor observer binds a filesystem UUID, inode and inode generation; Btrfs also
+requires the containing subvolume UUID and ID. Its top-level tree (ID 5) has no subvolume UUID.
+Btrfs uses the native `FS_INFO` 128-bit filesystem UUID with the kernel sysfs
+`temp_fsid=0` proof; ext4 requires `FS_IOC_GETFSUUID`. Neither provider uses `statfs.f_fsid`
+or `st_dev` as persistent authority. The first admitted providers are Btrfs and ext4. Unsupported filesystems, unavailable kernel
+identity interfaces, temporary Btrfs clone FSIDs and uncertain observations refuse before init
+effects. A filesystem UUID is not proof against an administrator cloning or rolling back the
+entire filesystem; restoration remains a separately reconciled operation.
+
+Identity is captured from pinned descriptors at creation and checked again before authority is
+used. Live device/inode comparisons, no-follow traversal, ownership checks and same-parent mount
+checks remain mandatory; a persistent match supplies no mount-crossing permission. Consumers
+use freshly attested live identities for race protection. Changed persistent identity blocks
+init resealing as well as operation. Legacy version-1/2 receipts remain readable evidence but
+cannot authorize operation or be silently upgraded; no migration or manual receipt-rebasing
+procedure is supplied by this change. Shared XDG parents, mounts, source checkouts, and external
 model shelves remain outside that grant. `del` is a separately confirmed destructive lifecycle:
 it joins receipt authority to a live inventory, stops managed installation state, and refuses
 unknown mounts, identity mismatches, invalid receipts, foreign objects, or ambiguous ancestry. Recursive
@@ -94,12 +112,13 @@ uses a bounded, fixed read-only helper with only the opened leaf descriptor: it 
 Btrfs root directory and a supported kernel ABI before reading its own UUID and ID through
 `BTRFS_IOC_GET_SUBVOL_INFO`. No privileged path or snapshot lookup is required. No-COW mutation
 and before/after confirmation remain descriptor-bound. A successful subvolume records canonical
-UUID and non-reserved ID as well as device/inode in the version-2 lifecycle receipt. Existing
+UUID and non-reserved ID together with persistent filesystem/object identity in the version-3
+lifecycle receipt. Existing
 storage is never retrofitted; `+C` is only an inheritance policy and a false result is a warning.
 
 Retiring a subvolume requires identity established at creation; observing an existing subvolume
 cannot adopt it or fill in a missing identity. A mounted Phylactery requires complete live mount
-and Btrfs agreement. An unmounted one requires the exact version-2 creation receipt, matching
+and Btrfs agreement. An unmounted one requires the exact version-3 creation receipt, matching
 live identity, and a safe top-level mapping. Once those checks succeed, LychD emits the attested
 `btrfs subvolume delete --subvolid ID TOP_LEVEL` operator handoff and waits for proven absence
 before generic retirement. It never invokes `sudo`.

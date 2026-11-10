@@ -9,6 +9,7 @@ from pathlib import Path
 from uuid import UUID
 
 from lychd.system.btrfs_identity import BTRFS_FIRST_FREE_OBJECTID
+from lychd.system.path_identity import PersistentPathIdentity
 
 
 class LifecycleError(RuntimeError):
@@ -100,6 +101,7 @@ class CreatedDirectory:
     path: Path
     device: int
     inode: int
+    persistent_identity: PersistentPathIdentity | None = None
 
     def __post_init__(self) -> None:
         """Reject an identity that cannot safely authorize later cleanup."""
@@ -117,6 +119,7 @@ class CreatedBtrfsSubvolume:
     inode: int
     subvolume_uuid: str
     subvolume_id: int
+    persistent_identity: PersistentPathIdentity | None = None
 
     def __post_init__(self) -> None:
         """Canonicalize the UUID and reject incomplete filesystem identity."""

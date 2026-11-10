@@ -235,3 +235,6 @@ def test_writer_preserves_and_never_journals_a_peer_sample(
     assert created == []
     assert journal == []
     assert target.read_text(encoding="utf-8") == 'required_name = "peer"\n'
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")

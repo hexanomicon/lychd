@@ -54,7 +54,10 @@ blocks `init`; missing runtime capabilities remain for `bind`.
 Effectful `init` rejects effective UID 0 before Settings, host inspection, locks or filesystem
 effects. It then takes the lifecycle lock and requires the previewed plan to remain unchanged.
 Execution creates only planned paths, journals confirmed progress, verifies convergence, and
-records exact device, inode and mount authority for dedicated Codex, Crypt and Forge roots. It adopts an existing dedicated root only through that
+records persistent filesystem/object identity for dedicated Codex, Crypt and Forge roots, while
+retaining live descriptor and mount checks for each operation. Unsupported identity capabilities
+block before creation; legacy receipts and changed identities require separate recovery, never
+an automatic identity refresh. It adopts an existing dedicated root only through that
 verified receipt. Shared XDG parents, source checkouts, foreign mounts, and the mounted
 Phylactery are never recursively adopted. Dry-run is available under effective root because it
 does not grant LychD mutation authority.

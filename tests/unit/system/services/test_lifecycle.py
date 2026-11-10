@@ -6,6 +6,7 @@ import os
 import stat
 import subprocess
 import sys
+from contextlib import AbstractContextManager
 from functools import partial
 from pathlib import Path
 from typing import Any, TypedDict, cast
@@ -13,6 +14,7 @@ from typing import Any, TypedDict, cast
 import pytest
 
 from lychd.system import constants as lifecycle_constants
+from lychd.system import path_identity
 from lychd.system.services.lifecycle.deletion_checkpoint import DeletionCheckpointStore
 from lychd.system.services.lifecycle.initialization import InitializationPlanner
 from lychd.system.services.lifecycle.lock import LifecycleLock
@@ -24,7 +26,7 @@ from lychd.system.services.lifecycle.models import (
     LifecycleError,
     LifecycleResourceKind,
 )
-from lychd.system.services.lifecycle.paths import digest_file
+from lychd.system.services.lifecycle.paths import open_generated_file
 from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
 
 _SUBVOLUME_UUID = "12345678-1234-5678-1234-567812345678"
@@ -187,7 +189,7 @@ def test_absent_receipt_and_missing_peer_never_mask_an_unsafe_existing_root(
         return path.stat()
 
     monkeypatch.setattr(
-        "lychd.system.services.lifecycle.receipt.directory_identity_on_parent_mount",
+        "lychd.system.services.lifecycle.receipt.open_directory_on_parent_mount",
         reject_mount_boundary,
     )
     plan = InitializationPlanner(
@@ -308,6 +310,7 @@ def test_receipt_records_creation_identity_without_restatting_replacement(
                 path=codex,
                 device=created_metadata.st_dev,
                 inode=created_metadata.st_ino,
+                persistent_identity=_persistent_identity(codex),
             ),
         ),
     )
@@ -320,11 +323,13 @@ def test_receipt_records_creation_identity_without_restatting_replacement(
     store.record(resources)
 
     document = json.loads(isolated_roots["receipt"].read_text(encoding="utf-8"))
+    assert resources.directory_identities[0].persistent_identity is not None
     assert document["directories"] == [
         {
             "path": str(codex),
             "device": created_metadata.st_dev,
             "inode": created_metadata.st_ino,
+            "identity": resources.directory_identities[0].persistent_identity.model_dump(),
         }
     ]
     assert replacement_metadata.st_ino != created_metadata.st_ino
@@ -337,10 +342,10 @@ def test_receipt_records_creation_identity_without_restatting_replacement(
     )
 
 
-def test_receipt_v2_round_trips_exact_created_subvolume_identity(
+def test_receipt_v3_round_trips_exact_created_subvolume_identity(
     isolated_roots: IsolatedRoots,
 ) -> None:
-    """Version 2 preserves creation identity without mixing a replacement path."""
+    """Version 3 preserves creation identity without mixing a replacement path."""
     postgres_data = isolated_roots["postgres_data"]
     postgres_data.mkdir(parents=True)
     isolated_roots["receipt"].parent.mkdir(parents=True)
@@ -351,6 +356,7 @@ def test_receipt_v2_round_trips_exact_created_subvolume_identity(
         inode=metadata.st_ino,
         subvolume_uuid=_SUBVOLUME_UUID,
         subvolume_id=259,
+        persistent_identity=_persistent_identity(postgres_data),
     )
     displaced = postgres_data.with_name("data-created-by-init")
     postgres_data.rename(displaced)
@@ -360,8 +366,9 @@ def test_receipt_v2_round_trips_exact_created_subvolume_identity(
     store.record(CreatedResources(subvolumes=(created,)))
 
     document = json.loads(isolated_roots["receipt"].read_text(encoding="utf-8"))
-    assert document["version"] == 2
+    assert document["version"] == 3
     assert document["directories"] == []
+    assert created.persistent_identity is not None
     assert document["subvolumes"] == [
         {
             "path": str(postgres_data),
@@ -369,6 +376,7 @@ def test_receipt_v2_round_trips_exact_created_subvolume_identity(
             "inode": metadata.st_ino,
             "subvolume_uuid": _SUBVOLUME_UUID,
             "subvolume_id": 259,
+            "identity": created.persistent_identity.model_dump(),
         }
     ]
     assert store.created_subvolume(postgres_data) == created
@@ -387,8 +395,11 @@ def test_legacy_v1_receipt_loads_without_subvolume_authority(
     receipt.chmod(0o600)
     store = LifecycleReceiptStore(receipt)
 
-    assert store.created_subvolume(isolated_roots["postgres_data"]) is None
-    assert store.plan_destroy().blockers == ()
+    assert store.load().version == 1
+    with pytest.raises(LifecycleError, match="Legacy lifecycle"):
+        store.created_subvolume(isolated_roots["postgres_data"])
+    with pytest.raises(LifecycleError, match="Legacy lifecycle"):
+        store.plan_destroy()
 
 
 def test_legacy_v1_receipt_cannot_smuggle_v2_subvolume_authority(
@@ -442,12 +453,11 @@ def test_recording_against_v1_never_adopts_existing_postgres_data(
     before = postgres_data.lstat()
     store = LifecycleReceiptStore(receipt)
 
-    store.record(CreatedResources())
-
-    document = json.loads(receipt.read_text(encoding="utf-8"))
-    assert document["version"] == 2
-    assert document["subvolumes"] == []
-    assert store.created_subvolume(postgres_data) is None
+    original = receipt.read_bytes()
+    with pytest.raises(LifecycleError, match="Legacy lifecycle"):
+        store.record(CreatedResources())
+    assert receipt.read_bytes() == original
+    assert store.load().version == 1
     assert postgres_data.lstat().st_ino == before.st_ino
 
 
@@ -525,13 +535,13 @@ def test_generated_file_digest_rejects_replacement_after_identity_check(
             opened.append(descriptor)
         return descriptor
 
-    def race_before_digest(path: Path, **kwargs: Any) -> str:
+    def race_before_digest(path: Path, **kwargs: Any) -> AbstractContextManager[int]:
         _replace_generated_file(path, replacement=replacement, foreign=foreign)
-        return digest_file(path, **kwargs)
+        return open_generated_file(path, **kwargs)
 
     monkeypatch.setattr(Path, "open", guarded_open)
     monkeypatch.setattr(os, "open", observe_open)
-    monkeypatch.setattr("lychd.system.services.lifecycle.receipt.digest_file", race_before_digest)
+    monkeypatch.setattr("lychd.system.services.lifecycle.receipt.open_generated_file", race_before_digest)
 
     operation = store.plan_destroy if preview else partial(store.record, resources)
     with pytest.raises(LifecycleError, match="digest"):
@@ -560,7 +570,9 @@ def test_generated_file_digest_records_the_opened_regular_file(
     store.record(CreatedResources(files=(target,)))
 
     (entry,) = store.load().files
-    assert (entry.device, entry.inode) == (expected.st_dev, expected.st_ino)
+    assert (entry.creation_device, entry.creation_inode) == (expected.st_dev, expected.st_ino)
+    assert not hasattr(entry, "device")
+    assert not hasattr(entry, "inode")
     assert entry.digest == "sha256:" + hashlib.sha256(payload).hexdigest()
     assert any(
         action.target == str(target) and action.disposition is LifecycleDisposition.WOULD_REMOVE
@@ -731,6 +743,7 @@ def test_default_lifecycle_lock_contends_across_different_tmpdir_environments(
     script = """
 import os
 from pathlib import Path
+from lychd.system import path_identity
 from lychd.system import constants as lifecycle_constants
 from lychd.system.services.lifecycle.lock import LifecycleLock
 from lychd.system.services.lifecycle.models import LifecycleError
@@ -814,3 +827,131 @@ def test_anticipated_scribe_removals_unblock_empty_only_binding_anchors(
         and action.target == str(quadlets)
         for action in joined.actions
     )
+
+
+def _persistent_identity(path: Path) -> path_identity.PersistentPathIdentity:
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    try:
+        return path_identity.observe_identity_fd(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")
+
+
+def test_device_renumbering_preserves_v3_authority_without_rewriting_receipt(isolated_roots: IsolatedRoots) -> None:
+    """Old dev_t numbers are observations, not authority across a reboot."""
+    roots = tuple(isolated_roots[name] for name in ("crypt", "cache", "codex"))
+    for root in roots:
+        root.mkdir(parents=True)
+    config = isolated_roots["codex"] / "lychd.toml"
+    config.write_text("original = true\n")
+    store = LifecycleReceiptStore(isolated_roots["receipt"])
+    store.record(CreatedResources(directories=(isolated_roots["codex"],), files=(config,)))
+    store.seal_dedicated_roots()
+    document = json.loads(store.path.read_bytes())
+    for entries in (document["dedicated_roots"], document["directories"], document["files"]):
+        for entry in entries:
+            entry["device"] += 12345  # A synthetic prior-boot receipt fixture.
+    store.path.write_text(json.dumps(document))
+    before = store.path.read_bytes()
+    live = store.require_dedicated_root_identities(roots)
+    assert all(item.device == item.path.stat().st_dev for item in live)
+    assert store.plan_dedicated_root_attestation().disposition is LifecycleDisposition.PRESERVE
+    assert store.plan_destroy().blockers == ()
+    store.seal_dedicated_roots()
+    assert store.path.read_bytes() == before
+
+
+def test_changed_root_cannot_be_resealed_by_init(isolated_roots: IsolatedRoots) -> None:
+    for name in ("crypt", "cache", "codex"):
+        isolated_roots[name].mkdir(parents=True)
+    store = LifecycleReceiptStore(isolated_roots["receipt"])
+    store.seal_dedicated_roots()
+    before = store.path.read_bytes()
+    cache = isolated_roots["cache"]
+    cache.rename(cache.with_name("displaced"))
+    cache.mkdir()
+    assert store.plan_dedicated_root_attestation().disposition is LifecycleDisposition.BLOCKED
+    with pytest.raises(LifecycleError, match="cannot reseal"):
+        store.seal_dedicated_roots()
+    assert store.path.read_bytes() == before
+
+
+def test_unsupported_provider_blocks_init_before_effects(
+    isolated_roots: IsolatedRoots, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def unavailable(_descriptor: int) -> path_identity.PersistentPathIdentity:
+        message = "unsupported test filesystem"
+        raise path_identity.PathIdentityError(message)
+
+    monkeypatch.setattr(path_identity, "observe_identity_fd", unavailable)
+    plan = InitializationPlanner(
+        reactor_directories=(),
+        anchor_paths=(),
+        sample_paths=(),
+        receipt_store=LifecycleReceiptStore(isolated_roots["receipt"]),
+    ).plan()
+    assert any("persistent filesystem identity unavailable" in action.detail for action in plan.blockers)
+    assert not isolated_roots["codex"].exists()
+    assert not isolated_roots["crypt"].exists()
+
+
+def test_recorded_file_replacement_blocks_init_without_rebasing(isolated_roots: IsolatedRoots) -> None:
+    codex = isolated_roots["codex"]
+    codex.mkdir(parents=True)
+    config = codex / "lychd.toml"
+    config.write_text("old")
+    store = LifecycleReceiptStore(isolated_roots["receipt"])
+    store.record(CreatedResources(files=(config,)))
+    before = store.path.read_bytes()
+    config.rename(codex / "old-file")
+    config.write_text("old")
+    assert store.plan_recorded_identities()
+    with pytest.raises(LifecycleError, match="cannot replace recorded"):
+        store.record(CreatedResources(files=(config,)))
+    assert store.path.read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        {"filesystem_uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
+        {"subvolume_uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
+        {"subvolume_id": 260},
+        {"generation": 2},
+    ],
+)
+def test_stable_identity_mismatch_never_rebases_root_authority(
+    isolated_roots: IsolatedRoots,
+    monkeypatch: pytest.MonkeyPatch,
+    changed: dict[str, object],
+) -> None:
+    roots = tuple(isolated_roots[name] for name in ("crypt", "cache", "codex"))
+    for root in roots:
+        root.mkdir(parents=True)
+    store = LifecycleReceiptStore(isolated_roots["receipt"])
+    store.seal_dedicated_roots()
+    original = store.path.read_bytes()
+    observe = path_identity.observe_identity_fd
+
+    def drift(descriptor: int) -> path_identity.PersistentPathIdentity:
+        return path_identity.PersistentPathIdentity.model_validate(observe(descriptor).model_dump() | changed)
+
+    monkeypatch.setattr(path_identity, "observe_identity_fd", drift)
+    with pytest.raises(LifecycleError, match="identity drifted"):
+        store.require_dedicated_root_identities(roots)
+    with pytest.raises(LifecycleError, match="cannot reseal"):
+        store.seal_dedicated_roots()
+    assert store.path.read_bytes() == original
+
+
+@pytest.mark.parametrize("version", [True, 3.0])
+def test_receipt_schema_version_is_exact_integer(isolated_roots: IsolatedRoots, version: object) -> None:
+    receipt = isolated_roots["receipt"]
+    receipt.parent.mkdir(parents=True)
+    receipt.write_text(json.dumps({"version": version}))
+    receipt.chmod(0o600)
+    with pytest.raises(LifecycleError, match="version must be an integer"):
+        LifecycleReceiptStore(receipt).load()

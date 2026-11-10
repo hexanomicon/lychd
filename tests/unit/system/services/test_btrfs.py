@@ -363,3 +363,6 @@ def test_created_subvolume_nocow_mutation_remains_bound_to_open_descriptor(
 
     assert mutated_inode == displaced.stat().st_ino
     assert mutated_inode != target.stat().st_ino
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")

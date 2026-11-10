@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from lychd.system import atomic_paths
+from lychd.system import atomic_paths, path_identity
 from lychd.system.descriptor_settlement import DescriptorSet
 from lychd.system.services import layout_directory_recovery as recovery
 from lychd.system.services import layout_directory_traversal as traversal
@@ -94,6 +94,7 @@ def stage_and_install_directory(
             if mode is not None:
                 os.fchmod(staging_fd, mode)
             metadata = os.fstat(staging_fd)
+            persistent_identity = path_identity.observe_identity_fd(staging_fd)
         except BaseException as exc:  # noqa: BLE001 - candidate may already exist
             recovery.rollback_unattested_staging(
                 parent_fd=parent_fd,
@@ -116,6 +117,7 @@ def stage_and_install_directory(
                 path=path,
                 device=metadata.st_dev,
                 inode=metadata.st_ino,
+                persistent_identity=persistent_identity,
             ),
             parent_fd=descriptors.transfer(rollback_parent_fd),
             name=staging_name,

@@ -38,3 +38,28 @@ def setup_test_logging() -> Iterator[None]:
     structlog.configure(cache_logger_on_first_use=False)
     yield
     structlog.reset_defaults()
+
+
+@pytest.fixture
+def persistent_identity_observer(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Supply typed kernel observations to high-level tests on OCI scratch.
+
+    This fixture is explicit at each consumer module; provider tests exercise the
+    real observer boundary separately. It grants no production fallback.
+    """
+    import os
+
+    from lychd.system import path_identity
+
+    def observe(descriptor: int, **_kwargs: object) -> path_identity.PersistentPathIdentity:
+        metadata = os.fstat(descriptor)
+        return path_identity.PersistentPathIdentity(
+            filesystem="btrfs",
+            filesystem_uuid="87654321-4321-8765-4321-876543218765",
+            inode=metadata.st_ino,
+            generation=1,
+            subvolume_id=259,
+            subvolume_uuid="12345678-1234-5678-1234-567812345678",
+        )
+
+    monkeypatch.setattr(path_identity, "observe_identity_fd", observe)

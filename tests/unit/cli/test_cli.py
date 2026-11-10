@@ -1065,3 +1065,6 @@ def test_web_image_selection_does_not_mutate_cached_settings() -> None:
     prepared = _with_web_image(settings, image)
     assert prepared.server.web.image == image
     assert settings.server.web.image == original
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")
