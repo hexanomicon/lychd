@@ -675,10 +675,29 @@ The native chain is `tether prepare --intent PATH`, `tether bind`, ordinary guar
 then `tether activate`. Keys must already be admitted through the separate operator-owned
 `tether import-key --secret REF --file PATH` boundary before binding; automation neither transports
 keys nor generates VPN units. Inspect with `tether inspect`, enroll a strict public declaration
-with `tether enroll --peer-file PATH` while the offered road is cold (independent imports may stay active),
+with `tether enroll --peer-file PATH` (new peers may join a live road when its Pod policy stays unchanged),
 readmit one imported attachment with `tether admit --attachment ID --generation GENERATION`,
 and revoke an exact observed generation with
 `tether revoke --network ID --generation GENERATION [--peer ID]`.
+
+To add a received VPN attachment after installation, keep the original campaign and Rune unchanged.
+Write a closed public `ImportedAttachment` JSON document in a private, owner-only `0600` file,
+containing numeric endpoint/service coordinates, public peer identity and secret references.
+Raw WireGuard configuration, private keys and hooks are not attachment declarations. Stage it with
+`lychd tether register --attachment-file PATH` (or inspect the proposed operation with `--dry-run`).
+Then use native `tether import-key`, `tether admit --attachment ID --generation 1`, `tether bind`,
+and `tether activate` in that order. Registration records managed Tether data; it grants neither
+admission nor activation. The binding projection uses that managed topology without rewriting the
+original initialization receipt, normalized intent or immutable Rune. Ordinary preparation and
+Ansible reruns preserve the managed attachments.
+
+Repeating the identical declaration is a no-op. To change an existing attachment, revoke the whole
+attachment's current generation and complete runtime closure first, then register its replacement,
+import any new referenced key, admit the next generation, bind and activate. The prior generation
+remains a tombstone; it is never reset to generation 1. These attachment operations do not restart
+Core; check its existing PID and unrelated active roads across the native lifecycle acceptance run.
+Native inspection reports currently required secrets separately from all strictly receipted owned
+secrets. Retained keys from revoked roads remain owned; unreceipted or replaced keys remain refusals.
 
 Protocol 2 observes native Tether custody, exact unit provenance and the separately admitted
 image identity. Its status invocation adds `--deployment-profile tether-container-v1`,

@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from lychd.system.services.tether.service import NativeTetherService
 
 _MAX_PEER_BYTES = 64 * 1024
+_PRIVATE_DECLARATION_MODE = 0o600
 
 
 def _invoke(operation: Callable[[NativeTetherService], dict[str, object]]) -> None:
@@ -89,7 +90,7 @@ def import_key(secret: str, key_file: Path, *, dry_run: bool) -> None:
 @click.option("--peer-file", required=True, type=click.Path(path_type=Path, dir_okay=False))
 @click.option("--dry-run", is_flag=True)
 def enroll(peer_file: Path, *, dry_run: bool) -> None:
-    """Enroll a public peer while the offered road is cold; imports may stay active."""
+    """Enroll a public peer; additive admission preserves an unchanged live offered Pod."""
     from lychd.domain.tether.models import OfferedPeer
 
     try:
@@ -143,3 +144,50 @@ def resume() -> None:
 def admit(attachment: str, generation: int, *, dry_run: bool) -> None:
     """Independently admit one current imported attachment generation."""
     _invoke(lambda service: service.admit(attachment_id=attachment, generation=generation, dry_run=dry_run))
+
+
+@tether_group.command("register")
+@click.option("--attachment-file", required=True, type=click.Path(path_type=Path, dir_okay=False))
+@click.option("--dry-run", is_flag=True)
+def register(attachment_file: Path, *, dry_run: bool) -> None:
+    """Stage one public imported attachment; import its key and admit it separately."""
+    from lychd.domain.tether.models import ImportedAttachment
+
+    try:
+        data = _read_private_declaration(attachment_file)
+        document = json.loads(data, object_pairs_hook=_closed_object)
+        attachment = ImportedAttachment.model_validate_json(json.dumps(document), strict=True)
+    except (OSError, ValueError, RecursionError):
+        message = "Public attachment declaration refused."
+        raise click.ClickException(message) from None
+    _invoke(lambda service: service.register_attachment(attachment, dry_run=dry_run))
+
+
+def _read_private_declaration(path: Path) -> bytes:
+    """Read bounded owner-only public input without following any path symlink."""
+    path = path.absolute()
+    if ".." in path.parts:
+        raise ValueError
+    parent = os.open("/", os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    try:
+        for component in path.parent.parts[1:]:
+            child = os.open(component, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=parent)
+            os.close(parent)
+            parent = child
+        descriptor = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK, dir_fd=parent)
+        with os.fdopen(descriptor, "rb") as source:
+            metadata = os.fstat(source.fileno())
+            if (
+                not stat.S_ISREG(metadata.st_mode)
+                or metadata.st_uid != os.getuid()
+                or metadata.st_nlink != 1
+                or stat.S_IMODE(metadata.st_mode) != _PRIVATE_DECLARATION_MODE
+                or metadata.st_size > _MAX_PEER_BYTES
+            ):
+                raise ValueError
+            data = source.read(_MAX_PEER_BYTES + 1)
+    finally:
+        os.close(parent)
+    if len(data) > _MAX_PEER_BYTES:
+        raise ValueError
+    return data

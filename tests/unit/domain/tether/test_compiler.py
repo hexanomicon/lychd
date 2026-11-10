@@ -169,6 +169,47 @@ def test_one_offered_interface_many_independent_owner_adapters() -> None:
     assert old_unit == new_unit
 
 
+def test_last_owner_revocation_preserves_pod_capacity_without_live_admission() -> None:
+    offered = OfferedNetwork(
+        id="home",
+        interface="wg0",
+        address="10.55.0.1/24",
+        listen_address="192.0.2.10",
+        listen_port=51820,
+        private_key_ref="lychd-tether-home-private",
+    )
+    rune = TetherRune(quadlet=QuadletConfig(image="example/tether:1"), offered=offered)
+    owner = OfferedPeer(
+        id="owner",
+        generation=1,
+        public_key=KEY,
+        address="10.55.0.2",
+        owner_access=OwnerAccess(ssh_public_key=SSH_KEY, ssh_host_key_ref="lychd-tether-owner-ssh", listen_port=2222),
+    )
+    initial = TetherSnapshot(installation_epoch=EPOCH)
+    admitted = initial.model_copy(update={"offered_peers": (owner,)})
+    revoked = admitted.model_copy(update={"offered_peers": (owner.model_copy(update={"enabled": False}),)})
+    empty, before, after = (project(rune, snapshot) for snapshot in (initial, admitted, revoked))
+    empty_pod, old_pod, new_pod = (
+        next(row for row in deployment.manifests if isinstance(row, QuadletPod))
+        for deployment in (empty, before, after)
+    )
+    assert empty_pod.tether_policy is not None
+    assert empty_pod.tether_policy.owner_loopback_port is None
+    assert empty_pod.model_dump_json() != old_pod.model_dump_json()
+    assert old_pod.model_dump_json() == new_pod.model_dump_json()
+    assert new_pod.tether_policy is not None
+    assert new_pod.tether_policy.owner_loopback_port == 8123
+    assert [row.role for row in after.runtime_configs] == ["wireguard"]
+    wireguard = after.runtime_configs[0]
+    assert wireguard.payload["peers"] == []
+    assert wireguard.payload["ingress"] == []
+    assert wireguard.payload["owner_loopback_port"] == 8123
+    assert wireguard.fences["peers"] == [{"id": "owner", "generation": 1, "enabled": False}]
+    assert after.required_secrets == (offered.private_key_ref,)
+    assert all(row.tether_role != "owner-ssh" for row in after.manifests if isinstance(row, QuadletContainer))
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
@@ -305,3 +346,50 @@ def test_outer_endpoint_cannot_enter_tunnel_connected_route() -> None:
     payload.update(address="10.77.0.1/24", endpoint_address="10.77.0.254")
     with pytest.raises(ValidationError, match="local tunnel prefix"):
         ImportedAttachment.model_validate(payload)
+
+
+def test_offered_only_core_manifest_stays_identical_when_first_import_is_admitted() -> None:
+    from lychd.config.runes.registry import RuneRegistry
+    from lychd.config.settings import SettingsSnapshot
+    from lychd.extensions.host import assemble_extensions
+    from lychd.system.services.bind_compilation import compile_bind_request
+
+    settings = SettingsSnapshot(payload="{}").materialize()
+    settings.extensions.builtins = ("tether",)
+    extensions = assemble_extensions(settings)
+    offered = OfferedNetwork(
+        id="home",
+        interface="wg0",
+        address="10.55.0.1/24",
+        listen_address="192.0.2.10",
+        listen_port=51820,
+        private_key_ref="lychd-tether-home-private",
+    )
+    initial = TetherRune(quadlet=QuadletConfig(image="example/tether:1"), offered=offered)
+    added = initial.model_copy(update={"attachments": (attachment("b"),)})
+    before = TetherSnapshot(installation_epoch=EPOCH)
+    after = before.model_copy(update={"attachments": (AttachmentAdmission(attachment_id="b", generation=1),)})
+    results = []
+    for rune, snapshot in ((initial, before), (added, after)):
+        request = compile_bind_request(
+            settings=settings,
+            extensions=extensions,
+            runes=RuneRegistry((rune,)),
+            soulstones=(),
+            portals=(),
+            tether_snapshot=snapshot,
+            tether_runtime_root=Path("/run/user/1000/lychd-tether"),
+            tether_config_root=Path("/var/lib/example/tether-config"),
+            tether_consumer_uid=1000,
+        )
+        core = next(
+            row
+            for row in request.manifests
+            if isinstance(row, QuadletContainer) and row.container_name == "lychd-vessel"
+        )
+        results.append(core)
+    assert results[0].model_dump(mode="json") == results[1].model_dump(mode="json")
+    assert any(
+        volume.container_path == Path("/run/lychd-tether") and volume.options == ["ro", "z"]
+        for volume in results[0].volumes
+    )

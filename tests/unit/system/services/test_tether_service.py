@@ -454,3 +454,413 @@ def test_other_pending_withdrawal_does_not_block_independent_denial(lifecycle: A
     assert service._load().revocations["b:@:1"]["status"] == "pending"
     assert service._load().revocations["c:@:1"]["status"] == "complete"
     assert service.revoke("b", None, "1")["physical_closure"] is True
+
+
+def new_attachment(service: ServiceHarness, name: str = "d") -> ImportedAttachment:
+    original = service._load().intent.rune.attachments[0]
+    return original.model_copy(
+        update={"id": name, "remote_lich_id": name, "private_key_ref": f"lychd-tether-{name}-private"}
+    )
+
+
+def test_register_new_road_without_rewriting_original_or_starting(lifecycle: Any) -> None:
+    service, host = lifecycle
+    service.activate()
+    before = service._load()
+    starts = tuple(host.starts)
+    attachment = new_attachment(service)
+    assert service.register_attachment(attachment)["changed"] is True
+    assert service.register_attachment(attachment)["changed"] is False
+    after = service._load()
+    assert after.intent == before.intent
+    assert service.rune == before.intent.rune
+    assert after.snapshot == before.snapshot
+    assert after.active == before.active
+    assert after.incarnations == before.incarnations
+    assert after.pods == before.pods
+    assert tuple(host.starts) == starts
+    assert service._projection(after).routes == service._projection(before).routes
+    assert service._references(after)[attachment.private_key_ref] == "wireguard"
+    service.admit("d", 1)
+    admitted = service._load()
+    assert "d" not in admitted.active
+    assert {row.selection.attachment_id for row in service._projection(admitted).routes} == {"b", "c", "d"}
+
+
+def test_registered_replacement_requires_closure_and_preserves_generation(lifecycle: Any) -> None:
+    service, _ = lifecycle
+    old = service._load().intent.rune.attachments[0]
+    replacement = old.model_copy(update={"remote_lich_id": "replacement", "endpoint_port": 51821})
+    with pytest.raises(TetherError, match="Revoke"):
+        service.register_attachment(replacement)
+    service.revoke("b", None, "1")
+    service.register_attachment(replacement)
+    admission = next(row for row in service._load().snapshot.attachments if row.attachment_id == "b")
+    assert admission.generation == 1
+    assert not admission.enabled
+    with pytest.raises(TetherError, match="generation"):
+        service.admit("b", 1)
+    service.admit("b", 2)
+    selected = next(row for row in service._projection(service._load()).routes if row.selection.attachment_id == "b")
+    assert selected.selection.remote_lich_id == "replacement"
+    assert selected.selection.generation == 2
+
+
+def test_retired_reference_cannot_move_to_another_road(lifecycle: Any) -> None:
+    service, _ = lifecycle
+    original = service._load().intent.rune.attachments[0]
+    service.revoke("b", None, "1")
+    service.register_attachment(original.model_copy(update={"private_key_ref": "lychd-tether-b-rotated"}))
+    incoming = new_attachment(service).model_copy(update={"private_key_ref": original.private_key_ref})
+    with pytest.raises(TetherError, match="another road"):
+        service.register_attachment(incoming)
+
+
+def test_managed_topology_cannot_change_image_or_offered_envelope(lifecycle: Any) -> None:
+    service, _ = lifecycle
+    state = service._load()
+    changed = state.intent.rune.model_copy(update={"quadlet": QuadletConfig(image="other@sha256:" + "b" * 64)})
+    with pytest.raises(TetherError, match="only imported attachments"):
+        service.effective_rune(state.model_copy(update={"topology": changed}))
+
+
+def test_registration_refuses_foreign_runtime_before_state_mutation(lifecycle: Any) -> None:
+    service, host = lifecycle
+    incoming = new_attachment(service)
+    before = service._load()
+    import hashlib
+
+    pod = "lychd-tether-" + hashlib.sha256(incoming.id.encode()).hexdigest()[:16]
+    host.pods[pod] = {"Id": "foreign"}
+    with pytest.raises(TetherError, match="existing runtime"):
+        service.register_attachment(incoming)
+    assert service._load() == before
+
+
+def test_registration_dry_run_and_staged_update_have_no_admission(lifecycle: Any) -> None:
+    service, host = lifecycle
+    incoming = new_attachment(service)
+    before = service._load()
+    assert service.register_attachment(incoming, dry_run=True)["changed"] is True
+    assert service._load() == before
+    service.register_attachment(incoming)
+    service.register_attachment(incoming.model_copy(update={"endpoint_port": 51821}))
+    assert service._load().snapshot == before.snapshot
+    assert not host.starts
+
+
+def test_offered_only_registration_and_repeat_prepare_preserve_managed_road(
+    lifecycle: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from unittest.mock import Mock
+
+    from lychd.domain.tether.models import OfferedNetwork
+
+    service, host = lifecycle
+    incoming = new_attachment(service)
+    old = service._load()
+    offered = OfferedNetwork(
+        id="home",
+        interface="wg0",
+        address="10.55.0.1/24",
+        listen_address="192.0.2.10",
+        listen_port=51820,
+        private_key_ref="lychd-tether-home-private",
+    )
+    initial = TetherRune(quadlet=old.intent.rune.quadlet, offered=offered)
+    intent = TetherIntent(rune=initial)
+    state = NativeState(
+        intent=intent, snapshot=TetherSnapshot(installation_epoch=old.snapshot.installation_epoch), image=old.image
+    )
+    service.rune = initial
+    service._save(state)
+    service.register_attachment(incoming)
+    registered = service._load()
+    assert registered.intent == intent
+    assert service._projection(registered).routes == ()
+    assert service._projection(registered).consumer_mount is not None
+    keys = Mock()
+    keys.attest.return_value = {
+        "reference": offered.private_key_ref,
+        "purpose": "wireguard",
+        "public_key": "public",
+        "fingerprint": "fingerprint",
+    }
+    monkeypatch.setattr(native, "load_intent", lambda _: intent)
+    monkeypatch.setattr(service, "_empty_preparation", lambda: False)
+    monkeypatch.setattr(service, "_keys", lambda _: keys)
+    assert service.prepare(Path("/public-intent.json"))["changed"] is False
+    assert service._load() == registered
+    assert not host.starts
+
+
+def test_effective_registry_preserves_other_runes(lifecycle: Any) -> None:
+    from lychd.config.runes.base import RuneConfig
+    from lychd.config.runes.registry import RuneRegistry
+
+    service, _ = lifecycle
+    original = service._load().intent.rune
+    other = RuneConfig()
+    registry = RuneRegistry((other, original))
+    service.register_attachment(new_attachment(service))
+    effective = service._effective_registry(service._load(), registry)
+    assert effective.all()[0] == other
+    assert effective.one(TetherRune) == service.effective_rune(service._load())
+    assert registry.one(TetherRune) == original
+
+
+def owner_peer(name: str, number: int) -> Any:
+    from lychd.domain.tether.models import OfferedPeer, OwnerAccess
+
+    ssh = "ssh-ed25519 " + base64.b64encode(b"\x00\x00\x00\x0bssh-ed25519\x00\x00\x00\x20" + bytes(range(32))).decode()
+    return OfferedPeer(
+        id=name,
+        generation=1,
+        public_key=base64.b64encode(bytes(range(number, number + 32))).decode(),
+        address=f"10.55.0.{number + 2}",
+        owner_access=OwnerAccess(
+            ssh_public_key=ssh, ssh_host_key_ref=f"lychd-tether-owner-{name}", listen_port=2222 + number
+        ),
+    )
+
+
+def add_offered_network(service: ServiceHarness, peers: tuple[Any, ...]) -> NativeState:
+    from lychd.domain.tether.models import OfferedNetwork
+
+    state = service._load()
+    offered = OfferedNetwork(
+        id="home",
+        interface="wg0",
+        address="10.55.0.1/24",
+        listen_address="192.0.2.10",
+        listen_port=51820,
+        private_key_ref="lychd-tether-home-private",
+    )
+    rune = state.intent.rune.model_copy(update={"offered": offered})
+    intent = state.intent.model_copy(update={"rune": rune, "offered_peers": peers})
+    updated = state.model_copy(
+        update={"intent": intent, "snapshot": state.snapshot.model_copy(update={"offered_peers": peers})}
+    )
+    service.rune = rune
+    service._save(updated)
+    return updated
+
+
+def test_hot_new_owner_preserves_other_peers_and_imported_incarnations(
+    lifecycle: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from unittest.mock import Mock
+
+    service, host = lifecycle
+    first, second = owner_peer("first", 0), owner_peer("second", 1)
+    add_offered_network(service, (first,))
+    keys = Mock()
+    monkeypatch.setattr(service, "_keys", lambda _: keys)
+    service.activate()
+    before = service._load()
+    starts = tuple(host.starts)
+    before_configs = service._projection(before).runtime_configs
+    owner_before = next(row for row in before_configs if row.role == "owner-ssh")
+    imports_before = tuple(row for row in before_configs if row.network_id in {"b", "c"})
+    assert service.enroll(second)["changed"] is True
+    after = service._load()
+    assert len(host.starts) == len(starts) + 1
+    assert all(after.incarnations[name] == identity for name, identity in before.incarnations.items())
+    owner_after = next(row for row in service._projection(after).runtime_configs if row.name == owner_before.name)
+    assert owner_after.payload == owner_before.payload
+    assert owner_after.name == owner_before.name
+    assert (
+        tuple(row for row in service._projection(after).runtime_configs if row.network_id in {"b", "c"})
+        == imports_before
+    )
+    keys.ensure.assert_called_once_with(second.owner_access.ssh_host_key_ref, "ssh-host")
+    assert service.enroll(second)["changed"] is False
+    assert service._load() == after
+    assert len(host.starts) == len(starts) + 1
+
+
+def test_hot_first_owner_bridge_refuses_before_state_or_key_effects(
+    lifecycle: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from unittest.mock import Mock
+
+    service, _ = lifecycle
+    add_offered_network(service, ())
+    service.activate()
+    before = service._load()
+    keys = Mock()
+    monkeypatch.setattr(service, "_keys", lambda _: keys)
+    with pytest.raises(TetherError, match="Pod policy"):
+        service.enroll(owner_peer("first", 0))
+    assert service._load() == before
+    keys.ensure.assert_not_called()
+
+
+def test_hot_missing_preshared_key_refuses_before_grant(lifecycle: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    from unittest.mock import Mock
+
+    service, _ = lifecycle
+    add_offered_network(service, (owner_peer("first", 0),))
+    service.activate()
+    before = service._load()
+    keys = Mock()
+    keys.attest.side_effect = TetherError("Missing key")
+    monkeypatch.setattr(service, "_keys", lambda _: keys)
+    second = owner_peer("second", 1).model_copy(update={"preshared_key_ref": "lychd-tether-peer-psk"})
+    with pytest.raises(TetherError, match="Missing key"):
+        service.enroll(second)
+    assert service._load() == before
+    keys.ensure.assert_not_called()
+
+
+def test_hot_enrollment_retries_saved_peer_after_binding_failure(
+    lifecycle: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from unittest.mock import Mock
+
+    service, host = lifecycle
+    first, second = owner_peer("first", 0), owner_peer("second", 1)
+    add_offered_network(service, (first,))
+    keys = Mock()
+    monkeypatch.setattr(service, "_keys", lambda _: keys)
+    service.activate()
+    starts = tuple(host.starts)
+    before = service._load()
+    with monkeypatch.context() as patch:
+
+        def fail_bind(_state: NativeState) -> dict[str, Any]:
+            message = "Binding interrupted"
+            raise TetherError(message)
+
+        patch.setattr(service, "_bind", fail_bind)
+        with pytest.raises(TetherError, match="interrupted"):
+            service.enroll(second)
+    assert second in service._load().snapshot.offered_peers
+    assert service.enroll(second)["changed"] is True
+    assert len(host.starts) == len(starts) + 1
+    assert all(service._load().incarnations[name] == value for name, value in before.incarnations.items())
+    keys.ensure.assert_called_once()
+    assert service.enroll(second)["changed"] is False
+
+
+def test_failed_peer_key_preparation_retains_reference_owner_without_grant(
+    lifecycle: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from unittest.mock import Mock
+
+    service, _ = lifecycle
+    add_offered_network(service, (owner_peer("first", 0),))
+    before = service._load()
+    second = owner_peer("second", 1)
+    keys = Mock()
+    keys.ensure.side_effect = TetherError("Interrupted key preparation")
+    monkeypatch.setattr(service, "_keys", lambda _: keys)
+    with pytest.raises(TetherError, match="Interrupted"):
+        service.enroll(second)
+    retained = service._load()
+    assert retained.snapshot == before.snapshot
+    assert retained.active == before.active
+    assert retained.key_owners[second.owner_access.ssh_host_key_ref] == "peer:second:ssh-host"
+    third = owner_peer("third", 2)
+    third = third.model_copy(
+        update={
+            "owner_access": third.owner_access.model_copy(
+                update={"ssh_host_key_ref": second.owner_access.ssh_host_key_ref}
+            )
+        }
+    )
+    with pytest.raises(TetherError, match="another road"):
+        service.enroll(third)
+    keys.ensure.assert_called_once()
+
+
+def test_failed_start_launch_retires_only_after_its_role_closes(
+    lifecycle: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    service, host = lifecycle
+
+    def fail_start(*_args: str) -> str:
+        message = "Start failed before creating a container"
+        raise TetherError(message)
+
+    monkeypatch.setattr(host, "command", fail_start)
+    for network in ("b", "c"):
+        with pytest.raises(TetherError, match="Start failed"):
+            service._activate(service._load(), (network,))
+    pending = service._load()
+    assert {row["network_id"] for row in pending.launches.values()} == {"b", "c"}
+    host.refuse_quiescence = True
+    with pytest.raises(TetherError, match="pending"):
+        service.revoke("b", None, "1")
+    assert service._load().launches == pending.launches
+    host.refuse_quiescence = False
+    assert service.revoke("b", None, "1")["physical_closure"] is True
+    assert service._load().launches == {name: row for name, row in pending.launches.items() if row["network_id"] == "c"}
+    original = pending.intent.rune.attachments[0]
+    replacement = original.model_copy(update={"endpoint_port": 51821})
+    assert service.register_attachment(replacement)["changed"] is True
+    assert service.revoke("b", None, "1")["changed"] is False
+
+
+def fail_after_pod_start(host: HostPort, *args: str) -> str:
+    name = args[3].removesuffix(".service")
+    pod = "-".join(name.split("-")[:3])
+    host.invocations[pod + "-pod"] = host.invocations.get(pod + "-pod", 0) + 1
+    host.pods[pod] = {"Id": pod}
+    message = "Start failed after creating the Pod"
+    raise TetherError(message)
+
+
+def test_revocation_recovers_failed_start_pod_before_stopping_it(
+    lifecycle: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    service, host = lifecycle
+    monkeypatch.setattr(host, "command", lambda *args: fail_after_pod_start(host, *args))
+    with pytest.raises(TetherError, match="Start failed"):
+        service._activate(service._load(), ("b",))
+    assert host.pods
+    assert not service._load().pods
+    assert not host.containers
+    stop_pod = host.stop_pod
+
+    def verify_checkpoint(retained: dict[str, Any]) -> None:
+        assert service._load().revocations["b:@:1"]["pod"] == retained
+        stop_pod(retained)
+
+    monkeypatch.setattr(host, "stop_pod", verify_checkpoint)
+    assert service.revoke("b", None, "1")["physical_closure"] is True
+    assert not host.pods
+    assert not service._load().launches
+    assert service.revoke("b", None, "1")["changed"] is False
+    original = service._load().intent.rune.attachments[0]
+    assert service.register_attachment(original.model_copy(update={"endpoint_port": 51821}))["changed"] is True
+
+
+@pytest.mark.parametrize("proof", ["missing", "boot", "network", "policy", "unchanged_invocation"])
+def test_revocation_refuses_pod_without_exact_failed_launch_proof(
+    lifecycle: Any, monkeypatch: pytest.MonkeyPatch, proof: str
+) -> None:
+    service, host = lifecycle
+    monkeypatch.setattr(host, "command", lambda *args: fail_after_pod_start(host, *args))
+    with pytest.raises(TetherError, match="Start failed"):
+        service._activate(service._load(), ("b",))
+    state = service._load()
+    name, launch = next(iter(state.launches.items()))
+    changes = {
+        "boot": {"boot_id": "another-boot"},
+        "network": {"network_id": "c"},
+        "policy": {"policy_digest": "other-policy"},
+        "unchanged_invocation": {"previous_pod_invocation_id": "1"},
+    }
+    launches = {} if proof == "missing" else {name: {**launch, **changes[proof]}}
+    service._save(state.model_copy(update={"launches": launches}))
+    before = dict(host.pods)
+
+    def refuse_stop(_retained: dict[str, Any]) -> None:
+        pytest.fail("An unproved Pod must never be stopped")
+
+    monkeypatch.setattr(host, "stop_pod", refuse_stop)
+    with pytest.raises(TetherError, match="pending"):
+        service.revoke("b", None, "1")
+    assert host.pods == before
+    assert service._load().revocations["b:@:1"]["status"] == "pending"

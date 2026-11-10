@@ -278,6 +278,39 @@ class TetherKeys:
         _require(public == record["public_key"] and hmac.compare_digest(fingerprint, record["fingerprint"]))
         return {**record, "secret_id": secret_id}, value, material
 
+    def owned_references(self) -> tuple[str, ...]:
+        """Observe exact owned live secrets, including recoverable pending creations."""
+        try:
+            owned: list[str] = []
+            materials: list[tuple[bytes, str | None, str]] = []
+            for reference in self.known_references():
+                phase = self.preparation_state(reference)
+                pending = phase == "pending"
+                record = self._record(
+                    self.custody.read(_name(reference, pending=pending)), reference, final=not pending
+                )
+                if pending and self._call("podman", "secret", "exists", reference, absence=True) is None:
+                    continue
+                identity, _value, material = self._inspect(record)
+                purpose, public = identity["purpose"], identity["public_key"]
+                for previous, previous_public, previous_purpose in materials:
+                    _require(not hmac.compare_digest(material, previous))
+                    if purpose == "wireguard" or previous_purpose == "wireguard":
+                        left, right = bytearray(material), bytearray(previous)
+                        left[0] &= 248
+                        right[0] &= 248
+                        left[-1] = (left[-1] & 127) | 64
+                        right[-1] = (right[-1] & 127) | 64
+                        _require(not hmac.compare_digest(left, right))
+                    if public is not None and purpose == previous_purpose:
+                        _require(public != previous_public)
+                materials.append((material, public, purpose))
+                owned.append(reference)
+        except Exception:  # noqa: BLE001 - secret observations never escape diagnostics
+            raise _refuse() from None
+        else:
+            return tuple(owned)
+
     def preparation_state(self, reference: str) -> Literal["absent", "pending", "ready"]:
         """Classify receipted preparation only; readiness still requires attestation."""
         try:
@@ -322,6 +355,8 @@ class TetherKeys:
             raise _refuse() from None
 
     def _unique_material(self, reference: str, material: bytes, public: str | None, purpose: Purpose) -> None:
+        """Compare existing owned material without coupling absent pending creations."""
+
         def scalar(value: bytes) -> bytes:
             copy = bytearray(value)
             copy[0] &= 248
@@ -331,10 +366,10 @@ class TetherKeys:
         for other in self.known_references():
             if other == reference:
                 continue
-            final = self.custody.read(_name(other))
-            pending = self.custody.read(_name(other, pending=True))
-            _require(pending is not None)
-            record = self._record(final if final is not None else pending, other, final=final is not None)
+            pending = self.preparation_state(other) == "pending"
+            record = self._record(self.custody.read(_name(other, pending=pending)), other, final=not pending)
+            if pending and self._call("podman", "secret", "exists", other, absence=True) is None:
+                continue
             _identity, _value, previous = self._inspect(record)
             _require(not hmac.compare_digest(material, previous))
             if purpose == "wireguard" or record["purpose"] == "wireguard":

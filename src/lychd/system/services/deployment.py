@@ -240,7 +240,7 @@ class DeploymentInspectionService:
         expected_pods = {manifest.pod_name for manifest in manifests if isinstance(manifest, QuadletPod)}
         if (
             set(footprint["secrets"])
-            - {*settings.server.privileged_secret_names, *self._tether.get("required_secrets", ())}
+            - {*settings.server.privileged_secret_names, *self._tether.get("owned_secrets", ())}
             or set(footprint["pods"]) - expected_pods
             or set(footprint["containers"]) - expected_containers
         ):
@@ -250,7 +250,7 @@ class DeploymentInspectionService:
             if (
                 footprint["containers"]
                 or footprint["pods"]
-                or set(footprint["secrets"]) - set(self._tether.get("required_secrets", ()))
+                or set(footprint["secrets"]) - set(self._tether.get("owned_secrets", ()))
             ):
                 report.reasons.append("runtime_material_without_binding_authority")
             elif any(not self.unit_quiescent(value, absent=True) for value in observed.values()):
@@ -328,6 +328,7 @@ class DeploymentInspectionService:
         self._tether = {
             "known_paths": preparation["known_paths"],
             "required_secrets": preparation["required_secrets"],
+            "owned_secrets": preparation["owned_secrets"],
             "image": intent.rune.quadlet.image,
         }
         self._require_tether_image(request)
@@ -336,7 +337,7 @@ class DeploymentInspectionService:
             or footprint["foreign_sources"]
             or footprint["containers"]
             or footprint["pods"]
-            or set(footprint["secrets"]) - set(preparation["required_secrets"])
+            or set(footprint["secrets"]) - set(preparation["owned_secrets"])
             or any(not self.unit_quiescent(value, absent=True) for value in observed.values())
             or not self._data_empty()
         ):

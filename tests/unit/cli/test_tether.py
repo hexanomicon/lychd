@@ -103,3 +103,99 @@ def test_ordinary_bind_keeps_native_helpers_and_attestor(monkeypatch: pytest.Mon
     assert assemble.call_args.kwargs["request_attestor"] == native.attest_bind_request
     assemble.return_value.plan.assert_called_once_with(request)
     compile_direct.assert_not_called()
+
+
+def _attachment_document() -> dict[str, object]:
+    import base64
+
+    return {
+        "id": "received",
+        "remote_lich_id": "remote",
+        "interface": "wgimport",
+        "address": "10.77.0.2/24",
+        "private_key_ref": "lychd-tether-client",
+        "remote_public_key": base64.b64encode(b"\x01" * 32).decode(),
+        "endpoint_address": "192.0.2.50",
+        "endpoint_port": 51820,
+        "services": [
+            {
+                "id": "api",
+                "address": "10.77.0.1",
+                "port": 8443,
+                "hostname": "peer.test",
+                "application_identity_ref": "remote-app",
+            }
+        ],
+        "allowed_callers": ["intercom"],
+    }
+
+
+def test_register_dispatches_closed_attachment_without_other_lifecycle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+
+    from lychd.domain.tether.models import ImportedAttachment
+
+    path = tmp_path / "attachment.json"
+    path.write_text(json.dumps(_attachment_document()))
+    path.chmod(0o600)
+    service = MagicMock()
+    service.register_attachment.return_value = {"state": "registered", "changed": True, "attachment_id": "received"}
+    monkeypatch.setattr("lychd.system.services.tether.service.NativeTetherService", lambda: service)
+    result = CliRunner().invoke(tether_group, ["register", "--attachment-file", str(path), "--dry-run"])
+    assert result.exit_code == 0, result.output
+    expected = ImportedAttachment.model_validate_json(path.read_text(), strict=True)
+    service.register_attachment.assert_called_once_with(expected, dry_run=True)
+    assert [call[0] for call in service.method_calls] == ["register_attachment"]
+
+
+@pytest.mark.parametrize("case", ["mode", "symlink", "parent_symlink", "hardlink", "oversize", "duplicate", "hook"])
+def test_register_refuses_unsafe_or_unclosed_public_input(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+    import os
+
+    path = tmp_path / "attachment.json"
+    path.write_text(json.dumps(_attachment_document()))
+    path.chmod(0o600)
+    if case == "mode":
+        path.chmod(0o644)
+    elif case == "symlink":
+        alias = tmp_path / "alias.json"
+        alias.symlink_to(path)
+        path = alias
+    elif case == "parent_symlink":
+        alias = tmp_path / "alias"
+        alias.symlink_to(tmp_path, target_is_directory=True)
+        path = alias / path.name
+    elif case == "hardlink":
+        os.link(path, tmp_path / "alias.json")
+    elif case == "oversize":
+        path.write_bytes(b" " * (64 * 1024 + 1))
+    elif case == "duplicate":
+        path.write_text('{"id":"received","id":"PRIVATE"}')
+    else:
+        path.write_text(json.dumps({**_attachment_document(), "PostUp": "PRIVATE"}))
+    service = MagicMock()
+    monkeypatch.setattr("lychd.system.services.tether.service.NativeTetherService", lambda: service)
+    result = CliRunner().invoke(tether_group, ["register", "--attachment-file", str(path)])
+    assert result.exit_code != 0
+    assert "Public attachment declaration refused" in result.output
+    assert "PRIVATE" not in result.output
+    service.register_attachment.assert_not_called()
+
+
+def test_register_native_failure_does_not_echo_declaration(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    path = tmp_path / "attachment.json"
+    path.write_text(json.dumps(_attachment_document()))
+    path.chmod(0o600)
+    service = MagicMock()
+    service.register_attachment.side_effect = ValueError("PRIVATE")
+    monkeypatch.setattr("lychd.system.services.tether.service.NativeTetherService", lambda: service)
+    result = CliRunner().invoke(tether_group, ["register", "--attachment-file", str(path)])
+    assert result.exit_code != 0
+    assert "PRIVATE" not in result.output

@@ -531,12 +531,13 @@ async def wireguard(p: dict[str, Any]) -> None:
                     if admitted(p, fence, peer["id"], peer["generation"])
                     for item in peer["allowed_ips"]
                 }
+                # Route installation requires an up device; denial remains until reconciliation finishes.
+                run((IP, "link", "set", "dev", interface, "up"))
                 for item in routes - desired_routes:
                     run((IP, "route", "delete", item, "dev", interface))
                 for item in desired_routes - routes:
                     run((IP, "route", "add", item, "dev", interface))
                 routes = desired_routes
-                run((IP, "link", "set", "dev", interface, "up"))
                 install_policy(p, fence)
                 previous = fingerprint
                 notify_ready()

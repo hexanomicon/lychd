@@ -324,6 +324,94 @@ def test_restart_adopts_only_marked_wireguard_and_exact_routes(monkeypatch: pyte
         runtime.owned_interface_routes(p)
 
 
+class WireGuardKernel:
+    """Enforce link-state and denial guards without changing a network namespace."""
+
+    def __init__(self, config: dict[str, Any], fence: dict[str, Any], routes: set[str]) -> None:
+        """Start with a down interface and explicit recovered route state."""
+        self.config = config
+        self.fence = fence
+        self.routes = set(routes)
+        self.up = False
+        self.denied = False
+        self.peers_configured = False
+        self.ready = False
+        self.grants = 0
+
+    def run(self, argv: tuple[str, ...], *, content: str | None = None) -> str:
+        if argv == (runtime.NFT, "-f", "-"):
+            assert content is not None
+            self.denied = "accept" not in content
+            if not self.denied:
+                assert self.fence["enabled"]
+                assert self.up
+                assert self.peers_configured
+                assert self.routes == {"10.77.0.2/32"}
+                self.grants += 1
+        elif argv[1:3] == ("link", "set") and argv[-1] == "up":
+            assert self.denied
+            assert self.peers_configured
+            self.up = True
+        elif argv[1:3] == ("route", "add"):
+            if not self.up:
+                message = "Device for nexthop is not up"
+                raise ValueError(message)
+            assert self.denied
+            self.routes.add(argv[3])
+        elif argv[1:3] == ("route", "delete"):
+            assert self.denied
+            self.routes.remove(argv[3])
+        elif argv[1:3] == ("link", "delete"):
+            assert self.denied
+            self.up = False
+        else:
+            assert self.denied
+        return ""
+
+    def configure_peers(self, config: dict[str, Any], current_fence: dict[str, Any] | None) -> None:
+        assert self.denied
+        assert config == self.config
+        assert current_fence == self.fence
+        self.peers_configured = True
+
+    def notify_ready(self) -> None:
+        assert self.up
+        assert self.routes == ({"10.77.0.2/32"} if self.fence["enabled"] else set())
+        assert self.denied is not self.fence["enabled"]
+        self.ready = True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("recovered", [False, True])
+@pytest.mark.parametrize("enabled", [False, True])
+async def test_wireguard_routes_require_up_device_under_denial(
+    monkeypatch: pytest.MonkeyPatch, *, recovered: bool, enabled: bool
+) -> None:
+    p = runtime.validate_config(wg())
+    fence = fences(p, enabled=enabled)
+    initial_routes = {"10.77.0.99/32"} if recovered else set()
+    kernel = WireGuardKernel(p, fence, initial_routes)
+
+    async def stop_after_reconciliation(_seconds: float) -> None:
+        raise asyncio.CancelledError
+
+    monkeypatch.setattr(runtime, "run", kernel.run)
+    monkeypatch.setattr(runtime, "existing_owned_table", lambda _p: recovered)
+    monkeypatch.setattr(runtime, "owned_interface_routes", lambda _p: initial_routes if recovered else None)
+    monkeypatch.setattr(runtime, "load_config", lambda: p)
+    monkeypatch.setattr(runtime, "load_fences", lambda _p: fence)
+    monkeypatch.setattr(runtime, "configure_peers", kernel.configure_peers)
+    monkeypatch.setattr(runtime, "notify_ready", kernel.notify_ready)
+    monkeypatch.setattr(runtime, "public_status", lambda _p, **_kwargs: None)
+    monkeypatch.setattr(runtime.asyncio, "sleep", stop_after_reconciliation)
+    with pytest.raises(asyncio.CancelledError):
+        await runtime.wireguard(p)
+    assert kernel.ready
+    assert kernel.denied
+    assert not kernel.up
+    assert kernel.grants == int(enabled)
+
+
 def test_stale_socket_recovery_refuses_live_listener_and_regular_file(tmp_path: Path) -> None:
     tmp_path.chmod(0o700)
     relay = runtime.Relay(imported())

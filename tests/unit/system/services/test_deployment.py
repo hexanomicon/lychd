@@ -606,6 +606,7 @@ def test_tether_profile_refuses_wrong_runtime_image_before_binding(mocker: Mocke
         "missing_secrets": [],
         "known_paths": [],
         "required_secrets": [],
+        "owned_secrets": [],
     }
     native.inspect.return_value = {
         "schema": "lychd.tether.inspection",
@@ -650,6 +651,7 @@ def test_original_tether_preparation_recovery_without_binding(
         "missing_secrets": ["client"] if state == "waiting_keys" else [],
         "known_paths": [],
         "required_secrets": [],
+        "owned_secrets": [],
     }
     mocker.patch(
         "lychd.system.services.tether.models.load_intent",
@@ -700,6 +702,7 @@ def test_preparation_recovery_refuses_foreign_runtime(mocker: MockerFixture, tmp
         "missing_secrets": [],
         "known_paths": [],
         "required_secrets": [],
+        "owned_secrets": [],
     }
     mocker.patch(
         "lychd.system.services.tether.models.load_intent",
@@ -718,3 +721,52 @@ def test_preparation_recovery_refuses_foreign_runtime(mocker: MockerFixture, tmp
     assert report.state == "unknown"
     assert report.reasons == ["runtime_material_before_tether_preparation"]
     native.inspect.assert_not_called()
+
+
+@pytest.mark.parametrize("owned", [True, False])
+def test_retired_receipted_tether_secret_is_owned_but_unknown_secret_refuses(
+    mocker: MockerFixture, tmp_path: Path, *, owned: bool
+) -> None:
+    service = world(mocker, tmp_path, bound=True)
+    native = mocker.patch("lychd.system.services.tether.service.NativeTetherService").return_value
+    native.preparation_status.return_value = {"state": "prepared"}
+    native.inspect.return_value = {
+        "schema": "lychd.tether.inspection",
+        "version": 1,
+        "state": "bound",
+        "known_paths": [],
+        "required_secrets": [],
+        "owned_secrets": ["lychd-tether-retired"] if owned else [],
+    }
+    service._footprint.return_value["secrets"] = ["lychd-tether-retired"]
+    mocker.patch.object(service, "_require_tether_image")
+    request = DeploymentRequest(
+        REVISION,
+        IMAGE,
+        profile="tether-container-v1",
+        intent_path=Path("/secure/intent.json"),
+        tether_image_id="c" * 64,
+    )
+    report = service.inspect(request)
+    assert report.state == ("bound_inactive" if owned else "unknown")
+    if not owned:
+        assert report.reasons == ["foreign_runtime_material"]
+
+
+def test_tether_desired_bindings_use_effective_native_request(mocker: MockerFixture) -> None:
+    from lychd.system.services.bind import BindRequest
+
+    settings = SettingsSnapshot(payload="{}").materialize()
+    settings.extensions.builtins = ("tether",)
+    native = mocker.patch("lychd.system.services.tether.service.NativeTetherService").return_value
+    request = BindRequest.compile(
+        manifests=(),
+        plain_units={"managed.service": "current topology"},
+        core_secret_factories={},
+        required_secret_names=(),
+    )
+    native.bind_request.return_value = request
+    manifests, units = DeploymentInspectionService.desired_bindings(settings)
+    assert manifests == []
+    assert units == {"managed.service": "current topology"}
+    native.bind_request.assert_called_once_with()

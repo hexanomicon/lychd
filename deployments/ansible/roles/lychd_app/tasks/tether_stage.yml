@@ -48,11 +48,6 @@
     name: lychd_image
   vars:
     lychd_image_kind: tether
-    lychd_image_archive: "{{ lychd_tether_image_archive }}"
-    lychd_image_archive_sha256: "{{ lychd_tether_image_archive_sha256 }}"
-    lychd_image_id: "{{ lychd_tether_image_id }}"
-    lychd_image_ref: "{{ lychd_tether_image_ref }}"
-    lychd_image_revision: "{{ lychd_tether_image_revision }}"
 
 - name: Create private deployment staging outside native owned roots
   ansible.builtin.file:

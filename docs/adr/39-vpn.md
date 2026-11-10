@@ -26,14 +26,14 @@ Remote model/CLI requests still disclose their transmitted content to the receiv
 irrespective of the road carrying it; [Security](09-security.md#portal-privatization-and-egress)
 owns that disclosure decision.
 
-The Tether may manifest a rootless service with only the network capability it needs and explicit
+The Tether manifests rootless services with only the network capability each needs and explicit
 UDP publication. Interface name, listen port, address space, DNS behaviour, routes, and peer limits
-are Rune-owned configuration, not hard-coded topology. Typed operations under a future host-owned
-run-operation verb may generate a keypair, admit, inspect, revoke, rotate, or export a short-lived
-client configuration or QR projection; it adds no root CLI verb.
+are typed configuration, not hard-coded topology. Native `lychd tether` operations own preparation,
+key import, attachment registration and admission, peer enrollment, binding, activation, inspection
+and generation-fenced revocation. Client configuration and QR export remain separate work.
 
-If that service is projected through Quadlet, its future Rune may embed the code-level
-`QuadletConfig` value under `quadlet`. That does not rename Tether to a kind of Stone, make it an
+The Rune embeds the code-level `QuadletConfig` value under `quadlet`. That does not rename Tether
+to a kind of Stone, make it an
 Animator, or grant generic unit-text authority; Tether keeps ownership of its exact network fields
 and compilation policy.
 
@@ -172,13 +172,16 @@ traversal require separate trust decisions; recovery cannot introduce them invis
 
 ## Delivery and consequences
 
-This Covenant is **Designed**. No VPN provider, interface, enrollment, peer registry, key
-rotation, route policy, health, or revocation path ships; generated deployment remains
-IPv4-loopback-only and rejects UDP. The optional infrastructure-owned
+[State of Work](../state-of-the-work.md#vpn-tether) owns maturity, executable evidence and remaining
+qualification boundaries. The native `rootless-wireguard-stream-v1` contract below is selected by
+the `tether-container-v1` initialization profile. It has typed Domain/Rune values, isolated Quadlet
+projection with exact UDP publication, native key and peer custody, managed imported attachments,
+and host-owned lifecycle operations. These source contracts do not establish unrestricted
+tunnelling, remote application authority or qualification on arbitrary hosts and user devices.
+
+Use the native profile for LychD-managed roads. The infrastructure-owned
 [single-operator forwarding candidate](09-security.md#single-operator-forwarding-candidate)
-is separate from Tether and has no installed qualification. General tunnelling and shared-user
-access remain unsupported. [State of
-Work](../state-of-the-work.md#vpn-tether) owns that boundary.
+is a separate legacy access path with its own custody and evidence; it does not qualify Tether.
 
 Independent revocation is Tether's practical return. Operating that private road requires
 security-sensitive peer and route management, backup, rotation, recovery, and an account of
@@ -201,7 +204,27 @@ handshake also binds installation epoch, policy digest and caller. The broker co
 compiled destination. TLS hostname verification and application identity remain with the consumer.
 A failed selection never becomes direct transport or another attachment.
 
-Static Rune definitions and current host-owned admission are separate inputs. The compiler does
+The initial Rune is immutable installation configuration. After preparation, typed native Tether
+operations may register additional imported attachment definitions in Tether-owned persistent
+runtime data. This managed topology can change only imported attachments: the initial profile,
+image, offered network and other Rune fields remain unchanged. Registration accepts the closed
+public attachment DTO, never a WireGuard configuration file, hook or executable directive. It
+stages a definition without importing credentials, admitting a generation or starting a service.
+The operator separately imports its local keys, admits the exact generation, binds and activates.
+
+Changing an existing attachment requires completed physical revocation of its previous generation
+and no retained live launch, role or Pod. Its identity and admission tombstone remain; the next
+admission advances the generation even when the remote Lich or endpoint changes. Historical key
+references keep their attachment and credential-purpose ownership and cannot be reassigned to
+another road. Original Settings, Rune files and installation receipts are never rewritten or
+resealed; repeated preparation with original intent preserves managed roads. Binding substitutes
+only the validated effective Tether Rune into the in-memory Rune registry and preserves every
+other extension's declarations. A Tether-selected Core always mounts the private runtime parent
+read-only, including an initially offered-only installation, so adding an attachment requires no
+Core mount change. Application enrollment and authorization remain separate under [A2A](26-a2a.md).
+
+Initial Rune configuration, managed attachment definitions and current host-owned admission are
+separate inputs. The compiler does
 not discover files or generate keys. Binding reconciles the complete desired fileset through
 Scribe with a freshly observed transaction generation. Persisted route identity instead uses the
 installation epoch, explicit admission generation and canonical policy digest. Offered peer-only
@@ -216,6 +239,12 @@ parent, while each producer can write only its own attachment directory. Socket 
 Missing, mismatched or disabled current fences close the affected transport. Revocation is
 complete only after observing live removal and stream closure, or verified termination of the
 affected role; writing denial intent alone is not a live closure receipt.
+
+Failed-start launch records retire only after the corresponding role is proved closed. If a failed
+start created the Pod before its receipt was saved, revocation may recover its exact owned Pod
+identity from the journaled launch's boot, network, policy and changed Pod invocation, then persist
+that identity before stopping it. Missing or stale proof leaves revocation pending; an existing
+unproved Pod never counts as physical closure.
 
 ### Optional same-owner SSH access
 
@@ -232,6 +261,11 @@ policy admits only the selected container-loopback-to-host-loopback TCP port and
 host-loopback aliases and automatic port forwarding. This profile requires live qualification of
 the installed Podman/pasta combination and namespace filtering.
 
+Declared owner bindings reserve this one-port namespace capacity, including disabled peer
+tombstones. Revoking the last owner removes its WireGuard admission, ingress and SSH adapter but
+keeps the offered Pod policy unchanged. Retained bridge capacity grants no peer access. A network
+with no declared owner binding has no owner bridge; introducing its first binding is a cold change.
+
 SSH admits no shell, session, subsystem, reverse forward, arbitrary destination, Unix-socket
 forward, agent, X11 or tunnel channel. Each peer's private SSH listener is separately source-filtered
 and admits only its own SSH key. Per-peer container termination closes all descendants and active
@@ -245,3 +279,11 @@ observation the compiler refuses external backends. Host, loopback, link-local, 
 and reserved Core listener destinations are rejected. The host revalidates this observation
 before activation and reconciliation; unrelated host addresses are not part of route identity. It cannot select arbitrary Core administration, database or Reactor listeners, and
 cannot use the generic route to bypass the owner SSH profile.
+
+A new offered peer may join an already active network without stopping other peers only when
+its compiled Pod policy is byte-identical, all required imported credentials are already attested,
+and any new peer-specific SSH host key is prepared before publication. Binding reconciles the
+complete fileset and starts only new peer roles; existing peer identities and imported attachments
+remain unchanged. Changing the Pod policy, including introducing the first owner loopback bridge,
+or rotating an existing peer requires the explicit cold-change path. A missing preshared key
+cannot be published into a live admission.

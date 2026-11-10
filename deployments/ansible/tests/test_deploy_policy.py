@@ -330,11 +330,43 @@ class DeployPolicyTests(unittest.TestCase):
                     self.assertFalse(play["become"], path)
                     self.assertFalse(play["vars"]["ansible_become"], path)
 
+    def test_image_namespace_renders_independent_receipts_with_extra_var_precedence(self):
+        tasks = list(walk(load("roles/lychd_image/tasks/main.yml")))
+        select = next(
+            task["ansible.builtin.set_fact"]["_lychd_selected_image"]
+            for task in tasks
+            if "ansible.builtin.set_fact" in task
+        )
+        extra_vars = {}
+        for prefix, label in [("lychd_image_", "core"), ("lychd_tether_image_", "tether")]:
+            extra_vars.update(
+                {prefix + name: label + "-" + name for name in ["archive", "archive_sha256", "id", "ref", "revision"]}
+            )
+        environment = NativeEnvironment(undefined=StrictUndefined)
+        for kind in ["core", "tether", "core"]:
+            role_vars = {"lychd_image_kind": kind, "lychd_image_ref": "attempted-role-override"}
+            effective = {**role_vars, **extra_vars}
+            selected = environment.from_string(select).render(**effective)
+            self.assertEqual(
+                selected, {name: kind + "-" + name for name in ["archive", "archive_sha256", "id", "ref", "revision"]}
+            )
+            effective["_lychd_selected_image"] = selected
+            inspect = next(
+                task["ansible.builtin.command"]["argv"]
+                for task in tasks
+                if task["name"] == "Observe whether the full-revision tag already exists"
+            )
+            self.assertEqual(environment.from_string(inspect[3]).render(**effective), kind + "-ref")
+            copy = next(task["ansible.builtin.copy"] for task in tasks if "ansible.builtin.copy" in task)
+            self.assertEqual(environment.from_string(copy["src"]).render(**effective), kind + "-archive")
+
     def test_image_role_verifies_checksum_and_identity(self):
         tasks = list(walk(load("roles/lychd_image/tasks/main.yml")))
         text = yaml.safe_dump(tasks)
-        self.assertIn("lychd_image_remote_archive.stat.checksum == lychd_image_archive_sha256", text)
-        self.assertIn("lychd_image_final.stdout | trim == lychd_image_id + ' ' + lychd_image_revision", text)
+        self.assertIn("lychd_image_remote_archive.stat.checksum == _lychd_selected_image.archive_sha256", text)
+        self.assertIn(
+            "lychd_image_final.stdout | trim == _lychd_selected_image.id + ' ' + _lychd_selected_image.revision", text
+        )
         loads = [task for task in tasks if "load" in task.get("ansible.builtin.command", {}).get("argv", [])]
         checksum = next(
             i

@@ -19,10 +19,11 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from lychd.config.runes.registry import RuneRegistry
 from lychd.domain.tether.compiler import TetherDeployment, compile_tether
-from lychd.domain.tether.models import AttachmentAdmission, OfferedPeer, TetherRune, TetherSnapshot
+from lychd.domain.tether.models import AttachmentAdmission, ImportedAttachment, OfferedPeer, TetherRune, TetherSnapshot
 from lychd.system import constants
-from lychd.system.schemas import QuadletBase, QuadletContainer
+from lychd.system.schemas import QuadletBase, QuadletContainer, QuadletPod
 from lychd.system.services.lifecycle.lock import LifecycleLock
 from lychd.system.services.tether.custody import TetherCustody
 from lychd.system.services.tether.host import TetherHost
@@ -32,6 +33,7 @@ from lychd.system.services.tether.models import TetherError, TetherIntent, canon
 _RUNTIME_UNIT = "lychd-tether-runtime.service"
 _RESUME_UNIT = "lychd-tether-resume.service"
 _PRIVATE_FILE_MODE = 0o600
+_MAX_KEY_OWNERS = 512
 
 
 class NativeState(BaseModel):
@@ -41,6 +43,8 @@ class NativeState(BaseModel):
 
     version: Literal[1] = 1
     intent: TetherIntent
+    topology: TetherRune | None = None
+    key_owners: dict[str, str] = Field(default_factory=dict, max_length=_MAX_KEY_OWNERS)
     snapshot: TetherSnapshot
     image: dict[str, str]
     active: tuple[str, ...] = ()
@@ -113,7 +117,61 @@ class NativeTetherService:
         if self.host.image(rune.quadlet.image) != state.image:
             msg = "The prepared Tether image was replaced"
             raise TetherError(msg)
+        self.effective_rune(state)
         return state
+
+    @staticmethod
+    def _key_assignments(rune: TetherRune, peers: tuple[OfferedPeer, ...]) -> tuple[tuple[str, str], ...]:
+        assignments: list[tuple[str, str]] = []
+        if rune.offered:
+            assignments.append((rune.offered.private_key_ref, "offered:wireguard"))
+        for attachment in rune.attachments:
+            assignments.append((attachment.private_key_ref, f"attachment:{attachment.id}:wireguard"))
+            if attachment.preshared_key_ref:
+                assignments.append((attachment.preshared_key_ref, f"attachment:{attachment.id}:preshared"))
+        for peer in peers:
+            if peer.preshared_key_ref:
+                assignments.append((peer.preshared_key_ref, f"peer:{peer.id}:preshared"))
+            if peer.owner_access:
+                assignments.append((peer.owner_access.ssh_host_key_ref, f"peer:{peer.id}:ssh-host"))
+        return tuple(assignments)
+
+    @staticmethod
+    def _key_ownership(state: NativeState, rune: TetherRune, peers: tuple[OfferedPeer, ...]) -> dict[str, str]:
+        """Retain original and retired reference ownership across managed updates."""
+        owners = dict(state.key_owners)
+        configurations = (
+            (state.intent.rune, state.intent.offered_peers),
+            (state.topology or state.intent.rune, state.snapshot.offered_peers),
+            (rune, peers),
+        )
+        for definition, admitted_peers in configurations:
+            for reference, owner in NativeTetherService._key_assignments(definition, admitted_peers):
+                if reference in owners and owners[reference] != owner:
+                    message = "Tether key reference belongs to another road or credential purpose"
+                    raise TetherError(message)
+                owners[reference] = owner
+        if len(owners) > _MAX_KEY_OWNERS:
+            message = "Tether historical key reference capacity is exhausted"
+            raise TetherError(message)
+        return owners
+
+    @staticmethod
+    def effective_rune(state: NativeState) -> TetherRune:
+        """Resolve managed roads without changing the immutable installation envelope."""
+        rune = state.topology or state.intent.rune
+        if rune.model_dump(exclude={"attachments"}) != state.intent.rune.model_dump(exclude={"attachments"}):
+            message = "Managed Tether topology may change only imported attachments"
+            raise TetherError(message)
+        NativeTetherService._key_ownership(state, rune, state.snapshot.offered_peers)
+        return rune
+
+    @staticmethod
+    def _effective_registry(state: NativeState, runes: RuneRegistry) -> RuneRegistry:
+        """Overlay exactly one Tether definition while preserving every other Rune."""
+        runes.one(TetherRune)
+        effective = NativeTetherService.effective_rune(state)
+        return RuneRegistry(tuple(effective if isinstance(row, TetherRune) else row for row in runes.all()))
 
     def _save(self, state: NativeState) -> bool:
         return self.custody.write("state.json", state.model_dump(mode="json", by_alias=True))
@@ -137,18 +195,22 @@ class NativeTetherService:
                 "state": "absent",
                 "missing_secrets": [],
                 "required_secrets": [],
+                "owned_secrets": [],
                 "known_paths": [str(path) for path in paths],
             }
         state = self._load()
         deployment = self._projection(state)
         keys = self._keys(state)
+        owned = set(keys.owned_references())
         local = self._local_references(state)
         missing: list[str] = []
         retry_prepare = False
         for reference in deployment.required_secrets:
             phase = keys.preparation_state(reference)
             if phase == "ready":
-                keys.attest(reference)
+                if reference not in owned:
+                    message = "Ready Tether credential lacks current owned backend evidence"
+                    raise TetherError(message)
             elif reference in local:
                 retry_prepare = True
             elif phase == "pending":
@@ -160,6 +222,7 @@ class NativeTetherService:
             "state": "absent" if retry_prepare else "waiting_keys" if missing else "prepared",
             "missing_secrets": sorted(missing),
             "required_secrets": list(deployment.required_secrets),
+            "owned_secrets": sorted(owned),
             "known_paths": [str(path) for path in self.custody.known_paths()],
         }
 
@@ -178,20 +241,11 @@ class NativeTetherService:
 
     @staticmethod
     def _references(state: NativeState) -> dict[str, str]:
-        rune = state.intent.rune
-        references: dict[str, str] = {}
-        if rune.offered is not None:
-            references[rune.offered.private_key_ref] = "wireguard"
-        for attachment in rune.attachments:
-            references[attachment.private_key_ref] = "wireguard"
-            if attachment.preshared_key_ref:
-                references[attachment.preshared_key_ref] = "preshared"
-        for peer in state.snapshot.offered_peers:
-            if peer.owner_access:
-                references[peer.owner_access.ssh_host_key_ref] = "ssh-host"
-            if peer.preshared_key_ref:
-                references[peer.preshared_key_ref] = "preshared"
-        return references
+        rune = NativeTetherService.effective_rune(state)
+        return {
+            reference: owner.rsplit(":", 1)[1]
+            for reference, owner in NativeTetherService._key_assignments(rune, state.snapshot.offered_peers)
+        }
 
     def _attest_keys(self, state: NativeState, deployment: TetherDeployment) -> None:
         keys = self._keys(state)
@@ -200,7 +254,7 @@ class NativeTetherService:
 
     def _projection(self, state: NativeState) -> TetherDeployment:
         return compile_tether(
-            rune=state.intent.rune,
+            rune=self.effective_rune(state),
             snapshot=state.snapshot,
             runtime_root=self.runtime_root,
             config_root=self.custody.root / "runtime",
@@ -212,7 +266,7 @@ class NativeTetherService:
     def _retained_projection(self, state: NativeState) -> TetherDeployment:
         """Reconstruct withdrawal targets only; this grants no startup authority."""
         return compile_tether(
-            rune=state.intent.rune,
+            rune=self.effective_rune(state),
             snapshot=state.snapshot,
             runtime_root=self.runtime_root,
             config_root=self.custody.root / "runtime",
@@ -246,6 +300,8 @@ class NativeTetherService:
         from lychd.system.services.bind_compilation import compile_bind_request
 
         settings, extensions, runes, _rune = self._declared()
+        state = state_override or self._load()
+        runes = self._effective_registry(state, runes)
         declarations = compile_animator_declarations(settings=settings, runes=runes)
         request = compile_bind_request(
             settings=settings,
@@ -253,7 +309,7 @@ class NativeTetherService:
             runes=runes,
             soulstones=declarations.soulstones,
             portals=declarations.portals,
-            **self.binding_context(state_override),
+            **self.binding_context(state),
         )
         executable = Path(sys.prefix) / "bin/lychd"
         from lychd.system.schemas import systemd_environment_assignment, systemd_executable_token
@@ -770,6 +826,7 @@ class NativeTetherService:
             "installation_epoch": state.snapshot.installation_epoch,
             "image": state.intent.rune.quadlet.image,
             "required_secrets": list(deployment.required_secrets),
+            "owned_secrets": list(self._keys(state).owned_references()),
             "unit_names": [unit for network in deployment.networks for unit in (network.pod_unit, *network.unit_names)],
             "known_paths": [str(path) for path in self.custody.known_paths()],
             "networks": networks,
@@ -792,6 +849,27 @@ class NativeTetherService:
             identity = self._keys(state).import_key(secret_ref, path, admitted_purpose)
             return {"state": "prepared", "reference": identity["reference"], "public_key": identity["public_key"]}
 
+    def _preflight_hot_peer(
+        self, before: NativeState, after: NativeState, peer: OfferedPeer, previous: OfferedPeer | None
+    ) -> None:
+        """Allow only additive peers under an unchanged live offered namespace policy."""
+        if previous is not None:
+            message = "Stop the offered network before rotating an existing peer"
+            raise TetherError(message)
+        old, new = self._projection(before), self._projection(after)
+        old_pods = tuple(row.model_dump(mode="json") for row in old.manifests if isinstance(row, QuadletPod))
+        new_pods = tuple(row.model_dump(mode="json") for row in new.manifests if isinstance(row, QuadletPod))
+        if old_pods != new_pods:
+            message = "Stop the offered network before changing its Pod policy"
+            raise TetherError(message)
+        self._require_core()
+        self._bound(self.bind_request(state_override=before))
+        generated = peer.owner_access.ssh_host_key_ref if peer.owner_access else None
+        keys = self._keys(after)
+        for reference in new.required_secrets:
+            if reference != generated:
+                keys.attest(reference)
+
     def enroll(self, peer: OfferedPeer, *, dry_run: bool = False) -> dict[str, Any]:
         """Admit the next peer generation without disturbing unrelated attachments."""
         with nullcontext() if dry_run else LifecycleLock():
@@ -805,25 +883,92 @@ class NativeTetherService:
                 raise TetherError(msg)
             previous = next((row for row in state.snapshot.offered_peers if row.id == peer.id), None)
             if previous == peer:
+                if offered.id in state.active and not dry_run:
+                    rebound = self._bind(state)
+                    resumed = self._activate(state, (offered.id,))
+                    return {"state": "enrolled", "changed": rebound["changed"] or resumed["changed"]}
                 return {"state": "enrolled", "changed": False}
             if not peer.enabled or peer.generation != (previous.generation + 1 if previous else 1):
                 msg = "Peer admission requires the next exact enabled generation"
                 raise TetherError(msg)
-            if offered.id in state.active:
-                msg = "Stop the offered network before changing peer admission"
-                raise TetherError(msg)
             peers = (*tuple(row for row in state.snapshot.offered_peers if row.id != peer.id), peer)
             snapshot = TetherSnapshot.model_validate({**state.snapshot.model_dump(), "offered_peers": peers})
-            updated = state.model_copy(update={"snapshot": snapshot})
+            owners = self._key_ownership(state, self.effective_rune(state), peers)
+            updated = state.model_copy(update={"snapshot": snapshot, "key_owners": owners})
             self._projection(updated)
+            hot = offered.id in state.active
+            if hot:
+                self._preflight_hot_peer(state, updated, peer, previous)
             if dry_run:
                 return {"state": "enrolled", "changed": True, "dry_run": True}
-            # An interrupted key operation leaves no newly admitted peer.
+            # Reserve reference ownership without granting the peer before key creation.
+            # An interrupted ensure must not free its new reference for another peer.
+            self._save(state.model_copy(update={"key_owners": owners}))
             if peer.owner_access:
                 self._keys(updated).ensure(peer.owner_access.ssh_host_key_ref, "ssh-host")
             self._save(updated)
-            self._materialize(updated)
+            if hot:
+                self._bind(updated)
+                self._activate(updated, (offered.id,))
+            else:
+                self._materialize(updated)
             return {"state": "enrolled", "changed": True}
+
+    def _validate_registered_topology(self, state: NativeState) -> TetherDeployment:
+        """Compile every staged definition without authorizing any runtime effect."""
+        rune = self.effective_rune(state)
+        generations = {row.attachment_id: row.generation for row in state.snapshot.attachments}
+        admissions = tuple(
+            AttachmentAdmission(attachment_id=row.id, generation=generations.get(row.id, 1)) for row in rune.attachments
+        )
+        validation = state.model_copy(
+            update={"snapshot": state.snapshot.model_copy(update={"attachments": admissions})}
+        )
+        return self._projection(validation)
+
+    def _require_attachment_closed(self, state: NativeState, attachment_id: str, deployment: TetherDeployment) -> None:
+        """Require a retired admitted generation and no current runtime or pending launch."""
+        admission = next((row for row in state.snapshot.attachments if row.attachment_id == attachment_id), None)
+        if admission is not None:
+            journal = state.revocations.get(f"{attachment_id}:@:{admission.generation}")
+            if admission.enabled or journal is None or journal.get("status") != "complete":
+                message = "Revoke and reconcile the exact attachment generation before changing its definition"
+                raise TetherError(message)
+        names = {row.name for row in deployment.runtime_configs if row.network_id == attachment_id}
+        if (
+            attachment_id in state.active
+            or attachment_id in state.pods
+            or names.intersection(state.incarnations)
+            or any(row.get("network_id") == attachment_id for row in state.launches.values())
+        ):
+            message = "Attachment replacement has retained runtime authority"
+            raise TetherError(message)
+        network = next(row for row in deployment.networks if row.id == attachment_id)
+        if self.host.exists("pod", network.pod_unit.removesuffix("-pod.service")) or any(
+            self.host.exists("container", name) for name in names
+        ):
+            message = "Attachment registration refuses an existing runtime incarnation"
+            raise TetherError(message)
+
+    def register_attachment(self, attachment: ImportedAttachment, *, dry_run: bool = False) -> dict[str, Any]:
+        """Stage one closed public road definition without admitting or starting it."""
+        attachment = ImportedAttachment.model_validate_json(attachment.model_dump_json())
+        with nullcontext() if dry_run else LifecycleLock():
+            state = self._load()
+            rune = self.effective_rune(state)
+            previous = next((row for row in rune.attachments if row.id == attachment.id), None)
+            if previous == attachment:
+                return {"state": "registered", "changed": False, "attachment_id": attachment.id}
+            attachments = (*tuple(row for row in rune.attachments if row.id != attachment.id), attachment)
+            topology = TetherRune.model_validate({**rune.model_dump(), "attachments": attachments})
+            owners = self._key_ownership(state, topology, state.snapshot.offered_peers)
+            updated = state.model_copy(update={"topology": topology, "key_owners": owners})
+            deployment = self._validate_registered_topology(updated)
+            self._require_attachment_closed(state, attachment.id, deployment)
+            if dry_run:
+                return {"state": "registered", "changed": True, "attachment_id": attachment.id, "dry_run": True}
+            self._save(updated)
+            return {"state": "registered", "changed": True, "attachment_id": attachment.id}
 
     def admit(self, attachment_id: str, generation: int, *, dry_run: bool = False) -> dict[str, Any]:
         """Admit a declared attachment generation; bind and activation remain explicit."""
@@ -832,8 +977,8 @@ class NativeTetherService:
             if type(generation) is not int or generation < 1:
                 msg = "Attachment generation must be a positive integer"
                 raise TetherError(msg)
-            if not any(row.id == attachment_id for row in state.intent.rune.attachments):
-                msg = "Attachment is not declared in original intent"
+            if not any(row.id == attachment_id for row in self.effective_rune(state).attachments):
+                msg = "Attachment is not registered in managed Tether topology"
                 raise TetherError(msg)
             if any(row.get("status") != "complete" for row in state.revocations.values()):
                 msg = "Finish pending revocation before changing admission"
@@ -953,6 +1098,7 @@ class NativeTetherService:
             "previous_snapshot": previous.model_dump(mode="json"),
             "previous_active": [network_id] if network_id in state.active else [],
             "incarnations": retained,
+            "launches": {name: value for name, value in state.launches.items() if name in target_names},
             "pod": state.pods.get(network_id),
             "closed": [],
         }
@@ -1009,6 +1155,7 @@ class NativeTetherService:
         journal: dict[str, Any] = state.revocations[operation]
         peer_id = journal["peer_id"]
         incarnations = dict(state.incarnations)
+        launches = dict(state.launches)
         closed = set(journal["closed"])
         failed = False
         for config in reversed(configs):
@@ -1018,22 +1165,61 @@ class NativeTetherService:
             try:
                 self._stop_revoked_role(config, journal["incarnations"].get(config.name))
                 incarnations.pop(config.name, None)
+                launches.pop(config.name, None)
                 closed.add(config.name)
             except (OSError, TetherError):
                 failed = True
             journal = {**journal, "closed": sorted(closed)}
             state = state.model_copy(
-                update={"incarnations": dict(incarnations), "revocations": {**state.revocations, operation: journal}}
+                update={
+                    "incarnations": dict(incarnations),
+                    "launches": dict(launches),
+                    "revocations": {**state.revocations, operation: journal},
+                }
             )
             self._save(state)
         return state, failed
 
+    def _recover_revocation_pod(self, state: NativeState, journal: dict[str, Any]) -> dict[str, Any] | None:
+        """Recover only the owned Pod invocation created by a journaled failed launch."""
+        before = self._revocation_before(state, journal)
+        config = next(
+            row
+            for row in self._retained_projection(before).runtime_configs
+            if row.network_id == journal["network_id"] and row.role == "wireguard"
+        )
+        pod_name = self._pod_name(config)
+        if not self.host.exists("pod", pod_name):
+            return None
+        pending = journal.get("launches", {}).get(config.name)
+        if (
+            pending is None
+            or pending.get("boot_id") != Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+            or pending.get("policy_digest") != config.payload["policy_digest"]
+            or pending.get("network_id") != config.network_id
+            or not isinstance(pending.get("previous_pod_invocation_id"), str)
+        ):
+            message = "Unretained Tether Pod lacks exact pending-launch authority"
+            raise TetherError(message)
+        pod = self.host.capture_pod(pod_name)
+        if pod["invocation_id"] == pending.get("previous_pod_invocation_id"):
+            message = "Pending Tether launch did not create the observed Pod invocation"
+            raise TetherError(message)
+        return pod
+
     def _revocation_close_pod(self, state: NativeState, operation: str) -> tuple[NativeState, bool]:
         """Retire only the selected whole-network Pod after attempting all role closures."""
-        journal = state.revocations[operation]
-        if journal["peer_id"] is not None or journal.get("pod") is None:
+        journal: dict[str, Any] = state.revocations[operation]
+        if journal["peer_id"] is not None:
             return state, False
         try:
+            if journal.get("pod") is None:
+                recovered = self._recover_revocation_pod(state, journal)
+                if recovered is None:
+                    return state, False
+                journal = {**journal, "pod": recovered}
+                state = state.model_copy(update={"revocations": {**state.revocations, operation: journal}})
+                self._save(state)
             self.host.stop_pod(journal["pod"])
             pods = dict(state.pods)
             pods.pop(journal["network_id"], None)

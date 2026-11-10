@@ -205,7 +205,7 @@ def test_pending_exact_labeled_creation_recovers_without_regeneration(
     recovered = service.ensure(REFERENCE, "wireguard")
     assert recovered["secret_id"] == runner.secrets[REFERENCE]["ID"]
     assert runner.generated == 1
-    assert len(custody.records) == 2  # Retained pending plus committed identity.
+    assert len(custody.records) == 2
 
 
 def test_pending_without_secret_refuses_uncertain_regeneration(
@@ -410,3 +410,93 @@ def test_preparation_state_refuses_inconsistent_receipts(
     with pytest.raises(TetherError):
         service.preparation_state(REFERENCE)
     assert runner.commands == commands
+
+
+@pytest.mark.parametrize("failure", ["before", "after"])
+def test_owned_inventory_handles_pending_without_effects(
+    gateway: tuple[keys.TetherKeys, Custody, Runner],
+    failure: str,
+) -> None:
+    service, custody, runner = gateway
+    runner.fail_create = failure
+    with pytest.raises(TetherError):
+        service.ensure(REFERENCE, "wireguard")
+    records = copy.deepcopy(custody.records)
+    generated = runner.generated
+    assert service.owned_references() == ((REFERENCE,) if failure == "after" else ())
+    assert custody.records == records
+    assert runner.generated == generated
+
+
+def test_owned_inventory_rejects_replaced_final_and_pending(
+    gateway: tuple[keys.TetherKeys, Custody, Runner],
+) -> None:
+    service, custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    assert service.owned_references() == (REFERENCE,)
+    runner.secrets[REFERENCE]["Spec"]["Labels"] = {}
+    with pytest.raises(TetherError):
+        service.owned_references()
+    final = next(name for name in custody.records if not name.endswith("-pending.json"))
+    del custody.records[final]
+    with pytest.raises(TetherError):
+        service.owned_references()
+
+
+def test_owned_inventory_refuses_missing_final_backend(
+    gateway: tuple[keys.TetherKeys, Custody, Runner],
+) -> None:
+    service, _custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    runner.secrets.clear()
+    with pytest.raises(TetherError):
+        service.owned_references()
+
+
+def test_failed_unrelated_creation_does_not_block_existing_key_attestation(
+    gateway: tuple[keys.TetherKeys, Custody, Runner],
+) -> None:
+    service, custody, runner = gateway
+    identity = service.ensure(REFERENCE, "wireguard")
+    runner.fail_create = "before"
+    other = "lychd-tether-next-owner"
+    with pytest.raises(TetherError):
+        service.ensure(other, "ssh-host")
+    assert service.preparation_state(other) == "pending"
+    assert other not in runner.secrets
+    records = copy.deepcopy(custody.records)
+    generated = runner.generated
+    runner.fail_create = None
+    assert service.attest(REFERENCE) == identity
+    assert service.ensure(REFERENCE, "wireguard") == identity
+    assert service.owned_references() == (REFERENCE,)
+    assert custody.records == records
+    assert runner.generated == generated
+    with pytest.raises(TetherError):
+        service.ensure(other, "ssh-host")
+    assert runner.generated == generated
+
+
+@pytest.mark.parametrize("phase", ["pending", "final"])
+@pytest.mark.parametrize("tamper", ["missing", "labels"])
+def test_unrelated_existing_custody_still_blocks_attestation_on_drift(
+    gateway: tuple[keys.TetherKeys, Custody, Runner], phase: str, tamper: str
+) -> None:
+    service, _custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    other = "lychd-tether-next-owner"
+    if phase == "pending":
+        runner.fail_create = "after"
+        with pytest.raises(TetherError):
+            service.ensure(other, "ssh-host")
+    else:
+        service.ensure(other, "ssh-host")
+    if tamper == "missing":
+        del runner.secrets[other]
+    else:
+        runner.secrets[other]["Spec"]["Labels"] = {}
+    if phase == "pending" and tamper == "missing":
+        assert service.attest(REFERENCE)["reference"] == REFERENCE
+    else:
+        with pytest.raises(TetherError):
+            service.attest(REFERENCE)

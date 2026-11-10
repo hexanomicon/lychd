@@ -304,7 +304,8 @@ def _offered(
     peers = tuple(sorted(snapshot.offered_peers, key=lambda peer: peer.id))
     active = tuple(peer for peer in peers if peer.enabled)
     own_address = str(ipaddress.IPv4Interface(offered.address).ip)
-    owner_port = core_web_port if any(peer.owner_access is not None for peer in active) else None
+    # Declared owner capacity survives revocation; only active peers receive admission.
+    owner_port = core_web_port if any(peer.owner_access is not None for peer in peers) else None
     builder = _NetworkBuilder(
         rune=rune,
         snapshot=snapshot,
@@ -624,7 +625,5 @@ def compile_tether(
         networks=tuple(builder.network() for builder in builders),
         consumer_mount=MountData(
             host_path=runtime_root, container_path=CONTAINER_RUNTIME, mirror=False, options=["ro", "z"]
-        )
-        if rows
-        else None,
+        ),
     )
