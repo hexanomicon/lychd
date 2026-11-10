@@ -212,6 +212,39 @@ class OutputTests(unittest.TestCase):
         flag = root.find("a:bootloader/a:global/a:boot_mbr", NS)
         self.assertEqual(flag.text, "true")
         self.assertNotIn(TYPE, flag.attrib)
+        active = root.find("a:bootloader/a:global/a:activate", NS)
+        self.assertEqual(active.text, "true")
+        self.assertNotIn(TYPE, active.attrib)
+
+    def test_both_roles_select_the_tumbleweed_base_product(self):
+        for role in ("server", "workstation"):
+            data = intent()
+            data.update(role=role, firmware="uefi")
+            with self.subTest(role=role):
+                root = profile(data)
+                products = root.find("a:software/a:products", NS)
+                self.assertIsNotNone(products)
+                self.assertEqual(products.attrib.get(TYPE), "list")
+                self.assertEqual(
+                    [(item.tag, item.text) for item in products], [(f"{{{generator.NS}}}product", "openSUSE")]
+                )
+
+    def test_both_roles_use_fresh_ssh_identity_and_enable_key_access(self):
+        for role in ("server", "workstation"):
+            data = intent()
+            data.update(role=role, firmware="uefi")
+            with self.subTest(role=role):
+                root = profile(data)
+                for name in ("import", "copy_config"):
+                    flag = root.find(f"a:ssh_import/a:{name}", NS)
+                    self.assertEqual(flag.text, "false")
+                    self.assertEqual(flag.attrib.get(TYPE), "boolean")
+                enabled = root.findall("a:services-manager/a:services/a:enable/a:service", NS)
+                self.assertIn("sshd", [item.text for item in enabled])
+                self.assertEqual(content(root, "firewall/zones/zone/name"), "public")
+                self.assertEqual(content(root, "firewall/zones/zone/interfaces/interface"), "ens3")
+                services = root.findall("a:firewall/a:zones/a:zone/a:services/a:service", NS)
+                self.assertIn("ssh", [item.text for item in services])
 
     def test_uefi_kde_and_secure_boot(self):
         data = intent()
@@ -219,6 +252,7 @@ class OutputTests(unittest.TestCase):
         root = profile(data)
         self.assertEqual(content(root, "bootloader/loader_type"), "grub2-efi")
         self.assertEqual(content(root, "bootloader/global/secure_boot"), "true")
+        self.assertIsNone(root.find("a:bootloader/a:global/a:activate", NS))
         self.assertEqual(content(root, "partitioning/drive/partitions/partition/mount"), "/boot/efi")
         self.assertEqual(content(root, "partitioning/drive/partitions/partition/size"), "1GiB")
         self.assertEqual(content(root, "services-manager/default_target"), "graphical")

@@ -14,7 +14,8 @@ unit tests do not establish a successful installation or recovery on AlphaVPS or
 
 The supported contract is a **fresh, whole-disk replacement**: one explicitly named disk,
 GPT, a firmware-specific boot partition, and one Btrfs capacity pool with `/home` and `/var`
-subvolumes outside root snapshots. BIOS uses GRUB2 with a BIOS boot partition. UEFI uses
+subvolumes outside root snapshots. BIOS uses GRUB2 with a BIOS boot partition and requests
+the legacy active flag for boot compatibility. UEFI uses
 classic GRUB2 EFI with a 1 GiB ESP and Secure Boot support requested. This deliberate choice
 avoids depending on changing boot-loader defaults; it must still be checked against the
 selected installation medium. There is no encryption, dual boot, preserved partition,
@@ -32,7 +33,9 @@ crypt password hash. The password permits console recovery and authenticates sud
 administrator. Root is locked, root SSH and SSH password authentication are disabled, and
 the complete sudo policy grants only root and that named administrator. The future `lychd`
 runtime account is not an administrator. No application secrets or private keys belong in
-these inputs. The profile itself contains a password hash and is private material.
+these inputs. Neither profile imports SSH host keys or configuration from an existing installation;
+verify the new host fingerprint through the console before trusting SSH. The profile itself
+contains a password hash and is private material.
 
 ## Generate outside the checkout
 
