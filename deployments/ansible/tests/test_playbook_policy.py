@@ -89,6 +89,45 @@ class HostAuthorityTests(unittest.TestCase):
         self.assertIn("default(false)", task["when"])
         self.assertIn("lychd_floor_enable_network_online", task["when"])
 
+    def test_new_delegation_precedes_map_checkpoint_and_reload_is_changed_only(self):
+        names = [task["name"] for task, _ in self.tasks]
+        publish = names.index("Publish the exact runtime controller delegation before the map checkpoint")
+        reload = names.index("Reload PID1 only after changed delegation publication")
+        linger = names.index("Enable linger only when absent after map and key initialization")
+        identity = names.index("Assert the actual identity has no sudo before enabling any runtime access")
+        maps = names.index("Initialize subordinate ranges only for the new identity from this invocation")
+        checkpoint = names.index("Atomically record initialized maps before installing keys or enabling linger")
+        self.assertLess(identity, publish)
+        self.assertLess(publish, reload)
+        self.assertLess(reload, maps)
+        self.assertLess(maps, checkpoint)
+        self.assertLess(reload, linger)
+        task, user = self.tasks[publish]
+        self.assertEqual(user, "root")
+        self.assertFalse(task["ansible.builtin.copy"]["force"])
+        self.assertIn("not lychd_floor_before.delegation.present", task["when"])
+        self.assertIn("not lychd_floor_before.account_exists", task["when"])
+        directory = self.tasks[names.index("Create the validated per-UID delegation directory")][0]
+        self.assertIn("not lychd_floor_before.account_exists", directory["when"])
+        self.assertIn("not lychd_floor_before.delegation.directory_present", directory["when"])
+        reload_task = self.tasks[reload][0]
+        self.assertEqual(reload_task["ansible.builtin.systemd_service"], {"daemon_reload": True})
+        self.assertIn("not ansible_check_mode", reload_task["when"])
+        self.assertIn("lychd_delegation_publication.changed", reload_task["when"])
+        self.assertNotIn("daemon_reexec", TASKS.read_text())
+        self.assertNotIn("state: restarted", TASKS.read_text())
+
+    def test_host_tasks_and_preflight_never_query_podman_or_user_bus(self):
+        for path in (TASKS, TASKS.parent / "preflight.yml"):
+            text = path.read_text()
+            self.assertNotIn("/usr/bin/podman", text)
+            self.assertNotIn("--machine=", text)
+            self.assertNotIn("show-environment", text)
+            self.assertNotIn("needs_container_guard", text)
+        preflight = yaml.safe_load((TASKS.parent / "preflight.yml").read_text())
+        self.assertFalse(preflight[0]["changed_when"])
+        self.assertFalse(preflight[0]["check_mode"])
+
 
 if __name__ == "__main__":
     unittest.main()

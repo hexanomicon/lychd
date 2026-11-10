@@ -90,6 +90,31 @@
   changed_when: false
   when: not ansible_check_mode or lychd_floor_before.account_exists
 
+- name: Create the validated per-UID delegation directory
+  ansible.builtin.file:
+    path: "{{ lychd_floor_before.delegation.path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: not lychd_floor_before.account_exists and not lychd_floor_before.delegation.directory_present
+
+- name: Publish the exact runtime controller delegation before the map checkpoint
+  ansible.builtin.copy:
+    dest: "{{ lychd_floor_before.delegation.path }}"
+    content: "{{ lychd_floor_before.delegation.content }}"
+    owner: root
+    group: root
+    mode: '0644'
+    force: false
+  register: lychd_delegation_publication
+  when: not lychd_floor_before.account_exists and not lychd_floor_before.delegation.present
+
+- name: Reload PID1 only after changed delegation publication
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: not ansible_check_mode and lychd_delegation_publication.changed | default(false)
+
 - name: Initialize subordinate ranges only for the new identity from this invocation
   ansible.builtin.lineinfile:
     path: "/etc/{{ item.kind }}"

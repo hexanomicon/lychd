@@ -7,7 +7,7 @@
   check_mode: false
   changed_when: false
 
-- name: Read host mechanism evidence and enforce the installed floor
+- name: Enforce the installed floor including effective controller delegation
   ansible.builtin.command:
     argv:
       - /usr/bin/python3

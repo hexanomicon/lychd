@@ -28,6 +28,12 @@ class Refusal(ValueError):
     """The intent or observed host does not fit this narrow floor."""
 
 
+DELEGATION_CONTENT = (
+    "# Managed by LychD host floor: runtime cgroup delegation v1\n[Service]\nDelegate=cpu memory pids\n"
+)
+CONTROLLERS = {"cpu", "memory", "pids"}
+
+
 def require(value: bool, message: str) -> None:
     if not value:
         raise Refusal(message)
@@ -316,6 +322,139 @@ def command(*argv: str) -> str:
     return subprocess.run(argv, check=True, text=True, capture_output=True, timeout=30).stdout.strip()
 
 
+def delegation_path(uid: int) -> Path:
+    return Path(f"/etc/systemd/system/user@{uid}.service.d/80-lychd-delegate.conf")
+
+
+def trusted_delegation_path(path: Path) -> bool:
+    """Refuse replacement through any untrusted ancestor, link or foreign reserved file."""
+    for parent in reversed(path.parents):
+        if not os.path.lexists(parent):
+            continue
+        info = parent.lstat()
+        require(
+            stat.S_ISDIR(info.st_mode) and info.st_uid == 0 and not info.st_mode & 0o022,
+            f"unsafe delegation directory: {parent}",
+        )
+    if not os.path.lexists(path):
+        return False
+    info = path.lstat()
+    require(
+        stat.S_ISREG(info.st_mode) and info.st_uid == 0 and info.st_nlink == 1 and stat.S_IMODE(info.st_mode) == 0o644,
+        "unsafe delegation file",
+    )
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    with os.fdopen(fd) as handle:
+        actual = os.fstat(handle.fileno())
+        require((actual.st_dev, actual.st_ino) == (info.st_dev, info.st_ino), "delegation file changed")
+        require(handle.read() == DELEGATION_CONTENT, "foreign delegation file; adoption refused")
+    return True
+
+
+def unit_properties(unit: str, *names: str) -> dict:
+    output = command("systemctl", "show", *[f"--property={name}" for name in names], "--", unit)
+    return dict(line.split("=", 1) for line in output.splitlines() if "=" in line)
+
+
+def require_no_local_controller_policy(unit: str, properties: dict, owned: Path) -> None:
+    """Do not supersede local delegation/disable policy, including ancestor constraints."""
+    local_prefixes = ("/etc/", "/run/", "/usr/local/lib/systemd/system/")
+    fragment = properties.get("FragmentPath", "")
+    if unit.startswith("user@"):
+        require(not fragment.startswith(local_prefixes), "local user-manager unit override refused")
+    require(
+        not CONTROLLERS.intersection(properties.get("DisableControllers", "").split()),
+        f"required controllers disabled by {unit}",
+    )
+    for filename in properties.get("DropInPaths", "").split():
+        path = Path(filename)
+        if path == owned or not filename.startswith(local_prefixes):
+            continue
+        trusted_file(path, optional=False)
+        require(
+            not re.search(r"(?m)^\s*(?:Delegate|DisableControllers)\s*=", path.read_text()),
+            f"local controller policy conflicts: {path}",
+        )
+
+
+def validate_live_delegation(properties: dict, available: str) -> None:
+    require(
+        properties.get("Delegate") == "yes"
+        and CONTROLLERS <= set(properties.get("DelegateControllers", "").split())
+        and CONTROLLERS <= set(available.split()),
+        "delegation activation pending: controlled boot and read-only verification required; no restart attempted",
+    )
+
+
+def delegation_boundary(cgroup: str) -> Path:
+    require(
+        cgroup.startswith("/")
+        and not cgroup.startswith("//")
+        and cgroup != "/"
+        and str(Path(cgroup)) == cgroup
+        and ".." not in Path(cgroup).parts
+        and not any(ord(character) < 32 for character in cgroup),
+        "invalid runtime manager ControlGroup",
+    )
+    return Path("/sys/fs/cgroup") / cgroup[1:]
+
+
+def observe_delegation(uid: int, account_exists: bool, verify: bool) -> dict:
+    require(
+        CONTROLLERS <= set(Path("/sys/fs/cgroup/cgroup.controllers").read_text().split()),
+        "kernel lacks required cpu/memory/pids controllers",
+    )
+    path = delegation_path(uid)
+    present = trusted_delegation_path(path)
+    require(
+        present or not account_exists,
+        "existing runtime identity lacks managed delegation artifact; explicit one-time operator preparation "
+        "required before retrying; a valid schema-1 receipt remains valid and must not be removed",
+    )
+    service = f"user@{uid}.service"
+    properties = unit_properties(
+        service,
+        "FragmentPath",
+        "NeedDaemonReload",
+        "DropInPaths",
+        "DisableControllers",
+        "Delegate",
+        "DelegateControllers",
+        "ControlGroup",
+        "Slice",
+    )
+    require(
+        properties.get("NeedDaemonReload") == "no",
+        f"stale or unknown systemd unit policy: {service}; operator review required, no automatic reload",
+    )
+    expected_cgroup = f"/user.slice/user-{uid}.slice/{service}"
+    require(
+        properties.get("Slice") == f"user-{uid}.slice" and properties.get("ControlGroup") in ("", expected_cgroup),
+        "custom user-manager placement refused",
+    )
+    for unit, parent in (("-.slice", ""), ("user.slice", "-.slice"), (f"user-{uid}.slice", "user.slice")):
+        ancestors = unit_properties(unit, "NeedDaemonReload", "DropInPaths", "DisableControllers", "Slice")
+        require(
+            ancestors.get("NeedDaemonReload") == "no",
+            f"stale or unknown systemd unit policy: {unit}; operator review required, no automatic reload",
+        )
+        require(ancestors.get("Slice") == parent, f"custom ancestor placement refused: {unit}")
+        require_no_local_controller_policy(unit, ancestors, path)
+    require_no_local_controller_policy(service, properties, path)
+    if verify:
+        require(present, "required managed delegation file absent")
+        boundary = delegation_boundary(properties.get("ControlGroup", ""))
+        require(boundary.resolve(strict=True) == boundary, "symlinked runtime cgroup boundary")
+        validate_live_delegation(properties, (boundary / "cgroup.controllers").read_text())
+    return {
+        "present": present,
+        "directory_present": path.parent.exists(),
+        "path": str(path),
+        "content": DELEGATION_CONTENT,
+        "controllers": properties.get("DelegateControllers", "").split(),
+    }
+
+
 def effective_generator() -> tuple[str, str]:
     """Inspect the executable selected by systemd's default directory precedence."""
     require("SYSTEMD_GENERATOR_PATH" not in os.environ, "SYSTEMD_GENERATOR_PATH override refused")
@@ -459,10 +598,12 @@ def observe(intent: dict, verify: bool) -> dict:
     linger = Path("/var/lib/systemd/linger/lychd")
     trusted_file(linger)
     receipt_stage = validate_receipt(receipt, intent, account is not None, group is not None, maps, linger.exists())
+    delegation = observe_delegation(intent["uid"], account is not None, verify)
     result = {
         "account_exists": account is not None,
         "managed_identity": managed,
         "receipt_stage": receipt_stage,
+        "delegation": delegation,
         "subuid_matches": maps["uid"],
         "subgid_matches": maps["gid"],
         "linger": linger.exists(),

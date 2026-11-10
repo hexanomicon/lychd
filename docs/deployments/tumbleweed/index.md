@@ -217,6 +217,31 @@ Interrupted account creation needs explicit recovery; do not remove its receipt 
 Once the mapping stage has been recorded, both exact subordinate ranges must remain present.
 Runtime home and SSH-file work uses the runtime user's authority, with no privileged fallback.
 
+The floor also owns one UID-specific systemd drop-in,
+`user@UID.service.d/80-lychd-delegate.conf`, requesting `Delegate=cpu memory pids`.
+This overrides Tumbleweed's vendor delegation reset only for the runtime manager; it changes
+no resource ceilings. New identities receive it after the actual UID and no-sudo assertion,
+before the initialized-maps checkpoint and before linger starts their manager. Every post-map
+receipt produced by this recipe therefore already has the artifact, and ordinary interrupted
+post-map creation can resume. An existing identity missing this file requires explicit one-time
+operator preparation before retrying, including identities created by an older recipe with a
+valid `maps_initialized` or `configured` schema-1 receipt. The receipt remains valid; do not delete
+or rewrite it to bypass this maintenance boundary. The role does not infer application inactivity,
+inspect container storage, query Podman state, or automatically prepare legacy identities.
+An exact existing artifact is left unchanged even when an application is active. Foreign local
+controller policy (including `/usr/local/lib/systemd/system`) and custom manager placement are
+refused. The manager and its standard ancestor slices must report `NeedDaemonReload=no` before
+convergence or verification; stale or unknown unit policy requires operator review, not an
+automatic preflight reload.
+The floor reloads PID1 only after publishing the file. It never restarts or reexecutes a user
+manager, reboots, or kills a workload. If the current manager still lacks controllers, verification
+reports **activation pending**: stop provisioning, perform the separately authorized controlled
+boot, then rerun verification and the second no-change apply. A successful reload is not proof
+of effective delegation. Root controller support, the exact managed file, effective delegation
+and available controllers at the user-manager boundary are required; a resource-limited build
+or container remains a separate live acceptance check. `CPUAccounting=` does not enable CPU
+control on current systemd. See [systemd's delegation contract](https://systemd.io/CGROUP_DELEGATION/).
+
 Then run the observation playbook:
 
 ```bash
