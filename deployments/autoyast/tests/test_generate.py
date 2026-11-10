@@ -213,6 +213,19 @@ class OutputTests(unittest.TestCase):
         self.assertEqual(flag.text, "true")
         self.assertNotIn(TYPE, flag.attrib)
 
+    def test_both_roles_select_the_tumbleweed_base_product(self):
+        for role in ("server", "workstation"):
+            data = intent()
+            data.update(role=role, firmware="uefi")
+            with self.subTest(role=role):
+                root = profile(data)
+                products = root.find("a:software/a:products", NS)
+                self.assertIsNotNone(products)
+                self.assertEqual(products.attrib.get(TYPE), "list")
+                self.assertEqual(
+                    [(item.tag, item.text) for item in products], [(f"{{{generator.NS}}}product", "openSUSE")]
+                )
+
     def test_uefi_kde_and_secure_boot(self):
         data = intent()
         data.update(role="workstation", firmware="uefi")

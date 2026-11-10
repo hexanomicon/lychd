@@ -289,6 +289,7 @@ def render(config: Install, secret_hash: str) -> bytes:
     element(loader_global, "os_prober", "false")
 
     software = element(root, "software")
+    values(software, "products", "product", ["openSUSE"])
     patterns = ["base", "enhanced_base", "yast2_basis", "selinux"]
     patterns += ["yast2_server"] if config.role == "server" else ["kde", "x11", "x11_yast"]
     values(software, "patterns", "pattern", patterns)
