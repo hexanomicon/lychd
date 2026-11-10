@@ -330,9 +330,13 @@ The Tumbleweed deployment candidate separates headless Server and personal KDE w
 entry points, with explicit AutoYaST installation inputs. Server automation stages an exact
 source/CLI and admitted OCI archive, classifies existing state, and invokes the installed CLI's
 initialization, binding and separately authorized startup. Running same-source bodies take a
-read-only verification path. Workstation tooling owns only selected packages and personal
-configuration. Optional host access is infrastructure-owned, separate from native Tether.
-These assets do not own a second application lifecycle, model, secret generator or unit stack.
+read-only verification path. Workstation tooling owns selected packages and personal
+configuration. A shared interactive-shell role defaults to Zsh, with explicit Fish selection,
+for one existing ordinary workstation user or VPS administrator. It prepares private persistent
+Zsh history and guarded login-shell selection while preserving personal startup files and the
+separate runtime UID. Its fixture checks do not establish installed shell or login behavior.
+Optional host access is infrastructure-owned, separate from native Tether. These assets do not
+own a second application lifecycle, model, secret generator or unit stack.
 
 The [Server guide](./deployments/tumbleweed/index.md) retains PR #136's report of five VPS
 startup/reboot trials at its candidate revision. The present campaign reviewed that source and
@@ -366,7 +370,9 @@ required before another host inherits a ready claim.
 
 - **Source:** [Tumbleweed host playbook](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/playbooks/host.yml), [host observation helper](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/roles/tumbleweed_host/files/host_probe.py), and [inactive source preparation](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/playbooks/source.yml)
 - **Verification:** [Host refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_host_probe.py), [source refusal tests](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_source_guard.py), and [deployment checks](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/deployments.yml)
-- **Topic:** [Tumbleweed Server](./deployments/tumbleweed/index.md), [KDE workstation](./deployments/tumbleweed/workstation.md), [AutoYaST](./deployments/tumbleweed/install.md), and [private access](./deployments/tumbleweed/access.md)
+- **Topic:** [Tumbleweed Server](./deployments/tumbleweed/index.md), [KDE workstation](./deployments/tumbleweed/workstation.md), [interactive shells](./deployments/tumbleweed/shells.md), [AutoYaST](./deployments/tumbleweed/install.md), and [private access](./deployments/tumbleweed/access.md)
+- **Source:** [Shared ordinary-user shell role](https://github.com/hexanomicon/lychd/tree/main/deployments/ansible/roles/tumbleweed_shell) and [guarded account/configuration helper](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/files/user_config.py)
+- **Verification:** [Shell refusal and convergence fixtures](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_shell.py)
 - **Verification:** [Deployment candidate checks and unrun boundaries](https://github.com/hexanomicon/lychd/blob/main/deployments/VALIDATION.md)
 
 ### Whole-body snapshot and restore {#whole-body-snapshot-restore}

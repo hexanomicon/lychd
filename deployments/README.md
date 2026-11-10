@@ -7,11 +7,14 @@ application lifecycle and private access have distinct owners and acceptance che
 | --- | --- | --- | --- |
 | AlphaVPS Server | `autoyast/examples/server.json` | `ansible/playbooks/server.yml` | `app-verify.yml` and host `verify.yml` |
 | KDE workstation | `autoyast/examples/workstation.json` | `ansible/playbooks/workstation.yml` | `workstation-verify.yml` plus actual laptop/session checks |
+| Personal/admin shell | Existing ordinary account; default Zsh or optional Fish | `ansible/playbooks/shell.yml` | `shell-verify.yml`, then fresh login/history/completion |
 | Optional private road | Existing installed Server | `ansible/playbooks/access.yml` | `access-verify.yml`, then two-device/browser trial; `access-revoke.yml` closes transport |
 
 Keep real inventories, password hashes, private keys, rendered AutoYaST XML and image archives
 outside every checkout. Public examples intentionally cannot install a real host unchanged.
 NVIDIA provisioning is excluded. The workstation baseline does not install or activate LychD.
+The shared [shell profile](../docs/deployments/tumbleweed/shells.md) changes only the selected
+personal/administrator login shell; the runtime identity remains separate.
 The access profile is for one trusted owner per instance; it is not a shared multiuser Altar.
 The [access guide](../docs/deployments/tumbleweed/access.md) covers local key preparation,
 `access/client.py` rendering and the pinned `access/forward.py --profile ...` browser road.

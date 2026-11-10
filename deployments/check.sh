@@ -18,7 +18,7 @@ cd "$LYCHD_CHECK_ROOT"
 "$LYCHD_CHECK_TOOLS/bin/ruff" format --check deployments
 
 cd deployments/ansible
-for playbook in host verify source deploy app-verify server admin access access-verify access-revoke workstation workstation-verify; do
+for playbook in host verify source deploy app-verify server admin shell shell-verify access access-verify access-revoke workstation workstation-verify; do
     inventory=inventory.example.yml
     [[ $playbook != workstation* ]] || inventory=inventory.workstation.example.yml
     "$LYCHD_CHECK_TOOLS/bin/ansible-playbook" -i "$inventory" --syntax-check "playbooks/$playbook.yml"

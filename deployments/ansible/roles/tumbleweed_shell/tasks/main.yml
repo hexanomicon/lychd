@@ -1,0 +1,57 @@
+---
+- name: Validate the complete shell intent before changes
+  ansible.builtin.import_tasks: preflight.yml
+
+- name: Report shell changes in check mode
+  ansible.builtin.debug:
+    msg:
+      missing_package: "{{ lychd_shell if lychd_shell_package.rc == 1 else '' }}"
+      files: "{{ (lychd_shell_file_plan.stdout | from_json).changed }}"
+      login_shell_change: "{{ (lychd_shell_observation.stdout | from_json).login_change }}"
+  changed_when: >-
+    lychd_shell_package.rc == 1 or
+    (lychd_shell_file_plan.stdout | from_json).changed | length > 0 or
+    (lychd_shell_observation.stdout | from_json).login_change
+  when: ansible_check_mode
+
+- name: Install only the selected missing shell from existing repositories
+  ansible.builtin.command:
+    argv: [/usr/bin/zypper, --non-interactive, --no-refresh, install, --no-recommends, --, "{{ lychd_shell }}"]
+  changed_when: true
+  when: not ansible_check_mode and lychd_shell_package.rc == 1
+
+- name: Publish selected shell defaults with only their owner's authority
+  become_user: "{{ lychd_shell_user }}"
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', playbook_dir + '/../files/user_config.py') }}"
+      - apply
+    stdin: >-
+      {{ {'kind': 'shell', 'user': lychd_shell_user, 'shell': lychd_shell,
+          'set_login': lychd_shell_set_login, 'identity': lychd_shell_identity,
+          'files': lychd_shell_files} | to_json }}
+  register: lychd_shell_file_apply
+  changed_when: (lychd_shell_file_apply.stdout | from_json).changed | length > 0
+  when: not ansible_check_mode
+
+- name: Set only the explicitly selected existing account login shell
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', playbook_dir + '/../files/user_config.py') }}"
+      - apply
+    stdin: >-
+      {{ {'kind': 'shell-login', 'user': lychd_shell_user, 'shell': lychd_shell,
+          'set_login': lychd_shell_set_login, 'identity': lychd_shell_identity} | to_json }}
+  register: lychd_shell_login_apply
+  changed_when: (lychd_shell_login_apply.stdout | from_json).changed
+  when: not ansible_check_mode
+
+- name: Verify installed shell defaults and login selection
+  ansible.builtin.import_tasks: verify.yml
+  when: not ansible_check_mode

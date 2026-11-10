@@ -3,3 +3,6 @@
 lychd_workstation_user: existing_personal_user
 # Explicit opt-in: affects every user of RPM Firefox; conflicts are refused.
 lychd_workstation_dark_reader: false
+# Shared ordinary-user shell; zsh is the default. Fish is the other supported value.
+lychd_shell: zsh
+lychd_shell_set_login: true

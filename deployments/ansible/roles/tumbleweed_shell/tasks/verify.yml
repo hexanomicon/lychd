@@ -1,0 +1,36 @@
+---
+- name: Require the selected shell package to be installed
+  ansible.builtin.command:
+    argv: [/usr/bin/rpm, -q, "{{ lychd_shell }}"]
+  check_mode: false
+  changed_when: false
+
+- name: Verify selected shell defaults without executing startup code
+  become_user: "{{ lychd_shell_user }}"
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', playbook_dir + '/../files/user_config.py') }}"
+      - verify
+    stdin: >-
+      {{ {'kind': 'shell', 'user': lychd_shell_user, 'shell': lychd_shell,
+          'set_login': lychd_shell_set_login, 'identity': lychd_shell_identity,
+          'files': lychd_shell_files} | to_json }}
+  check_mode: false
+  changed_when: false
+
+- name: Verify the selected existing account login shell without changing it
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', playbook_dir + '/../files/user_config.py') }}"
+      - verify
+    stdin: >-
+      {{ {'kind': 'shell-login', 'user': lychd_shell_user, 'shell': lychd_shell,
+          'set_login': lychd_shell_set_login, 'identity': lychd_shell_identity} | to_json }}
+  check_mode: false
+  changed_when: false
