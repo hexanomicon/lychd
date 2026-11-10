@@ -22,6 +22,7 @@ from lychd.system.operator import (
     VesselAuthority,
 )
 from lychd.system.operator.inventory import OperatorInventoryService
+from lychd.system.operator.process import ProcessInvocationError
 from lychd.system.services.scribe import OwnedBindings, ScribeService
 
 if TYPE_CHECKING:
@@ -85,6 +86,23 @@ class _StartRunner(_Runner):
                 "Id=lychd-uncaged-vessel.service\nLoadState=loaded\nActiveState=inactive\n"
                 "SubState=dead\nMainPID=0\nControlPID=0\nJob=\n",
             )
+        return result
+
+
+class _TimedStartRunner(_StartRunner):
+    def __init__(self, duration_s: float) -> None:
+        super().__init__()
+        self.duration_s = duration_s
+        self.job_pending = False
+
+    def run(self, argv: tuple[str, ...], *, timeout_s: float) -> ProcessResult:
+        result = super().run(argv, timeout_s=timeout_s)
+        if argv[2] == "start":
+            self.job_pending = True
+            if self.duration_s > timeout_s:
+                message = "Synthetic systemctl client observation timed out"
+                raise ProcessInvocationError(message)
+            self.job_pending = False
         return result
 
 
@@ -166,9 +184,57 @@ def test_start_down_system_uses_exact_owned_vessel_argv() -> None:
                 "start",
                 "lychd-vessel.service",
             ),
-            30.0,
+            360.0,
         ),
     ]
+
+
+def test_cold_start_can_complete_after_the_short_command_budget() -> None:
+    runner = _TimedStartRunner(duration_s=75.0)
+    control = _control(_Inventory(_catalog(ObservationState.INACTIVE)), runner)
+
+    result = control.execute(OperatorAction.START)
+
+    assert result.authority is VesselAuthority.DIRECT
+    assert result.units == ("lychd-vessel.service",)
+    assert not runner.job_pending
+    assert runner.calls == [
+        (_COUNTERPART_SHOW, 3.0),
+        (("/usr/bin/systemctl", "--user", "start", "lychd-vessel.service"), 360.0),
+    ]
+
+
+def test_start_observation_timeout_preserves_uncertainty_without_second_action(mocker: MockerFixture) -> None:
+    events: list[str] = []
+
+    @contextmanager
+    def lock() -> Generator[None]:
+        events.append("locked")
+        try:
+            yield
+        finally:
+            events.append("unlocked")
+
+    audit = mocker.patch("lychd.system.operator.control.logger")
+    runner = _TimedStartRunner(duration_s=361.0)
+    control = _control(_Inventory(_catalog(ObservationState.INACTIVE)), runner, lock_factory=lock)
+
+    with pytest.raises(OperatorError, match="outcome is unconfirmed; the manager job may continue"):
+        control.execute(OperatorAction.START)
+
+    assert runner.job_pending
+    assert events == ["locked", "unlocked"]
+    assert runner.calls == [
+        (_COUNTERPART_SHOW, 3.0),
+        (("/usr/bin/systemctl", "--user", "start", "lychd-vessel.service"), 360.0),
+    ]
+    audit.info.assert_called_once_with(
+        "operator_actuation_started",
+        action="start",
+        target="system",
+        authority="direct",
+        units=("lychd-vessel.service",),
+    )
 
 
 @pytest.mark.parametrize("other_state", [ObservationState.ACTIVE, ObservationState.UNKNOWN])
@@ -346,7 +412,10 @@ def test_storage_actuation_ignores_unchanged_unknown_unselected_unit(
     assert result.authority is VesselAuthority.DIRECT
     assert result.units == ("lychd-phylactery.service",)
     assert runner.calls == [
-        (("/usr/bin/systemctl", "--user", action.value, "lychd-phylactery.service"), 30.0),
+        (
+            ("/usr/bin/systemctl", "--user", action.value, "lychd-phylactery.service"),
+            360.0 if action is OperatorAction.START else 30.0,
+        ),
     ]
 
 
@@ -771,7 +840,12 @@ def test_direct_selected_control_keeps_bad_setting_activity_policy(
 
     assert result.authority is VesselAuthority.DIRECT
     assert result.units == ("lychd-phylactery.service",)
-    assert runner.calls == [(("/usr/bin/systemctl", "--user", action.value, "lychd-phylactery.service"), 30.0)]
+    assert runner.calls == [
+        (
+            ("/usr/bin/systemctl", "--user", action.value, "lychd-phylactery.service"),
+            360.0 if action is OperatorAction.START else 30.0,
+        )
+    ]
 
 
 def test_retiring_runner_preserves_observed_load_state_and_detail() -> None:

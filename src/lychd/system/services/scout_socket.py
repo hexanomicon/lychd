@@ -405,24 +405,3 @@ async def open_pinned_tls(
         tcp.close()
         raise
     return stream
-
-
-async def wrap_pinned_tls(tcp: PinnedTcpStream, *, ca_file: Path) -> PinnedTlsStream:
-    """Verify TLS over an already connected, gated numeric or broker carrier.
-
-    The carrier retains all syscall gates, limits and its absolute deadline.
-    This wrapper owns closure if TLS setup or verification fails.
-    """
-    try:
-        _target_address(tcp._target, tcp._deadline)
-        if tcp._target.role != "origin":
-            raise FetchError(FetchCode.CONFIG)  # noqa: TRY301 - wrapper owns closure on invalid carriers
-        stream = PinnedTlsStream(tcp, _tls_context(ca_file))
-        await stream._handshake()
-    except ssl.SSLError:
-        tcp.close()
-        raise FetchError(FetchCode.TLS) from None
-    except BaseException:
-        tcp.close()
-        raise
-    return stream

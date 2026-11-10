@@ -11,6 +11,7 @@ import math
 import os
 import re
 import socket
+import ssl
 import stat
 import struct
 import time
@@ -59,6 +60,30 @@ class _BrokerStream(scout_socket.PinnedTcpStream):
         result = await super()._receive_wire(max_bytes)
         self._current()
         return result
+
+    async def wrap_tls(self, *, ca_file: Path) -> scout_socket.PinnedTlsStream:
+        """Verify application TLS over this connected, gated broker carrier.
+
+        Reuse the shared stream's exact target and trust policy; Tether owns
+        only broker-carrier assembly and closure if that assembly fails.
+        """
+        try:
+            # The broker reuses Scout's validator without acquiring a new IP socket.
+            scout_socket._target_address(self._target, self._deadline)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+            if self._target.role != "origin":
+                raise FetchError(FetchCode.CONFIG)  # noqa: TRY301 - carrier owns failed assembly cleanup
+            # Keep one CA/hostname/ALPN policy for both numeric and broker carriers.
+            context = scout_socket._tls_context(ca_file)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+            stream = scout_socket.PinnedTlsStream(self, context)
+            # The shared TLS engine retains all syscall gates, bounds and deadline.
+            await stream._handshake()  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+        except ssl.SSLError:
+            self.close()
+            raise FetchError(FetchCode.TLS) from None
+        except BaseException:
+            self.close()
+            raise
+        return stream
 
     async def connect_broker(self, path: str, header: bytes) -> None:
         handoff = NetworkHandoff(self._target, "connect", b"", None)
@@ -206,7 +231,7 @@ class TetherConnector:
         try:
             await stream.connect_broker(str(path), header)
             self.current(route)
-            tls = await scout_socket.wrap_pinned_tls(stream, ca_file=ca_file)
+            tls = await stream.wrap_tls(ca_file=ca_file)
         except BaseException:
             stream.close()
             raise
