@@ -212,6 +212,9 @@ class OutputTests(unittest.TestCase):
         flag = root.find("a:bootloader/a:global/a:boot_mbr", NS)
         self.assertEqual(flag.text, "true")
         self.assertNotIn(TYPE, flag.attrib)
+        active = root.find("a:bootloader/a:global/a:activate", NS)
+        self.assertEqual(active.text, "true")
+        self.assertNotIn(TYPE, active.attrib)
 
     def test_both_roles_select_the_tumbleweed_base_product(self):
         for role in ("server", "workstation"):
@@ -249,6 +252,7 @@ class OutputTests(unittest.TestCase):
         root = profile(data)
         self.assertEqual(content(root, "bootloader/loader_type"), "grub2-efi")
         self.assertEqual(content(root, "bootloader/global/secure_boot"), "true")
+        self.assertIsNone(root.find("a:bootloader/a:global/a:activate", NS))
         self.assertEqual(content(root, "partitioning/drive/partitions/partition/mount"), "/boot/efi")
         self.assertEqual(content(root, "partitioning/drive/partitions/partition/size"), "1GiB")
         self.assertEqual(content(root, "services-manager/default_target"), "graphical")

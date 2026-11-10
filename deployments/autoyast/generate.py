@@ -285,6 +285,7 @@ def render(config: Install, secret_hash: str) -> bytes:
         element(loader_global, "update_nvram", "true")
     else:
         element(loader_global, "boot_mbr", "true")
+        element(loader_global, "activate", "true")
         element(loader, "loader_device", config.disk)
     element(loader_global, "os_prober", "false")
 

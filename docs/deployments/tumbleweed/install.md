@@ -14,7 +14,8 @@ unit tests do not establish a successful installation or recovery on AlphaVPS or
 
 The supported contract is a **fresh, whole-disk replacement**: one explicitly named disk,
 GPT, a firmware-specific boot partition, and one Btrfs capacity pool with `/home` and `/var`
-subvolumes outside root snapshots. BIOS uses GRUB2 with a BIOS boot partition. UEFI uses
+subvolumes outside root snapshots. BIOS uses GRUB2 with a BIOS boot partition and requests
+the legacy active flag for boot compatibility. UEFI uses
 classic GRUB2 EFI with a 1 GiB ESP and Secure Boot support requested. This deliberate choice
 avoids depending on changing boot-loader defaults; it must still be checked against the
 selected installation medium. There is no encryption, dual boot, preserved partition,
