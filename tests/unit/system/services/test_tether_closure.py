@@ -65,7 +65,7 @@ def test_guard_is_persistent_latched_and_has_no_conflicting_pull_edges() -> None
     plan = make_plan()
     units = render_tether_units(plan, crypt_root=Path("/owned/crypt"), executable=Path("/owned/venv/bin/python"))
     path, handler = units[plan.guard_unit], units[plan.closure_unit]
-    assert 'PathExists="/owned/crypt/tether/closed.json"' in path
+    assert "PathExists=/owned/crypt/tether/closed.json" in path
     assert "PathChanged=" not in path
     assert "Type=oneshot\nRemainAfterExit=yes" in handler
     assert "TimeoutStartSec=60" in handler
