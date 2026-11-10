@@ -46,8 +46,10 @@ DHCP does not disable IPv6; this generator does not impose an IPv6 routing polic
 Root is locked. The named administrator gets public-key SSH, console password access and
 sudo authenticated by their own password. The complete fresh-install sudoers and sshd files
 are explicit; no broad targetpw grant or sudo access for `lychd` is generated. Both profiles
-enable SSH, allowing subsequent Ansible control. Workstations must be deliberately accepted
-without disk encryption; use the interactive installer when encryption is required.
+enable SSH, allowing subsequent Ansible control. Neither profile imports SSH host keys or
+configuration from an existing installation; verify the new host fingerprint through the console.
+Workstations must be deliberately accepted without disk encryption; use the interactive installer
+when encryption is required.
 
 Tests establish input refusals, private output handling and generated intent, **not** installer
 schema compatibility, package resolution, hardware support or successful boot. Validate with

@@ -336,6 +336,10 @@ def render(config: Install, secret_hash: str) -> bytes:
         element(route, "device", config.network.interface)
         element(route, "gateway", config.network.gateway)
 
+    ssh_import = element(root, "ssh_import")
+    boolean(ssh_import, "import", False)
+    boolean(ssh_import, "copy_config", False)
+
     users = element(root, "users", kind="list")
     root_user = element(users, "user")
     element(root_user, "username", "root")

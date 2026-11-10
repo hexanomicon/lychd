@@ -32,7 +32,9 @@ crypt password hash. The password permits console recovery and authenticates sud
 administrator. Root is locked, root SSH and SSH password authentication are disabled, and
 the complete sudo policy grants only root and that named administrator. The future `lychd`
 runtime account is not an administrator. No application secrets or private keys belong in
-these inputs. The profile itself contains a password hash and is private material.
+these inputs. Neither profile imports SSH host keys or configuration from an existing installation;
+verify the new host fingerprint through the console before trusting SSH. The profile itself
+contains a password hash and is private material.
 
 ## Generate outside the checkout
 

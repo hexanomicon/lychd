@@ -226,6 +226,23 @@ class OutputTests(unittest.TestCase):
                     [(item.tag, item.text) for item in products], [(f"{{{generator.NS}}}product", "openSUSE")]
                 )
 
+    def test_both_roles_use_fresh_ssh_identity_and_enable_key_access(self):
+        for role in ("server", "workstation"):
+            data = intent()
+            data.update(role=role, firmware="uefi")
+            with self.subTest(role=role):
+                root = profile(data)
+                for name in ("import", "copy_config"):
+                    flag = root.find(f"a:ssh_import/a:{name}", NS)
+                    self.assertEqual(flag.text, "false")
+                    self.assertEqual(flag.attrib.get(TYPE), "boolean")
+                enabled = root.findall("a:services-manager/a:services/a:enable/a:service", NS)
+                self.assertIn("sshd", [item.text for item in enabled])
+                self.assertEqual(content(root, "firewall/zones/zone/name"), "public")
+                self.assertEqual(content(root, "firewall/zones/zone/interfaces/interface"), "ens3")
+                services = root.findall("a:firewall/a:zones/a:zone/a:services/a:service", NS)
+                self.assertIn("ssh", [item.text for item in services])
+
     def test_uefi_kde_and_secure_boot(self):
         data = intent()
         data.update(role="workstation", firmware="uefi")
