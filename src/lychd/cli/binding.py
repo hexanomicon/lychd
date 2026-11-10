@@ -77,17 +77,26 @@ class BindingCommandSession:
         """Refine host authority and compile the complete immutable bind request."""
         settings = self.settings_snapshot.materialize()
         foundation = self.preflight.require_ready()
-        request = compile_bind_request(
-            settings=settings,
-            extensions=self.extensions,
-            runes=self.runes,
-            soulstones=self.soulstones,
-            portals=self.portals,
-        )
+        attestor = None
+        if "tether" in settings.extensions.builtins:
+            from lychd.system.services.tether.service import NativeTetherService
+
+            tether = NativeTetherService()
+            request = tether.bind_request()
+            attestor = tether.attest_bind_request
+        else:
+            request = compile_bind_request(
+                settings=settings,
+                extensions=self.extensions,
+                runes=self.runes,
+                soulstones=self.soulstones,
+                portals=self.portals,
+            )
         use_case = assemble_bind_use_case(
             foundation=foundation,
             preflight_service=self.preflight_service,
             settings_snapshot=self.settings_snapshot,
+            request_attestor=attestor,
         )
         return PreparedBinding(
             request=request,

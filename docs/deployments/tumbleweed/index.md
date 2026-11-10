@@ -617,6 +617,75 @@ An active body remains observation-only, even when all acceptance checks pass. T
 and [focused refusal tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_deployment.py)
 are source evidence; installed host qualification remains a separate receipt.
 
+### Native Tether profile (protocol 2)
+
+The controller records the admitted archive manifest digest alongside its config image ID.
+Rootless import may change the manifest digest while preserving that config ID. Before original
+initialization, staging verifies the archive again, checks the source intent names that archive's
+`localhost/lychd-tether@sha256:…` reference, and resolves the actual imported repository digest to
+the same admitted ID and revision. It changes only `rune.quadlet.image` in a normalized public
+intent. `tether-campaign.json` retains the source and normalized intent hashes, archive hash,
+manifest digest, imported reference, config ID and revision. Existing campaign bytes are never
+replaced; original initialization consumes the normalized intent from its first journaled write.
+
+An interruption after original initialization can resume native preparation on the next deployment.
+`prepared_waiting_keys` reports `next_action: import-key` and the missing references; import those
+keys explicitly with the native CLI, then rerun deployment. Automation never transfers keys.
+Replaced keys and uncertain custody remain refusals, not missing-key recovery.
+
+Select `lychd_app_profile: tether-container-v1` only for an original installation with the
+`tether` builtin. Keep its public closed intent JSON outside the checkout and provide
+`lychd_tether_intent` plus its SHA-256 as `lychd_tether_intent_sha256`. The intent selects the
+Rune, offered peers, attachment admission and application port; it contains secret references,
+never private keys. Admit the separate runtime OCI archive with
+`deployments/ansible/roles/lychd_image/files/admit_oci_archive.py --tether ARCHIVE REVISION OUTPUT_JSON [IMAGE_ID]`
+and pass the resulting `lychd_tether_image_*` variables alongside the ordinary Core image receipt.
+
+Automation verifies and imports that image and stages the public intent before running
+`lychd init --profile tether-container-v1 --intent PATH --web-image REF`. The selected settings
+and active `tether/default.toml` are journaled by that original initialization. Existing original
+bytes must agree on repeat runs; there is no post-init settings edit or receipt replacement.
+
+For an offered network, set `lychd_tether_firewall_zone` to the existing firewalld zone of the
+concrete host IPv4 listener in that normalized intent. The deployment uses the administrator
+connection between runtime staging and original initialization to add only that exact UDP port
+to the existing zone's permanent and runtime port lists. It preserves other rules, performs no
+reload, and reports no change when both entries already exist. There is no separate firewall
+port variable. Import-only profiles do not invoke the firewall helper.
+
+The listener address must occur exactly once on one host interface; `0.0.0.0`, loopback,
+link-local, ambiguous addresses and mismatched zones are refused. An interface with no explicit
+zone uses firewalld's [documented default zone](https://firewalld.org/documentation/zone/default-zone.html),
+which must still equal the selected zone. Both runtime and permanent interface assignments must
+agree. The supported host profile requires positive NetworkManager ownership and checks the active
+connection UUID's configured `connection.zone`; an unset zone uses the same default according to
+[NetworkManager's zone contract](https://networkmanager.dev/docs/api/latest/settings-connection.html).
+Unknown or unmanaged ownership is refused without altering network bindings.
+A port entry applies to the selected zone; this helper
+does not narrow or change that zone's interface membership. Check mode only reports missing
+entries for an already verified normalized campaign; it cannot invent an unstaged listener.
+The protocol-2 verification path observes both port entries and the effective interface zone.
+Provider firewall or security-group rules remain operator-owned and are not claimed as verified.
+
+This OS prerequisite belongs to deployment automation. Native Tether continues to own all VPN
+keys, routes, configuration, units, activation and revocation; the host helper performs none of them.
+The helper uses only the documented [firewall-cmd zone and port operations](https://firewalld.org/documentation/man-pages/firewall-cmd.html).
+
+The native chain is `tether prepare --intent PATH`, `tether bind`, ordinary guarded `start`,
+then `tether activate`. Keys must already be admitted through the separate operator-owned
+`tether import-key --secret REF --file PATH` boundary before binding; automation neither transports
+keys nor generates VPN units. Inspect with `tether inspect`, enroll a strict public declaration
+with `tether enroll --peer-file PATH` while the offered road is cold (independent imports may stay active),
+readmit one imported attachment with `tether admit --attachment ID --generation GENERATION`,
+and revoke an exact observed generation with
+`tether revoke --network ID --generation GENERATION [--peer ID]`.
+
+Protocol 2 observes native Tether custody, exact unit provenance and the separately admitted
+image identity. Its status invocation adds `--deployment-profile tether-container-v1`,
+`--deployment-intent PATH` and `--deployment-tether-image-id ID` to the protocol-1 revision/image
+arguments. Default deployments keep protocol 1 and empty optional extensions. A partially active
+or unknown body remains a refusal requiring native inspection; automation does not infer recovery.
+
 ## Repeat on another host
 
 After the pilot passes its declared host and recovery observations, add each fresh Tumbleweed

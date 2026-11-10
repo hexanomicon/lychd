@@ -10,6 +10,12 @@ UserNS={{ user_ns }}
 ShmSize={{ shm_size }}
 {% endif %}
 
+{% if tether_policy %}
+Network={{ tether_policy.network }}
+{% if tether_policy.kind == 'offered' %}
+PublishPort={{ tether_policy.udp_address }}:{{ tether_policy.udp_port }}:{{ tether_policy.udp_port }}/udp
+{% endif %}
+{% endif %}
 # Network exposure
 {% for port_mapping in publish_ports %}
 PublishPort={{ port_mapping }}

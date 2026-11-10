@@ -8,3 +8,13 @@ lychd_app_start_authorized: false
 # Bounded read-only convergence wait after start; no restart, kill or second lifecycle is attempted.
 lychd_app_start_poll_retries: 36
 lychd_app_start_poll_delay: 10
+
+# Protocol 1 remains the default; protocol 2 must be selected explicitly.
+lychd_app_profile: empty-extensions-container
+lychd_tether_intent: ""
+lychd_tether_intent_sha256: ""
+lychd_tether_image_id: ""
+lychd_tether_intent_remote: /home/lychd/.local/state/lychd-deploy/tether-intent.json
+
+# Explicit authorization for one existing OS firewall zone; no separate port input.
+lychd_tether_firewall_zone: ""

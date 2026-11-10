@@ -16,6 +16,8 @@ if TYPE_CHECKING:
     from lychd.config.settings.root import Settings
     from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
     from lychd.domain.animation.services.adapters.contracts import RuntimePlan
+    from lychd.domain.tether.compiler import TetherDeployment
+    from lychd.domain.tether.models import TetherSnapshot
     from lychd.extensions.host import AssembledExtensions
 
 
@@ -43,6 +45,11 @@ def compile_bind_request(
     runes: RuneRegistry,
     soulstones: Sequence[SoulstoneConfig],
     portals: Sequence[PortalConfig],
+    tether_snapshot: TetherSnapshot | None = None,
+    tether_runtime_root: Path | None = None,
+    tether_config_root: Path | None = None,
+    tether_consumer_uid: int | None = None,
+    tether_forbidden_backend_addresses: tuple[str, ...] | None = None,
 ) -> BindRequest:
     """Compile the complete container binding generation from declared intent."""
     from lychd.domain.animation.capabilities import CapabilitySpec
@@ -80,6 +87,34 @@ def compile_bind_request(
         runes=runes,
         runtime_plans=runtime_plans,
     )
+    tether = _compile_tether_contribution(
+        settings=settings,
+        extensions=extensions,
+        runes=runes,
+        snapshot=tether_snapshot,
+        runtime_root=tether_runtime_root,
+        config_root=tether_config_root,
+        consumer_uid=tether_consumer_uid,
+        forbidden_backend_addresses=tether_forbidden_backend_addresses,
+    )
+    if tether is not None:
+        existing_secrets = {
+            podman_secret_source(spec)
+            for manifest in manifests
+            if isinstance(manifest, QuadletContainer)
+            for spec in manifest.secrets
+        }
+        if existing_secrets.intersection(tether.required_secrets):
+            msg = "Tether credentials cannot alias Core or other application credentials"
+            raise ValueError(msg)
+        manifests.extend(tether.manifests)
+        if tether.consumer_mount is not None:
+            manifests = [
+                manifest.model_copy(update={"volumes": [*manifest.volumes, tether.consumer_mount]})
+                if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-vessel"
+                else manifest
+                for manifest in manifests
+            ]
     core_secret_factories = {
         settings.server.web.secret_key_secret: (lambda: secrets.token_hex(32)),
         settings.server.database.password_secret: (lambda: secrets.token_urlsafe(16)),
@@ -87,6 +122,9 @@ def compile_bind_request(
         settings.server.database.phoenix_password_secret: (lambda: secrets.token_urlsafe(32)),
         settings.server.web.access_password_secret: (lambda: secrets.token_urlsafe(32)),
     }
+    if tether is not None and set(core_secret_factories).intersection(tether.required_secrets):
+        msg = "Tether credentials cannot use a Core-generated secret name"
+        raise ValueError(msg)
     manifest_secrets = {
         podman_secret_source(spec)
         for manifest in manifests
@@ -100,6 +138,7 @@ def compile_bind_request(
         manifests=manifests,
         plain_units=_desired_plain_units(settings=settings),
         core_secret_factories=core_secret_factories,
+        tether=tether,
         required_secret_names=sorted(
             {
                 *required_soulstone_secrets,
@@ -153,3 +192,41 @@ __all__ = [
     "compile_bind_request",
     "required_secret_names_from_soulstones",
 ]
+
+
+def _compile_tether_contribution(
+    *,
+    settings: Settings,
+    extensions: AssembledExtensions,
+    runes: RuneRegistry,
+    snapshot: TetherSnapshot | None,
+    runtime_root: Path | None,
+    config_root: Path | None,
+    consumer_uid: int | None,
+    forbidden_backend_addresses: tuple[str, ...] | None,
+) -> TetherDeployment | None:
+    """Require explicit current host authority for the one trusted Tether compiler."""
+    from lychd.domain.tether.compiler import compile_tether
+    from lychd.domain.tether.models import TetherRune
+
+    rune = runes.one_or_none(TetherRune)
+    if rune is None:
+        if snapshot is not None:
+            msg = "Tether admission requires its selected Rune"
+            raise ValueError(msg)
+        return None
+    if "tether" not in settings.extensions.builtins or TetherRune not in extensions.rune_schemas:
+        msg = "Tether Rune was not registered by its selected native extension"
+        raise ValueError(msg)
+    if snapshot is None or runtime_root is None or config_root is None or consumer_uid is None:
+        msg = "Tether bind requires explicit current admission and owned projection roots"
+        raise ValueError(msg)
+    return compile_tether(
+        rune=rune,
+        snapshot=snapshot,
+        runtime_root=runtime_root,
+        config_root=config_root,
+        core_web_port=settings.server.port,
+        consumer_uid=consumer_uid,
+        forbidden_backend_addresses=forbidden_backend_addresses,
+    )

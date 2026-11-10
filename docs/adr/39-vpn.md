@@ -183,3 +183,65 @@ Work](../state-of-the-work.md#vpn-tether) owns that boundary.
 Independent revocation is Tether's practical return. Operating that private road requires
 security-sensitive peer and route management, backup, rotation, recovery, and an account of
 uncertain direct reachability.
+
+## Native rootless stream profile
+
+The `rootless-wireguard-stream-v1` profile compiles one private Pod for the offered network and
+one private Pod for each admitted imported attachment. These Pods are separate from the Core
+Pod. The WireGuard role alone receives namespace-local `NET_ADMIN`; byte relays drop all
+capabilities. The compiler owns the closed networking policy and complete deployment contribution.
+Ordinary extension contributors cannot request this privilege, arbitrary Podman arguments, or
+changes to Core's network namespace.
+
+The first profile uses numeric IPv4 outer endpoints and numeric inner service destinations with
+an admitted application hostname. It performs no ambient DNS resolution. Each imported service
+has a generation-specific Unix socket beneath its attachment's runtime directory. A Core consumer
+selects the remote Lich, attachment, generation and service before connecting; a bounded broker
+handshake also binds installation epoch, policy digest and caller. The broker connects only the
+compiled destination. TLS hostname verification and application identity remain with the consumer.
+A failed selection never becomes direct transport or another attachment.
+
+Static Rune definitions and current host-owned admission are separate inputs. The compiler does
+not discover files or generate keys. Binding reconciles the complete desired fileset through
+Scribe with a freshly observed transaction generation. Persisted route identity instead uses the
+installation epoch, explicit admission generation and canonical policy digest. Offered peer-only
+changes advance that peer's generation without advancing the network topology generation; it never persists
+Scribe's inode-sensitive transaction observation as route authority.
+
+The host atomically materializes public role configuration and revocation fences in dedicated
+per-role directories. Tunnel and SSH private material arrive only through purpose-specific secret
+references mounted into the role that needs them. Read-only consumer mounts expose the socket
+parent, while each producer can write only its own attachment directory. Socket directories under
+`/run/user/<uid>/lychd-tether` are boot-local; their inode identities are not durable authority.
+Missing, mismatched or disabled current fences close the affected transport. Revocation is
+complete only after observing live removal and stream closure, or verified termination of the
+affected role; writing denial intent alone is not a live closure receipt.
+
+### Optional same-owner SSH access
+
+`same-owner-ssh-loopback-v1` is a separate owner-access binding on an offered peer. It provides
+one SSH local-forward destination to the existing host-published owner web loopback port, derived
+from current Settings. It does not expose an Altar IP listener through WireGuard, enroll a remote
+application principal, or deliver general remote Ward/IAM.
+
+Each owner peer has an independently contained SSH adapter in the offered network's private Pod,
+outside Core. Its SSH public-key admission and purpose-specific host key are independent of the
+WireGuard keys and application credentials. The adapter has no `NET_ADMIN`; its capability set is
+limited to the tested SSH requirements `SETUID`, `SETGID` and `SYS_CHROOT`. The namespace's pasta
+policy admits only the selected container-loopback-to-host-loopback TCP port and disables broad
+host-loopback aliases and automatic port forwarding. This profile requires live qualification of
+the installed Podman/pasta combination and namespace filtering.
+
+SSH admits no shell, session, subsystem, reverse forward, arbitrary destination, Unix-socket
+forward, agent, X11 or tunnel channel. Each peer's private SSH listener is separately source-filtered
+and admits only its own SSH key. Per-peer container termination closes all descendants and active
+channels without terminating another peer's adapter. The browser uses the admitted loopback
+origin through its local SSH forward. Existing Basic authentication, Host and Origin validation,
+and same-origin behavior remain unchanged; neither tunnel nor SSH admission substitutes for them.
+
+A generic offered TCP service is a distinct explicit service contract with independent application
+authentication. Admission supplies a fresh observed host-address exclusion set; without that
+observation the compiler refuses external backends. Host, loopback, link-local, offered-network
+and reserved Core listener destinations are rejected. The host revalidates this observation
+before activation and reconciliation; unrelated host addresses are not part of route identity. It cannot select arbitrary Core administration, database or Reactor listeners, and
+cannot use the generic route to bypass the owner SSH profile.

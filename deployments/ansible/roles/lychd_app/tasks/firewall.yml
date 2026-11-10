@@ -1,0 +1,25 @@
+---
+- name: Require verified normalized campaign facts before host UDP preparation
+  ansible.builtin.assert:
+    that:
+      - lychd_tether_campaign is defined
+      - (lychd_tether_campaign.stdout | from_json).state in ['staged', 'pending_receipt']
+    fail_msg: "Stage and verify the normalized public Tether campaign first; check mode cannot invent an unstaged listener."
+
+- name: Prepare or observe only the normalized intent's host UDP prerequisite
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/tether_firewall.py') }}"
+    stdin: "{{ {'mode': ('plan' if ansible_check_mode and lychd_tether_firewall_action == 'prepare' else lychd_tether_firewall_action), 'zone': lychd_tether_firewall_zone, 'normalized_sha256': (lychd_tether_campaign.stdout | from_json).normalized_sha256} | to_json }}"
+  register: lychd_tether_firewall_result
+  check_mode: false
+  changed_when: (lychd_tether_firewall_result.stdout | from_json).changed
+  when: (lychd_tether_campaign.stdout | from_json).offered
+
+- name: Report the bounded host UDP observation
+  ansible.builtin.debug:
+    msg: "{{ lychd_tether_firewall_result.stdout | from_json }}"
+  when: (lychd_tether_campaign.stdout | from_json).offered

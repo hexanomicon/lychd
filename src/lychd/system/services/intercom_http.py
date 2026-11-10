@@ -45,6 +45,7 @@ from lychd.domain.intercom.transport import (
 )
 from lychd.domain.scout.transport import FetchCode, FetchError, NetworkHandoff, NetworkTarget
 from lychd.system.services.scout_socket import open_pinned_tls
+from lychd.system.services.tether.connector import TetherConnector
 
 EXTENSION_URI = "https://github.com/hexanomicon/lychd/blob/main/docs/adr/26-a2a.md#peer-task-jsonrpc-1"
 SIGNATURE_LABEL = "lychd"
@@ -461,6 +462,10 @@ def _request_fresh(prepared: PreparedRequest) -> None:
 class BoundedIntercomHTTP:
     """One pinned TLS connection, one POST, one bounded response, always closed."""
 
+    def __init__(self, *, tether_connector: TetherConnector | None = None) -> None:
+        """Keep Direct as default; a selected Tether requires trusted assembly."""
+        self._tether_connector = tether_connector
+
     async def exchange(  # noqa: C901, PLR0912, PLR0915 - One finite response parser and owned closure boundary.
         self,
         endpoint: IntercomEndpoint,
@@ -493,12 +498,26 @@ class BoundedIntercomHTTP:
             raise IntercomError(IntercomCode.CONFIG) from None
         stream = None
         try:
-            stream = await open_pinned_tls(
-                NetworkTarget(endpoint.address, endpoint.port, endpoint.hostname, "origin"),
-                gate=_SocketGate(endpoint, prepared, gate),
-                deadline=deadline,
-                ca_file=endpoint.ca_file,
-            )
+            target = NetworkTarget(endpoint.address, endpoint.port, endpoint.hostname, "origin")
+            socket_gate = _SocketGate(endpoint, prepared, gate)
+            if endpoint.tether is None:
+                stream = await open_pinned_tls(
+                    target,
+                    gate=socket_gate,
+                    deadline=deadline,
+                    ca_file=endpoint.ca_file,
+                )
+            else:
+                if self._tether_connector is None:
+                    self._tether_connector = TetherConnector.from_catalog(caller="intercom")
+                stream = await self._tether_connector.open_tls(
+                    endpoint.tether,
+                    target=target,
+                    application_identity_ref=prepared.peer_id,
+                    gate=socket_gate,
+                    deadline=deadline,
+                    ca_file=endpoint.ca_file,
+                )
             await stream.send(prepared.wire)
             connection = h11.Connection(h11.CLIENT, max_incomplete_event_size=MAX_HEADER_BYTES)
             connection.send(

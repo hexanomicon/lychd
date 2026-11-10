@@ -199,6 +199,42 @@
         name: lychd_image
       when: lychd_deploy_mode == 'mutate' and lychd_deploy_runtime_ready | bool
 
+    - name: Stage the verified normalized Tether campaign before host UDP preparation
+      ansible.builtin.include_role:
+        name: lychd_app
+        tasks_from: tether_stage
+      when: >-
+        lychd_app_profile | default('empty-extensions-container') == 'tether-container-v1'
+        and lychd_deploy_mode == 'mutate' and lychd_deploy_runtime_ready | bool
+        and not ansible_check_mode
+
+- name: Admit only the declared host UDP prerequisite before native initialization
+  hosts: lychd_hosts
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Prepare the existing host zone without managing VPN state
+      ansible.builtin.include_role:
+        name: lychd_app
+        tasks_from: firewall
+      vars:
+        lychd_tether_firewall_action: prepare
+      when: >-
+        lychd_app_profile | default('empty-extensions-container') == 'tether-container-v1'
+        and lychd_deploy_mode == 'mutate'
+        and not (ansible_check_mode and lychd_app_observed.state == 'no_runtime_account')
+
+- name: Apply native application lifecycle after host prerequisites
+  hosts: lychd_hosts
+  gather_facts: false
+  connection: ssh
+  remote_user: lychd
+  become: false
+  vars:
+    ansible_user: lychd
+    ansible_become: false
+    lychd_deploy_runtime_ready: "{{ not (ansible_check_mode and lychd_app_observed.state == 'no_runtime_account') }}"
+  tasks:
     - name: Initialize, configure, bind and (when authorized) start
       ansible.builtin.include_role:
         name: lychd_app
@@ -218,6 +254,16 @@
         apply:
           tags: [floor]
       when: lychd_deploy_mode == 'verify'
+
+    - name: Verify the existing normalized host UDP prerequisite without mutation
+      ansible.builtin.include_role:
+        name: lychd_app
+        tasks_from: firewall
+      vars:
+        lychd_tether_firewall_action: verify
+      when: >-
+        lychd_app_profile | default('empty-extensions-container') == 'tether-container-v1'
+        and lychd_deploy_mode == 'verify'
 
 - name: Observe application acceptance
   hosts: lychd_hosts

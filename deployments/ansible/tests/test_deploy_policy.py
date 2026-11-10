@@ -7,6 +7,7 @@ from pathlib import Path
 
 import yaml
 from jinja2 import Environment, StrictUndefined
+from jinja2.nativetypes import NativeEnvironment
 
 ROOT = Path(__file__).parents[1]
 FORBIDDEN = re.compile(
@@ -58,12 +59,26 @@ class DeployPolicyTests(unittest.TestCase):
 
     def test_application_effects_follow_classification_and_dry_runs(self):
         names = [task.get("name", "") for task in walk(load("roles/lychd_app/tasks/apply.yml"))]
-        commands = [
-            task["ansible.builtin.command"]["argv"][1:]
-            for task in walk(load("roles/lychd_app/tasks/apply.yml"))
-            if "ansible.builtin.command" in task
-            and str(task["ansible.builtin.command"]["argv"][0]).endswith("lychd_app_cli }}")
-        ]
+        context = {
+            "lychd_app_cli": "{{ lychd_app_cli }}",
+            "lychd_app_image_ref": "{{ lychd_app_image_ref }}",
+            "lychd_source_revision": "{{ lychd_source_revision }}",
+            "lychd_image_id": "{{ lychd_image_id }}",
+            "lychd_app_init_profile_args": [],
+            "lychd_app_bind_args": ["bind"],
+            "lychd_app_status_args": [],
+        }
+        commands = []
+        for task in walk(load("roles/lychd_app/tasks/apply.yml")):
+            if "ansible.builtin.command" not in task or "lychd_app_profile == 'tether-container-v1'" in str(
+                task.get("when", "")
+            ):
+                continue
+            argv = task["ansible.builtin.command"]["argv"]
+            if isinstance(argv, str):
+                argv = NativeEnvironment(undefined=StrictUndefined).from_string(argv).render(**context)
+            if argv[0] == "{{ lychd_app_cli }}":
+                commands.append(argv[1:])
         self.assertEqual(
             commands,
             [
@@ -86,6 +101,52 @@ class DeployPolicyTests(unittest.TestCase):
             names.index("Refuse application effects outside the admitted chain"),
             names.index("Initialize the Codex and Crypt"),
         )
+
+    def test_tether_stages_public_inputs_before_original_init_and_keeps_core_bootstrap(self):
+        tasks = list(walk(load("roles/lychd_app/tasks/apply.yml")))
+        names = [task.get("name") for task in tasks]
+        self.assertLess(
+            names.index("Stage public Tether intent and verified image before original initialization"),
+            names.index("Preview initialization"),
+        )
+        self.assertLess(
+            names.index("Start through the CLI's guarded inactive bootstrap"),
+            names.index("Activate and verify Tether through native lifecycle after the guarded Core bootstrap"),
+        )
+        stage = list(walk(load("roles/lychd_app/tasks/tether_stage.yml")))
+        self.assertTrue(
+            any(task.get("ansible.builtin.include_role", {}).get("name") == "lychd_image" for task in stage)
+        )
+        commands = [task["ansible.builtin.command"]["argv"] for task in stage if "ansible.builtin.command" in task]
+        self.assertEqual(len(commands), 2)
+        self.assertIn("admit_oci_archive.py", commands[0][3])
+        self.assertEqual(commands[0][4], "--verify-tether")
+        self.assertIn("tether_intent.py", commands[1][3])
+        self.assertEqual(commands[1][4], "stage")
+        self.assertTrue(all(command[:3] == ["/usr/bin/python3", "-I", "-c"] for command in commands))
+        copies = [task["ansible.builtin.copy"] for task in stage if "ansible.builtin.copy" in task]
+        self.assertEqual(len(copies), 1)
+        self.assertFalse(copies[0]["force"])
+        self.assertEqual(copies[0]["src"], "{{ lychd_tether_intent }}")
+        self.assertFalse(any("receipt" in str(task).lower() for task in stage))
+
+    def test_tether_host_udp_prerequisite_precedes_native_apply(self):
+        plays = load("playbooks/deploy.yml")
+        names = [play["name"] for play in plays]
+        stage = names.index("Stage the exact source CLI, image and application")
+        firewall = names.index("Admit only the declared host UDP prerequisite before native initialization")
+        apply = names.index("Apply native application lifecycle after host prerequisites")
+        self.assertLess(stage, firewall)
+        self.assertLess(firewall, apply)
+        self.assertFalse(plays[stage]["become"])
+        self.assertTrue(plays[firewall]["become"])
+        self.assertFalse(plays[apply]["become"])
+        task = load("roles/lychd_app/tasks/firewall.yml")[1]
+        self.assertEqual(task["when"], "(lychd_tether_campaign.stdout | from_json).offered")
+        self.assertFalse(task["check_mode"])
+        self.assertIn("'plan' if ansible_check_mode", task["ansible.builtin.command"]["stdin"])
+        self.assertIn("normalized_sha256", task["ansible.builtin.command"]["stdin"])
+        self.assertNotIn("listen_port", task["ansible.builtin.command"]["stdin"])
 
     def test_deploy_requires_one_named_target_before_any_effect(self):
         plays = load("playbooks/deploy.yml")
@@ -300,7 +361,11 @@ class DeployPolicyTests(unittest.TestCase):
         )
         environment = Environment()
         environment.filters["from_json"] = json.loads
-        check = environment.compile_expression(wait["until"])
+        raw_check = environment.compile_expression(wait["until"])
+
+        def check(**kwargs):
+            return raw_check(lychd_app_protocol=1, **kwargs)
+
         self.assertFalse(
             check(
                 lychd_app_units={
@@ -338,9 +403,11 @@ class DeployPolicyTests(unittest.TestCase):
     def test_read_only_classification_checks_source_before_running_cli(self):
         tasks = load("roles/lychd_app/tasks/classify.yml")
         commands = [task["ansible.builtin.command"]["argv"] for task in tasks if "ansible.builtin.command" in task]
-        self.assertEqual(len(commands), 2)
+        self.assertEqual(len(commands), 3)
         self.assertIn("source_guard.py", commands[0][3])
-        self.assertIn("app_probe.py", commands[1][3])
+        self.assertIn("tether_intent.py", commands[1][3])
+        self.assertEqual(commands[1][4], "verify")
+        self.assertIn("app_probe.py", commands[2][3])
 
     def test_fresh_source_install_is_noneditable_and_completed_environments_are_preserved(self):
         tasks = load("roles/lychd_source/tasks/main.yml")

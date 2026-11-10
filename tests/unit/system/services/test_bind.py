@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from contextlib import nullcontext
+from collections.abc import Callable, Generator
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -82,6 +82,7 @@ def _use_case(
     systemd: MagicMock,
     foundation: BindingFoundation | None = None,
     observed_foundation: BindingFoundation | None = None,
+    request_attestor: Callable[[BindRequest], None] | None = None,
 ) -> BindUseCase:
     expected = foundation or _foundation()
     return BindUseCase(
@@ -91,6 +92,7 @@ def _use_case(
         foundation=expected,
         foundation_probe=lambda: observed_foundation or expected,
         lock_factory=nullcontext,
+        request_attestor=request_attestor,
     )
 
 
@@ -720,3 +722,120 @@ def test_apply_preserves_scribe_failure_state_without_claiming_generation(
     assert failure.value.progress.binding_commit_state is binding_state
     assert failure.value.progress.binding_generation is None
     systemd.daemon_reload.assert_not_called()
+
+
+def test_owner_identity_drift_is_refused_under_lock_before_any_effect() -> None:
+    events: list[str] = []
+    locked = False
+
+    @contextmanager
+    def lock() -> Generator[None]:
+        nonlocal locked
+        locked = True
+        events.append("lock")
+        try:
+            yield
+        finally:
+            locked = False
+            events.append("unlock")
+
+    def attest(request: BindRequest) -> None:
+        assert locked
+        assert request.required_secret_names == ("operator-token",)
+        events.append("attest")
+        message = "owner_identity_changed"
+        raise BindingPlanDriftError(message)
+
+    scribe, secrets, systemd = MagicMock(), MagicMock(), MagicMock()
+    scribe.plan_reconcile_all.return_value = BindingReconcilePlan(
+        changes=(),
+        observed_generation="before",
+        desired_generation="desired",
+    )
+    secrets.exists.return_value = True
+    foundation = _foundation()
+    use_case = BindUseCase(
+        scribe=scribe,
+        secrets=secrets,
+        systemd_factory=lambda: systemd,
+        foundation=foundation,
+        foundation_probe=lambda: foundation,
+        lock_factory=lock,
+        request_attestor=attest,
+    )
+    request = _request()
+    approved = use_case.plan(request)
+    with pytest.raises(BindingPlanDriftError, match="owner_identity_changed"):
+        use_case.apply(request, approved)
+    assert events == ["lock", "attest", "unlock"]
+    secrets.ensure_present.assert_not_called()
+    scribe.reconcile_all.assert_not_called()
+    systemd.daemon_reload.assert_not_called()
+
+
+def test_second_owner_attestation_preserves_confirmed_secret_creation() -> None:
+    scribe, secrets, systemd = MagicMock(), MagicMock(), MagicMock()
+    scribe.plan_reconcile_all.return_value = BindingReconcilePlan(
+        changes=(),
+        observed_generation="before",
+        desired_generation="desired",
+    )
+    present = {"operator-token"}
+    secrets.exists.side_effect = lambda name: name in present
+
+    def create(name: str, value: str) -> bool:
+        assert value == "generated"
+        present.add(name)
+        return True
+
+    secrets.ensure_present.side_effect = create
+    attestations = 0
+
+    def attest(request: BindRequest) -> None:
+        nonlocal attestations
+        assert request.required_secret_names == ("operator-token",)
+        attestations += 1
+        if attestations == 2:
+            message = "owner_identity_changed_after_creation"
+            raise BindingPlanDriftError(message)
+
+    use_case = _use_case(scribe=scribe, secrets=secrets, systemd=systemd, request_attestor=attest)
+    request = _request()
+    approved = use_case.plan(request)
+    with pytest.raises(BindApplyError, match="attestation failed") as caught:
+        use_case.apply(request, approved)
+    assert attestations == 2
+    assert caught.value.progress.created_secrets == ("lychd-core",)
+    assert caught.value.progress.binding_commit_state is BindingCommitState.NOT_ATTEMPTED
+    scribe.reconcile_all.assert_not_called()
+    systemd.daemon_reload.assert_not_called()
+
+
+def test_host_assembly_forwards_owner_attestation(monkeypatch: pytest.MonkeyPatch) -> None:
+    from lychd.config.settings import SettingsSnapshot
+    from lychd.system.services.bind_assembly import assemble_bind_use_case
+
+    secrets, scribe = MagicMock(), MagicMock()
+    secrets.exists.return_value = True
+    scribe.plan_reconcile_all.return_value = BindingReconcilePlan(
+        changes=(),
+        observed_generation="before",
+        desired_generation="desired",
+    )
+    monkeypatch.setattr("lychd.system.services.secrets.PodmanSecretStore", lambda _binary: secrets)
+    monkeypatch.setattr("lychd.system.services.scribe.facade.ScribeService", lambda **_kwargs: scribe)
+    monkeypatch.setattr("lychd.system.services.lifecycle.lock.LifecycleLock", nullcontext)
+    attestor = MagicMock(side_effect=BindingPlanDriftError("owner_identity_changed"))
+    use_case = assemble_bind_use_case(
+        foundation=_foundation(),
+        preflight_service=MagicMock(),
+        settings_snapshot=SettingsSnapshot(payload="{}"),
+        request_attestor=attestor,
+    )
+    request = _request()
+    approved = use_case.plan(request)
+    with pytest.raises(BindingPlanDriftError, match="owner_identity_changed"):
+        use_case.apply(request, approved)
+    attestor.assert_called_once_with(request)
+    secrets.ensure_present.assert_not_called()
+    scribe.reconcile_all.assert_not_called()

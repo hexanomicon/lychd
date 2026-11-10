@@ -14,7 +14,7 @@ import re
 import stat
 import sys
 import tomllib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -67,9 +67,27 @@ class DeploymentRequest:
     revision: str
     image_id: str | None = None
     verify: bool = False
+    profile: str = "empty-extensions-container"
+    intent_path: Path | None = None
+    tether_image_id: str | None = None
 
     def __post_init__(self) -> None:
         """Reject unpinned campaign identities before host inspection."""
+        if self.profile not in {"empty-extensions-container", "tether-container-v1"}:
+            msg = "Unsupported deployment profile."
+            raise ValueError(msg)
+        if self.profile == "tether-container-v1":
+            if self.intent_path is None or not self.intent_path.is_absolute() or self.tether_image_id is None:
+                msg = "Tether deployment requires absolute intent path and admitted image ID."
+                raise ValueError(msg)
+            match = _IMAGE_ID.fullmatch(self.tether_image_id)
+            if match is None:
+                msg = "Invalid Tether image identity."
+                raise ValueError(msg)
+            object.__setattr__(self, "tether_image_id", match.group(1))
+        elif self.intent_path is not None or self.tether_image_id is not None:
+            msg = "Tether inputs require the Tether profile."
+            raise ValueError(msg)
         if _REVISION.fullmatch(self.revision) is None:
             msg = "deployment revision must be exactly 40 lowercase hexadecimal characters"
             raise ValueError(msg)
@@ -96,11 +114,17 @@ class DeploymentReport:
     checks: list[dict[str, Any]] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
-        actions = {"absent": "init", "initialized": "bind", "bound_inactive": "start", "running": "observe"}
+        actions = {
+            "absent": "init",
+            "initialized": "bind",
+            "bound_inactive": "start",
+            "running": "observe",
+            "prepared_waiting_keys": "import-key",
+        }
         return {
             "schema": SCHEMA,
-            "version": VERSION,
-            "profile": "empty-extensions-container",
+            "version": 2 if self.request.profile == "tether-container-v1" else VERSION,
+            "profile": self.request.profile,
             "revision": self.request.revision,
             "image_ref": self.request.image_ref,
             "state": self.state,
@@ -126,6 +150,7 @@ class DeploymentInspectionService:
         self.receipt = LifecycleReceiptStore()
         self.scribe = ScribeService()
         self.operator = build_operator_services(runner=self.runner)
+        self._tether: dict[str, Any] = {}
 
     def run(self, tool: str, *arguments: str) -> str:
         executable = trusted_host_tool(tool)
@@ -143,6 +168,7 @@ class DeploymentInspectionService:
 
     def inspect(self, request: DeploymentRequest) -> DeploymentReport:  # noqa: C901, PLR0911, PLR0912, PLR0915 - each conservative admission refusal remains explicit
         """Return typed refusals; operational failures are handled by the JSON adapter."""
+        self._tether = {}
         report = DeploymentReport(request)
         if os.geteuid() == 0:
             report.reasons.append("ordinary_runtime_user_required")
@@ -163,6 +189,27 @@ class DeploymentInspectionService:
             return report
         settings = self._configuration(request)
         report.facts["configuration"] = {"state": "original", "image": settings.server.web.image}
+        if request.profile == "tether-container-v1":
+            from lychd.system.services.tether.service import NativeTetherService
+
+            native = NativeTetherService()
+            preparation = native.preparation_status()
+            report.facts["tether_preparation"] = preparation
+            if preparation["state"] in {"absent", "waiting_keys"}:
+                return self._preparation_report(request, report, preparation, bindings, observed, footprint)
+            if preparation["state"] != "prepared":
+                message = "tether_preparation_protocol"
+                raise DeploymentObservationError(message)
+            self._tether = native.inspect()
+            if (
+                self._tether.get("schema") != "lychd.tether.inspection"
+                or type(self._tether.get("version")) is not int
+                or self._tether.get("version") != 1
+            ):
+                msg = "tether_inspection_protocol"
+                raise DeploymentObservationError(msg)
+            report.facts["tether"] = self._tether
+            self._require_tether_image(request)
         inventory = self.operator.inventory.inspect(OperatorTarget.SYSTEM)
         if inventory.warnings:
             report.reasons.append("inventory_warnings")
@@ -192,14 +239,19 @@ class DeploymentInspectionService:
         }
         expected_pods = {manifest.pod_name for manifest in manifests if isinstance(manifest, QuadletPod)}
         if (
-            set(footprint["secrets"]) - set(settings.server.privileged_secret_names)
+            set(footprint["secrets"])
+            - {*settings.server.privileged_secret_names, *self._tether.get("required_secrets", ())}
             or set(footprint["pods"]) - expected_pods
             or set(footprint["containers"]) - expected_containers
         ):
             report.reasons.append("foreign_runtime_material")
             return report
         if not bindings.receipt_present:
-            if footprint["containers"] or footprint["pods"] or footprint["secrets"]:
+            if (
+                footprint["containers"]
+                or footprint["pods"]
+                or set(footprint["secrets"]) - set(self._tether.get("required_secrets", ()))
+            ):
                 report.reasons.append("runtime_material_without_binding_authority")
             elif any(not self.unit_quiescent(value, absent=True) for value in observed.values()):
                 report.reasons.append("runtime_units_without_binding_authority")
@@ -236,6 +288,8 @@ class DeploymentInspectionService:
             )
             if running_image != image["id"]:
                 report.reasons.append("running_image_identity_mismatch")
+            elif request.profile == "tether-container-v1" and self._tether.get("state") != "active":
+                report.reasons.append("tether_not_verified_active")
             else:
                 report.state = "running"
         else:
@@ -255,6 +309,53 @@ class DeploymentInspectionService:
     def _roots() -> tuple[Path, ...]:
         return constants.PATH_CODEX_ROOT, constants.PATH_CRYPT_ROOT, constants.PATH_CACHE_ROOT
 
+    def _preparation_report(
+        self,
+        request: DeploymentRequest,
+        report: DeploymentReport,
+        preparation: dict[str, Any],
+        bindings: OwnedBindings,
+        observed: dict[str, dict[str, str]],
+        footprint: dict[str, list[str]],
+    ) -> DeploymentReport:
+        """Admit only original, unbound, quiescent preparation recovery."""
+        from lychd.system.services.tether.models import load_intent
+
+        if request.intent_path is None:
+            message = "tether_intent_missing"
+            raise DeploymentObservationError(message)
+        intent = load_intent(request.intent_path)
+        self._tether = {
+            "known_paths": preparation["known_paths"],
+            "required_secrets": preparation["required_secrets"],
+            "image": intent.rune.quadlet.image,
+        }
+        self._require_tether_image(request)
+        if (
+            bindings.receipt_present
+            or footprint["foreign_sources"]
+            or footprint["containers"]
+            or footprint["pods"]
+            or set(footprint["secrets"]) - set(preparation["required_secrets"])
+            or any(not self.unit_quiescent(value, absent=True) for value in observed.values())
+            or not self._data_empty()
+        ):
+            report.reasons.append("runtime_material_before_tether_preparation")
+            return report
+        self._require_original_files()
+        self._require_known_tree(bound=False)
+        image = self._image(request)
+        report.facts["image"] = image
+        if image["revision"] != request.revision or (request.image_id is not None and image["id"] != request.image_id):
+            report.reasons.append("admitted_image_identity_mismatch")
+            return report
+        if preparation["state"] == "waiting_keys":
+            report.state = "prepared_waiting_keys"
+            report.reasons.append("native_tether_import_key_required")
+        else:
+            report.state = "initialized"
+        return report
+
     def _configuration(self, request: DeploymentRequest) -> Settings:
         self._require_original_files()
         try:
@@ -270,6 +371,22 @@ class DeploymentInspectionService:
         declared = SettingsSnapshot(payload=json.dumps(document)).materialize()
         baseline = SettingsSnapshot(payload="{}").materialize()
         baseline.server.web.image = request.image_ref
+        if request.profile == "tether-container-v1":
+            from lychd.domain.tether.models import TetherRune
+            from lychd.system.services.tether.models import load_intent
+
+            if request.intent_path is None:
+                msg = "tether_intent_missing"
+                raise DeploymentObservationError(msg)
+            intent = load_intent(request.intent_path)
+            baseline.extensions.builtins = ("tether",)
+            baseline.server.port = intent.web_port
+            path = TetherRune.anchor_dir(constants.PATH_RUNES_DIR) / "default.toml"
+            original = self.receipt.read_original_file(path, expected_mode=_CONFIG_MODE, max_bytes=_MAX_CONFIG_BYTES)
+            rune = TetherRune.model_validate(tomllib.loads(original.decode()))
+            if rune != intent.rune:
+                msg = "tether_original_intent_mismatch"
+                raise DeploymentObservationError(msg)
         if declared.model_dump(mode="json", exclude_none=True) != baseline.model_dump(mode="json", exclude_none=True):
             msg = "configuration_outside_deployment_profile"
             raise DeploymentObservationError(msg)
@@ -323,6 +440,7 @@ class DeploymentInspectionService:
             *self._roots(),
         }
         known.update(Path(entry.path) for entry in receipt.subvolumes)
+        known.update(Path(path) for path in self._tether.get("known_paths", ()))
         count = 0
         pending = list(self._roots())
         while pending:
@@ -351,6 +469,11 @@ class DeploymentInspectionService:
         from lychd.extensions.host import assemble_extensions
         from lychd.system.services.bind_compilation import compile_bind_request
 
+        if "tether" in settings.extensions.builtins:
+            from lychd.system.services.tether.service import NativeTetherService
+
+            request = NativeTetherService().bind_request()
+            return list(request.manifests), request.plain_unit_mapping()
         request = compile_bind_request(
             settings=settings,
             extensions=assemble_extensions(settings),
@@ -451,6 +574,30 @@ class DeploymentInspectionService:
             fields.update(MainPID="0", ControlPID="0", Result="", ExecMainStatus="")
         return fields
 
+    def observe_owned_units(
+        self, bindings: OwnedBindings, unit_names: frozenset[str] | None = None
+    ) -> dict[str, dict[str, str]]:
+        """Attest exact owned source provenance and effective definitions for a subset."""
+        selected = frozenset(bindings.runtime_units) if unit_names is None else unit_names
+        if not bindings.receipt_present or not bindings.generation or not selected.issubset(bindings.runtime_units):
+            msg = "unowned_unit_selection"
+            raise DeploymentObservationError(msg)
+        quadlets = tuple(
+            path
+            for path in bindings.quadlet_sources
+            if path.suffix in {".pod", ".container"} and runtime_unit_for_source(path.name) in selected
+        )
+        plain = tuple(path for path in bindings.systemd_sources if runtime_unit_for_source(path.name) in selected)
+        if frozenset(runtime_unit_for_source(path.name) for path in (*quadlets, *plain)) != selected:
+            msg = "owned_unit_source_missing"
+            raise DeploymentObservationError(msg)
+        subset = replace(
+            bindings, quadlet_sources=quadlets, systemd_sources=plain, runtime_units=tuple(sorted(selected))
+        )
+        observed = {name: self.observe_unit(name) for name in sorted(selected)}
+        self._require_effective_bindings(subset, observed)
+        return observed
+
     @staticmethod
     def unit_quiescent(value: dict[str, str], *, absent: bool = False) -> bool:
         return (
@@ -520,6 +667,29 @@ class DeploymentInspectionService:
             "revision": revision if isinstance(revision, str) and _REVISION.fullmatch(revision) is not None else "",
             "reference": request.image_ref,
         }
+
+    def _require_tether_image(self, request: DeploymentRequest) -> None:
+        """Compare the native declared image to the separately admitted OCI identity."""
+        payload: object = json.loads(self.run("podman", "image", "inspect", self._tether["image"]))
+        if not isinstance(payload, list):
+            message = "tether_image_unavailable"
+            raise DeploymentObservationError(message)
+        entries = cast("list[object]", payload)
+        if len(entries) != 1 or not isinstance(entries[0], dict):
+            message = "tether_image_unavailable"
+            raise DeploymentObservationError(message)
+        image = cast("dict[str, object]", entries[0])
+        identifier = image.get("Id")
+        if not isinstance(identifier, str) or identifier.removeprefix("sha256:") != request.tether_image_id:
+            message = "tether_image_identity_mismatch"
+            raise DeploymentObservationError(message)
+        raw_labels = image.get("Labels")
+        if (
+            not isinstance(raw_labels, dict)
+            or cast("dict[str, object]", raw_labels).get("org.opencontainers.image.revision") != request.revision
+        ):
+            message = "tether_image_revision_mismatch"
+            raise DeploymentObservationError(message)
 
     def _data_empty(self) -> bool:
         if not os.path.lexists(constants.PATH_POSTGRESS_DATA_DIR):

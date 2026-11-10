@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ipaddress
 import re
 from pathlib import Path, PurePosixPath
 from typing import Any, Final, Literal
@@ -237,12 +238,56 @@ class MountData(BaseModel):
         return cls.model_validate(val)
 
 
+class TetherPodPolicy(BaseModel):
+    """Closed network policy emitted only by the host Tether compiler."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    kind: Literal["offered", "imported"]
+    udp_address: str | None = None
+    udp_port: int | None = Field(default=None, strict=True, ge=1, le=65535)
+    owner_loopback_port: int | None = Field(default=None, strict=True, ge=1, le=65535)
+
+    network: str = ""
+
+    def _network(self) -> str:
+        """Render only the bounded pasta flags belonging to this profile."""
+        value = "pasta:--ipv4-only,--no-map-gw,--map-host-loopback,none,--map-guest-addr,none,-t,none,-U,none"
+        value += f",-T,{self.owner_loopback_port}" if self.owner_loopback_port else ",-T,none"
+        if self.kind == "imported":
+            value += ",-u,none"
+        return value
+
+    @model_validator(mode="after")
+    def validate_topology(self) -> TetherPodPolicy:
+        """No wildcard TCP exposure, host namespace or ambient loopback alias."""
+        expected_network = self._network()
+        if self.network and self.network != expected_network:
+            msg = "Tether networking cannot override the closed pasta profile"
+            raise ValueError(msg)
+        object.__setattr__(self, "network", expected_network)
+        if self.kind == "imported":
+            if any(value is not None for value in (self.udp_address, self.udp_port, self.owner_loopback_port)):
+                msg = "Imported Tether pods cannot publish or bridge host ports"
+                raise ValueError(msg)
+        elif self.udp_address is None or self.udp_port is None:
+            msg = "Offered Tether pods require exact UDP publication"
+            raise ValueError(msg)
+        if self.udp_address is not None:
+            address = ipaddress.IPv4Address(self.udp_address)
+            if str(address) != self.udp_address or address.is_multicast:
+                msg = "Tether UDP publication requires canonical IPv4"
+                raise ValueError(msg)
+        return self
+
+
 class QuadletContainer(QuadletBase):
     """Data model for 'container.jinja'. Represents a single [Container] Quadlet file.
 
     The Vessel that contains a portion of the Daemon's spirit.
     Raw Podman arguments admit only explicitly supported complete values.
     """
+
+    tether_role: Literal["wireguard", "imported-relay", "offered-relay", "owner-ssh"] | None = None
 
     # [Unit] section
     description: str
@@ -386,6 +431,30 @@ class QuadletContainer(QuadletBase):
         return self
 
     @model_validator(mode="after")
+    def validate_tether_role(self) -> QuadletContainer:
+        """Confine special capabilities to standalone compiled Tether bodies."""
+        if self.tether_role is not None:
+            if (
+                not self.container_name.startswith("lychd-tether-")
+                or self.pod is None
+                or not self.pod.startswith("lychd-tether-")
+                or not self.read_only
+                or self.run_init
+                or self.devices
+                or self.podman_args != ["--replace"]
+                or self.security_label_disable
+                or self.user_ns is not None
+                or self.wanted_by
+            ):
+                msg = "Tether roles require a closed standalone rootless deployment"
+                raise ValueError(msg)
+            expected_user = "0" if self.tether_role in {"wireguard", "owner-ssh"} else "%U"
+            if self.user != expected_user:
+                msg = "Tether role user mapping differs from its compiled policy"
+                raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
     def derive_pod_service(self) -> QuadletContainer:
         """Resolve a Quadlet source name to the systemd service it generates."""
         if self.pod is not None and self.pod_service is None:
@@ -400,6 +469,7 @@ class QuadletPod(QuadletBase):
     The Sepulcher—the physical boundary of the Daemon's presence.
     """
 
+    tether_policy: TetherPodPolicy | None = None
     description: str = "The Sepulcher (LychD Pod)"
     pod_name: str = "lychd"
     publish_ports: list[str] = Field(default_factory=list)
@@ -434,6 +504,19 @@ class QuadletPod(QuadletBase):
                 raise ValueError(msg)
             seen_host_ports.add(host_port)
         return values
+
+    @model_validator(mode="after")
+    def validate_tether_pod(self) -> QuadletPod:
+        """Keep special networking outside the Core pod and generic port grammar."""
+        if self.tether_policy is not None and (
+            not self.pod_name.startswith("lychd-tether-")
+            or self.publish_ports
+            or self.user_ns != "keep-id"
+            or self.wanted_by
+        ):
+            msg = "Tether networking requires its own explicitly activated pod"
+            raise ValueError(msg)
+        return self
 
     @field_validator("wanted_by")
     @classmethod

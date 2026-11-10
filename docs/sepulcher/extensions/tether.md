@@ -138,3 +138,36 @@ Direct WireGuard avoids a mandatory hosted control plane, but CGNAT, blocked UDP
 endpoints, roaming, endpoint metadata, and traffic analysis remain. Reachability may require fixed
 addressing, DNS, or a separately accepted rendezvous or relay. ADR 39 owns transport law;
 [Security](../../adr/09-security.md) and the Ward own the trust boundary.
+
+## Native profile configuration contract
+
+The native `rootless-wireguard-stream-v1` contract separates static topology from current
+admission. Its [Rune and public values](../../../src/lychd/domain/tether/models.py) describe at
+most one offered network and many independent imported attachments. The
+[pure compiler](../../../src/lychd/domain/tether/compiler.py) receives a current host-owned
+admission snapshot explicitly; loading an imported document does not enable it.
+
+Each imported attachment names its remote Lich, local tunnel-key reference, remote public key,
+numeric UDP endpoint, numeric inner services, TLS hostnames and allowed callers. The first
+profile uses admitted static resolution only. The same private service address in two attachments
+is valid because each has a separate private Pod, socket directory and route generation. Core
+selects the complete route and verifies the remote application independently.
+
+Private keys never belong in Rune documents or public role JSON. Preparation must establish
+purpose-specific immutable secrets before binding. Runtime projections carry secret references,
+not secret values. Binding still reconciles the complete installation; it does not replace Scribe
+with a per-route file writer. Repeating unchanged intent preserves keys and route generations.
+
+The optional `same-owner-ssh-loopback-v1` binding gives a specific offered peer a separate SSH
+public-key admission and restricted SSH adapter. It permits only a local forward to the current
+owner web loopback port. Open the browser at the same admitted loopback address and port used by
+local owner access; the tunnel preserves the browser's Host, Origin and Basic authentication.
+There is no WireGuard-exposed Altar HTTP listener. General application peers do not acquire this
+owner binding implicitly.
+
+Live acceptance must cover two overlapping imported networks, two offered peers, authenticated
+Core-selected service access, real owner browser access where selected, failed routes without
+fallback, and revocation during active streams. Repeat initialization, preparation, binding and
+activation; then verify restart and reinstall without editing the original creation receipt.
+Current delivery and qualified platform combinations remain owned by
+[State of Work](../../state-of-the-work.md#vpn-tether).

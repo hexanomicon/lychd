@@ -7,8 +7,11 @@ from typing import TYPE_CHECKING
 from lychd.system.services.bind import BindUseCase
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from lychd.config.settings import SettingsSnapshot
     from lychd.system.readiness import BindingFoundation
+    from lychd.system.services.bind import BindRequest
     from lychd.system.services.binding_preflight import BindingPreflightService
 
 
@@ -17,6 +20,7 @@ def assemble_bind_use_case(
     foundation: BindingFoundation,
     preflight_service: BindingPreflightService,
     settings_snapshot: SettingsSnapshot,
+    request_attestor: Callable[[BindRequest], None] | None = None,
 ) -> BindUseCase:
     """Wire concrete host adapters behind the reusable bind use case."""
     from lychd.system.services.lifecycle.lock import LifecycleLock
@@ -45,6 +49,7 @@ def assemble_bind_use_case(
         foundation=foundation,
         foundation_probe=revalidate_foundation,
         lock_factory=LifecycleLock,
+        request_attestor=request_attestor,
     )
 
 

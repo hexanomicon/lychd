@@ -29,6 +29,8 @@ if [[ "$inside" == 1 ]]; then
     export LYCHD_TEST_CONTAINER=1
     XDG_RUNTIME_DIR=$(mktemp -d /tmp/lychd-check-runtime.XXXXXX)
     export XDG_RUNTIME_DIR
+    UV_CACHE_DIR=$(mktemp -d /tmp/lychd-check-cache.XXXXXX)
+    export UV_CACHE_DIR
     exec make --no-print-directory "$@"
 fi
 engine=${LYCHD_TEST_ENGINE:-podman}
@@ -101,8 +103,9 @@ tar -C "$root" --exclude=node_modules --exclude=.venv --exclude=.cache \
     --exclude=.svelte-kit --exclude=.pytest_cache --exclude=.ruff_cache \
     -cf - "${inputs[@]}" | tar -C "$context" -xf -
 # Both engines see only this already-bounded context. Its production ignore
-# file is retained as test data; the build uses a local empty ignore file.
-: > "$context/.dockerignore"
+# file is retained as test data. Explicit inclusion avoids Podman/Buildah
+# falling back to the production allowlist when an override has no patterns.
+printf '!**\n' > "$context/.dockerignore"
 cp -- "$context/.dockerignore" "$context/.containerignore.build"
 image="localhost/lychd-checks:python-${python_version}"
 build=("$engine" build --file "$context/Containerfile.tests"
@@ -134,9 +137,13 @@ needs_daemon=0
 for target in "$@"; do
     [[ "$target" != test-containers ]] || needs_daemon=1
 done
+check_tmpfs=/tmp:rw,nosuid,nodev,size=1g
+if [[ "$engine" == podman ]]; then
+    check_tmpfs+=,notmpcopyup
+fi
 common_run=("$engine" run --cidfile "$cidfile" --label io.lychd.repository-check=1
     --memory 4g --cpus 2 --pids-limit 512 --cap-drop=ALL
-    --security-opt=no-new-privileges --tmpfs /tmp:rw,nosuid,nodev,size=1g)
+    --security-opt=no-new-privileges --tmpfs "$check_tmpfs")
 run=("${common_run[@]}" --network=none)
 if [[ " $* " == *' developer-fixture '* ]]; then
     [[ $# == 1 ]] || fail 'developer-fixture must run as its own explicit invocation.'

@@ -384,6 +384,9 @@ class Transmuter:
         contribution: QuadletContribution,
     ) -> QuadletContribution:
         """Revalidate returned container fields and detach contributor-owned references."""
+        if any(container.tether_role is not None for container in contribution.containers):
+            msg = "Tether privilege is reserved for the host admission compiler"
+            raise ValueError(msg)
         return QuadletContribution(
             containers=tuple(
                 QuadletContainer.model_validate(container.model_dump()) for container in contribution.containers

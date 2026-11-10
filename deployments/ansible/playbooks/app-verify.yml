@@ -1,5 +1,5 @@
 ---
-# Read-only application acceptance over direct runtime SSH; no sudo, no effects.
+# Read-only application acceptance; protocol 2 also observes the administrator-owned host UDP prerequisite.
 - name: Observe one LychD body without changing it
   hosts: lychd_hosts
   gather_facts: false
@@ -25,3 +25,17 @@
       ansible.builtin.include_role:
         name: lychd_app
         tasks_from: verify
+
+- name: Observe the protocol-2 host UDP prerequisite without changing it
+  hosts: lychd_hosts
+  gather_facts: false
+  become: true
+  serial: 1
+  tasks:
+    - name: Verify the normalized listener's effective OS firewall zone and port
+      ansible.builtin.include_role:
+        name: lychd_app
+        tasks_from: firewall
+      vars:
+        lychd_tether_firewall_action: verify
+      when: lychd_app_profile | default('empty-extensions-container') == 'tether-container-v1'

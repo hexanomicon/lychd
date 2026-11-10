@@ -6,7 +6,8 @@
       - not (ansible_become | default(false) | bool)
       - lychd_image_revision is match('^[0-9a-f]{40}$')
       - lychd_image_revision == lychd_source_revision
-      - lychd_image_ref == 'localhost/lychd:' + lychd_image_revision
+      - lychd_image_kind in ['core', 'tether']
+      - lychd_image_ref == ('localhost/lychd-tether:' if lychd_image_kind == 'tether' else 'localhost/lychd:') + lychd_image_revision
       - lychd_image_id is match('^[0-9a-f]{64}$')
       - lychd_image_archive_sha256 is match('^[0-9a-f]{64}$')
       - lychd_image_archive is match('^/[^\n]+$')

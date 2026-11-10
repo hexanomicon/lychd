@@ -6,7 +6,7 @@ from collections.abc import Callable, Mapping, Sequence
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Never, Protocol
+from typing import TYPE_CHECKING, Never, Protocol
 
 import structlog
 
@@ -19,6 +19,9 @@ from lychd.system.services.scribe.errors import (
     ScribeTransactionState,
 )
 from lychd.system.services.scribe.models import BindingReconcilePlan
+
+if TYPE_CHECKING:
+    from lychd.domain.tether.compiler import TetherDeployment
 
 logger = structlog.get_logger()
 
@@ -127,6 +130,7 @@ class BindRequest:
     plain_units: tuple[tuple[str, str], ...]
     core_secrets: tuple[CoreSecret, ...]
     required_secret_names: tuple[str, ...]
+    tether: TetherDeployment | None = None
 
     @classmethod
     def compile(
@@ -136,6 +140,7 @@ class BindRequest:
         plain_units: Mapping[str, str],
         core_secret_factories: Mapping[str, Callable[[], str]],
         required_secret_names: Sequence[str],
+        tether: TetherDeployment | None = None,
     ) -> BindRequest:
         """Canonicalize caller-owned collections into deterministic intent."""
         core_names = tuple(sorted(core_secret_factories))
@@ -149,6 +154,7 @@ class BindRequest:
             plain_units=tuple(sorted(plain_units.items())),
             core_secrets=tuple(CoreSecret(name=name, factory=core_secret_factories[name]) for name in core_names),
             required_secret_names=required,
+            tether=tether,
         )
 
     @property
@@ -199,6 +205,7 @@ class BindUseCase:
         foundation: BindingFoundation,
         foundation_probe: Callable[[], BindingFoundation],
         lock_factory: Callable[[], AbstractContextManager[object]],
+        request_attestor: Callable[[BindRequest], None] | None = None,
     ) -> None:
         """Bind the use case to narrow mutation and revalidation ports."""
         self._scribe = scribe
@@ -207,6 +214,7 @@ class BindUseCase:
         self._foundation = foundation
         self._foundation_probe = foundation_probe
         self._lock_factory = lock_factory
+        self._request_attestor = request_attestor
 
     def plan(
         self,
@@ -240,6 +248,7 @@ class BindUseCase:
         self._require_external_secrets(approved)
 
         with self._lock_factory():
+            self._attest_request(request)
             self._require_approved_state(request, approved)
             created = self._reconcile_core_secrets(request, approved)
             self._require_secrets_at_commit(request, created=created)
@@ -256,6 +265,22 @@ class BindUseCase:
             created_secrets=created,
             binding_generation=committed_generation,
         )
+
+    def _attest_request(self, request: BindRequest, *, created: tuple[str, ...] = ()) -> None:
+        """Revalidate owner-specific intent and identities without losing prior effects."""
+        if self._request_attestor is None:
+            return
+        try:
+            self._request_attestor(request)
+        except BaseException as exc:  # cancellation retains confirmed secret creation
+            if not created:
+                raise
+            self._raise_partial(
+                "Binding intent attestation failed before commit",
+                phase="intent-attestation",
+                progress=BindProgress(created_secrets=created),
+                error=exc,
+            )
 
     @staticmethod
     def _require_external_secrets(approved: BindPlan) -> None:
@@ -335,6 +360,7 @@ class BindUseCase:
         created: tuple[str, ...],
     ) -> None:
         """Revalidate every secret without losing confirmed creation on probe failure."""
+        self._attest_request(request, created=created)
         try:
             observed = self._observe_secrets(request.secret_names)
         except BaseException as exc:  # cancellation must retain confirmed secret creation
