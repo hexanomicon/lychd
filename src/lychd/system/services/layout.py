@@ -248,6 +248,7 @@ class LayoutService:
                 inode=preparation.inode,
                 subvolume_uuid=subvolume.uuid,
                 subvolume_id=subvolume.subvolume_id,
+                persistent_identity=preparation.persistent_identity,
             )
         )
         if not preparation.nocow:

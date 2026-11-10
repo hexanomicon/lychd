@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # pyright: reportPrivateUsage=false
 import base64
+import os
 import struct
 from contextlib import nullcontext
 from ipaddress import IPv4Address, IPv4Interface
@@ -23,6 +24,7 @@ from lychd.domain.tether.models import (
     compile_tether_plan,
 )
 from lychd.system.operator.process import ProcessResult
+from lychd.system.path_identity import PersistentPathIdentity
 from lychd.system.services.tether.closure import TetherStopAdapter
 from lychd.system.services.tether.custody import PreparationStore, TetherCustody
 from lychd.system.services.tether.models import (
@@ -76,11 +78,21 @@ def make_peer(generation: int = 1, operation_id: UUID | None = None) -> TetherPe
     )
 
 
+class FixtureTetherCustody(TetherCustody):
+    """Keep filesystem provider qualification outside in-process operation fixtures."""
+
+    @staticmethod
+    def _identity(descriptor: int) -> PersistentPathIdentity:
+        return PersistentPathIdentity(
+            filesystem="ext4", filesystem_uuid=str(UUID(int=100)), inode=os.fstat(descriptor).st_ino, generation=1
+        )
+
+
 def make_custody(tmp_path: Path) -> TetherCustody:
     codex, crypt = tmp_path / "codex", tmp_path / "crypt"
     codex.mkdir(mode=0o700)
     crypt.mkdir(mode=0o700)
-    custody = TetherCustody(codex, crypt)
+    custody = FixtureTetherCustody(codex, crypt)
     custody.initialize()
     return custody
 

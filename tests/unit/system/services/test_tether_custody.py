@@ -2,14 +2,40 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
+from uuid import UUID
 
 import pytest
 
-from lychd.system.services.tether.custody import TetherCustody
+from lychd.system import path_identity
+from lychd.system.services.tether.custody import CustodyReceipt, TetherCustody
 from lychd.system.services.tether.models import TetherError
 from tests.unit.system.services.test_tether_operations import make_custody
+
+
+def observe_fixture_identity(descriptor: int) -> path_identity.PersistentPathIdentity:
+    """Model stable filesystem authority independently of host test storage."""
+    return path_identity.PersistentPathIdentity(
+        filesystem="btrfs",
+        filesystem_uuid=str(UUID(int=100)),
+        inode=os.fstat(descriptor).st_ino,
+        generation=1,
+        subvolume_id=256,
+        subvolume_uuid=str(UUID(int=101)),
+    )
+
+
+@pytest.fixture
+def persistent_custody(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TetherCustody:
+    monkeypatch.setattr(path_identity, "observe_identity_fd", observe_fixture_identity)
+    codex, crypt = tmp_path / "codex", tmp_path / "crypt"
+    codex.mkdir(mode=0o700)
+    crypt.mkdir(mode=0o700)
+    custody = TetherCustody(codex, crypt)
+    custody.initialize()
+    return custody
 
 
 def test_immutable_history_disagrees_without_replacement(tmp_path: Path) -> None:
@@ -150,3 +176,138 @@ def test_completed_unselected_bundle_refuses_partial_selector_rollback(tmp_path:
     operations.custody.write("private", "current-preparation.json", initial.selection)
     with pytest.raises(TetherError, match="outside current selected ancestry"):
         store.selected()
+
+
+def test_versioned_receipt_contains_persistent_identities_for_all_fixed_roots(
+    persistent_custody: TetherCustody,
+) -> None:
+    receipt_path = persistent_custody.directories["private"] / ".custody.json"
+    receipt = CustodyReceipt.model_validate_json(receipt_path.read_bytes())
+    assert receipt.version == 1
+    assert set(receipt.identities) == {*persistent_custody.directories, "codex", "crypt"}
+    assert all(identity.filesystem == "btrfs" for identity in receipt.identities.values())
+    assert all(identity.subvolume_id == 256 for identity in receipt.identities.values())
+    assert all(identity.subvolume_uuid == str(UUID(int=101)) for identity in receipt.identities.values())
+    assert all(identity.filesystem_uuid == str(UUID(int=100)) for identity in receipt.identities.values())
+    assert all(identity.generation == 1 for identity in receipt.identities.values())
+    assert all("st_dev" not in identity.model_dump() for identity in receipt.identities.values())
+
+
+def test_reboot_device_number_change_preserves_exact_persistent_custody(
+    persistent_custody: TetherCustody, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    receipt_path = persistent_custody.directories["private"] / ".custody.json"
+    before = receipt_path.read_bytes()
+    real_fstat = os.fstat
+
+    def rebooted_fstat(descriptor: int) -> os.stat_result:
+        values = list(real_fstat(descriptor))
+        values[2] += 1000
+        return os.stat_result(values)
+
+    monkeypatch.setattr(os, "fstat", rebooted_fstat)
+    persistent_custody.attest()
+    persistent_custody.publish("public", "post-reboot.json", b"public")
+    assert receipt_path.read_bytes() == before
+
+
+@pytest.mark.parametrize("changed", ["filesystem-uuid", "inode-generation", "inode", "subvolume-id", "subvolume-uuid"])
+def test_same_path_cannot_rebind_a_changed_persistent_identity(
+    persistent_custody: TetherCustody, monkeypatch: pytest.MonkeyPatch, changed: str
+) -> None:
+    before = (persistent_custody.directories["private"] / ".custody.json").read_bytes()
+
+    def substituted(descriptor: int) -> path_identity.PersistentPathIdentity:
+        original = observe_fixture_identity(descriptor)
+        if changed == "filesystem-uuid":
+            return original.model_copy(update={"filesystem_uuid": str(UUID(int=102))})
+        if changed == "inode-generation":
+            return original.model_copy(update={"generation": original.generation + 1})
+        if changed == "inode":
+            return original.model_copy(update={"inode": original.inode + 1})
+        if changed == "subvolume-id":
+            return original.model_copy(update={"subvolume_id": 257})
+        return original.model_copy(update={"subvolume_uuid": str(UUID(int=102))})
+
+    monkeypatch.setattr(path_identity, "observe_identity_fd", substituted)
+    with pytest.raises(TetherError, match="identity changed"):
+        persistent_custody.attest()
+    assert (persistent_custody.directories["private"] / ".custody.json").read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        "legacy",
+        "version-missing",
+        "version-unsupported",
+        "version-bool",
+        "version-float",
+        "version-string",
+        "missing-role",
+        "extra-role",
+    ],
+)
+def test_custody_receipt_refuses_legacy_or_unsupported_authority(persistent_custody: TetherCustody, shape: str) -> None:
+    receipt_path = persistent_custody.directories["private"] / ".custody.json"
+    typed = CustodyReceipt.model_validate_json(receipt_path.read_bytes())
+    identities = {role: identity.model_dump(mode="json") for role, identity in typed.identities.items()}
+    receipt: dict[str, object] = {"version": 1, "identities": identities}
+    if shape == "legacy":
+        receipt = {role: [1, 2] for role in (*persistent_custody.directories, "codex", "crypt")}
+    elif shape == "version-missing":
+        del receipt["version"]
+    elif shape == "version-unsupported":
+        receipt["version"] = 2
+    elif shape == "version-bool":
+        receipt["version"] = True
+    elif shape == "version-float":
+        receipt["version"] = 1.0
+    elif shape == "version-string":
+        receipt["version"] = "1"
+    elif shape == "missing-role":
+        del identities["codex"]
+    else:
+        identities["foreign"] = identities["codex"]
+    original = json.dumps(receipt).encode()
+    receipt_path.write_bytes(original)
+    with pytest.raises(TetherError, match="receipt"):
+        persistent_custody.attest()
+    with pytest.raises(TetherError, match="receipt"):
+        persistent_custody.initialize()
+    assert receipt_path.read_bytes() == original
+
+
+def test_provider_refusal_preserves_existing_custody_evidence(
+    persistent_custody: TetherCustody, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    before = (persistent_custody.directories["private"] / ".custody.json").read_bytes()
+
+    def unavailable(_descriptor: int) -> path_identity.PersistentPathIdentity:
+        msg = "unsupported filesystem"
+        raise path_identity.PathIdentityError(msg)
+
+    monkeypatch.setattr(path_identity, "observe_identity_fd", unavailable)
+    with pytest.raises(TetherError, match="persistent filesystem identity is unavailable"):
+        persistent_custody.attest()
+    assert (persistent_custody.directories["private"] / ".custody.json").read_bytes() == before
+
+
+def test_initial_provider_refusal_never_adopts_partially_created_custody(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def unavailable(_descriptor: int) -> path_identity.PersistentPathIdentity:
+        msg = "unsupported filesystem"
+        raise path_identity.PathIdentityError(msg)
+
+    monkeypatch.setattr(path_identity, "observe_identity_fd", unavailable)
+    codex, crypt = tmp_path / "codex", tmp_path / "crypt"
+    codex.mkdir(mode=0o700)
+    crypt.mkdir(mode=0o700)
+    custody = TetherCustody(codex, crypt)
+    with pytest.raises(TetherError, match="persistent filesystem identity is unavailable"):
+        custody.initialize()
+    assert not (custody.directories["private"] / ".custody.json").exists()
+    monkeypatch.setattr(path_identity, "observe_identity_fd", observe_fixture_identity)
+    with pytest.raises(TetherError, match="Unreceipted"):
+        custody.initialize()

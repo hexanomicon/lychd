@@ -111,3 +111,6 @@ def test_generic_existing_directory_still_requires_host_ownership(tmp_path: Path
         pytest.raises(RuntimeError, match="owned"),
     ):
         require_existing_directory(tmp_path)
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")

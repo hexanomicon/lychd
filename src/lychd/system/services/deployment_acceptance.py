@@ -14,8 +14,7 @@ import os
 from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlsplit
 
-from lychd.system import btrfs_observer, constants
-from lychd.system.btrfs_identity import BtrfsSubvolumeObservation
+from lychd.system import constants, path_identity, path_identity_observer
 from lychd.system.services.lifecycle.models import LifecycleError
 from lychd.system.services.local_access import load_local_access
 
@@ -154,9 +153,7 @@ def storage_check(service: DeploymentInspectionService) -> dict[str, Any]:
     script = """import json, os, runpy, sys
 fd = os.open(sys.argv[2], os.O_RDONLY | os.O_DIRECTORY | os.O_NONBLOCK | os.O_NOFOLLOW)
 try:
-    identity = os.fstat(fd)
     result = runpy.run_path(sys.argv[1])["observe"](fd)
-    result.update(device=identity.st_dev, inode=identity.st_ino)
     print(json.dumps(result))
 finally:
     os.close(fd)
@@ -173,15 +170,15 @@ finally:
             "-S",
             "-c",
             script,
-            str(Path(btrfs_observer.__file__).resolve(strict=True)),
+            str(Path(path_identity_observer.__file__).resolve(strict=True)),
             str(path),
         )
-        payload = json.loads(content)
-        observed = BtrfsSubvolumeObservation(uuid=payload["uuid"], subvolume_id=payload["subvolume_id"])
-        ok = (payload["device"], payload["inode"]) == (recorded.device, recorded.inode) and (
-            observed.uuid,
-            observed.subvolume_id,
-        ) == (recorded.subvolume_uuid, recorded.subvolume_id)
+        observed = path_identity.PersistentPathIdentity.model_validate_json(content)
+        ok = (
+            recorded.persistent_identity is not None
+            and observed == recorded.persistent_identity
+            and (observed.subvolume_uuid, observed.subvolume_id) == (recorded.subvolume_uuid, recorded.subvolume_id)
+        )
     except (OSError, ValueError, KeyError, TypeError):
         ok = False
     return {"name": "storage.phylactery", "ok": ok, "detail": "receipt_and_live_identity"}

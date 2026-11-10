@@ -34,6 +34,16 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/system/services/test_bind.py tests/unit/system/services/test_bind_assembly.py \
 	tests/unit/system/services/test_binding_lifecycle.py \
 	tests/unit/system/services/test_deployment.py tests/unit/system/services/test_deployment_acceptance.py \
+	tests/unit/system/services/test_btrfs.py \
+	tests/unit/system/services/test_datastore_custody.py \
+	tests/unit/system/services/test_deletion.py \
+	tests/unit/system/services/test_deletion_storage.py \
+	tests/unit/system/services/test_initialization.py \
+	tests/unit/system/services/test_layout.py \
+	tests/unit/system/services/test_lifecycle.py \
+	tests/unit/system/services/test_publication.py \
+	tests/unit/system/services/test_runtime_guard_initialization.py \
+	tests/unit/system/test_path_identity.py \
 	tests/unit/cli/test_tether.py tests/unit/domain/tether \
 	tests/unit/system/services/test_tether_closure.py tests/unit/system/services/test_tether_custody.py \
 	tests/unit/system/services/test_tether_operations.py tests/unit/system/services/test_tether_runtime.py \

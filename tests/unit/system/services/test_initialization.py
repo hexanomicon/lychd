@@ -259,3 +259,6 @@ def test_executor_rejects_unplanned_creation_before_receipting(
 
     receipt.record.assert_not_called()
     receipt.seal_dedicated_roots.assert_not_called()
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")

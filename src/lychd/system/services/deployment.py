@@ -27,7 +27,7 @@ from lychd.system.operator.process import ProcessRunner, SubprocessRunner
 from lychd.system.path_safety import path_has_symlink_component
 from lychd.system.schemas import QuadletContainer, QuadletPod
 from lychd.system.services.lifecycle.models import LifecycleError
-from lychd.system.services.lifecycle.paths import digest_file
+from lychd.system.services.lifecycle.paths import digest_file_fd, open_generated_file
 from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
 from lychd.system.services.scribe import ScribeService
 from lychd.system.services.scribe.naming import runtime_unit_for_source
@@ -257,26 +257,16 @@ class DeploymentInspectionService:
 
     def _configuration(self, request: DeploymentRequest) -> Settings:
         self._require_original_files()
-        state = capture_path_state(constants.PATH_LYCHD_TOML)
-        if (
-            state is None
-            or state.content is None
-            or len(state.content) > _MAX_CONFIG_BYTES
-            or stat.S_IMODE(state.mode) != _CONFIG_MODE
-        ):
-            msg = "configuration_not_private_regular_file"
-            raise DeploymentObservationError(msg)
-        import hashlib
-
-        recorded = next(entry for entry in self.receipt.load().files if Path(entry.path) == constants.PATH_LYCHD_TOML)
-        if (state.device, state.inode, state.user_id) != (
-            recorded.device,
-            recorded.inode,
-            os.getuid(),
-        ) or "sha256:" + hashlib.sha256(state.content).hexdigest() != recorded.digest:
+        try:
+            content = self.receipt.read_original_file(
+                constants.PATH_LYCHD_TOML,
+                expected_mode=_CONFIG_MODE,
+                max_bytes=_MAX_CONFIG_BYTES,
+            )
+        except LifecycleError as exc:
             message = "configuration_changed_during_observation"
-            raise DeploymentObservationError(message)
-        document = tomllib.loads(state.content.decode())
+            raise DeploymentObservationError(message) from exc
+        document = tomllib.loads(content.decode())
         declared = SettingsSnapshot(payload=json.dumps(document)).materialize()
         baseline = SettingsSnapshot(payload="{}").materialize()
         baseline.server.web.image = request.image_ref
@@ -315,12 +305,14 @@ class DeploymentInspectionService:
             ):
                 message = "created_file_shape_or_mode_changed"
                 raise DeploymentObservationError(message)
-            if (metadata.st_dev, metadata.st_ino, metadata.st_uid) != (entry.device, entry.inode, os.getuid()):
-                msg = "created_file_identity_changed"
+            if metadata.st_uid != os.getuid():
+                msg = "created_file_owner_changed"
                 raise DeploymentObservationError(msg)
-            if digest_file(path, expected=metadata) != entry.digest:
-                msg = "created_file_digest_changed"
-                raise DeploymentObservationError(msg)
+            with open_generated_file(path, expected=metadata) as descriptor:
+                self.receipt.require_identity_fd(descriptor, entry)
+                if digest_file_fd(descriptor) != entry.digest:
+                    msg = "created_file_digest_changed"
+                    raise DeploymentObservationError(msg)
 
     def _require_known_tree(self, *, bound: bool) -> None:
         receipt = self.receipt.load()

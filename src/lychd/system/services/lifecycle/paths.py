@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import os
 import stat
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 
 from lychd.system.binding_sites import BindingSites, BindingSiteState, inspect_binding_site
@@ -21,9 +23,9 @@ from lychd.system.services.lifecycle.models import (
 _SHA256_PREFIX = "sha256:"
 
 
-def digest_file(path: Path, *, expected: os.stat_result) -> str:
-    """Hash only the expected regular inode through a nonblocking, no-follow open."""
-    digest = hashlib.sha256()
+@contextmanager
+def open_generated_file(path: Path, *, expected: os.stat_result) -> Generator[int]:
+    """Pin the expected regular inode without following or blocking on a racer."""
     flags = os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0)
     descriptor = -1
     try:
@@ -35,17 +37,29 @@ def digest_file(path: Path, *, expected: os.stat_result) -> str:
         if (observed.st_dev, observed.st_ino, observed.st_uid) != (expected.st_dev, expected.st_ino, expected.st_uid):
             msg = f"Generated file identity changed before digest: {path}"
             raise LifecycleError(msg)
-        with os.fdopen(descriptor, "rb") as stream:
-            descriptor = -1
-            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-                digest.update(chunk)
+        yield descriptor
     except OSError as exc:
         msg = f"Cannot digest generated file safely: {path}"
         raise LifecycleError(msg) from exc
     finally:
         if descriptor >= 0:
             os.close(descriptor)
+
+
+def digest_file_fd(descriptor: int) -> str:
+    """Hash the pinned file without closing its caller's descriptor."""
+    digest = hashlib.sha256()
+    offset = 0
+    while chunk := os.pread(descriptor, 1024 * 1024, offset):
+        digest.update(chunk)
+        offset += len(chunk)
     return f"{_SHA256_PREFIX}{digest.hexdigest()}"
+
+
+def digest_file(path: Path, *, expected: os.stat_result) -> str:
+    """Hash only the expected regular inode through a nonblocking, no-follow open."""
+    with open_generated_file(path, expected=expected) as descriptor:
+        return digest_file_fd(descriptor)
 
 
 def lexically_normal(path: Path) -> bool:

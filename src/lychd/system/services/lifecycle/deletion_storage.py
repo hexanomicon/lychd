@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from uuid import UUID
 
+from lychd.system import path_identity
 from lychd.system.btrfs_identity import (
     BTRFS_FIRST_FREE_OBJECTID,
     BTRFS_SUBVOLUME_BOUNDARY_INODES,
@@ -221,7 +222,7 @@ class DeletionStoragePlanner:
             authority=authority,
         )
 
-    def _plan_attested_initialized_subvolume(
+    def _plan_attested_initialized_subvolume(  # noqa: PLR0911 - fail-closed authority checks
         self,
         *,
         target: Path,
@@ -231,9 +232,20 @@ class DeletionStoragePlanner:
     ) -> StorageDeletionEvidence:
         """Re-attest receipt, path, and covering filesystem as one identity."""
         observed_uuid = self._canonical_subvolume_uuid(observed)
+        try:
+            descriptor = open_directory_path(target)
+            try:
+                current = os.fstat(descriptor)
+                if (current.st_dev, current.st_ino) != (metadata.st_dev, metadata.st_ino):
+                    return self._initialized_subvolume_blocked("subvolume changed during observation")
+                persistent = path_identity.observe_identity_fd(descriptor)
+            finally:
+                os.close(descriptor)
+        except (OSError, DirectoryRollbackError, path_identity.PathIdentityError):
+            return self._initialized_subvolume_blocked("persistent subvolume identity unavailable")
         if (
-            metadata.st_dev != authority.device
-            or metadata.st_ino != authority.inode
+            authority.persistent_identity is None
+            or persistent != authority.persistent_identity
             or observed_uuid != authority.subvolume_uuid
             or observed.subvolume_id != authority.subvolume_id
         ):
@@ -262,6 +274,8 @@ class DeletionStoragePlanner:
         try:
             relative = target.relative_to(covering_mount)
             filesystem_uuid = str(UUID(filesystem_uuid))
+            if filesystem_uuid != persistent.filesystem_uuid:
+                return self._initialized_subvolume_blocked("covering filesystem and persistent identity disagree")
         except (TypeError, ValueError):
             return self._initialized_subvolume_blocked(
                 "init-created subvolume cannot be mapped beneath its top-level mount",

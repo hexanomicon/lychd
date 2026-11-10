@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from lychd.system import path_identity
 from lychd.system.constants import PATH_RUNTIME_GUARD_DIR
+from lychd.system.services.layout_directory_settlement import DirectoryRollbackError
+from lychd.system.services.layout_directory_traversal import open_directory_path
 from lychd.system.services.lifecycle._authority import current_authority
 from lychd.system.services.lifecycle.models import (
     CreatedResources,
@@ -96,6 +100,8 @@ class InitializationPlanner:
             ),
             *(inspect_init_file(path, expected_mode=mode, authority=authority) for path, mode in sorted(files.items())),
         ]
+        actions.extend(self._identity_capability_actions(directories))
+        actions.extend(self._receipt_store.plan_recorded_identities())
         receipt = self._receipt_store.load()
         root_attestation = self._receipt_store.plan_dedicated_root_attestation()
         if root_attestation.disposition is LifecycleDisposition.BLOCKED:
@@ -126,11 +132,49 @@ class InitializationPlanner:
                     (
                         "record created resources and deliberately adopt the exact "
                         "dedicated XDG roots as recursively removable only after "
-                        "parent-mount verification and device/inode attestation"
+                        "parent-mount verification and persistent filesystem/object attestation"
                     ),
                 )
             )
         return LifecyclePlan.combine(LifecyclePlan(actions=tuple(actions)))
+
+    @staticmethod
+    def _identity_capability_actions(directories: set[Path]) -> list[LifecycleAction]:
+        """Prove each containing filesystem supports persistent authority before effects."""
+        # Observe each containing filesystem before any creation. Missing paths
+        # inherit the nearest existing ancestor; every created object is observed
+        # again through its publication descriptor before receipt authority exists.
+        authority = current_authority()
+        directories = set(directories)
+        if os.path.lexists(authority.postgres_data):
+            # Preserve a mapped-UID datastore without entering it during init.
+            directories.discard(authority.postgres_data)
+            directories.add(authority.postgres_data.parent)
+        actions: list[LifecycleAction] = []
+        observed_ancestors: set[Path] = set()
+        for target in sorted(directories):
+            existing = target
+            while not os.path.lexists(existing):
+                existing = existing.parent
+            if existing in observed_ancestors:
+                continue
+            observed_ancestors.add(existing)
+            try:
+                descriptor = open_directory_path(existing)
+                try:
+                    path_identity.observe_identity_fd(descriptor)
+                finally:
+                    os.close(descriptor)
+            except (OSError, DirectoryRollbackError, path_identity.PathIdentityError) as exc:
+                actions.append(
+                    LifecycleAction(
+                        LifecycleDisposition.BLOCKED,
+                        LifecycleResourceKind.DIRECTORY,
+                        str(target),
+                        f"persistent filesystem identity unavailable before initialization: {exc}",
+                    )
+                )
+        return actions
 
 
 class InitializationExecutor:

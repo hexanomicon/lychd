@@ -1088,3 +1088,6 @@ def test_directory_race_loser_is_not_reported_or_journaled(
     assert resources.directory_identities == ()
     assert journal == []
     assert target.is_dir()
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")

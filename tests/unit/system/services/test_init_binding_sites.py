@@ -240,3 +240,6 @@ def test_binding_race_winner_is_reinspected_before_journaling(
         assert journaled == [CreatedResources()]
     assert stat.S_IMODE(site.stat().st_mode) == race_mode
     assert not init_sites.receipt.exists
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")

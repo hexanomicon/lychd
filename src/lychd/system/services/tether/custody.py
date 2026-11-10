@@ -12,10 +12,13 @@ import stat
 from contextlib import contextmanager, suppress
 from itertools import pairwise
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID, uuid4
 
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+
 from lychd.domain.tether.models import CompiledTetherPlan, TetherPeerIntent, validate_peer
+from lychd.system import path_identity
 from lychd.system.services.tether.models import (
     EnrollRequest,
     ImagePreparationBundle,
@@ -33,11 +36,28 @@ from lychd.system.services.tether.models import (
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-    from pydantic import BaseModel
 
 _FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
 _MAX_BYTES = 131072
 _DIRS = ("public", "wireguard", "forwarder", "private", "operations", "revocations", "generations")
+
+
+class CustodyReceipt(BaseModel):
+    """Versioned persistent identities; legacy device/inode lists have no authority."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    version: Literal[1]
+    identities: dict[str, path_identity.PersistentPathIdentity]
+
+    @field_validator("version", mode="before")
+    @classmethod
+    def strict_version(cls, value: object) -> object:
+        """Require exact integer schema versions, including when read from JSON."""
+        if type(value) is not int:
+            msg = "Tether custody version must be an integer"
+            raise ValueError(msg)
+        return value
 
 
 class TetherCustody:
@@ -79,9 +99,12 @@ class TetherCustody:
             os.close(descriptor)
 
     @staticmethod
-    def _identity(descriptor: int) -> list[int]:
-        metadata = os.fstat(descriptor)
-        return [metadata.st_dev, metadata.st_ino]
+    def _identity(descriptor: int) -> path_identity.PersistentPathIdentity:
+        try:
+            return path_identity.observe_identity_fd(descriptor)
+        except path_identity.PathIdentityError as exc:
+            msg = "Tether custody persistent filesystem identity is unavailable"
+            raise TetherError(msg) from exc
 
     def initialize(self) -> None:
         """Create absent leaves once; existing leaves require exact creation receipt."""
@@ -91,7 +114,7 @@ class TetherCustody:
         if os.path.lexists(self.directories["public"]):
             msg = "Unreceipted Tether public custody exists; refusing adoption"
             raise TetherError(msg)
-        identities: dict[str, list[int]] = {}
+        identities: dict[str, path_identity.PersistentPathIdentity] = {}
         for role in _DIRS:
             path = self.directories[role]
             with self._directory(path.parent) as parent:
@@ -111,7 +134,8 @@ class TetherCustody:
             with self._directory(path) as descriptor:
                 os.fchmod(descriptor, 0o755 if role in {"wireguard", "forwarder"} else 0o700)
                 identities[role] = self._identity(descriptor)
-        self._write("private", ".custody.json", json.dumps(identities).encode(), immutable=True)
+        receipt = CustodyReceipt(version=1, identities=identities)
+        self._write("private", ".custody.json", receipt.model_dump_json().encode(), immutable=True)
         self.attest()
 
     def attest(self) -> None:
@@ -120,7 +144,12 @@ class TetherCustody:
         if raw is None:
             msg = "Tether creation receipt is absent; preserve uncertain custody"
             raise TetherError(msg)
-        expected = cast("dict[str, list[int]]", json.loads(raw))
+        try:
+            receipt = CustodyReceipt.model_validate_json(raw)
+        except ValidationError as exc:
+            msg = "Unsupported or malformed Tether custody receipt; preserve legacy evidence"
+            raise TetherError(msg) from exc
+        expected = receipt.identities
         paths = {**self.directories, "codex": self.codex_root, "crypt": self.crypt_root}
         if set(expected) != set(paths):
             msg = "Tether custody receipt has an unknown or missing role"

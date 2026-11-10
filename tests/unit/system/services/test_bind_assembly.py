@@ -658,3 +658,6 @@ def test_historical_peer_closure_reconciles_after_new_image_full_bind_without_re
     raw = native.custody.read("operations", f"{revoke.operation_id}.json")
     assert raw is not None
     assert OperationReceipt.model_validate_json(raw).binding_generation == original_binding
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")

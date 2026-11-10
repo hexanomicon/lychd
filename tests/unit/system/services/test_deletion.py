@@ -12,6 +12,7 @@ from typing import cast
 
 import pytest
 
+from lychd.system import path_identity
 from lychd.system import (
     protected_retirement as protected_retirement_module,
 )
@@ -673,6 +674,14 @@ def test_init_receipted_unmounted_subvolume_pauses_before_generic_tree_removal(
         inode=metadata.st_ino,
         subvolume_uuid=_SUBVOLUME_UUID,
         subvolume_id=259,
+        persistent_identity=path_identity.PersistentPathIdentity(
+            filesystem="btrfs",
+            filesystem_uuid=_FILESYSTEM_UUID,
+            inode=metadata.st_ino,
+            generation=1,
+            subvolume_id=259,
+            subvolume_uuid=_SUBVOLUME_UUID,
+        ),
     )
     harness.subvolumes.identities[target] = ObservedBtrfsSubvolume(
         uuid=_SUBVOLUME_UUID,
@@ -2596,3 +2605,6 @@ def test_retired_native_vessel_blocks_deletion_before_any_effect(tmp_path: Path,
     assert harness.retirement.execute_calls == 0
     assert harness.bindings.destroy_calls == 0
     assert not harness.checkpoint.exists
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")

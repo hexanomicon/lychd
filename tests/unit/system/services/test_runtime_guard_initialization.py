@@ -71,3 +71,6 @@ def test_init_plan_requires_private_guard_without_changing_existing_modes(
     assert action.disposition is (LifecycleDisposition.BLOCKED if existing else LifecycleDisposition.WOULD_CREATE)
     if existing:
         assert stat.S_IMODE(guard.stat().st_mode) == 0o755
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")

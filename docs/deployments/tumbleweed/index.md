@@ -581,9 +581,23 @@ It also requires the receipted Phylactery subvolume identity (or an exact mountp
 loopback-only listener.
 
 On Btrfs, `init` creates the PostgreSQL `data` directory as a subvolume and records its ID and
-UUID in the version-2 lifecycle receipt. A subvolume is not a mountpoint, so `lychd status`
+UUID in the version-3 lifecycle receipt. A subvolume is not a mountpoint, so `lychd status`
 reports `not an exact mountpoint`. That is the expected unmounted-subvolume shape; acceptance
 joins the typed receipt authority to the existing isolated live subvolume observer instead.
+
+### Persistent identity across a host reboot
+
+Fresh initialization records version-3 lifecycle identities from the opened filesystem objects.
+Btrfs device numbers may change after reboot; they are used only for live race checks. Persistent
+checks bind filesystem UUID, containing subvolume UUID/ID, inode and inode generation. Ext4 uses
+its filesystem UUID, inode and generation. Other filesystems or unavailable identity capabilities
+refuse before initialization effects; temporary Btrfs clone mounts are not admitted.
+
+Version-1/2 lifecycle receipts lack this proof. They remain evidence, but the new native code
+refuses to use or reseal them. Do not edit receipts, substitute a new device number, or rerun init
+to adopt uncertain state. This change supplies no legacy migration or whole-filesystem restore
+procedure. A fresh installation still needs actual reboot and second-run acceptance; source tests
+do not establish those observations.
 
 ### Native deployment protocol 1
 

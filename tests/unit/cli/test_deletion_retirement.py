@@ -338,3 +338,6 @@ def test_del_refuses_receipt_owned_bad_setting_before_any_effect(
     assert owned_scribe.inspect_owned_bindings() == owned
     assert {path: path.read_bytes() for path in original_files} == original_files
     assert not any(root.exists() for root in fixture.services.planner.paths.dedicated_roots)
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")

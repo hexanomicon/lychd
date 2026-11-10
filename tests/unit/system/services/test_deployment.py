@@ -287,8 +287,9 @@ def test_old_default_image_configuration_refuses(mocker: MockerFixture, tmp_path
     path.chmod(0o600)
     service: Any = object.__new__(DeploymentInspectionService)
     mocker.patch.object(service, "_require_original_files")
-    metadata = path.stat()
     service.receipt = mocker.Mock()
+    service.receipt.read_original_file.return_value = path.read_bytes()
+    metadata = path.stat()
     service.receipt.load.return_value = SimpleNamespace(
         files=(
             SimpleNamespace(
@@ -468,3 +469,83 @@ def test_deployment_projection_matches_the_actual_complete_bind_compiler() -> No
     assert plain == compiled.plain_unit_mapping()
     assert plain["lychd-reactor.service"]
     assert "lychd-reactor.path" in plain
+
+
+@pytest.mark.usefixtures("persistent_identity_observer")
+@pytest.mark.parametrize("race", ["none", "replacement", "mutation", "parent_replacement"])
+def test_configuration_accepts_device_renumbering_without_rebasing_creation_evidence(  # noqa: PLR0915 - full consumer and race witnesses
+    mocker: MockerFixture,
+    tmp_path: Path,
+    race: str,
+) -> None:
+    """The actual configuration consumer must survive a different boot dev_t."""
+    import json
+    import os
+
+    from tomlkit import dumps
+
+    from lychd.system.services.lifecycle.models import CreatedResources
+    from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
+
+    root = tmp_path / "codex"
+    root.mkdir()
+    path = root / "lychd.toml"
+    declared = SettingsSnapshot(payload="{}").materialize()
+    declared.server.web.image = DeploymentRequest(REVISION).image_ref
+    path.write_text(dumps(declared.model_dump(mode="json", exclude_none=True)))
+    path.chmod(0o600)
+    mocker.patch("lychd.system.constants.PATH_CODEX_ROOT", root)
+    mocker.patch("lychd.system.constants.PATH_LYCHD_TOML", path)
+    store = LifecycleReceiptStore(root / ".lychd-lifecycle.json")
+    store.record(CreatedResources(files=(path,)))
+    document = json.loads(store.path.read_bytes())
+    document["files"][0]["device"] += 12345
+    store.path.write_text(json.dumps(document))
+    original = store.path.read_bytes()
+    service: Any = object.__new__(DeploymentInspectionService)
+    service.receipt = store
+    mocker.patch.object(service, "_roots", return_value=())
+    mocker.patch("lychd.system.services.deployment.get_settings", return_value=declared)
+
+    original_check = service._require_original_files
+    real_pread = os.pread
+    observed_descriptors: list[int] = []
+    identity_check = store.require_identity_fd
+
+    def identity(descriptor: int, entry: Any) -> None:
+        identity_check(descriptor, entry)
+        observed_descriptors.append(descriptor)
+
+    def read(descriptor: int, size: int, offset: int) -> bytes:
+        assert observed_descriptors[-1] == descriptor
+        content = real_pread(descriptor, size, offset)
+        if race == "mutation":
+            path.write_bytes(content + b"# raced\n")
+        elif race == "parent_replacement":
+            root.rename(tmp_path / "original-codex")
+            root.mkdir()
+            path.write_bytes(content)
+            path.chmod(0o600)
+            store.path.write_bytes(original)
+            store.path.chmod(0o600)
+        return content
+
+    def precheck() -> None:
+        original_check()
+        if race == "replacement":
+            contents = path.read_bytes()
+            path.rename(root / "original-config")
+            path.write_bytes(contents)
+            path.chmod(0o600)
+        mocker.patch.object(store, "require_identity_fd", side_effect=identity)
+        mocker.patch("lychd.system.services.lifecycle.receipt.os.pread", side_effect=read)
+
+    mocker.patch.object(service, "_require_original_files", side_effect=precheck)
+    if race == "none":
+        result = service._configuration(DeploymentRequest(REVISION))
+        assert result.server.web.image == DeploymentRequest(REVISION).image_ref
+        assert observed_descriptors
+    else:
+        with pytest.raises(DeploymentObservationError, match="configuration_changed_during_observation"):
+            service._configuration(DeploymentRequest(REVISION))
+    assert store.path.read_bytes() == original

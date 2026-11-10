@@ -1294,3 +1294,6 @@ def test_materialized_creation_interruption_retains_ancestry(
     assert commits == 1
     assert postgres_data.is_dir()
     assert postgres_data.parent.is_dir()
+
+
+pytestmark = pytest.mark.usefixtures("persistent_identity_observer")
