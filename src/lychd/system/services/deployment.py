@@ -14,7 +14,7 @@ import re
 import stat
 import sys
 import tomllib
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -359,36 +359,6 @@ class DeploymentInspectionService:
             portals=(),
         )
         return list(request.manifests), request.plain_unit_mapping()
-
-    def observe_owned_units(
-        self,
-        bindings: OwnedBindings,
-        *,
-        unit_names: frozenset[str],
-    ) -> dict[str, dict[str, str]]:
-        """Attest effective definitions for an exact retained subset without loading Settings."""
-        if not bindings.receipt_present or bindings.generation is None or not unit_names <= set(bindings.runtime_units):
-            msg = "effective_binding_ownership_missing"
-            raise DeploymentObservationError(msg)
-        selected = replace(
-            bindings,
-            quadlet_sources=tuple(
-                source
-                for source in bindings.quadlet_sources
-                if source.suffix in {".pod", ".container"} and runtime_unit_for_source(source.name) in unit_names
-            ),
-            systemd_sources=tuple(
-                source for source in bindings.systemd_sources if runtime_unit_for_source(source.name) in unit_names
-            ),
-            runtime_units=tuple(sorted(unit_names)),
-        )
-        sources = (*selected.quadlet_sources, *selected.systemd_sources)
-        if frozenset(runtime_unit_for_source(source.name) for source in sources) != unit_names:
-            msg = "effective_binding_unit_missing"
-            raise DeploymentObservationError(msg)
-        observed = {name: self.observe_unit(name) for name in sorted(unit_names)}
-        self._require_effective_bindings(selected, observed)
-        return observed
 
     @staticmethod
     def _require_effective_bindings(bindings: OwnedBindings, observed: dict[str, dict[str, str]]) -> None:

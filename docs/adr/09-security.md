@@ -95,34 +95,6 @@ credentials crossing instance boundaries; no untrusted sites or extensions enter
 Tunnel loss has no public fallback. Removing a key alone does not revoke an established SSH
 connection: transport removal must close the live road and persist the removal before reuse.
 
-The Designed native replacement, [Tether `single-operator-forward@1`](39-vpn.md#single-operator-profile),
-keeps this same single-owner application boundary while moving the tunnel and a separate standard
-OpenSSH forwarding role into a dedicated rootless Pod. Its WireGuard container receives tunnel
-secrets only; the forwarding container receives its own SSH host key and the client's public
-authorized key, never the Altar Basic credential. Client private keys stay on the client. Neither
-role receives Core's network namespace, broad host-loopback reachability or host control authority.
-
-Only the compiler-selected pasta mapping connects the forwarding container's loopback destination
-to the configured host-loopback Altar port. Other host addresses, listeners, DNS and routes require
-negative installed probes; disabling one convenient host alias is not isolation evidence. OpenSSH
-must enforce public-key-only authentication, an exact tunnel listener and destination,
-`MaxSessions 0`, and refusal of shell, reverse, agent and Unix-socket forwarding. Effective daemon
-configuration and actual unauthorized-channel failures must both be checked.
-
-A durable closure latch is also consumed by a continuously supervised host path guard. Its
-failure or observation of revocation requests closure independently of the invoking CLI; exact
-settlement still has to be observed. Boot-time refusal alone cannot close an existing connection. This native profile remains
-Designed and changes no active-Vessel lifecycle or remote-IAM delivery claim. The infrastructure
-candidate above remains independently owned until a qualified replacement has retired it.
-
-The guard watches a fixed persistent closure latch, separate from retained generation-specific
-revocation evidence. Its handler's conflict/ordering edges request transport stops before host-lock
-acquisition. The successful handler remains active/exited; failure/timeout has bounded retries
-and path-failure propagation. These mechanisms require whole-Pod, process-tree and session
-settlement evidence before claiming closure. The dedicated Tether stop adapter is monotonic:
-after a durable fence no compensation path may restart the revoked transport. Namespace output
-is default-deny; DNS, IPv6 and unrelated egress are denied before WireGuard readiness or SSH start.
-
 Repository checks authorize no installed-security claim. Qualification requires two-endpoint
 positive/negative reachability, browser/SSE and hostile-origin checks, reboot, loss and live
 revocation observations. Credential compromise requires transport quarantine and an explicit

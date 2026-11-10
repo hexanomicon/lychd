@@ -74,33 +74,6 @@ opened inode before reading. Payload retirement follows a durable tombstone and 
 attestation, then namespace sync. Unknown names, extra hardlinks, replacements and interrupted
 outcomes remain recovery evidence rather than deletion authority.
 
-### Persistent binding identity
-
-Scribe's live generation is a concurrency token, including current device/inode observations;
-it is not durable authority across a reboot. Its existing ownership observation, transaction
-and deletion compare-and-swap contracts remain unchanged. Consumers that retain binding
-authority across boots use a separate, opt-in Scribe observation. It returns a strict frozen
-`PersistentBindingIdentity` with exact integer `version: 1` and a lowercase 64-character SHA-256
-`digest`. Requesting that observation requires the expected live generation; ordinary Scribe
-observation does not acquire a persistent-filesystem requirement.
-
-The version-1 digest starts with `lychd-scribe-persistent-binding-v1\0`, then includes the exact
-authority pathname bytes and authority bytes, a source count, and every receipt-owned source
-ordered by its filesystem pathname bytes. Each source contributes its pathname bytes, the shared
-persistent identity's complete compact typed JSON, and its exact content. Byte strings are
-framed by unsigned 64-bit big-endian lengths; the count uses the same integer encoding.
-The authority file's object identity is not part of this digest: rewriting identical authority
-bytes alone does not establish a new source identity.
-
-Capture pins each file and its parent without following symlinks. Source content and persistent
-identity come from the same descriptor. Files must belong to the invoking UID, have one hardlink,
-and have mode `0644` for sources or `0600` for authority; each bounded read permits at most 1 MiB.
-Before/after metadata, named leaf and freshly resolved parent/mount checks reject replacement
-or concurrent writes. The live generation reconstructed from those exact captured bytes and
-live identities must equal the requested generation, as must fresh final ordinary ownership
-observation and its complete source set. A changed, missing or unsupported observation refuses;
-no cached name, content-only digest or legacy live token substitutes for this proof.
-
 ### Retire only recorded identities
 
 After a complete transaction, the version-3 lifecycle receipt seals the persistent filesystem
@@ -130,61 +103,6 @@ walks reject mount crossings and possible Btrfs root/stub signatures. Deletion m
 re-attested leaf to a collision-resistant private sibling before type-specific removal; mismatch or
 failure restores it when possible, otherwise leaves a typed recovery marker. Published init
 creations are never pathname-deleted as rollback.
-
-## Tether custody (Designed) {#tether-custody-designed}
-
-The first managed Tether profile adds a fixed `tether/` leaf beneath the Codex for its public
-peer-intent record and separate forwarding public authorization, and `tether/` beneath the Crypt
-for preparation/operation receipts, a fixed `closed.json` active closure latch and immutable
-revocation records keyed by generation. Its static topology remains a Rune. The fixed latch
-pathname never contains a peer or generation supplied by a caller; generation-specific evidence
-is stored separately and retained when an admitted cold re-enrollment clears that latch.
-These proposed leaves require native creation/identity receipts before use; their names do not
-authorize adopting existing files. Peer records are not loaded as shared Settings or Runes, so
-enrollment/revocation does not invalidate an unrelated active Core configuration generation.
-
-Initial `plan.json` and `preparation.json` remain immutable preparation evidence. Cold image
-replacement adds immutable operation-keyed transition bundles and one fixed
-`current-preparation.json` selector within the same private custody leaf. A bundle retains its
-parent selection identity, exact request digest, compiled target plan and target preparation
-receipt; the selector binds its operation identity and content digest. Only the selector commits
-which preparation is current. Before the first transition, a fully attested original pair has a
-typed initial selection identity; the owner durably publishes that same selection under the lock
-before writing any transition bundle. Absent selection with existing transition evidence,
-a malformed selector, missing bundle or inconsistent link refuses preparation selection, bind
-and startup instead of falling back.
-Prior bundles, plans, preparation receipts, secret-creation identities and generation/revocation
-history remain available for exact historical ownership checks. No caller supplies a pathname.
-Selector publication follows the same atomic replacement and durability law as other custody
-records; its digest is a compare-and-swap condition, not protection against whole-state rollback.
-
-Closure may resolve immutable plan content independently of preparation selection only when the
-exact current generation and correlated native enrollment request, digest and binding establish
-its envelope. Existing Scribe and runtime identity checks still precede effects. This read path
-grants no preparation, binding or startup authority.
-
-The typed selection has ordered fields `version` (1), `installation_id`, `operation_id`,
-`bundle_digest` and `parent_preparation_digest` (null initially). Its public preparation-selection
-digest uses the native record digest: SHA-256 of UTF-8 `model_dump_json()` with all fields present.
-The bundle digest uses that same rule over the complete typed bundle. The initial bundle is the
-retained compiled plan and preparation receipt, with the receipt's original operation UUID as
-selection identity. Its read-only computed selection and first persisted selector are identical.
-Replacement bundles additionally bind their exact parent selection and request digest; unique
-transition operation identity prevents an old expected digest matching a later return to an image.
-
-The host operation owner publishes these bounded records through the existing no-follow,
-same-directory atomic-write and durability law. Records bind installation identity and the static
-Rune envelope. No user-selected path is accepted. The host operation and startup guard read
-current public intent and fences directly; container mounts expose only each role's explicitly required generated projection,
-never the whole Codex, Crypt or the private operation journal. Atomic publication must remain
-visible to the consumer; mounting a replaceable individual file cannot certify freshness.
-
-The existing shared Quadlet and user-systemd binding sites and complete Scribe receipt remain the
-only unit authority. This profile adds no separate binding directory or unit writer. Init/layout,
-inventory and retirement must recognize the new leaves before effectful delivery, preserve
-unrelated objects, and refuse deletion until the exact Tether runtime is quiescent. Revocation
-evidence survives ordinary rebind and peer-record rollback. Whole-state restoration still needs
-the independent reconciliation or fresh identity required by [VPN](39-vpn.md#native-peer-operations).
 
 ## PostgreSQL substrate
 

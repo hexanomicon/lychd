@@ -3,20 +3,6 @@
 Use the canonical [Tumbleweed runbook](../../docs/deployments/tumbleweed/index.md) for controller
 setup, private inventory and variables, check/apply commands, limitations and host acceptance.
 
-The runtime no-sudo gate supports Tumbleweed's distro `sudo` package profile with
-`/etc` administrator configuration overriding `/usr/etc`. It requires a standalone, root-owned,
-non-symlink `/etc/sudoers` and trusted configuration directories and files. `visudo` validates
-the complete policy; `cvtsudoers` JSON expands aliases and matches `lychd` with its actual Unix
-groups. Every matching rule is refused. Includes, remote or unknown sudoers NSS sources,
-netgroups, non-Unix groups and custom plugin configuration require administrator review.
-The three tools must share the distro's source RPM. A narrowly parsed `sudo -V` build diagnostic
-must confirm `/etc/sudoers:/usr/etc/sudoers`; this diagnostic never decides authorization.
-Unknown build paths and JSON shapes fail closed, while package-version changes alone do not.
-
-The host package floor includes `wireguard-tools` for native Tether's `wg` key factory;
-OpenSSH supplies `ssh-keygen`. Verification requires both executables. Installing these OS
-prerequisites creates no VPN keys, peers or units; native Tether owns its preparation and runtime.
-
 | Playbook | Authority | Effect |
 | --- | --- | --- |
 | `host.yml` / `verify.yml` | administrator + sudo | Converge / observe the installed host floor. |

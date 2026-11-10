@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from lychd.system.services.scribe.naming import (
     QUADLET_SUFFIXES,
@@ -15,24 +15,6 @@ from lychd.system.services.scribe.naming import (
     runtime_unit_for_source,
     validate_owned_filename,
 )
-
-
-class PersistentBindingIdentity(BaseModel):
-    """Versioned durable binding authority, separate from the live CAS generation."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
-
-    version: Literal[1]
-    digest: str = Field(pattern=r"^[0-9a-f]{64}$")
-
-    @field_validator("version", mode="before")
-    @classmethod
-    def strict_version(cls, value: object) -> object:
-        """Require an exact integer version, including for JSON input."""
-        if type(value) is not int:
-            msg = "Persistent binding identity version must be an integer"
-            raise ValueError(msg)
-        return value
 
 
 class OwnershipManifest(BaseModel):

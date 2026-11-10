@@ -10,8 +10,6 @@ lychd_floor_packages:
   - openssh-common
   - openssh-clients
   - openssh-server
-  - sudo
-  - wireguard-tools
   - firewalld
   - btrfsprogs
   - snapper

@@ -26,30 +26,11 @@ PYTEST_TARGETS ?= tests
 CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/architecture/test_release_legal_artifacts.py tests/architecture/test_ward_native_postgres_receipt.py \
 	tests/architecture/test_core_check_entrypoints.py tests/architecture/test_container_only_receipt.py \
-	tests/architecture/test_state_of_work.py \
 	tests/unit/test_app.py tests/unit/cli/test_cli.py \
 	tests/unit/system/operator tests/unit/cli/test_operator.py \
 	tests/unit/cli/test_deletion_retirement.py \
 	tests/unit/system/services/test_binding_preflight.py \
 	tests/unit/system/services/test_init_binding_sites.py tests/unit/system/services/test_bind_compilation.py \
-	tests/unit/system/services/test_bind.py tests/unit/system/services/test_bind_assembly.py \
-	tests/unit/system/services/test_binding_lifecycle.py \
-	tests/unit/system/services/test_deployment.py tests/unit/system/services/test_deployment_acceptance.py \
-	tests/unit/system/services/test_btrfs.py \
-	tests/unit/system/services/test_datastore_custody.py \
-	tests/unit/system/services/test_deletion.py \
-	tests/unit/system/services/test_deletion_storage.py \
-	tests/unit/system/services/test_initialization.py \
-	tests/unit/system/services/test_layout.py \
-	tests/unit/system/services/test_lifecycle.py \
-	tests/unit/system/services/test_publication.py \
-	tests/unit/system/services/test_runtime_guard_initialization.py \
-	tests/unit/system/test_path_identity.py \
-	tests/unit/cli/test_tether.py tests/unit/domain/tether \
-	tests/unit/system/services/test_tether_closure.py tests/unit/system/services/test_tether_custody.py \
-	tests/unit/system/services/test_tether_operations.py tests/unit/system/services/test_tether_runtime.py \
-	tests/unit/system/services/test_tether_secrets.py \
-	tests/unit/system/services/test_scribe.py tests/unit/system/services/test_scribe_render.py \
 	tests/unit/system/test_schemas.py tests/unit/system/services/test_artifact_custody.py \
 	tests/unit/system/services/test_artifact_publication.py \
 	tests/unit/system/services/test_native_candidate_custody.py \
@@ -86,7 +67,20 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/integration/test_bridge_casting_workflow.py \
 	tests/integration/test_blockworld_placement_vertical.py \
 	tests/integration/test_crypt_extension_vertical.py \
-	tests/integration/test_extension_configuration.py
+	tests/integration/test_extension_configuration.py \
+	tests/unit/system/services/test_btrfs.py \
+	tests/unit/system/services/test_datastore_custody.py \
+	tests/unit/system/services/test_deletion.py \
+	tests/unit/system/services/test_deletion_storage.py \
+	tests/unit/system/services/test_deployment.py \
+	tests/unit/system/services/test_initialization.py \
+	tests/unit/system/services/test_layout.py \
+	tests/unit/system/services/test_lifecycle.py \
+	tests/unit/system/services/test_publication.py \
+	tests/unit/system/services/test_runtime_guard_initialization.py \
+	tests/unit/system/test_path_identity.py \
+	tests/unit/system/services/test_deployment_acceptance.py \
+	tests/architecture/test_state_of_work.py
 CONTAINER_TEST_TARGETS ?= tests/integration/test_db_consent_pg.py \
 	tests/integration/test_ward_pg.py tests/integration/test_native_candidate_authority_pg.py \
 	tests/integration/test_db_blockworld_pg.py \

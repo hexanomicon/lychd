@@ -118,55 +118,6 @@ tokens are refused; they cannot introduce an independent secret, mount, device, 
 network-policy path. There is no `Stone`, `ServiceStone`, or `AmbientStone` base type:
 **Soulstone** is the sole accepted service term using that suffix.
 
-### Designed isolated Tether body
-
-The first [Tether profile](39-vpn.md#single-operator-profile) contributes one dedicated rootless
-Pod, WireGuard and forwarding containers, and a host guard through a closed compiler contract.
-The compiler retains host-assigned registrant provenance through normalization and policy checks;
-a contributor cannot self-assert the Tether role to obtain its special authority.
-It does not widen ordinary shared-Pod publication: Core and generic extension ports retain their
-loopback TCP grammar. Only the Tether compiler may produce its exact UDP publication, pasta
-loopback mapping, network policy and namespaced WireGuard capability. The contribution cannot
-select arbitrary networks, capabilities, host devices, unit directives or commands.
-
-The WireGuard container drops other capabilities and adds only `CAP_NET_ADMIN` in its private
-user/network namespace. The standard OpenSSH container has no network-administration capability;
-its fixed rootless privilege-separation profile admits only `CAP_SETUID`, `CAP_SETGID` and
-`CAP_SYS_CHROOT` beyond a dropped-all baseline. Qualification must establish that this image and
-its fixed users work with that set; missing behavior is a refusal, not permission to add ambient
-capabilities. Neither role receives a host namespace, host control socket, broad mount or Core
-secret. Read-only image roots and explicitly bounded runtime scratch remain required.
-The project-owned Containerfile packages standard distribution WireGuard, iproute, nftables and
-OpenSSH tools with fixed Python orchestration. It introduces no custom VPN/SSH implementation or
-new runtime language. Native preparation creates and receipts the exact two server secrets before
-bind; their typed `Secret` references are still validated by the complete-fileset binder.
-
-Startup orders the path guard, checked Pod, WireGuard policy/interface readiness, then OpenSSH.
-WireGuard readiness means the exact default-deny input/output/forwarding policy and declared
-interface/address have been observed, not merely that its container process started. OpenSSH
-binds to and orders after that WireGuard service and may not start before readiness. DNS and
-IPv6 are denied and only the exact ciphertext, peer-to-SSH and loopback-Altar flows are admitted.
-The namespace policy precedes opening the tunnel; no permissive startup interval is accepted.
-
-Scribe remains the sole complete-fileset unit writer. Initial installation and topology changes
-use ordinary bind; subsequent peer operations change only the separately owned public intent and
-operation evidence, leaving the compiled envelope and shared binding generation unchanged. The
-existing single Scribe receipt therefore inventories these units for observation and retirement;
-there is no second binding site, partial `reconcile_all` call, or extension-owned unit writer.
-This is a required implementation seam, not a delivered Tether contribution.
-
-The Pod and both containers bind to and order after the guard path. Its inactivity or failure
-stops the complete Pod and both process trees; stopping only the configuring WireGuard
-process is insufficient because its kernel interface can outlive that process. Qualification
-must observe namespace and session closure, including restart races. No dependency edge may
-stop, restart or reconfigure Core as a consequence of Tether failure.
-The fixed stop handler conflicts with and orders after all three transport units, without
-requiring them. Its successful oneshot stays active/exited; its finite timeouts and cumulative
-start limit follow [Privilege](10-privilege.md#tether-host-operations-designed). Dependency stop
-requests, watcher failure and unit exit status do not substitute for exact teardown readback.
-All transport services also have finite stop timeouts and whole-process-group termination; the
-closure observation includes the Pod namespace after the container stop transactions finish.
-
 ### Versioned application deployments
 
 A future `ApplicationDeploymentManifest@1` admits a complete application-specific service body

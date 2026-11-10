@@ -23,18 +23,6 @@ class HostAuthorityTests(unittest.TestCase):
     def setUpClass(cls):
         cls.tasks = list(flattened(yaml.safe_load(TASKS.read_text())))
 
-    def test_floor_installs_native_key_and_structured_policy_prerequisites_only(self):
-        packages = yaml.safe_load((TASKS.parent.parent / "vars/main.yml").read_text())["lychd_floor_packages"]
-        self.assertTrue({"wireguard-tools", "openssh-server", "sudo"} <= set(packages))
-        for task, _ in self.tasks:
-            argv = task.get("ansible.builtin.command", {}).get("argv", [])
-            if isinstance(argv, list):
-                self.assertNotIn("genkey", argv)
-                self.assertNotIn("wg", argv)
-            unit = task.get("ansible.builtin.systemd_service", {}).get("name", "")
-            self.assertNotIn("wireguard", unit)
-            self.assertNotIn("wg-quick", unit)
-
     def test_all_home_writes_and_relabels_run_as_runtime_user(self):
         inspected = 0
         for task, user in self.tasks:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
@@ -16,10 +15,7 @@ from lychd.system.schemas import (
     QuadletContainer,
     QuadletPod,
     QuadletTarget,
-    QuadletTetherPod,
     quadlet_environment_assignment,
-    systemd_environment_assignment,
-    systemd_executable_token,
 )
 from lychd.system.services.scribe.errors import ScribeConflictError
 from lychd.system.services.scribe.naming import (
@@ -27,48 +23,6 @@ from lychd.system.services.scribe.naming import (
     QUADLET_SUFFIXES,
     validate_owned_filename,
 )
-
-
-def _tether_condition_path(path: Path) -> str:
-    """Encode a fixed condition's scalar path, not an executable or shell word."""
-    value = str(path)
-    if (
-        not path.is_absolute()
-        or ".." in path.parts
-        or value != value.strip()
-        or (not value.isprintable() or "\\" in value)
-    ):
-        msg = "Tether unit conditions require safe canonical absolute paths"
-        raise ValueError(msg)
-    return value.replace("%", "%%")
-
-
-def _tether_host_parameters() -> dict[str, object]:
-    """Pin host hooks to the same installation environment as binding."""
-    from lychd.system.constants import (
-        PATH_CODEX_ROOT,
-        PATH_CRYPT_ROOT,
-        PATH_XDG_CACHE_HOME,
-        PATH_XDG_CONFIG_HOME,
-        PATH_XDG_DATA_HOME,
-    )
-
-    environment = {
-        "HOME": str(Path.home()),
-        "XDG_CONFIG_HOME": str(PATH_XDG_CONFIG_HOME),
-        "XDG_DATA_HOME": str(PATH_XDG_DATA_HOME),
-        "XDG_CACHE_HOME": str(PATH_XDG_CACHE_HOME),
-    }
-    return {
-        # These are the fixed public-intent/private-latch roles in
-        # CompiledTetherPlan and TetherCustody, never caller-selected paths.
-        "tether_peer_path": _tether_condition_path(PATH_CODEX_ROOT / "tether/peer.json"),
-        "tether_closed_path": _tether_condition_path(PATH_CRYPT_ROOT / "tether/closed.json"),
-        "tether_host_python": systemd_executable_token(Path(sys.prefix) / "bin" / "python"),
-        "tether_host_environment": tuple(
-            systemd_environment_assignment(key, value) for key, value in sorted(environment.items())
-        ),
-    }
 
 
 class BindingRenderer:
@@ -134,24 +88,13 @@ class BindingRenderer:
 
     def _write_manifest(self, manifest: QuadletBase, target_dir: Path) -> None:
         """Render one manifest into isolated staging after validating its name."""
-        if isinstance(manifest, QuadletTetherPod):
-            content = self._env.get_template("tether-pod.jinja").render(
-                **manifest.model_dump(),
-                **_tether_host_parameters(),
-            )
+        if isinstance(manifest, QuadletPod):
+            content = self._pod_tmpl.render(**manifest.model_dump())
             filename = f"{manifest.pod_name}.pod"
             site: Literal["quadlet", "systemd"] = "quadlet"
             suffixes = QUADLET_SUFFIXES
-        elif isinstance(manifest, QuadletPod):
-            content = self._pod_tmpl.render(**manifest.model_dump())
-            filename = f"{manifest.pod_name}.pod"
-            site = "quadlet"
-            suffixes = QUADLET_SUFFIXES
         elif isinstance(manifest, QuadletContainer):
-            parameters = manifest.model_dump()
-            if manifest.tether_role is not None:
-                parameters.update(_tether_host_parameters())
-            content = self._container_tmpl.render(**parameters)
+            content = self._container_tmpl.render(**manifest.model_dump())
             filename = f"{manifest.container_name}.container"
             site = "quadlet"
             suffixes = QUADLET_SUFFIXES

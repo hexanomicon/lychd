@@ -16,8 +16,6 @@ For a laptop, use the independent [KDE workstation profile](workstation.md).
 administrator, separately from the runtime account; the guarded provisioning branch includes it.
 [AutoYaST](install.md) prepares explicit installation inputs for either class. Optional
 [private access](access.md) has its own host lifecycle and one-owner acceptance boundary.
-[Native Tether](tether.md) gives the separate fresh-install pilot, with Core started before peer
-enrollment and subsequent application operations owned by the native CLI.
 [Snapshot upgrade qualification](qualification.md) separately tests one exact OS transition in
 an owned disposable QEMU guest; ordinary host apply still performs no rolling upgrade or reboot.
 

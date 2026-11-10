@@ -11,15 +11,13 @@ icon: material/shield-link-variant-outline
 It may eventually appear as a LychD-managed WireGuard service or as an attachment to an externally
 managed private network.
 
-Tether remains **Designed** pending installed qualification. This source candidate implements
-the closed native peer-operation path below; [State of
-Work](../../state-of-the-work.md#vpn-tether) records its evidence and limits. Public peer intent,
+Tether is **Designed**; no managed VPN or peer-operation path ships. [State of
+Work](../../state-of-the-work.md#vpn-tether) records that delivery boundary. The public peer intent,
 secret references, endpoint and route checks, revision fences, and retained revocation tombstones
-remain subject to that qualification boundary.
+below are accepted design.
 
-The general Extension port grammar accepts only `127.0.0.1:<host>:<container>` and rejects UDP.
-The native Tether compiler contribution separately admits its exact UDP listener; Core remains
-loopback-published. Remote, proxied, tunneled, and untrusted-browser
+Generated deployment remains IPv4-loopback-only: the Extension port grammar accepts only
+`127.0.0.1:<host>:<container>` and rejects UDP. Remote, proxied, tunneled, and untrusted-browser
 use is unsupported. The separate infrastructure-owned
 [single-owner access candidate](../../deployments/tumbleweed/access.md) permits an explicit
 qualification experiment while keeping loopback publication. It is not a native Tether
@@ -46,144 +44,52 @@ and routes, endpoint and keepalive policy, enabled or revoked state, and creatio
 metadata. Keep private and preshared keys with the secret owner, outside ordinary documentation,
 logs, QR history, and public peer records.
 
-The host-owned `run tether` namespace exposes only `prepare`, `enroll`, `inspect`, and `revoke`
-in this source candidate. General rotation, client-configuration export and QR projections remain
-future operations; no extension-owned root verb or arbitrary callback is admitted.
+Future typed operations under a host-owned run-operation verb may generate, admit, inspect,
+revoke, rotate, or export short-lived client configuration or QR projections. They would use
+that governed operation path without adding a root CLI verb.
 
-## First native operator profile (Designed) {#first-native-operator-profile}
+## One offered network, many received accesses
 
-`single-operator-forward@1` is the first bounded implementation target: one trusted instance
-owner and one active WireGuard peer. The profile uses standard kernel WireGuard and OpenSSH in
-separate containers of a dedicated rootless Pod outside Core. It is not an installed capability,
-a shared Altar, remote IAM, a mesh, or a VPN exit. The [owning decision](../../adr/39-vpn.md#single-operator-profile)
-defines its exact boundary.
+[ADR 39](../../adr/39-vpn.md#offered-and-imported-roads) separates the network a Lich offers from
+the independent VPN attachments it receives. This is a design example, not an available command,
+Rune schema, or expansion of the first single-peer deployment profile.
 
-The browser continues using `http://127.0.0.1:7134` through an ordinary SSH local forward. The
-server SSH destination is the configured loopback Altar port, reached through one exact pasta
-mapping. Only WireGuard UDP is publicly published. The peer receives only the server tunnel
-`/32`; it receives no DNS, default or LAN route. The existing Basic credential, Host, Origin,
-CORS and CSRF requirements remain unchanged. Keep a dedicated browser profile for this instance.
+Suppose Lich A offers `A-home` to an admitted Lich D. A also receives `B-private` from Lich B and
+`C-private` from Lich C, whose application endpoints are private. B and C independently choose
+the same inner service address:
 
-The static Rune declares the tunnel/deployment envelope. Tether's separate public peer record
-contains the enrolled public key and generation; the forwarding role separately records the SSH
-authorized public key. The client creates and retains both private keys locally. Tether owns only
-server tunnel material; the forwarding role owns its server SSH host key, which the client pins.
-Neither container receives the application password. The server does not export client private
-keys or modify the operator's device.
+| Intended service | Selected attachment | Inner destination | Routing context |
+| --- | --- | --- | --- |
+| B's Intercom | `B-private` | `10.77.0.2:443` | isolated B context |
+| C's Intercom | `C-private` | `10.77.0.2:443` | isolated C context |
 
-For this source candidate, discover the public declaration before the first preparation:
+A selects `(B, B-private, Intercom)` or `(C, C-private, Intercom)`, together with the current
+attachment generation and admitted service policy. The equal addresses are valid because the
+routing contexts are separate. The remote WireGuard UDP contact has its own coordinates; the
+table names the application service inside each tunnel. TLS and Intercom still verify the
+selected remote application identity.
 
-```bash
-lychd run tether inspect --declared
-```
+If B's road fails or is revoked, A's connection to B fails. It is never sent to C or to a public
+replacement. C's independent attachment remains unchanged. Pools and any profile-permitted DNS
+or reconnect behavior retain the same selected road; the first A2A profile's stricter rules still
+apply. A tunnel handshake alone establishes no authenticated Intercom readiness.
 
-Use the returned `envelope.installation_id` and `envelope_digest` for preparation's
-`--installation-id` and `--envelope-digest`, with `--expected-generation 0` and a fresh
-`--operation-id` UUID. This read-only query works before prepared secrets, Tether custody or
-bindings exist. It reports declared intent; installed readiness still requires qualification.
+D's admission to `A-home` gives D no route into `B-private` or `C-private`. Receiving B's or C's
+VPN configuration neither enrolls them into `A-home` nor grants access to A's other services.
+Application-mediated work remains subject to its own caller, destination, disclosure, and effect
+authorization; turning A into a transit router is a separate decision.
 
-The designed operator sequence is:
+For each received access, locally admit the exact remote service, tunnel key references, route
+scope, and required DNS behavior. Imported configurations do not authorize executable hooks,
+default routes, or changes to host DNS. Keep each network's credentials and revocation intent
+separate. A peer with an admitted public endpoint needs no VPN attachment; a private-only peer
+still needs a reachable tunnel endpoint or a separately accepted relay/traversal arrangement.
 
-1. Prepare the Linux/rootless substrate and explicit UDP firewall opening. Qualify the exact
-   kernel, Podman, pasta and OpenSSH combination under an isolated installation first.
-2. Initialize the owned Tether custody leaves. Use the designed `lychd run tether prepare` to
-   create the exact server WireGuard and SSH host-key secrets and their creation receipts. Then
-   install the static service envelope through ordinary complete-fileset bind, which validates
-   both typed secret references. Existing active-Vessel and foreign-revision refusals still apply.
-3. Generate client keys locally. Use the designed `lychd run tether enroll` operation with public
-   keys and exact peer intent. The operation may activate only the already owned Tether units;
-   it cannot change the compiled topology or shared binding generation.
-4. Inspect desired, loaded and observed state through the designed `lychd run tether inspect`.
-   Establish the client WireGuard route and pinned SSH forward separately, then qualify the browser
-   and its refusal boundaries. Unit state alone cannot establish this result.
-5. Use the designed `lychd run tether revoke` to fence the generation and stop the complete private
-   road. Confirm terminal settlement. An incomplete result stays fenced and needs reconciliation;
-   it is not permission to clear the fence or repeat enrollment blindly.
-
-The source candidate implements these closed CLI operations. Follow the
-[fresh Tumbleweed pilot](../../deployments/tumbleweed/tether.md) for the concrete sequence,
-including Core startup before peer enrollment. Installed qualification remains incomplete and
-the profile remains Designed.
-Preparation creates server secrets before bind; later peer operations change only Tether's public
-intent and operation evidence, leaving prepared secret identities and compiled units unchanged.
-The designed image-maintenance route below requires new preparation authority and normal bind.
-Other envelope changes, including interface, UDP endpoint, forwarding destination or secret
-references, have no supported migration in this profile. Editing the Rune and running bind alone
-cannot migrate preparation. Tether cannot update or restart a separately running older Vessel.
-
-### Cold transport image replacement (Designed)
-
-This bounded maintenance design does not establish installed update qualification. Preserve the
-existing server keys and client SSH host-key pin; never delete custody or regenerate keys merely
-to bypass a preparation mismatch.
-
-1. If a peer exists, revoke its exact current generation and confirm full closure. Preserve the
-   active latch and immutable revocation evidence. Without a peer, preparation must still prove
-   the road cold, including a prepared installation that has never been bound.
-2. Read `lychd run tether inspect --prepared` for the installation identity, selected envelope,
-   current preparation-selection digest and current peer generation. This metadata view works
-   without a matching new binding and never starts transport.
-3. Change only the immutable image reference in the Tether Rune. Read
-   `lychd run tether inspect --declared` for the target envelope digest. Use `prepare` with a fresh
-   operation UUID, that target digest, the current peer generation and
-   `--expected-preparation-digest` set to the previously observed selection digest. Review its
-   dry run before effect. All non-image envelope differences refuse.
-4. Preparation reattests the exact existing secret IDs and public fingerprints, retains the old
-   plan and preparation, and atomically selects a new immutable preparation bundle. It does not
-   clear a latch, reset generation, write units, bind or start transport. Retry the identical
-   operation after interruption; stale selection or conflicting intent refuses. Never edit the
-   selector or erase history manually.
-5. Apply ordinary complete-fileset bind. Active-Vessel and foreign-revision restrictions still
-   apply; this procedure provides no Core stop or upgrade bypass. A failed bind leaves the road
-   cold and its prior peer revoked. After successful bind, enroll explicitly with the next peer
-   generation, then qualify the exact updated transport and browser path. Preparation or reboot
-   alone never reactivates the old peer.
-
-The selector is the preparation commit point even if recording operation completion is
-interrupted. Unselected bundles confer no authority. Historical closure records retain their
-original envelope and binding; replacement neither rewrites them nor proves whole-state rollback
-safe. Initial preparation and its flat public receipt remain unchanged.
-
-### Closure and reboot
-
-An independent host systemd path guard watches the durable closure latch and invokes the exact
-owned stop handler. Its conflict/ordering edges stop transport before the handler takes the
-lifecycle lock; watcher loss also requests stop. Closure still requires observed settlement,
-including established sessions, even if the revoking CLI crashes after writing the latch. A
-boot-only check cannot provide that property. The successful handler stays active/exited while
-the fixed latch persists. Re-enrollment first proves transport cold, stops the watcher, preserves
-old revocation evidence, stops/resets the handler and watcher, publishes the new generation,
-clears only the active latch durably, then starts the watcher before transport. Recovery after a
-fence never restarts the revoked generation.
-Boot requests require public peer intent and an absent closure latch, followed by the same native
-preflight as explicit activation. A completed, exactly correlated enrollment permits a new boot
-incarnation. An incomplete enrollment admits only its native first-start request in the same
-kernel boot; merely publishing peer intent never grants reboot authority. An unmatched retained
-Pod activation attempt blocks automatic recovery across boots. Reconciliation may advance only to
-a fresh generation after exact retained revocation evidence and cold proof; it preserves the old
-attempt and generation evidence.
-
-Retained enrollment and closure evidence uses a separately versioned
-[persistent binding identity](../../adr/13-layout.md#persistent-binding-identity), checked against
-the exact current Scribe-owned source files. An ordinary filesystem device-number change across
-reboot does not change this identity. A replaced source object, changed content or unavailable
-filesystem proof refuses startup. Older records containing only the live `binding_generation`
-token remain evidence but cannot be converted or relabeled by retrying an operation; this profile
-supplies no migration for them. Do not edit or remove receipts to bypass that refusal.
-
-Reboot cannot restart a fenced generation. Whole-state rollback can also roll back its fence,
-so restoration needs independent revocation evidence or fresh server identity and client
-re-enrollment; a generation number alone is not rollback protection.
-
-Live qualification must include denied unrelated host/loopback/LAN destinations, unauthorized SSH
-channels, browser/SSE and hostile origins, established-session revocation, process/guard failure,
-interruption after fence persistence, tunnel loss and reboot. Keep their exact versions and observed
-results with delivery evidence. Do not infer these properties from generated configuration.
-
-When replacing the infrastructure access candidate, use a distinct endpoint and identity until
-the new road passes qualification. Then fence and retire the old road using its owner. Ansible
-retains substrate/firewall preparation; it must not remain a second controller for native peers,
-keys or units. Existing application data and receipts remain subject to their normal owners.
+Separate routing contexts can be embodied by dedicated rootless services; a container is not
+required for every peer. Native namespace services remain a technical alternative requiring their
+own accepted privilege and lifecycle contract. Tether stays outside the application Pod and
+Vessel. Neither approach has a measured universal per-attachment RAM or throughput cost; capacity
+qualification must include the selected forwarding helpers and simultaneous workload.
 
 ## Reach attachment
 
@@ -219,9 +125,9 @@ container and Host lifecycle control, Oculus, audio, and
 
 ## Revocation, rotation, and recovery
 
-Before changing the service, binding validates peer-address overlap, route conflicts, key
-references, port collisions, and the generated contribution. Revocation then removes a peer from
-the live interface and persists the revised intent. Rotation may overlap old and new credentials
+Before changing the service, binding validates peer-address overlap and route conflicts within
+each routing domain, key references, port collisions, and the generated contribution. Revocation
+then removes a peer from the live interface and persists the revised intent. Rotation may overlap old and new credentials
 only with explicit operator authorization.
 
 Version the public peer and routing intent so restore or reconciliation cannot revive stale or

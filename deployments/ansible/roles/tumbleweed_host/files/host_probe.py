@@ -238,223 +238,25 @@ def validate_mount_parent(info: os.stat_result) -> None:
     )
 
 
-def trusted_sudo_path(path: Path, *, optional: bool = False) -> os.stat_result | None:
-    """Require real root-owned policy/tool paths, including every ancestor."""
-    for parent in reversed(path.parents):
-        info = parent.lstat()
-        require(
-            stat.S_ISDIR(info.st_mode) and info.st_uid == 0 and not info.st_mode & 0o022,
-            f"untrusted sudo policy directory: {parent}",
-        )
-    if not os.path.lexists(path):
-        require(optional, f"required sudo policy input absent: {path}")
-        return None
-    info = path.lstat()
-    require(
-        stat.S_ISREG(info.st_mode) and info.st_uid == 0 and not info.st_mode & 0o022,
-        f"untrusted sudo policy input: {path}",
-    )
-    return info
-
-
-def read_sudo_file(path: Path, *, optional: bool = False) -> tuple | None:
-    """Pin a policy input through a trusted path and an O_NOFOLLOW fd."""
-
-    def identity(info: os.stat_result) -> tuple:
-        return tuple(
-            getattr(info, key)
-            for key in (
-                "st_dev",
-                "st_ino",
-                "st_mode",
-                "st_uid",
-                "st_gid",
-                "st_nlink",
-                "st_size",
-                "st_mtime_ns",
-                "st_ctime_ns",
-            )
-        )
-
-    info = trusted_sudo_path(path, optional=optional)
-    if info is None:
-        return None
-    with os.fdopen(os.open(path, os.O_RDONLY | os.O_NOFOLLOW)) as handle:
-        actual = os.fstat(handle.fileno())
-        require(identity(info) == identity(actual), f"sudo policy input changed while opening: {path}")
-        text = handle.read()
-        require(
-            identity(actual) == identity(os.fstat(handle.fileno())), f"sudo policy input changed while reading: {path}"
-        )
-    return identity(actual), text
-
-
-def validate_sudo_config(text: str) -> None:
-    """Admit only the distro's default sudoers plugin without any plugin arguments."""
-    plugins = set()
-    for line in text.splitlines():
-        words = line.partition("#")[0].split()
-        if not words:
-            continue
-        require(
-            len(words) == 3
-            and words[0] == "Plugin"
-            and words[1] in {"sudoers_policy", "sudoers_io", "sudoers_audit"}
-            and words[2] == "sudoers.so"
-            and words[1] not in plugins,
-            "custom sudo.conf plugin, argument or setting is unsupported",
-        )
-        plugins.add(words[1])
-    require(not plugins or "sudoers_policy" in plugins, "sudo.conf does not select the default policy plugin")
-
-
-def validate_sudo_nss(text: str) -> None:
-    """An absent sudoers NSS entry means files; remote or unknown sources are refused."""
-    sources = [
-        line.partition("#")[0].split(":", 1)[1].split()
-        for line in text.splitlines()
-        if line.partition(":")[0].strip() == "sudoers"
-    ]
-    require(not sources or sources == [["files"]], "sudoers NSS policy must use local files only")
-
-
-def sudo_json(text: str) -> dict:
-    """Consume cvtsudoers output, including its documented omission of empty sections."""
-
-    def unique(pairs: list[tuple]) -> dict:
-        result = {}
-        for key, item in pairs:
-            require(key not in result, "duplicate cvtsudoers JSON field")
-            result[key] = item
-        return result
-
-    # Upstream emits no bytes when every JSON section is empty.
-    try:
-        value = json.loads(text, object_pairs_hook=unique) if text.strip() else {}
-    except ValueError as error:
-        raise Refusal("malformed cvtsudoers JSON") from error
-    require(
-        isinstance(value, dict)
-        and set(value) <= {"Defaults", "User_Specs"}
-        and all(isinstance(section, list) for section in value.values()),
-        "unsupported cvtsudoers JSON shape",
-    )
-
-    def local_only(item: object) -> None:
-        if isinstance(item, dict):
-            require(
-                not {"netgroup", "nonunixgroup", "nonunixgid", "group_plugin"}.intersection(item),
-                "external sudo netgroup or group plugin policy is unsupported",
-            )
-            for nested in item.values():
-                local_only(nested)
-        elif isinstance(item, list):
-            for nested in item:
-                local_only(nested)
-
-    local_only(value)
-    # Only inspect structural member types. The distro matcher, not this probe,
-    # decides membership, aliases, negation, commands and host applicability.
-    member_types = {"username", "userid", "usergroup", "usergid", "hostname", "networkaddr", "command"}
-
-    def members(items: object, allowed: set[str]) -> None:
-        require(isinstance(items, list) and bool(items), "unsupported cvtsudoers member list")
-        for item in items:
-            require(isinstance(item, dict), "unsupported cvtsudoers member")
-            fields = set(item) - {"negated"}
-            require(len(fields) == 1 and fields <= allowed, "unsupported cvtsudoers member type")
-            require("negated" not in item or type(item["negated"]) is bool, "invalid cvtsudoers negation")
-
-    for defaults in value.get("Defaults", []):
-        require(
-            isinstance(defaults, dict)
-            and set(defaults) <= {"Binding", "Options"}
-            and isinstance(defaults.get("Options"), list),
-            "unsupported cvtsudoers Defaults shape",
-        )
-        if "Binding" in defaults:
-            members(defaults["Binding"], member_types)
-    for rule in value.get("User_Specs", []):
-        require(
-            isinstance(rule, dict)
-            and set(rule) == {"User_List", "Host_List", "Cmnd_Specs"}
-            and isinstance(rule["Cmnd_Specs"], list)
-            and bool(rule["Cmnd_Specs"]),
-            "unsupported cvtsudoers User_Spec shape",
-        )
-        members(rule["User_List"], {"username", "userid", "usergroup", "usergid"})
-        members(rule["Host_List"], {"hostname", "networkaddr"})
-    return value
-
-
 def require_no_sudo() -> None:
-    """Prove an empty local-user match with distro parsers, without localized human output."""
-    tools = {name: shutil.which(name, path="/usr/sbin:/usr/bin") for name in ("sudo", "visudo", "cvtsudoers")}
-    require(all(tools.values()), "sudo, visudo and cvtsudoers are required for the local policy proof")
-    environment = {"PATH": "/usr/sbin:/usr/bin", "LC_ALL": "C"}
-
-    def run(argv: list[str]) -> subprocess.CompletedProcess:
-        result = subprocess.run(argv, capture_output=True, text=True, timeout=10, check=False, env=environment)
-        require(result.returncode == 0 and not result.stderr.strip(), "sudo policy parser or package query failed")
-        return result
-
-    packages = []
-    for name, executable in tools.items():
-        expected = "/usr/sbin/visudo" if name == "visudo" else "/usr/bin/" + name
-        require(executable == expected, "noncanonical sudo tool path is unsupported")
-        info = trusted_sudo_path(Path(executable))
-        require(bool(info.st_mode & 0o111), "sudo policy tool is not executable")
-        package = run(
-            ["/usr/bin/rpm", "-q", "--whatprovides", "--qf", "%{NAME}\n%{VENDOR}\n%{SOURCERPM}\n", executable]
+    """Check effective policy for the actual account; ambiguous policy fails closed."""
+    if shutil.which("sudo"):
+        sudo = subprocess.run(
+            ["sudo", "-n", "-l", "-U", "lychd"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+            env={**os.environ, "LC_ALL": "C"},
         )
-        fields = package.stdout.splitlines()
         require(
-            len(fields) == 3
-            and fields[:2] == ["sudo", "openSUSE"]
-            and re.fullmatch(r"sudo-[^/\s]+\.src\.rpm", fields[2]) is not None,
-            "sudo tools must belong to the distro sudo package",
+            sudo.returncode in (0, 1)
+            and re.fullmatch(
+                r"User lychd is not allowed to run sudo on [^\n]+\.", (sudo.stdout + sudo.stderr).strip(), re.I
+            )
+            is not None,
+            "runtime sudo grants or indeterminate sudo policy; administrator must resolve",
         )
-        packages.append(fields)
-    require(all(package == packages[0] for package in packages), "sudo tools do not share one source package")
-
-    paths = [Path("/etc/sudoers")]
-    paths += [Path(directory) / name for name in ("sudo.conf", "nsswitch.conf") for directory in ("/etc", "/usr/etc")]
-    inputs = {path: read_sudo_file(path, optional=path != paths[0]) for path in paths}
-    for name in ("sudo.conf", "nsswitch.conf"):
-        override, vendor = (inputs[Path(directory) / name] for directory in ("/etc", "/usr/etc"))
-        selected = override if override is not None else vendor
-        if name == "sudo.conf":
-            validate_sudo_config(selected[1] if selected is not None else "")
-        else:
-            require(selected is not None, "sudo policy proof requires a trusted NSS configuration")
-            validate_sudo_nss(selected[1])
-    # -V supplies build-profile metadata only. All authorization decisions below
-    # come from cvtsudoers JSON, never sudo's localized listing/denial messages.
-    profile = run([tools["sudo"], "-V"]).stdout
-    require(
-        re.findall(r"^Sudoers path: (.*)$", profile, re.M) == ["/etc/sudoers:/usr/etc/sudoers"],
-        "unknown sudo administrator/vendor policy path profile",
-    )
-    policy = inputs[paths[0]][1]
-    # Refuse introducers, including in comments/strings, rather than implementing
-    # sudoers include syntax or silently overlooking a converter input file.
-    require(
-        "@" not in policy and re.search(r"#\s*include", policy, re.I) is None,
-        "sudoers includes are unsupported; a standalone local /etc/sudoers is required",
-    )
-    account = pwd.getpwnam("lychd")
-    groups = sorted(set(os.getgrouplist("lychd", account.pw_gid)))
-    run([tools["visudo"], "-c", "-q", "-s", "-f", str(paths[0])])
-    converter = [tools["cvtsudoers"], "-c", "/dev/null", "-f", "json", "-e"]
-    sudo_json(run([*converter, str(paths[0])]).stdout)
-    matched = sudo_json(run([*converter, "-m", "user=lychd", "-M", str(paths[0])]).stdout)
-    require(not matched.get("User_Specs", []), "runtime sudo policy matches; administrator must remove every grant")
-    require(
-        inputs == {path: read_sudo_file(path, optional=path != paths[0]) for path in paths}
-        and account == pwd.getpwnam("lychd")
-        and groups == sorted(set(os.getgrouplist("lychd", account.pw_gid))),
-        "sudo policy or account groups changed during observation",
-    )
 
 
 def observe_identity(intent: dict) -> dict:
@@ -813,8 +615,8 @@ def observe(intent: dict, verify: bool) -> dict:
     if verify:
         require(receipt_stage == "configured" and linger.exists(), "host floor is incomplete")
         require(
-            all(shutil.which(name) for name in ("newuidmap", "newgidmap", "wg", "ssh-keygen")),
-            "rootless subordinate-ID or native Tether key-generation tools are missing",
+            all(shutil.which(name) for name in ("newuidmap", "newgidmap")),
+            "rootless subordinate-ID helpers are missing",
         )
         version = command("podman", "--version")
         require(version_at_least_54(version), "Podman must be >=5.4")

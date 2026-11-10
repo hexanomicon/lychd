@@ -45,7 +45,6 @@ def assemble_bind_use_case(
         foundation=foundation,
         foundation_probe=revalidate_foundation,
         lock_factory=LifecycleLock,
-        preparation=preflight_service,
     )
 
 

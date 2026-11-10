@@ -25,7 +25,6 @@ def test_catalog_has_only_explicitly_supported_builtin_ids() -> None:
         "animator/sglang",
         "observability/phoenix",
         "delegation",
-        "tether",
     }
 
 

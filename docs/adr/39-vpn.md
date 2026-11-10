@@ -6,8 +6,8 @@ icon: material/lan-connect
 # :material-lan-connect: 39. VPN
 
 !!! abstract "Context"
-    A Magus may need a private road to the host without making administrative surfaces public or
-    mistaking membership of that road for authority inside the Vessel.
+    A Lich may offer a private road to admitted peers while holding separate private roads to
+    other Liches. Neither reachability nor membership of any road grants application authority.
 
 ## Decision
 
@@ -28,18 +28,84 @@ owns that disclosure decision.
 
 The Tether may manifest a rootless service with only the network capability it needs and explicit
 UDP publication. Interface name, listen port, address space, DNS behaviour, routes, and peer limits
-are Rune-owned configuration, not hard-coded topology. This source candidate exposes the closed
-host-owned `run tether prepare|enroll|inspect|revoke` namespace; it adds no extension-owned root
-CLI verb. General key rotation, client-configuration export and QR projections remain future
-work. The native profile remains **Designed** pending installed qualification.
+are Rune-owned configuration, not hard-coded topology. Typed operations under a future host-owned
+run-operation verb may generate a keypair, admit, inspect, revoke, rotate, or export a short-lived
+client configuration or QR projection; it adds no root CLI verb.
 
-For the native Quadlet projection, the Rune embeds the code-level `QuadletConfig` value under
-`quadlet`. That does not rename Tether to a kind of Stone, make it an Animator, or grant generic
-unit-text authority; Tether keeps ownership of its exact network fields and compilation policy.
+If that service is projected through Quadlet, its future Rune may embed the code-level
+`QuadletConfig` value under `quadlet`. That does not rename Tether to a kind of Stone, make it an
+Animator, or grant generic unit-text authority; Tether keeps ownership of its exact network fields
+and compilation policy.
 
 The Tether service remains outside the shared application Pod. It receives no broad mounts,
 application secrets, database credentials, or host-mutation channel; granting `CAP_NET_ADMIN`
 inside that Pod is not an acceptable shortcut.
+
+## Offered network and imported attachments {#offered-and-imported-roads}
+
+A Lich may offer one locally governed VPN network to many admitted peers and simultaneously hold
+many independent attachments to other Liches' private networks. These are configuration ownership
+and consent roles; WireGuard traffic is bidirectional and the roles confer no asymmetric trust.
+Publicly reachable peers need no VPN merely to participate in A2A.
+
+An offered network may share one WireGuard interface among peers with distinct admitted addresses
+when its local key identity and policy permit. An imported attachment binds its own local identity,
+remote Lich and tunnel-peer identity, key references, outer UDP endpoint, inner service coordinates,
+DNS policy, allowed callers, and versioned route intent. The outer endpoint carries encrypted
+packets; it is distinct from the inner address, port, and protocol of the admitted service.
+Tunnel identity does not replace the remote application's independently enrolled identity.
+
+Independent attachments may use the same private addresses. Bind refuses ambiguous overlap within
+a shared routing domain; it does not reject equal prefixes in properly isolated domains. Where
+addresses overlap or trust policies conflict, each attachment needs a distinct routing and
+enforcement context. Independent imported networks have separate routing and name-resolution
+contexts by default. Sharing requires an explicitly admitted profile proving deterministic
+selection, compatible address and DNS policy, no unauthorized forwarding, and independent lifecycle
+fencing. Two interfaces alone do not establish that boundary. Network namespaces are one mechanism;
+one peer, interface, namespace, and container are not interchangeable units.
+
+Every application connection using an imported attachment selects the remote Lich, attachment
+identity and current generation, and admitted service before opening a socket. An IP address or
+hostname alone is insufficient.
+Keep that selection through name resolution, connection pooling, reconnects, and redirects or
+retries where the selected application profile permits them. Changed intent or authority requires
+fresh admission. [A2A](26-a2a.md) retains its narrower protocol rules, egress decisions, and
+settlement of uncertain submissions.
+
+Imported configuration is untrusted input, not installation authority. Locally admit the needed
+keys, endpoint, address scope, exact services, and DNS behavior; do not execute imported hooks or
+silently install default routes, host DNS changes, forwarding rules, or other host mutations.
+The local operator's typed intent admits the proposal, Tether validates its network contribution,
+the deployment compiler validates the declared topology, and the authorized materializer inscribes
+it. Import supplies no arbitrary unit text or new privilege.
+WireGuard `AllowedIPs` selects peers and validates source addresses; service ports, protocols,
+callers, and application effects require their own enforcement.
+
+Only the admitted service interactions and corresponding return traffic cross an attachment.
+Neither imported attachments nor peers on the offered network receive implicit access to one
+another, unrelated host listeners, or the application Pod. A receiving endpoint is an exact
+admitted service, not ambient Pod reachability. IP transit between these networks, peer-to-peer
+forwarding, and exit-node behavior require a separately accepted profile; possession of several
+VPN accesses creates no full mesh.
+
+### Isolation and service packaging
+
+Routing isolation is required independently of packaging. A dedicated rootless service may hold
+one or more compatible attachments only when their identity, route, key, and enforcement boundaries
+remain explicit. Neither a container per peer nor one shared VPN container is mandated.
+[WireGuard namespaces](https://www.wireguard.com/netns/) also make native systemd-managed namespace
+services a technical alternative. This does not admit a privileged native Tether profile: any such
+profile needs an accepted owner, closed operations, recovery, and verification under
+[Containers](08-containers.md) and [Privilege](10-privilege.md). The Vessel receives no general
+root, shell, network-administration, or service-launch authority and runs no tunnel subprocess.
+Attaching to infrastructure-owned VPNs retains that infrastructure's separate custody.
+
+Container packaging does not imply userspace WireGuard, and Quadlet services are themselves
+systemd-managed. Performance qualification must name the actual kernel or userspace implementation,
+forwarding path, simultaneous attachments and traffic, and incremental process and kernel memory.
+Image size is not resident-memory overhead; no portable per-container RAM or throughput figure
+selects this architecture. Rootless networking and per-attachment helpers require measured evidence
+before a deployment claims its capacity or isolation.
 
 The optional [Gateway Host](../sepulcher/gateway.md) uses Tether only when placement requires a
 private routed road. **Remote** may admit one exact peer and backend route from the off-site Veil to
@@ -57,137 +123,17 @@ no default route or path to the home Phylactery, Reach core, Altar, model/provid
 socket, Reactor, or host administration. Tether custody contains tunnel keys only; the edge relay
 keeps its disjoint workload credential and revoking one class never repairs another.
 
-## First managed profile: single operator {#single-operator-profile}
-
-The first native profile is `single-operator-forward@1`: one instance owner, one active peer,
-IPv4, and one exact route to a restricted OpenSSH forwarder. It remains **Designed**, conditional
-on the installed qualification below. It supplies neither remote IAM nor the Reach gateway
-profile. No mesh, relay, exit route, DNS change, or client-device configuration is implicit.
-
-The Rune owns the static deployment envelope: profile revision, stable service identity,
-interface, server tunnel address, exact host UDP bind address/port, advertised endpoint,
-single-peer limit, image, and server tunnel-secret reference. A separate Tether-owned public peer
-record in the Codex owns peer identity, public key, exact tunnel `/32`, keepalive policy,
-enabled/revoked state and generation. This record is not a Rune or a second copy of Settings;
-peer operations do not change shared configuration or Scribe generations. The forwarding role
-owns its distinct SSH authorized public key, host-key reference, tunnel listener and fixed local
-Altar destination. [Layout](13-layout.md#tether-custody-designed) owns these paths.
-
-Validation refuses unknown fields, invalid keys or interface names, overlapping addresses,
-default/LAN routes, ambiguous endpoints, and address/protocol/port collisions. Client routes
-contain only the server tunnel `/32`. The client generates and retains its WireGuard and SSH
-private keys; enrollment accepts public keys only. Server generation or export of client private
-keys, preshared-key distribution, QR projection and overlapping rotation are outside this first
-profile. A public configuration projection is not proof of client installation.
-
-The managed body is a dedicated rootless Pod containing standard kernel WireGuard and standard
-OpenSSH in separate containers. Only WireGuard receives namespaced `CAP_NET_ADMIN`; no container
-joins Core or receives host networking. Tether custody contains only tunnel material. The
-forwarder owns its SSH host key separately and receives no application password. Compilation
-selects fixed programs and closed WireGuard, address, nftables and sshd configuration: no
-operator command, `wg-quick` hook, `SaveConfig`, generic capability list, or raw unit text.
-
-Pasta supplies one explicit container-loopback to host-loopback TCP mapping for the configured
-Altar port. Automatic mappings and broad host-address/loopback mappings are disabled explicitly.
-The namespace uses default-deny input, output and forwarding policies. It admits only WireGuard
-UDP on the declared listener, the exact peer-to-SSH flow and its replies, and the Altar loopback
-TCP flow and its replies. Output permits WireGuard ciphertext from its declared UDP socket to
-its learned peer endpoint, not arbitrary container egress. No DNS resolver/forwarder or IPv6
-flow is admitted; the first profile uses a literal IPv4 advertised endpoint. The fixed startup
-helper installs and verifies these policies before raising the tunnel and declaring WireGuard
-ready. OpenSSH starts only after that readiness, binds only the tunnel address, and admits only
-local TCP forwarding to the exact loopback Altar destination, with no shell/session, reverse,
-agent or Unix-socket forwarding.
-The client listener, browser URL and application publication remain literal loopback. The
-[Security forwarding boundary](09-security.md#single-operator-forwarding-candidate) still owns
-Basic authentication, Host, Origin, CORS, CSRF and browser-profile requirements.
-
-### Native peer operations and closure {#native-peer-operations}
-
-The first closed host-owned operation namespace admits `prepare`, `enroll`, `inspect` and `revoke`
-under the grammar designed in [CLI](19-cli.md#admit-work-without-ceding-the-language). Before bind,
-`prepare` creates only the exact server WireGuard and forwarding SSH host-key secrets through
-fixed trusted native factories and records immutable creation identity receipts. Both remain
-typed `Secret` references in their respective container contributions; bind validates their
-presence and admitted identity. A missing or foreign secret cannot be deferred to enrollment.
-Preparation neither starts transport nor creates client keys; partial creation remains recorded
-or fenced for reconciliation, never adopted or deleted merely by name.
-
-Enrollment is idempotent for the same operation identity and intent; a key or generation mismatch
-refuses. It requires prepared secrets, persists pending/public intent, and activates only the
-exact Scribe-owned Tether body after locked revalidation. Enrollment cannot rewrite units or
-adopt a foreign/older application generation. Initially adding Tether is not an exception to
-existing bind or active-Vessel restrictions.
-
-The first profile admits one bounded maintenance transition: cold replacement of the transport
-image through `prepare`, followed by ordinary complete-fileset bind and explicit enrollment.
-Only the image reference may differ between the selected and proposed typed envelopes. Existing
-server secret identities are reattested, never recreated or adopted; their immutable creation
-authority is separate from each deployment envelope's preparation attestation. Before first
-peer enrollment the road must be proven cold; after enrollment its exact current generation must
-also have retained revocation evidence and the active closure latch. Preparation preserves peer
-generation, the latch and all historical ownership and revocation records. It does not bind,
-stop Core or start transport. [Privilege](10-privilege.md#tether-host-operations-designed) owns the
-atomic transition and interruption rules; [Layout](13-layout.md#tether-custody-designed) owns its
-retained evidence. Other envelope changes, including interface, endpoint, forwarding destination
-and secret references, have no admitted migration in this profile. Ordinary bind alone cannot
-migrate their preparation authority.
-
-Inspection separates desired peer state, loaded generation, unit state and bounded transport
-observations. A running unit or recent handshake alone is not end-to-end readiness. Secret-bearing
-WireGuard dump output never becomes a public result or log.
-
-Revocation first durably fences the current generation, then stops the whole Tether Pod and
-forwarding process tree. It succeeds only after exact terminal observations establish closure;
-an interrupted or unknown stop stays fenced and incomplete. A separately supervised host guard
-closes the live road after a fence even if the CLI dies before submitting stop, as specified by
-[Privilege](10-privilege.md#tether-host-operations-designed). A boot-only fence is insufficient.
-The fixed closure latch is distinct from immutable generation-specific revocation evidence.
-The first profile does not hot-reload peers. Repeating revoke reconciles the same generation;
-re-enrollment requires the cold, ordered sequence in Privilege, preserves old revocation evidence,
-and clears only the active latch after new intent is durable. A post-fence recovery path can
-stop or observe transport, never restart or compensate back to the revoked world.
-
-Tunnel loss has no public fallback. Reboot requires typed startup checks of current public intent and
-retained generation evidence, the exact [persistent Scribe binding identity](13-layout.md#persistent-binding-identity),
-and an active path guard, before either container starts. Device-number changes alone do not alter
-that identity; changed source objects or content do. Legacy live-generation records confer no
-reboot authority and are not automatically converted. A whole-state
-rollback can restore both old intent and its old fence: a counter on that same disk cannot detect
-it. Restore therefore requires independently retained revocation evidence or fresh server identity and client
-re-enrollment; uncertainty refuses activation.
-
-### Qualification and ownership transfer
-
-The implementation must first prove rootless kernel WireGuard creation, real UDP handshake,
-the exact pasta loopback mapping and denied alternate host routes, restricted OpenSSH forwarding,
-established-session teardown, crash after fence persistence, guard failure, stale-state refusal,
-loss and reboot on the selected host/runtime versions. Browser/SSE and hostile-origin acceptance
-remain separate. Repository rendering tests establish none of these installed properties.
-
-Ansible retains platform preparation and the explicit external UDP firewall opening. Native
-Tether owns its tunnel, peers, keys, units and revocation. Qualify a replacement under a distinct
-identity and endpoint before fencing and retiring the old infrastructure-owned road through its
-own ownership procedure. Never run two controllers for one interface or adopt old units/secrets
-by name. Qualification uses an isolated rootless installation; it does not mutate an existing
-active Vessel, its data, source/image identity or receipts.
-
-The alternative is a native-owned host `wg-quick` service with a restricted privileged helper.
-It reduces network indirection but adds host-root mutation authority. It is not an automatic
-fallback if this rootless profile fails: that authority needs a separate accepted amendment.
-
-The mechanisms are documented by [WireGuard's namespace guide](https://www.wireguard.com/netns/),
-[Podman's Pod unit reference](https://docs.podman.io/en/latest/markdown/podman-pod.unit.5.html),
-the [pasta manual](https://passt.top/builds/latest/web/passt.1.html), and
-[OpenSSH's configuration reference](https://man.openbsd.org/sshd_config). Their documentation
-does not qualify this generated combination or replace exact-version live evidence.
-
 ## Peer custody and exact routes
 
 The Codex may retain stable peer identity, public key, allowed addresses/routes, endpoint and
 keepalive policy, enabled/revoked state, and creation/rotation metadata. Private and preshared keys
 are hydrated through the secret boundary and never rendered into ordinary documentation, logs, QR
 history, or public peer records.
+
+The offered network holds its interface private key and admitted peers' public keys. Each imported
+attachment holds its own local private-key reference and the remote public key, with a separate
+preshared-key reference when used. Short-lived client export does not make retaining every peer's
+private key normal server custody. Application, operator, and SSH credentials remain separate.
 
 Each route must be explicit. Host firewall policy determines which listeners the interface can
 reach, Veil may apply ingress policy, and Ward and Vessel still authenticate and authorize.
@@ -198,12 +144,26 @@ administrator.
 
 ## Lifecycle, failure, and recovery
 
-Binding validates peer-address overlap, route conflict, key reference, port collision, and the
-generated service contribution before inscription. Revocation removes the peer from the active
-interface and persists revised intent. Rotation overlaps old and new credentials only with explicit
-operator authorization. Versioned public intent and retained revocation evidence fence stale
-reconciliation; whole-state restore requires the independent evidence or fresh identity described
-above. Failure stays visible and privileged traffic never falls back to a public route.
+Binding validates peer-address overlap and route conflicts within each routing domain, key
+references, port collisions, and the generated service contribution before inscription.
+Revocation removes the peer from the active interface and persists revised intent.
+Rotation overlaps old and new credentials only with explicit
+operator authorization. Versioned public peer/routing intent prevents restore or reconciliation
+from reviving revoked or stale access; failure stays visible and privileged traffic never falls
+back to a public route.
+
+Readiness is observed per attachment generation and service binding: Tether supplies route health,
+while the consumer verifies its remote service under that service's authentication owner. A tunnel
+handshake alone proves neither. Unavailable or revoked attachments, failed permitted resolution,
+missing routes, or service-authentication failure close that selection; they never select another attachment with
+the same address or direct/public application transport. Ordinary outer WireGuard UDP traffic is
+not such a fallback. Revocation fences active pooled connections and future sends for the affected
+generation; it cannot recall bytes or undo remote effects already admitted. Independent attachments
+keep separate revocation and recovery intent, so restoring one cannot resurrect another's access.
+Tunnel revocation does not revoke independent application sessions or credentials. Restore must
+check current authoritative route and revocation generations, not infer freshness from records
+restored together in the same snapshot. If that authority cannot be established, the affected
+attachment stays closed for reconciliation.
 
 Dynamic addressing needs an operator-supplied reachable endpoint, whether through DNS, fixed
 addressing, or a separately accepted rendezvous mechanism. Carrier NAT, blocked UDP, changing
@@ -212,12 +172,9 @@ traversal require separate trust decisions; recovery cannot introduce them invis
 
 ## Delivery and consequences
 
-This Covenant remains **Designed** pending installed qualification. The source candidate
-implements the bounded native profile, including its exact UDP compiler contribution, server-secret
-and peer custody, and closed operations under the [CLI grammar](19-cli.md). Core remains
-loopback-published; the general Extension port grammar still rejects UDP. Source implementation
-does not qualify live interface, enrollment, route policy, health, revocation, browser or reboot
-behavior, and supplies no general key-rotation path. The optional infrastructure-owned
+This Covenant is **Designed**. No VPN provider, interface, enrollment, peer registry, key
+rotation, route policy, health, or revocation path ships; generated deployment remains
+IPv4-loopback-only and rejects UDP. The optional infrastructure-owned
 [single-operator forwarding candidate](09-security.md#single-operator-forwarding-candidate)
 is separate from Tether and has no installed qualification. General tunnelling and shared-user
 access remain unsupported. [State of

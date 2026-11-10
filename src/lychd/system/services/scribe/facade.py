@@ -21,7 +21,6 @@ from lychd.system.services.scribe.errors import ScribeOwnershipError
 from lychd.system.services.scribe.models import (
     BindingReconcilePlan,
     OwnedBindings,
-    PersistentBindingIdentity,
     SitePlan,
 )
 from lychd.system.services.scribe.naming import runtime_unit_for_source
@@ -170,20 +169,6 @@ class ScribeService:
             systemd_sources=systemd_sources,
             runtime_units=runtime_units,
         )
-
-    def inspect_persistent_binding_identity(self, *, expected_generation: str) -> PersistentBindingIdentity:
-        """Opt into durable identity without changing ordinary ownership or live CAS."""
-        before = self.inspect_owned_bindings()
-        if not before.receipt_present or before.generation != expected_generation:
-            msg = "Persistent binding observation requires the exact current live generation"
-            raise ScribeOwnershipError(msg)
-        identity = self._authority.persistent_identity(
-            sources=(*before.quadlet_sources, *before.systemd_sources), expected_generation=expected_generation
-        )
-        if self.inspect_owned_bindings() != before:
-            msg = "Scribe ownership changed during persistent binding observation"
-            raise ScribeOwnershipError(msg)
-        return identity
 
     def clear_owned_bindings(self, *, expected_generation: str | None = None) -> None:
         """Transactionally remove exact sources while retaining their authority."""

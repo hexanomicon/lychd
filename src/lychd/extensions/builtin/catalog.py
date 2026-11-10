@@ -39,7 +39,6 @@ BUILTIN_EXTENSIONS: Final = MappingProxyType(
         "observability/phoenix": BuiltinExtension(
             register_module="lychd.extensions.builtin.observability.phoenix.register",
         ),
-        "tether": BuiltinExtension(register_module="lychd.extensions.builtin.tether.register"),
         "delegation": BuiltinExtension(
             register_module="lychd.extensions.builtin.delegation.register",
         ),

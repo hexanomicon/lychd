@@ -39,9 +39,8 @@ not public compatibility. The managed image uses the fixed process entrypoint
 defined by [Backend](11-backend.md#process-and-listener-boundary). There is no host Vessel `serve`
 entrypoint. Database commands retain their
 lazy framework delegation. The root verbs are `init`, `bind`, `start`, `stop`, `status`/`st`,
-`logs`, `access`, `run`, and `del`. The `run` namespace admits only the closed native Tether
-operations below; no snapshot, restore, selector shorthand, recovery, promotion, or consent
-spelling is reserved by the grammar.
+`logs`, `access`, and `del`; no run-operation, snapshot, restore, selector shorthand, recovery, promotion, or
+consent spelling is reserved by the grammar.
 
 ### Inscribe, then bind
 
@@ -146,39 +145,11 @@ a browser. Ordinary help, status, logs, startup, generated units, and URLs never
 password. Replace its external secret and restart the Vessel to rotate access. This is a local
 operator credential, not Ward enrollment or a remote CLI admission interface.
 
-A future extension operation catalogue may use the host-owned `run` namespace.
+A future host-owned run-operation verb may become the sole extension execution namespace.
 Registration would contribute inert, typed identity, inputs, authority/scope, mutation and consent
 characteristics, and progress/result shape; it must never grant an extension-owned Click callback
 or arbitrary host execution. No run-operation catalogue, schema help, injected client seam, or
 Ward-authenticated CLI admission route is delivered today.
-
-The source candidate exposes the closed grammar `lychd run tether prepare|enroll|inspect|revoke`
-for [the single-operator profile](39-vpn.md#native-peer-operations), including public help.
-The profile remains Designed pending installed qualification; this adds no extension-owned root verb. The native
-host adapter owns the finite operation mapping and typed requests/results. It accepts neither
-an arbitrary extension callback nor a command, path, unit, or raw transport argument. This first
-slice requires no dynamic operation registry or remote Ward transport.
-
-Preparation runs before ordinary bind and creates only the two exact server secrets with
-creation receipts through fixed trusted factories. Enrollment requires those prepared identities
-and takes client public keys and exact peer intent; inspection observes its bounded state;
-revocation durably fences and closes the complete private road. Client private keys are
-never inputs or exports. Mutating dry runs produce the same typed plan without provisioning
-secrets, publishing intent or starting/stopping units. Repeated operation identity with different
-intent refuses. [Privilege](10-privilege.md#tether-host-operations-designed) owns serialization,
-guarded activation, interruption and settlement; the CLI only validates, delegates and renders.
-
-The same `prepare` verb admits cold image-only replacement when
-`--expected-preparation-digest` is supplied. This selects a distinct typed `prepare-image`
-request; it does not change the serialized initial `prepare` request or its historical digest.
-The request also names the target envelope and current peer generation through the existing
-options. Read-only `inspect --prepared` exposes installation identity, selected envelope digest,
-current preparation-selection digest, current peer generation and the unchanged flat preparation
-receipt without requiring a new target binding. It reveals metadata only, creates no custody or
-secret, and grants no activation authority. It is distinct from
-`inspect --declared`, which describes proposed Rune intent. Initial preparation retains its flat
-preparation receipt result; ordinary bind still consumes the preparation attestation contract.
-No new root verb, operation registry, generic upgrader or internal-hash scripting is required.
 
 ### Delete only what the body can name
 
