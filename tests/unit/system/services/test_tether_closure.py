@@ -199,7 +199,11 @@ def test_current_boot_unattested_attempt_cannot_be_hidden_by_another_start(
         plan, MagicMock(), podman_bin="/usr/bin/podman", systemctl_bin="/usr/bin/systemctl", custody=custody
     )
     operations.stop_adapter = adapter
-    monkeypatch.setattr(operations, "startup_preflight", lambda *_: None)
+
+    def startup_preflight(_expected_binding: str | None = None) -> None:
+        return None
+
+    monkeypatch.setattr(operations, "startup_preflight", startup_preflight)
     manager = MagicMock(return_value=(uuid4(), "/replacement-attempt"))
     monkeypatch.setattr(adapter, "_manager_invocation", manager)
     action = (
@@ -293,8 +297,15 @@ def test_live_closure_requires_retained_exact_object_ids_without_adoption(
         plan, MagicMock(), podman_bin="/usr/bin/podman", systemctl_bin="/usr/bin/systemctl", custody=custody
     )
     monkeypatch.setattr(adapter, "observe", lambda: closed(value=False))
-    monkeypatch.setattr(adapter, "_exists", lambda *_: True)
-    monkeypatch.setattr(adapter, "_inspect_object", lambda _kind, name: rows[name])
+
+    def object_exists(*_arguments: str) -> bool:
+        return True
+
+    def inspect_object(_kind: str, name: str) -> dict[str, str]:
+        return rows[name]
+
+    monkeypatch.setattr(adapter, "_exists", object_exists)
+    monkeypatch.setattr(adapter, "_inspect_object", inspect_object)
     publish = MagicMock(wraps=custody.write)
     monkeypatch.setattr(custody, "write", publish)
     if fault is None:

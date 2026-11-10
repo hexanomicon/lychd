@@ -39,7 +39,11 @@ def test_runtime_revalidates_closed_public_projection(
 ) -> None:
     public = render_wireguard_public(make_plan(), make_peer()).model_dump(mode="json")
     public[field] = value
-    monkeypatch.setattr(runtime, "_read", lambda *_: json.dumps(public))
+
+    def read_projection(_path: Path, _maximum: int = 65536) -> str:
+        return json.dumps(public)
+
+    monkeypatch.setattr(runtime, "_read", read_projection)
     with pytest.raises((RuntimeError, ValueError)):
         runtime._public()
 
@@ -48,9 +52,20 @@ def test_wireguard_installs_nft_before_interface_and_notifies_after_readback(mon
     public = render_wireguard_public(make_plan(), make_peer()).model_dump(mode="json")
     calls: list[tuple[str, ...]] = []
     monkeypatch.setattr(runtime, "_public", lambda: public)
-    monkeypatch.setattr(runtime, "_read", lambda *_: make_peer().wireguard_public_key)
-    monkeypatch.setattr(runtime, "_run", lambda argv, **_: calls.append(argv) or "")
-    monkeypatch.setattr(runtime, "_verify", lambda _: calls.append(("verified",)))
+
+    def read_server_key(_path: Path, _maximum: int = 65536) -> str:
+        return make_peer().wireguard_public_key
+
+    def run(argv: tuple[str, ...], **_: object) -> str:
+        calls.append(argv)
+        return ""
+
+    def verify(_projection: dict[str, object]) -> None:
+        calls.append(("verified",))
+
+    monkeypatch.setattr(runtime, "_read", read_server_key)
+    monkeypatch.setattr(runtime, "_run", run)
+    monkeypatch.setattr(runtime, "_verify", verify)
     monkeypatch.setattr(runtime, "_notify_ready", lambda: calls.append(("READY=1",)))
     monkeypatch.setattr(runtime.time, "sleep", MagicMock(side_effect=KeyboardInterrupt))
     with pytest.raises(KeyboardInterrupt):

@@ -17,7 +17,7 @@ from uuid import uuid4
 from lychd.system.services.tether.models import TetherError
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
     from pydantic import BaseModel
 
@@ -44,7 +44,7 @@ class TetherCustody:
         }
 
     @contextmanager
-    def _directory(self, path: Path) -> Iterator[int]:
+    def _directory(self, path: Path) -> Generator[int]:
         if not path.is_absolute() or ".." in path.parts:
             msg = "Tether custody requires canonical absolute roots"
             raise TetherError(msg)

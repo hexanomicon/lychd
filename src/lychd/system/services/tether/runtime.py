@@ -18,7 +18,8 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any, cast
+from types import FrameType
+from typing import Any, NoReturn, cast
 
 _KEY_BYTES = 32
 _PROJECT = Path("/etc/lychd-tether")
@@ -206,10 +207,14 @@ def wireguard() -> None:
         _run((_IP, "link", "set", "dev", interface, "up"))
         _verify(p)
         _notify_ready()
+
         # The supervisor remains alive, so exiting a configuring one-shot is
         # never mistaken for transport absence. Any drift exits and stops SSH.
-        signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
-        signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+        def exit_cleanly(_signum: int, _frame: FrameType | None) -> NoReturn:
+            sys.exit(0)
+
+        signal.signal(signal.SIGTERM, exit_cleanly)
+        signal.signal(signal.SIGINT, exit_cleanly)
         while True:
             time.sleep(2)
             _verify(p)

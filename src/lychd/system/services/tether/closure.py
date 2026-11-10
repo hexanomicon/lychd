@@ -238,8 +238,9 @@ class TetherStopAdapter:
 
     def _inspect_object(self, kind: str, name: str) -> dict[str, Any]:
         result = self.runner.run((self.podman, kind, "inspect", name), timeout_s=5)
-        rows = json.loads(result.stdout)
-        if result.returncode or not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+        raw: object = json.loads(result.stdout)
+        rows: list[object] = cast("list[object]", raw) if isinstance(raw, list) else []
+        if result.returncode or len(rows) != 1 or not isinstance(rows[0], dict):
             msg = "Cannot attest exact Tether runtime object"
             raise TetherError(msg)
         return cast("dict[str, Any]", rows[0])
@@ -470,7 +471,7 @@ class TetherStopAdapter:
         Podman; an inactive WireGuard configuring process alone proves nothing.
         Any failed/unknown query keeps closure incomplete.
         """
-        services = []
+        services: list[tuple[str, str]] = []
         processes_empty = True
         terminal = True
         for unit in self.plan.transport_units:
@@ -551,16 +552,22 @@ class TetherStopAdapter:
         # not turn familiar-name absence into a successful closure receipt.
         listing = self.runner.run((self.podman, "ps", "--all", "--format", "json"), timeout_s=5)
         try:
-            rows = json.loads(listing.stdout)
-            if (
-                listing.returncode
-                or not isinstance(rows, list)
-                or any(row.get("PodName") == self.plan.pod_name for row in rows)
-            ):
+            raw: object = json.loads(listing.stdout)
+            rows: list[object] | None = cast("list[object]", raw) if isinstance(raw, list) else None
+            if listing.returncode or rows is None:
                 containers_absent = False
+            else:
+                for candidate in rows:
+                    if not isinstance(candidate, dict):
+                        containers_absent = False
+                        break
+                    row = cast("dict[str, object]", candidate)
+                    if row.get("PodName") == self.plan.pod_name:
+                        containers_absent = False
+                        break
         except (ValueError, TypeError, AttributeError):
             containers_absent = False
-        guard_states = []
+        guard_states: list[str] = []
         for unit in (self.plan.guard_unit, self.plan.closure_unit):
             result = self.runner.run(
                 (self.systemctl, "--user", "show", unit, "--property=ActiveState,SubState", "--no-pager"), timeout_s=5

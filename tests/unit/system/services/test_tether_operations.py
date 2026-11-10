@@ -92,7 +92,11 @@ def closed(*, value: bool = True) -> ClosureObservation:
 def stack(tmp_path: Path) -> tuple[TetherOperations, TetherCustody, MagicMock, MagicMock, MagicMock]:
     plan, custody = make_plan(), make_custody(tmp_path)
     runner, secrets, stop = MagicMock(), MagicMock(), MagicMock()
-    runner.run.side_effect = lambda argv, **_: ProcessResult(argv, 0, "active\n" if "show" in argv else "")
+
+    def run(argv: tuple[str, ...], **_: object) -> ProcessResult:
+        return ProcessResult(argv, 0, "active\n" if "show" in argv else "")
+
+    runner.run.side_effect = run
     stop.observe.return_value = closed()
     stop.stop.return_value = closed()
     operations = TetherOperations(
@@ -287,13 +291,14 @@ def test_guard_handler_stays_fenced_and_requires_full_observation(tmp_path: Path
         operations.handle_closure()
     stop.observe.return_value = closed()
     assert operations.handle_closure().complete
-    assert custody.read("private", "closed.json") is not None
-    assert OperationReceipt.model_validate_json(
-        custody.read(
-            "operations",
-            f"{ClosureLatch.model_validate_json(custody.read('private', 'closed.json')).operation_id}.json",
-        )
-    ).closure.closed
+    raw_latch = custody.read("private", "closed.json")
+    assert raw_latch is not None
+    latch = ClosureLatch.model_validate_json(raw_latch)
+    raw_receipt = custody.read("operations", f"{latch.operation_id}.json")
+    assert raw_receipt is not None
+    receipt = OperationReceipt.model_validate_json(raw_receipt)
+    assert receipt.closure is not None
+    assert receipt.closure.closed
 
 
 @pytest.mark.parametrize("boundary", ["generation", "wireguard", "sshd", "authorized", "peer"])

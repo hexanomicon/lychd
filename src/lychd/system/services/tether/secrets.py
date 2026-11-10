@@ -71,8 +71,9 @@ class TetherSecrets:
             return private, public
 
     def _secret_data(self, payload: str, identity: SecretIdentity) -> str:
-        rows: Any = json.loads(payload)
-        if not isinstance(rows, list) or len(rows) != 1:
+        raw: object = json.loads(payload)
+        rows: list[object] = cast("list[object]", raw) if isinstance(raw, list) else []
+        if len(rows) != 1:
             msg = "Prepared Tether secret has an invalid inspection shape"
             raise TetherError(msg)
         row = cast("dict[str, Any]", rows[0])

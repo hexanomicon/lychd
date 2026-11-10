@@ -53,14 +53,16 @@ def secret_stack(tmp_path: Path) -> tuple[TetherSecrets, TetherCustody, dict[str
     service = TetherSecrets(
         plan, custody, runner, podman_bin="/usr/bin/podman", wg_bin="/usr/bin/wg", ssh_keygen_bin="/usr/bin/ssh-keygen"
     )
-    factory = MagicMock(
-        side_effect=lambda purpose: (
+
+    def factory_result(purpose: str) -> tuple[str, str]:
+        return (
             "synthetic-server-secret",
             make_peer().wireguard_public_key
             if purpose == "wireguard-server"
             else make_peer().ssh_authorized_public_key,
         )
-    )
+
+    factory = MagicMock(side_effect=factory_result)
     service._factory = factory
     return service, custody, values, created
 

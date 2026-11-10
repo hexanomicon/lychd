@@ -391,7 +391,7 @@ class DeploymentInspectionService:
             runtime_units=tuple(sorted(unit_names)),
         )
         sources = (*selected.quadlet_sources, *selected.systemd_sources)
-        if {runtime_unit_for_source(source.name) for source in sources} != unit_names:
+        if frozenset(runtime_unit_for_source(source.name) for source in sources) != unit_names:
             msg = "effective_binding_unit_missing"
             raise DeploymentObservationError(msg)
         observed = {name: self.observe_unit(name) for name in sorted(unit_names)}

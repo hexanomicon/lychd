@@ -26,10 +26,12 @@ from lychd.system.services.tether.models import TetherError
 from tests.unit.system.services.test_tether_secrets import secret_stack
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
     from lychd.domain.tether.models import CompiledTetherPlan
     from lychd.system.services.scribe.models import OwnedBindings
+    from lychd.system.services.tether.custody import TetherCustody
+    from lychd.system.services.tether.models import ClosureObservation
     from lychd.system.services.tether.secrets import TetherSecrets
 
 
@@ -72,21 +74,37 @@ def _session(
     foundation = _foundation()
     report = BindingPreflightReport(issues=(), foundation=foundation)
     preflight = BindingPreflightService()
-    monkeypatch.setattr(preflight, "inspect", lambda _: report)
+
+    def inspect_settings(_settings: Settings) -> BindingPreflightReport:
+        return report
+
+    monkeypatch.setattr(preflight, "inspect", inspect_settings)
     quadlet, systemd = tmp_path / "quadlet", tmp_path / "systemd"
     quadlet.mkdir()
     systemd.mkdir()
     scribe = ScribeService(output_dir=quadlet, systemd_dir=systemd)
-    monkeypatch.setattr("lychd.system.services.scribe.facade.ScribeService", lambda **_: scribe)
+
+    def scribe_factory(**_: object) -> ScribeService:
+        return scribe
+
+    monkeypatch.setattr("lychd.system.services.scribe.facade.ScribeService", scribe_factory)
     store = MagicMock()
     store.exists.return_value = True
-    monkeypatch.setattr("lychd.system.services.secrets.PodmanSecretStore", lambda _: store)
+
+    def secret_store_factory(_podman_bin: str) -> MagicMock:
+        return store
+
+    monkeypatch.setattr("lychd.system.services.secrets.PodmanSecretStore", secret_store_factory)
     manager = MagicMock()
-    monkeypatch.setattr("lychd.system.services.systemd.SystemdUserManager", lambda **_: manager)
+
+    def manager_factory(**_: object) -> MagicMock:
+        return manager
+
+    monkeypatch.setattr("lychd.system.services.systemd.SystemdUserManager", manager_factory)
     events: list[str] = []
 
     @contextmanager
-    def lock() -> Iterator[None]:
+    def lock() -> Generator[None]:
         events.append("locked")
         try:
             yield
@@ -303,16 +321,32 @@ def test_retained_revoke_checks_loaded_unit_provenance_with_unchanged_disk_gener
         return rows[name]
 
     monkeypatch.setattr(DeploymentInspectionService, "observe_unit", observe)
-    monkeypatch.setattr("lychd.system.services.tether.composition.TetherCustody", lambda *_: native.custody)
+
+    def custody_factory(*_roots: Path) -> TetherCustody:
+        return native.custody
+
+    monkeypatch.setattr("lychd.system.services.tether.composition.TetherCustody", custody_factory)
     monkeypatch.setattr("lychd.system.services.tether.composition.LifecycleLock", nullcontext)
     monkeypatch.setattr("lychd.system.services.tether.composition.os.geteuid", lambda: 1000)
-    monkeypatch.setattr("lychd.system.services.tether.composition._tool", lambda name, *_: f"/usr/bin/{name}")
+
+    def host_tool(name: str, *_locations: str) -> str:
+        return f"/usr/bin/{name}"
+
+    monkeypatch.setattr("lychd.system.services.tether.composition._tool", host_tool)
+
+    def attest_roots(*_arguments: object) -> tuple[()]:
+        return ()
+
     monkeypatch.setattr(
-        "lychd.system.services.lifecycle.receipt.LifecycleReceiptStore.require_dedicated_root_identities", lambda *_: ()
+        "lychd.system.services.lifecycle.receipt.LifecycleReceiptStore.require_dedicated_root_identities", attest_roots
     )
     # Retained closure must not consult current Runes or unrelated configuration.
     monkeypatch.setattr(BindingCommandSession, "inspect", MagicMock(side_effect=ValueError("Rune removed")))
-    monkeypatch.setattr(TetherStopAdapter, "observe", lambda _: closed())
+
+    def observe_transport(_adapter: TetherStopAdapter) -> ClosureObservation:
+        return closed()
+
+    monkeypatch.setattr(TetherStopAdapter, "observe", observe_transport)
     stop = MagicMock(return_value=closed())
     monkeypatch.setattr(TetherStopAdapter, "stop", stop)
     operations = build_tether_operations(for_closure=True)
