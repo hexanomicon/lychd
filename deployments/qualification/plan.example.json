@@ -11,7 +11,7 @@
       "sha256": "REPLACE_WITH_SHA256"
     },
     "provenance": {
-      "url": "https://download.opensuse.org/tumbleweed/appliances/REPLACE_WITH_EXACT_OFFICIAL_IMAGE.qcow2",
+      "url": "https://download.opensuse.org/tumbleweed/iso/REPLACE_WITH_EXACT_OFFICIAL_NET_INSTALLER.iso",
       "image_sha256": "REPLACE_WITH_ORIGINAL_IMAGE_SHA256",
       "checksum": {
         "path": "/private/official-image.qcow2.sha256",
@@ -63,11 +63,16 @@
     "port": 22222,
     "host_key": "ssh-ed25519 REPLACE_WITH_BASELINE_PUBLIC_HOST_KEY",
     "admin_key": {
-      "path": "/private/disposable-root-key",
+      "path": "/private/disposable-operator-key",
       "sha256": "REPLACE_WITH_SHA256"
     },
     "runtime_key": {
       "path": "/private/disposable-runtime-key",
+      "sha256": "REPLACE_WITH_SHA256"
+    },
+    "admin_user": "operator",
+    "admin_become_password": {
+      "path": "/private/disposable-operator-sudo-password",
       "sha256": "REPLACE_WITH_SHA256"
     }
   },

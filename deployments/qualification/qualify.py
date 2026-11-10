@@ -10,6 +10,7 @@ import json
 import os
 import re
 import resource
+import secrets
 import shlex
 import shutil
 import signal
@@ -213,6 +214,20 @@ def admitted_file(value, private=False):
     return path
 
 
+def become_password(value):
+    """Read one admitted private password; never persist or report its value."""
+    path = admitted_file(value, private=True)
+    require(path.stat().st_size <= 1025, "sudo password file exceeds its bound")
+    password = path.read_bytes().removesuffix(b"\n").decode("utf-8")
+    require(
+        1 <= len(password.encode()) <= 1024
+        and password.strip() == password
+        and not any(ord(character) < 32 or ord(character) == 127 for character in password),
+        "sudo password must be one nonempty UTF-8 line without control or edge whitespace",
+    )
+    return password
+
+
 def source_digest():
     trusted_directory(ROOT)
     result = hashlib.sha256()
@@ -264,11 +279,13 @@ def validate_plan(plan):
     require(
         url.scheme == "https"
         and url.netloc == "download.opensuse.org"
-        and url.path.startswith("/tumbleweed/appliances/")
-        and url.path.endswith(".qcow2")
+        and re.fullmatch(
+            r"/tumbleweed/(?:appliances/[A-Za-z0-9][A-Za-z0-9._+-]*\.qcow2|iso/[A-Za-z0-9][A-Za-z0-9._+-]*\.iso)",
+            url.path,
+        )
         and not url.query
         and not url.fragment,
-        "official upstream qcow2 provenance URL required",
+        "official upstream cloud qcow2 or installer ISO provenance URL required",
     )
     hex_value(provenance["image_sha256"], 64)
     require(re.fullmatch(r"[0-9A-F]{40}", provenance["signer_fingerprint"] or ""), "image signer pin required")
@@ -280,14 +297,16 @@ def validate_plan(plan):
     hex_value(plan["application"]["revision"], 40)
     hex_value(plan["application"]["image_id"], 64)
     ssh = plan["ssh"]
-    closed(ssh, "port host_key admin_key runtime_key")
+    closed(ssh, "port host_key admin_user admin_key admin_become_password runtime_key")
+    require(ssh["admin_user"] == "operator", "the hardened operator administrator profile is required")
     require(type(ssh["port"]) is int and 1024 <= ssh["port"] <= 65535, "unprivileged localhost SSH port required")
     require(
         isinstance(ssh["host_key"], str) and re.fullmatch(r"ssh-ed25519 [A-Za-z0-9+/]+={0,2}", ssh["host_key"]),
         "one pinned Ed25519 SSH host key required",
     )
-    for name in ("admin_key", "runtime_key"):
+    for name in ("admin_key", "admin_become_password", "runtime_key"):
         admitted_file(ssh[name], private=True)
+    become_password(ssh["admin_become_password"])
     closed(plan["inputs"], "host_vars source_vars image_vars")
     for value in plan["inputs"].values():
         admitted_file(value, private=True)
@@ -447,11 +466,24 @@ class Qualification:
 
     def ssh(self, user, action, payload, stage, **options):
         code = (ROOT / "deployments/qualification/guest.py").read_text()
-        remote = shlex.join(["/usr/bin/python3", "-c", code, action])
+        require(user in {"operator", "lychd"}, "only operator and direct runtime SSH are admitted")
+        request = json.dumps(payload) + "\n"
+        command = ["/usr/bin/python3", "-c", code, action]
+        if user == "operator" and action != "administrator":
+            token = secrets.token_hex(32)
+            command = ["/usr/bin/sudo", "-k", "-S", "-p", "", "--", *command, token]
+            request = (
+                become_password(self.plan["ssh"]["admin_become_password"])
+                + "\nlychd-qualification-sudo-v1:"
+                + token
+                + "\n"
+                + request
+            )
+        remote = shlex.join(command)
         return self.command(
             stage,
             [self.tools["ssh"], "-F", str(self.work / "ssh_config"), "-l", user, "qualification", remote],
-            stdin=json.dumps(payload),
+            stdin=request,
             **options,
         )
 
@@ -552,14 +584,14 @@ class Qualification:
         config = (
             "Host qualification 127.0.0.1\n"
             "  HostName 127.0.0.1\n"
-            f"  Port {self.plan['ssh']['port']}\n  User root\n"
+            f"  Port {self.plan['ssh']['port']}\n  User operator\n"
             f"  UserKnownHostsFile {ssh_literal(str(key))}\n  GlobalKnownHostsFile /dev/null\n"
             "  StrictHostKeyChecking yes\n  CheckHostIP yes\n  UpdateHostKeys no\n"
             "  IdentitiesOnly yes\n  BatchMode yes\n  PasswordAuthentication no\n"
             "  KbdInteractiveAuthentication no\n  ConnectTimeout 5\n  ConnectionAttempts 1\n"
             "  ServerAliveInterval 10\n  ServerAliveCountMax 2\n"
         )
-        for user, field in (("root", "admin_key"), ("lychd", "runtime_key")):
+        for user, field in (("operator", "admin_key"), ("lychd", "runtime_key")):
             config += (
                 f"Match host 127.0.0.1 user {user}\n  IdentityFile {ssh_literal(self.plan['ssh'][field]['path'])}\n"
             )
@@ -574,7 +606,8 @@ class Qualification:
                                     "pilot": {
                                         "ansible_host": "127.0.0.1",
                                         "ansible_port": self.plan["ssh"]["port"],
-                                        "ansible_user": "root",
+                                        "ansible_user": "operator",
+                                        "ansible_become_method": "sudo",
                                     }
                                 }
                             }
@@ -614,6 +647,8 @@ class Qualification:
             self.plan["run_id"],
             "-display",
             "none",
+            "-device",
+            "VGA",
             "-monitor",
             "none",
             "-serial",
@@ -682,7 +717,8 @@ class Qualification:
         }
 
     def observe(self, phase):
-        observation = json.loads(self.ssh("root", "observe", self.guest_payload(phase), phase + "-identity"))
+        self.ssh("operator", "administrator", {}, phase + "-administrator")
+        observation = json.loads(self.ssh("operator", "observe", self.guest_payload(phase), phase + "-identity"))
         self.receipt[phase + "_boot_id"] = observation["boot_id"]
         self.receipt[phase + "_packages"] = observation["packages"]
         self.save()
@@ -697,6 +733,8 @@ class Qualification:
                 "pilot",
                 "--ssh-common-args",
                 "-F " + shlex.quote(str(self.work / "ssh_config")),
+                "--become-password-file",
+                self.plan["ssh"]["admin_become_password"]["path"],
             ]
             for value in self.plan["inputs"].values():
                 argv.extend(["-e", "@" + value["path"]])
@@ -715,6 +753,8 @@ class Qualification:
                 "pilot",
                 "--ssh-common-args",
                 "-F " + shlex.quote(str(self.work / "ssh_config")),
+                "--become-password-file",
+                self.plan["ssh"]["admin_become_password"]["path"],
                 "-e",
                 "@" + self.plan["access"]["variables"]["path"],
                 "-e",
@@ -731,20 +771,20 @@ class Qualification:
         self.observe("baseline")
         payload = self.guest_payload("baseline")
         payload["repositories"] = self.plan["baseline"]["repositories"]
-        self.ssh("root", "metadata", payload, "baseline-metadata")
+        self.ssh("operator", "metadata", payload, "baseline-metadata")
         payload = self.guest_payload("baseline")
         payload["candidate_snapshot"] = self.plan["candidate"]["snapshot"]
         payload["repositories"] = self.plan["candidate"]["repositories"]
         for repo in payload["repositories"]:
             repo["key_data"] = base64.b64encode(Path(repo["key"]["path"]).read_bytes()).decode()
-        self.ssh("root", "upgrade", payload, "snapshot-upgrade", timeout=1800)
-        self.ssh("root", "reboot", self.guest_payload("candidate"), "controlled-reboot", allow_disconnect=True)
+        self.ssh("operator", "upgrade", payload, "snapshot-upgrade", timeout=1800)
+        self.ssh("operator", "reboot", self.guest_payload("candidate"), "controlled-reboot", allow_disconnect=True)
         # Require actual disconnection/boot-ID transition; do not reuse a pre-reboot session.
         time.sleep(3)
         self.wait_ssh("candidate")
         self.observe("candidate")
         require(self.receipt["candidate_boot_id"] != self.receipt["baseline_boot_id"], "reboot did not change boot ID")
-        self.ssh("root", "shutdown", self.guest_payload("candidate"), "controlled-shutdown", allow_disconnect=True)
+        self.ssh("operator", "shutdown", self.guest_payload("candidate"), "controlled-shutdown", allow_disconnect=True)
         self.process.wait(timeout=min(30, max(0.1, self.deadline - time.monotonic())))
         require(self.process.returncode == 0, "guest did not shut down cleanly")
         required = {
@@ -758,7 +798,8 @@ class Qualification:
         }
         for phase in ("baseline", "candidate"):
             required.update(
-                phase + "-" + name for name in ("ssh-ready", "identity", "runtime", "verify", "app-verify", "server")
+                phase + "-" + name
+                for name in ("ssh-ready", "administrator", "identity", "runtime", "verify", "app-verify", "server")
             )
             if self.plan["access"] is not None:
                 required.add(phase + "-access")

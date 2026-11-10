@@ -5,6 +5,7 @@ import importlib.util
 import io
 import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -48,7 +49,9 @@ class PlanTests(unittest.TestCase):
             "ssh": {
                 "port": 22222,
                 "host_key": "ssh-ed25519 AAAATEST",
-                "admin_key": self.artifact("root key%fixture", b"disposable fake private key"),
+                "admin_user": "operator",
+                "admin_key": self.artifact("operator key%fixture", b"disposable fake private key"),
+                "admin_become_password": self.artifact("operator-password", b"disposable-sudo-test\n"),
                 "runtime_key": self.artifact("runtime-key", b"disposable fake private key"),
             },
             "inputs": {
@@ -221,7 +224,7 @@ class PlanTests(unittest.TestCase):
             patch.object(run, "command", side_effect=output),
         ):
             run.prepare()
-        for user, name in (("root", "admin_key"), ("lychd", "runtime_key")):
+        for user, name in (("operator", "admin_key"), ("lychd", "runtime_key")):
             observed = subprocess.run(
                 ["ssh", "-G", "-F", str(self.root / "ssh_config"), "-l", user, "qualification"],
                 capture_output=True,
@@ -235,6 +238,125 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(
             (self.root / "known_hosts").read_text(), "[127.0.0.1]:22222 " + self.plan["ssh"]["host_key"] + "\n"
         )
+        inventory = json.loads((self.root / "inventory.json").read_text())
+        target = inventory["all"]["children"]["lychd_hosts"]["hosts"]["pilot"]
+        self.assertEqual(target["ansible_user"], "operator")
+        self.assertEqual(target["ansible_become_method"], "sudo")
+
+    def test_root_or_arbitrary_administrator_profile_is_refused(self):
+        for user in ("root", "other_admin", "lychd"):
+            self.plan["ssh"]["admin_user"] = user
+            with self.subTest(user=user), self.assertRaises(qualification.Refusal):
+                qualification.validate_plan(self.plan)
+
+    def test_password_is_one_private_pinned_nonempty_line(self):
+        for content in (
+            b"",
+            b"\n",
+            b"two\nlines",
+            b"with\rreturn",
+            b"nul\0byte",
+            b" leading",
+            b"trailing ",
+            b"x" * 1025,
+        ):
+            self.plan["ssh"]["admin_become_password"] = self.artifact("operator-password", content)
+            with self.subTest(content_length=len(content)), self.assertRaises(qualification.Refusal):
+                qualification.validate_plan(self.plan)
+        artifact = self.artifact("operator-password", b"disposable-sudo-test\n")
+        Path(artifact["path"]).chmod(0o644)
+        with self.assertRaises(qualification.Refusal):
+            qualification.become_password(artifact)
+
+    def test_password_freezes_with_other_private_inputs(self):
+        work = self.root / "password-snapshot"
+        work.mkdir(mode=0o700)
+        frozen = qualification.snapshot_inputs(self.plan, work)
+        Path(self.plan["ssh"]["admin_become_password"]["path"]).write_text("replaced later")
+        self.assertEqual(qualification.become_password(frozen["ssh"]["admin_become_password"]), "disposable-sudo-test")
+
+    def test_privileged_ssh_password_uses_only_stdin_and_runtime_receives_none(self):
+        run = qualification.Qualification(self.plan, self.root, self.root)
+        run.tools = {"ssh": "/not-executed/ssh"}
+        with (
+            patch.object(run, "command", return_value="") as command,
+            patch.object(qualification.secrets, "token_hex", return_value="f" * 64),
+        ):
+            run.ssh("operator", "observe", {"public": True}, "identity")
+        argv = command.call_args.args[1]
+        remote = shlex.split(argv[-1])
+        self.assertEqual(remote[:6], ["/usr/bin/sudo", "-k", "-S", "-p", "", "--"])
+        self.assertNotIn("disposable-sudo-test", " ".join(argv))
+        self.assertEqual(
+            command.call_args.kwargs["stdin"],
+            "disposable-sudo-test\nlychd-qualification-sudo-v1:" + "f" * 64 + '\n{"public": true}\n',
+        )
+        self.assertNotIn("disposable-sudo-test", json.dumps(run.receipt))
+        with (
+            patch.object(run, "command", return_value="") as command,
+            patch.object(qualification, "become_password") as password,
+        ):
+            run.ssh("lychd", "runtime", {}, "runtime")
+        password.assert_not_called()
+        self.assertEqual(shlex.split(command.call_args.args[1][-1])[0], "/usr/bin/python3")
+        self.assertEqual(command.call_args.kwargs["stdin"], "{}\n")
+        with self.assertRaises(qualification.Refusal):
+            run.ssh("root", "observe", {}, "forbidden-root")
+
+    def test_all_ansible_observations_use_password_file_path_without_secret_value(self):
+        run = qualification.Qualification(self.plan, self.root, self.root)
+        run.ansible = "/not-executed/ansible-playbook"
+        self.plan["access"] = {
+            "profile": "host-access-v1",
+            "variables": self.json_artifact("access.json", {"lychd_access_enabled": True}),
+        }
+        with (
+            patch.object(run, "ssh", return_value=json.dumps({"boot_id": "test", "packages": {}})),
+            patch.object(run, "command", return_value="pilot : ok=1 changed=0 failed=0 mode=verify") as command,
+        ):
+            run.observe("baseline")
+        self.assertEqual(command.call_count, 4)
+        for call in command.call_args_list:
+            argv = call.args[1]
+            self.assertEqual(
+                argv[argv.index("--become-password-file") + 1], self.plan["ssh"]["admin_become_password"]["path"]
+            )
+            self.assertNotIn("disposable-sudo-test", " ".join(argv))
+
+    def test_official_iso_provenance_accepts_only_paired_directory_and_suffix(self):
+        self.plan["baseline"]["provenance"]["url"] = (
+            "https://download.opensuse.org/tumbleweed/iso/openSUSE-Tumbleweed-NET-x86_64-Snapshot20261108-Media.iso"
+        )
+        qualification.validate_plan(self.plan)
+        for path in (
+            "/tumbleweed/appliances/installer.iso",
+            "/tumbleweed/iso/cloud.qcow2",
+            "/elsewhere/installer.iso",
+            "/tumbleweed/iso/nested/installer.iso",
+            "/tumbleweed/iso/installer.iso?moving=true",
+        ):
+            self.plan["baseline"]["provenance"]["url"] = "https://download.opensuse.org" + path
+            with self.subTest(path=path), self.assertRaises(qualification.Refusal):
+                qualification.validate_plan(self.plan)
+
+    def test_qemu_keeps_invisible_display_with_vga_for_firmware_boot(self):
+        run = qualification.Qualification(self.plan, self.root, self.root)
+        run.tools = {"qemu-img": "/not-executed/qemu-img", "qemu-system-x86_64": "/not-executed/qemu"}
+        process = Mock(pid=12345)
+        with (
+            patch.object(
+                run, "command", side_effect=[json.dumps({"format": "qcow2", "virtual-size": 55 * 1024**3}), ""]
+            ),
+            patch.object(qualification.shutil, "disk_usage", return_value=Mock(free=40 * 1024**3)),
+            patch.object(qualification.subprocess, "Popen", return_value=process) as start,
+            patch.object(qualification.threading, "Thread"),
+            patch.object(qualification, "process_identity", return_value=("/not-executed/qemu", "123")),
+        ):
+            run.launch()
+        argv = start.call_args.args[0]
+        self.assertIn("VGA", [argv[index + 1] for index, item in enumerate(argv[:-1]) if item == "-device"])
+        self.assertEqual(argv[argv.index("-display") + 1], "none")
+        self.assertNotIn("-vnc", argv)
 
     def test_changed_or_missing_playbook_observations_cannot_pass(self):
         for output in ("pilot : ok=1 changed=1 failed=0", "", "pilot : ok=1 changed=0 failed=0"):

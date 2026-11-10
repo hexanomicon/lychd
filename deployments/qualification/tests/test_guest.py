@@ -3,9 +3,11 @@
 import base64
 import hashlib
 import importlib.util
+import io
 import json
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -197,6 +199,55 @@ class GuestTests(unittest.TestCase):
             self.assertRaises(ValueError),
         ):
             guest.runtime()
+
+    def test_sudo_framing_requires_password_consumption_before_any_privileged_action(self):
+        token = "f" * 64
+        marker = "lychd-qualification-sudo-v1:" + token + "\n"
+        for prefix in ("disposable-sudo-test\n", "", "wrong-marker\n"):
+            # The empty prefix without its marker also models missing framing.
+            data = prefix + (marker if prefix else "") + "{}\n"
+            with (
+                patch.object(sys, "argv", ["guest", "observe", token]),
+                patch.object(sys, "stdin", io.StringIO(data)),
+                patch.object(guest, "observe") as observation,
+                self.assertRaisesRegex(ValueError, "password consumption"),
+            ):
+                guest.main()
+            observation.assert_not_called()
+        with (
+            patch.object(sys, "argv", ["guest", "observe", token]),
+            patch.object(sys, "stdin", io.StringIO(marker + '{"public":true}\n')),
+            patch.object(sys, "stdout", io.StringIO()) as output,
+            patch.object(guest, "observe", return_value={"ok": True}) as observation,
+        ):
+            guest.main()
+        observation.assert_called_once_with({"public": True})
+        self.assertNotIn("disposable-sudo-test", output.getvalue())
+
+    def test_privileged_guest_action_without_sudo_marker_is_refused(self):
+        with (
+            patch.object(sys, "argv", ["guest", "observe"]),
+            patch.object(sys, "stdin", io.StringIO("{}\n")),
+            patch.object(guest, "observe") as observation,
+            self.assertRaisesRegex(ValueError, "sudo input marker"),
+        ):
+            guest.main()
+        observation.assert_not_called()
+
+    def test_operator_profile_is_observed_as_an_ordinary_nonroot_identity(self):
+        with patch.object(guest.os, "geteuid", return_value=0), self.assertRaises(ValueError):
+            guest.administrator()
+        with (
+            patch.object(guest.os, "geteuid", return_value=1000),
+            patch.object(guest.pwd, "getpwuid", return_value=Mock(pw_name="different")),
+            self.assertRaises(ValueError),
+        ):
+            guest.administrator()
+        with (
+            patch.object(guest.os, "geteuid", return_value=1000),
+            patch.object(guest.pwd, "getpwuid", return_value=Mock(pw_name="operator")),
+        ):
+            self.assertTrue(guest.administrator()["unprivileged"])
 
 
 if __name__ == "__main__":

@@ -22,8 +22,10 @@ The same application source and image remain in use before and after the OS upgr
 
 On an explicitly disposable builder, authenticate an official openSUSE image using its signed
 checksum and independently authenticated signing-key fingerprint. The
-[official download page](https://get.opensuse.org/tumbleweed/) provides cloud images and
-verification instructions. Retain the original image, signed checksum, public key and their
+[official download page](https://get.opensuse.org/tumbleweed/) provides cloud images, NET
+installation ISOs and verification instructions. Either an authenticated official cloud qcow2
+or NET ISO is valid installation lineage; a newly installed blank disk need not be Cloud-derived.
+Retain the original medium, signed checksum, public key and their
 SHA-256 identities; moving aliases and old-image retention are not permanent contracts.
 The original signed image and prepared baseline have separate identities. An operator may
 separately prepare an older baseline from a newer authenticated image, recording that explicit
@@ -31,11 +33,16 @@ builder transition; the harness still requires the prepared guest's actual relea
 to match its baseline pin. The qualification run itself admits only a strictly later candidate.
 
 Prepare the baseline using the [Server procedure](index.md), including a model-free running
-body, exact source and admitted OCI image, root and runtime SSH public keys, required native
+body, exact source and admitted OCI image, `operator` and runtime SSH public keys, required native
 deployment protocol version 1 and any deliberately selected access profile. This preparation
 is a separate effectful operation: the harness does not construct a working baseline from an
-unconfigured cloud image. Keep private material outside every checkout. Use a baseline with
-passwordless root SSH restricted to its disposable test key; no production key belongs here.
+unconfigured cloud image. Keep private material outside every checkout. The baseline must retain
+the Server Btrfs layout and ordinary hardened administrator policy: SSH as `operator`, with
+password-backed sudo and root SSH disabled. Do not add `NOPASSWD` or a root-login exception.
+Keep the disposable operator's sudo password in one private mode-`0600` file outside Git,
+pin it as `ssh.admin_become_password`, and use its operator key as `ssh.admin_key`.
+No production credential belongs here. The password file contains one UTF-8 password, with
+an optional final LF and no other control characters or leading/trailing whitespace.
 
 Create `/etc/lychd-qualification.json` as a root-owned regular file, mode `0600`, containing
 exactly `{"schema":1,"disposable":true,"baseline_id":"<a recorded UUID>"}`. Record its
@@ -45,6 +52,10 @@ or a writable live image. The baseline marker is an additional guard; ownership 
 QEMU process, pinned image and localhost-only connection establish the harness target.
 The prepared artifact must boot with BIOS firmware and virtio disk/network devices under QEMU
 `q35`; this first lane does not select UEFI firmware or qualify Secure Boot.
+The launcher includes a VGA device while keeping `-display none`; no graphical listener or VNC
+is opened. Configure the guest boot loader/kernel for `ttyS0` when a retained serial console is
+needed. A bootable Cloud image with XFS does not satisfy the Server floor; install the required
+Btrfs layout separately instead of weakening that floor.
 
 ## Pin one transition
 
@@ -52,9 +63,16 @@ Copy the [plan example](https://github.com/hexanomicon/lychd/blob/main/deploymen
 outside the checkout, replace every placeholder and restrict it and referenced private files
 to the current operator. The closed schema admits one baseline, one strictly later candidate,
 one prepared image, one application revision/image and one exact SSH host key. Host keys are
-pinned before the first connection; `ssh-keyscan` is not an admission step. The private root
-and runtime keys must match keys already installed in the baseline. The harness generates its
+pinned before the first connection; `ssh-keyscan` is not an admission step. The private operator
+and runtime keys must match keys already installed in the baseline. `ssh.admin_user` is exactly
+`operator`; no arbitrary administrator or root profile is admitted. The harness generates its
 own one-host inventory and SSH configuration; it accepts no arbitrary command hooks.
+Both observation phases first verify that the direct operator login has a nonzero effective UID.
+Privileged fixed guest actions use password-backed `sudo -k -S` through the operator connection.
+A fresh input marker proves sudo consumed the password line before guest JSON is parsed;
+cached or passwordless sudo cannot silently bypass this check. Ansible receives only the path
+of the frozen password file through `--become-password-file`. The password value travels only
+in process memory and stdin, never in command arguments, environment variables or diagnostics.
 
 Pin both snapshots' exact official repositories and each `repodata/repomd.xml` SHA-256.
 [openSUSE's history repositories](https://doc.opensuse.org/documentation/tumbleweed/updating_upgrading_reverting/)

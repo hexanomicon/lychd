@@ -78,6 +78,11 @@ def runtime():
     return {"runtime_login": True, "user_manager": True, "rootless_podman": True}
 
 
+def administrator():
+    require(os.geteuid() != 0 and pwd.getpwuid(os.geteuid()).pw_name == "operator", "ordinary operator SSH required")
+    return {"administrator_login": True, "unprivileged": True}
+
+
 def metadata(payload, snapshot=None):
     guard(payload)
     selected = snapshot or payload["snapshot"]
@@ -158,10 +163,20 @@ def upgrade(payload):
 
 
 def main():
-    payload = json.load(sys.stdin)
     action = sys.argv[1]
+    if action not in {"runtime", "administrator"}:
+        require(len(sys.argv) == 3 and re.fullmatch(r"[0-9a-f]{64}", sys.argv[2]), "sudo input marker required")
+        require(
+            sys.stdin.readline(128) == "lychd-qualification-sudo-v1:" + sys.argv[2] + "\n",
+            "sudo password consumption was not established",
+        )
+    else:
+        require(len(sys.argv) == 2, "direct unprivileged action does not accept sudo framing")
+    payload = json.load(sys.stdin)
     if action == "runtime":
         result = runtime()
+    elif action == "administrator":
+        result = administrator()
     elif action == "observe":
         result = observe(payload)
     elif action == "metadata":
