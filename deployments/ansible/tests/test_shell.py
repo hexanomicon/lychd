@@ -1,6 +1,7 @@
 """Ordinary-user shell refusal, preservation and convergence on disposable fixtures."""
 
 import importlib.util
+import json
 import os
 import tempfile
 import unittest
@@ -381,36 +382,104 @@ class RoleBoundaryTests(unittest.TestCase):
                 self.assertTrue("ansible.builtin.assert" in task or "ansible.builtin.set_fact" in task)
         self.assertEqual(operations, {"shell-preflight", "plan"})
 
-    def test_rendered_startup_payload_and_workstation_files_match_selection(self):
+    def test_workstation_files_follow_selected_shell(self):
         environment = NativeEnvironment(undefined=StrictUndefined)
         environment.filters["combine"] = lambda left, right: {**left, **right}
-        environment.globals["lookup"] = lambda kind, name: (
-            (ROOT / "roles/tumbleweed_shell/templates" / name).read_text()
-            if name == "zshrc.j2"
-            else config.MARKER + name + "\n"
-        )
-        shell_tasks = yaml.safe_load((ROOT / "roles/tumbleweed_shell/tasks/preflight.yml").read_text())
-        shell_template = next(
-            task["ansible.builtin.set_fact"]["lychd_shell_files"]
-            for task in shell_tasks
-            if "ansible.builtin.set_fact" in task
-        )
-        workstation_tasks = yaml.safe_load((ROOT / "roles/tumbleweed_workstation/tasks/preflight.yml").read_text())
-        workstation_template = next(
+        environment.globals["lookup"] = lambda kind, name: config.MARKER + name + "\n"
+        tasks = yaml.safe_load((ROOT / "roles/tumbleweed_workstation/tasks/preflight.yml").read_text())
+        template = next(
             task["ansible.builtin.set_fact"]["lychd_workstation_files"]
-            for task in workstation_tasks
+            for task in tasks
             if "ansible.builtin.set_fact" in task
         )
         for selected in ("zsh", "fish"):
-            shell_files = environment.from_string(shell_template).render(lychd_shell=selected)
-            workstation_files = environment.from_string(workstation_template).render(lychd_shell=selected)
-            if selected == "zsh":
-                self.assertEqual(shell_files[".zshrc"], config.SHELL_MARKER + config.ZSH_HOOK + "\n")
-                self.assertTrue(shell_files[".config/lychd-shell/zshrc"].startswith(config.SHELL_MARKER))
-                self.assertNotIn(".config/fish/conf.d/60-lychd-workstation.fish", workstation_files)
-            else:
-                self.assertEqual(shell_files, {})
-                self.assertIn(".config/fish/conf.d/60-lychd-workstation.fish", workstation_files)
+            files = environment.from_string(template).render(lychd_shell=selected)
+            self.assertEqual(".config/fish/conf.d/60-lychd-workstation.fish" in files, selected == "fish")
+
+    def test_ansible_shell_payload_survives_serialization_and_marker_admission(self):
+        role = ROOT / "roles/tumbleweed_shell"
+        tasks = yaml.safe_load((role / "tasks/preflight.yml").read_text())
+        retain = next(task for task in tasks if "ansible.builtin.set_fact" in task)
+        plan = next(task for task in tasks if task.get("become_user") == "{{ lychd_shell_user }}")
+        identity = {"name": "fixture", "uid": 1000, "gid": 1000, "home": "/fixture/home"}
+        with tempfile.TemporaryDirectory() as temporary:
+            controller = Path(temporary)
+            (controller / "ansible.cfg").write_text("[defaults]\n")
+            with patch.dict(
+                os.environ,
+                {
+                    "ANSIBLE_HOME": str(controller / "ansible"),
+                    "ANSIBLE_LOCAL_TEMP": str(controller / "local"),
+                    "ANSIBLE_CONFIG": str(controller / "ansible.cfg"),
+                },
+            ):
+                # Plain Jinja does not reproduce Ansible's backslash-preserving lexer.
+                from ansible.parsing.dataloader import DataLoader
+                from ansible.plugins.loader import init_plugin_loader
+                from ansible.template import Templar, trust_as_template
+
+                init_plugin_loader()
+                loader = DataLoader()
+                loader.set_basedir(str(role))
+                for selected in ("zsh", "fish"):
+                    with self.subTest(shell=selected):
+                        variables = {
+                            **retain.get("vars", {}),
+                            "ansible_search_path": [str(role)],
+                            "lychd_shell": selected,
+                            "lychd_shell_user": "fixture",
+                            "lychd_shell_set_login": True,
+                            "lychd_shell_observation": {"stdout": json.dumps({"identity": identity})},
+                        }
+                        templar = Templar(loader=loader, variables=variables)
+                        values = retain["ansible.builtin.set_fact"]
+                        files = templar.template(trust_as_template(values["lychd_shell_files"]))
+                        observed = templar.template(trust_as_template(values["lychd_shell_identity"]))
+                        templar.available_variables = {
+                            **variables,
+                            "lychd_shell_files": files,
+                            "lychd_shell_identity": observed,
+                        }
+                        serialized = templar.template(trust_as_template(plan["ansible.builtin.command"]["stdin"]))
+                        payload = json.loads(serialized)
+                        self.assertEqual(payload["identity"], identity)
+                        self.assertEqual(payload["files"], files)
+                        if selected == "zsh":
+                            self.assertEqual(set(payload["files"]), config.ZSH_FILES)
+                            self.assertEqual(payload["files"][".zshrc"], config.SHELL_MARKER + config.ZSH_HOOK + "\n")
+                            self.assertEqual(
+                                payload["files"][".zshrc"].splitlines(),
+                                [config.SHELL_MARKER.rstrip("\n"), config.ZSH_HOOK],
+                            )
+                            self.assertTrue(
+                                all(value.startswith(config.SHELL_MARKER) for value in payload["files"].values())
+                            )
+                        else:
+                            self.assertEqual(payload["files"], {})
+                        with (
+                            patch.object(
+                                config, "shell_selection", return_value=(identity, "/bin/bash", "/usr/bin/" + selected)
+                            ),
+                            patch.object(config.os, "geteuid", return_value=identity["uid"]),
+                            patch.object(
+                                config, "managed_files", return_value={"changed": [], "operation": "plan"}
+                            ) as publish,
+                            patch.object(config, "history_state", return_value=[]),
+                        ):
+                            self.assertEqual(config.shell_files("plan", payload)["changed"], [])
+                            publish.assert_called_once()
+                            if selected == "zsh":
+                                publish.reset_mock()
+                                escaped = {
+                                    **payload,
+                                    "files": {
+                                        **payload["files"],
+                                        ".zshrc": payload["files"][".zshrc"].replace("\n", "\\n"),
+                                    },
+                                }
+                                with self.assertRaisesRegex(config.Refusal, "marked defaults"):
+                                    config.shell_files("plan", escaped)
+                                publish.assert_not_called()
 
     def test_shell_package_and_konsole_command_follow_selection(self):
         defaults = yaml.safe_load((ROOT / "roles/tumbleweed_shell/defaults/main.yml").read_text())
