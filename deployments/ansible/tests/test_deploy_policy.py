@@ -93,7 +93,7 @@ class DeployPolicyTests(unittest.TestCase):
         classify = plays[1]
         self.assertEqual(classify["vars"]["ansible_user"], "lychd")
         self.assertFalse(classify["become"])
-        resolve = plays[2]
+        resolve = plays[4]
         self.assertFalse(resolve["become"])
         self.assertFalse(resolve["vars"]["ansible_become"])
         authorize = next(
@@ -104,13 +104,13 @@ class DeployPolicyTests(unittest.TestCase):
         self.assertIn(
             "lychd_deploy_target | default('') == inventory_hostname", authorize["ansible.builtin.assert"]["that"]
         )
-        for play in plays[3:]:
+        for play in plays[5:]:
             for task in play["tasks"]:
                 self.assertIn("lychd_deploy_mode", str(task.get("when", "")), task["name"])
 
     def test_unavailable_runtime_login_requires_an_absent_account_before_provisioning(self):
         plays = load("playbooks/deploy.yml")
-        resolve = plays[2]
+        resolve = plays[4]
         tasks = resolve["tasks"]
         query, guard, record, decide = tasks[:4]
         environment = Environment(undefined=StrictUndefined)
@@ -144,13 +144,114 @@ class DeployPolicyTests(unittest.TestCase):
                 self.assertEqual(mode.render(lychd_app_observed={"state": observed}), expected)
         # The refusal and absence checkpoint precede the first effectful floor play.
         self.assertEqual(
-            [task["ansible.builtin.include_role"]["name"] for task in plays[3]["tasks"]],
+            [task["ansible.builtin.include_role"]["name"] for task in plays[5]["tasks"]],
             ["tumbleweed_shell", "tumbleweed_host"],
         )
-        staging = plays[4]
+        staging = plays[6]
         ready = environment.from_string(staging["vars"]["lychd_deploy_runtime_ready"])
         self.assertEqual(ready.render(ansible_check_mode=True, lychd_app_observed={"state": state}), "False")
         self.assertEqual(ready.render(ansible_check_mode=False, lychd_app_observed={"state": state}), "True")
+
+    def test_missing_source_bootstrap_requires_target_and_retains_native_classification(self):
+        plays = load("playbooks/deploy.yml")
+        inspect, floor, bootstrap = plays[1:4]
+        tasks = inspect["tasks"]
+        observation, decision, authorization, check_refusal = tasks[1:]
+        self.assertEqual(observation["ansible.builtin.include_role"], {"name": "lychd_source", "tasks_from": "inspect"})
+        environment = Environment(undefined=StrictUndefined)
+        environment.filters["bool"] = bool
+        needed = environment.from_string(decision["ansible.builtin.set_fact"]["lychd_deploy_source_bootstrap"])
+        for complete, expected in [(True, "False"), (False, "True")]:
+            self.assertEqual(needed.render(lychd_source_observed={"complete": complete}), expected)
+        for target, skipped, admitted in [
+            ("pilot", [], True),
+            ("other", [], False),
+            (None, [], False),
+            ("pilot", ["floor"], False),
+        ]:
+            context = {"inventory_hostname": "pilot", "ansible_skip_tags": skipped}
+            if target is not None:
+                context["lychd_deploy_target"] = target
+            checks = authorization["ansible.builtin.assert"]["that"]
+            self.assertEqual(all(environment.compile_expression(check)(**context) for check in checks), admitted)
+        refused = environment.compile_expression(check_refusal["when"])
+        self.assertTrue(refused(ansible_check_mode=True, lychd_deploy_source_bootstrap=True))
+        self.assertFalse(refused(ansible_check_mode=False, lychd_deploy_source_bootstrap=True))
+        self.assertFalse(refused(ansible_check_mode=True, lychd_deploy_source_bootstrap=False))
+        self.assertIn("cannot complete native", check_refusal["ansible.builtin.fail"]["msg"])
+        self.assertTrue(floor["become"])
+        verify = floor["tasks"][0]
+        self.assertEqual(verify["ansible.builtin.include_role"]["tasks_from"], "verify")
+        self.assertEqual(verify["ansible.builtin.include_role"]["name"], "tumbleweed_host")
+        self.assertEqual(verify["when"], bootstrap["tasks"][0]["when"])
+        self.assertEqual(bootstrap["tasks"][0]["ansible.builtin.include_role"], {"name": "lychd_source"})
+        self.assertEqual(
+            bootstrap["tasks"][1]["ansible.builtin.include_role"], {"name": "lychd_app", "tasks_from": "classify"}
+        )
+        # Failed floor observation aborts before source staging; there is no rescue or ignored failure.
+        for play in [floor, bootstrap]:
+            for task in play["tasks"]:
+                self.assertNotIn("ignore_errors", task)
+                self.assertNotIn("rescue", task)
+        self.assertNotIn("lychd_app_observed", str(tasks))
+
+    def test_complete_source_observation_needs_no_controller_binary_or_explicit_python(self):
+        tasks = load("roles/lychd_source/tasks/inspect.yml")
+        defaults = load("roles/lychd_source/defaults/main.yml")
+        environment = Environment(undefined=StrictUndefined)
+        environment.filters["bool"] = bool
+        environment.tests["match"] = lambda value, pattern: re.match(pattern, value) is not None
+        context = {
+            "ansible_user": "lychd",
+            "ansible_become": False,
+            "lychd_source_revision": "a" * 40,
+            "lychd_source_uv_sha256": "b" * 64,
+            "lychd_source_python": defaults["lychd_source_python"],
+        }
+        for check in tasks[0]["ansible.builtin.assert"]["that"]:
+            self.assertTrue(environment.compile_expression(check)(**context))
+        self.assertNotIn("lychd_source_uv_local_binary", str(tasks))
+        self.assertFalse(tasks[1]["changed_when"])
+        self.assertFalse(tasks[1]["check_mode"])
+        self.assertIn("source_guard.py", tasks[1]["ansible.builtin.command"]["argv"][3])
+        source = load("roles/lychd_source/tasks/main.yml")
+        self.assertEqual(source[0]["ansible.builtin.include_tasks"], "inspect.yml")
+
+    def test_source_bootstrap_refuses_current_and_retired_running_or_unknown_bodies(self):
+        tasks = load("roles/lychd_source/tasks/inactive.yml")
+        query, refusal = tasks[-2:]
+        self.assertEqual(query["loop"], ["lychd-vessel.service", "lychd-uncaged-vessel.service"])
+        environment = Environment(undefined=StrictUndefined)
+        checks = [environment.compile_expression(check) for check in refusal["ansible.builtin.assert"]["that"]]
+        for unit in query["loop"]:
+            cold = [
+                f"Id={unit}",
+                "LoadState=loaded",
+                "ActiveState=inactive",
+                "SubState=dead",
+                "MainPID=0",
+                "ControlPID=0",
+                "Job=",
+            ]
+            for replaced in [
+                None,
+                ("ActiveState=inactive", "ActiveState=active"),
+                ("MainPID=0", "MainPID=123"),
+                ("Job=", "Job=9"),
+                ("LoadState=loaded", "LoadState=error"),
+            ]:
+                lines = cold if replaced is None else [replaced[1] if line == replaced[0] else line for line in cold]
+                self.assertEqual(
+                    all(check(item={"item": unit, "stdout_lines": lines}) for check in checks), replaced is None
+                )
+        source = load("roles/lychd_source/tasks/main.yml")
+        cold_check = next(
+            i for i, task in enumerate(source) if task.get("ansible.builtin.include_tasks") == "inactive.yml"
+        )
+        first_write = next(
+            i for i, task in enumerate(source) if "ansible.builtin.file" in task or "ansible.builtin.copy" in task
+        )
+        self.assertLess(cold_check, first_write)
 
     def test_running_verification_preserves_a_supplied_image_receipt(self):
         acceptance = load("playbooks/deploy.yml")[-1]

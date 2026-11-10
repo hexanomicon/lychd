@@ -493,10 +493,21 @@ An existing runtime account with inaccessible SSH refuses before any host-floor 
 its key, host-key or network failure instead of treating it as a fresh install.
 
 `playbooks/server.yml` is the server entry point and imports `deploy.yml`, which composes
-the steps above for exactly one `--limit`ed host. It first
+the steps above for exactly one `--limit`ed host. For an accessible runtime account, it first
+inspects the pinned source without interpreting application state. A missing CLI can be
+bootstrapped only with the explicit `lychd_deploy_target`, an unskipped floor, and successful
+read-only host-floor verification. The existing source role then proves both current and retired
+Vessel units inactive before staging the exact CLI; its ownership, receipt and partial-environment
+refusals still apply. A running older body cannot be updated through this bootstrap. An incomplete
+floor requires separate host preparation, not speculative application classification.
+
+With the CLI available, it
 asks the source-admitted CLI for its native deployment assessment through a small protocol-checking
 JSON adapter (`roles/lychd_app/files/app_probe.py`), then admits
-only one mode:
+only one mode. If the CLI needs bootstrap, `--check` stops with an explicit inability to
+complete native classification until a real authorized bootstrap has run; it creates no synthetic
+application state. A complete source retains the ordinary read-only classification path and does
+not require a controller uv binary path.
 
 | Observed state | Mode |
 | --- | --- |

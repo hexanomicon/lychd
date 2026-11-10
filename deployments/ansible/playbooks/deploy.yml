@@ -1,5 +1,6 @@
 ---
-# One host per run. Classification precedes every effect:
+# One host per run. Native classification precedes application and floor effects.
+# A missing pinned CLI may first receive explicitly authorized, cold source staging:
 #   running (healthy, pinned revision)        -> read-only verification only
 #   absent / initialized / bound_inactive /
 #   administrator confirms absent account    -> guarded provisioning, if this host is the named target
@@ -15,7 +16,7 @@
           - lychd_source_revision | default('') is match('^[0-9a-f]{40}$')
         fail_msg: "Run deploy.yml with --limit naming exactly one host, and pass source-vars.json."
 
-- name: Classify the runtime account without effects
+- name: Inspect runtime access and source authority without effects
   hosts: lychd_hosts
   gather_facts: false
   connection: ssh
@@ -32,6 +33,64 @@
       ignore_unreachable: true
       changed_when: false
       check_mode: false
+
+    - name: Inspect the pinned source when the runtime login exists
+      ansible.builtin.include_role:
+        name: lychd_source
+        tasks_from: inspect
+      when: not (lychd_deploy_login.unreachable | default(false)) and lychd_deploy_login.stdout | default('') == 'lychd'
+
+    - name: Record whether source bootstrap is required
+      ansible.builtin.set_fact:
+        lychd_deploy_source_bootstrap: "{{ not lychd_source_observed.complete }}"
+      when: not (lychd_deploy_login.unreachable | default(false)) and lychd_deploy_login.stdout | default('') == 'lychd'
+
+    - name: Require explicit authorization before source bootstrap
+      ansible.builtin.assert:
+        that:
+          - lychd_deploy_target | default('') == inventory_hostname
+          - "'floor' not in ansible_skip_tags"
+        fail_msg: >-
+          The pinned CLI needs source bootstrap before native application classification.
+          Pass -e lychd_deploy_target={{ inventory_hostname }} and do not skip the floor tag.
+      when: lychd_deploy_source_bootstrap | default(false) | bool
+
+    - name: Refuse incomplete native classification in check mode
+      ansible.builtin.fail:
+        msg: >-
+          The pinned CLI is unavailable. Check mode cannot complete native application
+          classification until a real authorized source bootstrap has run. No application state
+          has been inferred; rerun without --check to admit the guarded source bootstrap.
+      when: ansible_check_mode and lychd_deploy_source_bootstrap | default(false) | bool
+
+- name: Verify the existing host floor before source bootstrap
+  hosts: lychd_hosts
+  gather_facts: false
+  become: true
+  tags: [floor]
+  tasks:
+    - name: Require a complete floor without changing it
+      ansible.builtin.include_role:
+        name: tumbleweed_host
+        tasks_from: verify
+        apply:
+          tags: [floor]
+      when: lychd_deploy_source_bootstrap | default(false) | bool
+
+- name: Bootstrap the pinned CLI and obtain native application classification
+  hosts: lychd_hosts
+  gather_facts: false
+  connection: ssh
+  remote_user: lychd
+  become: false
+  vars:
+    ansible_user: lychd
+    ansible_become: false
+  tasks:
+    - name: Stage missing source through the existing inactive-body safeguards
+      ansible.builtin.include_role:
+        name: lychd_source
+      when: lychd_deploy_source_bootstrap | default(false) | bool
 
     - name: Classify the application when the runtime login exists
       ansible.builtin.include_role:
