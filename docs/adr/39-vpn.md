@@ -28,14 +28,14 @@ owns that disclosure decision.
 
 The Tether may manifest a rootless service with only the network capability it needs and explicit
 UDP publication. Interface name, listen port, address space, DNS behaviour, routes, and peer limits
-are Rune-owned configuration, not hard-coded topology. Typed operations under a future host-owned
-run-operation verb may generate a keypair, admit, inspect, revoke, rotate, or export a short-lived
-client configuration or QR projection; it adds no root CLI verb.
+are Rune-owned configuration, not hard-coded topology. This source candidate exposes the closed
+host-owned `run tether prepare|enroll|inspect|revoke` namespace; it adds no extension-owned root
+CLI verb. General key rotation, client-configuration export and QR projections remain future
+work. The native profile remains **Designed** pending installed qualification.
 
-If that service is projected through Quadlet, its future Rune may embed the code-level
-`QuadletConfig` value under `quadlet`. That does not rename Tether to a kind of Stone, make it an
-Animator, or grant generic unit-text authority; Tether keeps ownership of its exact network fields
-and compilation policy.
+For the native Quadlet projection, the Rune embeds the code-level `QuadletConfig` value under
+`quadlet`. That does not rename Tether to a kind of Stone, make it an Animator, or grant generic
+unit-text authority; Tether keeps ownership of its exact network fields and compilation policy.
 
 The Tether service remains outside the shared application Pod. It receives no broad mounts,
 application secrets, database credentials, or host-mutation channel; granting `CAP_NET_ADMIN`
