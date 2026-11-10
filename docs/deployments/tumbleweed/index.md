@@ -217,6 +217,81 @@ Interrupted account creation needs explicit recovery; do not remove its receipt 
 Once the mapping stage has been recorded, both exact subordinate ranges must remain present.
 Runtime home and SSH-file work uses the runtime user's authority, with no privileged fallback.
 
+The floor also owns one UID-specific systemd drop-in,
+`user@UID.service.d/80-lychd-delegate.conf`, requesting `Delegate=cpu memory pids`.
+This overrides Tumbleweed's vendor delegation reset only for the runtime manager; it changes
+no resource ceilings. New identities receive it after the actual UID and no-sudo assertion,
+before the initialized-maps checkpoint and before linger starts their manager. Every post-map
+receipt produced by this recipe therefore already has the artifact, and ordinary interrupted
+post-map creation can resume. An existing identity missing this file requires explicit one-time
+operator preparation before retrying, including identities created by an older recipe with a
+valid `maps_initialized` or `configured` schema-1 receipt. The receipt remains valid; do not delete
+or rewrite it to bypass this maintenance boundary. The role does not infer application inactivity,
+inspect container storage, query Podman state, or automatically prepare legacy identities.
+An exact existing artifact is left unchanged even when an application is active. Foreign local
+controller policy (including `/usr/local/lib/systemd/system`) and custom manager placement are
+refused. The manager and its standard ancestor slices must report `NeedDaemonReload=no` before
+convergence or verification; stale or unknown unit policy requires operator review, not an
+automatic preflight reload.
+The floor reloads PID1 only after publishing the file. It never restarts or reexecutes a user
+manager, reboots, or kills a workload. If the current manager still lacks controllers, verification
+reports **activation pending**: stop provisioning, perform the separately authorized controlled
+boot, then rerun verification and the second no-change apply. A successful reload is not proof
+of effective delegation. Root controller support, the exact managed file, effective delegation
+and available controllers at the user-manager boundary are required; a resource-limited build
+or container remains a separate live acceptance check. `CPUAccounting=` does not enable CPU
+control on current systemd. See [systemd's delegation contract](https://systemd.io/CGROUP_DELEGATION/).
+
+For an existing valid schema-1 identity whose delegation artifact is absent, perform this
+one-time operator maintenance before retrying the host role:
+
+1. Independently establish that the body is quiescent and this maintenance is authorized.
+   Retain tested provider-console access and an authorized controlled-boot recovery plan.
+   The role does not establish application inactivity; public active-container stop/start is
+   still incomplete. Do not substitute an improvised stop, kill, or restart procedure.
+2. Inspect and preserve `/etc/lychd-host-floor.json`. Confirm its identity matches the actual
+   `lychd` account's numeric UID/GID, exact retained subordinate maps and intended host variables;
+   confirm the runtime has no sudo grants. A valid `maps_initialized` or `configured` receipt
+   must not be deleted or rewritten to make the account appear new. A `creating` receipt needs
+   separate interrupted-creation recovery.
+3. Review the manager and standard ancestor slices' effective and on-disk controller policy,
+   including local units/drop-ins under `/etc`, `/run` and `/usr/local/lib/systemd/system`.
+   Resolve stale policy through separate operator review; do not blindly reload or overwrite it.
+   Require standard placement and no conflicting local delegation or disabled required
+   controllers. Use the actual runtime UID in the destination below, not an assumed UID.
+4. Verify every destination ancestor is a real, root-owned directory, with no symlinks or
+   group/world write permission. Create the absent per-UID directory
+   `/etc/systemd/system/user@UID.service.d` as root, mode `0755`; preserve any existing trusted
+   directory. Create **only an absent** `80-lychd-delegate.conf` there, as a root-owned,
+   single-link regular file with mode `0644`. Do not replace a foreign file or follow a link.
+   Its content must be exactly these three lines, including the ownership comment and a final
+   LF newline, with no leading indentation or extra blank lines:
+
+   ```ini
+   # Managed by LychD host floor: runtime cgroup delegation v1
+   [Service]
+   Delegate=cpu memory pids
+   ```
+
+5. After changed publication, reload PID1 with `systemctl daemon-reload`. An already exact file
+   requires no publication or reload. Do not restart or reexecute the live user manager.
+6. For a `configured` receipt with the existing floor complete, run the read-only observation
+   playbook below first. After it passes, review a host-role check run and apply. If observation
+   reports **activation pending**, follow step 8 before continuing with that check/apply.
+7. For a valid `maps_initialized` receipt, resume only the independently confirmed pre-application
+   identity admitted in step 1. After exact artifact publication and PID1 reload, review a
+   host-role check run and apply to finish keys, linger and the `configured` checkpoint. Do not
+   require the observation playbook to pass before this resume: it requires configured state
+   and linger. The host apply performs verification after configuration and may then report
+   **activation pending** if a user manager already existed. Preparation or a successful check
+   alone does not establish a configured floor.
+8. On **activation pending** in either path, stop further provisioning, perform the separately
+   authorized controlled boot, then run read-only observation again. Daemon reload alone does
+   not prove that the required controllers reached the manager. After configuration and
+   verification pass, repeat host apply; this second apply must report no persistent changes.
+   Retain a separate successful resource-limited native build or container observation before
+   accepting CPU/memory enforcement. These checks do not establish application recovery support.
+
 Then run the observation playbook:
 
 ```bash

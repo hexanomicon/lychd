@@ -61,10 +61,29 @@ and use the explicit manual prerequisites.
 Use the existing administrator and retain a tested provider-console recovery path. Install the
 distribution's `wireguard-tools`, OpenSSH, firewalld, and Python 3 first. Keep host IP forwarding
 disabled. The candidate requires a running firewalld with no source-bound zones or direct rules.
-Its only admitted policy is the unchanged vendor `allow-host-ipv6` ICMPv6 bootstrap policy, checked
-in runtime and permanent configuration. Other policies refuse even when currently inactive:
-binding the private interface can activate them before zone rules. Do not disable the vendor
-IPv6 policy to make this profile pass. This narrow prerequisite may exclude a custom workstation.
+It admits the unchanged vendor `allow-host-ipv6` ICMPv6 bootstrap policy and the five unchanged,
+administratively disabled vendor gateway policies shipped with firewalld 2.5.2. The gateway
+objects are `gateway-dmz-to-HOST`, `gateway-lan-to-HOST`, `gateway-lan-to-work`,
+`gateway-lan-to-world`, and `gateway-world-to-HOST`. Both runtime and permanent inventories must
+match; every gateway object's disabled state, target, priority, zone sets, services and absence
+of extra rules are checked. Their permanent paths must remain under `/usr/lib/firewalld/policies`
+with no corresponding `/etc/firewalld/policies` override. The guard observes these objects; it
+does not enable, disable, delete or reload them. Firewalld's
+[administrative disable](https://firewalld.org/documentation/man-pages/firewalld.policy.html)
+prevents activation even when zone membership changes. Unknown policies still refuse even when
+currently inactive, as do enabled or changed gateway policies. Do not disable the vendor IPv6
+policy to make this profile pass. This narrow prerequisite may exclude a custom workstation.
+
+Before the first access bootstrap, review the permanent firewall configuration and policies,
+then establish a trusted fresh firewalld runtime through a controlled boot or an explicitly
+reviewed reload. Retain independent administrator SSH access and a tested provider console:
+a reload also applies unrelated pending permanent configuration and discards runtime-only
+changes. Observing `disabled=yes` reports current state; it does not prove the absence of a
+pending timeout that will remove the disable. Do not perform timed policy operations during
+the managed access transport's lifetime. The privileged firewall administrator is trusted;
+the `lychd` account must not have authority to change the firewall. These are operator
+prerequisites, not properties proved by the policy validator.
+
 When NetworkManager runs, reserve `lychd-wg` as unmanaged in the administrator's network policy
 before installation, so it does not adopt the interface created by `wg-quick`. The candidate
 refuses a NetworkManager connection naming that interface and does not reload NetworkManager.

@@ -1,5 +1,5 @@
 ---
-- name: Inspect distro, mounted subvolumes, SELinux and identity allocations
+- name: Inspect distro, storage, identity and delegation destinations before effects
   ansible.builtin.command:
     argv:
       - /usr/bin/python3
