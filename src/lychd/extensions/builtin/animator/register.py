@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from lychd.domain.animation.links import Link
 from lychd.domain.animation.model_factory import validate_openai_interface_target
 from lychd.domain.animation.schemas import ModelSurface, OpenAICompatibleProvider, PortalConfig
 from lychd.domain.animation.services.adapters.catalog import model_info_from_portal_model
@@ -57,7 +58,19 @@ async def probe_openai_portal(animator: RuntimeAnimator) -> None:
     if not isinstance(connector, OpenAICompatibleConnector):
         msg = "OpenAI-compatible Portal probe received a runtime with another connector contract."
         raise TypeError(msg)
-    connector.set_link(await probe_openai_compatible_link(connector))
+    rune = animator.rune
+    api_key: str | None = None
+    if isinstance(rune, PortalConfig) and rune.allow_dispatch:
+        # An admitted Portal already sends this credential on every call; the bare probe
+        # stays unauthenticated for every other declaration.
+        try:
+            api_key = connector.resolve_api_key()
+        except RuntimeError as exc:
+            connector.set_observed_model_ids(None)
+            connector.set_inventory_error(None)
+            connector.set_link(Link(up=False, reason=str(exc)))
+            return
+    connector.set_link(await probe_openai_compatible_link(connector, api_key=api_key))
 
 
 def register(context: ExtensionRegistrationContext) -> None:

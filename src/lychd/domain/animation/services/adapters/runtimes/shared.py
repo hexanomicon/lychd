@@ -74,6 +74,7 @@ async def probe_openai_compatible_link(
     *,
     timeout_seconds: float = PROBE_TIMEOUT_SECONDS,
     path: str = "/models",
+    api_key: str | None = None,
 ) -> Link:
     """Probe link liveness and the exact OpenAI-compatible model inventory.
 
@@ -85,6 +86,8 @@ async def probe_openai_compatible_link(
     ``up=False``. A reachable but non-conformant response keeps the physical
     link live and records a separate inventory error; this function never
     raises (A3-U3: async HTTPX2 replaces the blocking ``urlopen``).
+
+    ``api_key`` adds a bearer credential; only an operator-admitted Portal passes one.
     """
     normalized_path = path if path.startswith("/") else f"/{path}"
     request_url = f"{connector.base_url.rstrip('/')}{normalized_path}"
@@ -92,7 +95,7 @@ async def probe_openai_compatible_link(
         payload = await request_json(
             "GET",
             request_url,
-            headers={"Accept": "application/json"},
+            headers={"Accept": "application/json"} | ({"Authorization": f"Bearer {api_key}"} if api_key else {}),
             timeout=timeout_seconds,
         )
     except HttpJsonError as exc:
