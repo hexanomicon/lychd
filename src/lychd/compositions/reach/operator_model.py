@@ -1,4 +1,4 @@
-"""Exact vLLM development capability through a fixed host relay, under ordinary grants."""
+"""Exact operator-bound model capability through a host relay, under ordinary grants."""
 
 from __future__ import annotations
 
@@ -78,7 +78,7 @@ class _RelayTransport(httpx2.AsyncBaseTransport):
             choice = result["choices"][0]
             message = choice["message"]
             valid = (
-                result["model"] == self.profile.model_id
+                self.profile.serves(result["model"])
                 and choice.get("finish_reason") != "length"
                 and (not thinking or choice.get("finish_reason") == "stop")
                 and len(result["choices"]) == 1

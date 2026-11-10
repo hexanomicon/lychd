@@ -41,7 +41,13 @@ from lychd.compositions.reach.operator_wire import MAX_WIRE_BYTES
 from lychd.interface.discord.operator_io import load_policy
 
 if __package__:
-    from scripts.reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker, validate_endpoint
+    from scripts.reach_model_broker import (
+        MODEL_ENDPOINT,
+        OperatorModelBroker,
+        is_loopback_endpoint,
+        validate_api_key,
+        validate_endpoint,
+    )
     from scripts.reach_observation import ReachObservationPublisher
     from scripts.reach_operator_transport import remove_owned, safe_environment, strict_object, supervise
     from scripts.reach_podman_model import PodmanModelTransport
@@ -49,7 +55,13 @@ if __package__:
     from scripts.reach_trace_archive import TraceArchive
     from scripts.reach_trace_capture import TraceCapture
 else:
-    from reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker, validate_endpoint
+    from reach_model_broker import (
+        MODEL_ENDPOINT,
+        OperatorModelBroker,
+        is_loopback_endpoint,
+        validate_api_key,
+        validate_endpoint,
+    )
     from reach_observation import ReachObservationPublisher
     from reach_operator_transport import remove_owned, safe_environment, strict_object, supervise
     from reach_podman_model import PodmanModelTransport
@@ -476,6 +488,27 @@ def instance_lock(state: Path) -> Generator[None]:
         os.close(descriptor)
 
 
+def model_credential(args: argparse.Namespace) -> str | None:
+    """Validate the model road and read its optional bearer credential from a private file.
+
+    The Podman transport execs into the local model container and reaches only its loopback
+    endpoint, so it cannot carry a remote endpoint. The credential never appears in argv.
+    """
+    try:
+        validate_endpoint(args.model_endpoint)
+    except ValueError:
+        _fail("operator_model_endpoint")
+    if args.model_transport == "podman" and not is_loopback_endpoint(args.model_endpoint):
+        _fail("operator_model_transport")
+    if args.model_api_key_file is None:
+        return None
+    raw = read_regular(args.model_api_key_file, 8192, private=True)
+    try:
+        return validate_api_key(raw.decode("ascii").strip())
+    except (UnicodeDecodeError, ValueError):
+        _fail("operator_model_api_key")
+
+
 def container_arguments(engine: str, image: str, cidfile: Path, *, offline: bool) -> list[str]:
     """Build a closed boundary without published ports or inherited environment."""
     if IMAGE_ID.fullmatch(image) is None:
@@ -585,7 +618,7 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
     if args.onboarding_profile is not None:
         onboarding_raw = read_regular(args.onboarding_profile, 4096, private=True)
         strict_object(onboarding_raw)
-    validate_endpoint(args.model_endpoint)
+    model_api_key = model_credential(args)
     publications = None
     if args.publications_dir is not None:
         publications = private_directory(args.publications_dir)
@@ -689,6 +722,7 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
                         endpoint=args.model_endpoint,
                         transport=PodmanModelTransport() if args.model_transport == "podman" else None,
                         trace=capture.host,
+                        api_key=model_api_key,
                     ),
                     research_broker=research_broker,
                     capture=capture,
@@ -786,6 +820,7 @@ def parser() -> argparse.ArgumentParser:
             child.add_argument("--conversation-profile", type=Path)
             child.add_argument("--onboarding-profile", type=Path)
             child.add_argument("--model-endpoint", default=MODEL_ENDPOINT)
+            child.add_argument("--model-api-key-file", type=Path)
             child.add_argument("--model-transport", choices=("host", "podman"), default="host")
             child.add_argument("--research-profile", type=Path)
             child.add_argument("--research-state-dir", type=Path)

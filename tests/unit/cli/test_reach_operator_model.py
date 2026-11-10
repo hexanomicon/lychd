@@ -327,13 +327,110 @@ async def test_multiplexer_keeps_model_payload_off_discord_pipe_and_refuses_unkn
         "http://localhost:28000",
         "http://127.0.0.1:28000/",
         "http://127.0.0.1:28000?q=1",
-        "https://127.0.0.1:28000",
+        "http://127.0.0.1",
+        "http://127.0.0.1:0",
+        "http://127.0.0.1:28000/v1",
+        "http://10.0.0.5:28000",
         "http://user:pass@127.0.0.1:28000",
+        "https://user:pass@gateway.example",
+        "https://gateway.example/",
+        "https://gateway.example/v1?q=1",
+        "https://gateway.example#fragment",
+        "ftp://gateway.example",
     ],
 )
-def test_endpoint_is_one_literal_fixed_road(endpoint: str) -> None:
+def test_endpoint_refuses_plain_remote_http_credentials_and_url_state(endpoint: str) -> None:
     with pytest.raises(ValueError, match="model_endpoint"):
         validate_endpoint(endpoint)
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        "http://127.0.0.1:28000",
+        "http://127.0.0.1:9000",
+        "http://[::1]:28000",
+        "https://gateway.example",
+        "https://gateway.example:8443/zen/go",
+    ],
+)
+def test_endpoint_admits_loopback_http_and_any_https(endpoint: str) -> None:
+    assert validate_endpoint(endpoint) == endpoint
+
+
+@pytest.mark.asyncio
+async def test_remote_gateway_probe_skips_health_bounds_inventory_and_accepts_routed_model() -> None:
+    selected = OperatorConversationProfile(
+        persona_name="Fixture",
+        persona_instructions="Answer plainly.",
+        animator_id="gateway",
+        model_id="vendor/small-model",
+    )
+    observed: list[httpx2.Request] = []
+    catalogue = [{"id": f"other/model-{index}"} for index in range(600)] + [{"id": "vendor/small-model"}]
+
+    def handle(value: httpx2.Request) -> httpx2.Response:
+        observed.append(value)
+        assert str(value.url).startswith("https://gateway.example/zen/v1/")
+        assert value.headers["authorization"] == "Bearer sk-fixture"
+        if value.url.path == "/zen/v1/models":
+            return httpx2.Response(200, json={"data": catalogue})
+        assert value.url.path == "/zen/v1/chat/completions"
+        assert json.loads(value.content)["model"] == "vendor/small-model"
+        # Gateways report the bare model they reached.
+        return httpx2.Response(
+            200,
+            json={
+                "model": "small-model",
+                "choices": [{"message": {"role": "assistant", "content": "Hi"}, "finish_reason": "stop"}],
+            },
+        )
+
+    broker = OperatorModelBroker(
+        selected,
+        endpoint="https://gateway.example/zen",
+        api_key="sk-fixture",
+        transport=httpx2.MockTransport(handle),
+    )
+    probe = await broker.handle(
+        OperatorModelRequest(call_id=str(uuid4()), binding_digest=selected.digest, operation="probe", payload_json="{}")
+    )
+    assert probe.status == "ok"
+    assert json.loads(probe.payload_json) == {"healthy": True, "model_ids": ["vendor/small-model"]}
+    body = {
+        "model": "vendor/small-model",
+        "messages": [{"role": "system", "content": "Answer plainly."}, {"role": "user", "content": "Hello"}],
+        "max_tokens": selected.max_tokens,
+        "temperature": selected.temperature,
+        "stream": False,
+        "chat_template_kwargs": {"enable_thinking": False},
+    }
+    result = await broker.handle(
+        OperatorModelRequest(
+            call_id=str(uuid4()),
+            binding_digest=selected.digest,
+            operation="generate",
+            payload_json=canonical_json(body),
+        )
+    )
+    assert result.status == "ok"
+    assert [item.url.path for item in observed] == ["/zen/v1/models", "/zen/v1/chat/completions"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("reported", ["other-model", "vendor/other", "", None])
+async def test_completion_from_a_different_model_is_still_refused(reported: object) -> None:
+    def handle(value: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(200, json=completion() | {"model": reported})
+
+    result = await OperatorModelBroker(profile(), transport=httpx2.MockTransport(handle)).handle(request())
+    assert (result.status, result.reason) == ("error", "model_protocol")
+
+
+@pytest.mark.parametrize("value", ["", "two words", "line\nbreak", "x" * 4097])
+def test_api_key_must_be_one_printable_header_token(value: str) -> None:
+    with pytest.raises(ValueError, match="model_api_key"):
+        OperatorModelBroker(profile(), api_key=value)
 
 
 def test_profile_is_frozen_worker_only_and_publication_mount_is_edge_only(

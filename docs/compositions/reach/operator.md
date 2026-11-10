@@ -711,14 +711,23 @@ uncertain earlier effect. The bot needs Discord's Add Reactions and Embed Links 
 where used; this option does not grant or change permissions. Discord client settings and
 provider availability still determine whether the GIF animates.
 
-This option requires an already running, warm local `Qwen3.8-27B` at the fixed literal endpoint
-`http://127.0.0.1:28000`. The host transport checks fresh `/health` and `/v1/models` observations
-for the exact model. It cannot start, activate, evict or replace an engine. An absent or unsuitable
-model refuses the turn; document search and another model are not fallbacks.
+By default this option requires an already running, warm local `Qwen3.8-27B` at
+`http://127.0.0.1:28000`. The private profile's `animator_id` and `model_id` select a different
+binding, and `--model-endpoint` a different road: plain HTTP is admitted only for a loopback IP
+literal with an explicit port, while HTTPS may name any OpenAI-compatible endpoint with an
+optional path prefix. `--model-api-key-file` reads one bearer credential from a private `0600`
+file; it never appears in argv. A loopback endpoint is checked with fresh `/health` and
+`/v1/models` observations; a remote endpoint has no standard health route, so its `/v1/models`
+inventory is the probe, and only the selected model's presence crosses to the worker. A
+gateway may report the bare model it reached for a routed id such as `vendor/model`; that exact
+suffix is the only accepted alias. The transport cannot start, activate, evict or replace an
+engine. An absent or unsuitable model refuses the turn; document search and another model are
+not fallbacks. The remote road sends the conversation, persona and selected context to that
+provider: choose it deliberately.
 
 The default `--model-transport host` reads that loopback endpoint on the operator host.
 When the already-running model is inside the native Podman pod, explicitly select
-`--model-transport podman`. Its bounded transport executes only a fixed Python HTTP helper
+`--model-transport podman` (loopback endpoints only). Its bounded transport executes only a fixed Python HTTP helper
 in the exact `lychd-night-qwen38` container and reads the same loopback endpoint there.
 Request text crosses standard input, never shell arguments. The helper cannot select a
 different container, URL, command, model, or runtime transition; it publishes no host port.

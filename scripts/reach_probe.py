@@ -94,14 +94,14 @@ from lychd.compositions.reach.schemas import ReachEvent, ReachPolicy, ReachRule,
 if __package__:
     from scripts import reach_operator as operator
     from scripts import reach_operator_transport as transport
-    from scripts.reach_model_broker import OperatorModelBroker
+    from scripts.reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker
     from scripts.reach_podman_model import PodmanModelTransport
     from scripts.reach_trace_archive import TraceArchive
     from scripts.reach_trace_capture import TraceCapture
 else:
     import reach_operator as operator
     import reach_operator_transport as transport
-    from reach_model_broker import OperatorModelBroker
+    from reach_model_broker import MODEL_ENDPOINT, OperatorModelBroker
     from reach_podman_model import PodmanModelTransport
     from reach_trace_archive import TraceArchive
     from reach_trace_capture import TraceCapture
@@ -1449,7 +1449,15 @@ async def cleanup_owned(
 
 
 async def supervise(
-    turn: Turn, arguments: list[str], cidfile: Path, *, engine: str, model_transport: str, budget_seconds: float
+    turn: Turn,
+    arguments: list[str],
+    cidfile: Path,
+    *,
+    engine: str,
+    model_transport: str,
+    budget_seconds: float,
+    model_endpoint: str = MODEL_ENDPOINT,
+    model_api_key: str | None = None,
 ) -> None:
     """Retire the one owned process and exact CID on every terminal path, without retries."""
     process: asyncio.subprocess.Process | None = None
@@ -1483,6 +1491,8 @@ async def supervise(
                 turn.profile,
                 transport=PodmanModelTransport() if model_transport == "podman" else None,
                 trace=turn.capture.host,
+                endpoint=model_endpoint,
+                api_key=model_api_key,
             )
             tasks = [
                 asyncio.create_task(exchange(turn, spawned, broker)),
@@ -1517,6 +1527,8 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--scenario", type=Path, required=True)
     result.add_argument("--output", type=Path, required=True)
     result.add_argument("--model-transport", choices=("podman", "http"), default="podman")
+    result.add_argument("--model-endpoint", default=MODEL_ENDPOINT)
+    result.add_argument("--model-api-key-file", type=Path)
     result.add_argument("--timeout-seconds", type=int, default=420)
     result.add_argument("--capture-model-output", action="store_true")
     return result
@@ -1638,6 +1650,8 @@ def run_turn(
                 cidfile,
                 engine=args.engine,
                 model_transport=args.model_transport,
+                model_endpoint=args.model_endpoint,
+                model_api_key=operator.model_credential(args),
                 budget_seconds=args.timeout_seconds,
             )
         )
