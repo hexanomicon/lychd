@@ -324,6 +324,7 @@ def test_root_help_does_not_construct_asgi_app(runner: CliRunner, mocker: Mocker
         "status",
         "logs",
         "access",
+        "run",
         "del",
     }
     assert {name for name, command in cli.commands.items() if command.hidden} == {
@@ -331,7 +332,7 @@ def test_root_help_does_not_construct_asgi_app(runner: CliRunner, mocker: Mocker
         "database-bootstrap",
         "reactor",
     }
-    for command in ("init", "bind", "start", "stop", "status", "logs", "access", "del"):
+    for command in ("init", "bind", "start", "stop", "status", "logs", "access", "run", "del"):
         assert command in result.output
     positions = [
         result.output.index(f"\n  {command}")
@@ -340,6 +341,9 @@ def test_root_help_does_not_construct_asgi_app(runner: CliRunner, mocker: Mocker
     assert positions == sorted(positions)
     for internal in ("destroy", "doctor", "animators", "runs", "workers", "reactor", "serve", "database"):
         assert internal not in result.output
+    for arguments in (("run", "--help"), ("run", "tether", "--help")):
+        nested_help = runner.invoke(cli, arguments)
+        assert nested_help.exit_code == 0
     create_app.assert_not_called()
 
 
