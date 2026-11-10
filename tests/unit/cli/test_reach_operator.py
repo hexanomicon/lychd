@@ -150,7 +150,7 @@ def test_image_retention_accepts_bare_and_prefixed_engine_ids(
         return observed.encode() + b"\n" if list(arguments)[1:3] == ["image", "inspect"] else b""
 
     monkeypatch.setattr(operator, "command", command)
-    operator._retain_image("podman", "core", IMAGE, root=Path.cwd())
+    operator._retain_image("podman", "core", IMAGE, root=Path.cwd())  # pyright: ignore[reportPrivateUsage]
     assert calls[0][1:3] == ["image", "tag"]
     assert calls[0][3] == IMAGE
 
