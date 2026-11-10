@@ -160,7 +160,13 @@ class InitializationPlanner:
                 continue
             observed_ancestors.add(existing)
             try:
-                descriptor = open_directory_path(existing)
+                try:
+                    descriptor = open_directory_path(existing)
+                except RuntimeError as exc:
+                    # The no-follow layout adapter translates unsafe traversal
+                    # into RuntimeError. Preserve it as a read-only refusal.
+                    msg = f"Cannot inspect containing directory safely: {existing}: {exc}"
+                    raise path_identity.PathIdentityError(msg) from exc
                 try:
                     path_identity.observe_identity_fd(descriptor)
                 finally:

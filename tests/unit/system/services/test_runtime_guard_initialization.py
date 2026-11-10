@@ -56,6 +56,7 @@ def test_init_plan_requires_private_guard_without_changing_existing_modes(
     receipt = Mock(spec=LifecycleReceiptStore)
     receipt.path = authority.lifecycle_receipt
     receipt.exists = False
+    receipt.plan_recorded_identities.return_value = ()
     receipt.plan_dedicated_root_attestation.return_value = LifecycleAction(
         LifecycleDisposition.WOULD_CREATE,
         LifecycleResourceKind.RECEIPT,
@@ -66,6 +67,7 @@ def test_init_plan_requires_private_guard_without_changing_existing_modes(
         guard.mkdir(parents=True, mode=0o755)
         guard.chmod(0o755)
     plan = InitializationPlanner(reactor_directories=(), anchor_paths=(), sample_paths=(), receipt_store=receipt).plan()
+    receipt.plan_recorded_identities.assert_called_once_with()
     action = next(item for item in plan.actions if item.target == str(guard))
     assert "0700" in action.detail
     assert action.disposition is (LifecycleDisposition.BLOCKED if existing else LifecycleDisposition.WOULD_CREATE)

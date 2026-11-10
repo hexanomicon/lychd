@@ -178,10 +178,12 @@ def test_prepared_inspection_is_metadata_only_before_binding_or_first_peer(
 ) -> None:
     from lychd.system.services.tether.custody import PreparationStore, TetherCustody
     from lychd.system.services.tether.models import PreparedInspection, digest
-    from tests.unit.system.services.test_tether_operations import image_stack
+    from tests.unit.system.services.test_tether_operations import FixtureTetherCustody, image_stack
 
     operations, original, _, created = image_stack(tmp_path)
     before = PreparationStore(operations.custody).selected()
+    # Fresh CLI custody must attest with the same filesystem identity adapter as preparation.
+    monkeypatch.setattr(composition, "TetherCustody", FixtureTetherCustody)
     monkeypatch.setattr(composition, "PATH_CODEX_ROOT", operations.custody.codex_root)
     monkeypatch.setattr(composition, "PATH_CRYPT_ROOT", operations.custody.crypt_root)
     monkeypatch.setattr(composition.os, "geteuid", lambda: 1000)

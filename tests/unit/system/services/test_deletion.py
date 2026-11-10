@@ -278,6 +278,7 @@ def _build_harness(
     tmp_path: Path,
     *,
     active: bool = True,
+    legacy_receipt: bool = True,
     storage_observation: MountTreeObservation | None = None,
     subvolumes: dict[Path, ObservedBtrfsSubvolume] | None = None,
     sudo_bin: str | None = "/usr/bin/sudo",
@@ -331,11 +332,12 @@ def _build_harness(
         lifecycle_receipt=codex / ".lychd-lifecycle.json",
         source_checkout=source_checkout,
     )
-    paths.lifecycle_receipt.write_text(
-        ('{"version":1,"dedicated_roots":[],"directories":[],"files":[]}\n'),
-        encoding="utf-8",
-    )
-    paths.lifecycle_receipt.chmod(0o600)
+    if legacy_receipt:
+        paths.lifecycle_receipt.write_text(
+            ('{"version":1,"dedicated_roots":[],"directories":[],"files":[]}\n'),
+            encoding="utf-8",
+        )
+        paths.lifecycle_receipt.chmod(0o600)
     source_checkout.mkdir()
     checkpoint = DeletionCheckpointStore(codex)
     trees = ManagedTreeService(paths.dedicated_roots)
@@ -459,10 +461,12 @@ def test_successful_init_root_seal_authorizes_complete_deletion(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A real lifecycle receipt bridges explicit init into recursive del authority."""
-    harness = _build_harness(tmp_path, active=False)
+    harness = _build_harness(tmp_path, active=False, legacy_receipt=False)
     _patch_receipt_authority(monkeypatch, harness)
     root_authority = LifecycleReceiptStore(harness.paths.lifecycle_receipt)
+    assert not root_authority.exists
     root_authority.seal_dedicated_roots()
+    assert root_authority.load().version == 3
     planner, executor = _wire_root_authority(harness, root_authority)
 
     plan = planner.plan()
@@ -484,10 +488,12 @@ def test_late_codex_removal_failure_retains_receipt_for_retry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Codex authority is consumed only after every sibling is removed."""
-    harness = _build_harness(tmp_path, active=False)
+    harness = _build_harness(tmp_path, active=False, legacy_receipt=False)
     _patch_receipt_authority(monkeypatch, harness)
     root_authority = LifecycleReceiptStore(harness.paths.lifecycle_receipt)
+    assert not root_authority.exists
     root_authority.seal_dedicated_roots()
+    assert root_authority.load().version == 3
     planner, executor = _wire_root_authority(harness, root_authority)
     late_entry = harness.paths.codex_root / "late-failure"
     late_entry.write_text("retry me", encoding="utf-8")
@@ -2608,3 +2614,18 @@ def test_retired_native_vessel_blocks_deletion_before_any_effect(tmp_path: Path,
 
 
 pytestmark = pytest.mark.usefixtures("persistent_identity_observer")
+
+
+def test_legacy_root_receipt_is_not_resealed_for_deletion(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness = _build_harness(tmp_path, active=False)
+    _patch_receipt_authority(monkeypatch, harness)
+    root_authority = LifecycleReceiptStore(harness.paths.lifecycle_receipt)
+    original = root_authority.path.read_bytes()
+    with pytest.raises(LifecycleError, match="Legacy lifecycle identity"):
+        root_authority.seal_dedicated_roots()
+    assert root_authority.path.read_bytes() == original
+    assert all(root.exists() for root in harness.paths.dedicated_roots)
+    assert harness.bindings.destroy_calls == 0

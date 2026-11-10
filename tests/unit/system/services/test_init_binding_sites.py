@@ -206,6 +206,8 @@ def test_symlink_binding_component_never_admits_init(init_sites: InitSites, link
         site.symlink_to(actual, target_is_directory=True)
     before = actual.stat()
     plan = init_sites.planner().plan()
+    assert any("persistent filesystem identity unavailable" in action.detail for action in plan.blockers)
+    assert not init_sites.receipt.exists
     with pytest.raises(LifecycleError, match="symlink"):
         plan.require_executable()
     with pytest.raises(RuntimeError, match="symlink"):
