@@ -59,6 +59,20 @@ def _show_declared_plan(ctx: click.Context, _parameter: click.Parameter, value: 
     ctx.exit()
 
 
+def _show_prepared_inspection(ctx: click.Context, _parameter: click.Parameter, value: bool) -> None:  # noqa: FBT001 - Click owns its eager-option callback signature
+    if not value or ctx.resilient_parsing:
+        return
+    try:
+        from lychd.system.services.tether.composition import prepared_tether_inspection
+
+        metadata = prepared_tether_inspection().model_dump_json(indent=2)
+    except Exception:  # noqa: BLE001 - no private key or validation payload may escape metadata inspection
+        msg = "Prepared Tether metadata is unavailable; check native preparation and creation receipts"
+        raise click.ClickException(msg) from None
+    click.echo(metadata)
+    ctx.exit()
+
+
 @click.group(name="run")
 def run() -> None:
     """Execute closed native host operations."""
@@ -71,15 +85,34 @@ def tether() -> None:
 
 @tether.command(name="prepare")
 @_request_options
+@click.option(
+    "--expected-preparation-digest", help="Replace only the cold transport image from this exact prepared selection."
+)
 @click.option("--dry-run", is_flag=True)
 @_native
 def prepare(
-    *, installation_id: UUID, operation_id: UUID, expected_generation: int, envelope_digest: str, dry_run: bool
+    *,
+    installation_id: UUID,
+    operation_id: UUID,
+    expected_generation: int,
+    envelope_digest: str,
+    dry_run: bool,
+    expected_preparation_digest: str | None,
 ) -> BaseModel:
-    """Create the two exact server secrets before ordinary bind."""
+    """Prepare server secrets initially, or select a cold image-only replacement."""
     from lychd.system.services.tether.composition import build_tether_operations
-    from lychd.system.services.tether.models import PrepareRequest
+    from lychd.system.services.tether.models import PrepareImageRequest, PrepareRequest
 
+    if expected_preparation_digest is not None:
+        image_request = PrepareImageRequest(
+            installation_id=installation_id,
+            operation_id=operation_id,
+            expected_generation=expected_generation,
+            envelope_digest=envelope_digest,
+            intent_digest=envelope_digest,
+            expected_preparation_digest=expected_preparation_digest,
+        )
+        return build_tether_operations().prepare_image(image_request, dry_run=dry_run)
     request = PrepareRequest(
         installation_id=installation_id,
         operation_id=operation_id,
@@ -139,6 +172,14 @@ def enroll(
 
 
 @tether.command(name="inspect")
+@click.option(
+    "--prepared",
+    is_flag=True,
+    is_eager=True,
+    expose_value=False,
+    callback=_show_prepared_inspection,
+    help="Print current selected-preparation metadata before binding or peer enrollment.",
+)
 @click.option(
     "--declared",
     is_flag=True,

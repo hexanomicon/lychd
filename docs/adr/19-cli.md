@@ -164,6 +164,18 @@ secrets, publishing intent or starting/stopping units. Repeated operation identi
 intent refuses. [Privilege](10-privilege.md#tether-host-operations-designed) owns serialization,
 guarded activation, interruption and settlement; the CLI only validates, delegates and renders.
 
+The same `prepare` verb admits cold image-only replacement when
+`--expected-preparation-digest` is supplied. This selects a distinct typed `prepare-image`
+request; it does not change the serialized initial `prepare` request or its historical digest.
+The request also names the target envelope and current peer generation through the existing
+options. Read-only `inspect --prepared` exposes installation identity, selected envelope digest,
+current preparation-selection digest, current peer generation and the unchanged flat preparation
+receipt without requiring a new target binding. It reveals metadata only, creates no custody or
+secret, and grants no activation authority. It is distinct from
+`inspect --declared`, which describes proposed Rune intent. Initial preparation retains its flat
+preparation receipt result; ordinary bind still consumes the preparation attestation contract.
+No new root verb, operation registry, generic upgrader or internal-hash scripting is required.
+
 ### Delete only what the body can name
 
 `lychd del` retires an installation through init's separately confirmed destructive counterpart.

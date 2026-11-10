@@ -8,7 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from lychd.domain.tether.models import TetherPeerIntent
+from lychd.domain.tether.models import CompiledTetherPlan, TetherPeerIntent
 
 
 class TetherError(RuntimeError):
@@ -36,6 +36,13 @@ class OperationRequest(Record):
 
 class PrepareRequest(OperationRequest):
     kind: Literal["prepare"] = "prepare"
+
+
+class PrepareImageRequest(OperationRequest):
+    """A cold image transition, distinct from historical initial preparation."""
+
+    kind: Literal["prepare-image"] = "prepare-image"
+    expected_preparation_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
 class EnrollRequest(OperationRequest):
@@ -95,7 +102,7 @@ class EnrollmentStartupAdmission(Record):
 
 class OperationReceipt(Record):
     request_digest: str
-    request: PrepareRequest | EnrollRequest | RevokeRequest
+    request: PrepareRequest | PrepareImageRequest | EnrollRequest | RevokeRequest
     stages: tuple[str, ...] = ()
     complete: bool = False
     binding_generation: str | None = None
@@ -213,3 +220,56 @@ class ActivationAttempt(Record):
     boot_id: UUID
     invocation_id: UUID
     service_cgroup: str
+
+
+class PreparationSelection(Record):
+    """The sole current-preparation commit identity, including its exact parent."""
+
+    version: Literal[1] = 1
+    installation_id: UUID
+    operation_id: UUID
+    bundle_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    parent_preparation_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+
+
+class InitialPreparationBundle(Record):
+    """Typed view of the original immutable pair; no new creation authority."""
+
+    plan: CompiledTetherPlan
+    preparation: PreparationReceipt
+
+
+class ImagePreparationBundle(Record):
+    """An immutable image-only transition, inert until selected."""
+
+    parent_selection: PreparationSelection
+    request_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    plan: CompiledTetherPlan
+    preparation: PreparationReceipt
+
+
+class SelectedPreparation(Record):
+    """Resolved native selection and its exact plan/flat preparation receipt."""
+
+    selection: PreparationSelection
+    plan: CompiledTetherPlan
+    preparation: PreparationReceipt
+
+
+class PreparedInspection(Record):
+    """Public selection metadata, available before binding or peer enrollment."""
+
+    installation_id: UUID
+    envelope_digest: str
+    preparation_digest: str
+    peer_generation: int = Field(ge=0)
+    preparation: PreparationReceipt
+
+
+def require_image_only_change(old: CompiledTetherPlan, new: CompiledTetherPlan) -> None:
+    """Refuse any migration other than one changed immutable transport image."""
+    if old.envelope.image == new.envelope.image or old.envelope.model_dump(
+        exclude={"image"}
+    ) != new.envelope.model_dump(exclude={"image"}):
+        msg = "Tether replacement permits only a changed immutable image reference"
+        raise TetherError(msg)

@@ -10,7 +10,8 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
-from lychd.system.services.tether.models import PreparationReceipt, SecretIdentity, TetherError
+from lychd.system.services.tether.custody import PreparationStore
+from lychd.system.services.tether.models import PreparationReceipt, SecretIdentity, SelectedPreparation, TetherError
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -172,6 +173,7 @@ class TetherSecrets:
         """Create both disjoint server secrets and retain immutable creation authority."""
         if self.custody.read("private", "preparation.json") is not None:
             return self.attest()
+        self.custody.write("private", "plan.json", self.plan, immutable=True)
         identities = (
             self._create(self.plan.secret_requirements[0], operation_id),
             self._create(self.plan.secret_requirements[1], operation_id),
@@ -185,17 +187,31 @@ class TetherSecrets:
         self.custody.write("private", "preparation.json", receipt, immutable=True)
         return receipt
 
+    def attest_selected(self) -> SelectedPreparation:
+        """Attest existing selected identities even when this command proposes a new image."""
+        selected = PreparationStore(self.custody).selected()
+        gateway = TetherSecrets(
+            selected.plan,
+            self.custody,
+            self.runner,
+            podman_bin=self.podman,
+            wg_bin=self.wg,
+            ssh_keygen_bin=self.ssh_keygen,
+        )
+        if gateway.attest() != selected.preparation:
+            msg = "Selected preparation changed during exact secret identity attestation"
+            raise TetherError(msg)
+        return selected
+
+    def preparation_metadata(self) -> PreparationReceipt:
+        """Read the selected public receipt without provisioning or key creation."""
+        return PreparationStore(self.custody).selected().preparation
+
     def attest(self) -> PreparationReceipt:
         """Bind-time/startup check of both exact secret IDs and public fingerprints."""
-        raw = self.custody.read("private", "preparation.json")
-        if raw is None:
-            msg = "Run `lychd run tether prepare` before binding"
-            raise TetherError(msg)
-        receipt = PreparationReceipt.model_validate_json(raw)
-        if (
-            receipt.installation_id != self.plan.envelope.installation_id
-            or receipt.envelope_digest != self.plan.envelope_digest
-        ):
+        selected = PreparationStore(self.custody).selected()
+        receipt = selected.preparation
+        if selected.plan != self.plan:
             msg = "Preparation belongs to another installation or envelope"
             raise TetherError(msg)
         for reference, identity in zip(self.plan.secret_requirements, receipt.secrets, strict=True):

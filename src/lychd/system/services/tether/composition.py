@@ -7,15 +7,22 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from lychd.domain.tether.models import CompiledTetherPlan
+from lychd.domain.tether.models import CompiledTetherPlan, TetherPeerIntent
 from lychd.system.constants import PATH_CACHE_ROOT, PATH_CODEX_ROOT, PATH_CRYPT_ROOT
 from lychd.system.host_tools import trusted_host_tool
 from lychd.system.operator.process import SubprocessRunner
 from lychd.system.services.lifecycle.lock import LifecycleLock
 from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
 from lychd.system.services.tether.closure import TetherStopAdapter
-from lychd.system.services.tether.custody import TetherCustody
-from lychd.system.services.tether.models import TetherError
+from lychd.system.services.tether.custody import PreparationStore, TetherCustody
+from lychd.system.services.tether.models import (
+    ClosureObservation,
+    EnrollRequest,
+    OperationReceipt,
+    PreparedInspection,
+    TetherError,
+    digest,
+)
 from lychd.system.services.tether.operations import TetherOperations
 from lychd.system.services.tether.secrets import TetherSecrets
 
@@ -52,6 +59,28 @@ def declared_tether_plan() -> CompiledTetherPlan:
     return _tether_plan(_binding_request(BindingCommandSession.inspect()))
 
 
+def prepared_tether_inspection() -> PreparedInspection:
+    """Read exact selected preparation metadata without requiring any Tether binding."""
+    if os.geteuid() == 0:
+        msg = "Tether preparation metadata belongs to the rootless operator"
+        raise TetherError(msg)
+    custody = TetherCustody(PATH_CODEX_ROOT, PATH_CRYPT_ROOT)
+    selected = PreparationStore(custody).selected()
+    receipt = preparation_service(selected.plan).attest()
+    raw = custody.read("public", "peer.json")
+    peer = TetherPeerIntent.model_validate_json(raw) if raw is not None else None
+    if peer is not None and peer.installation_id != selected.selection.installation_id:
+        msg = "Current peer belongs to another prepared installation"
+        raise TetherError(msg)
+    return PreparedInspection(
+        installation_id=selected.selection.installation_id,
+        envelope_digest=selected.plan.envelope_digest,
+        preparation_digest=digest(selected.selection),
+        peer_generation=peer.generation if peer else 0,
+        preparation=receipt,
+    )
+
+
 def _tool(name: str, *locations: str) -> str:
     tool = trusted_host_tool(name, fallbacks=tuple(Path(location) for location in locations) or None)
     if tool is None:
@@ -78,7 +107,7 @@ def preparation_service(plan: CompiledTetherPlan, *, podman_bin: str | None = No
     )
 
 
-def build_tether_operations(*, for_closure: bool = False) -> TetherOperations:
+def build_tether_operations(*, for_closure: bool = False) -> TetherOperations:  # noqa: C901, PLR0915 - assemble fixed fresh/retained native authority and cold observation ports
     """Resolve fixed native authority without assembling an application listener."""
     if os.geteuid() == 0:
         msg = "Tether belongs to the rootless operator; rerun as your ordinary user"
@@ -118,6 +147,42 @@ def build_tether_operations(*, for_closure: bool = False) -> TetherOperations:
             raise TetherError(msg)
         return owned.generation
 
+    def preparation_cold_probe(old_plan: CompiledTetherPlan) -> ClosureObservation:
+        from lychd.system.services.deployment import DeploymentInspectionService
+
+        scribe = ScribeService(expected_sites=foundation.sites)
+        owned = scribe.inspect_owned_bindings()
+        expected = {*old_plan.transport_units, *old_plan.plain_unit_names}
+        observer = TetherStopAdapter(
+            old_plan, runner, podman_bin=foundation.podman_bin, systemctl_bin=foundation.systemctl_bin, custody=custody
+        )
+        present = expected.intersection(owned.runtime_units)
+        if present:
+            if present != expected or owned.generation is None:
+                msg = "Image replacement refuses partial Tether binding ownership"
+                raise TetherError(msg)
+            DeploymentInspectionService(runner=runner).observe_owned_units(owned, unit_names=frozenset(expected))
+            observation = observer.observe()
+            if not observation.closed:
+                msg = "Image replacement requires the exact owned Tether road cold"
+                raise TetherError(msg)
+            return observation
+        sources = (
+            *(
+                foundation.sites.quadlet.path / name
+                for name in (
+                    old_plan.pod_source,
+                    f"{old_plan.wireguard_container}.container",
+                    f"{old_plan.forwarder_container}.container",
+                )
+            ),
+            *(foundation.sites.systemd_user.path / name for name in old_plan.plain_unit_names),
+        )
+        if any(os.path.lexists(path) for path in sources):
+            msg = "Image replacement refuses unowned fixed Tether binding sources"
+            raise TetherError(msg)
+        return observer.observe_never_bound()
+
     stop = TetherStopAdapter(
         plan, runner, podman_bin=foundation.podman_bin, systemctl_bin=foundation.systemctl_bin, custody=custody
     )
@@ -130,6 +195,7 @@ def build_tether_operations(*, for_closure: bool = False) -> TetherOperations:
         systemctl_bin=foundation.systemctl_bin,
         binding_probe=binding_probe,
         lock_factory=LifecycleLock,
+        preparation_cold_probe=preparation_cold_probe,
     )
 
 
@@ -140,11 +206,26 @@ def _retained_operations() -> TetherOperations:
 
     custody = TetherCustody(PATH_CODEX_ROOT, PATH_CRYPT_ROOT)
     custody.attest()
-    raw = custody.read("private", "plan.json")
-    if raw is None:
-        msg = "No retained native Tether plan; foreign or older pilots are not adopted"
-        raise TetherError(msg)
-    plan = CompiledTetherPlan.model_validate_json(raw)
+    store = PreparationStore(custody)
+    peer_raw = custody.read("public", "peer.json")
+    if peer_raw is None:
+        plan = store.selected().plan
+    else:
+        peer = TetherPeerIntent.model_validate_json(peer_raw)
+        enrollment_raw = custody.read("operations", f"{peer.operation_id}.json")
+        if enrollment_raw is None:
+            msg = "Current peer has no exact historical enrollment plan authority"
+            raise TetherError(msg)
+        enrollment = OperationReceipt.model_validate_json(enrollment_raw)
+        request = enrollment.request
+        if (
+            not isinstance(request, EnrollRequest)
+            or request.peer != peer
+            or enrollment.request_digest != digest(request)
+        ):
+            msg = "Current peer differs from its exact historical enrollment authority"
+            raise TetherError(msg)
+        plan = store.retained_enrollment_plan(peer, enrollment)
     LifecycleReceiptStore().require_dedicated_root_identities((PATH_CODEX_ROOT, PATH_CRYPT_ROOT, PATH_CACHE_ROOT))
     process = SubprocessRunner()
     podman, systemctl = _tool("podman"), _tool("systemctl")

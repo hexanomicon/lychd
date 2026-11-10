@@ -98,6 +98,35 @@ These proposed leaves require native creation/identity receipts before use; thei
 authorize adopting existing files. Peer records are not loaded as shared Settings or Runes, so
 enrollment/revocation does not invalidate an unrelated active Core configuration generation.
 
+Initial `plan.json` and `preparation.json` remain immutable preparation evidence. Cold image
+replacement adds immutable operation-keyed transition bundles and one fixed
+`current-preparation.json` selector within the same private custody leaf. A bundle retains its
+parent selection identity, exact request digest, compiled target plan and target preparation
+receipt; the selector binds its operation identity and content digest. Only the selector commits
+which preparation is current. Before the first transition, a fully attested original pair has a
+typed initial selection identity; the owner durably publishes that same selection under the lock
+before writing any transition bundle. Absent selection with existing transition evidence,
+a malformed selector, missing bundle or inconsistent link refuses preparation selection, bind
+and startup instead of falling back.
+Prior bundles, plans, preparation receipts, secret-creation identities and generation/revocation
+history remain available for exact historical ownership checks. No caller supplies a pathname.
+Selector publication follows the same atomic replacement and durability law as other custody
+records; its digest is a compare-and-swap condition, not protection against whole-state rollback.
+
+Closure may resolve immutable plan content independently of preparation selection only when the
+exact current generation and correlated native enrollment request, digest and binding establish
+its envelope. Existing Scribe and runtime identity checks still precede effects. This read path
+grants no preparation, binding or startup authority.
+
+The typed selection has ordered fields `version` (1), `installation_id`, `operation_id`,
+`bundle_digest` and `parent_preparation_digest` (null initially). Its public preparation-selection
+digest uses the native record digest: SHA-256 of UTF-8 `model_dump_json()` with all fields present.
+The bundle digest uses that same rule over the complete typed bundle. The initial bundle is the
+retained compiled plan and preparation receipt, with the receipt's original operation UUID as
+selection identity. Its read-only computed selection and first persisted selector are identical.
+Replacement bundles additionally bind their exact parent selection and request digest; unique
+transition operation identity prevents an old expected digest matching a later return to an image.
+
 The host operation owner publishes these bounded records through the existing no-follow,
 same-directory atomic-write and durability law. Records bind installation identity and the static
 Rune envelope. No user-selected path is accepted. The host operation and startup guard read

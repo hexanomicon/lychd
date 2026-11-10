@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
+from lychd.system.services.tether.custody import PreparationStore
 from lychd.system.services.tether.models import (
     ActivationAttempt,
     ClosureObservation,
@@ -212,12 +213,17 @@ class TetherStopAdapter:
         record = RevocationRecord.model_validate_json(revoked_raw)
         peer = TetherPeerIntent.model_validate_json(current_raw)
         latch = record.latch
+        historical_plan = self.plan
+        if attempt.envelope_digest != self.plan.envelope_digest:
+            store = PreparationStore(self.custody)
+            store.require_lineage(attempt.envelope_digest, self.plan.envelope_digest)
+            historical_plan = store.historical_plan(attempt.envelope_digest)
         if (
             record.latch_digest != digest(latch)
             or old.generation != attempt.generation
             or old.installation_id != attempt.installation_id
             or attempt.installation_id != self.plan.envelope.installation_id
-            or attempt.envelope_digest != self.plan.envelope_digest
+            or attempt.envelope_digest != historical_plan.envelope_digest
             or latch.installation_id != old.installation_id
             or latch.generation != old.generation
             or latch.intent_digest != digest(old)
@@ -317,12 +323,11 @@ class TetherStopAdapter:
         if raw is None:
             return None
         value = IncarnationIdentity.model_validate_json(raw)
-        if (
-            value.installation_id != self.plan.envelope.installation_id
-            or value.envelope_digest != self.plan.envelope_digest
-        ):
+        if value.installation_id != self.plan.envelope.installation_id:
             msg = "Tether incarnation belongs to another installation or envelope"
             raise TetherError(msg)
+        if value.envelope_digest != self.plan.envelope_digest:
+            PreparationStore(self.custody).require_lineage(value.envelope_digest, self.plan.envelope_digest)
         return value
 
     def incarnation_closed(self, value: IncarnationIdentity) -> bool:
@@ -527,6 +532,56 @@ class TetherStopAdapter:
             self.custody.write("generations", f"runtime-{identity.pod_id}.json", identity, immutable=True)
             self.custody.write("private", "runtime.json", identity)
         return identity
+
+    def observe_never_bound(self) -> ClosureObservation:
+        """Prove a never-installed no-peer road absent, rather than treating errors as cold."""
+        if self.custody is None:
+            msg = "Never-bound cold proof requires exact native custody"
+            raise TetherError(msg)
+        if (
+            self.custody.read("public", "peer.json") is not None
+            or self.custody.names("generations")
+            or any(
+                self.custody.read("private", name) is not None
+                for name in ("activation.json", "incarnation.json", "runtime.json")
+            )
+        ):
+            msg = "Never-bound cold proof refuses retained peer or activation history"
+            raise TetherError(msg)
+        for unit in (*self.plan.transport_units, *self.plan.plain_unit_names):
+            result = self.runner.run(
+                (
+                    self.systemctl,
+                    "--user",
+                    "show",
+                    unit,
+                    "--property=Id,LoadState,ActiveState,SubState,FragmentPath,SourcePath,DropInPaths,Job,NeedDaemonReload,MainPID,ControlPID,ControlGroup",
+                    "--no-pager",
+                ),
+                timeout_s=5,
+            )
+            values = dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
+            expected = {
+                "Id": unit,
+                "LoadState": "not-found",
+                "ActiveState": "inactive",
+                "SubState": "dead",
+                "FragmentPath": "",
+                "SourcePath": "",
+                "DropInPaths": "",
+                "Job": "",
+                "NeedDaemonReload": "no",
+            }
+            if unit.endswith(".service"):
+                expected.update({"MainPID": "0", "ControlPID": "0", "ControlGroup": ""})
+            if result.returncode or any(values.get(name) != value for name, value in expected.items()):
+                msg = "Fixed Tether unit absence is unknown or differs from never-bound proof"
+                raise TetherError(msg)
+        observation = self.observe()
+        if not observation.closed:
+            msg = "Never-bound Tether jobs, Podman objects or process absence is not proven"
+            raise TetherError(msg)
+        return observation
 
     def observe(self) -> ClosureObservation:  # noqa: C901, PLR0912, PLR0915 - independent closure dimensions must all remain explicit
         """Require zero jobs, cgroup processes, containers and owned Pod namespace.

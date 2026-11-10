@@ -104,8 +104,45 @@ including Core startup before peer enrollment. Installed qualification remains i
 the profile remains Designed.
 Preparation creates server secrets before bind; later peer operations change only Tether's public
 intent and operation evidence, leaving prepared secret identities and compiled units unchanged.
-Changing the image, interface, UDP endpoint binding or forwarding destination requires normal bind.
-They cannot update or restart a separately running older Vessel.
+The designed image-maintenance route below requires new preparation authority and normal bind.
+Other envelope changes, including interface, UDP endpoint, forwarding destination or secret
+references, have no supported migration in this profile. Editing the Rune and running bind alone
+cannot migrate preparation. Tether cannot update or restart a separately running older Vessel.
+
+### Cold transport image replacement (Designed)
+
+This bounded maintenance design does not establish installed update qualification. Preserve the
+existing server keys and client SSH host-key pin; never delete custody or regenerate keys merely
+to bypass a preparation mismatch.
+
+1. If a peer exists, revoke its exact current generation and confirm full closure. Preserve the
+   active latch and immutable revocation evidence. Without a peer, preparation must still prove
+   the road cold, including a prepared installation that has never been bound.
+2. Read `lychd run tether inspect --prepared` for the installation identity, selected envelope,
+   current preparation-selection digest and current peer generation. This metadata view works
+   without a matching new binding and never starts transport.
+3. Change only the immutable image reference in the Tether Rune. Read
+   `lychd run tether inspect --declared` for the target envelope digest. Use `prepare` with a fresh
+   operation UUID, that target digest, the current peer generation and
+   `--expected-preparation-digest` set to the previously observed selection digest. Review its
+   dry run before effect. All non-image envelope differences refuse.
+4. Preparation reattests the exact existing secret IDs and public fingerprints, retains the old
+   plan and preparation, and atomically selects a new immutable preparation bundle. It does not
+   clear a latch, reset generation, write units, bind or start transport. Retry the identical
+   operation after interruption; stale selection or conflicting intent refuses. Never edit the
+   selector or erase history manually.
+5. Apply ordinary complete-fileset bind. Active-Vessel and foreign-revision restrictions still
+   apply; this procedure provides no Core stop or upgrade bypass. A failed bind leaves the road
+   cold and its prior peer revoked. After successful bind, enroll explicitly with the next peer
+   generation, then qualify the exact updated transport and browser path. Preparation or reboot
+   alone never reactivates the old peer.
+
+The selector is the preparation commit point even if recording operation completion is
+interrupted. Unselected bundles confer no authority. Historical closure records retain their
+original envelope and binding; replacement neither rewrites them nor proves whole-state rollback
+safe. Initial preparation and its flat public receipt remain unchanged.
+
+### Closure and reboot
 
 An independent host systemd path guard watches the durable closure latch and invokes the exact
 owned stop handler. Its conflict/ordering edges stop transport before the handler takes the

@@ -102,6 +102,33 @@ receipt is an uncertain outcome to preserve and reconcile, not permission to ado
 Secrets never appear in argv, public intent, logs or receipts. Bind validates both typed references
 and their prepared identities before writing units.
 
+Cold image replacement uses a distinct typed preparation request naming the exact prior
+preparation-selection digest and proposed envelope, together with installation, operation and
+expected peer generation. The native owner rechecks under the lifecycle lock that only the image
+changed, both existing secret identities still attest, and the old road is physically cold.
+An existing peer additionally requires its exact immutable revocation and matching active latch.
+Before any peer, an existing binding requires ordinary owned-unit cold observations; a never-bound
+installation requires positive absence of the fixed units, jobs and Podman objects, with no
+activation/runtime history. A missing unit or failed observation alone is not cold proof.
+
+The owner writes an immutable transition bundle with the exact request digest, parent selection,
+new compiled plan and preparation attestation, then durably replaces one typed current-preparation
+selector. That replacement is the commit point. A bundle written before it is inert; retry must
+revalidate the same parent selection, secrets, generation and fresh cold observations before
+commit. After commit, the same operation reconciles its completion without selecting the parent
+again; a superseded operation cannot select itself anew. Request identity conflicts refuse.
+Initial secret creation and its existing request serialization remain unchanged. Image replacement
+never invokes a key factory, alters units, clears the latch or advances the peer generation.
+
+Closure, retained runtime checks and cold re-enrollment resolve each old latch, activation attempt
+and incarnation against its own retained envelope and binding. A selected replacement cannot
+relabel old evidence. Crossing to the new envelope requires the exact retained image-only
+transition authority as well as existing closure and startup proofs. After normal full bind,
+explicit enrollment advances the peer generation and clears only the active latch through the
+existing cold sequence. Any interruption before that enrollment leaves no authority to restart
+the revoked generation. This transition grants no exception to active-Vessel or foreign-revision
+refusals and makes no claim to detect whole-state rollback.
+
 After initial binding, peer operations preserve the complete compiled unit fileset and its
 generation. Enrollment may change only the Tether public peer record, separate forwarding public
 authorization and operation evidence; it requires the prepared server secrets. Initial unit

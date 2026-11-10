@@ -6,6 +6,7 @@ import os
 
 # pyright: reportPrivateUsage=false
 from pathlib import Path
+from typing import cast
 from unittest.mock import MagicMock
 from uuid import UUID, uuid4
 
@@ -514,3 +515,147 @@ def test_reconciled_enrollment_must_be_strictly_later_than_the_old_attempt(
     assert adapter.activation() == attempt
     assert custody.read("generations", name) == attempt.model_dump_json().encode()
     assert custody.read("revocations", "2.json") == revoked.model_dump_json().encode()
+
+
+@pytest.mark.parametrize("fault", [None, "query-error", "loaded-unit", "pending-job", "history", "pod"])
+def test_never_bound_cold_proof_requires_positive_absence_in_every_layer(tmp_path: Path, fault: str | None) -> None:
+    custody, plan = make_custody(tmp_path), make_plan()
+    process = MagicMock()
+
+    def probe(argv: tuple[str, ...], **_: object) -> ProcessResult:
+        if "show" in argv:
+            unit = argv[3]
+            values = {
+                "Id": unit,
+                "LoadState": "not-found",
+                "ActiveState": "inactive",
+                "SubState": "dead",
+                "FragmentPath": "",
+                "SourcePath": "",
+                "DropInPaths": "",
+                "Job": "",
+                "NeedDaemonReload": "no",
+            }
+            if unit.endswith(".service"):
+                values.update({"MainPID": "0", "ControlPID": "0", "ControlGroup": ""})
+            if fault == "loaded-unit":
+                values["LoadState"] = "loaded"
+            return ProcessResult(
+                argv, 125 if fault == "query-error" else 0, "\n".join(f"{key}={value}" for key, value in values.items())
+            )
+        if "list-jobs" in argv:
+            return ProcessResult(argv, 0, "1 lychd-tether-pod.service start waiting" if fault == "pending-job" else "")
+        if argv[1] == "ps":
+            return ProcessResult(argv, 0, "[]")
+        return ProcessResult(argv, 0 if fault == "pod" and argv[1] == "pod" else 1)
+
+    process.run.side_effect = probe
+    if fault == "history":
+        custody.publish("generations", "attempt-orphan.json", b"orphan", immutable=True)
+    adapter = TetherStopAdapter(
+        plan, process, podman_bin="/usr/bin/podman", systemctl_bin="/usr/bin/systemctl", custody=custody
+    )
+    if fault is None:
+        assert adapter.observe_never_bound().closed
+    else:
+        with pytest.raises(TetherError):
+            adapter.observe_never_bound()
+    assert all("stop" not in call.args[0] and "start" not in call.args[0] for call in process.run.call_args_list)
+
+
+@pytest.mark.parametrize("case", ["unmatched", "matched", "missing-lineage", "unrelated-lineage"])
+def test_real_adapter_crosses_only_retained_image_lineage_for_a_fresh_generation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
+) -> None:
+    from contextlib import nullcontext
+
+    from lychd.system.services.tether.operations import TetherOperations
+    from tests.unit.system.services.test_tether_operations import (
+        closed,
+        enroll_request,
+        image_request,
+        image_stack,
+        revoke_request,
+    )
+
+    operations, original, _, _ = image_stack(tmp_path)
+    old = TetherOperations(
+        original.plan,
+        operations.custody,
+        original,
+        operations.stop_adapter,
+        operations.runner,
+        systemctl_bin="/usr/bin/systemctl",
+        binding_probe=lambda: "old-binding",
+        lock_factory=nullcontext,
+    )
+    first = make_peer()
+    old.enroll(enroll_request(first))
+    old.revoke(revoke_request(first))
+    attempt = ActivationAttempt(
+        installation_id=first.installation_id,
+        generation=1,
+        envelope_digest=original.plan.envelope_digest,
+        binding_generation="old-binding",
+        boot_id=UUID(int=1),
+        invocation_id=uuid4(),
+        service_cgroup="/old",
+    )
+    name = f"attempt-{attempt.boot_id.hex}-{attempt.invocation_id.hex}.json"
+    operations.custody.write("generations", name, attempt, immutable=True)
+    operations.custody.write("private", "activation.json", attempt)
+    image = image_request(operations, generation=1)
+    operations.prepare_image(image)
+    if case == "matched":
+        incarnation = IncarnationIdentity(
+            installation_id=first.installation_id,
+            generation=1,
+            envelope_digest=attempt.envelope_digest,
+            binding_generation=attempt.binding_generation,
+            boot_id=attempt.boot_id,
+            invocation_id=attempt.invocation_id,
+            pod_id="a" * 64,
+            infra_id="b" * 64,
+            netns_inode=1,
+            infra_cgroup="/old-infra",
+            host_uid_ranges=((os.getuid(), 1),),
+        )
+        operations.custody.write("private", "incarnation.json", incarnation)
+    adapter = TetherStopAdapter(
+        operations.plan,
+        operations.runner,
+        podman_bin="/usr/bin/podman",
+        systemctl_bin="/usr/bin/systemctl",
+        custody=operations.custody,
+    )
+    monkeypatch.setattr(adapter, "observe", MagicMock(return_value=closed()))
+    monkeypatch.setattr(adapter, "capture_runtime", MagicMock())
+    monkeypatch.setattr(adapter, "boot_id", lambda: UUID(int=2))
+    manager = MagicMock(return_value=(uuid4(), "/new"))
+    monkeypatch.setattr(adapter, "_manager_invocation", manager)
+    operations.stop_adapter = adapter
+    if case == "missing-lineage":
+        (operations.custody.directories["private"] / f"image-preparation-{image.operation_id}.json").unlink()
+    elif case == "unrelated-lineage":
+        operations.custody.write("private", "activation.json", attempt.model_copy(update={"envelope_digest": "f" * 64}))
+    if case in {"missing-lineage", "unrelated-lineage"}:
+        with pytest.raises((TetherError, ValueError)):
+            adapter.require_prior_activation_attested(binding_generation="new-binding")
+        manager.assert_not_called()
+    else:
+
+        def start(argv: tuple[str, ...], **_: object) -> ProcessResult:
+            if argv[2] == "start" and operations.plan.pod_unit in argv:
+                operations.role_preflight("pod")
+                adapter.begin_pod(2, "new-binding")
+            return ProcessResult(argv, 0, "active\n" if "show" in argv else "")
+
+        cast("MagicMock", operations.runner).run.side_effect = start
+        request = enroll_request(make_peer(2)).model_copy(update={"envelope_digest": operations.plan.envelope_digest})
+        assert operations.enroll(request).complete
+        current = adapter.activation()
+        assert current is not None
+        assert current.envelope_digest == operations.plan.envelope_digest
+        manager.assert_called_once()
+    assert operations.custody.read("generations", name) == attempt.model_dump_json().encode()
+    assert operations.custody.read("revocations", "1.json") is not None

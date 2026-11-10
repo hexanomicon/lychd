@@ -10,11 +10,25 @@ import json
 import os
 import stat
 from contextlib import contextmanager, suppress
+from itertools import pairwise
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
-from uuid import uuid4
+from uuid import UUID, uuid4
 
-from lychd.system.services.tether.models import TetherError
+from lychd.domain.tether.models import CompiledTetherPlan, TetherPeerIntent, validate_peer
+from lychd.system.services.tether.models import (
+    EnrollRequest,
+    ImagePreparationBundle,
+    InitialPreparationBundle,
+    OperationReceipt,
+    PreparationReceipt,
+    PreparationSelection,
+    PrepareImageRequest,
+    SelectedPreparation,
+    TetherError,
+    digest,
+    require_image_only_change,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -197,6 +211,20 @@ class TetherCustody:
                 with suppress(FileNotFoundError):
                     os.unlink(temporary, dir_fd=parent)
 
+    def names(self, role: str) -> tuple[str, ...]:
+        """List names only through the fixed attested directory descriptor."""
+        self.attest()
+        with self._directory(self.directories[role]) as parent:
+            return tuple(sorted(os.listdir(parent)))  # noqa: PTH208 - descriptor-bound inventory must not reopen a pathname
+
+    def select_preparation(self, expected: bytes | None, selection: PreparationSelection) -> None:
+        """Durably CAS the fixed selector while the native owner holds LifecycleLock."""
+        self.attest()
+        if self._read("private", "current-preparation.json") != expected:
+            msg = "Preparation selector changed before its exact atomic commit"
+            raise TetherError(msg)
+        self._write("private", "current-preparation.json", selection.model_dump_json().encode(), immutable=False)
+
     def clear_latch(self, expected: bytes) -> None:
         """Remove only the active latch after exact cold reenrollment validation."""
         self.attest()
@@ -206,3 +234,249 @@ class TetherCustody:
         with self._directory(self.directories["private"]) as parent:
             os.unlink("closed.json", dir_fd=parent)
             os.fsync(parent)
+
+
+class PreparationStore:
+    """Resolve the selected preparation and its immutable image-only ancestry."""
+
+    _SELECTOR = "current-preparation.json"
+    _BUNDLE_PREFIX = "image-preparation-"
+
+    def __init__(self, custody: TetherCustody) -> None:
+        """Use the same fixed, attested private leaf as native operation evidence."""
+        self.custody = custody
+
+    def _legacy(self) -> SelectedPreparation:
+        plan_raw = self.custody.read("private", "plan.json")
+        receipt_raw = self.custody.read("private", "preparation.json")
+        if plan_raw is None or receipt_raw is None:
+            msg = "Tether has no complete original preparation authority"
+            raise TetherError(msg)
+        plan = CompiledTetherPlan.model_validate_json(plan_raw)
+        receipt = PreparationReceipt.model_validate_json(receipt_raw)
+        self._require_pair(plan, receipt)
+        bundle = InitialPreparationBundle(plan=plan, preparation=receipt)
+        selection = PreparationSelection(
+            installation_id=receipt.installation_id, operation_id=receipt.operation_id, bundle_digest=digest(bundle)
+        )
+        return SelectedPreparation(selection=selection, plan=plan, preparation=receipt)
+
+    @staticmethod
+    def _require_pair(plan: CompiledTetherPlan, receipt: PreparationReceipt) -> None:
+        if receipt.installation_id != plan.envelope.installation_id or receipt.envelope_digest != plan.envelope_digest:
+            msg = "Preparation does not match its exact retained envelope"
+            raise TetherError(msg)
+        if any(
+            (reference.purpose, reference.name) != (identity.purpose, identity.name)
+            for reference, identity in zip(plan.secret_requirements, receipt.secrets, strict=True)
+        ):
+            msg = "Preparation secret roles differ from their retained references"
+            raise TetherError(msg)
+
+    def _require_request(self, selection: PreparationSelection, bundle: ImagePreparationBundle) -> None:
+        raw = self.custody.read("operations", f"{selection.operation_id}.json")
+        if raw is None:
+            msg = "Image preparation bundle lacks its exact native request journal"
+            raise TetherError(msg)
+        receipt = OperationReceipt.model_validate_json(raw)
+        request = receipt.request
+        if (
+            not isinstance(request, PrepareImageRequest)
+            or receipt.request_digest != digest(request)
+            or bundle.request_digest != receipt.request_digest
+            or request.operation_id != selection.operation_id
+            or request.installation_id != selection.installation_id
+            or request.envelope_digest != bundle.plan.envelope_digest
+            or request.intent_digest != bundle.plan.envelope_digest
+            or request.expected_preparation_digest != digest(bundle.parent_selection)
+            or "image-cold-proven" not in receipt.stages
+        ):
+            msg = "Image preparation bundle differs from its correlated native request"
+            raise TetherError(msg)
+
+    def _require_consistent_completions(self, states: list[SelectedPreparation]) -> None:
+        selected_operations = {state.selection.operation_id for state in states}
+        for name in self.custody.names("private"):
+            if not name.startswith(self._BUNDLE_PREFIX) or not name.endswith(".json"):
+                continue
+            operation_id = UUID(name.removeprefix(self._BUNDLE_PREFIX).removesuffix(".json"))
+            if operation_id in selected_operations:
+                continue
+            raw = self.custody.read("operations", f"{operation_id}.json")
+            if raw is None:
+                continue
+            receipt = OperationReceipt.model_validate_json(raw)
+            if receipt.request_digest != digest(receipt.request) or not isinstance(
+                receipt.request, PrepareImageRequest
+            ):
+                msg = "Unselected transition evidence has inconsistent operation identity"
+                raise TetherError(msg)
+            if receipt.complete or "image-selected" in receipt.stages:
+                msg = "Completed image preparation is outside current selected ancestry"
+                raise TetherError(msg)
+
+    def history(self) -> tuple[SelectedPreparation, ...]:  # noqa: C901 - validate every immutable ancestry and commit predicate
+        """Validate the entire selected ancestry; unselected bundles confer no authority."""
+        raw = self.custody.read("private", self._SELECTOR)
+        if raw is None:
+            if any(name.startswith(self._BUNDLE_PREFIX) for name in self.custody.names("private")):
+                msg = "Preparation selector is absent while transition evidence exists; preserve and reconcile"
+                raise TetherError(msg)
+            return (self._legacy(),)
+        selection = PreparationSelection.model_validate_json(raw)
+        states: list[SelectedPreparation] = []
+        seen: set[str] = set()
+        while True:
+            identity = digest(selection)
+            if identity in seen:
+                msg = "Preparation ancestry contains a repeated selector"
+                raise TetherError(msg)
+            seen.add(identity)
+            if selection.parent_preparation_digest is None:
+                legacy = self._legacy()
+                if selection != legacy.selection:
+                    msg = "Initial preparation selector differs from immutable original evidence"
+                    raise TetherError(msg)
+                states.append(legacy)
+                break
+            bundle_raw = self.custody.read("private", f"{self._BUNDLE_PREFIX}{selection.operation_id}.json")
+            if bundle_raw is None:
+                msg = "Selected preparation bundle is absent"
+                raise TetherError(msg)
+            bundle = ImagePreparationBundle.model_validate_json(bundle_raw)
+            self._require_pair(bundle.plan, bundle.preparation)
+            if (
+                digest(bundle) != selection.bundle_digest
+                or bundle.preparation.operation_id != selection.operation_id
+                or bundle.preparation.installation_id != selection.installation_id
+                or bundle.parent_selection.installation_id != selection.installation_id
+                or digest(bundle.parent_selection) != selection.parent_preparation_digest
+            ):
+                msg = "Preparation selector or ancestry link differs from its immutable bundle"
+                raise TetherError(msg)
+            self._require_request(selection, bundle)
+            states.append(SelectedPreparation(selection=selection, plan=bundle.plan, preparation=bundle.preparation))
+            selection = bundle.parent_selection
+        self._require_consistent_completions(states)
+        for child, parent in pairwise(states):
+            require_image_only_change(parent.plan, child.plan)
+            if child.preparation.secrets != parent.preparation.secrets:
+                msg = "Image preparation changed immutable server secret identities"
+                raise TetherError(msg)
+        return tuple(states)
+
+    def selected(self) -> SelectedPreparation:
+        """Return the fully validated selected preparation without any write."""
+        return self.history()[0]
+
+    def historical_plan(self, envelope_digest: str) -> CompiledTetherPlan:
+        """Resolve only an envelope admitted by the selected immutable ancestry."""
+        for state in self.history():
+            if state.plan.envelope_digest == envelope_digest:
+                return state.plan
+        msg = "Retained envelope is not in the selected image-only ancestry"
+        raise TetherError(msg)
+
+    def retained_enrollment_plan(  # noqa: C901 - finite closure-only correlation and immutable plan-data validation
+        self, peer: TetherPeerIntent, enrollment: OperationReceipt
+    ) -> CompiledTetherPlan:
+        """Resolve plan data only for an already owned peer, never preparation or startup."""
+        request = enrollment.request
+        generation = self.custody.read("generations", f"{peer.generation}.json")
+        if (
+            not isinstance(request, EnrollRequest)
+            or request.peer != peer
+            or request.installation_id != peer.installation_id
+            or request.operation_id != peer.operation_id
+            or request.expected_generation != peer.generation - 1
+            or request.intent_digest != digest(peer)
+            or enrollment.request_digest != digest(request)
+            or enrollment.binding_generation is None
+            or generation is None
+            or TetherPeerIntent.model_validate_json(generation) != peer
+        ):
+            msg = "Retained closure plan lacks exact immutable peer and enrollment authority"
+            raise TetherError(msg)
+        matches: list[CompiledTetherPlan] = []
+        legacy = self.custody.read("private", "plan.json")
+        if legacy is not None:
+            try:
+                candidate = CompiledTetherPlan.model_validate_json(legacy)
+            except ValueError:
+                candidate = None
+            if candidate is not None and candidate.envelope_digest == request.envelope_digest:
+                matches.append(candidate)
+        for name in self.custody.names("private"):
+            if not name.startswith(self._BUNDLE_PREFIX) or not name.endswith(".json"):
+                continue
+            try:
+                UUID(name.removeprefix(self._BUNDLE_PREFIX).removesuffix(".json"))
+                raw = self.custody.read("private", name)
+                body: object = json.loads(raw) if raw is not None else None
+                if not isinstance(body, dict):
+                    continue
+                fields = cast("dict[str, object]", body)
+                candidate = CompiledTetherPlan.model_validate(fields.get("plan"))
+            except (ValueError, TypeError, OSError, TetherError):
+                continue
+            if candidate.envelope_digest == request.envelope_digest:
+                matches.append(candidate)
+        if not matches or any(candidate != matches[0] for candidate in matches):
+            msg = "Exact enrolled envelope plan data is absent or conflicting"
+            raise TetherError(msg)
+        plan = matches[0]
+        validate_peer(plan, peer)
+        return plan
+
+    def require_lineage(self, old_digest: str, new_digest: str) -> None:
+        """Refuse to relabel historical evidence as an unrelated deployment envelope."""
+        states = self.history()
+        new_positions = [index for index, state in enumerate(states) if state.plan.envelope_digest == new_digest]
+        old_positions = [index for index, state in enumerate(states) if state.plan.envelope_digest == old_digest]
+        if (
+            not new_positions
+            or not old_positions
+            or not any(old >= new for old in old_positions for new in new_positions)
+        ):
+            msg = "Historical envelope lacks the exact admitted image-only transition lineage"
+            raise TetherError(msg)
+
+    def require_replacement_ancestry(self, old_digest: str) -> None:
+        """Require an actual selected replacement after the historical envelope."""
+        if not any(state.plan.envelope_digest == old_digest for state in self.history()[1:]):
+            msg = "Historical envelope has no committed image replacement in selected ancestry"
+            raise TetherError(msg)
+
+    def commit(
+        self,
+        request: PrepareImageRequest,
+        parent: SelectedPreparation,
+        preparation: PreparationReceipt,
+        plan: CompiledTetherPlan,
+    ) -> PreparationReceipt:
+        """Select one immutable bundle under the existing lifecycle lock and exact CAS."""
+        current = self.selected()
+        if digest(current.selection) != request.expected_preparation_digest or current != parent:
+            msg = "Selected preparation changed before image transition commit"
+            raise TetherError(msg)
+        require_image_only_change(parent.plan, plan)
+        self._require_pair(plan, preparation)
+        if preparation.operation_id != request.operation_id or preparation.secrets != parent.preparation.secrets:
+            msg = "Image replacement must preserve exact original server secret identities"
+            raise TetherError(msg)
+        raw = self.custody.read("private", self._SELECTOR)
+        if raw is None:
+            self.custody.select_preparation(None, parent.selection)
+            raw = parent.selection.model_dump_json().encode()
+        bundle = ImagePreparationBundle(
+            parent_selection=parent.selection, request_digest=digest(request), plan=plan, preparation=preparation
+        )
+        selection = PreparationSelection(
+            installation_id=preparation.installation_id,
+            operation_id=request.operation_id,
+            bundle_digest=digest(bundle),
+            parent_preparation_digest=digest(parent.selection),
+        )
+        self.custody.write("private", f"{self._BUNDLE_PREFIX}{request.operation_id}.json", bundle, immutable=True)
+        self.custody.select_preparation(raw, selection)
+        return self.selected().preparation

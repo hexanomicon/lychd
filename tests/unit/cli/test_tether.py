@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from types import ModuleType
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
@@ -23,6 +24,9 @@ from lychd.extensions.host import assemble_extensions
 from lychd.system.services.binding_preflight import BindingPreflightReport, BindingPreflightService
 from lychd.system.services.tether import composition
 from tests.unit.system.services.test_tether_operations import make_plan
+
+if TYPE_CHECKING:
+    from lychd.system.services.tether.secrets import TetherSecrets
 
 
 def test_closed_native_tether_grammar_and_no_extra_roots() -> None:
@@ -167,3 +171,87 @@ def test_inspection_help_remains_bootstrap_safe_with_declared_option(monkeypatch
     assert result.exit_code == 0
     assert "--declared" in result.output
     declared.assert_not_called()
+
+
+def test_prepared_inspection_is_metadata_only_before_binding_or_first_peer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from lychd.system.services.tether.custody import PreparationStore, TetherCustody
+    from lychd.system.services.tether.models import PreparedInspection, digest
+    from tests.unit.system.services.test_tether_operations import image_stack
+
+    operations, original, _, created = image_stack(tmp_path)
+    before = PreparationStore(operations.custody).selected()
+    monkeypatch.setattr(composition, "PATH_CODEX_ROOT", operations.custody.codex_root)
+    monkeypatch.setattr(composition, "PATH_CRYPT_ROOT", operations.custody.crypt_root)
+    monkeypatch.setattr(composition.os, "geteuid", lambda: 1000)
+
+    def preparation(plan: CompiledTetherPlan, *, podman_bin: str | None = None) -> TetherSecrets:
+        assert plan == original.plan
+        assert podman_bin is None
+        return original
+
+    monkeypatch.setattr(composition, "preparation_service", preparation)
+    initialize = MagicMock(side_effect=AssertionError("Metadata must not initialize custody"))
+    assemble = MagicMock(side_effect=AssertionError("Metadata must not assemble native mutations"))
+    monkeypatch.setattr(TetherCustody, "initialize", initialize)
+    monkeypatch.setattr(composition, "build_tether_operations", assemble)
+    result = CliRunner().invoke(cli, ["run", "tether", "inspect", "--prepared"])
+    assert result.exit_code == 0, result.output
+    view = PreparedInspection.model_validate_json(result.output)
+    assert view.preparation_digest == digest(before.selection)
+    assert view.envelope_digest == original.plan.envelope_digest
+    assert view.peer_generation == 0
+    assert view.preparation == before.preparation
+    assert "synthetic-server-secret" not in result.output
+    assert operations.custody.read("private", "current-preparation.json") is None
+    assert created == ["test-wg", "test-ssh"]
+    initialize.assert_not_called()
+    assemble.assert_not_called()
+
+
+def test_prepare_dispatch_keeps_original_request_hash_and_uses_distinct_image_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from lychd.system.services.tether.models import PrepareImageRequest, PrepareRequest, digest
+    from tests.unit.system.services.test_tether_operations import make_plan
+
+    plan = make_plan()
+    native = MagicMock()
+    native.prepare.return_value = plan
+    native.prepare_image.return_value = plan
+    monkeypatch.setattr(composition, "build_tether_operations", MagicMock(return_value=native))
+    arguments = [
+        "run",
+        "tether",
+        "prepare",
+        "--installation-id",
+        "00000000-0000-0000-0000-000000000001",
+        "--operation-id",
+        "00000000-0000-0000-0000-000000000002",
+        "--expected-generation",
+        "0",
+        "--envelope-digest",
+        "a" * 64,
+    ]
+    assert CliRunner().invoke(cli, arguments).exit_code == 0
+    original = native.prepare.call_args.args[0]
+    assert isinstance(original, PrepareRequest)
+    assert digest(original) == "9dc1ca3b0521e972d5911a5eb41f3ee204a94282bfb568569188685fa4bea197"
+    assert "expected_preparation_digest" not in original.model_dump()
+    assert CliRunner().invoke(cli, [*arguments, "--expected-preparation-digest", "b" * 64]).exit_code == 0
+    image = native.prepare_image.call_args.args[0]
+    assert isinstance(image, PrepareImageRequest)
+    assert image.kind == "prepare-image"
+    assert image.expected_preparation_digest == "b" * 64
+    assert set(tether.commands) == {"prepare", "enroll", "inspect", "revoke"}
+
+
+def test_prepared_inspection_never_exposes_invalid_custody_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        composition, "prepared_tether_inspection", MagicMock(side_effect=ValueError("synthetic-private-key"))
+    )
+    result = CliRunner().invoke(cli, ["run", "tether", "inspect", "--prepared"])
+    assert result.exit_code == 1
+    assert "Prepared Tether metadata is unavailable" in result.output
+    assert "synthetic-private-key" not in result.output

@@ -6,7 +6,7 @@ from __future__ import annotations
 # pyright: reportPrivateUsage=false
 import json
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -18,6 +18,10 @@ from lychd.system.services.tether.custody import TetherCustody
 from lychd.system.services.tether.models import TetherError
 from lychd.system.services.tether.secrets import TetherSecrets
 from tests.unit.system.services.test_tether_operations import make_custody, make_peer, make_plan
+
+if TYPE_CHECKING:
+    from lychd.domain.tether.models import CompiledTetherPlan
+    from lychd.system.services.tether.models import ClosureObservation
 
 
 def secret_stack(tmp_path: Path) -> tuple[TetherSecrets, TetherCustody, dict[str, dict[str, Any]], list[str]]:
@@ -122,3 +126,40 @@ def test_dry_run_applies_foreign_name_refusal_without_creation(tmp_path: Path) -
     with pytest.raises(TetherError, match="already exists"):
         service.preview_prepare()
     assert created == []
+
+
+def test_image_preparation_rechecks_replaced_secret_after_cold_observation(tmp_path: Path) -> None:
+    from tests.unit.system.services.test_tether_operations import closed, image_request, image_stack
+
+    operations, _, values, created = image_stack(tmp_path)
+    request = image_request(operations)
+
+    def cold_probe(_plan: CompiledTetherPlan) -> ClosureObservation:
+        values["test-wg"]["ID"] = "f" * 25
+        return closed()
+
+    operations.preparation_cold_probe = cold_probe
+    with pytest.raises(TetherError):
+        operations.prepare_image(request)
+    assert operations.custody.read("private", "current-preparation.json") is None
+    assert created == ["test-wg", "test-ssh"]
+
+
+def test_returning_to_an_old_image_has_a_new_selection_identity_without_new_keys(tmp_path: Path) -> None:
+    from lychd.system.services.tether.custody import PreparationStore
+    from lychd.system.services.tether.models import digest
+    from tests.unit.system.services.test_tether_operations import image_request, image_stack
+
+    operations, original, _, created = image_stack(tmp_path)
+    initial = PreparationStore(operations.custody).selected()
+    operations.prepare_image(image_request(operations))
+    operations.plan = original.plan
+    operations.secrets = original
+    request = image_request(operations)
+    operations.prepare_image(request)
+    selected = PreparationStore(operations.custody).selected()
+    assert selected.plan == initial.plan
+    assert selected.preparation.secrets == initial.preparation.secrets
+    assert digest(selected.selection) != digest(initial.selection)
+    assert selected.selection.operation_id == request.operation_id
+    assert created == ["test-wg", "test-ssh"]

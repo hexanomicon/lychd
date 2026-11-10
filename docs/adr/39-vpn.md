@@ -115,10 +115,23 @@ or fenced for reconciliation, never adopted or deleted merely by name.
 
 Enrollment is idempotent for the same operation identity and intent; a key or generation mismatch
 refuses. It requires prepared secrets, persists pending/public intent, and activates only the
-exact Scribe-owned Tether body after locked revalidation. Topology,
-image, interface or forwarding-destination changes require ordinary complete-fileset binding;
-enrollment cannot rewrite units or adopt a foreign/older application generation. Initially adding
-Tether is not an exception to existing bind or active-Vessel restrictions.
+exact Scribe-owned Tether body after locked revalidation. Enrollment cannot rewrite units or
+adopt a foreign/older application generation. Initially adding Tether is not an exception to
+existing bind or active-Vessel restrictions.
+
+The first profile admits one bounded maintenance transition: cold replacement of the transport
+image through `prepare`, followed by ordinary complete-fileset bind and explicit enrollment.
+Only the image reference may differ between the selected and proposed typed envelopes. Existing
+server secret identities are reattested, never recreated or adopted; their immutable creation
+authority is separate from each deployment envelope's preparation attestation. Before first
+peer enrollment the road must be proven cold; after enrollment its exact current generation must
+also have retained revocation evidence and the active closure latch. Preparation preserves peer
+generation, the latch and all historical ownership and revocation records. It does not bind,
+stop Core or start transport. [Privilege](10-privilege.md#tether-host-operations-designed) owns the
+atomic transition and interruption rules; [Layout](13-layout.md#tether-custody-designed) owns its
+retained evidence. Other envelope changes, including interface, endpoint, forwarding destination
+and secret references, have no admitted migration in this profile. Ordinary bind alone cannot
+migrate their preparation authority.
 
 Inspection separates desired peer state, loaded generation, unit state and bounded transport
 observations. A running unit or recent handshake alone is not end-to-end readiness. Secret-bearing

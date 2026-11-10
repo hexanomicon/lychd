@@ -12,8 +12,10 @@ from lychd.domain.tether.models import (
     render_wireguard_public,
     validate_peer,
 )
+from lychd.system.services.tether.custody import PreparationStore
 from lychd.system.services.tether.models import (
     ClosureLatch,
+    ClosureObservation,
     EnrollmentStartupAdmission,
     EnrollRequest,
     Inspection,
@@ -21,11 +23,14 @@ from lychd.system.services.tether.models import (
     OperationReceipt,
     OperationRequest,
     PreparationReceipt,
+    PrepareImageRequest,
     PrepareRequest,
     RevocationRecord,
     RevokeRequest,
+    SelectedPreparation,
     TetherError,
     digest,
+    require_image_only_change,
 )
 
 if TYPE_CHECKING:
@@ -53,11 +58,13 @@ class TetherOperations:
         binding_probe: Callable[[], str],
         lock_factory: Callable[[], AbstractContextManager[object]],
         desired_probe: Callable[[], str] | None = None,
+        preparation_cold_probe: Callable[[CompiledTetherPlan], ClosureObservation] | None = None,
     ) -> None:
         """Bind the fixed compiler plan to trusted effect and ownership ports."""
         self.plan, self.custody, self.secrets, self.stop_adapter, self.runner = plan, custody, secrets, stop, runner
         self.systemctl, self.binding_probe, self.lock_factory = systemctl_bin, binding_probe, lock_factory
         self.desired_probe = desired_probe
+        self.preparation_cold_probe = preparation_cold_probe
 
     def _current(self) -> TetherPeerIntent | None:
         raw = self.custody.read("public", "peer.json")
@@ -75,7 +82,7 @@ class TetherOperations:
             msg = "Tether request installation or envelope changed"
             raise TetherError(msg)
 
-    def _begin(self, request: PrepareRequest | EnrollRequest | RevokeRequest) -> OperationReceipt:
+    def _begin(self, request: PrepareRequest | PrepareImageRequest | EnrollRequest | RevokeRequest) -> OperationReceipt:  # noqa: C901 - closed finite request kinds have distinct admission checks
         self._validate(request)
         name = f"{request.operation_id}.json"
         previous = self.custody.read("operations", name)
@@ -93,6 +100,10 @@ class TetherOperations:
         if isinstance(request, PrepareRequest):
             if request.intent_digest != self.plan.envelope_digest or generation:
                 msg = "Preparation requires the exact static envelope and no enrolled peer"
+                raise TetherError(msg)
+        elif isinstance(request, PrepareImageRequest):
+            if request.intent_digest != self.plan.envelope_digest:
+                msg = "Image preparation requires the exact target envelope intent"
                 raise TetherError(msg)
         elif isinstance(request, EnrollRequest):
             validate_peer(self.plan, request.peer)
@@ -147,12 +158,159 @@ class TetherOperations:
             return request
         with self.lock_factory():
             self.custody.initialize()
-            self.custody.write("private", "plan.json", self.plan, immutable=True)
             receipt = self._begin(request)
             if receipt.complete:
                 return self.secrets.attest()
             prepared = self.secrets.prepare(request.operation_id)
             self._record(receipt, "prepared", complete=True)
+            return prepared
+
+    def _require_retained_revocation(
+        self, peer: TetherPeerIntent, *, selected_plan: CompiledTetherPlan | None = None
+    ) -> ClosureLatch:
+        raw = self.custody.read("operations", f"{peer.operation_id}.json")
+        if raw is None:
+            msg = "Revoked peer has no retained enrollment authority"
+            raise TetherError(msg)
+        enrollment = OperationReceipt.model_validate_json(raw)
+        request = enrollment.request
+        if (
+            not isinstance(request, EnrollRequest)
+            or request.peer != peer
+            or request.installation_id != peer.installation_id
+            or request.operation_id != peer.operation_id
+            or request.expected_generation != peer.generation - 1
+            or request.intent_digest != digest(peer)
+            or enrollment.request_digest != digest(request)
+            or enrollment.binding_generation is None
+        ):
+            msg = "Revoked peer differs from its exact retained enrollment"
+            raise TetherError(msg)
+        current_plan = selected_plan or self.plan
+        old_plan = current_plan
+        if request.envelope_digest != current_plan.envelope_digest:
+            store = PreparationStore(self.custody)
+            store.require_lineage(request.envelope_digest, current_plan.envelope_digest)
+            old_plan = store.historical_plan(request.envelope_digest)
+        validate_peer(old_plan, peer)
+        generation = self.custody.read("generations", f"{peer.generation}.json")
+        raw_revocation = self.custody.read("revocations", f"{peer.generation}.json")
+        raw_latch = self.custody.read("private", "closed.json")
+        if (
+            generation is None
+            or TetherPeerIntent.model_validate_json(generation) != peer
+            or raw_revocation is None
+            or raw_latch is None
+        ):
+            msg = "Image replacement requires exact peer generation, retained revocation and active latch"
+            raise TetherError(msg)
+        record = RevocationRecord.model_validate_json(raw_revocation)
+        latch = ClosureLatch.model_validate_json(raw_latch)
+        if (
+            record.latch != latch
+            or record.latch_digest != digest(latch)
+            or latch.installation_id != peer.installation_id
+            or latch.generation != peer.generation
+            or latch.intent_digest != digest(peer)
+            or latch.envelope_digest != request.envelope_digest
+            or latch.binding_generation != enrollment.binding_generation
+        ):
+            msg = "Retained revocation or active latch differs from its historical envelope and binding"
+            raise TetherError(msg)
+        return latch
+
+    def _image_transition_parent(self, request: PrepareImageRequest) -> SelectedPreparation:
+        self._validate(request)
+        parent = self.secrets.attest_selected()
+        if digest(parent.selection) != request.expected_preparation_digest:
+            msg = "Expected preparation selection is stale"
+            raise TetherError(msg)
+        require_image_only_change(parent.plan, self.plan)
+        peer = self._current()
+        if (
+            request.expected_generation != (peer.generation if peer else 0)
+            or request.intent_digest != self.plan.envelope_digest
+        ):
+            msg = "Image preparation peer generation or target intent changed"
+            raise TetherError(msg)
+        if peer is not None:
+            self._require_retained_revocation(peer, selected_plan=parent.plan)
+        elif (
+            self._latch() is not None
+            or self.custody.names("generations")
+            or any(
+                self.custody.read("private", name) is not None
+                for name in ("activation.json", "incarnation.json", "runtime.json")
+            )
+        ):
+            msg = "A no-peer installation cannot adopt unexplained latch or generation/runtime history"
+            raise TetherError(msg)
+        if self.preparation_cold_probe is None or not self.preparation_cold_probe(parent.plan).closed:
+            msg = "Image preparation requires exact owned whole-road cold proof"
+            raise TetherError(msg)
+        return parent
+
+    def _image_operation(self, request: PrepareImageRequest) -> OperationReceipt | None:
+        raw = self.custody.read("operations", f"{request.operation_id}.json")
+        receipt = OperationReceipt.model_validate_json(raw) if raw is not None else None
+        if receipt is not None and (receipt.request != request or receipt.request_digest != digest(request)):
+            msg = "Operation identity was already used with different intent"
+            raise TetherError(msg)
+        return receipt
+
+    def _committed_image_result(
+        self, request: PrepareImageRequest, selected: SelectedPreparation, receipt: OperationReceipt | None
+    ) -> PreparationReceipt | None:
+        if selected.selection.operation_id == request.operation_id:
+            if (
+                receipt is None
+                or selected.selection.parent_preparation_digest != request.expected_preparation_digest
+                or selected.plan != self.plan
+            ):
+                msg = "Selected transition does not match the exact pending image request"
+                raise TetherError(msg)
+            return self.secrets.attest()
+        if receipt is not None and receipt.complete:
+            msg = "Superseded image preparation cannot select itself again"
+            raise TetherError(msg)
+        return None
+
+    def prepare_image(
+        self, request: PrepareImageRequest, *, dry_run: bool = False
+    ) -> PreparationReceipt | PrepareImageRequest:
+        """Select only a cold image replacement, reusing exact original server identities."""
+        self._validate(request)
+        if dry_run:
+            selected = PreparationStore(self.custody).selected()
+            if self._committed_image_result(request, selected, self._image_operation(request)) is None:
+                self._image_transition_parent(request)
+            return request
+        with self.lock_factory():
+            self.custody.attest()
+            store = PreparationStore(self.custody)
+            selected = store.selected()
+            existing = self._image_operation(request)
+            completed = self._committed_image_result(request, selected, existing)
+            if completed is not None:
+                if existing is None:
+                    msg = "Committed image selection lost its operation journal"
+                    raise TetherError(msg)
+                self._record(existing, "image-selected", complete=True)
+                return completed
+            parent = self._image_transition_parent(request)
+            receipt = self._begin(request)
+            receipt = self._record(receipt, "image-cold-proven")
+            if self.secrets.attest_selected() != parent:
+                msg = "Selected preparation or server identities changed before image commit"
+                raise TetherError(msg)
+            prepared = PreparationReceipt(
+                installation_id=request.installation_id,
+                operation_id=request.operation_id,
+                envelope_digest=self.plan.envelope_digest,
+                secrets=parent.preparation.secrets,
+            )
+            store.commit(request, parent, prepared, self.plan)
+            self._record(receipt, "image-selected", complete=True)
             return prepared
 
     def startup_preflight(self, expected_binding: str | None = None) -> None:
@@ -330,7 +488,7 @@ class TetherOperations:
     @overload
     def enroll(self, request: EnrollRequest, *, dry_run: bool) -> OperationReceipt | EnrollRequest: ...
 
-    def enroll(self, request: EnrollRequest, *, dry_run: bool = False) -> OperationReceipt | EnrollRequest:  # noqa: C901, PLR0915 - ordered durability/effect transaction
+    def enroll(self, request: EnrollRequest, *, dry_run: bool = False) -> OperationReceipt | EnrollRequest:  # noqa: C901, PLR0912, PLR0915 - ordered durability/effect transaction
         """Publish the next generation only after exact cold proof and reset guard."""
         self._validate(request)
         if dry_run:
@@ -374,7 +532,14 @@ class TetherOperations:
                 old_peer_raw = self.custody.read("generations", f"{old_latch.generation}.json")
                 old_peer = TetherPeerIntent.model_validate_json(old_peer_raw) if old_peer_raw is not None else None
                 if old_peer is not None and old_peer.generation == old_latch.generation:
-                    self._fence(request, old_peer, binding)
+                    if (
+                        old_latch.envelope_digest == self.plan.envelope_digest
+                        and old_latch.binding_generation == binding
+                    ):
+                        self._fence(request, old_peer, binding)
+                    elif self._require_retained_revocation(old_peer) != old_latch:
+                        msg = "Historical closure latch changed before cold image reenrollment"
+                        raise TetherError(msg)
                 else:
                     msg = "Old closure evidence does not match the enrolled generation"
                     raise TetherError(msg)
@@ -503,9 +668,13 @@ class TetherOperations:
             if latch is None:
                 msg = "Closure handler requires the persistent active latch"
                 raise TetherError(msg)
-            if self.binding_probe() != latch.binding_generation:
-                msg = "Closure handler binding differs from the fenced generation"
-                raise TetherError(msg)
+            current_binding = self.binding_probe()
+            if current_binding != latch.binding_generation:
+                store = PreparationStore(self.custody)
+                store.require_replacement_ancestry(latch.envelope_digest)
+                if not self.stop_adapter.observe().closed:
+                    msg = "Closure handler binding differs without proven cold image-transition authority"
+                    raise TetherError(msg)
             peer = self._current()
             if peer is None or peer.generation != latch.generation or digest(peer) != latch.intent_digest:
                 msg = "Closure handler generation disagrees with public intent"
@@ -542,14 +711,13 @@ class TetherOperations:
         ):
             msg = "Inspection request no longer matches current intent"
             raise TetherError(msg)
-        raw = self.custody.read("private", "preparation.json")
-        prepared = PreparationReceipt.model_validate_json(raw) if raw else None
+        prepared: PreparationReceipt | None = None
         prepared_attested = False
-        if prepared is not None:
-            try:
-                prepared_attested = self.secrets.attest() == prepared
-            except (TetherError, ValueError, OSError):
-                prepared_attested = False
+        try:
+            prepared = self.secrets.preparation_metadata()
+            prepared_attested = self.secrets.attest() == prepared
+        except (TetherError, ValueError, OSError):
+            prepared_attested = False
         runtime = self.stop_adapter.runtime_identity()
         binding: str | None = None
         attested = False

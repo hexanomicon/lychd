@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from lychd.system.services.scribe.models import OwnedBindings
     from lychd.system.services.tether.custody import TetherCustody
     from lychd.system.services.tether.models import ClosureObservation
+    from lychd.system.services.tether.operations import TetherOperations
     from lychd.system.services.tether.secrets import TetherSecrets
 
 
@@ -364,3 +365,296 @@ def test_retained_revoke_checks_loaded_unit_provenance_with_unchanged_disk_gener
         assert "ownership-unconfirmed" in result.stages
         assert native.custody.read("private", "closed.json") is None
         stop.assert_not_called()
+
+
+def _image_transition(native: TetherSecrets, target: CompiledTetherPlan) -> TetherOperations:
+    from lychd.system.services.tether.operations import TetherOperations
+    from lychd.system.services.tether.secrets import TetherSecrets
+    from tests.unit.system.services.test_tether_operations import closed
+
+    gateway = TetherSecrets(
+        target,
+        native.custody,
+        native.runner,
+        podman_bin=native.podman,
+        wg_bin=native.wg,
+        ssh_keygen_bin=native.ssh_keygen,
+    )
+    return TetherOperations(
+        target,
+        native.custody,
+        gateway,
+        MagicMock(),
+        MagicMock(),
+        systemctl_bin="/usr/bin/systemctl",
+        binding_probe=MagicMock(side_effect=AssertionError("Preparation cannot require the new binding")),
+        lock_factory=nullcontext,
+        preparation_cold_probe=MagicMock(return_value=closed()),
+    )
+
+
+def test_image_preparation_is_required_before_normal_complete_bind_and_preserves_keys(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dataclasses import replace
+    from uuid import uuid4
+
+    from lychd.domain.tether.models import compile_tether_plan
+    from lychd.system.services.tether.secrets import TetherSecrets
+    from tests.unit.system.services.test_tether_operations import image_request
+
+    session, scribe, native, identities, store, _ = _session(tmp_path, monkeypatch)
+    original = native.prepare(uuid4())
+    target = compile_tether_plan(
+        native.plan.envelope.model_copy(update={"image": "localhost/tether@sha256:" + "b" * 64})
+    )
+
+    def preparation(plan: CompiledTetherPlan, *, podman_bin: str) -> TetherSecrets:
+        return TetherSecrets(
+            plan,
+            native.custody,
+            native.runner,
+            podman_bin=podman_bin,
+            wg_bin=native.wg,
+            ssh_keygen_bin=native.ssh_keygen,
+        )
+
+    monkeypatch.setattr("lychd.system.services.tether.composition.preparation_service", preparation)
+    rune = session.runes.one(TetherSettings).model_copy(update={"quadlet": QuadletConfig(image=target.envelope.image)})
+    updated = replace(session, runes=RuneRegistry((rune,)))
+    with pytest.raises(TetherError, match="another installation or envelope"):
+        updated.prepare()
+    transition = _image_transition(native, target)
+    prepared_receipt = transition.prepare_image(image_request(transition))
+    approved = updated.prepare()
+    approved.use_case.apply(approved.request, approved.plan)
+    assert approved.plan.tether_preparation == (prepared_receipt,)
+    assert scribe.inspect_owned_bindings().source_count > 5
+    assert any(
+        f"Image={target.envelope.image}" in path.read_text() for path in scribe.inspect_owned_bindings().quadlet_sources
+    )
+    assert native.custody.read("private", "preparation.json") == original.model_dump_json().encode()
+    assert {row["ID"] for row in identities.values()} == {secret.podman_id for secret in original.secrets}
+    store.ensure_present.assert_not_called()
+
+
+def test_changed_image_selection_after_preview_refuses_locked_full_bind(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dataclasses import replace
+    from uuid import uuid4
+
+    from lychd.domain.tether.models import compile_tether_plan
+    from lychd.system.services.tether.secrets import TetherSecrets
+    from tests.unit.system.services.test_tether_operations import image_request
+
+    session, scribe, native, _, store, _ = _session(tmp_path, monkeypatch)
+    native.prepare(uuid4())
+    target = compile_tether_plan(
+        native.plan.envelope.model_copy(update={"image": "localhost/tether@sha256:" + "b" * 64})
+    )
+
+    def preparation(plan: CompiledTetherPlan, *, podman_bin: str) -> TetherSecrets:
+        return TetherSecrets(
+            plan,
+            native.custody,
+            native.runner,
+            podman_bin=podman_bin,
+            wg_bin=native.wg,
+            ssh_keygen_bin=native.ssh_keygen,
+        )
+
+    monkeypatch.setattr("lychd.system.services.tether.composition.preparation_service", preparation)
+    transition = _image_transition(native, target)
+    transition.prepare_image(image_request(transition))
+    rune = session.runes.one(TetherSettings).model_copy(update={"quadlet": QuadletConfig(image=target.envelope.image)})
+    approved = replace(session, runes=RuneRegistry((rune,))).prepare()
+    later = compile_tether_plan(target.envelope.model_copy(update={"image": "localhost/tether@sha256:" + "c" * 64}))
+    next_transition = _image_transition(native, later)
+    next_transition.prepare_image(image_request(next_transition))
+    with pytest.raises(TetherError, match="another installation or envelope"):
+        approved.use_case.apply(approved.request, approved.plan)
+    assert not scribe.inspect_owned_bindings().receipt_present
+    store.ensure_present.assert_not_called()
+
+
+@pytest.mark.parametrize("bound", [False, True])
+def test_real_image_prepare_assembly_handles_never_bound_and_bound_no_peer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, bound: bool
+) -> None:
+    from dataclasses import replace
+    from uuid import uuid4
+
+    from lychd.domain.tether.models import compile_tether_plan
+    from lychd.system.operator.process import ProcessResult
+    from lychd.system.services.deployment import DeploymentInspectionService
+    from lychd.system.services.tether.composition import build_tether_operations
+    from lychd.system.services.tether.secrets import TetherSecrets
+    from tests.unit.system.services.test_tether_operations import image_request
+
+    session, scribe, native, _, _, _ = _session(tmp_path, monkeypatch)
+    native.prepare(uuid4())
+    if bound:
+        initial = session.prepare()
+        initial.use_case.apply(initial.request, initial.plan)
+    target = compile_tether_plan(
+        native.plan.envelope.model_copy(update={"image": "localhost/tether@sha256:" + "b" * 64})
+    )
+    rune = session.runes.one(TetherSettings).model_copy(update={"quadlet": QuadletConfig(image=target.envelope.image)})
+    current = replace(session, runes=RuneRegistry((rune,)))
+    monkeypatch.setattr(BindingCommandSession, "inspect", MagicMock(return_value=current))
+
+    def preparation(plan: CompiledTetherPlan, *, podman_bin: str | None = None) -> TetherSecrets:
+        return TetherSecrets(
+            plan,
+            native.custody,
+            native.runner,
+            podman_bin=podman_bin or native.podman,
+            wg_bin=native.wg,
+            ssh_keygen_bin=native.ssh_keygen,
+        )
+
+    def custody_factory(*_paths: Path) -> TetherCustody:
+        return native.custody
+
+    monkeypatch.setattr("lychd.system.services.tether.composition.preparation_service", preparation)
+    monkeypatch.setattr("lychd.system.services.tether.composition.TetherCustody", custody_factory)
+    monkeypatch.setattr("lychd.system.services.tether.composition.os.geteuid", lambda: 1000)
+    monkeypatch.setattr("lychd.system.services.tether.composition.LifecycleReceiptStore", MagicMock())
+    monkeypatch.setattr("lychd.system.services.tether.composition.LifecycleLock", nullcontext)
+    process = MagicMock()
+
+    def probe(argv: tuple[str, ...], **_: object) -> ProcessResult:
+        if "show" in argv:
+            unit = argv[3]
+            fields = {
+                "Id": unit,
+                "LoadState": "loaded" if bound else "not-found",
+                "ActiveState": "inactive",
+                "SubState": "dead",
+                "FragmentPath": "",
+                "SourcePath": "",
+                "DropInPaths": "",
+                "Job": "",
+                "NeedDaemonReload": "no",
+            }
+            if unit.endswith(".service"):
+                fields.update({"MainPID": "0", "ControlPID": "0", "ControlGroup": ""})
+            return ProcessResult(argv, 0, "\n".join(f"{key}={value}" for key, value in fields.items()))
+        if "list-jobs" in argv:
+            return ProcessResult(argv, 0)
+        if argv[1] == "ps":
+            return ProcessResult(argv, 0, "[]")
+        return ProcessResult(argv, 1)
+
+    process.run.side_effect = probe
+    monkeypatch.setattr("lychd.system.services.tether.composition.SubprocessRunner", MagicMock(return_value=process))
+    effective = MagicMock(return_value={})
+    monkeypatch.setattr(DeploymentInspectionService, "observe_owned_units", effective)
+    operations = build_tether_operations()
+    operations.prepare_image(image_request(operations))
+    assert effective.call_count == int(bound)
+    assert native.custody.read("public", "peer.json") is None
+    assert all("start" not in call.args[0] and "stop" not in call.args[0] for call in process.run.call_args_list)
+    assert scribe.inspect_owned_bindings().receipt_present is bound
+
+
+def test_historical_peer_closure_reconciles_after_new_image_full_bind_without_relabeling(  # noqa: PLR0915 - one complete old-peer/new-Scribe reconciliation
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dataclasses import replace
+    from uuid import uuid4
+
+    from lychd.domain.tether.models import compile_tether_plan
+    from lychd.system.operator.process import ProcessResult
+    from lychd.system.services.deployment import DeploymentInspectionService
+    from lychd.system.services.tether.closure import TetherStopAdapter
+    from lychd.system.services.tether.composition import build_tether_operations
+    from lychd.system.services.tether.models import ClosureLatch, OperationReceipt
+    from lychd.system.services.tether.operations import TetherOperations
+    from lychd.system.services.tether.secrets import TetherSecrets
+    from tests.unit.system.services.test_tether_operations import (
+        closed,
+        enroll_request,
+        image_request,
+        make_peer,
+        revoke_request,
+    )
+
+    session, scribe, native, _, _, _ = _session(tmp_path, monkeypatch)
+    native.prepare(uuid4())
+    initial = session.prepare()
+    original_binding = initial.use_case.apply(initial.request, initial.plan).binding_generation
+    process, stop = MagicMock(), MagicMock()
+
+    def probe(argv: tuple[str, ...], **_: object) -> ProcessResult:
+        return ProcessResult(argv, 0, "active\n" if "show" in argv else "")
+
+    process.run.side_effect = probe
+    stop.boot_id.return_value = TetherStopAdapter.boot_id()
+    stop.observe.return_value = closed()
+    stop.stop.return_value = closed()
+    old = TetherOperations(
+        native.plan,
+        native.custody,
+        native,
+        stop,
+        process,
+        systemctl_bin="/usr/bin/systemctl",
+        binding_probe=lambda: original_binding,
+        lock_factory=nullcontext,
+    )
+    peer = make_peer()
+    old.enroll(enroll_request(peer))
+    revoke = revoke_request(peer)
+    assert old.revoke(revoke).complete
+    latch_bytes = native.custody.read("private", "closed.json")
+    revocation_bytes = native.custody.read("revocations", "1.json")
+    target = compile_tether_plan(
+        native.plan.envelope.model_copy(update={"image": "localhost/tether@sha256:" + "b" * 64})
+    )
+    transition = _image_transition(native, target)
+    transition.prepare_image(image_request(transition, generation=1))
+
+    def preparation(plan: CompiledTetherPlan, *, podman_bin: str) -> TetherSecrets:
+        return TetherSecrets(
+            plan,
+            native.custody,
+            native.runner,
+            podman_bin=podman_bin,
+            wg_bin=native.wg,
+            ssh_keygen_bin=native.ssh_keygen,
+        )
+
+    monkeypatch.setattr("lychd.system.services.tether.composition.preparation_service", preparation)
+    rune = session.runes.one(TetherSettings).model_copy(update={"quadlet": QuadletConfig(image=target.envelope.image)})
+    updated = replace(session, runes=RuneRegistry((rune,))).prepare()
+    updated.use_case.apply(updated.request, updated.plan)
+    current_binding = scribe.inspect_owned_bindings().generation
+    assert current_binding != original_binding
+
+    def custody_factory(*_paths: Path) -> TetherCustody:
+        return native.custody
+
+    def tool(name: str, *_locations: str) -> str:
+        return f"/usr/bin/{name}"
+
+    monkeypatch.setattr("lychd.system.services.tether.composition.TetherCustody", custody_factory)
+    monkeypatch.setattr("lychd.system.services.tether.composition._tool", tool)
+    monkeypatch.setattr("lychd.system.services.tether.composition.os.geteuid", lambda: 1000)
+    monkeypatch.setattr("lychd.system.services.tether.composition.LifecycleLock", nullcontext)
+    monkeypatch.setattr("lychd.system.services.tether.composition.LifecycleReceiptStore", MagicMock())
+    monkeypatch.setattr(DeploymentInspectionService, "observe_owned_units", MagicMock(return_value={}))
+    monkeypatch.setattr(TetherStopAdapter, "observe", MagicMock(return_value=closed()))
+    retained = build_tether_operations(for_closure=True)
+    assert retained.plan == native.plan
+    result = retained.handle_closure()
+    assert result.complete
+    assert result.binding_generation == original_binding
+    assert native.custody.read("private", "closed.json") == latch_bytes
+    assert native.custody.read("revocations", "1.json") == revocation_bytes
+    assert latch_bytes is not None
+    assert ClosureLatch.model_validate_json(latch_bytes).envelope_digest == native.plan.envelope_digest
+    raw = native.custody.read("operations", f"{revoke.operation_id}.json")
+    assert raw is not None
+    assert OperationReceipt.model_validate_json(raw).binding_generation == original_binding

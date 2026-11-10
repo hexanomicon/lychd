@@ -8,12 +8,12 @@ import struct
 from contextlib import nullcontext
 from ipaddress import IPv4Address, IPv4Interface
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 from unittest.mock import MagicMock
 from uuid import UUID, uuid4
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from lychd.domain.tether.models import (
     CompiledTetherPlan,
@@ -24,19 +24,24 @@ from lychd.domain.tether.models import (
 )
 from lychd.system.operator.process import ProcessResult
 from lychd.system.services.tether.closure import TetherStopAdapter
-from lychd.system.services.tether.custody import TetherCustody
+from lychd.system.services.tether.custody import PreparationStore, TetherCustody
 from lychd.system.services.tether.models import (
     ActivationAttempt,
     ClosureLatch,
     ClosureObservation,
     EnrollRequest,
+    InspectRequest,
     OperationReceipt,
+    PreparationReceipt,
+    PreparationSelection,
+    PrepareImageRequest,
     RevocationRecord,
     RevokeRequest,
     TetherError,
     digest,
 )
 from lychd.system.services.tether.operations import TetherOperations
+from lychd.system.services.tether.secrets import TetherSecrets
 
 
 def make_plan() -> CompiledTetherPlan:
@@ -587,3 +592,317 @@ def test_later_enrollment_recovers_after_intermediate_grant_dies_before_begin_po
     assert custody.read("generations", old_name) == attempt.model_dump_json().encode()
     assert custody.read("revocations", "1.json") is not None
     assert custody.read("revocations", "2.json") is not None
+
+
+def image_stack(tmp_path: Path) -> tuple[TetherOperations, TetherSecrets, dict[str, dict[str, Any]], list[str]]:
+    """Use real receipt/secret/transition services against one bounded fake Podman."""
+    from tests.unit.system.services.test_tether_secrets import secret_stack
+
+    initial, custody, values, created = secret_stack(tmp_path)
+    initial.prepare(uuid4())
+    target = compile_tether_plan(
+        initial.plan.envelope.model_copy(update={"image": "localhost/tether@sha256:" + "b" * 64})
+    )
+    gateway = TetherSecrets(
+        target, custody, initial.runner, podman_bin=initial.podman, wg_bin=initial.wg, ssh_keygen_bin=initial.ssh_keygen
+    )
+    process, stop = MagicMock(), MagicMock()
+
+    def run(argv: tuple[str, ...], **_: object) -> ProcessResult:
+        return ProcessResult(argv, 0, "active\n" if "show" in argv else "")
+
+    process.run.side_effect = run
+    stop.boot_id.return_value = TetherStopAdapter.boot_id()
+    stop.observe.return_value = closed()
+    stop.stop.return_value = closed()
+    operations = TetherOperations(
+        target,
+        custody,
+        gateway,
+        stop,
+        process,
+        systemctl_bin="/usr/bin/systemctl",
+        binding_probe=lambda: "new-binding",
+        lock_factory=nullcontext,
+        preparation_cold_probe=MagicMock(return_value=closed()),
+    )
+    return operations, initial, values, created
+
+
+def image_request(operations: TetherOperations, *, generation: int = 0) -> PrepareImageRequest:
+    return PrepareImageRequest(
+        installation_id=operations.plan.envelope.installation_id,
+        operation_id=uuid4(),
+        expected_generation=generation,
+        envelope_digest=operations.plan.envelope_digest,
+        intent_digest=operations.plan.envelope_digest,
+        expected_preparation_digest=digest(PreparationStore(operations.custody).selected().selection),
+    )
+
+
+def test_image_preparation_before_first_peer_reuses_creation_identities_and_does_not_bind(tmp_path: Path) -> None:
+    operations, original, _, created = image_stack(tmp_path)
+    before = PreparationStore(operations.custody).selected()
+    original_plan = operations.custody.read("private", "plan.json")
+    original_receipt = operations.custody.read("private", "preparation.json")
+    request = image_request(operations)
+    prepared = operations.prepare_image(request)
+    assert isinstance(prepared, PreparationReceipt)
+    assert prepared.secrets == before.preparation.secrets
+    assert prepared.envelope_digest == operations.plan.envelope_digest
+    assert operations.secrets.attest() == prepared
+    assert operations.prepare_image(request) == prepared
+    assert operations.custody.read("private", "plan.json") == original_plan
+    assert operations.custody.read("private", "preparation.json") == original_receipt
+    assert operations.custody.read("public", "peer.json") is None
+    assert operations.custody.read("private", "closed.json") is None
+    assert created == ["test-wg", "test-ssh"]
+    cast("MagicMock", operations.runner).run.assert_not_called()
+    cast("MagicMock", operations.stop_adapter).stop.assert_not_called()
+    cast("MagicMock", original._factory).assert_called()
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("interface", "wgdifferent"),
+        ("udp_port", 51821),
+        ("advertised_endpoint", "203.0.113.3:51820"),
+        ("ssh_port", 2223),
+        ("altar_port", 7135),
+        ("installation_id", UUID(int=99)),
+    ],
+)
+def test_image_preparation_rejects_every_non_image_migration(tmp_path: Path, field: str, value: object) -> None:
+    operations, _, _, created = image_stack(tmp_path)
+    operations.plan = compile_tether_plan(operations.plan.envelope.model_copy(update={field: value}))
+    request = image_request(operations)
+    with pytest.raises(TetherError, match="only a changed immutable image"):
+        operations.prepare_image(request)
+    assert operations.custody.read("private", "current-preparation.json") is None
+    assert created == ["test-wg", "test-ssh"]
+
+
+def test_image_preparation_dry_run_preserves_selector_journal_and_keys(tmp_path: Path) -> None:
+    operations, _, _, created = image_stack(tmp_path)
+    request = image_request(operations)
+    lock = MagicMock(side_effect=AssertionError("dry run must not acquire a mutation lock"))
+    operations.lock_factory = lock
+    assert operations.prepare_image(request, dry_run=True) == request
+    assert operations.custody.read("private", "current-preparation.json") is None
+    assert operations.custody.read("operations", f"{request.operation_id}.json") is None
+    assert created == ["test-wg", "test-ssh"]
+    lock.assert_not_called()
+
+
+@pytest.mark.parametrize("boundary", ["legacy-selector", "bundle", "selected", "completion"])
+def test_image_transition_crashes_reconcile_exactly_without_recreating_keys(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, boundary: str
+) -> None:
+    operations, _, _, created = image_stack(tmp_path)
+    request = image_request(operations)
+    parent = PreparationStore(operations.custody).selected()
+    selector = operations.custody.select_preparation
+    writer = operations.custody.write
+    fired = False
+
+    def select(expected: bytes | None, value: PreparationSelection) -> None:
+        nonlocal fired
+        selector(expected, value)
+        hit = (boundary == "legacy-selector" and value.parent_preparation_digest is None) or (
+            boundary == "selected" and value.parent_preparation_digest is not None
+        )
+        if hit and not fired:
+            fired = True
+            raise KeyboardInterrupt
+
+    def write(role: str, name: str, value: BaseModel, **kwargs: bool) -> None:
+        nonlocal fired
+        writer(role, name, value, **kwargs)
+        hit = (boundary == "bundle" and name.startswith("image-preparation-")) or (
+            boundary == "completion" and "image-selected" in getattr(value, "stages", ())
+        )
+        if hit and not fired:
+            fired = True
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(operations.custody, "select_preparation", select)
+    monkeypatch.setattr(operations.custody, "write", write)
+    with pytest.raises(KeyboardInterrupt):
+        operations.prepare_image(request)
+    monkeypatch.setattr(operations.custody, "select_preparation", selector)
+    monkeypatch.setattr(operations.custody, "write", writer)
+    selected = PreparationStore(operations.custody).selected()
+    assert selected.plan == (parent.plan if boundary in {"legacy-selector", "bundle"} else operations.plan)
+    prepared = operations.prepare_image(request)
+    assert isinstance(prepared, PreparationReceipt)
+    assert prepared.secrets == parent.preparation.secrets
+    assert created == ["test-wg", "test-ssh"]
+
+
+def test_stale_and_superseded_image_requests_cannot_reselect_old_authority(tmp_path: Path) -> None:
+    operations, _, _, _ = image_stack(tmp_path)
+    first = image_request(operations)
+    operations.prepare_image(first)
+    second_target = compile_tether_plan(
+        operations.plan.envelope.model_copy(update={"image": "localhost/tether@sha256:" + "c" * 64})
+    )
+    operations.plan = second_target
+    operations.secrets = TetherSecrets(
+        second_target,
+        operations.custody,
+        operations.secrets.runner,
+        podman_bin=operations.secrets.podman,
+        wg_bin=operations.secrets.wg,
+        ssh_keygen_bin=operations.secrets.ssh_keygen,
+    )
+    second = image_request(operations)
+    operations.prepare_image(second)
+    current = PreparationStore(operations.custody).selected()
+    operations.plan = compile_tether_plan(
+        operations.plan.envelope.model_copy(update={"image": "localhost/tether@sha256:" + "b" * 64})
+    )
+    with pytest.raises(TetherError, match="Superseded"):
+        operations.prepare_image(first)
+    with pytest.raises(TetherError, match="stale"):
+        operations.prepare_image(first.model_copy(update={"operation_id": uuid4()}))
+    assert PreparationStore(operations.custody).selected() == current
+
+
+def test_revoked_peer_image_transition_and_new_binding_preserve_historical_latch(tmp_path: Path) -> None:
+    operations, original, _, created = image_stack(tmp_path)
+    old = TetherOperations(
+        original.plan,
+        operations.custody,
+        original,
+        operations.stop_adapter,
+        operations.runner,
+        systemctl_bin="/usr/bin/systemctl",
+        binding_probe=lambda: "old-binding",
+        lock_factory=nullcontext,
+    )
+    peer = make_peer()
+    assert old.enroll(enroll_request(peer)).complete
+    assert old.revoke(revoke_request(peer)).complete
+    latch = operations.custody.read("private", "closed.json")
+    revocation = operations.custody.read("revocations", "1.json")
+    original_peer = operations.custody.read("generations", "1.json")
+    operations.prepare_image(image_request(operations, generation=1))
+    assert operations.custody.read("private", "closed.json") == latch
+    assert operations.custody.read("revocations", "1.json") == revocation
+    assert operations.custody.read("public", "peer.json") == peer.model_dump_json().encode()
+    assert operations.enroll(
+        enroll_request(make_peer(2)).model_copy(update={"envelope_digest": operations.plan.envelope_digest})
+    ).complete
+    assert operations.custody.read("private", "closed.json") is None
+    assert operations.custody.read("revocations", "1.json") == revocation
+    assert operations.custody.read("generations", "1.json") == original_peer
+    assert created == ["test-wg", "test-ssh"]
+
+
+def test_missing_public_peer_cannot_reset_generation_authority_for_image_preparation(tmp_path: Path) -> None:
+    operations, original, _, _ = image_stack(tmp_path)
+    peer = make_peer()
+    admit_peer(operations.custody, peer)
+    (operations.custody.directories["public"] / "peer.json").unlink()
+    with pytest.raises(TetherError, match="generation/runtime history"):
+        operations.prepare_image(image_request(operations))
+    cast("MagicMock", operations.preparation_cold_probe).assert_not_called()
+    assert operations.custody.read("private", "current-preparation.json") is None
+    assert original.plan.envelope_digest == PreparationStore(operations.custody).selected().plan.envelope_digest
+
+
+def test_selector_corruption_does_not_remove_owned_enrollment_closure_or_inspection(tmp_path: Path) -> None:
+    operations, _, _, _ = image_stack(tmp_path)
+    operations.prepare_image(image_request(operations))
+    peer = make_peer()
+    enrollment_request = enroll_request(peer).model_copy(update={"envelope_digest": operations.plan.envelope_digest})
+    enrollment = operations.enroll(enrollment_request)
+    operations.custody.publish("private", "current-preparation.json", b"invalid selection")
+    store = PreparationStore(operations.custody)
+    assert store.retained_enrollment_plan(peer, enrollment) == operations.plan
+    with pytest.raises(ValidationError):
+        store.selected()
+    cast("MagicMock", operations.stop_adapter).runtime_identity.return_value = None
+    request = RevokeRequest(
+        installation_id=peer.installation_id,
+        operation_id=uuid4(),
+        expected_generation=peer.generation,
+        envelope_digest=operations.plan.envelope_digest,
+        intent_digest=digest(peer),
+    )
+    assert operations.revoke(request).complete
+    inspection = operations.inspect(
+        InspectRequest(
+            installation_id=peer.installation_id,
+            operation_id=uuid4(),
+            expected_generation=peer.generation,
+            envelope_digest=operations.plan.envelope_digest,
+            intent_digest=digest(peer),
+        )
+    )
+    assert inspection.preparation is None
+    assert not inspection.preparation_attested
+    assert inspection.peer == peer
+    assert inspection.observation.closed
+    with pytest.raises(ValidationError):
+        store.selected()
+
+
+def test_data_only_plan_reader_rejects_missing_enrollment_authority(tmp_path: Path) -> None:
+    operations, _, _, _ = image_stack(tmp_path)
+    operations.prepare_image(image_request(operations))
+    peer = make_peer()
+    request = enroll_request(peer).model_copy(update={"envelope_digest": operations.plan.envelope_digest})
+    receipt = OperationReceipt(request_digest=digest(request), request=request, binding_generation="new-binding")
+    with pytest.raises(TetherError, match="immutable peer and enrollment"):
+        PreparationStore(operations.custody).retained_enrollment_plan(peer, receipt)
+
+
+@pytest.mark.parametrize("case", ["round-trip", "no-replacement", "unrelated"])
+def test_cold_historical_handler_requires_actual_replacement_ancestry_and_preserves_old_binding(
+    tmp_path: Path, case: str
+) -> None:
+    operations, original, _, _ = image_stack(tmp_path)
+    old = TetherOperations(
+        original.plan,
+        operations.custody,
+        original,
+        operations.stop_adapter,
+        operations.runner,
+        systemctl_bin="/usr/bin/systemctl",
+        binding_probe=lambda: "old-binding",
+        lock_factory=nullcontext,
+    )
+    peer = make_peer()
+    old.enroll(enroll_request(peer))
+    old.revoke(revoke_request(peer))
+    if case != "no-replacement":
+        operations.prepare_image(image_request(operations, generation=1))
+    if case == "round-trip":
+        operations.plan = original.plan
+        operations.secrets = original
+        operations.prepare_image(image_request(operations, generation=1))
+    else:
+        operations.plan = original.plan
+        operations.secrets = original
+    if case == "unrelated":
+        raw = operations.custody.read("private", "closed.json")
+        assert raw is not None
+        latch = ClosureLatch.model_validate_json(raw).model_copy(update={"envelope_digest": "f" * 64})
+        operations.custody.write("private", "closed.json", latch)
+    latch_bytes = operations.custody.read("private", "closed.json")
+    revocation_bytes = operations.custody.read("revocations", "1.json")
+    cast("MagicMock", operations.runner).reset_mock()
+    cast("MagicMock", operations.stop_adapter).stop.reset_mock()
+    if case == "round-trip":
+        result = operations.handle_closure()
+        assert result.complete
+        assert result.binding_generation == "old-binding"
+    else:
+        with pytest.raises(TetherError, match="replacement"):
+            operations.handle_closure()
+    assert operations.custody.read("private", "closed.json") == latch_bytes
+    assert operations.custody.read("revocations", "1.json") == revocation_bytes
+    cast("MagicMock", operations.runner).run.assert_not_called()
+    cast("MagicMock", operations.stop_adapter).stop.assert_not_called()
