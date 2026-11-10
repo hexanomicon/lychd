@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # pyright: reportPrivateUsage=false
 import base64
+import hashlib
 import os
 import struct
 from contextlib import nullcontext
@@ -25,6 +26,7 @@ from lychd.domain.tether.models import (
 )
 from lychd.system.operator.process import ProcessResult
 from lychd.system.path_identity import PersistentPathIdentity
+from lychd.system.services.scribe.models import PersistentBindingIdentity
 from lychd.system.services.tether.closure import TetherStopAdapter
 from lychd.system.services.tether.custody import PreparationStore, TetherCustody
 from lychd.system.services.tether.models import (
@@ -44,6 +46,11 @@ from lychd.system.services.tether.models import (
 )
 from lychd.system.services.tether.operations import TetherOperations
 from lychd.system.services.tether.secrets import TetherSecrets
+
+
+def make_binding(label: str = "binding-1") -> PersistentBindingIdentity:
+    """Return a distinct typed synthetic durable binding identity."""
+    return PersistentBindingIdentity(version=1, digest=hashlib.sha256(label.encode()).hexdigest())
 
 
 def make_plan() -> CompiledTetherPlan:
@@ -126,7 +133,7 @@ def stack(tmp_path: Path) -> tuple[TetherOperations, TetherCustody, MagicMock, M
         stop,
         runner,
         systemctl_bin="/usr/bin/systemctl",
-        binding_probe=lambda: "binding-1",
+        binding_probe=make_binding,
         lock_factory=nullcontext,
     )
     return operations, custody, runner, secrets, stop
@@ -155,7 +162,7 @@ def admit_peer(custody: TetherCustody, peer: TetherPeerIntent) -> None:
         OperationReceipt(
             request_digest=digest(request),
             request=request,
-            binding_generation="binding-1",
+            binding_identity=make_binding(),
             stages=("prepared", "generation-published"),
             complete=True,
         ),
@@ -391,11 +398,11 @@ def test_revoke_keeps_active_guard_inert_for_unowned_bindings(
 
     monkeypatch.setattr(custody, "write", active_guard)
 
-    def probe() -> str:
+    def probe() -> PersistentBindingIdentity:
         if ownership == "unknown":
             msg = "Actual Scribe ownership unavailable"
             raise TetherError(msg)
-        return "foreign-binding"
+        return make_binding("foreign-binding")
 
     operations.binding_probe = probe
     result = operations.revoke(request)
@@ -405,14 +412,14 @@ def test_revoke_keeps_active_guard_inert_for_unowned_bindings(
     raw = custody.read("revocations", "1.json")
     assert raw is not None
     tombstone = RevocationRecord.model_validate_json(raw)
-    assert tombstone.latch.binding_generation == "binding-1"
+    assert tombstone.latch.binding_identity == make_binding()
     assert tombstone.latch.generation == peer.generation
     assert tombstone.latch_digest == digest(tombstone.latch)
     assert operations.revoke(request) == result
     assert custody.read("revocations", "1.json") == raw
     stop.stop.assert_not_called()
     runner.run.assert_not_called()
-    operations.binding_probe = lambda: "binding-1"
+    operations.binding_probe = make_binding
     with pytest.raises(TetherError, match="retained revocation"):
         operations.startup_preflight()
     assert operations.revoke(request).complete
@@ -525,7 +532,7 @@ def test_startup_requires_exact_correlated_successful_enrollment(tmp_path: Path,
     }
     receipt_changes: dict[str, dict[str, object]] = {
         "request-kind": {"request": revoke_request(peer)},
-        "binding": {"binding_generation": "foreign"},
+        "binding": {"binding_identity": make_binding("foreign")},
         "request-digest": {"request_digest": "f" * 64},
         "completion-flag": {"stages": ("generation-published",)},
         "fenced-complete": {"stages": ("activation-fenced", "forwarder-active")},
@@ -554,7 +561,7 @@ def test_later_enrollment_recovers_after_intermediate_grant_dies_before_begin_po
         installation_id=first.installation_id,
         generation=1,
         envelope_digest=operations.plan.envelope_digest,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         boot_id=UUID(int=1),
         invocation_id=uuid4(),
         service_cgroup="/old-attempt",
@@ -592,7 +599,7 @@ def test_later_enrollment_recovers_after_intermediate_grant_dies_before_begin_po
     def manager_start(argv: tuple[str, ...], **_: object) -> ProcessResult:
         if argv[2] == "start" and operations.plan.pod_unit in argv:
             operations.role_preflight("pod")
-            adapter.begin_pod(3, "binding-1")
+            adapter.begin_pod(3, make_binding())
         return ProcessResult(argv, 0, "active\n" if "show" in argv else "")
 
     runner.run.side_effect = manager_start
@@ -634,7 +641,7 @@ def image_stack(tmp_path: Path) -> tuple[TetherOperations, TetherSecrets, dict[s
         stop,
         process,
         systemctl_bin="/usr/bin/systemctl",
-        binding_probe=lambda: "new-binding",
+        binding_probe=lambda: make_binding("new-binding"),
         lock_factory=nullcontext,
         preparation_cold_probe=MagicMock(return_value=closed()),
     )
@@ -790,7 +797,7 @@ def test_revoked_peer_image_transition_and_new_binding_preserve_historical_latch
         operations.stop_adapter,
         operations.runner,
         systemctl_bin="/usr/bin/systemctl",
-        binding_probe=lambda: "old-binding",
+        binding_probe=lambda: make_binding("old-binding"),
         lock_factory=nullcontext,
     )
     peer = make_peer()
@@ -866,7 +873,9 @@ def test_data_only_plan_reader_rejects_missing_enrollment_authority(tmp_path: Pa
     operations.prepare_image(image_request(operations))
     peer = make_peer()
     request = enroll_request(peer).model_copy(update={"envelope_digest": operations.plan.envelope_digest})
-    receipt = OperationReceipt(request_digest=digest(request), request=request, binding_generation="new-binding")
+    receipt = OperationReceipt(
+        request_digest=digest(request), request=request, binding_identity=make_binding("new-binding")
+    )
     with pytest.raises(TetherError, match="immutable peer and enrollment"):
         PreparationStore(operations.custody).retained_enrollment_plan(peer, receipt)
 
@@ -883,7 +892,7 @@ def test_cold_historical_handler_requires_actual_replacement_ancestry_and_preser
         operations.stop_adapter,
         operations.runner,
         systemctl_bin="/usr/bin/systemctl",
-        binding_probe=lambda: "old-binding",
+        binding_probe=lambda: make_binding("old-binding"),
         lock_factory=nullcontext,
     )
     peer = make_peer()
@@ -910,7 +919,7 @@ def test_cold_historical_handler_requires_actual_replacement_ancestry_and_preser
     if case == "round-trip":
         result = operations.handle_closure()
         assert result.complete
-        assert result.binding_generation == "old-binding"
+        assert result.binding_identity == make_binding("old-binding")
     else:
         with pytest.raises(TetherError, match="replacement"):
             operations.handle_closure()
@@ -918,3 +927,19 @@ def test_cold_historical_handler_requires_actual_replacement_ancestry_and_preser
     assert operations.custody.read("revocations", "1.json") == revocation_bytes
     cast("MagicMock", operations.runner).run.assert_not_called()
     cast("MagicMock", operations.stop_adapter).stop.assert_not_called()
+
+
+def test_missing_retained_binding_identity_cannot_activate_a_latch_or_stop(tmp_path: Path) -> None:
+    operations, custody, _, _, stop = stack(tmp_path)
+    peer = make_peer()
+    admit_peer(custody, peer)
+    raw = custody.read("operations", f"{peer.operation_id}.json")
+    assert raw is not None
+    receipt = OperationReceipt.model_validate_json(raw).model_copy(update={"binding_identity": None})
+    custody.write("operations", f"{peer.operation_id}.json", receipt)
+    stop.incarnation.return_value = None
+    with pytest.raises(TetherError, match="binding identity is absent"):
+        operations.revoke(revoke_request(peer))
+    assert custody.read("private", "closed.json") is None
+    assert custody.read("revocations", "1.json") is None
+    stop.stop.assert_not_called()

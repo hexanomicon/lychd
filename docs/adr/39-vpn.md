@@ -149,7 +149,10 @@ and clears only the active latch after new intent is durable. A post-fence recov
 stop or observe transport, never restart or compensate back to the revoked world.
 
 Tunnel loss has no public fallback. Reboot requires typed startup checks of current public intent and
-retained generation evidence, and an active path guard, before either container starts. A whole-state
+retained generation evidence, the exact [persistent Scribe binding identity](13-layout.md#persistent-binding-identity),
+and an active path guard, before either container starts. Device-number changes alone do not alter
+that identity; changed source objects or content do. Legacy live-generation records confer no
+reboot authority and are not automatically converted. A whole-state
 rollback can restore both old intent and its old fence: a counter on that same disk cannot detect
 it. Restore therefore requires independently retained revocation evidence or fresh server identity and client
 re-enrollment; uncertainty refuses activation.

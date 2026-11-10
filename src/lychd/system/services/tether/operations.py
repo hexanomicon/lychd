@@ -12,6 +12,7 @@ from lychd.domain.tether.models import (
     render_wireguard_public,
     validate_peer,
 )
+from lychd.system.services.scribe.models import PersistentBindingIdentity
 from lychd.system.services.tether.custody import PreparationStore
 from lychd.system.services.tether.models import (
     ClosureLatch,
@@ -55,7 +56,7 @@ class TetherOperations:
         runner: ProcessRunner,
         *,
         systemctl_bin: str,
-        binding_probe: Callable[[], str],
+        binding_probe: Callable[[], PersistentBindingIdentity],
         lock_factory: Callable[[], AbstractContextManager[object]],
         desired_probe: Callable[[], str] | None = None,
         preparation_cold_probe: Callable[[CompiledTetherPlan], ClosureObservation] | None = None,
@@ -182,7 +183,7 @@ class TetherOperations:
             or request.expected_generation != peer.generation - 1
             or request.intent_digest != digest(peer)
             or enrollment.request_digest != digest(request)
-            or enrollment.binding_generation is None
+            or enrollment.binding_identity is None
         ):
             msg = "Revoked peer differs from its exact retained enrollment"
             raise TetherError(msg)
@@ -213,7 +214,7 @@ class TetherOperations:
             or latch.generation != peer.generation
             or latch.intent_digest != digest(peer)
             or latch.envelope_digest != request.envelope_digest
-            or latch.binding_generation != enrollment.binding_generation
+            or latch.binding_identity != enrollment.binding_identity
         ):
             msg = "Retained revocation or active latch differs from its historical envelope and binding"
             raise TetherError(msg)
@@ -313,12 +314,12 @@ class TetherOperations:
             self._record(receipt, "image-selected", complete=True)
             return prepared
 
-    def startup_preflight(self, expected_binding: str | None = None) -> None:
+    def startup_preflight(self, expected_binding: PersistentBindingIdentity | None = None) -> None:
         """Revalidate live intent, secrets, binding and guard before UDP activation."""
         self.custody.attest()
         binding = self.binding_probe()
         if expected_binding is not None and expected_binding != binding:
-            msg = "Tether Scribe generation changed during the operation"
+            msg = "Tether Scribe binding identity changed during the operation"
             raise TetherError(msg)
         peer = self._current()
         if peer is None:
@@ -339,7 +340,7 @@ class TetherOperations:
         OperationReceipt.model_validate_json(raw_receipt).require_enrollment_startup(
             peer,
             envelope_digest=self.plan.envelope_digest,
-            binding_generation=binding,
+            binding_identity=binding,
             boot_id=self.stop_adapter.boot_id(),
         )
         self.secrets.attest()
@@ -364,7 +365,7 @@ class TetherOperations:
             raise TetherError(msg)
         incarnation = self.stop_adapter.incarnation()
         if role == "pod":
-            self.stop_adapter.require_prior_activation_attested(binding_generation=self.binding_probe())
+            self.stop_adapter.require_prior_activation_attested(binding_identity=self.binding_probe())
             if incarnation is not None and not self.stop_adapter.incarnation_closed(incarnation):
                 msg = "Same-boot Tether restart requires exact old-incarnation cold proof"
                 raise TetherError(msg)
@@ -374,7 +375,7 @@ class TetherOperations:
             or incarnation is None
             or incarnation.generation != peer.generation
             or incarnation.boot_id != self.stop_adapter.boot_id()
-            or incarnation.binding_generation != self.binding_probe()
+            or incarnation.binding_identity != self.binding_probe()
         ):
             msg = "Tether role startup lacks current Pod poststart attestation"
             raise TetherError(msg)
@@ -412,7 +413,7 @@ class TetherOperations:
             if (
                 incarnation is None
                 or incarnation.generation != peer.generation
-                or incarnation.binding_generation != binding
+                or incarnation.binding_identity != binding
                 or incarnation.boot_id != self.stop_adapter.boot_id()
             ):
                 msg = "Tether role poststart belongs to another incarnation"
@@ -427,25 +428,28 @@ class TetherOperations:
         # attestation path starts anything, clears a latch or compensates.
         self.startup_preflight(binding)
 
-    def _retained_binding(self, peer: TetherPeerIntent) -> str:
+    def _retained_binding(self, peer: TetherPeerIntent) -> PersistentBindingIdentity:
         raw = self.custody.read("operations", f"{peer.operation_id}.json")
         if raw is not None:
             value = OperationReceipt.model_validate_json(raw)
-            if value.binding_generation is not None:
-                return value.binding_generation
+            if value.binding_identity is not None:
+                return value.binding_identity
         incarnation = self.stop_adapter.incarnation()
         if incarnation is not None and incarnation.generation == peer.generation:
-            return incarnation.binding_generation
-        return "unconfirmed"
+            return incarnation.binding_identity
+        msg = "Retained Tether binding identity is absent; closure authority is unconfirmed"
+        raise TetherError(msg)
 
-    def _fence(self, request: EnrollRequest | RevokeRequest, peer: TetherPeerIntent, binding: str) -> ClosureLatch:
+    def _fence(
+        self, request: EnrollRequest | RevokeRequest, peer: TetherPeerIntent, binding: PersistentBindingIdentity
+    ) -> ClosureLatch:
         existing = self._latch()
         if existing is not None:
             if (
                 existing.generation != peer.generation
                 or existing.intent_digest != digest(peer)
                 or existing.envelope_digest != self.plan.envelope_digest
-                or existing.binding_generation != binding
+                or existing.binding_identity != binding
             ):
                 msg = "Existing Tether closure latch does not match the current generation"
                 raise TetherError(msg)
@@ -461,7 +465,7 @@ class TetherOperations:
                     generation=peer.generation,
                     intent_digest=digest(peer),
                     envelope_digest=self.plan.envelope_digest,
-                    binding_generation=binding,
+                    binding_identity=binding,
                 )
             )
             if (
@@ -469,7 +473,7 @@ class TetherOperations:
                 or latch.generation != peer.generation
                 or latch.intent_digest != digest(peer)
                 or latch.envelope_digest != self.plan.envelope_digest
-                or latch.binding_generation != binding
+                or latch.binding_identity != binding
             ):
                 msg = "Retained Tether revocation does not match exact current ownership"
                 raise TetherError(msg)
@@ -504,8 +508,8 @@ class TetherOperations:
             if receipt.complete:
                 return receipt
             binding = self.binding_probe()
-            if receipt.binding_generation is not None and receipt.binding_generation != binding:
-                msg = "Pending Tether operation belongs to another binding generation"
+            if receipt.binding_identity is not None and receipt.binding_identity != binding:
+                msg = "Pending Tether operation belongs to another binding identity"
                 raise TetherError(msg)
             self.secrets.attest()
             if (
@@ -518,7 +522,7 @@ class TetherOperations:
                 self._fence(request, request.peer, binding)
                 observation = self.stop_adapter.stop()
                 return self._record(receipt, "interrupted-activation-fenced", closure=observation, complete=False)
-            receipt = self._record(receipt, "prepared", binding_generation=binding)
+            receipt = self._record(receipt, "prepared", binding_identity=binding)
             if not self.stop_adapter.observe().closed:
                 msg = "Enrollment requires full cold proof, including Pod/process/job absence"
                 raise TetherError(msg)
@@ -532,10 +536,7 @@ class TetherOperations:
                 old_peer_raw = self.custody.read("generations", f"{old_latch.generation}.json")
                 old_peer = TetherPeerIntent.model_validate_json(old_peer_raw) if old_peer_raw is not None else None
                 if old_peer is not None and old_peer.generation == old_latch.generation:
-                    if (
-                        old_latch.envelope_digest == self.plan.envelope_digest
-                        and old_latch.binding_generation == binding
-                    ):
+                    if old_latch.envelope_digest == self.plan.envelope_digest and old_latch.binding_identity == binding:
                         self._fence(request, old_peer, binding)
                     elif self._require_retained_revocation(old_peer) != old_latch:
                         msg = "Historical closure latch changed before cold image reenrollment"
@@ -633,18 +634,20 @@ class TetherOperations:
                 owned_binding = self.binding_probe()
             except (TetherError, ValueError, OSError):
                 self._retain_inert_revocation(request, peer, binding)
-                return self._record(receipt, "ownership-unconfirmed", binding_generation=binding, complete=False)
-            if binding == "unconfirmed" or owned_binding != binding:
+                return self._record(receipt, "ownership-unconfirmed", binding_identity=binding, complete=False)
+            if owned_binding != binding:
                 self._retain_inert_revocation(request, peer, binding)
-                return self._record(receipt, "ownership-changed", binding_generation=binding, complete=False)
+                return self._record(receipt, "ownership-changed", binding_identity=binding, complete=False)
             # Publishing closed.json can itself trigger systemd Conflicts stops;
             # retained actual ownership must therefore precede that publication.
             latch = self._fence(request, peer, binding)
-            receipt = self._record(receipt, "fence-durable", binding_generation=latch.binding_generation)
+            receipt = self._record(receipt, "fence-durable", binding_identity=latch.binding_identity)
             observation = self.stop_adapter.stop()
             return self._record(receipt, "closure-observed", closure=observation, complete=observation.closed)
 
-    def _retain_inert_revocation(self, request: RevokeRequest, peer: TetherPeerIntent, binding: str) -> None:
+    def _retain_inert_revocation(
+        self, request: RevokeRequest, peer: TetherPeerIntent, binding: PersistentBindingIdentity
+    ) -> None:
         """Retain restart refusal without activating a guard against unowned units."""
         name = f"{peer.generation}.json"
         if self.custody.read("revocations", name) is not None:
@@ -655,7 +658,7 @@ class TetherOperations:
             generation=peer.generation,
             intent_digest=digest(peer),
             envelope_digest=self.plan.envelope_digest,
-            binding_generation=binding,
+            binding_identity=binding,
         )
         self.custody.write(
             "revocations", name, RevocationRecord(latch=latch, latch_digest=digest(latch)), immutable=True
@@ -669,7 +672,7 @@ class TetherOperations:
                 msg = "Closure handler requires the persistent active latch"
                 raise TetherError(msg)
             current_binding = self.binding_probe()
-            if current_binding != latch.binding_generation:
+            if current_binding != latch.binding_identity:
                 store = PreparationStore(self.custody)
                 store.require_replacement_ancestry(latch.envelope_digest)
                 if not self.stop_adapter.observe().closed:
@@ -719,7 +722,7 @@ class TetherOperations:
         except (TetherError, ValueError, OSError):
             prepared_attested = False
         runtime = self.stop_adapter.runtime_identity()
-        binding: str | None = None
+        binding: PersistentBindingIdentity | None = None
         attested = False
         try:
             binding = self.binding_probe()
@@ -746,7 +749,7 @@ class TetherOperations:
             observation=self.stop_adapter.observe(),
             loaded_runtime=runtime,
             runtime_attested=attested,
-            binding_generation=binding,
+            binding_identity=binding,
             desired_envelope_digest=desired,
             configuration_drift=desired != self.plan.envelope_digest,
         )

@@ -8,6 +8,7 @@ import stat
 from dataclasses import dataclass
 from pathlib import Path
 
+from lychd.system import path_identity
 from lychd.system.atomic_paths import rename_exchange_at, rename_noreplace_at
 
 
@@ -477,6 +478,109 @@ def capture_path_state(path: Path) -> PathState | None:
         os.close(directory_fd)
 
 
+_PERSISTENT_MAX_BYTES = 1024 * 1024
+_PERSISTENT_FDINFO_MAX_BYTES = 4096
+_PERSISTENT_DIRECTORY_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+
+
+def _persistent_parent(path: Path) -> int:
+    if not path.is_absolute() or ".." in path.parts:
+        msg = "Persistent Scribe observation requires an absolute canonical path"
+        raise OSError(errno.EINVAL, msg, str(path))
+    descriptor = os.open("/", _PERSISTENT_DIRECTORY_FLAGS)
+    try:
+        for part in path.parent.parts[1:]:
+            child = os.open(part, _PERSISTENT_DIRECTORY_FLAGS, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = child
+    except BaseException:
+        os.close(descriptor)
+        raise
+    return descriptor
+
+
+def _persistent_mount_id(descriptor: int) -> int:
+    info = Path("/proc/self/fdinfo") / str(descriptor)
+    with info.open("rb") as stream:
+        raw = stream.read(_PERSISTENT_FDINFO_MAX_BYTES + 1)
+    values = [line.partition(b":")[2].strip() for line in raw.splitlines() if line.partition(b":")[0] == b"mnt_id"]
+    if len(raw) > _PERSISTENT_FDINFO_MAX_BYTES or len(values) != 1 or not values[0].isdigit() or int(values[0]) <= 0:
+        msg = "Persistent Scribe observation lacks exact descriptor mount identity"
+        raise OSError(errno.ESTALE, msg)
+    return int(values[0])
+
+
+def _persistent_metadata(metadata: os.stat_result) -> tuple[int, ...]:
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_mode,
+        metadata.st_uid,
+        metadata.st_gid,
+        metadata.st_nlink,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
+
+
+def capture_persistent_path_state(
+    path: Path, *, expected_mode: int
+) -> tuple[PathState, path_identity.PersistentPathIdentity]:
+    """Capture bytes and durable identity from one fd; leave generic capture unchanged."""
+    parent = _persistent_parent(path)
+    try:
+        parent_before = os.fstat(parent)
+        parent_mount = _persistent_mount_id(parent)
+        named_before = os.stat(path.name, dir_fd=parent, follow_symlinks=False)
+        descriptor = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=parent)
+        try:
+            opened_before = os.fstat(descriptor)
+            if (
+                not stat.S_ISREG(opened_before.st_mode)
+                or opened_before.st_uid != os.getuid()
+                or stat.S_IMODE(opened_before.st_mode) != expected_mode
+                or opened_before.st_nlink != 1
+                or opened_before.st_size > _PERSISTENT_MAX_BYTES
+                or _persistent_metadata(named_before) != _persistent_metadata(opened_before)
+                or _persistent_mount_id(descriptor) != parent_mount
+            ):
+                raise _observation_race(PinnedPath(parent, path.name, path))
+            chunks: list[bytes] = []
+            remaining = _PERSISTENT_MAX_BYTES + 1
+            while remaining:
+                chunk = os.read(descriptor, remaining)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                remaining -= len(chunk)
+            content = b"".join(chunks)
+            if len(content) > _PERSISTENT_MAX_BYTES:
+                raise _observation_race(PinnedPath(parent, path.name, path))
+            identity = path_identity.observe_identity_fd(descriptor)
+            opened_after = os.fstat(descriptor)
+            named_after = os.stat(path.name, dir_fd=parent, follow_symlinks=False)
+            fresh_parent = _persistent_parent(path)
+            try:
+                if (
+                    _persistent_metadata(opened_before) != _persistent_metadata(opened_after)
+                    or _persistent_metadata(opened_after) != _persistent_metadata(named_after)
+                    or _persistent_metadata(parent_before) != _persistent_metadata(os.fstat(parent))
+                    or _persistent_metadata(parent_before) != _persistent_metadata(os.fstat(fresh_parent))
+                    or _persistent_mount_id(fresh_parent) != parent_mount
+                    or _persistent_mount_id(descriptor) != parent_mount
+                    or identity.inode != opened_after.st_ino
+                ):
+                    raise _observation_race(PinnedPath(parent, path.name, path))
+            finally:
+                os.close(fresh_parent)
+            return _state_from_metadata(opened_after, content=content), identity
+        finally:
+            os.close(descriptor)
+    finally:
+        os.close(parent)
+
+
 def _state_from_metadata(
     metadata: os.stat_result,
     *,
@@ -526,5 +630,6 @@ __all__ = (
     "PathStateIndeterminateError",
     "PinnedPath",
     "capture_path_state",
+    "capture_persistent_path_state",
     "capture_pinned_path_state",
 )

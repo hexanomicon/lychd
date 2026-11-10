@@ -13,6 +13,7 @@ from lychd.system.services.scribe.models import (
     BindingChangeKind,
     BindingReconcilePlan,
     OwnedBindings,
+    PersistentBindingIdentity,
 )
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     "BindingChangeKind",
     "BindingReconcilePlan",
     "OwnedBindings",
+    "PersistentBindingIdentity",
     "ScribeConflictError",
     "ScribeGenerationError",
     "ScribeOwnershipError",

@@ -161,6 +161,14 @@ Pod activation attempt blocks automatic recovery across boots. Reconciliation ma
 a fresh generation after exact retained revocation evidence and cold proof; it preserves the old
 attempt and generation evidence.
 
+Retained enrollment and closure evidence uses a separately versioned
+[persistent binding identity](../../adr/13-layout.md#persistent-binding-identity), checked against
+the exact current Scribe-owned source files. An ordinary filesystem device-number change across
+reboot does not change this identity. A replaced source object, changed content or unavailable
+filesystem proof refuses startup. Older records containing only the live `binding_generation`
+token remain evidence but cannot be converted or relabeled by retrying an operation; this profile
+supplies no migration for them. Do not edit or remove receipts to bypass that refusal.
+
 Reboot cannot restart a fenced generation. Whole-state rollback can also roll back its fence,
 so restoration needs independent revocation evidence or fresh server identity and client
 re-enrollment; a generation number alone is not rollback protection.

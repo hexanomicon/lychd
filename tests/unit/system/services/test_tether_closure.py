@@ -11,6 +11,7 @@ from unittest.mock import MagicMock
 from uuid import UUID, uuid4
 
 import pytest
+from pydantic import BaseModel, ValidationError
 
 from lychd.system.operator.process import ProcessResult
 from lychd.system.services.tether.closure import TetherStopAdapter
@@ -27,7 +28,14 @@ from lychd.system.services.tether.models import (
     digest,
 )
 from lychd.system.services.tether.units import render_tether_units
-from tests.unit.system.services.test_tether_operations import admit_peer, make_custody, make_peer, make_plan, stack
+from tests.unit.system.services.test_tether_operations import (
+    admit_peer,
+    make_binding,
+    make_custody,
+    make_peer,
+    make_plan,
+    stack,
+)
 
 
 @pytest.mark.parametrize("fault", [None, "wg-active", "container", "pod", "unknown", "job", "pid", "renamed-member"])
@@ -83,7 +91,7 @@ def test_removed_pod_objects_cannot_hide_a_surviving_recorded_namespace() -> Non
     runtime = RuntimeIdentity(
         installation_id=make_plan().envelope.installation_id,
         generation=1,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         boot_id=TetherStopAdapter.boot_id(),
         pod_id="a" * 64,
         wireguard_id="b" * 64,
@@ -116,7 +124,7 @@ def test_absent_objects_with_live_recorded_namespace_stay_incomplete(monkeypatch
     runtime = RuntimeIdentity(
         installation_id=plan.envelope.installation_id,
         generation=1,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         boot_id=TetherStopAdapter.boot_id(),
         pod_id="a" * 64,
         wireguard_id="b" * 64,
@@ -142,7 +150,7 @@ def test_missing_pod_poststart_receipt_keeps_current_boot_attempt_incomplete(tmp
         installation_id=plan.envelope.installation_id,
         generation=1,
         envelope_digest=plan.envelope_digest,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         boot_id=TetherStopAdapter.boot_id(),
         invocation_id=uuid4(),
         service_cgroup="/absent-tether",
@@ -161,7 +169,7 @@ def test_reboot_proves_old_attempt_dead_but_same_boot_needs_physical_absence(mon
         installation_id=plan.envelope.installation_id,
         generation=1,
         envelope_digest=plan.envelope_digest,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         boot_id=UUID(int=1),
         invocation_id=uuid4(),
         pod_id="a" * 64,
@@ -189,7 +197,7 @@ def test_current_boot_unattested_attempt_cannot_be_hidden_by_another_start(
         installation_id=plan.envelope.installation_id,
         generation=peer.generation,
         envelope_digest=plan.envelope_digest,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         boot_id=TetherStopAdapter.boot_id(),
         invocation_id=uuid4(),
         service_cgroup="/absent-uncertain-attempt",
@@ -212,7 +220,7 @@ def test_current_boot_unattested_attempt_cannot_be_hidden_by_another_start(
     action = (
         (lambda: operations.role_preflight("pod"))
         if entry == "pod-preflight"
-        else (lambda: adapter.begin_pod(peer.generation, "binding-1"))
+        else (lambda: adapter.begin_pod(peer.generation, make_binding()))
     )
     with pytest.raises(TetherError, match=r"current-boot.*poststart"):
         action()
@@ -232,7 +240,7 @@ def test_new_kernel_boot_cannot_hide_an_unmatched_prior_attempt(
         installation_id=plan.envelope.installation_id,
         generation=1,
         envelope_digest=plan.envelope_digest,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         boot_id=UUID(int=1),
         invocation_id=uuid4(),
         service_cgroup="/old-attempt",
@@ -247,7 +255,7 @@ def test_new_kernel_boot_cannot_hide_an_unmatched_prior_attempt(
     manager = MagicMock(return_value=(UUID(int=3), "/new-attempt"))
     monkeypatch.setattr(adapter, "_manager_invocation", manager)
     with pytest.raises(TetherError, match=r"retained.*poststart"):
-        adapter.begin_pod(1, "binding-1")
+        adapter.begin_pod(1, make_binding())
     manager.assert_not_called()
     assert custody.read("generations", name) == old.model_dump_json().encode()
     assert adapter.activation() == old
@@ -264,7 +272,7 @@ def test_live_closure_requires_retained_exact_object_ids_without_adoption(
         installation_id=plan.envelope.installation_id,
         generation=1,
         envelope_digest=plan.envelope_digest,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         boot_id=TetherStopAdapter.boot_id(),
         invocation_id=uuid4(),
         pod_id="a" * 64,
@@ -313,10 +321,10 @@ def test_live_closure_requires_retained_exact_object_ids_without_adoption(
     publish = MagicMock(wraps=custody.write)
     monkeypatch.setattr(custody, "write", publish)
     if fault is None:
-        adapter.require_retained_runtime_ownership("binding-1")
+        adapter.require_retained_runtime_ownership(make_binding())
     else:
         with pytest.raises(TetherError, match=r"replaced|retained Pod"):
-            adapter.require_retained_runtime_ownership("binding-1")
+            adapter.require_retained_runtime_ownership(make_binding())
     publish.assert_not_called()
 
 
@@ -328,7 +336,7 @@ def test_new_boot_cannot_restart_a_retained_revoked_generation(tmp_path: Path, m
         generation=1,
         intent_digest="retained-public-generation",
         envelope_digest=plan.envelope_digest,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
     )
     custody.write("revocations", "1.json", RevocationRecord(latch=latch, latch_digest=digest(latch)), immutable=True)
     adapter = TetherStopAdapter(
@@ -338,7 +346,7 @@ def test_new_boot_cannot_restart_a_retained_revoked_generation(tmp_path: Path, m
     manager = MagicMock(return_value=(UUID(int=3), "/new-attempt"))
     monkeypatch.setattr(adapter, "_manager_invocation", manager)
     with pytest.raises(TetherError, match="retained revocation"):
-        adapter.begin_pod(1, "binding-1")
+        adapter.begin_pod(1, make_binding())
     manager.assert_not_called()
     assert custody.read("private", "activation.json") is None
 
@@ -351,7 +359,7 @@ def test_successfully_matched_old_attempt_remains_valid_for_completed_reboot(
         installation_id=plan.envelope.installation_id,
         generation=1,
         envelope_digest=plan.envelope_digest,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         boot_id=UUID(int=1),
         invocation_id=uuid4(),
         service_cgroup="/old",
@@ -360,7 +368,7 @@ def test_successfully_matched_old_attempt_remains_valid_for_completed_reboot(
         installation_id=attempt.installation_id,
         generation=attempt.generation,
         envelope_digest=attempt.envelope_digest,
-        binding_generation=attempt.binding_generation,
+        binding_identity=attempt.binding_identity,
         boot_id=attempt.boot_id,
         invocation_id=attempt.invocation_id,
         pod_id="a" * 64,
@@ -375,7 +383,7 @@ def test_successfully_matched_old_attempt_remains_valid_for_completed_reboot(
         plan, MagicMock(), podman_bin="/usr/bin/podman", systemctl_bin="/usr/bin/systemctl", custody=custody
     )
     monkeypatch.setattr(adapter, "boot_id", lambda: UUID(int=2))
-    adapter.require_prior_activation_attested(binding_generation="binding-1")
+    adapter.require_prior_activation_attested(binding_identity=make_binding())
 
 
 @pytest.mark.parametrize(
@@ -404,7 +412,7 @@ def test_old_unmatched_attempt_requires_exact_revocation_and_fresh_next_generati
         installation_id=old.installation_id,
         generation=old.generation,
         envelope_digest=plan.envelope_digest,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         boot_id=UUID(int=1),
         invocation_id=uuid4(),
         service_cgroup="/old",
@@ -418,14 +426,14 @@ def test_old_unmatched_attempt_requires_exact_revocation_and_fresh_next_generati
         generation=old.generation,
         intent_digest=digest(old),
         envelope_digest=plan.envelope_digest,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
     )
     latch_changes: dict[str, dict[str, object]] = {
         "intent": {"intent_digest": "f" * 64},
         "installation": {"installation_id": UUID(int=99)},
         "generation": {"generation": 99},
         "envelope": {"envelope_digest": "f" * 64},
-        "binding": {"binding_generation": "foreign"},
+        "binding": {"binding_identity": make_binding("foreign")},
     }
     latch = latch.model_copy(update=latch_changes.get(fault or "", {}))
     record = RevocationRecord(latch=latch, latch_digest="f" * 64 if fault == "latch-digest" else digest(latch))
@@ -439,7 +447,7 @@ def test_old_unmatched_attempt_requires_exact_revocation_and_fresh_next_generati
     receipt = OperationReceipt(
         request_digest=digest(request),
         request=request,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         stages=("wireguard-start-requested",)
         if fault == "cold-proof"
         else ("cold-proven", "wireguard-start-requested"),
@@ -453,11 +461,11 @@ def test_old_unmatched_attempt_requires_exact_revocation_and_fresh_next_generati
     manager = MagicMock(return_value=(UUID(int=3), "/new"))
     monkeypatch.setattr(adapter, "_manager_invocation", manager)
     if fault is None:
-        assert adapter.begin_pod(2, "binding-1").generation == 2
+        assert adapter.begin_pod(2, make_binding()).generation == 2
         manager.assert_called_once()
     else:
         with pytest.raises(TetherError, match=r"retained.*poststart"):
-            adapter.begin_pod(2, "binding-1")
+            adapter.begin_pod(2, make_binding())
         manager.assert_not_called()
         assert adapter.activation() == attempt
     assert custody.read("generations", attempt_name) == attempt.model_dump_json().encode()
@@ -477,7 +485,7 @@ def test_reconciled_enrollment_must_be_strictly_later_than_the_old_attempt(
         installation_id=old.installation_id,
         generation=2,
         envelope_digest=plan.envelope_digest,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         boot_id=UUID(int=1),
         invocation_id=uuid4(),
         service_cgroup="/old",
@@ -491,7 +499,7 @@ def test_reconciled_enrollment_must_be_strictly_later_than_the_old_attempt(
         generation=2,
         intent_digest=digest(old),
         envelope_digest=plan.envelope_digest,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
     )
     revoked = RevocationRecord(latch=latch, latch_digest=digest(latch))
     custody.write("revocations", "2.json", revoked, immutable=True)
@@ -501,7 +509,7 @@ def test_reconciled_enrollment_must_be_strictly_later_than_the_old_attempt(
     receipt = OperationReceipt(
         request_digest=digest(request),
         request=request,
-        binding_generation="binding-1",
+        binding_identity=make_binding(),
         stages=("cold-proven", "wireguard-start-requested"),
         startup_admission=EnrollmentStartupAdmission(boot_id=UUID(int=2), request_digest=digest(request)),
     )
@@ -511,7 +519,7 @@ def test_reconciled_enrollment_must_be_strictly_later_than_the_old_attempt(
     )
     monkeypatch.setattr(adapter, "boot_id", lambda: UUID(int=2))
     with pytest.raises(TetherError, match=r"retained.*poststart"):
-        adapter.require_prior_activation_attested(binding_generation="binding-1")
+        adapter.require_prior_activation_attested(binding_identity=make_binding())
     assert adapter.activation() == attempt
     assert custody.read("generations", name) == attempt.model_dump_json().encode()
     assert custody.read("revocations", "2.json") == revoked.model_dump_json().encode()
@@ -586,7 +594,7 @@ def test_real_adapter_crosses_only_retained_image_lineage_for_a_fresh_generation
         operations.stop_adapter,
         operations.runner,
         systemctl_bin="/usr/bin/systemctl",
-        binding_probe=lambda: "old-binding",
+        binding_probe=lambda: make_binding("old-binding"),
         lock_factory=nullcontext,
     )
     first = make_peer()
@@ -596,7 +604,7 @@ def test_real_adapter_crosses_only_retained_image_lineage_for_a_fresh_generation
         installation_id=first.installation_id,
         generation=1,
         envelope_digest=original.plan.envelope_digest,
-        binding_generation="old-binding",
+        binding_identity=make_binding("old-binding"),
         boot_id=UUID(int=1),
         invocation_id=uuid4(),
         service_cgroup="/old",
@@ -611,7 +619,7 @@ def test_real_adapter_crosses_only_retained_image_lineage_for_a_fresh_generation
             installation_id=first.installation_id,
             generation=1,
             envelope_digest=attempt.envelope_digest,
-            binding_generation=attempt.binding_generation,
+            binding_identity=attempt.binding_identity,
             boot_id=attempt.boot_id,
             invocation_id=attempt.invocation_id,
             pod_id="a" * 64,
@@ -640,14 +648,14 @@ def test_real_adapter_crosses_only_retained_image_lineage_for_a_fresh_generation
         operations.custody.write("private", "activation.json", attempt.model_copy(update={"envelope_digest": "f" * 64}))
     if case in {"missing-lineage", "unrelated-lineage"}:
         with pytest.raises((TetherError, ValueError)):
-            adapter.require_prior_activation_attested(binding_generation="new-binding")
+            adapter.require_prior_activation_attested(binding_identity=make_binding("new-binding"))
         manager.assert_not_called()
     else:
 
         def start(argv: tuple[str, ...], **_: object) -> ProcessResult:
             if argv[2] == "start" and operations.plan.pod_unit in argv:
                 operations.role_preflight("pod")
-                adapter.begin_pod(2, "new-binding")
+                adapter.begin_pod(2, make_binding("new-binding"))
             return ProcessResult(argv, 0, "active\n" if "show" in argv else "")
 
         cast("MagicMock", operations.runner).run.side_effect = start
@@ -659,3 +667,70 @@ def test_real_adapter_crosses_only_retained_image_lineage_for_a_fresh_generation
         manager.assert_called_once()
     assert operations.custody.read("generations", name) == attempt.model_dump_json().encode()
     assert operations.custody.read("revocations", "1.json") is not None
+
+
+@pytest.mark.parametrize("kind", ["operation", "latch", "attempt", "incarnation", "runtime"])
+def test_legacy_live_binding_generation_is_never_relabelled_as_persistent_authority(kind: str) -> None:
+    from tests.unit.system.services.test_tether_operations import enroll_request
+
+    peer = make_peer()
+    binding = make_binding()
+    if kind == "operation":
+        request = enroll_request(peer)
+        value: BaseModel = OperationReceipt(request_digest=digest(request), request=request, binding_identity=binding)
+    elif kind == "latch":
+        value = ClosureLatch(
+            installation_id=peer.installation_id,
+            operation_id=peer.operation_id,
+            generation=1,
+            intent_digest=digest(peer),
+            envelope_digest=make_plan().envelope_digest,
+            binding_identity=binding,
+        )
+    elif kind == "attempt":
+        value = ActivationAttempt(
+            installation_id=peer.installation_id,
+            generation=1,
+            envelope_digest=make_plan().envelope_digest,
+            binding_identity=binding,
+            boot_id=uuid4(),
+            invocation_id=uuid4(),
+            service_cgroup="/old",
+        )
+    elif kind == "incarnation":
+        value = IncarnationIdentity(
+            installation_id=peer.installation_id,
+            generation=1,
+            envelope_digest=make_plan().envelope_digest,
+            binding_identity=binding,
+            boot_id=uuid4(),
+            invocation_id=uuid4(),
+            pod_id="a" * 64,
+            infra_id="b" * 64,
+            netns_inode=1,
+            infra_cgroup="/old",
+            host_uid_ranges=((os.getuid(), 1),),
+        )
+    else:
+        value = RuntimeIdentity(
+            installation_id=peer.installation_id,
+            generation=1,
+            binding_identity=binding,
+            boot_id=uuid4(),
+            pod_id="a" * 64,
+            wireguard_id="b" * 64,
+            forwarder_id="c" * 64,
+            netns_inode=1,
+            service_cgroups=("/pod", "/wg", "/ssh"),
+            container_cgroups=("/wg-body", "/ssh-body"),
+            host_uid_ranges=((os.getuid(), 1),),
+        )
+    legacy = value.model_dump(mode="json")
+    del legacy["binding_identity"]
+    legacy["binding_generation"] = "a" * 64
+    with pytest.raises(ValidationError):
+        type(value).model_validate(legacy)
+    legacy.pop("binding_generation")
+    legacy["binding_identity"] = "a" * 64
+    with pytest.raises(ValidationError):
+        type(value).model_validate(legacy)

@@ -279,7 +279,7 @@ class PreparationStore:
         plan_raw = self.custody.read("private", "plan.json")
         receipt_raw = self.custody.read("private", "preparation.json")
         if plan_raw is None or receipt_raw is None:
-            msg = "Tether has no complete original preparation authority"
+            msg = "Run 'lychd run tether prepare' before binding: no complete original preparation authority"
             raise TetherError(msg)
         plan = CompiledTetherPlan.model_validate_json(plan_raw)
         receipt = PreparationReceipt.model_validate_json(receipt_raw)
@@ -420,7 +420,7 @@ class PreparationStore:
             or request.expected_generation != peer.generation - 1
             or request.intent_digest != digest(peer)
             or enrollment.request_digest != digest(request)
-            or enrollment.binding_generation is None
+            or enrollment.binding_identity is None
             or generation is None
             or TetherPeerIntent.model_validate_json(generation) != peer
         ):

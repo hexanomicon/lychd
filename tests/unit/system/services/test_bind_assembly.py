@@ -21,7 +21,7 @@ from lychd.system.host_tools import TrustedExecutable
 from lychd.system.readiness import BindingFoundation
 from lychd.system.services.bind import BindingPlanDriftError
 from lychd.system.services.binding_preflight import BindingPreflightReport, BindingPreflightService
-from lychd.system.services.scribe import ScribeService
+from lychd.system.services.scribe import ScribeOwnershipError, ScribeService
 from lychd.system.services.tether.models import TetherError
 from tests.unit.system.services.test_tether_secrets import secret_stack
 
@@ -276,8 +276,8 @@ def _effective_tether_rows(
     return rows
 
 
-@pytest.mark.parametrize("shadow", [None, "fragment", "dropin", "reload"])
-def test_retained_revoke_checks_loaded_unit_provenance_with_unchanged_disk_generation(  # noqa: PLR0915 - one complete retained-ownership transaction
+@pytest.mark.parametrize("shadow", [None, "fragment", "dropin", "reload", "device-renumber", "persistent-proof"])
+def test_retained_revoke_checks_loaded_provenance_and_persistent_binding(  # noqa: C901, PLR0915 - one complete retained-ownership transaction
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     shadow: str | None,
@@ -293,15 +293,19 @@ def test_retained_revoke_checks_loaded_unit_provenance_with_unchanged_disk_gener
     session, scribe, native, _, _, _ = _session(tmp_path, monkeypatch)
     native.prepare(uuid4())
     prepared = session.prepare()
-    committed = prepared.use_case.apply(prepared.request, prepared.plan)
+    prepared.use_case.apply(prepared.request, prepared.plan)
     owned = scribe.inspect_owned_bindings()
+    assert owned.generation is not None
     native.custody.write("private", "plan.json", native.plan, immutable=True)
     peer = make_peer()
     admit_peer(native.custody, peer)
     raw = native.custody.read("operations", f"{peer.operation_id}.json")
     assert raw is not None
     enrollment = OperationReceipt.model_validate_json(raw).model_copy(
-        update={"binding_generation": committed.binding_generation}
+        update={
+            "binding_identity": scribe.inspect_persistent_binding_identity(expected_generation=owned.generation),
+            "stages": ("prepared", "generation-published", "forwarder-active"),
+        }
     )
     native.custody.write("operations", f"{peer.operation_id}.json", enrollment)
     generator = tmp_path / "generator"
@@ -350,15 +354,32 @@ def test_retained_revoke_checks_loaded_unit_provenance_with_unchanged_disk_gener
     monkeypatch.setattr(TetherStopAdapter, "observe", observe_transport)
     stop = MagicMock(return_value=closed())
     monkeypatch.setattr(TetherStopAdapter, "stop", stop)
-    operations = build_tether_operations(for_closure=True)
+    if shadow == "persistent-proof":
+        monkeypatch.setattr(
+            scribe, "inspect_persistent_binding_identity", MagicMock(side_effect=ScribeOwnershipError("unavailable"))
+        )
+    if shadow == "device-renumber":
+        from tests.unit.system.services.test_scribe import renumbered_device_numbers
 
-    result = operations.revoke(revoke_request(peer))
+        with renumbered_device_numbers(monkeypatch):
+            assert scribe.inspect_owned_bindings().generation != owned.generation
+            operations = build_tether_operations(for_closure=True)
+            enrollment.require_enrollment_startup(
+                peer,
+                envelope_digest=native.plan.envelope_digest,
+                binding_identity=operations.binding_probe(),
+                boot_id=uuid4(),
+            )
+            result = operations.revoke(revoke_request(peer))
+    else:
+        operations = build_tether_operations(for_closure=True)
+        result = operations.revoke(revoke_request(peer))
 
     assert scribe.inspect_owned_bindings().generation == owned.generation
     assert set(observed) == selected
     assert native.custody.read("revocations", "1.json") is not None
-    assert result.complete is (shadow is None)
-    if shadow is None:
+    assert result.complete is (shadow in (None, "device-renumber"))
+    if shadow in (None, "device-renumber"):
         assert native.custody.read("private", "closed.json") is not None
         stop.assert_called_once()
     else:
@@ -584,7 +605,9 @@ def test_historical_peer_closure_reconciles_after_new_image_full_bind_without_re
     session, scribe, native, _, _, _ = _session(tmp_path, monkeypatch)
     native.prepare(uuid4())
     initial = session.prepare()
-    original_binding = initial.use_case.apply(initial.request, initial.plan).binding_generation
+    committed = initial.use_case.apply(initial.request, initial.plan)
+    assert committed.binding_generation is not None
+    original_binding = scribe.inspect_persistent_binding_identity(expected_generation=committed.binding_generation)
     process, stop = MagicMock(), MagicMock()
 
     def probe(argv: tuple[str, ...], **_: object) -> ProcessResult:
@@ -630,7 +653,9 @@ def test_historical_peer_closure_reconciles_after_new_image_full_bind_without_re
     rune = session.runes.one(TetherSettings).model_copy(update={"quadlet": QuadletConfig(image=target.envelope.image)})
     updated = replace(session, runes=RuneRegistry((rune,))).prepare()
     updated.use_case.apply(updated.request, updated.plan)
-    current_binding = scribe.inspect_owned_bindings().generation
+    current_owned = scribe.inspect_owned_bindings()
+    assert current_owned.generation is not None
+    current_binding = scribe.inspect_persistent_binding_identity(expected_generation=current_owned.generation)
     assert current_binding != original_binding
 
     def custody_factory(*_paths: Path) -> TetherCustody:
@@ -650,14 +675,14 @@ def test_historical_peer_closure_reconciles_after_new_image_full_bind_without_re
     assert retained.plan == native.plan
     result = retained.handle_closure()
     assert result.complete
-    assert result.binding_generation == original_binding
+    assert result.binding_identity == original_binding
     assert native.custody.read("private", "closed.json") == latch_bytes
     assert native.custody.read("revocations", "1.json") == revocation_bytes
     assert latch_bytes is not None
     assert ClosureLatch.model_validate_json(latch_bytes).envelope_digest == native.plan.envelope_digest
     raw = native.custody.read("operations", f"{revoke.operation_id}.json")
     assert raw is not None
-    assert OperationReceipt.model_validate_json(raw).binding_generation == original_binding
+    assert OperationReceipt.model_validate_json(raw).binding_identity == original_binding
 
 
 pytestmark = pytest.mark.usefixtures("persistent_identity_observer")

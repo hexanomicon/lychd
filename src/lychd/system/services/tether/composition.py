@@ -115,7 +115,9 @@ def build_tether_operations(*, for_closure: bool = False) -> TetherOperations:  
     if for_closure:
         return _retained_operations()
     from lychd.cli.binding import BindingCommandSession
+    from lychd.system.services.scribe.errors import ScribeOwnershipError
     from lychd.system.services.scribe.facade import ScribeService
+    from lychd.system.services.scribe.models import PersistentBindingIdentity
 
     session = BindingCommandSession.inspect()
     foundation = session.preflight.require_ready()
@@ -125,7 +127,7 @@ def build_tether_operations(*, for_closure: bool = False) -> TetherOperations:  
     runner = SubprocessRunner()
     secrets = preparation_service(plan, podman_bin=foundation.podman_bin)
 
-    def binding_probe() -> str:
+    def binding_probe() -> PersistentBindingIdentity:
         # Fresh full-generation compilation/inspection only. Peer operations
         # never call reconcile_all or create/rotate any Core secret.
         current = BindingCommandSession.inspect()
@@ -145,7 +147,11 @@ def build_tether_operations(*, for_closure: bool = False) -> TetherOperations:  
         if preview.mutates:
             msg = "Current bindings differ from complete declared intent; ordinary bind is required"
             raise TetherError(msg)
-        return owned.generation
+        try:
+            return scribe.inspect_persistent_binding_identity(expected_generation=owned.generation)
+        except ScribeOwnershipError as exc:
+            msg = "Complete Tether bindings lack a coherent persistent Scribe identity"
+            raise TetherError(msg) from exc
 
     def preparation_cold_probe(old_plan: CompiledTetherPlan) -> ClosureObservation:
         from lychd.system.services.deployment import DeploymentInspectionService
@@ -202,7 +208,9 @@ def build_tether_operations(*, for_closure: bool = False) -> TetherOperations:  
 def _retained_operations() -> TetherOperations:
     """Close a receipted native installation even when current Runes drift."""
     from lychd.system.services.deployment import DeploymentInspectionService, DeploymentObservationError
+    from lychd.system.services.scribe.errors import ScribeOwnershipError
     from lychd.system.services.scribe.facade import ScribeService
+    from lychd.system.services.scribe.models import PersistentBindingIdentity
 
     custody = TetherCustody(PATH_CODEX_ROOT, PATH_CRYPT_ROOT)
     custody.attest()
@@ -238,24 +246,26 @@ def _retained_operations() -> TetherOperations:
         ssh_keygen_bin=trusted_host_tool("ssh-keygen", fallbacks=(Path("/usr/bin/ssh-keygen"),)) or "",
     )
 
-    def binding_probe() -> str:
-        owned = ScribeService().inspect_owned_bindings()
-        if (
-            not owned.receipt_present
-            or owned.generation is None
-            or not {*plan.transport_units, *plan.plain_unit_names} <= set(owned.runtime_units)
-        ):
-            msg = "Retained Tether bindings are absent or no longer owned"
-            raise TetherError(msg)
+    def binding_probe() -> PersistentBindingIdentity:
+        scribe = ScribeService()
         try:
+            owned = scribe.inspect_owned_bindings()
+            if (
+                not owned.receipt_present
+                or owned.generation is None
+                or not {*plan.transport_units, *plan.plain_unit_names} <= set(owned.runtime_units)
+            ):
+                msg = "Retained Tether bindings are absent or no longer owned"
+                raise TetherError(msg)
             DeploymentInspectionService(runner=process).observe_owned_units(
                 owned, unit_names=frozenset((*plan.transport_units, *plan.plain_unit_names))
             )
-            stop.require_retained_runtime_ownership(owned.generation)
-        except (DeploymentObservationError, ValueError, OSError) as exc:
+            identity = scribe.inspect_persistent_binding_identity(expected_generation=owned.generation)
+            stop.require_retained_runtime_ownership(identity)
+        except (DeploymentObservationError, ScribeOwnershipError, ValueError, OSError) as exc:
             msg = "Retained Tether effective units or runtime identities are no longer owned"
             raise TetherError(msg) from exc
-        return owned.generation
+        return identity
 
     def desired_probe() -> str:
         from lychd.cli.binding import BindingCommandSession

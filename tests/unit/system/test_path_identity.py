@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 import os
 import struct
+from collections.abc import Callable
 from pathlib import Path
+from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
@@ -17,6 +19,22 @@ from lychd.system.operator.process import ProcessResult
 
 FS_UUID = "87654321-4321-8765-4321-876543218765"
 SUBVOL_UUID = "12345678-1234-5678-1234-567812345678"
+# Linux LP64 UAPI witnesses are independent expected values. Provider tests use
+# the public observe(fd) boundary; only syscall adapters are replaced.
+BTRFS_MAGIC = 0x9123683E
+EXT4_MAGIC = 0xEF53
+SYSFS_MAGIC = 0x62656572
+FS_UUID_IOCTL = 0x80111500
+BTRFS_FS_INFO = 0x8400941F
+BTRFS_SUBVOL_INFO = 0x81F8943C
+INODE_GENERATION = 0x80087601
+
+
+def filesystem_type(value: int) -> Callable[[int], int]:
+    def observe(_descriptor: int) -> int:
+        return value
+
+    return observe
 
 
 def payload(inode: int = 256) -> dict[str, object]:
@@ -66,18 +84,18 @@ def test_native_btrfs_provider_never_calls_generic_uuid(tmp_path: Path, monkeypa
     fd = os.open(path, os.O_RDONLY)
     commands: list[int] = []
     permanent: list[str] = []
-    monkeypatch.setattr(observer, "_filesystem_type", lambda _: observer._BTRFS_MAGIC)
+    monkeypatch.setattr(observer, "_filesystem_type", filesystem_type(BTRFS_MAGIC))
     monkeypatch.setattr(observer, "_require_permanent_btrfs", permanent.append)
 
     def ioctl(_fd: int, command: int, size: int) -> bytes:
         commands.append(command)
         result = bytearray(size)
-        if command == observer._BTRFS_FS_INFO:
+        if command == BTRFS_FS_INFO:
             result[16:32] = UUID(FS_UUID).bytes
-        elif command == observer._BTRFS_SUBVOL_INFO:
+        elif command == BTRFS_SUBVOL_INFO:
             struct.pack_into("<Q", result, 0, 259)
             result[296:312] = UUID(SUBVOL_UUID).bytes
-        elif command == observer._INODE_GENERATION:
+        elif command == INODE_GENERATION:
             struct.pack_into("<I", result, 0, 7)
         else:
             pytest.fail("Btrfs must not require unsupported generic UUID ioctl")
@@ -90,13 +108,17 @@ def test_native_btrfs_provider_never_calls_generic_uuid(tmp_path: Path, monkeypa
         assert observer.observe(fd) == first == payload(os.fstat(fd).st_ino)
     finally:
         os.close(fd)
-    assert observer._FS_UUID not in commands
+    assert FS_UUID_IOCTL not in commands
     assert permanent == [FS_UUID] * 4
 
 
 def test_unknown_filesystem_refuses_before_any_ioctl(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(observer, "_filesystem_type", lambda _: 0x794C7630)
-    monkeypatch.setattr(observer, "_ioctl", lambda *_: pytest.fail("unsupported provider must not issue ioctls"))
+    monkeypatch.setattr(observer, "_filesystem_type", filesystem_type(0x794C7630))
+
+    def unexpected_ioctl(_descriptor: int, _command: int, _size: int) -> bytes:
+        pytest.fail("unsupported provider must not issue ioctls")
+
+    monkeypatch.setattr(observer, "_ioctl", unexpected_ioctl)
     fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
     try:
         with pytest.raises(OSError, match="Unsupported persistent"):
@@ -106,10 +128,10 @@ def test_unknown_filesystem_refuses_before_any_ioctl(tmp_path: Path, monkeypatch
 
 
 def test_ext4_unavailable_uuid_refuses_without_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(observer, "_filesystem_type", lambda _: observer._EXT4_MAGIC)
+    monkeypatch.setattr(observer, "_filesystem_type", filesystem_type(EXT4_MAGIC))
 
     def unavailable(_fd: int, command: int, _size: int) -> bytes:
-        assert command == observer._FS_UUID
+        assert command == FS_UUID_IOCTL
         raise OSError(25, "unsupported ioctl")
 
     monkeypatch.setattr(observer, "_ioctl", unavailable)
@@ -156,24 +178,74 @@ def test_transport_pins_only_supplied_fd_and_strictly_parses(tmp_path: Path) -> 
         os.close(fd)
 
 
+def observe_with_sysfs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    attribute: bytes,
+    filesystem: int,
+) -> dict[str, str | int | None]:
+    """Exercise public Btrfs observation with an isolated typed sysfs adapter."""
+    descriptor = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+    sysfs_descriptor = 100_000
+
+    def open_sysfs(_path: object, _flags: int, *, dir_fd: int | None = None) -> int:
+        assert dir_fd is None or dir_fd == sysfs_descriptor
+        return sysfs_descriptor
+
+    def close_sysfs(current: int) -> None:
+        assert current == sysfs_descriptor
+
+    def fstat(current: int) -> os.stat_result:
+        if current == descriptor:
+            return os.fstat(current)
+        assert current == sysfs_descriptor
+        return os.stat_result((0o100444, 1, 1, 1, 0, 0, len(attribute), 0, 0, 0))
+
+    def read_sysfs(current: int, _size: int) -> bytes:
+        assert current == sysfs_descriptor
+        return attribute
+
+    def observed_filesystem(current: int) -> int:
+        return BTRFS_MAGIC if current == descriptor else filesystem
+
+    def fs_info(current: int, command: int, size: int) -> bytes:
+        assert current == descriptor
+        assert command == BTRFS_FS_INFO
+        result = bytearray(size)
+        result[16:32] = UUID(FS_UUID).bytes
+        return bytes(result)
+
+    sysfs_os = SimpleNamespace(
+        open=open_sysfs,
+        close=close_sysfs,
+        fstat=fstat,
+        read=read_sysfs,
+        uname=os.uname,
+        O_RDONLY=os.O_RDONLY,
+        O_NOFOLLOW=os.O_NOFOLLOW,
+        O_NONBLOCK=os.O_NONBLOCK,
+    )
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(observer, "os", sysfs_os)
+            patch.setattr(observer, "_filesystem_type", observed_filesystem)
+            patch.setattr(observer, "_ioctl", fs_info)
+            return observer.observe(descriptor)
+    finally:
+        os.close(descriptor)
+
+
 @pytest.mark.parametrize("value", [b"1\n", b"", b"0", b"0\nextra"])
-def test_temporary_or_uncertain_btrfs_fsid_is_refused(value: bytes, monkeypatch: pytest.MonkeyPatch) -> None:
-    from types import SimpleNamespace
-
-    with monkeypatch.context() as patch:
-        patch.setattr(observer.os, "open", lambda *_args, **_kwargs: 9)
-        patch.setattr(observer.os, "close", lambda _fd: None)
-        patch.setattr(observer.os, "fstat", lambda _fd: SimpleNamespace(st_mode=0o100444))
-        patch.setattr(observer.os, "read", lambda *_args: value)
-        patch.setattr(observer, "_filesystem_type", lambda _fd: observer._SYSFS_MAGIC)
-        with pytest.raises(OSError, match="Temporary or unknown"):
-            observer._require_permanent_btrfs(FS_UUID)
+def test_temporary_or_uncertain_btrfs_fsid_is_refused(
+    value: bytes,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with pytest.raises(OSError, match="Temporary or unknown"):
+        observe_with_sysfs(tmp_path, monkeypatch, attribute=value, filesystem=SYSFS_MAGIC)
 
 
-def test_non_sysfs_identity_attribute_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
-    with monkeypatch.context() as patch:
-        patch.setattr(observer.os, "open", lambda *_args, **_kwargs: 9)
-        patch.setattr(observer.os, "close", lambda _fd: None)
-        patch.setattr(observer, "_filesystem_type", lambda _fd: observer._EXT4_MAGIC)
-        with pytest.raises(OSError, match="Kernel sysfs"):
-            observer._require_permanent_btrfs(FS_UUID)
+def test_non_sysfs_identity_attribute_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    with pytest.raises(OSError, match="Kernel sysfs"):
+        observe_with_sysfs(tmp_path, monkeypatch, attribute=b"0\n", filesystem=EXT4_MAGIC)

@@ -136,6 +136,14 @@ installation or envelope changes use normal bind and its existing refusals. Reco
 or older live body. Pending operations retain confirmed stages; a retry reconciles their exact
 identity before another effect. Unknown activation stays fenced rather than reporting success.
 
+Durable Tether operation, latch, activation-attempt, incarnation and runtime records carry the
+typed `binding_identity` from [Layout's persistent Scribe observation](13-layout.md#persistent-binding-identity).
+They never retain Scribe's live generation as cross-boot authority. Current ownership and live
+generation checks still precede effects; exact persistent identity binds historical evidence to
+that observation. Legacy unstructured `binding_generation` records are preserved but refused,
+without inferred conversion, resealing or relabeling. Missing or malformed retained authority
+cannot authorize an active closure latch or stop, and cannot be reported as successful closure.
+
 Revocation durably publishes the fixed active closure latch before any stop effect; it then
 retains separate immutable generation-specific revocation evidence. If the CLI dies between
 those writes, the latch already closes the road and reconciliation completes the record. A fixed
@@ -179,7 +187,7 @@ restart races and crash immediately after latch durability. A live receipt recor
 closure bound; a frozen host/user manager cannot be certified closed by unit declarations.
 
 The CLI also requests and observes exact stop settlement. Successful revocation requires the
-exact peer generation, fence digest/durability, Scribe generation, guard/handler outcome, terminal
+exact peer generation, fence digest/durability, persistent Scribe binding identity, guard/handler outcome, terminal
 container/service identities, terminated forwarding process trees and absence of the owned Pod
 namespace. The same correlated record retains confirmed stages for incomplete outcomes. An
 inactive configuring process alone is insufficient, and a watcher marked failed is not itself

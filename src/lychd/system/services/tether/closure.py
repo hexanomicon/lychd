@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
+from lychd.system.services.scribe.models import PersistentBindingIdentity
 from lychd.system.services.tether.custody import PreparationStore
 from lychd.system.services.tether.models import (
     ActivationAttempt,
@@ -52,7 +53,7 @@ class TetherStopAdapter:
         self.runner.run((self.systemctl, "--user", "stop", *reversed(self.plan.transport_units)), timeout_s=45)
         return self.observe()
 
-    def require_retained_runtime_ownership(self, binding_generation: str) -> None:
+    def require_retained_runtime_ownership(self, binding_identity: PersistentBindingIdentity) -> None:
         """Permit closure only for exact retained live object IDs or a proven cold road."""
         if self.observe().closed:
             return
@@ -60,7 +61,7 @@ class TetherStopAdapter:
         if (
             incarnation is None
             or incarnation.boot_id != self.boot_id()
-            or incarnation.binding_generation != binding_generation
+            or incarnation.binding_identity != binding_identity
             or self._unattested_activation()
         ):
             msg = "Tether live road lacks exact retained current-incarnation ownership"
@@ -86,7 +87,7 @@ class TetherStopAdapter:
             runtime.boot_id != incarnation.boot_id
             or runtime.pod_id != incarnation.pod_id
             or runtime.netns_inode != incarnation.netns_inode
-            or runtime.binding_generation != binding_generation
+            or runtime.binding_identity != binding_identity
         ):
             msg = "Retained Tether runtime disagrees with current incarnation"
             raise TetherError(msg)
@@ -179,7 +180,7 @@ class TetherStopAdapter:
             or incarnation.generation != attempt.generation
         )
 
-    def require_prior_activation_attested(self, *, binding_generation: str | None = None) -> None:
+    def require_prior_activation_attested(self, *, binding_identity: PersistentBindingIdentity | None = None) -> None:
         """Reject unmatched attempts across boots until exact fenced reconciliation."""
         attempt = self.activation()
         if attempt is None:
@@ -191,16 +192,18 @@ class TetherStopAdapter:
             and incarnation.generation == attempt.generation
             and incarnation.installation_id == attempt.installation_id
             and incarnation.envelope_digest == attempt.envelope_digest
-            and incarnation.binding_generation == attempt.binding_generation
+            and incarnation.binding_identity == attempt.binding_identity
         ):
             return
-        if self._reconciled_later_generation(attempt, binding_generation):
+        if self._reconciled_later_generation(attempt, binding_identity):
             return
         msg = "Prior current-boot or retained Tether activation lacks Pod poststart attestation"
         raise TetherError(msg)
 
-    def _reconciled_later_generation(self, attempt: ActivationAttempt, binding_generation: str | None) -> bool:
-        if self.custody is None or binding_generation is None or attempt.boot_id == self.boot_id():
+    def _reconciled_later_generation(
+        self, attempt: ActivationAttempt, binding_identity: PersistentBindingIdentity | None
+    ) -> bool:
+        if self.custody is None or binding_identity is None or attempt.boot_id == self.boot_id():
             return False
         from lychd.domain.tether.models import TetherPeerIntent
 
@@ -228,7 +231,7 @@ class TetherStopAdapter:
             or latch.generation != old.generation
             or latch.intent_digest != digest(old)
             or latch.envelope_digest != attempt.envelope_digest
-            or latch.binding_generation != attempt.binding_generation
+            or latch.binding_identity != attempt.binding_identity
             or peer.installation_id != old.installation_id
             or peer.generation <= old.generation
         ):
@@ -246,7 +249,7 @@ class TetherStopAdapter:
         receipt.require_enrollment_startup(
             peer,
             envelope_digest=self.plan.envelope_digest,
-            binding_generation=binding_generation,
+            binding_identity=binding_identity,
             boot_id=self.boot_id(),
         )
         return True
@@ -368,12 +371,12 @@ class TetherStopAdapter:
             raise TetherError(msg)
         return invocation, group
 
-    def begin_pod(self, generation: int, binding_generation: str) -> ActivationAttempt:
+    def begin_pod(self, generation: int, binding_identity: PersistentBindingIdentity) -> ActivationAttempt:
         """Record the exact manager incarnation before any Pod creation effect."""
         if self.custody is None:
             msg = "Pod startup journaling requires native custody"
             raise TetherError(msg)
-        self.require_prior_activation_attested(binding_generation=binding_generation)
+        self.require_prior_activation_attested(binding_identity=binding_identity)
         if self.custody.read("revocations", f"{generation}.json") is not None:
             msg = "Tether generation has retained revocation evidence and cannot restart"
             raise TetherError(msg)
@@ -382,7 +385,7 @@ class TetherStopAdapter:
             installation_id=self.plan.envelope.installation_id,
             generation=generation,
             envelope_digest=self.plan.envelope_digest,
-            binding_generation=binding_generation,
+            binding_identity=binding_identity,
             boot_id=self.boot_id(),
             invocation_id=invocation,
             service_cgroup=group,
@@ -393,7 +396,7 @@ class TetherStopAdapter:
         self.custody.write("private", "activation.json", value)
         return value
 
-    def attest_pod(self, generation: int, binding_generation: str) -> IncarnationIdentity:
+    def attest_pod(self, generation: int, binding_identity: PersistentBindingIdentity) -> IncarnationIdentity:
         """Durably attest infra namespace before WireGuard's ordered job can start."""
         if self.custody is None:
             msg = "Pod attestation requires fixed native custody"
@@ -405,7 +408,7 @@ class TetherStopAdapter:
             or attempt.invocation_id != invocation
             or attempt.boot_id != self.boot_id()
             or attempt.generation != generation
-            or attempt.binding_generation != binding_generation
+            or attempt.binding_identity != binding_identity
         ):
             msg = "Pod poststart does not match its durable manager start attempt"
             raise TetherError(msg)
@@ -428,7 +431,7 @@ class TetherStopAdapter:
             installation_id=self.plan.envelope.installation_id,
             generation=generation,
             envelope_digest=self.plan.envelope_digest,
-            binding_generation=binding_generation,
+            binding_identity=binding_identity,
             boot_id=self.boot_id(),
             pod_id=pod["Id"],
             infra_id=pod["InfraContainerID"],
@@ -475,7 +478,9 @@ class TetherStopAdapter:
         self.custody.write("generations", f"role-{incarnation.pod_id}-{role}.json", value, immutable=True)
         return value
 
-    def capture_runtime(self, generation: int, binding_generation: str, *, publish: bool = True) -> RuntimeIdentity:
+    def capture_runtime(
+        self, generation: int, binding_identity: PersistentBindingIdentity, *, publish: bool = True
+    ) -> RuntimeIdentity:
         """Seal immutable IDs, shared network namespace and all service cgroups."""
         pod = self._inspect_object("pod", self.plan.pod_name)
         wg = self._inspect_object("container", self.plan.wireguard_container)
@@ -518,7 +523,7 @@ class TetherStopAdapter:
         identity = RuntimeIdentity(
             installation_id=self.plan.envelope.installation_id,
             generation=generation,
-            binding_generation=binding_generation,
+            binding_identity=binding_identity,
             boot_id=self.boot_id(),
             pod_id=pod["Id"],
             wireguard_id=wg["Id"],

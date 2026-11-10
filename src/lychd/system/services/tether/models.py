@@ -9,6 +9,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from lychd.domain.tether.models import CompiledTetherPlan, TetherPeerIntent
+from lychd.system.services.scribe.models import PersistentBindingIdentity
 
 
 class TetherError(RuntimeError):
@@ -79,7 +80,7 @@ class ClosureLatch(Record):
     generation: int = Field(ge=1)
     intent_digest: str
     envelope_digest: str
-    binding_generation: str
+    binding_identity: PersistentBindingIdentity
 
 
 class ClosureObservation(Record):
@@ -105,12 +106,17 @@ class OperationReceipt(Record):
     request: PrepareRequest | PrepareImageRequest | EnrollRequest | RevokeRequest
     stages: tuple[str, ...] = ()
     complete: bool = False
-    binding_generation: str | None = None
+    binding_identity: PersistentBindingIdentity | None = None
     closure: ClosureObservation | None = None
     startup_admission: EnrollmentStartupAdmission | None = None
 
     def require_enrollment_startup(
-        self, peer: TetherPeerIntent, *, envelope_digest: str, binding_generation: str, boot_id: UUID
+        self,
+        peer: TetherPeerIntent,
+        *,
+        envelope_digest: str,
+        binding_identity: PersistentBindingIdentity,
+        boot_id: UUID,
     ) -> None:
         """Require completed enrollment or its exact native first-start admission."""
         request = self.request
@@ -123,7 +129,7 @@ class OperationReceipt(Record):
             or request.intent_digest != digest(peer)
             or request.envelope_digest != envelope_digest
             or self.request_digest != digest(request)
-            or self.binding_generation != binding_generation
+            or self.binding_identity != binding_identity
         ):
             msg = "Tether startup lacks exact correlated native enrollment authority"
             raise TetherError(msg)
@@ -157,7 +163,7 @@ class RuntimeIdentity(Record):
 
     installation_id: UUID
     generation: int = Field(ge=1)
-    binding_generation: str
+    binding_identity: PersistentBindingIdentity
     boot_id: UUID
     pod_id: str = Field(pattern=r"^[0-9a-f]{64}$")
     wireguard_id: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -178,7 +184,7 @@ class Inspection(Record):
     observation: ClosureObservation
     loaded_runtime: RuntimeIdentity | None
     runtime_attested: bool
-    binding_generation: str | None
+    binding_identity: PersistentBindingIdentity | None
     desired_envelope_digest: str | None
     configuration_drift: bool
 
@@ -189,7 +195,7 @@ class IncarnationIdentity(Record):
     installation_id: UUID
     generation: int
     envelope_digest: str
-    binding_generation: str
+    binding_identity: PersistentBindingIdentity
     boot_id: UUID
     pod_id: str = Field(pattern=r"^[0-9a-f]{64}$")
     infra_id: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -216,7 +222,7 @@ class ActivationAttempt(Record):
     installation_id: UUID
     generation: int
     envelope_digest: str
-    binding_generation: str
+    binding_identity: PersistentBindingIdentity
     boot_id: UUID
     invocation_id: UUID
     service_cgroup: str

@@ -12,13 +12,15 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from lychd.lib.json_objects import unique_json_object
+from lychd.system.path_identity import PathIdentityError, PersistentPathIdentity
 from lychd.system.services.scribe.errors import ScribeOwnershipError
 from lychd.system.services.scribe.models import (
     BindingWriteSet,
     OwnershipManifest,
+    PersistentBindingIdentity,
     SitePlan,
 )
-from lychd.system.services.scribe.storage import capture_path_state
+from lychd.system.services.scribe.storage import capture_path_state, capture_persistent_path_state
 
 OWNERSHIP_FILENAME = ".lychd-owned.json"
 AUTHORITY_MODE = 0o600
@@ -114,6 +116,45 @@ class BindingAuthority:
             digest.update(f"\0{state.device}:{state.inode}:".encode())
             digest.update(state.content)
         return digest.hexdigest()
+
+    def persistent_identity(self, *, sources: Sequence[Path], expected_generation: str) -> PersistentBindingIdentity:
+        """Bind one coherent, complete source capture to its requested live generation."""
+        stable = hashlib.sha256(b"lychd-scribe-persistent-binding-v1\0")
+
+        def frame(value: bytes) -> None:
+            stable.update(len(value).to_bytes(8, byteorder="big"))
+            stable.update(value)
+
+        try:
+            authority, _identity = capture_persistent_path_state(self.path, expected_mode=AUTHORITY_MODE)
+            if authority.content is None:
+                msg = "Persistent Scribe authority is not a regular file"
+                raise ScribeOwnershipError(msg)
+            frame(os.fsencode(self.path))
+            frame(authority.content)
+            stable.update(len(sources).to_bytes(8, byteorder="big"))
+            live = hashlib.sha256(authority.content)
+            captured: list[tuple[Path, PersistentPathIdentity, bytes]] = []
+            for path in sorted(sources):
+                state, identity = capture_persistent_path_state(path, expected_mode=0o644)
+                if state.content is None:
+                    msg = "Persistent Scribe source is not a regular file"
+                    raise ScribeOwnershipError(msg)
+                live.update(os.fsencode(path))
+                live.update(f"\0{state.device}:{state.inode}:".encode())
+                live.update(state.content)
+                captured.append((path, identity, state.content))
+            for path, identity, content in sorted(captured, key=lambda capture: os.fsencode(capture[0])):
+                frame(os.fsencode(path))
+                frame(identity.model_dump_json().encode())
+                frame(content)
+        except (OSError, PathIdentityError, ValueError) as exc:
+            msg = "Could not coherently observe persistent Scribe binding identity"
+            raise ScribeOwnershipError(msg) from exc
+        if live.hexdigest() != expected_generation:
+            msg = "Persistent Scribe capture differs from the expected live generation"
+            raise ScribeOwnershipError(msg)
+        return PersistentBindingIdentity(version=1, digest=stable.hexdigest())
 
     def observe(self, sources: Sequence[Path]) -> tuple[bytes, str]:
         """Read authority bytes and fingerprint one exact full source set."""

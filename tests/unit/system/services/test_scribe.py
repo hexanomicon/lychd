@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Callable, Generator
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Protocol, cast
 from unittest.mock import MagicMock
 
 import pytest
+from pydantic import ValidationError
 
+from lychd.system import path_identity
 from lychd.system.atomic_paths import rename_exchange_at, rename_noreplace_at
 from lychd.system.binding_sites import AttestedBindingSite, AttestedBindingSites
 from lychd.system.interruptions import (
@@ -29,6 +33,7 @@ from lychd.system.services.scribe.models import (
     BindingBase,
     BindingWriteSet,
     OwnershipManifest,
+    PersistentBindingIdentity,
 )
 from lychd.system.services.scribe.storage import (
     AtomicMutation,
@@ -2133,3 +2138,249 @@ def test_preparation_primary_and_ordinary_cleanup_failure_are_both_typed(
     assert cleanup_failure in raised.value.cleanup_errors
     assert raised.value.__cause__ is primary
     workspace.cleanup.assert_called_once()
+
+
+@contextmanager
+def renumbered_device_numbers(monkeypatch: pytest.MonkeyPatch) -> Generator[None]:
+    """Simulate boot-local device renumbering while preserving every other stat field."""
+    real_stat, real_fstat = os.stat, os.fstat
+
+    def renumbered(metadata: os.stat_result) -> os.stat_result:
+        fields = {name: getattr(metadata, name) for name in dir(metadata) if name.startswith("st_")}
+        fields["st_dev"] = metadata.st_dev + 1000
+        return cast("os.stat_result", SimpleNamespace(**fields))
+
+    def changed_stat(
+        path: int | str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *,
+        dir_fd: int | None = None,
+        follow_symlinks: bool = True,
+    ) -> os.stat_result:
+        return renumbered(real_stat(path, dir_fd=dir_fd, follow_symlinks=follow_symlinks))
+
+    def changed_fstat(descriptor: int) -> os.stat_result:
+        return renumbered(real_fstat(descriptor))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(os, "stat", changed_stat)
+        patch.setattr(os, "fstat", changed_fstat)
+        yield
+
+
+@pytest.mark.usefixtures("persistent_identity_observer")
+def test_persistent_identity_is_stable_when_live_device_numbers_change(
+    scribe: ScribeService, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    scribe.reconcile_all([_container()], plain_units={"lychd-stable.service": "[Service]\nExecStart=/bin/true\n"})
+    owned = scribe.inspect_owned_bindings()
+    assert owned.generation is not None
+    before = scribe.inspect_persistent_binding_identity(expected_generation=owned.generation)
+    with renumbered_device_numbers(monkeypatch):
+        rebooted = scribe.inspect_owned_bindings()
+        assert rebooted.generation is not None
+        assert rebooted.generation != owned.generation
+        assert scribe.inspect_persistent_binding_identity(expected_generation=rebooted.generation) == before
+        with pytest.raises(ScribeOwnershipError, match="exact current live generation"):
+            scribe.inspect_persistent_binding_identity(expected_generation=owned.generation)
+
+
+@pytest.mark.usefixtures("persistent_identity_observer")
+def test_replaced_same_content_source_gets_a_different_persistent_binding_identity(
+    scribe: ScribeService, systemd_dir: Path
+) -> None:
+    source = _reconcile_plain(scribe, systemd_dir, "lychd-stable.service", "[Service]\nExecStart=/bin/true\n")
+    owned = scribe.inspect_owned_bindings()
+    assert owned.generation is not None
+    before = scribe.inspect_persistent_binding_identity(expected_generation=owned.generation)
+    content = source.read_bytes()
+    source.rename(source.with_name("preserved-source"))
+    source.write_bytes(content)
+    source.chmod(0o644)
+    current = scribe.inspect_owned_bindings()
+    assert current.generation is not None
+    assert scribe.inspect_persistent_binding_identity(expected_generation=current.generation) != before
+
+
+@pytest.mark.usefixtures("persistent_identity_observer")
+def test_persistent_capture_reconstructs_requested_generation_even_if_live_bytes_return(
+    scribe: ScribeService, systemd_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from lychd.system.services.scribe import authority as authority_module
+
+    source = _reconcile_plain(scribe, systemd_dir, "lychd-stable.service", "[Service]\nExecStart=/bin/true\n")
+    owned = scribe.inspect_owned_bindings()
+    assert owned.generation is not None
+    capture = authority_module.capture_persistent_path_state
+    content = source.read_bytes()
+
+    def transient(path: Path, *, expected_mode: int) -> tuple[PathState, path_identity.PersistentPathIdentity]:
+        if path != source:
+            return capture(path, expected_mode=expected_mode)
+        source.write_bytes(b"transient foreign content")
+        result = capture(path, expected_mode=expected_mode)
+        source.write_bytes(content)
+        return result
+
+    monkeypatch.setattr(authority_module, "capture_persistent_path_state", transient)
+    with pytest.raises(ScribeOwnershipError, match="capture differs from the expected live generation"):
+        scribe.inspect_persistent_binding_identity(expected_generation=owned.generation)
+    assert scribe.inspect_owned_bindings().generation == owned.generation
+    assert source.read_bytes() == content
+
+
+@pytest.mark.usefixtures("persistent_identity_observer")
+def test_persistent_capture_rejects_content_restore_during_same_fd_observation(
+    scribe: ScribeService, systemd_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = _reconcile_plain(scribe, systemd_dir, "lychd-stable.service", "[Service]\nExecStart=/bin/true\n")
+    owned = scribe.inspect_owned_bindings()
+    assert owned.generation is not None
+    observe = path_identity.observe_identity_fd
+    metadata = source.stat()
+    content = source.read_bytes()
+    changed = False
+
+    def restoring(descriptor: int) -> path_identity.PersistentPathIdentity:
+        nonlocal changed
+        identity = observe(descriptor)
+        if identity.inode == metadata.st_ino and not changed:
+            changed = True
+            source.write_bytes(b"transient")
+            source.write_bytes(content)
+            os.utime(source, ns=(metadata.st_atime_ns, metadata.st_mtime_ns))
+        return identity
+
+    monkeypatch.setattr(path_identity, "observe_identity_fd", restoring)
+    with pytest.raises(ScribeOwnershipError, match="coherently observe"):
+        scribe.inspect_persistent_binding_identity(expected_generation=owned.generation)
+    assert changed
+    assert source.read_bytes() == content
+
+
+@pytest.mark.usefixtures("persistent_identity_observer")
+@pytest.mark.parametrize("fault", ["mode", "hardlink", "oversized", "missing", "unsupported"])
+def test_persistent_binding_refuses_unsafe_or_unavailable_sources(
+    scribe: ScribeService, systemd_dir: Path, monkeypatch: pytest.MonkeyPatch, fault: str
+) -> None:
+    source = _reconcile_plain(scribe, systemd_dir, "lychd-stable.service", "[Service]\nExecStart=/bin/true\n")
+    if fault == "mode":
+        source.chmod(0o600)
+    elif fault == "hardlink":
+        os.link(source, source.with_name("foreign-link"))
+    elif fault == "oversized":
+        source.write_bytes(b"x" * (1024 * 1024 + 1))
+    elif fault == "missing":
+        source.unlink()
+    else:
+
+        def unsupported(_descriptor: int) -> path_identity.PersistentPathIdentity:
+            msg = "unsupported filesystem"
+            raise path_identity.PathIdentityError(msg)
+
+        monkeypatch.setattr(path_identity, "observe_identity_fd", unsupported)
+    owned = scribe.inspect_owned_bindings()
+    assert owned.generation is not None
+    with pytest.raises(ScribeOwnershipError, match="coherently observe"):
+        scribe.inspect_persistent_binding_identity(expected_generation=owned.generation)
+    assert scribe.inspect_owned_bindings() == owned
+
+
+def test_ordinary_scribe_inspection_does_not_require_persistent_filesystem_provider(
+    scribe: ScribeService, systemd_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def forbidden(_descriptor: int) -> path_identity.PersistentPathIdentity:
+        pytest.fail("Ordinary inspection cannot require persistent filesystem observation")
+
+    monkeypatch.setattr(path_identity, "observe_identity_fd", forbidden)
+    _reconcile_plain(scribe, systemd_dir, "lychd-stable.service", "[Service]\nExecStart=/bin/true\n")
+    owned = scribe.inspect_owned_bindings()
+    assert owned.receipt_present
+    assert owned.source_count == 1
+    assert not scribe.plan_reconcile_all(
+        [], plain_units={"lychd-stable.service": "[Service]\nExecStart=/bin/true\n"}
+    ).mutates
+
+
+@pytest.mark.parametrize("version", [True, 1.0, "1", 2])
+def test_persistent_binding_identity_rejects_non_integer_or_unsupported_versions(version: object) -> None:
+    with pytest.raises(ValidationError):
+        PersistentBindingIdentity.model_validate({"version": version, "digest": "a" * 64})
+
+
+@pytest.mark.usefixtures("persistent_identity_observer")
+@pytest.mark.parametrize("changed", ["filesystem-uuid", "generation", "subvolume-id", "subvolume-uuid"])
+def test_persistent_binding_digest_includes_every_stable_object_identity_field(
+    scribe: ScribeService, systemd_dir: Path, monkeypatch: pytest.MonkeyPatch, changed: str
+) -> None:
+    _reconcile_plain(scribe, systemd_dir, "lychd-stable.service", "[Service]\nExecStart=/bin/true\n")
+    owned = scribe.inspect_owned_bindings()
+    assert owned.generation is not None
+    before = scribe.inspect_persistent_binding_identity(expected_generation=owned.generation)
+    observe = path_identity.observe_identity_fd
+
+    def substituted(descriptor: int) -> path_identity.PersistentPathIdentity:
+        original = observe(descriptor)
+        if changed == "filesystem-uuid":
+            return original.model_copy(update={"filesystem_uuid": "00000000-0000-0000-0000-000000000001"})
+        if changed == "generation":
+            return original.model_copy(update={"generation": original.generation + 1})
+        if changed == "subvolume-id":
+            return original.model_copy(update={"subvolume_id": 260})
+        return original.model_copy(update={"subvolume_uuid": "00000000-0000-0000-0000-000000000002"})
+
+    monkeypatch.setattr(path_identity, "observe_identity_fd", substituted)
+    assert scribe.inspect_persistent_binding_identity(expected_generation=owned.generation) != before
+    assert scribe.inspect_owned_bindings() == owned
+
+
+@pytest.mark.usefixtures("persistent_identity_observer")
+@pytest.mark.parametrize("race", ["parent", "mount"])
+def test_persistent_same_fd_capture_refuses_parent_or_mount_reresolution_drift(
+    scribe: ScribeService, systemd_dir: Path, monkeypatch: pytest.MonkeyPatch, race: str
+) -> None:
+    source = _reconcile_plain(scribe, systemd_dir, "lychd-stable.service", "[Service]\nExecStart=/bin/true\n")
+    owned = scribe.inspect_owned_bindings()
+    assert owned.generation is not None
+    metadata, content = source.stat(), source.read_bytes()
+    observe = path_identity.observe_identity_fd
+    mount_id = cast("Callable[[int], int]", getattr(storage_module, "_persistent_mount_id"))  # noqa: B009 - exercise the fixed mount observation seam
+    changed = False
+
+    def raced_mount(descriptor: int) -> int:
+        result = mount_id(descriptor)
+        return result + 1 if changed and race == "mount" and os.fstat(descriptor).st_ino == metadata.st_ino else result
+
+    def raced_observe(descriptor: int) -> path_identity.PersistentPathIdentity:
+        nonlocal changed
+        identity = observe(descriptor)
+        if identity.inode == metadata.st_ino and not changed:
+            changed = True
+            if race == "parent":
+                systemd_dir.rename(systemd_dir.with_name("preserved-systemd"))
+                systemd_dir.mkdir(mode=0o700)
+                source.write_bytes(content)
+                source.chmod(0o644)
+        return identity
+
+    monkeypatch.setattr(storage_module, "_persistent_mount_id", raced_mount)
+    monkeypatch.setattr(path_identity, "observe_identity_fd", raced_observe)
+    with pytest.raises(ScribeOwnershipError, match="coherently observe"):
+        scribe.inspect_persistent_binding_identity(expected_generation=owned.generation)
+    assert changed
+    assert source.read_bytes() == content
+
+
+@pytest.mark.usefixtures("persistent_identity_observer")
+def test_identical_authority_rewrite_preserves_persistent_binding_identity(
+    scribe: ScribeService, systemd_dir: Path
+) -> None:
+    _reconcile_plain(scribe, systemd_dir, "lychd-stable.service", "[Service]\nExecStart=/bin/true\n")
+    owned = scribe.inspect_owned_bindings()
+    assert owned.generation is not None
+    before = scribe.inspect_persistent_binding_identity(expected_generation=owned.generation)
+    content = scribe.ownership_path.read_bytes()
+    scribe.ownership_path.rename(scribe.ownership_path.with_name("preserved-authority"))
+    scribe.ownership_path.write_bytes(content)
+    scribe.ownership_path.chmod(0o600)
+    assert scribe.inspect_owned_bindings() == owned
+    assert scribe.inspect_persistent_binding_identity(expected_generation=owned.generation) == before

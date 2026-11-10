@@ -74,6 +74,33 @@ opened inode before reading. Payload retirement follows a durable tombstone and 
 attestation, then namespace sync. Unknown names, extra hardlinks, replacements and interrupted
 outcomes remain recovery evidence rather than deletion authority.
 
+### Persistent binding identity
+
+Scribe's live generation is a concurrency token, including current device/inode observations;
+it is not durable authority across a reboot. Its existing ownership observation, transaction
+and deletion compare-and-swap contracts remain unchanged. Consumers that retain binding
+authority across boots use a separate, opt-in Scribe observation. It returns a strict frozen
+`PersistentBindingIdentity` with exact integer `version: 1` and a lowercase 64-character SHA-256
+`digest`. Requesting that observation requires the expected live generation; ordinary Scribe
+observation does not acquire a persistent-filesystem requirement.
+
+The version-1 digest starts with `lychd-scribe-persistent-binding-v1\0`, then includes the exact
+authority pathname bytes and authority bytes, a source count, and every receipt-owned source
+ordered by its filesystem pathname bytes. Each source contributes its pathname bytes, the shared
+persistent identity's complete compact typed JSON, and its exact content. Byte strings are
+framed by unsigned 64-bit big-endian lengths; the count uses the same integer encoding.
+The authority file's object identity is not part of this digest: rewriting identical authority
+bytes alone does not establish a new source identity.
+
+Capture pins each file and its parent without following symlinks. Source content and persistent
+identity come from the same descriptor. Files must belong to the invoking UID, have one hardlink,
+and have mode `0644` for sources or `0600` for authority; each bounded read permits at most 1 MiB.
+Before/after metadata, named leaf and freshly resolved parent/mount checks reject replacement
+or concurrent writes. The live generation reconstructed from those exact captured bytes and
+live identities must equal the requested generation, as must fresh final ordinary ownership
+observation and its complete source set. A changed, missing or unsupported observation refuses;
+no cached name, content-only digest or legacy live token substitutes for this proof.
+
 ### Retire only recorded identities
 
 After a complete transaction, the version-3 lifecycle receipt seals the persistent filesystem
