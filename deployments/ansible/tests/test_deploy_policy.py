@@ -1,5 +1,6 @@
 """Offline authority checks for the deployment playbooks; requires controller PyYAML."""
 
+import json
 import re
 import unittest
 from pathlib import Path
@@ -340,6 +341,55 @@ class DeployPolicyTests(unittest.TestCase):
         self.assertEqual(len(commands), 2)
         self.assertIn("source_guard.py", commands[0][3])
         self.assertIn("app_probe.py", commands[1][3])
+
+    def test_fresh_source_install_is_noneditable_and_completed_environments_are_preserved(self):
+        tasks = load("roles/lychd_source/tasks/main.yml")
+        install = next(
+            task
+            for task in tasks
+            if task.get("name") == "Install the locked CLI once without replacing an existing environment"
+        )
+        argv = install["ansible.builtin.command"]["argv"]
+        self.assertIn("--no-editable", argv)
+        self.assertIn("--locked", argv)
+        receipts = [
+            task
+            for task in tasks
+            if task.get("ansible.builtin.copy", {}).get("dest", "").endswith("/.git/lychd-source.json")
+        ]
+        self.assertEqual(len(receipts), 2)
+        environment = Environment(undefined=StrictUndefined)
+        environment.filters["to_nice_json"] = json.dumps
+        context = {
+            "lychd_source_revision": "a" * 40,
+            "lychd_source_uv_sha256": "b" * 64,
+            "lychd_source_python": "3.14.8",
+        }
+        for receipt in receipts:
+            rendered = environment.from_string(receipt["ansible.builtin.copy"]["content"]).render(**context)
+            self.assertEqual(json.loads(rendered)["install_mode"], "non-editable")
+        completed = receipts[-1]
+        self.assertLess(tasks.index(install), tasks.index(completed))
+        for is_complete, should_install in [(False, True), (True, False)]:
+            state = {"exists": True, "complete": is_complete}
+            self.assertEqual(
+                environment.compile_expression(install["when"])(lychd_source_observed=state), should_install
+            )
+            self.assertEqual(
+                environment.compile_expression(completed["when"])(
+                    ansible_check_mode=False, lychd_source_observed=state
+                ),
+                should_install,
+            )
+            self.assertFalse(
+                environment.compile_expression(completed["when"])(ansible_check_mode=True, lychd_source_observed=state)
+            )
+        self.assertFalse(receipts[0]["ansible.builtin.copy"]["force"])
+        self.assertFalse(
+            environment.compile_expression(receipts[0]["when"])(
+                lychd_source_observed={"exists": True, "complete": True}
+            )
+        )
 
     def test_controller_uv_release_is_the_release_admitted_on_target(self):
         from jinja2 import Environment

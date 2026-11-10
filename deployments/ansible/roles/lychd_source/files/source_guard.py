@@ -79,6 +79,11 @@ def inspect_source(home, revision, uv_sha256, python, uid):
     receipt = json.loads(receipt_path.read_text())
     expected = {"revision": revision, "uv_sha256": uv_sha256, "python": python}
     require(all(receipt.get(key) == value for key, value in expected.items()), "receipt mismatch")
+    # Missing mode belongs to an older, preserved preparation; never relabel it.
+    require(
+        "install_mode" not in receipt or receipt["install_mode"] == "non-editable",
+        "unsupported source install mode",
+    )
     complete = receipt.get("complete")
     require(type(complete) is bool, "invalid completion receipt")
     require(git(checkout, "rev-parse", "--show-toplevel") == str(checkout), "wrong Git root")
