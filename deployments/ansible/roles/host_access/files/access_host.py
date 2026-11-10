@@ -62,7 +62,7 @@ def run(args, *, data=None, allow_failure=False, timeout=60):
         check=False,
         env={"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL": "C"},
     )
-    require(allow_failure or result.returncode == 0, f"command refused: {args[0]} {args[1]}")
+    require(allow_failure or result.returncode == 0, f"command refused: {args[0]}")
     return result
 
 

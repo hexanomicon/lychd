@@ -2,6 +2,7 @@
 
 import base64
 import importlib.util
+import subprocess
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -133,6 +134,40 @@ class EffectiveSSHTests(unittest.TestCase):
         output = "\n" + "\n".join(f"\t{key.swapcase()}\t{value}  " for key, value in SSH_RESTRICTIONS.items()) + "\n"
         with self.observe(output):
             host.effective_ssh()
+
+
+class CommandObservationTests(unittest.TestCase):
+    def test_single_argument_success_returns_the_subprocess_result(self):
+        result = subprocess.CompletedProcess(["getenforce"], 0, "Enforcing\n", "")
+        with patch.object(host.subprocess, "run", return_value=result) as execute:
+            self.assertIs(host.run(["getenforce"]), result)
+        execute.assert_called_once_with(
+            ["getenforce"],
+            input=None,
+            text=True,
+            capture_output=True,
+            timeout=60,
+            check=False,
+            env={"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL": "C"},
+        )
+
+    def test_single_argument_failure_is_a_refusal_not_an_index_error(self):
+        result = subprocess.CompletedProcess(["getenforce"], 1, "PRIVATE_STDOUT", "PRIVATE_STDERR")
+        with patch.object(host.subprocess, "run", return_value=result), self.assertRaises(host.Refusal) as caught:
+            host.run(["getenforce"])
+        self.assertEqual(str(caught.exception), "command refused: getenforce")
+
+    def test_allowed_failure_preserves_the_original_result(self):
+        result = subprocess.CompletedProcess(["getenforce"], 1, "observation", "diagnostic")
+        with patch.object(host.subprocess, "run", return_value=result):
+            self.assertIs(host.run(["getenforce"], allow_failure=True), result)
+
+    def test_failure_diagnostic_never_contains_arguments_input_or_captured_output(self):
+        args = ["tool", "PRIVATE_ARGUMENT", "--private=VALUE"]
+        result = subprocess.CompletedProcess(args, 2, "PRIVATE_STDOUT", "PRIVATE_STDERR")
+        with patch.object(host.subprocess, "run", return_value=result), self.assertRaises(host.Refusal) as caught:
+            host.run(args, data="PRIVATE_STDIN")
+        self.assertEqual(str(caught.exception), "command refused: tool")
 
 
 class HostAccessTests(unittest.TestCase):
