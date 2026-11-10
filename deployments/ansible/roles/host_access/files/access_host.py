@@ -205,14 +205,81 @@ def firewall(*args, permanent=False):
     return result.stdout.strip()
 
 
+GATEWAY_POLICIES = {
+    # firewalld v2.5.2 config/policies/*.xml: all five have <disable/> and priority 1000.
+    "gateway-dmz-to-HOST": ("CONTINUE", {"dmz"}, {"HOST"}, {"dhcp", "dns"}),
+    "gateway-lan-to-HOST": ("CONTINUE", {"internal", "home", "trusted"}, {"HOST"}, {"dhcp", "dns", "ssh"}),
+    "gateway-lan-to-work": ("ACCEPT", {"internal", "home", "trusted"}, {"work"}, {"ftp", "tftp"}),
+    "gateway-lan-to-world": ("ACCEPT", {"internal", "home", "trusted"}, {"external", "public"}, {"ftp", "tftp"}),
+    "gateway-world-to-HOST": ("CONTINUE", {"external", "public"}, {"HOST"}, {"dhcpv6-client"}),
+}
+
+
+def firewall_gateway_prerequisites(name, *, permanent):
+    """Observe the exact disabled vendor object, never adopt an administrator override."""
+    policy = "--policy=" + name
+    # v2.5.2 FirewallCommand.print_zone_policy_info emits these fields once. Unlike
+    # per-field invocations, one summary bounds watchdog observation overhead.
+    lines = firewall(policy, "--list-all", permanent=permanent).splitlines()
+    require(lines and lines[0] in (name, name + " (disabled)"), "gateway firewall policy header differs")
+    fields = {}
+    for line in lines[1:]:
+        match = re.fullmatch(r"  ([a-z -]+):[ ]*(.*)", line)
+        require(match is not None, "gateway firewall policy has malformed or extra content")
+        field, value = match.groups()
+        require(field not in fields, "gateway firewall policy has duplicate fields")
+        fields[field] = value
+    target, ingress, egress, services = GATEWAY_POLICIES[name]
+    expected = {
+        "disable": "yes",
+        "priority": "1000",
+        "target": target,
+        "ingress-zones": ingress,
+        "egress-zones": egress,
+        "services": services,
+        "ports": "",
+        "protocols": "",
+        "masquerade": "no",
+        "forward-ports": "",
+        "source-ports": "",
+        "icmp-blocks": "",
+        "rich rules": "",
+    }
+    require(set(fields) == set(expected), "gateway firewall policy fields differ")
+    for field, value in expected.items():
+        observed = fields[field]
+        if isinstance(value, set):
+            words = observed.split()
+            require(len(words) == len(set(words)) and set(words) == value, "gateway firewall policy set differs")
+        else:
+            require(observed == value, "gateway firewall policy was changed or enabled")
+    require(firewall(policy, "--query-disable", permanent=permanent) == "yes", "gateway firewall policy is enabled")
+    if permanent:
+        require(
+            firewall("--path-policy=" + name, permanent=True) == f"/usr/lib/firewalld/policies/{name}.xml"
+            and not os.path.lexists(f"/etc/firewalld/policies/{name}.xml"),
+            "gateway firewall policy is not the vendor object",
+        )
+
+
 def firewall_policy_prerequisites():
-    """Admit only the unchanged vendor ICMPv6 bootstrap policy, including dormant objects."""
+    """Admit unchanged ICMPv6 bootstrap and exact disabled vendor gateway objects."""
     baseline = {"neighbour-advertisement", "neighbour-solicitation", "router-advertisement", "redirect"}
     full = baseline | {"mld-listener-done", "mld-listener-query", "mld-listener-report", "mld2-listener-report"}
+    inventories = {}
     for permanent in (False, True):
         policies = firewall("--get-policies", permanent=permanent).split()
-        require(set(policies) <= {"allow-host-ipv6"}, "foreign firewall policy objects require separate review")
-        if not policies:
+        require(len(policies) == len(set(policies)), "duplicate firewall policy objects")
+        require(
+            set(policies) <= {"allow-host-ipv6", *GATEWAY_POLICIES},
+            "foreign firewall policy objects require separate review",
+        )
+        inventories[permanent] = set(policies)
+    require(inventories[False] == inventories[True], "runtime and permanent firewall policy inventories differ")
+    for permanent, policies in inventories.items():
+        for name in sorted(policies & GATEWAY_POLICIES.keys()):
+            firewall_gateway_prerequisites(name, permanent=permanent)
+        if "allow-host-ipv6" not in policies:
             continue
         policy = "--policy=allow-host-ipv6"
         # Target/priority getters are permanent-only. Inspect actual runtime values via list-all.
