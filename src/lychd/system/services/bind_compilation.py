@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import secrets
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from lychd.system.constants import PATH_CRYPT_ROOT
 from lychd.system.schemas import QuadletContainer, podman_secret_source
 from lychd.system.services.bind import BindRequest
 
@@ -43,6 +44,7 @@ def compile_bind_request(
     runes: RuneRegistry,
     soulstones: Sequence[SoulstoneConfig],
     portals: Sequence[PortalConfig],
+    tether_plain_units: Mapping[str, str] | None = None,
 ) -> BindRequest:
     """Compile the complete container binding generation from declared intent."""
     from lychd.domain.animation.capabilities import CapabilitySpec
@@ -70,11 +72,12 @@ def compile_bind_request(
         runtime_plans,
     )
     portal_secrets = {portal.api_key_secret_name for portal in portals if portal.api_key_secret_name is not None}
-    manifests = Transmuter(
+    transmuter = Transmuter(
         settings=settings,
         runtime_planner=runtime_planner,
-        contributors=extensions.quadlet_contributors,
-    ).transmute_all(
+        contributors=extensions.quadlet_registrations,
+    )
+    manifests = transmuter.transmute_all(
         tuple(soulstones),
         portals=tuple(portals),
         runes=runes,
@@ -96,9 +99,26 @@ def compile_bind_request(
     # Only emitted references inherit generation authority; explicit operator
     # requirements must retain BindRequest's core/operator overlap refusal.
     manifest_requirements = manifest_secrets.difference(core_secret_factories)
+    plain_units = _desired_plain_units(settings=settings)
+    from lychd.system.services.tether.units import render_tether_units
+
+    trusted_tether_units = {
+        name: content
+        for plan in transmuter.tether_plans
+        for name, content in render_tether_units(
+            plan,
+            crypt_root=PATH_CRYPT_ROOT,
+            executable=Path(sys.prefix) / "bin" / "python",
+        ).items()
+    }
+    if tether_plain_units is not None and dict(tether_plain_units) != trusted_tether_units:
+        msg = "Tether binding requires exactly its trusted guard and closure plain units"
+        raise ValueError(msg)
+    plain_units.update(trusted_tether_units)
     return BindRequest.compile(
         manifests=manifests,
-        plain_units=_desired_plain_units(settings=settings),
+        plain_units=plain_units,
+        tether_plans=transmuter.tether_plans,
         core_secret_factories=core_secret_factories,
         required_secret_names=sorted(
             {

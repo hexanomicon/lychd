@@ -22,6 +22,8 @@ _REACTOR_DIRECTORY_MODE = 0o700
 
 if TYPE_CHECKING:
     from lychd.config.settings.root import Settings
+    from lychd.domain.tether.models import CompiledTetherPlan
+    from lychd.system.services.tether.models import PreparationReceipt
 
 type BindingPreflightIssueCode = Literal[
     "codex-shape",
@@ -145,6 +147,17 @@ class BindingPreflightService:
             issues=tuple(issues),
             foundation=foundation,
         )
+
+    @staticmethod
+    def attest_tether_preparation(
+        plan: CompiledTetherPlan,
+        *,
+        podman_bin: str,
+    ) -> PreparationReceipt:
+        """Read exact native preparation identities through the trusted host boundary."""
+        from lychd.system.services.tether.composition import preparation_service
+
+        return preparation_service(plan, podman_bin=podman_bin).attest()
 
     @staticmethod
     def _inspect_retired_vessel_bindings(foundation: BindingFoundation) -> list[BindingPreflightIssue]:

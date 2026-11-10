@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Final, Protocol
 from lychd.domain.animation.conflicts import build_conflict_topology
 from lychd.domain.animation.mounts import validate_soulstone_data_mount
 from lychd.domain.animation.secret_isolation import validate_secret_declarations
+from lychd.domain.tether.models import CompiledTetherPlan, TetherEnvelope, compile_tether_plan
 from lychd.extensions.base import ExtensionStore
 from lychd.system.constants import (
     CONTAINER_LYCHD_PORT,
@@ -38,6 +39,7 @@ from lychd.system.schemas import (
     QuadletContainer,
     QuadletPod,
     QuadletTarget,
+    QuadletTetherPod,
     podman_secret_source,
 )
 from lychd.system.unit_names import (
@@ -99,6 +101,7 @@ class QuadletContribution:
 
     containers: tuple[QuadletContainer, ...] = field(default_factory=tuple)
     pod_ports: tuple[str, ...] = field(default_factory=tuple)  # "host:container"
+    tether: TetherEnvelope | None = None
 
 
 @dataclass(frozen=True)
@@ -190,7 +193,7 @@ class Transmuter:
         *,
         settings: Settings,
         runtime_planner: SoulstoneRuntimePlanner,
-        contributors: Sequence[QuadletContributor] = (),
+        contributors: Sequence[QuadletContributor | RegisteredQuadletContributor] = (),
     ) -> None:
         """Initialize from one explicit settings snapshot and extension set.
 
@@ -201,7 +204,18 @@ class Transmuter:
         """
         self._settings = settings
         self._runtime_planner = runtime_planner
-        self._contributors = tuple(contributors)
+        self._contributors = tuple(
+            item
+            if isinstance(item, RegisteredQuadletContributor)
+            else RegisteredQuadletContributor("unattributed", item)
+            for item in contributors
+        )
+        self._tether_plans: tuple[CompiledTetherPlan, ...] = ()
+
+    @property
+    def tether_plans(self) -> tuple[CompiledTetherPlan, ...]:
+        """Closed plans emitted by the most recent complete compilation."""
+        return self._tether_plans
 
     def transmute_all(
         self,
@@ -220,18 +234,24 @@ class Transmuter:
         resolved_runes = runes if runes is not None else RuneRegistry(())
         contributions = tuple(
             self._normalize_contribution(
-                contributor.contribute(
+                registration.contributor.contribute(
                     self._contributor_context(
                         settings=settings,
                         soulstones=resolved_soulstones,
                         portals=resolved_portals,
                         runes=resolved_runes,
                     )
-                )
+                ),
+                registrant_id=registration.registrant_id,
             )
-            for contributor in self._contributors
+            for registration in self._contributors
         )
         self._validate_contribution_vessel_reservations(contributions)
+        envelopes = tuple(contribution.tether for contribution in contributions if contribution.tether is not None)
+        if len(envelopes) > 1:
+            msg = "Only one Tether envelope may be compiled"
+            raise ValueError(msg)
+        self._tether_plans = tuple(compile_tether_plan(envelope) for envelope in envelopes)
         resolved_runtime_plans = (
             tuple(runtime_plans)
             if runtime_plans is not None
@@ -240,6 +260,8 @@ class Transmuter:
         if len(resolved_runtime_plans) != len(resolved_soulstones):
             msg = "Runtime plan count must match the Soulstone count"
             raise ValueError(msg)
+
+        self._validate_tether_isolation(contributions, resolved_portals, resolved_soulstones, resolved_runtime_plans)
 
         self._validate_secret_isolation(
             settings,
@@ -266,6 +288,9 @@ class Transmuter:
         # 3. Contribution containers (contributor order) -- e.g. the Oculus.
         for contribution in contributions:
             manifests.extend(contribution.containers)
+
+        for plan in self._tether_plans:
+            manifests.extend(self._transmute_tether(plan))
 
         # 4. Compile physical conflict topology and operator Covens.
         topology = build_conflict_topology(resolved_soulstones)
@@ -382,14 +407,130 @@ class Transmuter:
     @staticmethod
     def _normalize_contribution(
         contribution: QuadletContribution,
+        *,
+        registrant_id: str,
     ) -> QuadletContribution:
         """Revalidate returned container fields and detach contributor-owned references."""
-        return QuadletContribution(
-            containers=tuple(
-                QuadletContainer.model_validate(container.model_dump()) for container in contribution.containers
-            ),
-            pod_ports=tuple(contribution.pod_ports),
+        if contribution.tether is not None and registrant_id != "builtin:tether":
+            msg = "Only manager-assigned builtin:tether may contribute a Tether envelope"
+            raise ValueError(msg)
+        containers = tuple(
+            QuadletContainer.model_validate(container.model_dump()) for container in contribution.containers
         )
+        if any(container.tether_role is not None for container in containers):
+            msg = "Contributors cannot supply compiler-owned Tether roles"
+            raise ValueError(msg)
+        return QuadletContribution(
+            containers=containers,
+            pod_ports=tuple(contribution.pod_ports),
+            tether=(TetherEnvelope.model_validate(contribution.tether.model_dump()) if contribution.tether else None),
+        )
+
+    def _validate_tether_isolation(
+        self,
+        contributions: Sequence[QuadletContribution],
+        portals: Sequence[PortalConfig],
+        soulstones: Sequence[SoulstoneConfig],
+        runtime_plans: Sequence[RuntimePlan],
+    ) -> None:
+        """Reserve the isolated profile and refuse cross-owner secret aliases."""
+        reserved = {"lychd-tether", "lychd-tether-wg", "lychd-tether-ssh"}
+        reserved_references = {
+            "lychd-tether.pod",
+            "lychd-tether-pod.service",
+            "lychd-tether-wg.service",
+            "lychd-tether-ssh.service",
+            "lychd-tether-guard.path",
+            "lychd-tether-close.service",
+        }
+        for contribution in contributions:
+            for container in contribution.containers:
+                references = {
+                    container.pod,
+                    container.pod_service,
+                    *container.wants,
+                    *container.requires,
+                    *container.after,
+                    *container.binds_to,
+                    *container.conflicts,
+                    *container.wanted_by,
+                }
+                if container.container_name in reserved or reserved_references.intersection(references):
+                    msg = "Ordinary contributors cannot use reserved Tether identities"
+                    raise ValueError(msg)
+        if any(f"lychd-{stone.name}" in reserved for stone in soulstones):
+            msg = "Soulstone identity collides with the reserved Tether body"
+            raise ValueError(msg)
+        protected = set(self._settings.server.privileged_secret_names)
+        protected.update(portal.api_key_secret_name for portal in portals if portal.api_key_secret_name)
+        protected.update(secret for stone in soulstones for secret in stone.control_plane_secret_names)
+        protected.update(secret for stone in soulstones for secret in stone.secret_env_files.values())
+        protected.update(podman_secret_source(spec) for plan in runtime_plans for spec in plan.secrets)
+        protected.update(
+            podman_secret_source(spec)
+            for contribution in contributions
+            for container in contribution.containers
+            for spec in container.secrets
+        )
+        for plan in self._tether_plans:
+            aliases = protected.intersection(secret.name for secret in plan.secret_requirements)
+            if aliases:
+                msg = f"Tether secrets must be disjoint from other owners: {', '.join(sorted(aliases))}"
+                raise ValueError(msg)
+
+    @staticmethod
+    def _transmute_tether(plan: CompiledTetherPlan) -> tuple[QuadletBase, ...]:
+        """Emit only the fixed isolated Pod and the two purpose-separated roles."""
+        envelope = plan.envelope
+        pod = QuadletTetherPod(
+            udp_bind_address=envelope.udp_bind_address,
+            udp_port=envelope.udp_port,
+            altar_port=envelope.altar_port,
+        )
+        containers: list[QuadletContainer] = []
+        for role, name, secret, directory, extra_dependencies in (
+            ("wireguard", plan.wireguard_container, envelope.wireguard_secret, plan.wireguard_projection_directory, ()),
+            (
+                "forwarder",
+                plan.forwarder_container,
+                envelope.ssh_host_secret,
+                plan.forwarder_projection_directory,
+                (plan.wireguard_unit,),
+            ),
+        ):
+            target = "/run/secrets/tether-wg-server" if role == "wireguard" else "/run/secrets/tether-ssh-host"
+            containers.append(
+                QuadletContainer(
+                    description=f"LychD Tether {role}",
+                    image=envelope.image,
+                    container_name=name,
+                    pod=plan.pod_source,
+                    user="0",
+                    run_init=True,
+                    read_only=True,
+                    read_only_tmpfs=False,
+                    secret_mount_tmpfs=True,
+                    tether_role="wireguard" if role == "wireguard" else "forwarder",
+                    volumes=[
+                        MountData(
+                            host_path=PATH_CODEX_ROOT / directory,
+                            container_path=Path("/etc/lychd-tether"),
+                            mirror=False,
+                            options=["ro", "Z"],
+                        )
+                    ],
+                    secrets=[f"{secret.name},type=mount,target={target},mode=0400"],
+                    env_vars={"TETHER_ENVELOPE_DIGEST": plan.envelope_digest},
+                    exec=f"/usr/bin/python3 /usr/libexec/lychd-tether-runtime {role}",
+                    binds_to=[plan.guard_unit, *extra_dependencies],
+                    requires=[*extra_dependencies],
+                    wants=[],
+                    after=[plan.guard_unit, plan.pod_unit, *extra_dependencies],
+                    restart_policy="no",
+                    wanted_by=[],
+                )
+            )
+        return (pod, *containers)
 
     def _create_pod(
         self,

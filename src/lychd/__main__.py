@@ -22,6 +22,7 @@ class PulseGroup(click.Group):
         "status",
         "logs",
         "access",
+        "run",
         "del",
     )
 
@@ -124,8 +125,9 @@ def _register_local_commands() -> None:
     from lychd.cli.commands import COMMANDS
     from lychd.cli.deletion import delete_installation
     from lychd.cli.operator import logs, start, status, stop
+    from lychd.cli.tether import run
 
-    for command in (*COMMANDS, start, stop, status, logs, access, delete_installation):
+    for command in (*COMMANDS, start, stop, status, logs, access, run, delete_installation):
         cli.add_command(command)
 
 

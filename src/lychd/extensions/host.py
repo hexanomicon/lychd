@@ -23,7 +23,7 @@ if TYPE_CHECKING:
         PortalDefinition,
         SoulstoneRuntimeAdapter,
     )
-    from lychd.domain.animation.transmute import QuadletContributor
+    from lychd.domain.animation.transmute import QuadletContributor, RegisteredQuadletContributor
     from lychd.domain.delegation.ports import DelegatedAgentRuntime
     from lychd.domain.oculus.runtime import RegisteredInspection, RegisteredObservation
     from lychd.extensions.context import ExtensionContext
@@ -65,6 +65,11 @@ class AssembledExtensions:
     @property
     def quadlet_contributors(self) -> tuple[QuadletContributor, ...]:
         return self.context.transmutation.contributors
+
+    @property
+    def quadlet_registrations(self) -> tuple[RegisteredQuadletContributor, ...]:
+        """Contributors with their manager-assigned registrant identities intact."""
+        return self.context.transmutation.registrations
 
     @property
     def delegated_runtime_catalog(self) -> tuple[RegisteredDelegatedRuntime, ...]:

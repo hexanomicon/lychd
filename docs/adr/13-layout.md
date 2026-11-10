@@ -86,6 +86,32 @@ re-attested leaf to a collision-resistant private sibling before type-specific r
 failure restores it when possible, otherwise leaves a typed recovery marker. Published init
 creations are never pathname-deleted as rollback.
 
+## Tether custody (Designed) {#tether-custody-designed}
+
+The first managed Tether profile adds a fixed `tether/` leaf beneath the Codex for its public
+peer-intent record and separate forwarding public authorization, and `tether/` beneath the Crypt
+for preparation/operation receipts, a fixed `closed.json` active closure latch and immutable
+revocation records keyed by generation. Its static topology remains a Rune. The fixed latch
+pathname never contains a peer or generation supplied by a caller; generation-specific evidence
+is stored separately and retained when an admitted cold re-enrollment clears that latch.
+These proposed leaves require native creation/identity receipts before use; their names do not
+authorize adopting existing files. Peer records are not loaded as shared Settings or Runes, so
+enrollment/revocation does not invalidate an unrelated active Core configuration generation.
+
+The host operation owner publishes these bounded records through the existing no-follow,
+same-directory atomic-write and durability law. Records bind installation identity and the static
+Rune envelope. No user-selected path is accepted. The host operation and startup guard read
+current public intent and fences directly; container mounts expose only each role's explicitly required generated projection,
+never the whole Codex, Crypt or the private operation journal. Atomic publication must remain
+visible to the consumer; mounting a replaceable individual file cannot certify freshness.
+
+The existing shared Quadlet and user-systemd binding sites and complete Scribe receipt remain the
+only unit authority. This profile adds no separate binding directory or unit writer. Init/layout,
+inventory and retirement must recognize the new leaves before effectful delivery, preserve
+unrelated objects, and refuse deletion until the exact Tether runtime is quiescent. Revocation
+evidence survives ordinary rebind and peer-record rollback. Whole-state restoration still needs
+the independent reconciliation or fresh identity required by [VPN](39-vpn.md#native-peer-operations).
+
 ## PostgreSQL substrate
 
 Only an absent PostgreSQL `data/` target on trusted Btrfs may receive a new subvolume and `+C`

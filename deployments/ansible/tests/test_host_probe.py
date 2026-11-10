@@ -2,6 +2,7 @@
 
 import base64
 import importlib.util
+import json
 import struct
 import unittest
 from pathlib import Path
@@ -390,28 +391,6 @@ class AuthorityTests(unittest.TestCase):
             with self.subTest(mode=mode, uid=uid), self.assertRaises(probe.Refusal):
                 probe.validate_mount_parent(SimpleNamespace(st_mode=mode, st_uid=uid))
 
-    def test_sudo_policy_accepts_only_explicit_denial(self):
-        for code, output, accepted in (
-            (1, "User lychd is not allowed to run sudo on pilot.", True),
-            (0, "User lychd is not allowed to run sudo on localhost.", True),
-            (0, "(ALL) ALL", False),
-            (0, "(ALL) ALL", False),
-            (1, "policy plugin failure", False),
-            (2, "unknown user", False),
-        ):
-            with (
-                self.subTest(code=code, output=output),
-                patch.object(probe.shutil, "which", return_value="/usr/bin/sudo"),
-                patch.object(
-                    probe.subprocess, "run", return_value=SimpleNamespace(returncode=code, stdout=output, stderr="")
-                ),
-            ):
-                if accepted:
-                    probe.require_no_sudo()
-                else:
-                    with self.assertRaisesRegex(probe.Refusal, "runtime sudo grants or indeterminate"):
-                        probe.require_no_sudo()
-
     def test_new_identity_gate_checks_effective_sudo_policy(self):
         account = SimpleNamespace(pw_uid=1001, pw_gid=1001, pw_dir="/home/lychd", pw_shell="/bin/bash")
         group = SimpleNamespace(gr_gid=1001, gr_mem=[])
@@ -426,6 +405,200 @@ class AuthorityTests(unittest.TestCase):
             with self.assertRaisesRegex(probe.Refusal, "runtime sudo"):
                 probe.observe_identity(fixture_intent())
             policy.assert_called_once_with()
+
+
+class SudoPolicyTests(unittest.TestCase):
+    # The converter expands User_Alias OPS = %operators into this Unix-group list.
+    grant = {
+        "User_Specs": [
+            {
+                "User_List": [{"usergroup": "operators"}],
+                "Host_List": [{"hostname": "ALL"}],
+                "Cmnd_Specs": [{"Commands": [{"command": "/usr/bin/id"}]}],
+            }
+        ],
+    }
+
+    def check(
+        self,
+        *,
+        matched=None,
+        complete=None,
+        failure=None,
+        config="",
+        nss="sudoers: files\n",
+        policy=None,
+        changed=False,
+    ):
+        if policy is None:
+            policy = "User_Alias OPS = %operators\nOPS ALL=(ALL) /usr/bin/id\n"
+        files = {
+            "/etc/sudoers": ("policy", policy),
+            "/etc/sudo.conf": ("config", config),
+            "/etc/nsswitch.conf": ("nss", nss),
+        }
+
+        def run(argv, **kwargs):
+            self.assertEqual(kwargs["env"], {"PATH": "/usr/sbin:/usr/bin", "LC_ALL": "C"})
+            if failure and failure[0] in argv[0]:
+                return SimpleNamespace(returncode=failure[1], stdout=failure[2], stderr=failure[3])
+            if argv[0] == "/usr/bin/rpm":
+                return SimpleNamespace(returncode=0, stdout="sudo\nopenSUSE\nsudo-1.9.99-1.1.src.rpm\n", stderr="")
+            if argv[0] == "/usr/bin/sudo":
+                self.assertEqual(argv[1:], ["-V"])
+                return SimpleNamespace(returncode=0, stdout="Sudoers path: /etc/sudoers:/usr/etc/sudoers\n", stderr="")
+            if argv[0].endswith("visudo"):
+                self.assertEqual(argv[1:], ["-c", "-q", "-s", "-f", "/etc/sudoers"])
+                return SimpleNamespace(returncode=0, stdout="", stderr="")
+            self.assertEqual(argv[:6], ["/usr/bin/cvtsudoers", "-c", "/dev/null", "-f", "json", "-e"])
+            self.assertEqual(argv[-1], "/etc/sudoers")
+            if "-m" in argv:
+                self.assertEqual(argv[6:-1], ["-m", "user=lychd", "-M"])
+                result = matched if matched is not None else {}
+                if changed:
+                    files["/etc/sudoers"] = ("changed", policy)
+            else:
+                result = complete if complete is not None else self.grant
+            return SimpleNamespace(returncode=0, stdout=json.dumps(result), stderr="")
+
+        with (
+            patch.object(
+                probe.shutil,
+                "which",
+                side_effect=lambda name, **kw: "/usr/sbin/visudo" if name == "visudo" else "/usr/bin/" + name,
+            ),
+            patch.object(probe, "trusted_sudo_path", return_value=SimpleNamespace(st_mode=0o100755)),
+            patch.object(probe, "read_sudo_file", side_effect=lambda path, **kw: files.get(str(path))),
+            patch.object(probe.pwd, "getpwnam", return_value=SimpleNamespace(pw_gid=1001)),
+            patch.object(probe.os, "getgrouplist", return_value=[1001, 2000]),
+            patch.object(probe.subprocess, "run", side_effect=run) as commands,
+        ):
+            probe.require_no_sudo()
+        self.assertEqual(commands.call_count, 7)
+
+    def test_unmatched_policy_accepts_only_after_both_conversions_and_visudo(self):
+        self.check()
+        self.check(matched={"User_Specs": []})
+
+    def test_alias_expanded_local_group_grant_refuses_even_without_user_name(self):
+        with self.assertRaisesRegex(probe.Refusal, "runtime sudo policy matches"):
+            self.check(matched=self.grant)
+
+    def test_parser_failures_are_not_policy_denial(self):
+        for failure in (
+            ("visudo", 1, "", ""),
+            ("cvtsudoers", 1, "{}", ""),
+            ("cvtsudoers", 0, "{}", "warning"),
+            ("cvtsudoers", 0, "not json", ""),
+            ("rpm", 0, "sudo 99.0\n", ""),
+            ("/sudo", 0, "Sudoers path: /elsewhere\n", ""),
+        ):
+            with self.subTest(failure=failure), self.assertRaises(probe.Refusal):
+                self.check(failure=failure)
+
+    def test_external_constructs_cannot_disappear_in_the_user_filter(self):
+        for key in ("netgroup", "nonunixgroup", "nonunixgid", "group_plugin"):
+            full = {"Defaults": [{"Options": [{key: "external"}]}]}
+            with self.subTest(key=key), self.assertRaisesRegex(probe.Refusal, "external sudo"):
+                self.check(complete=full, matched={})
+
+    def test_unknown_or_remote_nss_and_custom_plugins_refuse(self):
+        for nss in ("sudoers: sss", "sudoers: files ldap", "sudoers: files\nsudoers: files", "sudoers: unknown"):
+            with self.subTest(nss=nss), self.assertRaisesRegex(probe.Refusal, "NSS"):
+                self.check(nss=nss)
+        for config in (
+            "Plugin custom_policy custom.so",
+            "Plugin sudoers_policy /custom/sudoers.so",
+            "Plugin sudoers_policy sudoers.so sudoers_file=/elsewhere",
+            "Path plugin_dir /elsewhere",
+            "Plugin sudoers_audit sudoers.so sudoers_file=/elsewhere",
+            "Set group_source static",
+        ):
+            with self.subTest(config=config), self.assertRaisesRegex(probe.Refusal, "sudo.conf"):
+                self.check(config=config)
+        self.check(config="Plugin sudoers_policy sudoers.so\nPlugin sudoers_audit sudoers.so\n")
+
+    def test_include_introducers_refuse_without_interpreting_paths(self):
+        for directive in ("@include /elsewhere", "#include /elsewhere", "#includedir /etc/sudoers.d"):
+            with self.subTest(directive=directive), self.assertRaisesRegex(probe.Refusal, "includes"):
+                self.check(policy=directive)
+
+    def test_policy_mutation_during_conversion_invalidates_the_empty_match(self):
+        with self.assertRaisesRegex(probe.Refusal, "changed during observation"):
+            self.check(changed=True)
+
+    def test_missing_structured_policy_tool_never_skips_the_check(self):
+        with (
+            patch.object(probe.shutil, "which", return_value=None),
+            patch.object(probe.subprocess, "run") as commands,
+            self.assertRaisesRegex(probe.Refusal, "required for the local policy proof"),
+        ):
+            probe.require_no_sudo()
+        commands.assert_not_called()
+
+    def test_malformed_and_unknown_json_shapes_refuse(self):
+        for text in ("not json", "[]", '{"User_Specs":{}}', '{"unexpected": []}', '{"User_Specs":[],"User_Specs":[]}'):
+            with self.subTest(text=text), self.assertRaises(probe.Refusal):
+                probe.sudo_json(text)
+        self.assertEqual(probe.sudo_json(""), {})
+
+    def test_unknown_user_selector_cannot_be_pruned_into_an_empty_match(self):
+        full = {"User_Specs": [self.grant["User_Specs"][0] | {"User_List": [{"future_group": "remote"}]}]}
+        with self.assertRaisesRegex(probe.Refusal, "member type"):
+            self.check(complete=full)
+
+    def test_policy_files_refuse_symlinks_foreign_owner_and_writable_modes(self):
+        path = Path("/etc/sudoers")
+        directory = SimpleNamespace(st_mode=0o40755, st_uid=0)
+        for mode, uid in ((0o120777, 0), (0o100440, 1001), (0o100460, 0), (0o100442, 0)):
+            file = SimpleNamespace(st_mode=mode, st_uid=uid)
+            with (
+                self.subTest(mode=mode, uid=uid),
+                patch.object(probe.os.path, "lexists", return_value=True),
+                patch.object(
+                    probe.Path, "lstat", autospec=True, side_effect=lambda p: file if p == path else directory
+                ),
+                patch.object(probe.os, "open") as opened,
+                self.assertRaisesRegex(probe.Refusal, "untrusted sudo policy input"),
+            ):
+                probe.read_sudo_file(path)
+            opened.assert_not_called()
+
+    def test_file_pin_uses_no_follow_and_detects_replacement(self):
+        path = Path("/etc/sudoers")
+        directory = SimpleNamespace(st_mode=0o40755, st_uid=0)
+        fields = dict(
+            st_dev=1,
+            st_ino=2,
+            st_mode=0o100440,
+            st_uid=0,
+            st_gid=0,
+            st_nlink=1,
+            st_size=15,
+            st_mtime_ns=1,
+            st_ctime_ns=1,
+        )
+        for replaced in (False, True):
+            actual = SimpleNamespace(**(fields | ({"st_ino": 3} if replaced else {})))
+            with (
+                self.subTest(replaced=replaced),
+                patch.object(probe.os.path, "lexists", return_value=True),
+                patch.object(
+                    probe.Path,
+                    "lstat",
+                    autospec=True,
+                    side_effect=lambda p: SimpleNamespace(**fields) if p == path else directory,
+                ),
+                patch.object(probe.os, "open", return_value=3) as opened,
+                patch.object(probe.os, "fstat", return_value=actual),
+                patch.object(probe.os, "fdopen", mock_open(read_data="root ALL=ALL\n")),
+            ):
+                if replaced:
+                    with self.assertRaisesRegex(probe.Refusal, "changed while opening"):
+                        probe.read_sudo_file(path)
+                else:
+                    self.assertEqual(probe.read_sudo_file(path)[1], "root ALL=ALL\n")
+                self.assertTrue(opened.call_args.args[1] & probe.os.O_NOFOLLOW)
 
 
 class NsswitchTests(unittest.TestCase):

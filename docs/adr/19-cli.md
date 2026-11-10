@@ -148,6 +148,22 @@ characteristics, and progress/result shape; it must never grant an extension-own
 or arbitrary host execution. No run-operation catalogue, schema help, injected client seam, or
 Ward-authenticated CLI admission route is delivered today.
 
+The first designed admission is the closed grammar `lychd run tether prepare|enroll|inspect|revoke`
+for [the single-operator profile](39-vpn.md#native-peer-operations). `run` remains absent from
+delivered help until implemented; this decision adds no extension-owned root verb. The native
+host adapter owns the finite operation mapping and typed requests/results. It accepts neither
+an arbitrary extension callback nor a command, path, unit, or raw transport argument. This first
+slice requires no dynamic operation registry or remote Ward transport.
+
+Preparation runs before ordinary bind and creates only the two exact server secrets with
+creation receipts through fixed trusted factories. Enrollment requires those prepared identities
+and takes client public keys and exact peer intent; inspection observes its bounded state;
+revocation durably fences and closes the complete private road. Client private keys are
+never inputs or exports. Mutating dry runs produce the same typed plan without provisioning
+secrets, publishing intent or starting/stopping units. Repeated operation identity with different
+intent refuses. [Privilege](10-privilege.md#tether-host-operations-designed) owns serialization,
+guarded activation, interruption and settlement; the CLI only validates, delegates and renders.
+
 ### Delete only what the body can name
 
 `lychd del` retires an installation through init's separately confirmed destructive counterpart.

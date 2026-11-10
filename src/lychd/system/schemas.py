@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from ipaddress import IPv4Address
 from pathlib import Path, PurePosixPath
 from typing import Any, Final, Literal
 
@@ -290,6 +291,9 @@ class QuadletContainer(QuadletBase):
     # The actual command (list of args joined by spaces in template)
     exec: str | None = None
 
+    # Only the attributed compiler may emit either closed Tether role.
+    tether_role: Literal["wireguard", "forwarder"] | None = None
+
     # [Service] section
     service_type: Literal["simple", "oneshot"] | None = None
     remain_after_exit: bool = False
@@ -439,6 +443,24 @@ class QuadletPod(QuadletBase):
     @classmethod
     def validate_wanted_by(cls, values: list[str]) -> list[str]:
         return _validate_unit_name_list(values, field_name="QuadletPod.wanted_by")
+
+
+class QuadletTetherPod(QuadletBase):
+    """The compiler-only isolated body; ordinary Pod publication stays unchanged."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    pod_name: Literal["lychd-tether"] = "lychd-tether"
+    udp_bind_address: IPv4Address
+    udp_port: int = Field(ge=1024, le=65535, strict=True)
+    altar_port: int = Field(ge=1, le=65535, strict=True)
+
+    @field_validator("udp_bind_address")
+    @classmethod
+    def validate_bind_address(cls, value: IPv4Address) -> IPv4Address:
+        if value.is_multicast or value.is_link_local or value == IPv4Address("255.255.255.255"):
+            msg = "Tether UDP bind requires an explicit unicast or unspecified IPv4 address"
+            raise ValueError(msg)
+        return value
 
 
 class QuadletTarget(QuadletBase):

@@ -48,6 +48,74 @@ Future typed operations under a host-owned run-operation verb may generate, admi
 revoke, rotate, or export short-lived client configuration or QR projections. They would use
 that governed operation path without adding a root CLI verb.
 
+## First native operator profile (Designed) {#first-native-operator-profile}
+
+`single-operator-forward@1` is the first bounded implementation target: one trusted instance
+owner and one active WireGuard peer. The profile uses standard kernel WireGuard and OpenSSH in
+separate containers of a dedicated rootless Pod outside Core. It is not an installed capability,
+a shared Altar, remote IAM, a mesh, or a VPN exit. The [owning decision](../../adr/39-vpn.md#single-operator-profile)
+defines its exact boundary.
+
+The browser continues using `http://127.0.0.1:7134` through an ordinary SSH local forward. The
+server SSH destination is the configured loopback Altar port, reached through one exact pasta
+mapping. Only WireGuard UDP is publicly published. The peer receives only the server tunnel
+`/32`; it receives no DNS, default or LAN route. The existing Basic credential, Host, Origin,
+CORS and CSRF requirements remain unchanged. Keep a dedicated browser profile for this instance.
+
+The static Rune declares the tunnel/deployment envelope. Tether's separate public peer record
+contains the enrolled public key and generation; the forwarding role separately records the SSH
+authorized public key. The client creates and retains both private keys locally. Tether owns only
+server tunnel material; the forwarding role owns its server SSH host key, which the client pins.
+Neither container receives the application password. The server does not export client private
+keys or modify the operator's device.
+
+The designed operator sequence is:
+
+1. Prepare the Linux/rootless substrate and explicit UDP firewall opening. Qualify the exact
+   kernel, Podman, pasta and OpenSSH combination under an isolated installation first.
+2. Initialize the owned Tether custody leaves. Use the designed `lychd run tether prepare` to
+   create the exact server WireGuard and SSH host-key secrets and their creation receipts. Then
+   install the static service envelope through ordinary complete-fileset bind, which validates
+   both typed secret references. Existing active-Vessel and foreign-revision refusals still apply.
+3. Generate client keys locally. Use the designed `lychd run tether enroll` operation with public
+   keys and exact peer intent. The operation may activate only the already owned Tether units;
+   it cannot change the compiled topology or shared binding generation.
+4. Inspect desired, loaded and observed state through the designed `lychd run tether inspect`.
+   Establish the client WireGuard route and pinned SSH forward separately, then qualify the browser
+   and its refusal boundaries. Unit state alone cannot establish this result.
+5. Use the designed `lychd run tether revoke` to fence the generation and stop the complete private
+   road. Confirm terminal settlement. An incomplete result stays fenced and needs reconciliation;
+   it is not permission to clear the fence or repeat enrollment blindly.
+
+These command names describe the accepted first grammar; current CLI help does not implement them.
+Preparation creates server secrets before bind; later peer operations change only Tether's public
+intent and operation evidence, leaving prepared secret identities and compiled units unchanged.
+Changing the image, interface, UDP endpoint binding or forwarding destination requires normal bind.
+They cannot update or restart a separately running older Vessel.
+
+An independent host systemd path guard watches the durable closure latch and invokes the exact
+owned stop handler. Its conflict/ordering edges stop transport before the handler takes the
+lifecycle lock; watcher loss also requests stop. Closure still requires observed settlement,
+including established sessions, even if the revoking CLI crashes after writing the latch. A
+boot-only check cannot provide that property. The successful handler stays active/exited while
+the fixed latch persists. Re-enrollment first proves transport cold, stops the watcher, preserves
+old revocation evidence, stops/resets the handler and watcher, publishes the new generation,
+clears only the active latch durably, then starts the watcher before transport. Recovery after a
+fence never restarts the revoked generation.
+Reboot cannot restart a fenced generation. Whole-state rollback can also roll back its fence,
+so restoration needs independent revocation evidence or fresh server identity and client
+re-enrollment; a generation number alone is not rollback protection.
+
+Live qualification must include denied unrelated host/loopback/LAN destinations, unauthorized SSH
+channels, browser/SSE and hostile origins, established-session revocation, process/guard failure,
+interruption after fence persistence, tunnel loss and reboot. Keep their exact versions and observed
+results with delivery evidence. Do not infer these properties from generated configuration.
+
+When replacing the infrastructure access candidate, use a distinct endpoint and identity until
+the new road passes qualification. Then fence and retire the old road using its owner. Ansible
+retains substrate/firewall preparation; it must not remain a second controller for native peers,
+keys or units. Existing application data and receipts remain subject to their normal owners.
+
 ## Reach attachment
 
 The [Reach deployment matrix](../../compositions/reach/deployments/index.md) gives Tether one exact

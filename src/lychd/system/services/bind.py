@@ -6,7 +6,7 @@ from collections.abc import Callable, Mapping, Sequence
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Never, Protocol
+from typing import TYPE_CHECKING, Never, Protocol
 
 import structlog
 
@@ -19,6 +19,10 @@ from lychd.system.services.scribe.errors import (
     ScribeTransactionState,
 )
 from lychd.system.services.scribe.models import BindingReconcilePlan
+
+if TYPE_CHECKING:
+    from lychd.domain.tether.models import CompiledTetherPlan
+    from lychd.system.services.tether.models import PreparationReceipt
 
 logger = structlog.get_logger()
 
@@ -111,6 +115,19 @@ class SystemdReloadPort(Protocol):
         ...
 
 
+class BindingPreparationPort(Protocol):
+    """Read-only exact preparation evidence for a compiler-admitted Tether plan."""
+
+    def attest_tether_preparation(
+        self,
+        plan: CompiledTetherPlan,
+        *,
+        podman_bin: str,
+    ) -> PreparationReceipt:
+        """Attest immutable secret identities without creating or adopting them."""
+        ...
+
+
 @dataclass(frozen=True, slots=True)
 class CoreSecret:
     """One LychD-owned secret whose value may be generated when absent."""
@@ -127,6 +144,7 @@ class BindRequest:
     plain_units: tuple[tuple[str, str], ...]
     core_secrets: tuple[CoreSecret, ...]
     required_secret_names: tuple[str, ...]
+    tether_plans: tuple[CompiledTetherPlan, ...] = ()
 
     @classmethod
     def compile(
@@ -136,6 +154,7 @@ class BindRequest:
         plain_units: Mapping[str, str],
         core_secret_factories: Mapping[str, Callable[[], str]],
         required_secret_names: Sequence[str],
+        tether_plans: Sequence[CompiledTetherPlan] = (),
     ) -> BindRequest:
         """Canonicalize caller-owned collections into deterministic intent."""
         core_names = tuple(sorted(core_secret_factories))
@@ -149,6 +168,7 @@ class BindRequest:
             plain_units=tuple(sorted(plain_units.items())),
             core_secrets=tuple(CoreSecret(name=name, factory=core_secret_factories[name]) for name in core_names),
             required_secret_names=required,
+            tether_plans=tuple(tether_plans),
         )
 
     @property
@@ -177,6 +197,7 @@ class BindPlan:
     observed_secrets: tuple[tuple[str, bool], ...]
     missing_core_secrets: tuple[str, ...]
     missing_required_secrets: tuple[str, ...]
+    tether_preparation: tuple[PreparationReceipt, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -199,6 +220,7 @@ class BindUseCase:
         foundation: BindingFoundation,
         foundation_probe: Callable[[], BindingFoundation],
         lock_factory: Callable[[], AbstractContextManager[object]],
+        preparation: BindingPreparationPort | None = None,
     ) -> None:
         """Bind the use case to narrow mutation and revalidation ports."""
         self._scribe = scribe
@@ -207,12 +229,14 @@ class BindUseCase:
         self._foundation = foundation
         self._foundation_probe = foundation_probe
         self._lock_factory = lock_factory
+        self._preparation = preparation
 
     def plan(
         self,
         request: BindRequest,
     ) -> BindPlan:
         """Observe binding and secret generations without applying effects."""
+        tether_preparation = self._attest_tether_preparation(request)
         observed_secrets = self._observe_secrets(request.secret_names)
         presence = dict(observed_secrets)
         core_names = tuple(secret.name for secret in request.core_secrets)
@@ -225,6 +249,7 @@ class BindUseCase:
             observed_secrets=observed_secrets,
             missing_core_secrets=tuple(name for name in core_names if not presence[name]),
             missing_required_secrets=tuple(name for name in request.required_secret_names if not presence[name]),
+            tether_preparation=tether_preparation,
         )
         logger.debug(
             "bind_plan_observed",
@@ -243,6 +268,7 @@ class BindUseCase:
             self._require_approved_state(request, approved)
             created = self._reconcile_core_secrets(request, approved)
             self._require_secrets_at_commit(request, created=created)
+            self._require_tether_preparation(request, approved, created=created)
             committed_generation = self._commit_bindings(
                 request,
                 approved,
@@ -278,6 +304,7 @@ class BindUseCase:
         if self._foundation_probe() != self._foundation:
             msg = "Trusted host foundation changed after planning; rerun `lychd bind`."
             raise BindingPlanDriftError(msg)
+        self._require_tether_preparation(request, approved)
         current_bindings = self._scribe.plan_reconcile_all(
             request.manifests,
             plain_units=request.plain_unit_mapping(),
@@ -288,6 +315,43 @@ class BindUseCase:
         if self._observe_secrets(request.secret_names) != approved.observed_secrets:
             msg = "Podman secret state changed after planning; rerun `lychd bind`."
             raise BindingPlanDriftError(msg)
+
+    def _attest_tether_preparation(self, request: BindRequest) -> tuple[PreparationReceipt, ...]:
+        """Observe the exact immutable identities before exposing any bind preview."""
+        if not request.tether_plans:
+            return ()
+        if self._preparation is None:
+            msg = "Tether binding requires its native preparation attestor."
+            raise BindingRequirementError(msg)
+        return tuple(
+            self._preparation.attest_tether_preparation(plan, podman_bin=self._foundation.podman_bin)
+            for plan in request.tether_plans
+        )
+
+    def _require_tether_preparation(
+        self,
+        request: BindRequest,
+        approved: BindPlan,
+        *,
+        created: tuple[str, ...] = (),
+    ) -> None:
+        """Compare exact preparation receipts under the lock immediately before commit."""
+        try:
+            current = self._attest_tether_preparation(request)
+        except BaseException as exc:  # cancellation must retain confirmed Core creation
+            if not created:
+                raise
+            self._raise_partial(
+                "Tether preparation revalidation failed before binding commit",
+                phase="tether-preparation",
+                progress=BindProgress(created_secrets=created),
+                error=exc,
+            )
+        if current != approved.tether_preparation:
+            msg = "Tether preparation changed after planning; rerun `lychd bind`."
+            if not created:
+                raise BindingPlanDriftError(msg)
+            self._raise_partial(msg, phase="tether-preparation", progress=BindProgress(created_secrets=created))
 
     def _reconcile_core_secrets(
         self,

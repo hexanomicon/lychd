@@ -1,0 +1,24 @@
+[Unit]
+Description=LychD isolated single-operator Tether
+BindsTo=lychd-tether-guard.path
+After=lychd-tether-guard.path
+
+[Pod]
+PodName=lychd-tether
+Network=pasta:--ipv4-only,--no-map-gw,--map-host-loopback,none,--map-guest-addr,none,--dns,none,--dns-forward,169.254.1.1,--dns-host,127.0.0.1,--search,none,--no-dhcp-dns,--no-dhcp-search,-t,none,-T,127.0.0.1/{{ altar_port }},-U,none
+DNS=none
+PublishPort={{ udp_bind_address }}:{{ udp_port }}:{{ udp_port }}/udp
+PodmanArgs=--no-hosts
+
+[Service]
+ExecStartPre={{ tether_host_python }} -m lychd.system.services.tether.composition preflight-pod
+ExecStartPre={{ tether_host_python }} -m lychd.system.services.tether.composition begin-pod
+ExecStartPost={{ tether_host_python }} -m lychd.system.services.tether.composition attest-pod
+{% for assignment in tether_host_environment %}
+Environment={{ assignment }}
+{% endfor %}
+TimeoutStartSec=60
+TimeoutStopSec=30
+KillMode=control-group
+
+[Install]

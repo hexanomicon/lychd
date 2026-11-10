@@ -31,6 +31,16 @@ NoNewPrivileges=true
 DropCapability=all
 ReadOnly=true
 ReadOnlyTmpfs={{ read_only_tmpfs | lower }}
+{% if tether_role %}
+{% if tether_role == 'wireguard' %}
+AddCapability=CAP_NET_ADMIN
+Notify=true
+{% else %}
+AddCapability=CAP_SETUID CAP_SETGID CAP_SYS_CHROOT
+{% endif %}
+Tmpfs=/run:rw,nosuid,nodev,noexec,mode=0755,size=8m
+Tmpfs=/tmp:rw,nosuid,nodev,noexec,mode=1777,size=1m
+{% endif %}
 {% if secret_mount_tmpfs %}
 Tmpfs=/run/secrets:rw,nosuid,nodev,noexec,mode=0755,size=1m
 {% endif %}
@@ -90,6 +100,21 @@ Type={{ service_type }}
 RemainAfterExit=true
 {% endif %}
 Restart={{ restart_policy | default('always') }}
+{% if tether_role %}
+{% if tether_role == 'wireguard' %}
+ExecStartPre={{ tether_host_python }} -m lychd.system.services.tether.composition preflight-wireguard
+ExecStartPost={{ tether_host_python }} -m lychd.system.services.tether.composition attest-wireguard
+{% else %}
+ExecStartPre={{ tether_host_python }} -m lychd.system.services.tether.composition preflight-forwarder
+ExecStartPost={{ tether_host_python }} -m lychd.system.services.tether.composition attest-forwarder
+{% endif %}
+{% for assignment in tether_host_environment %}
+Environment={{ assignment }}
+{% endfor %}
+TimeoutStartSec=60
+TimeoutStopSec=30
+KillMode=control-group
+{% endif %}
 
 [Install]
 {% if wanted_by %}
