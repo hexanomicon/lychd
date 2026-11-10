@@ -60,3 +60,18 @@ def test_discord_only_adapter_refuses_non_snowflake_ids(identity: object) -> Non
 def test_bad_provider_configuration_never_expands_shared_policy(changes: dict[str, Any]) -> None:
     with pytest.raises(ValidationError):
         policy(**changes)
+
+
+def test_agent_display_name_defaults_and_never_enters_the_shared_policy() -> None:
+    default, named = policy(), policy(agent_display_name="Anvesha")
+    assert default.agent_display_name == "Nadir"
+    assert named.agent_display_name == "Anvesha"
+    # Presentation only: the compiled Reach policy and its worker binding digest are unchanged.
+    assert named.to_reach_policy() == default.to_reach_policy()
+    assert named.digest == default.digest
+
+
+@pytest.mark.parametrize("name", ["", " padded ", "two\nlines", "bell\x07", "x" * 81])
+def test_agent_display_name_refuses_unprintable_padded_or_oversized_text(name: str) -> None:
+    with pytest.raises(ValidationError):
+        policy(agent_display_name=name)

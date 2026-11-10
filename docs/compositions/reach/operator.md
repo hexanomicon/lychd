@@ -285,6 +285,12 @@ procedure below first.
 
 ## Start Reachy and try its commands
 
+The edge refers to itself by name in fixed operational notices such as refusals, timeouts and
+permission errors. Set `agent_display_name` in the private policy to match the bot's Discord name;
+it defaults to `Nadir`. It is presentation only: it is excluded from the compiled Reach policy and
+its digest, and grants no identity or authority. Notices about the model say "the model" rather
+than naming a particular one, because the model binding is configured separately.
+
 On the first launch, explicitly register commands for **this policy's guild** and allow your
 admitted user to run the read-only inspection command:
 

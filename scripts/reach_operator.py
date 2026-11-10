@@ -366,6 +366,11 @@ def load_images(path: Path) -> dict[str, str]:
     return {"core": record["core"], "edge": record["edge"]}
 
 
+def _prefixed_image_id(observed: str) -> str:
+    """Podman prints a bare hex image id where Docker prints the ``sha256:`` form."""
+    return observed if observed.startswith("sha256:") else f"sha256:{observed}"
+
+
 def _retain_image(engine: str, role: Literal["core", "edge"], identity: str, *, root: Path) -> None:
     """Keep the selected image addressable when a later build replaces its build tag."""
     if IMAGE_ID.fullmatch(identity) is None:
@@ -381,6 +386,7 @@ def _retain_image(engine: str, role: Literal["core", "edge"], identity: str, *, 
         .decode("ascii")
         .strip()
     )
+    observed = _prefixed_image_id(observed)
     if observed != identity:
         _fail("operator_image_retention")
 
@@ -404,6 +410,7 @@ def build_images(engine: str, output: Path, *, root: Path = ROOT) -> None:
         .decode()
         .strip()
     )
+    core = _prefixed_image_id(core)
     if IMAGE_ID.fullmatch(core) is None:
         _fail("operator_image_identity")
     _retain_image(engine, "core", core, root=root)
@@ -415,6 +422,10 @@ def build_images(engine: str, output: Path, *, root: Path = ROOT) -> None:
                 _fail("operator_build_input")
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(source, target)
+        # COPY keeps these modes, and the edge runs as the operator's UID rather than the image's
+        # owner, so a private caller umask would leave its source unreadable inside the image.
+        for path in (context, *context.rglob("*")):
+            path.chmod(0o755 if path.is_dir() else 0o644)
         (context / ".dockerignore").write_text("")
         (context / ".containerignore.build").write_text("")
         iidfile = context / "image.id"
@@ -498,7 +509,8 @@ def container_arguments(engine: str, image: str, cidfile: Path, *, offline: bool
         "--cpus",
         "1",
         "--tmpfs",
-        "/tmp:rw,nosuid,nodev,size=256m",  # noqa: S108 - isolated, size-limited container tmpfs
+        # Podman would otherwise copy the image's own /tmp into this bounded tmpfs and overflow it.
+        "/tmp:rw,nosuid,nodev,size=256m" + (",notmpcopyup" if engine == "podman" else ""),  # noqa: S108
         "--user",
         f"{os.getuid()}:{os.getgid()}",
     ]

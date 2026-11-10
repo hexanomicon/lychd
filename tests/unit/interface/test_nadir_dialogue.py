@@ -84,6 +84,17 @@ async def test_dm_denial_precedes_acknowledgement_and_native_request(denial: str
     native.request.assert_not_awaited()
 
 
+def test_dm_from_an_uncached_channel_without_a_recipient_is_admitted() -> None:
+    # Without a member cache the SDK builds the DM channel from the message alone, leaving
+    # ``recipient`` unset. The allowlisted non-bot author is still the only possible recipient;
+    # the reply path separately verifies the channel's recipients before sending.
+    configured, observed = policy(), direct_message()
+    observed.channel.recipient = None
+    event = event_from_message(observed, configured, conversation=True)
+    assert event is not None
+    assert (event.subject_id, event.conversation_id, event.action) == ("105", "204", "converse")
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("fail_second_part", [False, True])
 async def test_dm_starts_with_native_reply_and_multipart_delivery_stops_on_unknown(

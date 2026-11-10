@@ -10,6 +10,8 @@ event_ttl_seconds = 300
 max_question_chars = 2000
 context_message_limit = 0
 context_max_age_seconds = 600
+# Name the bot uses for itself in fixed notices (errors, refusals). Presentation only.
+agent_display_name = "Nadir"
 
 # First matching user-or-role rule wins, including denial of a missing action.
 [[rules]]

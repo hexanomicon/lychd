@@ -439,3 +439,21 @@ async def test_busy_worker_refuses_before_history() -> None:
     with pytest.raises(ValueError, match="worker_busy_or_unavailable"):
         await configured.run_event(configured.session(observed), channel)
     channel.history.assert_not_called()
+
+
+def test_fixed_notices_use_the_configured_display_name_and_name_no_model() -> None:
+    from lychd.interface.discord.delivery import WORKER_FAILURES, failure_text, worker_problem
+
+    for reason in WORKER_FAILURES:
+        default, named = worker_problem(reason), worker_problem(reason, agent_name="Anvesha")
+        assert "{agent}" not in default
+        assert "{agent}" not in named
+        assert "Nadir" not in named
+        assert "Qwen" not in default
+        assert named == default.replace("Nadir", "Anvesha")
+    assert "Anvesha's channel" in worker_problem("foreign_failure", refused=True, agent_name="Anvesha")
+    assert "Nadir's channel" in worker_problem("foreign_failure", refused=True)
+    assert failure_text(TimeoutError(), agent_name="Anvesha").startswith("Anvesha timed out")
+    assert "Anvesha's logs" in failure_text(RuntimeError("private detail"), agent_name="Anvesha")
+    # The name is inserted literally and is never interpreted as a template itself.
+    assert "{agent} timed out" in failure_text(TimeoutError(), agent_name="{agent}")

@@ -23,6 +23,9 @@ class _Value(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True, hide_input_in_errors=True)
 
 
+DEFAULT_AGENT_DISPLAY_NAME = "Nadir"
+
+
 class DiscordRule(_Value):
     """Friendly Discord selectors; rule evaluation belongs to Reach."""
 
@@ -56,6 +59,16 @@ class DiscordPolicy(_Value):
     max_question_chars: int = Field(default=2000, ge=1, le=2000)
     context_message_limit: int = Field(default=0, ge=0, le=50)
     context_max_age_seconds: int = Field(default=600, ge=1, le=172800)
+    agent_display_name: str = Field(default=DEFAULT_AGENT_DISPLAY_NAME, min_length=1, max_length=80)
+    """Name the edge uses for itself in fixed operational notices; presentation only, never authority."""
+
+    @field_validator("agent_display_name")
+    @classmethod
+    def single_line_display_name(cls, value: str) -> str:
+        if not value.isprintable() or value != value.strip():
+            msg = "Discord agent display name must be printable single-line text without surrounding whitespace."
+            raise ValueError(msg)
+        return value
 
     @field_validator("schema_version", mode="before")
     @classmethod
