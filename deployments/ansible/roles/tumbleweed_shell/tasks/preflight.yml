@@ -23,10 +23,14 @@
   changed_when: false
 
 - name: Retain exact identity and selected startup defaults
+  vars:
+    _lychd_shell_zsh_hook: |
+      # Managed by LychD interactive shell v1
+      source "$HOME/.config/lychd-shell/zshrc"
   ansible.builtin.set_fact:
     lychd_shell_identity: "{{ (lychd_shell_observation.stdout | from_json).identity }}"
     lychd_shell_files: >-
-      {{ {'.zshrc': '# Managed by LychD interactive shell v1\nsource "$HOME/.config/lychd-shell/zshrc"\n',
+      {{ {'.zshrc': _lychd_shell_zsh_hook,
           '.config/lychd-shell/zshrc': lookup('ansible.builtin.template', 'zshrc.j2')}
          if lychd_shell == 'zsh' else {} }}
 
