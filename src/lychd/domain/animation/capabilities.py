@@ -63,6 +63,13 @@ class CapabilitySpec(BaseModel):
     generation_profile: GenerationProfile = Field(default_factory=GenerationProfile)
     is_dynamic: bool = False
     concurrency: ConcurrencyIntent = Field(default_factory=ConcurrencyIntent)
+    # Operator opt-in copied from the Portal Rune's ``allow_dispatch``; meaningless for Soulstones.
+    egress_admitted: bool = False
+
+    @property
+    def egress_refused(self) -> bool:
+        """Whether this is a Portal whose operator has not opted in to dispatch."""
+        return self.source_kind is SourceKind.PORTAL and not self.egress_admitted
 
     def require_executable_v1_family(self) -> None:
         """Refuse metadata-only labels before readiness can request physical work.
