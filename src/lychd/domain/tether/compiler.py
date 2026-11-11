@@ -208,6 +208,8 @@ class _NetworkBuilder:
                 user="0" if role in {"wireguard", "owner-ssh"} else "%U",
                 read_only=True,
                 run_init=False,
+                # Only native activation may journal and retain a replacement incarnation.
+                restart_policy="no",
                 secret_mount_tmpfs=bool(specs),
                 volumes=mounts,
                 secrets=specs,
