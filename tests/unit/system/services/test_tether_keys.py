@@ -765,3 +765,141 @@ def test_batch_rejects_material_aliases_even_with_consistent_public_receipts(
     runner.secrets[other]["SecretData"] = encoded(material)
     with pytest.raises(TetherError, match="refused"):
         service.attest_many((REFERENCE, other))
+
+
+def create_or_import(
+    service: keys.TetherKeys, reference: str, path: Path, operation: Literal["ensure", "import"]
+) -> dict[str, Any]:
+    if operation == "ensure":
+        return service.ensure(reference, "wireguard")
+    return service.import_key(reference, path, "wireguard")
+
+
+@pytest.mark.parametrize("operation", ["ensure", "import"])
+@pytest.mark.parametrize("count", [1, 4])
+def test_creation_uniqueness_has_one_snapshot_independent_of_existing_key_count(
+    gateway: tuple[keys.TetherKeys, Custody, Runner],
+    tmp_path: Path,
+    count: int,
+    operation: Literal["ensure", "import"],
+) -> None:
+    service, custody, runner = gateway
+    for index in range(count):
+        runner.private = bytes([8]) + bytes([97 + index]) * 30 + bytes([64])
+        service.ensure(f"lychd-tether-existing-{index}", "wireguard")
+    runner.private = b"z" * 32
+    path = private_input(tmp_path, runner.private)
+    custody.scans = custody.snapshot_reads = 0
+    runner.commands.clear()
+    identity = create_or_import(service, REFERENCE, path, operation)
+    # Entry attestation + two target reads + two snapshot scans + two receipt writes.
+    assert custody.scans == 7
+    assert custody.snapshot_reads == 2 * count
+    inspections = [argv for argv in runner.commands if argv[2:4] == ("secret", "inspect")]
+    assert len(inspections) == count + 1
+    assert len({argv[-1] for argv in inspections}) == count + 1
+    custody.scans = custody.snapshot_reads = 0
+    runner.commands.clear()
+    assert create_or_import(service, REFERENCE, path, operation) == identity
+    assert custody.scans == 5
+    assert custody.snapshot_reads == 2 * (count + 1)
+    assert not any(argv[2:4] == ("secret", "create") for argv in runner.commands)
+
+
+@pytest.mark.parametrize("operation", ["ensure", "import"])
+@pytest.mark.parametrize("phase", ["pending", "ready"])
+@pytest.mark.parametrize("tamper", ["missing", "labels"])
+def test_creation_batch_preserves_pending_absence_and_live_backend_refusal(
+    gateway: tuple[keys.TetherKeys, Custody, Runner],
+    tmp_path: Path,
+    operation: Literal["ensure", "import"],
+    phase: str,
+    tamper: str,
+) -> None:
+    service, custody, runner = gateway
+    if phase == "pending":
+        runner.fail_create = "after"
+        with pytest.raises(TetherError):
+            service.ensure(REFERENCE, "wireguard")
+        runner.fail_create = None
+    else:
+        service.ensure(REFERENCE, "wireguard")
+    if tamper == "missing":
+        del runner.secrets[REFERENCE]
+    else:
+        runner.secrets[REFERENCE]["Spec"]["Labels"] = {}
+    runner.private = b"z" * 32
+    path = private_input(tmp_path, runner.private)
+    retained = copy.deepcopy(custody.records)
+    runner.commands.clear()
+    if phase == "pending" and tamper == "missing":
+        assert create_or_import(service, "lychd-tether-next", path, operation)["reference"] == "lychd-tether-next"
+        assert all(custody.records[name] == record for name, record in retained.items())
+        assert REFERENCE not in runner.secrets
+    else:
+        with pytest.raises(TetherError, match="refused"):
+            create_or_import(service, "lychd-tether-next", path, operation)
+        assert custody.records == retained
+        assert not any(argv[2:4] == ("secret", "create") for argv in runner.commands)
+
+
+@pytest.mark.parametrize("operation", ["ensure", "import"])
+def test_creation_batch_exit_drift_refuses_before_any_new_receipt_or_backend_create(
+    gateway: tuple[keys.TetherKeys, Custody, Runner],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    operation: Literal["ensure", "import"],
+) -> None:
+    service, custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    runner.private = b"z" * 32
+    path = private_input(tmp_path, runner.private)
+    retained = copy.deepcopy(custody.records)
+    original = runner.run
+
+    def drift(argv: tuple[str, ...], *, timeout_s: float) -> ProcessResult:
+        result = original(argv, timeout_s=timeout_s)
+        if argv[2:4] == ("secret", "inspect"):
+            custody.records["foreign.json"] = {}
+        return result
+
+    monkeypatch.setattr(runner, "run", drift)
+    runner.commands.clear()
+    with pytest.raises(TetherError, match="refused"):
+        create_or_import(service, "lychd-tether-next", path, operation)
+    assert custody.records == {**retained, "foreign.json": {}}
+    assert set(runner.secrets) == {REFERENCE}
+    assert not any(argv[2:4] == ("secret", "create") for argv in runner.commands)
+
+
+@pytest.mark.parametrize("operation", ["ensure", "import"])
+@pytest.mark.parametrize("alias", ["raw", "clamped", "public"])
+def test_creation_batch_preserves_all_material_alias_checks(
+    gateway: tuple[keys.TetherKeys, Custody, Runner],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    operation: Literal["ensure", "import"],
+    alias: str,
+) -> None:
+    service, custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    candidate = PRIVATE if alias == "raw" else bytes([PRIVATE[0] | 1]) + PRIVATE[1:]
+    if alias == "public":
+        candidate = b"z" * 32
+        original = runner.run_with_input
+
+        def same_public(argv: tuple[str, ...], *, timeout_s: float, input_text: str) -> ProcessResult:
+            if argv == ("/tools/wg", "pubkey") and input_text == encoded(candidate):
+                return ProcessResult(argv, 0, encoded(hashlib.sha256(PRIVATE).digest()))
+            return original(argv, timeout_s=timeout_s, input_text=input_text)
+
+        monkeypatch.setattr(runner, "run_with_input", same_public)
+    runner.private = candidate
+    path = private_input(tmp_path, candidate)
+    retained = copy.deepcopy(custody.records)
+    runner.commands.clear()
+    with pytest.raises(TetherError, match="refused"):
+        create_or_import(service, "lychd-tether-next", path, operation)
+    assert custody.records == retained
+    assert set(runner.secrets) == {REFERENCE}
+    assert not any(argv[2:4] == ("secret", "create") for argv in runner.commands)

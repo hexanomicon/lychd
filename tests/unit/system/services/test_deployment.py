@@ -935,7 +935,7 @@ def infra_world(mocker: MockerFixture, tmp_path: Path, *, tether: bool = False) 
         )
     sources, observed = infra_sources(tmp_path, manifests)
     reactor = tmp_path / "user/lychd-reactor.service"
-    observed[reactor.name] = dict(unit("active", sub="running", name=reactor.name), FragmentPath=str(reactor))
+    observed[reactor.name] = dict(unit(name=reactor.name), FragmentPath=str(reactor))
     bindings = OwnedBindings(
         receipt_present=True,
         generation="exact",

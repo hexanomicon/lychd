@@ -458,19 +458,20 @@ class TetherKeys:
             copy[-1] = (copy[-1] & 127) | 64
             return bytes(copy)
 
-        for other in self.known_references():
-            if other == reference:
-                continue
-            pending = self.preparation_state(other) == "pending"
-            record = self._record(self.custody.read(_name(other, pending=pending)), other, final=not pending)
-            if pending and self._call("podman", "secret", "exists", other, absence=True) is None:
-                continue
-            _identity, _value, previous = self._inspect(record)
-            _require(not hmac.compare_digest(material, previous))
-            if purpose == "wireguard" or record["purpose"] == "wireguard":
-                _require(not hmac.compare_digest(scalar(material), scalar(previous)))
-            if public is not None and purpose == record["purpose"]:
-                _require(public != record["public_key"])
+        with self.custody.records_snapshot() as view:
+            for other, entry in self._inventory(view).items():
+                if other == reference:
+                    continue
+                if entry.phase == "pending" and self._call("podman", "secret", "exists", other, absence=True) is None:
+                    continue
+                record = entry.record
+                _identity, _value, previous = self._inspect(record)
+                _require(not hmac.compare_digest(material, previous))
+                if purpose == "wireguard" or record["purpose"] == "wireguard":
+                    _require(not hmac.compare_digest(scalar(material), scalar(previous)))
+                if public is not None and purpose == record["purpose"]:
+                    _require(public != record["public_key"])
+        # Snapshot exit proves unchanged custody before the caller may publish a receipt.
 
     def _existing(self, reference: str, purpose: Purpose, imported: str | None = None) -> dict[str, Any] | None:
         final = self.custody.read(_name(reference))
