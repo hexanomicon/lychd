@@ -646,7 +646,7 @@ class HeartbeatKernel:
 
     def configure(self, config: dict[str, Any], current: dict[str, Any] | None) -> None:
         assert "accept" not in self.policy
-        admitted = (
+        admitted: set[str] = (
             set()
             if current is None or not current["enabled"]
             else {row["id"] for row in current["peers"] if row["enabled"]}
