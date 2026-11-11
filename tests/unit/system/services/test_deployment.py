@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import json
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
@@ -8,7 +10,8 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from lychd.config.settings import SettingsSnapshot
-from lychd.system.schemas import QuadletContainer
+from lychd.system.operator.process import ProcessResult
+from lychd.system.schemas import QuadletContainer, QuadletPod
 from lychd.system.services.deployment import (
     DeploymentInspectionService,
     DeploymentObservationError,
@@ -19,6 +22,8 @@ from lychd.system.services.scribe import OwnedBindings
 
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
+
+    from lychd.system.schemas import QuadletBase
 
 REVISION = "a" * 40
 IMAGE = "b" * 64
@@ -835,3 +840,309 @@ def test_tether_desired_bindings_use_effective_native_request(mocker: MockerFixt
     assert manifests == []
     assert units == {"managed.service": "current topology"}
     native.bind_request.assert_called_once_with()
+
+
+@dataclass
+class InfraEngine:
+    pods: dict[str, list[object]] = field(default_factory=dict)
+    containers: dict[str, list[object]] = field(default_factory=dict)
+    invocations: dict[str, str] = field(default_factory=dict)
+    calls: list[tuple[str, ...]] = field(default_factory=list)
+
+    def run(self, tool: str, *arguments: str) -> str:
+        self.calls.append((tool, *arguments))
+        if tool == "systemctl":
+            assert arguments[:2] == ("--user", "show")
+            assert arguments[3:] == ("--property=InvocationID", "--value")
+            return self.invocations[arguments[2]]
+        assert tool == "podman"
+        kind, verb, identity, flag, projection = arguments
+        assert verb == "inspect"
+        assert flag == "--format"
+        assert "Env" not in projection
+        assert "Secret" not in projection
+        if identity == "lychd-vessel":
+            assert projection == "{{.Image}}"
+            return IMAGE
+        if kind == "pod":
+            assert projection == "[{{json .ID}},{{json .Name}},{{json .CreateInfra}},{{json .InfraContainerID}}]"
+        else:
+            assert projection == (
+                "[{{json .ID}},{{json .Name}},{{json .Pod}},{{json .IsInfra}},"
+                "{{json .State.Running}},{{json .State.ConmonPid}}]"
+            )
+        rows = self.pods if kind == "pod" else self.containers
+        row = next((row for name, row in rows.items() if identity in (name, row[0])), None)
+        if row is None:
+            message = "Synthetic runtime object unavailable"
+            raise DeploymentObservationError(message)
+        return json.dumps(row)
+
+
+@dataclass
+class InfraWorld:
+    service: DeploymentInspectionService
+    engine: InfraEngine
+    bindings: OwnedBindings
+    observed: dict[str, dict[str, str]]
+    footprint: dict[str, list[str]]
+    request: DeploymentRequest
+
+
+def infra_sources(tmp_path: Path, manifests: list[QuadletBase]) -> tuple[tuple[Path, ...], dict[str, dict[str, str]]]:
+    sources: list[Path] = []
+    observed: dict[str, dict[str, str]] = {}
+    for index, manifest in enumerate(manifests):
+        if isinstance(manifest, QuadletPod):
+            stem, suffix = manifest.pod_name, ".pod"
+            name = stem + "-pod.service"
+        else:
+            assert isinstance(manifest, QuadletContainer)
+            stem, suffix = manifest.container_name, ".container"
+            name = stem + ".service"
+        source = tmp_path / "quadlet" / (stem + suffix)
+        fragment = tmp_path / "runtime/systemd/generator" / name
+        for path in (source, fragment):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("exact")
+            path.chmod(0o600)
+        sources.append(source)
+        observed[name] = dict(
+            unit("active", sub="running", name=name),
+            FragmentPath=str(fragment),
+            SourcePath=str(source),
+            MainPID=str(100 + index),
+        )
+    return tuple(sources), observed
+
+
+def infra_world(mocker: MockerFixture, tmp_path: Path, *, tether: bool = False) -> InfraWorld:
+    service: DeploymentInspectionService = world(mocker, tmp_path)
+    engine = InfraEngine()
+    pod_names = ["lychd", *(["lychd-tether-" + "d" * 16] if tether else [])]
+    manifests: list[QuadletBase] = [
+        QuadletContainer(image="example/core", container_name="lychd-vessel", pod="lychd.pod"),
+        *(QuadletPod(pod_name=name) for name in pod_names),
+    ]
+    if tether:
+        manifests.append(
+            QuadletContainer(image="example/tether", container_name=pod_names[1] + "-wg", pod=pod_names[1] + ".pod")
+        )
+    sources, observed = infra_sources(tmp_path, manifests)
+    reactor = tmp_path / "user/lychd-reactor.service"
+    observed[reactor.name] = dict(unit("active", sub="running", name=reactor.name), FragmentPath=str(reactor))
+    bindings = OwnedBindings(
+        receipt_present=True,
+        generation="exact",
+        systemd_sources=(reactor,),
+        quadlet_sources=sources,
+        runtime_units=tuple(sorted(observed)),
+    )
+    for index, name in enumerate(pod_names):
+        pod_id, infra_id = str(index + 1) * 64, str(index + 3) * 64
+        # The arbitrary observed name deliberately does not use an infra suffix.
+        infra_name = f"lychd-observed-{index}"
+        engine.pods[name] = [pod_id, name, True, infra_id]
+        unit_name = name + "-pod.service"
+        engine.containers[infra_id] = [infra_id, infra_name, pod_id, True, True, int(observed[unit_name]["MainPID"])]
+        engine.invocations[unit_name] = "a" * 32
+    containers = [
+        *(row.container_name for row in manifests if isinstance(row, QuadletContainer)),
+        *(str(row[1]) for row in engine.containers.values()),
+    ]
+    footprint = {
+        "foreign_sources": [],
+        "containers": containers,
+        "pods": pod_names,
+        "secrets": [],
+        "running_containers": list(containers),
+    }
+    mocker.patch.object(service.scribe, "inspect_owned_bindings", return_value=bindings)
+    mocker.patch.object(service, "_unit_names", return_value=set(observed))
+
+    def observe(name: str) -> dict[str, str]:
+        return dict(observed[name])
+
+    mocker.patch.object(service, "observe_unit", side_effect=observe)
+    mocker.patch.object(service, "_footprint", return_value=footprint)
+    mocker.patch.object(service, "desired_bindings", return_value=(manifests, {reactor.name: "exact"}))
+    mocker.patch.object(service, "run", side_effect=engine.run)
+    request = DeploymentRequest(REVISION, IMAGE)
+    if tether:
+        native = mocker.patch("lychd.system.services.tether.service.NativeTetherService").return_value
+        native.preparation_status.return_value = {"state": "prepared"}
+        native.inspect.return_value = {"schema": "lychd.tether.inspection", "version": 1, "state": "active"}
+        mocker.patch.object(service, "_require_tether_image")
+        request = DeploymentRequest(
+            REVISION,
+            IMAGE,
+            profile="tether-container-v1",
+            intent_path=tmp_path / "intent.json",
+            tether_image_id="c" * 64,
+        )
+    return InfraWorld(service, engine, bindings, observed, footprint, request)
+
+
+@pytest.mark.parametrize("tether", [False, True])
+def test_deployment_admits_only_proved_implicit_pod_infrastructure(
+    mocker: MockerFixture, tmp_path: Path, *, tether: bool
+) -> None:
+    current = infra_world(mocker, tmp_path, tether=tether)
+    effects = mocker.patch.object(current.service.scribe, "reconcile_all")
+    for _ in range(2):
+        report = current.service.inspect(current.request)
+        assert report.state == "running"
+        assert report.as_dict()["next_action"] == "observe"
+        assert report.facts["footprint"] == current.footprint
+    assert len([call for call in current.engine.calls if call[0:2] == ("podman", "pod")]) == 4 * (1 + tether)
+    effects.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("kind", "index", "value"),
+    [
+        ("pod", 0, "f" * 64),
+        ("pod", 2, False),
+        ("pod", 2, "true"),
+        ("pod", 3, "short"),
+        ("pod", 3, "f" * 64),
+        ("container", 0, "f" * 64),
+        ("container", 2, "f" * 64),
+        ("container", 3, False),
+        ("container", 3, "true"),
+        ("container", 3, None),
+        ("container", 4, False),
+        ("container", 5, 999),
+        ("container", 5, True),
+        ("container", 5, "101"),
+    ],
+)
+def test_deployment_refuses_wrong_infrastructure_identity_or_manager(
+    mocker: MockerFixture, tmp_path: Path, kind: str, index: int, value: object
+) -> None:
+    current = infra_world(mocker, tmp_path)
+    rows = current.engine.pods if kind == "pod" else current.engine.containers
+    next(iter(rows.values()))[index] = value
+    report = current.service.inspect(current.request)
+    assert report.state == "unknown"
+    assert report.reasons == ["foreign_runtime_material"]
+
+
+@pytest.mark.parametrize("category", ["containers", "pods", "secrets"])
+def test_infrastructure_exception_never_hides_foreign_material(
+    mocker: MockerFixture, tmp_path: Path, category: str
+) -> None:
+    current = infra_world(mocker, tmp_path)
+    current.footprint[category].append("lychd-foreign-infra")
+    report = current.service.inspect(current.request)
+    assert report.state == "unknown"
+    assert report.reasons == ["foreign_runtime_material"]
+
+
+@pytest.mark.parametrize("payload", ["not-json synthetic-sensitive-input", "{}", "[]", "[null]", "[]\n[]"])
+def test_infrastructure_malformed_projection_is_a_content_free_refusal(
+    mocker: MockerFixture, tmp_path: Path, payload: str
+) -> None:
+    current = infra_world(mocker, tmp_path)
+
+    def malformed(tool: str, *arguments: str) -> str:
+        if tool == "podman" and arguments[0] == "pod":
+            return payload
+        return current.engine.run(tool, *arguments)
+
+    mocker.patch.object(current.service, "run", side_effect=malformed)
+    report = current.service.inspect(current.request)
+    assert report.state == "unknown"
+    assert report.reasons == ["foreign_runtime_material"]
+    assert "synthetic-sensitive-input" not in json.dumps(report.as_dict())
+
+
+@pytest.mark.parametrize("drift", ["pod", "container", "invocation", "generation"])
+def test_infrastructure_observation_refuses_replacement_between_reads(
+    mocker: MockerFixture, tmp_path: Path, drift: str
+) -> None:
+    current = infra_world(mocker, tmp_path)
+    reads = 0
+
+    def changing(tool: str, *arguments: str) -> str:
+        nonlocal reads
+        result = current.engine.run(tool, *arguments)
+        if tool == "podman" and arguments[0] == "container" and arguments[2] != "lychd-vessel":
+            reads += 1
+            if reads == 1:
+                if drift == "pod":
+                    current.engine.pods["lychd"][3] = "f" * 64
+                elif drift == "container":
+                    next(iter(current.engine.containers.values()))[1] = "lychd-replaced"
+                elif drift == "invocation":
+                    current.engine.invocations["lychd-pod.service"] = "b" * 32
+                else:
+                    mocker.patch.object(
+                        current.service.scribe,
+                        "inspect_owned_bindings",
+                        return_value=replace(current.bindings, generation="changed"),
+                    )
+        return result
+
+    mocker.patch.object(current.service, "run", side_effect=changing)
+    report = current.service.inspect(current.request)
+    assert report.state == "unknown"
+    assert report.reasons == ["foreign_runtime_material"]
+
+
+@pytest.mark.parametrize("authority", ["receipt", "source", "inactive", "shadow", "generation"])
+def test_infrastructure_requires_complete_current_binding_authority(
+    mocker: MockerFixture, tmp_path: Path, authority: str
+) -> None:
+    current = infra_world(mocker, tmp_path)
+    if authority in {"receipt", "source"}:
+        bindings = (
+            replace(current.bindings, receipt_present=False)
+            if authority == "receipt"
+            else replace(
+                current.bindings,
+                quadlet_sources=tuple(path for path in current.bindings.quadlet_sources if path.suffix != ".pod"),
+            )
+        )
+        mocker.patch.object(current.service.scribe, "inspect_owned_bindings", return_value=bindings)
+    elif authority == "inactive":
+        current.observed["lychd-pod.service"].update(ActiveState="inactive", SubState="dead", MainPID="0")
+    elif authority == "shadow":
+        current.observed["lychd-pod.service"]["DropInPaths"] = "/foreign/override.conf"
+    else:
+        mocker.patch.object(current.service.scribe, "plan_reconcile_all", return_value=SimpleNamespace(mutates=True))
+    if authority == "shadow":
+        with pytest.raises(DeploymentObservationError, match="effective_binding_override"):
+            current.service.inspect(current.request)
+    else:
+        report = current.service.inspect(current.request)
+        assert report.state == "unknown"
+        assert report.as_dict()["next_action"] == "refuse"
+    assert not current.engine.calls or all(call[0] == "systemctl" for call in current.engine.calls)
+
+
+def test_deployment_observations_pin_local_podman_despite_ambient_remote(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CONTAINER_HOST", "ssh://foreign.invalid/run/podman.sock")
+    monkeypatch.setenv("CONTAINER_CONNECTION", "foreign-engine")
+    service = DeploymentInspectionService.__new__(DeploymentInspectionService)
+    runner = mocker.Mock()
+    service.runner = runner
+    runner.run.return_value = ProcessResult(("/tools/podman",), 0, "observed")
+
+    def trusted(name: str) -> str:
+        return "/tools/" + name
+
+    mocker.patch("lychd.system.services.deployment.trusted_host_tool", side_effect=trusted)
+    for arguments in (
+        ("ps", "--all"),
+        ("pod", "inspect", "1" * 64),
+        ("container", "inspect", "2" * 64),
+        ("secret", "ls"),
+        ("image", "inspect", "pinned"),
+    ):
+        assert service.run("podman", *arguments) == "observed"
+        runner.run.assert_called_with(("/tools/podman", "--remote=false", *arguments), timeout_s=20.0)
+    service.run("systemctl", "--user", "show", "lychd-pod.service")
+    runner.run.assert_called_with(("/tools/systemctl", "--user", "show", "lychd-pod.service"), timeout_s=20.0)

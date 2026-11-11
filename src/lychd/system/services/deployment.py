@@ -42,6 +42,12 @@ SCHEMA = "lychd.deployment"
 VERSION = 1
 _REVISION = re.compile(r"[0-9a-f]{40}")
 _IMAGE_ID = re.compile(r"(?:sha256:)?([0-9a-f]{64})")
+_RUNTIME_ID = re.compile(r"[0-9a-f]{64}")
+_INVOCATION_ID = re.compile(r"[0-9a-f]{32}")
+_POD_PROJECTION = "[{{json .ID}},{{json .Name}},{{json .CreateInfra}},{{json .InfraContainerID}}]"
+_INFRA_PROJECTION = (
+    "[{{json .ID}},{{json .Name}},{{json .Pod}},{{json .IsInfra}},{{json .State.Running}},{{json .State.ConmonPid}}]"
+)
 _COMMON_PROPERTIES = (
     "Id",
     "LoadState",
@@ -157,7 +163,8 @@ class DeploymentInspectionService:
         if executable is None:
             msg = f"tool_unavailable:{tool}"
             raise DeploymentObservationError(msg)
-        result = self.runner.run((executable, *arguments), timeout_s=20.0)
+        options = ("--remote=false",) if tool == "podman" else ()
+        result = self.runner.run((executable, *options, *arguments), timeout_s=20.0)
         if result.returncode != 0:
             msg = f"observation_failed:{tool}"
             raise DeploymentObservationError(msg)
@@ -238,11 +245,12 @@ class DeploymentInspectionService:
             manifest.container_name for manifest in manifests if isinstance(manifest, QuadletContainer)
         }
         expected_pods = {manifest.pod_name for manifest in manifests if isinstance(manifest, QuadletPod)}
+        extra_containers = set(footprint["containers"]) - expected_containers
         if (
             set(footprint["secrets"])
             - {*settings.server.privileged_secret_names, *self._tether.get("owned_secrets", ())}
             or set(footprint["pods"]) - expected_pods
-            or set(footprint["containers"]) - expected_containers
+            or (extra_containers and not bindings.receipt_present)
         ):
             report.reasons.append("foreign_runtime_material")
             return report
@@ -273,6 +281,14 @@ class DeploymentInspectionService:
         if plan.mutates:
             report.reasons.append("bindings_differ_from_declared_generation")
             return report
+        if extra_containers:
+            try:
+                infrastructure = self._owned_infra_names(manifests, bindings, observed, footprint)
+            except DeploymentObservationError:
+                infrastructure = frozenset()
+            if extra_containers - infrastructure:
+                report.reasons.append("foreign_runtime_material")
+                return report
         report.facts["binding_generation"] = bindings.generation
         active_units = self._active_names(manifests, plain_units)
         owned_states = {name: observed[name] for name in expected_names}
@@ -644,6 +660,114 @@ class DeploymentInspectionService:
         }
         found["foreign_sources"] = foreign
         return found
+
+    def _runtime_projection(self, kind: str, identity: str, template: str, size: int) -> list[object]:
+        """Read only the public fields needed for a runtime association."""
+        try:
+            value: object = json.loads(self.run("podman", kind, "inspect", identity, "--format", template))
+        except ValueError:
+            message = "pod_infrastructure_identity_unproven"
+            raise DeploymentObservationError(message) from None
+        if not isinstance(value, list) or len(value) != size:
+            message = "pod_infrastructure_identity_unproven"
+            raise DeploymentObservationError(message)
+        return cast("list[object]", value)
+
+    def _pod_identity(self, name: str, identity: str | None = None) -> tuple[str, str]:
+        row = self._runtime_projection("pod", identity or name, _POD_PROJECTION, 4)
+        if (
+            not isinstance(row[0], str)
+            or _RUNTIME_ID.fullmatch(row[0]) is None
+            or row[1] != name
+            or row[2] is not True
+            or not isinstance(row[3], str)
+            or _RUNTIME_ID.fullmatch(row[3]) is None
+            or row[0] == row[3]
+            or (identity is not None and row[0] != identity)
+        ):
+            message = "pod_infrastructure_identity_unproven"
+            raise DeploymentObservationError(message)
+        return row[0], row[3]
+
+    def _infra_identity(self, identity: str) -> tuple[str, str, int]:
+        row = self._runtime_projection("container", identity, _INFRA_PROJECTION, 6)
+        if (
+            row[0] != identity
+            or not isinstance(row[1], str)
+            or not row[1]
+            or not isinstance(row[2], str)
+            or _RUNTIME_ID.fullmatch(row[2]) is None
+            or row[3] is not True
+            or row[4] is not True
+            or type(row[5]) is not int
+            or row[5] <= 0
+        ):
+            message = "pod_infrastructure_identity_unproven"
+            raise DeploymentObservationError(message)
+        return row[1], row[2], row[5]
+
+    def _pod_unit_incarnation(self, name: str, expected: dict[str, str]) -> str:
+        current = self.observe_unit(name)
+        invocation = self.run("systemctl", "--user", "show", name, "--property=InvocationID", "--value").strip()
+        if (
+            current != expected
+            or not self.unit_active(current)
+            or current["SubState"] != "running"
+            or _INVOCATION_ID.fullmatch(invocation) is None
+            or invocation == "0" * 32
+        ):
+            message = "pod_infrastructure_identity_unproven"
+            raise DeploymentObservationError(message)
+        return invocation
+
+    def _owned_infra_names(
+        self,
+        manifests: list[QuadletBase],
+        bindings: OwnedBindings,
+        observed: dict[str, dict[str, str]],
+        footprint: dict[str, list[str]],
+    ) -> frozenset[str]:
+        """Join implicit infra to compiled, effective Pod units without adopting names.
+
+        Called only after complete binding-generation reconciliation is a no-op.
+        Quadlet's Pod service tracks its infrastructure conmon as MainPID. Both
+        immutable engine identities and that invocation must remain unchanged.
+        """
+        pods = {row.pod_name for row in manifests if isinstance(row, QuadletPod)} & set(footprint["pods"])
+        if not bindings.receipt_present or not bindings.generation or len(pods) > _MAX_TREE_ENTRIES:
+            message = "pod_infrastructure_identity_unproven"
+            raise DeploymentObservationError(message)
+        names: set[str] = set()
+        identities: set[str] = set()
+        for name in sorted(pods):
+            unit_name = runtime_unit_for_source(name + ".pod")
+            sources = [path for path in bindings.quadlet_sources if path.name == name + ".pod"]
+            if len(sources) != 1 or unit_name not in bindings.runtime_units or unit_name not in observed:
+                message = "pod_infrastructure_identity_unproven"
+                raise DeploymentObservationError(message)
+            invocation = self._pod_unit_incarnation(unit_name, observed[unit_name])
+            pod_id, infra_id = self._pod_identity(name)
+            infra = self._infra_identity(infra_id)
+            infra_name, parent, conmon = infra
+            if (
+                parent != pod_id
+                or str(conmon) != observed[unit_name]["MainPID"]
+                or infra_name not in footprint["containers"]
+                or infra_name not in footprint["running_containers"]
+                or infra_name in names
+                or {pod_id, infra_id} & identities
+                or self._pod_identity(name, pod_id) != (pod_id, infra_id)
+                or self._infra_identity(infra_id) != infra
+                or self._pod_unit_incarnation(unit_name, observed[unit_name]) != invocation
+            ):
+                message = "pod_infrastructure_identity_unproven"
+                raise DeploymentObservationError(message)
+            names.add(infra_name)
+            identities.update((pod_id, infra_id))
+        if self.scribe.inspect_owned_bindings() != bindings:
+            message = "pod_infrastructure_identity_unproven"
+            raise DeploymentObservationError(message)
+        return frozenset(names)
 
     def _image(self, request: DeploymentRequest) -> dict[str, str]:
         payload: object = json.loads(self.run("podman", "image", "inspect", request.image_ref))
