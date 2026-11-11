@@ -394,8 +394,77 @@ def test_offered_only_core_manifest_stays_identical_when_first_import_is_admitte
             if isinstance(row, QuadletContainer) and row.container_name == "lychd-vessel"
         )
         results.append(core)
+    assert all(core.restart_policy == "always" for core in results)
     assert results[0].model_dump(mode="json") == results[1].model_dump(mode="json")
     assert any(
         volume.container_path == Path("/run/lychd-tether") and volume.options == ["ro", "z"]
         for volume in results[0].volumes
     )
+
+
+@pytest.mark.parametrize("qa_revoked", [False, True])
+def test_all_tether_roles_render_without_automatic_restart(tmp_path: Path, *, qa_revoked: bool) -> None:
+    from lychd.system.binding_sites import BindingSites
+    from lychd.system.constants import PATH_RUNE_TEMPLATES_DIR
+    from lychd.system.services.scribe.rendering import BindingRenderer
+
+    rune = TetherRune(
+        quadlet=QuadletConfig(image="example/tether:1"),
+        offered=OfferedNetwork(
+            id="home",
+            interface="wg0",
+            address="10.55.0.1/24",
+            listen_address="192.0.2.10",
+            listen_port=51820,
+            private_key_ref="lychd-tether-home-private",
+            services=(
+                OfferedService(id="external", listen_port=9443, backend_address="198.51.100.20", backend_port=443),
+            ),
+        ),
+        attachments=(attachment("b"),),
+    )
+    peers = tuple(
+        OfferedPeer(
+            id=name,
+            generation=1,
+            public_key=key,
+            address=address,
+            enabled=name != "qa" or not qa_revoked,
+            service_ids=("external",),
+            owner_access=OwnerAccess(
+                ssh_public_key=SSH_KEY, ssh_host_key_ref=f"lychd-tether-ssh-{name}", listen_port=port
+            ),
+        )
+        for name, key, address, port in (("owner", KEY, "10.55.0.2", 2222), ("qa", KEY2, "10.55.0.3", 2223))
+    )
+    snapshot = TetherSnapshot(
+        installation_epoch=EPOCH,
+        offered_peers=peers,
+        attachments=(AttachmentAdmission(attachment_id="b", generation=1),),
+    )
+    deployment = compile_tether(
+        rune=rune,
+        snapshot=snapshot,
+        runtime_root=Path("/run/user/1000/lychd-tether"),
+        config_root=Path("/var/lib/example/tether-config"),
+        core_web_port=8123,
+        consumer_uid=1000,
+        forbidden_backend_addresses=("192.0.2.10",),
+    )
+    containers = [row for row in deployment.manifests if isinstance(row, QuadletContainer)]
+    assert {row.tether_role for row in containers} == {"wireguard", "offered-relay", "imported-relay", "owner-ssh"}
+    owners = [row for row in deployment.runtime_configs if row.role == "owner-ssh"]
+    assert {row.payload["peer_id"] for row in owners} == ({"owner"} if qa_revoked else {"owner", "qa"})
+    rendered, systemd = BindingRenderer(
+        templates_dir=PATH_RUNE_TEMPLATES_DIR,
+        sites=BindingSites(quadlet=tmp_path / "quadlet", systemd_user=tmp_path / "systemd"),
+    ).render_generated(deployment.manifests)
+    assert not systemd
+    for container in containers:
+        lines = rendered[container.container_name + ".container"].decode().splitlines()
+        assert [line for line in lines if line.startswith("Restart=")] == ["Restart=no"]
+        assert "WantedBy=" not in "\n".join(lines)
+        assert container.pod is not None
+        assert container.requires == (
+            [] if container.tether_role == "wireguard" else [container.pod.removesuffix(".pod") + "-wg.service"]
+        )

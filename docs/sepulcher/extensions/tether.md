@@ -158,6 +158,10 @@ purpose-specific immutable secrets before binding. Runtime projections carry sec
 not secret values. Binding still reconciles the complete installation; it does not replace Scribe
 with a per-route file writer. Repeating unchanged intent preserves keys and route generations.
 
+Compiled Tether role units use `Restart=no`: a fenced or failed runtime must not create another
+manager invocation outside native launch custody. Native `tether activate` and the boot-time
+`tether resume` helper own eligible replacement launches; pending revocation must finish first.
+
 The optional `same-owner-ssh-loopback-v1` binding gives a specific offered peer a separate SSH
 public-key admission and restricted SSH adapter. It permits only a local forward to the current
 owner web loopback port. Open the browser at the same admitted loopback address and port used by
