@@ -542,7 +542,7 @@ async def wireguard(p: dict[str, Any]) -> None:
                 previous = fingerprint
                 notify_ready()
             if time.monotonic() - observed >= 1:
-                public_status(p, wg=True)
+                public_status(p, fence=fence, wg=True)
                 observed = time.monotonic()
             await asyncio.sleep(POLL_SECONDS)
     finally:
@@ -759,7 +759,7 @@ class Relay:
                 for peer, _generation in self.tasks.values():
                     name = peer or self.config["network_id"]
                     counts[name] = counts.get(name, 0) + 1
-                public_status(self.config, streams=counts)
+                public_status(self.config, fence=load_fences(self.config), streams=counts)
                 await asyncio.sleep(POLL_SECONDS)
         finally:
             for server in self.servers:
@@ -835,7 +835,7 @@ async def owner_ssh(p: dict[str, Any]) -> None:
     try:
         notify_ready()
         while process.returncode is None and admitted(p, load_fences(p), p["peer_id"], p["peer_generation"]):
-            public_status(p)
+            public_status(p, fence=load_fences(p))
             await asyncio.sleep(POLL_SECONDS)
     finally:
         # This process is the container init. Its exit settles the PID namespace;
@@ -856,9 +856,14 @@ def policy_tokens(value: str) -> list[str]:
     return re.findall(r'"[^"\n]*"|[A-Za-z0-9_.:/+-]+|!=|[{};,]', value)
 
 
-def public_status(p: dict[str, Any], *, streams: dict[str, int] | None = None, wg: bool = False) -> None:
-    """Publish bounded public observation only; never request WireGuard dump."""
-    fence = load_fences(p)
+def public_status(
+    p: dict[str, Any], *, fence: dict[str, Any] | None, streams: dict[str, int] | None = None, wg: bool = False
+) -> None:
+    """Observe the supplied applied snapshot; consumers separately require current authority.
+
+    WireGuard passes the fence used for its kernel reconciliation, so a concurrent
+    publication cannot turn an unapplied admission change into apparent kernel drift.
+    """
     result: dict[str, Any] = {
         "schema": "lychd.tether.runtime-observation",
         "version": 1,

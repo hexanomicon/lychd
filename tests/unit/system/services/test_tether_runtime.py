@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import copy
+import hashlib
 import json
 import os
 import socket
@@ -569,12 +571,161 @@ def test_public_status_requires_exact_default_formatted_nft_policy(
     monkeypatch.setattr(runtime, "STATUS", status)
     if before:
         with pytest.raises(ValueError, match="refused"):
-            runtime.public_status(p, wg=True)
+            runtime.public_status(p, fence=f, wg=True)
         assert not status.exists()
     else:
-        runtime.public_status(p, wg=True)
+        runtime.public_status(p, fence=f, wg=True)
         result = json.loads(status.read_text())
         assert result["enabled"] is True
         assert result["peer_public_keys"] == [public_key]
         assert result["public_key"] == public_key
     assert len(calls) == 4
+
+
+class HeartbeatKernel:
+    """Interleave publication with a stateful kernel and real heartbeat validation."""
+
+    def __init__(self, publication: str, drift: str, status_path: Path) -> None:
+        self.publication = publication
+        self.drift = drift
+        self.config = wg()
+        self.config["listen_port"] = 51820
+        self.config["peers"][0].update(endpoint_address=None, endpoint_port=None)
+        second = {
+            **self.config["peers"][0],
+            "id": "lich-c",
+            "public_key": base64.b64encode(b"\x02" * 32).decode(),
+            "allowed_ips": ["10.77.0.3/32"],
+        }
+        self.config["peers"].append(second)
+        self.config["ingress"] = [{"peer_address": address, "port": 443} for address in ("10.77.0.2", "10.77.0.3")]
+        self.config["egress"] = []
+        runtime.validate_config(self.config)
+        self.first = fences(self.config)
+        self.first["peers"] = [{"id": "lich-b", "generation": 3, "enabled": True}]
+        self.replacement = {
+            **self.first,
+            "peers": [*self.first["peers"], {"id": "lich-c", "generation": 3, "enabled": True}],
+        }
+        self.latest: dict[str, Any] | None = self.first
+        self.applied: list[dict[str, Any]] = []
+        self.routes: set[str] = set()
+        self.policy = ""
+        self.up = self.deleted = False
+        self.ready = self.sleeps = 0
+        self.clock = 10.0
+        self.status = status_path
+
+    def run(self, argv: tuple[str, ...], *, content: str | None = None) -> str:
+        if argv == (runtime.NFT, "-f", "-"):
+            assert content is not None
+            self.policy = content[content.index("table inet lychd_tether {") :]
+            return ""
+        if argv == (runtime.NFT, "--stateless", "list", "table", "inet", "lychd_tether"):
+            return self.policy.replace("policy drop", "policy accept", 1) if self.drift == "nft" else self.policy
+        if argv[:3] == (runtime.WG, "show", "wg0"):
+            if argv[3] == "peers":
+                return "" if self.drift == "peers" else "\n".join(row["public_key"] for row in self.applied)
+            if argv[3] == "allowed-ips":
+                return "\n".join(row["public_key"] + " " + " ".join(row["allowed_ips"]) for row in self.applied)
+            assert argv[3] == "public-key"
+            return self.config["peers"][0]["public_key"]
+        assert argv[0] == runtime.IP
+        assert "accept" not in self.policy
+        if argv[1:3] == ("link", "set") and argv[-1] == "up":
+            self.up = True
+        elif argv[1:3] == ("route", "add"):
+            assert self.up
+            self.routes.add(argv[3])
+        elif argv[1:3] == ("route", "delete"):
+            self.routes.remove(argv[3])
+        elif argv[1:3] == ("link", "delete"):
+            self.deleted = True
+            self.up = False
+        return ""
+
+    def configure(self, config: dict[str, Any], current: dict[str, Any] | None) -> None:
+        assert "accept" not in self.policy
+        admitted = (
+            set()
+            if current is None or not current["enabled"]
+            else {row["id"] for row in current["peers"] if row["enabled"]}
+        )
+        self.applied = [row for row in config["peers"] if row["id"] in admitted]
+
+    def notify(self) -> None:
+        self.ready += 1
+        if self.ready == 1:
+            # Publish after kernel reconciliation but before the first heartbeat.
+            self.latest = self.replacement if self.publication == "enroll" else None
+
+    def load_fences(self, _config: dict[str, Any]) -> dict[str, Any] | None:
+        return self.latest
+
+    def capabilities(self, _role: str) -> dict[str, str]:
+        return {"CapEff": "1000"}
+
+    def existing_table(self, _config: dict[str, Any]) -> bool:
+        return False
+
+    def existing_routes(self, _config: dict[str, Any]) -> set[str] | None:
+        return None
+
+    async def polling_boundary(self, _seconds: float) -> None:
+        self.sleeps += 1
+        assert self.up
+        assert not self.deleted
+        heartbeat = json.loads(self.status.read_text())
+        if self.sleeps == 1:
+            assert self.routes == {"10.77.0.2/32"}
+            assert heartbeat["peer_public_keys"] == [self.config["peers"][0]["public_key"]]
+            assert (
+                heartbeat["fence_digest"] == hashlib.sha256(json.dumps(self.first, sort_keys=True).encode()).hexdigest()
+            )
+            with pytest.raises(ValueError, match="refused"):
+                runtime.observe()
+            self.clock += 1
+        else:
+            assert self.sleeps == self.ready == 2
+            assert self.routes == ({"10.77.0.2/32", "10.77.0.3/32"} if self.publication == "enroll" else set())
+            assert (
+                heartbeat["fence_digest"]
+                == hashlib.sha256(json.dumps(self.latest, sort_keys=True).encode()).hexdigest()
+            )
+            assert heartbeat["enabled"] is (self.publication == "enroll")
+            assert heartbeat["peer_public_keys"] == sorted(row["public_key"] for row in self.applied)
+            runtime.observe()
+            # Deterministic test termination only, after both coherent observations.
+            raise asyncio.CancelledError
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("publication", ["enroll", "missing"])
+@pytest.mark.parametrize("drift", ["none", "peers", "nft"])
+async def test_wireguard_heartbeat_uses_applied_fence_and_consumer_requires_latest(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, publication: str, drift: str
+) -> None:
+    kernel = HeartbeatKernel(publication, drift, tmp_path / "status" / "status.json")
+    monkeypatch.setattr(runtime, "run", kernel.run)
+    monkeypatch.setattr(runtime, "configure_peers", kernel.configure)
+    monkeypatch.setattr(runtime, "notify_ready", kernel.notify)
+    monkeypatch.setattr(runtime, "load_config", lambda: kernel.config)
+    monkeypatch.setattr(runtime, "load_fences", kernel.load_fences)
+    monkeypatch.setattr(runtime, "capabilities", kernel.capabilities)
+    monkeypatch.setattr(runtime, "existing_owned_table", kernel.existing_table)
+    monkeypatch.setattr(runtime, "owned_interface_routes", kernel.existing_routes)
+    monkeypatch.setattr(runtime, "STATUS", kernel.status)
+    monkeypatch.setattr(runtime.time, "monotonic", lambda: kernel.clock)
+    monkeypatch.setattr(runtime.asyncio, "sleep", kernel.polling_boundary)
+    if drift == "none":
+        with pytest.raises(asyncio.CancelledError):
+            await runtime.wireguard(kernel.config)
+        assert kernel.sleeps == 2
+    else:
+        with pytest.raises(ValueError, match="refused"):
+            await runtime.wireguard(kernel.config)
+        assert kernel.sleeps == 0
+        assert not kernel.status.exists()
+    assert kernel.deleted
+    assert not kernel.up
+    assert "accept" not in kernel.policy
