@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import PageHeader from "../shared/PageHeader.svelte";
   import { onMount, tick, untrack } from "svelte";
   import { ApiError, getBridgeSessions, getBridgeSnapshot } from "$lib/api/client";
   import type { BridgeSnapshot, BridgeTurnView, SessionPage } from "$lib/api/models";
@@ -147,7 +148,9 @@
 <svelte:head><title>Séances — LychD</title></svelte:head>
 <svelte:window onstorage={(event) => { if (event.key === bridgePinsStorageKey) readPins(); }} />
 <div class="seances-workspace">
-  <header class="workspace-heading"><div><h1>Séances</h1><p>Return to a conversation. Gather what matters for the next use.</p></div><a class="new-seance" href={resolve("/bridge?choose=conversation")}>New Séance in Bridge</a></header>
+  <PageHeader title="Séances" description="Return to a conversation. Gather what matters for the next use.">
+    {#snippet actions()}<a class="new-seance" href={resolve("/bridge?choose=conversation")}>New Séance in Bridge</a>{/snippet}
+  </PageHeader>
   {#if notice}<p class="notice" role="status">{notice}</p>{/if}
   <div class="workspace-body">
     <aside class="catalogue" aria-label="Séance catalogue">
@@ -200,12 +203,11 @@
 
 <style>
   .seances-workspace { color: var(--color-parchment); min-height: 100%; padding: 1.5rem; }
-  .workspace-heading, .detail-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
-  h1 { font: 600 var(--text-2xl)/1.2 var(--font-body); color: var(--color-bone); letter-spacing: -.025em; }
+  .detail-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
   h2 { font: 600 var(--text-lg)/1.4 var(--font-body); color: var(--color-bone); }
   h3 { color: var(--color-bone); font-size: var(--text-base); }
   p { line-height: 1.6; margin: .5rem 0; }
-  .workspace-heading p, .muted, .read-status, time { color: var(--color-ash); font-size: var(--text-xs); }
+  .muted, .read-status, time { color: var(--color-ash); font-size: var(--text-xs); }
   .workspace-body { display: grid; grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr); gap: 1.5rem; margin-top: 1.5rem; }
   .catalogue { border-right: 1px solid var(--color-engraving); padding-right: 1rem; min-width: 0; }
   .catalogue h2 { margin-top: 1.5rem; font-size: var(--text-sm); }

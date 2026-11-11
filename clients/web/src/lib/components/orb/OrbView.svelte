@@ -15,6 +15,7 @@
   import BridgePreferenceSummary from "../bridge/BridgePreferenceSummary.svelte";
   import GraphCanvas from "../graph/GraphCanvas.svelte";
   import AnimatorRail from "../shared/AnimatorRail.svelte";
+  import PageHeader from "../shared/PageHeader.svelte";
   import { projectOrb, orbEvidenceNodeId, matchesOrbPattern, mergeOrbEvidence, mergeOrbGaps } from "$lib/graph/orb";
   import { listenToOrb, type OrbConnection } from "$lib/orb/live";
   import { bridgeConsentHref, bridgeRunHref, loomOriginHref, scavengerRunHref } from "$lib/navigation/instruments";
@@ -416,10 +417,7 @@
         <div class="mist"></div><div class="mist"></div>
       {:else if snapshot}
         {#if error}<div class="turn__fault" role="alert">{error}</div>{/if}
-        <header class="run-identity">
-          <div>
-            <span class="eyebrow">Selected Run · workflow and evidence</span>
-            <h1>Orb</h1>
+        <PageHeader title="Orb" kicker="Selected Run · workflow and evidence">
             <p class="run-id"><span>Run</span> {snapshot.run.run_id}</p>
             <nav class="context-links" aria-label="Related instruments">
               <a href={resolve("/orb")}>All Runs</a>
@@ -435,13 +433,12 @@
                 </span>
               {/if}
             </nav>
-          </div>
-          <div class="run-outcome">
+          {#snippet actions()}<div class="run-outcome">
             <span class="eyebrow">Latest fetched Run status</span>
             <span class="chip run-status" data-state={snapshot.run.status}>{snapshot.run.status.replaceAll("_", " ")}</span>
             <span class="capture-label">Capture · {snapshot.capture.replaceAll("_", " ")}</span>
-          </div>
-        </header>
+          </div>{/snippet}
+        </PageHeader>
 
         {#if linkedJobUnavailable}
           <p class="context-unavailable" role="status">
@@ -750,9 +747,6 @@
   .panel-head::before { content:none; }
   .rune-head { font-variant:normal; letter-spacing:-.015em; }
   .panel-head .rune-head { font:600 1rem/1.5 var(--font-body); }
-  .run-identity { display:flex; justify-content:space-between; align-items:flex-start; gap:1.5rem; }
-  .run-identity > div { min-width:0; }
-  .run-identity h1 { font:600 clamp(1.5rem,2.2vw,2rem)/1.2 var(--font-body); letter-spacing:-.04em; }
   .eyebrow { color:var(--color-ash); font-size:11px; letter-spacing:.07em; }
   .run-id { margin:.8rem 0 0; color:var(--color-bone); font:13px/1.7 var(--font-glyph); overflow-wrap:anywhere; }
   .run-id > span { margin-inline-end:.4rem; color:var(--color-ash); }
@@ -848,6 +842,6 @@
   @media(max-width:48rem) { .instrument-deck--orb { gap:1.25rem; } .coverage-strip { grid-template-columns:repeat(2,minmax(0,1fr)); } .coverage-strip > div { padding:.75rem; } .graph-heading { align-items:flex-start; flex-direction:column; } .evidence-panel .panel-head > span { margin-left:0; } .evidence-row { grid-template-columns:2.5rem minmax(0,1fr); gap:.4rem .7rem; } .evidence-description,.evidence-row time { grid-column:2; } .evidence-gap { grid-template-columns:minmax(0,1fr); } .selected-evidence { background:var(--color-obsidian); max-height:min(70dvh,36rem); box-shadow:0 -.5rem 2rem color-mix(in srgb,var(--color-void) 85%,transparent); } .delegated-jobs > summary > span + span { display:block; margin:.35rem 0 0; } }
   @container work-area (max-width:68rem) { .instrument-deck--orb { grid-template-columns:minmax(0,1fr); } .orb-inspector { position:static; padding-inline-start:0; border-inline-start:0; border-top:1px solid var(--color-engraving); padding-top:1rem; } .graph-and-animators { grid-template-columns:minmax(0,1fr); } }
   @container work-area (max-width:48rem) { .coverage-strip { grid-template-columns:repeat(2,minmax(0,1fr)); } .graph-heading { align-items:flex-start; flex-direction:column; } .evidence-row { grid-template-columns:2.5rem minmax(0,1fr); gap:.4rem .7rem; } .evidence-description,.evidence-row time { grid-column:2; } .evidence-gap { grid-template-columns:minmax(0,1fr); } .delegated-jobs > summary > span + span { display:block; margin:.35rem 0 0; } }
-  @container work-area (max-width:48rem) { .run-identity { flex-direction:column; gap:1rem; }.run-outcome { align-items:flex-start; }.coverage-strip .text-action { grid-column:1/-1; border-left:0; border-top:1px solid var(--color-engraving); } }
+  @container work-area (max-width:48rem) { .run-outcome { align-items:flex-start; }.coverage-strip .text-action { grid-column:1/-1; border-left:0; border-top:1px solid var(--color-engraving); } }
   @media(prefers-reduced-motion:reduce) { .evidence-row,.chip,.chip::before { transition:none; animation:none; } }
 </style>

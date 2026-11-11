@@ -7,6 +7,7 @@
   import { blankDocument, replaceDocument, validateDocument } from "$lib/canvas/engine";
   import type { Document as BoardDocument } from "$lib/canvas/types";
   import CanvasView from "./CanvasView.svelte";
+  import PageHeader from "../shared/PageHeader.svelte";
 
   let { projectId, newRequested = false }: { projectId?: string; newRequested?: boolean } = $props();
   type Pending =
@@ -198,9 +199,8 @@
 <svelte:window onbeforeunload={guardUnload} />
 
 <section class="canvas-workspace" aria-label="Canvas project workspace">
-  <header class="workspace-heading">
-    <div class="workspace-identity"><a href={resolve("/atlas")}>Atlas · All projects</a><h1>{project?.title ?? "Canvas workspace"}</h1></div>
-    <div class="workspace-actions">
+  <div class="workspace-heading"><PageHeader title={project?.title ?? "Canvas workspace"} back={{ href: resolve("/atlas"), label: "Atlas · All projects" }}>
+    {#snippet actions()}<div class="workspace-actions">
       {#if project && project.workspace_state !== "discarded"}
         <a href={resolve(`/atlas/${encodeURIComponent(project.id)}`)}>Project record</a>
         <button type="button" class="primary" onclick={save} disabled={locked || conflict || !dirty}>Save board</button>
@@ -208,8 +208,8 @@
       {/if}
       <button type="button" onclick={() => createNew()} disabled={locked}>New canvas</button>
       <a href={resolve("/canvas/local")}>Portable local board</a>
-    </div>
-  </header>
+    </div>{/snippet}
+  </PageHeader></div>
   {#if loading}<p role="status">Loading Canvas project…</p>{/if}
   {#if readError}<div class="workspace-error" role="alert"><p>{readError}</p><button type="button" onclick={() => load()}>Retry loading Canvas</button></div>{/if}
   {#if project}<div class="workspace-context">
@@ -235,11 +235,9 @@
 
 <style>
 .canvas-workspace { min-width:0; width:100%; }
-  .workspace-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; padding:1.1rem 1.25rem .75rem; }
-  .workspace-identity { min-width:0; flex:1; }
-  .workspace-identity h1 { margin:.4rem 0 0; font-size:1.25rem; font-weight:600; letter-spacing:-.035em; line-height:1.35; color:var(--color-bone); overflow-wrap:anywhere; }
-  .workspace-identity a,.workspace-actions a,.map-caption a { color:var(--color-ash); font-size:var(--text-xs); text-underline-offset:.2em; }
-  .workspace-identity a:hover,.workspace-actions a:hover,.map-caption a:hover { color:var(--color-rune); }
+  .workspace-heading { padding:1.1rem 1.25rem 0; }
+  .workspace-actions a,.map-caption a { color:var(--color-ash); font-size:var(--text-xs); text-underline-offset:.2em; }
+  .workspace-actions a:hover,.map-caption a:hover { color:var(--color-rune); }
   .workspace-state,.workspace-hint,.retention,.map-caption { color:var(--color-ash); font-size:var(--text-2xs); }
   .workspace-state { color:var(--color-parchment); }
   .workspace-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:.5rem; max-width:33rem; }
@@ -253,5 +251,5 @@
   .workspace-notice { margin:.5rem 1.25rem; color:var(--color-parchment); font-size:var(--text-xs); }
   .workspace-error,.comparison { margin:1rem 1.25rem; padding:1rem; border:1px solid var(--color-control-border); border-radius:var(--radius-panel); color:var(--color-parchment); background:var(--color-obsidian); font-size:var(--text-sm); line-height:1.7; }
   .workspace-error { border-left:3px solid var(--color-heat); }
-  @container work-area (max-width:48rem) { .workspace-heading { align-items:start; flex-direction:column; padding-inline:1rem; }.workspace-actions { justify-content:flex-start; max-width:none; }.workspace-context { margin-inline:1rem; } }
+  @container work-area (max-width:48rem) { .workspace-heading { padding-inline:1rem; }.workspace-actions { justify-content:flex-start; max-width:none; }.workspace-context { margin-inline:1rem; } }
 </style>

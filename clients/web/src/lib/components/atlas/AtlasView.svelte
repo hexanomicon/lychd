@@ -2,6 +2,7 @@
   import { beforeNavigate, goto } from "$app/navigation";
   import { tick, untrack } from "svelte";
   import { atlasHref, parseAtlasLink, type AtlasLinkIntent } from "$lib/atlas/navigation";
+  import PageHeader from "../shared/PageHeader.svelte";
 
   import {
     ApiError,
@@ -578,14 +579,15 @@
 <svelte:head><title>{view ? `${view.title} · Atlas` : "Atlas"} — LychD</title></svelte:head>
 
 <div class="atlas">
-  <header class="atlas-heading">
-    <div>
-      {#if projectId}<a class="back-link" href={atlasHref(undefined, linkIntent)}>← All projects</a>{/if}
-      <span class="instrument-kicker">{projectId ? "Canvas project record" : "Canvas projects"}</span>
-      <h1 class="rune-head" id={`${uid}-page-title`} tabindex="-1">{view?.title ?? "Atlas"}</h1>
-      {#if !projectId}<p>Open a canvas or return to a project.</p>{/if}
-    </div>
-    <div class="actions">
+  <PageHeader
+    title={view?.title ?? "Atlas"}
+    kicker={projectId ? "Canvas project record" : "Canvas projects"}
+    description={projectId ? undefined : "Open a canvas or return to a project."}
+    back={projectId ? { href: atlasHref(undefined, linkIntent), label: "← All projects" } : undefined}
+    titleId={`${uid}-page-title`}
+    titleFocusable
+  >
+    {#snippet actions()}
       <button type="button" disabled={loading || saving || uncertain} onclick={() => refresh()}>
         {loading && (catalogue || view) ? "Refreshing…" : "Refresh"}
       </button>
@@ -597,8 +599,8 @@
         <a class="canvas-action" href={`/canvas/${encodeURIComponent(view.id)}`}>Open Canvas →</a>
         <span class="badge">{lifecycleNames[view.lifecycle]}</span>
       {/if}
-    </div>
-  </header>
+    {/snippet}
+  </PageHeader>
 
   {#if notice}<p class="notice" role="status">{notice}</p>{/if}
   {#if linkIntent}
@@ -1141,17 +1143,14 @@
     padding: clamp(1.25rem, 3vw, 2.5rem);
     color: var(--color-bone);
   }
-  .atlas-heading, .section-heading, .actions, .form-footer, .pagination {
+  .section-heading, .actions, .form-footer, .pagination {
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 0.75rem;
   }
-  .atlas-heading { align-items: flex-end; margin-bottom: 2.25rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--color-engraving); }
-  .atlas-heading h1 { margin-block: 0.35rem 0.6rem; font-size: clamp(1.8rem, 3.3vw, 2.8rem); letter-spacing: -0.02em; overflow-wrap: anywhere; }
-  .atlas-heading p { color: var(--color-parchment); max-width: 48rem; }
-  .back-link { display: inline-block; margin-bottom: 0.6rem; }
+  .atlas > :global(.page-header) { margin-bottom: 2.25rem; }
   h2 { font-size: var(--text-xl); font-weight: 500; }
   h3 { font-size: var(--text-lg); font-weight: 500; overflow-wrap: anywhere; }
   h4 { font-size: var(--text-base); font-weight: 600; }
@@ -1319,7 +1318,6 @@
     .project-facts { align-items: flex-start; text-align: left; }
     .card-foot { display: flex; justify-content: space-between; width: 100%; }
     .record-preview { justify-content: flex-start; }
-    .atlas-heading { align-items: flex-start; }
   }
   @media (max-width: 68rem) {
     .project-reading { grid-template-columns: minmax(0, 1fr); }
@@ -1329,7 +1327,6 @@
     .atlas-chart { display: none; }
     .supporting-grid, .form-pair, .comparison-values, .concern-filters, .overview-body, .basis-columns { grid-template-columns: minmax(0, 1fr); }
     .concern-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .atlas-heading { gap: 1rem; }
     .section-heading { gap: 0.8rem; }
     .atlas { padding: 1rem; }
     .editor input, .editor textarea, .editor select { font-size: 1rem; }
@@ -1342,7 +1339,6 @@
     .atlas-chart { display: none; }
     .supporting-grid, .form-pair, .comparison-values, .concern-filters, .overview-body, .basis-columns { grid-template-columns: minmax(0, 1fr); }
     .concern-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .atlas-heading { gap: 1rem; }
     .section-heading { gap: 0.8rem; }
     .atlas { padding: 1rem; }
     .editor input, .editor textarea, .editor select { font-size: 1rem; }

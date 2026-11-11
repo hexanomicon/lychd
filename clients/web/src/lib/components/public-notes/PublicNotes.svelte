@@ -3,6 +3,7 @@
   import { getContext, onMount, onDestroy, tick } from "svelte";
   import { getArchiveProfile, getArchiveBridgeDefault, listArchiveNotes, getArchiveNote, admitArchiveNote, promoteArchiveNote, revokeArchiveNote, discoverArchiveGeneration, registerArchiveGeneration, deriveArchiveNote, inspectArchiveDerivation } from "$lib/api/client";
   import PublicNotePreparation from "./PublicNotePreparation.svelte";
+  import PageHeader from "../shared/PageHeader.svelte";
   import { PublicNotePreparation as PreparationController, initialPreparationState } from "$lib/archive/preparation";
   import type { NoteRecord } from "$lib/api/models";
   import { PublicNoteManager, initialNotesState, emptyNoteDraft, correctionDraft, validateDraft, prepareNote, notesHref, notesSelection } from "$lib/archive/notes";
@@ -125,12 +126,14 @@
 <svelte:head><title>Public notes — Bridge — LychD</title></svelte:head>
 <svelte:window onbeforeunload={guardUnload} />
 <section class="public-notes" aria-labelledby="notes-title">
-  <header>
-    <span class="instrument-kicker">Bridge · public notes</span>
-    <h1 id="notes-title">Public notes</h1>
-    <p>Explicit public intake and exact revision management. Conversation text is never saved here automatically.</p>
+  <PageHeader
+    title="Public notes"
+    kicker="Bridge · public notes"
+    description="Explicit public intake and exact revision management. Conversation text is never saved here automatically."
+    titleId="notes-title"
+  >
     <nav aria-label="Public notes focus"><a href={navigation?.bridgePath ?? "/bridge"}>Return to conversation</a><a href={notesHref("manage")}>Manage notes</a><a href={notesHref("new")}>New public note</a></nav>
-  </header>
+  </PageHeader>
   {#if noteState.profilePhase === "loading"}<p role="status">Loading authorized public-note configuration…</p>
   {:else if noteState.profile}
     <section aria-labelledby="profile-title"><h2 id="profile-title">Configured profile</h2>
@@ -221,13 +224,9 @@
 
 <style>
   .public-notes { width: min(100%, 64rem); margin: 0 auto; padding: clamp(1rem, 3vw, 2.5rem); display: grid; align-content: start; gap: 2rem; min-width: 0; }
-  header, section, article, form, fieldset { display: grid; align-content: start; gap: 1rem; min-width: 0; }
-  header { gap: 0.75rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--color-engraving); }
-  header > .instrument-kicker { color: var(--color-accent); }
-  header > p { max-width: 48rem; color: var(--color-ash); }
-  h1, h2, h3, p { margin: 0; }
-  h1, h2, h3, legend { color: var(--color-bone); font-family: var(--font-body); font-variant: normal; letter-spacing: normal; }
-  h1 { font-size: clamp(1.6rem, 2.5vw, 2rem); font-weight: 600; line-height: 1.2; }
+  section, article, form, fieldset { display: grid; align-content: start; gap: 1rem; min-width: 0; }
+  h2, h3, p { margin: 0; }
+  h2, h3, legend { color: var(--color-bone); font-family: var(--font-body); font-variant: normal; letter-spacing: normal; }
   h2 { font-size: var(--text-xl); font-weight: 600; line-height: 1.35; }
   h3 { font-size: var(--text-base); font-weight: 600; line-height: 1.5; }
   .public-notes > form, .public-notes > article { border-top: 1px solid var(--color-engraving); padding-top: 1.5rem; }

@@ -5,6 +5,7 @@
   import { PublicSourceRecall, initialRecallState, emptyRecallDraft, validateRecallDraft } from "$lib/archive/semantic";
   import { notesHref } from "$lib/archive/notes";
   import { altarNavigationContext, type AltarNavigation } from "$lib/navigation/instruments";
+  import PageHeader from "../shared/PageHeader.svelte";
 
   const navigation = getContext<AltarNavigation | undefined>(altarNavigationContext);
   let recall = $state.raw(initialRecallState());
@@ -73,12 +74,14 @@
 <svelte:head><title>Recall public sources — Bridge — LychD</title></svelte:head>
 <svelte:window onbeforeunload={guardUnload} />
 <section class="public-recall" aria-labelledby="recall-title">
-  <header>
-    <span class="instrument-kicker">Bridge · public notes</span>
-    <h1 id="recall-title">Recall public sources</h1>
-    <p>One explicit semantic query and exact current-source load. This view generates no answer and starts no conversation Run.</p>
+  <PageHeader
+    title="Recall public sources"
+    kicker="Bridge · public notes"
+    description="One explicit semantic query and exact current-source load. This view generates no answer and starts no conversation Run."
+    titleId="recall-title"
+  >
     <nav aria-label="Public-source recall focus"><a href={navigation?.bridgePath ?? "/bridge"}>Return to conversation</a><a href={notesHref("manage")}>Manage public notes</a><a href={notesHref("new")}>New public note</a></nav>
-  </header>
+  </PageHeader>
   <aside class="notice" aria-label="Recall prerequisites">
     <p>Already promoted public sources with complete derivations and the exact warm embedding profile are prerequisites. Prepare them separately. This view does not register generations, derive sources or activate runtime capabilities.</p>
     <p>Configuration metadata establishes neither semantic opt-in, active generation registration, eligible sources nor runtime warmth. Similarity locates context; it is not answer confidence or evidence of truth.</p>
@@ -147,13 +150,9 @@
 
 <style>
   .public-recall { width: min(100%, 64rem); margin: 0 auto; padding: clamp(1rem, 3vw, 2.5rem); display: grid; align-content: start; gap: 2rem; min-width: 0; }
-  header, section, article, form, fieldset { display: grid; align-content: start; gap: 1rem; min-width: 0; }
-  header { gap: 0.75rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--color-engraving); }
-  header > .instrument-kicker { color: var(--color-accent); }
-  header > p { max-width: 48rem; color: var(--color-ash); }
-  h1, h2, h3, p { margin: 0; }
-  h1, h2, h3, legend { color: var(--color-bone); font-family: var(--font-body); font-variant: normal; letter-spacing: normal; }
-  h1 { font-size: clamp(1.6rem, 2.5vw, 2rem); font-weight: 600; line-height: 1.2; }
+  section, article, form, fieldset { display: grid; align-content: start; gap: 1rem; min-width: 0; }
+  h2, h3, p { margin: 0; }
+  h2, h3, legend { color: var(--color-bone); font-family: var(--font-body); font-variant: normal; letter-spacing: normal; }
   h2 { font-size: var(--text-xl); font-weight: 600; line-height: 1.35; }
   h3 { font-size: var(--text-base); font-weight: 600; line-height: 1.5; }
   .public-recall > form { border-top: 1px solid var(--color-engraving); padding-top: 1.5rem; }

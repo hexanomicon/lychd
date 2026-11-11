@@ -3,6 +3,7 @@
   import { getContext, onDestroy, tick } from "svelte";
   import { readCreationInvestigation, submitCreationInvestigation } from "$lib/api/client";
   import CreationFeedback from "./CreationFeedback.svelte";
+  import PageHeader from "../shared/PageHeader.svelte";
   import { altarNavigationContext, type AltarNavigation } from "$lib/navigation/instruments";
   import {
     emptyDraft, initialIntakeState, InvestigationIntake, investigationHref, investigationSelection, prepareRequest, utf8Bytes
@@ -106,12 +107,15 @@
 <svelte:head><title>Creation investigation — Bridge — LychD</title></svelte:head>
 <svelte:window onbeforeunload={guardUnload} />
 <section class="investigation" aria-labelledby="investigation-title">
-  <header>
-    <span class="instrument-kicker">Bridge · public source</span>
-    <h1 id="investigation-title" bind:this={intakeHeading} tabindex="-1">Creation investigation</h1>
-    <p>A bounded question about literal public source. The fixed investigation is tools-free: it does not acquire a repository, edit source or promote a change.</p>
-    <a href={navigation?.bridgePath ?? "/bridge"}>Return to conversation</a>
-  </header>
+  <PageHeader
+    title="Creation investigation"
+    kicker="Bridge · public source"
+    description="A bounded question about literal public source. The fixed investigation is tools-free: it does not acquire a repository, edit source or promote a change."
+    back={{ href: navigation?.bridgePath ?? "/bridge", label: "Return to conversation" }}
+    titleId="investigation-title"
+    titleFocusable
+    bind:heading={intakeHeading}
+  />
   {#if intakeState.unconfirmedIds.length > 0}
     <aside class="notice" aria-label="Unconfirmed admissions">
       <h2>Admission unconfirmed</h2>
@@ -242,13 +246,9 @@
 
 <style>
   .investigation { width: min(100%, 64rem); margin: 0 auto; padding: clamp(1rem, 3vw, 2.5rem); display: grid; align-content: start; gap: 2rem; min-width: 0; }
-  header, section, article, form, fieldset { display: grid; align-content: start; gap: 1rem; min-width: 0; }
-  header { gap: 0.75rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--color-engraving); }
-  header > .instrument-kicker { color: var(--color-accent); }
-  header > p { max-width: 48rem; color: var(--color-ash); }
-  h1, h2, h3, p { margin: 0; }
-  h1, h2, h3, legend { color: var(--color-bone); font-family: var(--font-body); font-variant: normal; letter-spacing: normal; }
-  h1 { font-size: clamp(1.6rem, 2.5vw, 2rem); font-weight: 600; line-height: 1.2; }
+  section, article, form, fieldset { display: grid; align-content: start; gap: 1rem; min-width: 0; }
+  h2, h3, p { margin: 0; }
+  h2, h3, legend { color: var(--color-bone); font-family: var(--font-body); font-variant: normal; letter-spacing: normal; }
   h2 { font-size: var(--text-xl); font-weight: 600; line-height: 1.35; }
   h3 { font-size: var(--text-base); font-weight: 600; line-height: 1.5; }
   .investigation > form, .investigation > article { border-top: 1px solid var(--color-engraving); padding-top: 1.5rem; }
@@ -280,7 +280,6 @@
   summary:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   pre { white-space: pre-wrap; overflow-wrap: anywhere; font: var(--text-sm)/1.7 var(--font-glyph); margin: 0; }
 
-  header > a { justify-self: start; padding-block: 0.35rem; font-size: var(--text-sm); }
   h4 { margin: 0; color: var(--color-bone); font: 600 var(--text-base)/1.5 var(--font-body); }
   .entry { display: grid; align-content: start; gap: 1rem; min-width: 0; padding: 0.25rem 0 0.25rem 1rem; border-left: 2px solid var(--color-engraving); }
   article > section { padding-top: 1.5rem; border-top: 1px solid var(--color-engraving); }

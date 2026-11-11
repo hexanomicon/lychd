@@ -23,6 +23,7 @@
   import DelegateMark from "../shared/DelegateMark.svelte";
   import NexusMap from "./NexusMap.svelte";
   import NexusProperties from "./NexusProperties.svelte";
+  import PageHeader from "../shared/PageHeader.svelte";
   import { createNexusMap } from "$lib/nexus/map";
 
   type Preview = { target: string; plan: TransitionPlan };
@@ -451,10 +452,7 @@
 
 <div class="instrument-deck instrument-deck--nexus">
   <section class="nexus-main" aria-label="Capability observations">
-    <header class="instrument-header">
-      <div><span class="instrument-kicker">Capability observations</span><h1 class="rune-head">Nexus</h1>
-        <p>Inspect an object. Preview what a change would affect.</p></div>
-    </header>
+    <PageHeader title="Nexus" kicker="Capability observations" description="Inspect an object. Preview what a change would affect." />
     <div class="snapshot-bar">
       <div>
         {#if snapshot}<time datetime={snapshot.snapshot_at}>Snapshot {new Date(snapshot.snapshot_at).toLocaleString()}</time>
@@ -639,11 +637,6 @@
   .nexus-plan--idle .preview-empty { padding-top: 0; }
   .transition-inspector--idle { display: none; }
   .nexus-object-inspector:focus { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  .instrument-header h1 { font: 600 1.5rem/1.3 var(--font-body); letter-spacing: -.035em; margin: 0; }
-  .instrument-header > div { display:flex; align-items:baseline; flex-wrap:wrap; gap:.35rem 1rem; }
-  .instrument-header .instrument-kicker { display:none; }
-  .instrument-header { padding: 0; }
-  .instrument-header p { color: var(--color-parchment); font-size: var(--text-sm); }
   .nexus-side { display: flex; flex-direction: column; flex: 0 0 21rem; position: sticky; top: 1.25rem; width: 21rem; min-width: 0; gap: 0; padding: .25rem 0; border-inline-start: 1px solid var(--color-engraving); background: var(--color-tertiary); }
   .panel { box-shadow: none; background: transparent; border: 0; border-bottom: 1px solid var(--color-engraving); border-radius: 0; }
   .nexus-side > .panel:last-child { border-bottom: 0; }

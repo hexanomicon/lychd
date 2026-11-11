@@ -19,6 +19,7 @@
   } from "$lib/api/models";
   import GraphCanvas from "../graph/GraphCanvas.svelte";
   import DelegateMark from "../shared/DelegateMark.svelte";
+  import PageHeader from "../shared/PageHeader.svelte";
 
   let {
     patternId,
@@ -260,9 +261,8 @@
 
 <svelte:head><title>{view ? `${view.title} · ${view.pattern_id}@${view.revision} — Loom` : "Loom — LychD"}</title></svelte:head>
 <div class="instrument-deck instrument-deck--loom loom-workspace">
-  <header class="loom-workspace-heading">
-    <div class="loom-workspace-title"><h1>Loom</h1><span>Pattern topology</span></div>
-    <details class="loom-catalogue">
+  <PageHeader title="Loom" kicker="Pattern topology">
+    {#snippet actions()}<details class="loom-catalogue">
       <summary>Pattern library <span>{catalogue.length}</span></summary>
       <nav aria-label="Pattern revisions">
         {#each catalogue as pattern (pattern.detail_path)}
@@ -278,8 +278,8 @@
           </a>
         {/each}
       </nav>
-    </details>
-  </header>
+    </details>{/snippet}
+  </PageHeader>
 
   <section class="loom-reading" aria-label="Registered Pattern" aria-busy={loading}>
     {#if loading}
@@ -476,10 +476,7 @@
   .loom-workspace :is(p,h2,h3,h4,code,strong,span,dd) { overflow-wrap:anywhere; }
   .loom-workspace button { cursor:pointer; font:inherit; }
   .loom-workspace a { color:var(--color-rune); }
-  .loom-workspace-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; }
-  .loom-workspace-title { display:flex; flex-wrap:wrap; align-items:baseline; gap:.5rem 1rem; }
-  .loom-workspace-title h1 { color:var(--color-bone); font:600 1.5rem/1.25 var(--font-body); letter-spacing:-.04em; }
-  .loom-workspace-title > span { color:var(--color-ash); font-size:12px; }
+  .loom-workspace > :global(.page-header) { margin-bottom:1.25rem; }
   .loom-catalogue { position:relative; z-index:5; flex:0 0 auto; max-width:100%; }
   .loom-catalogue summary { min-height:38px; padding:.55rem .8rem; border:1px solid var(--color-control-border); border-radius:5px; color:var(--color-bone); background:var(--color-obsidian); cursor:pointer; font-size:13px; }
   .loom-catalogue summary span { margin-left:.5rem; color:var(--color-ash); }
@@ -573,7 +570,7 @@
   .loom-empty-score { padding:1.25rem 0; color:var(--color-parchment); }
   @container work-area (max-width:42rem) { .loom-identity { grid-template-columns:minmax(0,1fr); gap:.65rem; } .loom-identity :is(.loom-title-row,.loom-exact-identity,.loom-description,.loom-entry-row) { grid-column:1; grid-row:auto; justify-content:flex-start; } }
   @media(max-width:65rem) { .loom-score-layout { grid-template-columns:minmax(0,1fr); } .loom-detail-column { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); align-items:start; padding-inline-start:0; border-inline-start:0; border-top:1px solid var(--color-engraving); padding-top:1rem; } }
-  @media(max-width:48rem) { .loom-workspace-heading { flex-wrap:wrap; margin-bottom:1.2rem; } .loom-catalogue nav { right:auto; left:0; } .loom-graph-column { display:flex; flex-direction:column; } .loom-outline { order:-1; } .loom-detail-column { grid-template-columns:minmax(0,1fr); } .loom-outline > summary span { float:none; display:block; margin:.35rem 0 0; } .loom-station { padding-inline:.65rem; } .loom-station-tags { max-width:30%; } .loom-level-hint { flex-basis:100%; margin-left:0; } }
+  @media(max-width:48rem) { .loom-catalogue nav { right:auto; left:0; } .loom-graph-column { display:flex; flex-direction:column; } .loom-outline { order:-1; } .loom-detail-column { grid-template-columns:minmax(0,1fr); } .loom-outline > summary span { float:none; display:block; margin:.35rem 0 0; } .loom-station { padding-inline:.65rem; } .loom-station-tags { max-width:30%; } .loom-level-hint { flex-basis:100%; margin-left:0; } }
   @container work-area (max-width:65rem) { .loom-score-layout { grid-template-columns:minmax(0,1fr); } .loom-detail-column { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); align-items:start; padding-inline-start:0; border-inline-start:0; border-top:1px solid var(--color-engraving); padding-top:1rem; } }
-  @container work-area (max-width:48rem) { .loom-workspace-heading { flex-wrap:wrap; margin-bottom:1.2rem; } .loom-catalogue nav { right:auto; left:0; width:min(25rem,calc(100cqw - 2rem)); } .loom-graph-column { display:flex; flex-direction:column; } .loom-outline { order:-1; } .loom-detail-column { grid-template-columns:minmax(0,1fr); } .loom-outline > summary span { float:none; display:block; margin:.35rem 0 0; } .loom-station { padding-inline:.65rem; } .loom-station-tags { max-width:30%; } .loom-level-hint { flex-basis:100%; margin-left:0; } }
+  @container work-area (max-width:48rem) { .loom-catalogue nav { right:auto; left:0; width:min(25rem,calc(100cqw - 2rem)); } .loom-graph-column { display:flex; flex-direction:column; } .loom-outline { order:-1; } .loom-detail-column { grid-template-columns:minmax(0,1fr); } .loom-outline > summary span { float:none; display:block; margin:.35rem 0 0; } .loom-station { padding-inline:.65rem; } .loom-station-tags { max-width:30%; } .loom-level-hint { flex-basis:100%; margin-left:0; } }
 </style>

@@ -8,6 +8,7 @@
   import { emptyObservationDraft, prepareObservation } from "$lib/scavenger/draft";
   import { initialObservationState, observationId, ObservationWorkspace } from "$lib/scavenger/observation";
   import ConsentCard from "../shared/ConsentCard.svelte";
+  import PageHeader from "../shared/PageHeader.svelte";
 
   let { admissionId = null }: { admissionId?: string | null } = $props();
   let ui = $state.raw(initialObservationState);
@@ -94,18 +95,18 @@
 <svelte:head><title>Scavenger market — LychD</title></svelte:head>
 <svelte:window onbeforeunload={guardUnload} />
 <section class="scavenger" aria-labelledby="market-title" aria-busy={busy}>
-  <header class="scavenger-heading">
-    <div class="scavenger-intro">
-    <span class="instrument-kicker">Altar · application</span>
-    <h1 id="market-title">Scavenger market</h1>
-    <p>One bounded Bazoš PC feed observation. Keep the whole field, then inspect it with a literal title/link filter.</p>
+  <PageHeader
+    title="Scavenger market"
+    kicker="Altar · application"
+    description="One bounded Bazoš PC feed observation. Keep the whole field, then inspect it with a literal title/link filter."
+    titleId="market-title"
+  >
     <p class="limits">Title and link only · no seller judgment, price assessment, ranking, learning or automatic continuation.</p>
-    </div>
-  <div class="actions">
-    <button type="button" class="rune-btn" disabled={busy} onclick={() => { confirmDelete = false; void workspace.refresh(); }}>Refresh retained state</button>
-    {#if ui.selectedId}<a href={`/scavenger?observation=${encodeURIComponent(ui.selectedId)}`}>Link to this UUID</a>{/if}
-  </div>
-  </header>
+    {#snippet actions()}
+      <button type="button" class="rune-btn" disabled={busy} onclick={() => { confirmDelete = false; void workspace.refresh(); }}>Refresh retained state</button>
+      {#if ui.selectedId}<a class="heading-link" href={`/scavenger?observation=${encodeURIComponent(ui.selectedId)}`}>Link to this UUID</a>{/if}
+    {/snippet}
+  </PageHeader>
   {#if ui.phase === "reading"}<p role="status">Reading current protected state. No source acquisition was requested.</p>{/if}
   {#if ui.phase === "submitting"}<p role="status">Submitting once. No automatic retry will be sent.</p>{/if}
   {#if ui.configured === false}<p role="status">Scavenger is not configured. This page cannot admit an observation.</p>
@@ -260,15 +261,12 @@
 
 <style>
   .scavenger { width: min(100%, 88rem); margin-inline: auto; padding: clamp(1.25rem, 3vw, 2.5rem); display: grid; align-content: start; gap: 1.75rem; min-width: 0; }
-  .scavenger-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem 2.5rem; align-items: end; padding-bottom: 1.75rem; border-bottom: 1px solid var(--color-engraving); }
-  .scavenger-intro { min-width: 0; }
-  header p, .limits, caption { color: var(--color-ash); }
-  h1 { margin-block: .4rem .85rem; font: 550 clamp(1.8rem, 3.3vw, 2.8rem)/1.2 var(--font-body); letter-spacing: -.03em; }
+  .limits { margin-top: .4rem; font-size: var(--text-xs); }
+  .limits, caption { color: var(--color-ash); }
   h2 { font-size: 1.25rem; font-weight: 550; margin-block: .25rem .75rem; }
   p { max-width: 80ch; line-height: 1.65; margin-block: .5rem; }
-  .actions, .filter, .preference { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
-  .scavenger-heading .actions { flex-direction: column; align-items: flex-start; padding-bottom: .4rem; }
-  .scavenger-heading .actions a { padding-block: .35rem; font-size: var(--text-sm); }
+  .filter, .preference { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
+  .heading-link { padding-block: .35rem; font-size: var(--text-sm); }
   .notice { padding: 1.25rem; border: 1px solid var(--color-control-border); border-inline-start: 3px solid var(--color-heat); background: var(--color-obsidian); }
   .retained-observation { padding: 1.25rem 1.5rem; border-inline-start: 2px solid var(--color-engraving); background: var(--color-obsidian); }
   .retained-observation h2 { font-size: 1rem; }
@@ -321,16 +319,13 @@
   th:first-child { width: 7rem; }
   :focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   @container work-area (max-width: 48rem) {
-    .scavenger-heading { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
-    .scavenger-heading .actions { flex-direction: row; align-items: center; }
     .campaign-facts { grid-template-columns: minmax(0, 1fr); }
     .identity { grid-template-columns: minmax(0, 1fr); }
     .identity dd { margin-block-end: .5rem; }
     table { min-width: 42rem; }
   }
   @media (max-width: 40rem) {
-    .scavenger-heading, .campaign-facts, .identity { grid-template-columns: minmax(0, 1fr); }
-    .scavenger-heading .actions { flex-direction: row; align-items: center; }
+    .campaign-facts, .identity { grid-template-columns: minmax(0, 1fr); }
     .identity dd { margin-block-end: .5rem; }
     table { min-width: 42rem; }
   }

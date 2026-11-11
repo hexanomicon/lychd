@@ -8,6 +8,7 @@
   import CanvasSurface from "./CanvasSurface.svelte";
   import CanvasObjects from "./CanvasObjects.svelte";
   import AltarIcon from "../altar/AltarIcon.svelte";
+  import PageHeader from "../shared/PageHeader.svelte";
 
   let { initialDocument, managed = false, onchange, onbusy }: {
     initialDocument?: BoardDocument;
@@ -291,7 +292,9 @@
   {#if managed}
     <div class="managed-document-row">{@render boardTitle()}<span class="revision">r{scene.revision} · {count} objects</span><div class="document-actions">{@render fileActions()}</div></div>
   {:else}
-    <header class="canvas-header"><div class="identity"><span class="eyebrow">Portable board</span><h1>Canvas</h1></div><div class="document-actions"><button type="button" onclick={() => newBoard(false)} disabled={capturing || gestureBusy}>Blank board</button><button type="button" onclick={() => newBoard(true)} disabled={capturing || gestureBusy}>Example</button>{@render fileActions()}</div></header>
+    <PageHeader title="Canvas" kicker="Portable board">
+      {#snippet actions()}<div class="document-actions"><button type="button" onclick={() => newBoard(false)} disabled={capturing || gestureBusy}>Blank board</button><button type="button" onclick={() => newBoard(true)} disabled={capturing || gestureBusy}>Example</button>{@render fileActions()}</div>{/snippet}
+    </PageHeader>
     <div class="board-meta">{@render boardTitle()}<span class="file-state" data-unsaved={unexported}>{unexported ? "● " : ""}{fileState}</span><span class="revision">r{scene.revision} · {count} objects</span></div>
   {/if}
   <input class="file-input" data-file="board" type="file" accept="application/json,.json" aria-label="Open board document" onchange={openBoard} />
@@ -337,10 +340,6 @@
 
 <style>
 .canvas-view { width:100%; min-width:0; margin:0 auto; padding:.5rem 1rem 1rem; container-type:inline-size; color:var(--color-bone); }
-  .canvas-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; padding:1rem 0; }
-  .identity { display:flex; align-items:baseline; gap:.75rem; }
-  .eyebrow { color:var(--color-ash); font-size:var(--text-xs); letter-spacing:.06em; }
-  h1 { margin:0; font-size:1.5rem; font-weight:600; letter-spacing:-.04em; }
   .document-actions { display:flex; align-items:center; flex-wrap:wrap; gap:.4rem; }
   button { min-height:2.25rem; padding:.5rem .75rem; border:1px solid var(--color-control-border); border-radius:var(--radius-rune); background:var(--color-obsidian); color:var(--color-parchment); font:var(--text-xs)/1.4 var(--font-body); cursor:pointer; white-space:nowrap; }
   button:hover:not(:disabled) { color:var(--color-bone); background:var(--color-obsidian-2); border-color:var(--color-ash); }
@@ -350,6 +349,8 @@
   .primary span { margin-left:.4rem; }
   button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible { outline:2px solid var(--color-rune); outline-offset:3px; }
   .file-input { display:none; }
+  .eyebrow { color:var(--color-ash); font-size:var(--text-xs); letter-spacing:.06em; }
+  .canvas-view > :global(.page-header) { margin-block:.5rem .25rem; padding-bottom:.75rem; }
   .board-meta,.managed-document-row { display:flex; align-items:center; flex-wrap:wrap; gap:.6rem 1rem; min-width:0; padding:.5rem 0 .75rem; }
   .board-title { min-width:7rem; flex:1; }
   .board-title input { width:min(100%,28rem); min-height:2.25rem; padding:.4rem .6rem; border:1px solid transparent; border-radius:var(--radius-rune); background:transparent; color:var(--color-parchment); font:var(--text-sm)/1.4 var(--font-body); }
