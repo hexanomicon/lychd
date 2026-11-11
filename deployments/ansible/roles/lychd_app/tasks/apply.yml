@@ -73,7 +73,7 @@
       environment: "{{ lychd_app_env }}"
       when: lychd_app_profile == 'tether-container-v1'
       register: lychd_tether_preparation
-      changed_when: (lychd_tether_preparation.stdout | from_json).changed
+      changed_when: lychd_tether_preparation.rc == 0 and (lychd_tether_preparation.stdout | from_json).changed
 
     - name: Re-classify preparation and key admission
       ansible.builtin.include_tasks: classify.yml

@@ -73,6 +73,7 @@ class KernelPrerequisiteTests(unittest.TestCase):
                 "ansible.builtin.slurp",
                 "ansible.builtin.copy",
                 "ansible.builtin.debug",
+                "ansible.builtin.import_tasks",
             },
         )
 
