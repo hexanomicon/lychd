@@ -42,8 +42,8 @@ import { goto } from "$app/navigation";
 import { createBridgeSession, getAltarStatus, getBridgeSnapshot, getOrbRun, sendBridgeMessage, listenToRun, cancelBridgeRun } from "$lib/api/client";
 import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
 import { getSeancesWorkspace, type SeancesWorkspace as SeancesContext } from "$lib/seances/workspace.svelte";
-import AltarShell from "./AltarShell.svelte";
-import BridgePage from "../../routes/bridge/+page.svelte";
+import AltarShell from "../altar/AltarShell.svelte";
+import BridgePage from "../../../routes/bridge/+page.svelte";
 
 const children = createRawSnippet(() => ({ render: () => "<div></div>" }));
 const sessions = [

@@ -7,7 +7,7 @@
   import type { ConsentDecision } from "$lib/bridge/workspace.svelte";
   import { emptyObservationDraft, prepareObservation } from "$lib/scavenger/draft";
   import { initialObservationState, observationId, ObservationWorkspace } from "$lib/scavenger/observation";
-  import ConsentCard from "./ConsentCard.svelte";
+  import ConsentCard from "../shared/ConsentCard.svelte";
 
   let { admissionId = null }: { admissionId?: string | null } = $props();
   let ui = $state.raw(initialObservationState);

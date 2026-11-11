@@ -1,4 +1,4 @@
 <script lang="ts">
-  import SeancesWorkspace from "$lib/components/SeancesWorkspace.svelte";
+  import SeancesWorkspace from "$lib/components/seances/SeancesWorkspace.svelte";
 </script>
 <SeancesWorkspace />

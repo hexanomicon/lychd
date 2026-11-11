@@ -245,7 +245,7 @@ def _verify_sdist(sdist: Path, revision: str, version: str, source_root: Path) -
             "clients/web/package-lock.json",
             "clients/web/package.json",
             "clients/web/static/THIRD_PARTY_NOTICES.txt",
-            "clients/web/src/lib/components/AltarShell.svelte",
+            "clients/web/src/lib/components/altar/AltarShell.svelte",
             "clients/web/vite.config.ts",
             "scripts/generate_python_third_party_notices.py",
             "scripts/verify_release_artifacts.py",

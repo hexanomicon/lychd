@@ -17,8 +17,8 @@
     LoomView as LoomProjection,
     OrbRunSnapshot
   } from "$lib/api/models";
-  import GraphCanvas from "./graph/GraphCanvas.svelte";
-  import DelegateMark from "./DelegateMark.svelte";
+  import GraphCanvas from "../graph/GraphCanvas.svelte";
+  import DelegateMark from "../shared/DelegateMark.svelte";
 
   let {
     patternId,

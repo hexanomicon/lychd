@@ -5,7 +5,7 @@ import { blankDocument, exampleDocument } from "$lib/canvas/engine";
 import type { Document as BoardDocument, Packet, Proposal } from "$lib/canvas/types";
 import { createWorkCommandRegistry, workCommandKey } from "$lib/bridge/work-commands";
 import CanvasSurface from "./CanvasSurface.svelte";
-import CanvasView from "../CanvasView.svelte";
+import CanvasView from "./CanvasView.svelte";
 
 vi.mock("$app/navigation", () => ({ beforeNavigate: vi.fn() }));
 let downloads: NodeBlob[];

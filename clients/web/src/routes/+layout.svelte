@@ -5,7 +5,7 @@
   import { beforeNavigate } from "$app/navigation";
   import { createWorkCommandRegistry, workCommandKey } from "$lib/bridge/work-commands";
   import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
-  import AltarShell from "$lib/components/AltarShell.svelte";
+  import AltarShell from "$lib/components/altar/AltarShell.svelte";
 
   let { children } = $props();
   const offlineProfile = untrack(() => import.meta.env.DEV && page.url.pathname === "/canvas/local");

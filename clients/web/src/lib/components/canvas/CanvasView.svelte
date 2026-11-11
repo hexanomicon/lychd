@@ -5,9 +5,9 @@
   import type { CanvasNode, Document as BoardDocument, Packet, Proposal, Scene, Tool } from "$lib/canvas/types";
   import { CANVAS_COMMAND_HELP, isCanvasCommandCurrent, planCanvasCommand, type CanvasCommandPlan } from "$lib/canvas/commands";
   import { workCommandKey, type CommandResult, type CommandTarget, type WorkCommandRegistry } from "$lib/bridge/work-commands";
-  import CanvasSurface from "./canvas/CanvasSurface.svelte";
-  import CanvasObjects from "./canvas/CanvasObjects.svelte";
-  import AltarIcon from "./AltarIcon.svelte";
+  import CanvasSurface from "./CanvasSurface.svelte";
+  import CanvasObjects from "./CanvasObjects.svelte";
+  import AltarIcon from "../altar/AltarIcon.svelte";
 
   let { initialDocument, managed = false, onchange, onbusy }: {
     initialDocument?: BoardDocument;

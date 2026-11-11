@@ -20,7 +20,7 @@
     TransitionPlan,
     TransitionRecordView
   } from "$lib/api/models";
-  import DelegateMark from "./DelegateMark.svelte";
+  import DelegateMark from "../shared/DelegateMark.svelte";
   import NexusMap from "./NexusMap.svelte";
   import NexusProperties from "./NexusProperties.svelte";
   import { createNexusMap } from "$lib/nexus/map";

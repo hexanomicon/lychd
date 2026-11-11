@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { components } from "../api/openapi";
-  import { readCreationFeedback, ApiError } from "../api/client";
+  import type { components } from "../../api/openapi";
+  import { readCreationFeedback, ApiError } from "../../api/client";
   import { onMount, untrack } from "svelte";
 
   type FeedbackView = components["schemas"]["FeedbackView"];

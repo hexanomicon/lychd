@@ -32,8 +32,8 @@ import {
   getBridgeSnapshot, getOrbRun, getRunSnapshot, listenToRun, sendBridgeMessage
 } from "$lib/api/client";
 import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
-import BridgeView from "./BridgeView.svelte";
-import OrbView from "./OrbView.svelte";
+import BridgeView from "../bridge/BridgeView.svelte";
+import OrbView from "../orb/OrbView.svelte";
 
 const at = "2026-10-10T12:00:00Z";
 const bridgeRead = vi.mocked(getBridgeSnapshot);

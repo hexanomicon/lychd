@@ -7,15 +7,15 @@
   import { matchesOrbPattern, mergeOrbEvidence, mergeOrbGaps, projectOrbField, type OrbDetailLevel, type OrbFieldLens } from "$lib/graph/orb";
   import { projectRuntime } from "$lib/graph/runtime";
   import { observeRuntime, emptyRuntimeState, type RuntimeReadState } from "$lib/orb/runtime";
-  import RuntimeEvidence from "./RuntimeEvidence.svelte";
-  import GraphCanvas from "./graph/GraphCanvas.svelte";
-  import AnimatorRail from "./AnimatorRail.svelte";
+  import RuntimeEvidence from "../shared/RuntimeEvidence.svelte";
+  import GraphCanvas from "../graph/GraphCanvas.svelte";
+  import AnimatorRail from "../shared/AnimatorRail.svelte";
   import OrbTimeline from "./OrbTimeline.svelte";
   import { appendFieldFrame, pruneFieldRun, sameOrbRun, trimFieldFrames, type FieldFrame } from "$lib/orb/field-history";
 
   import { workCommandKey, type WorkCommandRegistry, type CommandTarget, type CommandResult } from "$lib/bridge/work-commands";
   import { parseOrbPresentationCommand, seekObservationFrame, orbPresentationExamples } from "$lib/orb/presentation-commands";
-  import type { GraphCameraCommand } from "./graph/camera-command";
+  import type { GraphCameraCommand } from "../graph/camera-command";
 
   const workCommands = getContext<WorkCommandRegistry | undefined>(workCommandKey);
   let presentationEpoch = 0;
