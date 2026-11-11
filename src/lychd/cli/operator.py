@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import click
 
@@ -48,8 +49,15 @@ def _render_status(report: InventoryReport) -> None:
 @click.command(name="status", help="Show installation, runtime, storage, and readiness truth.")
 @click.argument("target", required=False, type=_TARGET_CHOICE, default=OperatorTarget.SYSTEM.value)
 @click.option("--json", "as_json", is_flag=True, help="Emit stable machine-readable JSON.")
-@click.option("--deployment-revision", default=None, help="Assess the pinned empty-extension deployment profile.")
+@click.option("--deployment-revision", default=None, help="Assess the explicitly selected pinned deployment profile.")
 @click.option("--deployment-image-id", default=None, help="Require the admitted exact OCI image ID.")
+@click.option(
+    "--deployment-profile",
+    type=click.Choice(["empty-extensions-container", "tether-container-v1"]),
+    default="empty-extensions-container",
+)
+@click.option("--deployment-intent", type=click.Path(path_type=Path, dir_okay=False), default=None)
+@click.option("--deployment-tether-image-id", default=None)
 @click.option("--deployment-verify", is_flag=True, help="Observe bounded server-local deployment acceptance.")
 def status(
     target: str,
@@ -58,9 +66,19 @@ def status(
     deployment_revision: str | None,
     deployment_image_id: str | None,
     deployment_verify: bool,
+    deployment_profile: str = "empty-extensions-container",
+    deployment_intent: Path | None = None,
+    deployment_tether_image_id: str | None = None,
 ) -> None:
     """Render one read-only status projection."""
-    if deployment_revision is not None or deployment_image_id is not None or deployment_verify:
+    if (
+        deployment_revision is not None
+        or deployment_image_id is not None
+        or deployment_verify
+        or deployment_profile != "empty-extensions-container"
+        or deployment_intent is not None
+        or deployment_tether_image_id is not None
+    ):
         if not as_json or target != OperatorTarget.SYSTEM.value or deployment_revision is None:
             message = "Deployment assessment requires --json, the system target, and --deployment-revision."
             raise click.UsageError(message)
@@ -73,7 +91,14 @@ def status(
         )
 
         try:
-            request = DeploymentRequest(deployment_revision, deployment_image_id, deployment_verify)
+            request = DeploymentRequest(
+                deployment_revision,
+                deployment_image_id,
+                deployment_verify,
+                deployment_profile,
+                deployment_intent,
+                deployment_tether_image_id,
+            )
         except ValueError as error:
             raise click.UsageError(str(error)) from None
         try:
@@ -91,7 +116,8 @@ def status(
                 json.dumps(
                     {
                         "schema": SCHEMA,
-                        "version": VERSION,
+                        "version": 2 if request.profile == "tether-container-v1" else VERSION,
+                        "profile": request.profile,
                         "state": "unknown",
                         "next_action": "refuse",
                         "reasons": [reason],

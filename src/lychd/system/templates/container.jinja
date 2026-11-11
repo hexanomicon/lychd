@@ -29,6 +29,11 @@ ContainerName={{ container_name }}
 NoNewPrivileges=true
 {% if read_only %}
 DropCapability=all
+{% if tether_role == 'wireguard' %}
+AddCapability=NET_ADMIN
+{% elif tether_role == 'owner-ssh' %}
+AddCapability=SETUID SETGID SYS_CHROOT
+{% endif %}
 ReadOnly=true
 ReadOnlyTmpfs={{ read_only_tmpfs | lower }}
 {% if secret_mount_tmpfs %}

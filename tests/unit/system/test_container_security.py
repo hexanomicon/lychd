@@ -184,5 +184,5 @@ def test_podman_secret_read_returns_exact_masked_value() -> None:
     assert value.get_secret_value() == "synthetic-value"
     assert "synthetic-value" not in repr(value)
     runner.run.assert_called_once_with(
-        ("/usr/bin/podman", "secret", "inspect", "--showsecret", "secret"), timeout_s=5.0
+        ("/usr/bin/podman", "--remote=false", "secret", "inspect", "--showsecret", "secret"), timeout_s=5.0
     )

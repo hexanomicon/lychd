@@ -20,6 +20,20 @@
   changed_when: false
   check_mode: false
 
+- name: Verify the normalized immutable public Tether campaign
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/tether_intent.py') }}"
+      - verify
+    stdin: "{{ {'source_sha256': lychd_tether_intent_sha256, 'archive_sha256': lychd_tether_image_archive_sha256, 'archive_manifest_digest': lychd_tether_image_manifest_digest, 'image_id': lychd_tether_image_id, 'revision': lychd_source_revision} | to_json }}"
+  register: lychd_tether_campaign
+  changed_when: false
+  check_mode: false
+  when: lychd_app_profile == 'tether-container-v1'
+
 - name: Observe server-local application acceptance without effects
   ansible.builtin.command:
     argv:
@@ -30,7 +44,7 @@
       - verify
     # Hosts deployed from the admitted archive must run its exact ID; earlier hand-built hosts are
     # checked by revision label and running-container/settings agreement instead.
-    stdin: "{{ {'revision': lychd_source_revision, 'image_id': lychd_app_expected_image_id | default('')} | to_json }}"
+    stdin: "{{ {'revision': lychd_source_revision, 'image_id': lychd_app_expected_image_id | default(''), 'profile': lychd_app_profile, 'intent': lychd_tether_intent_remote, 'tether_image_id': lychd_tether_image_id} | to_json }}"
   register: lychd_app_verify
   changed_when: false
   check_mode: false

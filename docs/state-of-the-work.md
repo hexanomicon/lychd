@@ -3902,34 +3902,46 @@ artifact transfer, durable spool, cancellation, or settlement.
 
 ### VPN Tether {#vpn-tether}
 
-**State:** Designed
+**State:** Partial
 
-**Proved now:** VPN law defines Tether as private reachability over WireGuard without application
-authority, with exact peer and route intent and separate lifecycle ownership. It distinguishes
-one offered network from independent received VPN attachments, including isolated overlapping
-addresses and attachment-scoped service selection without implicit transit or fallback. It also
-distinguishes that road from anonymous browsing and provider-visible request content.
+**Proved now:** The native `rootless-wireguard-stream-v1` implementation has typed Domain/Rune
+contracts and a closed `tether-container-v1` initialization profile. Its compiler projects one
+offered multi-peer network and independent imported attachments into separate rootless Pods,
+with exact UDP publication, isolated overlapping addresses and generation-specific consumer
+sockets. Route selection binds the remote Lich, attachment, generation, service and caller;
+transport failure cannot select another attachment or direct application transport.
 
-**Do not expect yet:** There is no Tether Domain contract, Rune or provider, generated service, UDP
-publication, interface or enrollment effect, peer/key custody, live route policy, health,
-reconciliation, revocation effect, or identity proof. Multi-attachment selection and routing
-isolation have no implementation or capacity qualification.
+Native lifecycle source and focused tests cover immutable original intent, named attachment
+registration, purpose-specific key custody, separate generation admission, complete-fileset
+binding, activation and observation. Offered peers have independent revocation tombstones;
+additive enrollment can preserve a live Pod's policy and existing owner SSH adapters. Revocation
+journals retain uncertain closure, recover exactly owned failed launches, and preserve unrelated
+roads. Boot helpers recreate ephemeral directories and resume only prior activation authority.
+The CLI and Ansible profile delegate these effects to the native service. The optional same-owner
+SSH binding permits only the existing owner web loopback destination; it grants no application
+identity or remote IAM role.
 
-The separate [host access candidate](./deployments/tumbleweed/access.md) can prepare an
-infrastructure-owned WireGuard road and restricted SSH forwarding service. It is not a Tether
-extension, Rune, UDP compiler contribution or IAM implementation. Two-endpoint operation,
-browser refusal, loss, revocation and reboot remain unqualified by this campaign.
-Its reviewed source now includes separate read-only verification and durable transport revocation,
-boot fences for both owned services, semantic firewalld policy checks and private client-profile
-rendering with a pinned SSH host key and explicit WireGuard route preflight. These are candidate
-contracts, not an installed security receipt or a shared remote Altar.
+**Boundary — Not yet:** Repository tests use bounded effect ports and policy fixtures; they do not
+qualify an arbitrary installed Podman/pasta/kernel combination, wider fleet operation, measured
+capacity, or user-device/browser acceptance. Whole-filesystem rollback and reconciliation against
+independently current revocation authority remain unqualified. Client-profile/QR export, general
+remote IAM, automatic NAT traversal, exit-node traffic and anonymous browsing are not delivered by
+this profile. Each live deployment still needs named evidence for loss, active-stream revocation,
+restart and reboot under its actual transport and browser configuration.
+
+The separate legacy [host access candidate](./deployments/tumbleweed/access.md) retains its own
+infrastructure custody, verification and revocation path. Prefer the native profile for
+LychD-managed roads; neither path supplies shared remote Altar authority.
 
 **Evidence**
 
 - **Topic:** [Tether](./sepulcher/extensions/tether.md)
-- **Source:** [Host access candidate](https://github.com/hexanomicon/lychd/tree/main/deployments/ansible/roles/host_access)
-- **Verification:** [Access refusal checks](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_access_host.py)
-- **Verification:** [Policy checks](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_access_policy.py), [revocation checks](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_access_lifecycle.py), and [client checks](https://github.com/hexanomicon/lychd/blob/main/deployments/access/test_client.py)
+- **Source:** [Domain values](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/tether/models.py), [compiler](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/tether/compiler.py), and [native lifecycle](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/tether/service.py)
+- **Source:** [CLI operations](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/tether.py), [initialization profile](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/commands.py), and [Ansible application flow](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/roles/lychd_app/tasks/apply.yml)
+- **Verification:** [Compiler isolation and stable Pod policy](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/tether/test_compiler.py), [admission, recovery and revocation](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_tether_service.py), and [CLI input and dispatch](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_tether.py)
+- **Verification:** [Key custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_tether_keys.py), [host incarnation ownership](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_tether_host.py), [runtime policy](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_tether_runtime.py), and [consumer selection](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_tether_consumer.py)
+- **Verification:** [Ansible intent handling](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_tether_intent.py) and [firewall policy](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_tether_firewall.py)
+- **Source:** [Separate legacy host access](https://github.com/hexanomicon/lychd/tree/main/deployments/ansible/roles/host_access), with [refusal](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_access_host.py), [policy](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_access_policy.py), [revocation](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/tests/test_access_lifecycle.py), and [client checks](https://github.com/hexanomicon/lychd/blob/main/deployments/access/test_client.py)
 - **Law:** [VPN](./adr/39-vpn.md)
 
 ### Proxy Veil {#proxy-veil}

@@ -1,20 +1,40 @@
 ---
+- name: Require an explicit supported image namespace
+  ansible.builtin.assert:
+    that: lychd_image_kind in ['core', 'tether']
+
+# Extra variables outrank include_role vars. Select from distinct receipt namespaces
+# instead of aliasing Tether values onto the public Core image variables.
+- name: Select the admitted artifact without overriding public receipt variables
+  ansible.builtin.set_fact:
+    _lychd_selected_image: >-
+      {{ {'archive': lychd_tether_image_archive,
+          'archive_sha256': lychd_tether_image_archive_sha256,
+          'id': lychd_tether_image_id, 'ref': lychd_tether_image_ref,
+          'revision': lychd_tether_image_revision}
+         if lychd_image_kind == 'tether' else
+         {'archive': lychd_image_archive,
+          'archive_sha256': lychd_image_archive_sha256,
+          'id': lychd_image_id, 'ref': lychd_image_ref,
+          'revision': lychd_image_revision} }}
+
 - name: Validate the admitted image receipt and direct runtime SSH
   ansible.builtin.assert:
     that:
       - ansible_user == 'lychd'
       - not (ansible_become | default(false) | bool)
-      - lychd_image_revision is match('^[0-9a-f]{40}$')
-      - lychd_image_revision == lychd_source_revision
-      - lychd_image_ref == 'localhost/lychd:' + lychd_image_revision
-      - lychd_image_id is match('^[0-9a-f]{64}$')
-      - lychd_image_archive_sha256 is match('^[0-9a-f]{64}$')
-      - lychd_image_archive is match('^/[^\n]+$')
+      - _lychd_selected_image.revision is match('^[0-9a-f]{40}$')
+      - _lychd_selected_image.revision == lychd_source_revision
+      - lychd_image_kind in ['core', 'tether']
+      - _lychd_selected_image.ref == ('localhost/lychd-tether:' if lychd_image_kind == 'tether' else 'localhost/lychd:') + _lychd_selected_image.revision
+      - _lychd_selected_image.id is match('^[0-9a-f]{64}$')
+      - _lychd_selected_image.archive_sha256 is match('^[0-9a-f]{64}$')
+      - _lychd_selected_image.archive is match('^/[^\n]+$')
     fail_msg: "Admit one OCI archive with admit_oci_archive.py and pass its image-vars.json; connect directly as lychd."
 
 - name: Observe whether the full-revision tag already exists
   ansible.builtin.command:
-    argv: [/usr/bin/podman, image, inspect, "{{ lychd_image_ref }}", --format, "{{ '{{' }}.Id{{ '}}' }}"]
+    argv: [/usr/bin/podman, image, inspect, "{{ _lychd_selected_image.ref }}", --format, "{{ '{{' }}.Id{{ '}}' }}"]
   register: lychd_image_existing
   changed_when: false
   failed_when: false
@@ -22,17 +42,17 @@
 
 - name: Refuse a different image under the campaign tag
   ansible.builtin.assert:
-    that: lychd_image_existing.rc != 0 or lychd_image_existing.stdout | trim == lychd_image_id
+    that: lychd_image_existing.rc != 0 or lychd_image_existing.stdout | trim == _lychd_selected_image.id
     fail_msg: >-
-      {{ lychd_image_ref }} already names image {{ lychd_image_existing.stdout | trim }}, not the admitted
-      {{ lychd_image_id }}. It is never retagged or removed automatically.
+      {{ _lychd_selected_image.ref }} already names image {{ lychd_image_existing.stdout | trim }}, not the admitted
+      {{ _lychd_selected_image.id }}. It is never retagged or removed automatically.
 
 - name: Stage, verify and load the admitted archive only when the image is absent
   when: lychd_image_existing.rc != 0
   block:
     - name: Re-verify the controller archive checksum before transfer
       ansible.builtin.stat:
-        path: "{{ lychd_image_archive }}"
+        path: "{{ _lychd_selected_image.archive }}"
         follow: false
         checksum_algorithm: sha256
       delegate_to: localhost
@@ -45,11 +65,11 @@
         that:
           - lychd_image_controller_archive.stat.isreg | default(false)
           - not (lychd_image_controller_archive.stat.islnk | default(true))
-          - lychd_image_controller_archive.stat.checksum | default('') == lychd_image_archive_sha256
+          - lychd_image_controller_archive.stat.checksum | default('') == _lychd_selected_image.archive_sha256
 
     - name: Report the check-mode boundary for image loading
       ansible.builtin.debug:
-        msg: "Image {{ lychd_image_ref }} ({{ lychd_image_id }}) would be transferred and loaded."
+        msg: "Image {{ _lychd_selected_image.ref }} ({{ _lychd_selected_image.id }}) would be transferred and loaded."
       when: ansible_check_mode
 
     - name: Create the private staging directory
@@ -65,14 +85,14 @@
 
     - name: Copy the archive under the runtime account
       ansible.builtin.copy:
-        src: "{{ lychd_image_archive }}"
-        dest: "{{ lychd_image_staging_dir }}/lychd-{{ lychd_image_revision }}.oci.tar"
+        src: "{{ _lychd_selected_image.archive }}"
+        dest: "{{ lychd_image_staging_dir }}/lychd-{{ _lychd_selected_image.revision }}.oci.tar"
         mode: '0600'
       when: not ansible_check_mode
 
     - name: Hash the transferred archive on the host
       ansible.builtin.stat:
-        path: "{{ lychd_image_staging_dir }}/lychd-{{ lychd_image_revision }}.oci.tar"
+        path: "{{ lychd_image_staging_dir }}/lychd-{{ _lychd_selected_image.revision }}.oci.tar"
         follow: false
         checksum_algorithm: sha256
       register: lychd_image_remote_archive
@@ -80,25 +100,25 @@
 
     - name: Refuse a transferred archive whose SHA-256 differs
       ansible.builtin.assert:
-        that: lychd_image_remote_archive.stat.checksum == lychd_image_archive_sha256
+        that: lychd_image_remote_archive.stat.checksum == _lychd_selected_image.archive_sha256
       when: not ansible_check_mode
 
     - name: Load the verified archive into rootless storage
       ansible.builtin.command:
-        argv: [/usr/bin/podman, load, --input, "{{ lychd_image_staging_dir }}/lychd-{{ lychd_image_revision }}.oci.tar"]
+        argv: [/usr/bin/podman, load, --input, "{{ lychd_image_staging_dir }}/lychd-{{ _lychd_selected_image.revision }}.oci.tar"]
       when: not ansible_check_mode
       changed_when: true
 
     - name: Observe the loaded image by its exact ID
       ansible.builtin.command:
-        argv: [/usr/bin/podman, image, inspect, "{{ lychd_image_id }}", --format, "{{ '{{' }}.Id{{ '}}' }}"]
+        argv: [/usr/bin/podman, image, inspect, "{{ _lychd_selected_image.id }}", --format, "{{ '{{' }}.Id{{ '}}' }}"]
       register: lychd_image_loaded
       changed_when: false
       when: not ansible_check_mode
 
     - name: Observe the full-revision tag after loading
       ansible.builtin.command:
-        argv: [/usr/bin/podman, image, inspect, "{{ lychd_image_ref }}", --format, "{{ '{{' }}.Id{{ '}}' }}"]
+        argv: [/usr/bin/podman, image, inspect, "{{ _lychd_selected_image.ref }}", --format, "{{ '{{' }}.Id{{ '}}' }}"]
       register: lychd_image_tagged
       changed_when: false
       failed_when: false
@@ -106,13 +126,13 @@
 
     - name: Name the verified image with the full revision only when the archive carried no tag
       ansible.builtin.command:
-        argv: [/usr/bin/podman, tag, "{{ lychd_image_id }}", "{{ lychd_image_ref }}"]
+        argv: [/usr/bin/podman, tag, "{{ _lychd_selected_image.id }}", "{{ _lychd_selected_image.ref }}"]
       when: not ansible_check_mode and lychd_image_tagged.rc != 0
       changed_when: true
 
     - name: Remove the staged archive copy after a verified load
       ansible.builtin.file:
-        path: "{{ lychd_image_staging_dir }}/lychd-{{ lychd_image_revision }}.oci.tar"
+        path: "{{ lychd_image_staging_dir }}/lychd-{{ _lychd_selected_image.revision }}.oci.tar"
         state: absent
       when: not ansible_check_mode
 
@@ -122,7 +142,7 @@
       - /usr/bin/podman
       - image
       - inspect
-      - "{{ lychd_image_ref }}"
+      - "{{ _lychd_selected_image.ref }}"
       - --format
       - "{{ '{{' }}.Id{{ '}}' }} {{ '{{' }}index .Labels \"org.opencontainers.image.revision\"{{ '}}' }}"
   register: lychd_image_final
@@ -132,6 +152,6 @@
 
 - name: Require the exact admitted image identity
   ansible.builtin.assert:
-    that: lychd_image_final.stdout | trim == lychd_image_id + ' ' + lychd_image_revision
+    that: lychd_image_final.stdout | trim == _lychd_selected_image.id + ' ' + _lychd_selected_image.revision
     fail_msg: "Loaded image identity differs from the admitted archive."
   when: not ansible_check_mode or lychd_image_existing.rc == 0

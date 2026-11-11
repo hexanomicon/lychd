@@ -27,7 +27,7 @@ def test_secret_store_exists_uses_bounded_podman_probe(
 ) -> None:
     runner = _runner(mocker)
     runner.run.return_value = ProcessResult(
-        argv=("/usr/bin/podman", "secret", "exists", "alpha"),
+        argv=("/usr/bin/podman", "--remote=false", "secret", "exists", "alpha"),
         returncode=0,
     )
 
@@ -38,7 +38,7 @@ def test_secret_store_exists_uses_bounded_podman_probe(
 
     assert store.exists("alpha") is True
     runner.run.assert_called_once_with(
-        ("/usr/bin/podman", "secret", "exists", "alpha"),
+        ("/usr/bin/podman", "--remote=false", "secret", "exists", "alpha"),
         timeout_s=5.0,
     )
 
@@ -82,7 +82,7 @@ def test_secret_store_ensure_present_creates_only_when_missing(
 ) -> None:
     runner = _runner(mocker)
     runner.run_with_input.return_value = ProcessResult(
-        argv=("/usr/bin/podman", "secret", "create", "alpha", "-"),
+        argv=("/usr/bin/podman", "--remote=false", "secret", "create", "alpha", "-"),
         returncode=0,
     )
     store = PodmanSecretStore(
@@ -95,7 +95,7 @@ def test_secret_store_ensure_present_creates_only_when_missing(
 
     assert created is True
     runner.run_with_input.assert_called_once_with(
-        ("/usr/bin/podman", "secret", "create", "alpha", "-"),
+        ("/usr/bin/podman", "--remote=false", "secret", "create", "alpha", "-"),
         timeout_s=30.0,
         input_text="value",
     )
@@ -107,7 +107,7 @@ def test_secret_store_ensure_present_preserves_a_raced_secret(
     """Create-if-absent never replaces an operator secret that wins the race."""
     runner = _runner(mocker)
     runner.run_with_input.return_value = ProcessResult(
-        argv=("/usr/bin/podman", "secret", "create", "alpha", "-"),
+        argv=("/usr/bin/podman", "--remote=false", "secret", "create", "alpha", "-"),
         returncode=125,
         stderr="secret already exists",
     )
@@ -130,7 +130,7 @@ def test_secret_store_create_uses_bounded_non_echoed_stdin(
 ) -> None:
     runner = _runner(mocker)
     runner.run_with_input.return_value = ProcessResult(
-        argv=("/usr/bin/podman", "secret", "create"),
+        argv=("/usr/bin/podman", "--remote=false", "secret", "create"),
         returncode=125,
         stderr="boom",
     )
@@ -145,6 +145,7 @@ def test_secret_store_create_uses_bounded_non_echoed_stdin(
     runner.run_with_input.assert_called_once_with(
         (
             "/usr/bin/podman",
+            "--remote=false",
             "secret",
             "create",
             "--replace",
@@ -154,3 +155,40 @@ def test_secret_store_create_uses_bounded_non_echoed_stdin(
         timeout_s=30.0,
         input_text="value",
     )
+
+
+def test_secret_store_ignores_ambient_remote_selection_and_keeps_values_on_stdin(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+
+    monkeypatch.setenv("CONTAINER_HOST", "ssh://wrong-engine.invalid/run/podman.sock")
+    monkeypatch.setenv("CONTAINER_CONNECTION", "untrusted-connection")
+    value = "private-test-value"
+    completed = mocker.Mock(
+        returncode=0,
+        stdout=json.dumps([{"Spec": {"Name": "alpha"}, "SecretData": value}]),
+        stderr="",
+    )
+    process = mocker.patch("lychd.system.operator.process.subprocess.run", return_value=completed)
+    store = PodmanSecretStore("/usr/bin/podman")
+    assert store.read("alpha").get_secret_value() == value
+    assert store.exists("alpha") is True
+    store.create("alpha", value)
+    process.side_effect = (mocker.Mock(returncode=1, stdout="", stderr=""), completed)
+    assert store.ensure_present("alpha", value) is True
+    commands = [call.args[0] for call in process.call_args_list]
+    assert commands == [
+        ("/usr/bin/podman", "--remote=false", "secret", "inspect", "--showsecret", "alpha"),
+        ("/usr/bin/podman", "--remote=false", "secret", "exists", "alpha"),
+        ("/usr/bin/podman", "--remote=false", "secret", "create", "--replace", "alpha", "-"),
+        ("/usr/bin/podman", "--remote=false", "secret", "exists", "alpha"),
+        ("/usr/bin/podman", "--remote=false", "secret", "create", "alpha", "-"),
+    ]
+    for call in process.call_args_list:
+        assert value not in call.args[0]
+        if "create" in call.args[0]:
+            assert call.kwargs["input"] == value
+        else:
+            assert "input" not in call.kwargs
+        assert "env" not in call.kwargs

@@ -150,3 +150,38 @@ def test_prepared_image_is_part_of_original_inscription_and_never_rewrites_exist
     assert not repeated.files
     assert digest_file(path, expected=path.stat()) == original_digest
     assert path.stat().st_ino == before.st_ino
+
+
+@pytest.mark.usefixtures("persistent_identity_observer")
+def test_active_profile_rune_is_part_of_original_journal(codex_paths: dict[str, Path]) -> None:
+    from pathlib import Path
+    from typing import ClassVar
+
+    from lychd.config.runes import RuneConfig
+
+    class InitialRune(RuneConfig):
+        path_fragment: ClassVar[Path] = Path("initial")
+        name: str
+
+    rune = InitialRune(name="admitted")
+    service = CodexService(
+        toml_path=codex_paths["toml"],
+        runes_path=codex_paths["runes"],
+        postgres_root_path=codex_paths["postgres"],
+        rune_schemas=[InitialRune],
+        settings=Settings(),
+        initial_runes=(rune,),
+    )
+    planned = service.initial_files()
+    assert service.sample_schemas == []
+    journal: list[CreatedResources] = []
+    created = service.inscribe(on_created=journal.append)
+    assert created == CreatedResources.combine(*journal)
+    assert set(planned).issubset(created.files)
+    path = next(iter(planned))
+    assert path.name == "default.toml"
+    assert tomllib.loads(path.read_text()) == {"name": "admitted"}
+    assert list(path.parent.glob("*.toml")) == [path]
+    before = path.stat().st_ino
+    assert service.inscribe() == CreatedResources()
+    assert path.stat().st_ino == before

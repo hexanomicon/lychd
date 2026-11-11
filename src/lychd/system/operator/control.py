@@ -22,6 +22,9 @@ from lychd.system.operator.process import ProcessInvocationError, ProcessRunner
 from lychd.system.operator.targets import OperatorTargetResolver
 
 _SYSTEMCTL_TIMEOUT_SECONDS = 30.0
+# Cold starts include the 60s database readiness gate and prerequisite units.
+# Match the controller convergence window without changing manager completion semantics.
+_SYSTEMCTL_START_TIMEOUT_SECONDS = 360.0
 _COUNTERPART_TIMEOUT_SECONDS = 3.0
 logger = structlog.get_logger(__name__)
 
@@ -153,10 +156,15 @@ class OperatorControlService:
             authority=authority.value,
             units=units,
         )
+        timeout_s = _SYSTEMCTL_START_TIMEOUT_SECONDS if action is OperatorAction.START else _SYSTEMCTL_TIMEOUT_SECONDS
         try:
-            result = self._runner.run(argv, timeout_s=_SYSTEMCTL_TIMEOUT_SECONDS)
+            result = self._runner.run(argv, timeout_s=timeout_s)
         except ProcessInvocationError as exc:
-            message = f"systemctl {action.value} failed: {exc}"
+            message = (
+                f"systemctl start outcome is unconfirmed; the manager job may continue: {exc}"
+                if action is OperatorAction.START
+                else f"systemctl {action.value} failed: {exc}"
+            )
             logger.exception(
                 "operator_actuation_failed",
                 action=action.value,

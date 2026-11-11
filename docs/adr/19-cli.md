@@ -13,7 +13,8 @@ icon: material/console-line
 
 ## Requirements
 
-- The root grammar is closed: internal frameworks and extensions add no public root command.
+- The root grammar is a fixed host-owned inventory reviewed in source. Internal frameworks and
+  extensions cannot register their own public root commands.
 - Commands name operator intent rather than Litestar, systemd, Podman, database, queue, or worker
   topology. Click validates and renders; typed services retain authority.
 - One source-owned target vocabulary supplies observation, with a safely actuable subset for
@@ -39,8 +40,14 @@ not public compatibility. The managed image uses the fixed process entrypoint
 defined by [Backend](11-backend.md#process-and-listener-boundary). There is no host Vessel `serve`
 entrypoint. Database commands retain their
 lazy framework delegation. The root verbs are `init`, `bind`, `start`, `stop`, `status`/`st`,
-`logs`, `access`, and `del`; no run-operation, snapshot, restore, selector shorthand, recovery, promotion, or
-consent spelling is reserved by the grammar.
+`logs`, `access`, `tether`, and `del`; no run-operation, snapshot, restore, selector shorthand,
+recovery, promotion, or consent spelling is reserved by the grammar.
+
+`lychd tether` is a fixed host-owned group for the rootless native lifecycle defined by
+[VPN](39-vpn.md). Its closed operations delegate to typed native services, revalidate exact
+ownership, and serialize mutations under the lifecycle lock. Registration belongs to Pulse source,
+never an extension-supplied Click callback. This group grants neither generic extension execution
+nor arbitrary host commands; the future run-operation namespace remains separate.
 
 ### Inscribe, then bind
 

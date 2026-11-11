@@ -1,0 +1,91 @@
+---
+- name: Require the public intent and independently admitted Tether image
+  ansible.builtin.assert:
+    that:
+      - lychd_tether_intent is match('^/[^\n]+$')
+      - lychd_tether_intent_sha256 is match('^[0-9a-f]{64}$')
+      - lychd_tether_image_id is match('^[0-9a-f]{64}$')
+      - lychd_tether_image_revision == lychd_source_revision
+      - lychd_tether_intent_remote == '/home/lychd/.local/state/lychd-deploy/tether-intent.json'
+
+- name: Verify the public controller intent before transfer
+  ansible.builtin.stat:
+    path: "{{ lychd_tether_intent }}"
+    follow: false
+    checksum_algorithm: sha256
+  delegate_to: localhost
+  vars:
+    ansible_connection: local
+  register: lychd_tether_controller_intent
+
+- name: Refuse a changed or symlinked intent
+  ansible.builtin.assert:
+    that:
+      - lychd_tether_controller_intent.stat.isreg | default(false)
+      - not (lychd_tether_controller_intent.stat.islnk | default(true))
+      - lychd_tether_controller_intent.stat.checksum == lychd_tether_intent_sha256
+
+- name: Re-attest the exact archive manifest before image import and intent normalization
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/../lychd_image/files/admit_oci_archive.py') }}"
+      - --verify-tether
+      - "{{ lychd_tether_image_archive }}"
+      - "{{ lychd_source_revision }}"
+      - "{{ lychd_tether_image_id }}"
+      - "{{ lychd_tether_image_manifest_digest }}"
+      - "{{ lychd_tether_image_archive_sha256 }}"
+  delegate_to: localhost
+  vars:
+    ansible_connection: local
+  changed_when: false
+
+- name: Load only the verified Tether OCI archive through the existing image importer
+  ansible.builtin.include_role:
+    name: lychd_image
+  vars:
+    lychd_image_kind: tether
+
+- name: Create private deployment staging outside native owned roots
+  ansible.builtin.file:
+    path: /home/lychd/.local/state/lychd-deploy
+    state: directory
+    mode: '0700'
+
+- name: Stage the public intent without replacing an existing campaign
+  ansible.builtin.copy:
+    src: "{{ lychd_tether_intent }}"
+    dest: /home/lychd/.local/state/lychd-deploy/tether-intent.source.json
+    force: false
+    mode: '0600'
+
+- name: Verify the staged intent digest
+  ansible.builtin.stat:
+    path: /home/lychd/.local/state/lychd-deploy/tether-intent.source.json
+    follow: false
+    checksum_algorithm: sha256
+  register: lychd_tether_staged_intent
+
+- name: Require the exact admitted public intent before original initialization
+  ansible.builtin.assert:
+    that:
+      - lychd_tether_staged_intent.stat.isreg | default(false)
+      - not (lychd_tether_staged_intent.stat.islnk | default(true))
+      - lychd_tether_staged_intent.stat.checksum == lychd_tether_intent_sha256
+
+- name: Stage the normalized immutable public Tether campaign
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/tether_intent.py') }}"
+      - stage
+    stdin: "{{ {'source_sha256': lychd_tether_intent_sha256, 'archive_sha256': lychd_tether_image_archive_sha256, 'archive_manifest_digest': lychd_tether_image_manifest_digest, 'image_id': lychd_tether_image_id, 'revision': lychd_source_revision} | to_json }}"
+  register: lychd_tether_campaign
+  changed_when: (lychd_tether_campaign.stdout | from_json).changed
+  check_mode: false
+  when: lychd_app_profile == 'tether-container-v1'

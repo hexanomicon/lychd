@@ -7,3 +7,6 @@ lychd_image_ref: ""
 lychd_image_revision: ""
 # Private runtime-user staging outside every LychD-owned root; the copy is removed after loading.
 lychd_image_staging_dir: /home/lychd/.local/state/lychd-deploy
+
+# Closed image repository selection; optional Tether reuses the same verified import.
+lychd_image_kind: core

@@ -46,6 +46,27 @@ class NativeContractTests(unittest.TestCase):
             ],
         )
 
+    def test_protocol_two_requires_explicit_profile_and_full_tether_identity(self):
+        request = {
+            "revision": REVISION,
+            "image_id": IMAGE,
+            "profile": "tether-container-v1",
+            "intent": "/secure/intent.json",
+            "tether_image_id": "c" * 64,
+        }
+        _, argv = probe.native_command("classify", request, "/home/lychd")
+        self.assertIn("--deployment-profile", argv)
+        self.assertIn("--deployment-intent", argv)
+        self.assertIn("--deployment-tether-image-id", argv)
+        document = dict(response(), version=2, profile="tether-container-v1")
+        self.assertIs(probe.validate_response(document, "tether-container-v1"), document)
+        with self.assertRaises(probe.Refusal):
+            probe.validate_response(document)
+        with self.assertRaises(probe.Refusal):
+            probe.validate_response(response(), "tether-container-v1")
+        with self.assertRaises(probe.Refusal):
+            probe.native_command("classify", dict(request, tether_image_id="moving"), "/home/lychd")
+
     def test_configure_and_arbitrary_commands_do_not_exist(self):
         for command in ("configure", "start", "shell"):
             with self.assertRaises(probe.Refusal):
@@ -120,3 +141,10 @@ class NativeContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TetherPreparationTests(unittest.TestCase):
+    def test_waiting_keys_is_actionable_protocol_two(self):
+        document = response("prepared_waiting_keys")
+        document.update(version=2, profile="tether-container-v1")
+        self.assertEqual(probe.validate_response(document, "tether-container-v1")["next_action"], "import-key")

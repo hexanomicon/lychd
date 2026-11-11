@@ -94,7 +94,7 @@ class _World:
                 stdout = "".join(f"{key}={value}\n" for key, value in self.fields.items())
             return ProcessResult(argv, self.returncode, stdout, "private untrusted stderr" * 1000)
         assert argv == ("/trusted/systemctl", "--user", "start", self.vessel)
-        assert timeout_s == 30.0
+        assert timeout_s == 360.0
         return ProcessResult(argv, 0)
 
     def control(self, *, systemctl_bin: str | None = "/trusted/systemctl") -> OperatorControlService:
@@ -123,7 +123,7 @@ def test_cold_counterpart_allows_only_exact_owned_start(vessel: str, counterpart
     assert tuple(unit.name for unit in world.catalog.units) == (vessel, "lychd-phylactery.service")
     assert world.calls == [
         (world.show_argv(), 3.0),
-        (("/trusted/systemctl", "--user", "start", vessel), 30.0),
+        (("/trusted/systemctl", "--user", "start", vessel), 360.0),
     ]
     assert world.events == ["lock", "owned-1", "owned-2", "show", "start", "unlock"]
 

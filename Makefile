@@ -56,6 +56,13 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/cli/test_reach_observation.py tests/unit/system/services/test_oculus_snapshot.py \
 	tests/unit/cli/test_reach_operator_onboarding.py \
 	tests/unit/system/services/test_intercom_http.py \
+	tests/unit/domain/tether tests/unit/cli/test_tether.py \
+	tests/unit/system/services/test_tether_runtime.py tests/unit/system/services/test_tether_consumer.py \
+	tests/unit/system/services/test_tether_broker_tls.py \
+	tests/unit/system/services/test_tether_custody.py tests/unit/system/services/test_tether_keys.py \
+	tests/unit/system/services/test_tether_host.py tests/unit/system/services/test_tether_service.py \
+	tests/unit/system/services/test_secrets.py tests/unit/system/test_container_security.py \
+	tests/unit/system/services/test_bind.py tests/unit/system/services/test_codex.py \
 	tests/unit/domain/test_artifact_custody.py tests/unit/domain/test_evolution.py \
 	tests/unit/domain/animation tests/unit/domain/cortex tests/unit/domain/delegation \
 	tests/unit/domain/test_naming.py \

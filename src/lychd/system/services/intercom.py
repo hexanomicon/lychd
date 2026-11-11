@@ -28,8 +28,10 @@ from lychd.domain.codex.peer import PeerAuthorityError, PeerObject, PublicDeclar
 from lychd.domain.intercom.codec import encode_request, send_params, task_params
 from lychd.domain.intercom.native import PeerRunBinding, PeerTaskRef
 from lychd.domain.intercom.transport import IntercomEndpoint, IntercomHandoff, PreparedRequest, TaskMethod
+from lychd.domain.tether.models import TetherSelection
 from lychd.system.services.intercom_http import BoundedIntercomHTTP, prepare_request, verify_response
 from lychd.system.services.peer_authority import PeerAuthority
+from lychd.system.services.tether.connector import TetherConnector
 
 _NETWORK_ALLOWANCE = 512 * 1024
 _MAX_PORT = 65535
@@ -79,7 +81,10 @@ def _instant(value: str) -> datetime:
 
 def _endpoint(record: dict[str, Any]) -> tuple[IntercomEndpoint, str]:
     try:
-        if set(record) != {"address", "hostname", "port", "path", "ca_file"}:
+        if set(record) not in (
+            {"address", "hostname", "port", "path", "ca_file"},
+            {"address", "hostname", "port", "path", "ca_file", "tether"},
+        ):
             _refuse("endpoint")
         address, hostname, port, path, ca_file = (
             record["address"],
@@ -104,9 +109,16 @@ def _endpoint(record: dict[str, Any]) -> tuple[IntercomEndpoint, str]:
             or not Path(ca_file).is_absolute()
         ):
             _refuse("endpoint")
+        tether = None
+        if "tether" in record:
+            if type(record["tether"]) is not dict:
+                _refuse("endpoint")
+            tether = TetherSelection.model_validate(record["tether"], strict=True)
         authority = f"[{hostname}]" if ":" in hostname else hostname
         uri = f"https://{authority}:{port}{path}"
-        return IntercomEndpoint(address=address, hostname=hostname, port=port, path=path, ca_file=Path(ca_file)), uri
+        return IntercomEndpoint(
+            address=address, hostname=hostname, port=port, path=path, ca_file=Path(ca_file), tether=tether
+        ), uri
     except (KeyError, TypeError, ValueError):
         _refuse("endpoint")
 
@@ -197,6 +209,7 @@ class IntercomService:
         workload_id: UUID,
         signing_key: bytes,
         signing_key_id: str,
+        tether_connector: TetherConnector | None = None,
     ) -> None:
         """Compose trusted custody and an in-memory workload signing credential."""
         if not signing_key_id or not signing_key_id.isascii() or len(signing_key_id) > _MAX_KEY_ID_BYTES:
@@ -215,7 +228,7 @@ class IntercomService:
         self._workload_id = workload_id
         self._signing_key = signing_key
         self._signing_key_id = signing_key_id
-        self._http = BoundedIntercomHTTP()
+        self._http = BoundedIntercomHTTP(tether_connector=tether_connector)
         self._declarations: dict[UUID, _LiveDeclaration] = {}
         self._native_declarations: dict[UUID, UUID] = {}
         self._pending: dict[UUID, _TransmissionGate] = {}
