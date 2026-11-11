@@ -467,13 +467,56 @@ class TetherHost:
             and fields["Job"] in {"", "0"}
         )
 
+    def _failed_role_state(self, retained: dict[str, Any]) -> dict[str, str] | None:
+        """Observe only the exact owned terminal failure, with no pending restart intent."""
+        unit = self.owned_unit(retained["unit_name"])
+        if unit.get("ActiveState") != "failed" or unit.get("SubState") != "failed":
+            return None
+        expected = {
+            "Id": retained["unit_name"],
+            "LoadState": "loaded",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "MainPID": "0",
+            "ControlPID": "0",
+            "Job": unit.get("Job", ""),
+            "NRestarts": "0",
+            "InvocationID": retained["invocation_id"],
+        }
+        _require(unit.get("Job") in {"", "0"})
+        _require(all(unit.get(key) == expected[key] for key in ("LoadState", "MainPID", "ControlPID")))
+        properties = (*expected, "ControlGroup")
+        raw = self.command(
+            "systemctl", "--user", "show", retained["unit_name"], *("--property=" + key for key in properties)
+        )
+        fields: dict[str, str] = {}
+        for line in raw.splitlines():
+            key, separator, value = line.partition("=")
+            _require(bool(separator) and key not in fields)
+            fields[key] = value
+        _require(fields.get("ControlGroup") in {"", retained["unit_cgroup"]})
+        _require(fields == {**expected, "ControlGroup": fields.get("ControlGroup")})
+        return fields
+
+    def _failed_role_closed(self, retained: dict[str, Any]) -> bool:
+        """Bracket vanished-body and whole-cgroup proofs with exact failed-launch authority."""
+        before = self._failed_role_state(retained)
+        if before is None:
+            return False
+        _require(not self.exists("container", retained["container_id"]))
+        _require(not self.exists("container", retained["container_name"]))
+        _require(self.cgroup_empty(retained["cgroup"]))
+        _require(self.cgroup_empty(retained["unit_cgroup"]))
+        _require(self._failed_role_state(retained) == before)
+        return True
+
     def closed(self, retained: dict[str, Any]) -> bool:
-        """Prove closure without effects even after a binding has been retired."""
+        """Prove retired or exactly retained terminal-failed role closure without effects."""
         self._retained_role(retained)
         return (
             not self._role_present(retained)
             and self.cgroup_empty(retained["cgroup"])
-            and self._unit_closed(retained["unit_name"])
+            and (self._unit_closed(retained["unit_name"]) or self._failed_role_closed(retained))
         )
 
     def pod_closed(self, retained: dict[str, Any]) -> bool:

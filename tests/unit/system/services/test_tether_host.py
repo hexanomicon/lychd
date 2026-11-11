@@ -749,3 +749,186 @@ def test_core_requires_image_and_current_owned_payload(
         with pytest.raises(TetherError):
             service.require_core("example/core:admitted")
     assert not runner.calls
+
+
+class FailedRoleObservation(Runner):
+    """Model terminal manager observations separately from body and cgroup absence."""
+
+    def __init__(self, group: str = "") -> None:
+        super().__init__()
+        self.fields: dict[str, str] = {
+            "Id": NAME + ".service",
+            "LoadState": "loaded",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "MainPID": "0",
+            "ControlPID": "0",
+            "Job": "",
+            "NRestarts": "0",
+            "InvocationID": INVOCATION,
+            "ControlGroup": group,
+        }
+        self.owned_calls = 0
+        self.groups: list[str] = []
+        self.bodies: list[str] = []
+        self.present: set[str] = set()
+        self.nonempty: set[str] = set()
+        self.drift: dict[str, str] = {}
+        self.foreign_at = 0
+        self.appear = ""
+
+    def run(self, argv: tuple[str, ...], *, timeout_s: float) -> ProcessResult:
+        assert timeout_s > 0
+        assert argv[:4] == ("/tools/systemctl", "--user", "show", NAME + ".service")
+        self.calls.append(argv)
+        properties = tuple(argument.removeprefix("--property=") for argument in argv[4:])
+        assert set(properties) == set(self.fields)
+        return ProcessResult(argv, 0, "".join(key + "=" + self.fields[key] + "\n" for key in properties))
+
+    def owned_unit(self, name: str) -> dict[str, str]:
+        assert name == NAME + ".service"
+        self.owned_calls += 1
+        if self.owned_calls == self.foreign_at:
+            message = "Effective owned unit replaced"
+            raise TetherError(message)
+        if self.owned_calls == 1 and self.appear:
+            self.present.add(self.appear)
+        if self.owned_calls == 2:
+            self.fields.update(self.drift)
+        return dict(self.fields)
+
+    def exists(self, kind: str, identity: str) -> bool:
+        assert kind == "container"
+        assert identity in {IDENTITY, NAME}
+        self.bodies.append(identity)
+        return identity in self.present
+
+    def cgroup_empty(self, group: str) -> bool:
+        self.groups.append(group)
+        return group not in self.nonempty
+
+
+def failed_role_port(
+    service: host.TetherHost, monkeypatch: pytest.MonkeyPatch, group: str = ""
+) -> FailedRoleObservation:
+    observed = FailedRoleObservation(group)
+    service.runner = observed
+    monkeypatch.setattr(service, "owned_unit", observed.owned_unit)
+    monkeypatch.setattr(service, "exists", observed.exists)
+    monkeypatch.setattr(service, "cgroup_empty", observed.cgroup_empty)
+    return observed
+
+
+@pytest.mark.parametrize("group", ["", UNIT_GROUP])
+@pytest.mark.parametrize("job", ["", "0"])
+def test_retained_failed_role_with_vanished_body_closes_without_effect(
+    port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch, group: str, job: str
+) -> None:
+    service, _runner = port
+    observed = failed_role_port(service, monkeypatch, group)
+    observed.fields["Job"] = job
+    service.stop(retained())
+    service.stop(retained())
+    assert observed.owned_calls == 4
+    assert len(observed.calls) == 4
+    assert set(observed.groups) == {retained()["cgroup"], UNIT_GROUP}
+    assert observed.bodies.count(IDENTITY) == 4
+    assert observed.bodies.count(NAME) == 4
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("Id", "foreign.service"),
+        ("LoadState", "not-found"),
+        ("MainPID", "5"),
+        ("ControlPID", "5"),
+        ("Job", "42"),
+        ("NRestarts", "1"),
+        ("NRestarts", ""),
+        ("InvocationID", "e" * 32),
+        ("InvocationID", ""),
+        ("ControlGroup", UNIT_GROUP + "/foreign"),
+    ],
+)
+def test_failed_role_closure_refuses_unproved_terminal_state(
+    port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch, field: str, value: str
+) -> None:
+    service, _runner = port
+    observed = failed_role_port(service, monkeypatch)
+    observed.fields[field] = value
+    with pytest.raises(TetherError):
+        service.closed(retained())
+
+
+@pytest.mark.parametrize(
+    ("active", "substate"), [("active", "running"), ("activating", "auto-restart"), ("failed", "auto-restart")]
+)
+def test_restarting_role_does_not_acquire_terminal_failure_closure(
+    port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch, active: str, substate: str
+) -> None:
+    service, _runner = port
+    observed = failed_role_port(service, monkeypatch)
+    observed.fields.update(ActiveState=active, SubState=substate)
+    assert not service.closed(retained())
+    assert not observed.calls
+
+
+@pytest.mark.parametrize("identity", [IDENTITY, NAME])
+def test_failed_role_closure_refuses_body_appearing_during_proof(
+    port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch, identity: str
+) -> None:
+    service, _runner = port
+    observed = failed_role_port(service, monkeypatch)
+    observed.appear = identity
+    with pytest.raises(TetherError):
+        service.closed(retained())
+    assert observed.owned_calls == 1
+
+
+@pytest.mark.parametrize("group", [retained()["cgroup"], UNIT_GROUP])
+def test_failed_role_closure_requires_both_retained_subtrees_empty(
+    port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch, group: str
+) -> None:
+    service, _runner = port
+    observed = failed_role_port(service, monkeypatch)
+    observed.nonempty.add(group)
+    if group == UNIT_GROUP:
+        with pytest.raises(TetherError):
+            service.closed(retained())
+    else:
+        assert not service.closed(retained())
+
+
+@pytest.mark.parametrize("observation", [1, 2])
+def test_failed_role_closure_requires_effective_ownership_on_both_observations(
+    port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch, observation: int
+) -> None:
+    service, _runner = port
+    observed = failed_role_port(service, monkeypatch)
+    observed.foreign_at = observation
+    with pytest.raises(TetherError, match="Effective owned unit replaced"):
+        service.closed(retained())
+    assert observed.owned_calls == observation
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("InvocationID", "e" * 32),
+        ("ControlGroup", UNIT_GROUP),
+        ("Job", "42"),
+        ("MainPID", "5"),
+        ("NRestarts", "1"),
+        ("ActiveState", "active"),
+    ],
+)
+def test_failed_role_closure_refuses_manager_drift_between_observations(
+    port: tuple[host.TetherHost, Runner], monkeypatch: pytest.MonkeyPatch, field: str, value: str
+) -> None:
+    service, _runner = port
+    observed = failed_role_port(service, monkeypatch)
+    observed.drift[field] = value
+    with pytest.raises(TetherError):
+        service.closed(retained())
+    assert observed.owned_calls == 2
