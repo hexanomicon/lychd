@@ -285,7 +285,7 @@ class DeploymentInspectionService:
             try:
                 infrastructure = self._owned_infra_names(manifests, bindings, observed, footprint)
             except DeploymentObservationError:
-                infrastructure = frozenset()
+                infrastructure = frozenset[str]()
             if extra_containers - infrastructure:
                 report.reasons.append("foreign_runtime_material")
                 return report
@@ -668,10 +668,14 @@ class DeploymentInspectionService:
         except ValueError:
             message = "pod_infrastructure_identity_unproven"
             raise DeploymentObservationError(message) from None
-        if not isinstance(value, list) or len(value) != size:
+        if not isinstance(value, list):
             message = "pod_infrastructure_identity_unproven"
             raise DeploymentObservationError(message)
-        return cast("list[object]", value)
+        entries = cast("list[object]", value)
+        if len(entries) != size:
+            message = "pod_infrastructure_identity_unproven"
+            raise DeploymentObservationError(message)
+        return entries
 
     def _pod_identity(self, name: str, identity: str | None = None) -> tuple[str, str]:
         row = self._runtime_projection("pod", identity or name, _POD_PROJECTION, 4)

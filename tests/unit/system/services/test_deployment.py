@@ -921,12 +921,17 @@ def infra_world(mocker: MockerFixture, tmp_path: Path, *, tether: bool = False) 
     engine = InfraEngine()
     pod_names = ["lychd", *(["lychd-tether-" + "d" * 16] if tether else [])]
     manifests: list[QuadletBase] = [
-        QuadletContainer(image="example/core", container_name="lychd-vessel", pod="lychd.pod"),
-        *(QuadletPod(pod_name=name) for name in pod_names),
+        QuadletContainer(description="Core", image="example/core", container_name="lychd-vessel", pod="lychd.pod"),
     ]
+    manifests.extend(QuadletPod(pod_name=name) for name in pod_names)
     if tether:
         manifests.append(
-            QuadletContainer(image="example/tether", container_name=pod_names[1] + "-wg", pod=pod_names[1] + ".pod")
+            QuadletContainer(
+                description="Tether",
+                image="example/tether",
+                container_name=pod_names[1] + "-wg",
+                pod=pod_names[1] + ".pod",
+            )
         )
     sources, observed = infra_sources(tmp_path, manifests)
     reactor = tmp_path / "user/lychd-reactor.service"
