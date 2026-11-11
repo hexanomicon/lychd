@@ -646,24 +646,35 @@ Automation verifies and imports that image and stages the public intent before r
 and active `tether/default.toml` are journaled by that original initialization. Existing original
 bytes must agree on repeat runs; there is no post-init settings edit or receipt replacement.
 
-Every native Tether profile, including import-only installations, requires WireGuard in the
-running host kernel. Between runtime staging and native initialization, the administrator phase
-checks that kernel's module inventory, loads `wireguard` only when absent, and observes it in
+Every native Tether profile, including import-only installations, requires the distribution's
+`wireguard-tools` userspace package and WireGuard support in the running host kernel. The host
+uses `wg` for key generation and identity checks; a loaded kernel module alone is insufficient.
+Between runtime staging and native initialization, the administrator preparation phase installs
+`wireguard-tools` when absent and verifies its executable before native key operations. It also
+checks the running kernel's module inventory, loads `wireguard` only when absent, and observes it in
 `/sys/module/wireguard`. Only after that observation does it create the root-owned
 `/etc/modules-load.d/lychd-tether.conf` containing `wireguard` for subsequent boots. Existing
 reserved-file bytes and ownership must match; unsafe or conflicting entries are refused before
 loading. Repeated preparation is a no-op. Kernel loading respects the administrator's blacklist;
-no force option, kernel/package update, module unload or service restart is performed.
+no force option, kernel update, module unload or service restart is performed.
 
-Check mode observes availability and predicts a missing load or boot entry without performing
-either. It does not claim the module is active. Healthy deployment and `app-verify.yml` require
-both the loaded module and exact boot entry without repairing them. Preparation and verification
-use separate task entry points: saved action variables cannot turn kernel or firewall verification
+Check mode predicts a missing userspace package, module load or boot entry without performing
+those changes. It does not claim the tools or module are ready. Healthy deployment and
+`app-verify.yml` require the installed userspace package and executable, loaded module and exact
+boot entry without repairing them. Preparation and verification use separate task entry points: saved action variables cannot turn kernel or firewall verification
 into preparation. If modules for the running kernel are missing, stop and restore the
-distribution's matching kernel modules or separately
-arrange a boot into a supported installed kernel, then rerun preparation. A failed or blocked load
-also stops before boot-file publication or native lifecycle work. Installing WireGuard tools alone
+distribution's matching kernel modules or separately arrange a boot into a supported installed
+kernel, then rerun preparation. A failed or blocked load also stops before boot-file publication or native lifecycle work. Installing WireGuard tools alone
 does not establish this kernel prerequisite.
+
+If native preparation fails after original initialization because a host prerequisite is missing,
+complete that prerequisite through administrator preparation and rerun deployment with the exact
+same pinned source, images and original campaign inputs. Preserve the normalized intent, settings,
+Rune, custody receipts and any pending or ready keys. Classification must prove the original
+unbound, quiescent installation before preparation resumes; it must not initialize the body again.
+Missing imported keys still require explicit `tether import-key`. Unknown or replaced material is
+a refusal, not permission to delete receipts or regenerate keys. A failed prepare command remains
+a failure with its native diagnostic; only successful JSON receipts supply its change result.
 
 For an offered network, set `lychd_tether_firewall_zone` to the existing firewalld zone of the
 concrete host IPv4 listener in that normalized intent. The deployment uses the administrator

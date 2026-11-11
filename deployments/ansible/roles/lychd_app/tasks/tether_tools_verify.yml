@@ -1,0 +1,10 @@
+---
+- name: Verify the installed WireGuard package and trusted executable
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -I
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/tether_tools.py') }}"
+  changed_when: false
+  check_mode: false

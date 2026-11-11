@@ -17,3 +17,6 @@
   ansible.builtin.assert:
     that: lychd_tether_kernel_loaded.stat.isdir | default(false)
     fail_msg: "WireGuard is not loaded in the running host kernel; read-only verification does not load it."
+
+- name: Verify the host WireGuard key-generation tool without mutation
+  ansible.builtin.import_tasks: tether_tools_verify.yml

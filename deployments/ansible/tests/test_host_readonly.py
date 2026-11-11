@@ -78,7 +78,7 @@ class HostReadOnlyTests(unittest.TestCase):
                     actions = {task.action.removeprefix("ansible.builtin.") for task in tasks}
                     self.assertLessEqual(actions, {"assert", "command", "stat", "slurp", "debug", "meta"})
                     commands = [task for task in tasks if task.action.removeprefix("ansible.builtin.") == "command"]
-                    self.assertEqual(len(commands), 4)
+                    self.assertEqual(len(commands), 5)
                     self.assertEqual(commands[0].args["argv"], ["/usr/bin/id", "-u"])
                     self.assertEqual(commands[1].args["argv"], ["/usr/bin/uname", "-r"])
                     self.assertEqual(
@@ -92,13 +92,20 @@ class HostReadOnlyTests(unittest.TestCase):
                             "wireguard",
                         ],
                     )
-                    for task in commands[:3]:
+                    for task in commands[:-1]:
                         self.assertFalse(task.check_mode)
                         self.assertIs(task.get_ds()["changed_when"], False)
                     for task in commands:
                         context = variables.get_vars(play=play, task=task)
                         self.assertEqual(context["lychd_tether_kernel_action"], obsolete_action)
                         self.assertEqual(context["lychd_tether_firewall_action"], obsolete_action)
+                    tools = commands[-2]
+                    self.assertEqual(tools.args["argv"][:3], ["/usr/bin/python3", "-I", "-c"])
+                    self.assertEqual(
+                        tools.args["argv"][3],
+                        "{{ lookup('ansible.builtin.file', role_path + '/files/tether_tools.py') }}",
+                    )
+                    self.assertEqual(tools.when, [])
                     firewall = commands[-1]
                     context = variables.get_vars(play=play, task=firewall)
                     context["ansible_check_mode"] = check
@@ -124,8 +131,26 @@ class HostReadOnlyTests(unittest.TestCase):
     def test_preparation_retains_effects_and_check_prediction_despite_obsolete_verify_variable(self):
         play, variables, tasks = compiled(["tether_kernel_prepare", "firewall"], "verify")
         commands = [task for task in tasks if task.action.removeprefix("ansible.builtin.") == "command"]
-        self.assertEqual(len(commands), 5)
-        load = commands[3]
+        self.assertEqual(len(commands), 8)
+        package = commands[3]
+        self.assertEqual(package.args["argv"], ["/usr/bin/rpm", "-q", "wireguard-tools"])
+        install = commands[4]
+        self.assertEqual(
+            install.args["argv"],
+            [
+                "/usr/bin/zypper",
+                "--non-interactive",
+                "--no-refresh",
+                "install",
+                "--no-recommends",
+                "--",
+                "wireguard-tools",
+            ],
+        )
+        self.assertEqual(install.when, ["not ansible_check_mode and lychd_tether_tools_package.rc == 1"])
+        tools = commands[5]
+        self.assertEqual(tools.when, ["not ansible_check_mode or lychd_tether_tools_package.rc == 0"])
+        load = commands[6]
         self.assertEqual(load.args["argv"], ["/usr/sbin/modprobe", "--use-blacklist", "wireguard"])
         self.assertEqual(load.args["creates"], "/sys/module/wireguard")
         self.assertNotIn("check_mode", load.get_ds())

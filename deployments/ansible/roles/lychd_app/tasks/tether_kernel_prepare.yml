@@ -2,6 +2,9 @@
 - name: Check the host kernel and reserved boot entry before preparation
   ansible.builtin.import_tasks: tether_kernel.yml
 
+- name: Prepare the host WireGuard key-generation tool
+  ansible.builtin.import_tasks: tether_tools_prepare.yml
+
 - name: Load only an absent WireGuard module with administrator policy intact
   ansible.builtin.command:
     argv: [/usr/sbin/modprobe, --use-blacklist, wireguard]
