@@ -29,6 +29,7 @@ from lychd.system.services.tether.models import TetherError, TetherIntent
 from lychd.system.services.tether.service import NativeState, NativeTetherService
 
 if TYPE_CHECKING:
+    from lychd.domain.tether.compiler import TetherDeployment
     from lychd.system.services.tether.custody import TetherCustody
     from lychd.system.services.tether.host import TetherHost
 
@@ -63,6 +64,9 @@ class MemoryCustody:
 
     def publish(self, name: Path, value: dict[str, Any], **_kwargs: Any) -> bool:
         return self.write(str(name), value)
+
+    def known_paths(self) -> tuple[Path, ...]:
+        return (self.root, self.root / ".custody.json", *(self.root / name for name in sorted(self.records)))
 
 
 class HostPort:
@@ -190,6 +194,10 @@ class ServiceHarness(NativeTetherService):
 
     def _attest_keys(self, state: NativeState, deployment: Any) -> None:
         pass
+
+    def observe_real_keys(self, state: NativeState, deployment: TetherDeployment) -> None:
+        """Exercise the production batch boundary when a test supplies its key port."""
+        super()._attest_keys(state, deployment)
 
     def bind_request(self, state_override: NativeState | None = None) -> Any:
         return SimpleNamespace(tether=self._projection(state_override or self._load()))
@@ -641,11 +649,13 @@ def test_offered_only_registration_and_repeat_prepare_preserve_managed_road(
     assert service._projection(registered).routes == ()
     assert service._projection(registered).consumer_mount is not None
     keys = Mock()
-    keys.attest.return_value = {
-        "reference": offered.private_key_ref,
-        "purpose": "wireguard",
-        "public_key": "public",
-        "fingerprint": "fingerprint",
+    keys.attest_many.return_value = {
+        offered.private_key_ref: {
+            "reference": offered.private_key_ref,
+            "purpose": "wireguard",
+            "public_key": "public",
+            "fingerprint": "fingerprint",
+        }
     }
 
     def declared_intent(_path: Path) -> TetherIntent:
@@ -781,7 +791,7 @@ def test_hot_missing_preshared_key_refuses_before_grant(lifecycle: Any, monkeypa
     service.activate()
     before = service._load()
     keys = Mock()
-    keys.attest.side_effect = TetherError("Missing key")
+    keys.attest_many.side_effect = TetherError("Missing key")
 
     def key_gateway(_state: NativeState) -> Mock:
         return keys
@@ -961,3 +971,90 @@ def test_revocation_refuses_pod_without_exact_failed_launch_proof(
         service.revoke("b", None, "1")
     assert host.pods == before
     assert service._load().revocations["b:@:1"]["status"] == "pending"
+
+
+@pytest.mark.parametrize("operation", ["projection", "binding_context", "bind_request", "attest_bind_request"])
+def test_public_planning_and_commit_reobserve_changed_key_backend(
+    lifecycle: tuple[ServiceHarness, HostPort], monkeypatch: pytest.MonkeyPatch, operation: str
+) -> None:
+    from unittest.mock import Mock
+
+    from lychd.config.runes.registry import RuneRegistry
+    from lychd.config.settings import SettingsSnapshot
+    from lychd.extensions.host import assemble_extensions
+    from lychd.system.services.tether.keys import TetherKeys
+
+    service, host = lifecycle
+    state = service.load_state()
+    settings = SettingsSnapshot(payload="{}").materialize()
+    settings.extensions.builtins = ("tether",)
+    settings.server.port = state.intent.web_port
+    extensions = assemble_extensions(settings)
+    runes = RuneRegistry((service.rune,))
+    key_port = Mock(spec=TetherKeys)
+    key_port.attest_many.return_value = {}
+
+    def key_gateway(_state: NativeState) -> Mock:
+        return key_port
+
+    def declared() -> tuple[object, object, RuneRegistry, TetherRune]:
+        return settings, extensions, runes, service.rune
+
+    def compile_request(state_override: NativeState | None = None) -> object:
+        return NativeTetherService.bind_request(service, state_override)
+
+    monkeypatch.setattr(service, "_keys", key_gateway)
+    monkeypatch.setattr(service, "_declared", declared)
+    monkeypatch.setattr(service, "_attest_keys", service.observe_real_keys)
+    monkeypatch.setattr(service, "bind_request", compile_request)
+    request = service.bind_request()
+    expected_references = tuple(sorted(attachment.private_key_ref for attachment in state.intent.rune.attachments))
+    key_port.attest_many.assert_called_once_with(expected_references)
+    before = service.load_state()
+    key_port.attest_many.reset_mock()
+    key_port.attest_many.side_effect = TetherError("Synthetic backend identity replaced")
+
+    def invoke() -> None:
+        if operation == "attest_bind_request":
+            service.attest_bind_request(request)
+        else:
+            getattr(service, operation)()
+
+    with pytest.raises(TetherError, match="identity replaced"):
+        invoke()
+    key_port.attest_many.assert_called_once_with(expected_references)
+    assert service.load_state() == before
+    assert not host.starts
+    assert not host.stops
+
+
+def test_preparation_status_uses_one_batch_for_all_reference_phases(
+    lifecycle: tuple[ServiceHarness, HostPort], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from unittest.mock import Mock
+
+    from lychd.system.services.tether.keys import KeyObservation, TetherKeys
+
+    service, _host = lifecycle
+    state = service.load_state()
+    references = tuple(sorted(attachment.private_key_ref for attachment in state.intent.rune.attachments))
+    observation = KeyObservation(
+        {reference: {"reference": reference} for reference in references},
+        dict.fromkeys(references, "ready"),
+    )
+    key_port = Mock(spec=TetherKeys)
+    key_port.observe.return_value = observation
+
+    def key_gateway(_state: NativeState) -> Mock:
+        return key_port
+
+    monkeypatch.setattr(service, "_empty_preparation", lambda: False)
+    monkeypatch.setattr(service, "_keys", key_gateway)
+    result = service.preparation_status()
+    assert result["state"] == "prepared"
+    assert result["missing_secrets"] == []
+    assert result["owned_secrets"] == list(references)
+    assert result["required_secrets"] == list(references)
+    key_port.observe.assert_called_once_with()
+    key_port.preparation_state.assert_not_called()
+    key_port.owned_references.assert_not_called()

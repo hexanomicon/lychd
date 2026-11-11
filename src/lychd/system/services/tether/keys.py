@@ -18,8 +18,13 @@ import stat
 import struct
 import tempfile
 import uuid
+from collections.abc import Iterable, Mapping
+from contextlib import AbstractContextManager
+from dataclasses import dataclass
+from itertools import islice
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, cast
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
 from lychd.lib.json_objects import unique_json_object
 from lychd.system.host_tools import trusted_host_tool
@@ -29,7 +34,7 @@ from lychd.system.services.tether.models import TetherError
 
 if TYPE_CHECKING:
     from lychd.system.operator.process import InputProcessRunner
-    from lychd.system.services.tether.custody import TetherCustody
+    from lychd.system.services.tether.custody import CustodyRecords
 
 Purpose = Literal["wireguard", "ssh-host", "preshared"]
 _MAX_KEY_BYTES = 8192
@@ -57,6 +62,47 @@ _FIELDS = {
 _LABEL_EPOCH = "io.lychd.tether.epoch"
 _LABEL_PURPOSE = "io.lychd.tether.purpose"
 _LABEL_OPERATION = "io.lychd.tether.operation"
+
+
+class KeyCustody(Protocol):
+    """The existing custody operations used by key creation and observation."""
+
+    def attest(self) -> None: ...
+
+    def read(self, name: str) -> dict[str, object] | None: ...
+
+    def write(self, name: str, value: dict[str, object], *, immutable: bool = False) -> bool: ...
+
+    def directory(self, name: str, *, public: bool = False) -> Path: ...
+
+    def records_snapshot(self) -> AbstractContextManager[CustodyRecords]: ...
+
+
+@dataclass(frozen=True)
+class KeyObservation:
+    """Detached public results; no private material or continuing authority."""
+
+    identities: Mapping[str, Mapping[str, object]]
+    phases: Mapping[str, Literal["pending", "ready"]]
+
+    def preparation_state(self, reference: str) -> Literal["absent", "pending", "ready"]:
+        _reference(reference)
+        return self.phases.get(reference, "absent")
+
+    def require(self, references: Iterable[str]) -> dict[str, dict[str, Any]]:
+        result: dict[str, dict[str, Any]] = {}
+        for index, reference in enumerate(references):
+            _require(index < _MAX_REFERENCES)
+            _require(self.preparation_state(reference) == "ready" and reference in self.identities)
+            result[reference] = dict(self.identities[reference])
+            _require(len(result) <= _MAX_REFERENCES)
+        return result
+
+
+@dataclass(frozen=True)
+class _KeyEntry:
+    phase: Literal["pending", "ready"]
+    record: dict[str, Any]
 
 
 def _refuse() -> TetherError:
@@ -208,7 +254,7 @@ def _default_driver_directory(graph_root: str, configured: str) -> None:
 class TetherKeys:
     """Exact-reference factories and attestations; no replace, ignore, or deletion."""
 
-    def __init__(self, custody: TetherCustody, epoch: str, runner: InputProcessRunner | None = None) -> None:
+    def __init__(self, custody: KeyCustody, epoch: str, runner: InputProcessRunner | None = None) -> None:
         """Bind existing host custody; callers serialize complete transactions."""
         _require(type(epoch) is str and re.fullmatch(r"[0-9a-f]{32}", epoch) is not None)
         self.custody, self.epoch, self.runner = custody, epoch, runner or SubprocessRunner()
@@ -313,81 +359,95 @@ class TetherKeys:
         _require(public == record["public_key"] and hmac.compare_digest(fingerprint, record["fingerprint"]))
         return {**record, "secret_id": secret_id}, value, material
 
-    def owned_references(self) -> tuple[str, ...]:
-        """Observe exact owned live secrets, including recoverable pending creations."""
+    def _inventory(self, view: CustodyRecords) -> dict[str, _KeyEntry]:
+        pairs: dict[str, dict[bool, dict[str, Any]]] = {}
+        for name in view.names:
+            if not Path(name).name.startswith("key-") or Path(name).suffix != ".json":
+                continue
+            _require(re.fullmatch(r"key-[0-9a-f]{64}(?:-pending)?\.json", name) is not None)
+            row = view.read(name)
+            _require(row is not None)
+            reference = cast("dict[str, object]", row).get("reference")
+            _require(type(reference) is str)
+            reference = cast("str", reference)
+            _reference(reference)
+            pending = name.endswith("-pending.json")
+            _require(name == _name(reference, pending=pending))
+            pairs.setdefault(reference, {})[pending] = self._record(row, reference, final=not pending)
+            _require(len(pairs) <= _MAX_REFERENCES)
+        result: dict[str, _KeyEntry] = {}
+        for reference, pair in sorted(pairs.items()):
+            pending = pair.get(True)
+            _require(pending is not None)
+            pending = cast("dict[str, Any]", pending)
+            final = pair.get(False)
+            if final is not None:
+                _require({name: final[name] for name in _FIELDS} == pending)
+            result[reference] = _KeyEntry("pending" if final is None else "ready", pending if final is None else final)
+        return result
+
+    def observe(self) -> KeyObservation:
+        """Inspect each live owned backend once inside one fresh custody interval."""
         try:
-            owned: list[str] = []
+            identities: dict[str, Mapping[str, object]] = {}
             materials: list[tuple[bytes, str | None, str]] = []
-            for reference in self.known_references():
-                phase = self.preparation_state(reference)
-                pending = phase == "pending"
-                record = self._record(
-                    self.custody.read(_name(reference, pending=pending)), reference, final=not pending
+            with self.custody.records_snapshot() as view:
+                inventory = self._inventory(view)
+                for reference, entry in inventory.items():
+                    if (
+                        entry.phase == "pending"
+                        and self._call("podman", "secret", "exists", reference, absence=True) is None
+                    ):
+                        continue
+                    identity, _value, material = self._inspect(entry.record)
+                    purpose, public = identity["purpose"], identity["public_key"]
+                    for previous, previous_public, previous_purpose in materials:
+                        _require(not hmac.compare_digest(material, previous))
+                        if purpose == "wireguard" or previous_purpose == "wireguard":
+                            left, right = bytearray(material), bytearray(previous)
+                            left[0] &= 248
+                            right[0] &= 248
+                            left[-1] = (left[-1] & 127) | 64
+                            right[-1] = (right[-1] & 127) | 64
+                            _require(not hmac.compare_digest(left, right))
+                        if public is not None and purpose == previous_purpose:
+                            _require(public != previous_public)
+                    materials.append((material, public, purpose))
+                    identities[reference] = MappingProxyType(identity)
+                result = KeyObservation(
+                    MappingProxyType(identities),
+                    MappingProxyType({name: entry.phase for name, entry in inventory.items()}),
                 )
-                if pending and self._call("podman", "secret", "exists", reference, absence=True) is None:
-                    continue
-                identity, _value, material = self._inspect(record)
-                purpose, public = identity["purpose"], identity["public_key"]
-                for previous, previous_public, previous_purpose in materials:
-                    _require(not hmac.compare_digest(material, previous))
-                    if purpose == "wireguard" or previous_purpose == "wireguard":
-                        left, right = bytearray(material), bytearray(previous)
-                        left[0] &= 248
-                        right[0] &= 248
-                        left[-1] = (left[-1] & 127) | 64
-                        right[-1] = (right[-1] & 127) | 64
-                        _require(not hmac.compare_digest(left, right))
-                    if public is not None and purpose == previous_purpose:
-                        _require(public != previous_public)
-                materials.append((material, public, purpose))
-                owned.append(reference)
         except Exception:  # noqa: BLE001 - secret observations never escape diagnostics
             raise _refuse() from None
         else:
-            return tuple(owned)
+            return result
+
+    def owned_references(self) -> tuple[str, ...]:
+        """Observe exact owned live secrets, including recoverable pending creations."""
+        return tuple(self.observe().identities)
 
     def preparation_state(self, reference: str) -> Literal["absent", "pending", "ready"]:
         """Classify receipted preparation only; readiness still requires attestation."""
         try:
             _reference(reference)
-            self.known_references()  # Validate inventory names, epochs and schemas first.
-            final = self.custody.read(_name(reference))
-            pending = self.custody.read(_name(reference, pending=True))
-            if final is None and pending is None:
-                return "absent"
-            pending = self._record(pending, reference, final=False)
-            if final is None:
-                return "pending"
-            final = self._record(final, reference, final=True)
-            _require({name: final[name] for name in _FIELDS} == pending)
+            with self.custody.records_snapshot() as view:
+                entry = self._inventory(view).get(reference)
+                phase: Literal["absent", "pending", "ready"] = "absent" if entry is None else entry.phase
         except Exception:  # noqa: BLE001 - metadata diagnostics remain content-free
             raise _refuse() from None
         else:
-            return "ready"
+            return phase
 
     def known_references(self) -> tuple[str, ...]:
         """Discover only positively receipted key records, including pending work."""
         try:
-            self.custody.attest()
-            references: set[str] = set()
-            for path in self.custody.known_paths():
-                if re.fullmatch(r"key-[0-9a-f]{64}(?:-pending)?\.json", path.name) is None:
-                    continue
-                row = self.custody.read(path.name)
-                if row is None:
-                    raise _refuse()  # noqa: TRY301 - normalize the public gateway boundary
-                reference = row.get("reference")
-                if not isinstance(reference, str):
-                    raise _refuse()  # noqa: TRY301 - retain type narrowing inside quarantine
-                _reference(reference)
-                pending = path.name.endswith("-pending.json")
-                _require(path.name == _name(reference, pending=pending))
-                self._record(row, reference, final=not pending)
-                references.add(reference)
-            _require(len(references) <= _MAX_REFERENCES)
-            return tuple(sorted(references))
+            with self.custody.records_snapshot() as view:
+                result = tuple(self._inventory(view))
         except Exception:  # noqa: BLE001 - public gateway has content-free diagnostics
             raise _refuse() from None
+        else:
+            return result
 
     def _unique_material(self, reference: str, material: bytes, public: str | None, purpose: Purpose) -> None:
         """Compare existing owned material without coupling absent pending creations."""
@@ -499,18 +559,20 @@ class TetherKeys:
 
     def attest(self, reference: str) -> dict[str, Any]:
         """Check exact receipt ID, labels, name and current cryptographic identity."""
+        return self.attest_many((reference,))[reference]
+
+    def attest_many(self, references: Iterable[str]) -> dict[str, dict[str, Any]]:
+        """Freshly attest all requested ready identities without repeating backend reads."""
         try:
-            _reference(reference)
-            self.custody.attest()
-            final = self._record(self.custody.read(_name(reference)), reference, final=True)
-            pending = self._record(self.custody.read(_name(reference, pending=True)), reference, final=False)
-            _require({name: final[name] for name in _FIELDS} == pending)
-            identity, _value, material = self._inspect(final)
-            self._unique_material(reference, material, identity["public_key"], identity["purpose"])
+            requested = tuple(islice(references, _MAX_REFERENCES + 1))
+            _require(len(requested) <= _MAX_REFERENCES)
+            for reference in requested:
+                _reference(reference)
+            result = self.observe().require(requested)
         except Exception:  # noqa: BLE001 - no secret-bearing diagnostic escapes
             raise _refuse() from None
         else:
-            return identity
+            return result
 
 
 __all__ = ("TetherKeys",)

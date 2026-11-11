@@ -646,6 +646,25 @@ Automation verifies and imports that image and stages the public intent before r
 and active `tether/default.toml` are journaled by that original initialization. Existing original
 bytes must agree on repeat runs; there is no post-init settings edit or receipt replacement.
 
+Every native Tether profile, including import-only installations, requires WireGuard in the
+running host kernel. Between runtime staging and native initialization, the administrator phase
+checks that kernel's module inventory, loads `wireguard` only when absent, and observes it in
+`/sys/module/wireguard`. Only after that observation does it create the root-owned
+`/etc/modules-load.d/lychd-tether.conf` containing `wireguard` for subsequent boots. Existing
+reserved-file bytes and ownership must match; unsafe or conflicting entries are refused before
+loading. Repeated preparation is a no-op. Kernel loading respects the administrator's blacklist;
+no force option, kernel/package update, module unload or service restart is performed.
+
+Check mode observes availability and predicts a missing load or boot entry without performing
+either. It does not claim the module is active. Healthy deployment and `app-verify.yml` require
+both the loaded module and exact boot entry without repairing them. Preparation and verification
+use separate task entry points: saved action variables cannot turn kernel or firewall verification
+into preparation. If modules for the running kernel are missing, stop and restore the
+distribution's matching kernel modules or separately
+arrange a boot into a supported installed kernel, then rerun preparation. A failed or blocked load
+also stops before boot-file publication or native lifecycle work. Installing WireGuard tools alone
+does not establish this kernel prerequisite.
+
 For an offered network, set `lychd_tether_firewall_zone` to the existing firewalld zone of the
 concrete host IPv4 listener in that normalized intent. The deployment uses the administrator
 connection between runtime staging and original initialization to add only that exact UDP port
@@ -667,9 +686,9 @@ entries for an already verified normalized campaign; it cannot invent an unstage
 The protocol-2 verification path observes both port entries and the effective interface zone.
 Provider firewall or security-group rules remain operator-owned and are not claimed as verified.
 
-This OS prerequisite belongs to deployment automation. Native Tether continues to own all VPN
+These OS prerequisites belong to deployment automation. Native Tether continues to own all VPN
 keys, routes, configuration, units, activation and revocation; the host helper performs none of them.
-The helper uses only the documented [firewall-cmd zone and port operations](https://firewalld.org/documentation/man-pages/firewall-cmd.html).
+The firewall helper uses only the documented [firewall-cmd zone and port operations](https://firewalld.org/documentation/man-pages/firewall-cmd.html).
 
 The native chain is `tether prepare --intent PATH`, `tether bind`, ordinary guarded `start`,
 then `tether activate`. Keys must already be admitted through the separate operator-owned

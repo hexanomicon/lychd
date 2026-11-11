@@ -7,7 +7,7 @@ setup, private inventory and variables, check/apply commands, limitations and ho
 | --- | --- | --- |
 | `host.yml` / `verify.yml` | administrator + sudo | Converge / observe the installed host floor. |
 | `source.yml` | direct `lychd` SSH | Stage one exact source CLI while the body is inactive. |
-| `app-verify.yml` | direct `lychd` SSH | Read-only application acceptance of a running body. |
+| `app-verify.yml` | direct `lychd` SSH; administrator for protocol-2 host prerequisites | Read-only application and selected host-prerequisite acceptance. |
 | `deploy.yml` | both, one `--limit`ed host | Classify, then provision a fresh host or only verify a healthy one. |
 | `server.yml` | same as `deploy.yml` | Explicit headless Server entry point. |
 | `admin.yml` | administrator + sudo, explicit target | Replace only stock vendor sudo policy with a named administrator policy. |

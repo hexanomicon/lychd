@@ -1,0 +1,19 @@
+---
+- name: Check the host kernel and reserved boot entry without mutation
+  ansible.builtin.import_tasks: tether_kernel.yml
+
+- name: Require the persistent Tether entry during read-only verification
+  ansible.builtin.assert:
+    that: lychd_tether_module_boot.stat.exists
+    fail_msg: "WireGuard boot persistence is absent; read-only verification does not create it."
+
+- name: Observe actual WireGuard presence during read-only verification
+  ansible.builtin.stat:
+    path: /sys/module/wireguard
+    follow: false
+  register: lychd_tether_kernel_loaded
+
+- name: Require observed WireGuard during read-only verification
+  ansible.builtin.assert:
+    that: lychd_tether_kernel_loaded.stat.isdir | default(false)
+    fail_msg: "WireGuard is not loaded in the running host kernel; read-only verification does not load it."

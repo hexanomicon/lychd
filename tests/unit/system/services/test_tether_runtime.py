@@ -487,3 +487,94 @@ def test_producer_lock_refuses_second_live_producer_and_symlink(tmp_path: Path) 
     finally:
         assert first.lock_descriptor is not None
         os.close(first.lock_descriptor)
+
+
+# Default nft formatting retains symbolic protocol/state names and numeric addresses/ports.
+_OBSERVED_NFT = """table inet lychd_tether {
+    comment "lychd-tether:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:remote-b"
+    chain input {
+        type filter hook input priority mangle; policy drop;
+        iifname != "wg0" meta nfproto ipv4 udp dport 51820 accept
+        iifname "wg0" ip saddr 10.77.0.2 ip daddr 10.77.0.1 tcp dport 443 ct state established,new accept
+    }
+    chain output {
+        type filter hook output priority mangle; policy drop;
+        oifname != "wg0" meta nfproto ipv4 udp sport 51820 accept
+        oifname "wg0" ip saddr 10.77.0.1 ip daddr 10.77.0.2 tcp sport 443 ct state established accept
+    }
+    chain forward {
+        type filter hook forward priority mangle; policy drop;
+    }
+}
+"""
+
+
+@pytest.mark.parametrize(
+    ("before", "after"),
+    [
+        ("", ""),
+        ("dport 443", "dport 444"),
+        ('iifname != "wg0"', 'iifname "wg0"'),
+        ("hook forward priority mangle; policy drop", "hook forward priority mangle; policy accept"),
+        ("nfproto ipv4", "nfproto ipv6"),
+        ("nfproto ipv4", "nfproto 2"),
+        ("ct state established,new", "ct state established,related"),
+        ("priority mangle", "priority filter"),
+        ("udp dport 51820 accept", "udp dport 51820 drop"),
+        ('        iifname != "wg0" meta nfproto ipv4 udp dport 51820 accept\n', ""),
+        (
+            '        iifname != "wg0" meta nfproto ipv4 udp dport 51820 accept\n        iifname "wg0" ip saddr 10.77.0.2 ip daddr 10.77.0.1 tcp dport 443 ct state established,new accept\n',
+            '        iifname "wg0" ip saddr 10.77.0.2 ip daddr 10.77.0.1 tcp dport 443 ct state established,new accept\n        iifname != "wg0" meta nfproto ipv4 udp dport 51820 accept\n',
+        ),
+        ("    chain forward {", "    chain forward { accept"),
+        ("ct state established,new accept", "accept ct state established,new"),
+    ],
+)
+def test_public_status_requires_exact_default_formatted_nft_policy(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, before: str, after: str
+) -> None:
+    p = wg()
+    p["listen_port"] = 51820
+    p["peers"][0]["endpoint_address"] = None
+    p["peers"][0]["endpoint_port"] = None
+    p["ingress"] = [{"peer_address": "10.77.0.2", "port": 443}]
+    p["egress"] = []
+    runtime.validate_config(p)
+    f = fences(p)
+    f["peers"] = [{"id": "lich-b", "generation": 3, "enabled": True}]
+    observed = _OBSERVED_NFT.replace(before, after) if before else _OBSERVED_NFT
+    assert not before or observed != _OBSERVED_NFT
+    calls: list[tuple[str, ...]] = []
+    public_key = p["peers"][0]["public_key"]
+
+    def fake_run(argv: tuple[str, ...]) -> str:
+        calls.append(argv)
+        if argv[0] == runtime.NFT:
+            # Default output never opts into reverse DNS, service names or numeric enum names.
+            assert argv == (runtime.NFT, "--stateless", "list", "table", "inet", "lychd_tether")
+            return observed
+        assert argv[:3] == (runtime.WG, "show", "wg0")
+        return {"peers": public_key, "allowed-ips": public_key + " 10.77.0.2/32", "public-key": public_key}[argv[3]]
+
+    def current_fences(_p: dict[str, Any]) -> dict[str, Any]:
+        return f
+
+    def current_capabilities(_role: str) -> dict[str, str]:
+        return {"CapEff": "1000"}
+
+    status = tmp_path / "status" / "status.json"
+    monkeypatch.setattr(runtime, "run", fake_run)
+    monkeypatch.setattr(runtime, "load_fences", current_fences)
+    monkeypatch.setattr(runtime, "capabilities", current_capabilities)
+    monkeypatch.setattr(runtime, "STATUS", status)
+    if before:
+        with pytest.raises(ValueError, match="refused"):
+            runtime.public_status(p, wg=True)
+        assert not status.exists()
+    else:
+        runtime.public_status(p, wg=True)
+        result = json.loads(status.read_text())
+        assert result["enabled"] is True
+        assert result["peer_public_keys"] == [public_key]
+        assert result["public_key"] == public_key
+    assert len(calls) == 4

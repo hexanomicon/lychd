@@ -202,12 +202,13 @@ class NativeTetherService:
         state = self._load()
         deployment = self._projection(state)
         keys = self._keys(state)
-        owned = set(keys.owned_references())
+        observation = keys.observe()
+        owned = set(observation.identities)
         local = self._local_references(state)
         missing: list[str] = []
         retry_prepare = False
         for reference in deployment.required_secrets:
-            phase = keys.preparation_state(reference)
+            phase = observation.preparation_state(reference)
             if phase == "ready":
                 if reference not in owned:
                     message = "Ready Tether credential lacks current owned backend evidence"
@@ -249,9 +250,7 @@ class NativeTetherService:
         }
 
     def _attest_keys(self, state: NativeState, deployment: TetherDeployment) -> None:
-        keys = self._keys(state)
-        for reference in deployment.required_secrets:
-            keys.attest(reference)
+        self._keys(state).attest_many(deployment.required_secrets)
 
     def _projection(self, state: NativeState) -> TetherDeployment:
         return compile_tether(
@@ -404,7 +403,7 @@ class NativeTetherService:
             self._materialize(state)
             public_keys = [
                 {key: value[key] for key in ("reference", "purpose", "public_key", "fingerprint")}
-                for value in (keys.attest(reference) for reference in sorted(local_references))
+                for value in keys.attest_many(sorted(local_references)).values()
             ]
             return {
                 "state": "prepared",
@@ -767,10 +766,10 @@ class NativeTetherService:
         with nullcontext() if dry_run else LifecycleLock():
             state = self._load()
             deployment = self._projection(state)
-            self._attest_keys(state, deployment)
-            self._bound(self.bind_request())
             selected = tuple(network.id for network in deployment.networks)
             if dry_run:
+                self._attest_keys(state, deployment)
+                self._bound(self.bind_request())
                 return {"state": "bound", "changed": state.active != tuple(sorted(selected)), "dry_run": True}
             return self._activate(state, selected)
 
@@ -867,9 +866,7 @@ class NativeTetherService:
         self._bound(self.bind_request(state_override=before))
         generated = peer.owner_access.ssh_host_key_ref if peer.owner_access else None
         keys = self._keys(after)
-        for reference in new.required_secrets:
-            if reference != generated:
-                keys.attest(reference)
+        keys.attest_many(reference for reference in new.required_secrets if reference != generated)
 
     def enroll(self, peer: OfferedPeer, *, dry_run: bool = False) -> dict[str, Any]:
         """Admit the next peer generation without disturbing unrelated attachments."""

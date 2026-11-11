@@ -10,12 +10,115 @@ import json
 import os
 import stat
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from lychd.system.path_identity import PathIdentityError, PersistentPathIdentity
 from lychd.system.services.tether import custody
 from lychd.system.services.tether.models import TetherError, TetherIntent, digest
+
+if TYPE_CHECKING:
+    from pytest_mock import MockerFixture
+
+
+@pytest.mark.parametrize("count", [1, 4])
+def test_record_snapshot_scans_twice_and_expires(
+    store: custody.TetherCustody, mocker: MockerFixture, count: int
+) -> None:
+    store.initialize()
+    for index in range(count):
+        store.write(f"key-{index}.json", {"index": index, "nested": {"enabled": True}})
+    scans = mocker.spy(store, "_attest")
+    with store.records_snapshot() as view:
+        assert view.names == tuple(f"key-{index}.json" for index in range(count))
+        for index, name in enumerate(view.names):
+            assert view.read(name) == {"index": index, "nested": {"enabled": True}}
+        assert scans.call_count == 1
+        detached = view.read("key-0.json")
+        assert detached is not None
+        detached["nested"] = {}
+        assert view.read("key-0.json") == {"index": 0, "nested": {"enabled": True}}
+    assert scans.call_count == 2
+    with pytest.raises(TetherError, match="ownership"):
+        view.read("key-0.json")
+    with pytest.raises(TetherError, match="ownership"):
+        _ = view.names
+
+
+@pytest.mark.parametrize("tamper", ["foreign", "replacement", "receipt", "receipt_identity", "mode", "directory"])
+def test_record_snapshot_exit_rejects_drift_after_read(store: custody.TetherCustody, tamper: str) -> None:
+    store.initialize()
+    store.write("state.json", {"generation": 1})
+    store.directory("runtime")
+    views: list[custody.CustodyRecords] = []
+
+    def observe_with_tamper() -> None:
+        with store.records_snapshot() as view:
+            views.append(view)
+            assert view.read("state.json") == {"generation": 1}
+            path = store.root / "state.json"
+            if tamper == "foreign":
+                (store.root / "foreign.json").write_text("{}")
+            elif tamper == "replacement":
+                replacement = store.root.parent / "replacement.json"
+                replacement.write_bytes(path.read_bytes())
+                replacement.chmod(0o600)
+                replacement.replace(path)
+            elif tamper == "receipt":
+                receipt_path = store.root / ".custody.json"
+                receipt = json.loads(receipt_path.read_bytes())
+                receipt["revision"] += 1
+                receipt_path.write_bytes(custody.canonical_bytes(receipt))
+            elif tamper == "receipt_identity":
+                receipt_path = store.root / ".custody.json"
+                replacement = store.root.parent / "replacement-receipt.json"
+                replacement.write_bytes(receipt_path.read_bytes())
+                replacement.chmod(0o600)
+                replacement.replace(receipt_path)
+            elif tamper == "mode":
+                path.chmod(0o644)
+            else:
+                directory = store.root / "runtime"
+                retired = store.root.parent / "retired-runtime"
+                directory.rename(retired)
+                directory.symlink_to(retired, target_is_directory=True)
+
+    with pytest.raises(TetherError, match="ownership"):
+        observe_with_tamper()
+    with pytest.raises(TetherError, match="ownership"):
+        views[0].read("state.json")
+
+
+def test_record_snapshot_bounds_reads_and_bytes(store: custody.TetherCustody, monkeypatch: pytest.MonkeyPatch) -> None:
+    store.initialize()
+    store.write("state.json", {"generation": 1})
+    monkeypatch.setattr(custody, "_MAX_PATHS", 1)
+    with store.records_snapshot() as view:
+        assert view.read("state.json") == {"generation": 1}
+        with pytest.raises(TetherError, match="ownership"):
+            view.read("state.json")
+    monkeypatch.setattr(custody, "_MAX_SNAPSHOT_BYTES", 1)
+    with store.records_snapshot() as view, pytest.raises(TetherError, match="ownership"):
+        view.read("state.json")
+
+
+def test_record_snapshot_exception_expires_view(store: custody.TetherCustody, mocker: MockerFixture) -> None:
+    store.initialize()
+    scans = mocker.spy(store, "_attest")
+    views: list[custody.CustodyRecords] = []
+
+    def interrupt() -> None:
+        with store.records_snapshot() as view:
+            views.append(view)
+            message = "interrupted"
+            raise RuntimeError(message)
+
+    with pytest.raises(RuntimeError, match="interrupted"):
+        interrupt()
+    assert scans.call_count == 2
+    with pytest.raises(TetherError, match="ownership"):
+        _ = views[0].names
 
 
 @pytest.fixture

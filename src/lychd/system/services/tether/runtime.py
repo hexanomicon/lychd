@@ -887,7 +887,7 @@ def public_status(p: dict[str, Any], *, streams: dict[str, int] | None = None, w
         }
         require(actual_allowed == expected_allowed)
         own = key(run((WG, "show", p["interface"], "public-key")).strip())
-        policy = run((NFT, "-nn", "--stateless", "list", "table", "inet", "lychd_tether"))
+        policy = run((NFT, "--stateless", "list", "table", "inet", "lychd_tether"))
         require(policy_tokens(policy) == policy_tokens(nft_policy(p, fence)))
         result.update(
             public_key=own, peer_public_keys=sorted(actual), nft_digest=hashlib.sha256(policy.encode()).hexdigest()

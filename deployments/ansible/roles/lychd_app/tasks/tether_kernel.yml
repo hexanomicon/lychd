@@ -1,0 +1,90 @@
+---
+# Host kernel availability is an administrator prerequisite, not native VPN state.
+- name: Require the explicit Tether profile
+  ansible.builtin.assert:
+    that:
+      - lychd_app_profile == 'tether-container-v1'
+
+- name: Observe the effective prerequisite user
+  ansible.builtin.command:
+    argv: [/usr/bin/id, -u]
+  register: lychd_tether_kernel_uid
+  changed_when: false
+  check_mode: false
+
+- name: Require administrator authority for the host prerequisite
+  ansible.builtin.assert:
+    that: lychd_tether_kernel_uid.stdout | trim == '0'
+    fail_msg: "The WireGuard kernel prerequisite belongs to the administrator play, never the runtime account."
+
+- name: Observe the running kernel release
+  ansible.builtin.command:
+    argv: [/usr/bin/uname, -r]
+  register: lychd_tether_kernel_release
+  changed_when: false
+  check_mode: false
+
+- name: Observe WireGuard availability for this running kernel
+  ansible.builtin.command:
+    argv: [/usr/sbin/modinfo, -k, "{{ lychd_tether_kernel_release.stdout | trim }}", -F, filename, wireguard]
+  register: lychd_tether_kernel_module
+  failed_when: false
+  changed_when: false
+  check_mode: false
+
+- name: Require matching running-kernel WireGuard support before any effect
+  ansible.builtin.assert:
+    that:
+      - lychd_tether_kernel_module.rc == 0
+      - lychd_tether_kernel_module.stdout | trim | length > 0
+    fail_msg: >-
+      WireGuard is unavailable for running kernel {{ lychd_tether_kernel_release.stdout | trim }}.
+      Restore that distribution kernel's matching modules or separately boot a supported installed
+      kernel, then rerun. This role does not install or update kernels/modules, bypass policy or reboot.
+
+- name: Observe the system module-load directory without following symlinks
+  ansible.builtin.stat:
+    path: /etc/modules-load.d
+    follow: false
+  register: lychd_tether_module_directory
+
+- name: Require a safe existing administrator-owned module-load directory
+  ansible.builtin.assert:
+    that:
+      - lychd_tether_module_directory.stat.isdir | default(false)
+      - lychd_tether_module_directory.stat.uid | default(-1) == 0
+      - lychd_tether_module_directory.stat.mode | default('') is match('^0[0-7][0145][0145]$')
+    fail_msg: "The existing /etc/modules-load.d must be a root-owned directory without group/other write access."
+
+- name: Observe the reserved Tether boot entry without following symlinks
+  ansible.builtin.stat:
+    path: /etc/modules-load.d/lychd-tether.conf
+    follow: false
+  register: lychd_tether_module_boot
+
+- name: Refuse unsafe existing Tether boot entries before loading
+  ansible.builtin.assert:
+    that:
+      - >-
+        not lychd_tether_module_boot.stat.exists or
+        (lychd_tether_module_boot.stat.isreg | default(false) and
+         lychd_tether_module_boot.stat.uid | default(-1) == 0 and
+         lychd_tether_module_boot.stat.gid | default(-1) == 0 and
+         lychd_tether_module_boot.stat.mode | default('') == '0644' and
+         lychd_tether_module_boot.stat.nlink | default(0) == 1 and
+         lychd_tether_module_boot.stat.size | default(0) == 10)
+    fail_msg: "Existing /etc/modules-load.d/lychd-tether.conf is not an exact root-owned regular 0644 entry; refusing replacement."
+
+- name: Read only a metadata-validated existing Tether boot entry
+  ansible.builtin.slurp:
+    src: /etc/modules-load.d/lychd-tether.conf
+  register: lychd_tether_module_content
+  when: lychd_tether_module_boot.stat.exists
+
+- name: Refuse different reserved boot bytes before loading
+  ansible.builtin.assert:
+    that: >-
+      not lychd_tether_module_boot.stat.exists or
+      (lychd_tether_module_content.content | default('') | b64decode) == 'wireguard\n'
+    fail_msg: "Existing /etc/modules-load.d/lychd-tether.conf has different content; no module was loaded or file replaced."
+

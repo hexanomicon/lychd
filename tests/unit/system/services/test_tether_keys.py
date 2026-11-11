@@ -8,8 +8,10 @@ import hashlib
 import json
 import os
 import struct
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
 
@@ -18,7 +20,7 @@ from lychd.system.services.tether import keys
 from lychd.system.services.tether.models import TetherError
 
 if TYPE_CHECKING:
-    from lychd.system.services.tether.custody import TetherCustody
+    from lychd.system.services.tether.custody import CustodyRecords
 
 EPOCH = "e" * 32
 REFERENCE = "lychd-tether-local"
@@ -62,8 +64,11 @@ class Custody:
         root.mkdir(mode=0o700)
         self.records: dict[str, dict[str, Any]] = {}
         self.directories: set[str] = set()
+        self.scans = 0
+        self.snapshot_reads = 0
 
     def attest(self) -> None:
+        self.scans += 1
         for name in self.directories:
             assert list((self.root / name).iterdir()) == []
 
@@ -71,13 +76,13 @@ class Custody:
         self.attest()
         return copy.deepcopy(self.records.get(name))
 
-    def write(self, name: str, record: dict[str, Any], *, immutable: bool = False) -> bool:
+    def write(self, name: str, value: dict[str, object], *, immutable: bool = False) -> bool:
         self.attest()
         assert immutable
         if name in self.records:
-            assert self.records[name] == record
+            assert self.records[name] == value
             return False
-        self.records[name] = copy.deepcopy(record)
+        self.records[name] = copy.deepcopy(value)
         return True
 
     def directory(self, name: str, *, public: bool = False) -> Path:
@@ -89,6 +94,40 @@ class Custody:
 
     def known_paths(self) -> tuple[Path, ...]:
         return tuple(self.root / name for name in sorted(self.records))
+
+    @contextmanager
+    def records_snapshot(self) -> Generator[CustodyRecords]:
+        self.attest()
+        before = copy.deepcopy(self.records)
+        view = RecordView(self)
+        try:
+            yield view
+        finally:
+            view.active = False
+            self.attest()
+            if self.records != before:
+                message = "Synthetic custody drift"
+                raise TetherError(message)
+
+
+class RecordView:
+    def __init__(self, custody: Custody) -> None:
+        self.custody = custody
+        self.active = True
+
+    @property
+    def names(self) -> tuple[str, ...]:
+        if not self.active:
+            message = "Expired synthetic custody view"
+            raise TetherError(message)
+        return tuple(sorted(self.custody.records))
+
+    def read(self, name: str) -> dict[str, object] | None:
+        if not self.active:
+            message = "Expired synthetic custody view"
+            raise TetherError(message)
+        self.custody.snapshot_reads += 1
+        return copy.deepcopy(self.custody.records.get(name))
 
 
 class Runner:
@@ -188,7 +227,7 @@ def gateway(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[keys.Tethe
         return "/tools/" + name
 
     monkeypatch.setattr(keys, "trusted_host_tool", fake_trusted_host_tool)
-    return keys.TetherKeys(cast("TetherCustody", custody), EPOCH, runner), custody, runner
+    return keys.TetherKeys(custody, EPOCH, runner), custody, runner
 
 
 def test_ensure_is_absent_only_and_public_receipts_exclude_private(
@@ -644,3 +683,85 @@ def test_unrelated_existing_custody_still_blocks_attestation_on_drift(
     else:
         with pytest.raises(TetherError):
             service.attest(REFERENCE)
+
+
+@pytest.mark.parametrize("count", [1, 4])
+def test_batch_attestation_has_constant_custody_scans_and_one_inspection_per_key(
+    gateway: tuple[keys.TetherKeys, Custody, Runner], count: int
+) -> None:
+    service, custody, runner = gateway
+    expected: dict[str, dict[str, Any]] = {}
+    private_values: list[str] = []
+    for index in range(count):
+        runner.private = bytes([8]) + bytes([97 + index]) * 30 + bytes([64])
+        private_values.append(encoded(runner.private))
+        reference = f"lychd-tether-key-{index}"
+        expected[reference] = service.ensure(reference, "wireguard")
+    custody.scans = custody.snapshot_reads = 0
+    runner.commands.clear()
+    observed = service.attest_many(tuple(expected))
+    assert observed == expected
+    assert custody.scans == 2
+    assert custody.snapshot_reads == 2 * count
+    inspections = [argv for argv in runner.commands if argv[2:4] == ("secret", "inspect")]
+    assert len(inspections) == count
+    assert {argv[-1] for argv in inspections} == {row["secret_id"] for row in expected.values()}
+    assert all(value.strip() not in repr(observed) for value in private_values)
+    assert all(argv[1] == "--remote=false" for argv in runner.commands if argv[0] == "/tools/podman")
+
+
+def test_batch_results_are_public_detached_and_next_call_is_fresh(
+    gateway: tuple[keys.TetherKeys, Custody, Runner],
+) -> None:
+    service, custody, runner = gateway
+    expected = service.ensure(REFERENCE, "wireguard")
+    observation = service.observe()
+    assert observation.require((REFERENCE,)) == {REFERENCE: expected}
+    output = observation.require((REFERENCE,))
+    output[REFERENCE]["public_key"] = "changed"
+    assert observation.require((REFERENCE,)) == {REFERENCE: expected}
+    assert encoded(PRIVATE).strip() not in repr(observation)
+    retained = copy.deepcopy(custody.records)
+    runner.secrets[REFERENCE]["Spec"]["Labels"] = {}
+    with pytest.raises(TetherError, match="refused"):
+        service.attest_many((REFERENCE,))
+    assert custody.records == retained
+
+
+def test_batch_custody_drift_during_backend_observation_refuses_return(
+    gateway: tuple[keys.TetherKeys, Custody, Runner], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    service, custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    original = runner.run
+
+    def replace_receipt(argv: tuple[str, ...], *, timeout_s: float) -> ProcessResult:
+        result = original(argv, timeout_s=timeout_s)
+        if argv[2:4] == ("secret", "inspect"):
+            custody.records["foreign.json"] = {}
+        return result
+
+    monkeypatch.setattr(runner, "run", replace_receipt)
+    with pytest.raises(TetherError, match="refused"):
+        service.attest_many((REFERENCE,))
+
+
+@pytest.mark.parametrize("clamped", [False, True])
+def test_batch_rejects_material_aliases_even_with_consistent_public_receipts(
+    gateway: tuple[keys.TetherKeys, Custody, Runner], *, clamped: bool
+) -> None:
+    service, custody, runner = gateway
+    service.ensure(REFERENCE, "wireguard")
+    other = "lychd-tether-other"
+    runner.private = b"z" * 32
+    service.ensure(other, "wireguard")
+    material = bytes([PRIVATE[0] | 1]) + PRIVATE[1:] if clamped else PRIVATE
+    public_raw = hashlib.sha256(material).digest()
+    public = base64.b64encode(public_raw).decode()
+    fingerprint = "SHA256:" + base64.b64encode(hashlib.sha256(public_raw).digest()).decode().rstrip("=")
+    for record in custody.records.values():
+        if record["reference"] == other:
+            record.update(public_key=public, fingerprint=fingerprint)
+    runner.secrets[other]["SecretData"] = encoded(material)
+    with pytest.raises(TetherError, match="refused"):
+        service.attest_many((REFERENCE, other))

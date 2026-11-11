@@ -134,7 +134,7 @@ class DeployPolicyTests(unittest.TestCase):
         plays = load("playbooks/deploy.yml")
         names = [play["name"] for play in plays]
         stage = names.index("Stage the exact source CLI, image and application")
-        firewall = names.index("Admit only the declared host UDP prerequisite before native initialization")
+        firewall = names.index("Admit only declared host prerequisites before native initialization")
         apply = names.index("Apply native application lifecycle after host prerequisites")
         self.assertLess(stage, firewall)
         self.assertLess(firewall, apply)

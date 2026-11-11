@@ -15,10 +15,10 @@ import os
 import re
 import stat
 import uuid
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal, Protocol, cast
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -29,6 +29,7 @@ from lychd.system.services.tether.models import MAX_DOCUMENT_BYTES, TetherError,
 
 _RECEIPT = ".custody.json"
 _MAX_PATHS = 4096
+_MAX_SNAPSHOT_BYTES = 4 * MAX_DOCUMENT_BYTES
 _MAX_RELATIVE_BYTES = 1024
 _RECEIPT_ENTRY_RESERVE = 4096
 _PRIVATE_FILE = 0o600
@@ -62,6 +63,44 @@ class _Receipt(BaseModel):
     root: PersistentPathIdentity
     directories: dict[str, _Directory]
     files: dict[str, _File]
+
+
+class CustodyRecords(Protocol):
+    """Read-only record access valid only inside the custody lock interval."""
+
+    @property
+    def names(self) -> tuple[str, ...]: ...
+
+    def read(self, name: str) -> dict[str, object] | None: ...
+
+
+class _RecordView:
+    def __init__(self, names: tuple[str, ...], reader: Callable[[str], bytes | None]) -> None:
+        self._names = names
+        self._reader: Callable[[str], bytes | None] | None = reader
+        self._reads = 0
+        self._bytes = 0
+
+    @property
+    def names(self) -> tuple[str, ...]:
+        if self._reader is None:
+            raise _refuse()
+        return self._names
+
+    def read(self, name: str) -> dict[str, object] | None:
+        if self._reader is None or self._reads >= _MAX_PATHS:
+            raise _refuse()
+        self._reads += 1
+        raw = self._reader(_relative(name))
+        if raw is None:
+            return None
+        self._bytes += len(raw)
+        if self._bytes > _MAX_SNAPSHOT_BYTES:
+            raise _refuse()
+        return _object(raw)
+
+    def close(self) -> None:
+        self._reader = None
 
 
 def _refuse() -> TetherError:
@@ -383,16 +422,46 @@ class TetherCustody:
         """Read an owned JSON record, or report a truly absent unowned name."""
         relative = _relative(name)
         with self._locked() as (root, receipt):
-            record = receipt.files.get(relative)
-            if record is None:
-                if relative in receipt.directories:
+            raw = self._read_record(root, receipt, relative)
+            return None if raw is None else _object(raw)
+
+    def _read_record(self, root: int, receipt: _Receipt, relative: str) -> bytes | None:
+        record = receipt.files.get(relative)
+        if record is None:
+            if relative in receipt.directories:
+                raise _refuse()
+            return None
+        with self._child_directory(root, Path(relative).parent.as_posix(), receipt) as parent:
+            raw, identity = _read_file(parent, Path(relative).name, mode=record.mode)
+            if identity != record.identity or hashlib.sha256(raw).hexdigest() != record.digest:
+                raise _refuse()
+            return raw
+
+    @contextmanager
+    def records_snapshot(self) -> Generator[CustodyRecords]:
+        """Bracket bounded reads with fresh complete-tree and unchanged-receipt proof.
+
+        The caller may perform read-only backend observations while this lock is
+        held. It must not call custody mutations or acquire this lock again.
+        Returned records are detached values, never continuing effect authority.
+        """
+        with self._locked() as (root, receipt):
+            original, identity = _read_file(root, _RECEIPT, mode=_PRIVATE_FILE)
+            if original != canonical_bytes(receipt) or identity is None:
+                raise _refuse()
+
+            def read_owned(name: str) -> bytes | None:
+                return self._read_record(root, receipt, name)
+
+            view = _RecordView(tuple(sorted(receipt.files)), read_owned)
+            try:
+                yield view
+            finally:
+                view.close()
+                current = self._attest(root)
+                raw, current_identity = _read_file(root, _RECEIPT, mode=_PRIVATE_FILE)
+                if canonical_bytes(current) != original or raw != original or current_identity != identity:
                     raise _refuse()
-                return None
-            with self._child_directory(root, Path(relative).parent.as_posix(), receipt) as parent:
-                raw, identity = _read_file(parent, Path(relative).name, mode=record.mode)
-                if identity != record.identity or hashlib.sha256(raw).hexdigest() != record.digest:
-                    raise _refuse()
-                return _object(raw)
 
     def write(self, name: str, value: dict[str, object], *, immutable: bool = False) -> bool:
         """Atomically replace one owned private record and then its ownership receipt."""
