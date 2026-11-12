@@ -4,17 +4,23 @@ from __future__ import annotations
 
 import os
 from collections.abc import Sequence
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import click
 
 from lychd.cli.base import get_console, ritual_command
+from lychd.cli.tether import tether_group
 
 if TYPE_CHECKING:
     from rich.console import Console
 
+    from lychd.config.runes import RuneConfig
     from lychd.config.settings import Settings
+    from lychd.extensions.host import AssembledExtensions
     from lychd.system.services.binding_preflight import BindingPreflightReport
+    from lychd.system.services.codex import CodexService
+    from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
     from lychd.system.services.scribe import BindingReconcilePlan
 
 
@@ -37,6 +43,56 @@ def _with_web_image(settings: Settings, image: str) -> Settings:
     return prepared
 
 
+def _initial_profile(
+    settings: Settings, *, profile: str, intent: Path | None
+) -> tuple[Settings, tuple[RuneConfig, ...], AssembledExtensions]:
+    from lychd.extensions.host import assemble_extensions, get_extensions
+
+    if profile == "default":
+        if intent is not None:
+            message = "--intent requires the Tether initialization profile."
+            raise click.UsageError(message)
+        return settings, (), get_extensions()
+    if profile != "tether-container-v1":
+        message = "Unsupported initialization profile."
+        raise click.UsageError(message)
+    if intent is None:
+        message = "Tether initialization requires --intent."
+        raise click.UsageError(message)
+    from lychd.system.services.tether.models import load_intent
+
+    try:
+        admitted = load_intent(intent)
+    except (OSError, ValueError, RuntimeError):
+        message = "Public Tether initialization intent refused."
+        raise click.UsageError(message) from None
+    prepared = settings.model_copy(deep=True)
+    prepared.extensions.builtins = ("tether",)
+    prepared.extensions.crypt = ()
+    prepared.server.port = admitted.web_port
+    from lychd.config.settings import SettingsSnapshot
+
+    baseline = SettingsSnapshot(payload="{}").materialize()
+    baseline.server.web.image = prepared.server.web.image
+    baseline.server.port = admitted.web_port
+    baseline.extensions.builtins = ("tether",)
+    if prepared.model_dump(mode="json", exclude_none=True) != baseline.model_dump(mode="json", exclude_none=True):
+        message = "Settings are outside the closed Tether initialization profile."
+        raise click.UsageError(message)
+    return prepared, (admitted.rune,), assemble_extensions(prepared)
+
+
+def _require_original_profile(codex: CodexService, receipt_store: LifecycleReceiptStore) -> None:
+    from lychd.system.constants import PATH_LYCHD_TOML
+
+    for path, expected in {PATH_LYCHD_TOML: codex.settings_content(), **codex.initial_files()}.items():
+        if os.path.lexists(path):
+            original = receipt_store.read_original_file(path, expected_mode=0o600, max_bytes=1024 * 1024)
+            if original != expected.encode():
+                message = "Existing original configuration differs from the selected profile."
+                raise click.UsageError(message)
+
+
 @ritual_command(
     name="init",
     help_text="Initialize the Codex config files and system layout.",
@@ -53,6 +109,8 @@ def _with_web_image(settings: Settings, image: str) -> Settings:
     default=None,
     help="Select the Vessel image for newly created settings; existing settings are preserved.",
 )
+@click.option("--profile", type=click.Choice(["default", "tether-container-v1"]), default="default")
+@click.option("--intent", type=click.Path(path_type=Path, dir_okay=False), default=None)
 @click.option(
     "-v",
     "--verbose",
@@ -64,6 +122,8 @@ def init_codex(
     dry_run: bool,  # noqa: FBT001 - Click owns these boolean option contracts
     verbose: bool,  # noqa: FBT001
     web_image: str | None,
+    profile: str = "default",
+    intent: Path | None = None,
 ) -> None:
     """Plan, attest, and converge the complete host inscription.
 
@@ -84,7 +144,6 @@ def init_codex(
     )
     from lychd.config.runes.writer import ConfigWriter
     from lychd.config.settings.root import get_settings
-    from lychd.extensions.host import get_extensions
     from lychd.system.constants import PATH_CODEX_ROOT, PATH_RUNES_DIR
     from lychd.system.readiness import HostReadinessService
     from lychd.system.services.codex import CodexService
@@ -96,19 +155,28 @@ def init_codex(
     lifecycle_lock = nullcontext() if dry_run else lock.LifecycleLock()
     with lifecycle_lock:
         settings = get_settings()
-        if web_image is not None:
-            settings = _with_web_image(settings, web_image)
-        extensions = get_extensions()
+        settings = _with_web_image(settings, web_image) if web_image is not None else settings
+        settings, initial_runes, extensions = _initial_profile(settings, profile=profile, intent=intent)
         schemas = list(extensions.rune_schemas)
         writer = ConfigWriter(runes_dir=PATH_RUNES_DIR)
         receipt_store = receipt.LifecycleReceiptStore()
+        codex = (
+            CodexService(rune_schemas=schemas, settings=settings, initial_runes=initial_runes)
+            if initial_runes
+            else None
+        )
+        if codex is not None:
+            _require_original_profile(codex, receipt_store)
         planner = initialization.InitializationPlanner(
             reactor_directories=(
                 settings.orchestration.switching.host_reactor_dir,
                 settings.orchestration.switching.host_reactor_journal_dir,
             ),
             anchor_paths=tuple(schema.anchor_dir(PATH_RUNES_DIR) for schema in schemas),
-            sample_paths=writer.planned_sample_paths(schemas),
+            sample_paths=(
+                *writer.planned_sample_paths(codex.sample_schemas if codex else schemas),
+                *(codex.initial_files() if codex else ()),
+            ),
             receipt_store=receipt_store,
         )
         readiness_service = HostReadinessService()
@@ -143,8 +211,7 @@ def init_codex(
             )
 
         def inscribe_codex(record: initialization.InitializationRecorder) -> models.CreatedResources:
-            console.print("[dim]  Inscribing the Prime Directive (lychd.toml)...[/]")
-            return CodexService(rune_schemas=schemas, settings=settings).inscribe(on_created=record)
+            return (codex or CodexService(rune_schemas=schemas, settings=settings)).inscribe(on_created=record)
 
         initialization.InitializationExecutor(
             planner=planner,
@@ -395,4 +462,5 @@ COMMANDS: tuple[click.Command, ...] = (
     init_codex,
     bind_quadlets,
     reactor_group,
+    tether_group,
 )

@@ -15,8 +15,14 @@ from pathlib import Path
 
 SCHEMA = "lychd.deployment"
 VERSION = 1
-STATES = {"absent", "initialized", "bound_inactive", "running", "foreign_revision", "unknown"}
-ACTIONS = {"absent": "init", "initialized": "bind", "bound_inactive": "start", "running": "observe"}
+STATES = {"absent", "initialized", "bound_inactive", "running", "foreign_revision", "unknown", "prepared_waiting_keys"}
+ACTIONS = {
+    "absent": "init",
+    "initialized": "bind",
+    "bound_inactive": "start",
+    "running": "observe",
+    "prepared_waiting_keys": "import-key",
+}
 
 
 class Refusal(Exception):
@@ -39,18 +45,32 @@ def native_command(command, request, home):
     if identifier:
         require(re.fullmatch(r"(?:sha256:)?[0-9a-f]{64}", identifier), "exact image ID required")
         argv.extend(["--deployment-image-id", identifier])
+    profile = request.get("profile", "empty-extensions-container")
+    require(profile in {"empty-extensions-container", "tether-container-v1"}, "unsupported deployment profile")
+    if profile == "tether-container-v1":
+        intent = request.get("intent", "")
+        image = request.get("tether_image_id", "")
+        require(isinstance(intent, str) and Path(intent).is_absolute(), "absolute public intent required")
+        require(re.fullmatch(r"[0-9a-f]{64}", image), "admitted Tether image required")
+        argv.extend(
+            ["--deployment-profile", profile, "--deployment-intent", intent, "--deployment-tether-image-id", image]
+        )
     if command == "verify":
         argv.append("--deployment-verify")
     return source, argv
 
 
-def validate_response(document):
+def validate_response(document, profile="empty-extensions-container"):
     """Require the exact native protocol without synthesizing lifecycle truth."""
     require(isinstance(document, dict), "native response is not an object")
     require(
-        document.get("schema") == SCHEMA and type(document.get("version")) is int and document["version"] == VERSION,
-        "native deployment protocol 1 required",
+        document.get("schema") == SCHEMA
+        and type(document.get("version")) is int
+        and document["version"] == (2 if profile == "tether-container-v1" else VERSION),
+        "matching native deployment protocol required",
     )
+    if profile == "tether-container-v1":
+        require(document.get("profile") == profile, "native profile mismatch")
     state = document.get("state")
     require(state in STATES, "unsupported native deployment state")
     require(document.get("next_action") == ACTIONS.get(state, "refuse"), "inconsistent native action")
@@ -80,7 +100,7 @@ def observe(command, request, home):
         raise Refusal("native deployment observation unavailable") from error
     require(result.returncode in {0, 1}, "native deployment observation failed")
     try:
-        document = validate_response(json.loads(result.stdout))
+        document = validate_response(json.loads(result.stdout), request.get("profile", "empty-extensions-container"))
     except (ValueError, TypeError, KeyError) as error:
         raise Refusal("native deployment response unavailable or incompatible") from error
     require(document.get("revision", request["revision"]) == request["revision"], "native revision mismatch")
@@ -101,4 +121,4 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except (Refusal, ValueError, TypeError, KeyError, IndexError, OSError):
-        sys.exit("lychd deployment protocol observation refused; matching controller and native protocol 1 required")
+        sys.exit("lychd deployment protocol observation refused; matching controller and native protocol required")

@@ -10,12 +10,15 @@ marks, select the part worth improving, and judge a proposed change before it re
 **Canvas** owns that visual board and its revision history. Its accepted Composition identity is
 **`canvas.board`, revision `1`**.
 
-The **project workspace** at `/canvas` starts with LychD's own Canvas and its curated static
-architecture map. **Atlas** is the project catalogue. LychD remains separately pinned above the
-loaded user collection, including after filters or pagination. The diagram describes selected
-canonical relationships; it supplies no live status or proof that an illustrated capability runs.
+Open **Canvas** from the [Atlas](../../divination/altar/atlas.md#put-an-undertaking-on-the-map)
+project catalogue or go directly to `/canvas`. The board workspace starts with LychD's own Canvas
+and its curated static architecture map. LychD remains separately pinned above the loaded user
+collection, including after filters or pagination. The diagram describes selected canonical
+relationships. Inspect execution in Orb. In the future
+[Atlas map](../../divination/altar/atlas.md#the-shared-memory-map), layout and ink remain board
+content until an explicit action asserts a typed relationship.
 
-**New Canvas** immediately creates a draft project and its blank primary board. Draw without
+**New canvas** immediately creates a draft project and its blank primary board. Draw without
 first naming or categorizing the idea. Keep it, rename it through its project record, or discard
 an eligible draft. One primary board belongs to each project in this profile. Existing projects
 retain their identities, judgments, decisions and references when a board is added.

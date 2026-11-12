@@ -439,3 +439,41 @@ async def test_bounded_octet_parser_one_send_and_unconditional_close(
     assert calls == 1
     assert stream.sent == [prepared.wire]
     assert stream.closed
+
+
+@pytest.mark.asyncio
+async def test_explicit_tether_without_catalog_never_uses_direct(
+    keys: tuple[_Key, _Key], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from lychd.domain.scout.transport import FetchCode, FetchError
+    from lychd.domain.tether.models import TetherSelection
+
+    def missing_catalog(**kwargs: object) -> None:
+        del kwargs
+        raise FetchError(FetchCode.CONFIG)
+
+    monkeypatch.setattr(intercom_http.TetherConnector, "from_catalog", missing_catalog)
+    contacted: list[bool] = []
+
+    async def direct(*args: object, **kwargs: object) -> None:
+        del args, kwargs
+        contacted.append(True)
+        pytest.fail("Explicit Tether attempted Direct")
+
+    monkeypatch.setattr(intercom_http, "open_pinned_tls", direct)
+    endpoint = IntercomEndpoint(
+        "10.44.0.1",
+        "peer.test",
+        8443,
+        "/a2a",
+        Path("/explicit-ca.pem"),
+        tether=TetherSelection(remote_lich_id="remote", attachment_id="road", generation=1, service_id="api"),
+    )
+    with pytest.raises(IntercomError):
+        await BoundedIntercomHTTP().exchange(
+            endpoint,
+            _prepared(keys[0]),
+            gate=_Gate(),
+            deadline=time.monotonic() + 10,
+        )
+    assert contacted == []

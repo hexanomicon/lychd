@@ -112,6 +112,14 @@ be legible before the reader opens digest or source detail. The computed graph h
 and station inspector beside or below it as space permits. That outline must answer the same
 question without pan or zoom gestures.
 
+The future workflow map expands nested declared subgraphs until each agent can be inspected.
+Open one group to work within it, or expand the complete declared graph. Context policy and
+[Evaluation](../../adr/34-evaluation.md#evaluating-a-workflow-change) follow the exact revision.
+For example, a policy could request a retained rollout decision with its source.
+[Archive](../../adr/27-memory.md) governs eligibility, and
+[Context](../../adr/21-context.md#explicit-archive-projection) governs assembly for the Invocation.
+The current Score reads supplied stations and permissions.
+
 Judge every mark against the manifest. Both views share declared nodes and permission endpoints;
 station detail exposes incoming and outgoing permissions. Placement cannot supply a conditional
 edge label, station effect, independent Spell identity, or execution colour. Handles must not

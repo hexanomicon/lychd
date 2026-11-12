@@ -81,6 +81,18 @@ PATH_PORTALS_DIR: Final[Path] = PATH_ANIMATOR_DIR / "portals"  # ~/.config/lychd
 PATH_CRYPT_ROOT: Final[Path] = PATH_XDG_DATA_HOME / DEFAULT_MODULE_NAME  # ~/.local/share/lychd
 """Persistent LychD data and workspaces."""
 
+PATH_TETHER_STATE_DIR: Final[Path] = PATH_CRYPT_ROOT / "tether"
+"""Host-owned Tether admission, tombstones and public runtime projections."""
+
+PATH_TETHER_CONFIG_DIR: Final[Path] = PATH_TETHER_STATE_DIR / "runtime"
+"""Per-role public configuration directories; never private key material."""
+
+PATH_TETHER_RUNTIME_DIR: Final[Path] = Path("/run/user") / str(os.getuid()) / "lychd-tether"
+"""Boot-local sockets: recreate safely; never persist inode identity as authority."""
+
+CONTAINER_TETHER_RUNTIME_DIR: Final[Path] = Path("/run/lychd-tether")
+"""The only Core-facing Tether socket mount."""
+
 PATH_RUNTIME_GUARD_DIR: Final[Path] = PATH_CRYPT_ROOT / "runtime-guard"
 """Durable Vessel-owned soft activation fence, separate from the Host Reactor journal."""
 

@@ -60,6 +60,7 @@ class CodexService:
         templates_dir: Path | None = None,
         postgres_root_path: Path | None = None,
         settings: Settings | None = None,
+        initial_runes: Sequence[RuneConfig] = (),
     ) -> None:
         """Bind inscription paths and optional prepared Settings for new files only."""
         self.toml_path = toml_path or PATH_LYCHD_TOML
@@ -68,6 +69,11 @@ class CodexService:
         self.postgres_root_path = postgres_root_path or PATH_POSTGRES_ROOT_DIR
         self.rune_schemas = list(rune_schemas)
         self._settings = settings
+        self.initial_runes = tuple(initial_runes)
+        types = [type(rune) for rune in self.initial_runes]
+        if len(types) != len(set(types)) or any(schema not in self.rune_schemas for schema in types):
+            message = "Initial runes must have unique admitted schemas."
+            raise ValueError(message)
 
         self._env = Environment(
             loader=FileSystemLoader(self.templates_dir),
@@ -75,6 +81,26 @@ class CodexService:
             trim_blocks=True,
             lstrip_blocks=True,
         )
+
+    def settings_content(self) -> str:
+        """Render exactly the settings bytes the journaled inscription will create."""
+        settings = self._settings if self._settings is not None else get_settings()
+        return _render_default_settings_toml(settings)
+
+    def initial_files(self) -> dict[Path, str]:
+        """Return exact active Rune bytes included in the original creation plan."""
+        return {
+            type(rune).anchor_dir(self.runes_path) / "default.toml": _toml_dumps(
+                rune.model_dump(mode="json", exclude_none=True)
+            )
+            for rune in self.initial_runes
+        }
+
+    @property
+    def sample_schemas(self) -> list[type[RuneConfig]]:
+        """Exclude explicitly initialized active schemas from inactive examples."""
+        active = {type(rune) for rune in self.initial_runes}
+        return [schema for schema in self.rune_schemas if schema not in active]
 
     def inscribe(
         self,
@@ -97,8 +123,7 @@ class CodexService:
 
     def _inscribe_lychd_toml(self, creation: JournaledCreation) -> None:
         """Publish newly prepared Settings without overwriting existing configuration."""
-        settings = self._settings if self._settings is not None else get_settings()
-        content = _render_default_settings_toml(settings)
+        content = self.settings_content()
         resources = creation.create_text_file(
             self.toml_path,
             content,
@@ -133,6 +158,8 @@ class CodexService:
             creation=creation,
         )
         writer.initialize_anchors(self.rune_schemas)
-        writer.inscribe_samples(self.rune_schemas)
+        for path, content in self.initial_files().items():
+            creation.create_text_file(path, content, mode=0o600)
+        writer.inscribe_samples(self.sample_schemas)
 
         logger.info("configurable_anchors_inscribed", count=len(self.rune_schemas), runes_root=str(self.runes_path))

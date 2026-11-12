@@ -25,7 +25,10 @@ def test_catalog_has_only_explicitly_supported_builtin_ids() -> None:
         "animator/sglang",
         "observability/phoenix",
         "delegation",
+        "tether",
     }
+    assert builtin_register_module("tether") == "lychd.extensions.builtin.tether.register"
+    assert builtin_registration_order(("tether", "tether")) == ("tether",)
 
 
 def test_unknown_builtin_is_rejected_before_import() -> None:

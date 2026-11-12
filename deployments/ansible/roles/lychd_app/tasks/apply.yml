@@ -7,7 +7,7 @@
 - name: Refuse application effects outside the admitted chain
   ansible.builtin.assert:
     that: lychd_app_observed.state in ['absent', 'initialized', 'bound_inactive']
-    fail_msg: "Application state {{ lychd_app_observed.state }} is not mutable by automation: {{ lychd_app_observed.reasons }}"
+    fail_msg: "Application state {{ lychd_app_observed.state }} is not mutable by automation: {{ lychd_app_observed.reasons }}. For prepared_waiting_keys, use native tether import-key for {{ lychd_app_observed.facts.tether_preparation.missing_secrets | default([]) }} and rerun."
 
 - name: Report the check-mode boundary for application effects
   ansible.builtin.debug:
@@ -18,18 +18,30 @@
   ansible.builtin.meta: end_host
   when: ansible_check_mode
 
+- name: Stage public Tether intent and verified image before original initialization
+  ansible.builtin.include_tasks: tether_stage.yml
+  when: lychd_app_profile == 'tether-container-v1'
+
+- name: Select the closed native protocol arguments
+  ansible.builtin.set_fact:
+    lychd_app_init_profile_args: "{{ ['--profile', 'tether-container-v1', '--intent', lychd_tether_intent_remote] if lychd_app_profile == 'tether-container-v1' else [] }}"
+    lychd_app_bind_args: "{{ ['tether', 'bind'] if lychd_app_profile == 'tether-container-v1' else ['bind'] }}"
+    lychd_app_status_args: "{{ ['--deployment-profile', 'tether-container-v1', '--deployment-intent', lychd_tether_intent_remote, '--deployment-tether-image-id', lychd_tether_image_id] if lychd_app_profile == 'tether-container-v1' else [] }}"
+    lychd_app_protocol: "{{ 2 if lychd_app_profile == 'tether-container-v1' else 1 }}"
+
 # Block conditions are re-evaluated per task, so fix the step plan before re-classifying inside it.
 - name: Fix the admitted step plan from the entry state
   ansible.builtin.set_fact:
     lychd_app_step_init: "{{ lychd_app_observed.state == 'absent' }}"
     lychd_app_step_bind: "{{ lychd_app_observed.state in ['absent', 'initialized'] }}"
+    lychd_app_step_prepare: "{{ lychd_app_profile == 'tether-container-v1' and lychd_app_observed.state in ['absent', 'initialized'] }}"
 
 - name: Initialize an absent installation
   when: lychd_app_step_init | bool
   block:
     - name: Preview initialization
       ansible.builtin.command:
-        argv: ["{{ lychd_app_cli }}", init, --web-image, "{{ lychd_app_image_ref }}", --dry-run]
+        argv: "{{ [lychd_app_cli, 'init', '--web-image', lychd_app_image_ref, '--dry-run'] + lychd_app_init_profile_args }}"
         chdir: "{{ lychd_app_source }}"
       environment: "{{ lychd_app_env }}"
       register: lychd_app_init_plan
@@ -37,7 +49,7 @@
 
     - name: Initialize the Codex and Crypt
       ansible.builtin.command:
-        argv: ["{{ lychd_app_cli }}", init, --web-image, "{{ lychd_app_image_ref }}"]
+        argv: "{{ [lychd_app_cli, 'init', '--web-image', lychd_app_image_ref] + lychd_app_init_profile_args }}"
         chdir: "{{ lychd_app_source }}"
       environment: "{{ lychd_app_env }}"
       changed_when: true
@@ -51,6 +63,26 @@
           - lychd_app_observed.state == 'initialized'
           - lychd_app_observed.facts.configuration.state == 'original'
 
+- name: Prepare or resume preparation of an originally initialized Tether installation
+  when: lychd_app_step_prepare | bool
+  block:
+    - name: Prepare native Tether custody from the original public intent
+      ansible.builtin.command:
+        argv: ["{{ lychd_app_cli }}", tether, prepare, --intent, "{{ lychd_tether_intent_remote }}"]
+        chdir: "{{ lychd_app_source }}"
+      environment: "{{ lychd_app_env }}"
+      when: lychd_app_profile == 'tether-container-v1'
+      register: lychd_tether_preparation
+      changed_when: lychd_tether_preparation.rc == 0 and (lychd_tether_preparation.stdout | from_json).changed
+
+    - name: Re-classify preparation and key admission
+      ansible.builtin.include_tasks: classify.yml
+
+    - name: Stop for explicit native key import
+      ansible.builtin.assert:
+        that: lychd_app_observed.state == 'initialized'
+        fail_msg: "Tether preparation requires native import-key for missing_secrets: {{ lychd_app_observed.facts.tether_preparation.missing_secrets | default([]) }}. Import keys explicitly, then rerun application deployment."
+
 - name: Bind an initialized installation
   when: lychd_app_step_bind | bool
   block:
@@ -60,14 +92,14 @@
 
     - name: Preview binding
       ansible.builtin.command:
-        argv: ["{{ lychd_app_cli }}", bind, --dry-run]
+        argv: "{{ [lychd_app_cli] + lychd_app_bind_args + ['--dry-run'] }}"
         chdir: "{{ lychd_app_source }}"
       environment: "{{ lychd_app_env }}"
       changed_when: false
 
     - name: Bind the generated units and create only absent core secrets
       ansible.builtin.command:
-        argv: ["{{ lychd_app_cli }}", bind]
+        argv: "{{ [lychd_app_cli] + lychd_app_bind_args }}"
         chdir: "{{ lychd_app_source }}"
       environment: "{{ lychd_app_env }}"
       changed_when: true
@@ -99,13 +131,21 @@
   when: lychd_app_observed.state == 'bound_inactive' and (lychd_app_start_authorized | bool)
   changed_when: true
 
+- name: Activate and verify Tether through native lifecycle after the guarded Core bootstrap
+  ansible.builtin.command:
+    argv: ["{{ lychd_app_cli }}", tether, activate]
+    chdir: "{{ lychd_app_source }}"
+  environment: "{{ lychd_app_env }}"
+  when: lychd_app_profile == 'tether-container-v1' and (lychd_app_start_authorized | bool)
+  changed_when: true
+
 - name: Wait read-only for the native deployment assessment to converge
   ansible.builtin.command:
-    argv: ["{{ lychd_app_cli }}", status, --json, --deployment-revision, "{{ lychd_source_revision }}", --deployment-image-id, "{{ lychd_image_id }}"]
+    argv: "{{ [lychd_app_cli, 'status', '--json', '--deployment-revision', lychd_source_revision, '--deployment-image-id', lychd_image_id] + lychd_app_status_args }}"
     chdir: "{{ lychd_app_source }}"
   environment: "{{ lychd_app_env }}"
   register: lychd_app_units
-  until: lychd_app_units.rc == 0 and (lychd_app_units.stdout | from_json).schema == 'lychd.deployment' and (lychd_app_units.stdout | from_json).version == 1 and (lychd_app_units.stdout | from_json).state == 'running'
+  until: lychd_app_units.rc == 0 and (lychd_app_units.stdout | from_json).schema == 'lychd.deployment' and (lychd_app_units.stdout | from_json).version == (lychd_app_protocol | int) and (lychd_app_units.stdout | from_json).state == 'running'
   retries: "{{ lychd_app_start_poll_retries }}"
   delay: "{{ lychd_app_start_poll_delay }}"
   changed_when: false
@@ -113,7 +153,7 @@
 
 - name: Report non-convergence without intervening
   ansible.builtin.assert:
-    that: lychd_app_units.rc == 0 and (lychd_app_units.stdout | from_json).schema == 'lychd.deployment' and (lychd_app_units.stdout | from_json).version == 1 and (lychd_app_units.stdout | from_json).state == 'running'
+    that: lychd_app_units.rc == 0 and (lychd_app_units.stdout | from_json).schema == 'lychd.deployment' and (lychd_app_units.stdout | from_json).version == (lychd_app_protocol | int) and (lychd_app_units.stdout | from_json).state == 'running'
     fail_msg: >-
       Native deployment assessment did not reach running. Automation does not stop, restart or
       kill anything; follow the approved recovery plan and `lychd logs`.

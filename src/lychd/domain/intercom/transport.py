@@ -12,6 +12,8 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Literal, Protocol
 
+from lychd.domain.tether.models import TetherSelection
+
 MAX_REQUEST_BYTES = 64 * 1024
 MAX_REQUEST_BODY_BYTES = 48 * 1024
 MAX_RESPONSE_BODY_BYTES = 64 * 1024
@@ -63,6 +65,7 @@ class IntercomEndpoint:
     port: int
     path: str = field(repr=False)
     ca_file: Path = field(repr=False)
+    tether: TetherSelection | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True, slots=True)

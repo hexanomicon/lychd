@@ -17,6 +17,7 @@ class BuiltinExtension:
 
 BUILTIN_EXTENSIONS: Final = MappingProxyType(
     {
+        "tether": BuiltinExtension(register_module="lychd.extensions.builtin.tether.register"),
         "animator": BuiltinExtension(
             register_module="lychd.extensions.builtin.animator.register",
         ),

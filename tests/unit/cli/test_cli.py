@@ -311,6 +311,8 @@ def host_readiness(mocker: MockerFixture) -> MagicMock:
 
 def test_root_help_does_not_construct_asgi_app(runner: CliRunner, mocker: MockerFixture) -> None:
     """The public Pulse stays closed and usable before the server can boot."""
+    from lychd.cli.tether import tether_group
+
     create_app = mocker.patch("lychd.app.create_app")
 
     result = runner.invoke(cli, ["--help"])
@@ -325,17 +327,19 @@ def test_root_help_does_not_construct_asgi_app(runner: CliRunner, mocker: Mocker
         "logs",
         "access",
         "del",
+        "tether",
     }
+    assert cli.commands["tether"] is tether_group
     assert {name for name, command in cli.commands.items() if command.hidden} == {
         "database",
         "database-bootstrap",
         "reactor",
     }
-    for command in ("init", "bind", "start", "stop", "status", "logs", "access", "del"):
+    for command in ("init", "bind", "start", "stop", "status", "logs", "access", "del", "tether"):
         assert command in result.output
     positions = [
         result.output.index(f"\n  {command}")
-        for command in ("init", "bind", "start", "stop", "status", "logs", "access", "del")
+        for command in ("init", "bind", "start", "stop", "status", "logs", "access", "del", "tether")
     ]
     assert positions == sorted(positions)
     for internal in ("destroy", "doctor", "animators", "runs", "workers", "reactor", "serve", "database"):
@@ -343,7 +347,7 @@ def test_root_help_does_not_construct_asgi_app(runner: CliRunner, mocker: Mocker
     create_app.assert_not_called()
 
 
-def test_status_lookup_alias_does_not_become_a_ninth_public_root(runner: CliRunner) -> None:
+def test_status_lookup_alias_does_not_become_an_additional_public_root(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["st", "--help"])
 
     assert result.exit_code == 0

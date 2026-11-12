@@ -79,7 +79,9 @@ def read_verified(archive, digest, *, keep=True, size=None):
     return bytes(kept)
 
 
-def inspect_archive(path, revision, expected_image_id=None):
+def inspect_archive(path, revision, expected_image_id=None, *, kind="core"):
+    require(kind in {"core", "tether"}, "unsupported image kind")
+    repository = "lychd-tether" if kind == "tether" else "lychd"
     require(re.fullmatch(r"[0-9a-f]{40}", revision or ""), "exact source SHA required")
     if expected_image_id:
         require(re.fullmatch(r"[0-9a-f]{64}", expected_image_id), "expected image ID must be 64 hex characters")
@@ -104,7 +106,9 @@ def inspect_archive(path, revision, expected_image_id=None):
         require(len(manifests) == 1, f"archive must contain exactly one image, found {len(manifests)}")
         descriptor = validate_descriptor(manifests[0], MANIFEST_TYPES)
         reference = (descriptor.get("annotations") or {}).get("org.opencontainers.image.ref.name")
-        require(reference in (None, f"localhost/lychd:{revision}"), "archive tag must be absent or the campaign tag")
+        require(
+            reference in (None, f"localhost/{repository}:{revision}"), "archive tag must be absent or the campaign tag"
+        )
         manifest = json.loads(read_verified(archive, descriptor["digest"], size=descriptor.get("size")))
         require(manifest.get("schemaVersion") == 2, "unsupported manifest schema")
         require(manifest.get("mediaType", next(iter(MANIFEST_TYPES))) in MANIFEST_TYPES, "unsupported manifest type")
@@ -138,20 +142,36 @@ def sha256_file(path):
 
 
 def main(argv):
-    require(len(argv) in (3, 4), "usage: ARCHIVE REVISION OUTPUT_JSON [EXPECTED_IMAGE_ID]")
+    if argv and argv[0] == "--verify-tether":
+        require(len(argv) == 6, "usage: --verify-tether ARCHIVE REVISION IMAGE_ID MANIFEST_DIGEST ARCHIVE_SHA256")
+        _, raw_path, revision, image_id, manifest_digest, archive_sha256 = argv
+        path = Path(raw_path)
+        require(path.is_absolute() and path.is_file() and not path.is_symlink(), "ordinary absolute archive required")
+        require(sha256_file(path) == archive_sha256, "archive checksum differs")
+        identity = inspect_archive(path, revision, image_id, kind="tether")
+        require(identity["manifest_digest"] == manifest_digest, "archive manifest differs")
+        require(sha256_file(path) == archive_sha256, "archive changed during admission")
+        print(json.dumps(identity, sort_keys=True))
+        return
+    kind = "tether" if argv and argv[0] == "--tether" else "core"
+    argv = argv[1:] if kind == "tether" else argv
+    require(len(argv) in (3, 4), "usage: [--tether] ARCHIVE REVISION OUTPUT_JSON [EXPECTED_IMAGE_ID]")
     archive = Path(argv[0]).resolve(strict=True)
     revision, output = argv[1], Path(argv[2])
     require(archive.is_file() and not Path(argv[0]).is_symlink(), "archive must be a regular file")
     before = sha256_file(archive)
-    identity = inspect_archive(archive, revision, argv[3] if len(argv) == 4 else None)
+    identity = inspect_archive(archive, revision, argv[3] if len(argv) == 4 else None, kind=kind)
     require(sha256_file(archive) == before, "archive changed during admission")
     variables = {
         "lychd_image_archive": str(archive),
         "lychd_image_archive_sha256": before,
         "lychd_image_id": identity["image_id"],
-        "lychd_image_ref": f"localhost/lychd:{revision}",
+        "lychd_image_manifest_digest": identity["manifest_digest"],
+        "lychd_image_ref": f"localhost/{'lychd-tether' if kind == 'tether' else 'lychd'}:{revision}",
         "lychd_image_revision": revision,
     }
+    if kind == "tether":
+        variables = {key.replace("lychd_image_", "lychd_tether_image_"): value for key, value in variables.items()}
     # Create privately before writing; never follow or replace an existing output path.
     with os.fdopen(os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as handle:
         handle.write(json.dumps(variables, indent=2) + "\n")

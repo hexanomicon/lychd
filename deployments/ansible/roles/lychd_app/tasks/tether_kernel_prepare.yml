@@ -1,0 +1,47 @@
+---
+- name: Check the host kernel and reserved boot entry before preparation
+  ansible.builtin.import_tasks: tether_kernel.yml
+
+- name: Prepare the host WireGuard key-generation tool
+  ansible.builtin.import_tasks: tether_tools_prepare.yml
+
+- name: Load only an absent WireGuard module with administrator policy intact
+  ansible.builtin.command:
+    argv: [/usr/sbin/modprobe, --use-blacklist, wireguard]
+    creates: /sys/module/wireguard
+  # command's creates check predicts changes in check mode without executing modprobe.
+  # Do not override changed_when: the first real load must report its effect.
+
+- name: Observe actual WireGuard presence after preparation or during verification
+  ansible.builtin.stat:
+    path: /sys/module/wireguard
+    follow: false
+  register: lychd_tether_kernel_loaded
+
+- name: Require observed WireGuard before boot publication or native lifecycle
+  ansible.builtin.assert:
+    that: lychd_tether_kernel_loaded.stat.isdir | default(false)
+    fail_msg: >-
+      WireGuard is not loaded in the running host kernel. A successful modprobe exit is not proof;
+      check administrator blacklist/install policy, module signatures and matching kernel modules.
+      No boot entry or native lifecycle effect follows this failure.
+  when: not ansible_check_mode
+
+- name: Persist only an absent Tether module-load entry after observed loading
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/lychd-tether.conf
+    content: "wireguard\n"
+    owner: root
+    group: root
+    mode: '0644'
+    force: false
+  when: not lychd_tether_module_boot.stat.exists
+
+- name: Report the check-mode kernel prerequisite prediction
+  ansible.builtin.debug:
+    msg:
+      running_kernel: "{{ lychd_tether_kernel_release.stdout | trim }}"
+      loaded_now: "{{ lychd_tether_kernel_loaded.stat.isdir | default(false) }}"
+      boot_entry_present: "{{ lychd_tether_module_boot.stat.exists }}"
+      boundary: "Load and boot-entry changes were predicted only; native effects remain withheld in check mode."
+  when: ansible_check_mode

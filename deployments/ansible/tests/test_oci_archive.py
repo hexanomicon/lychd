@@ -79,6 +79,35 @@ class ArchiveTests(unittest.TestCase):
         identity = admit.inspect_archive(path, REVISION, image_id)
         self.assertEqual(identity["image_id"], image_id)
 
+    def test_tether_archive_has_a_separate_explicit_receipt(self):
+        path, image_id = self.build(reference=f"localhost/lychd-tether:{REVISION}")
+        with self.assertRaises(admit.ArchiveRefusal):
+            admit.inspect_archive(path, REVISION)
+        self.assertEqual(admit.inspect_archive(path, REVISION, kind="tether")["image_id"], image_id)
+        output = self.root / "tether-vars.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            admit.main(["--tether", str(path), REVISION, str(output), image_id])
+        document = json.loads(output.read_text())
+        self.assertEqual(document["lychd_tether_image_id"], image_id)
+        self.assertNotIn("lychd_image_id", document)
+
+    def test_manifest_receipt_is_reverified_without_writing(self):
+        path, image_id = self.build(reference=f"localhost/lychd-tether:{REVISION}")
+        identity = admit.inspect_archive(path, REVISION, kind="tether")
+        arguments = [
+            "--verify-tether",
+            str(path),
+            REVISION,
+            image_id,
+            identity["manifest_digest"],
+            admit.sha256_file(path),
+        ]
+        with contextlib.redirect_stdout(io.StringIO()):
+            admit.main(arguments)
+        arguments[4] = "sha256:" + "f" * 64
+        with self.assertRaisesRegex(admit.ArchiveRefusal, "manifest differs"):
+            admit.main(arguments)
+
     def test_tampered_layer_is_refused(self):
         path, _ = self.build(corrupt=True)
         with self.assertRaisesRegex(admit.ArchiveRefusal, "digest mismatch"):
