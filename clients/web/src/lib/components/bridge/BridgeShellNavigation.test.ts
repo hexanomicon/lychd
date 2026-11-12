@@ -195,6 +195,7 @@ describe("shell-lifetime Bridge conversation", () => {
     expect(screen.getByRole("link", { name: "Return to Orb event →" }).getAttribute("href"))
       .toBe("/orb/missing-run?event=event-b");
     await visit("/orb/run-b?event=event-b");
+    expect(screen.getByRole("link", { name: "Bridge" }).getAttribute("href")).toBe("/bridge/session-b");
     await fireEvent.click(screen.getByRole("button", { name: "Collapse Bridge" }));
     await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
     expect(screen.queryByText(/requested consent is unavailable/)).toBeNull();
@@ -333,13 +334,15 @@ it("opens the actual default séance and preserves active A while inspecting B",
   const composer = await screen.findByLabelText("Message");
   await fireEvent.input(composer, { target: { value: "Keep A draft" } });
   expect(screen.getByRole("link", { name: "Open Séance" }).getAttribute("href")).toBe("/seances/session-a");
-  expect(screen.getByRole("link", { name: "Séances" }).getAttribute("href")).toBe("/seances");
+  expect(screen.getByRole("link", { name: "Bridge" }).getAttribute("href")).toBe("/bridge");
   await visit("/seances/session-b");
   expect(screen.getByLabelText("Message")).toBe(composer);
   expect((composer as HTMLTextAreaElement).value).toBe("Keep A draft");
   expect(screen.getByRole("link", { name: "Open Séance" }).getAttribute("href")).toBe("/seances/session-a");
   expect(getBridgeSnapshot).toHaveBeenCalledExactlyOnceWith(undefined);
   expect(sendBridgeMessage).not.toHaveBeenCalled();
+  await visit("/bridge");
+  expect(screen.getByRole("link", { name: "Browse séances" }).getAttribute("href")).toBe("/seances");
   shell.unmount();
 });
 

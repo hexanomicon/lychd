@@ -5,7 +5,7 @@ icon: material/map-outline
 
 # :material-map-outline: Atlas
 
-**Atlas is the catalogue of Canvas projects.** Its pinned first entry is LychD's own Canvas,
+**Atlas opens the catalogue of Canvas projects.** Its pinned first entry is LychD's own Canvas,
 with a curated static project map. Search, filters and pagination apply to the loaded user
 collection while that entry remains available. Open a project to draw on its Canvas, or open
 its **Project record** directly to inspect its brief, concerns, decisions and related activity.
@@ -30,8 +30,9 @@ distinguish understanding from the ability to modify, replace, or recover a comp
 
 ## Put an undertaking on the map
 
-Open **Canvas** in the [Altar](index.md#bring-one-intent) navigation, then **Atlas** for the catalogue.
-**New Canvas** creates a draft project with a blank board immediately; a name and brief can follow.
+Open **Atlas** in the [Altar](index.md#bring-one-intent) masthead. **Open Canvas →** enters the board
+workspace. **New canvas** creates a draft project with a blank board immediately. A name and brief
+can follow.
 Keep the project when it is worth retaining in your working collection, or discard an eligible
 draft to remove it from the catalogue. Discard retains a recoverable account, and cannot remove
 LychD, a kept project, or existing planning records. In the Project record, describe the
@@ -159,6 +160,24 @@ relations remain distinct. Larger collection limits and catalogue-wide search ne
 server contract; hiding rows cannot create that support. This composition and its scale checks
 are targets under [Frontend](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction), not
 additional delivered controls.
+
+## The shared memory map
+
+In the future design, Atlas opens on retained knowledge and its sources. Recall could show a
+retained decision and its nearby relationships, including an earlier decision it superseded.
+A Project is one slice of that map. A finding can appear in several slices through the same source
+reference. A map of requirements, use cases, exact ADR revisions, and acceptance evidence could
+show where a claim came from, what addresses it, and which judgments remain open. A
+[séance map](seances.md#map-a-seance) uses the same identities inside Bridge, within that séance's
+scope and access.
+
+Canvas is the authoring surface inside Atlas. A reader can sketch an idea before asserting a
+relationship. A typed relation needs a deliberate, attributable action and exact source references.
+A reader could review a finding from a séance, retain it with its source, then explicitly attach a
+later Recall result to a conversation. [Archive](../../adr/27-memory.md#recall) governs admission,
+correction, and Recall. [Context](../../adr/21-context.md#explicit-archive-projection) governs what
+enters an Invocation. Today's Atlas provides project records and board access. The shared map
+and generalized memory curation remain future work.
 
 ## Concerns before a Project
 

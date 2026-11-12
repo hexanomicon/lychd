@@ -27,9 +27,10 @@ http://127.0.0.1:7134/
 Before entering, retrieve the dedicated local credential in a private terminal with `lychd access`
 and answer the browser's authentication dialog as described in
 [The Awakening](../../summoning.md#the-awakening). Keep the password out of URLs and command lines.
-The root then opens **Orb**, with **Bridge** open on the left in a fresh wide layout. On a narrow
-window, use the edge chevron to open Bridge; saved panel preferences remain in use.
-On a fresh Phylactery, choose **New Séance** in Bridge and offer a bounded Intent.
+The root opens **Orb**, with the Bridge dock on the left in a fresh wide layout. On a narrow
+window, the edge chevron opens the dock. Saved dock preferences remain in use.
+Choose **Bridge** in the masthead to open the full conversation workspace. On a fresh Phylactery,
+choose **New Séance** in Bridge and offer a bounded Intent.
 Answer an inline consent card only when the Run asks for judgment.
 
 Keep the listener on literal loopback, with no ad hoc proxy, tunnel, or forwarding. The separate
@@ -52,23 +53,18 @@ identity. Keep that identity in view when changing instruments.
 
 | What you need to establish | Instrument |
 | --- | --- |
-| What can we draw, develop, organize and return to across conversations? | [Canvas](../../compositions/canvas/index.md), with [Atlas](./atlas.md) as its project catalogue |
 | What was offered, what judgment is pending, and what settled? | [Bridge](./bridge.md) |
-| What did this conversation contain, and which words should we carry into later work? | [Séances](./seances.md) |
-| Which Runs are before us, what evidence is arriving, and where does capture run out? | [Orb](./orb.md) |
+| What did this conversation contain, and which words should we carry into later work? | [Séances](./seances.md) within Bridge |
+| What can we draw, develop, organize and return to across conversations? | [Atlas](./atlas.md), including [Canvas](../../compositions/canvas/index.md) authoring |
 | Which stations and paths does this exact Scroll permit? | [Loom](./loom.md) |
 | What was observed about readiness or a physical transition? | [Nexus](./nexus.md) |
+| Which Runs are before us, what evidence is arriving, and where does capture run out? | [Orb](./orb.md) |
 
-Canvas and Atlas are equal top-level destinations: the creative board and its project catalogue.
-Séances is the first navigation entry, immediately to the left of Atlas; Canvas, Orb, Loom and
-Nexus follow. LychD's own Canvas is pinned first
-and opens by default in Canvas. Séances opens a catalogue and exact retained-conversation workspace.
-Bridge remains the live conversation panel beside the selected work, opened by its named edge
-control. **Open Séance** opens the panel's actual conversation for inspection; **Continue in Bridge**
-explicitly selects an inspected conversation for live exchange. Icons accompany the visible
-navigation names. Existing full-focus Bridge links remain supported.
-Hover, click or keyboard opens the menu. **Applications** opens the other admitted
-applications, including Scavenger market.
+The masthead orders **Bridge**, **Atlas**, **Loom**, **Nexus**, **Orb**, and **Applications**.
+Bridge opens the full conversation workspace, with **Browse séances** for retained inspection.
+Atlas opens the project catalogue, with **New canvas** and **Open Canvas →**. LychD's own Canvas
+stays pinned first. **Applications** opens other admitted applications, including Scavenger market.
+Hover, click, or keyboard focus opens the menu.
 
 Atlas gives a larger undertaking continuity across conversations and Runs, and can begin before
 either exists. Inside Bridge, a Circle gathers one Invocation. Its current form is a compact
@@ -89,6 +85,13 @@ the view cannot infer it.
 Nexus inspection changes no lifecycle state. **Preview** is nonbinding; **Request transition**
 performs a real maximum-priority mutation. Read the [Nexus guide](./nexus.md) before making that
 request.
+
+## Return to Bridge
+
+Choose **Bridge** in the masthead to return to the last explicitly selected conversation in this
+browser document. **Browse séances** opens the catalogue. The dock's **Open Séance** opens the
+current conversation for inspection, and **Continue in Bridge** explicitly selects an inspected
+conversation for live exchange.
 
 ## Keep Bridge beside the work
 
@@ -120,9 +123,12 @@ contracts belong to the Frontend Covenant; interface choices preserve retained s
 
 The graphite frame leaves black spatial surfaces to the work. Neutral primary actions, a quiet
 purple instrument identity, cyan manipulation controls, and green observed activity have distinct
-roles. Bridge keeps a compact composer beside the work; Atlas reads as a catalogue, Canvas as a
-drawing board, Séances as a retained-conversation workspace, Orb as an evidence field, Loom as
-a declared score, and Nexus as an inspection board.
+roles. Bridge gives the conversation room on its route and offers a compact composer beside
+other work. Séances gives retained conversations room for reading. Atlas opens the project
+catalogue and Canvas drawing boards. Loom reads as a declared score, Nexus as a readiness
+inspection board, and Orb as an evidence field. The future
+[Atlas memory map](atlas.md#the-shared-memory-map) describes how the instruments can refer to the
+same retained knowledge.
 Canvas's **Selection tools** unfold when ink or nodes are selected, or can be opened directly.
 Identity and history unfold as needed, while uncertainty,
 consent, capture limits, and physical consequences stay beside the choices they qualify.

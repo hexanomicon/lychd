@@ -208,10 +208,20 @@
   }
 
   const instruments = [
-    { slug: "seances", label: "Séances" }, { slug: "atlas", label: "Atlas" },
-    { slug: "canvas", label: "Canvas" }, { slug: "orb", label: "Orb" },
-    { slug: "loom", label: "Loom" }, { slug: "nexus", label: "Nexus" }
+    { slug: "bridge", label: "Bridge", related: "/seances" },
+    { slug: "atlas", label: "Atlas", related: "/canvas" },
+    { slug: "loom", label: "Loom" },
+    { slug: "nexus", label: "Nexus" },
+    { slug: "orb", label: "Orb" }
   ] as const;
+
+  function instrumentCurrent(instrument: typeof instruments[number], href: string) {
+    const pathname = page.url.pathname;
+    if (pathname === href || pathname === `${href}/`) return "page";
+    const roots = [resolve(`/${instrument.slug}`)];
+    if ("related" in instrument) roots.push(resolve(instrument.related));
+    return roots.some(root => pathname === root || pathname.startsWith(`${root}/`)) ? "location" : undefined;
+  }
 
   function attention(_event: Event) {
     // Instrument events are invalidation hints; only the shell status endpoint
@@ -326,21 +336,18 @@
 
   <nav class="instruments" aria-label="Instruments">
     {#each instruments as instrument (instrument.slug)}
-      <a
-        href={resolve(`/${instrument.slug}`)}
-        aria-current={page.url.pathname.startsWith(`/${instrument.slug}`) ? "page" : undefined}
-      >
+      {@const href = resolve(instrument.slug === "bridge" ? navigation.bridgePath : `/${instrument.slug}`)}
+      <a {href} aria-current={instrumentCurrent(instrument, href)}>
         <AltarIcon name={instrument.slug} /><span>{instrument.label}</span>
       </a>
     {/each}
+    <details class="application-menu" {@attach manageAboutDisclosure}>
+      <summary><AltarIcon name="applications" /><span>Applications</span><span aria-hidden="true">⌄</span></summary>
+      <nav aria-label="Applications">
+        <a href={resolve("/scavenger")} aria-current={page.url.pathname === resolve("/scavenger") ? "page" : undefined}><AltarIcon name="scavenger" />Scavenger market</a>
+      </nav>
+    </details>
   </nav>
-
-  <details class="application-menu" {@attach manageAboutDisclosure}>
-    <summary><AltarIcon name="applications" /><span>Applications</span><span aria-hidden="true">⌄</span></summary>
-    <nav aria-label="Applications">
-      <a href={resolve("/scavenger")} aria-current={page.url.pathname === "/scavenger" ? "page" : undefined}><AltarIcon name="scavenger" />Scavenger market</a>
-    </nav>
-  </details>
 
   <div class="spacer"></div>
   {#if available}
@@ -361,7 +368,7 @@
   <main id={bridgeFocused ? undefined : "altar-main"} tabindex="-1" hidden={bridgeFocused} inert={bridgeModal}>
     {@render children()}
   </main>
-  <BridgeDock bind:open={dockOpen} bind:narrow focused={bridgeFocused} focusHref={resolve(resolvedBridgeSession ? seanceHref(resolvedBridgeSession) : "/seances")} focusLabel={resolvedBridgeSession ? "Open Séance" : "Browse séances"} {workHref} {available} {viewing} onconnect={connect} onexpand={toggleBridge} onsuspend={suspendBridgeVoice}>
+  <BridgeDock bind:open={dockOpen} bind:narrow focused={bridgeFocused} focusHref={resolve(resolvedBridgeSession ? seanceHref(resolvedBridgeSession) : "/seances")} focusLabel={resolvedBridgeSession ? "Open Séance" : "Browse séances"} browseHref={resolve("/seances")} {workHref} {available} {viewing} onconnect={connect} onexpand={toggleBridge} onsuspend={suspendBridgeVoice}>
     {#if available}<BridgeView bind:this={bridgeView} visible={dockOpen || bridgeFocused} isVisible={readBridgeVisibility} embedded={!bridgeFocused} sessionId={bridgeSession} search={bridgeSearch} onNavigate={selectConversation} onSessionResolved={(id) => { resolvedBridgeSession = id; }} />{/if}
   </BridgeDock>
 </div>
@@ -380,11 +387,11 @@
   .brand { justify-content: center; width: 3rem; min-height: 3rem; padding: .125rem; }
   .brand:hover { background: var(--color-tertiary); }
   .altar-product { margin-top: .35rem; color: var(--color-parchment); font-size: var(--text-sm); }
-  nav.instruments { height: auto; align-self: center; gap: .25rem; margin-left: .5rem; }
-  nav.instruments a { gap: .6rem; padding: .65rem .85rem; letter-spacing: 0; text-transform: none; color: var(--color-ash); min-height: 2.75rem; border: 1px solid transparent; border-radius: var(--radius-rune); }
-  nav.instruments a :global(svg), .application-menu :global(svg) { color: currentColor; flex: 0 0 auto; }
-  nav.instruments a:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
-  nav.instruments a[aria-current="page"] { color: var(--color-accent); text-shadow: none; border-color: color-mix(in srgb,var(--color-accent) 25%,var(--color-engraving)); background: color-mix(in srgb,var(--color-accent) 10%,var(--color-obsidian)); }
+  nav.instruments { height: auto; align-self: center; flex-wrap: wrap; gap: .25rem; margin-left: .5rem; overflow: visible; }
+  nav.instruments > a { gap: .6rem; padding: .65rem .85rem; letter-spacing: 0; text-transform: none; color: var(--color-ash); min-height: 2.75rem; border: 1px solid transparent; border-radius: var(--radius-rune); }
+  nav.instruments > a :global(svg), .application-menu :global(svg) { color: currentColor; flex: 0 0 auto; }
+  nav.instruments > a:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
+  nav.instruments > a[aria-current] { color: var(--color-accent); text-shadow: none; border-color: color-mix(in srgb,var(--color-accent) 25%,var(--color-engraving)); background: color-mix(in srgb,var(--color-accent) 10%,var(--color-obsidian)); }
   .topbar .spacer { flex: 1 1 0; }
   .sigil { border-radius: var(--radius-rune); padding: .55rem .7rem; box-shadow: none; animation: none; border-color: transparent; }
   .sigil-identity { display: none; }
@@ -394,14 +401,27 @@
   .application-menu > summary:hover { color:var(--color-bone); background:var(--color-obsidian-2); }
   .application-menu > summary::-webkit-details-marker { display: none; }
   .application-menu nav { position: absolute; inset-block-start: 100%; inset-inline-start: -.5rem; z-index: 50; min-width: 14rem; padding: .35rem; background: var(--color-tertiary); border: 1px solid var(--color-tertiary-edge); border-radius: var(--radius-glyph); }
-  .application-menu a { display: flex; align-items: center; gap: .75rem; min-height: 2.75rem; padding: .65rem; font-size: var(--text-sm); text-decoration: none; color: var(--color-bone); }
+  .application-menu a { display: flex; align-items: center; gap: .75rem; min-height: 2.75rem; padding: .65rem; font-size: var(--text-sm); letter-spacing: 0; text-transform: none; text-decoration: none; color: var(--color-bone); }
   .application-menu a:hover, .application-menu a[aria-current="page"] { background: color-mix(in srgb, var(--color-rune) 10%, var(--color-tertiary)); }
   .altar-workbench { position: relative; display: flex; flex: 0 0 auto; min-width: 0; min-height: 0; overflow: hidden; background: var(--color-void); }
   #altar-main { flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; background: var(--color-void); container-type: inline-size; container-name: work-area; }
   #altar-main::before, #altar-main::after { display: none; }
   main[hidden] { display: none; }
   :focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  @media (max-width: 75rem) { .topbar { gap: .65rem; padding-inline: .75rem; } nav.instruments a { padding-inline: .5rem; gap: .4rem; } .offline-status { display: none; } }
-  @media (max-width: 56rem) { .topbar { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: .25rem .5rem; padding: .25rem .5rem .5rem; } .altar-about { grid-column: 1; grid-row: 1; } nav.instruments { grid-column: 1 / -1; grid-row: 2; width: 100%; margin: 0; justify-content: center; } nav.instruments a { min-height: 2.75rem; flex: 1; justify-content: center; } .topbar .spacer { display: none; } .application-menu { grid-column: 2; grid-row: 1; margin: 0; } .application-menu > summary { min-height: 2.75rem; gap: .4rem; font-size: var(--text-xs); } .application-menu nav { inset-inline-start: 0; inset-inline-end: auto; } .sigil { grid-column: 3; grid-row: 1; margin: 0; max-width: 100%; font-size: var(--text-xs); line-height: 1.3; white-space: normal; } }
-  @media (max-width: 36rem) { nav.instruments { gap: 0; } nav.instruments a { flex-direction: column; gap: .2rem; padding: .4rem .2rem; font-size: var(--text-xs); } }
+  @media (max-width: 75rem) { .topbar { gap: .65rem; padding-inline: .75rem; } nav.instruments > a { padding-inline: .5rem; gap: .4rem; } .offline-status { display: none; } }
+  @media (max-width: 56rem) {
+    .topbar { display: flex; flex-wrap: wrap; gap: .25rem .5rem; padding: .25rem .5rem .5rem; }
+    .altar-about { order: 0; }
+    .sigil { margin: 0 0 0 auto; max-width: 9rem; font-size: var(--text-xs); line-height: 1.3; white-space: normal; }
+    .topbar .spacer { display: none; }
+    nav.instruments { order: 4; flex: 1 0 100%; margin: 0; justify-content: center; }
+    nav.instruments > a, .application-menu { flex: 1; }
+    nav.instruments > a, .application-menu > summary { justify-content: center; }
+    .application-menu nav { inset-inline-start: auto; inset-inline-end: 0; }
+  }
+  @media (max-width: 36rem) {
+    nav.instruments { gap: 0; }
+    nav.instruments > a, .application-menu > summary { flex-direction: column; gap: .2rem; padding: .4rem .2rem; font-size: var(--text-xs); }
+    .application-menu > summary > span[aria-hidden] { display: none; }
+  }
 </style>
