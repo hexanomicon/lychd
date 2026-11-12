@@ -1233,26 +1233,23 @@ cloth-purple navigation accents. Shared controls, instrument typography and grap
 that palette; fixed brand artwork remains separately attributed. There is no complete contrast matrix or bright/dim production-browser receipt;
 ADR 15's bounded operator-palette contract is design law, not delivered configurability.
 
-### Shared workbench and persistent Bridge {#altar-workbench}
+### Altar workbench and Bridge {#altar-workbench}
 
 **State:** Partial
 
-**Proved now:** The shared masthead provides independent Séances, Canvas, Atlas, Orb, Loom and
-Nexus icon-and-label destinations, with a board icon for Canvas and map icon for Atlas, plus an
-Applications menu reachable by hover, click, or keyboard. A persistent named work-area edge control
-opens or collapses Bridge; new layouts start on the left while valid saved sides remain. One
-ordinary conversation stays mounted across work navigation and collapse, retaining exact-session
-drafts, unresolved offering identity, and live subscriptions. Explicit Bridge URLs still select
-session, Project, Run, and consent focus. Investigation and public-note applications keep their
-separate composition. Ordinary `/bridge` and exact-session URLs open full focus: the same
-mounted conversation fills the work area, with one accessible main and no dock modal or resize
-controls. Full focus leaves saved dock preferences intact. The rail separates browser-local pinned
-identities from recent server-supplied sessions. Séances is the first masthead entry, immediately
-before Atlas. The panel's **Open Séance** uses its actual server-supplied conversation identity;
-an unresolved default instead offers the catalogue. Leaving legacy full chat for a wide work view reveals the same mounted conversation as a
-sidebar without replacing saved openness; narrow work views retain their edge/modal treatment.
-Off-page pins need no speculative thread reads.
-Pins retain IDs only, at most 32, and carry no session or admission authority.
+**Proved now:** The masthead orders Bridge, Atlas, Loom, Nexus, Orb, and Applications. Bridge opens
+the full conversation workspace at the last explicitly selected session in the open browser
+document. **Browse séances** opens the catalogue from that workspace. The dock's **Open Séance**
+opens the exact server-supplied session. An unresolved default offers the catalogue. Atlas
+retains **Open Canvas →** and **New canvas**. The masthead marks Bridge on Séances routes and
+Atlas on Canvas routes. Existing direct URLs remain available, and the root opens Orb.
+
+The shell keeps one conversation mounted across navigation, retaining exact-session drafts,
+unresolved offerings, and live subscriptions. Full-route Bridge fills the work area with one
+accessible main. Leaving it for a wide work view reveals the same conversation beside the work.
+Saved dock side, width, and open preferences survive full focus. The rail distinguishes
+browser-local pins from recent server-supplied sessions. Off-page pins need no speculative
+thread reads. Pins retain at most 32 session IDs as presentation preferences.
 
 `/seances` pages conversation metadata with a filter explicitly scoped to loaded entries;
 `/seances/{session_id}` reads one exact retained transcript. This inspection does not select the
@@ -1278,12 +1275,13 @@ without destroying the conversation. Source-development Canvas opens that shell 
 makes no protected Bridge/status requests until an explicit connection. Production
 authentication remains intact.
 
-**Boundary — Not yet:** The dock supplies no new model context or attachment admission,
-global conversation merge, cross-instance history, durable browser draft storage or execution
-authority. Séances supplies no automatic analysis, durable working-material store, private
-conversation-to-Archive intake, or Persona authoring. Viewing a page is not transmitting it to a model. Browser and component checks do not
-qualify every device, bright/dim environment, forced-colour combination or the renderer's separate
-cross-engine heap gate. Existing server-held recovery, current-access and consent limits remain.
+**Boundary — Not yet:** The shared Atlas ontology, provenance-bearing séance map, and generalized
+memory curation remain design work. The dock supplies no new model context or attachment
+admission, global conversation merge, cross-instance history, durable browser draft storage or
+execution authority. Séances supplies no automatic analysis, durable working-material store,
+private conversation-to-Archive intake, or Persona authoring. Viewing a page is not transmitting
+it to a model. Browser and component checks do not qualify every device, bright/dim environment,
+forced-colour combination or the renderer's separate cross-engine heap gate. Existing server-held recovery, current-access and consent limits remain.
 
 **Evidence**
 
@@ -1291,14 +1289,14 @@ cross-engine heap gate. Existing server-held recovery, current-access and consen
 - **Source:** [Séances workspace](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/SeancesWorkspace.svelte), [source material](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/seances/material.ts), and [document-local collection](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/seances/workspace.svelte.ts)
 - **Verification:** [Séances reads and working material](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/SeancesWorkspace.test.ts), [source export](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/seances/material.test.ts), and [Bridge selection and continuation](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeShellNavigation.test.ts)
 - **Verification:** [Server shell fallbacks](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_pages.py), [shell admission/status tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/AltarShell.test.ts), [mounted conversation/navigation tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeShellNavigation.test.ts), [dock interaction tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/BridgeDock.test.ts), [layout preference tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/navigation/dock.test.ts), and [offline source profile](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/routes/canvas/layout.test.ts)
-- **Law:** [Shared workbench and Bridge dock](./adr/15-frontend.md#the-shared-workbench-and-bridge-dock)
-- **Topic:** [Altar](./divination/altar/index.md#keep-bridge-beside-the-work)
+- **Law:** [Shared workbench](./adr/15-frontend.md#the-shared-workbench)
+- **Topic:** [Altar](./divination/altar/index.md#return-to-bridge)
 
 ### Canvas board authoring {#canvas-board-authoring}
 
 **State:** Partial
 
-**Proved now:** Canvas is the primary creator entry; Atlas catalogues its Projects. `/canvas`
+**Proved now:** Atlas catalogues Projects and gives access to Canvas authoring. `/canvas`
 bootstraps and opens the owner's pinned LychD Project with a curated static architecture board;
 `/canvas/{project_id}` opens an exact Project. New Canvas atomically creates a draft and its
 primary board without a naming form. This profile supports one primary board per Project.
@@ -1569,8 +1567,11 @@ and native exact-revision execution lookup are unchanged.
 
 **Boundary — Not yet:** Loom is a view over exact admitted inspection records, not a Spellweaver editor, mutation
 surface, independent Spell identity or catalogue, compatibility or teaching surface, drafting
-canvas, inert unresolved-Spell projection, or Suite executor. The shared renderer's cross-engine
-forced-collection qualification and complete production-browser acceptance remain unproved.
+canvas, inert unresolved-Spell projection, or Suite executor. The future
+[workflow projection](./adr/15-frontend.md#loom-workload-and-editing-gate) covers nested declared
+subgraphs and Context policy and Evaluation views for the exact revision. The shared renderer's
+cross-engine forced-collection qualification and complete production-browser acceptance remain
+unproved.
 
 The [trusted source-browser profile](#current-evidence-envelope) covers only its keyboard link
 to the exact `bridge_chat@2` score and return to the same Run. It does not discharge renderer

@@ -266,6 +266,10 @@ subjects and gaps stay visible; job events keep their own sequence unless the se
 a Run correlation. Fold counts describe loaded membership. Deeper expansion needs supplied
 identities under the [folding contract](../../adr/15-frontend.md#folding-not-scale).
 
+A future [cross-instrument map](atlas.md#the-shared-memory-map) may lead to Orb with an explicit
+Run scope. Orb follows the observed account and its capture limits. Loom retains the declared
+workflow, and Nexus retains readiness and physical transitions.
+
 Acceptance case: open an event beyond the first page, distinguish not-yet-loaded evidence from
 an unretained interval or failed read, inspect the exact score or correlated physical transition,
 and return to the same selected event using only the keyboard. A narrow display should start

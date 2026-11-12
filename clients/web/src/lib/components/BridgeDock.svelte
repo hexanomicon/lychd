@@ -2,9 +2,9 @@
   import { onMount, tick, type Snippet } from "svelte";
   import { boundedDockWidth, bridgeDockStorageKey, defaultDockLayout, dockMaximumWidth, dockMinimumWidth, parseDockLayout } from "$lib/navigation/dock";
 
-  let { open = $bindable(true), narrow = $bindable(false), forceOpen = false, focused = false, focusHref = "/seances", focusLabel = "Open Séance", workHref = "/orb", available = true, viewing = "Altar", onconnect, onexpand, onsuspend, children }: {
+  let { open = $bindable(true), narrow = $bindable(false), forceOpen = false, focused = false, focusHref = "/seances", focusLabel = "Open Séance", browseHref = "/seances", workHref = "/orb", available = true, viewing = "Altar", onconnect, onexpand, onsuspend, children }: {
     open?: boolean; narrow?: boolean; forceOpen?: boolean; available?: boolean;
-    focused?: boolean; focusHref?: string; focusLabel?: string; workHref?: string;
+    focused?: boolean; focusHref?: string; focusLabel?: string; browseHref?: string; workHref?: string;
     viewing?: string; onconnect?: () => void; onexpand?: () => void; onsuspend?: () => void; children: Snippet;
   } = $props();
   let width = $state(defaultDockLayout.width);
@@ -140,7 +140,10 @@
     {#if modal}<button class="dock-backdrop" type="button" tabindex="-1" aria-label="Close Bridge overlay" onclick={collapse}></button>{/if}
     <section id="bridge-dock" class="bridge-dock" role={narrow || focused ? undefined : "complementary"} aria-labelledby={!focused ? "bridge-dock-title" : undefined}>
       {#if focused}
-        <nav class="focus-heading" aria-label="Bridge workspace"><a href={workHref}>← Back to workspace</a></nav>
+        <nav class="focus-heading" aria-label="Bridge workspace">
+          <a href={workHref}>← Back to workspace</a>
+          <a href={browseHref}>Browse séances</a>
+        </nav>
       {:else}
       <header class="dock-heading">
         <div class="dock-location"><h2 id="bridge-dock-title">Bridge</h2><span class="dock-view"><span class="visually-hidden">Viewing: </span>{viewing}</span></div>
@@ -174,7 +177,7 @@
   .dock-shell.dock-collapsed { flex-basis: 0; width: 0; }
   .dock-shell.dock-focused { flex: 1 1 0; width: 100%; order: 0; overflow: hidden; }
   .dock-focused .dock-frame { border: 0; }
-  .focus-heading { padding: .35rem 1rem; border-bottom: 1px solid var(--color-engraving); }
+  .focus-heading { display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: .35rem 1rem; border-bottom: 1px solid var(--color-engraving); }
   .focus-heading a, .dock-actions a { display: inline-flex; align-items: center; min-height: 2rem; font-size: var(--text-xs); color: var(--color-parchment); }
   a:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
   .dock-frame { position: relative; display: flex; width: 100%; min-width: 0; min-height: 0; background: var(--color-obsidian); border-left: 1px solid var(--color-engraving); }
