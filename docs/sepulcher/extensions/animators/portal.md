@@ -38,6 +38,12 @@ dashboard appearing there is a candidate classification, not a delivered connect
     Soulstone still outranks an admitted Portal. Archive, semantic, Scout and Creation workflows
     remain local-only.
 
+    The flag is off by default and is intended for Bridge experiments on a developer instance
+    holding test data. Prompts and history reach the provider as-is, without redaction or
+    anonymization. The planned [Egress Gate](https://github.com/hexanomicon/lychd/issues/25) is
+    to authorize the exact destination and payload, and apply any required privacy
+    transformation, before either this path or the direct Reach model road may send.
+
 Three limits matter:
 
 1. **No automatic cloud replay.** A failed local call is not replayed through a Portal; no current
