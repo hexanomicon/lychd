@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { admissionId, request } from "$lib/scavenger/observation.fixtures";
+import { admissionId, request } from "$lib/pages/observationsScavenger/state/observation.fixtures";
 
 afterEach(() => { vi.unstubAllGlobals(); document.cookie = "scavenger-csrf=; Max-Age=0"; });
 
