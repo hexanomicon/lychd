@@ -142,6 +142,10 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
 
         return self._default_surface
 
+    def resolve_api_key(self) -> str | None:
+        """Read the mounted Portal credential for an operator-admitted authenticated probe."""
+        return self._resolve_api_key()
+
     def _resolve_api_key(self) -> str | None:
         """Resolve API key value from mounted Podman secret files when configured."""
         if not self._api_key_secret_name:

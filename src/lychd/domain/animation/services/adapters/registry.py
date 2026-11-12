@@ -249,6 +249,7 @@ class RuntimeAdapterRegistry:
                     is_dynamic=False,
                     # A Portal is remote: LychD does not own its lifecycle (ADR-22).
                     concurrency=ConcurrencyIntent(dedicated=False),
+                    egress_admitted=portal.allow_dispatch,
                 )
                 for family in synthesize_families(info, hints)
             )

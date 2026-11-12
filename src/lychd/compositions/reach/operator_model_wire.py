@@ -1,4 +1,4 @@
-"""Closed values for one operator-selected local model and static voice, not Mirror."""
+"""Closed values for one operator-selected model and static voice, not Mirror."""
 
 from __future__ import annotations
 
@@ -26,6 +26,11 @@ from lychd.compositions.reach.schemas import PolicyDigest, Record
 
 MAX_MODEL_PAYLOAD_BYTES = 1_048_576
 DECISION_SCHEMA_VERSION = 4
+DEFAULT_ANIMATOR_ID = "night-qwen38"
+DEFAULT_MODEL_ID = "Qwen3.8-27B"
+# Provider-facing model ids, including gateway routes such as ``vendor/model``.
+MODEL_ID_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,255}$"
+ANIMATOR_ID_PATTERN = r"^[a-z][a-z0-9-]{0,62}$"
 
 
 def canonical_json(value: Any) -> str:
@@ -57,8 +62,8 @@ class OperatorConversationProfile(Record):
     schema_version: Literal[1] = 1
     persona_name: str = Field(min_length=1, max_length=80)
     persona_instructions: str = Field(min_length=1, max_length=8000, repr=False)
-    animator_id: Literal["night-qwen38"] = "night-qwen38"
-    model_id: Literal["Qwen3.8-27B"] = "Qwen3.8-27B"
+    animator_id: str = Field(default=DEFAULT_ANIMATOR_ID, pattern=ANIMATOR_ID_PATTERN)
+    model_id: str = Field(default=DEFAULT_MODEL_ID, pattern=MODEL_ID_PATTERN)
     adaptive_context: bool = False
     enable_thinking: bool = False
     thinking_phases: tuple[DecisionPhase, ...] = Field(default=(), max_length=len(DECISION_PHASES))
@@ -144,6 +149,16 @@ class OperatorConversationProfile(Record):
     def capability_key(self) -> str:
         return f"{self.animator_id}:chat:{self.model_id}"
 
+    def serves(self, observed: object) -> bool:
+        """Whether a completion's reported model is this binding's model.
+
+        Gateways route a prefixed id such as ``vendor/model`` and report the bare
+        ``model`` they reached; that one exact suffix is the only accepted alias.
+        """
+        if not isinstance(observed, str) or not observed:
+            return False
+        return observed == self.model_id or ("/" not in observed and self.model_id.endswith("/" + observed))
+
 
 class OperatorModelRequest(Record):
     """Only exact readiness or bounded text formation may cross to the trusted host."""
@@ -196,7 +211,7 @@ class _Message(Record):
 
 
 class _Generation(Record):
-    model: Literal["Qwen3.8-27B"]
+    model: str = Field(pattern=MODEL_ID_PATTERN)
     messages: tuple[_Message, ...] = Field(min_length=1, max_length=60)
     max_tokens: int = Field(ge=1, le=4096)
     temperature: float = Field(ge=0, le=1)

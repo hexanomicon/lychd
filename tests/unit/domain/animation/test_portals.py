@@ -474,3 +474,131 @@ def test_portal_registration_collision_reports_both_registrants() -> None:
                 RegisteredPortalDefinition(registrant_id="crypt:collision", definition=_OPENAI_PORTAL),
             ]
         )
+
+
+# --- operator-admitted dispatch ---------------------------------------------
+
+
+def test_allow_dispatch_requires_probe() -> None:
+    with pytest.raises(ValidationError, match="allow_dispatch requires probe"):
+        OpenAIPortalConfig.model_validate({"name": "remote", "allow_dispatch": True})
+
+
+@pytest.mark.asyncio
+async def test_admitted_portal_probes_with_its_credential_and_grants(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    httpx2_mock: respx.MockRouter,
+) -> None:
+    authorizations: list[str | None] = []
+
+    def inventory(request: httpx.Request) -> httpx.Response:
+        authorizations.append(request.headers.get("Authorization"))
+        return httpx.Response(200, json={"object": "list", "data": [{"id": "vendor/small"}]})
+
+    route = httpx2_mock.get("https://gateway.example/v1/models").mock(side_effect=inventory)
+    secrets = tmp_path / "secrets"
+    secrets.mkdir(parents=True, exist_ok=True)
+    (secrets / "portal_gateway").write_text("sk-test\n", encoding="utf-8")
+    monkeypatch.setenv("LYCHD_SECRET_ROOT", str(secrets))
+
+    runes_dir = tmp_path / "runes"
+    _write(
+        runes_dir / "animator" / "portals" / "openai" / "gateway.toml",
+        """
+        name = "gateway"
+        provider_name = "openai-compatible"
+        base_url = "https://gateway.example/v1"
+        api_key_secret_name = "portal_gateway"
+        probe = true
+        allow_dispatch = true
+
+        [[models]]
+        id = "vendor/small"
+        [models.capabilities]
+        supports_tools = true
+        """,
+    )
+    registry = AnimatorRegistry(
+        declarations=_portal_declarations(runes_dir),
+        runtime_adapters=[],
+        portal_definitions=[_OPENAI_PORTAL],
+    )
+    leases = LeaseLedger()
+    dispatcher = Dispatcher(registry=registry, leases=leases)
+
+    spec = registry.get_capability("gateway:chat:vendor/small")
+    assert spec is not None
+    assert spec.egress_admitted is True
+
+    async with dispatcher.lease_grant(
+        family="chat", capability_key="gateway:chat:vendor/small", run_id="r1", requires_tools=True
+    ) as grant:
+        assert grant.spec.key == "gateway:chat:vendor/small"
+        assert grant.model is not None
+    assert leases.active() == []
+    assert route.called
+    assert authorizations
+    assert set(authorizations) == {"Bearer sk-test"}
+
+
+def test_unadmitted_portal_probe_stays_unauthenticated(tmp_path: Path, httpx2_mock: respx.MockRouter) -> None:
+    authorizations: list[str | None] = []
+
+    def inventory(request: httpx.Request) -> httpx.Response:
+        authorizations.append(request.headers.get("Authorization"))
+        return httpx.Response(200, json={"object": "list", "data": [{"id": "gpt-x"}]})
+
+    route = httpx2_mock.get("https://api.openai.com/v1/models").mock(side_effect=inventory)
+    runes_dir = tmp_path / "runes"
+    _write(
+        runes_dir / "animator" / "portals" / "openai" / "live.toml",
+        """
+        name = "live"
+        probe = true
+        api_key_secret_name = "portal_never_read"
+        [[models]]
+        id = "gpt-x"
+        """,
+    )
+    registry = AnimatorRegistry(
+        declarations=_portal_declarations(runes_dir),
+        runtime_adapters=[],
+        portal_definitions=[_OPENAI_PORTAL],
+    )
+    registry.load()
+
+    assert route.called
+    assert authorizations == [None]
+    assert registry.list_capability_states()[0].phase is CapabilityPhase.WARM
+
+
+def test_admitted_portal_with_missing_secret_is_cold(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, httpx2_mock: respx.MockRouter
+) -> None:
+    route = httpx2_mock.get("https://api.openai.com/v1/models").mock(return_value=httpx.Response(200, json={}))
+    monkeypatch.setenv("LYCHD_SECRET_ROOT", str(tmp_path / "absent"))
+    runes_dir = tmp_path / "runes"
+    _write(
+        runes_dir / "animator" / "portals" / "openai" / "live.toml",
+        """
+        name = "live"
+        probe = true
+        allow_dispatch = true
+        api_key_secret_name = "portal_missing"
+        [[models]]
+        id = "gpt-x"
+        """,
+    )
+    registry = AnimatorRegistry(
+        declarations=_portal_declarations(runes_dir),
+        runtime_adapters=[],
+        portal_definitions=[_OPENAI_PORTAL],
+    )
+    registry.load()
+
+    assert not route.called
+    state = registry.list_capability_states()[0]
+    assert state.phase is CapabilityPhase.COLD
+    assert state.reason is not None
+    assert "portal_missing" in state.reason
