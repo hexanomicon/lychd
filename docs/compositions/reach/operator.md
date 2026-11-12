@@ -723,7 +723,11 @@ gateway may report the bare model it reached for a routed id such as `vendor/mod
 suffix is the only accepted alias. The transport cannot start, activate, evict or replace an
 engine. An absent or unsuitable model refuses the turn; document search and another model are
 not fallbacks. The remote road sends the conversation, persona and selected context to that
-provider: choose it deliberately.
+provider as-is, without redaction or anonymization. It is off unless `--model-endpoint` names a
+remote endpoint, and is intended for a developer instance holding test data. The planned
+[Egress Gate](https://github.com/hexanomicon/lychd/issues/25) is to authorize the exact
+destination and payload, and apply any required privacy transformation, before this road or a
+Portal granted through `allow_dispatch` may send.
 
 The default `--model-transport host` reads that loopback endpoint on the operator host.
 When the already-running model is inside the native Podman pod, explicitly select
