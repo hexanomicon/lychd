@@ -9,14 +9,14 @@ nav:
       - transmutation/distillation.md
   - Altar:
       - altar/index.md
-      - altar/atlas.md
-      - Owned Technology Map: altar/technology-map.md
       - altar/bridge.md
       - altar/seances.md
       - altar/circle.md
-      - altar/orb.md
-      - altar/nexus.md
+      - altar/atlas.md
+      - Owned Technology Map: altar/technology-map.md
       - altar/loom.md
+      - altar/nexus.md
+      - altar/orb.md
   - Transcendence:
       - transcendence/index.md
       - transcendence/incantation.md

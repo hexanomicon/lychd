@@ -5,9 +5,9 @@ icon: material/bridge
 
 # :material-bridge: Bridge
 
-Use Bridge to offer an Intent and stay with the answer as you inspect other Altar instruments or
-applications. Its session, or séance, holds the continuing conversation. Each admitted turn opens
-its own [Circle](circle.md), whose Run lets you follow that one request through to its result.
+Use Bridge to offer an Intent and follow the answer. Its session, or séance, holds the continuing
+conversation. Each admitted turn opens its own [Circle](circle.md), whose Run lets you follow
+that one request through to its result.
 
 Bridge is ordinarily where you return to **[Primus](../../lexicon/inner-tongue.md#primus)**,
 the Lich's first and continuing main personal identity. The optional
@@ -17,13 +17,16 @@ proposal in conversation. **Save names** applies the reviewed choice to later ad
 closing the ceremony leaves conversation available. Further Agents and Personas can contribute
 to the work while this central relation continues.
 
-Choose [**Séances**](seances.md) in the top navigation for the conversation catalogue and retained
-reading workspace. The dock's **Open Séance** link opens its actual supplied conversation there.
-Inspection leaves the live Bridge selection unchanged until **Continue in Bridge** is chosen.
-Existing full-focus `/bridge` links retain **Pinned** and **Recent conversations** beside the
-live thread. Pins stay in this browser and store only session identities; an older unloaded pin
-shows its identity until its metadata is supplied. Use **Load more conversations** for older
-archive pages. The order follows creation time, not last activity.
+Choose **Bridge** in the masthead to open the full conversation workspace. The link returns to
+the last explicitly selected conversation in this browser document. **Pinned** and **Recent
+conversations** stay beside the live thread. Pins store only session identities in this browser.
+An older unloaded pin shows its identity until its metadata is supplied. **Load more conversations**
+reads older pages in creation order.
+
+Choose [**Browse séances**](seances.md) in the full workspace toolbar for the catalogue and
+retained reading workspace. The dock's **Open Séance** opens the actual supplied conversation
+there. Inspection preserves the live Bridge selection until you choose **Continue in Bridge**.
+**Back to workspace** returns to the work you were viewing.
 
 Open the side panel with the named **Bridge** control at the work area's edge. New layouts start on the left;
 a saved side is preserved. Resize its divider, choose the left or right side,
@@ -648,7 +651,8 @@ selection stays accessible while secondary metadata unfolds on demand.
 Judge the composition by what survives a detour: returning from Orb should recover the originating
 Run while preserving the later draft and the reader's place. Project origin, saved membership,
 and material in model Context must remain distinguishable. Circle's links should carry the reader
-to the owning view; its fuller workspace remains a separate design.
+to the owning view. The future [séance map](seances.md#map-a-seance) would show scoped relationships
+with source provenance. A fuller Circle would gather the lenses for one admitted Invocation.
 
 Acceptance case: lose an offering's admission response, write a later draft, inspect another
 instrument, and attend to consent in a different session. Return to the original session with

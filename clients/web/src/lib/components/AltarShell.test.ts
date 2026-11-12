@@ -215,20 +215,23 @@ describe("Altar consent status", () => {
 
 
 describe("shell contextual navigation", () => {
-  it.each(["/canvas", "/canvas/project-a", "/atlas", "/atlas/project-a"])("selects Canvas and Atlas independently at %s", async (path) => {
+  it.each([
+    ["/bridge", "Bridge", "page"],
+    ["/seances", "Bridge", "location"],
+    ["/seances/session-a", "Bridge", "location"],
+    ["/canvas", "Atlas", "location"],
+    ["/canvas/project-a", "Atlas", "location"],
+    ["/atlas", "Atlas", "page"],
+    ["/atlas/project-a", "Atlas", "location"]
+  ])("selects the owning instrument at %s", (path, label, current) => {
     vi.mocked(getAltarStatus).mockResolvedValue(status(0));
     page.url.href = `http://localhost${path}`;
     const view = render(AltarShell, { children });
     const instruments = screen.getByRole("navigation", { name: "Instruments" });
-    const canvas = within(instruments).getByRole("link", { name: "Canvas" });
-    expect(canvas.getAttribute("href")).toBe("/canvas");
-    const atlas = within(instruments).getByRole("link", { name: "Atlas" });
-    expect(atlas.getAttribute("href")).toBe("/atlas");
-    expect(canvas.getAttribute("aria-current")).toBe(path.startsWith("/canvas") ? "page" : null);
-    expect(atlas.getAttribute("aria-current")).toBe(path.startsWith("/atlas") ? "page" : null);
-    expect(canvas.querySelector("svg rect")).toBeTruthy();
-    expect(atlas.querySelector("svg path")).toBeTruthy();
-    expect(screen.getAllByRole("link", { name: "Canvas" })).toHaveLength(1);
+    expect(Array.from(instruments.children, entry => (entry.querySelector("summary") ?? entry).textContent?.replace(/⌄\s*$/, "").trim()))
+      .toEqual(["Bridge", "Atlas", "Loom", "Nexus", "Orb", "Applications"]);
+    expect(within(instruments).getByRole("link", { name: label }).getAttribute("aria-current")).toBe(current);
+    expect(instruments.querySelectorAll("[aria-current]")).toHaveLength(1);
     view.unmount();
   });
 

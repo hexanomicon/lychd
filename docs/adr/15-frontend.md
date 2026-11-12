@@ -22,12 +22,12 @@ icon: material/language-html5
   remote functions, or JavaScript production server.
 - A snapshot plus event cursor must reconstruct browser state. Connection, animation, and canvas
   layout never prove execution.
-- Séances, Canvas, Atlas, Orb, Nexus, and Loom are work routes; Bridge is one shell-owned conversation
-  surface beside work. Existing full-focus Bridge URLs retain exact session,
-  Run, consent and focused-application navigation. Generated UI is closed descriptors, never model-
-  or extension-supplied HTML, JavaScript, Svelte, or imports.
-- Circle is the Invocation-shaped focus within Bridge, not a separate instrument or a claim
-  that the current run strip already composes every owning projection.
+- The masthead orders Bridge, Atlas, Loom, Nexus, Orb, and Applications. Bridge opens the full
+  conversation workspace and leads to Séances. Atlas leads to Canvas authoring. Existing URLs
+  preserve exact session, Run, consent, Project, and focused-application navigation.
+- Generated UI uses closed descriptors. Model and extension content cannot supply HTML,
+  JavaScript, Svelte, or imports.
+- Circle focuses one admitted Invocation within Bridge. Its current form is the per-turn Run strip.
 - Native CSS includes keyboard access, visible focus, non-colour cues, reduced motion, named
   regions, and visible unknown/error states.
 - The Altar ships one canonical built-in appearance, **LychD Dark**. Its semantic colour boundary
@@ -69,27 +69,25 @@ owns delivery.
 
 | Instrument | Browser contract | Current limit |
 | --- | --- | --- |
-| Canvas | Project creation and visual board authorship; Atlas catalogues Projects and their retained records | One primary board per Project; shared Bridge dictation is separately configured; no native model transport, autonomous continuation or automatic coverage. |
-| Bridge | Session selection, single-active-Run text admission, reconstruction, semantic stream, consent, closed fragments, and bounded Creation investigation intake/report focus | Partial: text admission and separately configured finite dictation; live reconstruction and tokens are process-local. |
-| Séances | Metadata catalogue, exact retained-conversation inspection, source-linked working material, and explicit continuation in Bridge | Retained reads are snapshots; working material is document-local and does not admit Archive memory or create a second live conversation. |
-| Orb | Paged Run catalogue, parallel graph field, and bounded selected-Run evidence feeds with gaps, capture labels, and links | Partial: no complete trace store, nested subworkflow identity, or annotation. |
-| Nexus | Timestamped capability observations, non-binding plan preview, typed request, and ticket stream | Partial: observations and tickets are process-local and not restart-complete. |
-| Loom | Immutable Scroll/Pattern-revision graph and station/permission outline | Partial: fixed registry reader without independent Spell identities, editing, teaching, or publication. |
+| Bridge | One mounted conversation with session selection, single-active-Run text admission, reconstruction, semantic stream, consent, closed fragments, and focused investigations and public notes. Séances adds retained inspection and explicit continuation. | Finite dictation requires configuration. Live reconstruction and tokens are process-local. Retained reads use snapshots, and selections last for the open browser document. |
+| Atlas | Retained knowledge and provenance, with Canvas as the visual authoring surface | Project catalogue and retained records with one primary board per Project. The shared memory map is a design target. |
+| Loom | Exact Scroll and Pattern revision, with its declared workflow, Context policy and Evaluation | The fixed registry reader shows supplied stations and permissions. Nested expansion and full Context policy and Evaluation views are design targets. |
+| Nexus | Timestamped capability observations, nonbinding plan preview, typed request, and ticket stream | Observations and tickets are process-local and lack complete restart recovery. |
+| Orb | Paged Run catalogue, parallel graph field, and bounded selected-Run evidence feeds | Capture labels and gaps remain visible. Complete traces, nested subworkflow identity, and annotation are future work. |
+| Applications | Bounded disclosure for other admitted applications | Each application keeps its existing admission and operation contracts. |
 
 The shell owns navigation, source identity, pending-consent count, transient notices, and the
-persistent Bridge presentation. Each other instrument owns its route-local presentation.
+mounted Bridge conversation. Each instrument owns its route-local presentation.
 `/scrying`, `/reliquary`, `/bindings`, and ambiguous unversioned Loom detail are deliberately absent
 from the route contract. Scrying names Orb's act. Artifact references and configuration
 observations let the browser show context without acquiring custody or configuration authority.
 
-The browser shell retains drafts by exact session and the last explicit Bridge session path
-for its own lifetime. The global Bridge control opens that session without a Run hint.
-The global Orb link opens the parallel Run field at `/orb`. Until an explicit Bridge session
-path is selected, its global link stays at `/bridge`;
-the server's default session does not establish browser navigation memory. This is recoverable
-navigation state, not a durable dossier or execution truth. Cross-instrument links preserve an
-explicit Run and selected event where supported; Orb's contextual Bridge return focuses that
-Run's turn. A selected historical consent event may also carry a bounded Consent reference to
+The browser shell retains drafts by exact session and the last explicitly selected Bridge session
+for the open browser document. The masthead Bridge link opens that session without a Run hint.
+Until an explicit session is selected, it opens `/bridge`. The server-supplied default session
+leaves that destination at `/bridge`. The masthead Orb link opens the parallel Run field at
+`/orb`. Cross-instrument links preserve an explicit Run and selected event where supported.
+Orb's contextual Bridge return focuses that Run's turn. A selected historical consent event may also carry a bounded Consent reference to
 that exact session and Run. Orb retains only the syntactic historical reference, without resolving
 current status, review, or decision authority. Bridge resolves the exact Consent and requested Run
 against its currently authorized session snapshot; a missing, settled, foreign, or unbound request
@@ -295,37 +293,36 @@ retains that boundary.
 
 ### Reading hierarchy and visual direction
 
-#### The shared workbench and Bridge dock
+<span id="the-shared-workbench-and-bridge-dock"></span>
 
-The top masthead starts with Séances as the conversation-workspace entry, immediately before Atlas,
-then Canvas, Orb, Loom and Nexus, all with icons and visible labels. Canvas and Atlas remain peer
-work destinations. Canvas uses a board icon; Atlas retains its map icon and catalogues Canvas Projects.
-Applications is a bounded disclosure for other admitted applications; hover, click and keyboard
-focus can open it, Escape dismisses it, and moving into the menu keeps it reachable. Bridge is
-an always-available conversation dock. Its named edge control opens or collapses the panel;
-**Open Séance** opens the exact currently supplied conversation in `/seances/{session_id}`.
-The control cannot infer that identity from an unresolved default-session route. `/seances`
-opens a metadata-only catalogue; `/seances/{session_id}` inspects that exact retained conversation.
-Existing `/bridge` full-focus links remain
-exact focus destinations; session, Run, consent, Project, investigation and public-note intent
-must survive the composition change.
+#### The shared workbench
 
-The bare root opens Orb. A fresh wide workbench starts with Bridge open on the left; saved dock
-preferences remain in force. A fresh narrow workbench keeps the graph visible and opens Bridge
-from its edge chevron. Explicit Bridge focus destinations still open the conversation.
+The masthead presents Bridge, Atlas, Loom, Nexus, Orb, and Applications in that order, with visible
+labels and icons. Hover, click, or keyboard focus opens Applications. Escape dismisses it, and
+moving into the menu keeps it reachable. The bare root opens Orb.
+
+Bridge opens the full conversation workspace at the last explicitly selected session in the
+browser document. **Browse séances** opens the metadata catalogue at `/seances`. The dock's
+**Open Séance** opens the exact supplied session at `/seances/{session_id}`. Until the session
+identity resolves, the dock offers the catalogue. Inspecting a séance preserves the live
+selection and draft. **Continue in Bridge** explicitly selects the inspected session. Direct
+Bridge URLs preserve session, Run, consent, Project, investigation, and public-note focus.
+
+Atlas opens the Project catalogue at `/atlas`. **Open Canvas →** and **New canvas** use the
+existing Canvas routes. The masthead marks Bridge as the current location on Séances routes
+and Atlas as the current location on Canvas routes.
+
+The named edge control opens or collapses Bridge beside the work. A fresh wide workbench opens
+Bridge on the left. A narrow workbench opens it as a modal sheet from the edge control. One
+mounted conversation retains its composer and subscriptions across navigation. Full-route Bridge
+suppresses dock controls while preserving saved side, width, and open state. Leaving for a wide
+work view reveals the same conversation beside the work. Investigation and public-note focus
+keep their separate composition.
 
 A compact dark-wood altar mark with two separate legs, purple cloth and small front-mounted
 candles opens About; a permanent product wordmark is unnecessary in the masthead. About retains
 the LychD identity, version, source and licence provenance. The fixed natural-colour mark is
 decorative identity, never a connection or activity indicator.
-
-The dock's persistent named edge control opens or collapses it. The Séances destination does not
-select a conversation for the live Bridge. One mounted Bridge retains its composer and subscriptions
-across work navigation. Legacy full focus suppresses
-the dock modal, resizing and collapse controls without overwriting saved side, width or open state.
-Leaving full focus for a wide work view reveals that conversation as its sidebar without replacing
-the saved open preference. Narrow work views retain the edge control and modal-sheet behavior.
-Public-note and investigation destinations remain separate work views beside the dock.
 
 #### Séance inspection and working material
 
@@ -337,7 +334,7 @@ refused, failed, and stale reads remain distinct; an unavailable identity never 
 conversation. Navigation and refresh fence late responses.
 
 Inspecting séance B leaves live Bridge A and its draft, pending offering, consent, and subscriptions
-unchanged. **Continue in Bridge** explicitly selects B in that same Bridge and opens its panel.
+unchanged. **Continue in Bridge** selects B in the existing dock and opens its composer.
 Creating a séance is an explicit operation; browsing the catalogue creates none. Compatibility
 Bridge session, Run, consent, Project, public-note, and investigation links keep their existing
 focus and recovery semantics.
@@ -464,9 +461,9 @@ identity, or persuasive copy cannot supply those contracts.
 ### Canvas portable board authoring
 
 [Canvas](../compositions/canvas/index.md) is the Composition for visual board authorship and
-reviewed transformations. `/canvas` is the primary creator workspace; `/atlas` is its Project
-catalogue. Opening a new Canvas explicitly creates a draft Project and blank primary board,
-without requiring a name or an existing undertaking. `/canvas/{project_id}` opens that exact
+reviewed transformations. Atlas opens the Project catalogue at `/atlas` and gives access to the
+board workspace at `/canvas`. **New canvas** explicitly creates a draft Project and blank primary
+board without requiring a name or an existing undertaking. `/canvas/{project_id}` opens that exact
 Project; `/atlas/{project_id}` retains the directly addressable project record and existing
 activity-link intent. Projects without a board can acquire one without recreating their records.
 This initial workspace supports one primary board per Project.
@@ -537,8 +534,9 @@ remain evidence-backed claims in State of Work, independently of command/UI sche
 
 ### Atlas and continuity across Invocations
 
-Atlas is the catalogue of Canvas Projects. Their retained record maps Concerns: what needs attention, how it decomposes, where it is addressed, and what
-supports a judgment. A Concern can begin with an idea or question before any Project exists.
+The initial Atlas surface is the catalogue and retained record of Canvas Projects. A Project maps
+Concerns, how each decomposes, where it is addressed, and what supports a judgment. A Concern can
+begin with an idea or question before any Project exists.
 The independent Concern contract is [Designed](#independent-concerns-decomposition-and-addressing).
 The initial server-owned Project aggregate holds a
 brief, concerns, attributed assessments and decisions, a proposed next action, and explicit
@@ -589,6 +587,24 @@ does not establish whether that earlier write committed.
 [State](../state-of-the-work.md#atlas-projects) owns the delivered boundary. AI proposal generation,
 automatic concern coverage, autonomous continuation, graph clustering, and implicit shared
 Context remain outside this initial contract.
+
+#### Shared memory map
+
+The future Atlas opens on retained knowledge and its provenance. A shared ontology lets each
+instrument refer to the same authorized identities and explicitly typed relationships. Bridge can
+project a séance as a scoped subgraph whose evidence points to exact turns. Projects and maps
+linking requirements, use cases, exact ADR revisions, and acceptance evidence are further slices.
+A citation preserves its source and basis across those views.
+
+Canvas authors boards within Atlas. A board may display a typed relationship or offer a
+separately admitted action to author one. A relationship requires explicit attribution and
+source references. Layout and ink remain board content.
+
+[Archive](27-memory.md) owns admission, lifecycle, and Recall. [Context](21-context.md) owns
+selection and assembly for an Invocation. Opening a map or following a citation supplies
+navigation only. Cross-instrument links use identities and evidence supplied by their owners.
+Loom projects the declared score. Nexus projects capability readiness and physical transitions.
+Orb projects observed evidence scoped to actual Runs, with its capture limits visible.
 
 ### Independent Concerns, decomposition, and addressing
 
@@ -991,6 +1007,12 @@ reconnect, delete, rejection, and resync preserve the authoritative semantic twi
 
 #### Loom workload and editing gate
 
+Loom's future workflow projection expands nested declared subgraphs so every declared agent can
+be inspected. The reader may open one group or expand the whole declared graph. Context policy
+and [Evaluation](34-evaluation.md) attach to the exact Pattern revision. Archive governs record
+eligibility, and Context governs assembly for each Invocation. Execution evidence remains
+attached to its actual Run and opens in Orb.
+
 Loom’s designed editing workload is a workflow score. The registered Bridge and delegated-rite
 Scrolls place five and three stations over six and three permitted edges, respectively; the latter
 includes the [delegate's durable re-entry loop](28-workflow.md#pattern-identity). Admitted Suite
@@ -1132,9 +1154,10 @@ owns the exact material boundary.
 ### Build boundary, security, and reopening
 
 Development runs Vite on `127.0.0.1:5173`, proxying `/api` and `/schema` to the loopback Vessel.
-Production serves static Séances, Canvas, Atlas, Bridge, Orb, Nexus, and Loom shells; unknown APIs and retired paths stay
-404. Every operation that raises a runtime not-found across those verticals declares the shared JSON
-`FrameworkError` contract. `npm ci`, OpenAPI and notice generation, compilation, and Python build share a release source.
+Production serves static Bridge, Séances, Atlas, Canvas, Loom, Nexus, and Orb shells. Unknown APIs
+and retired paths stay 404. Operations that raise a runtime not-found across those verticals
+declare the shared JSON `FrameworkError` contract. `npm ci`, OpenAPI and notice generation,
+compilation, and Python build share a release source.
 Audit verifies source identity, compiled `index.html`, and archive notices—not a real browser or
 running image. Only `src/lychd/public/_app` is broadly mounted; `/altar-lightning.svg`,
 `/favicon.svg`, `/altar-mark.svg` and `/THIRD_PARTY_NOTICES.txt` have narrow typed Litestar handlers.

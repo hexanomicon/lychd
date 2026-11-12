@@ -5,15 +5,15 @@ icon: material/book-open-page-variant
 
 # :material-book-open-page-variant: Séances
 
-Open **Séances** to return to a conversation and work with what it contains. **Bridge** keeps
-the live exchange beside your work; a séance's workspace gives its retained words room for
-reading, selecting, and preparing a later use.
+Open **Séances** within Bridge to return to a conversation and work with what it contains.
+A séance's retained workspace gives its words room for reading, selecting, and preparing a
+later use.
 
 ## Find and inspect a conversation
 
-Choose **Séances** in the top navigation, or open `/seances`. The catalogue reads conversation
-metadata without loading another conversation's transcript. Its title filter searches loaded
-entries; load further pages to reach older entries. Pinned identities remain browser-local
+Choose **Browse séances** in the full Bridge workspace, or open `/seances`. The catalogue reads
+conversation metadata without loading another conversation's transcript. Its title filter searches
+loaded entries. Load further pages to reach older entries. Pinned identities remain browser-local
 presentation preferences, not copies of the conversations.
 
 Choose one entry to open `/seances/{session_id}`. The workspace reads that exact retained
@@ -23,7 +23,7 @@ Follow a supplied Run link into [Orb](orb.md) for execution evidence. The words 
 not themselves establish which effects occurred.
 
 Inspecting séance B leaves the live Bridge on A. **Continue in Bridge** deliberately selects
-the inspected conversation and opens the existing Bridge panel. It sends no message. Drafts
+the inspected conversation and opens the Bridge dock beside the séance. It sends no message. Drafts
 and unresolved offerings keep their ordinary [Bridge recovery boundary](bridge.md#follow-a-turn-to-settlement).
 Creating a new séance is also explicit; opening the catalogue creates none.
 
@@ -51,11 +51,21 @@ its current explicit public-note profile does not admit arbitrary private conver
 ## Keep the encounter's identities
 
 One séance can contain many Invocations. **Circle** remains the detail of one such act in
-[Bridge](bridge.md); it has no separate top-level navigation entry. Atlas owns continuing
-project concerns and decisions, Loom the exact reusable score, and Orb the retained execution
-account. The Séances workspace relates selected words to those owners without replacing them.
+[Bridge](bridge.md). Atlas holds continuing project concerns and decisions, Loom the exact
+reusable score, and Orb the retained execution account. The Séances workspace relates selected
+words to those owners.
 
 Existing `/bridge` session, Run, consent, investigation, and public-note links remain supported.
-The panel's **Open Séance** opens its actual supplied conversation without resetting the draft,
+The Bridge dock's **Open Séance** opens its actual supplied conversation without resetting the draft,
 retry identity, consent, or subscriptions. Navigation alone never attaches the conversation or
 working material to a model request.
+
+## Map a séance
+
+In the future design, Bridge would show each séance as a scoped map in the
+[shared Atlas ontology](atlas.md#the-shared-memory-map). Proposed concepts and links can follow
+the conversation and point back to exact turns. The map can open beside the chat or fill the work
+area. The séance list and conversation can fold independently while the selected conversation and
+draft stay in place. **Open in Atlas** would widen the view around those same identities. A Circle
+would focus one Invocation within that scope. The retained transcript and document-local
+working-material collection are the current tools.
