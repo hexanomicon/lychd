@@ -193,8 +193,8 @@ cannot start a follow-up loop.
    recheck disclosure after awaited reads, clear revoked metadata and leave capture limits visible.
    Reading Orb never creates an event or changes an outbox entry.
 4. **Render the supplied meaning.** Regenerate OpenAPI/client types. Extend the closed runtime
-   decoder in `clients/web/src/lib/orb/live.ts`, ordinary projections in
-   `clients/web/src/lib/graph/orb.ts` and `graph/model.ts`, and the shared graph adapter plus Orb
+   decoder in `clients/web/src/lib/pages/orb/state/live.ts`, ordinary projections in
+   `clients/web/src/lib/pages/orb/state/orb.ts` and `clients/web/src/lib/graph/model.ts`, and the shared graph adapter plus Orb
    row/inspector. Reach supplies static provider semantics; Orb owns presentation, selection and
    folding. No renderer state, station name or terminal Run status manufactures an interaction.
 5. **Prove the question lifecycle separately.** Add inert-port and disposable-database fixtures
@@ -207,7 +207,7 @@ The first projection proof needs retained ingress, provider-accepted egress and 
 fixtures plus forged owner/reference, unsupported version, overlong label, private-name leakage,
 revocation-during-read, duplicate receipt, pagination/reconnect and playback cases. Extend the
 existing `tests/web/test_orb.py`, Reach composition/transport tests,
-`clients/web/src/lib/orb/live.test.ts`, `graph/orb.test.ts` and Orb component tests. Run focused
+`clients/web/src/lib/pages/orb/state/live.test.ts`, `clients/web/src/lib/pages/orb/state/orb.test.ts` and Orb component tests. Run focused
 Python checks through the source-bound OCI harness, then `make frontend-check` and
 `make frontend-build`; complete the required Svelte documentation/autofixer workflow before any
 Svelte edit. Published documentation changes also require a clean Zensical build. These are

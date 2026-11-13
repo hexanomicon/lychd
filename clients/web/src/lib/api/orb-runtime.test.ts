@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { runtimeSnapshot } from "$lib/orb/__fixtures__/runtime";
+import { runtimeSnapshot } from "$lib/pages/orb/state/__fixtures__/runtime";
 afterEach(() => { vi.unstubAllGlobals(); vi.resetModules(); });
 it("uses the independent read endpoint and preserves authorization refusal", async () => {
   const NativeRequest = globalThis.Request;

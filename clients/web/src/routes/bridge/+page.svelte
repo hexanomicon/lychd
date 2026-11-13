@@ -1,11 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import PublicNoteRecall from "$lib/components/PublicNoteRecall.svelte";
-  import PublicNotes from "$lib/components/PublicNotes.svelte";
-  import { notesHref, notesFocusSelection } from "$lib/archive/notes";
-  import CreationInvestigation from "$lib/components/CreationInvestigation.svelte";
-  import { investigationHref, investigationSelection } from "$lib/creation/intake";
+  import PublicNoteRecall from "$lib/pages/bridge/components/PublicNoteRecall.svelte";
+  import PublicNotes from "$lib/pages/bridge/components/PublicNotes.svelte";
+  import { notesHref, notesFocusSelection } from "$lib/pages/bridge/state/archive/notes";
+  import CreationInvestigation from "$lib/pages/bridge/components/CreationInvestigation.svelte";
+  import { investigationHref, investigationSelection } from "$lib/pages/bridge/state/creation/intake";
 
   const focus = $derived(page.url.searchParams.getAll("investigation"));
   const selected = $derived(focus.length === 1 ? investigationSelection(focus[0] ?? null) : null);

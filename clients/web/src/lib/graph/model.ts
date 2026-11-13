@@ -1,3 +1,5 @@
+import type { LoomView, OrbRunSnapshot } from "$lib/api/models";
+
 /** Immutable semantic input shared by the Loom and Orb renderer adapters.
  * Coordinates and renderer drafts never become Pattern or Run authority.
  */
@@ -31,4 +33,11 @@ export interface GraphProjection {
   readonly identity: string;
   readonly nodes: readonly GraphNode[];
   readonly edges: readonly GraphEdge[];
+}
+
+/** Whether a Run snapshot exactly matches this Pattern id, revision and digest. */
+export function matchesOrbPattern(snapshot: OrbRunSnapshot, pattern: LoomView): boolean {
+  return snapshot.pattern.exact && snapshot.pattern.digest !== null &&
+    snapshot.pattern.pattern_id === pattern.pattern_id && snapshot.pattern.revision === pattern.revision &&
+    snapshot.pattern.digest === pattern.digest;
 }
