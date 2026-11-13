@@ -4,7 +4,7 @@
   import { page } from "$app/state";
   import { beforeNavigate } from "$app/navigation";
   import { createWorkCommandRegistry, workCommandKey } from "$lib/shell/state/work-commands";
-  import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
+  import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/shell/state/bridge-workspace.svelte";
   import AltarShell from "$lib/shell/components/AltarShell.svelte";
 
   let { children } = $props();

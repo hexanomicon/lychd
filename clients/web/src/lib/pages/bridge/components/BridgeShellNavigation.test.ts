@@ -40,7 +40,7 @@ import { page as appPage } from "$app/state";
 const page = appPage as Omit<typeof appPage, "url"> & { url: import("svelte/reactivity").SvelteURL };
 import { goto } from "$app/navigation";
 import { createBridgeSession, getAltarStatus, getBridgeSnapshot, getOrbRun, sendBridgeMessage, listenToRun, cancelBridgeRun } from "$lib/api/client";
-import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
+import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/shell/state/bridge-workspace.svelte";
 import { getSeancesWorkspace, type SeancesWorkspace as SeancesContext } from "$lib/pages/seances/state/workspace.svelte";
 import AltarShell from "$lib/shell/components/AltarShell.svelte";
 import BridgePage from "../../../../routes/bridge/+page.svelte";

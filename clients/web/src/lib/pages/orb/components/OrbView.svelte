@@ -12,7 +12,7 @@
   import ArchiveRecallPanel from "$lib/pages/orb/components/ArchiveRecallPanel.svelte";
   import AtlasLinks from "$lib/components/atlas/AtlasLinks.svelte";
   import CreationSummary from "$lib/pages/orb/components/CreationSummary.svelte";
-  import BridgePreferenceSummary from "$lib/pages/bridge/components/BridgePreferenceSummary.svelte";
+  import BridgePreferenceSummary from "$lib/pages/orb/components/BridgePreferenceSummary.svelte";
   import GraphCanvas from "$lib/graph/components/GraphCanvas.svelte";
   import AnimatorRail from "$lib/pages/orb/components/AnimatorRail.svelte";
   import PageHeader from "$lib/components/shared/PageHeader.svelte";

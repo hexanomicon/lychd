@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ApiError, decideConsent } from "$lib/api/client";
   import type { ConsentCard } from "$lib/api/models";
-  import type { BridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
+  import type { BridgeWorkspace } from "$lib/shell/state/bridge-workspace.svelte";
 
   let {
     consent,

@@ -6,7 +6,7 @@
   import { ApiError, getBridgeSessions, getBridgeSnapshot } from "$lib/api/client";
   import type { BridgeSnapshot, BridgeTurnView, SessionPage } from "$lib/api/models";
   import { navigationId } from "$lib/navigation/instruments";
-  import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/pages/bridge/state/pins";
+  import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/navigation/pins";
   import { createSeancesWorkspace, getSeancesWorkspace, hasSeancesWorkspace } from "$lib/pages/seances/state/workspace.svelte";
   import { materialKinds, materialMarkdown, sourceSignature, type MaterialKind, type SeanceMaterial } from "$lib/pages/seances/state/material";
 

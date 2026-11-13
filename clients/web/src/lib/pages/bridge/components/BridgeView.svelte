@@ -31,9 +31,9 @@
   import AltarWelcome from "$lib/pages/bridge/components/AltarWelcome.svelte";
   import NamingCeremony from "$lib/pages/bridge/components/NamingCeremony.svelte";
   import { atlasHref } from "$lib/atlas/navigation";
-  import { bridgeWorkspaceKey, createBridgeWorkspace, type BridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
+  import { bridgeWorkspaceKey, createBridgeWorkspace, type BridgeWorkspace } from "$lib/shell/state/bridge-workspace.svelte";
   import { delegationStatusLabel } from "$lib/delegation/presentation";
-  import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/pages/bridge/state/pins";
+  import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/navigation/pins";
   import AltarIcon from "$lib/shell/components/AltarIcon.svelte";
   import BridgeVoiceInput from "./BridgeVoiceInput.svelte";
   import DictationFeedback from "$lib/pages/bridge/components/DictationFeedback.svelte";

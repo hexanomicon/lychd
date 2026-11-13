@@ -57,13 +57,13 @@ import {
   sendBridgeMessage,
   getNaming, acceptNaming
 } from "$lib/api/client";
-import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
+import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/shell/state/bridge-workspace.svelte";
 import BridgeView from "./BridgeView.svelte";
 import { createWorkCommandRegistry, workCommandKey, type CommandResult, type CommandTarget } from "$lib/shell/state/work-commands";
 import { createVoiceCapture } from "$lib/pages/bridge/state/voice/capture";
 import type { VoiceCaptureOptions, VoiceRecording } from "$lib/pages/bridge/state/voice/capture";
 vi.mock("$lib/pages/bridge/state/voice/capture", () => ({ createVoiceCapture: vi.fn(), VOICE_MAX_WAV_BYTES: 960044 }));
-import { bridgePinsStorageKey } from "$lib/pages/bridge/state/pins";
+import { bridgePinsStorageKey } from "$lib/navigation/pins";
 
 const createdAt = "2026-07-28T00:00:00Z";
 const failedStreamNotice = "This Run failed. The text shown here is not a completed answer.";

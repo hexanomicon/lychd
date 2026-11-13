@@ -9,7 +9,7 @@ routes to the implementation and its operating guide rather than duplicating eit
 | --- | --- | --- |
 | Canvas Project catalogue, retained concerns, judgments, references, and continuation | [AtlasView.svelte](lib/pages/atlas/components/AtlasView.svelte), [Atlas link hints](lib/atlas/navigation.ts) | [Atlas](../../../docs/divination/altar/atlas.md) |
 | Project board retention/recovery, portable authorship and reviewed selection transformations | [CanvasWorkspace.svelte](lib/pages/canvas/components/CanvasWorkspace.svelte), [CanvasView.svelte](lib/pages/canvas/components/CanvasView.svelte), [Canvas engine](lib/pages/canvas/state/engine.ts) | [Canvas](../../../docs/compositions/canvas/index.md) |
-| Conversation, consent, and offering recovery | [BridgeView.svelte](lib/pages/bridge/components/BridgeView.svelte), [shell-lifetime workspace](lib/pages/bridge/state/workspace.svelte.ts) | [Bridge](../../../docs/divination/altar/bridge.md) |
+| Conversation, consent, and offering recovery | [BridgeView.svelte](lib/pages/bridge/components/BridgeView.svelte), [shell-lifetime workspace](lib/shell/state/bridge-workspace.svelte.ts) | [Bridge](../../../docs/divination/altar/bridge.md) |
 | Conversation catalogue, retained inspection, and source-linked document-local working material | [SeancesWorkspace.svelte](lib/pages/seances/components/SeancesWorkspace.svelte), [material](lib/pages/seances/state/material.ts) | [Séances](../../../docs/divination/altar/seances.md) |
 | Finite dictation, transcript review and private correction/vocabulary controls | [BridgeVoiceInput.svelte](lib/pages/bridge/components/BridgeVoiceInput.svelte), [capture](lib/pages/bridge/state/voice/capture.ts), [draft coordinator](lib/pages/bridge/state/voice/dictation.ts), [DictationFeedback.svelte](lib/pages/bridge/components/DictationFeedback.svelte) | [Bridge dictation](../../../docs/divination/altar/bridge.md#dictate-and-review) |
 | Exact instrument work destination and inert Canvas command proposals | [work-command registry](lib/shell/state/work-commands.ts), [Canvas command planner](lib/pages/canvas/state/commands.ts) | [Canvas commands](../../../docs/compositions/canvas/index.md#give-a-bounded-command-through-bridge) |
@@ -27,7 +27,7 @@ work route inspects conversations without selecting the live Bridge; explicit co
 that same conversation component. Its layout
 preferences contain only bounded width, side and open state; conversation and recovery remain in
 their existing owners.
-[Browser-local pins](lib/pages/bridge/state/pins.ts) retain bounded session identities only.
+[Browser-local pins](lib/navigation/pins.ts) retain bounded session identities only.
 [Instrument links](lib/navigation/instruments.ts) carry bounded selection hints. Destination
 loaders still validate identity and relationships; a URL does not prove ownership or Run/Pattern
 equivalence. Code used by one instrument lives in that instrument's `lib/pages/<instrument>/`

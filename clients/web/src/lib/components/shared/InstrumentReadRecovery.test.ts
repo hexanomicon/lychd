@@ -31,7 +31,7 @@ import {
   cancelBridgeRun, createBridgeSession, decideConsent, getAtlasReferences,
   getBridgeSnapshot, getOrbRun, getRunSnapshot, listenToRun, sendBridgeMessage
 } from "$lib/api/client";
-import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
+import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/shell/state/bridge-workspace.svelte";
 import BridgeView from "$lib/pages/bridge/components/BridgeView.svelte";
 import OrbView from "$lib/pages/orb/components/OrbView.svelte";
 
