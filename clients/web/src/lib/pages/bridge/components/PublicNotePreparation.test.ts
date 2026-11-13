@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { expect, it, vi } from "vitest";
-import { initialPreparationState, type PublicNotePreparation as Controller, type PreparationTarget } from "$lib/archive/preparation";
+import { initialPreparationState, type PublicNotePreparation as Controller, type PreparationTarget } from "$lib/pages/bridge/state/archive/preparation";
 import PublicNotePreparation from "./PublicNotePreparation.svelte";
 const id = "00000000-0000-4000-8000-000000000001";
 const target: PreparationTarget = { profile: { profile: "local-public-notes@1", namespace_id: id, owner_subject: { identity: "<script>owner</script>" }, policy_revision: "p" },

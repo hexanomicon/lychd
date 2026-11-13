@@ -2,10 +2,10 @@
   import { beforeNavigate } from "$app/navigation";
   import { getContext, onMount, onDestroy, tick } from "svelte";
   import { getArchiveProfile, discoverArchiveGeneration, recallArchiveSemanticNotes, inspectArchiveSemanticRecall, resolveArchiveSemanticRecall } from "$lib/api/client";
-  import { PublicSourceRecall, initialRecallState, emptyRecallDraft, validateRecallDraft } from "$lib/archive/semantic";
-  import { notesHref } from "$lib/archive/notes";
+  import { PublicSourceRecall, initialRecallState, emptyRecallDraft, validateRecallDraft } from "$lib/pages/bridge/state/archive/semantic";
+  import { notesHref } from "$lib/pages/bridge/state/archive/notes";
   import { altarNavigationContext, type AltarNavigation } from "$lib/navigation/instruments";
-  import PageHeader from "../shared/PageHeader.svelte";
+  import PageHeader from "$lib/components/shared/PageHeader.svelte";
 
   const navigation = getContext<AltarNavigation | undefined>(altarNavigationContext);
   let recall = $state.raw(initialRecallState());

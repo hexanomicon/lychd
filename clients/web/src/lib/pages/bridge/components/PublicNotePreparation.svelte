@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy, tick } from "svelte";
-  import { preparationStatusReason, type PreparationState, type PublicNotePreparation } from "$lib/archive/preparation";
-  import { notesHref } from "$lib/archive/notes";
+  import { preparationStatusReason, type PreparationState, type PublicNotePreparation } from "$lib/pages/bridge/state/archive/preparation";
+  import { notesHref } from "$lib/pages/bridge/state/archive/notes";
   let { state, controller, blocked, recordAvailable }: { state: PreparationState; controller: PublicNotePreparation; blocked: boolean; recordAvailable: boolean } = $props();
   const uid = $props.id();
   const busy = $derived(state.operation !== "idle");

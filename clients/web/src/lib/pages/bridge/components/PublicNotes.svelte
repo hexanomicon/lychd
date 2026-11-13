@@ -3,10 +3,10 @@
   import { getContext, onMount, onDestroy, tick } from "svelte";
   import { getArchiveProfile, getArchiveBridgeDefault, listArchiveNotes, getArchiveNote, admitArchiveNote, promoteArchiveNote, revokeArchiveNote, discoverArchiveGeneration, registerArchiveGeneration, deriveArchiveNote, inspectArchiveDerivation } from "$lib/api/client";
   import PublicNotePreparation from "./PublicNotePreparation.svelte";
-  import PageHeader from "../shared/PageHeader.svelte";
-  import { PublicNotePreparation as PreparationController, initialPreparationState } from "$lib/archive/preparation";
+  import PageHeader from "$lib/components/shared/PageHeader.svelte";
+  import { PublicNotePreparation as PreparationController, initialPreparationState } from "$lib/pages/bridge/state/archive/preparation";
   import type { NoteRecord } from "$lib/api/models";
-  import { PublicNoteManager, initialNotesState, emptyNoteDraft, correctionDraft, validateDraft, prepareNote, notesHref, notesSelection } from "$lib/archive/notes";
+  import { PublicNoteManager, initialNotesState, emptyNoteDraft, correctionDraft, validateDraft, prepareNote, notesHref, notesSelection } from "$lib/pages/bridge/state/archive/notes";
   import { altarNavigationContext, type AltarNavigation } from "$lib/navigation/instruments";
 
   let { selection, onSelect }: { selection: string; onSelect: (selection: string) => void } = $props();

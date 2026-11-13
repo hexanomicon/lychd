@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/svelte
 import { beforeNavigate } from "$app/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, readCreationFeedback, readCreationInvestigation, submitCreationInvestigation } from "$lib/api/client";
-import type { CaseView, InvestigationRequest } from "$lib/creation/intake";
+import type { CaseView, InvestigationRequest } from "$lib/pages/bridge/state/creation/intake";
 import CreationInvestigation from "./CreationInvestigation.svelte";
 
 const navigationHooks = vi.hoisted(() => ({ after: [] as Array<() => void> }));

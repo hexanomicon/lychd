@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/svelte";
 import { createRawSnippet } from "svelte";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import BridgeDock from "./BridgeDock.svelte";
-import { bridgeDockStorageKey } from "$lib/navigation/dock";
+import { bridgeDockStorageKey } from "$lib/pages/bridge/state/dock";
 
 const children = createRawSnippet(() => ({ render: () => '<div><button type="button">Conversation action</button><textarea aria-label="Retained draft"></textarea></div>' }));
 beforeEach(() => { vi.stubGlobal("PointerEvent", MouseEvent); vi.stubGlobal("innerWidth", 1280); localStorage.clear(); vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false }))); });

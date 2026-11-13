@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, tick, type Snippet } from "svelte";
-  import { boundedDockWidth, bridgeDockStorageKey, defaultDockLayout, dockMaximumWidth, dockMinimumWidth, parseDockLayout } from "$lib/navigation/dock";
+  import { boundedDockWidth, bridgeDockStorageKey, defaultDockLayout, dockMaximumWidth, dockMinimumWidth, parseDockLayout } from "$lib/pages/bridge/state/dock";
 
   let { open = $bindable(true), narrow = $bindable(false), forceOpen = false, focused = false, focusHref = "/seances", focusLabel = "Open Séance", browseHref = "/seances", workHref = "/orb", available = true, viewing = "Altar", onconnect, onexpand, onsuspend, children }: {
     open?: boolean; narrow?: boolean; forceOpen?: boolean; available?: boolean;

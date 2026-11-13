@@ -24,19 +24,19 @@
     type LiveTurn
   } from "$lib/pages/bridge/state/projection";
   import ConsentCard from "$lib/components/shared/ConsentCard.svelte";
-  import CircleRun from "$lib/components/shared/CircleRun.svelte";
+  import CircleRun from "$lib/pages/bridge/components/CircleRun.svelte";
   import DelegateMark from "$lib/components/shared/DelegateMark.svelte";
-  import GenUI from "$lib/components/shared/GenUI.svelte";
+  import GenUI from "$lib/pages/bridge/components/GenUI.svelte";
   import AtlasLinks from "$lib/components/atlas/AtlasLinks.svelte";
   import AltarWelcome from "$lib/pages/bridge/components/AltarWelcome.svelte";
-  import NamingCeremony from "$lib/components/shared/NamingCeremony.svelte";
+  import NamingCeremony from "$lib/pages/bridge/components/NamingCeremony.svelte";
   import { atlasHref } from "$lib/atlas/navigation";
   import { bridgeWorkspaceKey, createBridgeWorkspace, type BridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
   import { delegationStatusLabel } from "$lib/delegation/presentation";
   import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/pages/bridge/state/pins";
   import AltarIcon from "$lib/shell/components/AltarIcon.svelte";
   import BridgeVoiceInput from "./BridgeVoiceInput.svelte";
-  import DictationFeedback from "$lib/components/shared/DictationFeedback.svelte";
+  import DictationFeedback from "$lib/pages/bridge/components/DictationFeedback.svelte";
   import { workCommandKey, type CommandTarget, type CommandResult, type WorkCommandRegistry } from "$lib/shell/state/work-commands";
   import type { DictationDraft, DictationOptions } from "$lib/pages/bridge/state/voice/dictation";
 

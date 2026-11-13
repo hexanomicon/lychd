@@ -18,7 +18,7 @@ import { page as appPage } from "$app/state";
 const page = appPage as Omit<typeof appPage, "url"> & { url: import("svelte/reactivity").SvelteURL };
 import { getAltarStatus } from "$lib/api/client";
 import AltarShell from "./AltarShell.svelte";
-import { bridgeDockStorageKey } from "$lib/navigation/dock";
+import { bridgeDockStorageKey } from "$lib/pages/bridge/state/dock";
 
 const children = createRawSnippet(() => ({ render: () => "<p>Instrument</p>" }));
 

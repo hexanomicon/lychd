@@ -3,11 +3,11 @@
   import { getContext, onDestroy, tick } from "svelte";
   import { readCreationInvestigation, submitCreationInvestigation } from "$lib/api/client";
   import CreationFeedback from "./CreationFeedback.svelte";
-  import PageHeader from "../shared/PageHeader.svelte";
+  import PageHeader from "$lib/components/shared/PageHeader.svelte";
   import { altarNavigationContext, type AltarNavigation } from "$lib/navigation/instruments";
   import {
     emptyDraft, initialIntakeState, InvestigationIntake, investigationHref, investigationSelection, prepareRequest, utf8Bytes
-  } from "$lib/creation/intake";
+  } from "$lib/pages/bridge/state/creation/intake";
 
   let { caseId, onSelect }: { caseId: string | null; onSelect: (id: string | null) => void } = $props();
   const navigation = getContext<AltarNavigation | undefined>(altarNavigationContext);
