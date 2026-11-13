@@ -19,75 +19,85 @@ from lychd.interface.discord.followups import FollowupLedger
 from lychd.interface.discord.messages import split_message
 from lychd.interface.discord.ports import TurnEffects
 from lychd.interface.discord.rest import DiscordRestError
-from lychd.interface.discord.schemas import DiscordPolicy
+from lychd.interface.discord.schemas import DEFAULT_AGENT_DISPLAY_NAME, DiscordPolicy
 from lychd.interface.observation import observation_context
 
+_AGENT = "{agent}"
+
+
+def _named(text: str, agent_name: str) -> str:
+    """Insert the configured display name into one fixed notice; it is never a format string."""
+    return text.replace(_AGENT, agent_name)
+
+
+# Templates: ``{agent}`` is replaced by the policy's display name when a notice is rendered.
 WORKER_FAILURES = {
     "budget": (
         "My configured context budget was too small for this request. I read the available chat context, "
         "but couldn't fit the instructions and selected sources needed to answer. Please narrow the question."
     ),
-    "model_unavailable": "The Qwen model service is unavailable. Please try again later; a maintainer should check it.",
-    "model_timeout": "The Qwen model timed out while preparing the answer. Please try again with a shorter request.",
-    "model_refused": "The Qwen model refused this request. A maintainer can check its diagnostics.",
+    "model_unavailable": "The model service is unavailable. Please try again later; a maintainer should check it.",
+    "model_timeout": "The model timed out while preparing the answer. Please try again with a shorter request.",
+    "model_refused": "The model refused this request. A maintainer can check its diagnostics.",
     "model_protocol": (
-        "The Qwen model returned a response Nadir couldn't safely use. A maintainer should check the model adapter."
+        "The model returned a response {agent} couldn't safely use. A maintainer should check the model adapter."
     ),
-    "model_failed": ("The Qwen model failed while preparing the answer. A maintainer should check its diagnostics."),
-    "run_timeout": "Nadir timed out while preparing the answer. Please try again with a shorter request.",
+    "model_failed": ("The model failed while preparing the answer. A maintainer should check its diagnostics."),
+    "run_timeout": "{agent} timed out while preparing the answer. Please try again with a shorter request.",
     "run_missing": (
-        "Nadir couldn't find the answer run it started (run_missing). A maintainer should check diagnostics."
+        "{agent} couldn't find the answer run it started (run_missing). A maintainer should check diagnostics."
     ),
-    "run_incomplete": "Nadir's answer run didn't complete (run_incomplete). A maintainer should check diagnostics.",
+    "run_incomplete": "{agent}'s answer run didn't complete (run_incomplete). A maintainer should check diagnostics.",
     "result_binding": (
-        "Nadir received a mismatched answer result (result_binding). A maintainer should check diagnostics."
+        "{agent} received a mismatched answer result (result_binding). A maintainer should check diagnostics."
     ),
     "run_failed": (
         "An internal processing step failed (run_failed). Please try again later; a maintainer can check diagnostics."
     ),
-    "worker_unavailable": "Nadir's answer worker is unavailable or busy. Please try again shortly.",
+    "worker_unavailable": "{agent}'s answer worker is unavailable or busy. Please try again shortly.",
     "permission_denied": (
-        "Discord denied access to earlier channel messages (403). Ask a maintainer to check Nadir's "
+        "Discord denied access to earlier channel messages (403). Ask a maintainer to check {agent}'s "
         "View Channel and Read Message History permissions."
     ),
     "conversation_not_allowed": (
-        "Nadir isn't enabled in this channel. Ask a maintainer to add it to the allowed channels."
+        "{agent} isn't enabled in this channel. Ask a maintainer to add it to the allowed channels."
     ),
     "subject_not_allowed": (
-        "You're not included in Nadir's allowed user or role list. Ask a maintainer to check your access."
+        "You're not included in {agent}'s allowed user or role list. Ask a maintainer to check your access."
     ),
     "action_not_allowed": "This type of request isn't enabled for your account or this channel.",
-    "action_not_supported": "Nadir doesn't support this request type.",
-    "trigger_not_allowed": "Nadir isn't configured to answer this kind of message here.",
-    "missing_agent_mention": "Please mention Nadir directly in this message.",
+    "action_not_supported": "{agent} doesn't support this request type.",
+    "trigger_not_allowed": "{agent} isn't configured to answer this kind of message here.",
+    "missing_agent_mention": "Please mention {agent} directly in this message.",
     "wrong_platform": "This request came from an unsupported chat platform.",
-    "wrong_account": "This request came from an account Nadir isn't configured to serve.",
-    "wrong_space": "Nadir isn't configured for this server or workspace.",
-    "self_event": "Nadir can't answer a message sent by the bot itself.",
-    "automated_subject": "Nadir can't answer messages from another bot account.",
-    "event_expired": "This request expired before Nadir could process it. Please send it again.",
+    "wrong_account": "This request came from an account {agent} isn't configured to serve.",
+    "wrong_space": "{agent} isn't configured for this server or workspace.",
+    "self_event": "{agent} can't answer a message sent by the bot itself.",
+    "automated_subject": "{agent} can't answer messages from another bot account.",
+    "event_expired": "This request expired before {agent} could process it. Please send it again.",
     "event_from_future": "This request has an invalid future timestamp. Please send it again.",
-    "question_empty": "Please include a question for Nadir.",
-    "question_too_large": "This question is over Nadir's configured input limit. Please shorten it.",
-    "question_invalid": "This question contains text Nadir can't safely process. Please edit and resend it.",
-    "context_disabled": "Nadir's chat history access isn't enabled for this request.",
-    "relationship_invalid": "Nadir couldn't verify that this reply belongs to the recent conversation.",
+    "question_empty": "Please include a question for {agent}.",
+    "question_too_large": "This question is over {agent}'s configured input limit. Please shorten it.",
+    "question_invalid": "This question contains text {agent} can't safely process. Please edit and resend it.",
+    "context_disabled": "{agent}'s chat history access isn't enabled for this request.",
+    "relationship_invalid": "{agent} couldn't verify that this reply belongs to the recent conversation.",
 }
 
 
-def worker_problem(reason: str | None, *, refused: bool = False) -> str:
+def worker_problem(reason: str | None, *, refused: bool = False, agent_name: str = DEFAULT_AGENT_DISPLAY_NAME) -> str:
     """Render only closed worker reasons; never display exception or model text."""
     if reason in WORKER_FAILURES:
-        return WORKER_FAILURES[reason]
+        return _named(WORKER_FAILURES[reason], agent_name)
     if refused:
-        return (
+        return _named(
             "I can't perform this request (request_refused). "
-            "Ask a maintainer to check Nadir's channel and access rules."
+            "Ask a maintainer to check {agent}'s channel and access rules.",
+            agent_name,
         )
-    return WORKER_FAILURES["run_failed"]
+    return _named(WORKER_FAILURES["run_failed"], agent_name)
 
 
-def failure_text(error: Exception) -> str:
+def failure_text(error: Exception, *, agent_name: str = DEFAULT_AGENT_DISPLAY_NAME) -> str:
     """Translate known edge failures without exposing provider bodies or exception text."""
     if isinstance(error, discord.Forbidden):
         code = "http_403"
@@ -110,9 +120,9 @@ def failure_text(error: Exception) -> str:
         code = error_code(error)
 
     messages = {
-        "http_401": "Discord rejected Nadir's bot authentication (401). A maintainer should check the bot token.",
+        "http_401": "Discord rejected {agent}'s bot authentication (401). A maintainer should check the bot token.",
         "http_403": (
-            "Discord denied one of Nadir's channel operations (403). Ask a maintainer to check View Channel, "
+            "Discord denied one of {agent}'s channel operations (403). Ask a maintainer to check View Channel, "
             "Read Message History, and Send Messages permissions."
         ),
         "http_404": (
@@ -120,38 +130,38 @@ def failure_text(error: Exception) -> str:
             "Ask a maintainer to check the channel binding."
         ),
         "network_error": (
-            "Nadir couldn't reach Discord. Please try again later; a maintainer should check connectivity."
+            "{agent} couldn't reach Discord. Please try again later; a maintainer should check connectivity."
         ),
-        "timeout": "Nadir timed out while preparing the answer. Please try again with a shorter request.",
+        "timeout": "{agent} timed out while preparing the answer. Please try again with a shorter request.",
         "budget": WORKER_FAILURES["budget"],
         "worker_unavailable": WORKER_FAILURES["worker_unavailable"],
     }
-    return messages.get(
-        code,
+    fallback = (
         f"I couldn't prepare an answer. Please try again later (diagnostic code: {code}). "
-        "A maintainer can check Nadir's logs.",
+        "A maintainer can check {agent}'s logs."
     )
+    return _named(messages.get(code, fallback), agent_name)
 
 
-def result_text(result: ReachWorkerResult) -> str:
+def result_text(result: ReachWorkerResult, *, agent_name: str = DEFAULT_AGENT_DISPLAY_NAME) -> str:
     """Render worker answers and precise safe reasons without attempting an empty message."""
     if result.text.strip():
         return result.text
     if result.status == "refused":
-        return worker_problem(result.reason, refused=True)
+        return worker_problem(result.reason, refused=True, agent_name=agent_name)
     if result.status == "error":
-        return worker_problem(result.reason)
+        return worker_problem(result.reason, agent_name=agent_name)
     return "I couldn't prepare an answer. Please try again later (diagnostic code: empty_result)."
 
 
-def context_text(outcome: ContextTurnOutcome) -> str:
+def context_text(outcome: ContextTurnOutcome, *, agent_name: str = DEFAULT_AGENT_DISPLAY_NAME) -> str:
     """Render a driver stop here, preserving unrelated native clarifications exactly."""
     if outcome.stop is None:
-        return result_text(outcome.result)
+        return result_text(outcome.result, agent_name=agent_name)
     notices = {
         "permission_denied": (
             "I couldn't read earlier messages in this channel because Discord denied history access (403). "
-            "Ask a maintainer to check Nadir's View Channel and Read Message History permissions, then try again."
+            "Ask a maintainer to check {agent}'s View Channel and Read Message History permissions, then try again."
         ),
         "unavailable": "Earlier messages are unavailable right now. Please quote the relevant message or clarify your question.",
         "disabled": "Chat history isn't enabled here. Please quote the relevant message or clarify your question.",
@@ -160,7 +170,7 @@ def context_text(outcome: ContextTurnOutcome) -> str:
         "round_limit": "I've reached the history limit. Please quote the relevant part of the conversation.",
         "no_progress": "I couldn't load more relevant messages. Please quote the missing material or clarify your question.",
     }
-    return notices[outcome.stop]
+    return _named(notices[outcome.stop], agent_name)
 
 
 class DiscordTurnDelivery:

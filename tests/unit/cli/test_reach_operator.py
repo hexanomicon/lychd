@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -127,6 +128,31 @@ def test_container_boundary_has_no_host_socket_ports_or_environment(tmp_path: Pa
     assert not any(
         "socket" in item or "docker.sock" in item or item in {"--publish", "--env", "--privileged"} for item in args
     )
+
+
+def test_podman_tmpfs_does_not_copy_the_image_tmp_into_its_bounded_mount(tmp_path: Path) -> None:
+    podman = operator.container_arguments("podman", IMAGE, tmp_path / "cid", offline=True)
+    docker = operator.container_arguments("docker", IMAGE, tmp_path / "cid", offline=True)
+    assert podman[podman.index("--tmpfs") + 1] == "/tmp:rw,nosuid,nodev,size=256m,notmpcopyup"  # noqa: S108
+    assert docker[docker.index("--tmpfs") + 1] == "/tmp:rw,nosuid,nodev,size=256m"  # noqa: S108
+
+
+@pytest.mark.parametrize("prefixed", [False, True])
+def test_image_retention_accepts_bare_and_prefixed_engine_ids(
+    monkeypatch: pytest.MonkeyPatch, *, prefixed: bool
+) -> None:
+    # Podman reports ``{{.Id}}`` as bare hex; Docker reports the ``sha256:`` form.
+    observed = IMAGE if prefixed else IMAGE.removeprefix("sha256:")
+    calls: list[list[str]] = []
+
+    def command(arguments: Any, **_kwargs: Any) -> bytes:
+        calls.append(list(arguments))
+        return observed.encode() + b"\n" if list(arguments)[1:3] == ["image", "inspect"] else b""
+
+    monkeypatch.setattr(operator, "command", command)
+    operator._retain_image("podman", "core", IMAGE, root=Path.cwd())  # pyright: ignore[reportPrivateUsage]
+    assert calls[0][1:3] == ["image", "tag"]
+    assert calls[0][3] == IMAGE
 
 
 def test_host_environment_excludes_provider_and_discord_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -584,3 +610,34 @@ def test_build_retains_exact_images_before_shared_tag_changes_and_manifest_publi
     assert shared == replacement
     assert operator.load_images(output) == {"core": core, "edge": edge}
     assert tags == {core_tag: core, edge_tag: edge}
+
+
+def test_edge_build_context_is_readable_regardless_of_the_caller_umask(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "source"
+    (root / "clients/discord").mkdir(parents=True)
+    (root / "clients/discord/Containerfile").write_text("FROM fixture\n")
+    monkeypatch.setattr(operator, "EDGE_INPUTS", ("clients/discord/Containerfile",))
+    observed: dict[str, int] = {}
+
+    def command(arguments: Any, **_kwargs: Any) -> bytes:
+        args = list(arguments)
+        if args[1:3] == ["image", "inspect"]:
+            return IMAGE.removeprefix("sha256:").encode() + b"\n"
+        if len(args) > 1 and args[1] == "build":
+            context = Path(args[-1])
+            observed["file"] = (context / "clients/discord/Containerfile").stat().st_mode & 0o777
+            observed["dir"] = (context / "clients/discord").stat().st_mode & 0o777
+            message = "stop"
+            raise ValueError(message)
+        return b""
+
+    monkeypatch.setattr(operator, "command", command)
+    previous = os.umask(0o077)
+    try:
+        with pytest.raises(ValueError, match="stop"):
+            operator.build_images("podman", tmp_path / "images.json", root=root)
+    finally:
+        os.umask(previous)
+    assert observed == {"file": 0o644, "dir": 0o755}

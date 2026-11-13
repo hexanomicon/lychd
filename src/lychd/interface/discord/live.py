@@ -41,7 +41,6 @@ from lychd.compositions.reach.policy import prepare_turn
 from lychd.compositions.reach.schemas import ReachEvent
 from lychd.interface.discord.admin import ChannelSnapshot, GuildSnapshot, snapshot_guild
 from lychd.interface.discord.delivery import (
-    WORKER_FAILURES,
     DiscordTurnDelivery,
     context_text,
     failure_text,
@@ -213,8 +212,9 @@ def event_from_message(  # noqa: PLR0911 - cheap DM, mention and continuation re
             or str(message.author.id) not in policy.allowed_dm_user_ids
             or message.author.bot
             or message.webhook_id is not None
-            or channel.recipient is None
-            or channel.recipient.id != message.author.id
+            # Without a member cache the SDK builds an uncached DM channel with no recipient.
+            # A non-bot author of a one-to-one DMChannel is then that recipient by construction.
+            or (channel.recipient is not None and channel.recipient.id != message.author.id)
         ):
             return None
         return ReachEvent(
@@ -593,7 +593,12 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
         if not self.service.eligible(event):
             decision = prepare_turn(self.service.shared_policy, event, now=datetime.now(UTC))
             await interaction.response.send_message(
-                worker_problem(decision.reason if not decision.allowed else None, refused=True), ephemeral=True
+                worker_problem(
+                    decision.reason if not decision.allowed else None,
+                    refused=True,
+                    agent_name=self.service.policy.agent_display_name,
+                ),
+                ephemeral=True,
             )
             return
         session = self.service.session(event)
@@ -606,11 +611,14 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                 try:
                     outcome = await self.service.run_event(session, interaction.channel, progress=delivery.plan)
                     if outcome is not None and session.visible():
-                        await delivery.final(context_text(outcome), result=outcome.result)
+                        await delivery.final(
+                            context_text(outcome, agent_name=self.service.policy.agent_display_name),
+                            result=outcome.result,
+                        )
                 except (ValueError, OSError, TimeoutError, discord.HTTPException, DiscordRestError) as error:
                     diagnostic("request_failed")
                     if session.can_report_failure():
-                        await delivery.final(failure_text(error))
+                        await delivery.final(failure_text(error, agent_name=self.service.policy.agent_display_name))
         except TimeoutError:
             diagnostic("request_expired")
         finally:
@@ -689,7 +697,12 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                     if not session.visible():
                         return
                     result = outcome.result if outcome is not None else None
-                    text = context_text(outcome) if outcome is not None else WORKER_FAILURES["run_failed"]
+                    agent_name = self.service.policy.agent_display_name
+                    text = (
+                        context_text(outcome, agent_name=agent_name)
+                        if outcome is not None
+                        else worker_problem(None, agent_name=agent_name)
+                    )
                     delivered = await delivery.final(text, result=result)
                     if delivered and result is not None:
                         await delivery.expressions(result)
@@ -699,7 +712,7 @@ class ReachCog(commands.GroupCog, group_name="reach", group_description="Bounded
                     if session.can_report_failure():
                         if event.trigger == "message":
                             await self.service.replies.bind_conversation(event)
-                        await delivery.final(failure_text(error))
+                        await delivery.final(failure_text(error, agent_name=self.service.policy.agent_display_name))
         except TimeoutError:
             diagnostic("request_expired")
         finally:
