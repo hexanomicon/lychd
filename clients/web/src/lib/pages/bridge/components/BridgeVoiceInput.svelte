@@ -2,9 +2,9 @@
   import { onMount, untrack, type Snippet } from "svelte";
   import { ApiError, getDictationDiscovery, getDictationAttempt, transcribeDictation, recordDictationCorrection } from "$lib/api/client";
   import type { DictationDiscovery } from "$lib/api/models";
-  import type { CommandTarget } from "$lib/bridge/work-commands";
-  import { createVoiceCapture, VOICE_MAX_WAV_BYTES, type VoiceCaptureState } from "$lib/bridge/voice/capture";
-  import { createDictationCoordinator, newDictationAttemptId, type DictationCapture, type DictationDraft, type DictationOptions } from "$lib/bridge/voice/dictation";
+  import type { CommandTarget } from "$lib/pages/bridge/state/work-commands";
+  import { createVoiceCapture, VOICE_MAX_WAV_BYTES, type VoiceCaptureState } from "$lib/pages/bridge/state/voice/capture";
+  import { createDictationCoordinator, newDictationAttemptId, type DictationCapture, type DictationDraft, type DictationOptions } from "$lib/pages/bridge/state/voice/dictation";
 
   interface Props {
     snapshot: DictationDraft;

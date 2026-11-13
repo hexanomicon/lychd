@@ -3,8 +3,8 @@
   import { setContext, untrack } from "svelte";
   import { page } from "$app/state";
   import { beforeNavigate } from "$app/navigation";
-  import { createWorkCommandRegistry, workCommandKey } from "$lib/bridge/work-commands";
-  import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
+  import { createWorkCommandRegistry, workCommandKey } from "$lib/pages/bridge/state/work-commands";
+  import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
   import AltarShell from "$lib/components/altar/AltarShell.svelte";
 
   let { children } = $props();

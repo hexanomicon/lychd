@@ -4,7 +4,7 @@
   import { applyProposal, arrangeScene, blankDocument, boundsOfSelection, commit, deleteSelection, exampleDocument, makePacket, moveSelection, pngArtwork, redo, renameNode, replaceDocument, tidyProposal, undo, validateDocument, validateProposal } from "$lib/canvas/engine";
   import type { CanvasNode, Document as BoardDocument, Packet, Proposal, Scene, Tool } from "$lib/canvas/types";
   import { CANVAS_COMMAND_HELP, isCanvasCommandCurrent, planCanvasCommand, type CanvasCommandPlan } from "$lib/canvas/commands";
-  import { workCommandKey, type CommandResult, type CommandTarget, type WorkCommandRegistry } from "$lib/bridge/work-commands";
+  import { workCommandKey, type CommandResult, type CommandTarget, type WorkCommandRegistry } from "$lib/pages/bridge/state/work-commands";
   import CanvasSurface from "./CanvasSurface.svelte";
   import CanvasObjects from "./CanvasObjects.svelte";
   import AltarIcon from "../altar/AltarIcon.svelte";

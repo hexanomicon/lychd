@@ -4,8 +4,8 @@
   import { asset } from "$app/paths";
   import { resolvePath as resolve } from "$lib/navigation/paths";
   import { onMount, setContext, tick, untrack, type Snippet } from "svelte";
-  import BridgeDock from "../bridge/BridgeDock.svelte";
-  import BridgeView from "../bridge/BridgeView.svelte";
+  import BridgeDock from "$lib/pages/bridge/components/BridgeDock.svelte";
+  import BridgeView from "$lib/pages/bridge/components/BridgeView.svelte";
   import AltarIcon from "./AltarIcon.svelte";
   import { altarNavigationContext, selectedBridgeHref, type AltarNavigation } from "$lib/navigation/instruments";
 

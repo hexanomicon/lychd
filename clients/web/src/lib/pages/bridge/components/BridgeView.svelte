@@ -22,23 +22,23 @@
     mergeSnapshotLiveTurns,
     replaceLiveTurnFromSnapshot,
     type LiveTurn
-  } from "$lib/bridge/projection";
-  import ConsentCard from "../shared/ConsentCard.svelte";
-  import CircleRun from "../shared/CircleRun.svelte";
-  import DelegateMark from "../shared/DelegateMark.svelte";
-  import GenUI from "../shared/GenUI.svelte";
-  import AtlasLinks from "../atlas/AtlasLinks.svelte";
-  import AltarWelcome from "../altar/AltarWelcome.svelte";
-  import NamingCeremony from "../shared/NamingCeremony.svelte";
+  } from "$lib/pages/bridge/state/projection";
+  import ConsentCard from "$lib/components/shared/ConsentCard.svelte";
+  import CircleRun from "$lib/components/shared/CircleRun.svelte";
+  import DelegateMark from "$lib/components/shared/DelegateMark.svelte";
+  import GenUI from "$lib/components/shared/GenUI.svelte";
+  import AtlasLinks from "$lib/components/atlas/AtlasLinks.svelte";
+  import AltarWelcome from "$lib/components/altar/AltarWelcome.svelte";
+  import NamingCeremony from "$lib/components/shared/NamingCeremony.svelte";
   import { atlasHref } from "$lib/atlas/navigation";
-  import { bridgeWorkspaceKey, createBridgeWorkspace, type BridgeWorkspace } from "$lib/bridge/workspace.svelte";
+  import { bridgeWorkspaceKey, createBridgeWorkspace, type BridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
   import { delegationStatusLabel } from "$lib/delegation/presentation";
-  import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/bridge/pins";
-  import AltarIcon from "../altar/AltarIcon.svelte";
+  import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/pages/bridge/state/pins";
+  import AltarIcon from "$lib/components/altar/AltarIcon.svelte";
   import BridgeVoiceInput from "./BridgeVoiceInput.svelte";
-  import DictationFeedback from "../shared/DictationFeedback.svelte";
-  import { workCommandKey, type CommandTarget, type CommandResult, type WorkCommandRegistry } from "$lib/bridge/work-commands";
-  import type { DictationDraft, DictationOptions } from "$lib/bridge/voice/dictation";
+  import DictationFeedback from "$lib/components/shared/DictationFeedback.svelte";
+  import { workCommandKey, type CommandTarget, type CommandResult, type WorkCommandRegistry } from "$lib/pages/bridge/state/work-commands";
+  import type { DictationDraft, DictationOptions } from "$lib/pages/bridge/state/voice/dictation";
 
   let {
     sessionId,

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it, vi } from "vitest";
 
-import type { LiveTurn } from "$lib/bridge/projection";
+import type { LiveTurn } from "$lib/pages/bridge/state/projection";
 import CircleRun from "./CircleRun.svelte";
 
 function projection(changes: Partial<LiveTurn> = {}): LiveTurn {

@@ -12,7 +12,7 @@
   import ArchiveRecallPanel from "../shared/ArchiveRecallPanel.svelte";
   import AtlasLinks from "../atlas/AtlasLinks.svelte";
   import CreationSummary from "../creation/CreationSummary.svelte";
-  import BridgePreferenceSummary from "../bridge/BridgePreferenceSummary.svelte";
+  import BridgePreferenceSummary from "$lib/pages/bridge/components/BridgePreferenceSummary.svelte";
   import GraphCanvas from "../graph/GraphCanvas.svelte";
   import AnimatorRail from "../shared/AnimatorRail.svelte";
   import PageHeader from "../shared/PageHeader.svelte";

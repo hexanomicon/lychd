@@ -1,9 +1,9 @@
 /** Synthetic port composition only: no microphone, browser UI or live speech qualification. */
 import { describe, expect, it } from "vitest";
-import type { DictationResult } from "../../api/models";
-import { isCanvasCommandCurrent, planCanvasCommand } from "../../canvas/commands";
-import { commit, redo, undo, validateDocument } from "../../canvas/engine";
-import type { Document } from "../../canvas/types";
+import type { DictationResult } from "$lib/api/models";
+import { isCanvasCommandCurrent, planCanvasCommand } from "$lib/canvas/commands";
+import { commit, redo, undo, validateDocument } from "$lib/canvas/engine";
+import type { Document } from "$lib/canvas/types";
 import { createWorkCommandRegistry, type CommandResult, type CommandTarget } from "../work-commands";
 import { createDictationCoordinator, type DictationDraft } from "./dictation";
 

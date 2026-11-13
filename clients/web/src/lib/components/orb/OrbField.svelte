@@ -13,7 +13,7 @@
   import OrbTimeline from "./OrbTimeline.svelte";
   import { appendFieldFrame, pruneFieldRun, sameOrbRun, trimFieldFrames, type FieldFrame } from "$lib/orb/field-history";
 
-  import { workCommandKey, type WorkCommandRegistry, type CommandTarget, type CommandResult } from "$lib/bridge/work-commands";
+  import { workCommandKey, type WorkCommandRegistry, type CommandTarget, type CommandResult } from "$lib/pages/bridge/state/work-commands";
   import { parseOrbPresentationCommand, seekObservationFrame, orbPresentationExamples } from "$lib/orb/presentation-commands";
   import type { GraphCameraCommand } from "../graph/camera-command";
 

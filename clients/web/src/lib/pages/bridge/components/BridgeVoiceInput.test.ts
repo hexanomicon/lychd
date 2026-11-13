@@ -2,8 +2,8 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/svelte
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { DictationDiscovery, DictationResult } from "$lib/api/models";
 import { ApiError } from "$lib/api/client";
-import type { DictationDraft } from "$lib/bridge/voice/dictation";
-import type { VoiceCaptureOptions, VoiceRecording } from "$lib/bridge/voice/capture";
+import type { DictationDraft } from "$lib/pages/bridge/state/voice/dictation";
+import type { VoiceCaptureOptions, VoiceRecording } from "$lib/pages/bridge/state/voice/capture";
 import BridgeVoiceInput from "./BridgeVoiceInput.svelte";
 
 const api = vi.hoisted(() => ({ discovery: vi.fn(), recover: vi.fn(), transcribe: vi.fn(), correct: vi.fn(), capture: vi.fn() }));
@@ -12,7 +12,7 @@ vi.mock("$lib/api/client", () => ({
   getDictationDiscovery: api.discovery, getDictationAttempt: api.recover,
   transcribeDictation: api.transcribe, recordDictationCorrection: api.correct
 }));
-vi.mock("$lib/bridge/voice/capture", () => ({ createVoiceCapture: api.capture, VOICE_MAX_WAV_BYTES: 960044 }));
+vi.mock("$lib/pages/bridge/state/voice/capture", () => ({ createVoiceCapture: api.capture, VOICE_MAX_WAV_BYTES: 960044 }));
 
 const discovery: DictationDiscovery = {
   status: "available", reason: null, profile_digest: `sha256:${"a".repeat(64)}`, languages: ["en", "sk"],

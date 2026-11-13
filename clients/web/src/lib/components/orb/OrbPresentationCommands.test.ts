@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fixtureRun } from '$lib/orb/__fixtures__/snapshot';
-import { createWorkCommandRegistry, workCommandKey } from '$lib/bridge/work-commands';
+import { createWorkCommandRegistry, workCommandKey } from '$lib/pages/bridge/state/work-commands';
 const camera = vi.hoisted(() => ({ setZoom: vi.fn(async () => true), fitView: vi.fn(async () => true) }));
 vi.mock('@xyflow/svelte', async original => {
   const module = await original<typeof import('@xyflow/svelte')>();

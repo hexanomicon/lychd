@@ -9,10 +9,10 @@ routes to the implementation and its operating guide rather than duplicating eit
 | --- | --- | --- |
 | Canvas Project catalogue, retained concerns, judgments, references, and continuation | [AtlasView.svelte](lib/components/atlas/AtlasView.svelte), [Atlas link hints](lib/atlas/navigation.ts) | [Atlas](../../../docs/divination/altar/atlas.md) |
 | Project board retention/recovery, portable authorship and reviewed selection transformations | [CanvasWorkspace.svelte](lib/components/canvas/CanvasWorkspace.svelte), [CanvasView.svelte](lib/components/canvas/CanvasView.svelte), [Canvas engine](lib/canvas/engine.ts) | [Canvas](../../../docs/compositions/canvas/index.md) |
-| Conversation, consent, and offering recovery | [BridgeView.svelte](lib/components/bridge/BridgeView.svelte), [shell-lifetime workspace](lib/bridge/workspace.svelte.ts) | [Bridge](../../../docs/divination/altar/bridge.md) |
+| Conversation, consent, and offering recovery | [BridgeView.svelte](lib/pages/bridge/components/BridgeView.svelte), [shell-lifetime workspace](lib/pages/bridge/state/workspace.svelte.ts) | [Bridge](../../../docs/divination/altar/bridge.md) |
 | Conversation catalogue, retained inspection, and source-linked document-local working material | [SeancesWorkspace.svelte](lib/components/seances/SeancesWorkspace.svelte), [material](lib/seances/material.ts) | [Séances](../../../docs/divination/altar/seances.md) |
-| Finite dictation, transcript review and private correction/vocabulary controls | [BridgeVoiceInput.svelte](lib/components/bridge/BridgeVoiceInput.svelte), [capture](lib/bridge/voice/capture.ts), [draft coordinator](lib/bridge/voice/dictation.ts), [DictationFeedback.svelte](lib/components/shared/DictationFeedback.svelte) | [Bridge dictation](../../../docs/divination/altar/bridge.md#dictate-and-review) |
-| Exact instrument work destination and inert Canvas command proposals | [work-command registry](lib/bridge/work-commands.ts), [Canvas command planner](lib/canvas/commands.ts) | [Canvas commands](../../../docs/compositions/canvas/index.md#give-a-bounded-command-through-bridge) |
+| Finite dictation, transcript review and private correction/vocabulary controls | [BridgeVoiceInput.svelte](lib/pages/bridge/components/BridgeVoiceInput.svelte), [capture](lib/pages/bridge/state/voice/capture.ts), [draft coordinator](lib/pages/bridge/state/voice/dictation.ts), [DictationFeedback.svelte](lib/components/shared/DictationFeedback.svelte) | [Bridge dictation](../../../docs/divination/altar/bridge.md#dictate-and-review) |
+| Exact instrument work destination and inert Canvas command proposals | [work-command registry](lib/pages/bridge/state/work-commands.ts), [Canvas command planner](lib/canvas/commands.ts) | [Canvas commands](../../../docs/compositions/canvas/index.md#give-a-bounded-command-through-bridge) |
 | Public-note intake, lifecycle review and metadata recovery within Bridge | [PublicNotes.svelte](lib/components/public-notes/PublicNotes.svelte), [recovery controller](lib/archive/notes.ts) | [Public notes](../../../docs/divination/altar/bridge.md#manage-public-notes) |
 | Spatial Run field, tab observation history, and one Run's retained records and gaps | [OrbField.svelte](lib/components/orb/OrbField.svelte), [OrbTimeline.svelte](lib/components/orb/OrbTimeline.svelte), [OrbView.svelte](lib/components/orb/OrbView.svelte) | [Orb](../../../docs/divination/altar/orb.md) |
 | Admitted runtime topology, actual call attempts, source coverage and inspection-only scores | [Runtime evidence](lib/components/shared/RuntimeEvidence.svelte), [runtime reader](lib/orb/runtime.ts), [generic projection](lib/graph/runtime.ts) | [Connected components](../../../docs/sepulcher/extensions/oculus.md#connected-components-and-activity) |
@@ -22,12 +22,12 @@ routes to the implementation and its operating guide rather than duplicating eit
 
 [The layout](routes/+layout.svelte) supplies browser-document context;
 [AltarShell](lib/components/altar/AltarShell.svelte) projects navigation, global attention and the
-shell-lifetime [Bridge dock and legacy full-focus page](lib/components/bridge/BridgeDock.svelte). The Séances
+shell-lifetime [Bridge dock and legacy full-focus page](lib/pages/bridge/components/BridgeDock.svelte). The Séances
 work route inspects conversations without selecting the live Bridge; explicit continuation reuses
 that same conversation component. Its layout
 preferences contain only bounded width, side and open state; conversation and recovery remain in
 their existing owners.
-[Browser-local pins](lib/bridge/pins.ts) retain bounded session identities only.
+[Browser-local pins](lib/pages/bridge/state/pins.ts) retain bounded session identities only.
 [Instrument links](lib/navigation/instruments.ts) carry bounded selection hints. Destination
 loaders still validate identity and relationships; a URL does not prove ownership or Run/Pattern
 equivalence. Focused component tests live beside their components; navigation has its own

@@ -5,7 +5,7 @@
   import { resolvePath as resolve } from "$lib/navigation/paths";
   import { navigationId, orbReturnHref, loomOriginHref } from "$lib/navigation/instruments";
   import { getContext, onDestroy, tick, untrack } from "svelte";
-  import { workCommandKey, type CommandTarget, type CommandResult, type WorkCommandRegistry } from "$lib/bridge/work-commands";
+  import { workCommandKey, type CommandTarget, type CommandResult, type WorkCommandRegistry } from "$lib/pages/bridge/state/work-commands";
   import { parseLoomCommand } from "$lib/graph/loom-commands";
   import { MediaQuery } from "svelte/reactivity";
   import { loomProjection } from "$lib/graph/loom";

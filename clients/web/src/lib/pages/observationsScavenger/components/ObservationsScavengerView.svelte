@@ -4,7 +4,7 @@
   import { SvelteMap } from "svelte/reactivity";
   import { cancelBridgeRun, deleteMarketObservation, filterMarketObservation, getMarketObservationConsent, getScavengerState,
     readMarketObservation, submitMarketObservation } from "$lib/api/client";
-  import type { ConsentDecision } from "$lib/bridge/workspace.svelte";
+  import type { ConsentDecision } from "$lib/pages/bridge/state/workspace.svelte";
   import { emptyObservationDraft, prepareObservation } from "$lib/pages/observationsScavenger/state/draft";
   import { initialObservationState, observationId, ObservationWorkspace } from "$lib/pages/observationsScavenger/state/observation";
   import ConsentCard from "$lib/components/shared/ConsentCard.svelte";

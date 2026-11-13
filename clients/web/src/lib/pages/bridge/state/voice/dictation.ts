@@ -1,5 +1,5 @@
 import type { CommandTarget } from "../work-commands";
-import type { DictationResult } from "../../api/models";
+import type { DictationResult } from "$lib/api/models";
 
 type TranscriptProjection = Pick<DictationResult, "attempt_id" | "status"> &
   Partial<Pick<DictationResult, "original_text" | "reason">>;

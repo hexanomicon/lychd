@@ -18,7 +18,7 @@ const page = appPage as Omit<typeof appPage, "url"> & { url: import("svelte/reac
 import { goto } from "$app/navigation";
 import { getLoomCatalogue, getLoomPatternRevision, getOrbRun } from "$lib/api/client";
 import LoomView from "./LoomView.svelte";
-import { createWorkCommandRegistry, workCommandKey } from "$lib/bridge/work-commands";
+import { createWorkCommandRegistry, workCommandKey } from "$lib/pages/bridge/state/work-commands";
 
 const summary: LoomSummary = {
   publication: "published",

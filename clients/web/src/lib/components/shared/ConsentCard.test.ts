@@ -10,7 +10,7 @@ vi.mock("$lib/api/client", async (importOriginal) => {
 
 import { decideConsent } from "$lib/api/client";
 import ConsentCard from "./ConsentCard.svelte";
-import { createBridgeWorkspace } from "$lib/bridge/workspace.svelte";
+import { createBridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
 
 const consent: ConsentCardModel = {
   args: { target: "chat:local" },

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { LiveTurn } from "$lib/bridge/projection";
+  import type { LiveTurn } from "$lib/pages/bridge/state/projection";
   import { loomOriginHref, orbReturnHref, selectedOrbHref } from "$lib/navigation/instruments";
 
   let { runId, turn: suppliedTurn, cancelling = false, oncancel }: {
