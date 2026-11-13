@@ -1,0 +1,1 @@
+import{Dt as e,Ot as t,i as n}from"../chunks/BVeF9d6R.js";import{t as r}from"../chunks/BfPB4xQI.js";import"../chunks/DSHrWEI0.js";import"../chunks/DPaxGaK1.js";import{t as i}from"../chunks/Bjwp_6GG.js";function a(a,o){t(o,!1),n(),i(a,{get projectId(){return r.params.project_id}}),e()}export{a as component};

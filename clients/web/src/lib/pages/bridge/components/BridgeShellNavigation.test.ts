@@ -41,7 +41,7 @@ const page = appPage as Omit<typeof appPage, "url"> & { url: import("svelte/reac
 import { goto } from "$app/navigation";
 import { createBridgeSession, getAltarStatus, getBridgeSnapshot, getOrbRun, sendBridgeMessage, listenToRun, cancelBridgeRun } from "$lib/api/client";
 import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
-import { getSeancesWorkspace, type SeancesWorkspace as SeancesContext } from "$lib/seances/workspace.svelte";
+import { getSeancesWorkspace, type SeancesWorkspace as SeancesContext } from "$lib/pages/seances/state/workspace.svelte";
 import AltarShell from "$lib/components/altar/AltarShell.svelte";
 import BridgePage from "../../../../routes/bridge/+page.svelte";
 

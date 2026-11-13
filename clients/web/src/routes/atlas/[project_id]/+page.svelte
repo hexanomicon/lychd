@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import AtlasView from "$lib/components/atlas/AtlasView.svelte";
+  import AtlasView from "$lib/pages/atlas/components/AtlasView.svelte";
 </script>
 
 <AtlasView
