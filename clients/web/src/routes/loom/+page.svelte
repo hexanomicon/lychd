@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LoomView from "$lib/components/loom/LoomView.svelte";
+  import LoomView from "$lib/pages/loom/components/LoomView.svelte";
 </script>
 
 <LoomView />

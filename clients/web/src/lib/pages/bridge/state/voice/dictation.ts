@@ -1,4 +1,4 @@
-import type { CommandTarget } from "../work-commands";
+import type { CommandTarget } from "$lib/shell/state/work-commands";
 import type { DictationResult } from "$lib/api/models";
 
 type TranscriptProjection = Pick<DictationResult, "attempt_id" | "status"> &

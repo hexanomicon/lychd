@@ -4,7 +4,7 @@ import type { DictationResult } from "$lib/api/models";
 import { isCanvasCommandCurrent, planCanvasCommand } from "$lib/pages/canvas/state/commands";
 import { commit, redo, undo, validateDocument } from "$lib/pages/canvas/state/engine";
 import type { Document } from "$lib/pages/canvas/state/types";
-import { createWorkCommandRegistry, type CommandResult, type CommandTarget } from "../work-commands";
+import { createWorkCommandRegistry, type CommandResult, type CommandTarget } from "$lib/shell/state/work-commands";
 import { createDictationCoordinator, type DictationDraft } from "./dictation";
 
 const id = (number: number) => `00000000-0000-0000-0000-${number.toString().padStart(12, "0")}`;

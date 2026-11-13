@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import { incompleteCreation } from "$lib/orb/__fixtures__/creation";
+import { incompleteCreation } from "$lib/pages/orb/state/__fixtures__/creation";
 import CreationSummary from "./CreationSummary.svelte";
 
 describe("Creation outcome", () => {

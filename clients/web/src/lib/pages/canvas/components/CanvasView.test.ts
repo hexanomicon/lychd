@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { blankDocument, exampleDocument } from "$lib/pages/canvas/state/engine";
 import type { Document as BoardDocument, Packet, Proposal } from "$lib/pages/canvas/state/types";
-import { createWorkCommandRegistry, workCommandKey } from "$lib/pages/bridge/state/work-commands";
+import { createWorkCommandRegistry, workCommandKey } from "$lib/shell/state/work-commands";
 import CanvasSurface from "./CanvasSurface.svelte";
 import CanvasView from "./CanvasView.svelte";
 

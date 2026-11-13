@@ -28,16 +28,16 @@
   import DelegateMark from "$lib/components/shared/DelegateMark.svelte";
   import GenUI from "$lib/components/shared/GenUI.svelte";
   import AtlasLinks from "$lib/components/atlas/AtlasLinks.svelte";
-  import AltarWelcome from "$lib/components/altar/AltarWelcome.svelte";
+  import AltarWelcome from "$lib/pages/bridge/components/AltarWelcome.svelte";
   import NamingCeremony from "$lib/components/shared/NamingCeremony.svelte";
   import { atlasHref } from "$lib/atlas/navigation";
   import { bridgeWorkspaceKey, createBridgeWorkspace, type BridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
   import { delegationStatusLabel } from "$lib/delegation/presentation";
   import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/pages/bridge/state/pins";
-  import AltarIcon from "$lib/components/altar/AltarIcon.svelte";
+  import AltarIcon from "$lib/shell/components/AltarIcon.svelte";
   import BridgeVoiceInput from "./BridgeVoiceInput.svelte";
   import DictationFeedback from "$lib/components/shared/DictationFeedback.svelte";
-  import { workCommandKey, type CommandTarget, type CommandResult, type WorkCommandRegistry } from "$lib/pages/bridge/state/work-commands";
+  import { workCommandKey, type CommandTarget, type CommandResult, type WorkCommandRegistry } from "$lib/shell/state/work-commands";
   import type { DictationDraft, DictationOptions } from "$lib/pages/bridge/state/voice/dictation";
 
   let {

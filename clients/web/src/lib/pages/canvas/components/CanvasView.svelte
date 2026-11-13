@@ -4,10 +4,10 @@
   import { applyProposal, arrangeScene, blankDocument, boundsOfSelection, commit, deleteSelection, exampleDocument, makePacket, moveSelection, pngArtwork, redo, renameNode, replaceDocument, tidyProposal, undo, validateDocument, validateProposal } from "$lib/pages/canvas/state/engine";
   import type { CanvasNode, Document as BoardDocument, Packet, Proposal, Scene, Tool } from "$lib/pages/canvas/state/types";
   import { CANVAS_COMMAND_HELP, isCanvasCommandCurrent, planCanvasCommand, type CanvasCommandPlan } from "$lib/pages/canvas/state/commands";
-  import { workCommandKey, type CommandResult, type CommandTarget, type WorkCommandRegistry } from "$lib/pages/bridge/state/work-commands";
+  import { workCommandKey, type CommandResult, type CommandTarget, type WorkCommandRegistry } from "$lib/shell/state/work-commands";
   import CanvasSurface from "./CanvasSurface.svelte";
   import CanvasObjects from "./CanvasObjects.svelte";
-  import AltarIcon from "$lib/components/altar/AltarIcon.svelte";
+  import AltarIcon from "$lib/shell/components/AltarIcon.svelte";
   import PageHeader from "$lib/components/shared/PageHeader.svelte";
 
   let { initialDocument, managed = false, onchange, onbusy }: {

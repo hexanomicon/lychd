@@ -12,16 +12,16 @@ routes to the implementation and its operating guide rather than duplicating eit
 | Conversation, consent, and offering recovery | [BridgeView.svelte](lib/pages/bridge/components/BridgeView.svelte), [shell-lifetime workspace](lib/pages/bridge/state/workspace.svelte.ts) | [Bridge](../../../docs/divination/altar/bridge.md) |
 | Conversation catalogue, retained inspection, and source-linked document-local working material | [SeancesWorkspace.svelte](lib/pages/seances/components/SeancesWorkspace.svelte), [material](lib/pages/seances/state/material.ts) | [Séances](../../../docs/divination/altar/seances.md) |
 | Finite dictation, transcript review and private correction/vocabulary controls | [BridgeVoiceInput.svelte](lib/pages/bridge/components/BridgeVoiceInput.svelte), [capture](lib/pages/bridge/state/voice/capture.ts), [draft coordinator](lib/pages/bridge/state/voice/dictation.ts), [DictationFeedback.svelte](lib/components/shared/DictationFeedback.svelte) | [Bridge dictation](../../../docs/divination/altar/bridge.md#dictate-and-review) |
-| Exact instrument work destination and inert Canvas command proposals | [work-command registry](lib/pages/bridge/state/work-commands.ts), [Canvas command planner](lib/pages/canvas/state/commands.ts) | [Canvas commands](../../../docs/compositions/canvas/index.md#give-a-bounded-command-through-bridge) |
+| Exact instrument work destination and inert Canvas command proposals | [work-command registry](lib/shell/state/work-commands.ts), [Canvas command planner](lib/pages/canvas/state/commands.ts) | [Canvas commands](../../../docs/compositions/canvas/index.md#give-a-bounded-command-through-bridge) |
 | Public-note intake, lifecycle review and metadata recovery within Bridge | [PublicNotes.svelte](lib/components/public-notes/PublicNotes.svelte), [recovery controller](lib/archive/notes.ts) | [Public notes](../../../docs/divination/altar/bridge.md#manage-public-notes) |
-| Spatial Run field, tab observation history, and one Run's retained records and gaps | [OrbField.svelte](lib/components/orb/OrbField.svelte), [OrbTimeline.svelte](lib/components/orb/OrbTimeline.svelte), [OrbView.svelte](lib/components/orb/OrbView.svelte) | [Orb](../../../docs/divination/altar/orb.md) |
-| Admitted runtime topology, actual call attempts, source coverage and inspection-only scores | [Runtime evidence](lib/components/shared/RuntimeEvidence.svelte), [runtime reader](lib/orb/runtime.ts), [generic projection](lib/graph/runtime.ts) | [Connected components](../../../docs/sepulcher/extensions/oculus.md#connected-components-and-activity) |
-| Exact-Run matching Archive selection and capture limits | [ArchiveRecallPanel.svelte](lib/components/shared/ArchiveRecallPanel.svelte) | [Archive selection](../../../docs/divination/altar/orb.md#inspect-a-matching-archive-selection) |
+| Spatial Run field, tab observation history, and one Run's retained records and gaps | [OrbField.svelte](lib/pages/orb/components/OrbField.svelte), [OrbTimeline.svelte](lib/pages/orb/components/OrbTimeline.svelte), [OrbView.svelte](lib/pages/orb/components/OrbView.svelte) | [Orb](../../../docs/divination/altar/orb.md) |
+| Admitted runtime topology, actual call attempts, source coverage and inspection-only scores | [Runtime evidence](lib/pages/orb/components/RuntimeEvidence.svelte), [runtime reader](lib/pages/orb/state/runtime.ts), [generic projection](lib/pages/orb/state/runtime-projection.ts) | [Connected components](../../../docs/sepulcher/extensions/oculus.md#connected-components-and-activity) |
+| Exact-Run matching Archive selection and capture limits | [ArchiveRecallPanel.svelte](lib/pages/orb/components/ArchiveRecallPanel.svelte) | [Archive selection](../../../docs/divination/altar/orb.md#inspect-a-matching-archive-selection) |
 | Capability ownership map/list, selected properties, preview, ticket, and physical request | [NexusView.svelte](lib/pages/nexus/components/NexusView.svelte), [native map](lib/pages/nexus/components/NexusMap.svelte), [projection](lib/pages/nexus/state/map.ts), [properties](lib/pages/nexus/components/NexusProperties.svelte) | [Nexus](../../../docs/divination/altar/nexus.md) |
-| Exact registered score and computed graph | [LoomView.svelte](lib/components/loom/LoomView.svelte), [shared canvas](lib/components/graph/GraphCanvas.svelte) | [Loom](../../../docs/divination/altar/loom.md) |
+| Exact registered score and computed graph | [LoomView.svelte](lib/pages/loom/components/LoomView.svelte), [shared canvas](lib/graph/components/GraphCanvas.svelte) | [Loom](../../../docs/divination/altar/loom.md) |
 
 [The layout](routes/+layout.svelte) supplies browser-document context;
-[AltarShell](lib/components/altar/AltarShell.svelte) projects navigation, global attention and the
+[AltarShell](lib/shell/components/AltarShell.svelte) projects navigation, global attention and the
 shell-lifetime [Bridge dock and legacy full-focus page](lib/pages/bridge/components/BridgeDock.svelte). The Séances
 work route inspects conversations without selecting the live Bridge; explicit continuation reuses
 that same conversation component. Its layout
@@ -40,7 +40,7 @@ Their Python owners are [Altar controllers](../../../src/lychd/interface/web/) a
 [web-domain contracts](../../../src/lychd/domain/web/). Regeneration, checks, and builds follow
 [CONTRIBUTING](../../../CONTRIBUTING.md#quality-checks); do not hand-edit generated descriptions.
 
-Loom and Orb share [graph projections](lib/graph/) and one [canvas adapter](lib/components/graph/GraphCanvas.svelte),
+Loom and Orb share [graph projections](lib/graph/) and one [canvas adapter](lib/graph/components/GraphCanvas.svelte),
 with semantic views over the same identities. [The renderer
 gate](../../../docs/adr/15-frontend.md#decision-lock-and-reopening-gate) owns qualification;
 [State](../../../docs/state-of-the-work.md#orb-instrument) records its remaining limits.

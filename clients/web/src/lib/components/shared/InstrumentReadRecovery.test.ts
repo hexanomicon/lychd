@@ -33,7 +33,7 @@ import {
 } from "$lib/api/client";
 import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
 import BridgeView from "$lib/pages/bridge/components/BridgeView.svelte";
-import OrbView from "../orb/OrbView.svelte";
+import OrbView from "$lib/pages/orb/components/OrbView.svelte";
 
 const at = "2026-10-10T12:00:00Z";
 const bridgeRead = vi.mocked(getBridgeSnapshot);

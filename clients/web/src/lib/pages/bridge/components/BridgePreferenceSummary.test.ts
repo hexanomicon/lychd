@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { coldPreferredRoute } from "$lib/orb/__fixtures__/preference";
+import { coldPreferredRoute } from "$lib/pages/orb/state/__fixtures__/preference";
 import BridgePreferenceSummary from "./BridgePreferenceSummary.svelte";
 
 afterEach(() => vi.unstubAllGlobals());

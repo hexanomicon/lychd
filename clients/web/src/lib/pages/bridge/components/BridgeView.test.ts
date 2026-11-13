@@ -59,7 +59,7 @@ import {
 } from "$lib/api/client";
 import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/pages/bridge/state/workspace.svelte";
 import BridgeView from "./BridgeView.svelte";
-import { createWorkCommandRegistry, workCommandKey, type CommandResult, type CommandTarget } from "$lib/pages/bridge/state/work-commands";
+import { createWorkCommandRegistry, workCommandKey, type CommandResult, type CommandTarget } from "$lib/shell/state/work-commands";
 import { createVoiceCapture } from "$lib/pages/bridge/state/voice/capture";
 import type { VoiceCaptureOptions, VoiceRecording } from "$lib/pages/bridge/state/voice/capture";
 vi.mock("$lib/pages/bridge/state/voice/capture", () => ({ createVoiceCapture: vi.fn(), VOICE_MAX_WAV_BYTES: 960044 }));

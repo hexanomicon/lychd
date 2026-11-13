@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createDictationCoordinator, newDictationAttemptId, type DictationDraft } from "./dictation";
-import type { CommandTarget } from "../work-commands";
+import type { CommandTarget } from "$lib/shell/state/work-commands";
 
 function fixture() {
   let state: DictationDraft = {
