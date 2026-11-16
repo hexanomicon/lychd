@@ -179,7 +179,6 @@ describe("shell-lifetime Bridge conversation", () => {
     await visit("/atlas");
     const shell = render(AltarShell, { children });
     await screen.findByText("Retained answer for session-a");
-    await fireEvent.click(screen.getByText("Conversations"));
     await fireEvent.click(screen.getByRole("link", { name: /Older B/ }));
     await screen.findByText("Retained answer for session-b");
     expect(page.url.pathname).toBe("/atlas");
@@ -408,7 +407,6 @@ it("discards a queued B composer focus when explicit C selection supersedes it",
   await visit("/atlas");
   const target = screen.getByRole("button", { name: "Workspace focus target" });
   target.focus();
-  await fireEvent.click(screen.getByText("Conversations"));
   await fireEvent.click(screen.getByRole("link", { name: /Older B/ }));
   await screen.findByText("Retained answer for session-b");
   expect(document.activeElement).not.toBe(screen.getByLabelText("Message"));

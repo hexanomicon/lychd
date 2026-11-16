@@ -7,7 +7,7 @@
   import BridgeDock from "$lib/pages/bridge/components/BridgeDock.svelte";
   import BridgeView from "$lib/pages/bridge/components/BridgeView.svelte";
   import AltarIcon from "./AltarIcon.svelte";
-  import { altarNavigationContext, selectedBridgeHref, type AltarNavigation } from "$lib/navigation/instruments";
+  import { altarNavigationContext, bridgeHistoryContext, selectedBridgeHref, type AltarNavigation, type BridgeHistory, type BridgeHistoryEntry, type BridgeHistoryHost } from "$lib/navigation/instruments";
 
   import { createSeancesWorkspace, setSeancesWorkspace } from "$lib/pages/seances/state/workspace.svelte";
   import { seanceHref } from "$lib/pages/seances/state/material";
@@ -33,7 +33,6 @@
     return available && (dockOpen || bridgeFocused) &&
       (typeof document === "undefined" || document.visibilityState !== "hidden");
   }
-  let workHref = $state(untrack(() => bridgeFocused ? "/orb" : `${page.url.pathname}${page.url.search}`));
   const viewing = $derived.by(() => {
     const path = page.url.pathname;
     if (path.startsWith("/bridge")) return page.url.searchParams.has("notes") ? "Public notes" :
@@ -77,6 +76,18 @@
   let omens = $state<Array<{ id: number; text: string; fault: boolean }>>([]);
   const navigation = $state<AltarNavigation>({ bridgePath: initialPath ?? "/bridge" });
   setContext(altarNavigationContext, navigation);
+  // BridgeView registers its conversation history here so the sidebar can list it.
+  let bridgeHistory = $state.raw<BridgeHistory | null>(null);
+  setContext<BridgeHistoryHost>(bridgeHistoryContext, {
+    register(history) {
+      bridgeHistory = history;
+      return () => { if (bridgeHistory === history) bridgeHistory = null; };
+    }
+  });
+  function selectHistory(event: MouseEvent, id: string) {
+    bridgeHistory?.select(event, id);
+    closeNarrowSidebar();
+  }
   const seances = setSeancesWorkspace(createSeancesWorkspace(async (id) => {
     if (navigationId(id) !== id) return;
     suspendBridgeVoice();
@@ -98,7 +109,6 @@
   beforeNavigate(({ from }) => {
     suspendBridgeVoice();
     navigatingFromBridge = bridgeFocused;
-    if (!bridgeFocused) workHref = `${page.url.pathname}${page.url.search}`;
     const main = document.getElementById("altar-main");
     if (!from || !main) return;
     mainScroll.delete(from.url.href);
@@ -175,59 +185,33 @@
   let attentionFault = "";
   let mounted = false;
 
+  // The About popover closes on outside click or Escape; Applications is an inline native disclosure.
   function manageAboutDisclosure(node: HTMLDetailsElement) {
-    let pinned = false;
-    const application = node.classList.contains("application-menu");
     function dismissOutside(event: MouseEvent) {
-      if (node.open && !event.composedPath().includes(node)) { node.open = false; pinned = false; }
+      if (node.open && !event.composedPath().includes(node)) node.open = false;
     }
 
     function dismissOnEscape(event: KeyboardEvent) {
       if (event.key !== "Escape" || event.defaultPrevented || !node.open) return;
       node.open = false;
-      pinned = false;
       node.querySelector("summary")?.focus();
       event.preventDefault();
     }
 
-    function openOnHover() { if (application) node.open = true; }
-    function closeAfterLeave() { if (application && !pinned && !node.contains(document.activeElement)) node.open = false; }
-    function openOnFocus(event: FocusEvent) {
-      if (application && !(event.relatedTarget instanceof Node && node.contains(event.relatedTarget))) node.open = true;
-    }
-    function closeAfterFocus(event: FocusEvent) {
-      if (application && !(event.relatedTarget instanceof Node && node.contains(event.relatedTarget))) { node.open = false; pinned = false; }
-    }
-    function clickDisclosure(event: MouseEvent) {
-      if (!application || !(event.target instanceof Element) || !event.target.closest("summary")) return;
-      event.preventDefault();
-      pinned = !pinned;
-      node.open = pinned;
-    }
-    node.addEventListener("pointerenter", openOnHover);
-    node.addEventListener("pointerleave", closeAfterLeave);
-    node.addEventListener("focusin", openOnFocus);
-    node.addEventListener("focusout", closeAfterFocus);
-    node.addEventListener("click", clickDisclosure);
     window.addEventListener("click", dismissOutside);
     window.addEventListener("keydown", dismissOnEscape);
     return () => {
-      node.removeEventListener("click", clickDisclosure);
-      node.removeEventListener("pointerenter", openOnHover);
-      node.removeEventListener("pointerleave", closeAfterLeave);
-      node.removeEventListener("focusin", openOnFocus);
-      node.removeEventListener("focusout", closeAfterFocus);
       window.removeEventListener("click", dismissOutside);
       window.removeEventListener("keydown", dismissOnEscape);
     };
   }
 
   const instruments = [
-    { slug: "bridge", label: "Bridge", related: "/seances" },
-    { slug: "atlas", label: "Atlas", related: "/canvas" },
-    { slug: "loom", label: "Loom" },
-    { slug: "nexus", label: "Nexus" },
-    { slug: "orb", label: "Orb" }
+    { slug: "bridge", label: "Bridge", hint: "Talk", related: "/seances" },
+    { slug: "atlas", label: "Atlas", hint: "Projects", related: "/canvas" },
+    { slug: "loom", label: "Loom", hint: "Scores" },
+    { slug: "nexus", label: "Nexus", hint: "Iron" },
+    { slug: "orb", label: "Orb", hint: "Runs" }
   ] as const;
 
   function instrumentCurrent(instrument: typeof instruments[number], href: string) {
@@ -332,6 +316,19 @@
 <svelte:window onfocus={refreshAttention} onbeforeunload={guardMaterialUnload} onkeydown={closeNarrowSidebarOnEscape} />
 <svelte:document onvisibilitychange={attentionVisibilityChanged} />
 
+{#snippet historyRow(history: BridgeHistory, entry: BridgeHistoryEntry)}
+  <div class="history-row">
+    <a class="history-link" href={history.href(entry.id)} aria-current={history.selectedId === entry.id ? "page" : undefined} onclick={(event) => selectHistory(event, entry.id)}>
+      <AltarIcon name="conversation" size={16} />
+      <span class="history-title">{entry.title}</span>
+      {#if entry.pending}<span class="history-chip">{entry.pending} awaiting consent</span>{/if}
+      {#if entry.marker}<span class="history-chip">{entry.marker}</span>{/if}
+      {#if !entry.loaded}<span class="history-chip">Details not loaded</span>{/if}
+    </a>
+    <button id={`bridge-pin-${entry.id}`} class="history-pin" type="button" aria-label={`${history.isPinned(entry.id) ? "Unpin" : "Pin"} conversation: ${entry.title}`} aria-pressed={history.isPinned(entry.id)} title={history.isPinned(entry.id) ? "Unpin conversation" : "Pin conversation"} onclick={() => history.togglePin(entry.id)}><AltarIcon name="pin" size={14} /></button>
+  </div>
+{/snippet}
+
 <a class="skip-link" href="#altar-main">Skip to instrument</a>
 <div class="altar-frame">
 <aside class="altar-sidebar" aria-label="Altar" data-expanded={sidebarExpanded} data-overlay={narrow && narrowSidebarOpen} inert={bridgeModal}>
@@ -352,29 +349,62 @@
       </div>
     </div>
   </details>
-  <button id="altar-sidebar-toggle" class="sidebar-toggle" type="button" aria-expanded={sidebarExpanded} aria-controls="altar-sidebar-nav" aria-label={sidebarExpanded ? "Collapse navigation" : "Expand navigation"} title={sidebarExpanded ? "Collapse navigation" : "Expand navigation"} onclick={toggleSidebar}>
+  <span class="wordmark label" aria-hidden="true">LychD <span>Altar</span></span>
+  <a class="sidebar-icon" href={resolve("/seances")} aria-label="Search séances" title="Search séances"><AltarIcon name="search" size={20} /></a>
+  <button id="altar-sidebar-toggle" class="sidebar-icon" type="button" aria-expanded={sidebarExpanded} aria-controls="altar-sidebar-nav" aria-label={sidebarExpanded ? "Collapse navigation" : "Expand navigation"} title={sidebarExpanded ? "Collapse navigation" : "Expand navigation"} onclick={toggleSidebar}>
     <AltarIcon name="sidebar" size={20} />
   </button>
   </div>
+
+  {#if bridgeHistory}
+    <button class="new-seance" type="button" disabled={bridgeHistory.creating} aria-busy={bridgeHistory.creating} title="New séance" onclick={() => { bridgeHistory?.create(); closeNarrowSidebar(); }}>
+      <AltarIcon name="compose" size={18} /><span class="label">{bridgeHistory.creating ? "Opening…" : "New séance"}</span>
+    </button>
+  {/if}
 
   <nav id="altar-sidebar-nav" class="instruments" aria-label="Instruments">
     {#each instruments as instrument (instrument.slug)}
       {@const href = resolve(instrument.slug === "bridge" ? navigation.bridgePath : `/${instrument.slug}`)}
       <a {href} aria-current={instrumentCurrent(instrument, href)} title={instrument.label}>
-        <AltarIcon name={instrument.slug} /><span class="label">{instrument.label}</span>
+        <AltarIcon name={instrument.slug} /><span class="label">{instrument.label}</span><span class="label hint" aria-hidden="true">{instrument.hint}</span>
       </a>
     {/each}
-    <details class="application-menu" {@attach manageAboutDisclosure}>
-      <summary title="Applications"><AltarIcon name="applications" /><span class="label">Applications</span><span class="caret" aria-hidden="true">⌄</span></summary>
+    <details class="application-menu">
+      <summary title="Applications"><AltarIcon name="applications" /><span class="label">Applications</span><span class="caret" aria-hidden="true"><AltarIcon name="chevron" size={16} /></span></summary>
       <nav aria-label="Applications">
-        <a href={resolve("/scavenger")} aria-current={page.url.pathname === resolve("/scavenger") ? "page" : undefined}><AltarIcon name="scavenger" />Scavenger market</a>
+        <a href={resolve("/scavenger")} aria-current={page.url.pathname === resolve("/scavenger") ? "page" : undefined}><AltarIcon name="scavenger" /><span class="label">Scavenger market</span></a>
       </nav>
     </details>
   </nav>
 
+  {#if bridgeHistory && sidebarExpanded}
+    {@const history = bridgeHistory}
+    <nav class="sidebar-history" aria-label="Conversations">
+      <div class="history-heading">
+        <h2>Pinned</h2>
+        {#if history.selectedId && !history.isPinned(history.selectedId)}
+          {@const current = history.selectedId}
+          <button class="history-add" type="button" aria-label="Pin current conversation" title="Pin current conversation" onclick={() => history.togglePin(current)}><AltarIcon name="plus" size={14} /></button>
+        {/if}
+      </div>
+      {#each history.pinned as entry (entry.id)}{@render historyRow(history, entry)}{:else}<p class="history-empty">No pinned conversations.</p>{/each}
+      <div class="history-heading">
+        <h2>Recent</h2>
+        <button class="history-add" type="button" aria-label="New séance from recent" title="New séance" disabled={history.creating} onclick={() => history.create()}><AltarIcon name="plus" size={14} /></button>
+      </div>
+      {#each history.recent as entry (entry.id)}{@render historyRow(history, entry)}{:else}<p class="history-empty">No séance yet.</p>{/each}
+      {#if history.hasMore}
+        <button class="history-more" type="button" disabled={history.loadingMore} aria-busy={history.loadingMore} onclick={() => history.loadMore()}>
+          {history.loadingMore ? "Loading conversations…" : "Load more conversations"}
+        </button>
+      {/if}
+      {#if history.notice}<p class="history-empty" role="status">{history.notice}</p>{/if}
+    </nav>
+  {/if}
+
   <div class="sidebar-foot">
   {#if available}
-  {@const consentText = pending === null ? "Consent status unknown" : pending > 0 ? `${pending} awaiting` : "Consent clear"}
+  {@const consentText = pending === null ? "Consent status unknown" : pending > 0 ? `${pending} awaiting consent` : "Consent clear"}
   <a
     class="sigil"
     data-state={pending === null ? "unknown" : pending > 0 ? "lit" : "dormant"}
@@ -385,9 +415,10 @@
     {#if pending}<span class="sigil-count" aria-hidden="true">{pending}</span>{/if}
   </a>
   {:else}<span class="offline-status" title="Offline · consent unavailable"><span aria-hidden="true">⊘</span> <span class="label">Offline · consent unavailable</span></span>{/if}
-  <span class="sigil-identity" title="Fixed local authority context; not authentication">
-    Local Sigil · <b>Magus</b>
-  </span>
+  <div class="sigil-identity" title="Fixed local authority context; not authentication">
+    <span class="avatar" aria-hidden="true">M</span>
+    <span class="label"><b>Magus</b><small>Local Sigil · {page.url.hostname}</small></span>
+  </div>
   </div>
  </div>
 </aside>
@@ -400,7 +431,7 @@
   <main id={bridgeFocused ? undefined : "altar-main"} tabindex="-1" hidden={bridgeFocused} inert={bridgeModal}>
     {@render children()}
   </main>
-  <BridgeDock bind:open={dockOpen} bind:narrow focused={bridgeFocused} focusHref={resolve(resolvedBridgeSession ? seanceHref(resolvedBridgeSession) : "/seances")} focusLabel={resolvedBridgeSession ? "Open Séance" : "Browse séances"} browseHref={resolve("/seances")} {workHref} {available} {viewing} onconnect={connect} onexpand={toggleBridge} onsuspend={suspendBridgeVoice}>
+  <BridgeDock bind:open={dockOpen} bind:narrow focused={bridgeFocused} focusHref={resolve(resolvedBridgeSession ? seanceHref(resolvedBridgeSession) : "/seances")} focusLabel={resolvedBridgeSession ? "Open Séance" : "Browse séances"} {available} {viewing} onconnect={connect} onexpand={toggleBridge} onsuspend={suspendBridgeVoice}>
     {#if available}<BridgeView bind:this={bridgeView} visible={dockOpen || bridgeFocused} isVisible={readBridgeVisibility} embedded={!bridgeFocused} sessionId={bridgeSession} search={bridgeSearch} onNavigate={selectConversation} onSessionResolved={(id) => { resolvedBridgeSession = id; }} />{/if}
   </BridgeDock>
 </div>
@@ -417,16 +448,39 @@
 
 <style>
   .altar-frame { position: relative; display: flex; height: 100dvh; min-height: 0; }
-  .altar-sidebar { --sidebar-expanded: 15rem; --sidebar-rail: 3.75rem; position: relative; z-index: 40; flex: 0 0 var(--sidebar-expanded); min-width: 0; transition: flex-basis var(--duration-drift, 160ms) ease; }
+  .altar-sidebar { --sidebar-expanded: 17rem; --sidebar-rail: 3.75rem; position: relative; z-index: 40; flex: 0 0 var(--sidebar-expanded); min-width: 0; transition: flex-basis var(--duration-drift, 160ms) ease; }
   .altar-sidebar[data-expanded="false"] { flex-basis: var(--sidebar-rail); }
-  .sidebar-inner { display: flex; flex-direction: column; gap: .75rem; width: 100%; height: 100%; padding: .75rem .625rem; background: var(--color-obsidian); border-inline-end: 1px solid var(--color-engraving); }
+  .sidebar-inner { display: flex; flex-direction: column; gap: .5rem; width: 100%; height: 100%; padding: .75rem .625rem; background: var(--color-obsidian); border-inline-end: 1px solid var(--color-engraving); }
   /* Visually hidden but still announced, so links keep their names in the rail. */
   .altar-sidebar[data-expanded="false"] .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .sidebar-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+  .sidebar-head { display: flex; align-items: center; gap: .25rem; }
   .altar-sidebar[data-expanded="false"] .sidebar-head { flex-direction: column; }
-  .sidebar-toggle { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; padding: 0; border: 0; border-radius: var(--radius-rune); background: transparent; color: var(--color-ash); cursor: pointer; }
-  .sidebar-toggle:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
-  .sidebar-foot { display: flex; flex-direction: column; gap: .5rem; margin-top: auto; }
+  .wordmark { flex: 1 1 auto; min-width: 0; margin-inline-start: .25rem; color: var(--color-bone); font: 600 var(--text-base)/1.4 var(--font-body); white-space: nowrap; }
+  .wordmark span { color: var(--color-ash); font-weight: 400; }
+  .sidebar-icon { display: grid; place-items: center; flex: 0 0 auto; width: 2.5rem; height: 2.5rem; padding: 0; border: 0; border-radius: var(--radius-rune); background: transparent; color: var(--color-ash); cursor: pointer; }
+  .sidebar-icon:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
+  .new-seance { display: flex; align-items: center; gap: .75rem; min-height: 2.75rem; padding: .55rem .7rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-glyph); background: var(--color-obsidian-2); color: var(--color-bone); font: inherit; font-size: var(--text-sm); cursor: pointer; }
+  .new-seance:hover:not(:disabled) { border-color: var(--color-rune); }
+  .altar-sidebar[data-expanded="false"] .new-seance { justify-content: center; padding-inline: 0; }
+  .sidebar-history { display: flex; flex-direction: column; gap: .1rem; flex: 1 1 auto; min-height: 0; margin-inline: -.625rem; padding: .5rem .625rem; overflow-y: auto; border-top: 1px solid var(--color-engraving); }
+  .history-heading { display: flex; align-items: center; justify-content: space-between; margin: .5rem 0 .15rem; padding-inline-start: .7rem; }
+  .history-heading h2 { color: var(--color-ash); font: 600 var(--text-2xs)/1.5 var(--font-body); letter-spacing: .08em; text-transform: uppercase; }
+  .history-add, .history-pin { display: grid; place-items: center; width: 2rem; height: 2rem; padding: 0; border: 0; border-radius: var(--radius-rune); background: transparent; color: var(--color-ash); cursor: pointer; }
+  .history-add:hover, .history-pin:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
+  .history-row { position: relative; display: flex; align-items: center; }
+  .history-link { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .6rem; flex: 1 1 auto; min-width: 0; min-height: 2.5rem; padding: .4rem 2.25rem .4rem .7rem; border: 1px solid transparent; border-radius: var(--radius-rune); color: var(--color-parchment); font-size: var(--text-sm); text-decoration: none; }
+  .history-link :global(svg) { flex: 0 0 auto; color: var(--color-ash); }
+  .history-link:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
+  .history-link[aria-current="page"] { color: var(--color-bone); font-weight: 600; border-color: var(--color-engraving); background: var(--color-obsidian-2); }
+  .history-title { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-chip { flex-basis: 100%; padding-inline-start: 1.6rem; color: var(--color-accent); font-size: var(--text-2xs); }
+  .history-pin { position: absolute; inset-inline-end: .2rem; inset-block-start: .25rem; opacity: 0; }
+  .history-row:hover .history-pin, .history-pin:focus-visible, .history-pin[aria-pressed="true"] { opacity: 1; }
+  .history-pin[aria-pressed="true"] { color: var(--color-accent); }
+  .history-empty { padding: .25rem .7rem; color: var(--color-ash); font-size: var(--text-xs); }
+  .history-more { min-height: 2.5rem; margin-top: .25rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); background: transparent; color: var(--color-parchment); font: inherit; font-size: var(--text-xs); cursor: pointer; }
+  .sidebar-foot { display: flex; flex-direction: column; gap: .5rem; margin-top: auto; padding-top: .5rem; border-top: 1px solid var(--color-engraving); }
+  .sidebar-history + .sidebar-foot { margin-top: 0; }
   /* Narrow screens: the rail stays in flow and the expanded panel floats over the work area. */
   .altar-sidebar[data-overlay="true"] { flex-basis: var(--sidebar-rail); }
   .altar-sidebar[data-overlay="true"] .sidebar-inner { position: absolute; inset-block: 0; inset-inline-start: 0; width: var(--sidebar-expanded); box-shadow: 0 0 2rem color-mix(in srgb, var(--color-void) 70%, transparent); }
@@ -435,31 +489,40 @@
   .brand:hover { background: var(--color-tertiary); }
   .altar-product { margin-top: .35rem; color: var(--color-parchment); font-size: var(--text-sm); }
   nav.instruments { display: flex; flex-direction: column; gap: .25rem; }
+  nav.instruments > a .hint { margin-inline-start: auto; color: var(--color-ash); font-size: var(--text-xs); }
   nav.instruments > a { display: flex; align-items: center; gap: .75rem; padding: .55rem .7rem; color: var(--color-ash); font-size: var(--text-sm); text-decoration: none; min-height: 2.75rem; border: 1px solid transparent; border-radius: var(--radius-rune); transition: color var(--duration-drift), background var(--duration-drift); }
   nav.instruments > a :global(svg), .application-menu :global(svg) { color: currentColor; flex: 0 0 auto; }
   nav.instruments > a:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
   nav.instruments > a[aria-current] { color: var(--color-accent); text-shadow: none; border-color: color-mix(in srgb,var(--color-accent) 25%,var(--color-engraving)); background: color-mix(in srgb,var(--color-accent) 10%,var(--color-obsidian)); }
   .altar-sidebar[data-expanded="false"] nav.instruments > a, .altar-sidebar[data-expanded="false"] .application-menu > summary { justify-content: center; padding-inline: 0; }
-  .sigil { position: relative; display: flex; align-items: center; gap: .6rem; min-height: 2.5rem; border-radius: var(--radius-rune); padding: .5rem .7rem; box-shadow: none; animation: none; border-color: transparent; }
+  .sigil { position: relative; display: flex; align-items: center; gap: .6rem; min-height: 2.5rem; border-radius: var(--radius-glyph); padding: .5rem .7rem; box-shadow: none; animation: none; border-color: transparent; }
+  .sigil[data-state="lit"] { border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent); background: color-mix(in srgb, var(--color-accent) 10%, transparent); color: var(--color-accent); }
+  .altar-sidebar[data-expanded="false"] .sigil[data-state="lit"] { border-color: transparent; background: transparent; }
   .sigil-count { display: none; position: absolute; inset-block-start: .1rem; inset-inline-end: .1rem; min-width: 1.1rem; padding: 0 .25rem; border-radius: 999px; background: var(--color-frost); color: var(--color-void); font-size: var(--text-2xs); line-height: 1.1rem; text-align: center; }
   .altar-sidebar[data-expanded="false"] .sigil { justify-content: center; padding-inline: 0; }
   .altar-sidebar[data-expanded="false"] .sigil-count { display: block; }
-  .sigil-identity { display: none; }
+  .sigil-identity { display: flex; align-items: center; gap: .65rem; padding: .35rem .5rem; }
+  .altar-sidebar[data-expanded="false"] .sigil-identity { justify-content: center; padding-inline: 0; }
+  .avatar { display: grid; place-items: center; flex: 0 0 auto; width: 2rem; height: 2rem; border: 1px solid var(--color-engraving); border-radius: 50%; color: var(--color-bone); font-size: var(--text-xs); font-weight: 600; }
+  .sigil-identity b { display: block; color: var(--color-bone); font-size: var(--text-sm); }
+  .sigil-identity small { display: block; color: var(--color-ash); font: var(--text-2xs)/1.4 var(--font-glyph); }
   .offline-status { display: flex; align-items: center; gap: .6rem; color: var(--color-ash); font-size: var(--text-xs); }
   .altar-sidebar[data-expanded="false"] .offline-status { justify-content: center; }
-  .application-menu { position: relative; }
   .application-menu > summary { display: flex; align-items: center; gap: .75rem; list-style: none; min-height: 2.75rem; padding: .55rem .7rem; border-radius:var(--radius-rune); color: var(--color-ash); cursor: pointer; font-size: var(--text-sm); }
   .application-menu > summary:hover { color:var(--color-bone); background:var(--color-obsidian-2); }
   .application-menu > summary::-webkit-details-marker { display: none; }
-  .application-menu .caret { margin-inline-start: auto; transform: rotate(-90deg); }
+  .application-menu .caret { display: grid; margin-inline-start: auto; transition: transform var(--duration-drift, 160ms) ease; }
+  .application-menu[open] .caret { transform: rotate(180deg); }
   .altar-sidebar[data-expanded="false"] .application-menu .caret { display: none; }
-  .application-menu nav { position: absolute; inset-block-start: 0; inset-inline-start: calc(100% + .5rem); z-index: 50; min-width: 14rem; padding: .35rem; background: var(--color-tertiary); border: 1px solid var(--color-tertiary-edge); border-radius: var(--radius-glyph); }
-  .application-menu a { display: flex; align-items: center; gap: .75rem; min-height: 2.75rem; padding: .65rem; font-size: var(--text-sm); letter-spacing: 0; text-transform: none; text-decoration: none; color: var(--color-bone); }
-  .application-menu a:hover, .application-menu a[aria-current="page"] { background: color-mix(in srgb, var(--color-rune) 10%, var(--color-tertiary)); }
+  .application-menu nav { display: flex; flex-direction: column; gap: .15rem; padding-inline-start: 1.25rem; }
+  .altar-sidebar[data-expanded="false"] .application-menu nav { padding-inline-start: 0; }
+  .application-menu a { display: flex; align-items: center; gap: .75rem; min-height: 2.5rem; padding: .45rem .7rem; border-radius: var(--radius-rune); font-size: var(--text-sm); letter-spacing: 0; text-transform: none; text-decoration: none; color: var(--color-ash); }
+  .altar-sidebar[data-expanded="false"] .application-menu a { justify-content: center; padding-inline: 0; }
+  .application-menu a:hover, .application-menu a[aria-current="page"] { color: var(--color-bone); background: var(--color-obsidian-2); }
   .altar-workbench { position: relative; display: flex; flex: 1 1 0; height: 100%; min-width: 0; min-height: 0; overflow: hidden; background: var(--color-void); }
   #altar-main { flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; background: var(--color-void); container-type: inline-size; container-name: work-area; }
   #altar-main::before, #altar-main::after { display: none; }
   main[hidden] { display: none; }
   :focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  @media (prefers-reduced-motion: reduce) { .altar-sidebar, nav.instruments > a { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .altar-sidebar, nav.instruments > a, .application-menu .caret { transition: none; } }
 </style>

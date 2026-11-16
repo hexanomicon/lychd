@@ -228,7 +228,7 @@ describe("shell contextual navigation", () => {
     page.url.href = `http://localhost${path}`;
     const view = render(AltarShell, { children });
     const instruments = screen.getByRole("navigation", { name: "Instruments" });
-    expect(Array.from(instruments.children, entry => (entry.querySelector("summary") ?? entry).textContent?.replace(/⌄\s*$/, "").trim()))
+    expect(Array.from(instruments.children, entry => (entry.querySelector("summary") ?? entry).querySelector(".label")?.textContent?.trim()))
       .toEqual(["Bridge", "Atlas", "Loom", "Nexus", "Orb", "Applications"]);
     expect(within(instruments).getByRole("link", { name: label }).getAttribute("aria-current")).toBe(current);
     expect(instruments.querySelectorAll("[aria-current]")).toHaveLength(1);
@@ -281,24 +281,22 @@ it("closes the About disclosure on Escape and restores focus to its trigger", as
   view.unmount();
 });
 
-it("opens Applications by hover, pins a click, and keeps menu traversal and Escape reachable", async () => {
+it("expands Applications inline as a native disclosure without hover side effects", async () => {
   vi.mocked(getAltarStatus).mockResolvedValue(status(0));
   const view = render(AltarShell, { children });
   const trigger = screen.getByText("Applications");
   const disclosure = trigger.closest("details")!;
   await fireEvent.pointerEnter(disclosure);
-  expect(disclosure.open).toBe(true);
+  expect(disclosure.open).toBe(false);
   await fireEvent.click(trigger);
   expect(disclosure.open).toBe(true);
   const scavenger = screen.getByRole("link", { name: "Scavenger market" });
-  scavenger.focus();
-  await fireEvent.pointerLeave(disclosure);
-  expect(disclosure.open).toBe(true);
   expect(scavenger.getAttribute("href")).toBe("/scavenger");
   expect(within(screen.getByRole("navigation", { name: "Applications" })).queryByRole("link", { name: "Canvas" })).toBeNull();
-  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.pointerLeave(disclosure);
+  expect(disclosure.open).toBe(true);
+  await fireEvent.click(trigger);
   expect(disclosure.open).toBe(false);
-  expect(document.activeElement).toBe(trigger.closest("summary"));
   view.unmount();
 });
 

@@ -8,6 +8,31 @@ export type BridgeDestination = "/bridge" | `/bridge/${string}`;
 export interface AltarNavigation { bridgePath: BridgeDestination }
 export const altarNavigationContext = Symbol("altar-navigation");
 
+/** One conversation row as the shell sidebar shows it; BridgeView remains its only owner. */
+export interface BridgeHistoryEntry { id: string; title: string; pending: number; marker: string | null; loaded: boolean }
+/**
+ * Bridge conversation history projected into the shell sidebar. BridgeView owns the
+ * snapshot, pins, and selection; the shell renders and forwards intent only.
+ */
+export interface BridgeHistory {
+  readonly pinned: readonly BridgeHistoryEntry[];
+  readonly recent: readonly BridgeHistoryEntry[];
+  readonly selectedId: string | null;
+  readonly creating: boolean;
+  readonly hasMore: boolean;
+  readonly loadingMore: boolean;
+  readonly notice: string;
+  isPinned(id: string): boolean;
+  href(id: string): string;
+  create(): void;
+  togglePin(id: string): void;
+  select(event: MouseEvent, id: string): void;
+  loadMore(): void;
+}
+/** The shell offers this to BridgeView; registering hides BridgeView's own history rail. */
+export interface BridgeHistoryHost { register(history: BridgeHistory): () => void }
+export const bridgeHistoryContext = Symbol("bridge-history");
+
 /** Navigation hints are bounded identities, never admission or evidence authority. */
 export function navigationId(value?: string | null): string | null {
   return value && value.trim() === value && /^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$/.test(value) ? value : null;

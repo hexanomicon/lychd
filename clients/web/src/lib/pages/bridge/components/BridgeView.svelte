@@ -2,7 +2,7 @@
   import { beforeNavigate, goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
   import { resolvePath as resolve } from "$lib/navigation/paths";
-  import { navigationId, orbReturnHref } from "$lib/navigation/instruments";
+  import { bridgeHistoryContext, navigationId, orbReturnHref, type BridgeHistoryEntry, type BridgeHistoryHost } from "$lib/navigation/instruments";
   import { getContext, onDestroy, onMount, tick, untrack } from "svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
@@ -25,6 +25,7 @@
   } from "$lib/pages/bridge/state/projection";
   import ConsentCard from "$lib/components/shared/ConsentCard.svelte";
   import CircleRun from "$lib/pages/bridge/components/CircleRun.svelte";
+  import CircleInspector from "$lib/pages/bridge/components/CircleInspector.svelte";
   import DelegateMark from "$lib/components/shared/DelegateMark.svelte";
   import GenUI from "$lib/pages/bridge/components/GenUI.svelte";
   import AtlasLinks from "$lib/components/atlas/AtlasLinks.svelte";
@@ -168,6 +169,42 @@
   const visiblePins = $derived(pins.filter((id) => !attentionOnly || (sessionMetadata.get(id)?.pending_count ?? 0) > 0));
   const recentSessions = $derived((snapshot?.sessions ?? []).filter((session) =>
     !pins.includes(session.id) && (!attentionOnly || (session.pending_count ?? 0) > 0)));
+
+  // Inside the Altar shell, conversation history renders in the shell sidebar. This view
+  // still owns the snapshot, pins, and selection; the shell only reads and forwards intent.
+  const historyHost = getContext<BridgeHistoryHost | undefined>(bridgeHistoryContext);
+  const shellHistory = !!historyHost;
+  function historyEntry(id: string): BridgeHistoryEntry {
+    const session = sessionMetadata.get(id);
+    return {
+      id,
+      title: session?.title ?? `Conversation · ${id}`,
+      pending: session?.pending_count ?? 0,
+      loaded: !!session,
+      marker: work.pending.has(id) ? "Offering unresolved" : work.refused.has(id) ? "Refused offering" : work.drafts.has(id) ? "Draft" : null
+    };
+  }
+  if (historyHost) {
+    const unregister = historyHost.register({
+      get pinned() { return visiblePins.map(historyEntry); },
+      get recent() {
+        const unlisted = selected && !pins.includes(selected.id) && !snapshot?.sessions.some((session) => session.id === selected.id);
+        return [...(unlisted && selected ? [selected.id] : []), ...recentSessions.map((session) => session.id)].map(historyEntry);
+      },
+      get selectedId() { return selected?.id ?? null; },
+      get creating() { return creatingSession; },
+      get hasMore() { return !!snapshot?.sessions_next_cursor; },
+      get loadingMore() { return loading || sessionsLoading; },
+      get notice() { return sessionsError || pinNotice; },
+      isPinned: (id) => pins.includes(id),
+      href: bridgeHref,
+      create: () => void createSession(),
+      togglePin,
+      select: selectConversation,
+      loadMore: () => void loadMoreSessions()
+    });
+    onDestroy(unregister);
+  }
   let focusedConsent = $derived(selected && sessionId === selected.id && focusRun && focusConsent && (
     (selected.turns ?? []).some((turn) => turn.run_id === focusRun) ||
     snapshot?.active_runs.some((run) => run.run_id === focusRun && run.session_id === selected.id)
@@ -193,6 +230,14 @@
   let selectedPendingCount = $derived(
     snapshot?.pending_consents.filter((card) => card.state === "pending_consent").length ?? 0
   );
+  // The inspector follows the focused Run, else the latest live Run, else the latest retained reply.
+  const inspectedTurn = $derived(selectedLiveTurns.find((turn) => turn.runId === focusRun) ?? selectedLiveTurns.at(-1));
+  const inspectedRunId = $derived(inspectedTurn?.runId ??
+    (selected?.turns ?? []).findLast((turn) => turn.role === "agent" && !!turn.run_id)?.run_id ?? null);
+  const inspectedPending = $derived(inspectedRunId
+    ? snapshot?.pending_consents.filter((card) => card.run_id === inspectedRunId && card.state === "pending_consent").length ?? 0
+    : 0);
+  const showInspector = $derived(!embedded && !!selected && !!inspectedRunId);
 
   const workCommands = getContext<WorkCommandRegistry | undefined>(workCommandKey);
   let commandTarget = $state.raw<CommandTarget | null>(null);
@@ -1053,8 +1098,8 @@
     <button id={`bridge-pin-${id}`} class="pin-conversation" type="button" aria-label={`${pins.includes(id) ? "Unpin" : "Pin"} conversation: ${session?.title ?? id}`} aria-pressed={pins.includes(id)} onclick={() => togglePin(id)} title={pins.includes(id) ? "Unpin conversation" : "Pin conversation"}><AltarIcon name="pin" size={16} /></button>
   </div>
 {/snippet}
-<div class="instrument-deck instrument-deck--bridge" class:instrument-deck--welcome={firstVisit && pins.length === 0} class:bridge-embedded={embedded}>
-  {#if !firstVisit || pins.length > 0}
+<div class="instrument-deck instrument-deck--bridge" class:instrument-deck--welcome={firstVisit && pins.length === 0} class:bridge-embedded={embedded} class:bridge-shell-history={shellHistory} class:bridge-with-inspector={showInspector}>
+  {#if !shellHistory && (!firstVisit || pins.length > 0)}
   <aside class="bridge-rail" aria-label="Conversation history">
     <details class="conversation-list" open={!embedded && !compactHistory}>
       <summary>Conversations</summary>
@@ -1087,9 +1132,12 @@
 
   <div class="bridge-thread">
     <header class="bridge-heading">
-      <div>
+      <div class="bridge-heading__identity">
+        {#if selected}
+          <button class="pin-conversation heading-pin" type="button" aria-label={pins.includes(selected.id) ? "Unpin this conversation" : "Pin this conversation"} aria-pressed={pins.includes(selected.id)} onclick={() => togglePin(selected.id)} title={pins.includes(selected.id) ? "Unpin conversation" : "Pin conversation"}><AltarIcon name="pin" size={16} /></button>
+        {/if}
         {#if !firstVisit}
-          <h1>Bridge</h1>
+          <h1 class:visually-hidden={!!selected}>Bridge</h1>
           {#if selected}<p class="conversation-title">{selected.title}</p>{/if}
         {:else}
           <h1 class="visually-hidden">Bridge — conversations</h1>
@@ -1098,6 +1146,7 @@
           <p class="conversation-attention">{selectedPendingCount} awaiting consent</p>
         {/if}
       </div>
+      {#if !embedded}<a class="browse-seances" href={resolve("/seances")}><AltarIcon name="seances" size={16} />Browse séances</a>{/if}
       <details class="conversation-tools">
         <summary aria-label="Conversation tools" {@attach captureNamingTools}>Tools</summary>
         <div class="bridge-tools" role="group" aria-label="Conversation tools">
@@ -1365,11 +1414,18 @@
     {/if}
   </div>
 
+  {#if showInspector && inspectedRunId}
+    <CircleInspector runId={inspectedRunId} turn={inspectedTurn} pending={inspectedPending} />
+  {/if}
 </div>
 
 <style>
   .instrument-deck--bridge { display: grid; grid-template-columns: 17rem minmax(0, 1fr); gap: 0; padding: 0; min-height: 0; height: 100%; overflow: hidden; background: var(--color-void); }
   .instrument-deck--welcome { grid-template-columns: minmax(0, 1fr); }
+  /* In the Altar shell the sidebar owns history; the optional third column is the Circle inspector. */
+  .bridge-shell-history { grid-template-columns: minmax(0, 1fr); }
+  .bridge-with-inspector { grid-template-columns: 17rem minmax(0, 1fr) 20rem; }
+  .bridge-shell-history.bridge-with-inspector { grid-template-columns: minmax(0, 1fr) 20rem; }
   .bridge-rail { width: auto; min-width: 0; padding: 1.25rem .85rem; border-right: 1px solid var(--color-engraving); overflow-y: auto; background: var(--color-obsidian); }
   .conversation-list { width: 100%; }
   /* Native details keeps history reachable without making it the dock's first reading task. */
@@ -1391,14 +1447,17 @@
   .seance .m { font-family: var(--font-body); }
   .seance .chip { display: inline; margin: .2rem .45rem .2rem 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--color-parchment); font-size: var(--text-xs); white-space: normal; }
   .bridge-thread { min-height: 0; overflow: hidden; }
-  .bridge-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .25rem 1rem; padding: .8rem clamp(1rem, 3vw, 2rem) .35rem; border-bottom: 1px solid var(--color-engraving); }
-  .bridge-heading > div { min-width: 0; }
-  .bridge-heading h1 { color: var(--color-ash); font: 600 var(--text-xs)/1.5 var(--font-body); letter-spacing: .06em; text-transform: uppercase; }
-  .conversation-title { margin-top: .45rem; color: var(--color-bone); font: 600 clamp(1.125rem, 1.5vw, 1.4rem)/1.4 var(--font-body); overflow-wrap: anywhere; }
-  .conversation-attention { margin-top: .25rem; font-size: var(--text-sm); color: var(--color-bone); line-height: 1.5; }
+  .bridge-heading { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem 1.25rem; min-height: 3.5rem; padding: .35rem clamp(1rem, 2vw, 1.5rem); border-bottom: 1px solid var(--color-engraving); }
+  .bridge-heading__identity { display: flex; align-items: center; flex: 1 1 12rem; gap: .65rem; min-width: 0; }
+  .bridge-heading h1 { color: var(--color-bone); font: 600 var(--text-base)/1.5 var(--font-body); }
+  .heading-pin { flex: 0 0 auto; width: 2.25rem; min-height: 2.25rem; border: 1px solid var(--color-engraving); }
+  .conversation-title { min-width: 0; margin: 0; color: var(--color-bone); font: 600 var(--text-base)/1.5 var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .conversation-attention { flex: 0 0 auto; margin: 0; padding: .1rem .55rem; border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--color-accent) 10%, transparent); color: var(--color-accent); font-size: var(--text-xs); line-height: 1.5; white-space: nowrap; }
+  .browse-seances { display: inline-flex; align-items: center; gap: .45rem; min-height: 2.75rem; color: var(--color-parchment); font-size: var(--text-sm); text-decoration: none; }
+  .browse-seances:hover { color: var(--color-bone); }
   .conversation-tools { min-width: 0; font-size: var(--text-sm); }
   .conversation-tools > summary { min-width: 2.75rem; min-height: 2.75rem; align-content: center; color: var(--color-parchment); cursor: pointer; }
-  .conversation-tools[open] { grid-column: 1 / -1; }
+  .conversation-tools[open] { flex-basis: 100%; }
   .seance-details { min-width: 0; font-size: var(--text-sm); }
   .seance-details summary { display: list-item; min-height: 2.75rem; align-content: center; white-space: nowrap; cursor: pointer; }
   .seance-details .chip { margin-left: .5rem; white-space: normal; }
@@ -1429,9 +1488,9 @@
   .latest-turn button { min-height: 2.75rem; padding: .4rem 1rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); color: var(--color-rune); background: var(--color-obsidian); cursor: pointer; }
   .composer-area { flex: 0 1 auto; min-height: 0; max-height: min(36rem, 65dvh); overflow-y: auto; overscroll-behavior: contain; padding: .8rem clamp(1rem, 3vw, 2rem) 1rem; border-top: 1px solid var(--color-engraving); }
   .composer-area:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
-  .composer-shell { max-width: 52rem; margin-inline: auto; padding: .65rem .85rem .75rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-panel); background: var(--color-obsidian); }
+  .composer-shell { display: flex; flex-direction: column; max-width: 52rem; margin-inline: auto; padding: .85rem 1rem .6rem; border: 1px solid var(--color-control-border); border-radius: 1.25rem; background: var(--color-obsidian); }
   .composer-shell:focus-within { border-color: var(--color-rune); }
-  .composer-destination { display: flex; align-items: center; gap: .75rem; margin-bottom: .55rem; min-width: 0; font-size: var(--text-sm); }
+  .composer-destination { order: 1; display: flex; align-items: center; gap: .75rem; margin-top: .35rem; min-width: 0; font-size: var(--text-sm); }
   .composer-destination label { flex: 0 0 auto; color: var(--color-parchment); }
   #bridge-destination { flex: 1 1 auto; width: auto; min-width: 0; max-width: 28rem; min-height: 2.75rem; margin: 0; padding: .4rem .25rem; border: 0; border-radius: 0; background: transparent; color: var(--color-bone); font: inherit; }
   .command-help, .command-result { font-size: var(--text-sm); line-height: 1.6; overflow-wrap: anywhere; }
@@ -1446,10 +1505,10 @@
   .composer { display: flex; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .composer:focus-within { box-shadow: none; border: 0; }
   .composer textarea { display: block; width: 100%; min-width: 0; min-height: 3rem; max-height: 16rem; padding: 0; resize: vertical; font-size: 1rem; line-height: 1.5; background: transparent; }
-  .composer-actions { position: relative; --voice-action-reserve: 6rem; padding-top: .35rem; border-top: 1px solid var(--color-engraving); }
+  .composer-actions { order: 2; position: relative; --voice-action-reserve: 6rem; padding-top: .35rem; }
   .composer-actions--work { --voice-action-reserve: 9rem; }
   .composer-voice { min-width: 0; }
-  .composer-send { position: absolute; inset-block-start: .35rem; inset-inline-end: 0; min-width: 5rem; min-height: 2.75rem; margin: 0; padding: .5rem 1rem; border-color: var(--color-bone); background: var(--color-bone); color: var(--color-void); box-shadow: none; }
+  .composer-send { position: absolute; inset-block-start: .35rem; inset-inline-end: 0; min-width: 5rem; min-height: 2.75rem; margin: 0; padding: .5rem 1rem; border-color: var(--color-bone); border-radius: 999px; background: var(--color-bone); color: var(--color-void); box-shadow: none; }
   .composer-send:hover:not(:disabled) { background: var(--color-parchment); border-color: var(--color-parchment); color: var(--color-void); }
   .composer-send:disabled { opacity: .5; }
   .composer-footer { display: flex; max-width: 52rem; justify-content: space-between; gap: .3rem 1.5rem; flex-wrap: wrap; margin: .35rem auto 0; color: var(--color-ash); font-size: var(--text-xs); line-height: 1.6; }
@@ -1467,7 +1526,7 @@
   .bridge-embedded .bridge-rail { padding: 0 .95rem; border: 0; max-height: min(18rem, 35dvh); overflow: auto; background: transparent; }
   .bridge-embedded .conversation-list > summary { margin: 0; font-weight: 500; }
   .bridge-embedded .conversation-list nav { margin-top: .25rem; padding-bottom: .75rem; }
-  .bridge-embedded .bridge-heading { padding: .2rem .95rem; gap: .15rem .5rem; }
+  .bridge-embedded .bridge-heading { min-height: 2.75rem; padding: .2rem .95rem; gap: .15rem .5rem; }
   .bridge-embedded .bridge-heading h1 { display: none; }
   .bridge-embedded .conversation-title { margin: 0; font: 600 var(--text-base)/1.5 var(--font-body); }
   .bridge-embedded .seance-details { font-size: var(--text-xs); }
@@ -1484,8 +1543,13 @@
   .bridge-embedded .composer-voice { --voice-label-display: none; }
   .bridge-embedded .composer-send { min-width: 4.5rem; padding-inline: .75rem; }
   .bridge-embedded .turn__body { font-size: var(--text-base); line-height: 1.7; }
+  @media (max-width: 64rem) {
+    .bridge-with-inspector { grid-template-columns: 17rem minmax(0, 1fr); }
+    .bridge-shell-history.bridge-with-inspector { grid-template-columns: minmax(0, 1fr); }
+    .bridge-with-inspector > :global(.circle-inspector) { display: none; }
+  }
   @media (max-width: 48rem) {
-    .instrument-deck--bridge { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+    .instrument-deck--bridge, .bridge-with-inspector, .bridge-shell-history.bridge-with-inspector { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
     .bridge-rail { display: block; max-height: 35dvh; padding: 0 .95rem; border-right: 0; border-bottom: 1px solid var(--color-engraving); overflow: auto; }
     .conversation-list > summary { margin: 0; }
     .conversation-list nav { max-height: 12rem; overflow-y: auto; margin-top: .5rem; padding-bottom: .75rem; }

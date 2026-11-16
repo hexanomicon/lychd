@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { LiveTurn } from "$lib/pages/bridge/state/projection";
-  import { loomOriginHref, orbReturnHref, selectedOrbHref } from "$lib/navigation/instruments";
+  import { runEvidenceHref, runScoreHref } from "$lib/pages/bridge/state/run-links";
 
   let { runId, turn: suppliedTurn, cancelling = false, oncancel }: {
     runId: string;
@@ -13,18 +13,8 @@
   let expanded = $state(false);
   let identityMismatch = $derived(!!suppliedTurn && suppliedTurn.runId !== runId);
   let turn = $derived(identityMismatch ? undefined : suppliedTurn);
-  let selection = $derived(turn?.delegatedJobId ? new URLSearchParams({ job: turn.delegatedJobId }).toString() : "");
-  let evidenceHref = $derived(
-    !identityMismatch && (!turn || selectedOrbHref(turn.orbPath, "") === orbReturnHref(runId))
-      ? orbReturnHref(runId, selection)
-      : null
-  );
-  let scoreHref = $derived.by(() => {
-    if (!turn?.loomPath || !turn.patternId || !turn.patternRevision) return null;
-    const supplied = loomOriginHref(turn.loomPath, runId, selection);
-    const exact = loomOriginHref(`/loom/${encodeURIComponent(turn.patternId)}/${encodeURIComponent(turn.patternRevision)}`, runId, selection);
-    return supplied === exact ? supplied : null;
-  });
+  let evidenceHref = $derived(identityMismatch ? null : runEvidenceHref(runId, turn));
+  let scoreHref = $derived(runScoreHref(runId, turn));
   let canCancel = $derived(!!oncancel && !!turn && !["done", "failed", "cancelled"].includes(turn.state));
   let active = $derived(turn?.runStatus === "running" && turn.state === "streaming");
 

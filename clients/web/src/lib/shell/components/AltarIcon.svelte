@@ -21,5 +21,9 @@
   {:else if name === "pan"}<path d="M8 12V5c0-3 3-3 3 0v6-8c0-3 3-3 3 0v8-6c0-3 3-3 3 0v7-4c0-3 3-3 3 0v8c0 9-11 9-14 4L2 14c-2-3 1-5 3-2l3 4" />
   {:else if name === "undo"}<path d="m8 4-5 5 5 5 M3 9h11a7 7 0 0 1 0 14" />
   {:else if name === "redo"}<path d="m16 4 5 5-5 5 M21 9H10a7 7 0 0 0 0 14" />
+  {:else if name === "search"}<circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" />
+  {:else if name === "compose"}<path d="M12 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7 M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z" />
+  {:else if name === "conversation"}<path d="M4 5h16v11H9l-5 4Z" />
+  {:else if name === "plus"}<path d="M12 5v14 M5 12h14" />
   {:else}<path d="m6 9 6 6 6-6" />{/if}
 </svg>
