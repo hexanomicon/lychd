@@ -303,6 +303,50 @@ it("opens Applications by hover, pins a click, and keeps menu traversal and Esca
 });
 
 
+describe("navigation sidebar", () => {
+  it("collapses to an icon rail that keeps instrument names and remembers the choice", async () => {
+    vi.mocked(getAltarStatus).mockResolvedValue(status(2));
+    page.url.href = "http://localhost/orb";
+    const view = render(AltarShell, { children });
+    await act(() => Promise.resolve());
+    const sidebar = document.querySelector("aside.altar-sidebar")!;
+    const toggle = screen.getByRole("button", { name: "Collapse navigation" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(sidebar.getAttribute("data-expanded")).toBe("true");
+
+    await fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: "Expand navigation" })).toBe(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(sidebar.getAttribute("data-expanded")).toBe("false");
+    const instruments = screen.getByRole("navigation", { name: "Instruments" });
+    expect(within(instruments).getByRole("link", { name: "Orb" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: /2 awaiting/ }).getAttribute("href")).toBe("/bridge?attention=pending");
+    expect(JSON.parse(localStorage.getItem("lychd.altar-sidebar.v1")!)).toEqual({ collapsed: true });
+    view.unmount();
+  });
+
+  it("restores a saved collapsed rail on mount", async () => {
+    vi.mocked(getAltarStatus).mockResolvedValue(status(0));
+    localStorage.setItem("lychd.altar-sidebar.v1", JSON.stringify({ collapsed: true }));
+    page.url.href = "http://localhost/orb";
+    const view = render(AltarShell, { children });
+    await act(() => Promise.resolve());
+    expect(screen.getByRole("button", { name: "Expand navigation" }).getAttribute("aria-expanded")).toBe("false");
+    expect(document.querySelector("aside.altar-sidebar")?.getAttribute("data-expanded")).toBe("false");
+    view.unmount();
+  });
+
+  it("ignores an unreadable saved preference", async () => {
+    vi.mocked(getAltarStatus).mockResolvedValue(status(0));
+    localStorage.setItem("lychd.altar-sidebar.v1", "{not json");
+    page.url.href = "http://localhost/orb";
+    const view = render(AltarShell, { children });
+    await act(() => Promise.resolve());
+    expect(screen.getByRole("button", { name: "Collapse navigation" })).toBeTruthy();
+    view.unmount();
+  });
+});
+
 it("places the persistent Bridge chevron at the workbench edge and removes the masthead toggle", async () => {
   vi.mocked(getAltarStatus).mockResolvedValue(status(0));
   page.url.href = "http://localhost/orb";
@@ -311,7 +355,7 @@ it("places the persistent Bridge chevron at the workbench edge and removes the m
   expect(toggle.closest(".altar-workbench")).toBeTruthy();
   expect(toggle.closest(".dock-shell")?.classList.contains("dock-left")).toBe(true);
   expect(screen.getByRole("separator", { name: "Bridge width" }).getAttribute("aria-valuenow")).toBe("360");
-  expect(document.querySelector(".topbar #bridge-toggle")).toBeNull();
+  expect(document.querySelector(".altar-sidebar #bridge-toggle")).toBeNull();
   expect(document.querySelectorAll("#bridge-toggle")).toHaveLength(1);
   await fireEvent.click(toggle);
   expect(screen.getByRole("button", { name: "Expand Bridge" })).toBe(toggle);

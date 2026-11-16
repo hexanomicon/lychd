@@ -310,7 +310,7 @@ it("reveals a narrow work view after full focus without overwriting a saved open
   const shell = render(AltarShell, { children });
   await screen.findByLabelText("Message");
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(document.querySelector("header.topbar")?.hasAttribute("inert")).toBe(false);
+  expect(document.querySelector("aside.altar-sidebar")?.hasAttribute("inert")).toBe(false);
   await visit("/atlas");
   expect(screen.getByRole("main").hasAttribute("inert")).toBe(false);
   expect(screen.getByRole("button", { name: "Expand Bridge" })).toBeTruthy();

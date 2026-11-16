@@ -29,7 +29,7 @@ and answer the browser's authentication dialog as described in
 [The Awakening](../../summoning.md#the-awakening). Keep the password out of URLs and command lines.
 The root opens **Orb**, with the Bridge dock on the left in a fresh wide layout. On a narrow
 window, the edge chevron opens the dock. Saved dock preferences remain in use.
-Choose **Bridge** in the masthead to open the full conversation workspace. On a fresh Phylactery,
+Choose **Bridge** in the sidebar to open the full conversation workspace. On a fresh Phylactery,
 choose **New Séance** in Bridge and offer a bounded Intent.
 Answer an inline consent card only when the Run asks for judgment.
 
@@ -60,7 +60,7 @@ identity. Keep that identity in view when changing instruments.
 | What was observed about readiness or a physical transition? | [Nexus](./nexus.md) |
 | Which Runs are before us, what evidence is arriving, and where does capture run out? | [Orb](./orb.md) |
 
-The masthead orders **Bridge**, **Atlas**, **Loom**, **Nexus**, **Orb**, and **Applications**.
+The sidebar orders **Bridge**, **Atlas**, **Loom**, **Nexus**, **Orb**, and **Applications**.
 Bridge opens the full conversation workspace, with **Browse séances** for retained inspection.
 Atlas opens the project catalogue, with **New canvas** and **Open Canvas →**. LychD's own Canvas
 stays pinned first. **Applications** opens other admitted applications, including Scavenger market.
@@ -88,7 +88,7 @@ request.
 
 ## Return to Bridge
 
-Choose **Bridge** in the masthead to return to the last explicitly selected conversation in this
+Choose **Bridge** in the sidebar to return to the last explicitly selected conversation in this
 browser document. **Browse séances** opens the catalogue. The dock's **Open Séance** opens the
 current conversation for inspection, and **Continue in Bridge** explicitly selects an inspected
 conversation for live exchange.

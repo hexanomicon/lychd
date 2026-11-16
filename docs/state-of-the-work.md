@@ -1237,11 +1237,11 @@ ADR 15's bounded operator-palette contract is design law, not delivered configur
 
 **State:** Partial
 
-**Proved now:** The masthead orders Bridge, Atlas, Loom, Nexus, Orb, and Applications. Bridge opens
+**Proved now:** The sidebar orders Bridge, Atlas, Loom, Nexus, Orb, and Applications. Bridge opens
 the full conversation workspace at the last explicitly selected session in the open browser
 document. **Browse séances** opens the catalogue from that workspace. The dock's **Open Séance**
 opens the exact server-supplied session. An unresolved default offers the catalogue. Atlas
-retains **Open Canvas →** and **New canvas**. The masthead marks Bridge on Séances routes and
+retains **Open Canvas →** and **New canvas**. The sidebar marks Bridge on Séances routes and
 Atlas on Canvas routes. Existing direct URLs remain available, and the root opens Orb.
 
 The shell keeps one conversation mounted across navigation, retaining exact-session drafts,

@@ -662,16 +662,7 @@
   }
   .glyph { font-family: var(--font-glyph); font-size: var(--text-xs); }
 
-  /* ── Top bar / instrument map ─────────────────────────────────────── */
-  .topbar {
-    display: flex; align-items: center; gap: 28px;
-    padding: 0 22px;
-    height: 52px;
-    background: var(--color-obsidian);
-    border-bottom: 1px solid var(--color-engraving);
-    box-shadow: none;
-    position: sticky; top: 0; z-index: 10;
-  }
+  /* ── Shell brand (layout lives in AltarShell.svelte) ──────────────── */
   .brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .brand .mark {
     display: block;
@@ -738,31 +729,6 @@
     text-underline-offset: 0.2em;
     overflow-wrap: anywhere;
   }
-
-  nav.instruments { display: flex; gap: 2px; height: 100%; }
-  nav.instruments a {
-    display: flex; align-items: center;
-    padding: 0 16px;
-    color: var(--color-ash);
-    text-decoration: none;
-    font-size: var(--text-sm);
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    border-bottom: 1px solid transparent;
-    transition: color var(--duration-drift), border-color var(--duration-drift);
-    cursor: pointer;
-    position: relative;
-  }
-  nav.instruments a:hover { color: var(--color-bone); }
-  nav.instruments a[aria-current="page"] {
-    color: var(--color-bone);
-    border-bottom-color: var(--color-accent);
-  }
-  nav.instruments a .dot { /* unbuilt marker */
-    position: absolute; top: 10px; right: 6px;
-    color: var(--color-engraving); font-size: 8px;
-  }
-  .topbar .spacer { flex: 1; }
 
   /* ── Global consent sigil (OOB-swappable) ─────────────────────────── */
   .sigil {
@@ -1451,20 +1417,7 @@
 }
 
 @media (max-width: 48rem) {
-  .topbar {
-    height: auto;
-    min-height: 3.25rem;
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    padding: 0.55rem 0.75rem;
-  }
-  .sigil-identity { display: none; }
-  nav.instruments {
-    order: 3;
-    width: 100%;
-    overflow-x: auto;
-  }
-  nav.instruments a { min-height: 2.5rem; padding: 0 clamp(0.375rem, 2vw, 0.75rem); }
+  /* .sigil-identity { display: none; } */
   .instrument-deck,
   .instrument-deck--bridge {
     display: flex;

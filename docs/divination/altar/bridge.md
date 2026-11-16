@@ -17,7 +17,7 @@ proposal in conversation. **Save names** applies the reviewed choice to later ad
 closing the ceremony leaves conversation available. Further Agents and Personas can contribute
 to the work while this central relation continues.
 
-Choose **Bridge** in the masthead to open the full conversation workspace. The link returns to
+Choose **Bridge** in the sidebar to open the full conversation workspace. The link returns to
 the last explicitly selected conversation in this browser document. **Pinned** and **Recent
 conversations** stay beside the live thread. Pins store only session identities in this browser.
 An older unloaded pin shows its identity until its metadata is supplied. **Load more conversations**

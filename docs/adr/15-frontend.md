@@ -22,7 +22,7 @@ icon: material/language-html5
   remote functions, or JavaScript production server.
 - A snapshot plus event cursor must reconstruct browser state. Connection, animation, and canvas
   layout never prove execution.
-- The masthead orders Bridge, Atlas, Loom, Nexus, Orb, and Applications. Bridge opens the full
+- The sidebar orders Bridge, Atlas, Loom, Nexus, Orb, and Applications. Bridge opens the full
   conversation workspace and leads to Séances. Atlas leads to Canvas authoring. Existing URLs
   preserve exact session, Run, consent, Project, and focused-application navigation.
 - Generated UI uses closed descriptors. Model and extension content cannot supply HTML,
@@ -83,9 +83,9 @@ from the route contract. Scrying names Orb's act. Artifact references and config
 observations let the browser show context without acquiring custody or configuration authority.
 
 The browser shell retains drafts by exact session and the last explicitly selected Bridge session
-for the open browser document. The masthead Bridge link opens that session without a Run hint.
+for the open browser document. The sidebar Bridge link opens that session without a Run hint.
 Until an explicit session is selected, it opens `/bridge`. The server-supplied default session
-leaves that destination at `/bridge`. The masthead Orb link opens the parallel Run field at
+leaves that destination at `/bridge`. The sidebar Orb link opens the parallel Run field at
 `/orb`. Cross-instrument links preserve an explicit Run and selected event where supported.
 Orb's contextual Bridge return focuses that Run's turn. A selected historical consent event may also carry a bounded Consent reference to
 that exact session and Run. Orb retains only the syntactic historical reference, without resolving
@@ -297,9 +297,13 @@ retains that boundary.
 
 #### The shared workbench
 
-The masthead presents Bridge, Atlas, Loom, Nexus, Orb, and Applications in that order, with visible
-labels and icons. Hover, click, or keyboard focus opens Applications. Escape dismisses it, and
-moving into the menu keeps it reachable. The bare root opens Orb.
+The left navigation sidebar carries the altar mark, then Bridge, Atlas, Loom, Nexus, Orb, and
+Applications in that order with visible labels and icons, then consent status at its foot. Its
+toggle collapses it to an icon rail; rail labels remain accessible names and tooltips, and a
+wide workbench remembers the choice in the browser. A narrow workbench starts with the rail and
+expands it as an overlay that closes on navigation, Escape, or an outside click. Hover, click, or
+keyboard focus opens Applications beside the sidebar. Escape dismisses it, and moving into the
+menu keeps it reachable. The bare root opens Orb.
 
 Bridge opens the full conversation workspace at the last explicitly selected session in the
 browser document. **Browse séances** opens the metadata catalogue at `/seances`. The dock's
@@ -309,7 +313,7 @@ selection and draft. **Continue in Bridge** explicitly selects the inspected ses
 Bridge URLs preserve session, Run, consent, Project, investigation, and public-note focus.
 
 Atlas opens the Project catalogue at `/atlas`. **Open Canvas →** and **New canvas** use the
-existing Canvas routes. The masthead marks Bridge as the current location on Séances routes
+existing Canvas routes. The sidebar marks Bridge as the current location on Séances routes
 and Atlas as the current location on Canvas routes.
 
 The named edge control opens or collapses Bridge beside the work. A fresh wide workbench opens
@@ -320,7 +324,7 @@ work view reveals the same conversation beside the work. Investigation and publi
 keep their separate composition.
 
 A compact dark-wood altar mark with two separate legs, purple cloth and small front-mounted
-candles opens About; a permanent product wordmark is unnecessary in the masthead. About retains
+candles opens About; a permanent product wordmark is unnecessary in the sidebar. About retains
 the LychD identity, version, source and licence provenance. The fixed natural-colour mark is
 decorative identity, never a connection or activity indicator.
 

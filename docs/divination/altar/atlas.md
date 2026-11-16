@@ -30,7 +30,7 @@ distinguish understanding from the ability to modify, replace, or recover a comp
 
 ## Put an undertaking on the map
 
-Open **Atlas** in the [Altar](index.md#bring-one-intent) masthead. **Open Canvas →** enters the board
+Open **Atlas** in the [Altar](index.md#bring-one-intent) sidebar. **Open Canvas →** enters the board
 workspace. **New canvas** creates a draft project with a blank board immediately. A name and brief
 can follow.
 Keep the project when it is worth retaining in your working collection, or discard an eligible
