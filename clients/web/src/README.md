@@ -32,6 +32,7 @@ their existing owners.
 loaders still validate identity and relationships; a URL does not prove ownership or Run/Pattern
 equivalence. Code used by one instrument lives in that instrument's `lib/pages/<instrument>/`
 `components/` and `state/` folders; code used by two or more instruments stays outside `pages/`.
+[Boundary tests](lib/boundaries.test.ts) enforce this.
 Focused component tests live beside their components; navigation has its own
 [identity tests](lib/navigation/instruments.test.ts).
 
