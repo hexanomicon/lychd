@@ -296,7 +296,7 @@ def test_derived_bound_origins_have_separate_finite_limits() -> None:
 
 
 def test_canonical_frontend_fixture_matches_python_review_and_object_bounds() -> None:
-    path = Path(__file__).resolve().parents[3] / "clients/web/src/lib/canvas/parity.json"
+    path = Path(__file__).resolve().parents[3] / "clients/web/src/lib/pages/canvas/state/parity.json"
     fixture = cast("dict[str, Any]", json.loads(path.read_text(encoding="utf-8")))
     document = validate_document(fixture["document"])
     packet = CanvasPacket.model_validate(fixture["packet"])
@@ -308,7 +308,7 @@ def test_canonical_frontend_fixture_matches_python_review_and_object_bounds() ->
 
 
 def test_canonical_self_loop_fixture_includes_rendered_curve_and_marquee_hit() -> None:
-    path = Path(__file__).resolve().parents[3] / "clients/web/src/lib/canvas/parity.json"
+    path = Path(__file__).resolve().parents[3] / "clients/web/src/lib/pages/canvas/state/parity.json"
     fixture = cast("dict[str, Any]", json.loads(path.read_text(encoding="utf-8")))["self_loop_case"]
     scene = CanvasScene.model_validate(fixture["scene"])
     expected = CanvasBounds.model_validate(fixture["expected_bounds"])
@@ -364,7 +364,7 @@ def _size_recipe_scene(recipe: dict[str, Any]) -> dict[str, Any]:
 
 
 def test_shared_size_recipes_have_identical_portable_admission() -> None:
-    path = Path(__file__).resolve().parents[3] / "clients/web/src/lib/canvas/parity.json"
+    path = Path(__file__).resolve().parents[3] / "clients/web/src/lib/pages/canvas/state/parity.json"
     fixture = cast("dict[str, Any]", json.loads(path.read_text(encoding="utf-8")))
     for recipe in fixture["size_recipes"]:
         values = _size_recipe_scene(recipe)

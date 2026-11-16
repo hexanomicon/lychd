@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { blankDocument } from "$lib/canvas/engine";
+import { blankDocument } from "$lib/pages/canvas/state/engine";
 afterEach(() => { vi.unstubAllGlobals(); document.cookie = "canvas-csrf=; Max-Age=0"; });
 
 it("protects exact Canvas creation and bootstrap through generated paths", async () => {
