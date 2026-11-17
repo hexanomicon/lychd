@@ -1218,7 +1218,7 @@ remain Designed.
 
 The Svelte 5 static client, generated `/api/v1` types, validated semantic SSE, local schema assets,
 and Litestar delivery exist. Loom and Orb share an immutable graph-projection supply and a
-read-only Svelte Flow adapter, with [`@xyflow/svelte` 1.6.6](https://github.com/hexanomicon/lychd/blob/main/clients/web/package.json) installed. Focused tests establish
+read-only Svelte Flow adapter, with [`@xyflow/svelte` 1.7.1](https://github.com/hexanomicon/lychd/blob/main/clients/web/package.json) installed. Focused tests establish
 contracts and components; the required cross-engine retained-heap qualification after forced
 collection remains under verification. Installation and a visible canvas do not discharge
 [ADR 15's renderer admission gate](./adr/15-frontend.md#xyflow-admission).
