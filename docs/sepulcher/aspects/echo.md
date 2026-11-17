@@ -94,7 +94,7 @@ policy, consent where required, and bounded cost. These are laws of the accepted
 claims of delivered behavior.
 
 For a call recorded locally without a meeting-service API, see Transmuter's candidate
-[computer-session capture](../../compositions/professional-operations/transmuter/index.md#computer-session-capture-without-a-service-api)
+[computer-session capture](../../compositions/knowledge-and-interpretation/transmuter/index.md#computer-session-capture-without-a-service-api)
 intake. The device integration supplies source artifacts; Echo's contribution remains speech.
 
 ## First engine profile

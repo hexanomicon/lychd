@@ -35,7 +35,8 @@ leading to its applications and their outcomes.
 | [Creative Works](creative-works/index.md) | visual work, music, language editions, playable builds, and publication |
 | [Stewardship & Acquisition](stewardship-and-acquisition/index.md) | personal health and wellbeing, places, animal care, cultivation, and acquisition |
 | [Presence & Embodiment](presence-and-embodiment/index.md) | social presence, presentation, virtual worlds, physical bodies, and mobile sessions |
-| [Professional Operations](professional-operations/index.md) | client casework, business books, technical service, and source interpretation |
+| [Professional Operations](professional-operations/index.md) | client casework, business books, and technical service |
+| [Knowledge & Interpretation](knowledge-and-interpretation/index.md) | attributed source interpretation, synthesis, and correction |
 | [Security & Trust](security-and-trust/index.md) | security casework and compute-node privacy qualification |
 
 Areas may overlap because a reader can approach the same work from different concerns. Each

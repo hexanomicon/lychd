@@ -2403,7 +2403,7 @@ registered Pattern, parallel Graph, dossier schema, or Altar surface.
 
 Keeper and Cultivator's durable record contracts do not supply database models or migrations.
 
-[Transmuter](compositions/professional-operations/transmuter/index.md), `transmuter.intake` revision 1,
+[Transmuter](compositions/knowledge-and-interpretation/transmuter/index.md), `transmuter.intake` revision 1,
 defines source-attributed extraction, synthesis, and dossier correction. Its Patterns have no
 executable registration, general import adapter, dossier store, or Memory/Identity handoff.
 

@@ -29,7 +29,7 @@ their coordination and execution. Assimilation itself is not a Portfolio Composi
 | Integration | Bind an external service/protocol through an adapter. |
 | Delegation | Ask another runtime or sovereign node for bounded labor. |
 | Assimilation | Study a pattern and implement an owned local expression. |
-| Material intake and interpretation | Convert external user data into provenance-bearing candidates; [Transmuter](../compositions/professional-operations/transmuter/index.md) owns the processing dossier. |
+| Material intake and interpretation | Convert external user data into provenance-bearing candidates; [Transmuter](../compositions/knowledge-and-interpretation/transmuter/index.md) owns the processing dossier. |
 
 No act promises bit-for-bit reproduction, protocol or license compatibility, or freedom from
 upstream maintenance without separate evidence.
@@ -201,7 +201,7 @@ workspace or changing its explanation.
 ## Transmuter and correspondence {#heritage-and-correspondence}
 
 Cloud archives, historical conversations, and shared media expose an application ownership need
-outside Smith. **[Transmuter](../compositions/professional-operations/transmuter/index.md)** owns the source-processing
+outside Smith. **[Transmuter](../compositions/knowledge-and-interpretation/transmuter/index.md)** owns the source-processing
 dossier, with Extractor and Synthesizer as internal stages. Its contract retains source attribution,
 processing judgment, terminal outcomes, and recovery; State of Work records implementation.
 The candidate-author Agent may propose a parser or supply attributable candidate artifacts for
