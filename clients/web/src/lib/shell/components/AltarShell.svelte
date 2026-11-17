@@ -7,7 +7,9 @@
   import BridgeDock from "$lib/pages/bridge/components/BridgeDock.svelte";
   import BridgeView from "$lib/pages/bridge/components/BridgeView.svelte";
   import AltarIcon from "./AltarIcon.svelte";
-  import { altarNavigationContext, bridgeHistoryContext, selectedBridgeHref, type AltarNavigation, type BridgeHistory, type BridgeHistoryEntry, type BridgeHistoryHost } from "$lib/navigation/instruments";
+  import ConversationList from "$lib/components/conversation/ConversationList.svelte";
+  import { dismissibleDetails } from "$lib/components/shared/dismissible";
+  import { altarNavigationContext, bridgeHistoryContext, selectedBridgeHref, type AltarNavigation, type BridgeHistory, type BridgeHistoryHost } from "$lib/navigation/instruments";
 
   import { createSeancesWorkspace, setSeancesWorkspace } from "$lib/pages/seances/state/workspace.svelte";
   import { seanceHref } from "$lib/pages/seances/state/material";
@@ -84,10 +86,6 @@
       return () => { if (bridgeHistory === history) bridgeHistory = null; };
     }
   });
-  function selectHistory(event: MouseEvent, id: string) {
-    bridgeHistory?.select(event, id);
-    closeNarrowSidebar();
-  }
   const seances = setSeancesWorkspace(createSeancesWorkspace(async (id) => {
     if (navigationId(id) !== id) return;
     suspendBridgeVoice();
@@ -184,27 +182,6 @@
   let attentionTimer: number | undefined;
   let attentionFault = "";
   let mounted = false;
-
-  // The About popover closes on outside click or Escape; Applications is an inline native disclosure.
-  function manageAboutDisclosure(node: HTMLDetailsElement) {
-    function dismissOutside(event: MouseEvent) {
-      if (node.open && !event.composedPath().includes(node)) node.open = false;
-    }
-
-    function dismissOnEscape(event: KeyboardEvent) {
-      if (event.key !== "Escape" || event.defaultPrevented || !node.open) return;
-      node.open = false;
-      node.querySelector("summary")?.focus();
-      event.preventDefault();
-    }
-
-    window.addEventListener("click", dismissOutside);
-    window.addEventListener("keydown", dismissOnEscape);
-    return () => {
-      window.removeEventListener("click", dismissOutside);
-      window.removeEventListener("keydown", dismissOnEscape);
-    };
-  }
 
   const instruments = [
     { slug: "bridge", label: "Bridge", hint: "Talk", related: "/seances" },
@@ -316,25 +293,12 @@
 <svelte:window onfocus={refreshAttention} onbeforeunload={guardMaterialUnload} onkeydown={closeNarrowSidebarOnEscape} />
 <svelte:document onvisibilitychange={attentionVisibilityChanged} />
 
-{#snippet historyRow(history: BridgeHistory, entry: BridgeHistoryEntry)}
-  <div class="history-row">
-    <a class="history-link" href={history.href(entry.id)} aria-current={history.selectedId === entry.id ? "page" : undefined} onclick={(event) => selectHistory(event, entry.id)}>
-      <AltarIcon name="conversation" size={16} />
-      <span class="history-title">{entry.title}</span>
-      {#if entry.pending}<span class="history-chip">{entry.pending} awaiting consent</span>{/if}
-      {#if entry.marker}<span class="history-chip">{entry.marker}</span>{/if}
-      {#if !entry.loaded}<span class="history-chip">Details not loaded</span>{/if}
-    </a>
-    <button id={`bridge-pin-${entry.id}`} class="history-pin" type="button" aria-label={`${history.isPinned(entry.id) ? "Unpin" : "Pin"} conversation: ${entry.title}`} aria-pressed={history.isPinned(entry.id)} title={history.isPinned(entry.id) ? "Unpin conversation" : "Pin conversation"} onclick={() => history.togglePin(entry.id)}><AltarIcon name="pin" size={14} /></button>
-  </div>
-{/snippet}
-
 <a class="skip-link" href="#altar-main">Skip to instrument</a>
 <div class="altar-frame">
 <aside class="altar-sidebar" aria-label="Altar" data-expanded={sidebarExpanded} data-overlay={narrow && narrowSidebarOpen} inert={bridgeModal}>
  <div class="sidebar-inner">
   <div class="sidebar-head">
-  <details class="altar-about" {@attach manageAboutDisclosure}>
+  <details class="altar-about" {@attach dismissibleDetails}>
     <summary class="brand" aria-label="About Altar" title="Altar">
       <img class="mark" src={asset("altar-mark.svg")} width="44" height="44" alt="" />
     </summary>
@@ -357,8 +321,8 @@
   </div>
 
   {#if bridgeHistory}
-    <button class="new-seance" type="button" disabled={bridgeHistory.creating} aria-busy={bridgeHistory.creating} title="New séance" onclick={() => { bridgeHistory?.create(); closeNarrowSidebar(); }}>
-      <AltarIcon name="compose" size={18} /><span class="label">{bridgeHistory.creating ? "Opening…" : "New séance"}</span>
+    <button class="new-seance" data-new-seance type="button" disabled={bridgeHistory.creating} aria-busy={bridgeHistory.creating} title="New Séance" onclick={() => { bridgeHistory?.create(); closeNarrowSidebar(); }}>
+      <AltarIcon name="compose" size={18} /><span class="label">{bridgeHistory.creating ? "Opening…" : "New Séance"}</span>
     </button>
   {/if}
 
@@ -378,28 +342,9 @@
   </nav>
 
   {#if bridgeHistory && sidebarExpanded}
-    {@const history = bridgeHistory}
-    <nav class="sidebar-history" aria-label="Conversations">
-      <div class="history-heading">
-        <h2>Pinned</h2>
-        {#if history.selectedId && !history.isPinned(history.selectedId)}
-          {@const current = history.selectedId}
-          <button class="history-add" type="button" aria-label="Pin current conversation" title="Pin current conversation" onclick={() => history.togglePin(current)}><AltarIcon name="plus" size={14} /></button>
-        {/if}
-      </div>
-      {#each history.pinned as entry (entry.id)}{@render historyRow(history, entry)}{:else}<p class="history-empty">No pinned conversations.</p>{/each}
-      <div class="history-heading">
-        <h2>Recent</h2>
-        <button class="history-add" type="button" aria-label="New séance from recent" title="New séance" disabled={history.creating} onclick={() => history.create()}><AltarIcon name="plus" size={14} /></button>
-      </div>
-      {#each history.recent as entry (entry.id)}{@render historyRow(history, entry)}{:else}<p class="history-empty">No séance yet.</p>{/each}
-      {#if history.hasMore}
-        <button class="history-more" type="button" disabled={history.loadingMore} aria-busy={history.loadingMore} onclick={() => history.loadMore()}>
-          {history.loadingMore ? "Loading conversations…" : "Load more conversations"}
-        </button>
-      {/if}
-      {#if history.notice}<p class="history-empty" role="status">{history.notice}</p>{/if}
-    </nav>
+    <div class="sidebar-history">
+      <ConversationList history={bridgeHistory} variant="sidebar" onselect={closeNarrowSidebar} />
+    </div>
   {/if}
 
   <div class="sidebar-foot">
@@ -462,25 +407,8 @@
   .new-seance { display: flex; align-items: center; gap: .75rem; min-height: 2.75rem; padding: .55rem .7rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-glyph); background: var(--color-obsidian-2); color: var(--color-bone); font: inherit; font-size: var(--text-sm); cursor: pointer; }
   .new-seance:hover:not(:disabled) { border-color: var(--color-rune); }
   .altar-sidebar[data-expanded="false"] .new-seance { justify-content: center; padding-inline: 0; }
-  .sidebar-history { display: flex; flex-direction: column; gap: .1rem; flex: 1 1 auto; min-height: 0; margin-inline: -.625rem; padding: .5rem .625rem; overflow-y: auto; border-top: 1px solid var(--color-engraving); }
-  .history-heading { display: flex; align-items: center; justify-content: space-between; margin: .5rem 0 .15rem; padding-inline-start: .7rem; }
-  .history-heading h2 { color: var(--color-ash); font: 600 var(--text-2xs)/1.5 var(--font-body); letter-spacing: .08em; text-transform: uppercase; }
-  .history-add, .history-pin { display: grid; place-items: center; width: 2rem; height: 2rem; padding: 0; border: 0; border-radius: var(--radius-rune); background: transparent; color: var(--color-ash); cursor: pointer; }
-  .history-add:hover, .history-pin:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
-  .history-row { position: relative; display: flex; align-items: center; }
-  .history-link { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .6rem; flex: 1 1 auto; min-width: 0; min-height: 2.5rem; padding: .4rem 2.25rem .4rem .7rem; border: 1px solid transparent; border-radius: var(--radius-rune); color: var(--color-parchment); font-size: var(--text-sm); text-decoration: none; }
-  .history-link :global(svg) { flex: 0 0 auto; color: var(--color-ash); }
-  .history-link:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
-  .history-link[aria-current="page"] { color: var(--color-bone); font-weight: 600; border-color: var(--color-engraving); background: var(--color-obsidian-2); }
-  .history-title { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .history-chip { flex-basis: 100%; padding-inline-start: 1.6rem; color: var(--color-accent); font-size: var(--text-2xs); }
-  .history-pin { position: absolute; inset-inline-end: .2rem; inset-block-start: .25rem; opacity: 0; }
-  .history-row:hover .history-pin, .history-pin:focus-visible, .history-pin[aria-pressed="true"] { opacity: 1; }
-  .history-pin[aria-pressed="true"] { color: var(--color-accent); }
-  .history-empty { padding: .25rem .7rem; color: var(--color-ash); font-size: var(--text-xs); }
-  .history-more { min-height: 2.5rem; margin-top: .25rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); background: transparent; color: var(--color-parchment); font: inherit; font-size: var(--text-xs); cursor: pointer; }
+  .sidebar-history { flex: 1 1 auto; min-height: 0; margin-inline: -.625rem; padding: .5rem .625rem; overflow-y: auto; border-top: 1px solid var(--color-engraving); }
   .sidebar-foot { display: flex; flex-direction: column; gap: .5rem; margin-top: auto; padding-top: .5rem; border-top: 1px solid var(--color-engraving); }
-  .sidebar-history + .sidebar-foot { margin-top: 0; }
   /* Narrow screens: the rail stays in flow and the expanded panel floats over the work area. */
   .altar-sidebar[data-overlay="true"] { flex-basis: var(--sidebar-rail); }
   .altar-sidebar[data-overlay="true"] .sidebar-inner { position: absolute; inset-block: 0; inset-inline-start: 0; width: var(--sidebar-expanded); box-shadow: 0 0 2rem color-mix(in srgb, var(--color-void) 70%, transparent); }

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/svelte";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/svelte";
 import { createRawSnippet } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -179,6 +179,7 @@ describe("shell-lifetime Bridge conversation", () => {
     await visit("/atlas");
     const shell = render(AltarShell, { children });
     await screen.findByText("Retained answer for session-a");
+    await fireEvent.click(screen.getByText("Conversations"));
     await fireEvent.click(screen.getByRole("link", { name: /Older B/ }));
     await screen.findByText("Retained answer for session-b");
     expect(page.url.pathname).toBe("/atlas");
@@ -327,6 +328,22 @@ it("navigates from the trailing-slash Bridge root to the exact selected conversa
   shell.unmount();
 });
 
+it("lists history in the sidebar while Bridge is focused and in the dock beside work", async () => {
+  await visit("/bridge/session-a");
+  const shell = render(AltarShell, { children });
+  await screen.findByLabelText("Message");
+  const sidebar = screen.getByRole("complementary", { name: "Altar" });
+  expect(within(sidebar).getByRole("navigation", { name: "Conversations" })).toBeTruthy();
+  expect(screen.queryByRole("complementary", { name: "Conversation history" })).toBeNull();
+  await visit("/atlas");
+  expect(within(sidebar).queryByRole("navigation", { name: "Conversations" })).toBeNull();
+  const dockHistory = screen.getByRole("complementary", { name: "Conversation history" });
+  expect(within(dockHistory).getByRole("navigation", { name: "Conversations" })).toBeTruthy();
+  await visit("/bridge/session-a");
+  expect(within(sidebar).getByRole("navigation", { name: "Conversations" })).toBeTruthy();
+  shell.unmount();
+});
+
 it("opens the actual default séance and preserves active A while inspecting B", async () => {
   await visit("/atlas");
   const shell = render(AltarShell, { children });
@@ -407,6 +424,7 @@ it("discards a queued B composer focus when explicit C selection supersedes it",
   await visit("/atlas");
   const target = screen.getByRole("button", { name: "Workspace focus target" });
   target.focus();
+  await fireEvent.click(screen.getByText("Conversations"));
   await fireEvent.click(screen.getByRole("link", { name: /Older B/ }));
   await screen.findByText("Retained answer for session-b");
   expect(document.activeElement).not.toBe(screen.getByLabelText("Message"));

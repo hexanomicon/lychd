@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { LiveTurn } from "$lib/pages/bridge/state/projection";
   import { runEvidenceHref, runScoreHref } from "$lib/pages/bridge/state/run-links";
+  import KeyValueList from "$lib/components/shared/KeyValueList.svelte";
 
   let { runId, turn: suppliedTurn, cancelling = false, oncancel }: {
     runId: string;
@@ -53,7 +54,7 @@
   </div>
   {#if identityMismatch}<p class="circle-unavailable">The supplied projection belongs to another Run.</p>{/if}
   <div class="circle-identity" id={identityId} hidden={!expanded}>
-    <dl>
+    <KeyValueList>
       <dt>Run</dt><dd><code>{runId}</code></dd>
       {#if turn}
         <dt>Pattern</dt><dd>{turn.patternId || "Not available"}</dd>
@@ -65,7 +66,7 @@
       {#if turn?.delegatedJobId}
         <dt>Delegated job</dt><dd><code>{turn.delegatedJobId}</code></dd>
       {/if}
-    </dl>
+    </KeyValueList>
     {#if scoreHref}
       <a class="circle-score" href={scoreHref}>View declared score <span aria-hidden="true">↗</span></a>
     {:else if turn}
@@ -90,10 +91,6 @@
   .circle-cancel:hover:not(:disabled) { border-color: var(--color-ember); }
   .circle-cancel:disabled { cursor: wait; color: var(--color-parchment); }
   .circle-identity { padding: .8rem 0; border-top: 1px solid var(--color-engraving); }
-  dl { display: grid; grid-template-columns: minmax(6.5rem, auto) minmax(0, 1fr); gap: .55rem 1.25rem; margin: 0; }
-  dt { color: var(--color-parchment); }
-  dd { min-width: 0; margin: 0; color: var(--color-bone); overflow-wrap: anywhere; }
-  code { color: inherit; font: .875rem/1.5 var(--font-glyph); white-space: normal; }
   .circle-score { margin-top: .45rem; }
   .circle-unavailable { color: var(--color-parchment); }
   p.circle-unavailable { margin: .65rem 0 0; }
@@ -101,7 +98,5 @@
   @media (max-width: 40rem) {
     .circle-status { flex-basis: 8rem; }
     .circle-actions { flex-basis: 100%; margin-left: 0; justify-content: space-between; }
-    dl { grid-template-columns: minmax(0, 1fr); gap: .2rem; }
-    dd + dt { margin-top: .65rem; }
   }
 </style>

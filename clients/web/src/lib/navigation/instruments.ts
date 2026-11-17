@@ -17,7 +17,11 @@ export interface BridgeHistoryEntry { id: string; title: string; pending: number
 export interface BridgeHistory {
   readonly pinned: readonly BridgeHistoryEntry[];
   readonly recent: readonly BridgeHistoryEntry[];
+  /** The selected conversation when it is neither pinned nor on the loaded recent page. */
+  readonly unlisted: BridgeHistoryEntry | null;
   readonly selectedId: string | null;
+  /** False while the first read is loading or has failed; empty-list copy waits for it. */
+  readonly ready: boolean;
   readonly creating: boolean;
   readonly hasMore: boolean;
   readonly loadingMore: boolean;

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import PageHeader from "$lib/components/shared/PageHeader.svelte";
+  import SegmentedControl from "$lib/components/shared/SegmentedControl.svelte";
+  import FaultNotice from "$lib/components/shared/FaultNotice.svelte";
   import { getContext, onDestroy, onMount, tick, untrack } from "svelte";
   import { resolvePath as resolve } from "$lib/navigation/paths";
   import { getOrbRun } from "$lib/api/client";
@@ -419,9 +422,13 @@
 <svelte:head><title>Orb — runtime and workflow field</title></svelte:head>
 <svelte:document onkeydown={dismissPanels} onvisibilitychange={() => { runtimeReader?.visibility(); if (document.visibilityState === "visible" && !loading) void loadCatalogue(false, true); }} />
 <div class="orb-field">
+  <div class="field-intro">
+    <PageHeader title="Orb" description="Ordered evidence for each Run. Gaps stay visible.">
+      {#if query.trim() || statusFilter !== "all"}<p class="field-count">{filteredRuns.length}/{viewedRuns.length} Run groups</p>{/if}
+      {#snippet actions()}<label class="search"><span class="sr-only">Filter Runs</span><input type="search" placeholder="Find workflow or Run…" bind:value={query} /></label>{/snippet}
+    </PageHeader>
+  </div>
   <header class="field-header">
-    <div class="field-title"><h1>Orb</h1>{#if query.trim() || statusFilter !== "all"}<span>{filteredRuns.length}/{viewedRuns.length} Run groups</span>{/if}</div>
-    <label class="search"><span class="sr-only">Filter Runs</span><input type="search" placeholder="Find workflow or Run…" bind:value={query} /></label>
     <label><span class="sr-only">Run status filter</span><select aria-label="Run status filter" bind:value={statusFilter}><option value="all">All states</option><option value="active">Active</option><option value="running">Running</option><option value="waiting">Waiting</option><option value="done">Done</option><option value="failed">Failed</option><option value="cancelled">Cancelled</option></select></label>
     <details class="run-list" bind:open={runsOpen}>
       <summary>Runs <span>{viewedRuns.length}</span></summary>
@@ -435,12 +442,12 @@
     </details>
     <details class="view-options" bind:open={optionsOpen}>
       <summary>View</summary><div class="options-panel">
-        <div role="group" aria-label="Graph detail">
-          <button type="button" aria-pressed={level === "runs"} onclick={() => chooseLevel("runs")}>Run groups</button>
-          <button type="button" aria-pressed={level === "stations"} onclick={() => chooseLevel("stations")}>Stations</button>
-          <button type="button" aria-pressed={level === "occurrences"} onclick={() => chooseLevel("occurrences")}>Occurrences</button>
-          <button type="button" aria-pressed={level === "records"} onclick={() => chooseLevel("records")}>Records</button>
-        </div>
+        <SegmentedControl label="Graph detail" value={level} onchange={chooseLevel} options={[
+          { value: "runs", label: "Run groups" },
+          { value: "stations", label: "Stations" },
+          { value: "occurrences", label: "Occurrences" },
+          { value: "records", label: "Records" }
+        ]} />
         <button type="button" aria-pressed={zoomDriven} onclick={() => zoomDriven = !zoomDriven}>Zoom changes detail</button>
         <button type="button" aria-pressed={following} onclick={toggleFollowing}>{following ? "Pause following" : "Follow selected Run"}</button>
         <p>Run → station/subject → supplied occurrence → loaded records. Deeper subworkflow structure is unavailable until its owner supplies it.</p>
@@ -452,7 +459,7 @@
     <button class="refresh" type="button" disabled={loading} aria-busy={loading} onclick={() => loadCatalogue()}>{loading && !initialReady ? "Reading…" : "Refresh Runs"}</button>
     <button id="orb-evidence-toggle" type="button" aria-label={inspectorOpen ? "Hide evidence" : "Show evidence"} aria-expanded={inspectorOpen} aria-controls="orb-evidence" onclick={(event) => { if (inspectorOpen) closeEvidence(); else { inspectorOpener = event.currentTarget; inspectorOpen = true; } }}>Evidence</button>
   </header>
-  {#if error}<p class="field-fault" role="alert">{error}</p>{/if}
+  {#if error}<div class="field-fault"><FaultNotice message={error} /></div>{/if}
   {#if notice}<p class="field-notice" role="status">{notice}</p>{/if}
   <div class="field-layout">
     <section class="canvas-area" aria-label="Runtime and parallel Run graph">
@@ -495,9 +502,10 @@
 <style>
 .orb-field { flex:1 1 0; width:100%; height:100%; min-height:28rem; min-width:0; display:flex; flex-direction:column; position:relative; overflow:hidden; background:#000; color:var(--color-bone); }
   .field-header { position:relative; z-index:8; display:flex; align-items:center; flex-wrap:wrap; gap:.45rem; flex:none; margin:.9rem .9rem 0; padding:.5rem .65rem; border:1px solid var(--color-engraving); border-radius:8px; background:var(--color-obsidian); box-shadow:0 8px 28px #0005; }
-  .field-title { display:flex; align-items:baseline; gap:.65rem; margin-inline-end:.65rem; white-space:nowrap; }
-  h1 { margin:0; color:var(--color-bone); font:600 1.05rem/1.2 var(--font-body); letter-spacing:-.025em; }
-  .field-title > span,.coverage { color:var(--color-ash); font:12px/1.5 var(--font-body); }
+  .field-intro { flex:none; margin:.9rem .9rem 0; }
+  .field-intro :global(.page-header) { padding-bottom:.75rem; border-bottom:0; }
+  .field-count { margin:.35rem 0 0; color:var(--color-ash); font:12px/1.5 var(--font-body); }
+  .coverage { color:var(--color-ash); font:12px/1.5 var(--font-body); }
   h2 { margin:0; font:600 1rem/1.4 var(--font-body); letter-spacing:-.015em; }
   p,small,dt { color:var(--color-parchment); line-height:1.6; }
   button,input,select,summary { min-height:36px; border:1px solid var(--color-control-border); border-radius:5px; background:transparent; color:var(--color-bone); font:400 13px/1.4 var(--font-body); }
@@ -518,7 +526,6 @@
   .run-list > summary span { color:var(--color-ash); font:12px var(--font-glyph); }
   .run-list-panel,.options-panel { position:absolute; inset-block-start:calc(100% + .6rem); inset-inline-end:0; width:min(39rem,100%); max-height:min(65vh,38rem); overflow:auto; overscroll-behavior:contain; padding:1.15rem; border:1px solid var(--color-control-border); border-radius:8px; background:var(--color-obsidian); box-shadow:0 16px 48px #0009; }
   .options-panel { width:min(28rem,100%); display:flex; flex-direction:column; gap:.7rem; }
-  .options-panel > div { display:flex; flex-wrap:wrap; gap:.4rem; }
   .options-panel p,.run-list-panel > p { margin:.75rem 0; font-size:13px; }
   .run-list ul { margin:1rem 0; padding:0; list-style:none; }
   .run-list li { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:.6rem; padding:.7rem 0; border-top:1px solid var(--color-engraving); }
@@ -551,9 +558,9 @@
   .record-detail { border-top:1px solid var(--color-engraving); padding-top:1rem; }
   .record-detail h3 { font:600 1rem/1.5 var(--font-body); overflow-wrap:anywhere; }
   .record-detail a { font-size:13px; }
-  .field-notice,.field-fault { flex:none; margin:.65rem .9rem 0; padding:.75rem .85rem; border:1px solid var(--color-engraving); border-inline-start:2px solid var(--color-rune); background:var(--color-obsidian); font-size:13px; overflow-wrap:anywhere; }
+  .field-notice { flex:none; margin:.65rem .9rem 0; padding:.75rem .85rem; border:1px solid var(--color-engraving); border-inline-start:2px solid var(--color-rune); background:var(--color-obsidian); font-size:13px; overflow-wrap:anywhere; }
   .field-feed .field-notice { margin:1rem 0; }
-  .field-fault { border-inline-start-color:var(--color-ember); }
+  .field-fault { flex:none; margin:.65rem .9rem 0; }
   .field-empty { display:flex; flex-direction:column; justify-content:center; gap:1rem; height:100%; min-height:12rem; padding:clamp(1.5rem,5vw,4rem); }
   .field-empty h2 { max-width:30rem; font-size:clamp(1.5rem,3vw,2.4rem); line-height:1.2; letter-spacing:-.035em; }
   .field-empty p,.field-empty a { max-width:32rem; font-size:14px; }
@@ -561,7 +568,7 @@
   .filter-empty button { margin-inline-start:.5rem; background:var(--color-obsidian); }
   .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0; }
   @media(max-width:56rem) { .field-header { margin:.6rem .6rem 0; padding:.45rem; gap:.4rem; } .search { max-width:none; } .refresh { margin-inline-start:0; } .field-caption { flex-direction:column; gap:.2rem; } .field-feed { position:absolute; inset:0 0 0 auto; z-index:7; width:min(25rem,100%); box-shadow:-12px 0 40px #0008; } }
-  @media(max-width:35rem) { .field-title { flex:1; } .search { flex-basis:100%; order:2; } .field-title > span { font-size:11px; } .run-list li { grid-template-columns:minmax(0,1fr) auto; } .run-list li > button:first-child { grid-column:1/-1; } .field-feed { padding:1rem; } }
+  @media(max-width:35rem) { .search { flex-basis:100%; order:2; } .run-list li { grid-template-columns:minmax(0,1fr) auto; } .run-list li > button:first-child { grid-column:1/-1; } .field-feed { padding:1rem; } }
   @container work-area (max-width:56rem) { .search { max-width:none; } .refresh { margin-inline-start:0; } .field-caption { flex-direction:column; gap:.2rem; } .field-feed { position:absolute; inset:0 0 0 auto; z-index:7; width:min(25rem,100%); box-shadow:-12px 0 40px #0008; } }
   @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none; transition:none; scroll-behavior:auto; } }
 </style>

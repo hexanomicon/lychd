@@ -226,22 +226,6 @@
     align-content: start;
     gap: 0.85rem;
   }
-  .pattern-identity {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.65rem 0.2rem 0.4rem;
-  }
-  .pattern-identity h2 {
-    margin-top: 0.2rem;
-    color: var(--color-bone);
-    font: 600 var(--text-3xl)/1.2 var(--font-body);
-  }
-  .pattern-identity p { max-width: 46rem; color: var(--color-ash); }
-  .pattern-identity .pattern-entry { margin-top: 0.65rem; color: var(--color-parchment); font-size: var(--text-sm); }
-  .pattern-entry code { margin-left: 0.4rem; color: var(--color-frost); }
   .identity-seal {
     min-width: max-content;
     padding: 0.65rem 0.8rem;
@@ -254,7 +238,6 @@
   .identity-seal span { display: block; }
   .identity-seal span { color: var(--color-ash); text-transform: uppercase; }
   .pattern-score { min-width: 0; align-self: start; }
-  .score-count { margin-left: auto; color: var(--color-ash); font-size: var(--text-xs); }
   .station-list { padding: 0.35rem 0; }
   .station {
     display: grid;
@@ -305,8 +288,6 @@
     align-self: start;
   }
   .loom-meta .panel { min-width: 0; }
-  .pattern-details summary { padding: 0.85rem 1rem; color: var(--color-rune); cursor: pointer; font-size: var(--text-sm); }
-  .pattern-details[open] summary { border-bottom: 1px solid var(--color-engraving); }
   .digest { word-break: break-all; }
 
   /* Orb: bounded scrying list plus inspector */
@@ -385,7 +366,7 @@
     color: var(--color-bone);
     font: 400 var(--text-sm)/1.4 var(--font-glyph);
   }
-  .delegated-job .kv { grid-template-columns: 5rem 1fr; padding-inline: 0; }
+  .delegated-job .kv-list { --kv-term-width: 5rem; }
   .delegated-event-list {
     display: flex;
     flex-wrap: wrap;
@@ -507,7 +488,7 @@
   .delegated-runtime[data-state="declared-only"] {
     box-shadow: inset 2px 0 var(--color-ash);
   }
-  .delegated-runtime .kv { grid-template-columns: 6.5rem 1fr; padding-inline: 0; }
+  .delegated-runtime .kv-list { --kv-term-width: 6.5rem; }
   .transition-ledger .panel-head > span { margin-left: auto; color: var(--color-ash); font-size: var(--text-xs); }
   .transition-ledger a {
     display: grid;
@@ -522,7 +503,7 @@
   .transition-ledger a.current { background: color-mix(in srgb, var(--color-rune) 8%, var(--color-obsidian)); box-shadow: inset 2px 0 var(--color-rune); }
   .transition-ledger code { color: var(--color-bone); }
   .transition-source { color: var(--color-rune); text-transform: uppercase; }
-  .transition-inspector .kv { grid-template-columns: 6rem 1fr; }
+  .transition-inspector .kv-list { --kv-term-width: 6rem; }
   .swap-ticket { flex-wrap: wrap; }
   .swap-ticket code { color: var(--color-bone); }
 }
@@ -1106,15 +1087,6 @@
   }
 
   /* inspector */
-  .bridge-inspector {
-    width: 296px; flex-shrink: 0;
-    display: flex; flex-direction: column; gap: 12px;
-    overflow-y: auto;
-  }
-  .kv { display: grid; grid-template-columns: 92px 1fr; gap: 6px 10px; padding: 12px 16px; font-size: var(--text-sm); }
-  .kv dt { color: var(--color-ash); }
-  .kv dd { color: var(--color-bone); overflow-wrap: anywhere; }
-  .kv dd.glyph { color: var(--color-frost); }
 
   .floor { padding: 8px 10px 12px; display: flex; flex-direction: column; gap: 6px; }
   .block {
@@ -1392,12 +1364,6 @@
     grid-template-columns: 13rem minmax(0, 1fr);
   }
   .instrument-deck--bridge.instrument-deck--welcome { grid-template-columns: minmax(0, 1fr); }
-  .bridge-inspector {
-    width: auto;
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-  }
   .instrument-deck--orb,
   .instrument-deck--nexus { flex-direction: column; }
   .orb-inspector,
@@ -1408,7 +1374,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .loom-canvas { grid-template-columns: 1fr; }
-  .pattern-identity,
   .pattern-score,
   .loom-meta { grid-column: 1; }
   .loom-meta {
@@ -1432,7 +1397,6 @@
   .bridge-rail .new-seance { width: auto; flex: 0 0 auto; }
   .seance,
   .pattern { min-width: 10rem; }
-  .bridge-inspector,
   .orb-inspector,
   .nexus-side,
   .loom-meta { display: flex; flex-direction: column; }
@@ -1441,7 +1405,6 @@
   .evidence-row,
   .evidence-gap,
   .transition-ledger a { grid-template-columns: 1fr; }
-  .pattern-identity,
   .run-identity,
   .instrument-header { flex-direction: column; }
   .identity-seal { min-width: 0; width: 100%; }

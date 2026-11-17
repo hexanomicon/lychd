@@ -2,7 +2,7 @@
   import { beforeNavigate, goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
   import { resolvePath as resolve } from "$lib/navigation/paths";
-  import { bridgeHistoryContext, navigationId, orbReturnHref, type BridgeHistoryEntry, type BridgeHistoryHost } from "$lib/navigation/instruments";
+  import { bridgeHistoryContext, navigationId, orbReturnHref, type BridgeHistory, type BridgeHistoryEntry, type BridgeHistoryHost } from "$lib/navigation/instruments";
   import { getContext, onDestroy, onMount, tick, untrack } from "svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
@@ -26,6 +26,16 @@
   import ConsentCard from "$lib/components/shared/ConsentCard.svelte";
   import CircleRun from "$lib/pages/bridge/components/CircleRun.svelte";
   import CircleInspector from "$lib/pages/bridge/components/CircleInspector.svelte";
+  import ConversationHeading from "$lib/components/conversation/ConversationHeading.svelte";
+  import ConversationList from "$lib/components/conversation/ConversationList.svelte";
+  import TurnHeader from "$lib/components/conversation/TurnHeader.svelte";
+  import Button from "$lib/components/shared/Button.svelte";
+  import Disclosure from "$lib/components/shared/Disclosure.svelte";
+  import EmptyState from "$lib/components/shared/EmptyState.svelte";
+  import FaultNotice from "$lib/components/shared/FaultNotice.svelte";
+  import KeyValueList from "$lib/components/shared/KeyValueList.svelte";
+  import LoadingState from "$lib/components/shared/LoadingState.svelte";
+  import StatusPill from "$lib/components/shared/StatusPill.svelte";
   import DelegateMark from "$lib/components/shared/DelegateMark.svelte";
   import GenUI from "$lib/pages/bridge/components/GenUI.svelte";
   import AtlasLinks from "$lib/components/atlas/AtlasLinks.svelte";
@@ -35,7 +45,6 @@
   import { bridgeWorkspaceKey, createBridgeWorkspace, type BridgeWorkspace } from "$lib/shell/state/bridge-workspace.svelte";
   import { delegationStatusLabel } from "$lib/delegation/presentation";
   import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/navigation/pins";
-  import AltarIcon from "$lib/shell/components/AltarIcon.svelte";
   import BridgeVoiceInput from "./BridgeVoiceInput.svelte";
   import DictationFeedback from "$lib/pages/bridge/components/DictationFeedback.svelte";
   import { workCommandKey, type CommandTarget, type CommandResult, type WorkCommandRegistry } from "$lib/shell/state/work-commands";
@@ -65,6 +74,8 @@
   let pins = $state.raw<readonly string[]>([]);
   let pinNotice = $state("");
   let compactHistory = $state(false);
+  // Open by default only in the full standalone view; the reader may toggle it.
+  let historyOpen = $derived(!embedded && !compactHistory);
   onMount(() => {
     try { pins = parsePinnedConversations(localStorage.getItem(bridgePinsStorageKey)); }
     catch { /* Pinning remains available for this tab when storage is unavailable. */ }
@@ -83,7 +94,7 @@
     try { localStorage.setItem(bridgePinsStorageKey, JSON.stringify(next)); }
     catch { pinNotice = "Pins are kept for this tab; browser storage is unavailable."; }
     if (returnFocus) void tick().then(() => {
-      if (!destroyed) (document.getElementById(`bridge-pin-${id}`) ?? document.querySelector<HTMLButtonElement>(".new-seance"))?.focus({ preventScroll: true });
+      if (!destroyed) (document.getElementById(`bridge-pin-${id}`) ?? document.querySelector<HTMLButtonElement>("[data-new-seance]"))?.focus({ preventScroll: true });
     });
   }
   const observedSettlements = new Map(work.settlements);
@@ -170,10 +181,11 @@
   const recentSessions = $derived((snapshot?.sessions ?? []).filter((session) =>
     !pins.includes(session.id) && (!attentionOnly || (session.pending_count ?? 0) > 0)));
 
-  // Inside the Altar shell, conversation history renders in the shell sidebar. This view
-  // still owns the snapshot, pins, and selection; the shell only reads and forwards intent.
+  // Conversation history is projected once through the BridgeHistory interface. While the
+  // Bridge is the focused workspace the Altar shell lists it in the sidebar; when docked or
+  // standalone, this view lists it itself. Either way this view owns data and intents.
   const historyHost = getContext<BridgeHistoryHost | undefined>(bridgeHistoryContext);
-  const shellHistory = !!historyHost;
+  const shellHistory = $derived(!!historyHost && !embedded);
   function historyEntry(id: string): BridgeHistoryEntry {
     const session = sessionMetadata.get(id);
     return {
@@ -184,27 +196,31 @@
       marker: work.pending.has(id) ? "Offering unresolved" : work.refused.has(id) ? "Refused offering" : work.drafts.has(id) ? "Draft" : null
     };
   }
-  if (historyHost) {
-    const unregister = historyHost.register({
-      get pinned() { return visiblePins.map(historyEntry); },
-      get recent() {
-        const unlisted = selected && !pins.includes(selected.id) && !snapshot?.sessions.some((session) => session.id === selected.id);
-        return [...(unlisted && selected ? [selected.id] : []), ...recentSessions.map((session) => session.id)].map(historyEntry);
-      },
-      get selectedId() { return selected?.id ?? null; },
-      get creating() { return creatingSession; },
-      get hasMore() { return !!snapshot?.sessions_next_cursor; },
-      get loadingMore() { return loading || sessionsLoading; },
-      get notice() { return sessionsError || pinNotice; },
-      isPinned: (id) => pins.includes(id),
-      href: bridgeHref,
-      create: () => void createSession(),
-      togglePin,
-      select: selectConversation,
-      loadMore: () => void loadMoreSessions()
-    });
-    onDestroy(unregister);
-  }
+  const history: BridgeHistory = {
+    get pinned() { return visiblePins.map(historyEntry); },
+    get recent() { return recentSessions.map((session) => historyEntry(session.id)); },
+    get unlisted() {
+      return selected && !pins.includes(selected.id) && !snapshot?.sessions.some((session) => session.id === selected.id)
+        ? historyEntry(selected.id) : null;
+    },
+    get selectedId() { return selected?.id ?? null; },
+    get ready() { return !loading && !error; },
+    get creating() { return creatingSession; },
+    get hasMore() { return !!snapshot?.sessions_next_cursor; },
+    get loadingMore() { return sessionsLoading; },
+    get notice() { return sessionsError || pinNotice; },
+    isPinned: (id) => pins.includes(id),
+    href: bridgeHref,
+    create: () => void createSession(),
+    togglePin,
+    select: selectConversation,
+    loadMore: () => void loadMoreSessions()
+  };
+  // The view survives route changes inside the shell, so placement follows `embedded`.
+  $effect(() => {
+    if (!historyHost || embedded) return;
+    return historyHost.register(history);
+  });
   let focusedConsent = $derived(selected && sessionId === selected.id && focusRun && focusConsent && (
     (selected.turns ?? []).some((turn) => turn.run_id === focusRun) ||
     snapshot?.active_runs.some((run) => run.run_id === focusRun && run.session_id === selected.id)
@@ -1086,103 +1102,61 @@
 </script>
 
 <svelte:head>{#if !embedded}<title>Bridge — LychD</title>{/if}</svelte:head>
-{#snippet conversationEntry(id: string)}
-  {@const session = sessionMetadata.get(id)}
-  <div class="conversation-row">
-    <a class:current={selected?.id === id} class="seance" href={bridgeHref(id)} onclick={(event) => selectConversation(event, id)} aria-current={selected?.id === id ? "page" : undefined}>
-      <span class="t">{session?.title ?? `Conversation · ${id}`}</span>
-      {#if session?.pending_count}<span class="chip">{session.pending_count} awaiting consent</span>{/if}
-      {#if work.pending.has(id)}<span class="chip">Offering unresolved</span>{:else if work.refused.has(id)}<span class="chip">Refused offering</span>{:else if work.drafts.has(id)}<span class="chip">Draft</span>{/if}
-      {#if !session}<span class="m">Details not loaded</span>{/if}
-    </a>
-    <button id={`bridge-pin-${id}`} class="pin-conversation" type="button" aria-label={`${pins.includes(id) ? "Unpin" : "Pin"} conversation: ${session?.title ?? id}`} aria-pressed={pins.includes(id)} onclick={() => togglePin(id)} title={pins.includes(id) ? "Unpin conversation" : "Pin conversation"}><AltarIcon name="pin" size={16} /></button>
-  </div>
-{/snippet}
 <div class="instrument-deck instrument-deck--bridge" class:instrument-deck--welcome={firstVisit && pins.length === 0} class:bridge-embedded={embedded} class:bridge-shell-history={shellHistory} class:bridge-with-inspector={showInspector}>
   {#if !shellHistory && (!firstVisit || pins.length > 0)}
-  <aside class="bridge-rail" aria-label="Conversation history">
-    <details class="conversation-list" open={!embedded && !compactHistory}>
-      <summary>Conversations</summary>
-    <button class="rune-btn new-seance" type="button" disabled={creatingSession} aria-busy={creatingSession} onclick={createSession}>✦ &nbsp;{creatingSession ? "Opening…" : "New Séance"}</button>
-    <nav aria-label="Conversations">
-    <h2 class="archive-label">Pinned</h2>
-    {#each visiblePins as id (id)}{@render conversationEntry(id)}{:else}<p class="rail-empty">No pinned conversations.</p>{/each}
-    {#if selected && !pins.includes(selected.id) && !snapshot?.sessions.some((session) => session.id === selected.id)}
-      <h2 class="archive-label">Selected conversation</h2>
-      {@render conversationEntry(selected.id)}
-    {/if}
-    <h2 class="archive-label">Recent conversations</h2>
-    <p class="archive-order">Newest created first</p>
-    {#if snapshot?.sessions.length}
-      {#each recentSessions as session (session.id)}{@render conversationEntry(session.id)}{/each}
-    {:else if !loading && !error}
-      <p class="glyph rail-empty">No séance yet — open one to speak.</p>
-    {/if}
-    {#if snapshot?.sessions_next_cursor}
-      <button class="rune-btn" type="button" disabled={loading || sessionsLoading} aria-busy={sessionsLoading} onclick={loadMoreSessions}>
-        {sessionsLoading ? "Loading conversations…" : "Load more conversations"}
-      </button>
-    {/if}
-    {#if sessionsError}<p class="turn__fault" role="status">{sessionsError}</p>{/if}
-    {#if pinNotice}<p class="rail-empty" role="status">{pinNotice}</p>{/if}
-    </nav>
-    </details>
-  </aside>
+    <aside class="bridge-rail" aria-label="Conversation history">
+      <ConversationList {history} variant="disclosure" bind:open={() => historyOpen, (value) => { historyOpen = value; }} />
+    </aside>
   {/if}
 
   <div class="bridge-thread">
-    <header class="bridge-heading">
-      <div class="bridge-heading__identity">
-        {#if selected}
-          <button class="pin-conversation heading-pin" type="button" aria-label={pins.includes(selected.id) ? "Unpin this conversation" : "Pin this conversation"} aria-pressed={pins.includes(selected.id)} onclick={() => togglePin(selected.id)} title={pins.includes(selected.id) ? "Unpin conversation" : "Pin conversation"}><AltarIcon name="pin" size={16} /></button>
-        {/if}
-        {#if !firstVisit}
-          <h1 class:visually-hidden={!!selected}>Bridge</h1>
-          {#if selected}<p class="conversation-title">{selected.title}</p>{/if}
-        {:else}
-          <h1 class="visually-hidden">Bridge — conversations</h1>
-        {/if}
-        {#if selected && selectedPendingCount}
-          <p class="conversation-attention">{selectedPendingCount} awaiting consent</p>
-        {/if}
-      </div>
-      {#if !embedded}<a class="browse-seances" href={resolve("/seances")}><AltarIcon name="seances" size={16} />Browse séances</a>{/if}
-      <details class="conversation-tools">
-        <summary aria-label="Conversation tools" {@attach captureNamingTools}>Tools</summary>
-        <div class="bridge-tools" role="group" aria-label="Conversation tools">
-          <button class="rune-btn" type="button" onclick={openNaming}>Naming ceremony</button>
-          {#if selected}
-            <details class="seance-details">
-              <summary>Séance details{#if selectedPendingCount}<span class="chip">{selectedPendingCount} awaiting consent</span>{/if}</summary>
-              <dl class="kv">
-                <dt>identity</dt><dd class="glyph">{selected.id}</dd>
-                <dt>title</dt><dd>{selected.title}</dd>
-                <dt>turns</dt><dd>{(selected.turns?.length ?? 0) + selectedLiveTurns.length}</dd>
-                <dt>awaiting consent</dt><dd>{selectedPendingCount}</dd>
-              </dl>
-            </details>
-          {/if}
-          <details class="public-sources">
-            <summary>Public sources</summary>
-            <nav class="atlas-links" aria-label="Bridge work"><a href="/bridge?investigation=new">Investigate public source</a><a href="/bridge?notes=manage">Manage public notes</a><a href="/bridge?notes=recall">Recall public sources</a></nav>
-          </details>
-          {#if selected}
-            <details class="project-details">
-              <summary>Project links</summary>
-              <AtlasLinks kind="session" targetId={selected.id} suggestedProject={hintedProject} />
-            </details>
-          {/if}
-        </div>
-      </details>
-    </header>
+    <ConversationHeading
+      heading={firstVisit ? "Bridge — conversations" : "Bridge"}
+      headingHidden={firstVisit || !!selected}
+      title={selected?.title}
+      pending={selected ? selectedPendingCount : 0}
+      pinned={selected ? pins.includes(selected.id) : undefined}
+      onpin={() => { if (selected) togglePin(selected.id); }}
+      browseHref={embedded ? undefined : resolve("/seances")}
+    >
+      {#snippet tools()}
+        <Disclosure variant="popover" summaryLabel="Conversation tools" summaryAttach={captureNamingTools}>
+          {#snippet summary()}Tools{/snippet}
+          <div class="bridge-tools" role="group" aria-label="Conversation tools">
+            <Button size="sm" onclick={openNaming}>Naming ceremony</Button>
+            {#if selected}
+              <Disclosure>
+                {#snippet summary()}Séance details{#if selectedPendingCount}<StatusPill tone="attention">{selectedPendingCount} awaiting consent</StatusPill>{/if}{/snippet}
+                <KeyValueList>
+                  <dt>identity</dt><dd class="glyph">{selected.id}</dd>
+                  <dt>title</dt><dd>{selected.title}</dd>
+                  <dt>turns</dt><dd>{(selected.turns?.length ?? 0) + selectedLiveTurns.length}</dd>
+                  <dt>awaiting consent</dt><dd>{selectedPendingCount}</dd>
+                </KeyValueList>
+              </Disclosure>
+            {/if}
+            <Disclosure>
+              {#snippet summary()}Public sources{/snippet}
+              <nav class="atlas-links" aria-label="Bridge work"><a href="/bridge?investigation=new">Investigate public source</a><a href="/bridge?notes=manage">Manage public notes</a><a href="/bridge?notes=recall">Recall public sources</a></nav>
+            </Disclosure>
+            {#if selected}
+              <Disclosure>
+                {#snippet summary()}Project links{/snippet}
+                <AtlasLinks kind="session" targetId={selected.id} suggestedProject={hintedProject} />
+              </Disclosure>
+            {/if}
+          </div>
+        </Disclosure>
+      {/snippet}
+    </ConversationHeading>
     {#if hintedProject}
       <nav class="atlas-links" aria-label="Originating project">
         <a href={atlasHref(hintedProject.id)}>← {hintedProject.title}</a>
         <span>Project context is not sent automatically.</span>
       </nav>
-    {:else if projectError}<p class="turn__fault" role="status">{projectError}</p>{/if}
+    {:else if projectError}<div class="thread-notice"><FaultNotice severity="status" message={projectError} /></div>{/if}
     {#if focusConsent !== undefined && !loading && !focusedConsent}
-      <p class="turn__fault" role="status">The requested consent is unavailable in this conversation at this read.</p>
+      <div class="thread-notice"><FaultNotice severity="status" message="The requested consent is unavailable in this conversation at this read." /></div>
     {/if}
     {#if consentReturnHref}
       <nav class="atlas-links" aria-label="Historical consent origin">
@@ -1190,7 +1164,7 @@
       </nav>
     {/if}
     {#if focusRun && !loading && selected && !(selected.turns ?? []).some((turn) => turn.role === "agent" && turn.run_id === focusRun) && !selectedLiveTurns.some((turn) => turn.runId === focusRun)}
-      <p class="turn__fault" role="status">The requested Run is not available in this conversation.</p>
+      <div class="thread-notice"><FaultNotice severity="status" message="The requested Run is not available in this conversation." /></div>
     {/if}
     {#if namingStarted}
       <div hidden={!namingOpen}>
@@ -1208,39 +1182,29 @@
       tabindex="0"
     >
       {#if readError && !snapshot}
-        <div class="turn__fault" role="alert">{readError}</div>
-        <button class="rune-btn" type="button" disabled={loading} aria-busy={loading} onclick={retryRead}>
-          {loading ? "Reading…" : "Retry read"}
-        </button>
+        <FaultNotice message={readError} onretry={retryRead} retrying={loading} retryLabel="Retry read" retryingLabel="Reading…" />
       {:else if loading && !selected}
-        <p class="bridge-loading" role="status">Loading conversation…</p>
-        <div class="mist" aria-hidden="true"></div><div class="mist" aria-hidden="true"></div>
+        <LoadingState label="Loading conversation…" />
       {:else if error && !selected}
-        <div class="turn__fault" role="alert">{error}</div>
-        <button class="rune-btn retry-conversation" type="button" onclick={() => void load(sessionId)}>Retry conversation</button>
+        <FaultNotice message={error} onretry={() => void load(sessionId)} retryLabel="Retry conversation" />
       {:else if choosing}
-        <div class="shell-placeholder">
-          <h2 class="rune-head">{attentionOnly ? "Conversations awaiting consent" : "Choose a conversation"}</h2>
+        <EmptyState title={attentionOnly ? "Conversations awaiting consent" : "Choose a conversation"}>
           <p>{attentionOnly ? "Select a marked conversation to review its pending requests." : "Select a conversation from the list or open a new séance."}</p>
           {#if attentionOnly && !snapshot?.sessions.some((session) => (session.pending_count ?? 0) > 0)}
             <p>{snapshot?.pending_count ? snapshot.sessions_next_cursor ? "Load more conversations to find older pending requests." : "Pending requests have no available Bridge conversation." : "No conversation is awaiting consent."}</p>
           {/if}
-        </div>
+        </EmptyState>
       {:else if firstVisit}
         <AltarWelcome onbegin={createSession} onnaming={openNaming} pending={creatingSession} />
       {:else if !selected}
-        <div class="shell-placeholder">
-          <span class="glyph-big">⬡</span>
-          <span class="rune-head">The Bridge awaits</span>
+        <EmptyState glyph="⬡" title="The Bridge awaits">
           <p>Open a séance to begin a local communion.</p>
-        </div>
+        </EmptyState>
       {:else}
         {#if !(selected.turns?.length || selectedLiveTurns.length || snapshot?.pending_consents.length)}
-          <div class="conversation-empty">
-            <span aria-hidden="true">✦</span>
-            <h2>What shall we explore?</h2>
+          <EmptyState glyph="✦" title="What shall we explore?">
             <p>Offer a question, an idea, or a piece of work.</p>
-          </div>
+          </EmptyState>
         {/if}
         {#each selected.turns ?? [] as turn (turn.run_id ? JSON.stringify([selected.id, turn.role, turn.run_id]) : turn)}
           <article
@@ -1251,7 +1215,7 @@
             tabindex="-1"
             data-state={turn.state === "failed" ? "failed" : "done"}
           >
-            <div class="turn__meta"><span class="who">{turn.role === "agent" ? "LychD" : "You"}</span></div>
+            <TurnHeader role={turn.role === "agent" ? "agent" : "user"} name={turn.role === "agent" ? "LychD" : "You"} />
             {#if turn.role === "agent" && turn.run_id}
               <CircleRun runId={turn.run_id} />
             {/if}
@@ -1265,9 +1229,7 @@
         {/each}
         {#each selectedLiveTurns as turn (turn.runId)}
           <article class="turn turn--agent" data-state={turn.state} data-run-id={turn.runId} tabindex="-1">
-            <div class="turn__meta">
-              <span class="who">LychD</span>
-            </div>
+            <TurnHeader role="agent" name="LychD" />
             <CircleRun runId={turn.runId} {turn} cancelling={cancellingRuns.has(turn.runId)} oncancel={() => void cancelRun(turn)} />
             <div class="turn__body">{turn.content || (turnIsTerminal(turn) ? "No reply text was retained for this Run." : "")}</div>
             {#if turn.runStatus === "failed" && turn.content}
@@ -1330,8 +1292,10 @@
           <strong>Offering refused</strong>
           <p class="offering-recovery__text">{refused.text}</p>
           <p>{refused.error}</p>
-          <button class="rune-btn" type="button" disabled={!!prompt} onclick={() => recoverRefused(refused.requestId, true)}>Restore refused offering</button>
-          <button class="rune-btn" type="button" onclick={() => recoverRefused(refused.requestId, false)}>Dismiss refused offering</button>
+          <div class="offering-recovery__actions">
+            <Button size="sm" disabled={!!prompt} onclick={() => recoverRefused(refused.requestId, true)}>Restore refused offering</Button>
+            <Button size="sm" variant="ghost" onclick={() => recoverRefused(refused.requestId, false)}>Dismiss refused offering</Button>
+          </div>
           {#if prompt}<p>Your current draft is kept. Send or clear it before restoring this text.</p>{/if}
         </section>
       {/each}
@@ -1341,18 +1305,11 @@
           <p class="offering-recovery__text">{pendingOffering.text}</p>
           {#if pendingOffering.error}<p>{pendingOffering.error}</p>{/if}
           <p>{pendingOffering.sending ? "You can continue browsing while this request settles." : "Retry the original offering to recover its result before sending a new one."}</p>
-          <button class="rune-btn" type="button" disabled={pendingOffering.sending} onclick={() => void submit(true)}>Retry original offering</button>
+          <Button size="sm" disabled={pendingOffering.sending} onclick={() => void submit(true)}>Retry original offering</Button>
         </section>
       {/if}
       <div class="composer-area" role="region" aria-label="Bridge composer">
         <div class="composer-shell">
-          <div class="composer-destination">
-            <label for="bridge-destination">Send to</label>
-            <select id="bridge-destination" value={composerMode} onchange={changeMode}>
-              <option value="chat">Conversation</option>
-              <option value="work">{destination}</option>
-            </select>
-          </div>
           {#if composerMode === "work"}
             <div class="command-help">
               <p>English commands · {destination}</p>
@@ -1393,14 +1350,21 @@
                 </BridgeVoiceInput>
               {/key}
             </div>
-            <button
-              class="rune-btn composer-send"
-              disabled={voiceSnapshot.busy || composing || !prompt.trim()}
-              type="button"
-              onclick={sendComposer}
-            >
-              {composerMode === "work" ? "Send command" : "Offer"}
-            </button>
+            <div class="composer-trail">
+              <label class="visually-hidden" for="bridge-destination">Send to</label>
+              <select id="bridge-destination" value={composerMode} onchange={changeMode}>
+                <option value="chat">Conversation</option>
+                <option value="work">{destination}</option>
+              </select>
+              <button
+                class="composer-send"
+                disabled={voiceSnapshot.busy || composing || !prompt.trim()}
+                type="button"
+                aria-label={composerMode === "work" ? "Send command" : "Offer"}
+                title={composerMode === "work" ? "Send command" : "Offer"}
+                onclick={sendComposer}
+              ><span aria-hidden="true">↑</span></button>
+            </div>
           </div>
         </div>
         {#if commandPending}<p class="command-result" role="status">Preparing command…</p>{/if}
@@ -1409,7 +1373,7 @@
           <p id="composer-shortcuts">Enter to {composerMode === "work" ? "send command" : "offer"} · Shift + Enter for a new line</p>
           <p id="composer-guidance" class:visually-hidden={!loading && !pendingOffering && !hasUnsettledRun} role="status">{loading ? "Refreshing this conversation before another offering." : pendingOffering ? "Resolve the original offering first. This later draft is kept and is not queued." : hasUnsettledRun ? "Wait for this Run to settle before offering again. You can keep writing; this draft is not queued." : "Draft stays in this open tab."}</p>
         </div>
-        {#if error}<div class="turn__fault" role="alert">{error}</div>{/if}
+        {#if error}<FaultNotice message={error} />{/if}
       </div>
     {/if}
   </div>
@@ -1427,72 +1391,26 @@
   .bridge-with-inspector { grid-template-columns: 17rem minmax(0, 1fr) 20rem; }
   .bridge-shell-history.bridge-with-inspector { grid-template-columns: minmax(0, 1fr) 20rem; }
   .bridge-rail { width: auto; min-width: 0; padding: 1.25rem .85rem; border-right: 1px solid var(--color-engraving); overflow-y: auto; background: var(--color-obsidian); }
-  .conversation-list { width: 100%; }
   /* Native details keeps history reachable without making it the dock's first reading task. */
-  .conversation-list > summary { min-height: 2.75rem; margin-bottom: .65rem; color: var(--color-bone); font: 600 var(--text-sm)/1.5 var(--font-body); cursor: pointer; }
-  .conversation-list nav { display: flex; flex-direction: column; gap: .15rem; margin-top: 1rem; }
-  .archive-label { margin: 1.25rem .5rem .35rem; font: 600 var(--text-xs)/1.4 var(--font-body); color: var(--color-parchment); }
-  .archive-order, .rail-empty { color: var(--color-ash); font-size: var(--text-xs); line-height: 1.6; }
-  .archive-order { margin: 0 .5rem .5rem; }
-  .conversation-row { display: grid; grid-template-columns: minmax(0, 1fr) 2.75rem; align-items: center; gap: .15rem; }
-  .pin-conversation { display: grid; place-items: center; min-height: 2.75rem; border: 0; border-radius: var(--radius-glyph); color: var(--color-ash); background: transparent; cursor: pointer; }
-  .pin-conversation:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
-  .pin-conversation[aria-pressed="true"] { color: var(--color-accent); }
-  .new-seance { width: 100%; min-height: 2.75rem; box-shadow: none; background: var(--color-bone); border-color: var(--color-bone); color: var(--color-void); }
-  .new-seance:hover:not(:disabled) { background: var(--color-parchment); border-color: var(--color-parchment); color: var(--color-void); }
-  .seance { min-width: 0; min-height: 2.75rem; padding: .7rem .65rem; border: 0; border-left: 2px solid transparent; border-radius: var(--radius-glyph); overflow-wrap: anywhere; }
-  .seance:hover { background: var(--color-obsidian-2); }
-  .seance.current { border: 0; border-left: 2px solid var(--color-rune); background: var(--color-obsidian-2); box-shadow: none; }
-  .seance .t { font-size: var(--text-sm); line-height: 1.5; margin-bottom: .15rem; color: var(--color-bone); }
-  .seance .m { font-family: var(--font-body); }
-  .seance .chip { display: inline; margin: .2rem .45rem .2rem 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--color-parchment); font-size: var(--text-xs); white-space: normal; }
   .bridge-thread { min-height: 0; overflow: hidden; }
-  .bridge-heading { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem 1.25rem; min-height: 3.5rem; padding: .35rem clamp(1rem, 2vw, 1.5rem); border-bottom: 1px solid var(--color-engraving); }
-  .bridge-heading__identity { display: flex; align-items: center; flex: 1 1 12rem; gap: .65rem; min-width: 0; }
-  .bridge-heading h1 { color: var(--color-bone); font: 600 var(--text-base)/1.5 var(--font-body); }
-  .heading-pin { flex: 0 0 auto; width: 2.25rem; min-height: 2.25rem; border: 1px solid var(--color-engraving); }
-  .conversation-title { min-width: 0; margin: 0; color: var(--color-bone); font: 600 var(--text-base)/1.5 var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .conversation-attention { flex: 0 0 auto; margin: 0; padding: .1rem .55rem; border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--color-accent) 10%, transparent); color: var(--color-accent); font-size: var(--text-xs); line-height: 1.5; white-space: nowrap; }
-  .browse-seances { display: inline-flex; align-items: center; gap: .45rem; min-height: 2.75rem; color: var(--color-parchment); font-size: var(--text-sm); text-decoration: none; }
-  .browse-seances:hover { color: var(--color-bone); }
-  .conversation-tools { min-width: 0; font-size: var(--text-sm); }
-  .conversation-tools > summary { min-width: 2.75rem; min-height: 2.75rem; align-content: center; color: var(--color-parchment); cursor: pointer; }
-  .conversation-tools[open] { flex-basis: 100%; }
-  .seance-details { min-width: 0; font-size: var(--text-sm); }
-  .seance-details summary { display: list-item; min-height: 2.75rem; align-content: center; white-space: nowrap; cursor: pointer; }
-  .seance-details .chip { margin-left: .5rem; white-space: normal; }
-  .seance-details .kv { position: static; width: 100%; padding: .75rem 0; border: 0; border-radius: 0; background: transparent; }
-  .bridge-tools { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: flex-start; gap: 0 1rem; max-height: min(20rem, 40dvh); padding: .25rem 0 0; overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--color-engraving); font-size: var(--text-sm); }
-  .bridge-tools > details { min-width: 0; padding: 0; border: 0; background: transparent; }
-  .bridge-tools > details[open] { flex-basis: 100%; }
-  .bridge-tools summary { min-height: 2.75rem; align-content: center; cursor: pointer; color: var(--color-parchment); }
+  .bridge-tools { display: flex; flex-direction: column; align-items: stretch; gap: .25rem; min-width: 16rem; font-size: var(--text-sm); }
+  .thread-notice { padding: .5rem clamp(1rem, 3vw, 2rem); }
   .thread-scroll { min-height: 4rem; padding: 1.5rem max(1rem, calc((100% - 48rem) / 2)); gap: 1.75rem; scrollbar-gutter: stable; }
   .thread-scroll:focus-visible { outline: 1px solid var(--color-rune); outline-offset: -3px; }
   .turn { max-width: 100%; overflow-wrap: anywhere; }
   .turn--user { max-width: min(42rem, 92%); }
-  .turn--user .turn__meta { justify-content: flex-end; }
   .turn__body { white-space: pre-wrap; font-size: 1rem; line-height: 1.75; box-shadow: none; }
   .turn--user .turn__body { padding: .85rem 1rem; background: var(--color-obsidian-2); border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); }
   .turn--agent .turn__body { padding: .25rem 0; color: var(--color-bone); background: transparent; border: 0; border-radius: 0; }
   .turn--agent[data-state="stale"] .turn__body { padding-left: .85rem; border-left: 2px solid var(--color-control-border); }
   .turn--agent[data-state="failed"] .turn__body { padding-left: .85rem; border-left: 2px solid var(--color-ember); }
   .turn--agent[data-state="cancelled"] .turn__body { padding-left: .85rem; border-left: 2px solid var(--color-ash); }
-  .turn__meta { flex-wrap: wrap; gap: .4rem .75rem; }
-  .turn__meta .who { color: var(--color-parchment); font: 600 var(--text-sm)/1.5 var(--font-body); font-variant: normal; letter-spacing: 0; }
-  .conversation-empty { margin: auto; padding: 3rem 1rem; text-align: center; }
-  .conversation-empty > span { color: var(--color-accent); font-size: 1.6rem; }
-  .conversation-empty h2 { margin: 1rem 0 .7rem; font: 500 1.65rem/1.3 var(--font-body); color: var(--color-bone); }
-  .conversation-empty p, .bridge-loading { color: var(--color-parchment); }
-  .retry-conversation { align-self: flex-start; min-height: 2.75rem; }
   .latest-turn { display: flex; justify-content: center; padding: .25rem 1rem .5rem; }
   .latest-turn button { min-height: 2.75rem; padding: .4rem 1rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); color: var(--color-rune); background: var(--color-obsidian); cursor: pointer; }
   .composer-area { flex: 0 1 auto; min-height: 0; max-height: min(36rem, 65dvh); overflow-y: auto; overscroll-behavior: contain; padding: .8rem clamp(1rem, 3vw, 2rem) 1rem; border-top: 1px solid var(--color-engraving); }
   .composer-area:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
   .composer-shell { display: flex; flex-direction: column; max-width: 52rem; margin-inline: auto; padding: .85rem 1rem .6rem; border: 1px solid var(--color-control-border); border-radius: 1.25rem; background: var(--color-obsidian); }
   .composer-shell:focus-within { border-color: var(--color-rune); }
-  .composer-destination { order: 1; display: flex; align-items: center; gap: .75rem; margin-top: .35rem; min-width: 0; font-size: var(--text-sm); }
-  .composer-destination label { flex: 0 0 auto; color: var(--color-parchment); }
-  #bridge-destination { flex: 1 1 auto; width: auto; min-width: 0; max-width: 28rem; min-height: 2.75rem; margin: 0; padding: .4rem .25rem; border: 0; border-radius: 0; background: transparent; color: var(--color-bone); font: inherit; }
   .command-help, .command-result { font-size: var(--text-sm); line-height: 1.6; overflow-wrap: anywhere; }
   .command-help { padding: 0 0 .75rem; margin: 0 0 .75rem; border-bottom: 1px solid var(--color-engraving); }
   .command-help p + p { margin-top: .35rem; }
@@ -1505,43 +1423,35 @@
   .composer { display: flex; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .composer:focus-within { box-shadow: none; border: 0; }
   .composer textarea { display: block; width: 100%; min-width: 0; min-height: 3rem; max-height: 16rem; padding: 0; resize: vertical; font-size: 1rem; line-height: 1.5; background: transparent; }
-  .composer-actions { order: 2; position: relative; --voice-action-reserve: 6rem; padding-top: .35rem; }
-  .composer-actions--work { --voice-action-reserve: 9rem; }
+  .composer-actions { order: 2; position: relative; --voice-action-reserve: 15rem; padding-top: .35rem; }
+  .composer-actions--work { --voice-action-reserve: 18rem; }
+  /* Destination and send sit at the row's end; the voice toolbar reserves their width. */
+  .composer-trail { position: absolute; inset-block-start: .35rem; inset-inline-end: 0; display: flex; align-items: center; gap: .6rem; max-width: var(--voice-action-reserve); }
+  #bridge-destination { min-width: 0; max-width: 11rem; min-height: 2.25rem; margin: 0; padding: .25rem 1.75rem .25rem .75rem; border: 1px solid var(--color-engraving); border-radius: 999px; background-color: var(--color-obsidian-2); color: var(--color-bone); font: 500 var(--text-xs)/1.2 var(--font-body); }
+  .composer-send { display: grid; place-items: center; flex: 0 0 auto; width: 2.75rem; height: 2.75rem; padding: 0; border: 1px solid var(--color-bone); border-radius: 50%; background: var(--color-bone); color: var(--color-void); font: 600 1.1rem/1 var(--font-body); cursor: pointer; }
+  .composer-send:hover:not(:disabled) { background: var(--color-parchment); border-color: var(--color-parchment); }
+  .composer-send:disabled { opacity: .35; cursor: default; }
+  .composer-send:focus-visible, #bridge-destination:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
   .composer-voice { min-width: 0; }
-  .composer-send { position: absolute; inset-block-start: .35rem; inset-inline-end: 0; min-width: 5rem; min-height: 2.75rem; margin: 0; padding: .5rem 1rem; border-color: var(--color-bone); border-radius: 999px; background: var(--color-bone); color: var(--color-void); box-shadow: none; }
-  .composer-send:hover:not(:disabled) { background: var(--color-parchment); border-color: var(--color-parchment); color: var(--color-void); }
-  .composer-send:disabled { opacity: .5; }
   .composer-footer { display: flex; max-width: 52rem; justify-content: space-between; gap: .3rem 1.5rem; flex-wrap: wrap; margin: .35rem auto 0; color: var(--color-ash); font-size: var(--text-xs); line-height: 1.6; }
   .composer-footer p { max-width: 38rem; }
   .offering-recovery { flex: 0 1 auto; min-height: 4rem; margin: .75rem 1rem; padding: .8rem 1rem; border: 0; border-left: 2px solid var(--color-rune); border-radius: 0; background: var(--color-obsidian); max-height: min(22rem, 45dvh); overflow-y: auto; overscroll-behavior: contain; }
   .offering-recovery p { margin: .5rem 0; color: var(--color-parchment); line-height: 1.6; }
   .offering-recovery .offering-recovery__text { color: var(--color-bone); white-space: pre-wrap; max-height: 12rem; overflow: auto; overflow-wrap: anywhere; }
-  .offering-recovery .rune-btn { min-height: 2.75rem; margin: .25rem .35rem .25rem 0; }
+  .offering-recovery__actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
   .atlas-links { display: flex; flex-wrap: wrap; gap: .35rem 1rem; align-items: center; padding: .5rem clamp(1rem, 3vw, 2rem); color: var(--color-parchment); font-size: var(--text-sm); }
   .atlas-links a { color: var(--color-rune); min-height: 2.75rem; display: inline-flex; align-items: center; }
-  .public-sources .atlas-links { padding: 0 0 .35rem; }
   .turn:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   .bridge-embedded { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100%; overflow: hidden; }
   .bridge-embedded.instrument-deck--welcome { grid-template-rows: minmax(0, 1fr); }
   .bridge-embedded .bridge-rail { padding: 0 .95rem; border: 0; max-height: min(18rem, 35dvh); overflow: auto; background: transparent; }
-  .bridge-embedded .conversation-list > summary { margin: 0; font-weight: 500; }
-  .bridge-embedded .conversation-list nav { margin-top: .25rem; padding-bottom: .75rem; }
-  .bridge-embedded .bridge-heading { min-height: 2.75rem; padding: .2rem .95rem; gap: .15rem .5rem; }
-  .bridge-embedded .bridge-heading h1 { display: none; }
-  .bridge-embedded .conversation-title { margin: 0; font: 600 var(--text-base)/1.5 var(--font-body); }
-  .bridge-embedded .seance-details { font-size: var(--text-xs); }
-  .bridge-embedded .seance-details[open] { width: 100%; }
-  .bridge-embedded .seance-details .kv { position: static; width: 100%; }
-  .bridge-embedded .bridge-tools { padding: .25rem 0 0; gap: 0 1rem; font-size: var(--text-xs); }
   .bridge-embedded .atlas-links { padding: .25rem .95rem; gap: .25rem .75rem; }
-  .bridge-embedded .public-sources .atlas-links { padding-inline: 0; }
   .bridge-embedded .thread-scroll { padding: 1rem .95rem; gap: 1.5rem; flex: 1; min-height: 4rem; }
   .bridge-embedded .composer-area { padding: .4rem .65rem .45rem; }
   .bridge-embedded .composer-shell { padding: .3rem .6rem .4rem; }
   .bridge-embedded .composer textarea { min-height: 3rem; }
-  .bridge-embedded .composer-destination { margin-bottom: .1rem; gap: .5rem; }
   .bridge-embedded .composer-voice { --voice-label-display: none; }
-  .bridge-embedded .composer-send { min-width: 4.5rem; padding-inline: .75rem; }
+  .bridge-embedded .composer-actions { --voice-action-reserve: 13rem; }
   .bridge-embedded .turn__body { font-size: var(--text-base); line-height: 1.7; }
   @media (max-width: 64rem) {
     .bridge-with-inspector { grid-template-columns: 17rem minmax(0, 1fr); }
@@ -1551,21 +1461,12 @@
   @media (max-width: 48rem) {
     .instrument-deck--bridge, .bridge-with-inspector, .bridge-shell-history.bridge-with-inspector { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
     .bridge-rail { display: block; max-height: 35dvh; padding: 0 .95rem; border-right: 0; border-bottom: 1px solid var(--color-engraving); overflow: auto; }
-    .conversation-list > summary { margin: 0; }
-    .conversation-list nav { max-height: 12rem; overflow-y: auto; margin-top: .5rem; padding-bottom: .75rem; }
-    .bridge-heading { gap: .25rem .5rem; padding: .25rem .95rem; }
-    .conversation-title { margin-top: .25rem; font-size: var(--text-base); }
-    .seance-details { font-size: var(--text-xs); }
-    .seance-details summary { white-space: normal; }
-    .seance-details .kv { position: static; width: 100%; grid-template-columns: minmax(0, .7fr) minmax(0, 1fr); }
-    .bridge-tools { padding-inline: 0; font-size: var(--text-xs); }
     .thread-scroll { padding: 1rem .95rem; }
     .composer-area { padding: .4rem .65rem .45rem; }
     .composer-shell { padding: .3rem .6rem .4rem; }
     .composer textarea { min-height: 3rem; }
-    .composer-destination { margin-bottom: .1rem; gap: .5rem; }
     .composer-voice { --voice-label-display: none; }
-    .composer-send { min-width: 4.5rem; padding-inline: .75rem; }
+    .composer-actions { --voice-action-reserve: 13rem; }
     .composer-footer { gap: .2rem .5rem; }
     .turn--user { max-width: 95%; }
   }

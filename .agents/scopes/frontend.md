@@ -85,6 +85,10 @@ within the selected stack.
   animation, or renderer state.
 - Native CSS and custom properties are the only styling vocabulary. Do not add Tailwind, Sass,
   project-owned PostCSS, or a parallel token system.
+- Repeated presentation (pills, inspectors, key/value facts, toggles, disclosures, buttons, fault,
+  loading, and empty states) uses the shared kit in `clients/web/src/lib/components/shared/`
+  (see its README); conversation history and headings use `lib/components/conversation/`. Extend
+  a shared component instead of restyling a local copy.
 - Keyboard operation, visible focus, semantic labels, non-color distinctions, reduced motion, and
   an accessible list/table or inspector alternative remain first-class. Animation must correspond
   to a typed event or be visibly marked as projection; layout motion must preserve spatial memory.

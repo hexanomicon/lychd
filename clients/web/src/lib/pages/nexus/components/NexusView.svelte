@@ -24,6 +24,12 @@
   import NexusMap from "./NexusMap.svelte";
   import NexusProperties from "./NexusProperties.svelte";
   import PageHeader from "$lib/components/shared/PageHeader.svelte";
+  import Button from "$lib/components/shared/Button.svelte";
+  import Eyebrow from "$lib/components/shared/Eyebrow.svelte";
+  import FaultNotice from "$lib/components/shared/FaultNotice.svelte";
+  import KeyValueList from "$lib/components/shared/KeyValueList.svelte";
+  import LoadingState from "$lib/components/shared/LoadingState.svelte";
+  import SegmentedControl from "$lib/components/shared/SegmentedControl.svelte";
   import { createNexusMap } from "$lib/pages/nexus/state/map";
 
   type Preview = { target: string; plan: TransitionPlan };
@@ -437,7 +443,7 @@
     </div>
     <details class="capability-detail">
       <summary aria-label={`Observation details for ${row.capability_key}`}>Observation details</summary>
-      <dl class="kv">
+      <KeyValueList>
         <dt>Animator</dt><dd>{row.animator_name}</dd>
         <dt>family</dt><dd>{row.family}</dd>
         <dt>model</dt><dd>{row.model_id}</dd>
@@ -445,7 +451,7 @@
         <dt>health</dt><dd>{row.health}</dd>
         <dt>warm</dt><dd>{row.warm ? "yes" : "no"}</dd>
         <dt>reason</dt><dd>{row.reason ?? "none reported"}</dd>
-      </dl>
+      </KeyValueList>
     </details>
   </article>
 {/snippet}
@@ -459,14 +465,14 @@
         {:else}<span>Snapshot unavailable</span>{/if}
         <span class="snapshot-caption">Cached observations · refreshes every 5 seconds</span>
       </div>
-      <button class="refresh-observations" type="button" disabled={refreshing} onclick={() => void refresh(false)}>{refreshing ? "Refreshing…" : "Refresh"}</button>
+      <Button size="sm" busy={refreshing} onclick={() => void refresh(false)}>{refreshing ? "Refreshing…" : "Refresh"}</Button>
     </div>
     {#if snapshot?.containment_reason}<div class="containment" role="alert">Runtime admission is contained: {snapshot.containment_reason}</div>{/if}
     {#if snapshot && snapshotStale}<div class="containment" role="alert">The Nexus board is stale. Lifecycle mutations are unavailable until a fresh snapshot loads.</div>{/if}
-    {#if loading}<p class="nexus-empty" role="status">Reading capability observations…</p>
+    {#if loading}<div class="nexus-empty"><LoadingState label="Reading capability observations…" /></div>
     {:else if snapshot}
-      <div class="nexus-viewbar"><span class="section-label">{mapModel?.objects.length ?? 0} observed objects</span>
-        <div role="group" aria-label="Nexus view"><button type="button" aria-pressed={viewMode === "map"} onclick={() => changeView("map")}>Map</button><button type="button" aria-pressed={viewMode === "list"} onclick={() => changeView("list")}>List</button></div>
+      <div class="nexus-viewbar"><Eyebrow>{mapModel?.objects.length ?? 0} observed objects</Eyebrow>
+        <SegmentedControl label="Nexus view" value={viewMode} onchange={changeView} options={[{ value: "map", label: "Map" }, { value: "list", label: "List" }]} />
       </div>
       {#if mapModel}
       <div class="nexus-map-view" hidden={viewMode !== "map"}>
@@ -475,7 +481,7 @@
       </div>
       {/if}
       <div hidden={viewMode !== "list"} class="nexus-list">
-      <div class="board-introduction"><h2 class="section-label">Observe capabilities</h2><p>Readiness is an observation. It does not grant permission or reserve capacity.</p></div>
+      <div class="board-introduction"><Eyebrow as="h2">Observe capabilities</Eyebrow><p>Readiness is an observation. It does not grant permission or reserve capacity.</p></div>
       <div class="animator-index" role="group" aria-label="Observed Animators">
         {#each mapModel?.objects.filter((object) => object.kind === "animator") ?? [] as object (object.id)}
           <button type="button" onclick={(event) => selectObject(object.id, event.currentTarget)}>Inspect Animator {object.label}</button>
@@ -503,13 +509,13 @@
               <article class="delegated-runtime" data-state={runtime.delivery}>
                 <header><button class="delegated-runtime__title inspect-object" type="button" aria-label={`Inspect delegated runtime ${runtime.runtime_id}`} onclick={(event) => inspectRuntime(runtime.runtime_id, event.currentTarget)}><DelegateMark /> {runtime.display_name}</button>
                   <span class="chip" data-state={runtime.runnable ? "awaited" : "cold"}>{runtime.runnable ? "available" : runtime.delivery}</span></header>
-                <dl class="kv">
+                <KeyValueList>
                   <dt>adapter</dt><dd>{runtime.runtime_id} · {runtime.transport}</dd>
                   <dt>registrant</dt><dd>{runtime.registrant_id}</dd>
                   <dt>coffin</dt><dd>{runtime.coffin_profiles.length ? runtime.coffin_profiles.join(" · ") : "not required"}</dd>
                   <dt>Provider Gate</dt><dd>{runtime.provider_gate.replaceAll("_", " ")}</dd>
                   <dt>capacity</dt><dd>{runtime.capacity_posture.replaceAll("_", " ")}</dd>
-                </dl>
+                </KeyValueList>
                 {#if runtime.limitations.length}<ul class="limits-list">{#each runtime.limitations as limitation (limitation)}<li>{limitation}</li>{/each}</ul>{/if}
               </article>
             {/each}
@@ -549,7 +555,7 @@
     </section>
     <section id="nexus-preview" class="panel nexus-plan" class:nexus-plan--idle={previewTarget === null && !error} data-open={previewTarget !== null}
       aria-labelledby="nexus-preview-title" aria-busy={previewLoading} {@attach capturePlanInspector} tabindex="-1">
-      <div class="panel-head"><div><span class="section-label">Plan a change</span><h2 id="nexus-preview-title" class="rune-head">Non-binding preview</h2></div>
+      <div class="panel-head"><div><Eyebrow>Plan a change</Eyebrow><h2 id="nexus-preview-title" class="rune-head">Non-binding preview</h2></div>
         {#if previewTarget}<button class="sheet-dismiss" type="button" onclick={closePreview}>Close</button>{/if}</div>
       {#if previewTarget}<div class="preview-identity"><span>Selected capability</span><code>{previewTarget}</code></div>{/if}
       {#if previewLoading}<p class="nexus-hint" role="status">Calculating preview… This read does not request a transition.</p>
@@ -565,14 +571,14 @@
           {#if snapshot?.containment_reason}<p class="action-note">Request unavailable while runtime admission is contained.</p>
           {:else if snapshotStale}<p class="action-note">Refresh the stale snapshot before requesting a transition.</p>
           {:else if preview.plan.action_type === "NO_OP"}<p class="action-note">No lifecycle change is planned for this target.</p>{/if}
-          <button class="rune-btn" disabled={busy || snapshotStale || Boolean(snapshot?.containment_reason) || preview.plan.action_type === "NO_OP"} type="button" onclick={swap}>Request transition</button>
+          <Button variant="primary" disabled={busy || snapshotStale || Boolean(snapshot?.containment_reason) || preview.plan.action_type === "NO_OP"} onclick={swap}>Request transition</Button>
           {#if busy}<p class="action-note" role="status">Submitting the prepared request…</p>{/if}
           {#if swapAttempts.has(preview.target) && !busy}<p class="action-note">Retry keeps the original request identity and target.</p>{/if}
         </div>
       {:else if !previewTarget}
         <div class="preview-empty"><span class="empty-number" aria-hidden="true">01 → 02</span><h3>Start with an observation</h3><p>Choose Preview on a managed capability to inspect the planned evictions and launches before requesting a change.</p></div>
       {/if}
-      {#if error}<div class="turn__fault" role="alert">{error}</div>{/if}
+      {#if error}<FaultNotice message={error} />{/if}
     </section>
     {#if swapAttempts.size}
       <section class="panel pending-requests" aria-labelledby="pending-requests-title">
@@ -598,7 +604,7 @@
       <div class="panel-head"><h2 id="transition-inspector-title" class="rune-head">Selected transition observation</h2>
         {#if selectedTransition}<button class="sheet-dismiss" type="button" onclick={() => void clearTransition()}>Close</button>{/if}</div>
       {#if selectedTransition}
-        <dl class="kv">
+        <KeyValueList>
           <dt>request</dt><dd class="glyph">{selectedTransition.request_id}</dd>
           <dt>source</dt><dd>{selectedTransition.source}</dd>
           <dt>target</dt><dd>{selectedTransition.target_capability_key}</dd>
@@ -609,7 +615,7 @@
           <dt>occurrence</dt><dd class="glyph">{selectedTransition.occurrence_id ?? "—"}</dd>
           <dt>physical</dt><dd class="glyph">{selectedTransition.physical_transition_id ?? "none"}</dd>
           <dt>restoration</dt><dd class="glyph">{selectedTransition.compensation_transition_id ?? "none"}</dd>
-        </dl>
+        </KeyValueList>
         {#if selectedTransition.detail}<p class="inspector-copy">{selectedTransition.detail}</p>{/if}
         {#if selectedTransition.orb_path}<a class="inspector-link" href={resolve((requestedEventId ? `${selectedTransition.orb_path}?event=${encodeURIComponent(requestedEventId)}` : selectedTransition.orb_path) as `/orb/${string}`)}>Return to evidence in the Orb →</a>{/if}
       {:else}<p class="inspector-copy">{transitionNote || "Select a retained request to inspect correlation."}</p>{/if}
@@ -621,8 +627,6 @@
   .instrument-deck--nexus { display: flex; flex-direction: row; align-items: start; gap: 2rem; padding: 1rem clamp(1rem, 2vw, 2rem); }
   .nexus-main { flex: 1 1 0; min-width: 0; gap: .75rem; }
   .nexus-viewbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
-  .nexus-viewbar .section-label { margin: 0; }
-  .nexus-viewbar [role="group"] { display: flex; gap: .25rem; }
   .nexus-viewbar button { min-height: 2.5rem; padding: .4rem .85rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); color: var(--color-parchment); background: var(--color-obsidian); cursor: pointer; }
   .nexus-viewbar button[aria-pressed="true"] { border-color: var(--color-rune); color: var(--color-bone); }
   .nexus-list[hidden], .nexus-map-view[hidden] { display: none; }
@@ -646,10 +650,7 @@
   .sheet-dismiss { display: inline-block; flex-shrink: 0; min-height: 2.25rem; }
   .snapshot-bar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 0; border-block: 1px solid var(--color-engraving); color: var(--color-bone); font-size: var(--text-sm); }
   .snapshot-caption { display: block; color: var(--color-parchment); margin-top: 0.25rem; }
-  .refresh-observations { border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); padding: 0.6rem 0.8rem; background: transparent; color: var(--color-rune); min-height: 2.5rem; }
-  .refresh-observations:disabled { color: var(--color-ash); cursor: wait; }
   .board-introduction { padding-top: 0.25rem; }
-  .section-label { display: block; font-family: var(--font-body); font-size: var(--text-xs); font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-parchment); margin-bottom: 0.375rem; }
   .board-introduction p, .section-caption { margin: 0.25rem 0 0; color: var(--color-parchment); font-size: var(--text-sm); line-height: 1.5; }
   .coven-grid { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
   .coven-card { display: block; min-width: 0; }
@@ -670,10 +671,7 @@
   .read-only { color: var(--color-parchment); font-size: var(--text-xs); }
   .capability-detail { padding: 0 .5rem 1rem; }
   .capability-detail summary { cursor: pointer; color: var(--color-parchment); font-size: var(--text-sm); min-height: 2.5rem; padding-top: .5rem; }
-  .kv { min-width: 0; grid-template-columns: minmax(4.75rem, auto) minmax(0, 1fr); gap: 0.6rem 0.85rem; font-size: var(--text-sm); }
-  .kv dd, .kv dt { min-width: 0; overflow-wrap: anywhere; }
-  .kv dt { color: var(--color-parchment); }
-  .capability-detail .kv { padding: 0.75rem 0 0; margin: 0; }
+  .capability-detail :global(.kv-list) { padding-top: 0.75rem; }
   .delegated-runtime-grid { grid-template-columns: minmax(0, 1fr); padding-top: 0; }
   .delegated-runtime { background: none; border-inline: 0; border-bottom: 0; border-radius: 0; }
   .delegated-runtime header { flex-wrap: wrap; }
@@ -698,8 +696,6 @@
   .policy-cost span { font-size: var(--text-xs); align-self: center; }
   .plan-act { padding: 1rem 1.125rem 1.125rem; gap: 0.75rem; }
   .plan-act .warn, .action-note { margin: 0; font-size: var(--text-sm); color: var(--color-parchment); line-height: 1.55; }
-  .plan-act .rune-btn { min-height: 2.75rem; box-shadow: none; font-size: var(--text-sm); color: var(--color-void); background: var(--color-bone); border-color: var(--color-bone); font-weight: 600; }
-  .plan-act .rune-btn:disabled { color: var(--color-ash); background: var(--color-obsidian-2); border-color: var(--color-control-border); }
   .preview-empty { padding: 1rem 1.125rem 1.25rem; }
   .empty-number { color: var(--color-rune-dim); font-family: var(--font-glyph); font-size: var(--text-xs); }
   .preview-empty h3 { font-weight: 400; font-size: var(--text-lg); margin: 1rem 0 0.75rem; }
@@ -714,8 +710,9 @@
   .swap-ticket span, .swap-ticket code, .swap-ticket strong { overflow-wrap: anywhere; white-space: normal; }
   .swap-ticket code { font-size: var(--text-xs); }
   .ticket-panel .inspector-copy { margin-top: 0.5rem; }
-  .transition-inspector .kv { padding: 1rem 1.125rem; }
-  .containment, .turn__fault { overflow-wrap: anywhere; }
+  .transition-inspector :global(.kv-list) { padding: 1rem 1.125rem; }
+  .delegated-runtime :global(.kv-list) { padding-block: .75rem; }
+  .containment { overflow-wrap: anywhere; }
   :is(button, summary, a):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   :is(.nexus-plan, .transition-inspector):focus { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   @container work-area (max-width: 68rem) { .instrument-deck--nexus { gap: 1.25rem; } .nexus-side { flex-basis: 19rem; width: 19rem; } }

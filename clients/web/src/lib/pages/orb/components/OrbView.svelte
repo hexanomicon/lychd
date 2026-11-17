@@ -16,6 +16,11 @@
   import GraphCanvas from "$lib/graph/components/GraphCanvas.svelte";
   import AnimatorRail from "$lib/pages/orb/components/AnimatorRail.svelte";
   import PageHeader from "$lib/components/shared/PageHeader.svelte";
+  import Button from "$lib/components/shared/Button.svelte";
+  import EmptyState from "$lib/components/shared/EmptyState.svelte";
+  import FaultNotice from "$lib/components/shared/FaultNotice.svelte";
+  import KeyValueList from "$lib/components/shared/KeyValueList.svelte";
+  import LoadingState from "$lib/components/shared/LoadingState.svelte";
   import { projectOrb, orbEvidenceNodeId, mergeOrbEvidence, mergeOrbGaps } from "$lib/pages/orb/state/orb";
   import { matchesOrbPattern } from "$lib/graph/model";
   import { listenToOrb, type OrbConnection } from "$lib/pages/orb/state/live";
@@ -410,14 +415,11 @@
   <div class="instrument-deck instrument-deck--orb">
     <section class="orb-main" aria-label="Selected run evidence">
       {#if error && !snapshot}
-        <div class="turn__fault" role="alert">{error}</div>
-        <button class="rune-btn" type="button" disabled={loading} aria-busy={loading} onclick={retryRead}>
-          {loading ? "Reading…" : "Retry read"}
-        </button>
+        <FaultNotice message={error} onretry={retryRead} retrying={loading} retryLabel="Retry read" retryingLabel="Reading…" />
       {:else if loading && !snapshot}
-        <div class="mist"></div><div class="mist"></div>
+        <LoadingState label="Reading Run evidence…" />
       {:else if snapshot}
-        {#if error}<div class="turn__fault" role="alert">{error}</div>{/if}
+        {#if error}<FaultNotice message={error} />{/if}
         <PageHeader title="Orb" kicker="Selected Run · workflow and evidence">
             <p class="run-id"><span>Run</span> {snapshot.run.run_id}</p>
             <nav class="context-links" aria-label="Related instruments">
@@ -598,10 +600,9 @@
               {#if loadMoreError}
                 <div id="orb-load-more-error" class="turn__fault" role="alert">{loadMoreError}</div>
               {/if}
-              <button
-                class="rune-btn"
-                disabled={loadingMore}
-                type="button"
+              <Button
+                variant="primary"
+                busy={loadingMore}
                 onclick={loadMore}
                 aria-describedby={loadMoreError ? "orb-load-more-error" : undefined}
               >
@@ -610,7 +611,7 @@
                   : loadMoreError
                     ? "Retry loading retained evidence"
                     : "Load more retained evidence"}
-              </button>
+              </Button>
             </div>
           {/if}
         </section>
@@ -652,7 +653,7 @@
             <p class="inspector-copy">The selected record is outside the current subject or attempt filter.</p>
           {/if}
           <p class="selected-evidence-summary">{selected.summary}</p>
-          <dl class="kv">
+          <KeyValueList termWidth="5.5rem">
             <dt>event</dt><dd class="glyph">{selected.event_id}</dd>
             <dt>sequence</dt><dd>#{selected.seq}</dd>
             <dt>recorded at</dt><dd><time datetime={selected.occurred_at}>{new Date(selected.occurred_at).toLocaleString()}</time> (local)</dd>
@@ -662,7 +663,7 @@
             <dt>phase</dt><dd>{selected.phase ?? "—"}</dd>
             <dt>station attempt (occurrence_id)</dt><dd class="glyph">{selected.occurrence_id ?? "No recorded attempt"}</dd>
             <dt>capture</dt><dd>{selected.capture.replaceAll("_", " ")}</dd>
-          </dl>
+          </KeyValueList>
           {#if selectedConsentHref}
             <a class="inspector-link" href={resolve(selectedConsentHref)}>Open exact consent in Bridge →</a>
             <p class="inspector-copy">Historical reference; current availability is checked in Bridge.</p>
@@ -680,8 +681,9 @@
         </section>
       {:else if snapshot && !selectionNote}
         <section class="panel inspector-empty">
-          <h2 class="rune-head">Inspect a record</h2>
-          <p>Select an evidence row to read its exact identity, recorded fields, and available counterpart links.</p>
+          <EmptyState title="Inspect a record">
+            <p>Select an evidence row to read its exact identity, recorded fields, and available counterpart links.</p>
+          </EmptyState>
         </section>
       {/if}
       <BridgePreferenceSummary summary={snapshot?.bridge_preference} />
@@ -707,7 +709,7 @@
                 <span class="delegated-job__title"><DelegateMark /> AgentJob {job.job_id}</span>
                 <span class="chip" data-state={job.status}>{delegationStatusLabel(job.status)}</span>
               </header>
-              <dl class="kv">
+              <KeyValueList>
                 <dt>runtime</dt><dd>{job.runtime}</dd>
                 <dt>coffin</dt><dd>{job.profile}</dd>
                 <dt>station</dt><dd>{job.step_id}</dd>
@@ -717,7 +719,7 @@
                   · {job.artifact_count} artifact reference{job.artifact_count === 1 ? "" : "s"}
                   {job.error_present ? " · private error retained" : ""}
                 </dd>
-              </dl>
+              </KeyValueList>
               <ol class="delegated-event-list" aria-label="AgentJob lifecycle">
                 {#each job.events as event (event.event_id)}
                   <li>
@@ -811,20 +813,16 @@
   .evidence-gap strong { color:var(--color-bone); font:500 13px/1.6 var(--font-body); }
   .evidence-gap p { margin-top:.35rem; color:var(--color-parchment); font-size:13px; }
   .evidence-empty { padding:1.25rem .5rem; color:var(--color-parchment); font-size:14px; }
+  .selected-evidence :global(.kv-list) { padding: 1rem; font-size: 12px; }
   .evidence-more { padding:1rem 0; }
-  .evidence-more .rune-btn { max-width:100%; white-space:normal; color:var(--color-void); background:var(--color-bone); border-color:var(--color-bone); border-radius:5px; }
   .selected-evidence { min-width:0; }
   .selected-evidence-summary { padding-top:1rem; font:500 1.1rem/1.6 var(--font-body); letter-spacing:-.015em; }
-  .selected-evidence .kv { grid-template-columns:5.5rem minmax(0,1fr); padding-block:1rem; gap:.8rem; font-size:12px; }
-  .selected-evidence .kv dt { color:var(--color-ash); }
-  .selected-evidence .kv dd { min-width:0; line-height:1.6; }
   .selected-evidence .glyph { color:var(--color-bone); font-size:12px; overflow-wrap:anywhere; }
   .sheet-dismiss { min-height:36px; padding:.35rem .6rem; border:1px solid var(--color-control-border); border-radius:5px; font-size:12px; }
   .record-navigation { display:flex; flex-wrap:wrap; gap:.5rem .8rem; padding-top:1rem; }
   .record-navigation button { min-height:34px; font-size:12px; }
   .inspector-link { font-size:13px; line-height:1.6; }
   .inspector-empty { padding:1rem 0; }
-  .inspector-empty h2 { font-size:1rem; }
   .inspector-empty p,.selection-note .inspector-copy { margin-top:.6rem; color:var(--color-parchment); font-size:13px; line-height:1.7; }
   .delegated-jobs { grid-column:1/-1; min-width:0; border-top:1px solid var(--color-engraving); }
   .delegated-jobs > summary { padding:1rem 0; color:var(--color-bone); cursor:pointer; }
@@ -835,7 +833,7 @@
   .delegated-job.current { box-shadow:inset 2px 0 var(--color-rune); }
   .delegated-job > header { flex-wrap:wrap; }
   .delegated-job__title { min-width:0; overflow-wrap:anywhere; }
-  .delegated-job .kv { grid-template-columns:5rem minmax(0,1fr); }
+  .delegated-job :global(.kv-list) { padding-block: .75rem; }
   .delegated-event-list { font-size:12px; }
   @media(max-width:75rem) { .evidence-row { grid-template-columns:2.5rem 4.5rem minmax(0,1fr); } .evidence-row time { grid-column:3; } }
   @media(max-width:70rem) { .graph-and-animators { grid-template-columns:minmax(0,1fr); } }

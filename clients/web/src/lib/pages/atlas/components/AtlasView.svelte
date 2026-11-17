@@ -3,6 +3,11 @@
   import { tick, untrack } from "svelte";
   import { atlasHref, parseAtlasLink, type AtlasLinkIntent } from "$lib/atlas/navigation";
   import PageHeader from "$lib/components/shared/PageHeader.svelte";
+  import Button from "$lib/components/shared/Button.svelte";
+  import FaultNotice from "$lib/components/shared/FaultNotice.svelte";
+  import LoadingState from "$lib/components/shared/LoadingState.svelte";
+  import SectionHeading from "$lib/components/shared/SectionHeading.svelte";
+  import StatusPill from "$lib/components/shared/StatusPill.svelte";
 
   import {
     ApiError,
@@ -588,16 +593,16 @@
     titleFocusable
   >
     {#snippet actions()}
-      <button type="button" disabled={loading || saving || uncertain} onclick={() => refresh()}>
+      <Button disabled={loading || saving || uncertain} onclick={() => refresh()}>
         {loading && (catalogue || view) ? "Refreshing…" : "Refresh"}
-      </button>
+      </Button>
       {#if !projectId && !linkIntent}
-        <a class="canvas-action" href="/canvas?new=1">New canvas</a>
+        <Button variant="primary" href="/canvas?new=1">New canvas</Button>
       {:else if !projectId && catalogue?.total !== 0}
-        <button class="primary" type="button" disabled={loading || editorLocked} onclick={() => openEditor("create")}>New project</button>
+        <Button variant="primary" disabled={loading || editorLocked} onclick={() => openEditor("create")}>New project</Button>
       {:else if view}
-        <a class="canvas-action" href={`/canvas/${encodeURIComponent(view.id)}`}>Open Canvas →</a>
-        <span class="badge">{lifecycleNames[view.lifecycle]}</span>
+        <Button variant="primary" href={`/canvas/${encodeURIComponent(view.id)}`}>Open Canvas →</Button>
+        <StatusPill>{lifecycleNames[view.lifecycle]}</StatusPill>
       {/if}
     {/snippet}
   </PageHeader>
@@ -615,18 +620,25 @@
     </section>
   {/if}
   {#if readError}
-    <div class="fault" role="alert">
-      <strong>{view || catalogue ? "Refresh failed. Showing the last loaded information." : "Atlas could not be loaded."}</strong>
-      <p>{readError}</p>
-      <button type="button" disabled={loading || editorLocked} onclick={() => void load(projectId, requestedOffset, conflict)}>Retry loading</button>
+    <div class="atlas-fault">
+      <FaultNotice
+        title={view || catalogue ? "Refresh failed. Showing the last loaded information." : "Atlas could not be loaded."}
+        message={readError}
+        retryLabel="Retry loading"
+        retryDisabled={loading || editorLocked}
+        onretry={() => void load(projectId, requestedOffset, conflict)}
+      />
     </div>
   {/if}
   {#if workspaceError}
-    <div class="fault" role="alert">
-      <strong>The LychD reference could not be prepared.</strong>
-      <p>{workspaceError}</p>
-      <p>You can still open any projects listed below.</p>
-      <button type="button" disabled={loading || editorLocked} onclick={() => refresh()}>Retry LychD reference</button>
+    <div class="atlas-fault">
+      <FaultNotice
+        title="The LychD reference could not be prepared."
+        message={workspaceError}
+        retryLabel="Retry LychD reference"
+        retryDisabled={loading || editorLocked}
+        onretry={() => refresh()}
+      ><p>You can still open any projects listed below.</p></FaultNotice>
     </div>
   {/if}
 
@@ -838,7 +850,7 @@
   {/if}
 
   {#if loading && !view && !catalogue}
-    <p class="loading" role="status">Loading Atlas…</p>
+    <div class="loading"><LoadingState label="Loading Atlas…" /></div>
   {:else if !projectId && catalogue && (catalogue.pinned || catalogue.total > 0 || (!editor && !readError))}
     <section aria-label={catalogue.total === 0 ? "Start a project" : undefined} aria-labelledby={catalogue.total > 0 ? `${uid}-list-title` : undefined}>
       {#if catalogue.pinned}
@@ -850,9 +862,8 @@
         </section>
       {/if}
       {#if catalogue.total > 0}
-      <div class="section-heading">
-        <h2 id={`${uid}-list-title`}>Your projects</h2>
-        <span class="metadata">{catalogue.total} recorded</span>
+      <div class="projects-heading">
+        <SectionHeading id={`${uid}-list-title`} title="Your projects" meta={`${catalogue.total} recorded`} />
       </div>
       {/if}
       {#if catalogue.total === 0 && !editor}
@@ -974,7 +985,7 @@
             <li class="panel concern">
               <header class="section-heading">
                 <h3 id={`${uid}-concern-${concern.id}`}>{concern.statement}</h3>
-                <span class={['badge', needsReview(concern, latest) && 'review-badge']}>{assessmentLabel(concern)}</span>
+                <StatusPill tone={needsReview(concern, latest) ? "attention" : "neutral"}>{assessmentLabel(concern)}</StatusPill>
               </header>
               <div class="criteria"><h4>Satisfaction conditions</h4><p class="prose">{concern.criteria || "No conditions recorded yet."}</p></div>
               {#if latest}
@@ -1094,7 +1105,7 @@
               {@const replacement = view.decisions.find((item) => item.supersedes_id === decision.id)}
               <li class="decision">
                 <h3>{decision.statement}</h3>
-                {#if replacement}<span class="badge">Superseded</span>{:else if decision.supersedes_id}<span class="badge">Replaces an earlier decision</span>{/if}
+                {#if replacement}<StatusPill tone="muted">Superseded</StatusPill>{:else if decision.supersedes_id}<StatusPill>Replaces an earlier decision</StatusPill>{/if}
                 <p class="prose">{decision.rationale}</p>
                 <p class="metadata">{decision.author} · <time datetime={decision.created_at}>{date(decision.created_at)}</time></p>
                 {#if replacement}<p class="field-help">Replaced by: {replacement.statement}</p>{:else}<button type="button" disabled={editorLocked || loading} onclick={() => openEditor("decision", undefined, decision.id)}>Supersede</button>{/if}
@@ -1171,12 +1182,9 @@
   button:disabled { opacity: 0.55; cursor: not-allowed; }
   :is(button, a, input, select, textarea, summary, h2, h3):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
   .actions { justify-content: flex-start; }
-  .canvas-action { display: inline-flex; align-items: center; min-height: 2.75rem; padding-inline: 1rem; border: 1px solid var(--color-bone); border-radius: var(--radius-rune); background: var(--color-bone); color: var(--color-void); text-decoration: none; font-weight: 600; }
   .panel { border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); background: var(--color-obsidian); }
   .section-heading { margin-bottom: 1rem; align-items: flex-start; }
   .section-heading > div { min-width: 0; }
-  .badge { display: inline-flex; padding: 0.2rem 0.6rem; border: 1px solid var(--color-engraving); border-radius: 999px; color: var(--color-parchment); font-size: var(--text-xs); white-space: nowrap; }
-  .review-badge { color: var(--color-heat); border-color: var(--color-heat-deep); }
   .metadata, .field-help { color: var(--color-parchment); font-size: var(--text-sm); line-height: 1.6; }
   .metadata { font-weight: 400; }
   .notice, .fault, .review-note { padding: 0.85rem 1rem; margin-block: 0.8rem; border-radius: var(--radius-rune); }
@@ -1184,7 +1192,9 @@
   .fault { color: var(--color-ember); border: 1px solid var(--color-ember); background: var(--color-obsidian); }
   .fault p { color: var(--color-parchment); overflow-wrap: anywhere; }
   .review-note { color: var(--color-parchment); border-left: 3px solid var(--color-heat); background: color-mix(in srgb, var(--color-heat) 6%, var(--color-obsidian)); }
-  .loading { padding-block: 2rem; color: var(--color-parchment); }
+  .loading { padding-block: 2rem; }
+  .atlas-fault { margin-block: 0.8rem; }
+  .projects-heading { margin-bottom: 1rem; }
   .editor { padding: clamp(1rem, 2vw, 1.5rem); margin-bottom: 1.5rem; border-color: var(--color-rune-dim); }
   .editor form { max-width: 58rem; }
   .concern .editor { margin-block: 1rem; background: var(--color-void); }
@@ -1311,7 +1321,7 @@
   .supporting-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; border-top: 1px solid var(--color-engraving); margin-top: 1rem; }
   .supporting { min-width: 0; }
   .decision, .reference { border-top: 1px solid var(--color-engraving); padding-top: 1rem; }
-  .decision .badge { margin-block: 0.5rem; }
+  .decision :global(.status-pill) { margin-block: 0.5rem; }
   .reference code { display: block; margin-top: 0.35rem; overflow-wrap: anywhere; font-size: var(--text-xs); }
   @container work-area (max-width: 45rem) {
     .project-card { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
