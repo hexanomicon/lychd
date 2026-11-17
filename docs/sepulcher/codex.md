@@ -27,7 +27,7 @@ boundary.
 ## The Prime Inscription
 
 Put only process-wide settings in `lychd.toml`: server and persistence settings, orchestration policy,
-extension selection, and the [bounded Bridge selector](extensions/weaver/index.md#choose-a-bridge-capability).
+extension selection, and the [bounded Bridge selector](aspects/weaver/index.md#choose-a-bridge-capability).
 Give each named runtime or provider instance its own Rune document beneath `runes/`. Reserve
 **Scroll** for an immutable Spellweaver Pattern revision; configuration declares the body's
 intent without becoming executable workflow law.
@@ -59,7 +59,7 @@ actuator = "host-reactor"
 ```
 
 `actuator = "systemd"` remains a typed host-adapter mechanism for explicit tests; it does not
-select a supported host-native Vessel or bypass the managed container's Host Reactor boundary. [Runtime transitions](animator/runtime-transitions.md#switching-settings) gives the Reactor path
+select a supported host-native Vessel or bypass the managed container's Host Reactor boundary. [Runtime transitions](extensions/animators/runtime-transitions.md#switching-settings) gives the Reactor path
 and acknowledgement settings; [Orchestrator](../adr/23-orchestrator.md#host-mutation-port-and-privilege-boundary)
 owns the validated host handoff and recovery outcomes.
 
@@ -88,10 +88,10 @@ instead uses `[[capabilities]]` references to registered interface, profile, dri
 evidence, and resource definitions. It gives non-model services a way to declare themselves
 without inventing a model id. In either case, establish the exact supported surface: an
 "OpenAI-compatible" label cannot imply every API beneath `/v1`. Continue through
-[Capabilities](animator/capabilities.md) and [Connectors](animator/connectors.md).
+[Capabilities](extensions/animators/capabilities.md) and [Connectors](extensions/animators/connectors.md).
 
-Read [Animator](animator/index.md), [Soulstone](animator/soulstone/index.md), and
-[Portal](animator/portal.md) for the built-in families.
+Read [Animator](extensions/animators/index.md), [Soulstone](extensions/animators/soulstone/index.md), and
+[Portal](extensions/animators/portal.md) for the built-in families.
 
 ## The Rite of Binding
 

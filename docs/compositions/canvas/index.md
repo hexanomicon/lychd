@@ -109,8 +109,8 @@ without requiring a pointer or pan/zoom gesture.
 | Board documents, source ink, visual objects, selection packets, proposal review and reversible edits | [Atlas](../../divination/altar/atlas.md) catalogues these projects; their retained records keep undertaking purpose, concerns and judgments. A board edit does not record a decision. |
 | Visual workflow sketches and possible future exports | [Loom](../../divination/altar/loom.md) retains exact workflow meaning and admission. A drawn arrow is not an executable permission. |
 | Illustrations of execution | [Orb](../../divination/altar/orb.md) projects recorded Run evidence. Diagram motion supplies no execution observation. |
-| Placement of local symbolic artwork | [Atelier](../atelier/index.md) owns visual commissions and creative acceptance; [Prism Image](../../sepulcher/extensions/prism/image.md) owns designed technical image jobs. |
-| Requests for optional generated assets | [ComfyUI](../../sepulcher/animator/soulstone/engines/comfyui.md) is a possible inference engine. Its graph does not become the board or a Loom Scroll. |
+| Placement of local symbolic artwork | [Atelier](../atelier/index.md) owns visual commissions and creative acceptance; [Prism Image](../../sepulcher/aspects/prism/image.md) owns designed technical image jobs. |
+| Requests for optional generated assets | [ComfyUI](../../sepulcher/extensions/animators/soulstone/engines/comfyui.md) is a possible inference engine. Its graph does not become the board or a Loom Scroll. |
 
 No relationship is inferred from proximity or a shared label. Future exact references may open
 their owning instrument without transferring its records, permissions or execution authority.

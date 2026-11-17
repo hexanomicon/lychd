@@ -45,7 +45,10 @@ and revocation; HitL retains review/preauthorization; Spellweaver retains Patter
 and Workers retain jobs. The credential owner holds provider secrets and transport attempts.
 A local result must still defer to provider records for the provider's external state.
 
-Mail transport does not acquire accounting, client-case, publication, or software-change judgment.
+For an admitted Reach communication, Reach would own its delivery intent and result; a transport
+attempt and provider evidence do not become a second application outcome. Another owner may
+retain its own correlated domain result without owning the same send. Mail transport does not
+acquire accounting, client-case, Broadcast editorial, or software-change judgment.
 Another Composition may submit an exact accepted artifact and a communication request. Coordinating
 several live application Invocations requires a [Suite](../../products-and-suites.md#compositions-relate-without-nesting).
 Forwarding between places is a new disclosure and delivery, never continuity inferred from matching

@@ -11,7 +11,7 @@ evidence that an effectful runtime adapter ships.
 ADRs 09, 14, 24, and 28 own containment, job, Graph, and Pattern law.
 
 For a consequential unresolved direction or construction choice, prepare the task through
-[Creation's Inquiry and policy packet](../../docs/sepulcher/extensions/weaver/creation.md#inquiry-policy).
+[Smith's Inquiry and policy packet](../../docs/sepulcher/aspects/weaver/smith.md#inquiry-policy).
 That method can guide an operator campaign under actual platform permissions; its native LychD
 workflow remains Designed. This playbook governs the bounded delegation that follows.
 
@@ -29,7 +29,7 @@ revise that contract when discovery requires a broader boundary. A published bra
 evidence, not a durable claim or proof of current execution. Keep claim, scope and disposition
 updates with the issue/PR through the campaign's actual communication authority.
 
-[The GitHub coordination follow-up](../../docs/sepulcher/extensions/weaver/development-bootstrap.md#github-coordination-follow-up)
+[The GitHub coordination follow-up](../../docs/sepulcher/aspects/weaver/development-bootstrap.md#github-coordination-follow-up)
 records the missing native read and participation slices. This procedure neither delivers a
 Reach connection nor expands its current provider permissions.
 

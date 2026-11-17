@@ -196,7 +196,7 @@ The accepted general-service Rune shape uses first-class `[[capabilities]]` entr
 references one registered semantic interface and exact immutable profile, declares its permitted
 operations and invocation mode, and pins the runtime driver/dialect, conformance evidence, resource
 envelope, and containment profile required to make that instance honest. Definitions are typed
-Contributions governed by their receiving Core office or Extension Domain and retain the
+Contributions governed by their receiving Core office or Aspect and retain the
 Registrant's `registrant_id`; an implementation profile separately names its concrete Provider. A
 Rune selects those definitions and supplies instance-local endpoint, secret reference, lifecycle,
 and explicit overlay values. It cannot redefine their schemas, licenses, or proved limits inline.

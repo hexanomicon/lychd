@@ -320,7 +320,7 @@ acknowledged or unknown; presentation failure cannot erase a known outcome or by
 Audio labels describe finite operations requested or pending, not verified device readiness,
 audible start or human hearing. This console view is separate from the optional focused-game
 controls below; it does not qualify a physical microphone.
-The shared [Linux recorder](../../sepulcher/extensions/echo-local-probe.md#probe-contract) uses
+The shared [Linux recorder](../../sepulcher/aspects/echo-local-probe.md#probe-contract) uses
 the host's ALSA `default` input. Select the intended microphone in the host sound settings;
 the lab neither changes routing nor retries on another device.
 Selected reply playback likewise uses the host's ALSA `default` output. The shared helper accepts
@@ -356,7 +356,7 @@ stop and refused a negative instruction; six other examples refused, including s
 recognizer, nor predict human accuracy. Start a human test with a fresh explicit recording,
 compare its unmodified transcript to the supported text grammar and keep text control available.
 Do not turn a similar-sounding refusal into a guessed action. The
-[provider study](../../sepulcher/extensions/echo-research.md) lists comparison candidates;
+[provider study](../../sepulcher/aspects/echo-research.md) lists comparison candidates;
 none is selected automatically after a failure.
 
 For an explicit comparison in the same console, `:language` reports the configured input and

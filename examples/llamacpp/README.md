@@ -12,5 +12,5 @@ path and declare its read-only mount at `/presets`; set `models_preset` to
 Older fragments mount `~/.config/lychd/llamacpp/`. Current binding refuses a Soulstone mount into
 Codex, so relocate that support directory before adapting them. Model files need their own
 explicit mount matching the paths in the INI. See the current [llama.cpp
-recipe](../../docs/sepulcher/animator/soulstone/engines/llamacpp.md) and
-[Rune authoring](../../docs/sepulcher/animator/soulstone/rune.md).
+recipe](../../docs/sepulcher/extensions/animators/soulstone/engines/llamacpp.md) and
+[Rune authoring](../../docs/sepulcher/extensions/animators/soulstone/rune.md).

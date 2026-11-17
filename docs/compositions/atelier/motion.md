@@ -7,7 +7,7 @@ icon: material/movie-open-outline
 
 The first frame has been chosen. Motion asks what should change, over which timebase, and how the director will recognize a finished sequence. Its material includes animation, transitions, camera movement, loops, and generated or authored visual sequences.
 
-Prism's [Video](../../sepulcher/extensions/prism/video.md) supplies pixel effects; [Kinesis](../../sepulcher/extensions/prism/kinesis.md) supplies structured motion recovery, generation, retargeting, cleanup, synchronization, and conversion. Atelier keeps choreography, visual direction, review, and acceptance across those replaceable tools. Music, sound design, final audiovisual editing, and public rendering retain separate owners.
+Prism's [Video](../../sepulcher/aspects/prism/video.md) supplies pixel effects; [Kinesis](../../sepulcher/aspects/prism/kinesis.md) supplies structured motion recovery, generation, retargeting, cleanup, synchronization, and conversion. Atelier keeps choreography, visual direction, review, and acceptance across those replaceable tools. Music, sound design, final audiovisual editing, and public rendering retain separate owners.
 
 ## Progressive visual depth
 
@@ -48,3 +48,26 @@ keeps the single technical parent and each facet's admission explicit.
 Check the sequence duration against the target, then review across that full duration: seams, ordering, camera continuity, clipping, flicker/accessibility hazards, and export stability can fail between otherwise acceptable frames. A bounded correction makes a successor revision. A wrong timebase, stale assets, unsupported profile, or ambiguous synchronization returns findings or refusal.
 
 [Package](package.md) receives accepted motion as visual material. Broadcast owns its final placement, trim, retime, transitions, captions, sound relation, and claims. Foundry owns engine import/runtime behavior. A pinned FFmpeg or other deterministic renderer may serve either office without deciding the creative sequence or final cut.
+
+## Procedural rendering study
+
+[RAEA at `7caf1bb`](https://github.com/shinyobjectz/raea/tree/7caf1bb5966dd536d007eb531dfe1c54f387fe69)
+renders scenes authored in React and TypeScript to individual frames or video on a local GPU.
+Its [technical checks](https://github.com/shinyobjectz/raea/blob/7caf1bb5966dd536d007eb531dfe1c54f387fe69/apps/check/src/lib.rs)
+can use a render manifest to report findings such as clipped text with a location on the timeline.
+
+The candidate idea is an independent Atelier and Prism workflow for short motion graphics.
+Pin the scene, assets, renderer and timebase, render a preview or export, and bind each finding to
+the exact output and affected time. A correction produces a successor candidate. Prism can
+supply rendering and technical findings. Atelier judges the result against the visual brief.
+
+RAEA is an inspiration for a bounded [Assimilation study](../../sepulcher/aspects/weaver/assimilation.md#upstream-reuse-and-notices).
+Start from the behavior and author the local implementation independently. The upstream
+[FSL-1.1-ALv2 license](https://github.com/shinyobjectz/raea/blob/7caf1bb5966dd536d007eb531dfe1c54f387fe69/LICENSE)
+restricts competing commercial use. Any proposal to integrate RAEA or incorporate upstream
+material needs its own review of the exact material and intended use.
+
+A first experiment could render one short scene with text deliberately clipped at a known time,
+then correct it in a new revision. The check must identify the first export and affected time,
+and a repeat check must establish that the successor fixes the defect. Atelier reviews the
+corrected sequence against the original visual criteria before accepting it.

@@ -7,7 +7,8 @@ icon: material/vector-polyline
 
 Open Loom when you want to understand what a workflow permits. It presents one exact Pattern
 revision as a declared Scroll: its stations and the routes between them. Once you can read that
-score, compare it with a particular Run's evidence in [Orb](orb.md). Loom is currently read-only.
+score, compare it with a particular Run's evidence in [Orb](orb.md) or use Evaluation to review
+a retained output. The score remains read-only.
 
 ## Find the exact score
 
@@ -17,10 +18,10 @@ other active routes, and retained revisions.
 
 Opening `/loom` selects the configured default and replaces the URL with its exact route. Without
 `weaver.bridge`, that is `/loom/bridge_chat/1`; configuring the
-[Bridge capability selector](../../sepulcher/extensions/weaver/index.md#choose-a-bridge-capability)
+[Bridge capability selector](../../sepulcher/aspects/weaver/index.md#choose-a-bridge-capability)
 selects `/loom/bridge_chat/2`; the
 [public-note configuration](bridge.md#public-note-answers) selects
-`/loom/bridge_chat/3`. The [Scout public-page profile](../../sepulcher/extensions/scout.md#public-page-answers)
+`/loom/bridge_chat/3`. The [Scout public-page profile](../../sepulcher/aspects/scout.md#public-page-answers)
 selects `/loom/bridge_chat/4`. An exact revision link continues to open that retained score.
 
 A direct link takes the form `/loom/{pattern_id}/{revision}`. Both parts are required: `/loom/{pattern_id}` is rejected. This lets a review name the revision it concerns instead of leaving its identity to a later selection.
@@ -34,7 +35,7 @@ an unavailable or changed binding is reported instead of opening a similarly nam
 
 These descriptions come from the same manifest as the source profile. Profile metadata does not
 change that Pattern's checksum. Registering a descriptor does not publish executable code or
-activate an extension. [Oculus](../../sepulcher/extensions/oculus.md#connected-components-and-activity)
+activate an extension. [Oculus](../../sepulcher/aspects/oculus.md#connected-components-and-activity)
 owns the bounded source handoff used by the first connected profile.
 
 ## Read identity, then possibility
@@ -93,6 +94,36 @@ The fixed trusted source-browser [journey](../../state-of-the-work.md#current-ev
 checks the exact `bridge_chat@2` score and keyboard return to its Run. It does not qualify the
 planned editor, every graph interaction or the shared renderer's cross-engine lifecycle gate.
 
+## Review a retained output
+
+An exact revision's **Evaluation** view offers **Manual output review**. It is a retrospective
+review of a historical answer, with no new execution. Begin with a bounded goal, the criteria and
+evidence needed to judge it, and your declared reviewer name. Freeze that contract before loading
+the output for this review; this does not claim that the criteria preceded the original Run.
+
+Choose an exact Run whose full pinned manifest and inspection binding match the displayed score.
+The review reads the matching retained agent turn from its exact Session. Its quoted words,
+supplied identities, timestamp and content digest identify the source. A missing or ambiguous
+answer stays unavailable; the review never substitutes the most recent answer or a process-local
+Orb projection.
+
+For each criterion, inspect what is actually present, then enter your verdict, reason and
+supporting quotation or evidence limitation. `UNKNOWN` is the starting verdict. A completed Run
+can contain an incorrect answer; an output that claims an effect does not prove the effect
+occurred. Source Run status and your review's completion remain separate from quality verdicts.
+
+Finishing freezes a local review record. Regrading creates another revision with the same frozen
+criteria and output. To change criteria or reviewer, start a new review and freeze a new contract.
+Export JSON or readable Markdown to keep the exact source, criteria, judgments, limitations and
+declared reviewer together. Reviews last only in this open browser document and are not saved to
+Vessel or localStorage; export before leaving. The reviewer name is self-declared, not authenticated
+attribution. Current access refusal clears protected captures and fences late reads.
+
+This is an authored review over retained output. It does not run a Trial Suite, establish new
+cost/latency observations, prove that another workflow revision improves outcomes, promote a
+model, or create a durable Drift Outcome. [Drift](../../adr/34-drift.md) owns those evaluation
+contracts. Orb remains the place to inspect the source Run's bounded execution evidence.
+
 ## The planned editor {#where-charcoal-must-wait}
 
 Editing, proposal, publication, execution, and layout changes belong to the future design. The [Loom workflow views record](../../state-of-the-work.md#loom-workflow-views) tracks which parts of that design have been implemented.
@@ -101,7 +132,7 @@ Future charcoal drafts and grey Spell placements would first produce inert candi
 resolution reports. Until every exact placement passes [Scroll admission](../../adr/28-workflow.md#spells-scrolls-and-casting),
 the whole candidate remains `castable=false`; no placeholder enters the executable Graph.
 
-Follow [ADR 15's editing gate](../../adr/15-frontend.md#loom-workload-and-editing-gate) for the future editor and [Spellweaver](../../sepulcher/extensions/weaver/index.md) for a candidate's passage to a published revision.
+Follow [ADR 15's editing gate](../../adr/15-frontend.md#loom-workload-and-editing-gate) for the future editor and [Spellweaver](../../sepulcher/aspects/weaver/index.md) for a candidate's passage to a published revision.
 
 ## Reading direction
 
@@ -112,13 +143,17 @@ be legible before the reader opens digest or source detail. The computed graph h
 and station inspector beside or below it as space permits. That outline must answer the same
 question without pan or zoom gestures.
 
+The proposed [shared workflow station inspector](index.md#shared-workflow-station-inspector)
+opens on the station's definition in Loom.
+
 The future workflow map expands nested declared subgraphs until each agent can be inspected.
 Open one group to work within it, or expand the complete declared graph. Context policy and
-[Evaluation](../../adr/34-evaluation.md#evaluating-a-workflow-change) follow the exact revision.
+[Evaluation](../../adr/34-drift.md#evaluating-a-workflow-change) follow the exact revision.
 For example, a policy could request a retained rollout decision with its source.
 [Archive](../../adr/27-memory.md) governs eligibility, and
 [Context](../../adr/21-context.md#explicit-archive-projection) governs assembly for the Invocation.
-The current Score reads supplied stations and permissions.
+The current Score reads supplied stations and permissions. Evaluation supports retrospective
+[manual review](#review-a-retained-output).
 
 Judge every mark against the manifest. Both views share declared nodes and permission endpoints;
 station detail exposes incoming and outgoing permissions. Placement cannot supply a conditional

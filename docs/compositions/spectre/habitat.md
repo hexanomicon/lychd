@@ -23,7 +23,7 @@ Seated, standing, captioned, controller-free, companion-screen, and audio-led ro
 
 [Foundry](../foundry/index.md) may supply an exact world/build/profile and playtest evidence; it retains project, controllers, derivatives, build judgment, and playability. Blockworld keeps persistent-world effects, and [Reach](../reach/index.md) keeps external social events, audience, platform delivery, and replies. Avatar may independently bind a Lich presentation to the Habitat, without owning runtime, locomotion, tracking, or entry.
 
-Prism and [Kinesis](../../sepulcher/extensions/prism/kinesis.md) retain spatial and motion sources. The [media ownership comparison](../choosing-a-home.md#media-owners-do-not-follow-file-extensions) follows separately admitted speech, music, dialogue, and sound handoffs; a shared VR runtime does not merge their judgments.
+Prism and [Kinesis](../../sepulcher/aspects/prism/kinesis.md) retain spatial and motion sources. The [media ownership comparison](../choosing-a-home.md#media-owners-do-not-follow-file-extensions) follows separately admitted speech, music, dialogue, and sound handoffs; a shared VR runtime does not merge their judgments.
 
 ## First integration hypothesis
 

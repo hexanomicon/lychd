@@ -15,7 +15,7 @@ Keep the candidate's source references, classifications, permitted influence, an
 
 The production history must let a reviewer follow each candidate back through its changes. Each transform therefore binds its parent digest, operation, parameters, implementation, output digest, and loss. Review adds the asset revision, role, format/profile facts, findings, approval, and derivatives. Both generation and normalization create artifacts with parents.
 
-Spatial candidates additionally declare geometry, appearance, structure, deformation, assembly and procedural facets; units, axes, origin, scale, bounds and transforms; material channels, parts, skeleton and camera facts; and representation conversions. A glTF/GLB can contain mesh, PBR appearance, skeleton, skinning and animation together. Point clouds, Gaussian and radiance forms, neutral voxels, game block grids, and portable assemblies remain distinct forms. [Prism Form](../../sepulcher/extensions/prism/form.md) owns their technical production; Atelier owns visual acceptance.
+Spatial candidates additionally declare geometry, appearance, structure, deformation, assembly and procedural facets; units, axes, origin, scale, bounds and transforms; material channels, parts, skeleton and camera facts; and representation conversions. A glTF/GLB can contain mesh, PBR appearance, skeleton, skinning and animation together. Point clouds, Gaussian and radiance forms, neutral voxels, game block grids, and portable assemblies remain distinct forms. [Prism Form](../../sepulcher/aspects/prism/form.md) owns their technical production; Atelier owns visual acceptance.
 
 ## Produce, normalize, review
 

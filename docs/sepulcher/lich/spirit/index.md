@@ -34,4 +34,10 @@ brings material into the present. These surfaces explain how retained form can m
 reducing the office to one storage mechanism. [ADR 21 — Context](../../../adr/21-context.md)
 owns the active field; [ADR 27 — Memory](../../../adr/27-memory.md) owns durable Archive and Recall.
 
+Quiet work can also prepare what later movement may inherit.
+[Background consolidation](../../../adr/27-memory.md#background-consolidation), sometimes called
+dreaming, prepares proposed memory revisions from admitted experience; a retained Seed can
+remain dormant without that processing. Candidate preparation and its later admission remain
+distinct acts.
+
 > _Next: enter [the Flux](./flux.md), where the Spirit moves now._

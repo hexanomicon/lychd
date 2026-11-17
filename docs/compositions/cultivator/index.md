@@ -46,6 +46,8 @@ agricultural treatment permits, and food-safety certification remain outside thi
 
 Use a [Suite](../products-and-suites.md) only for live start, await, retry, cancel,
 or recovery across multiple owners. Settled references and receipts alone need no Suite.
+The [living-subject comparison](../choosing-a-home.md#compare-living-subject-stewardship)
+tests whether Keeper and Cultivator need distinct application judgments.
 
 ## Privacy and recovery
 

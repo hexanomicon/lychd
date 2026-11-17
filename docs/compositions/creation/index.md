@@ -14,8 +14,8 @@ investigation should remain intelligible when its conversation and worker have e
 **`creation.investigation` revision `2`** publishes **`creation.investigate@2`** for bounded
 public-source software investigation. It owns the immutable request, source bundle, role
 reservations, inference attempts, candidate and attributed verdict. Run owns execution and delivery;
-Dispatcher owns grants. The wider [Creation method](../../sepulcher/extensions/weaver/creation.md)
-still guides design, editing and delivery under [SDLC law](../../adr/16-sdlc.md).
+Dispatcher owns grants. The wider [Smith method](../../sepulcher/aspects/weaver/smith.md)
+still guides design, editing and delivery under [SDLC law](../../adr/16-smith.md).
 
 The return is a retained report and an accepted, rejected, partial or incomplete review, or exact
 noncompletion. A complete response and a DONE Run do not establish semantic correctness. This
@@ -98,7 +98,7 @@ original source, question, criteria and exact candidate; it receives no construc
 private deliberation or unrelated history. Record shared model/infrastructure and exposures.
 Context separation is attributable review, not proof of a different sovereign or infallible judge.
 A verdict links findings, contradictions and unknowns to criteria. No recursive judging or automatic
-repair follows. [Tree faculties](../../sepulcher/extensions/weaver/creation.md#tree-relations-in-practice)
+repair follows. [Tree faculties](../../sepulcher/aspects/weaver/smith.md#tree-relations-in-practice)
 recur in framing, making, challenge and return; they do not require ten Agents or one universal score.
 
 ## Current local authority
@@ -344,4 +344,4 @@ admission, bounded by the original deadline. The verifier therefore gets only th
 and its single attempt. There is no renewed attempt or constructor replay. Cancelled, expired or
 ambiguous cases cannot continue, and no scanner submits replacement Runs.
 
-[Workflow](../../adr/28-workflow.md) · [SDLC](../../adr/16-sdlc.md) · [Portfolio](../index.md)
+[Workflow](../../adr/28-workflow.md) · [Smith](../../adr/16-smith.md) · [Portfolio](../index.md)

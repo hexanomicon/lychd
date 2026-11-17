@@ -4,13 +4,18 @@
   import { asset } from "$app/paths";
   import { resolvePath as resolve } from "$lib/navigation/paths";
   import { onMount, setContext, tick, untrack, type Snippet } from "svelte";
+  import MemoryPanel from "./MemoryPanel.svelte";
+  import AppearancePreferences from "./AppearancePreferences.svelte";
+  import { createEvaluationWorkspace, setEvaluationWorkspace } from "$lib/pages/loom/state/evaluation/workspace.svelte";
+  import { createMemoryPanel, setMemoryPanel } from "$lib/memory/panel.svelte";
+  import { notesFocusSelection } from "$lib/pages/bridge/state/archive/notes";
   import BridgeDock from "$lib/pages/bridge/components/BridgeDock.svelte";
   import BridgeView from "$lib/pages/bridge/components/BridgeView.svelte";
   import AltarIcon from "./AltarIcon.svelte";
   import { altarNavigationContext, selectedBridgeHref, type AltarNavigation } from "$lib/navigation/instruments";
 
-  import { createSeancesWorkspace, setSeancesWorkspace } from "$lib/pages/seances/state/workspace.svelte";
-  import { seanceHref } from "$lib/pages/seances/state/material";
+  import { createSeancesWorkspace, setSeancesWorkspace } from "$lib/seances/workspace.svelte";
+  import { seanceHref } from "$lib/seances/material";
   import { navigationId } from "$lib/navigation/instruments";
 
   import { getAltarStatus } from "$lib/api/client";
@@ -25,12 +30,26 @@
     ((page.url.pathname === resolve("/bridge") || page.url.pathname === `${resolve("/bridge")}/`) &&
       !page.url.searchParams.has("notes") && !page.url.searchParams.has("investigation"))
   );
-  const bridgeModal = $derived(narrow && dockOpen && !bridgeFocused);
   let resolvedBridgeSession = $state<string | null>(null);
   let bridgeView = $state<ReturnType<typeof BridgeView>>();
   function suspendBridgeVoice() { bridgeView?.suspendVoice(); }
+  const memory = setMemoryPanel(createMemoryPanel(suspendBridgeVoice));
+  const evaluationWorkspace = setEvaluationWorkspace(createEvaluationWorkspace());
+  const bridgeModal = $derived(narrow && dockOpen && !bridgeFocused && !memory.isOpen);
+  function memoryLocation(url?: { pathname: string; searchParams: Pick<URLSearchParams, "getAll" | "has"> }) {
+    if (!url) return null;
+    const root = url.pathname === resolve("/bridge") || url.pathname === `${resolve("/bridge")}/`;
+    const values = url.searchParams.getAll("notes");
+    const selection = values.length === 1 ? notesFocusSelection(values[0] ?? null) : null;
+    return root && !url.searchParams.has("investigation") ? selection : null;
+  }
+  function readMemoryLocation() {
+    const selection = memoryLocation(page.url);
+    if (selection) memory.selectNotes(selection);
+  }
+  untrack(readMemoryLocation);
   function readBridgeVisibility() {
-    return available && (dockOpen || bridgeFocused) &&
+    return available && !memory.isOpen && (dockOpen || bridgeFocused) &&
       (typeof document === "undefined" || document.visibilityState !== "hidden");
   }
   let workHref = $state(untrack(() => bridgeFocused ? "/orb" : `${page.url.pathname}${page.url.search}`));
@@ -73,7 +92,7 @@
     dockOpen = true;
   }));
   function guardMaterialUnload(event: BeforeUnloadEvent) {
-    if (!seances.needsUnloadWarning) return;
+    if (!seances.needsUnloadWarning && !evaluationWorkspace.needsUnloadWarning) return;
     event.preventDefault();
     event.returnValue = "";
   }
@@ -81,7 +100,11 @@
   const mainScroll = new Map<string, { top: number; left: number }>();
   let mainNavigation = 0;
   let navigatingFromBridge = false;
-  beforeNavigate(({ from }) => {
+  beforeNavigate((event) => {
+    memory.clearNotesNavigationApproval();
+    const selection = memoryLocation(event.to?.url);
+    if (selection && !memory.authorizeNotesNavigation(selection)) { event.cancel(); return; }
+    const { from } = event;
     suspendBridgeVoice();
     navigatingFromBridge = bridgeFocused;
     if (!bridgeFocused) workHref = `${page.url.pathname}${page.url.search}`;
@@ -96,6 +119,7 @@
   // and work-route queries never become ordinary Bridge conversation inputs.
   afterNavigate(({ type, to }) => {
     const version = ++mainNavigation;
+    readMemoryLocation();
     if (to && !to.url.hash && (type === "link" || type === "popstate")) {
       const position = type === "popstate" ? mainScroll.get(to.url.href) : undefined;
       void tick().then(() => {
@@ -114,7 +138,7 @@
     if (navigatingFromBridge && !bridgeFocused) {
       if (!narrow) dockOpen = true;
       void tick().then(() => {
-        if (version === mainNavigation) document.getElementById("altar-main")?.focus({ preventScroll: true });
+        if (version === mainNavigation && !memory.isOpen) document.getElementById("altar-main")?.focus({ preventScroll: true });
       });
     }
     if (selectedSession) {
@@ -124,10 +148,10 @@
     } else if (ordinaryRoot) {
       bridgeSession = undefined;
       bridgeSearch = search;
-    } else if (type !== "enter" && narrow && dockOpen) {
+    } else if (type !== "enter" && narrow && dockOpen && !memory.isOpen) {
       suspendBridgeVoice();
       dockOpen = false;
-      void tick().then(() => document.getElementById("altar-main")?.focus({ preventScroll: true }));
+      void tick().then(() => { if (!memory.isOpen) document.getElementById("altar-main")?.focus({ preventScroll: true }); });
     }
   });
 
@@ -316,8 +340,8 @@
 <svelte:window onfocus={refreshAttention} onbeforeunload={guardMaterialUnload} />
 <svelte:document onvisibilitychange={attentionVisibilityChanged} />
 
-<a class="skip-link" href="#altar-main">Skip to instrument</a>
-<header class="topbar" inert={bridgeModal} {@attach measureMasthead}>
+<a inert={memory.isOpen} class="skip-link" href="#altar-main">Skip to instrument</a>
+<header class="topbar" inert={bridgeModal || memory.isOpen} {@attach measureMasthead}>
   <details class="altar-about" {@attach manageAboutDisclosure}>
     <summary class="brand" aria-label="About Altar" title="Altar">
       <img class="mark" src={asset("altar-mark.svg")} width="44" height="44" alt="" />
@@ -349,6 +373,7 @@
     </details>
   </nav>
 
+  <div class="appearance-control"><AppearancePreferences /></div>
   <div class="spacer"></div>
   {#if available}
   <a
@@ -365,15 +390,17 @@
 </header>
 
 <div class="altar-workbench" style:height={`calc(100dvh - ${mastheadHeight}px)`}>
-  <main id={bridgeFocused ? undefined : "altar-main"} tabindex="-1" hidden={bridgeFocused} inert={bridgeModal}>
+  <main id={bridgeFocused ? undefined : "altar-main"} tabindex="-1" hidden={bridgeFocused} inert={bridgeModal || memory.isOpen}>
     {@render children()}
   </main>
-  <BridgeDock bind:open={dockOpen} bind:narrow focused={bridgeFocused} focusHref={resolve(resolvedBridgeSession ? seanceHref(resolvedBridgeSession) : "/seances")} focusLabel={resolvedBridgeSession ? "Open Séance" : "Browse séances"} browseHref={resolve("/seances")} {workHref} {available} {viewing} onconnect={connect} onexpand={toggleBridge} onsuspend={suspendBridgeVoice}>
-    {#if available}<BridgeView bind:this={bridgeView} visible={dockOpen || bridgeFocused} isVisible={readBridgeVisibility} embedded={!bridgeFocused} sessionId={bridgeSession} search={bridgeSearch} onNavigate={selectConversation} onSessionResolved={(id) => { resolvedBridgeSession = id; }} />{/if}
+  <BridgeDock suspended={memory.isOpen} bind:open={dockOpen} bind:narrow focused={bridgeFocused} focusHref={resolve(resolvedBridgeSession ? seanceHref(resolvedBridgeSession) : "/seances")} focusLabel={resolvedBridgeSession ? "Open Séance" : "Browse séances"} browseHref={resolve("/seances")} {workHref} {available} {viewing} onconnect={connect} onexpand={toggleBridge} onsuspend={suspendBridgeVoice}>
+    {#if available}<BridgeView bind:this={bridgeView} visible={!memory.isOpen && (dockOpen || bridgeFocused)} isVisible={readBridgeVisibility} embedded={!bridgeFocused} sessionId={bridgeSession} search={bridgeSearch} onNavigate={selectConversation} onSessionResolved={(id) => { resolvedBridgeSession = id; }} />{/if}
   </BridgeDock>
 </div>
 
-<div class="omen-stack" role="status" aria-live="polite">
+<MemoryPanel state={memory} work={seances} liveSession={resolvedBridgeSession} />
+
+<div inert={memory.isOpen} class="omen-stack" role="status" aria-live="polite">
   {#each omens as omen (omen.id)}
     <div class="omen" data-state={omen.fault ? "fault" : "info"}>
       <span>{omen.text}</span>
@@ -393,6 +420,7 @@
   nav.instruments > a:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
   nav.instruments > a[aria-current] { color: var(--color-accent); text-shadow: none; border-color: color-mix(in srgb,var(--color-accent) 25%,var(--color-engraving)); background: color-mix(in srgb,var(--color-accent) 10%,var(--color-obsidian)); }
   .topbar .spacer { flex: 1 1 0; }
+  .appearance-control { align-self: center; flex: 0 0 auto; }
   .sigil { border-radius: var(--radius-rune); padding: .55rem .7rem; box-shadow: none; animation: none; border-color: transparent; }
   .sigil-identity { display: none; }
   .offline-status { color: var(--color-ash); font-size: var(--text-xs); }
@@ -412,7 +440,8 @@
   @media (max-width: 56rem) {
     .topbar { display: flex; flex-wrap: wrap; gap: .25rem .5rem; padding: .25rem .5rem .5rem; }
     .altar-about { order: 0; }
-    .sigil { margin: 0 0 0 auto; max-width: 9rem; font-size: var(--text-xs); line-height: 1.3; white-space: normal; }
+    .appearance-control { order: 2; }
+    .sigil { order: 3; margin: 0; max-width: 9rem; font-size: var(--text-xs); line-height: 1.3; white-space: normal; }
     .topbar .spacer { display: none; }
     nav.instruments { order: 4; flex: 1 0 100%; margin: 0; justify-content: center; }
     nav.instruments > a, .application-menu { flex: 1; }

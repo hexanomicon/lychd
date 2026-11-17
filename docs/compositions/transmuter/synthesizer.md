@@ -36,7 +36,7 @@ memory or identity.
 | Retain or correct a memory | [Archive](../../adr/27-memory.md) owns Memory admission, curation, and recall eligibility. |
 | Revise the Lich's Persona | [Mirror](../../adr/32-identity.md) owns the reviewed revision and its publication. |
 | Nominate material for training | [Soulforge](../../adr/33-training.md) independently admits a corpus and any later training. |
-| Request a missing parser, tool, or code candidate | [Smith](../../adr/35-assimilation.md) supplies candidate authorship through a separately admitted exact application contract. |
+| Request a missing parser, tool, or code candidate | [Smith](../../adr/16-smith.md) governs candidate authorship through a separately admitted exact application contract. |
 
 Settled Smith outputs may also enter Transmuter as attributed material for interpretation. Their
 authorship establishes no promotion or truth. Forge constructs packages and images; Soulforge

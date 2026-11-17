@@ -50,6 +50,8 @@ SQL schema nor a Markdown shadow database.
 effects; [Cultivator](../cultivator/index.md) owns plants and cultivated fungi even in a shared
 enclosure. Neither is required to record manual animal care. The [stewardship handoff](../products-and-suites.md#homestead-keeper-and-cultivator)
 defines when exact references suffice and when a Suite must coordinate live work.
+The [living-subject comparison](../choosing-a-home.md#compare-living-subject-stewardship)
+tests whether Keeper and Cultivator need distinct application judgments.
 
 Minimize access to addresses, human photographs, and veterinary documents. Export and deletion
 respect custody and retention. Deletion stops schedules and disclosure; pending care effects need

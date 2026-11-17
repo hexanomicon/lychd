@@ -26,10 +26,10 @@ the proposal still has to earn its place.
 Decide what the lesson should change before choosing its destination. A missing fact may belong
 in Context; a correction may be nominated to Memory. A repeated procedural failure may call for
 a revised prompt, schema, tool contract, or Scroll. A stable and transferable skill gap may
-justify a separately admitted [Soulforge training objective](../../sepulcher/extensions/soulforge/discernment-training.md#choose-what-should-change).
+justify a separately admitted [Soulforge training objective](../../sepulcher/aspects/soulforge/discernment-training.md#choose-what-should-change).
 Keeping the lesson and authorizing training on it remain separate decisions.
 
-[Ouroboros](../../sepulcher/extensions/weaver/ouroboros.md#carry-the-distinction-not-the-entire-conversation)
+[Ouroboros](../../sepulcher/aspects/weaver/ouroboros.md#carry-the-distinction-not-the-entire-conversation)
 keeps these practical returns and their owners. Distillation may also conclude that the current
 method should remain, that another probe is needed, or that the undertaking should stop.
 If criteria change, [Canon](canon.md) receives a proposed revision for later trials; the
@@ -45,7 +45,7 @@ what remains unresolved. A generic warning that the answer might be wrong suppli
 
 That preserved condition lets a later encounter reopen the right decision. Evidence of concurrent
 writers reopens that design decision; an unrelated stylistic objection does not erase the earlier result.
-The [proposed temporal comparison](../../sepulcher/extensions/drift/workflow-improvement.md#correction-after-distillation)
+The [proposed temporal comparison](../../sepulcher/aspects/weaver/drift/workflow-improvement.md#correction-after-distillation)
 asks whether this selective response survives compaction and transfer to another task. The
 inheritance includes a way to become differently informed.
 
@@ -86,7 +86,7 @@ merely because a pattern looks complete.
 
 [Illumination's Ouroboros](../transcendence/illumination.md#i-the-ouroboros) develops the return of
 consequence, and [Immortality](../transcendence/immortality.md#vii-reconstitution-and-self-repair)
-examines continuity through rupture. [Weaver's Ouroboros](../../sepulcher/extensions/weaver/ouroboros.md)
+examines continuity through rupture. [Weaver's Ouroboros](../../sepulcher/aspects/weaver/ouroboros.md)
 carries the practical handoffs; [Reanimation](../../sepulcher/phylactery/reanimation.md) owns process
 recovery. Those contracts determine what can be retained and resumed.
 

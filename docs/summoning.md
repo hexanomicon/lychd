@@ -49,7 +49,7 @@ policy, authority, and identity contribute to the whole.
 ## Stage the acceptance campaign
 
 Choose the question your trial will answer. If you only need to test an already running model,
-begin with the [standalone vLLM probe](sepulcher/animator/soulstone/engines/vllm.md#bring-one-service-to-a-first-reply).
+begin with the [standalone vLLM probe](sepulcher/extensions/animators/soulstone/engines/vllm.md#bring-one-service-to-a-first-reply).
 That probe does not qualify the complete LychD installation. The worked rite here uses
 llama.cpp. Using vLLM in its place needs a specific engine recipe and separate observations of
 its namespace, devices, cache, shared memory, and lifecycle.

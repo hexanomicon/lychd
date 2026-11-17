@@ -1,0 +1,1 @@
+function e(e,t){return e.pattern.exact&&e.pattern.digest!==null&&e.pattern.pattern_id===t.pattern_id&&e.pattern.revision===t.revision&&e.pattern.digest===t.digest}export{e as t};

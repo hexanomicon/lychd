@@ -176,7 +176,8 @@ relationship. A typed relation needs a deliberate, attributable action and exact
 A reader could review a finding from a séance, retain it with its source, then explicitly attach a
 later Recall result to a conversation. [Archive](../../adr/27-memory.md#recall) governs admission,
 correction, and Recall. [Context](../../adr/21-context.md#explicit-archive-projection) governs what
-enters an Invocation. Today's Atlas provides project records and board access. The shared map
+enters an Invocation. [Memory](memory.md#recall-and-inspect-evidence) shows how to inspect
+Recall evidence today. Today's Atlas provides project records and board access. The shared map
 and generalized memory curation remain future work.
 
 ## Concerns before a Project

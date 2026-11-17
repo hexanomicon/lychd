@@ -19,6 +19,13 @@ Before using an incoming message, treat its prose, attachments, mail, audio, and
 
 For delivery, bind the reviewed answer to its recipient and channel, payload digest, case/product revisions, current authority, expiry, and idempotency identity. A missing acknowledgement leaves delivery uncertain; reconcile it before retrying. This preserves the connection between what staff reviewed and what the client may actually have received.
 
+Broker owns a direct case-bound delivery and its outcome. Alternatively, a separately chosen
+Reach Invocation could own the communication delivery under its applicable contract, with Broker
+retaining its case judgment and a correlated result. Shared transport attempts or provider
+evidence do not create a second owner of the same send. Live coordination of both Invocations
+requires the applicable [Suite](../products-and-suites.md#compositions-relate-without-nesting);
+Reach correspondence remains a [candidate](../reach/connected-work/index.md).
+
 Deletion begins by closing admission and draining or containing atomic work. It can then remove governed local derivatives while retaining explicit legal holds and an account of third-party custody.
 
 The first proof admits email only. Telephone and public client routes must each establish their own authentication, recording, disclosure, and delivery evidence before joining it.

@@ -1,0 +1,1 @@
+import{Ot as e,i as t,kt as n}from"../chunks/Dw4uaZtB.js";import{t as r}from"../chunks/BCLMW4fI.js";import"../chunks/DEtMp8cz.js";import"../chunks/BpwDm4PA.js";import{t as i}from"../chunks/DYU9KRn1.js";function a(a,o){n(o,!1),t(),i(a,{get patternId(){return r.params.pattern_id},get revision(){return r.params.revision}}),e()}export{a as component};

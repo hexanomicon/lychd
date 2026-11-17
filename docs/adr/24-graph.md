@@ -51,6 +51,12 @@ Both delivered Bridge revisions validate fresh and restored state against admitt
 session, prompt, priority, and capability binding before node execution.
 Workflow.mermaid() is a projection.
 
+[Workflow's Pattern identity](28-workflow.md#pattern-identity) owns reviewed implementation
+compatibility; its [private v2 adapter](28-workflow.md#private-v2-adapter) owns the current local
+binding. Check [execution evidence](../state-of-the-work.md#topology-a-local-runs) and
+[configured model binding](../state-of-the-work.md#configured-bridge-casting) for the distinct
+limits of resuming after code or model-profile changes.
+
 ### Boundary metadata
 
 A future contribution declares execution plane, eligible local/Portal providers, local-only/egress
@@ -86,6 +92,22 @@ The counters live in checkpointed Run state, so a durable park or replacement `G
 reset the budget. A pre-budget legacy checkpoint decodes with zero counters because past attempts
 cannot be reconstructed retroactively. The waiting run holds no lease and does not know whether
 convergence was a load, systemd swap, or no effect.
+
+### Handoff preparation
+
+Under the designed [handoff preparation policy](28-workflow.md#handoff-preparation-policy), Graph
+may signal the eligible successor's exact local capability while the current station is running.
+The signal carries the pinned policy, Run and predecessor attempt correlation, successor, binding,
+and expiry. It carries no successor Context, prompt, grant, or lease. Preparation may overlap a
+station in time. Graph still executes stations serially and enters the successor only after it
+validates the returned edge and the successor passes its ordinary admission checks.
+
+Cancel interest when its edge or binding becomes ineligible, the Run parks or terminates, or
+the policy expires. [Orchestrator](23-orchestrator.md#non-disruptive-handoff-preparation) owns any
+physical work already started. Graph checkpoints exclude preparation handles and residency claims.
+On re-entry, only current eligible state and the pinned policy can produce a fresh hint. At the
+actual handoff, the successor asks Dispatcher for a fresh grant. A declined, unfinished, expired,
+or mismatched preparation leaves the ordinary capability wait or refusal path in force.
 
 ## Live and Durable Stasis
 
@@ -240,7 +262,7 @@ End directly, so observers must not fabricate a terminal-node occurrence.
 
 ## Following a pause and return {#correspondence}
 
-[Stasis and return](../sepulcher/extensions/weaver/stasis-and-return.md) follows a running or
+[Stasis and return](../sepulcher/aspects/weaver/stasis-and-return.md) follows a running or
 parked workflow. [Reanimation](../sepulcher/phylactery/reanimation.md) explains how a new Vessel
 judges the durable records after process loss.
 

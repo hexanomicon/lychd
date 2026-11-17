@@ -48,7 +48,9 @@ none of its reach, engagement or sales.
 Images and video require separately admitted upload artifacts and returned media references;
 the present connector subset constructs text requests. It does not scrape link previews, generate
 assets, upload media or boost a post. [Broadcast release](../../broadcast/release.md) retains
-editorial acceptance, claims, credits, disclosures and publication judgment.
+editorial acceptance and release judgment for its own project. A proposed standalone Reach post
+retains its communication judgment, including applicable claims, credits and disclosures; it need
+not commission Broadcast.
 
 Paid campaigns need a separately reviewed request binding at least:
 

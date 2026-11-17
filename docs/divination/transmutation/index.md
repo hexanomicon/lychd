@@ -25,7 +25,7 @@ changing through encounter.
 
 - **Ouroboros — return through experience.** The serpent closes the loop between an act and what
   it teaches. Follow the [five chapters below](#five-chapters-of-the-return), then
-  [Weaver's Ouroboros](../../sepulcher/extensions/weaver/ouroboros.md) for the practical return
+  [Weaver's Ouroboros](../../sepulcher/aspects/weaver/ouroboros.md) for the practical return
   into another attempt. Repetition becomes learning when consequence changes what comes next.
 - **Pentacle — give power a bounded body.** Read the star beside
   [Summoning](../../summoning.md#draw-the-summoning-circle): gather the host, model, configuration,
@@ -161,7 +161,7 @@ flowchart TB
 ```
 
 The arrows follow meaning and evidence between separately admitted acts.
-[Weaver's Ouroboros](../../sepulcher/extensions/weaver/ouroboros.md#why-the-whole-is-not-one-dag)
+[Weaver's Ouroboros](../../sepulcher/aspects/weaver/ouroboros.md#why-the-whole-is-not-one-dag)
 explains how a recurring method differs from its execution: this cycle is no single executable
 DAG or hidden coordinator.
 
@@ -173,15 +173,15 @@ acknowledges its source. The engineering correspondence is the Hexanomicon's com
 ## From meaning to method
 
 To put this movement into software work, enter
-[Weaver's Creation](../../sepulcher/extensions/weaver/creation.md).
-[SDLC](../../adr/16-sdlc.md#the-agentic-graph-of-creation) governs the passage from candidate
-through verification to an owned effect. [Drift](../../sepulcher/extensions/drift/workflow-improvement.md)
+[Weaver's Smith](../../sepulcher/aspects/weaver/smith.md).
+[Smith](../../adr/16-smith.md#the-agentic-graph-of-creation) governs the passage from candidate
+through verification to an owned effect. [Drift](../../sepulcher/aspects/weaver/drift/workflow-improvement.md)
 asks what the evidence supports: it can examine a candidate, its manifested consequences, or
-the method across tasks. Its [two scales of evaluation](../../sepulcher/extensions/drift/workflow-improvement.md#evaluate-at-two-scales)
+the method across tasks. Its [two scales of evaluation](../../sepulcher/aspects/weaver/drift/workflow-improvement.md#evaluate-at-two-scales)
 keep those questions distinct.
 
 The return can be modest: a better question or a corrected procedure for the next attempt.
 When the evidence instead identifies a transferable skill gap,
-[Soulforge](../../sepulcher/extensions/soulforge/discernment-training.md) receives a separately
+[Soulforge](../../sepulcher/aspects/soulforge/discernment-training.md) receives a separately
 justified training hypothesis. [State of Work](../../state-of-the-work.md) records how far these
 autonomous operating designs have been delivered.

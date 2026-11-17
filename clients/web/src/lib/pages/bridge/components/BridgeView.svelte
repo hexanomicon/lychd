@@ -23,6 +23,8 @@
     replaceLiveTurnFromSnapshot,
     type LiveTurn
   } from "$lib/pages/bridge/state/projection";
+  import { getMemoryPanel, hasMemoryPanel } from "$lib/memory/panel.svelte";
+  import { getSeancesWorkspace, hasSeancesWorkspace } from "$lib/seances/workspace.svelte";
   import ConsentCard from "$lib/components/shared/ConsentCard.svelte";
   import CircleRun from "$lib/pages/bridge/components/CircleRun.svelte";
   import DelegateMark from "$lib/components/shared/DelegateMark.svelte";
@@ -57,6 +59,8 @@
     search?: string;
     onNavigate?: (sessionId: string, search: string, composerFocus?: boolean) => void | Promise<void>;
   } = $props();
+  const memory = hasMemoryPanel() ? getMemoryPanel() : null;
+  const materialWorkspace = hasSeancesWorkspace() ? getSeancesWorkspace() : null;
   const bridgeSearch = $derived(search ?? page.url.search);
   const bridgeParams = $derived(new URLSearchParams(bridgeSearch));
   let snapshot = $state<BridgeSnapshot | null>(null);
@@ -451,6 +455,7 @@
       window.dispatchEvent(new CustomEvent("altar:attention", { detail: next.pending_count }));
     } catch (cause) {
       if (version === loadVersion) {
+        if (cause instanceof ApiError && [401, 403].includes(cause.status ?? 0)) materialWorkspace?.refuseAccess();
         onSessionResolved?.(null);
         error = cause instanceof Error ? cause.message : "The Bridge stayed dark.";
         if (!snapshot) readError = error;
@@ -482,8 +487,9 @@
         sessions: [...snapshot.sessions, ...additional],
         sessions_next_cursor: next.next_cursor
       };
-    } catch {
+    } catch (cause) {
       if (!destroyed && !controller.signal.aborted && version === loadVersion) {
+        if (cause instanceof ApiError && [401, 403].includes(cause.status ?? 0)) materialWorkspace?.refuseAccess();
         sessionsError = "Older conversations could not be loaded. Try again.";
       }
     } finally {
@@ -1098,6 +1104,8 @@
           <p class="conversation-attention">{selectedPendingCount} awaiting consent</p>
         {/if}
       </div>
+      <div class="conversation-controls">
+      {#if memory}<button class="rune-btn" type="button" data-memory-opener aria-controls="memory-panel" aria-expanded={memory.isOpen} onclick={(event) => memory.open(undefined, event.currentTarget)}>Memory</button>{/if}
       <details class="conversation-tools">
         <summary aria-label="Conversation tools" {@attach captureNamingTools}>Tools</summary>
         <div class="bridge-tools" role="group" aria-label="Conversation tools">
@@ -1125,6 +1133,7 @@
           {/if}
         </div>
       </details>
+      </div>
     </header>
     {#if hintedProject}
       <nav class="atlas-links" aria-label="Originating project">
@@ -1396,6 +1405,10 @@
   .bridge-heading h1 { color: var(--color-ash); font: 600 var(--text-xs)/1.5 var(--font-body); letter-spacing: .06em; text-transform: uppercase; }
   .conversation-title { margin-top: .45rem; color: var(--color-bone); font: 600 clamp(1.125rem, 1.5vw, 1.4rem)/1.4 var(--font-body); overflow-wrap: anywhere; }
   .conversation-attention { margin-top: .25rem; font-size: var(--text-sm); color: var(--color-bone); line-height: 1.5; }
+  .conversation-controls { display: flex; align-items: center; gap: .5rem; }
+  .conversation-controls > button { min-height: 2.75rem; }
+  .conversation-controls:has(.conversation-tools[open]) { grid-column: 1 / -1; flex-wrap: wrap; }
+  .conversation-controls .conversation-tools[open] { flex-basis: 100%; }
   .conversation-tools { min-width: 0; font-size: var(--text-sm); }
   .conversation-tools > summary { min-width: 2.75rem; min-height: 2.75rem; align-content: center; color: var(--color-parchment); cursor: pointer; }
   .conversation-tools[open] { grid-column: 1 / -1; }

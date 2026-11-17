@@ -51,7 +51,7 @@ The household contract supplies no health or consumption judgment, unapproved pu
 
 ## Portfolio seams
 
-[Wellbeing](../wellbeing/index.md) decides what fits a consenting adult's eating and movement. [Scavenger](../scavenger/index.md) handles irregular, high-value, compatibility-heavy, property, and seller-negotiated acquisition. Exact inventory, needs, provision results, requirements, and confirmed consumption cross these seams. Credentials, private records, and authority stay with their owners. Scout supplies attributed research observations, never physical instructions.
+[Wellbeing](../wellbeing/index.md) decides what fits a consenting adult's eating and movement. [Scavenger](../scavenger/index.md) owns independent acquisition campaigns; [Provision](provision.md) explains that boundary without making price or frequency the routing rule. Exact inventory, needs, provision results, requirements, and confirmed consumption cross these seams. Credentials, private records, and authority stay with their owners. Scout supplies attributed research observations, never physical instructions.
 
 Keeper and Cultivator may reference the same enclosure, greenhouse, tank, or circuit. Their placements and requirements remain separately owned. [Utilities](utilities.md#meet-an-environment-request) checks the joint commissioned envelope; a technical acknowledgement establishes no animal or plant care outcome. Settled needs, yields, and receipts need no Suite. Starting and recovering several owners' live work follows the [Suite boundary](../products-and-suites.md#homestead-keeper-and-cultivator).
 

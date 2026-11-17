@@ -7,7 +7,7 @@ icon: material/connection
 
 The guitar's dry signal and the amp sound heard in the headphones are related, but they are not the same recording. Riffmaw admits the musical reason to arm an exact route and preserves those separate sources for later production.
 
-[Audio Hardware and Host Routes](../../sepulcher/animator/audio-routes.md) owns replaceable Linux/device candidates and setup evidence. [Audio](../../adr/37-audio.md) owns capture, custody, transport, interruption, and uncertain playback. ALSA, PipeWire, interfaces, drivers, and workstation hardware do not become Riffmaw records.
+[Audio Hardware and Host Routes](../../sepulcher/extensions/animators/audio-routes.md) owns replaceable Linux/device candidates and setup evidence. [Audio](../../adr/37-audio.md) owns capture, custody, transport, interruption, and uncertain playback. ALSA, PipeWire, interfaces, drivers, and workstation hardware do not become Riffmaw records.
 
 ## Admit a musical route
 

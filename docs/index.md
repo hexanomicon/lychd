@@ -65,7 +65,7 @@ To master **[LychD](https://github.com/hexanomicon/lychd)**, pass through the fo
 - **[The Summoning](./summoning.md):** The Rite of Binding. Tether the daemon to your local iron.
 - **[The Sepulcher](./sepulcher/index.md):** The Anatomy of the Spirit. Study the dark organs of
   the **[Vessel](./sepulcher/vessel/index.md)**, **[Phylactery](./sepulcher/phylactery/index.md)**,
-  and **[Animator](./sepulcher/animator/index.md)**.
+  and **[Animator](sepulcher/extensions/animators/index.md)**.
 - **[Divination](./divination/index.md):** The Communion of Magus and Machine. Project your Will
   through the **[Altar](./divination/altar/index.md)** to manifest Intents, and walk the path of
   **[Transcendence](./divination/transcendence/index.md)**.

@@ -75,4 +75,4 @@ Raw voice is `restricted`; transcripts and replies are at least `private`. Audio
 
 Revision `3` supersedes revision `2` with exact Ward enrollment and independently versioned handoff/presentation Patterns. Revision `2` had replaced revision `1`'s body claim with an exact Familiar dependency. No registry or Run used them; historical meanings remain unchanged without executable migration.
 
-[Composition Portfolio](../index.md) · [Echo](../../sepulcher/extensions/echo.md) · [Ward](../../sepulcher/extensions/ward.md)
+[Composition Portfolio](../index.md) · [Echo](../../sepulcher/aspects/echo.md) · [Ward](../../sepulcher/aspects/ward.md)

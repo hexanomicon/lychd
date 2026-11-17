@@ -22,7 +22,7 @@ icon: material/shield-lock-outline
 | Coffin | one foreign agent under one `AgentJob` and a revocable Gate bearer | queue/database credentials, promotion, authoritative VCS, host effects |
 
 A [Gateway Host](../sepulcher/gateway.md) is an optional separate ingress placement, not an
-Extension Domain, Composition, caller, or second authority plane. Veil owns its admitted routes;
+Aspect, Composition, caller, or second authority plane. Veil owns its admitted routes;
 Tether may supply an exact private road; the receiving Ward and application still authenticate
 and authorize every request. The Core host accepts only the named backend flow from the Gateway
 identity. Policy outside the Gateway host—a router/firewall, L3-switch ACL, or cloud-network rule,
@@ -163,7 +163,7 @@ justified, enforced non-applicability. Unknown fix status, provenance or applica
 
 The former 0.66-series baseline is retired: later upstream advisory ranges include it. Neither a
 downgrade to that series nor a newer release is admitted by this amendment. The
-[dated containment study](../sepulcher/extensions/weaver/coding-runtime-research.md#containment-version-selection)
+[dated containment study](../sepulcher/aspects/weaver/coding-runtime-research.md#containment-version-selection)
 keeps the primary-source findings and their limits. Landlock ABI 6+ and the required filesystem,
 TCP, signal, process, endpoint, environment-filtering and outer resource-enforcement capabilities
 must still be observed for the exact profile. Requested limits are not measured ceilings. Its
@@ -342,6 +342,26 @@ closed semantic task. Run/claim fencing is checked at each physical handoff and 
 or resume. Trusted local cancellation may close adoption and retire local exchanges without
 remote permission; remote poll/cancel still requires its own current exact authority and capacity.
 
+#### Inspection and destination evidence
+
+An admitted deployment profile must mediate its complete declared set of remote handoffs,
+including child provider calls, SDK retries, uploads, telemetry and subprocess traffic. Unsupported
+or direct paths cannot bypass admission. Inspection policy may require semantic review of every
+candidate or admit a separately qualified bounded workload; neither mode disables exact
+transmission-time checks. Missing inspection, unsupported material, timeout or exhausted resources
+cannot authorize raw fallback. Transport authentication has its own exact recipient/purpose basis
+and does not authorize exporting source credentials or private decision evidence.
+
+When disclosure policy depends on destination execution protections, current appraisal binds the
+required threat model, workload, configuration and connection to accepted evidence. Configuration
+inspection, measured launch and protection from a hostile administrator support different claims.
+Signed assessments are non-bearer evidence: they grant no identity enrollment, privilege, task
+authority or declassification. Expired, revoked, mismatched or missing required evidence refuses
+release. A peer's onward execution and custody must satisfy the actual task's requirements;
+evidence for its ingress endpoint alone cannot qualify that path. Runtime enforcement remains
+independent of the [Signet Composition](../compositions/signet/index.md). A post-execution stamp
+cannot replace the evidence and authority required before disclosure.
+
 #### Thresholds and refusal
 
 Consent cannot repair missing lineage, override a prohibited category, or broaden named content and
@@ -364,8 +384,28 @@ Work](../state-of-the-work.md#context-privatization-and-portal-egress) owns that
 
 Several sanitized payloads can together reveal a stable identity or reconstruct withheld context.
 Disclosure accounting must therefore cover related calls, retries, delegated child requests, and
-intermediaries across one purpose. A future gate must enforce that cumulative policy before
-transmission and keep enough bounded local evidence to detect reuse without exporting a
+intermediaries across one purpose. Observer policy also accounts for cooperating recipients and
+related disclosures across purposes when the declared threat model permits those observations.
+Changing a recipient alias, purpose label, Run or token namespace cannot erase relevant history.
+Use/byte accounting bounds transmissions; it does not measure what their combined meaning reveals.
+
+Cumulative appraisal binds the exact candidate to a versioned history basis for the policy's
+observer/linkage scopes, including relevant pending disclosures and their restricted semantic
+evidence. Before transmission, the gate atomically reserves admission against every required
+overlapping scope; a changed basis requires reassessment. Two concurrent Cuts cannot both rely
+on the same unreserved history merely because their Run, purpose or recipient alias differs.
+A missing acknowledgement leaves the occurrence possibly disclosed. Release of a pending
+reservation requires evidence that its covered disclosure did not occur; uncertainty is not a
+fresh allowance. This semantic reservation is distinct from the existing use/byte accounting.
+
+The appraisal declares history coverage and gaps, including relevant prior or out-of-band
+disclosures. A new installation, restored older ledger, changed alias or expired/erased record
+cannot establish that an observer knows nothing. Missing relevant history requires a conservative
+bound or refusal of the claim that depends on it. Retain only policy-permitted restricted
+evidence or a conservative bound; retention expiry cannot justify either reconstructing forbidden
+source material or silently resetting disclosure risk.
+
+The future gate enforces that cumulative policy before transmission without exporting a
 correlation identifier. Per-call censorship cannot guarantee anonymity. Resistance to semantic
 re-identification needs adversarial evaluation against the stated observer and workload; neither
 a general proof nor an implemented cumulative-disclosure gate is claimed here.

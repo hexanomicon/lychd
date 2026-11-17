@@ -45,6 +45,10 @@ systems, coerce someone, expose private identities publicly, or retaliate.
 [Security](../../adr/09-security.md) and [IAM](../../adr/38-iam.md) retain enforcement and authority.
 Thorn introduces no general system administrator, scheduler, or self-authorizing agent.
 
+[Signet](../signet/index.md) separately studies compute-node privacy
+qualification and certificate lifecycle. Thorn can supply an admitted security finding or repair
+retest without owning that qualification or its renewal.
+
 Typed findings, requests, and settled receipts can cross these boundaries without transferring
 ownership. A promise to coordinate separate Compositions' live Invocations needs the explicit
 [Suite contract](../products-and-suites.md#compositions-relate-without-nesting).

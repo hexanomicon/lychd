@@ -8,13 +8,13 @@ icon: material/spider-thread
 !!! abstract "Context and Problem Statement"
     Web acquisition crosses an untrusted network and returns untrusted bytes. Search, fetch,
     extraction, crawling, rendering, interaction, credentials, sessions, and storage are distinct
-    effects; failure may never authorize a stronger one. [Scout](../sepulcher/extensions/scout.md)
+    effects; failure may never authorize a stronger one. [Scout](../sepulcher/aspects/scout.md)
     binds each acquisition attempt to its admitted effect and retains its source attribution.
 
 ## Decision
 
 Scout owns acquisition: mechanics, attribution, freshness, and destination/contact policy.
-It is an Extension Domain, not a crawler service or Composition.
+It is an Aspect, not a crawler service or Composition.
 [The first passage](#the-first-passage) follows a bounded static read from a proposed URL to
 attributed text. A provider supplies the mechanism. The host binds the locator proposed by an
 Agent or admitted application Pattern to principal, Run, effect, destination scope, consent,
@@ -35,7 +35,7 @@ effect escalation follows. No-web profiles are valid and confer no ambient egres
 
 ### Provider, Animator, and effect-grant boundary
 
-A Scout **Provider** names one admitted acquisition mechanism. An [Animator](../sepulcher/animator/index.md)
+A Scout **Provider** names one admitted acquisition mechanism. An [Animator](../sepulcher/extensions/animators/index.md)
 may manifest that mechanism as a local Soulstone or remote Portal, but it does not replace Scout:
 
 - the Animator Rune, adapter, probe, and capability declaration establish what service exists and
@@ -183,7 +183,7 @@ does not admit XML. Item locators remain bounded returned data, never permission
 fetches. The consuming application owns local filtering and suitability; repeat watching needs
 current admission and finite standing policy.
 
-The [Scout source study](../sepulcher/extensions/scout.md#source-acquisition-study) records a Bazoš RSS
+The [Scout source study](../sepulcher/aspects/scout.md#source-acquisition-study) records a Bazoš RSS
 premise and the next qualification obligations. It is a candidate study, not an admitted feed
 profile or delivery evidence.
 
@@ -528,7 +528,7 @@ acquired != admitted != understood != promoted
 ```
 
 They are never instructions, code, policy, or truth. Interpretation belongs to
-[Drift (34)](34-evaluation.md) or the consuming Composition.
+[Drift (34)](34-drift.md) or the consuming Composition.
 
 ## Custody and stronger tracks
 
@@ -648,7 +648,7 @@ No Scout-owned general provider contribution, effect-scoped Agent tool, robots/r
 browser, download quarantine or Reliquary is delivered by that profile. Search mediation and
 renderer isolation require their own qualification; the native path cannot grant their effects
 or make the shared Pod an acceptable browser boundary. The
-[Scout topic](../sepulcher/extensions/scout.md#public-page-answers) owns configuration and operation.
+[Scout topic](../sepulcher/aspects/scout.md#public-page-answers) owns configuration and operation.
 
 ## Consequences
 

@@ -7,8 +7,8 @@ tests. It defines the **Edit Agent** procedure. It grants no permission beyond t
 does not replace the owning ADR, source, tests, or contribution rules.
 
 When a consequential direction or construction choice remains unsettled, use
-[Creation's Inquiry](../../../docs/sepulcher/extensions/weaver/creation.md#reuse-inquiry-at-each-uncertain-boundary)
-and record its [policy packet](../../../docs/sepulcher/extensions/weaver/creation.md#inquiry-policy)
+[Smith's Inquiry](../../../docs/sepulcher/aspects/weaver/smith.md#reuse-inquiry-at-each-uncertain-boundary)
+and record its [policy packet](../../../docs/sepulcher/aspects/weaver/smith.md#inquiry-policy)
 before handing off the edit. Settled mechanical changes can proceed under the edit contract below.
 
 ## Edit contract

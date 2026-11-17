@@ -29,12 +29,12 @@ Circle creates neither a fused super-Sigil nor an identical interior.
 
 ## The casting inside the Circle
 
-[Spellweaver](../../sepulcher/extensions/weaver/index.md) admits the exact **Scroll**, an immutable
+[Spellweaver](../../sepulcher/aspects/weaver/index.md) admits the exact **Scroll**, an immutable
 Pattern revision. Its placed **Spells** name the semantic actions the casting may perform. A
 placement can request an Agent, tool, Gate, effect, delegation, or typed capability; admission and
 authority still determine whether that request may be met.
 
-An admitted [Animator](../../sepulcher/animator/index.md#animus-the-power-answering) supplies
+An admitted [Animator](../../sepulcher/extensions/animators/index.md#animus-the-power-answering) supplies
 **Animus**, active capability power through its Connector and exact CapabilityGrant. Graph gives
 casting typed movement; model and tool returns remain candidates. Within Spirit's present
 [Flux](../../sepulcher/lich/spirit/flux.md), [Blade](../../sepulcher/lich/blade.md) discriminates
@@ -70,7 +70,7 @@ animation, open stream, or model utterance alone cannot establish progress or au
 
 ## What can outlast the act
 
-The Run remains ledger truth. [Oculus](../../sepulcher/extensions/oculus.md) and the
+The Run remains ledger truth. [Oculus](../../sepulcher/aspects/oculus.md) and the
 [Orb](orb.md) expose traces of activity, with their gaps and limits intact. A trace cannot replace
 Run, consent, effect, or artifact truth.
 

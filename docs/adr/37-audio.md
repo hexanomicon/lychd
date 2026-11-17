@@ -31,7 +31,7 @@ distinct player-exit facts. These helpers issue no native speech grant or playba
 Bridge implements the separately configured finite dictation operation below;
 its text result may enter ordinary Bridge admission after review. It does not
 forward audio modality into dispatch. General credential-backed STT/TTS grants,
-a speech timeline, streaming transport, a selectable Echo extension and an Audio
+a speech timeline, streaming transport, a selectable Echo package and an Audio
 Coven remain unavailable. Browser microphone operation and the exact live
 binary/model pair still require qualification. [State of
 Work](../state-of-the-work.md#audio-admission) owns this boundary and the
@@ -157,7 +157,7 @@ inputs and outputs, private external workspace and cancellation limits must be e
 probe issues no Animator grant, registers no ambient provider or extension, and cannot establish
 Bridge audio admission, Resonance Session delivery or remote-egress authority. It exists to
 measure the exact binary/model pair and supply evidence for those later boundaries. The
-[local qualification contract](../sepulcher/extensions/echo-local-probe.md) owns its operation.
+[local qualification contract](../sepulcher/aspects/echo-local-probe.md) owns its operation.
 
 Capture authority is explicit, visible, time-bounded, and revocable. Consent to one utterance is
 not permanent microphone access; device indicators and server state must agree whether capture is

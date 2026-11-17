@@ -15,11 +15,11 @@ An import must explain how the producer's material became an engine derivative. 
 
 If those checks expose a problem, return it as `AssetFindingSet@1`. The producer receives attributable correction evidence while its lineage and creative approval remain unchanged.
 
-A glTF/GLB can combine mesh, PBR appearance, skeleton, skinning, and animation. Point clouds, Gaussian/radiance forms, neutral voxels, game block grids, and portable assemblies require their own supported import forms. Unsupported forms fail or return findings. [Prism Form](../../sepulcher/extensions/prism/form.md#one-form-job-explicit-operation) owns admitted source-form conversion and declared loss; an engine importer cannot quietly mesh, rig, voxelize, or bake the source.
+A glTF/GLB can combine mesh, PBR appearance, skeleton, skinning, and animation. Point clouds, Gaussian/radiance forms, neutral voxels, game block grids, and portable assemblies require their own supported import forms. Unsupported forms fail or return findings. [Prism Form](../../sepulcher/aspects/prism/form.md#one-form-job-explicit-operation) owns admitted source-form conversion and declared loss; an engine importer cannot quietly mesh, rig, voxelize, or bake the source.
 
 One asset's collider, LOD, skeleton/material/animation map belongs to its import. World-wide collision layers/masks, navigation joins, spawn, streaming, interaction roles, actor bindings, and controller use belong to the [World](world.md) bake. Reusing a derivative changes neither receipt's ownership.
 
-For motion, begin with the exact accepted animation. Admission pins its target Form rig digest when rig-bound and the Kinesis `MotionAssetSet@1`/retarget receipt when used. [Kinesis](../../sepulcher/extensions/prism/kinesis.md) retains the portable curves, mapping, root/contact semantics, and technical validation. Foundry then owns the choices that make it run in the game: clip compression, engine controllers/state machines, blending, gameplay root motion, and playtest. Passing the import checks cannot certify the source rig or creative choice.
+For motion, begin with the exact accepted animation. Admission pins its target Form rig digest when rig-bound and the Kinesis `MotionAssetSet@1`/retarget receipt when used. [Kinesis](../../sepulcher/aspects/prism/kinesis.md) retains the portable curves, mapping, root/contact semantics, and technical validation. Foundry then owns the choices that make it run in the game: clip compression, engine controllers/state machines, blending, gameplay root motion, and playtest. Passing the import checks cannot certify the source rig or creative choice.
 
 ## Distinct sound and world boundaries
 

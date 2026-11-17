@@ -11,7 +11,7 @@ The drop at one exact point in a master can invite a visual answer. Sync makes t
 
 [Atelier](../atelier/motion.md) judges visual response; [Broadcast](../broadcast/edit.md) places it in the final timeline. Dialogue replacement belongs to [Language Edition](../language-edition/); picture effects and ambience have Broadcast cues. Consumers request a successor instead of editing Riffmaw's map.
 
-[Kinesis](../../sepulcher/extensions/prism/kinesis.md) may use the exact map in admitted `synchronize` or constrained-generation work. Its new motion derivative keeps music digest, clock relation, anchors, and uncertainty without rewriting the map or deciding creative acceptance.
+[Kinesis](../../sepulcher/aspects/prism/kinesis.md) may use the exact map in admitted `synchronize` or constrained-generation work. Its new motion derivative keeps music digest, clock relation, anchors, and uncertainty without rewriting the map or deciding creative acceptance.
 
 A retime, frame-rate conversion, shorter master, or changed mix may make the map stale. Reject a mismatched digest/timebase and create a new map revision while preserving the earlier relation as history. Timing-only changes stale dependent synchronization approvals; changed source revisions, consent, or use boundaries must still follow each owner's invalidation rules.
 

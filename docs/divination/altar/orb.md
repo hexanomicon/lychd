@@ -30,7 +30,7 @@ reported effect result readable without motion. A response alone does not establ
 This is a bounded latest runtime window, independent of the Run timeline below. Pausing Run
 history does not create historical runtime playback. Background calls can have no Run, and final
 delivery may be observed after Run completion. The source's capture, freshness, omissions and
-coverage describe what can be inspected. [Oculus source selection](../../sepulcher/extensions/oculus.md#connected-components-and-activity)
+coverage describe what can be inspected. [Oculus source selection](../../sepulcher/aspects/oculus.md#connected-components-and-activity)
 explains how admitted profiles join this common view.
 
 The field starts with a bounded page of Run identities. **Load more retained Runs** extends the
@@ -88,7 +88,7 @@ Confirm the **Run id**, **Latest fetched Run status**, and capture class in the 
 status. The Orb shows the bounded trace its sources can supply and cannot replace Run, consent,
 grant, effect, or artifact truth.
 
-**[Oculus](../../sepulcher/extensions/oculus.md)** names the body’s evidence service; **Orb** is
+**[Oculus](../../sepulcher/aspects/oculus.md)** names the body’s evidence service; **Orb** is
 its Altar surface. Native durable Oculus storage is not delivered. Run evidence is available
 through this running Vessel and is labeled `process local` or `durable best effort`.
 `process local` evidence disappears when the Vessel process ends. With `durable best effort`,
@@ -152,7 +152,7 @@ pages without finding it, Orb reports that absence at this read. To investigate 
 its recorded status, phase, subject, station attempt, and transition correlation. The cause may
 still be unknown; Orb supplies no **Why waiting?** analysis.
 
-Follow [Stasis and return](../../sepulcher/extensions/weaver/stasis-and-return.md) for the recorded
+Follow [Stasis and return](../../sepulcher/aspects/weaver/stasis-and-return.md) for the recorded
 wait's owner and return boundary. If the Vessel has died, continue through
 [Reanimation](../../sepulcher/phylactery/reanimation.md#reanimation-a-new-vessel-judges-durable-truth).
 
@@ -259,6 +259,13 @@ the graph and records. Summaries show the supplied subject; selection opens exac
 fields. Run-record timestamps include a date and use local time. A verified linked job opens its
 disclosure and receives focus after the evidence and selected record, where a long job collection
 cannot bury the account's limits.
+
+The proposed [shared workflow station inspector](index.md#shared-workflow-station-inspector)
+opens on the selected attempt in Orb and gives access to the verified station definition.
+
+A future cross-instrument map may lead to Orb with an explicit Run scope. Orb follows the
+observed account and its capture limits. Loom retains the declared workflow, and Nexus retains
+readiness and physical transitions.
 
 The diagram must distinguish declared permission from supplied record membership and observed
 traversal. Sequence and equal spacing establish order, not elapsed time or causality. Unknown

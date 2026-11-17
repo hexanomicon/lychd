@@ -17,7 +17,7 @@ after it dies.
 
 A request enters through Granian's production ASGI service. Litestar supplies routing, injection,
 lifecycle, and API authority, while Pydantic validates configuration and typed boundaries.
-Pydantic AI provides Agent and Graph mechanics over [Animator](../animator/index.md) capabilities.
+Pydantic AI provides Agent and Graph mechanics over [Animator](../extensions/animators/index.md) capabilities.
 Litestar also serves the compiled static SvelteKit client, so the browser remains a projection
 without a separate server authority.
 

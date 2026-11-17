@@ -110,7 +110,7 @@ can exceed wall time. Preserve both observations rather than clamping one to res
 The current engineering profile has no confidence-bearing STT contract. Do not optimize by
 inventing a confidence threshold. Prefer an exact parser, bounded clarification, reviewed plan
 and human command corpus. Selection of different models or paid services follows the separate
-[speech research](../../sepulcher/extensions/echo-research.md) and an explicit provider trial.
+[speech research](../../sepulcher/aspects/echo-research.md) and an explicit provider trial.
 
 ## Order of preparation
 

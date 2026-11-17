@@ -7,6 +7,15 @@
   import { altarNavigationContext, type AltarNavigation } from "$lib/navigation/instruments";
   import PageHeader from "$lib/components/shared/PageHeader.svelte";
 
+  let { embedded = false, active = true, onSelect, onClose }: { embedded?: boolean; active?: boolean; onSelect?: (selection: string) => void; onClose?: () => void } = $props();
+  function selectLink(event: MouseEvent, selection: string) {
+    if (!embedded || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault(); onSelect?.(selection);
+  }
+  function returnLink(event: MouseEvent) {
+    if (!embedded || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault(); onClose?.();
+  }
   const navigation = getContext<AltarNavigation | undefined>(altarNavigationContext);
   let recall = $state.raw(initialRecallState());
   const initialDraft = emptyRecallDraft();
@@ -36,6 +45,7 @@
   onMount(() => { void controller.load(); });
   onDestroy(() => { alive = false; ++focusVersion; controller.dispose(); });
   beforeNavigate((event) => {
+    if (embedded && !event.willUnload) return;
     const target = event.to?.url;
     const stays = !event.willUnload && target?.pathname === "/bridge" && target.searchParams.getAll("notes").length === 1 &&
       target.searchParams.get("notes") === "recall" && !target.searchParams.has("investigation");
@@ -49,29 +59,29 @@
     if (busy || recall.frozen || recall.configuration !== "configured") return;
     errors = validateRecallDraft($state.snapshot(draft));
     const version = ++focusVersion;
-    if (errors.length) { await tick(); if (alive && version === focusVersion) errorHeading?.focus(); return; }
+    if (errors.length) { await tick(); if (alive && active && version === focusVersion) errorHeading?.focus(); return; }
     await controller.submit($state.snapshot(draft));
-    await tick(); if (alive && version === focusVersion) resultHeading?.focus();
+    await tick(); if (alive && active && version === focusVersion) resultHeading?.focus();
   }
   async function inspect() {
     const version = ++focusVersion;
     await controller.check(); await tick();
-    if (alive && version === focusVersion) resultHeading?.focus();
+    if (alive && active && version === focusVersion) resultHeading?.focus();
   }
   async function resolve() {
     const version = ++focusVersion;
     await controller.resolve(); await tick();
-    if (alive && version === focusVersion) resultHeading?.focus();
+    if (alive && active && version === focusVersion) resultHeading?.focus();
   }
   function refresh() { ++focusVersion; errors = []; discardReview = false; void controller.load(); }
   async function reviewDiscard() {
     discardReview = true; const version = ++focusVersion; await tick();
-    if (alive && version === focusVersion && discardReview) discardHeading?.focus();
+    if (alive && active && version === focusVersion && discardReview) discardHeading?.focus();
   }
   function discard() { ++focusVersion; controller.discard(); draft = emptyRecallDraft(); errors = []; discardReview = false; }
 </script>
 
-<svelte:head><title>Recall public sources — Bridge — LychD</title></svelte:head>
+<svelte:head>{#if !embedded}<title>Recall public sources — Bridge — LychD</title>{/if}</svelte:head>
 <svelte:window onbeforeunload={guardUnload} />
 <section class="public-recall" aria-labelledby="recall-title">
   <PageHeader
@@ -80,7 +90,7 @@
     description="One explicit semantic query and exact current-source load. This view generates no answer and starts no conversation Run."
     titleId="recall-title"
   >
-    <nav aria-label="Public-source recall focus"><a href={navigation?.bridgePath ?? "/bridge"}>Return to conversation</a><a href={notesHref("manage")}>Manage public notes</a><a href={notesHref("new")}>New public note</a></nav>
+    <nav aria-label="Public-source recall focus"><a href={navigation?.bridgePath ?? "/bridge"} onclick={returnLink}>{embedded ? "Close Memory" : "Return to conversation"}</a><a href={notesHref("manage")} onclick={(event) => selectLink(event, "manage")}>Manage public notes</a><a href={notesHref("new")} onclick={(event) => selectLink(event, "new")}>New public note</a></nav>
   </PageHeader>
   <aside class="notice" aria-label="Recall prerequisites">
     <p>Already promoted public sources with complete derivations and the exact warm embedding profile are prerequisites. Prepare them separately. This view does not register generations, derive sources or activate runtime capabilities.</p>

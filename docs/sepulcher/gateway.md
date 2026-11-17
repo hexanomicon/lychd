@@ -7,10 +7,10 @@ icon: material/gate
 
 An optional **Gateway Host** receives hostile public ingress on a separate machine, leaving the
 Lich's durable body, data, and application authority on the Core host. The Gateway is a deployment
-trust role. [Veil](extensions/veil.md) still owns TLS and route admission;
-[Tether](extensions/tether.md) may supply private reachability. The selected deployment profile
+trust role. [Veil](aspects/veil.md) still owns TLS and route admission;
+[Tether](aspects/tether.md) may supply private reachability. The selected deployment profile
 must specify the physical hosts and flows. This role creates neither a Composition nor another
-Extension Domain.
+Aspect.
 
 A same-host Veil is not a Gateway Host. The extra role exists only when the operator deliberately
 spends another machine to separate the exposed surface. Gateway is **Designed**;

@@ -103,8 +103,9 @@ one accepted email cannot prove that a chat message or post was accepted. An unk
 remain visible and cannot trigger a blind replay of the whole batch.
 
 Reach owns correspondence and destination policy. [Broadcast](../../broadcast/release.md) owns
-editorial acceptance and publication judgment. An already accepted announcement can enter Reach
-as settled input. Commissioning and waiting for several live Composition Invocations would instead
+editorial acceptance and publication judgment for its own project; a standalone proposed Reach
+post need not commission Broadcast. An already accepted announcement can enter Reach as settled
+input. Commissioning and waiting for several live Composition Invocations would instead
 need a [Suite](../../products-and-suites.md#compositions-relate-without-nesting).
 
 ## Journeys and refusal cases

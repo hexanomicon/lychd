@@ -2,8 +2,9 @@
 
 ## Trigger
 
-Load this scope for implementation work under `src/**` or `tests/**`, including application
-assembly, persistence, execution, capabilities, agents, orchestration, extensions, and interfaces.
+Load this scope for implementation work under `src/**`, `tests/**`, or `clients/android/**`,
+including application assembly, persistence, execution, capabilities, agents, orchestration,
+extensions, and interfaces.
 Also load [Architecture](architecture.md) when the implementation changes a decision,
 documentation topology, public operation, or delivery truth.
 Also load [Frontend](frontend.md) when a backend contract changes browser, OpenAPI, or SSE
@@ -38,6 +39,10 @@ projection.
 - Browser-facing interfaces: `docs/adr/11-backend.md`, `docs/adr/15-frontend.md`,
   `src/lychd/interface/api/`, `src/lychd/interface/web/`,
   `src/lychd/domain/web/contracts.py`, `tests/web/`
+- Android client: [client entrypoint](../../clients/android/README.md) for source boundaries and
+  Gradle checks, then the linked Companion contract, Android Development page, and delivery entry.
+  Follow the affected module's source and tests; Core Python and web-client gates do not replace
+  Android verification.
 - Extensions and host effects: `docs/adr/05-extensions.md`, `docs/adr/08-containers.md`,
   `docs/adr/10-privilege.md`, `src/lychd/extensions/`, `src/lychd/system/`
 

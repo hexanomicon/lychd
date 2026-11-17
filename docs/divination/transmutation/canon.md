@@ -29,7 +29,7 @@ able to question what Netzach is being rewarded for continuing.
 and obligations to the chapter's literary thread. Declared commitments must remain present
 in the way a candidate is made and judged.
 
-[Drift's Trial and Rubric contracts](../../sepulcher/extensions/drift/trials.md#pin-the-trial)
+[Drift's Trial and Rubric contracts](../../sepulcher/aspects/weaver/drift/trials.md#pin-the-trial)
 own the practical evaluation terms. Canon names this interpretive chapter; it adds no runtime
 entity or competing architectural law.
 

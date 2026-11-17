@@ -25,9 +25,9 @@ the inputs are frozen sources and an editorial brief. The result is a candidate 
 judge. Preparing that candidate and releasing it are separate acts. Here is how the preparation
 passes through the body.
 
-Your request is an **Intent**. [Spellweaver](./sepulcher/extensions/weaver/index.md) resolves the
+Your request is an **Intent**. [Spellweaver](sepulcher/aspects/weaver/index.md) resolves the
 workflow that will perform it. That workflow belongs to a named Pattern; one
-[immutable Pattern revision](./sepulcher/extensions/weaver/pattern-lifecycle.md) is called a
+[immutable Pattern revision](sepulcher/aspects/weaver/pattern-lifecycle.md) is called a
 **Scroll**. Pinning the revision keeps the instructions identifiable even if a later version is
 published.
 
@@ -73,9 +73,9 @@ Current grants cover the narrow v1 chat and non-empty toolset path, and the exac
 profile through its dedicated counted lease. General call, job, and session grants remain
 designed.
 
-An [Animator](./sepulcher/animator/index.md) presents the selected local Soulstone or remote Portal
+An [Animator](sepulcher/extensions/animators/index.md) presents the selected local Soulstone or remote Portal
 through its exact Connector. Remote work also follows the privacy and effect rules
-of its [execution road](./sepulcher/extensions/weaver/execution-roads.md). A Portal call, a job in
+of its [execution road](sepulcher/aspects/weaver/execution-roads.md). A Portal call, a job in
 a delegated coding runtime, and work entrusted to a sovereign A2A peer use different contracts;
 choosing one does not authorize another.
 
@@ -86,8 +86,8 @@ record its settlement. The [Phylactery](./sepulcher/phylactery/index.md) retains
 and checkpoints. A checkpoint identifies a permitted place to resume; the Run ledger establishes
 terminal status even when an event is missing from the live view.
 
-[Oculus](./sepulcher/extensions/oculus.md) explains what was observed and where observation ends.
-[Drift](./sepulcher/extensions/drift/index.md) evaluates claims about the result. Those findings
+[Oculus](sepulcher/aspects/oculus.md) explains what was observed and where observation ends.
+[Drift](sepulcher/aspects/weaver/drift/index.md) evaluates claims about the result. Those findings
 help the editor judge the candidate; they do not make the editorial decision. The receiving
 owner accepts the result or admits a new correction. Keeping a lesson has a separate decision,
 too: [Archive law](./adr/27-memory.md) governs admission to memory. Completing work does not
@@ -109,7 +109,7 @@ the Composition continues to own the application's records and decisions.
 ## Identity, presentation, media, and place
 
 The same Lich may speak, appear in an image, or meet someone in another world. These uses connect
-several responsibilities. [Mirror](./sepulcher/extensions/mirror.md) binds Persona identity;
+several responsibilities. [Mirror](sepulcher/aspects/mirror.md) binds Persona identity;
 [Avatar](./compositions/avatar/index.md) chooses an eligible presentation. Prism and Echo provide
 visual and speech mechanisms, while the application using them decides whether the creative
 result is acceptable. A Habitat, game world, physical Familiar, or Companion session keeps the

@@ -1,0 +1,483 @@
+---
+title: Development bootstrap
+icon: material/source-branch
+---
+
+# Development bootstrap
+
+Start with one useful change that another person can verify. Run that change through an
+operator-controlled coding campaign, retain its failures and handoffs, and implement the parts
+of that passage LychD can subsequently own. This guide carries that bootstrap from ordinary
+development to bounded native operation. [Smith](smith.md) supplies the working method;
+[Smith](../../../adr/16-smith.md) owns its invariants.
+
+The initial coordinator is the actual coding platform and its human operator. A platform goal,
+worker session, or scheduled task receives that platform's identity. It is not a LychD Run,
+Scroll, Coffin, or Drift Trial. Consult [delegation evidence](../../../state-of-the-work.md#delegated-agent-execution)
+and [Forge evidence](../../../state-of-the-work.md#smith-forge-promotion) before selecting a
+native road. This procedure publishes no new Composition, Pattern, executor, or activation service.
+
+## Choose the first execution road
+
+Use a supported coding client selected by the operator for the first campaign. Preserve the
+requested model and orchestration settings as explicit campaign inputs; record the exact model
+identifier and effective settings the client reports.
+[Coding-runtime research](coding-runtime-research.md) distinguishes client orchestration from model
+reasoning, account limits from API billing, and local use from a distributed product. A different
+provider is a measured alternative, never an implicit fallback.
+
+Begin LychD integration by qualifying a trusted host for the existing one-shot CLI protocol and
+returning one bounded artifact with its terminal receipt. A bidirectional app-server adapter
+comes later, when a demonstrated requirement calls for live steering, interactive approvals, or
+persistent product sessions. Do not introduce several runtimes or a second orchestration
+framework to prove one job. LychD owns task semantics, admission, custody, verification
+requirements and effect requests. Within that admitted boundary, the foreign harness owns its
+private planning and tool loop.
+
+```mermaid
+flowchart TD
+    A[Operator-controlled coding campaign] --> B[Verified candidate and retained handoff]
+    B --> C[Qualify durable delegation and trusted host]
+    C --> D[LychD delegates one bounded job]
+    D --> E[Independent verification and maintainer integration]
+    E --> F[Admitted queue with spare-capacity work]
+    F --> G[Separately qualified package and body activation]
+    G --> H[Observed outcome informs a later request]
+    H --> B
+```
+
+Each arrow is a new admission or settled handoff. The diagram grants no effect or automatic
+continuation. A successful coding job never appoints itself the next task or promotion owner.
+
+## Establish the campaign before dispatch
+
+First follow the [contribution coordination preflight](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#coordinate-before-starting-work).
+The public intent may precede discovery of exact files; the executable campaign record below
+must close the inputs and effects admitted for its writer. Use existing operator tools under
+their actual permissions until the [native coordination follow-up](#github-coordination-follow-up)
+is implemented and qualified.
+
+Select a small milestone, such as proving one delegation recovery boundary. Name its acceptance
+owner and the work that is deliberately outside it. Use a claimed issue or attributable task
+record; the contributor's private campaign notes may stay outside the checkout. Public delivery
+claims still belong in State of Work.
+
+The following is a **record template**, not a delivered LychD schema or configuration API.
+Replace every placeholder before a dependent launch. Keep private account, company and client
+information outside the repository.
+
+```yaml
+campaign: <actual platform campaign identity>
+task: <task identity>
+attempt: <unique attempt identity and predecessor, if any>
+owner: <accountable acceptance owner>
+intent: <observable change and present defect or gap>
+owners: [<governing ADR and topic routes>]
+base_commit: <immutable commit>
+input_manifest: <digest of admitted tree, patches and selected untracked inputs>
+allowed_paths: [<task projection paths>]
+acceptance: [<expected behavior>, <forbidden behavior>, <failure and recovery checks>]
+non_goals: [<excluded effects and neighboring work>]
+dependencies: [<exact prerequisite artifacts or interface revisions>]
+runtime: <client, binary version, exact model and effective orchestration settings>
+authority: <source of current authorization and permitted downstream use>
+tools_and_effects: <actual filesystem, process, network and credential boundary>
+limits: <wall, calls, tokens, spend, CPU, memory, processes, disk and artifact ceilings>
+enforcement: <per limit: enforcing component, measurement and unsupported cases>
+verification_reserve: <required checks, independent reviewer and remaining resources>
+stop: <completion, expiry, cancellation and ambiguity conditions>
+result: <artifact shape, custody destination and terminal outcome>
+```
+
+Make the input record describe the actual checkout. An exact commit does not identify dirty
+working bytes, so first inspect status and preserve operator changes. Admit an explicit patch
+and selected untracked files with content identities when the task needs them; exclude
+credentials, ignored shelves and private collateral. Otherwise, start from the admitted clean
+commit. Never auto-stash, clean, reset, commit unrelated work, or silently omit needed files to
+obtain a convenient base.
+
+Give each writer its own branch/worktree or disposable projection. Separate candidate storage
+from the authoritative checkout and running installation. A worktree still shares host resources;
+record actual sandbox, network, credential and process controls. An instruction to a worker is
+not operating-system enforcement. Platform-controlled work uses observed platform permissions;
+a native foreign-runtime launch must meet [Security's](../../../adr/09-security.md) complete
+admission requirements or refuse.
+
+## Staff questions, then staff construction
+
+One Lead retains the wider intent, dependencies, remaining budget and acceptance target. The
+Lead dispatches closed task packets with fresh worker contexts under
+[scoped handoff](../../../adr/28-workflow.md#scoped-context-handoff). Useful assignments are:
+
+| Assignment | Receives | Returns |
+| --- | --- | --- |
+| Evidence investigator | One question, owners, source revisions and probe ceiling | Facts, source links, gaps and the smallest decisive probe. |
+| Alternative advocate | Common evidence, a declared position and defeat conditions | Strongest supported opportunity, concessions and objections. |
+| Boundary critic | Same evidence, failure and authority rubric | Counterexamples, missing premises and refusal/recovery requirements. |
+| Constructor | Settled contract, exact inputs and allowed paths | Candidate bytes, provenance, declared effects and observed checks. |
+| Independent verifier | Original acceptance, exact candidate and evidence | Reproducible findings, failed or missing checks and acceptance recommendation. |
+| Integrator | Admitted returns and current integration state | One combined candidate, renewed checks and its disposition. |
+
+Start ordinary work with one constructor and a separate verification context. Independent
+questions can justify parallel investigators. Consequential unsettled alternatives can justify
+[Crucible](crucible.md): independent first reports, actual reciprocal rebuttal, and synthesis
+that retains dissent and what would defeat the recommendation. Staffing supplies perspectives;
+it cannot simulate an opponent's reply or vote a fact into existence.
+
+Before freezing a composed or host-bound experiment, sample the cheapest real premise that
+could change its design: the actual DTO, route, normalization, tool field or role-specific process
+identity. An admitted read-only sample can establish compatibility without launching the target
+effect. Pure fixtures establish their model, not that environment. If a required sample is
+unavailable, retain the qualification gap and select work whose claim does not depend upon it.
+
+A proposed source change also needs a feasible qualification path. Before committing to
+construction on shared source, trace the maintained receipts that pin affected modules and
+assess the cost of fresh qualification, including prerequisites and cleanup. Narrow the boundary
+when that burden is disproportionate to the intended increment. Earlier receipts remain dated
+evidence; refreshing their fingerprints cannot substitute for requalification.
+
+End an inquiry when another observation cannot change the admitted choice. After a repair,
+return the exact finding and affected joins to the independent verifier; reopen whole-candidate
+review for changed authority, a shared invariant or a concrete cross-boundary finding. Required
+final checks still apply. Do not rerun unchanged passing gates or grow reports merely to consume
+allowance: compare time to a useful accepted result, meaningful escaped defects, repair rounds
+and the human attention required. Keep a handle for every launched check and observe its
+terminal state. A yielded command or elapsed time limit is unfinished evidence; settle its
+owned process before concluding.
+
+A practical four-slot campaign rotates one Lead and up to three workers; that is a pilot choice,
+not a model-count law. Settle shared interfaces before distributing writers, and serialize changes
+to a shared mutable surface. A design contributor's later review offers continuity, but its
+exposure cannot be called independent. Another vendor can add a different error profile; it
+cannot substitute for an independent acceptance rule.
+
+[Genesis](../../../divination/transmutation/genesis.md#tree-of-life) illuminates formation;
+Smith's [worked relations](smith.md#tree-relations-in-practice) give the engineering
+correspondence. Canon supplies criteria before construction and Trial. Revelation separates
+observations from interpretation and proposals; Distillation carries a corrigible lesson into
+a later request. These capacities do not require ten permanent Agents.
+
+## Advance through evidence gates
+
+The stages below are an implementation sequence. Completing a documentation task does not satisfy
+an execution gate, and a gate may need several reviewable changes. Work that needs no foreign
+launch can proceed while host-boundary design is investigated separately.
+
+| Stage | Work | Exit evidence |
+| --- | --- | --- |
+| **0 — Operator bootstrap** | Run one bounded milestone through the existing app, actual permissions, separate candidate and ordinary checks/review. | Exact input closure, candidate, receipts, corrections, integration or explicit noncompletion. |
+| **1 — Durable boundary** | Prove database acceptance races and independent-process recovery; define versioned request/policy binding and qualify the refusing host port. | Real PostgreSQL receipts, no duplicate start/adoption, enforced launch policy, complete cancellation and retained artifacts. |
+| **2 — Useful delegated candidate** | Admit one synthetic/public task, then one eligible repository task, through the qualified host and existing delegated score. | Correlated Run/job/launch/artifacts, bounded execution, independent verification and maintainer-owned integration. |
+| **3 — Spare-capacity queue** | Admit one eligible task at a time under explicit standing policy and reviewer capacity. | Durable claims and expiry, no overlapping writer, budget admission, pause/revoke/restart and ambiguity tests. |
+| **4 — Changed-body adoption** | Construct packages and rehearse selected extensions, configuration, migrations and owner recovery before activation. | Exact artifact closure, effect-time authority, new-generation readiness, observed rollback/compensation or declared forward recovery. |
+
+Recurring campaigns can begin in an external operator queue under the platform's actual
+permissions. Through Stage 2, that queue retains backlog, candidate judgment, retry, review and
+promotion ownership; LychD supplies only bounded labor. The legacy Core delegation exception
+must not be stretched into an application lifecycle. Preserve retained score revisions and
+publish a successor whenever manifest or checkpoint semantics change. Stage 3 transfers that
+lifecycle into LychD after the B7 ownership gate. It is not a prerequisite for recurring operator
+work.
+
+Stage 2 initially uses operator/CI verification through trusted commands and disposable state.
+Running generated tests or build hooks inside LychD is a separate untrusted-execution admission;
+a `verify` label does not deliver Tomb. Stage 3 automates candidate production only within its
+policy. Stage 4 follows [Packaging](../../../adr/17-packaging.md) and
+[Evolution](../../../adr/18-evolution.md), preserving each effect owner's authority.
+
+### Qualify the usable body alongside delegation
+
+Keep two concrete milestones separate: a useful Bridge installation and a trustworthy delegated
+coding job. The first does not require an autonomous SDLC, and its successful model reply does
+not qualify foreign guest execution. Use [Summoning](../../../summoning.md#stage-the-acceptance-campaign)
+for the exact Linux-host bring-up and acceptance campaign, rather than inventing another setup
+manual here.
+
+From the selected source snapshot, run the focused and repository gates in CONTRIBUTING and
+retain pre-existing failures. For the chosen Linux host, pin systemd/Podman, configuration,
+database/migration head, selected runtime/model and resource limits; follow dry-run preparation
+before the admitted initialization, binding and startup effects. Qualify one explicit local
+Bridge capability, observe first reply and durable history, then test the declared stop/restart
+and recovery boundary. Record the four witnesses and remaining gaps specified by Summoning.
+
+The existing warm-model/two-process receipts can guide a bounded reproduction under their exact
+profiles; they do not prove crash recovery, a deployed model body, general Coffin containment
+or public exposure. Keep host profiles, private configuration and raw receipts outside the
+checkout. Select one deployment target and its effect/recovery owner before a live campaign;
+success on that target establishes that recorded scope. Native SDLC work can continue on its
+own candidate surface while this host milestone is qualified.
+
+### Verify an analysis candidate before using it
+
+For a bounded operator task, the existing Bridge can return text for separate review. Its
+`BridgeReply.answer` string can contain JSON, but that text does not acquire a domain artifact's
+type, custody or downstream authority merely by being parseable. Before submission, fix the
+candidate shape, size, encoding and source requirements, with checks for Unicode, escaping and
+nested sensitive material where relevant. Record rejection as a failed task outcome and retain
+only admitted safe evidence; changing its evaluator or repairing its text requires a separately
+admitted successor.
+
+Judge the returned candidate separately from the machinery that carried it. Request
+acknowledgement, terminal Run state, external-effect settlement, candidate validity, semantic
+usefulness and repository promotion are distinct. A DONE Run can return invalid or unhelpful
+material, and terminal state alone does not establish physical closure of its effects. Separate
+verification must establish the useful outcome against the original acceptance. Native ownership
+of a recurring analysis task follows B7 and the existing
+[Spell contract](../../../adr/28-workflow.md#spells-scrolls-and-casting). An operator's JSON prompt
+creates neither a native application boundary nor an executable contract revision.
+
+### First implementation queue
+
+Revalidate this queue against current source before claiming a task. Its entries describe
+missing proof or future work, not completed issues or promises of delivery dates.
+
+| Task | Smallest useful slice and dependencies | Acceptance that closes the slice |
+| --- | --- | --- |
+| **B0: Preserve the baseline** | Inventory current changes; select an exact admitted input closure and record focused gate results. | Operator work retained; pre-existing failures attributed; task surface reproducible. |
+| **B1: Real database settlement** | Extend the existing delegation PostgreSQL receipt with independent concurrent sessions. Depends on B0. | RUNNING wins against conditional LOST; LOST prevents late RUNNING; result/event adoption occurs once; event failure rolls back; interruption remains attributable. |
+| **B2: Recovery across processes** | Exercise real migrations, Run admission and retained delegated Graph wait/resume through distinct coordinator processes. Depends on B1. | One admitted job and terminal adoption after restart; exact request replay cannot launch twice; uncertain effects stay contained. |
+| **B3: Versioned launch policy** | Bind exact source projection, paths, model/effective settings, tool/effect policy, budgets, artifact custody and verifier identity at admission. Can be designed alongside B1. | Invalid/missing/stale fields refuse; request and launch digest correlate; unsupported settings refuse; old retained Runs keep their admitted interpretation. |
+| **B4: Trusted host qualification** | Implement the selected host/Gate road using B3 and durable settlement; first qualify it with an inert adversarial executable and no provider. | Root/secret/egress escapes refused; child processes cancelled; resource limits exercised; uncertain start reconciled; artifacts survive coordinator loss. |
+| **B5: One real delegated artifact** | Qualify the reviewed CLI against harmless public/synthetic input, then an admitted repository projection. Depends on B2–B4. | Exact model/billing path observed, bounded output admitted, independent fixed checks pass, no forbidden effects. |
+| **B6: Candidate and review handoff** | Carry one immutable patch into separate verifier/integrator contexts. Depends on B5 for native production; operator practice can start now. | Scope and provenance checked, adversarial failures retained, integrated object retested, source effect separately authorized. |
+| **B7: Native ownership transfer** | When LychD is to own backlog, candidate judgment, repair/review or lifecycle recovery, test a candidate application study against existing homes, accept its owner revision and publish its exact Pattern. External lifecycle ownership can remain in place without this transfer. | Durable records, finish judgment, typed inputs/results, refusal, cancellation, recovery and retained revisions establish the actual application boundary. No portfolio placeholder or Assimilation coordinator. |
+| **B8: Idle pilot** | Add task eligibility, durable claim/lease and bounded scheduling under B7's owner; use the qualified execution and verification roads. | No duplicate claims, unsafe overlap or retry after unknown effects; stale grants refuse; review saturation sleeps; restart and revoke settle. |
+| **B9: Evolution rehearsal** | Package exact candidates, selected coupled extensions and schema/configuration closure; qualify target-owned activation. | Rehearsed migration/recovery, old-generation work disposition, new-generation readiness and recorded outcome. No candidate import into active Vessel. |
+
+Existing protocol adapters are the starting point, rather than a missing feature to rewrite:
+[launch contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/delegation/cli_protocol.py),
+[host port](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/delegation/cli_runtime.py),
+[request models](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/delegation/models.py),
+[store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/delegation.py),
+[modeled race tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/db/test_delegation_acceptance.py),
+and [PostgreSQL receipt](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_run_ledger_pg.py).
+Do not replace these with a second queue, subprocess supervisor, or lifecycle coordinator merely
+to attach another provider.
+
+### First executor closure fixture
+
+One candidate for B4's first inert fixture is a pre-established bounded trusted controller with
+one immutable occurrence-to-cgroup-object association. Keep each pending launch's original open
+reference alive until its kernel call resolves. A borrowed numeric descriptor, a reopened path
+or a replacement object cannot stand in for it. Exclude per-job manager requests containing
+foreign argv and fork-then-migrate fallbacks.
+
+The proposed creation primitive is direct `clone3(CLONE_INTO_CGROUP)` into that original object.
+After closing intake, contain its guest descendants and prove successful retirement of that
+exact object before acknowledging guest closure. If creation wins the race, retirement must
+remain pending while the child can execute. If retirement wins, the delayed original-object
+creation must refuse. Linux documents FD-selected placement and non-revival of retired groups;
+the inspected v6.6 source supplies the relevant clone/destruction ordering. These are upstream
+facts supporting a conditional design, not qualification of the operator's kernel.
+[clone interface](https://man7.org/linux/man-pages/man2/clone.2.html),
+[cgroup contract](https://www.kernel.org/doc/html/v6.6/admin-guide/cgroup-v2.html#core-interface-files),
+[inspected source](https://raw.githubusercontent.com/torvalds/linux/v6.6/kernel/cgroup/cgroup.c).
+
+Before a physical run, retain a bounded model's successful-launch and close witnesses, both
+race orders, and counterexamples for empty-only acknowledgement, path replacement, numeric-FD
+reuse and restored old authority. Model a surviving worker separately from controller death;
+assuming they die together does not qualify that recovery case. The later inert host fixture
+must force the same orders and verify original-object identity, descriptor lifetime, descendant
+containment, effective ceilings and owned cleanup. Failed deletion or unknown identity remains
+unresolved. No coding CLI, provider or real repository task belongs in that first fixture.
+
+The actual owner still needs an accepted ordered release-to-in-flight operation. A fresh
+observation followed by a pause supplies no such authority, and an earlier release does not prove
+physical exec before an absolute deadline. Object retirement also leaves resource, I/O, custody
+and prior external-effect settlement to their actual owners. Exact audited containment, source,
+reservations and Gate qualification remain separate gates; no controller or executor ships here.
+
+## Spend spare capacity on admitted work
+
+Spare capacity needs an owned queue of eligible work and a service willing to sleep when none
+qualifies. It does not need a model repeatedly inventing changes. A human-curated backlog can
+supply that queue before native scheduling exists. [Scheduling](scheduling-and-service-classes.md)
+owns future foreground and spare-capacity behavior; a desktop timer does not deliver it.
+
+Admit tasks in this order when their actual impact and dependencies justify it:
+
+1. Reproduce and repair a known failing acceptance contract or regression.
+2. Close a named recovery, security or compatibility evidence gap.
+3. Implement an already accepted, claimed backlog slice with observable acceptance.
+4. Investigate one recurring operational failure or human correction.
+5. Test a specific method improvement against a frozen baseline.
+
+Speculative refactors, mass dependency upgrades, repeated web research, test-count inflation and
+invented features need a concrete request before entering this queue. Preserve the unchanged
+baseline when the evidence does not support an improvement.
+
+The initial **operator pilot policy** is one active writer and at most one candidate awaiting
+review, two repair attempts per task, and one extra discovery probe for a decisive gap. Use
+45 minutes per task within a two-hour campaign window, reserving the final quarter of the
+window for verification, handoff and cleanup. Adjust these numbers in a recorded successor
+policy when measurements justify it; they are not universal ADR requirements or installed
+runtime defaults. If a required check cannot fit, select a smaller task or admit a larger window
+before starting. Research campaigns can use a separately bounded inquiry policy.
+
+Record a token/call/credit ceiling supported by the selected account and host, including review
+and failed attempts. Mark each bound as enforced, measured after use, or operator-observed.
+Post-hoc usage is not a hard cap. Required native launch limits that cannot be enforced make
+that road ineligible; choose another admitted road or return noncompletion. Existing allowance
+does not authorize paid overflow, a provider purchase or automatic billing fallback.
+
+A per-generation output limit and a validation-retry count do not bound a whole Run's model
+requests or tokens. Record the effective context and output reserve, retry behavior, total-call
+and token limits, and cancellation enforcement separately; state which limits remain unsupported.
+Prompt instructions do not override the installed model profile. A profile change needs its
+normal configuration and process-generation lifecycle before a later task can rely on it.
+
+Before **each** successor, the coordinator must observe:
+
+- standing authorization still covers its paths, inputs, data and effect classes;
+- a named owner, current defect or request, and predeclared useful outcome;
+- satisfied dependencies and compatible current base;
+- available reviewer, verification resources and global budget reserve;
+- a fresh task claim, no duplicate work and no unresolved external outcome; and
+- an observable stop condition and a permitted cancellation/recovery road.
+
+Dispatch ends when the campaign succeeds or reaches expiry, budget exhaustion, policy revocation,
+a missing boundary, review saturation, repeated unchanged failure, or unknown external state.
+Retain partial artifacts with the actual stopping reason. Reconcile an ambiguous launch before
+another effectful attempt: timeout or LOST does not prove that descendants stopped. A retry
+requires a changed repair hypothesis or justified replication and consumes the parent budget.
+
+For a later durable scheduler, a claim binds task/policy/input identities, owner, occurrence,
+expiry and renewal. Lease expiry changes dispatch eligibility; it does not prove process death
+or make an uncertain effect safe to replay. Pause stops new admission; cancel reconciles active
+work; revoke prevents later admissions and is checked again at effect time. Host cancellation
+must settle the whole process tree and retain final custody evidence. Notify the operator on
+a meaningful result, failure, or required decision; unchanged idle state stays quiet.
+
+## Integrate people and their candidates
+
+Humans decide which outcomes matter, own accepted architecture and protected judgment, maintain
+real-world acceptance cases, and perform the effects assigned to their roles. Agents investigate,
+construct, test within admitted boundaries, explain evidence and prepare reviewable candidates.
+Humans need not spend their time translating an already settled contract into routine edits.
+Neither a persuasive agent nor a busy maintainer can waive a failed mandatory gate.
+
+Use [CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#branches-and-everyday-collaboration)
+for the current collaboration phase and its branch and promotion procedure. Integrate candidates
+serially and verify the resulting exact snapshot. Appropriate maintainers can act without a
+founder-only queue. Expertise-based
+adjacent review is especially useful for shared API, checkpoint and effect-settlement changes.
+
+Integration carries responsibility through three roles. The author supplies the complete
+candidate and observed checks. A separate verifier examines the original request, governing
+owners and exact diff, including forbidden behavior, recovery, generated artifacts and
+truth-changing documentation. The integrator then inspects the current base and scope before
+admitting selected bytes. A change to the base, conflict, patch, dependency or verification plan
+creates a successor candidate and repeats affected checks. Test the combination: separately
+passing patches do not prove an integrated result. Repair or revert a broken integration branch
+before allowing more work to accumulate.
+
+Keep three exchanges distinct:
+
+| Exchange | Procedure |
+| --- | --- |
+| A developer contributes to shared LychD Core | Ordinary source review and exact-object promotion. The resulting public law belongs in its existing ADR. |
+| A developer keeps a private coupled extension or Core delta | Bind its base, local patch and selected extension set; verify them against each inactive upstream candidate. Conflict blocks adoption. |
+| Another project supplies a useful mechanism | Make an Assimilation Dossier, study the exact lesson and implement a local candidate. Integration remains preferable when a stable external contract meets the need. |
+
+Independent projects keep their own purpose and release authority. Adoption downstream and
+contribution upstream are separate decisions. Shared ancestry or an agent conversation creates
+no automatic merge, compatibility guarantee, credential sharing, or obligation to repair another
+lineage. Future human quorum governance is governed by
+[Evolution](../../../adr/18-evolution.md#future-quorum-roster); it is not an early-development
+approval ceremony.
+
+In the designed native passage, the operator's local Lych helps inspect work, form candidates
+and carry handoffs. Within it, [Synchronic Syncretizer](../../../adr/18-evolution.md#synchronic-syncretizer) owns bounded
+adoption judgment over an exact candidate, obligations, history and evidence; it is not the
+repository's task scheduler, CI executor or a global authority over other installations.
+Upstream maintainers decide admission to shared Core. Each downstream owner separately verifies
+adoption with its local delta, selected extensions, configuration, schema and recovery boundary.
+If upstream incorporates a local fix, reconcile the remaining delta against the exact successor
+and its regression evidence rather than blindly replaying the old patch or assuming equivalence.
+
+Deterministic repository checks and the available offline Evolution comparison need no model
+provider. Actual model-behavior trials or LLM assessments need their own admitted local or remote
+inference, versioned inputs, criteria and budgets under [Drift](../../../adr/34-drift.md).
+A completed comparison is not candidate acceptance: the
+[offline utility](https://github.com/hexanomicon/lychd/blob/main/scripts/compare_evolution.py)
+can exit successfully after recording rejection and grants no promotion authority. Keep observed
+checks, qualitative findings, adoption judgment and each owner's source or live effect distinct.
+The [current CI and promotion procedure](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#promote-a-tested-snapshot)
+continues to govern; no model gate, merge queue or autonomous activation is introduced here.
+
+## GitHub coordination follow-up
+
+These are pending implementation slices, not a delivered native coordination service. Existing
+operator-controlled GitHub tools can support today's contribution procedure without claiming a
+Reach or LychD execution receipt. Keep GitHub issues and PRs as the public coordination record;
+do not introduce a second task registry merely to project them.
+
+| Slice | Smallest useful work | Required evidence |
+| --- | --- | --- |
+| **Read current work** | Give the local Lych a bounded view of admitted repositories' relevant issues, assignees, coordination comments and linked PRs, with optional branch metadata and accessible board state. | Exact repository/object references, observation times, bounded pagination, access/refusal and stale-state handling; a public contributor works without private-board access. Missing signals never establish that an area is idle, and separately read objects are not an atomic snapshot. |
+| **Record participation** | Under separately granted authority, prepare and deliver an exact claim, scope, handoff or abandonment update in its issue/PR. Assignment, labels, issue state and board mutations each need their own admitted operation and provider permissions. | Current destination and actor authority, exact approved or preauthorized bytes, retained result and reconciliation after an unknown write; reread overlapping work without treating a comment as an exclusive lock. |
+| **Use the handoff** | Feed fresh coordination into candidate selection and writer admission, then link the actual candidate and checks back to the owning task. | Outcome-led exploration without guessed files; a bounded writer contract before construction; visible disposition, compatible small integrations and reviewer/CI capacity limits. Native backlog/scheduling ownership still passes B7/B8 above. |
+
+Start with the read slice. The current [Reach Forge](../../../compositions/reach/forge.md) prepares
+bounded conversation reads and timeline comments offline; it supplies no live authentication or
+transport. Its [GitHub successor study](../../../compositions/reach/connected-work/github.md)
+does not currently admit repository-wide coordination queries, branch/board discovery or issue
+state changes. Resolve each required operation to its owner, explicit profile and permissions
+before implementation; this follow-up does not silently widen the correspondence profile.
+Communications carry requests and observations, while code writes, reviews, merges, releases and
+installation adoption retain their existing owners.
+
+## Assimilate one mechanism at a time
+
+When a campaign studies or re-expresses foreign craft, follow Assimilation's
+[upstream reuse and notices](assimilation.md#upstream-reuse-and-notices). That procedure covers source
+selection, the reuse decision, attribution and the handoff to packaging and Evolution.
+
+Assign one mechanism with an exact source/base, receiving owner, permitted paths and effects,
+reviewer, budget and acceptance cases. The agent returns a bounded candidate, its Dossier,
+source-to-local mapping and changes, required notices, verification and unresolved gaps. Use the
+[bounded assignment](assimilation.md#a-bounded-assignment-for-an-agent) as the intake shape; campaign
+coordination and a passing job do not confer promotion or activation authority.
+
+## Measure whether the loop helps
+
+Measure the loop against a baseline using the declared model settings and existing procedure.
+Change one variable at a time: a fresh reviewer, a reviewer from another provider, a context policy
+or a different task decomposition. Match tasks and total budgets, counting failed attempts,
+verification, review and human attention. [Drift](../../../adr/34-drift.md) owns the
+native design; ordinary operator comparisons retain their actual identities and limited
+conclusions.
+
+For an initial reviewer comparison, freeze six representative past diffs with known defects and
+clean controls across delegation, persistence, configuration, API, frontend and documentation.
+Keep the answer key out of constructor/reviewer context. Run a fresh baseline review and
+then the optional alternative on the same evidence; record order and contamination. Measure
+accepted unique defects, false positives, missed requirements, fix effort, elapsed time and
+actual usage. Six cases are a screening pilot, not statistical proof of universal superiority.
+Reserve separate unseen cases for confirmation before adopting a standing default.
+
+Promote a method only when it improves the declared useful outcome within its full cost envelope,
+without regressing mandatory behavior or authority/recovery constraints. Retain rejection and
+inconclusive results too. The constructor cannot obtain a pass by rewriting the evaluator,
+holdout, acceptance threshold, promotion policy or budget. Any proposal to change those requires
+its own independent comparison and owner decision. Training weights is a later, separately
+admitted experiment; many useful improvements concern Context, tools, instructions and handoffs.
+
+## Start the first campaign
+
+Use a bounded goal after filling the task record and selecting the actual candidate surface:
+
+```text
+Complete task B1 from the Development bootstrap guide against its recorded input closure.
+Establish the owning contract and reproduce the missing evidence before editing.
+Use the requested model and record effective settings. Give independent investigators
+closed packets; keep one writer and a separate verification context. Preserve operator work.
+Run the focused PostgreSQL receipt and required repository gates; retain failures and unrun checks.
+Deliver the exact candidate, test receipts, updated owning documentation and next eligible task.
+Stop when B1 is verified or its declared budget/premise prevents completion. Do not start B2,
+merge, publish, deploy, purchase capacity or widen permissions from this request alone.
+```
+
+The final boundary is the task's actual authorization. A wider campaign may already authorize
+successor tasks or source effects; record that standing scope and re-admit each successor under
+it. Do not ask again for settled routine authority, and do not infer a new effect from silence.

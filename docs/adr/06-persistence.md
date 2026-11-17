@@ -37,12 +37,16 @@ store or restore qualification is delivered by this decision.
 
 ### Schema admission
 
-Core owns the schema-admission seam across native and extension models. Every admitted model
-derives from Core's `UUIDBase`; an extension explicitly calls `register_model(MyModel)` during
-initialization; Core aggregates those references before Alembic derives migration order. Runtime
-package scanning is not admission, and migration generation or application remains an explicit
-release or operator act. Colliding models, table names, or migrations refuse before a schema is
-changed.
+Core owns model admission and migration order. Current models derive from Core's `UUIDBase` and
+enter the explicitly imported metadata used by Alembic. Adding a model today requires a reviewed
+Core schema and migration change; the extension context has no model store or
+`register_model(...)` API.
+
+Package-contributed model admission is **Designed**. Its future contract must collect explicit
+model references before migration planning and refuse conflicting model, table, or migration
+identities before changing a schema. Runtime package scanning is not admission. Migration
+generation and application remain separately authorized release or operator acts. The
+[Models guide](../sepulcher/extensions/models.md) follows the current contribution route.
 
 The `delegated-host-disposition@1` precursor stores one restrictive, create-once record per
 AgentJob. The typed store owns exact canonical preparation bytes, their digest, optional one-time
@@ -173,8 +177,8 @@ This decision neither delivers nor promises sharding. A later amendment may assi
 whole application partitions to separate PostgreSQL Phylacteries, with routing completed before a
 unit of work opens and typed handoffs between partitions. It admits no shared `PGDATA`, routing
 implementation, table-level, row-level, or intra-partition sharding, and no cross-Phylactery
-transaction. A [Portal](../sepulcher/animator/portal.md) remains a remote capability road, while
-[Intercom](26-a2a.md) and [Legion](../sepulcher/extensions/legion.md) carry bounded work or references; none forms a
+transaction. A [Portal](../sepulcher/extensions/animators/portal.md) remains a remote capability road, while
+[Intercom](26-a2a.md) and [Legion](../sepulcher/aspects/legion.md) carry bounded work or references; none forms a
 shared database fabric.
 
 ## Reliquary custody (Designed)

@@ -49,6 +49,12 @@ Return `completed`, `safely_exited`, `interrupted`, `refused`, or `unresolved`, 
 
 In the reference journey, the Habitat admits required features and records optional downgrade; Avatar independently supplies its binding. The participant enters through a declared immersive or companion modality. Spectre records pause, focus, recenter, reference-space changes, consent and semantic events. Tracking revocation may narrow participation or lead to exit. Runtime loss then either settles interruption or receives explicit fresh-epoch recovery. Avatar separately settles its projection from that attributed result.
 
+For a generic Encounter without Avatar, two participants agree to review a proposed layout. One
+explicitly reports a particular revision accepted for handoff; then a required participant revokes
+consent. Spectre retains the permitted attributed report and settles the Encounter under its
+admitted exit policy. A consumer can inspect whether the report preceded departure; the layout
+owner decides any actual change. The report does not prove perception or create an effect.
+
 ## First proof and revision continuity
 
 A network-disabled synthetic fixture admits seated, separate bounded room-scale, and companion-screen Encounters, with a static or head-and-hands Avatar. Prove required-feature refusal, optional downgrade, focus loss, recenter/space change, participant exit, consent revocation, visible exit request, abrupt loss, new-epoch recovery, export, and deletion. It proves no hardware compatibility, universal comfort, content quality, multiplayer, physical safety, or delivery.

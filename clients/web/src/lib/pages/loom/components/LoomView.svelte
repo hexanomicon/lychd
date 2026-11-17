@@ -20,6 +20,8 @@
   import GraphCanvas from "$lib/graph/components/GraphCanvas.svelte";
   import DelegateMark from "$lib/components/shared/DelegateMark.svelte";
   import PageHeader from "$lib/components/shared/PageHeader.svelte";
+  import LoomEvaluation from "./LoomEvaluation.svelte";
+  import { createEvaluationWorkspace, getEvaluationWorkspace, hasEvaluationWorkspace, setEvaluationWorkspace } from "$lib/pages/loom/state/evaluation/workspace.svelte";
 
   let {
     patternId,
@@ -29,6 +31,9 @@
     revision?: string;
   } = $props();
   const workCommands = getContext<WorkCommandRegistry | undefined>(workCommandKey);
+  const evaluationWorkspace = hasEvaluationWorkspace() ? getEvaluationWorkspace() : createEvaluationWorkspace();
+  if (!hasEvaluationWorkspace()) setEvaluationWorkspace(evaluationWorkspace);
+  let activeView = $state<"score" | "evaluation">("score");
   let unregisterCommands: (() => void) | undefined;
   let focusId = $state<string | null>(null);
   let focusRevision = $state(0);
@@ -82,6 +87,20 @@
     workCommands?.refresh();
   }
 
+  function selectView(next: "score" | "evaluation") {
+    activeView = next;
+    focusRevision++;
+    workCommands?.refresh();
+  }
+
+  function tabKey(event: KeyboardEvent) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const next = event.key === "Home" ? "score" : event.key === "End" ? "evaluation" : activeView === "score" ? "evaluation" : "score";
+    selectView(next);
+    document.getElementById(`${uid}-${next}-tab`)?.focus();
+  }
+
   function zoomLevel(zoom: number) {
     if (canvasLevel === "stations" && zoom < 0.55) setCanvasLevel("pattern");
     else if (canvasLevel === "pattern" && zoom > 0.85) setCanvasLevel("stations");
@@ -127,7 +146,7 @@
     if (!workCommands) return;
     const id = JSON.stringify([loaded.pattern_id, loaded.revision]);
     const snapshot = () => {
-      if (loading || error || view !== loaded || version !== loadVersion ||
+      if (activeView !== "score" || loading || error || view !== loaded || version !== loadVersion ||
           (patternId && patternId !== loaded.pattern_id) ||
           (revision && revision !== loaded.revision)) throw new Error("Loom target is unavailable");
       return {
@@ -204,7 +223,10 @@
       const [patterns, origin] = await Promise.all([
         getLoomCatalogue(),
         requestedRun
-          ? getOrbRun(requestedRun, { limit: 1 }).catch(() => null)
+          ? getOrbRun(requestedRun, { limit: 1 }).catch((cause: unknown) => {
+            if (typeof cause === "object" && cause !== null && "status" in cause && (cause.status === 401 || cause.status === 403)) throw cause;
+            return null;
+          })
           : Promise.resolve(null)
       ]);
       if (version !== loadVersion) return;
@@ -248,6 +270,7 @@
       }
     } catch (cause) {
       if (version === loadVersion) {
+        if (typeof cause === "object" && cause !== null && "status" in cause && (cause.status === 401 || cause.status === 403)) evaluationWorkspace.clearProtected();
         error = cause instanceof Error ? cause.message : "The Loom cannot be read.";
       }
     } finally {
@@ -314,6 +337,14 @@
         {#if sourceContextError}<p class="loom-context-error" role="status">{sourceContextError}</p>{/if}
       </header>
 
+      <div class="loom-views" role="tablist" aria-label="Loom views">
+        <button type="button" role="tab" id={`${uid}-score-tab`} aria-selected={activeView === "score"} aria-controls={`${uid}-score-panel`} tabindex={activeView === "score" ? 0 : -1} onclick={() => selectView("score")} onkeydown={tabKey}>Score</button>
+        <button type="button" role="tab" id={`${uid}-evaluation-tab`} aria-selected={activeView === "evaluation"} aria-controls={`${uid}-evaluation-panel`} tabindex={activeView === "evaluation" ? 0 : -1} onclick={() => selectView("evaluation")} onkeydown={tabKey}>Evaluation</button>
+      </div>
+      {#if activeView === "evaluation"}
+        <div role="tabpanel" id={`${uid}-evaluation-panel`} aria-labelledby={`${uid}-evaluation-tab`}><LoomEvaluation score={view} linkedRunId={sourceRun?.run.run_id ?? null} /></div>
+      {:else}
+      <div role="tabpanel" id={`${uid}-score-panel`} aria-labelledby={`${uid}-score-tab`}>
       <div class="loom-score-layout">
         <div class="loom-graph-column">
           <section class="loom-canvas-panel" aria-labelledby={`${uid}-graph-title`}>
@@ -460,6 +491,8 @@
           </details>
         </div>
       </div>
+      </div>
+      {/if}
     {:else}
       <div class="loom-read-state">
         <span class="loom-eyebrow">Registry empty</span>
@@ -472,6 +505,9 @@
 
 <style>
 .loom-workspace { display:block; min-width:0; }
+  .loom-views { display:flex; gap:.5rem; border-bottom:1px solid var(--color-engraving); margin-bottom:1.5rem; }
+  .loom-views button { padding:.6rem 1rem; background:transparent; color:var(--color-ash); border:0; border-bottom:2px solid transparent; }
+  .loom-views button[aria-selected="true"] { color:var(--color-bone); border-bottom-color:var(--color-rune); }
   .loom-workspace :is(a,button,summary,h3):focus-visible { outline:2px solid var(--color-rune); outline-offset:4px; }
   .loom-workspace :is(p,h2,h3,h4,code,strong,span,dd) { overflow-wrap:anywhere; }
   .loom-workspace button { cursor:pointer; font:inherit; }

@@ -183,11 +183,26 @@ embedding, captioning, transcription, and model transformation do not lower infl
 may identify exact contributors to avoid unrelated overtaint; unknown lineage is `restricted` at
 egress.
 
+Influence includes inputs that determine selection, joins, counts, ordering, absence, or whether
+an output is produced, even when their values are never copied. A restricted predicate selecting
+public-looking rows remains an influence on that result. Where an adapter cannot establish
+precise dependencies, it retains conservative query- or operation-level ancestry. Source and
+policy revisions must come from the governed adapter; a caller-supplied lineage assertion does
+not establish that boundary.
+
 Source influence and disclosure risk are separate facts. Transformation never relabels ancestry as
 public; a residual-disclosure assessment says only what one exact recipient may receive for one
 purpose under one threat model. Pseudonymized material remains private while a reversal or likely
 linkage path exists. A distinctive private repository, diagnostic, or relationship graph may be an
 authorized sanitized disclosure without being anonymous.
+
+The local disclosure contract identifies protected facts as well as identifiers: identity,
+attributes or relationships, connections between disclosures, and the undertaking or hypothesis
+revealed by the task itself. It states the observer's background knowledge and permitted learning
+alongside required utility. These facts refine the existing plan's threat model and semantic
+invariants; they introduce no remote prompt field. A useful question that necessarily reveals a
+forbidden fact cannot be made eligible by renaming its subjects. Missing source lineage or
+unstated required evidence cannot be repaired by a Privacy Agent's confidence.
 
 A **Privacy Cut** forms a new recipient- and purpose-specific sanitized branch without mutating raw
 material or reusing continuation, serialized history, tool bodies, attachment projections, or
@@ -202,6 +217,13 @@ Agent proposes findings and typed operations only; a deterministic applicator cr
 candidate and terminal receipt. An independent local verifier emits `CutVerification@1`; Context
 seals a `PrivacyCut@1` only when source, final candidate, plan, complete receipt chain, verifier
 verdict, policy, and expiry all match. Security alone admits the exact wire/export branch.
+
+An accepted preparation profile qualifies the raw-data custody of its detector/model runtime as
+well as its tool authority. Source-influenced prompts, dictionaries/matches, findings/proposals, rejected
+candidates, working caches and diagnostic/crash/support output retain the source's access,
+lineage and retention constraints. An agent without tools is not thereby a contained runtime.
+Unadmitted telemetry, uploads, cross-task reuse or remote fallback remain forbidden; safe receipt
+summaries cannot be obtained by copying model-authored explanations into ordinary records.
 
 Designed receipts retain digests, revisions, typed operations and safe category summaries—not raw
 spans, credentials, subject names, filenames, material-parent identities, or reversal data. A Cut

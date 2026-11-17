@@ -29,7 +29,7 @@ it is not another Stone, Animator, or opening for raw Quadlet/systemd text.
 
 Veil may share the Core host or manifest on an optional separate
 [Gateway Host](../sepulcher/gateway.md). The Gateway is a deployment trust role rather than another
-Extension Domain or Composition. **Home** places it on operator-controlled local iron and forwards
+Aspect or Composition. **Home** places it on operator-controlled local iron and forwards
 only to an exact private Core backend. **Remote** places it off-site and may use one Tether peer and
 route to that same narrow backend. RPi and VPS are substrate and placement choices, not
 architectural identities.

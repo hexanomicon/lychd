@@ -1,0 +1,269 @@
+---
+title: 16. Smith
+icon: material/source-branch
+---
+
+# :material-source-branch: 16. Smith
+
+!!! abstract "Context and Problem Statement"
+    Software delivery begins with a need and continues through design, construction, verification,
+    release, operation, and revision or retirement. File control protects one part of that passage;
+    the software development lifecycle (SDLC) must also preserve intent, acceptance, evidence,
+    authority, and recovery across its handoffs. Autopoiesis may eventually let LychD extend itself,
+    but a candidate becomes part of the body only through its target owner's admitted effect.
+
+## Requirements
+
+- Bind the intended outcome, current-state evidence, scope, acceptance criteria, and affected
+  owners before committing to construction; unresolved choices need bounded inquiry.
+- Carry those decisions through candidate work, verification, delivery, and observed outcomes.
+  Changed intent or acceptance requires an attributable revision and renewed affected checks.
+- Candidate writes must not alter the active source tree or running package.
+- A candidate must bind its base revision, patch or artifact digest, principal, tools and
+  dependency inputs, declared effects, and resource budget.
+- A workspace is not a sandbox: processes, network, credentials, databases, and host effects need
+  separately admitted boundaries.
+- Commands, versions, environment, result, and error class must be retained as verification
+  receipts.
+- The eventual target owner—not the creator—must recheck current state, authority, evidence, and
+  recovery at promotion time.
+- The target owner must compare a candidate with any base-revision Protected Region manifest;
+  overlap requires an exact live human verdict and cannot use standing preauthorization.
+- Lineage and terminal disposition must remain attributable, so interrupted work can resume or be
+  discarded without touching the live body.
+
+## Considered Options
+
+| Option | Decision | Why |
+| --- | --- | --- |
+| Live hot-reload | Rejected | It mixes candidate and active object graphs before promotion; cleanup can prove only mediated registrations, not restoration of process memory or external effects. |
+| Ordinary pull request | Safe current route | Human review and merge remain a fallback, but do not encode admission, budgets, execution isolation, or receipts. |
+| Shadow candidate and owned promotion | Selected design | It makes candidate failure external to the body and keeps the final effect with its proper owner. |
+
+## Decision Outcome
+
+LychD carries a software change through explicit handoffs: intent, candidate work, verification,
+delivery, and subsequent change each retain their evidence.
+**[Smith](../sepulcher/aspects/weaver/smith.md)** is the practical workflow for that
+passage. This Covenant owns lifecycle invariants and the candidate-to-effect boundary; Smith
+provides the repeatable method, including Inquiry, task decomposition, review, and human decisions.
+
+Its candidate-to-effect chain is:
+
+`Creation Request → Candidate → Verification → Promotion Request → target-owner effect`
+
+A candidate never mounts, imports, or executes as a plugin in the active Vessel, even as a
+temporary trial. Removing callbacks or a module would not prove that its objects, tasks, caches,
+foreign-library state, or emitted effects had vanished. Promotion therefore selects a new body
+generation rather than trying to clean a candidate out of the current process; continuity crosses
+that boundary only through owned durable records and explicit recovery semantics.
+
+The lifecycle currently proceeds through ordinary operator-controlled development and review,
+with checks run through development and CI. Verification authorizes only a request for promotion;
+it does not execute the live effect.
+
+`PATH_LAB_DIR` and its read-write Vessel mount support trusted preparation in the Lab; the image’s `/app` remains read-only. This writable directory supplies neither an operational code Forge nor execution isolation.
+
+[Creation investigation](../compositions/creation/index.md) revision 2 fixes the narrower native
+application contract for immutable public-source questions, retained analysis candidates and
+separately attributed verdicts. Its Pattern is `creation.investigate@2`; the wider Smith method
+does not become one application or coordinator. That profile creates an artifact without an
+executable workspace and requests no promotion. The broader custody, compatibility, review and
+promotion records below remain accepted design. No autonomous repair loop, Tomb executor, verified
+package promotion, compatibility gate, rollback controller or self-extension runtime follows from
+publishing the investigation contract. [State of Work](../state-of-the-work.md#smith-forge-promotion)
+owns implementation and delivery status.
+
+### Retain external assessment before another change
+
+Creation may append an externally supplied assessment to exact retained investigation evidence,
+then retain an explicit local owner's hold or rejection. Preserve the report bytes and claimed
+reviewer separately from authenticated submitting authority and any submitter annotations. Native
+verdict, external judgment and owner disposition remain distinct; completion, agreement and a
+recorded decision grant no execution or promotion authority. The
+[bounded application contract](../compositions/creation/index.md#external-assessment-and-owner-hold)
+fixes custody, settlement, replay and authority. This attachment is no native Drift Outcome and
+changes neither Drift's evaluation jurisdiction nor delivery status. A successor needs its own
+inputs, acceptance, admission and lineage; no automatic successor follows from feedback.
+
+### Lifecycle and ownership
+
+When evidence defeats a premise, the lifecycle can return to the relevant question while retaining
+the prior decision and outcome. That return identifies which checks must run again. Acceptance
+criteria must exist before the verification they judge; revising them creates a later comparison
+and cannot turn the previous failure into a pass.
+
+| Passage | Required handoff | Owning law |
+| --- | --- | --- |
+| Need and design | Intended outcome, present evidence, alternatives, scope, acceptance, and a settled direction | This Covenant; [Doctrine](01-doctrine.md) governs documentation-first design. |
+| Construction | Attributable candidate, exact base and inputs, bounded workspace and execution, declared effects | This Covenant; [Security](09-security.md) governs containment and [Workflow](28-workflow.md) governs an executable score. |
+| Verification and review | Reproducible checks, independent findings, unresolved gaps, and an exact review target | This Covenant; [Quality](03-quality.md), [Testing](04-testing.md), and [Drift](34-drift.md) retain their separate gates. |
+| Release and adoption | Verified artifact identity, current authority, compatibility, and recovery evidence | [Packaging](17-packaging.md) binds release artifacts; [Evolution](18-evolution.md) owns changed-body adoption; each effect remains target-owned. |
+| Operation and revision | Attributed outcomes, failures, and proposed corrections for another admitted change | [Observability](29-observability.md) and [Drift](34-drift.md) supply evidence; this Covenant governs the next candidate. |
+| Retirement | Explicit disposition of the capability, affected work, retained records, and outstanding effects | The capability and effect owners apply their shutdown and recovery law; [Persistence](06-persistence.md) governs retained state. |
+
+Learning from delivery may change the next question, Context, procedure, or implementation.
+[Memory](27-memory.md) and [Training](33-training.md) separately govern retained lessons and
+weight changes; [Assimilation](35-assimilation.md) governs incorporating foreign craft. Closing
+one software task neither initiates training nor authorizes another live change. The lifecycle
+connects these decisions without creating a universal executor or absorbing their authority.
+
+### The agentic Graph of Creation
+
+The [Transmutation](../divination/transmutation/index.md) reading path connects the
+[Tree of Life correspondence](../divination/transmutation/genesis.md#tree-of-life) for differentiated powers bringing purpose
+into form with the operating methods below. LychD's **agentic Graph of Creation** is the engineering interpretation:
+admitted intent and present evidence become alternatives, discriminated decisions, a verified
+candidate, and an attributable owner effect. The sefirot do not prescribe ten Agents, replace the
+four coequal offices of the inner instrument, or supply executable Graph contracts.
+
+The [Smith method](../sepulcher/aspects/weaver/smith.md) applies bounded exploration,
+independent evidence-sufficiency judgment, and Crucible first to direction and again to
+construction where the decision warrants it. Its operation remains subject to the candidate,
+verification, and promotion law below. An application must publish its exact Pattern before this
+method becomes a LychD casting; the diagram alone registers no Pattern or coordinator.
+
+[Ouroboros](../sepulcher/aspects/weaver/ouroboros.md) maps the return from outcomes and human
+correction through evaluation to separately admitted memory, procedural change, or training.
+Autopoiesis names the wider horizon of recurrent self-formation, not an exception to effect
+ownership. Drift findings cannot mutate a candidate or score; Soulforge cannot promote its own
+weights; a changed body follows Packaging and Evolution. Each successor retains lineage and its
+own admission. The dependency map does not combine those owners into one hidden Run or make the
+whole recurrent process a DAG. Immutable records of its unfolded occurrences may form a causal DAG.
+
+### Progressive bootstrap and recurring work
+
+Operator-controlled campaigns are the initial execution road. They retain their actual platform,
+task, worker and artifact identities, observed permissions and explicit evidence gaps; they do
+not manufacture native Runs, containment receipts or evaluation records. A native coordinator
+can replace a handoff only after its typed contract, admission, custody, settlement and recovery
+are proved. Foreign harnesses retain private planning while LychD retains task semantics and
+receiving-owner authority. An executable development application must publish its own exact
+Pattern before assuming native coordination; this law creates no general SDLC or Assimilation
+coordinator. The [bootstrap procedure](../sepulcher/aspects/weaver/development-bootstrap.md)
+orders the small implementation gates. The first external CLI owner binding may use the
+operator campaign's immutable task, projection, custody and verification records under
+[ADR 14's versioned intent contract](14-workers.md#versioned-cli-intent-and-owner-binding).
+Those references preserve attribution; their parser and a fixture admission are not an owner
+record service or proof of source closure, authority, custody or available verification capacity.
+The actual producer must check that closure before usable admission. This does not manufacture a
+native Creation Request, Run or generic SDLC coordinator.
+
+Recurring or spare-capacity work selects from owned, eligible tasks under current standing
+authorization. Each occurrence requires a named acceptance owner, observable benefit, exact
+inputs, scope, acceptance, termination, and reserved verification/review and recovery capacity
+within the global budget. Capacity includes human attention and pending candidates, not only
+model tokens. Missing capacity, expired authority, exhausted budgets, unresolved external outcomes
+or absence of useful eligible work stops dispatch. Numerical concurrency and retry limits belong
+to a versioned operating policy, not a universal model topology.
+
+Completion authorizes no successor or authority expansion. A successor is independently admitted
+under the standing scope; a retry records its changed hypothesis or justified replication and
+consumes the same parent budget. Proposed changes to evaluators, protected cases, acceptance,
+budgets or promotion policy are separately reviewed candidates. They cannot retroactively make
+a failed artifact pass. Recurrent construction, procedural improvement, training and live body
+adoption remain separately owned passages.
+
+### External workflow research
+
+A future local implementation or explicit service integration may draw candidate SDLC contracts
+and evaluation cases from an independently operated workflow forge. The external owner keeps
+its scope and delivery evidence, and reuse requires neither migration nor retirement of that
+project. Each admitted reuse must separately prove this Covenant's admission, candidate,
+verification, and promotion boundaries. A graph, trace export, or favorable benchmark cannot by
+itself import runtime behavior or grant LychD effects.
+
+### Admission and candidate identity
+
+The bounded investigation profile retains its literal source bytes, declared base, criteria,
+role bindings, reservations and reports under its Composition. It implements its own current
+local object/action policy; fixed Sigil scopes or historical authentication attribution do not
+authorize another startup. A fresh, eligible continuation is a separately admitted Run against the
+same immutable case, never generic orphan replay. Complete packet bounds, uncertain-inference
+custody and release conditions belong to its versioned profile.
+
+A Composition may expose explicit successor admission from exact settled feedback. Its contract
+must bind the parent target, current assessment and owner decision to fresh child inputs,
+acceptance, authorization and a finite allowance before publishing execution. Admission consumes
+that allowance durably; publication failure does not silently refund it or authorize another
+identity. Replay preserves original attribution and repairs only the same held delivery under
+current authority. The Composition owns whether later feedback makes lineage historical; it must
+not rewrite the parent or turn a hold into permission. The
+[bounded Creation contract](../compositions/creation/index.md#explicit-successor-admission)
+allows one independently authorized child and no descendant chain. This supplies no recurring
+work selection, parent-budget renewal or measured improvement claim.
+
+For code-producing work, an immutable **Creation Request** names the principal and intent; exact base revision, admitted
+source-tree digest, and allowed paths; tools, effect classes, credentials, network policy, and budgets; required verification and
+retention; and the promotion owner and authorization class. It then receives a candidate identity
+and allocated workspace. Lab's writable directory conveys no subprocess or network containment.
+
+Each Shadow branch retains the request and exact parent state, but has its own lineage, budget,
+outputs, and disposition. Branches do not share a mutable workspace. The
+[Shadow contract](31-simulation.md) owns branch records and collapse. A VCS revision—including a
+Jujutsu change—proves comparison and provenance, not hidden model reasoning or execution
+containment. [The Call](../sepulcher/lich/call.md) gives this opening its correspondence, not its
+storage or authority rules.
+
+### Candidate work and proof
+
+Candidate work may write only its allocated workspace. Any command with process, package,
+credential, port, database, or network effect needs its own admitted executor and policy; path
+restriction alone is insufficient. Independent work may run in independent workspaces, with an
+explicit merge boundary. Its output is an immutable patch or artifact reference with structured
+observations and declared effects. [The Blade](../sepulcher/lich/blade.md) names discrimination
+among possibilities; it is not an acceptance rule.
+
+The request pins its verification plan: commands, tool versions, environment inputs, timeouts,
+expected artifacts, and pass criteria. Lint, types, unit tests, build, and migration probes remain
+separate from heuristic review such as [Drift](34-drift.md). A qualitative verdict cannot
+override a failed deterministic gate. A failure can consume a bounded repair attempt; exhausted
+budgets or missing premises settle as noncompletion with retained evidence. Candidate-declared
+database, package, install, and recovery checks use disposable state where appropriate and prove
+the recorded execution, not production fitness.
+
+Today those checks are operated through development and CI. Workers or Tomb may dispatch admitted
+work only after their execution boundaries exist; this ADR does not claim that
+[Ghouls](14-workers.md) verify generated code today.
+
+### Promotion is an owned effect
+
+A **Promotion Request** carries the exact candidate-record binding, current-base and source-tree preconditions, receipts, declared
+effects, compatibility evidence, and rollback or compensation instructions. It neither moves Lab
+into Crypt nor assumes a federated lockfile. At effect time the target owner must:
+
+1. revalidate the live base, source tree, and candidate identity;
+2. evaluate [Consent](25-hitl.md), or a narrowly bounded preauthorization; a
+   [Protected Region](28-workflow.md#authorship-provenance-and-protected-regions) forbids
+   preauthorization and binds live review to the exact candidate;
+3. confirm that the evidence is current for this effect;
+4. use its own transaction and recovery boundary; and
+5. verify the resulting state or invoke rollback or compensation.
+
+Source, package, and extension movement belongs to [Packaging](17-packaging.md),
+[Evolution](18-evolution.md), and [Assimilation](35-assimilation.md). Database, credential,
+host-lifecycle, and external-service effects remain separately owned; a VCS merge cannot make
+them atomic.
+
+### Changed state, conflict, and recovery
+
+A changed base or source tree, or an unresolved conflict, stops promotion. Keep the candidate and
+its evidence for diagnosis; neither discard them silently nor apply them over operator work.
+Continuation requires a new base, resolved conflict, renewed invalidated checks, and fresh
+authorization when the effect changed. Any external effect already produced remains its owner's
+reconciliation responsibility and cannot be hidden by VCS cleanup.
+
+An implementation must demonstrate candidate identity and workspace containment, refusal of
+active-tree mutation, receipt capture, crash recovery, refusal after state changes, effect-time
+authorization, target-owner promotion, and rollback or compensation. Untrusted execution additionally needs the
+Tomb controls owned by Security.
+
+## Consequences
+
+!!! success "Positive"
+    Candidate failure stays outside the active body, while identity, evidence, authorization, and
+    disposition remain attributable.
+
+!!! failure "Negative"
+    Isolation, retained proof, revalidation, and owner-specific recovery cost time and storage;
+    external effects still require compensation rather than one universal transaction.

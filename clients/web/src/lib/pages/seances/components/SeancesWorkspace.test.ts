@@ -7,7 +7,8 @@ vi.mock("$lib/api/client", () => ({
   getBridgeSessions: vi.fn(), getBridgeSnapshot: vi.fn()
 }));
 import { ApiError, getBridgeSessions, getBridgeSnapshot } from "$lib/api/client";
-import { createSeancesWorkspace, setSeancesWorkspace, materialCharacterLimit, materialLimit } from "$lib/pages/seances/state/workspace.svelte";
+import { createSeancesWorkspace, setSeancesWorkspace, materialCharacterLimit, materialLimit } from "$lib/seances/workspace.svelte";
+import { createMemoryPanel, setMemoryPanel } from "$lib/memory/panel.svelte";
 import SeancesWorkspace from "./SeancesWorkspace.svelte";
 
 const created = "2026-11-06T10:00:00Z";
@@ -175,4 +176,18 @@ it("offers catalogue recovery after exact-session access denial and a successful
   expect(await screen.findByRole("link", { name: /Alpha/ })).toBeTruthy();
   expect(getBridgeSessions).toHaveBeenCalledTimes(2);
   expect(vi.mocked(getBridgeSessions).mock.calls[1]?.[0]).toBeUndefined();
+});
+
+it("opens the shared Memory collection from inspected B without continuing or changing the live conversation", async () => {
+  const memory = createMemoryPanel();
+  const work = createSeancesWorkspace(vi.fn());
+  function Wrapper(...args: Parameters<typeof SeancesWorkspace>) { setSeancesWorkspace(work); setMemoryPanel(memory); return SeancesWorkspace(...args); }
+  const view = render(Wrapper, { sessionId: "b" });
+  await screen.findByText("Question b");
+  await fireEvent.click(screen.getByRole("button", { name: "Select quotation" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Memory" }));
+  expect(memory.isOpen).toBe(true); expect(memory.section).toBe("working");
+  expect(work.materials.get("b")![0]!.source.content).toBe("Question b");
+  expect(work.continueInBridge).not.toHaveBeenCalled();
+  expect(getBridgeSnapshot).toHaveBeenCalledExactlyOnceWith("b"); view.unmount();
 });

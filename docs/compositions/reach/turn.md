@@ -35,4 +35,4 @@ If compromise is contained to the adapter, revoke its Principal, rotate the bot 
 
 Deterministic Gateway fixtures and fake text capability prove mention/command, no ambient-message records, guest/member separation, consequential-request refusal, restart dedupe, quiet-hour budgets, revocation, and no duplicate after uncertain delivery. No live Discord/model enters the proof.
 
-[Execution roads](../../sepulcher/extensions/weaver/execution-roads.md) · [Deployment profiles](deployments/index.md)
+[Execution roads](../../sepulcher/aspects/weaver/execution-roads.md) · [Deployment profiles](deployments/index.md)

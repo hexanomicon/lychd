@@ -1,0 +1,43 @@
+---
+title: Soulforge
+icon: material/anvil
+---
+
+# :material-anvil: The Soulforge: Extension of Training
+
+> _Long before the hammer falls, the metal has a history._
+
+Training changes weights, but a useful result must also show what was taught and how the change
+was judged. **Soulforge** keeps that history immutable: the admitted corpus and base-model digest
+lead through an objective, Recipe, and Training Run to evaluated candidate weights. Its tools
+may change; the evidence linking those stages must survive the strike.
+
+Soulforge is **Designed**; the passages below have no operational training or serving path yet.
+[State of Work](../../../state-of-the-work.md#soulforge-training) records delivery, and
+[ADR 33](../../../adr/33-training.md) owns the law and complete record schemas.
+
+Soulforge may run during an admitted idle resource window, but sleep supplies no training or
+consolidation contract. The forge instead follows the explicit passage below.
+
+## The Four Passages {#iv-orchestration-of-the-forge}
+
+| Route | Receives | Leaves behind | Refuses |
+| :--- | :--- | :--- | :--- |
+| [Corpus admission](corpus.md#admit-one-snapshot) | Training Intent and nominated records | Corpus Admission, exact membership, negative ledger, and sealed holdout | Missing provenance, authority, privacy clearance, relevance, or a viable uncontaminated holdout |
+| [Dataset compilation](corpus.md#compile-without-leakage) | One admitted snapshot | Immutable Dataset Manifest with preserved lineage and splits | Unadmitted material, changed dataset splits, or holdout leakage |
+| [Training run](training-run.md) | Manifest, base digest, objective, Recipe, and resource request | Training Run receipt and frozen Candidate Bundle | Unpinned inputs, a refused resource window, or unknowable retry state |
+| [Candidate handoff](candidate-handoff.md) | Frozen bundle and evaluation contract | Drift Outcomes and an externally owned Promotion Decision | Trainer self-grading, mutable custody, or unowned serving |
+
+No passage inherits permission merely because the previous one succeeded.
+[Orchestrator](../../../adr/23-orchestrator.md) decides the physical transition needed for resources.
+Independent [Drift](../weaver/drift/capability-claims.md) evaluation can establish eligibility, after
+which owning policy and required Magus/[HitL](../../../adr/25-hitl.md) authority decide promotion.
+Only the serving owner can register and route the exact promoted digest.
+
+Observation may trigger rollback or lineage invalidation. It cannot rewrite an earlier record,
+erase completed effects, or remove learned influence from weights already produced.
+
+[Discernment training](discernment-training.md) applies these passages to SDLC experience and
+human corrections: preserve the reason and conditions of a choice, then test transfer through an
+independent evaluation. [Ouroboros](../weaver/ouroboros.md) connects that slower return to ordinary
+Context, memory and workflow improvement.

@@ -12,8 +12,8 @@ requirements determine which combination fits.
 
 ## Copy Flow
 
-1. Choose one runtime and follow its current [vLLM](../../../docs/sepulcher/animator/soulstone/engines/vllm.md)
-   or [llama.cpp](../../../docs/sepulcher/animator/soulstone/engines/llamacpp.md) recipe. Adapt the
+1. Choose one runtime and follow its current [vLLM](../../../docs/sepulcher/extensions/animators/soulstone/engines/vllm.md)
+   or [llama.cpp](../../../docs/sepulcher/extensions/animators/soulstone/engines/llamacpp.md) recipe. Adapt the
    fragment rather than copying its old fields unchanged: vLLM framework arguments now belong
    in the Rune's `exec` list.
 2. Declare the exact image, NVIDIA CDI devices, ports, and absolute model-directory mounts.
@@ -36,7 +36,7 @@ validated inventory before the capability is warm.
 
 The llama.cpp router adapter captures its preset catalogue and derives dynamic capabilities. A
 cold requested model can lead Graph to wait while Orchestrator loads it, after which Dispatcher
-rechecks readiness. The [runtime-transition guide](../../../docs/sepulcher/animator/runtime-transitions.md)
+rechecks readiness. The [runtime-transition guide](../../../docs/sepulcher/extensions/animators/runtime-transitions.md)
 explains the admission, drain, and recovery boundaries.
 
 Establish one working static call first. Add router selection and soft activation when those are

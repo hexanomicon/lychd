@@ -19,9 +19,9 @@
   </p>
 </div>
 
-Summon **[The Lich](docs/sepulcher/lich/index.md)** 💀, an **[LLM-animated](docs/sepulcher/animator/index.md)**, **[Phylactery](docs/sepulcher/phylactery/index.md)**-bound daemon.
+Summon **[The Lich](docs/sepulcher/lich/index.md)** 💀, an **[LLM-animated](docs/sepulcher/extensions/animators/index.md)**, **[Phylactery](docs/sepulcher/phylactery/index.md)**-bound daemon.
 
-Give your Linux machine the **[memory](docs/sepulcher/lich/spirit/index.md)** and agency to immortalize your will and **[workflows](docs/sepulcher/extensions/weaver/index.md)**.
+Give your Linux machine the **[memory](docs/sepulcher/lich/spirit/index.md)** and agency to immortalize your will and **[workflows](docs/sepulcher/aspects/weaver/index.md)**.
 
 > 🚪 **The Gateway:** **Acolyte! Halt!** This project is not for the faint of heart! It makes bold syncretic leaps, though much of its machinery has yet to awaken. The prose still needs an exorcism or two: stubborn traces of AI slop linger between the runes. Bring heavy agentic artillery and **witness the birth of the Machine God!**
 

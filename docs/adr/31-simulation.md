@@ -6,10 +6,10 @@ icon: material/source-branch
 # :material-source-branch: 31. Simulation
 
 !!! abstract "Context"
-    [Shadow](../sepulcher/extensions/shadow/index.md) explores bounded alternatives against a
+    [Shadow](../sepulcher/aspects/shadow/index.md) explores bounded alternatives against a
     pinned base and retains the evidence and outcome of each branch. Candidate generation,
-    independent review, and promotion need separate owners: [Dancer](../sepulcher/extensions/shadow/dancer.md)
-    proposes alternatives; [Hunter](../sepulcher/extensions/shadow/hunter.md) reviews them; the target
+    independent review, and promotion need separate owners: [Dancer](../sepulcher/aspects/shadow/dancer.md)
+    proposes alternatives; [Hunter](../sepulcher/aspects/shadow/hunter.md) reviews them; the target
     owner decides whether a proposed change may affect the system.
 
 ## Decision
@@ -87,7 +87,7 @@ score or implementation follow [Workflow revision law](28-workflow.md#pattern-id
 strategy update patches a live Run. Spellweaver coordinates the admitted attempts, Dispatcher
 selects capability, and Orchestrator owns physical readiness and resource conflicts.
 
-Retained branch histories may support [historical exploration replay](34-evaluation.md#historical-exploration-replay).
+Retained branch histories may support [historical exploration replay](34-drift.md#historical-exploration-replay).
 The replay snapshot pins parentage, source revisions, disclosed observations, recorded costs,
 terminal states and missing continuations. It preserves unsuccessful branches within the admitted
 retention scope. Search over those records produces a candidate strategy and bounded evidence;

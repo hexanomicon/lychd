@@ -40,7 +40,7 @@ packaging**. The repository implements it for Python release-candidate archives 
 checked-in Vessel definition. Publication, synthesized extension bodies, and activation remain
 separate work.
 
-The [Ouroboros map](../sepulcher/extensions/weaver/ouroboros.md#from-a-useful-lesson-to-a-changed-body)
+The [Ouroboros map](../sepulcher/aspects/weaver/ouroboros.md#from-a-useful-lesson-to-a-changed-body)
 places this artifact boundary between candidate work and governed Evolution. Conversational or
 A2A collaboration can change how work is requested while exact source identity, verification,
 publication and activation keep the separate meanings defined here.

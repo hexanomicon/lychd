@@ -540,7 +540,7 @@ admission-only contract. Actual durable integration remains with the existing ro
 
 - **Source:** [Pure road selector](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/execution_roads.py)
 - **Verification:** [Policy and selection tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_execution_roads.py)
-- **Topic:** [Execution roads](./sepulcher/extensions/weaver/execution-roads.md#pure-serial-selection)
+- **Topic:** [Execution roads](sepulcher/aspects/weaver/execution-roads.md#pure-serial-selection)
 - **Law:** [Workflow](./adr/28-workflow.md#execution-road-planning)
 
 ### Configured Bridge casting {#configured-bridge-casting}
@@ -590,7 +590,7 @@ it. The synthetic PostgreSQL controls use ORM metadata and do not claim migratio
 - **Source:** [Preference admission](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/bridge_preference.py), [Run admission](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/engine.py), and [retained decisions](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/ledger.py)
 - **Verification:** [Preference controls](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_bridge_preference.py), [Run admission and replay](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_engine.py), and [safe HTTP refusals](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge_preference.py)
 - **Verification:** [PostgreSQL retained winner and corruption controls](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_run_ledger_pg.py)
-- **Topic:** [Choose a Bridge capability](./sepulcher/extensions/weaver/index.md#choose-a-bridge-capability) and [prefer a ready route](./sepulcher/extensions/weaver/index.md#prefer-a-ready-route-at-admission)
+- **Topic:** [Choose a Bridge capability](sepulcher/aspects/weaver/index.md#choose-a-bridge-capability) and [prefer a ready route](sepulcher/aspects/weaver/index.md#prefer-a-ready-route-at-admission)
 - **Law:** [Configuration](./adr/12-configuration.md), [Workflow](./adr/28-workflow.md), and [Dispatcher](./adr/22-dispatcher.md)
 
 ### Pydantic AI 2.66.0 cognitive adapter {#pydantic-ai-adapter}
@@ -933,7 +933,7 @@ CapabilitySet placement solver.
 
 **Evidence**
 
-- **Topic:** [Capabilities](./sepulcher/animator/capabilities.md) and [Connectors](./sepulcher/animator/connectors.md)
+- **Topic:** [Capabilities](sepulcher/extensions/animators/capabilities.md) and [Connectors](sepulcher/extensions/animators/connectors.md)
 - **Law:** [Dispatcher](./adr/22-dispatcher.md), [Workers](./adr/14-workers.md), and [Graph](./adr/24-graph.md)
 
 ### Extension activation and contributions {#extension-activation-contributions}
@@ -941,7 +941,9 @@ CapabilitySet placement solver.
 **State:** Partial
 
 **Proved now:** Built-in assembly resolves dependencies first and supplies Rune, Portal, runtime,
-Quadlet, and delegation contributions through registrant-bound registration. Membership seals,
+Quadlet, and delegation contributions through registrant-bound registration. The seven stores
+also include bounded observation declarations and inspection-only Pattern descriptions; their
+[Oculus projection](#native-oculus) retains its separate evidence boundary. Membership seals,
 schema branches have owners, and synchronous hooks fail closed. Host-assigned registrant
 attribution survives v1 capability hydration, detached reads, grants, Orchestrator status, and
 Nexus response rows; adapters cannot override it. Direct raw adapter injection stays unattributed.
@@ -960,7 +962,8 @@ artifacts, or runtime generations for resumed work.
 
 - **Source:** [Extension manager](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/manager.py), [registration context](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/context.py), and [assembly host](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/host.py)
 - **Verification:** [Assembly tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_catalog.py), [activation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_admission.py), [private contribution through dispatch and Nexus](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_crypt_extension_vertical.py), [Phoenix process generations](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_extension_configuration.py), [delegation contribution tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_delegation.py), and [generated bind-fileset tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_bind_fileset.py)
-- **Topic:** [Extension authoring](./sepulcher/extensions/authoring.md)
+- **Topic:** [Extensions](./sepulcher/extensions/index.md), [Runes](./sepulcher/extensions/runes.md),
+  [Services](./sepulcher/extensions/services.md), and [Lifecycle](./sepulcher/extensions/lifecycle.md)
 - **Law:** [Extensions](./adr/05-extensions.md)
 
 ### llama.cpp integration {#llamacpp-integration}
@@ -985,7 +988,7 @@ take precedence over router inputs, and aliases accumulate before inventory iden
 Default model selection uses the captured catalogue. Effective main Hugging Face repositories,
 main-model shortcuts, and ambiguous source/alias syntax fail admission. Projected secret presets
 are not opened locally for catalogue or generation-default discovery. The
-[engine profile](./sepulcher/animator/soulstone/engines/llamacpp.md#launch-and-identity) defines the
+[engine profile](sepulcher/extensions/animators/soulstone/engines/llamacpp.md#launch-and-identity) defines the
 bounded grammar and remaining runtime-validation requirements.
 Model unloading is not a separate adapter operation; Orchestrator shuts down whole runtimes.
 
@@ -1074,7 +1077,7 @@ host, readiness, inference, and shutdown.
 - **Verification:** [maintained native TCP receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/animator/local-bridge-vllm-native-tcp.json), and [historical native receipt integrity/privacy](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_local_bridge_native_tcp_receipt.py)
 - **Verification:** [Dated 0cc0988 installed observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/animator/local-bridge-vllm-installed-0cc0988.json) and [offline dated metadata/privacy check](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_local_bridge_installed_0cc0988_receipt.py)
 - **Verification:** [Policy scope and binding tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_catalog.py), [real-SDK wire tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_model_transport.py), [dated selected-policy observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/animator/local-bridge-qwen-policy-bf1162f.json), and [observation integrity/privacy](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_local_bridge_qwen_policy_receipt.py)
-- **Topic:** [Standalone probe and first-reply boundaries](./sepulcher/animator/soulstone/engines/vllm.md#bring-one-service-to-a-first-reply)
+- **Topic:** [Standalone probe and first-reply boundaries](sepulcher/extensions/animators/soulstone/engines/vllm.md#bring-one-service-to-a-first-reply)
 - **Law:** [Dispatcher](./adr/22-dispatcher.md)
 
 ### SGLang integration {#sglang-integration}
@@ -1198,13 +1201,18 @@ declarations is absent; the bounded host command refuses them. Live recovery rem
 current simple eviction baseline.
 
 **Do not expect yet:** Current policy counts conflicting neighbors; it does not model VRAM,
-footprints, load time, topology, bandwidth, LRU, refits, tiers, or transition peaks.
+footprints, load time, topology, bandwidth, LRU, refits, tiers, or transition peaks. Graph reacts
+to the current station's cold demand. Automatic successor prewarming, its per-Pattern policy and
+operator controls, and runtime evidence for overlapping engine, model or adapter preparation
+remain Designed.
 
 **Evidence**
 
 - **Source:** [Current eviction policy](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/orchestration/policies.py)
 - **Verification:** [Policy tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/orchestration/test_policies.py)
-- **Law:** [Orchestrator](./adr/23-orchestrator.md)
+- **Law:** [Orchestrator](./adr/23-orchestrator.md#designed-resource-policy),
+  [Graph handoff](./adr/24-graph.md#handoff-preparation), and
+  [Workflow policy](./adr/28-workflow.md#handoff-preparation-policy)
 
 ## Altar and observability {#altar-and-observability}
 
@@ -1225,13 +1233,23 @@ locale resolver or selector, Principal-preference binding, translated accessibil
 right-to-left receipt. Browser-native date/time formatting may reflect a device locale, but that
 incidental variation is not delivered localization support.
 
-The compiled Altar has one fixed LychD Dark palette, dark browser metadata, dark native-control
-colour scheme, and no light/system selector, system-scheme following, palette configuration,
-runtime theme loader, or supported theme extension. Its canonical semantic palette now uses a black
+The compiled Altar has one LychD Dark surface/status palette, dark browser metadata, dark native-control
+colour scheme, and no light/system selector, system-scheme following, runtime theme loader, or
+supported theme extension. Appearance offers the closed browser-local Violet, Iris and Neutral
+decorative accents plus Reset. A versioned allowlisted ID is the only stored preference; malformed
+values fall back to Violet, and unavailable storage leaves an explicit in-tab choice usable. Focus,
+status, surfaces, text, fixed brand art and retained Canvas ink are unchanged. Focused tests cover
+storage recovery, cross-tab values, Escape/opener return and the supported accent/text contrast
+against canonical surfaces. Its canonical semantic palette uses a black
 work plane, neutral graphite, icy-blue interaction, green confirmation/activity and muted
-cloth-purple navigation accents. Shared controls, instrument typography and graph chrome consume
+decorative navigation accents. Shared controls, instrument typography and graph chrome consume
 that palette; fixed brand artwork remains separately attributed. There is no complete contrast matrix or bright/dim production-browser receipt;
 ADR 15's bounded operator-palette contract is design law, not delivered configurability.
+
+Appearance evidence: [typed preference](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/appearance/preferences.ts),
+[control](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/shell/components/AppearancePreferences.svelte),
+[closed grammar and contrast tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/appearance/preferences.test.ts),
+and [storage/focus tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/shell/components/AppearancePreferences.test.ts).
 
 ### Altar workbench and Bridge {#altar-workbench}
 
@@ -1249,7 +1267,8 @@ unresolved offerings, and live subscriptions. Full-route Bridge fills the work a
 accessible main. Leaving it for a wide work view reveals the same conversation beside the work.
 Saved dock side, width, and open preferences survive full focus. The rail distinguishes
 browser-local pins from recent server-supplied sessions. Off-page pins need no speculative
-thread reads. Pins retain at most 32 session IDs as presentation preferences.
+thread reads. Pins retain at most 32 session IDs for presentation and carry no admission
+authority.
 
 `/seances` pages conversation metadata with a filter explicitly scoped to loaded entries;
 `/seances/{session_id}` reads one exact retained transcript. This inspection does not select the
@@ -1267,6 +1286,17 @@ read lanes; stale completions cannot restore it. Other unavailable reads preserv
 while withholding source actions until a fresh authorized read. Component regressions cover these
 boundaries, delayed continuation, draft preservation and catalogue recovery; they are not an
 installed production-browser receipt.
+
+One shell-owned **Memory** drawer opens from Bridge or Séances without retargeting the live
+conversation. It separates the existing document-local Working material from Public notes and
+explicit Recall. Opening Working material makes no Archive request; other sections initialize
+lazily and retain their managers, drafts and unknown-operation recovery while hidden or closed.
+Legacy public-note URLs enter that same manager. External record selection uses the existing
+preparation-discard guard; no section change, navigation or close replays a write. The labelled
+modal drawer has background inertness and Escape/opener return, and suspends narrow Bridge's
+modal presentation while preserving its conversation. Private quotations are not copied into
+public intake. Promotion, recall eligibility, historical selection and actual consumption retain
+their separate boundaries.
 
 The dock supports left/right placement, bounded pointer/keyboard resizing, and layout-only local
 preferences. Wide windows allocate space beside it; narrow windows provide modal focus
@@ -1286,8 +1316,11 @@ forced-colour combination or the renderer's separate cross-engine heap gate. Exi
 **Evidence**
 
 - **Source:** [Shell](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/shell/components/AltarShell.svelte), [Bridge dock](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeDock.svelte), [conversation](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeView.svelte), [bounded layout preferences](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/state/dock.ts), and [semantic styling](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/app.css)
-- **Source:** [Séances workspace](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/seances/components/SeancesWorkspace.svelte), [source material](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/seances/state/material.ts), and [document-local collection](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/seances/state/workspace.svelte.ts)
-- **Verification:** [Séances reads and working material](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/seances/components/SeancesWorkspace.test.ts), [source export](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/seances/state/material.test.ts), and [Bridge selection and continuation](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeShellNavigation.test.ts)
+- **Source:** [Séances workspace](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/seances/components/SeancesWorkspace.svelte), [source material](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/seances/material.ts), and [document-local collection](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/seances/workspace.svelte.ts)
+- **Verification:** [Séances reads and working material](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/seances/components/SeancesWorkspace.test.ts), [source export](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/seances/material.test.ts), and [Bridge selection and continuation](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeShellNavigation.test.ts)
+- **Source:** [shared Memory panel](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/shell/components/MemoryPanel.svelte)
+- **Verification:** [panel tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/shell/components/MemoryPanel.test.ts)
+- **Topic:** [Memory operation](./divination/altar/memory.md)
 - **Verification:** [Server shell fallbacks](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_pages.py), [shell admission/status tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/shell/components/AltarShell.test.ts), [mounted conversation/navigation tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeShellNavigation.test.ts), [dock interaction tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeDock.test.ts), [layout preference tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/state/dock.test.ts), and [offline source profile](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/routes/canvas/layout.test.ts)
 - **Law:** [Shared workbench and Bridge dock](./adr/15-frontend.md#the-shared-workbench-and-bridge-dock)
 - **Topic:** [Altar](./divination/altar/index.md#keep-bridge-beside-the-work)
@@ -1565,6 +1598,21 @@ Their exact source/profile/generation bindings remain separate from local execut
 an inspection-only entry cannot satisfy routing, admission or resume. Existing v2 manifest digests
 and native exact-revision execution lookup are unchanged.
 
+The exact revision also offers **Evaluation → Manual output review**. A bounded browser workflow
+freezes a self-declared reviewer, goal and criteria before loading output for a retrospective
+review. Full pinned-manifest, displayed-score and inspection-binding checks precede exact Session
+and matching retained agent-turn reads. Missing, ambiguous, mismatched and refused sources never
+become another answer. Frozen output binds supplied references, timestamp and UTF-8 digest;
+process-local Orb content is not substituted. Verdicts begin UNKNOWN and require explicit reasons
+and supporting quotation or evidence limitations. Run status, review completion and quality stay
+separate. Finishing freezes a local review; editing creates a new revision. JSON/Markdown export
+preserves source, criteria, judgments, declared identity and limits. The shell preserves the bounded
+workspace and warns before document exit; it writes no review to localStorage or Vessel.
+
+This is authored retrospective review, not a durable Drift Outcome, fresh Trial Suite execution,
+independent calibration, measured workflow improvement or promotion. The general Drift harness,
+evaluation store and training integration remain Designed.
+
 **Boundary — Not yet:** Loom is a view over exact admitted inspection records, not a Spellweaver editor, mutation
 surface, independent Spell identity or catalogue, compatibility or teaching surface, drafting
 canvas, inert unresolved-Spell projection, or Suite executor. The future
@@ -1581,6 +1629,9 @@ lifecycle, graph-failure, editor or general accessibility acceptance.
 
 - **Source:** [Loom controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/loom.py), [Pattern registry contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/base.py), [Loom client](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/loom/components/LoomView.svelte), and [shared graph adapter](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/graph/components/GraphCanvas.svelte)
 - **Verification:** [Loom tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_loom.py), [client lifecycle tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/loom/components/LoomView.test.ts), and [semantic projection tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/loom/state/loom.test.ts)
+- **Source:** [manual review control](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/loom/components/LoomEvaluation.svelte) and [bounded review workspace](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/loom/state/evaluation/workspace.svelte.ts)
+- **Verification:** [review interaction tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/loom/components/LoomEvaluation.test.ts)
+- **Topic:** [operator guide](./divination/altar/loom.md#review-a-retained-output)
 - **Verification:** [Inspection-only source binding](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_orb_runtime.py) and [sealed descriptor contributions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_observation_context.py)
 - **Law:** [Workflow](./adr/28-workflow.md)
 
@@ -2403,6 +2454,12 @@ General monitoring and system maintenance remain outside its case ownership. It 
 implemented case records, monitoring integration, response automation, peer investigation network,
 actor attribution, or reporting adapter; deterrence remains unmeasured.
 
+[Signet](./compositions/signet/index.md) is a separate candidate Composition study. Its proposed
+Linux host conditions distinguish privileged inspection from enforced private processing, with
+public evidence, certificate renewal/revocation and per-request admission/completion stamps.
+It supplies no implemented scanner, certificate issuer, privileged host collector, stamp producer
+or qualified confidential inference path; its synthetic acceptance cases are not runtime evidence.
+
 The Android screen supplies no device capture/playback, transport, persistence, credential
 enrollment, or authoritative Companion records and receipts. Emulator evidence does not qualify
 physical devices or every Android version allowed by the declared minimum SDK.
@@ -2679,7 +2736,7 @@ Fixture and transport tests do not qualify a real Discord deployment or full bro
 
 **Evidence**
 
-- **Topic:** [Oculus](./sepulcher/extensions/oculus.md)
+- **Topic:** [Oculus](sepulcher/aspects/oculus.md)
 - **Source:** [Typed observations](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/oculus/models.py), [bounded read model](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/oculus/runtime.py), [same-host snapshot custody](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/oculus_snapshot.py), and [driver observation contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/observation.py)
 - **Verification:** [Two-provider and generation cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/oculus/test_runtime.py), [snapshot custody and bounded writer](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_oculus_snapshot.py), [Discord actual-attempt and settlement separation](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_observation.py), and [Reach producer custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_observation.py)
 - **Law:** [Observability](./adr/29-observability.md)
@@ -2744,7 +2801,7 @@ it does not extend the recorder or make a private Context eligible.
 - **Source:** [Recording owner](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/privacy_disclosure.py), [durable disclosure store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/privacy.py), and [custody models](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/models/privacy.py)
 - **Verification:** [Adversarial preparation fixtures](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/privacy/test_preparation.py), [Context influence tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_context_privacy.py), and [offline probe output](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/privacy/test_probe.py)
 - **Verification:** [Recording authority tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/privacy/test_disclosure.py), [retained evidence tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/db/test_privacy_disclosure.py), [PostgreSQL concurrency and recovery](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_privacy_disclosure_pg.py), and [transactional migration and catalog tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_privacy_disclosure_migrations_pg.py)
-- **Topic:** [Portal](./sepulcher/animator/portal.md)
+- **Topic:** [Portal](sepulcher/extensions/animators/portal.md)
 - **Law:** [Context](./adr/21-context.md#privatization-and-the-privacy-cut), [Security](./adr/09-security.md#portal-privatization-and-egress), and [disclosure custody](./adr/06-persistence.md#closed-disclosure-accounting-custody)
 
 ### Local Sigil and scope authority {#local-sigil-authority}
@@ -3003,8 +3060,8 @@ unimplemented outside the shared Pod.
 
 **Evidence**
 
-- **Topic:** [Scout](./sepulcher/extensions/scout.md)
-- **Verification:** [Pinned SearXNG transport study](./sepulcher/extensions/scout.md#searxng-transport-cut) and its [dated offline observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/searxng-transport-cut-2026-10-18.json) establish controlled upstream retry and private one-use transport-cut behavior only. The separate [local service-fixture observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/searxng-service-fixture-2026-10-18.json) adds actual one-use authenticated service/parser evidence; no live engine, repeated service use, production egress boundary or native Search is qualified.
+- **Topic:** [Scout](sepulcher/aspects/scout.md)
+- **Verification:** [Pinned SearXNG transport study](sepulcher/aspects/scout.md#searxng-transport-cut) and its [dated offline observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/searxng-transport-cut-2026-10-18.json) establish controlled upstream retry and private one-use transport-cut behavior only. The separate [local service-fixture observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/searxng-service-fixture-2026-10-18.json) adds actual one-use authenticated service/parser evidence; no live engine, repeated service use, production egress boundary or native Search is qualified.
 - **Source:** [Feed admission and protected API](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/api/scavenger.py), [model-free Graph](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/observe_market.py), [application custody](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/scavenger.py), and [Altar application](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/observationsScavenger/components/ObservationsScavengerView.svelte)
 - **Verification:** [Dated ordinary native public feed and retained readback observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/native-finite-feed-observation-2026-10-18.json) records successful finite custody, the failed original restart guard, separate fresh-process GET readback and unchanged permanent accounting; clean application shutdown remains unqualified.
 - **Verification:** [After-fix ordinary native retained readback](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/native-queue-shutdown-readback-2026-10-18.json) binds the exact dirty source candidate, full captured log assessment, unchanged retained data/accounting and independent resource settlement. [Queue-plugin regressions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime_queue_plugin.py) exercise actual installed workers, sole retirement ownership and partial-startup/failed-stop containment with inert transports.
@@ -3013,7 +3070,7 @@ unimplemented outside the shared Pod.
 - **Law:** [Webcrawler](./adr/30-webcrawler.md)
 - **Source:** [Pure destination preflight](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/scout/destination.py), [fixed extraction worker](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/scout_worker.py), and [Linux supervisor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/scout_extraction.py)
 - **Verification:** [Destination boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/scout/test_destination.py), [worker tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_scout_worker.py), [supervision and receipt-freshness tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_scout_extraction.py), [live host proof](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_extraction_runtime.py), and [maintained qualification receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-extraction-runtime.json)
-- **Verification:** [Separate OCI static receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-oci-extraction-runtime.json), [adapter and freshness contracts](https://github.com/hexanomicon/lychd/blob/main/tests/architecture/test_scout_qualification_profile.py), and [explicit qualification procedure](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md) bind the new runtime to its paired Fetch/authority proofs without replacing the historical static/RSS evidence.
+- **Verification:** [Separate OCI static receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-oci-extraction-runtime.json), [adapter and freshness contracts](https://github.com/hexanomicon/lychd/blob/main/tests/architecture/test_scout_qualification_profile.py), and [Scout OCI qualification procedure](https://github.com/hexanomicon/lychd/blob/main/tests/README.md) bind the new runtime to its paired Fetch/authority proofs without replacing the historical static/RSS evidence.
 - **Source:** [Native acquisition](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/scout_fetch.py), [gated transport](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/scout_socket.py), and [Run effect fences](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/cancellation.py)
 - **Verification:** [RSS behavioral tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_scout_rss_worker.py), [RSS return validation and freshness](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_scout_rss_extraction.py), [RSS live child proof](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_rss_extraction_runtime.py), and [maintained RSS receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-rss-extraction-runtime.json)
 - **Verification:** [Acquisition and freshness tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_scout_fetch.py), [HTTP decoder tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_scout_http.py), [Run fencing tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_cancellation.py), [isolated network proof](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_fetch_runtime.py), and [maintained transport receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-fetch-runtime.json)
@@ -3102,7 +3159,7 @@ Synthetic tests exercise this process boundary; no live listening receipt is est
 compatibility. Custody helpers remain separate from provider use; the engineering probe issues no
 Animator grant. The bounded Bridge operation does not qualify live devices,
 the exact speech service or general native STT/TTS admission. There is no hosted provider,
-streaming socket, resonance buffer, selectable Echo extension or Audio Coven.
+streaming socket, resonance buffer, selectable Echo package or Audio Coven.
 
 **Evidence**
 
@@ -3113,7 +3170,7 @@ streaming socket, resonance buffer, selectable Echo extension or Audio Coven.
 - **Verification:** [Speech dialect and default-transport tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_speech_probe.py), [private CLI boundaries](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_voice_probe.py), and [recorder ownership tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_voice_capture.py)
 - **Source:** [Explicit finite player](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/voice_playback.py)
 - **Verification:** [Player ownership, expiry and cancellation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_voice_playback.py)
-- **Topic:** [Local qualification](./sepulcher/extensions/echo-local-probe.md)
+- **Topic:** [Local qualification](sepulcher/aspects/echo-local-probe.md)
 
 - **Source:** [Dictation profile](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/dictation.py), [attempt service](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/dictation_service.py), [protected API](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/dictation.py), [CPU adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/dictation_transcriber.py), [retained attempts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/dictation.py), [private vocabulary](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/dictation_lexicon.py).
 - **Verification:** [API tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_dictation.py), [attempt history tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_dictation_history.py), [vocabulary tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_dictation_lexicon.py), [store tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/db/test_dictation.py), [voice controls](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeVoiceInput.test.ts), [history and corrections](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/DictationFeedback.test.ts), [synthetic command journey](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/state/voice/acceptance.test.ts).
@@ -3360,7 +3417,7 @@ Application startup also probes capabilities whose preloaded metadata has no rea
 before recovery starts; metadata never forces cold/error observations to warm. Focused lifespan
 controls distinguish this real-adapter observation from metadata hydration or forcing warm state.
 The test requires a separately admitted bounded outer unit and an independent terminal audit;
-its [operation procedure](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md)
+its [semantic memory adaptation requirements](https://github.com/hexanomicon/lychd/blob/main/tests/README.md)
 retains the trusted operator and fixed host/profile boundary. It does not activate a model through
 the Orchestrator or exercise normal Settings database socket configuration.
 
@@ -3420,7 +3477,7 @@ Persona, calibration, or promoted persistent identity. The bounded
 
 **Evidence**
 
-- **Topic:** [Mirror](./sepulcher/extensions/mirror.md)
+- **Topic:** [Mirror](sepulcher/aspects/mirror.md)
 - **Law:** [Identity](./adr/32-identity.md)
 
 ### Primus naming ceremony {#primus-naming}
@@ -3468,7 +3525,7 @@ strategy executor, budgeted simulation, collapse implementation, or reaper.
 
 **Evidence**
 
-- **Topic:** [Shadow](./sepulcher/extensions/shadow/index.md)
+- **Topic:** [Shadow](sepulcher/aspects/shadow/index.md)
 - **Law:** [Simulation](./adr/31-simulation.md)
 
 ### Drift evaluation {#drift-evaluation}
@@ -3486,9 +3543,9 @@ contract, benchmark history, pass-at-k experiment, or routing update.
 
 **Evidence**
 
-- **Topic:** [Drift](./sepulcher/extensions/drift/index.md) and
-  [workflow improvement](./sepulcher/extensions/drift/workflow-improvement.md)
-- **Law:** [Evaluation](./adr/34-evaluation.md)
+- **Topic:** [Drift](sepulcher/aspects/weaver/drift/index.md) and
+  [workflow improvement](sepulcher/aspects/weaver/drift/workflow-improvement.md)
+- **Law:** [Drift](adr/34-drift.md)
 
 ### Soulforge training {#soulforge-training}
 
@@ -3503,8 +3560,8 @@ evaluation, model registration, rollback, or production promotion.
 
 **Evidence**
 
-- **Topic:** [Soulforge](./sepulcher/extensions/soulforge/index.md) and
-  [discernment training](./sepulcher/extensions/soulforge/discernment-training.md)
+- **Topic:** [Soulforge](sepulcher/aspects/soulforge/index.md) and
+  [discernment training](sepulcher/aspects/soulforge/discernment-training.md)
 - **Law:** [Training](./adr/33-training.md)
 
 ### Offline Evolution comparison {#evolution-comparison}
@@ -3522,16 +3579,16 @@ preserving an unrelated extension, exact replay, and strict input refusal.
 **Boundary:** This is consistency checking over admitted claims. It does not retrieve or
 authenticate artifacts, establish factual test results or independent evaluation, create a Drift
 Outcome or Promotion Request, persist an adoption ledger, dispatch work, or authorize activation.
-Native autonomous Creation and target-owner promotion remain designed.
+Native autonomous Smith workflows and target-owner promotion remain designed.
 
 **Evidence**
 
 - **Source:** [Comparison contract and calculation](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/evolution/comparison.py) and [offline utility](https://github.com/hexanomicon/lychd/blob/main/scripts/compare_evolution.py)
 - **Verification:** [Historical comparison and input-boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/test_evolution.py)
-- **Topic:** [Ouroboros operation](./sepulcher/extensions/weaver/ouroboros.md#run-an-offline-historical-comparison)
+- **Topic:** [Ouroboros operation](sepulcher/aspects/weaver/ouroboros.md#run-an-offline-historical-comparison)
 - **Law:** [Evolution](./adr/18-evolution.md#synchronic-syncretizer)
 
-### Creation and Forge promotion {#smith-forge-promotion}
+### Smith, Creation investigation, and Forge promotion {#smith-forge-promotion}
 
 **State:** Partial
 
@@ -3721,7 +3778,7 @@ candidate verification was proved.
 The earlier successor observation retains its historical unattached-review boundary. A later [native child feedback attachment](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/creation/native-child-feedback-2026-10-17.json) at source `1777cbfb` attaches that exact 3,346-byte public report to child `701dcbed-1ddb-4b96-80bf-3cad32f13588`. Native `accepted`, Root-mapped external `partial` and owner `hold` remain separate; empty submitter annotations leave both criteria `not_assessed` in typed coverage. Exact protected replay and changed-body409 refusal preserve original feedback attribution across a normal restart. All six retained cases, prior feedback and lineage remain unchanged, with no new investigation, Run or inference. This records report custody and disposition, without semantic regrading, promotion or further child authority.
 
 The wider SDLC law defines attributable request → candidate → verification → promotion-request →
-target-owner-effect ownership. The Creation method and Ouroboros map connect work to separately
+target-owner-effect ownership. The Smith method and Ouroboros map connect work to separately
 governed evaluation, memory, training and body change. The Development bootstrap procedure orders
 operator-controlled work and incremental qualification; these methods introduce no general scheduler
 or autonomous development service.
@@ -3748,11 +3805,11 @@ attestation plane, canonical source on Radicle, Radicle node topology or downstr
 - **Verification:** [Known-case source projection](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/creation/native-source-projection-2026-10-17.json) retains both exact projected packets/results, native accepted, separate partial external judgments and normal restart/closure observations.
 - **Verification:** [Native attachment of the later review](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/creation/native-source-projection-feedback-2026-10-17.json) retains the subsequent exact-report attachment, separate partial/hold, typed coverage, replay/restart and zero-inference settlement.
 - **Verification:** [Current-authority read regressions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_creation_read_authority.py), [intake lifecycle](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/state/creation/intake.test.ts), [Investigation UI](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/CreationInvestigation.test.ts), [feedback disclosure](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/CreationFeedback.test.ts), and [generated transport](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/api/creation.test.ts)
-- **Topic:** [Creation investigation](./compositions/creation/index.md), [Smith](./sepulcher/extensions/smith.md),
-  [Creation](./sepulcher/extensions/weaver/creation.md), and [Ouroboros](./sepulcher/extensions/weaver/ouroboros.md),
-  with [Development bootstrap](./sepulcher/extensions/weaver/development-bootstrap.md) and
-  [coding-runtime research](./sepulcher/extensions/weaver/coding-runtime-research.md)
-- **Law:** [SDLC](./adr/16-sdlc.md), [Packaging](./adr/17-packaging.md#forge-neutral-source-trust),
+- **Topic:** [Creation investigation](./compositions/creation/index.md), [Assimilation](sepulcher/aspects/weaver/assimilation.md),
+  [Smith](sepulcher/aspects/weaver/smith.md), and [Ouroboros](sepulcher/aspects/weaver/ouroboros.md),
+  with [Development bootstrap](sepulcher/aspects/weaver/development-bootstrap.md) and
+  [coding-runtime research](sepulcher/aspects/weaver/coding-runtime-research.md)
+- **Law:** [Smith](adr/16-smith.md), [Packaging](./adr/17-packaging.md#forge-neutral-source-trust),
   and [Evolution](./adr/18-evolution.md#future-quorum-roster)
 
 ### Remote IAM {#remote-iam}
@@ -3800,7 +3857,7 @@ implementation gaps above.
 
 **Evidence**
 
-- **Topic:** [Ward](./sepulcher/extensions/ward.md)
+- **Topic:** [Ward](sepulcher/aspects/ward.md)
 - **Law:** [IAM](./adr/38-iam.md), [Persistence](./adr/06-persistence.md), [Evolution](./adr/18-evolution.md)
 - **Verification:** [20 October Ward OCI receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/container-only-2026-10-20.json), [OCI receipt controls](https://github.com/hexanomicon/lychd/blob/main/tests/architecture/test_container_only_receipt.py), [historical combined PostgreSQL receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/ward/ward-native-postgres-2026-10-20.json), [historical scope and current-qualification refusal](https://github.com/hexanomicon/lychd/blob/main/tests/architecture/test_ward_native_postgres_receipt.py), [Ward PostgreSQL cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_ward_pg.py), and [native authority cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_native_candidate_authority_pg.py)
 - **Source:** [Peer authority](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/peer_authority.py) and [operator public-source contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/peer.py)
@@ -3883,7 +3940,7 @@ HTTP 402 response.
 
 **Evidence**
 
-- **Topic:** [Toll](./sepulcher/extensions/toll.md)
+- **Topic:** [Toll](sepulcher/aspects/toll.md)
 - **Law:** [Toll](./adr/41-x402.md)
 
 ### Legion federation {#legion-federation}
@@ -3898,7 +3955,7 @@ artifact transfer, durable spool, cancellation, or settlement.
 
 **Evidence**
 
-- **Topic:** [Legion](./sepulcher/extensions/legion.md)
+- **Topic:** [Legion](sepulcher/aspects/legion.md)
 - **Law:** [Multinode](./adr/42-multinode.md)
 
 ### VPN Tether {#vpn-tether}
@@ -3936,7 +3993,7 @@ LychD-managed roads; neither path supplies shared remote Altar authority.
 
 **Evidence**
 
-- **Topic:** [Tether](./sepulcher/extensions/tether.md)
+- **Topic:** [Tether](sepulcher/aspects/tether.md)
 - **Source:** [Domain values](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/tether/models.py), [compiler](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/tether/compiler.py), and [native lifecycle](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/tether/service.py)
 - **Source:** [CLI operations](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/tether.py), [initialization profile](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/commands.py), and [Ansible application flow](https://github.com/hexanomicon/lychd/blob/main/deployments/ansible/roles/lychd_app/tasks/apply.yml)
 - **Verification:** [Compiler isolation and stable Pod policy](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/tether/test_compiler.py), [admission, recovery and revocation](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_tether_service.py), and [CLI input and dispatch](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_tether.py)
@@ -3958,7 +4015,7 @@ or proof that a proxy substitutes for application authorization.
 
 **Evidence**
 
-- **Topic:** [Veil](./sepulcher/extensions/veil.md) and [Gateway](./sepulcher/gateway.md)
+- **Topic:** [Veil](sepulcher/aspects/veil.md) and [Gateway](./sepulcher/gateway.md)
 - **Law:** [Proxy](./adr/40-proxy.md)
 
 ## Boundaries still to cross {#human-ruling-queue}

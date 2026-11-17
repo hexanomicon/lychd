@@ -38,7 +38,7 @@ cannot supply missing server proof. The first managed fixture below remains the 
 
 A [Prism Launcher client on macOS](https://prismlauncher.org/download/macos/) is separate from
 [LychD's Linux host requirement](../../adr/08-containers.md#supported-host-policy). LychD
-[Prism](../../sepulcher/extensions/prism/voxel-and-block-export.md) is a different component: its
+[Prism](../../sepulcher/aspects/prism/voxel-and-block-export.md) is a different component: its
 designed block-export path supplies blueprints for separate mission admission. An existing launcher
 instance does not establish game/modpack compatibility or provide Blockworld integration;
 [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) records delivery.

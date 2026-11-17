@@ -126,8 +126,8 @@ inspector or selecting another transition drops the event context.
 ## When the accounts disagree
 
 If a chip, raw status and host disagree—or a lost ticket leaves the outcome unknown—follow the
-[existing runtime-transition contract](../../sepulcher/animator/runtime-transitions.md#the-transition-contract)
-and its [Host Reactor observations](../../sepulcher/animator/runtime-transitions.md#switching-settings).
+[existing runtime-transition contract](../../sepulcher/extensions/animators/runtime-transitions.md#the-transition-contract)
+and its [Host Reactor observations](../../sepulcher/extensions/animators/runtime-transitions.md#switching-settings).
 Keep the original request identity while reconciling the physical outcome. A contained or
 unresolved result needs operator recovery; another transition request cannot clear that uncertainty.
 Reconcile a unit/probe mismatch before retrying.

@@ -123,7 +123,7 @@ image, video or audio format.
 ## Development operations
 
 Install the optional profile using
-[Contributing](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md). Choose an absolute,
+[music-probe setup](https://github.com/hexanomicon/lychd/blob/main/tests/README.md#optional-music-probes). Choose an absolute,
 operator-owned workspace outside the checkout, then use the source development runner:
 
 ```bash

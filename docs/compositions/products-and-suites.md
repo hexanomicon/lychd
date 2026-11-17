@@ -54,6 +54,10 @@ Replace a broad `depends_on: composition` edge with the actual relation:
 
 References supply no installation, availability, upgrade, lifecycle, credential, admission, ambient database, or effect authority.
 
+An Aspect technical attempt, such as Prism or Echo work inside an Invocation, is not another
+Composition Invocation and does not alone require a Suite. Authority, provenance, effect and
+recovery requirements and the receiving owner's judgment still apply.
+
 ### Avatar and Spectre
 
 Spectre can admit a generic VR Habitat/Encounter without Avatar. Meeting the Lich may require an exact already admitted `ProjectionBinding@2` as an external precondition. Its binding may still be live, but Spectre cannot create, revise, close, await, cancel, or recover it. Attributed results can later cross without a circular dependency.
@@ -86,10 +90,16 @@ timeline. This operator experience is distinct from the accepted visual Composit
 Riffmaw remains independently usable for musical work and live jam.
 
 A transient audition can present the parts together without accepting their final relation.
-Authoritative editorial cuts, timing, selected asset revisions, and audiovisual acceptance belong
-to [Broadcast](broadcast/edit.md), even when its finished candidate stays local. Atelier retains
-visual judgment, Riffmaw musical judgment, and Language Edition its aligned language contribution.
-The shared controls project those records and their declared timebase relations.
+For a Broadcast editorial project, authoritative cuts, timing, selected asset revisions, and
+audiovisual acceptance belong to [Broadcast](broadcast/edit.md), even when its finished candidate
+stays local. Atelier retains visual judgment, Riffmaw musical judgment, and Language Edition its
+aligned language contribution.
+The shared controls project those records and their declared timebase relations. Another Composition
+can interpret technical visual evidence, such as a Sight observation, under its own domain judgment
+without opening an Atelier commission. This does not relax [VideoJob@2](atelier/motion.md) or
+[compound-media facet admission](../adr/36-vision.md#compound-media-and-application-acceptance):
+their declared owner authority and Atelier visual acceptance remain required. A separate Atelier
+commission retains its visual acceptance and provenance.
 
 A joint audio/video generator performs one technical attempt with shared provenance and
 attributable cost. Declared role owners admit their facets without requiring duplicate generation

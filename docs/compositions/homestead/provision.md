@@ -23,6 +23,6 @@ A supply's availability cannot establish biological suitability. A material subs
 
 If the merchant acknowledgement is missing, checkout or payment remains unknown. Reconcile that effect before retrying. Restart cannot duplicate cart changes, orders, notifications, or delivery reconciliation.
 
-Personal meal choice, preparation guidance, and eating out remain with Wellbeing; confirmed cooking becomes a stock transformation in [Stores](stores.md). [Scavenger](../scavenger/index.md) owns irregular, high-value, compatibility-heavy, property, and seller-negotiated acquisitions.
+Personal meal choice, preparation guidance, and eating out remain with Wellbeing; confirmed cooking becomes a stock transformation in [Stores](stores.md). [Scavenger](../scavenger/index.md) owns independent acquisition campaigns for candidate or seller qualification, ranking, or negotiation; a campaign can finish with a shortlist alone. A recurring compatibility-sensitive purchase can need such a campaign, while comparing offers or asking a seller a question does not by itself require one. For a given transaction, the admitted checkout or Scavenger commitment has one owner; Homestead retains the household need and accepts stock from the resulting receipt.
 
 Return to [Homestead](index.md).

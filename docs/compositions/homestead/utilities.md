@@ -33,7 +33,7 @@ After the attempt, `HomesteadEnvironmentResult@1` records the requirement and ad
 
 The receiving care owner then assesses what that technical evidence establishes for its subject. A command acknowledgement alone cannot prove the measured postcondition, and reaching a set-point cannot establish a biological care verdict.
 
-For a [Legion](../../sepulcher/extensions/legion.md) body, the request carries only the fenced task, zone, resources, expiry, and stop conditions. Fresh body admission and local emergency control remain decisive. Lost acknowledgement blocks blind repetition until controller state, reservations, and effect evidence reconcile; cancellation cannot reverse already delivered water or heat. Ongoing environmental protection belongs to the commissioned local controller, even when an Invocation or network connection ends.
+For a [Legion](../../sepulcher/aspects/legion.md) body, the request carries only the fenced task, zone, resources, expiry, and stop conditions. Fresh body admission and local emergency control remain decisive. Lost acknowledgement blocks blind repetition until controller state, reservations, and effect evidence reconcile; cancellation cannot reverse already delivered water or heat. Ongoing environmental protection belongs to the commissioned local controller, even when an Invocation or network connection ends.
 
 Keeper and Cultivator can use human observations and work without Homestead. Exact settled requirements and result references do not grant access to either owner's database. Live multi-owner initiation, waiting, cancellation, or recovery needs the separately admitted [Suite contract](../products-and-suites.md#homestead-keeper-and-cultivator).
 

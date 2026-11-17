@@ -131,10 +131,10 @@ device capability check; the [LAN permission guidance](https://developer.android
 depends on the platform and target SDK.
 
 The first remote path needs a protected mobile ingress with
-[Ward](../../sepulcher/extensions/ward.md)-owned enrollment, scoped grants, and revocation. The
+[Ward](../../sepulcher/aspects/ward.md)-owned enrollment, scoped grants, and revocation. The
 current same-host loopback service is not this path: the study does not authorize exposing or
 tunnelling the current Altar. [Remote IAM](../../state-of-the-work.md#remote-iam) retains that
-delivery boundary. Later, [Tether](../../sepulcher/extensions/tether.md) can supply VPN reachability
+delivery boundary. Later, [Tether](../../sepulcher/aspects/tether.md) can supply VPN reachability
 without replacing application authentication or widening the grants.
 
 ## Keep execution and ownership explicit
@@ -185,7 +185,7 @@ does not become Companion enrollment.
 
 This player-delivery pilot can run independently of the Bridge and Voice release. It proves
 neither that release's live conversation nor an autonomous “ask, build, install” workflow.
-[SDLC](../../adr/16-sdlc.md) governs the candidate handoffs; standalone Android app installation
+[Smith](../../adr/16-smith.md) governs the candidate handoffs; standalone Android app installation
 does not inherit Core Evolution's body-update protocol. A future native construction/delivery
 promise still needs its exact executable owners and contracts.
 
@@ -276,7 +276,9 @@ The strongest reason to stop expanding Companion is a materially different durab
 backup retention, transfer recovery or cleanup judgment may need an application owner beyond a
 device session. Apply [Choosing a Home](../choosing-a-home.md) at that seam. Familiar may admit a
 phone-specific controller and stop policy without absorbing that application's records. The
-accepted result must precede a production schema, endpoint or remote handler.
+[phone admission comparison](android-foundation.md#candidate-phone-admission-without-a-familiar-body)
+studies an alternative without changing the accepted route. The accepted result must precede a
+production schema, endpoint or remote handler.
 
 ## Grow observation into troubleshooting
 

@@ -133,7 +133,7 @@ separately compiled per-host manifests plus one compatibility/enrolment receipt 
 revision, deployment and authority epochs, manifest digests, service Principals, protocol/schema
 ranges, and exact private-route generations. It does not create a distributed control plane:
 each host compiles and attests only its own Codex, secrets, volumes, and units. Each Core or
-Extension Domain owns its typed service contribution. The Containers compiler arbitrates each
+Aspect owns its typed service contribution. The Containers compiler arbitrates each
 whole physical manifest and Scribe alone emits the units and receipts. A profile may place a
 hostile parser, credential edge, or browser outside `lychd.pod` in a dedicated rootless network
 zone, but it cannot create a second application authority, raw unit fragment, Podman socket route,
@@ -152,7 +152,7 @@ application deployment, coordinated backup, or Tomb/Coffin qualification.
 
 An exact profile may place Veil on a separate
 [Gateway Host](../sepulcher/gateway.md). That host is a deployment trust role, not a Composition,
-Extension Domain, second Vessel, or application authority. Its manifest closes the public
+Aspect, second Vessel, or application authority. Its manifest closes the public
 listeners, typed Veil routes, exact authenticated backend, firewall flows, management boundary,
 edge-only secrets, optional Tether attachment, resources, readiness, reconciliation, and removal.
 It also binds or attests the independently enforced network zone, its router/firewall, L3-switch,
