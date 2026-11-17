@@ -7,7 +7,7 @@ icon: material/toy-brick-outline
 
 !!! abstract "Context and Problem Statement"
     LychD admits native Python where it needs its speed and reach, while keeping authority with
-    the explicit Core office or Extension Domain that receives a Contribution. The architecture
+    the explicit Core office or Aspect that receives a Contribution. The architecture
     must also leave a real boundary for separate engines, dependencies, images, and lifecycles.
     The operational journey is owned by [the Extensions Sepulcher](../sepulcher/extensions/); this
     leaf states the constitutional boundary.
@@ -25,13 +25,19 @@ conflating their trust or lifecycle boundaries. Semantic contract and profile id
 separate from their concrete Provider implementations. A future Forge lock lifecycle must pin
 foreign source and physical inputs; selected import shims alone are not reproducibility evidence.
 
-An **Extension Domain** is one of the fifteen stable user-facing jurisdictions. An **extension
-package** is selected code. A **Contribution** is a typed addition accepted by one explicit
-receiving owner, which may be a Core office or an Extension Domain. A **Provider** is a concrete
-engine or service behind a typed contract. Domain presence proves neither a package nor delivery;
-activation is of a concrete package or declared instance, never an abstract Domain. Compositions
-use Domain contracts without becoming their owners. Packages may contribute across several Core
-offices and Extension Domains, and one receiving owner may admit many packages or Providers.
+An **[Aspect](../sepulcher/aspects/index.md)** names a coherent responsibility in the body.
+Aspects form an open map, not a fixed register of plugins. A named responsibility may be realized
+by Core code, a method, a workflow, or several cooperating services; it requires neither a
+separate package nor a common replaceable interface. Smith names the software lifecycle and
+Drift the evaluation discipline, with their practical methods under Spellweaver.
+
+An **extension package** is explicitly selected code. A **Contribution** is a typed addition
+accepted by one receiving owner, which may be a Core office or an Aspect. A **Provider** supplies
+a concrete engine or service behind a typed contract. Activation selects a concrete package or
+declared instance. Compositions use the resulting contracts while retaining their application
+responsibilities. Packages may contribute to several owners, and one owner may admit several
+packages or Providers. A better implementation can be adopted through ordinary Smith and
+Evolution work; naming an Aspect does not promise a substitution API for that implementation.
 
 A **Registrant** is Core or one explicitly selected extension package performing registration. Its
 host-assigned `registrant_id` (`core`, `builtin:<activation-id>`, or
@@ -40,14 +46,14 @@ turns the Registrant into an engine or service Provider.
 
 Do not compress authority owner, package provenance, Contribution kind, Provider or external
 attachment, profile, and maturity into one union category. State the exact applicable facets.
-Every operational reference resolves to its concrete Core office or Extension Domain,
+Every operational reference resolves to its concrete Core office or Aspect,
 Contribution, Provider or attachment, profile revision, and Registrant provenance as required by
 the contract.
 
-### Vocabulary Boundary: Domain Is Not Package
+### Responsibilities and contributions
 
 Core owns schemas, policies, lifecycle, and host effects. A package can add only the explicit
-shapes accepted by a receiving owner. Keeping Domain and package separate therefore lets each
+shapes accepted by a receiving owner. Keeping responsibility and package separate lets each
 contribution state its provenance, trust, evolution, and configuration without making import
 location stand in for those decisions.
 
@@ -100,13 +106,13 @@ teardown hygiene neither authorizes live code replacement nor proves external ef
 
 A future declarative catalogue generation may activate without Vessel replacement only when it
 introduces no new executable implementation and its owner supplies atomic durable generation and
-pinning semantics. Otherwise activation follows [SDLC](16-sdlc.md),
+pinning semantics. Otherwise activation follows [Smith](16-smith.md),
 [Packaging](17-packaging.md), and Evolution into a new process generation.
 
 ### 2. The Registration Surface (The Extension Context)
 
-The context has shaped stores for `runes`, `soulstones`, `portals`, `transmutation`, and
-`delegated_runtimes`. New contribution kinds need an explicit owner. Patterns, Compositions,
+The context has seven shaped stores: `runes`, `soulstones`, `portals`, `transmutation`,
+`delegated_runtimes`, `observations`, and `inspections`. New contribution kinds need an explicit owner. Patterns, Compositions,
 status, routes, tools, workloads, operations, and migrations are not implied merely because a
 package registers. A minimal contribution is explicit:
 
@@ -123,6 +129,13 @@ effect authority, or service startup. Existing selected capability definitions m
 known identity into the component catalogue while reporting missing activity coverage explicitly.
 Dynamic runtime instances remain owner-reported observations of admitted definitions, not live
 package loading. Inspection and execution registries cannot substitute for one another.
+
+Contribution guides explain observation alongside the thing being contributed. The host can
+derive topology from admitted declarations and project standard execution evidence from the
+owning runtime. A declaration alone establishes no activity or successful outcome. Custom
+diagnostics and external sources retain Oculus's explicit source, schema, provenance, and
+projection contract. This authoring convention creates no universal annotation API and does not
+remove the existing observation or inspection stores.
 
 The manager owns the root context and passes each Registrant a registrant-bound
 `ExtensionRegistrationContext`. User activation IDs remain the Settings and filesystem selectors;
@@ -167,7 +180,7 @@ Contribution.
 
 A versioned application deployment profile is another receiving-owner contract, not raw unit text
 or authority inherited from a Composition name. The future sealed `deployment_services` surface
-may admit exact service-role contributions from Core or an Extension Domain; Containers owns the
+may admit exact service-role contributions from Core or an Aspect; Containers owns the
 `ApplicationDeploymentManifest@1` physical schema and compiler, Configuration owns selection and
 generation assembly, and the application profile owns which registered roles its workload needs.
 A contribution pins its owner, implementation revision, IPC contract, lifecycle, secret, network,
@@ -177,7 +190,7 @@ This surface is Designed and absent from the current `ExtensionRegistrationConte
 
 Future Spell and Scroll contribution preserves that boundary. Spellweaver-owned stores may admit
 portable Spell contracts and Scroll declarations; executable implementation and adapter stores
-remain separately owned by Extension and effect Domains. Contract publication, implementation
+remain separately owned by their implementation and effect owners. Contract publication, implementation
 registration, Scroll publication, and activation are distinct acts. None is implied by the current
 registration context or by the presence of an equally named package.
 
@@ -234,7 +247,7 @@ is where platform validation and operator consent can be made explicit.
 
 ### 5. Runtime Schema Discovery
 
-A schema makes TOML loadable; a Domain's runtime definition and hydrator make the configured
+A schema makes TOML loadable; its owner's runtime definition and hydrator make the configured
 capability usable. Codex validates the configuration, an adapter builds state, and the resulting
 LychD-facing `Runic[T]` handle retains its `.rune` provenance. A foreign object becomes `Runic`
 only through such a wrapper. Foreign internals remain sovereign even when a system uses rune

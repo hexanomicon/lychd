@@ -1,1 +1,1 @@
-"""Bounded public-source investigation; the wider Creation method is separate."""
+"""Bounded public-source investigation; the wider Smith method is separate."""

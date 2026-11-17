@@ -1294,7 +1294,7 @@ Oculus ingestion, native Run recovery, conversation memory, or a replacement for
 
 The separate `run --observation-dir /explicit/private/directory` option publishes a bounded
 `snapshot.json` for the common Oculus source contract. Select the same directory explicitly in
-the receiving Vessel's [observability configuration](../../sepulcher/extensions/oculus.md#connected-components-and-activity).
+the receiving Vessel's [observability configuration](../../sepulcher/aspects/oculus.md#connected-components-and-activity).
 Use `source_id = "reach.operator"` and host attribution `registrant_id = "operator:reach"`.
 The directory is owner-only, outside Git checkouts, and independently admitted to the reader's
 deployment. This feature neither exposes nor reads the diagnostic SQLite archive.

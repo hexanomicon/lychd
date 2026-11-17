@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { act, fireEvent, render, screen } from "@testing-library/svelte";
 import { expect, it, vi } from "vitest";
 import { initialPreparationState, type PublicNotePreparation as Controller, type PreparationTarget } from "$lib/pages/bridge/state/archive/preparation";
 import PublicNotePreparation from "./PublicNotePreparation.svelte";
@@ -43,4 +43,17 @@ it("an old rendered effectful gesture cannot use a newer controller context", as
   await fireEvent.click(screen.getByRole("button", { name: "Register configured generation" }));
   await fireEvent.click(screen.getByRole("button", { name: "Prepare this promoted revision" }));
   expect(actions.register).not.toHaveBeenCalled(); expect(actions.prepare).not.toHaveBeenCalled(); view.unmount();
+});
+
+it("a preparation response in an inactive retained section cannot move focus", async () => {
+  const actions = controller();
+  let finish!: () => void;
+  vi.mocked(actions.prepare).mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+  const state = { ...initialPreparationState(), generation: target.request.generation, configuration: "configured" as const, review: target, eligible: true };
+  const view = render(PublicNotePreparation, { state, controller: actions, blocked: false, recordAvailable: true });
+  await fireEvent.click(screen.getByRole("button", { name: "Prepare this promoted revision" }));
+  await view.rerender({ state, controller: actions, blocked: false, recordAvailable: true, active: false });
+  const newer = document.createElement("button"); document.body.append(newer); newer.focus();
+  await act(() => finish()); expect(document.activeElement).toBe(newer);
+  expect(actions.prepare).toHaveBeenCalledTimes(1); newer.remove(); view.unmount();
 });

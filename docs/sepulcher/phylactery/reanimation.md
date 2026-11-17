@@ -11,7 +11,7 @@ icon: material/eject-outline
 Systemd can raise the process; the Phylactery, queue, checkpoint, and wait owners determine which
 work may return. Volatile memory, subscribers, leases, and uncommitted frames are gone.
 
-A [durable park](../extensions/weaver/stasis-and-return.md) can return through a fresh worker
+A [durable park](../aspects/weaver/stasis-and-return.md) can return through a fresh worker
 claim in the same Vessel. Reanimation is needed only when the application process has died.
 
 ## Three rites that must not be confused

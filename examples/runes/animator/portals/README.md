@@ -5,7 +5,7 @@ an OpenAI Portal (`openai/main.toml`) and Gemini through Google's OpenAI-compati
 (`google-gemini/main.toml`).
 
 `portals/` is a branch anchor; each concrete provider leaf owns its TOML. The
-[Portal guide](../../../../docs/sepulcher/animator/portal.md) explains declaration and admission.
+[Portal guide](../../../../docs/sepulcher/extensions/animators/portal.md) explains declaration and admission.
 Current dispatch quarantines Portal issue, and the general privacy/egress path remains designed;
 [State of Work](../../../../docs/state-of-the-work.md#animator-dispatch-spine) records that limit.
 A stored declaration alone cannot enable a remote request.

@@ -6,10 +6,11 @@ claim, implementation fact, or vocabulary. Load the matching scope selected by
 
 | Work | Playbook |
 | --- | --- |
-| Settle a consequential direction or construction choice | [Creation's Inquiry](../../docs/sepulcher/extensions/weaver/creation.md#reuse-inquiry-at-each-uncertain-boundary), then the applicable playbook |
+| Settle a consequential direction or construction choice | [Smith's Inquiry](../../docs/sepulcher/aspects/weaver/smith.md#reuse-inquiry-at-each-uncertain-boundary), then the applicable playbook |
 | Rewrite or restructure documentation without losing nuance | [Nuance-preserving rewrite](nuance-preserving-rewrite.md) |
 | Change tracked source or tests | [File editing](editing/index.md), then one file-type card |
 | Hand bounded coding work to an external agent runtime | [Delegated coding](delegated-coding.md) |
+| Verify that a new or changed capability, contract, procedure, or route can be found | [Context-loading verification](context-loading.md) |
 
 ## Loading law
 

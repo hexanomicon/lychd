@@ -13,6 +13,12 @@ Begin with an already admitted controller or device attachment. `familiar.admit_
 
 For a phone, Ward must first supply the device/application `Principal`, revocable `Credential` and generation, current object-scoped `Authority Grant`, and policy generation. Familiar can then admit the body. Companion opens its device/session afterwards; no prior Companion record is needed.
 
+The existence of a hardware adapter alone does not establish a Familiar mission. The
+[phone admission comparison](../companion/android-foundation.md#candidate-phone-admission-without-a-familiar-body)
+studies a possible future boundary; it does not change the accepted phone binding or this body
+contract. A narrower accepted contract would require an explicit successor and continuity for its
+Pattern and record identities.
+
 The body record pins:
 
 - attachment owner, typed identity, revision/epoch, credential generation, fencing, and local/remote road;

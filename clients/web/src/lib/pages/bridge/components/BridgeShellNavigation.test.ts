@@ -2,10 +2,10 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/svelte
 import { createRawSnippet } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { BridgeSnapshot, OrbRunSnapshot, RunProjectionSnapshot } from "$lib/api/models";
+import type { BridgeSnapshot, LoomView, OrbRunSnapshot, RunProjectionSnapshot } from "$lib/api/models";
 
 const navigationHooks = vi.hoisted(() => ({
-  before: [] as Array<(navigation: { from: { url: URL } }) => void>,
+  before: [] as Array<(navigation: { from: { url: URL }; to?: { url: URL }; willUnload?: boolean; cancel: () => void }) => void>,
   after: [] as Array<(navigation: { type: "link" | "popstate"; to: { url: URL } }) => void>
 }));
 
@@ -14,7 +14,7 @@ vi.mock("$app/state", async () => {
   return { page: { state: {}, url: new SvelteURL("http://localhost/bridge") } };
 });
 vi.mock("$app/navigation", () => ({ goto: vi.fn(), replaceState: vi.fn(),
-  beforeNavigate: vi.fn((callback: (navigation: { from: { url: URL } }) => void) => { navigationHooks.before.push(callback); }),
+  beforeNavigate: vi.fn((callback: (navigation: { from: { url: URL }; to?: { url: URL }; willUnload?: boolean; cancel: () => void }) => void) => { navigationHooks.before.push(callback); }),
   afterNavigate: vi.fn((callback: (navigation: { type: "link" | "popstate"; to: { url: URL } }) => void) => { navigationHooks.after.push(callback); }) }));
 vi.mock("$lib/api/client", () => ({
   ApiError: class ApiError extends Error {},
@@ -23,6 +23,7 @@ vi.mock("$lib/api/client", () => ({
   decideConsent: vi.fn(),
   getAltarStatus: vi.fn(),
   getArchiveProfile: vi.fn().mockResolvedValue({ profile: "local-public-notes@1", namespace_id: "00000000-0000-4000-8000-000000000001", owner_subject: { identity: "owner" }, policy_revision: "policy" }),
+  recallArchiveSemanticNotes: vi.fn(), inspectArchiveSemanticRecall: vi.fn(), resolveArchiveSemanticRecall: vi.fn(),
   getArchiveBridgeDefault: vi.fn().mockResolvedValue({ current_default: null, requests_profile: null }),
   listArchiveNotes: vi.fn().mockResolvedValue({ records: [] }),
   getArchiveNote: vi.fn(), admitArchiveNote: vi.fn(), promoteArchiveNote: vi.fn(), revokeArchiveNote: vi.fn(), discoverArchiveGeneration: vi.fn(), registerArchiveGeneration: vi.fn(), deriveArchiveNote: vi.fn(), inspectArchiveDerivation: vi.fn(),
@@ -39,9 +40,10 @@ vi.mock("$lib/api/client", () => ({
 import { page as appPage } from "$app/state";
 const page = appPage as Omit<typeof appPage, "url"> & { url: import("svelte/reactivity").SvelteURL };
 import { goto } from "$app/navigation";
-import { createBridgeSession, getAltarStatus, getBridgeSnapshot, getOrbRun, sendBridgeMessage, listenToRun, cancelBridgeRun } from "$lib/api/client";
+import { createBridgeSession, getAltarStatus, getBridgeSnapshot, getArchiveNote, deriveArchiveNote, discoverArchiveGeneration, getOrbRun, sendBridgeMessage, listenToRun, cancelBridgeRun } from "$lib/api/client";
 import { bridgeWorkspaceKey, createBridgeWorkspace } from "$lib/shell/state/bridge-workspace.svelte";
-import { getSeancesWorkspace, type SeancesWorkspace as SeancesContext } from "$lib/pages/seances/state/workspace.svelte";
+import { getSeancesWorkspace, type SeancesWorkspace as SeancesContext } from "$lib/seances/workspace.svelte";
+import { getEvaluationWorkspace, type EvaluationWorkspace } from "$lib/pages/loom/state/evaluation/workspace.svelte";
 import AltarShell from "$lib/shell/components/AltarShell.svelte";
 import BridgePage from "../../../../routes/bridge/+page.svelte";
 
@@ -84,7 +86,9 @@ const orb: OrbRunSnapshot = {
 
 async function visit(href: string, type: "link" | "popstate" = "link") {
   await act(() => {
-    for (const callback of navigationHooks.before) callback({ from: { url: new URL(page.url.href) } });
+    let canceled = false;
+    for (const callback of navigationHooks.before) callback({ from: { url: new URL(page.url.href) }, to: { url: new URL(href, "http://localhost") }, willUnload: false, cancel: () => { canceled = true; } });
+    if (canceled) return;
     page.url.href = new URL(href, "http://localhost").href;
     for (const callback of navigationHooks.after) callback({ type, to: { url: new URL(page.url.href) } });
   });
@@ -221,43 +225,36 @@ describe("shell-lifetime Bridge conversation", () => {
     shell.unmount();
   });
 
-  it("reveals focused applications entered from a narrow Bridge without unmounting the ordinary conversation", async () => {
+  it("opens compatibility public-note applications in one narrow Memory boundary while preserving Bridge", async () => {
     vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
     await visit("/bridge/session-b");
     const shell = render(AltarShell, { children });
     const composer = await screen.findByLabelText("Message");
-    for (const [label, query] of [
-      ["Manage public notes", "notes=manage"],
-      ["Recall public sources", "notes=recall"],
-      ["Investigate public source", "investigation=new"]
-    ]) {
-      if (document.getElementById("bridge-dock")?.closest("[hidden]")) {
-        await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
-      }
-      const sources = screen.getByText("Public sources", { selector: "summary" });
-      if (!sources.parentElement?.hasAttribute("open")) await fireEvent.click(sources);
-      const link = screen.getByRole("link", { name: label });
-      expect(link.getAttribute("href")).toBe(`/bridge?${query}`);
-      await visit(link.getAttribute("href")!);
-      const main = screen.getByRole("main");
-      expect(main.hasAttribute("inert")).toBe(false);
-      expect(document.getElementById("bridge-dock")?.closest("[hidden]")).toBeTruthy();
-      expect(document.activeElement).toBe(main);
-      expect(document.getElementById("bridge-message")).toBe(composer);
-    }
-    await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
-    const orbLink = screen.getByRole("link", { name: "Look into the Orb" });
-    await visit(orbLink.getAttribute("href")!);
-    expect(document.getElementById("bridge-dock")?.closest("[hidden]")).toBeTruthy();
-    expect(document.activeElement).toBe(screen.getByRole("main"));
-    // Exercise the real focused route composition after leaving the modal.
+    await fireEvent.input(composer, { target: { value: "Retained B draft" } });
     await visit("/bridge?notes=manage");
-    const focused = render(BridgePage, { target: screen.getByRole("main") });
     expect(await screen.findByRole("heading", { name: "Public notes" })).toBeTruthy();
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(screen.getByRole("dialog", { name: "Memory" })).toBeTruthy();
+    expect(document.getElementById("bridge-message")).toBe(composer);
+    expect((document.getElementById("bridge-dock")?.closest(".dock-shell") as HTMLElement).inert).toBe(true);
+    await visit("/bridge?notes=new");
+    const publicDraft = await screen.findByLabelText(/^Complete replacement text/);
+    await fireEvent.input(publicDraft, { target: { value: "Explicit public text" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Close Memory" }));
+    await visit("/loom/bridge_chat/1");
+    await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
+    const opener = screen.getByRole("button", { name: "Memory" });
+    await fireEvent.click(opener);
+    expect(screen.getByLabelText(/^Complete replacement text/)).toBe(publicDraft);
+    expect((publicDraft as HTMLTextAreaElement).value).toBe("Explicit public text");
+    expect((composer as HTMLTextAreaElement).value).toBe("Retained B draft");
     expect(vi.mocked(getBridgeSnapshot).mock.calls.map(([id]) => id)).toEqual(["session-b"]);
-    expect(sendBridgeMessage).not.toHaveBeenCalled();
-    expect(cancelBridgeRun).not.toHaveBeenCalled();
-    focused.unmount(); shell.unmount();
+    expect(sendBridgeMessage).not.toHaveBeenCalled(); expect(cancelBridgeRun).not.toHaveBeenCalled();
+    await fireEvent.keyDown(window, { key: "Escape" });
+    expect(document.activeElement).toBe(opener);
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(screen.getByRole("dialog", { name: "Bridge" })).toBeTruthy();
+    shell.unmount();
   });
 
   it("keeps the explicit attention URL a chooser without changing the remembered session", async () => {
@@ -389,6 +386,31 @@ it("warns before losing document-local material even after leaving Séances", as
   shell.unmount();
 });
 
+it("retains a shell-owned evaluation draft across navigation and warns only until it is discarded", async () => {
+  let context: EvaluationWorkspace | undefined;
+  const inspect = createRawSnippet(() => {
+    context = getEvaluationWorkspace();
+    return { render: () => "<div>Review workspace</div>" };
+  });
+  await visit("/loom/bridge_chat/1");
+  const shell = render(AltarShell, { children: inspect });
+  await screen.findByLabelText("Message");
+  const score: LoomView = { schema_version: 1, pattern_id: "bridge_chat", revision: "1", digest: "sha256:test", implementation_revision: "test", checkpoint_schema: "test@1", entry_node: "start", nodes: [{ key: "start", kind: "step", label: "Start" }], edges: [], title: "Bridge", description: "Test score", publication: "published", mermaid_source: "flowchart TD", trigger_hint: "test" };
+  await act(() => context!.start(score));
+  const id = context!.activeId!;
+  await visit("/atlas");
+  const pending = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(pending);
+  expect(pending.defaultPrevented).toBe(true);
+  expect(context!.activeId).toBe(id);
+  expect(context!.active?.score.pattern_id).toBe("bridge_chat");
+  await act(() => context!.discard(id));
+  const empty = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(empty);
+  expect(empty.defaultPrevented).toBe(false);
+  shell.unmount();
+});
+
 it("discards a queued B composer focus when explicit C selection supersedes it", async () => {
   let context: SeancesContext | undefined;
   const inspect = createRawSnippet(() => {
@@ -414,4 +436,36 @@ it("discards a queued B composer focus when explicit C selection supersedes it",
   expect(document.activeElement).not.toBe(screen.getByLabelText("Message"));
   expect(page.url.pathname).toBe("/atlas");
   shell.unmount();
+});
+
+it("keeps exact unknown preparation recoverable when a legacy URL requests a different notes focus from another instrument", async () => {
+  const recordId = "00000000-0000-4000-8000-000000000003", generationId = "00000000-0000-4000-8000-000000000004";
+  vi.mocked(getArchiveNote).mockResolvedValue({ namespace_id: "00000000-0000-4000-8000-000000000001", reference: { record_id: recordId, revision_digest: "b".repeat(64), lifecycle_version: 2 }, source_key: "public-source", source_revision: "r1", source_digest: "c".repeat(64), producer: "author", observed_at: sessions[0]!.created_at, created_at: sessions[0]!.created_at, lifecycle: "promoted" });
+  vi.mocked(discoverArchiveGeneration).mockResolvedValue({ generation_id: generationId, manifest_digest: "a".repeat(64) });
+  vi.mocked(deriveArchiveNote).mockRejectedValue(new Error("Response lost"));
+  await visit(`/bridge?notes=${recordId}`);
+  const shell = render(AltarShell, { children });
+  await screen.findByText("Configured generation");
+  await fireEvent.click(screen.getByRole("button", { name: "Review preparation" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Prepare this promoted revision" }));
+  await screen.findByText(/Earlier preparation outcome remains unknown/);
+  const frozen = screen.getByRole("button", { name: "Check frozen preparation reference" });
+  await fireEvent.click(screen.getByRole("button", { name: "Close Memory" }));
+  await visit("/loom/bridge_chat/1");
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  await visit("/bridge?notes=new");
+  expect(confirm).toHaveBeenCalledTimes(1);
+  expect(page.url.pathname).toBe("/loom/bridge_chat/1");
+  expect(page.url.search).toBe("");
+  expect(screen.getByRole("button", { name: "Check frozen preparation reference" })).toBe(frozen);
+  expect(screen.getByText(/Earlier preparation outcome remains unknown/)).toBeTruthy();
+  expect(screen.queryByRole("form", { name: "Public note intake" })).toBeNull();
+  expect(deriveArchiveNote).toHaveBeenCalledTimes(1); expect(getArchiveNote).toHaveBeenCalledTimes(1);
+  confirm.mockReturnValue(true);
+  await visit("/bridge?notes=new");
+  expect(confirm).toHaveBeenCalledTimes(2);
+  expect(page.url.search).toBe("?notes=new");
+  expect(screen.getByRole("form", { name: "Public note intake" })).toBeTruthy();
+  expect(deriveArchiveNote).toHaveBeenCalledTimes(1);
+  confirm.mockRestore(); shell.unmount();
 });

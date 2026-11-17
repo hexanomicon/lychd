@@ -75,4 +75,4 @@ Begin actors with project-owned deterministic state machines, behavior trees, na
 
 ## The neighboring worlds
 
-[Shadow](../../sepulcher/extensions/shadow/) owns counterfactual branch lineage and prepares Promotion Requests. [Blockworld](../blockworld/) owns persistent-server missions/effects. Foundry owns the local project candidate: offline `.schem` or grid import grants no live placement. Signing, upload, rollout/rollback, public players, and remote-copy receipts require a future distribution owner.
+[Shadow](../../sepulcher/aspects/shadow/) owns counterfactual branch lineage and prepares Promotion Requests. [Blockworld](../blockworld/) owns persistent-server missions/effects. Foundry owns the local project candidate: offline `.schem` or grid import grants no live placement. Signing, upload, rollout/rollback, public players, and remote-copy receipts require a future distribution owner.

@@ -47,6 +47,6 @@ exists, _this seems familiar_ where Recall lacks provenance, and _I do not know_
 line exists. **Après moi, le déluge—the anti-Ouroboros** is the opposite posture: claiming the hand
 while sending its consequence elsewhere.
 
-[Mirror](../extensions/mirror.md) is the future jurisdiction for durable attribution across
+[Mirror](../aspects/mirror.md) is the future jurisdiction for durable attribution across
 Invocations. It remains **Designed**; [ADR 32 — Identity](../../adr/32-identity.md) and the
 [State of Work](../../state-of-the-work.md#mirror-identity) own that boundary.

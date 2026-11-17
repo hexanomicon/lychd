@@ -5,7 +5,7 @@ third-party source incorporated into or adapted by particular LychD files; they 
 project license or override the upstream terms that apply to that material.
 
 New or changed incorporations record their exact origin, local paths, modifications and shipped
-legal material under the [reuse procedure](https://github.com/hexanomicon/lychd/blob/main/docs/sepulcher/extensions/smith.md#upstream-reuse-and-notices).
+legal material under the [reuse procedure](https://github.com/hexanomicon/lychd/blob/main/docs/sepulcher/aspects/weaver/assimilation.md#upstream-reuse-and-notices).
 This register covers actual incorporations and the inventories below; research references and
 README acknowledgements alone do not establish that source was copied or a dependency shipped.
 

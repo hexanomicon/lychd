@@ -40,10 +40,10 @@ for that browser surface.
   life and death, and the next creation. Genesis also owns the
   [Tree of Life source meanings](../../docs/divination/transmutation/genesis.md#tree-of-life),
   its pillars, Adam Kadmon, and the inner-instrument comparison.
-- Practical continuation of that walk: [Weaver's Creation](../../docs/sepulcher/extensions/weaver/creation.md)
-  and [Ouroboros](../../docs/sepulcher/extensions/weaver/ouroboros.md),
-  [Drift](../../docs/sepulcher/extensions/drift/workflow-improvement.md), and
-  [Soulforge](../../docs/sepulcher/extensions/soulforge/discernment-training.md). Read the owner
+- Practical continuation of that walk: [Weaver's Smith](../../docs/sepulcher/aspects/weaver/smith.md)
+  and [Ouroboros](../../docs/sepulcher/aspects/weaver/ouroboros.md),
+  [Drift](../../docs/sepulcher/aspects/weaver/drift/workflow-improvement.md), and
+  [Soulforge](../../docs/sepulcher/aspects/soulforge/discernment-training.md). Read the owner
   needed by the question; an interpretive chapter does not replace its operating contract.
 - Transcendence: load [Transcendence scope](transcendence.md) for the five seals, the Great Work's
   telos, consciousness, cosmology, or philosophical claims about autonomy, discernment, memory,

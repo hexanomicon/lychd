@@ -196,8 +196,8 @@ fault to repair.
 refuse, continue, and answer from a life of their own. Its promise is to increase the number of
 places from which power can be questioned.
 
-In the intended body, [Soulstones](../../sepulcher/animator/soulstone/index.md) hold useful
-capability on operator-controlled machines, [Legion](../../sepulcher/extensions/legion.md) extends continuity
+In the intended body, [Soulstones](../../sepulcher/extensions/animators/soulstone/index.md) hold useful
+capability on operator-controlled machines, [Legion](../../sepulcher/aspects/legion.md) extends continuity
 across owned iron, and [Intercom](../../adr/26-a2a.md) exchanges bounded labor among sovereign
 peers. [Federation](../../state-of-the-work.md#legion-federation) and
 [peer exchange](../../state-of-the-work.md#a2a-intercom) remain Designed.

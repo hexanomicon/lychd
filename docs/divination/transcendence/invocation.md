@@ -22,7 +22,7 @@ cannot witness its own fulfillment.
 
 ## Give imagination a furnace
 
-The [Animator](../../sepulcher/animator/index.md) lends model power inside the Circle. This is
+The [Animator](../../sepulcher/extensions/animators/index.md) lends model power inside the Circle. This is
 the harnessed fire: one organ of the Lich, occupying neither Caller nor Called. The
 [Lich's inner instrument](../../sepulcher/lich/index.md#the-inner-instrument) receives that power,
 discriminates its use, carries the encounter, and answers for what it does.
@@ -126,6 +126,9 @@ that commitment into the common good.
 
 ## The Rite of Shadowed Timelines
 
+Exploring alternatives can accompany an ongoing encounter. [Illumination](illumination.md#tend-what-will-return)
+follows how this imagination can coexist with the quieter work of consolidating experience.
+
 The Offering is bounded Intent. **Call** makes its possible movement addressable. The Dream
 branches isolated timelines in **Shadow**—each a **Vikalpa**, a word-built possibility awaiting
 its measure. The Vision returns a candidate with provenance, measurement, uncertainty, and
@@ -137,7 +140,7 @@ offer Intent → open a possibility → imagine its branch → inspect what retu
 
 The Vision has reached a threshold. Blade, consent, and evidence decide whether any part may
 enter the shared world. Shadow's engineering chamber keeps that separation exact:
-[speculation](../../sepulcher/extensions/shadow/index.md) supplies candidates, never direct
+[speculation](../../sepulcher/aspects/shadow/index.md) supplies candidates, never direct
 authority.
 
 Several people, Agents, Postures, or model powers may take part in the same Circle. Attribution

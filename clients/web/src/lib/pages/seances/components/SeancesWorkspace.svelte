@@ -7,9 +7,12 @@
   import type { BridgeSnapshot, BridgeTurnView, SessionPage } from "$lib/api/models";
   import { navigationId } from "$lib/navigation/instruments";
   import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/navigation/pins";
-  import { createSeancesWorkspace, getSeancesWorkspace, hasSeancesWorkspace } from "$lib/pages/seances/state/workspace.svelte";
-  import { materialKinds, materialMarkdown, sourceSignature, type MaterialKind, type SeanceMaterial } from "$lib/pages/seances/state/material";
+  import { createSeancesWorkspace, getSeancesWorkspace, hasSeancesWorkspace } from "$lib/seances/workspace.svelte";
+  import { sourceSignature, type SeanceMaterial } from "$lib/seances/material";
 
+  import WorkingMaterial from "$lib/shell/components/WorkingMaterial.svelte";
+  import { getMemoryPanel, hasMemoryPanel } from "$lib/memory/panel.svelte";
+  const memory = hasMemoryPanel() ? getMemoryPanel() : null;
   let { sessionId }: { sessionId?: string } = $props();
   const work = hasSeancesWorkspace() ? getSeancesWorkspace() : createSeancesWorkspace((id) => goto(resolve("/bridge/[session_id]", { session_id: id })));
   let sessions = $state.raw<SessionPage["sessions"]>([]);
@@ -37,7 +40,8 @@
   onMount(() => {
     readPins();
     void loadCatalogue();
-    return () => { alive = false; generation++; catalogueRequest.abort(); };
+    const stopRefusal = work.onRefusal(() => denyAccess(false));
+    return () => { alive = false; generation++; catalogueRequest.abort(); stopRefusal(); };
   });
   function readPins() {
     try { pins = parsePinnedConversations(localStorage.getItem(bridgePinsStorageKey)); }
@@ -50,7 +54,7 @@
     try { localStorage.setItem(bridgePinsStorageKey, JSON.stringify(next)); }
     catch { notice = "Pins are kept for this tab; browser storage is unavailable."; }
   }
-  function denyAccess() {
+  function denyAccess(propagate = true) {
     accessVersion++;
     generation++;
     sessions = [];
@@ -59,7 +63,7 @@
     loading = false;
     catalogueLoading = false;
     catalogueError = "Catalogue access was refused. Retry after access is restored.";
-    work.materials.clear();
+    if (propagate) work.refuseAccess();
     readError = "Access to séances is unavailable. Read again after access is restored.";
   }
   async function loadCatalogue() {
@@ -115,10 +119,6 @@
     if (!selected) return;
     notice = work.add(selected.id, turn) ?? "Quotation added to Working material.";
   }
-  function editNote(item: SeanceMaterial, element: HTMLTextAreaElement) {
-    const error = work.update(item.sessionId, item.id, { note: element.value });
-    if (error) { notice = error; element.value = item.note; }
-  }
   async function inspectSource(item: SeanceMaterial) {
     const turn = selected?.turns?.find((turn) => sourceSignature(turn) === sourceSignature(item.source));
     if (!turn) { notice = "The selected quotation is not present in this retained read. Refresh or follow its exact session and Run reference."; return; }
@@ -128,28 +128,17 @@
     node?.focus({ preventScroll: true });
     node?.scrollIntoView?.({ block: "center" });
   }
-  async function copyMaterial() {
-    if (!selected) return;
-    try { await navigator.clipboard.writeText(materialMarkdown(selected.title, material)); notice = "Working material copied. Keep the copy somewhere safe before closing this tab."; }
-    catch { notice = "Clipboard access is unavailable. Use Export Markdown to keep this material."; }
-  }
-  function exportMaterial() {
-    if (!selected) return;
-    const url = URL.createObjectURL(new Blob([materialMarkdown(selected.title, material)], { type: "text/markdown;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `seance-${selected.id}.md`;
-    link.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    notice = "Markdown download requested. Check the file before closing this tab.";
-  }
+
 </script>
 
 <svelte:head><title>Séances — LychD</title></svelte:head>
 <svelte:window onstorage={(event) => { if (event.key === bridgePinsStorageKey) readPins(); }} />
 <div class="seances-workspace">
   <PageHeader title="Séances" description="Return to a conversation. Gather what matters for the next use.">
-    {#snippet actions()}<a class="new-seance" href={resolve("/bridge?choose=conversation")}>New Séance in Bridge</a>{/snippet}
+    {#snippet actions()}
+      {#if memory}<button type="button" data-memory-opener aria-controls="memory-panel" aria-expanded={memory.isOpen} onclick={(event) => memory.open("working", event.currentTarget)}>Memory</button>{/if}
+      <a class="new-seance" href={resolve("/bridge?choose=conversation")}>New Séance in Bridge</a>
+    {/snippet}
   </PageHeader>
   {#if notice}<p class="notice" role="status">{notice}</p>{/if}
   <div class="workspace-body">
@@ -173,7 +162,7 @@
         <header class="detail-heading"><div><h2>{selected.title}</h2><p class="identity">{selected.id}</p></div><button class="primary" type="button" onclick={continueConversation}>Continue in Bridge</button></header>
         <div class="read-status"><p>Retained read · {readAt}. Live replies and consent stay in Bridge.</p><button type="button" onclick={() => read(sessionId)}>Refresh transcript</button></div>
         {#if snapshot?.active_runs.length || selected.pending_count}<p class="notice">Live activity is available in Bridge. {selected.pending_count} awaiting consent. Continue in Bridge to review current actions.</p>{/if}
-        <nav class="view-switch" aria-label="Séance views"><button type="button" aria-pressed={view === "transcript"} onclick={() => { view = "transcript"; }}>Transcript</button><button type="button" aria-pressed={view === "material"} onclick={() => { view = "material"; }}>Working material ({material.length})</button></nav>
+        <nav class="view-switch" aria-label="Séance views"><button type="button" aria-pressed={view === "transcript"} onclick={() => { view = "transcript"; }}>Transcript</button><button type="button" aria-pressed={view === "material"} onclick={(event) => { if (memory) memory.open("working", event.currentTarget); else view = "material"; }}>Working material ({material.length})</button></nav>
         {#if view === "transcript"}
           <div class="transcript">
             {#each selected.turns ?? [] as turn (turn)}
@@ -186,15 +175,7 @@
             {:else}<div class="empty"><h3>No retained turns yet</h3><p>Continue in Bridge to begin, or refresh after a reply settles.</p></div>{/each}
           </div>
         {:else}
-          <div class="material-heading"><p>Manually selected quotations and notes. Kept in this open tab; export to keep. Not saved to Archive. Up to 32 selections and 128,000 quotation and note characters across this tab.</p><div class="actions"><button type="button" disabled={!material.length} onclick={copyMaterial}>Copy material</button><button type="button" disabled={!material.length} onclick={exportMaterial}>Export Markdown</button></div></div>
-          {#each material as item (item.id)}
-            <article class="material-card">
-              <label>Use as <select value={item.kind} onchange={(event) => work.update(item.sessionId, item.id, { kind: event.currentTarget.value as MaterialKind })}>{#each materialKinds as kind (kind)}<option>{kind}</option>{/each}</select></label>
-              <blockquote>{item.source.content}</blockquote><p class="muted">{item.source.role === "user" ? "You" : "LychD"} · {item.source.created_at}{item.source.run_id ? ` · Run ${item.source.run_id}` : " · No supplied Run identity"}</p>
-              <label>Your note<textarea value={item.note} oninput={(event) => editNote(item, event.currentTarget)} rows="2" placeholder="Why keep this?"></textarea></label>
-              <div class="actions"><button type="button" onclick={() => inspectSource(item)}>Inspect source</button><button type="button" onclick={() => work.remove(item.sessionId, item.id)}>Remove selection</button></div>
-            </article>
-          {:else}<div class="empty"><h3>Keep a thread worth following</h3><p>Select a quotation in Transcript, then mark it as a topic, open question or material for later use. Nothing is extracted automatically.</p></div>{/each}
+          <WorkingMaterial {work} sessionId={selected.id} title={selected.title} onInspect={inspectSource} />
         {/if}
       {:else}<div class="empty"><h2>Choose a séance</h2><p>Inspect its retained conversation without changing the conversation currently open in Bridge.</p><p>Topics, questions and selected material begin with your own source selections.</p></div>{/if}
     </section>
@@ -220,25 +201,21 @@
   .identity { font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--color-ash); overflow-wrap: anywhere; }
   .read-status { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
   .view-switch { display: flex; gap: .5rem; margin: 1rem 0; padding-bottom: .75rem; border-bottom: 1px solid var(--color-engraving); }
-  button, select, input, textarea { font: inherit; font-size: var(--text-sm); color: var(--color-parchment); background: var(--color-obsidian); border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); }
+  button, input { font: inherit; font-size: var(--text-sm); color: var(--color-parchment); background: var(--color-obsidian); border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); }
   button { cursor: pointer; min-height: 2.5rem; padding: .45rem .75rem; }
   button:hover, a:hover { color: var(--color-bone); border-color: var(--color-rune); }
   button[aria-pressed="true"] { color: var(--color-bone); border-color: var(--color-accent); }
   button.primary { color: var(--color-void); background: var(--color-bone); border-color: var(--color-bone); }
   button:disabled { opacity: .5; cursor: default; }
   label { display: block; font-size: var(--text-xs); color: var(--color-ash); }
-  input, textarea { display: block; width: 100%; padding: .65rem; margin-top: .4rem; box-sizing: border-box; }
-  select { margin-left: .5rem; padding: .5rem; }
-  textarea { resize: vertical; }
-  .retained-turn, .material-card { padding: 1.25rem 0; border-bottom: 1px solid var(--color-engraving); }
+  input { display: block; width: 100%; padding: .65rem; margin-top: .4rem; box-sizing: border-box; }
+  .retained-turn { padding: 1.25rem 0; border-bottom: 1px solid var(--color-engraving); }
   .retained-turn header { display: flex; flex-wrap: wrap; align-items: baseline; gap: .75rem; font-size: var(--text-xs); }
   .retained-turn strong { color: var(--color-bone); }
   .user-turn { padding-inline: 1rem; background: var(--color-obsidian); border-radius: var(--radius-glyph); }
-  .quotation, blockquote { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; font-size: var(--text-sm); }
-  blockquote { margin: 1rem 0; padding-left: 1rem; border-left: 2px solid var(--color-accent); }
-  footer, .actions { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; margin-top: .75rem; }
+  .quotation { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; font-size: var(--text-sm); }
+  footer { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; margin-top: .75rem; }
   footer a { font-size: var(--text-xs); color: var(--color-rune); }
-  .material-heading { font-size: var(--text-xs); color: var(--color-ash); }
   .empty { max-width: 40rem; padding: 3rem 1rem; color: var(--color-ash); }
   .notice { font-size: var(--text-xs); padding: .65rem .8rem; background: var(--color-obsidian); border-left: 2px solid var(--color-rune); }
   :focus-visible, article:focus { outline: 2px solid var(--color-rune); outline-offset: 3px; }

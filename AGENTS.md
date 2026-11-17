@@ -1,113 +1,111 @@
 # AGENTS.md
 
-This is the coding-agent entrypoint for [LychD](README.md). It routes context and states the
-repository-wide working contract. [CONTRIBUTING.md](CONTRIBUTING.md) owns setup, commands, and
-human-facing contribution rules.
-
-Before choosing a branch, committing, pushing, or opening a pull request, read the
-[current collaboration phase](CONTRIBUTING.md#branches-and-everyday-collaboration).
-
-Before proposing or starting substantial repository work, follow the
-[coordination preflight](CONTRIBUTING.md#coordinate-before-starting-work).
+This is the coding-agent entrypoint and working contract for [LychD](README.md).
+[CONTRIBUTING.md](CONTRIBUTING.md) owns setup, commands, and human contribution rules. Read its
+[current collaboration phase](CONTRIBUTING.md#branches-and-everyday-collaboration) before choosing
+a branch, committing, pushing, or opening a pull request; follow its
+[coordination preflight](CONTRIBUTING.md#coordinate-before-starting-work) before proposing or
+starting substantial work.
 
 ## Authority
 
-- ADRs own accepted architectural decisions.
-- [State of Work](docs/state-of-the-work.md) owns public delivery status.
+- ADRs own accepted architecture; [State of Work](docs/state-of-the-work.md) owns public delivery
+  status.
 - Tracked source, focused tests, lockfiles, and maintained receipts own executable evidence.
 - Topic pages own user operation and interpretation within those boundaries.
-- Scope files route context only; they cannot override any owner above.
-- Workflow playbooks prescribe task procedure only; they cannot create architectural, delivery,
-  or executable truth.
+- Scopes route context; workflows prescribe procedure. Neither overrides those owners or creates
+  architectural, delivery, or executable truth.
 - Ignored `.agents/work/**`, journals, local shelves, and tool profiles are never project truth.
 
-When owners disagree, do not reconcile them in prose. Find the stale owner or escalate.
+When owners disagree, find the stale owner or escalate. Do not reconcile them in prose.
 
 ## Scope router
 
-Load one matching scope before task action:
+Read one complete matching scope before task action:
 
 | Trigger | Scope |
 |---|---|
-| ADRs, doctrine, package boundaries, system-truth documentation, or tracked agent routing | [.agents/scopes/architecture.md](.agents/scopes/architecture.md) |
-| Implementation or tests under `src/**` or `tests/**` | [.agents/scopes/build.md](.agents/scopes/build.md) |
-| `clients/web/**`, browser projection, Svelte/SvelteKit, Vite, or native CSS | [.agents/scopes/frontend.md](.agents/scopes/frontend.md) |
-| Divination (Transmutation, Transcendence, Altar, or Correspondence), the Great Work, mythic or philosophical interpretation, formation, consciousness, identity, or published documentation navigation | [.agents/scopes/divination.md](.agents/scopes/divination.md) |
-| A named or decision-relevant external technology, protocol, library, research project, or benchmark | [.agents/scopes/references.md](.agents/scopes/references.md), after the primary scope; probe a matching operator-designated local reference when present |
+| ADRs, doctrine, package boundaries, system-truth documentation, or tracked agent routing | [Architecture](.agents/scopes/architecture.md) |
+| Implementation or tests under `src/**`, `tests/**`, or `clients/android/**` | [Build](.agents/scopes/build.md) |
+| `clients/web/**`, browser projection, Svelte/SvelteKit, Vite, or native CSS | [Frontend](.agents/scopes/frontend.md) |
+| Divination (Transmutation, Transcendence, Altar, or Correspondence), the Great Work, mythic or philosophical interpretation, formation, consciousness, identity, or published documentation navigation | [Divination](.agents/scopes/divination.md) |
+| A named or decision-relevant external technology, protocol, library, research project, or benchmark | [References](.agents/scopes/references.md), after the primary scope |
 
-The frontend scope routes onward to the Svelte scope when required. Backend work under `src/**` or
-`tests/**` starts with Build and adds Frontend only when it changes browser, OpenAPI, or SSE
-projection. Cross-domain work may load a second scope only when the task actually crosses that
-boundary.
+Frontend routes onward to Svelte when required. Backend work under `src/**` or `tests/**` starts
+with Build; add Frontend only for browser, OpenAPI, or SSE projection changes. Load a second
+domain scope only when the task crosses that boundary.
 
 ## Workflow router
 
-Load a workflow only after the matching scope and only when the task performs that operation:
+After the matching scope, load only workflows for operations the task performs; do not preload
+file-type cards.
 
 | Trigger | Workflow |
 |---|---|
-| Greenfield rewrite, compression, or topology redesign of documentation | [.agents/workflows/nuance-preserving-rewrite.md](.agents/workflows/nuance-preserving-rewrite.md) |
-| Editing tracked source or tests | [.agents/workflows/editing/index.md](.agents/workflows/editing/index.md), then one just-in-time file-type card when available |
-| Designing or operating delegated coding-agent labor | [.agents/workflows/delegated-coding.md](.agents/workflows/delegated-coding.md) |
+| Greenfield rewrite, compression, or topology redesign of documentation | [Nuance-preserving rewrite](.agents/workflows/nuance-preserving-rewrite.md) |
+| Editing tracked source or tests | [Editing](.agents/workflows/editing/index.md), then one just-in-time file-type card when available |
+| Designing or operating delegated coding-agent labor | [Delegated coding](.agents/workflows/delegated-coding.md) |
+| Introducing, moving, renaming, or changing a capability, contract, procedure, or context route | [Context-loading verification](.agents/workflows/context-loading.md), after the primary workflow when applicable |
 
-Do not preload every workflow or file-type card. A workflow governs method; the selected scope and
-canonical owners still govern truth.
+Context-loading completion includes finding the changed truth from realistic questions without
+supplied paths or answers; shared-router changes also check a neighboring task through that
+workflow.
 
 ## Primary probes
 
-- Development commands and conventions: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Commands and conventions: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Public entry: [README.md](README.md), then [docs/index.md](docs/index.md)
-- Whole-system relation map: [docs/map.md](docs/map.md), only when that view is cheaper than one
-  owning page
-- Delivery claims: [docs/state-of-the-work.md](docs/state-of-the-work.md)
-- Vocabulary: [docs/lexicon/index.md](docs/lexicon/index.md)
-- Lore and identity: [docs/sepulcher/lich/index.md](docs/sepulcher/lich/index.md)
+- Whole-system relations: [docs/map.md](docs/map.md), only when cheaper than one owning page
+- Delivery: [State of Work](docs/state-of-the-work.md)
+- Vocabulary: [Lexicon](docs/lexicon/index.md)
+- Lore and identity: [Lich](docs/sepulcher/lich/index.md)
 - Native application contracts, worked examples, and local current material:
-  [docs/compositions/index.md](docs/compositions/index.md); [State of Work](docs/state-of-the-work.md)
-  keeps the shared whole-system evidence envelope
+  [Compositions](docs/compositions/index.md); State keeps the shared whole-system evidence envelope
 - System constants: `src/lychd/system/constants.py`
-
-For documentation, enter through `docs/index.md`, the relevant directory `index.md`, and then the
-smallest owning leaf. Do not inventory a tree when one route answers the task.
 
 ## Discovery protocol
 
-1. Use stable knowledge for stable basics.
-2. Read the complete matching scope.
-3. Follow its cheapest authoritative probe.
-4. Inspect the smallest source and test slice that can establish current behavior.
-5. Inspect `.venv/lib/` when installed dependency behavior matters.
-6. When an external technology materially affects the answer, load the References scope and check
-   the index of any operator-designated local shelf for a matching snapshot before browsing or
-   guessing; absence is not a blocker and the shelf never becomes project truth.
-7. Use shell probes to close remaining uncertainty.
-8. Ask the operator only after internal archaeology is exhausted.
+This protocol loads coding-agent context, not [runtime Context](docs/adr/21-context.md). Load one
+useful edge at a time; a broad task does not justify speculative repository or reference-shelf
+ingestion.
 
-Do not guess paths, APIs, delivery, compatibility, or recovery behavior. If a routed path is stale,
-use the next authority and repair the route only when routing maintenance is in scope.
+1. Frame the concrete question and answer needed: architecture, delivery, vocabulary, operation,
+   implementation evidence, or procedure. Use stable knowledge for stable basics.
+2. Follow the matching scope to its cheapest authoritative probe. If no trigger fits, use the
+   nearest [primary probe](#primary-probes) and record the missing trigger, not a successful route.
+3. For documentation, follow `docs/index.md`, the relevant directory `index.md`, and the smallest
+   owning leaf. Do not inventory a tree when one route answers the question.
+4. Inspect the smallest source and test slice for current behavior or delivery, and `.venv/lib/`
+   when installed dependency behavior matters.
+5. For a References task, check any operator-designated local shelf's index for a matching
+   snapshot before browsing or guessing.
+   Absence is not a blocker; the shelf never becomes project truth.
+6. Close remaining uncertainty with targeted `rg` or `rg --files` in the routed area. Widen only
+   if that area cannot answer; retain missing or misleading routes as findings. Ask the operator
+   only after internal archaeology is exhausted.
+
+Do not guess paths, APIs, delivery, compatibility, or recovery behavior. For a stale routed path,
+use the next authority; repair the route only when routing maintenance is in scope.
 
 Do not load `.agents/AGENTS.md`, `~/.agents/AGENTS.md`, or tool-specific local profiles unless the
 operator assigns one for the current task.
 
 ## Working contract
 
-- **xDDD:** establish the Logos—truth, vocabulary, and boundaries in the owning documentation—then
-  derive implementation. Myth is constitutional telos, not decorative copy and not delivery
-  evidence.
+- **xDDD:** establish the Logos—truth, vocabulary, and boundaries in owning documentation—then
+  derive implementation. Myth is constitutional telos, not decorative copy or delivery evidence.
 - **Documentation topology:** follow
   [ADR 01 §Documentation Topology](docs/adr/01-doctrine.md#documentation-topology). Root files are
   entry doors, not duplicate manuals.
 - **Dynamic sync:** when code changes system truth, update its owner and any route or delivery
-  record made stale by the change.
+  record made stale.
 - **Trust verification:** when asked whether something is solid, inspect the critical chain and
   report findings rather than reassurance.
-- **Progressive context:** load one useful edge at a time. A broad task does not justify speculative
-  ingestion of the repository or local reference shelf.
-- **Private-material boundary:** operator or company dossiers, client collateral, contracts, local
-  transformation workspaces, and their generated artifacts live outside the repository checkout.
-  An ignored path prevents accidental publication; it does not make the checkout an acceptable
+- **Private-material boundary:** operator or company dossiers, client collateral, contracts,
+  local transformation workspaces, and their generated artifacts belong outside the checkout.
+  Ignoring a path prevents accidental publication; it does not make the checkout an acceptable
   private-material workspace.
 
-For docs changes, verify local links and run the architecture State test when delivery prose
-moves. For published routes or navigation, run a clean Zensical build. For source changes, use the
-focused and repository gates in CONTRIBUTING and the selected scope.
+For docs changes, verify local links; run the architecture State test when delivery prose moves.
+For published routes or navigation, run a clean Zensical build. For source changes, use the focused
+and repository gates in CONTRIBUTING and the selected scope.

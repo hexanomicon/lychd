@@ -24,8 +24,8 @@ Chesed gives the candidate enough room to disclose what it can do; Gevurah gives
 limits. Hod receives the failure that must be able to stop persistence. A fair trial gives
 the candidate a chance to answer and the world a chance to defeat it.
 
-The practical evaluation contract remains with [Drift's Trials](../../sepulcher/extensions/drift/trials.md),
-while [Creation verification](../../sepulcher/extensions/weaver/creation.md) keeps its place in the
+The practical evaluation contract remains with [Drift's Trials](../../sepulcher/aspects/weaver/drift/trials.md),
+while [Smith verification](../../sepulcher/aspects/weaver/smith.md) keeps its place in the
 software-development method. Drift evaluates retained evidence; the admitted execution owner
 carries out effects within the trial's declared boundary.
 

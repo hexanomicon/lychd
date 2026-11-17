@@ -21,8 +21,9 @@ names, turn to the [Inner Tongue](inner-tongue.md).
 
 ### [Agent](../adr/20-agents.md) { #agent }
 
-An execution specification that gives Pydantic AI a model or provider, tools, dependencies,
-limits, and an output contract.
+A typed cognitive step. Its AgentSpec declares instructions, output types, toolsets, and limits;
+Dispatcher supplies the admitted model capability for the particular step. An Agent is distinct
+from its model, the Spell it may implement, and the Pattern that places the action.
 
 ### [AgentJob](../adr/24-graph.md#3-delegated-agent-macro-nodes) { #agentjob }
 
@@ -41,7 +42,7 @@ conversation dock through a Svelte web interface served by Litestar. Atlas catal
 An address at which a typed capability can answer: a local Soulstone or a remote Portal.
 Lifecycle control belongs only to eligible local Soulstones.
 
-### [Animus](../sepulcher/animator/index.md#animus-the-power-answering) { #animus }
+### [Animus](../sepulcher/extensions/animators/index.md#animus-the-power-answering) { #animus }
 
 The active power answering through an admitted Animator capability, most plainly a loaded model.
 The name belongs to the Inner Tongue; it adds no runtime object and confers neither Persona nor
@@ -72,6 +73,20 @@ An immutable reference to durable content held outside the record. It identifies
 and carries its SHA-256 digest, media type, byte size, and classification, allowing a recipient
 to know exactly which artifact is meant.
 
+### [Aspect](../sepulcher/aspects/index.md) { #aspect }
+
+A coherent responsibility in the body. Aspects form an open map of cooperating capabilities and
+methods; the name requires neither a separate package nor a common substitution interface.
+
+[Covenant 5](../adr/05-extensions.md)
+
+### [Assimilation](../sepulcher/aspects/weaver/assimilation.md) { #assimilation }
+
+The passage from admitted foreign craft to an attributable local candidate. It specializes Smith
+with source provenance, rights, quarantine, local verification, and maintenance obligations.
+
+[Covenant 35](../adr/35-assimilation.md)
+
 ### [Atelier](../compositions/atelier/index.md) { #atelier }
 
 The Composition for directing and judging visual creation. It owns the commission and creative
@@ -97,7 +112,7 @@ Approving the artifact is a different act and does not establish authorship.
 The Work's intended capacity for verified self-repair and extension under the operator's
 authority.
 
-[Covenant 16](../adr/16-sdlc.md) · [Covenant 18](../adr/18-evolution.md) · [Covenant 35](../adr/35-assimilation.md)
+[Covenant 16](../adr/16-smith.md) · [Covenant 18](../adr/18-evolution.md) · [Covenant 35](../adr/35-assimilation.md)
 
 ### [Avatar](../compositions/avatar/index.md) { #avatar }
 
@@ -144,10 +159,10 @@ media applications keep their own judgments and records when Broadcast uses thei
 The office of reception and routing. It brings present signals, recalled forms, and possible
 acts within reach; selection follows elsewhere.
 
-### [Candidate author](../sepulcher/extensions/smith.md) { #candidate-author }
+### [Candidate author](../sepulcher/aspects/weaver/assimilation.md) { #candidate-author }
 
-The bounded Agent role that authors attributable candidates inside the Smith Domain; authorship
-grants no promotion or activation authority.
+The bounded Agent role that authors attributable software candidates under Smith. Assimilation
+adds the foreign-source duties when applicable; authorship grants no promotion or activation authority.
 
 [Covenant 35](../adr/35-assimilation.md)
 
@@ -163,6 +178,11 @@ The Dispatcher's temporary binding of one exact warm operation to its admitted m
 job, or session surface and GrantLease. The binding reaches only that admitted surface. Current
 source delivers a narrow v1 compatibility shape for a chat model and toolset.
 
+### [Capacity](../sepulcher/aspects/weaver/smith.md#capacities-workers-and-attempts) { #capacity }
+
+A recurring kind of attention or contribution in creation. A task gives that capacity a concrete
+question, a worker carries the task, and an attempt records one bounded occurrence.
+
 ### [Casting](../divination/altar/circle.md) { #casting }
 
 The performance of one exact Scroll within an admitted Invocation and its Circle. The
@@ -170,7 +190,7 @@ Invocation’s Run remains the sole execution identity.
 
 [Covenant 28](../adr/28-workflow.md)
 
-### [Censor](../sepulcher/extensions/weaver/anonymization.md#transformations-are-evidence) { #censor }
+### [Censor](../sepulcher/aspects/weaver/anonymization.md#transformations-are-evidence) { #censor }
 
 A typed local transformation station that produces a sanitized candidate and findings without
 declassification or egress authority.
@@ -254,7 +274,7 @@ environment, governed memory, state, and query.
 ### [Contribution](../adr/05-extensions.md) { #contribution }
 
 A typed addition admitted by one explicit receiving owner, which may be a Core office or
-Extension Domain; package provenance grants no ownership or wider authority.
+Aspect; package provenance grants no ownership or wider authority.
 
 ### [Coven](../adr/23-orchestrator.md) { #coven }
 
@@ -318,13 +338,14 @@ Communion with the Lich and the changes that follow: the Altar opens the encount
 Transmutation follows creation through experience and return, and Transcendence unfolds
 the Great Work's wider meaning.
 
-### [Drift](../sepulcher/extensions/drift/index.md) { #drift }
+### [Drift](../sepulcher/aspects/weaver/drift/index.md) { #drift }
 
-The evaluation Extension Domain that compares exact subjects with declared goals. It uses
+The evaluation discipline and family of methods under Spellweaver that compare exact subjects
+with declared goals. Drift uses
 versioned trials, controls, repeated Outcomes, calibrated findings, attribution candidates, and
 explicit uncertainty to establish where a subject meets or departs from those goals.
 
-[Covenant 34: Evaluation](../adr/34-evaluation.md#the-declared-goal)
+[Covenant 34: Drift](../adr/34-drift.md#the-declared-goal)
 
 ### [Dual-Gate](../adr/31-simulation.md) { #dual-gate }
 
@@ -339,9 +360,9 @@ the process has died.
 
 ## E
 
-### [Echo](../sepulcher/extensions/echo.md) { #echo }
+### [Echo](../sepulcher/aspects/echo.md) { #echo }
 
-The Extension Domain that follows speech from capture through transcription or synthesis to
+The Aspect that follows speech from capture through transcription or synthesis to
 delivery and playback. It owns the acoustic-voice facts and chronology of that lifecycle.
 
 [Covenant 37](../adr/37-audio.md)
@@ -364,12 +385,6 @@ also names one exact Avatar-owned `ProjectionBinding@2`.
 The shaped host registration surface passed to an extension package's `register(context)`
 function.
 
-### [Extension Domain](../sepulcher/extensions/index.md) { #extension-domain }
-
-One of the Fifteen stable user-facing jurisdictions through which the Lich may grow.
-
-[Covenant 5](../adr/05-extensions.md)
-
 ### [Extension package](https://github.com/hexanomicon/lychd/tree/main/src/lychd/extensions/) { #extension-package }
 
 Selected built-in or private Crypt code admitted for registration through the Extension
@@ -386,8 +401,8 @@ The in-process law of explicit package selection and shaped registration through
 
 ### [Extensions](../sepulcher/extensions/index.md) { #extensions }
 
-The qualified collective for either the Fifteen Extension Domains or concrete extension
-packages.
+Concrete contribution paths and the selected packages that use them. Each contribution has a
+receiving owner, while Aspects describe the responsibilities those owners serve.
 
 [Covenant 5](../adr/05-extensions.md)
 
@@ -509,7 +524,7 @@ retained as formative precedent.
 
 [Covenant 27](../adr/27-memory.md)
 
-### [Kinetic](../sepulcher/animator/soulstone/disciplines.md#i-the-kinetic-vllm) { #kinetic }
+### [Kinetic](../sepulcher/extensions/animators/soulstone/disciplines.md#i-the-kinetic-vllm) { #kinetic }
 
 The vLLM Soulstone discipline for continuous-batched, VRAM-strict parallel serving.
 
@@ -534,14 +549,14 @@ The Orchestrator's wait for all GrantLeases on Animators selected for eviction t
 
 The in-process registry whose live GrantLeases are the Orchestrator's drain truth.
 
-### [Legion](../sepulcher/extensions/legion.md) { #legion }
+### [Legion](../sepulcher/aspects/legion.md) { #legion }
 
-The Extension Domain for extending the Lich across operator-owned nodes. It delegates work with
+The Aspect for extending the Lich across operator-owned nodes. It delegates work with
 fences that preserve the boundaries of that distributed embodiment.
 
 [Covenant 42: Multinode](../adr/42-multinode.md)
 
-### [Legionnaire](../sepulcher/extensions/legion.md) { #legionnaire }
+### [Legionnaire](../sepulcher/aspects/legion.md) { #legionnaire }
 
 Legion's name for an enrolled operator-owned compute node with its own identity, resource
 authority, journal, and fencing.
@@ -595,16 +610,16 @@ consenting, refusing, and correcting.
 
 [Immortality](../divination/transcendence/immortality.md)
 
-### [MANA](../sepulcher/extensions/toll.md) { #mana }
+### [MANA](../sepulcher/aspects/toll.md) { #mana }
 
 An issuer-local, account-bound service credit in Toll's Counting House; not cash,
 cryptocurrency, globally fungible money, authority, or the inner-tongue term Manas.
 
 [Covenant 41](../adr/41-x402.md)
 
-### [Mirror](../sepulcher/extensions/mirror.md) { #mirror }
+### [Mirror](../sepulcher/aspects/mirror.md) { #mirror }
 
-The identity Extension Domain for versioned Persona lineage, hydration provenance, attribution,
+The identity Aspect for versioned Persona lineage, hydration provenance, attribution,
 and declared continuity.
 
 [Covenant 32](../adr/32-identity.md)
@@ -648,7 +663,7 @@ admission; distinct from the Graph runtime's legacy station-attempt `occurrence_
 
 ### [Oculus](../adr/29-observability.md) { #oculus }
 
-The designed evidence Extension Domain for bounded observations, correlation, explicit gaps, and
+The designed evidence Aspect for bounded observations, correlation, explicit gaps, and
 rebuildable read models.
 
 [State of Work](../state-of-the-work.md)
@@ -685,7 +700,7 @@ and registers the revisions and governs their execution.
 One immutable executable score within a Pattern family, including its checkpoint-compatibility
 contract. In the grimoire, a Scroll.
 
-### [Persona](../sepulcher/extensions/mirror.md) { #persona }
+### [Persona](../sepulcher/aspects/mirror.md) { #persona }
 
 A declared, revisioned part of personal identity. Mirror may hydrate its discourse voice, commitments, boundaries,
 and orientation into a bounded Agent instruction envelope. Acoustic voice and presentation assets
@@ -693,7 +708,7 @@ remain separate from Persona.
 
 [Covenant 32](../adr/32-identity.md)
 
-### [Phantasma](../sepulcher/extensions/shadow/index.md) { #phantasma }
+### [Phantasma](../sepulcher/aspects/shadow/index.md) { #phantasma }
 
 Shadow's mode for expanding isolated speculative branches before measurement.
 
@@ -742,9 +757,9 @@ workflow retain their separate contracts.
 
 [Covenant 32](../adr/32-identity.md#primus-and-naming)
 
-### [Prism](../sepulcher/extensions/prism/index.md) { #prism }
+### [Prism](../sepulcher/aspects/prism/index.md) { #prism }
 
-The visual and spatial grounding Extension Domain for source-bound observations, transforms,
+The visual and spatial grounding Aspect for source-bound observations, transforms,
 reconstructions, and generated forms.
 
 [Covenant 36](../adr/36-vision.md)
@@ -809,7 +824,7 @@ artifact, or consequence.
 A concrete engine or service implementing a typed contract; it is distinct from the package
 Registrant and its registration provenance.
 
-[Animator](../sepulcher/animator/index.md)
+[Animator](../sepulcher/extensions/animators/index.md)
 
 ### [Provider Gate](../adr/09-security.md#provider-gate) { #provider-gate }
 
@@ -833,7 +848,7 @@ binding site.
 
 ## R
 
-### [Radix](../sepulcher/animator/soulstone/disciplines.md#ii-the-radix-sglang) { #radix }
+### [Radix](../sepulcher/extensions/animators/soulstone/disciplines.md#ii-the-radix-sglang) { #radix }
 
 The SGLang Soulstone discipline for radix-tree prefix caching of iterative and multi-turn
 prompts.
@@ -885,15 +900,15 @@ tree.
 
 ## S
 
-### [Scout](../sepulcher/extensions/scout.md) { #scout }
+### [Scout](../sepulcher/aspects/scout.md) { #scout }
 
-The web-acquisition Extension Domain. It separates authorization for discovery, contact,
+The web-acquisition Aspect. It separates authorization for discovery, contact,
 transformation, interaction, capture, and download effects. Crawl is its finite-frontier track;
 durable Artifact Admission remains with the custody owner.
 
 [Covenant 30](../adr/30-webcrawler.md)
 
-### [Scroll](../sepulcher/extensions/weaver/index.md) { #scroll }
+### [Scroll](../sepulcher/aspects/weaver/index.md) { #scroll }
 
 The complete fixed score for one Pattern revision. It contains one or more Spell placements,
 their edges, entry and ending, requirements and budgets, authority and effect demands, and the
@@ -916,14 +931,14 @@ A trace or inherited disposition whose governed potency can shape a later Flux.
 The runtime body of LychD: rootless pods, services, mounts, and the topology in which work takes
 place.
 
-### [Shadow](../sepulcher/extensions/shadow/index.md) { #shadow }
+### [Shadow](../sepulcher/aspects/shadow/index.md) { #shadow }
 
-The possibility-lineage Extension Domain for isolated candidate worlds with exact parentage,
+The possibility-lineage Aspect for isolated candidate worlds with exact parentage,
 evidence, and terminal disposition.
 
 [Covenant 31](../adr/31-simulation.md)
 
-### [Shadow Realm](../sepulcher/extensions/shadow/index.md) { #shadow-realm }
+### [Shadow Realm](../sepulcher/aspects/shadow/index.md) { #shadow-realm }
 
 Shadow's speculative state and Jujutsu workspace topology, distinct from the Tomb execution
 plane.
@@ -935,16 +950,17 @@ Run.
 
 [Covenant 9](../adr/09-security.md) · [Covenant 32](../adr/32-identity.md) · [Covenant 38](../adr/38-iam.md)
 
-### [Smith](../sepulcher/extensions/smith.md) { #smith }
+### [Smith](../sepulcher/aspects/weaver/smith.md) { #smith }
 
-The Assimilation Extension Domain governing attributable re-expression of admitted foreign
-craft; unqualified Smith names the Domain.
+The software development lifecycle and its working method: from intent and inquiry through
+candidate construction, verification, separately authorized delivery, revision, and retirement.
+Assimilation specializes the method when adopting foreign craft.
 
-[Covenant 35](../adr/35-assimilation.md)
+[Covenant 16](../adr/16-smith.md)
 
-### [Soulforge](../sepulcher/extensions/soulforge/index.md) { #soulforge }
+### [Soulforge](../sepulcher/aspects/soulforge/index.md) { #soulforge }
 
-The training Extension Domain binding admitted corpus, base-model digest, objective, recipe,
+The training Aspect binding admitted corpus, base-model digest, objective, recipe,
 trainer Run, and candidate-weight lineage.
 
 [Covenant 33](../adr/33-training.md)
@@ -971,7 +987,7 @@ stand in for the material actually leaving.
 The Virtual Reality Composition. It admits a virtual place as `VRHabitat@1` and a bounded
 meeting or experience there as `SpectreEncounter@2`; its Habitat modality is VR.
 
-### [Spell](../sepulcher/extensions/weaver/index.md) { #spell }
+### [Spell](../sepulcher/aspects/weaver/index.md) { #spell }
 
 The smallest semantic action that can be named, discovered, and taught independently at the workflow
 boundary. A station in a Scroll places its exact contract. Naming a Spell identifies the action;
@@ -979,7 +995,7 @@ it grants neither a tool nor capability nor authority to perform it.
 
 [Covenant 28](../adr/28-workflow.md)
 
-### [Spellweaver](../sepulcher/extensions/weaver/index.md) { #spellweaver }
+### [Spellweaver](../sepulcher/aspects/weaver/index.md) { #spellweaver }
 
 The keeper of the rules by which work is composed and admitted. It validates Scrolls, admits
 castings, manages the Pattern lifecycle, and governs logical priority, dependencies, and schedule
@@ -1010,7 +1026,7 @@ Stasis commits a checkpoint and releases the worker execution.
 The discipline of bounded work that avoids needless residency, disruptive swaps, and unbounded
 speculation while preserving measured quality.
 
-[Covenant 34](../adr/34-evaluation.md)
+[Covenant 34](../adr/34-drift.md)
 
 ### [Suite (Composition Suite)](../compositions/products-and-suites.md#compositions-relate-without-nesting) { #suite }
 
@@ -1043,9 +1059,9 @@ Persona publication nor model training.
 
 ## T
 
-### [Tether](../sepulcher/extensions/tether.md) { #tether }
+### [Tether](../sepulcher/aspects/tether.md) { #tether }
 
-The private-reachability Extension Domain, planned to manifest through managed WireGuard or
+The private-reachability Aspect, planned to manifest through managed WireGuard or
 external attachments.
 
 [Covenant 39](../adr/39-vpn.md)
@@ -1056,20 +1072,20 @@ The designed `lychd-tomb` non-agent execution plane for disposable payloads and 
 narrow credentials and sandboxing. It is not synonymous with Coffin and does not, by its name,
 establish a Coffin host or a required container nesting.
 
-### [Titan](../sepulcher/animator/soulstone/disciplines.md#iii-the-titan-llamacpp) { #titan }
+### [Titan](../sepulcher/extensions/animators/soulstone/disciplines.md#iii-the-titan-llamacpp) { #titan }
 
 The llama.cpp Soulstone discipline for serial CPU offload beyond the VRAM envelope.
 
-### [Tithe](../sepulcher/extensions/toll.md) { #tithe }
+### [Tithe](../sepulcher/aspects/toll.md) { #tithe }
 
 The accounting and bounded quota for model-token use and compute resources. It is currency-neutral:
 usage can be measured and limited independently of payment or MANA.
 
 [Covenant 41](../adr/41-x402.md)
 
-### [Toll](../sepulcher/extensions/toll.md) { #toll }
+### [Toll](../sepulcher/aspects/toll.md) { #toll }
 
-The optional Extension Domain for economic exchanges. It keeps the quote, commitment, signing,
+The optional Aspect for economic exchanges. It keeps the quote, commitment, signing,
 settlement, delivery, refund, and reconciliation distinct so the status of one cannot silently
 stand in for another.
 
@@ -1103,7 +1119,7 @@ The candidate Composition for processing external digital material through Extra
 Synthesizer into knowledge and proposals for memory, identity, or other separately admitted use.
 It owns the proposed processing dossier, not its receiving owners' decisions.
 
-### [Trial Suite](../adr/34-evaluation.md#trial-contract) { #trial-suite }
+### [Trial Suite](../adr/34-drift.md#trial-contract) { #trial-suite }
 
 Drift's versioned `TrialSuite@1` grouping of evaluation Cases, controls, order, repetitions, and
 aggregation; never a Composition Suite.
@@ -1134,9 +1150,9 @@ without automatic identity linking or shared authority.
 
 ## V
 
-### [Veil](../sepulcher/extensions/veil.md) { #veil }
+### [Veil](../sepulcher/aspects/veil.md) { #veil }
 
-The hostile-ingress Extension Domain, planned to manifest through managed Caddy or an external
+The hostile-ingress Aspect, planned to manifest through managed Caddy or an external
 edge.
 
 [Covenant 40](../adr/40-proxy.md)
@@ -1147,14 +1163,14 @@ The running body of LychD: its Litestar application runtime and web server.
 
 ## W
 
-### [Ward](../sepulcher/extensions/ward.md) { #ward }
+### [Ward](../sepulcher/aspects/ward.md) { #ward }
 
-The Extension Domain that determines which principal a credential represents, then applies the
+The Aspect that determines which principal a credential represents, then applies the
 current policy for the requested object or effect.
 
 [Covenant 38](../adr/38-iam.md)
 
-### [Weaver](../sepulcher/extensions/weaver/index.md) { #weaver }
+### [Weaver](../sepulcher/aspects/weaver/index.md) { #weaver }
 
 Spellweaver’s short name in code, existing paths, and compatibility references.
 

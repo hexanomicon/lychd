@@ -10,7 +10,7 @@ icon: material/tournament
     revision, or which score remains valid through pause and repair. Spellweaver supplies that
     logical jurisdiction without absorbing authority, execution, or application purpose.
 
-[Spellweaver](../sepulcher/extensions/weaver/index.md) keeps the score through motion, pause, and return.
+[Spellweaver](../sepulcher/aspects/weaver/index.md) keeps the score through motion, pause, and return.
 
 For one casting, follow [score identity](#spells-scrolls-and-casting), [exact road selection](#execution-road-planning), [admission](#admission-and-ownership), and [Stasis](#gates-effects-and-stasis). To change what may be cast, follow [migration](#migration-without-rewritten-history), [contribution](#pattern-contribution), and [protected authorship](#authorship-provenance-and-protected-regions). [Application and coordination ownership](#compositions-products-suites-and-schedules) keeps those scores accountable to their Compositions, Products, and Suites.
 
@@ -468,7 +468,7 @@ current Dispatcher or Orchestrator contract implements it; future declared suppo
 Dispatcher capability fact and local placement remains inside Orchestrator's physical boundary.
 
 Provider cache eligibility, identity and lifetime scope, retention, and current tariff remain
-dated [Portal Roads](../sepulcher/animator/portal-roads.md) selection-receipt facts; local prefix or
+dated [Portal Roads](../sepulcher/extensions/animators/portal-roads.md) selection-receipt facts; local prefix or
 KV behavior remains an exact Soulstone engine/profile fact. A provider, model, or engine name alone
 proves no cache fact. An exact launch flag or provider declaration is declared capability or
 intent, not observed residency, hit, or savings; `prefix_digest` witnesses LychD content only, and
@@ -496,7 +496,7 @@ use. A submitted attempt is first reconciled under its existing identity; uncert
 activate an alternate branch by pretending the first effect did not happen. Every remote return
 stays attributed and quarantined until the Composition owner validates and adopts it.
 
-[Execution roads](../sepulcher/extensions/weaver/execution-roads.md) carries this law through the
+[Execution roads](../sepulcher/aspects/weaver/execution-roads.md) carries this law through the
 operator-facing selection and failure journey.
 
 ## Admission and ownership
@@ -513,6 +513,22 @@ the relay publish, claim, and settle physical hops; Graph checkpoints; Spellweav
 outbox directly nor operates containers. Spellweaver owns scheduling identity, eligibility, overlap,
 and miss semantics; a separate clock/relay mechanism detects due work and publishes only the
 ordinary delivery that Spellweaver has admitted. Spellweaver does not become that timer or broker.
+
+### Handoff preparation policy
+
+Handoff preparation is Designed. A latency-sensitive Pattern may opt in to preparing a declared
+successor's local capability while its predecessor is still running. The exact Scroll revision
+declares eligible edges and finite bounds, including candidate count and lifetime. Spellweaver pins
+the effective policy at Invocation admission within operator-configured resource ceilings. The
+operator may disable preparation. The default is off, including for `foreground` Invocations.
+Service class, Run priority, and preparation policy remain independent.
+
+Start with one immediate successor whose edge and eligible exact capability binding are already
+determinate from the admitted score and state. If a branch still depends on a predecessor result,
+or a required gate or binding is unresolved, skip preparation. The declaration gives the
+[Graph](24-graph.md#handoff-preparation) a bounded readiness hint.
+[Orchestrator](23-orchestrator.md#non-disruptive-handoff-preparation) owns physical admission. The
+hint cannot select another model, relax effect or disclosure policy, or guarantee a warm handoff.
 
 ## Gates, effects, and Stasis
 
@@ -631,7 +647,7 @@ boundaries established by the reference adapter.
 ### Bounded Inquiry in an engineering workflow
 
 **Inquiry** is a reusable design form in the
-[Creation workflow](../sepulcher/extensions/weaver/creation.md): bounded Explore is followed by
+[Smith workflow](../sepulcher/aspects/weaver/smith.md): bounded Explore is followed by
 independent coverage and sufficiency judgment, then Crucible for material alternatives. It can
 examine both direction and later implementation boundaries. This method is neither a registered
 global Pattern nor evidence of delivered subgraph composition.
@@ -650,7 +666,7 @@ for a new immutable revision and later Invocation, never mutation of a pinned Ru
 
 ### Crucible choreography
 
-[Crucible](../sepulcher/extensions/weaver/crucible.md) is the canonical adversarial choreography
+[Crucible](../sepulcher/aspects/weaver/crucible.md) is the canonical adversarial choreography
 for forming a decision candidate: frame one question and common evidence; run separately biased
 first-round Postures; join their strongest claims, citations, concessions, defeat conditions, and
 unknowns; return that attributed projection for a second-round rebuttal; synthesize without a
@@ -708,7 +724,7 @@ Assembly uses an explicitly selected shaped store, never package scanning. It re
 identities, ambiguous routes, unknown adapters, unreachable stations, unsafe cycles, unserializable
 state, missing continuity, and forbidden effects before freezing the generation.
 
-The workflow dataclass is internal and pre-v1, not an ABI. Creation, Assimilation, and Extension law
+The workflow dataclass is internal and pre-v1, not an ABI. Smith, Assimilation, and Extension law
 govern candidate publication. Source, model output, and Loom drafts require validation, review,
 evidence, and an immutable revision before publication.
 
@@ -783,7 +799,7 @@ the approval itself never performs that relabelling.
 
 For legacy material, history and stylometry may nominate likely regions for review. They remain
 `unknown` until a human explicitly attests the exact current digest. Spellweaver owns the Gate and
-ordering; the artifact/effect owner owns region resolution and mutation; [SDLC](16-sdlc.md)
+ordering; the artifact/effect owner owns region resolution and mutation; [Smith](16-smith.md)
 owns candidate isolation and target-owner promotion; [HitL](25-hitl.md) owns the live verdict.
 No Authorship Attestation store, protected-region manifest, trusted authoring surface, overlap
 resolver, or candidate-bound review card is delivered. [State of
@@ -885,9 +901,12 @@ admission, or effect authority. Suite is required when one result must initiate 
 retry, cancel, recover, correlate, or settle multiple Composition-owned Invocations. It pins member
 and Pattern revisions, typed ArtifactRef/Intent handoffs, correlation, ceilings, dependencies, and
 partial-completion law while never merging ownership, secrets, Sigils, HitL, or domain judgment.
-A Suite has its own technical identity, authority-qualified publisher, and revision as soon as
-that reusable live-coordination contract is published. Each Suite revision pins one exact
-Suite-owned coordination Pattern revision—an immutable Scroll whose only application truth is
+An Aspect technical attempt within an Invocation is not itself another Composition Invocation.
+Using Prism or Echo alone does not require a Suite; authority, provenance, effect, recovery,
+and receiving-owner judgment requirements still apply. A Suite has its own technical identity,
+authority-qualified publisher, and revision as soon as that reusable live-coordination contract
+is published. Each Suite revision pins one exact Suite-owned coordination Pattern revision—an
+immutable Scroll whose only application truth is
 member identity, typed handoff, correlation, ceilings, cancellation/recovery, and aggregate
 settlement. Its Casting opens a parent Suite Invocation and Run; every initiated member remains a
 separate Composition Invocation and Run with its own owner and judgment. A direct Intent may

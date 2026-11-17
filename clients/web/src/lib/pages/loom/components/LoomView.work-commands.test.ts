@@ -152,6 +152,19 @@ it("changes only the displayed level for show commands", async () => {
   component.unmount();
 });
 
+it("fences Score commands while Evaluation is displayed and after switching back", async () => {
+  vi.mocked(getLoomPatternRevision).mockResolvedValue(score);
+  const { registry, component } = mountCommands();
+  await screen.findByRole("heading", { name: "Bridge chat" });
+  const captured = registry.capture();
+  await fireEvent.click(screen.getByRole("tab", { name: "Evaluation" }));
+  expect(registry.capture()).toBeNull();
+  expect(await registry.execute("show pattern", captured)).toMatchObject({ status: "stale" });
+  await fireEvent.click(screen.getByRole("tab", { name: "Score" }));
+  expect(await registry.execute("show pattern", captured)).toMatchObject({ status: "stale" });
+  expect(registry.capture()).not.toBeNull(); component.unmount();
+});
+
 it("rejects ambiguous labels, fuzzy guesses, and workflow effects without changing inspection", async () => {
   vi.mocked(getLoomPatternRevision).mockResolvedValue({ ...score, nodes: [...score.nodes, { key: "other", label: "Await input", kind: "step" }] });
   const { registry, component } = mountCommands();

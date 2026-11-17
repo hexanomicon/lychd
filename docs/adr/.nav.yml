@@ -16,7 +16,7 @@ nav:
   - 13-layout.md
   - 14-workers.md
   - 15-frontend.md
-  - 16-sdlc.md
+  - 16-smith.md
   - 17-packaging.md
   - 18-evolution.md
   - 19-cli.md
@@ -34,7 +34,7 @@ nav:
   - 31-simulation.md
   - 32-identity.md
   - 33-training.md
-  - 34-evaluation.md
+  - 34-drift.md
   - 35-assimilation.md
   - 36-vision.md
   - 37-audio.md

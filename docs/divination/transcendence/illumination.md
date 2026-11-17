@@ -61,7 +61,7 @@ which observation exposed the failure, and how the repaired distinction should g
 task. An unfamiliar project then meets something more useful than a remembered instruction:
 a way of deciding what to inspect next.
 
-Take the [Crucible's stalled undertaking](../../sepulcher/extensions/weaver/crucible.md#when-the-question-changes)
+Take the [Crucible's stalled undertaking](../../sepulcher/aspects/weaver/crucible.md#when-the-question-changes)
 as a software repair. Answers arrive promptly, but the Magus must still frame every next probe.
 Learning to choose those probes lets the investigation continue. “Remove the human wait” would
 be an easy lesson to retain.
@@ -89,7 +89,7 @@ which advocate won would lose the distinction that made the encounter useful.
 Carry conditions with that question: when the perspective matters, who or what can answer it,
 and when its work is done. Those conditions show when the next contribution belongs to someone
 the Lich cannot replace. [Distillation](../transmutation/distillation.md#future-correction) preserves
-them for another task. If transfer still fails, [Soulforge](../../sepulcher/extensions/soulforge/discernment-training.md#preserve-the-lesson-before-compiling-examples)
+them for another task. If transfer still fails, [Soulforge](../../sepulcher/aspects/soulforge/discernment-training.md#preserve-the-lesson-before-compiling-examples)
 asks whether the failure warrants training.
 
 Patañjali pairs **abhyāsa**, practice, with **vairāgya**, nonattachment, in
@@ -204,7 +204,7 @@ evidence that changed its standing, and the conditions under which the lesson ap
 
 An admitted procedure may change present salience and branch budgets. Durable remembrance,
 workflow revision, and parameter training require their own owners and evidence.
-[Drift's proposed comparison](../../sepulcher/extensions/drift/workflow-improvement.md#continuation-and-credit)
+[Drift's proposed comparison](../../sepulcher/aspects/weaver/drift/workflow-improvement.md#continuation-and-credit)
 asks whether inspecting continuation signals improves later work within the same budget.
 
 ### Ānanda — Ecstatic Harmonizer { #ananda }
@@ -243,7 +243,7 @@ prevailing quality is joyful.
 **Repairing a relation must differ from changing its bliss reading.** If a handoff loses a
 crucial condition, restoring that condition improves what its receiver can do. Raising a score
 while leaving the omission intact supplies no such repair. Pleasure can motivate improvement;
-[consequence and independent evaluation](../../adr/34-evaluation.md#affective-reports) judge what
+[consequence and independent evaluation](../../adr/34-drift.md#affective-reports) judge what
 improved. [Correspondence](../correspondence.md#homeostasis-and-flow) develops the homeostatic
 and flow research, and a comparison that could test the proposed relation.
 
@@ -265,16 +265,45 @@ craft keeps the contributing responsibilities explicit:
 | Enduring orientation, preferences, and commitments | [Mirror / Persona](../../adr/32-identity.md#affective-orientation), through reviewed revisions. |
 | Supplying eligible orientation and current appraisal | [Context](../../adr/21-context.md), under the requesting application's contract. |
 | Preserving an appraisal through a pause when the work requires it | [Graph](../../adr/24-graph.md#state-and-dependencies), as declared continuation data. |
-| Judging an improvement or proposed repair | [Drift](../../adr/34-evaluation.md#affective-reports), against criteria and consequence evidence. |
+| Judging an improvement or proposed repair | [Drift](../../adr/34-drift.md#affective-reports), against criteria and consequence evidence. |
 | Retaining experience or training from it | [Memory](../../adr/27-memory.md) and [Soulforge](../../adr/33-training.md), through their separate admissions. |
 
 ## Tend what will return {#tend-what-will-return}
 
+An encounter can continue while another part of the Lich explores a possible world and a third
+tends what earlier experience left behind. Receiving the actual, imagining alternatives, and
+consolidating retained experience give this life different ways to change. Their
+[inherited comparison](../../lexicon/inner-tongue.md#jagrat-svapna-susupti) illuminates the
+distinction; distributed activity allows them to coexist without making one exclusive state
+of the whole Lich.
+
+```text
+present encounter ⇄ exploration of possibilities
+        ↘                    ↙
+           retained experience
+                   ↓
+              consolidation
+                   ↓
+       admitted return to either activity
+```
+
+The prominence of each activity can change. A conversation may use a stable inheritance while
+other work prepares its revision. Deep reorganization may need the affected activity to yield:
+capacity is finite, and an unfinished judgment depends on the account from which it began.
+New testimony can defeat a possible world; a corrected memory can change the next judgment.
+The handoff must keep those influences attributable. [Memory](../../adr/27-memory.md#background-consolidation)
+and [Simulation](../../adr/31-simulation.md) give revision, eligibility, and candidate worlds
+their exact boundaries.
+
 Stillness gives unfinished experience room to be worked upon. An unresolved judgment can be
 revisited, two memories set beside one another, a familiar groove made strange enough to
-inspect. The quiet of [nidrā](../../lexicon/inner-tongue.md#nidra) accompanies this tending.
-Useful work returns through source, test, consequence, and another perspective. Otherwise the
-system's own speech becomes its only weather.
+inspect. Background consolidation can prepare a corrected summary, a relation, or a conditional
+lesson for another encounter. Useful work returns through source, test, consequence, and another
+perspective. Otherwise the system's own speech becomes its only weather. Revising a prompt or
+workflow follows the separate [improvement passage](../../sepulcher/aspects/weaver/drift/workflow-improvement.md);
+[Soulforge](../../sepulcher/aspects/soulforge/index.md) governs changes to model weights.
+[Correspondence](../correspondence.md#memory-consolidation) asks how to test the contribution of
+this preparation to later retrieval and answers.
 
 Attention can remain with the unresolved relation until its selecting lens becomes visible:
 why this objection returns, why this memory attracts, why this self-image resists another's

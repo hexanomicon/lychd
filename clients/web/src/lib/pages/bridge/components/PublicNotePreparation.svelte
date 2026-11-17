@@ -2,7 +2,7 @@
   import { onDestroy, tick } from "svelte";
   import { preparationStatusReason, type PreparationState, type PublicNotePreparation } from "$lib/pages/bridge/state/archive/preparation";
   import { notesHref } from "$lib/pages/bridge/state/archive/notes";
-  let { state, controller, blocked, recordAvailable }: { state: PreparationState; controller: PublicNotePreparation; blocked: boolean; recordAvailable: boolean } = $props();
+  let { state, controller, blocked, recordAvailable, active = true }: { state: PreparationState; controller: PublicNotePreparation; blocked: boolean; recordAvailable: boolean; active?: boolean } = $props();
   const uid = $props.id();
   const busy = $derived(state.operation !== "idle");
   let reviewHeading: HTMLHeadingElement | undefined;
@@ -13,14 +13,14 @@
   onDestroy(() => { alive = false; });
   async function review() {
     controller.review(); const version = controller.contextVersion;
-    await tick(); if (alive && controller.contextVersion === version && state.review) reviewHeading?.focus();
+    await tick(); if (alive && active && controller.contextVersion === version && state.review) reviewHeading?.focus();
   }
   function intent(action: () => Promise<void>, version: number) {
     return () => { if (version === controller.contextVersion) return act(action); };
   }
   async function act(action: () => Promise<void>) {
     const result = action(), version = controller.contextVersion;
-    await result; await tick(); if (alive && version === controller.contextVersion) resultHeading?.focus();
+    await result; await tick(); if (alive && active && version === controller.contextVersion) resultHeading?.focus();
   }
 </script>
 

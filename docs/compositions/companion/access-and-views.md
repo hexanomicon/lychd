@@ -97,4 +97,4 @@ revocation, expiry, stale callbacks and instance switching. Authentication, UI p
 authorization require distinct evidence. Current Bridge's fixed loopback Sigil and local Basic
 credential supply none of this remote account boundary and must not be exposed over LAN/VPN.
 
-[Companion](index.md) · [Android Development](android-development.md) · [Ward](../../sepulcher/extensions/ward.md)
+[Companion](index.md) · [Android Development](android-development.md) · [Ward](../../sepulcher/aspects/ward.md)

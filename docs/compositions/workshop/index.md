@@ -27,7 +27,7 @@ identify asset → triage hazards → admit evidence → revise hypotheses
 
 The operator opens the no-start case from a phone, deliberately speaks through push-to-talk, and attaches a code report and finite images. Work may continue through a headset while retaining the same case. Workshop pins configuration and applicable source release, then proposes one non-invasive, engine-off inspection with reason, prerequisites, and stop conditions. Its reported result remains an attributed observation. Conflicting evidence can end in a qualified handoff instead of another speculative repair.
 
-[Sight](../../sepulcher/extensions/prism/sight.md) may nominate a connector region, and a phone or future glasses may show it. The estimate proves no component identity, cause, or action safety. Silence, “seems fine,” unseen repair, and missing acknowledgement cannot close the case.
+[Sight](../../sepulcher/aspects/prism/sight.md) may nominate a connector region, and a phone or future glasses may show it. The estimate proves no component identity, cause, or action safety. Silence, “seems fine,” unseen repair, and missing acknowledgement cannot close the case.
 
 Revision one guides no lifting/support, exposed high voltage or hazardous energy, energized/rotating machinery, pressurized/combustible material, pyrotechnics, primary vehicle controls, or guard/interlock defeat. It can organize evidence for qualified help. Consent does not create competence; local inference retains access, retention, deletion, and workplace privacy duties.
 

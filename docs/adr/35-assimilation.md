@@ -12,7 +12,7 @@ icon: material/import
 
 ## Status
 
-The **Smith Extension Domain** and its reference Assimilation protocol are **Designed**. LychD
+The reference Assimilation protocol and candidate-author Agent role are **Designed**. LychD
 ships no candidate-author Agent, end-to-end Assimilation path, forge, autonomous repair loop, compatibility
 gate, verified package promotion, rollback controller, or self-extension runtime. [State of
 Work](../state-of-the-work.md#smith-forge-promotion) owns this boundary.
@@ -20,7 +20,7 @@ Work](../state-of-the-work.md#smith-forge-promotion) owns this boundary.
 ## Decision
 
 **Assimilation** re-expresses an admitted foreign pattern as attributable local LychD code under
-the Smith Domain's governance. It produces a candidate, never a live organ. The protocol orders
+the [Smith method](../sepulcher/aspects/weaver/smith.md). It produces a candidate, never a live organ. The protocol orders
 governance questions and settled handoffs, while the owners of admissions and effects retain
 their coordination and execution. Assimilation itself is not a Portfolio Composition.
 
@@ -41,7 +41,7 @@ upstream maintenance without separate evidence.
     Its appetite has no inherent finish line; an admitted undertaking must supply one. Desire
     produces possibilities, while purpose, budgets, provenance and receiving owners govern acts.
 
-The name identifies a creative tension within Smith's governed protocol, not another Agent,
+The name identifies a creative tension within the Assimilation protocol, not another Agent,
 Pattern or authority. A useful foreign mechanism may remain an independent service or peer;
 local growth need not erase its source or homogenize the systems that made the lesson possible.
 [Evolution's Synchronic Syncretizer](18-evolution.md#synchronic-syncretizer) judges a proposed
@@ -52,13 +52,13 @@ inheritance against its declared obligations before the changed body may ask to 
 There is no `assimilation.*` Pattern, end-to-end Graph, Suite, or Assimilation coordinator in this
 decision. For one future application-owned job, that application's exact Pattern must admit the
 purpose, Dossier, candidate-author Agent, ceilings, and terminal result; Spellweaver may validate
-and execute its pinned Scroll but owns neither Smith's candidate semantics nor any promotion
+and execute its pinned Scroll but owns neither candidate semantics nor any promotion
 effect. Each later receiving owner acts only from a settled typed request and re-admits its own
 effect. If a reusable promise must actively coordinate several Composition-owned Invocations, it
 requires a separately named and revisioned Suite before execution.
 
 Until one of those exact application contracts is published, Assimilation remains a non-executable
-governance protocol. Source/custody, Smith candidate authorship, verification, HitL, packaging,
+governance protocol. Source/custody, candidate authorship, verification, HitL, packaging,
 migration, activation, and observation owners may each perform their own already-admitted action;
 the protocol stages transfer no lifecycle authority and imply no ambient resume of the next action.
 
@@ -76,8 +76,8 @@ role contract and re-express the lesson as a local Spell-contract or implementat
 Assimilation Dossier. Existing code may satisfy the contract, or the candidate may require new
 code, an adapter, package, tool, or capability; each follows its own owner and verification path.
 Spellweaver validates contract and Scroll candidates but does not coordinate the Assimilation
-protocol. Where the candidate adds a Contribution, its receiving Core office or Extension Domain
-retains its semantics; Extension law governs package admission; Creation, Packaging, Security,
+protocol. Where the candidate adds a Contribution, its receiving Core office or Aspect
+retains its semantics; Extension law governs package admission; Smith, Packaging, Security,
 Evolution, and effect owners retain implementation, promotion, and activation authority.
 
 Policy may refuse teaching entirely, request it only from named peers and content classes, or
@@ -97,16 +97,16 @@ A whole-body restore additionally requires the exact sealed cut in [Snapshots](0
 Declarative-only Scroll publication may avoid replacement only after an atomic durable catalogue-generation mechanism and
 already-admitted implementations exist; neither is delivered now.
 
-The [Creation workflow](../sepulcher/extensions/weaver/creation.md) supplies a candidate-working method
+The [Smith method](../sepulcher/aspects/weaver/smith.md) supplies a candidate-working method
 for this passage: establish the foreign lesson and local need, test direction, then test the local
-implementation boundary before constructing it. [Ouroboros](../sepulcher/extensions/weaver/ouroboros.md)
+implementation boundary before constructing it. [Ouroboros](../sepulcher/aspects/weaver/ouroboros.md)
 connects later observations to separately admitted evaluation, correction and training. Neither
 reference creates an Assimilation coordinator or grants an unknown Spell installation authority.
 
 ## Candidate author and admission
 
-A **candidate-author Agent** is the future reference Agent role defined by the Smith Extension
-Domain. A future exact owning application Pattern must select a registered AgentSpec satisfying
+A **candidate-author Agent** is a future reference role for Smith software work, which may
+specialize in Assimilation. A future exact owning application Pattern must select a registered AgentSpec satisfying
 that role. The Agent may inspect admitted source and write candidate code, schemas, migrations,
 tests, documentation, and packaging inputs inside a bounded Lab coordinate. It has no ambient authority
 over active checkout/Vessel, locks, publication, database migration, lifecycle, secrets,
@@ -124,7 +124,7 @@ idea and records the evidence for that choice. Local maintenance ownership does 
 upstream authorship or change its license. [License](00-license.md#receiving-third-party-material)
 owns that boundary. For incorporated material, source and generated-output mappings, retained
 notices, required file-level change markings and distribution duties remain part of the candidate
-and its review. The [operator reuse procedure](../sepulcher/extensions/smith.md#upstream-reuse-and-notices)
+and its review. The [operator reuse procedure](../sepulcher/aspects/weaver/assimilation.md#upstream-reuse-and-notices)
 uses the existing Dossier and shipped notices; it creates no new executor or promotion authority.
 
 Source, manifest, documentation, examples, archive, comments, tests, issue text, and generated
@@ -148,12 +148,12 @@ benchmarks remain attributed inputs; the local candidate and its independent ora
 only the contract actually exercised. An upstream change becomes a new study/adoption decision,
 not an ambient dependency update. Shared-source contribution and downstream activation remain
 separate from admitting the local lesson. The
-[Smith operating procedure](../sepulcher/extensions/smith.md#upstream-reuse-and-notices)
+[Assimilation operating procedure](../sepulcher/aspects/weaver/assimilation.md#upstream-reuse-and-notices)
 gives the operator-controlled first passage without creating an Assimilation executor.
 
 ## Candidate law and Lab
 
-Assimilation inherits [SDLC](./16-sdlc.md)'s candidate/promotion contract: immutable
+Assimilation inherits [Smith](16-smith.md)'s candidate/promotion contract: immutable
 identity and exact base, permitted paths/effects, isolated workspace, budget, verification plan,
 and terminal disposition. Lab is a location, not a sandbox. Untrusted analysis, build, or generated
 command needs the [Tomb](../state-of-the-work.md#tomb-untrusted-execution) or another delivered
@@ -186,7 +186,7 @@ The candidate-author Agent emits a **Promotion Request**, while owners decide an
 
 | Concern | Owner |
 | --- | --- |
-| candidate lineage/workspace | [SDLC](./16-sdlc.md) |
+| candidate lineage/workspace | [Smith](16-smith.md) |
 | source/package/image construction | [Packaging](./17-packaging.md) |
 | coupled extension-package admission | [Extension law](./05-extensions.md) |
 | migration/persistence | [Phylactery](./06-persistence.md) |

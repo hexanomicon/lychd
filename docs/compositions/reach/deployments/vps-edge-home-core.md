@@ -72,4 +72,4 @@ Home compromise has a different scope. Stop claims, revoke home/provider/A2A/Vei
 
 Qualification must show that hostile, replayed and old-epoch relay cannot obtain admission or upgrade the profile to private access, and that no WAN database route exists. Exercise every spool limit, offline slash expiry with zero reply, dedupe, and every partition between claim, send and settlement. Prove that submission cannot be reassigned and that journal loss preserves uncertainty. Finally, verify isolation, both compromise drills, and migration without duplicate Gateway owners or authorities.
 
-[Deployment matrix](index.md) · [Tether](../../../sepulcher/extensions/tether.md) · [Veil](../../../sepulcher/extensions/veil.md)
+[Deployment matrix](index.md) · [Tether](../../../sepulcher/aspects/tether.md) · [Veil](../../../sepulcher/aspects/veil.md)

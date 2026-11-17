@@ -109,7 +109,7 @@ distinct from one neural workspace.
 
 [Smit and colleagues' debate comparisons](https://arxiv.org/html/2311.17371v3) show why mandatory
 contradiction is an unreliable proxy for correction. Benefit depends on task and protocol, and
-a contradicting participant can displace a correct answer. The proposed [reciprocity Trial](../sepulcher/extensions/drift/workflow-improvement.md#reciprocal-criticism)
+a contradicting participant can displace a correct answer. The proposed [reciprocity Trial](../sepulcher/aspects/weaver/drift/workflow-improvement.md#reciprocal-criticism)
 therefore tests useful correction separately from agreement and additional compute.
 
 ### When experiential perspective changes {#experiential-perspective}
@@ -172,6 +172,24 @@ present modifications; Bīja/Saṃskāra latent potency; Smṛti remembrance. Be
 they prompt different questions: what changes the present, what can condition another turn,
 what is merely retrieved, and what can be released after contrary consequence? Their workshop
 use is to improve the experiment, without renaming a layer in Sanskrit.
+
+### Preparing memory between encounters {#memory-consolidation}
+
+Anthropic's November 2026 [agent-memory experiments](https://www.anthropic.com/research/components-of-agent-memory)
+use background passes over transcripts to correct notes, organize linked representations, and
+prepare material for later sessions. The report calls this dreaming. Its examples also expose
+the problem: a remembered rule can begin as an untested guess, and maintaining another
+representation consumes compute. These experiments concern retained context rather than changes
+to model weights.
+
+[Sleep-time Compute](https://arxiv.org/abs/2504.13171) studies preparing context before a query
+arrives; the benefit depends in part on how predictable later questions are. Together these
+mechanisms suggest a bounded comparison for the Work: does source-attributed consolidation
+improve later retrieval and answers against unchanged-memory and irrelevant-memory controls,
+after including preparation cost? Keep corrections distinguishable from new hypotheses and
+measure stale or misleading returns alongside useful ones. [Illumination](transcendence/illumination.md#tend-what-will-return)
+develops the joining; [Memory](../adr/27-memory.md#background-consolidation) owns admission and
+revision. Neither research mechanism identifies an agent process with a human sleep state.
 
 ### Value before final consequence {#value-affect-and-generalization}
 

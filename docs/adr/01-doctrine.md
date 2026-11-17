@@ -146,8 +146,18 @@ discoverable without copying its contents.
 Follow only the branches required by the task. Cross-domain links make another scope tree
 reachable without requiring its wholesale ingestion. Workflows load after the matching scope.
 Routing grants no new authority, launches no work, and does not itself assemble a fresh Context.
-[Discovery in Spellweaver](../sepulcher/extensions/weaver/discovery.md) shows the passage from
+[Discovery in Spellweaver](../sepulcher/aspects/weaver/discovery.md) shows the passage from
 scope discovery to workflow selection and a bounded task handoff.
+
+Discoverability is part of completing a change. When introducing, moving, renaming, or changing
+a capability, contract, or procedure, verify that a realistic task can reach its owner through
+the maintained entrypoints. Start with the task's language, without supplying the destination
+path, and trace the selected scope, parent indexes, owner, applicable workflow, and evidence.
+Check a neighboring task when a shared route changes. A working link alone does not prove that
+the reader will select it; a search that rescues a missing route identifies a routing defect.
+Keep the question, observed route, result, and remaining gaps in the change's verification record.
+[CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#change-and-review-discipline)
+owns contributor reporting; the agent entrypoint routes the repeatable check.
 
 ### One home per truth
 

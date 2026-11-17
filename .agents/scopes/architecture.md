@@ -31,7 +31,10 @@ Also load [Build](build.md) when the task implements that truth under `src/**` o
   Covenant number from the directory or bypass the index's closed-register law.
 - Doctrine and quality: `docs/adr/01-doctrine.md`, `docs/adr/03-quality.md`,
   `docs/adr/04-testing.md`
-- Extension law: `docs/adr/05-extensions.md`, `docs/sepulcher/extensions/`
+- Extension law and contribution guides: `docs/adr/05-extensions.md`, `docs/sepulcher/extensions/`
+- Responsibilities and methods: `docs/sepulcher/aspects/index.md`; Smith software lifecycle in
+  `docs/adr/16-smith.md`, Drift evaluation in `docs/adr/34-drift.md`, and their operating methods
+  under `docs/sepulcher/aspects/weaver/`
 - Native application contracts, Pattern catalogues, and workloads:
   `docs/compositions/index.md`, `docs/adr/28-workflow.md`; Portfolio membership accepts the
   reference contract, State keeps the shared evidence envelope, and a leaf mentions delivery only

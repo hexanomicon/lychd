@@ -22,9 +22,11 @@ The [social account and advertising assessment](connected-work/social.md) owns a
 provider versions and the founder's promotional journey. Social reads, replies, DMs, media uploads,
 boosts, advertising campaigns and spending are outside the prepared operation set.
 
-[Broadcast](../broadcast/release.md) owns editorial acceptance and publication judgment. Settled,
-approved copy can enter Reach as input; coordinating several live Composition Invocations needs
-a [Suite](../products-and-suites.md#compositions-relate-without-nesting).
+[Broadcast](../broadcast/release.md) owns editorial acceptance and release of its own project.
+Settled, approved copy can enter Reach as input; a standalone Reach social communication need not
+commission Broadcast. Reach delivery of such a post is proposed, not supplied by the current
+preparation builders. Coordinating several live Composition Invocations needs a
+[Suite](../products-and-suites.md#compositions-relate-without-nesting).
 
 Use [connected preparation](connected-work/preparation.md) for the founder launch example and
 native serial Graph. A prepared post does not authenticate its author or authorize publication.

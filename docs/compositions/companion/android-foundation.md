@@ -132,7 +132,7 @@ flowchart LR
 
 Implement a separately admitted mobile ingress before a real LAN journey. The current
 credential-gated loopback Altar must retain its existing boundary; neither forwarding it nor
-copying its password provides remote identity. [Ward](../../sepulcher/extensions/ward.md) owns
+copying its password provides remote identity. [Ward](../../sepulcher/aspects/ward.md) owns
 enrollment, credentials, sessions, grants, and revocation; [Remote
 IAM](../../state-of-the-work.md#remote-iam) records the missing execution seam.
 
@@ -173,6 +173,22 @@ device credentials, and a later Tether key have separate lifecycles. Reinstallat
 invalidation, and restoration require explicit reconciliation or enrollment rather than a copied
 credential backup.
 
+### Candidate: phone admission without a Familiar body
+
+A future successor could compare the accepted route above with an owner-qualified phone adapter
+that reports its bounded capability snapshot and epoch. Ward would retain human and
+application/device identity, credentials and grants; Companion would retain device/session
+admission, the idempotent handoff and lookup, and its separate presentation receipt using Echo.
+A changed epoch or revoked grant would require fresh admission or refusal; a lost acknowledgement
+would be reconciled against the exact handoff rather than replayed. Android permissions and local
+reports alone grant no host authority.
+
+This is a study, not an admitted route or a generic Device registry. It still needs a durable
+attachment owner, evidence for capability and stop guarantees across disconnects, epoch fencing,
+and a proof fixture. Removing the Familiar prerequisite changes `companion.mobile` revision 3
+and requires an explicit successor with exact binding and record identities, continuity and
+migration analysis. The accepted Ward → Familiar → Companion route remains in force.
+
 ## First voice profile
 
 Use visible foreground push-to-talk and **record and send**. A proposed device fixture admits
@@ -193,7 +209,7 @@ authority before transcription. Raw voice remains restricted and ephemeral by de
 from logs, analytics, Graph checkpoints, queue bodies, and device backups. Offline material is an
 expiring reviewable draft; reconnect never sends or executes it automatically.
 
-[Echo](../../sepulcher/extensions/echo.md) already selects audio.cpp as the first local runtime,
+[Echo](../../sepulcher/aspects/echo.md) already selects audio.cpp as the first local runtime,
 Parakeet TDT 0.6B v3 as an Ear candidate, and Supertonic 3 as a Voice candidate. Upstream
 [audio.cpp](https://github.com/0xShug0/audio.cpp) and the [Parakeet model
 card](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) declare Slovak and English support for the

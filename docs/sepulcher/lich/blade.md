@@ -112,19 +112,19 @@ criticize. It also helps form the useful alternative and recognize what the reci
 The [light-and-vessel comparison](../../divination/transmutation/genesis.md#light-and-vessel) asks whether
 that distinction survives the handoff in a usable form.
 
-[Creation Inquiry](../extensions/weaver/creation.md#reuse-inquiry-at-each-uncertain-boundary) gives this
+[Smith Inquiry](../aspects/weaver/smith.md#reuse-inquiry-at-each-uncertain-boundary) gives this
 movement a bounded procedure. Its independent sufficiency judge checks what exploration may
 have missed; Crucible then confronts the serious alternatives. The explorer's own discernment
-does not replace either check. [Drift](../extensions/drift/workflow-improvement.md#handoff-reception)
+does not replace either check. [Drift](../aspects/weaver/drift/workflow-improvement.md#handoff-reception)
 can test whether the distinction changes a downstream decision; where a recurring competence
-gap remains, [Soulforge](../extensions/soulforge/discernment-training.md#preserve-the-lesson-before-compiling-examples)
+gap remains, [Soulforge](../aspects/soulforge/discernment-training.md#preserve-the-lesson-before-compiling-examples)
 preserves the condition, reason, and counterexample as a possible lesson.
 
 ## Crucible
 
 **Viveka is the discernment being cultivated; Blade makes its cut; Crucible brings a contested
 judgment before its strongest opposition.**
-[Crucible](../extensions/weaver/crucible.md) gives that encounter its two-round form.
+[Crucible](../aspects/weaver/crucible.md) gives that encounter its two-round form.
 
 A deliberately biased [Posture](../../adr/20-agents.md#mechanical-cognitive-postures)
 gives an edge a declared angle. It grants no authority, does not change the evidence, and must
@@ -155,7 +155,7 @@ a targeted evidence request, or an honest ending without a decision. Learning wh
 belongs to discernment as much as learning where to search.
 
 Compression must carry what could defeat a favored answer, including dissent and missing evidence.
-Otherwise the Crucible merely rewards what survived summarization. [Spellweaver](../extensions/weaver/crucible.md)
+Otherwise the Crucible merely rewards what survived summarization. [Spellweaver](../aspects/weaver/crucible.md)
 owns the two-round score, its attributed joins, and separate synthesis. Blade owns the quality of
 the cut.
 

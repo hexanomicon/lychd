@@ -26,7 +26,7 @@ An already-settled part requirement may pass to Scavenger as exact sourcing inpu
 | another repeatable score under the same application owner | a **Pattern** and immutable Scroll revisions |
 | another vertical, region, provider, or form factor under the same records, authority, recovery, and finish judgment | an exact owner-qualified **profile** |
 | another UI, report, device view, or public explanation | a **projection**, with its own presentation owner |
-| another engine, API, transport, capture surface, or implementation mechanism | an exact Provider, Animator/Connector, adapter, or client integration, plus a typed package **Contribution** through its explicit **Core** or **Extension Domain** owner when registration is required |
+| another engine, API, transport, capture surface, or implementation mechanism | an exact Provider, Animator/Connector, adapter, or client integration, plus a typed package **Contribution** through its explicit **Core** or **Aspect** owner when registration is required |
 | an already-settled result from another owner | an exact typed record, artifact, observation, or receipt reference |
 | one live result must coordinate the lifecycle and settlement of several application owners | a **Suite** |
 | genuinely new durable records, judgment, effects, outcomes, and recovery reused beyond one Product, client, or deployment | a candidate **Composition** |
@@ -44,7 +44,7 @@ the judgments and policies that govern it, and the endings it must distinguish: 
 refused, partial, or unknown. Explain how stopped work restarts or recovers.
 
 Then test the proposed ownership. Find an existing owner, if one fits, and show why a Pattern,
-profile, Product, projection, Extension Domain, package Contribution, Provider, or typed reference
+profile, Product, projection, Aspect, package Contribution, Provider, or typed reference
 cannot carry the work. Name the smallest fixture that could disprove the design and the consumers
 who need it for independent reasons. Two Products or use cases can corroborate reuse; they are
 neither quota nor proof. Decorative wrappers count for little.
@@ -66,6 +66,17 @@ A physical body poses the same test at another boundary. Familiar can reuse its 
 capability, safety, stop, and settlement law stay coherent. A different emergency or recovery
 boundary may require another owner.
 
+### Compare living-subject stewardship
+
+Keeper and Cultivator remain accepted owners of animal and plant/fungi work respectively.
+To examine whether their similar records conceal a common judgment, compare a colony split
+and uncertain custody transfer with plant propagation and repeated partial harvest. For each,
+follow lineage, placement, responsible actor, care and collection through a lost acknowledgment,
+then request deletion while care remains outstanding. Identify what each owner must settle or
+hand off and whether a single proposed contract can preserve those judgments and recovery.
+A shared record shape alone does not answer that question; a substantive authority or settlement
+fork may support separate owners. This comparison promises no merger or universal biological model.
+
 ## Shared machinery, separate judgments
 
 Start with the work that can be shared without moving its judgment. Scout can search/fetch/render/crawl while an application decides source policy, interpretation, rank, and consequence. Mail/platform delivery carries a message; the application still decides recipient purpose, disclosure, review, reply meaning, and follow-up. Echo/Prism similarly supply admitted media effects while their consumers judge interpretation and acceptance.
@@ -74,7 +85,7 @@ The same boundary applies to transport and physical work. Tether/Veil provide ro
 
 Applications connect through exact requests, observations, artifacts, and receipts. They do not exchange ambient databases, credentials, Sigils, sessions, or judgment. In household work, Wellbeing supplies personal food needs and confirmed consumption; Keeper and Cultivator supply care needs, material-use evidence, and collected yields. Homestead retains inventory/provision and commissioned site effects.
 
-Calling that equipment IoT identifies an integration mechanism. Calling the subjects fauna and flora groups them within the [Stewardship & Acquisition Area](stewardship-and-acquisition/index.md). Neither label establishes an application owner. The [stewardship handoff](products-and-suites.md#homestead-keeper-and-cultivator) explains when shared equipment becomes live coordination. Scavenger separately keeps irregular listings, sellers, major commitments, parcels, and property diligence. Across presentation targets, Avatar follows the same principle: it groups presentation while Reach, Blockworld, Spectre, and Familiar retain their local work.
+Calling that equipment IoT identifies an integration mechanism. Calling the subjects fauna and flora groups them within the [Stewardship & Acquisition Area](stewardship-and-acquisition/index.md). Neither label establishes an application owner. The [stewardship handoff](products-and-suites.md#homestead-keeper-and-cultivator) explains when shared equipment becomes live coordination. Scavenger separately keeps acquisition campaigns, candidate and seller judgments, commitments, parcels, and property diligence. Across presentation targets, Avatar follows the same principle: it groups presentation while Reach, Blockworld, Spectre, and Familiar retain their local work.
 
 ### Media owners do not follow file extensions
 
@@ -82,8 +93,8 @@ A single engine or compound container can produce several roles. The role's acce
 
 | Office | Owns | Does not inherit |
 | --- | --- | --- |
-| **[Prism](../sepulcher/extensions/prism/index.md) · Extension Domain** | visual/spatial effect contracts, technical result settlement, provenance, and derivative facts | a visual commission or creative acceptance |
-| **[Echo](../sepulcher/extensions/echo.md) · Extension Domain** | speech capture, STT/TTS, speech chronology, delivery, and playback facts | translation, casting, music, or application purpose |
+| **[Prism](../sepulcher/aspects/prism/index.md) · Aspect** | visual/spatial effect contracts, technical result settlement, provenance, and derivative facts | a visual commission or creative acceptance |
+| **[Echo](../sepulcher/aspects/echo.md) · Aspect** | speech capture, STT/TTS, speech chronology, delivery, and playback facts | translation, casting, music, or application purpose |
 | **[Atelier](atelier/index.md) · Composition** | visual commission, direction, image, VFX, motion, and accepted visual package | music, timed-language editions, editorial cut, or publication |
 | **[Riffmaw](riffmaw/index.md) · Composition** | musical composition, instrumental and vocal performance, arrangement, mix/master, and musical cue map | ordinary speech, dubbing, standalone foley, or picture sound |
 | **[Language Edition](language-edition/index.md) · Composition** | source-aligned language versions, translation/adaptation judgment, spoken performance, captions, dialogue conform, and restricted language-version packaging | Persona identity, music, editorial recut, or publication |
@@ -116,5 +127,8 @@ Product/use-case study exposes a need
 ```
 
 A placeholder package cannot advance this sequence. There is no Crypt `compositions/` loader or Markdown discovery. [State](../state-of-the-work.md#composition-portfolio-delivery) records Composition registration, selection, scheduling, and execution evidence; its [Loom entry](../state-of-the-work.md#loom-workflow-views) retains the bounded source-registry projection.
+
+For the implementation journey, [Implementation](implementation.md)
+follows a native application from its source home into explicit Core assembly.
 
 Continue with [Products and Suites](products-and-suites.md), or return to the [Portfolio](index.md).

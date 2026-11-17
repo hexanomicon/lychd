@@ -275,6 +275,33 @@ drain/attest/actuate/converge sequence and exact compensation, restoration, or c
 Durable local service attempts additionally transfer their exact reservation/fence before a Run
 parks. Current process-local leases cannot prove that handoff.
 
+#### Non-disruptive handoff preparation
+
+A [Graph readiness hint](24-graph.md#handoff-preparation) is a policy input. Before any physical
+effect, Orchestrator must admit preparation separately under operator policy. Bind it to the
+exact eligible local capability profile, including immutable engine, base weights and optional
+LoRA adapter revisions, order and scales where applicable. Require runtime evidence of that
+exact loaded composition before declaring readiness. Preparation uses the existing lifecycle
+owner and admitted local inputs. The hint cannot authorize a successor request, remote call,
+artifact download, or change to the active binding.
+
+Before committing resources, use fresh observations and reserve measured capacity for active work
+and preparation together, including transition peaks, device placement, and required headroom.
+Preserve active leases, claim and capability admission, and required residency across the entire
+load. An ordinary `SOFT_SWAP` can drain the whole Animator. A conflicting `HARD_SWAP` can close
+admission and drain its neighbors. Decline preparation if the runtime cannot load in isolation,
+the operation would need those disruptions, or capacity or readiness evidence is missing. A
+second device or an engine with isolated loads can permit overlap when the measured profile fits.
+
+Orchestrator bounds preparation work and residency, yields uncommitted preparation to actual
+demand, and accounts for expiry or loss of interest. Before effect, cancellation discards the
+request. After effect starts, settle under the existing convergence, restoration or containment
+law before treating resources as released. `WARM` records observed readiness. Any preparation
+reservation stays with Orchestrator and confers no execution right. Dispatcher still checks
+current readiness and admission for the real call. Qualification compares handoff wait with
+preparation off and on, including hits, missed or unused loads, resource cost, and impact on
+active work.
+
 ### 3. Delegated Provider Capacity
 
 A future delegated-capacity policy acts after semantic selection. It may delay or decline work

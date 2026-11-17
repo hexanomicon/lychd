@@ -79,7 +79,7 @@ Accepted names are stored by the Vessel for this authenticated operator; they ar
 labels. Later admitted Bridge turns receive the saved names. Reopening the ceremony and saving a
 change updates future turns; an already admitted or resumed Run retains its original naming
 snapshot. Names are forms of address, separate from your login, Principal, and Sigil authority.
-[Mirror](../../sepulcher/extensions/mirror.md) keeps the distinction from full Persona lineage.
+[Mirror](../../sepulcher/aspects/mirror.md) keeps the distinction from full Persona lineage.
 
 ## Offer one Intent {#follow-a-turn-to-settlement}
 
@@ -339,11 +339,17 @@ identity = "local-notes-owner"
 
 Configuration binds the trusted local caller to that owner; the API cannot supply another subject.
 Changing the namespace's owner or policy revision does not migrate existing notes. Follow the
-normal [configuration lifecycle](../../sepulcher/extensions/weaver/index.md#choose-a-bridge-capability)
+normal [configuration lifecycle](../../sepulcher/aspects/weaver/index.md#choose-a-bridge-capability)
 when changing the selected revision. An already admitted Run keeps its original profile and
 capability; changed current authority can refuse its continuation.
 
 ### Manage public notes
+
+Open **Memory** in Bridge or Séances, then choose **Public notes**. This is the same retained
+manager across instruments; closing the drawer keeps its current draft and recovery state for
+the open browser document. The existing public-note links below remain compatibility entries.
+[Memory](memory.md) distinguishes the document-local quotation collection, public-note lifecycle
+and explicit Recall.
 
 Choose **Manage public notes** in Bridge. The **Configured profile** identifies the collection;
 **Current Bridge default** separately says whether the actual default requests this exact profile.
@@ -486,6 +492,9 @@ query and threshold; completion never launches it automatically.
 
 ### Recall semantic sources
 
+Choose **Recall** in the shared [Memory panel](memory.md), or follow the legacy exact focus below.
+Opening the section does not submit a query or send an answer request.
+
 Choose **Recall public sources** in Bridge, or open `/bridge?notes=recall`. This separate view
 returns attributed public-note sources; it does not generate an answer or admit a Run. Ordinary
 revision 3 public-note answers remain lexical. Opening the view reads only the authorized configured
@@ -524,7 +533,7 @@ offerings and Consent.
 The separate revision 5 uses the configured semantic generation to supply sources to a native
 answer workflow. Its [delivery record](../../state-of-the-work.md#karma-semantic-memory) separates
 component, PostgreSQL and actual model acceptance. Enable it deliberately through the normal
-[configuration lifecycle](../../sepulcher/extensions/weaver/index.md#choose-a-bridge-capability);
+[configuration lifecycle](../../sepulcher/aspects/weaver/index.md#choose-a-bridge-capability);
 opening **Recall public sources** does not change conversation routing.
 
 Use the existing independent `archive.profile`, `archive.derivation` and `archive.semantic = true`
@@ -592,7 +601,7 @@ the question on the next line:
 What does this page claim?
 ```
 
-With the opt-in [Scout profile](../../sepulcher/extensions/scout.md#public-page-answers), offer
+With the opt-in [Scout profile](../../sepulcher/aspects/scout.md#public-page-answers), offer
 `/read-public` followed by one exact public HTTPS URL, then a newline and your question. Review
 the complete URL, resolver disclosure, limits and local answer capability on the consent card
 before approving. The answer may quote the page and is retained in this conversation.

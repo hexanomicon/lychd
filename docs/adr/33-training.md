@@ -10,7 +10,7 @@ icon: material/school-outline
     parameters. **Soulforge** governs which nominated evidence may enter that training, how a
     candidate is formed, and what must reach independent judgment. A useful trace still needs
     corpus admission; trainer loss cannot authorize promotion; an adapter needs exact base-model
-    compatibility. The [Soulforge guide](../sepulcher/extensions/soulforge/index.md) follows the
+    compatibility. The [Soulforge guide](../sepulcher/aspects/soulforge/index.md) follows the
     passage from corpus admission to candidate handoff.
 
 ## Decision
@@ -37,14 +37,14 @@ Every arrow is attributable and may refuse; there is no ambient online self-trai
 
 ## Training discernment from work
 
-The [discernment training passage](../sepulcher/extensions/soulforge/discernment-training.md)
+The [discernment training passage](../sepulcher/aspects/soulforge/discernment-training.md)
 applies this law to nominated SDLC traces and human corrections. Preserve the distinction that
 changed a decision, its evidence and conditions, and a counterexample to the superficial rule.
 Preference, fact, authorization, measured result and evaluator judgment remain distinguishable.
 First test whether Context or a versioned procedural correction solves the limitation; changing
 weights requires a separate objective and transfer claim. Meeting capture, retained history,
 accepted work and evaluation consent do not imply training admission. The passage participates in
-[Ouroboros](../sepulcher/extensions/weaver/ouroboros.md) through settled records, with no ambient
+[Ouroboros](../sepulcher/aspects/weaver/ouroboros.md) through settled records, with no ambient
 harvesting or self-certified promotion.
 
 ## Records
@@ -133,7 +133,7 @@ never a Candidate Bundle. Retrying creates a new Training Run and receipt.
 
 ## Independent evaluation
 
-A frozen Bundle enters [Drift](34-evaluation.md) as an exact, immutable subject. Drift may
+A frozen Bundle enters [Drift](34-drift.md) as an exact, immutable subject. Drift may
 neither alter the candidate nor change its corpus, Recipe or lineage. Its evidence must include:
 
 - the sealed target holdout and matched Outcomes from the base or currently promoted baseline;

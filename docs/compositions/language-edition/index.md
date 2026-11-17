@@ -83,7 +83,7 @@ because it exists.
 ## Translation is a Spell, localization is the judgment
 
 The authority-qualified publisher of a versioned Translation Spell owns its transformation semantics;
-[Spellweaver](../../sepulcher/extensions/weaver/index.md) validates its placement. The request pins
+[Spellweaver](../../sepulcher/aspects/weaver/index.md) validates its placement. The request pins
 attested text, languages, glossary and protected spans, implementation, detection and fallback,
 review, and declared loss. Retain original and derivative so the edition's reviewer can judge
 speaker, scene, audience, duration, and fit.
@@ -99,7 +99,7 @@ canonical identities.
 
 ## Voices belong to no shortcut
 
-[Echo](../../sepulcher/extensions/echo.md) owns capture, STT, TTS, voice-profile facts, delivery,
+[Echo](../../sepulcher/aspects/echo.md) owns capture, STT, TTS, voice-profile facts, delivery,
 and playback chronology. The Animator profile identifies the exact engine, model and acoustic
 voice, supported languages and formats, licence, and measured limits. Performer consent and
 source rights must independently cover the exact inputs.

@@ -13,7 +13,12 @@ An inspection reports a leak. Before anyone can close the work, the household ne
 
 An uncertain cause may call for research or containment advice before a work order can be defined.
 
-If the work needs a part, the requirement passes to [Scavenger](../scavenger/index.md) with the compatibility, certification, serviceability, environmental, budget, and evidence requirements that a candidate must meet. Scavenger returns dated evidence about candidates and sellers. Purchasing a candidate and commissioning it each require their own admission.
+The proposed [Workshop](../workshop/index.md) could own a separately admitted technical service
+case and return its disposition. Homestead retains the site, work order, controller envelope,
+and return-to-service decision; its own maintenance does not require Workshop.
+
+If the work needs an independent acquisition campaign for a part, the requirement can pass to [Scavenger](../scavenger/index.md) with the compatibility, certification, serviceability, environmental, budget, and evidence requirements that a candidate must meet. Scavenger returns dated evidence about candidates and sellers. Purchasing a candidate and commissioning it each require their own admission.
+Ordinary replenishment can remain within [Provision](provision.md).
 
 ## Define the work before acting
 
@@ -23,9 +28,9 @@ A human or droid works within that envelope. For controller-backed work, the loc
 
 ## Admit an inspection channel for its purpose
 
-A future [Tether](../../sepulcher/extensions/tether.md) route could carry private inspection and exact approved controls. Principal identity and effect authorization would still be validated independently of network access. A public dashboard is never the fallback for that private route.
+A future [Tether](../../sepulcher/aspects/tether.md) route could carry private inspection and exact approved controls. Principal identity and effect authorization would still be validated independently of network access. A public dashboard is never the fallback for that private route.
 
-Where a camera is involved, its admission specifies the purpose, masks, active hours, viewers, and retention. Face recognition, neighbour surveillance, ambient audio, public streaming, and indefinite retention are absent by default. [Sight](../../sepulcher/extensions/prism/sight.md) may analyze an admitted feed; authority over the camera, site, maintenance work, and droid remains separately owned. An inspection view supplies evidence without extending the work order.
+Where a camera is involved, its admission specifies the purpose, masks, active hours, viewers, and retention. Face recognition, neighbour surveillance, ambient audio, public streaming, and indefinite retention are absent by default. [Sight](../../sepulcher/aspects/prism/sight.md) may analyze an admitted feed; authority over the camera, site, maintenance work, and droid remains separately owned. An inspection view supplies evidence without extending the work order.
 
 ## Verify the effect before closing the work
 

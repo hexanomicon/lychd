@@ -2,9 +2,9 @@
   import { onMount, tick, type Snippet } from "svelte";
   import { boundedDockWidth, bridgeDockStorageKey, defaultDockLayout, dockMaximumWidth, dockMinimumWidth, parseDockLayout } from "$lib/pages/bridge/state/dock";
 
-  let { open = $bindable(true), narrow = $bindable(false), forceOpen = false, focused = false, focusHref = "/seances", focusLabel = "Open Séance", browseHref = "/seances", workHref = "/orb", available = true, viewing = "Altar", onconnect, onexpand, onsuspend, children }: {
+  let { open = $bindable(true), narrow = $bindable(false), forceOpen = false, focused = false, suspended = false, focusHref = "/seances", focusLabel = "Open Séance", browseHref = "/seances", workHref = "/orb", available = true, viewing = "Altar", onconnect, onexpand, onsuspend, children }: {
     open?: boolean; narrow?: boolean; forceOpen?: boolean; available?: boolean;
-    focused?: boolean; focusHref?: string; focusLabel?: string; browseHref?: string; workHref?: string;
+    focused?: boolean; suspended?: boolean; focusHref?: string; focusLabel?: string; browseHref?: string; workHref?: string;
     viewing?: string; onconnect?: () => void; onexpand?: () => void; onsuspend?: () => void; children: Snippet;
   } = $props();
   let width = $state(defaultDockLayout.width);
@@ -13,7 +13,7 @@
   let viewportWidth = $state(1280);
   const maximumWidth = $derived(Math.max(dockMinimumWidth, Math.min(dockMaximumWidth, Math.floor(viewportWidth * .6))));
   const effectiveWidth = $derived(Math.min(width, maximumWidth));
-  const modal = $derived(narrow && open && !focused);
+  const modal = $derived(narrow && open && !focused && !suspended);
   const visible = $derived(open || focused);
   let panel: HTMLElement | undefined;
   function capturePanel(element: HTMLElement) {
@@ -23,6 +23,7 @@
   let mounted = $state(false);
   let opener: HTMLElement | null = null;
   let wasModal = false;
+  let wasSuspended = false;
   let dragging: { x: number; width: number; pointer: number } | null = null;
 
   function setOpen(value: boolean) {
@@ -60,19 +61,20 @@
   // Synchronize the modal's DOM focus without remounting the conversation.
   $effect(() => {
     const target = panel;
-    if (modal && !wasModal && target) {
+    if (modal && !wasModal && !wasSuspended && target) {
       opener = document.activeElement instanceof HTMLElement && document.activeElement !== document.body
         ? document.activeElement : document.getElementById("bridge-toggle");
       void tick().then(() => {
-        if (narrow && open && !focused && !target.contains(document.activeElement)) {
+        if (narrow && open && !focused && !suspended && !target.contains(document.activeElement)) {
           target.querySelector<HTMLButtonElement>("[data-dock-close]")?.focus();
         }
       });
     } else if (!modal && wasModal) {
-      if (!focused && opener?.isConnected) opener.focus({ preventScroll: true });
+      if (!suspended && !focused && opener?.isConnected) opener.focus({ preventScroll: true });
       opener = null;
     }
     wasModal = modal;
+    wasSuspended = suspended;
   });
 
   function keydown(event: KeyboardEvent) {
@@ -134,7 +136,7 @@
 </script>
 
 <svelte:window bind:innerWidth={viewportWidth} onkeydown={keydown} />
-<div id={focused ? "altar-main" : undefined} class={["dock-shell", { "dock-left": side === "left", "dock-modal": narrow && !focused, "dock-collapsed": !visible, "dock-focused": focused }]} role={focused ? "main" : modal ? "dialog" : undefined} aria-label={focused ? "Bridge workspace" : undefined} aria-modal={modal ? true : undefined} aria-labelledby={modal ? "bridge-dock-title" : undefined} tabindex="-1" style:--dock-width={`${effectiveWidth}px`} {@attach capturePanel}>
+<div id={focused ? "altar-main" : undefined} class={["dock-shell", { "dock-left": side === "left", "dock-modal": narrow && !focused && !suspended, "dock-collapsed": !visible, "dock-focused": focused }]} role={focused ? "main" : modal ? "dialog" : undefined} aria-label={focused ? "Bridge workspace" : undefined} aria-modal={modal ? true : undefined} aria-labelledby={modal ? "bridge-dock-title" : undefined} inert={suspended} tabindex="-1" style:--dock-width={`${effectiveWidth}px`} {@attach capturePanel}>
   {#if !focused}<button id="bridge-toggle" class="dock-toggle" type="button" data-dock-close aria-label={open ? "Collapse Bridge" : "Expand Bridge"} aria-expanded={open} aria-controls="bridge-dock" title={open ? "Collapse Bridge" : "Expand Bridge"} onclick={toggle}><span aria-hidden="true">{(side === "left") === open ? "<<" : ">>"}</span>{#if !open}<span class="edge-label">Bridge</span>{/if}</button>{/if}
   <div class="dock-frame" hidden={!visible}>
     {#if modal}<button class="dock-backdrop" type="button" tabindex="-1" aria-label="Close Bridge overlay" onclick={collapse}></button>{/if}

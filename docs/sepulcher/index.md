@@ -42,28 +42,32 @@ Then open the body:
 
 ### II. The Animating Spark
 
-An [Animator](animator/index.md) is a capability service you can address and call. A local
-[Soulstone](animator/soulstone/index.md) lives on your iron, with its Rune, container, devices,
-mounts, secrets, and lifecycle. A [Portal](animator/portal.md) declares a remote API boundary;
+An [Animator](extensions/animators/index.md) is a capability service you can address and call. A local
+[Soulstone](extensions/animators/soulstone/index.md) lives on your iron, with its Rune, container, devices,
+mounts, secrets, and lifecycle. A [Portal](extensions/animators/portal.md) declares a remote API boundary;
 the provider controls that service's lifecycle.
 
-[Capabilities](animator/capabilities.md) tells you what you can ask for and receive.
-[Connectors](animator/connectors.md) supplies the exact dialect for the call. Before using a
+[Capabilities](extensions/animators/capabilities.md) tells you what you can ask for and receive.
+[Connectors](extensions/animators/connectors.md) supplies the exact dialect for the call. Before using a
 service, establish that it is ready, that it is compatible, and that you have permission to call
 it. Each needs its own evidence.
 
-A [Coven](animator/coven.md) groups compatible services. To change what is running, follow
-[Runtime transitions](animator/runtime-transitions.md) through inspection, lease drain,
+A [Coven](extensions/animators/coven.md) groups compatible services. To change what is running, follow
+[Runtime transitions](extensions/animators/runtime-transitions.md) through inspection, lease drain,
 readiness, and recovery.
 
 ### III. Growth and Sight
 
-To understand how the body can grow, enter the [Federation of Extensions](extensions/index.md).
-It maps fifteen stable jurisdictions and distinguishes a Domain from the package that registers
-a contribution or the provider that implements it. Compositions and Products build on these
-roles without absorbing their authority.
+Follow [Aspects](aspects/index.md) to understand the body's responsibilities and how they
+cooperate. Smith carries software work through its lifecycle, Drift supplies evaluation, and
+Spellweaver preserves the execution of admitted scores. These names do not require separate
+packages or interchangeable implementations.
 
-The [Oculus](extensions/oculus.md) design follows the evidence of an act, showing where each
+To add something, enter [Extensions](extensions/index.md): Runes, Spells, Patterns, routes,
+services, and the other concrete contribution guides. Compositions and Products build on those
+contracts while retaining their own application responsibilities.
+
+The [Oculus](aspects/oculus.md) design follows the evidence of an act, showing where each
 observation came from and where evidence is missing. Its first native projection shows bounded
 component and runtime activity alongside the Altar's existing Run views; durable distributed
 tracing remains unfinished.

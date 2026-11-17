@@ -57,7 +57,7 @@ Orchestrator, events, Workers, and Graph; after a pause a consumer re-fetches th
 identity, never a mutable handle. The operation remains explicit in demand and grant rather than
 being hidden in profile identity.
 
-Every component uses the closed slug grammar owned by [Capabilities](../sepulcher/animator/capabilities.md#stable-identity);
+Every component uses the closed slug grammar owned by [Capabilities](../sepulcher/extensions/animators/capabilities.md#stable-identity);
 colons, paths, whitespace, controls, and floating revisions are forbidden.
 
 ### Delivered v1 compatibility projection
@@ -175,7 +175,7 @@ The receiving owner admits the supporting evidence under that requirement; missi
 inapplicable mandatory evidence excludes the candidate. A family, modality, schema, model name,
 or Connector class cannot substitute for it. Optional quality ranking applies only within the
 eligible set; missing ranking evidence preserves the documented deterministic order.
-[Evaluation](34-evaluation.md#capability-claims-and-routing) owns the scoped claims and their limits.
+[Drift](34-drift.md#capability-claims-and-routing) owns the scoped claims and their limits.
 
 Current `lease_grant` retains its narrower family/model/modalities/tools
 signature, an optional exact `capability_key` constraint, and deterministic
@@ -394,7 +394,7 @@ future path must not allow retry, fallback, delegated child, or consent to reuse
 
 ## Declaring and reading capabilities {#correspondence}
 
-Use [Capabilities](../sepulcher/animator/capabilities.md) for declaration formats and the meaning
+Use [Capabilities](../sepulcher/extensions/animators/capabilities.md) for declaration formats and the meaning
 of observed readiness. The guide relates these records to the capability an operation actually
 needs and distinguishes the current compatibility surface from the general-service design.
 

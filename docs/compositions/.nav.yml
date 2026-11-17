@@ -3,6 +3,7 @@ nav:
   - Guides:
       - choosing-a-home.md
       - products-and-suites.md
+      - implementation.md
   - Creative Works:
       - creative-works/index.md
       - Canvas:
@@ -157,6 +158,7 @@ nav:
           - reach/connected-work/delivery.md
       - Companion Android Foundation: companion/android-foundation.md
       - Companion Phone Workspace: companion/phone-workspace.md
+      - Signet: signet/index.md
       - Thorn:
           - thorn/index.md
           - thorn/investigation.md

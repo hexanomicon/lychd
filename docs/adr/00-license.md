@@ -87,7 +87,7 @@ central records and Git history cannot replace those duties. README acknowledgem
 editorial choice, not a licensing condition or a complete legal inventory.
 
 [Assimilation](35-assimilation.md#candidate-author-and-admission) owns the candidate's provenance
-contract; [the reuse procedure](../sepulcher/extensions/smith.md#upstream-reuse-and-notices)
+contract; [the reuse procedure](../sepulcher/aspects/weaver/assimilation.md#upstream-reuse-and-notices)
 shows how contributors retain it. [Packaging](17-packaging.md) owns distribution evidence.
 
 ## Contribution terms

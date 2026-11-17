@@ -13,8 +13,8 @@ icon: material/sitemap
 ## Decision
 
 **Multinode** governs bounded delegation across operator-owned physical nodes under one sovereign
-control plane. **[Legion](../sepulcher/extensions/legion.md)** is the distributed-embodiment
-Extension Domain applying this law through an owned-node profile over future [Intercom](26-a2a.md).
+control plane. **[Legion](../sepulcher/aspects/legion.md)** is the distributed-embodiment
+Aspect applying this law through an owned-node profile over future [Intercom](26-a2a.md).
 A **Legionnaire** in mythic language is a **Node Agent** in engineering.
 It is neither a Master-shaped Vessel, remote database client, universal shell, nor foreign A2A peer.
 
@@ -92,7 +92,7 @@ typed quarantined observations until admitted.
 This Covenant is **Designed**, not a fleet. No node role, enrollment, durable delegation,
 advertisement, local reservation, fencing, artifact transfer, durable spool, cancellation,
 settlement, or fleet-evidence path ships. [State of Work](../state-of-the-work.md#legion-federation)
-owns that boundary; [Legion](../sepulcher/extensions/legion.md) owns operated doctrine.
+owns that boundary; [Legion](../sepulcher/aspects/legion.md) owns operated doctrine.
 
 Safe delivery proves fresh resource evidence, deployment variants, and fenced admission on one host;
 then disjoint Master/Node assemblies with negative composition tests; credential-backed Ward;

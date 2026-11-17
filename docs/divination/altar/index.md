@@ -56,7 +56,9 @@ identity. Keep that identity in view when changing instruments.
 | What was offered, what judgment is pending, and what settled? | [Bridge](./bridge.md) |
 | What did this conversation contain, and which words should we carry into later work? | [Séances](./seances.md) within Bridge |
 | What can we draw, develop, organize and return to across conversations? | [Atlas](./atlas.md), including [Canvas](../../compositions/canvas/index.md) authoring |
+| Which quotations are working material, and which public notes have entered Archive? | [Memory](./memory.md), opened from Bridge or Séances |
 | Which stations and paths does this exact Scroll permit? | [Loom](./loom.md) |
+| How can I judge one retained answer against explicit criteria? | [Loom manual output review](./loom.md#review-a-retained-output) |
 | What was observed about readiness or a physical transition? | [Nexus](./nexus.md) |
 | Which Runs are before us, what evidence is arriving, and where does capture run out? | [Orb](./orb.md) |
 
@@ -114,10 +116,15 @@ Execution belongs to the [Vessel](../../sepulcher/vessel/index.md), committed tr
 [Phylactery](../../sepulcher/phylactery/index.md), and physical readiness to the Orchestrator.
 The Altar projects those accounts so the Magus can inspect and act through their admitted seams.
 
-The delivered interface is English-only and uses **LychD Dark**, with no locale selector or
-palette override. Future [locale](../../adr/15-frontend.md#interface-locale-and-content-language)
-and [palette](../../adr/15-frontend.md#canonical-appearance-and-bounded-palette-configuration)
-contracts belong to the Frontend Covenant; interface choices preserve retained source content.
+The delivered interface is English-only and uses **LychD Dark**. **Appearance** in the masthead
+offers **Violet**, **Iris**, and **Neutral** decorative accents, plus **Reset to LychD Dark**.
+The choice is local to this browser and falls back to the default if its saved value is invalid
+or storage is unavailable. Focus, activity, warning and refusal keep their established colours;
+the selection changes neither retained content nor authored Canvas ink. It is an accent preference,
+not a light/system selector or a free-form theme editor. Future
+[locale](../../adr/15-frontend.md#interface-locale-and-content-language) and wider
+[palette](../../adr/15-frontend.md#canonical-appearance-and-bounded-palette-configuration)
+contracts remain with Frontend.
 
 ## Presentation direction
 
@@ -149,3 +156,27 @@ and [generation prompt](https://github.com/hexanomicon/lychd/blob/main/clients/w
 They distinguish the generated Altar scene, the authorized character reference, and their terms.
 The source distribution retains [third-party notices](https://github.com/hexanomicon/lychd/blob/main/THIRD_PARTY_NOTICES.md);
 their custody does not require a permanent footer competing with the work.
+
+### Shared workflow station inspector
+
+The proposed inspector gives Loom and Orb the same panel when you select a workflow station.
+The panel identifies the station and its exact Pattern revision. Each instrument opens the view
+that answers the question you came with.
+
+- **Loom opens Definition.** Read the station's purpose, permitted successors, declared input and
+  output schemas, and any supplied prompt template. A placeholder such as `{{evidence}}` names a
+  declared input binding in the template.
+- **Orb opens Attempt.** Read the selected Run and station attempt, with its recorded phase,
+  events, and any inputs or results available to inspect. **Definition** opens the station from
+  the exact revision used by that Run when it can be verified. The panel shows capture gaps and
+  distinguishes an unavailable value from a recorded empty value.
+
+For example, an Explorator's definition could specify an **Evidence Packet** as its output. Select
+it in Loom to see what the packet should contain and where it can go next. Select an observed
+Explorator attempt in Orb to see its recorded outcome. Open **Definition** beside it to check
+the expected output without leaving the Run.
+
+The current [Loom station inspector](loom.md#read-identity-then-possibility) and
+[Orb evidence inspector](orb.md#locate-the-event) already provide the starting views. Orb's live
+feed carries structural records and metadata. Showing prompt or output bodies would require a
+separate authorized read.

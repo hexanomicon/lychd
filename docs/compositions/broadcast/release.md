@@ -7,6 +7,10 @@ icon: material/publish
 
 The candidate can remain local forever and still be finished. Release begins when the editor chooses to put those exact bytes before an external audience, with a destination and an attributable approval.
 
+Broadcast owns release and correction of its editorial project. A separate Reach correspondence or
+standalone social post need not become a Broadcast project; any use of a settled Broadcast
+candidate remains subject to its admitted use boundaries.
+
 ## Review before effect
 
 Source support, claims, voice/likeness authority, privacy/Portal use, accessibility, asset admission, and render checks supply their own receipts. Publication additionally binds candidate digest, destination, audience, visibility, schedule, disclosures, cost, and approving Principal.

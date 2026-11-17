@@ -75,6 +75,10 @@ autonomous delivery policy and recovery. It does not broaden the existing Reach 
 during an attack, cooperative investigation, and supported reports and corrections. Monitoring
 supplies evidence; general system maintenance keeps its own owners.
 
+[Signet](signet/index.md) studies independent compute-node privacy qualification, constrained
+Linux host profiles, public evidence, certificate renewal or revocation, and stamps for individual
+requests. Its executable profiles remain open.
+
 [Accounting Office](accounting-office/index.md) studies business documents, bank reconciliation,
 entity-owned books, asset and subscription obligations, and period close. Provider adapters and
 jurisdiction profiles vary under one proposed accounting lifecycle.
@@ -97,6 +101,7 @@ The companion guides follow the choices involved in shaping and combining applic
 
 | Question | Continue with |
 | --- | --- |
+| How does an accepted application enter Core? | [Implementation](implementation.md) follows the source, assembly, and verification path. |
 | <span id="products-package-compositions"></span>What operator promise does a Product offer? | [Products and Suites](products-and-suites.md) follows a named operator promise into one configured Deployment. |
 | <span id="suites-do-not-dissolve-their-members"></span><span id="relations-are-not-inheritance"></span>Does this result need coordination between live Invocations? | [The worked handoffs](products-and-suites.md#compositions-relate-without-nesting) distinguish a settled foreign result from separate owners' live work coordinated by a Suite. |
 | <span id="reuse-without-a-universal-helper"></span>Which machinery can applications share? | [Shared machinery, separate judgments](choosing-a-home.md#shared-machinery-separate-judgments) keeps shared engines distinct from application records and authority. |

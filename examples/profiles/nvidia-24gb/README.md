@@ -10,7 +10,7 @@ shape gives you a small first workload before adding router or multi-card coordi
 
 ## Copy Flow
 
-1. Start from the current [llama.cpp Rune](../../../docs/sepulcher/animator/soulstone/rune.md),
+1. Start from the current [llama.cpp Rune](../../../docs/sepulcher/extensions/animators/soulstone/rune.md),
    using this fragment's single-server intent as a reference.
 2. Declare an absolute host model directory in `volumes`, with the intended container target
    such as `/models`, and declare the NVIDIA CDI device. There is no automatic `~/models` mount

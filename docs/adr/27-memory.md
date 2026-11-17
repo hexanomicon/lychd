@@ -396,6 +396,61 @@ review rule, so it remains corrigible. Batch curation stages revisions and leave
 Context unchanged. Mirror, Context and Drift may consume these records while the Curator retains
 the curation decision.
 
+### Background consolidation
+
+Background consolidation, sometimes called dreaming, is admitted, bounded work over retained
+experience. It prepares source-attributed summaries, relations, corrections, and revised concepts
+as immutable candidate revisions, preserving source references, uncertainty, contradiction, and
+transformation lineage. Drift may compare correction quality and usefulness for later retrieval;
+similarity and repeated recall cannot certify truth. Embedding vectors remain retrieval
+derivatives in declared generations, not neuronal connections or model-weight updates.
+
+Consolidation may proceed alongside ordinary work and Shadow exploration. Consumers keep their
+admitted revision bindings; new material enters through declared Context and Pattern boundaries
+under current authority. Source lifecycle and derivative eligibility are rechecked at the owned
+resolution boundaries: a pinned reference cannot revive revoked or superseded material. A notice
+of a candidate or invalidation neither adopts replacement content nor proves that another
+consumer adopted it. Invalidation can require refusal while a replacement still awaits admission.
+
+Record curation remains distinct from revising the machinery that uses memory. Graph, prompt
+contract, or schema changes remain separately owned candidates, coordinated by
+[Spellweaver](28-workflow.md) and evaluated by [Drift](34-drift.md) before the receiving owner
+admits them. A memory promotion cannot enact those changes; [Soulforge](33-training.md) separately
+admits any weight training. The current bounded Archive profiles do not supply this general
+consolidation loop.
+
+#### Peer consultation during consolidation
+
+A consolidating Lich may seek relevant knowledge from sovereign peers before preparing its next
+memory candidate. [Intercom's advertisements](26-a2a.md#advertised-expertise-and-reusable-knowledge)
+let it ask locally, "Who deals with this area, and what have they already made available?" The
+intended sequence is:
+
+1. Identify a bounded question, missing evidence, or contradiction in the retained experience.
+2. Search locally cached, authorized descriptions of peer expertise and reusable material, using
+   inexpensive topic or index matching before optional model ranking of a small shortlist.
+3. Reuse relevant, currently authorized material already prepared by a peer; request a bounded
+   answer, correction, or counterexample from selected peers when further reasoning is worthwhile.
+4. Compare the contributions with local evidence and prepare an attributed candidate revision for
+   the local Curator. Receiving a peer result does not promote it or update active Context.
+
+The consolidation policy bounds discovery, peer count, bytes, model work, cost, and elapsed time;
+consultation is optional, not a broadcast or an unbounded chain of friends asking friends. An
+unavailable peer, refusal, or exhausted budget remains a recorded gap, not evidence against the
+claim. A local candidate may retain that uncertainty without waiting indefinitely for consultation.
+Even the question's topic can disclose private experience: each outward query or reference needs
+current exact egress authority under [A2A](26-a2a.md) and [Security](09-security.md).
+
+Peer claims retain their issuer, source/revision references, observation times, uncertainty, and
+transformation lineage alongside local observations. Several peers repeating one source do not
+become independent corroboration; disagreement remains visible. Local retention, correction,
+revocation, and promotion remain Archive decisions. Drift should compare the resulting candidate's
+usefulness and correction quality with local-only consolidation, counting discovery, retrieval,
+and reasoning costs. Reusing prior computation is the intended economy, not a measured saving or
+a guarantee of truth. This passage defines future behavior; current delivery remains bounded by
+[Archive](../state-of-the-work.md#karma-semantic-memory) and
+[Intercom](../state-of-the-work.md#a2a-intercom).
+
 ## Recall
 
 One contract serves Pattern context or an authorized tool:

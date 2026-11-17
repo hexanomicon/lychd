@@ -24,7 +24,7 @@ complete [Summoning](../summoning.md) before crossing this threshold.
 form; Trial brings it into encounter; Canon makes its measure explicit; Revelation interprets
 what happened; Distillation prepares what the next creation should inherit. The Tree of Life
 illuminates relations throughout this Ouroboros cycle.
-[Weaver's Creation](../sepulcher/extensions/weaver/creation.md) carries its software-development
+[Weaver's Smith](../sepulcher/aspects/weaver/smith.md) carries its software-development
 application.
 
 **[Follow Transcendence](./transcendence/index.md) to ask what this relation may become.** Its

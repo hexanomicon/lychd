@@ -29,7 +29,7 @@ redacted exports and gains no LychD authority.
 
 ## Decision Outcome
 
-[Oculus](../sepulcher/extensions/oculus.md) is the designed native evidence Domain. Its Altar
+[Oculus](../sepulcher/aspects/oculus.md) is the designed native evidence Domain. Its Altar
 instrument is **Orb**, and using that instrument is **scrying**. An external **[Eye](../lexicon/iron-tongue.md#e)**
 may be Phoenix, Logfire, an OpenTelemetry collector, or another viewer. Each supplies a way to
 inspect evidence without becoming a second source of truth.

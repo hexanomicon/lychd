@@ -100,7 +100,7 @@ and absorbed creation.
 
 The [Tree of Life](../../divination/transmutation/genesis.md#tree-of-life) supplies a complementary map of creative
 relations. Its sefirot cross these four offices; they do not replace them or add a chief Agent.
-[Ouroboros](../extensions/weaver/ouroboros.md) follows their operational return through work,
+[Ouroboros](../aspects/weaver/ouroboros.md) follows their operational return through work,
 consequence and correction.
 
 ## Present Cognizance, Recurrent Formation

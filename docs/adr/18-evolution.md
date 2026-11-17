@@ -35,9 +35,9 @@ icon: material/refresh
 
 ## Decision Outcome
 
-This update law applies [SDLC](16-sdlc.md) and [Packaging](17-packaging.md) to a Core update.
+This update law applies [Smith](16-smith.md) and [Packaging](17-packaging.md) to a Core update.
 [Illumination](../divination/transcendence/illumination.md#i-the-ouroboros) keeps the wider meaning
-of Ouroboros; the [operating map](../sepulcher/extensions/weaver/ouroboros.md) connects that return
+of Ouroboros; the [operating map](../sepulcher/aspects/weaver/ouroboros.md) connects that return
 to SDLC, evaluation, training and separately owned activation. The update passage is:
 
 `Update Request → Inactive Candidate → Verification → Promotion Request → owned effects`
@@ -61,7 +61,7 @@ compatible.
 ### One lineage, many developer-owned projects
 
 Evolution governs the next generation of one declared software lineage; it does not require every
-developer-owned project to become part of Core. A separately named Extension Domain, Composition,
+developer-owned project to become part of Core. A separately named Aspect, Composition,
 or external service may keep its own purpose, release cycle, and ownership while using LychD as its
 upstream substrate. A private coupled extension or local Core delta remains part of the selected
 body and must verify with that body's candidate; an independent boundary receives only the
@@ -76,7 +76,7 @@ local delta, evidence, recovery, and maintenance; common ancestry grants neither
 compatibility nor an upstream repair obligation.
 
 Returning work to the shared line is a separate decision from updating a local body. A developer
-may propose a generally useful change through [SDLC](16-sdlc.md), source governance, and
+may propose a generally useful change through [Smith](16-smith.md), source governance, and
 [Packaging](17-packaging.md); once admitted into canonical upstream, each downstream body chooses
 and verifies its adoption through its own Evolution. A foreign pattern instead enters through
 [Assimilation](35-assimilation.md), which yields an attributable local candidate; activating that
@@ -108,7 +108,7 @@ responsible for repairing a separately governed lineage.
     answerable obligations; it does not require every old implementation to remain executable.
 
 **Synchronic Syncretizer** names the bounded judgment that decides adoption in Evolution. It
-consumes verification receipts, [Drift's findings](34-evaluation.md) where available, required
+consumes verification receipts, [Drift's findings](34-drift.md) where available, required
 owner verdicts, and retained history. Evaluation stays with its evaluator, and effects stay with
 target owners. Changing selection criteria or an evaluator requires a separately reviewed
 candidate; a candidate author cannot use that proposal to rewrite a failed comparison.
@@ -245,7 +245,7 @@ without creating a shared key, founder veto, or unilateral recovery key.
 
 #### The signed candidate and its effects
 
-A future portable promotion envelope is the signed representation of Creation's Promotion
+A future portable promotion envelope is the signed representation of Smith's Promotion
 Request. It binds the governance epoch and replay boundary; exact source object and artifact
 closure from [Packaging](17-packaging.md); versioned verification plan and receipt digests;
 required Protected Region and owner verdicts; intended migrations, restarts, publications, and

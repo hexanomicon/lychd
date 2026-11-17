@@ -190,3 +190,38 @@ it("keeps full-focus voice active when restoring a collapsed dock preference", a
   expect(document.querySelector(".dock-frame")?.hasAttribute("hidden")).toBe(false);
   view.unmount();
 });
+
+it("suspends its narrow modal for Memory without losing the mounted draft or taking opener focus", async () => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+  localStorage.setItem(bridgeDockStorageKey, JSON.stringify({ width: 536, side: "right", open: true }));
+  const view = render(BridgeDock, { children, open: true });
+  await act(() => Promise.resolve());
+  const draft = screen.getByLabelText("Retained draft") as HTMLTextAreaElement;
+  await fireEvent.input(draft, { target: { value: "Keep this offering" } });
+  const opener = screen.getByRole("button", { name: "Conversation action" }); opener.focus();
+  expect(screen.getByRole("dialog")).toBeTruthy();
+  await view.rerender({ children, open: true, suspended: true });
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.getByLabelText("Retained draft")).toBe(draft);
+  const memoryClose = document.createElement("button"); document.body.append(memoryClose); memoryClose.focus();
+  const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }); window.dispatchEvent(escape);
+  expect(escape.defaultPrevented).toBe(false);
+  await view.rerender({ children, open: true, suspended: false });
+  expect(screen.getByRole("dialog")).toBeTruthy();
+  expect(document.activeElement).toBe(memoryClose);
+  opener.focus();
+  expect(draft.value).toBe("Keep this offering");
+  expect(JSON.parse(localStorage.getItem(bridgeDockStorageKey)!)).toMatchObject({ width: 536, side: "right", open: true });
+  memoryClose.remove(); view.unmount();
+});
+
+it("does not reopen a closed narrow Bridge or take a Séances opener on Memory return", async () => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+  const opener = document.createElement("button"); document.body.append(opener); opener.focus();
+  const view = render(BridgeDock, { children, open: false, suspended: true });
+  await view.rerender({ children, open: false, suspended: false });
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(document.activeElement).toBe(opener);
+  expect(screen.getByRole("button", { name: "Expand Bridge" })).toBeTruthy();
+  opener.remove(); view.unmount();
+});

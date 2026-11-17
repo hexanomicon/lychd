@@ -24,7 +24,7 @@ source evidence → proposed classification/match → validated and reviewed jou
 
 An `AccountingOfficeRequest@1` would bind the entity, period, purpose, source coverage, exact compliance profile, rule versions, reviewer authority, privacy policy, and effect ceilings. An `AccountingOfficeOutcome@1` would identify accepted records and reports, exceptions, unresolved balances, missing coverage, and required handoffs. Refusal and an indeterminate external action remain explicit outcomes. A plausible report cannot substitute for missing evidence.
 
-During a pilot, the external accountant's books remain the reference. Accounting Office shadows them, records disagreements, and prepares evidence for resolution; it cannot silently replace their books or treat agreement on one period as general accounting acceptance. Acceptance names the reviewer, scope, rule versions, exceptions, and reconciliation evidence.
+During a pilot, the external accountant's books remain the reference. Accounting Office shadows them, records disagreements, and prepares evidence for resolution; it cannot silently replace their books or treat agreement on one period as general accounting acceptance. Acceptance names the reviewer, scope, rule versions, exceptions, and reconciliation evidence. A proposed native-book mode would instead name the authoritative ledger, entity and period, reviewer, and reconciliation and correction route. The mode and any transition require explicit acceptance; shadow agreement cannot silently switch book authority.
 
 ## Records that survive the conversation
 
@@ -84,7 +84,7 @@ close: period_ref, reviewer_ref, exception_policy_ref
 
 ## Intake and effects have different authority
 
-`MailAdapter`, `BankAdapter`, and `DocumentAdapter` name proposed application-facing ports, not existing global LychD classes or new Core offices or Extension Domains. Mail separates read, draft, send, and delivery observation. Bank separates read, payment preparation, submission, status observation, and reconciliation. Document intake retains original evidence and quarantines untrusted content. Any required registration must identify the receiving owner, typed Contribution, Provider, profile revision, and Registrant under [Extensions](../../adr/05-extensions.md); these names do not justify stuffing bank or mail operations into `ToolConnector`.
+`MailAdapter`, `BankAdapter`, and `DocumentAdapter` name proposed application-facing ports, not existing global LychD classes or new Core offices or Aspects. Mail separates read, draft, send, and delivery observation. Bank separates read, payment preparation, submission, status observation, and reconciliation. Document intake retains original evidence and quarantines untrusted content. Any required registration must identify the receiving owner, typed Contribution, Provider, profile revision, and Registrant under [Extensions](../../adr/05-extensions.md); these names do not justify stuffing bank or mail operations into `ToolConnector`.
 
 Before using an adapter, inspect its declared operations, coverage, limits, and recovery semantics. Unsupported operations must refuse or return a manual handoff. During intake, use cursors to track traversal while keeping document identity separate. At-least-once ingestion deduplicates repeated delivery without losing distinct arrivals. Partial imports, unavailable attachments, and historical gaps remain visible.
 

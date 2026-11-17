@@ -26,9 +26,9 @@ finding gives another act its reason; the receiving owner decides whether to adm
 censuses, gives this chapter its image of taking account across a journey. The account must
 retain both what the encounter disclosed and what it left unknown.
 
-[Drift's observation and judgment contract](../../sepulcher/extensions/drift/trials.md#observe-before-judging)
+[Drift's observation and judgment contract](../../sepulcher/aspects/weaver/drift/trials.md#observe-before-judging)
 preserves what was measured and what the evidence supports. When a finding crosses ownership
-boundaries, [Returning Findings](../../sepulcher/extensions/drift/returning-findings.md) follows
+boundaries, [Returning Findings](../../sepulcher/aspects/weaver/drift/returning-findings.md) follows
 the retained dependencies toward the smallest supported correction. A finding does not itself
 rewrite the workflow or promote a candidate.
 

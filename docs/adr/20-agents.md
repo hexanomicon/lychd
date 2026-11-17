@@ -228,7 +228,7 @@ likewise consume that existing correction allowance when the model requests evid
 must qualify or retract the unsupported assertions, or produce a concrete clarification when the
 requested fact remains unavailable. It cannot invent a runtime observation or adopt the rejected draft.
 
-[Crucible](../sepulcher/extensions/weaver/crucible.md) uses explicitly biased Postures to pressure
+[Crucible](../sepulcher/aspects/weaver/crucible.md) uses explicitly biased Postures to pressure
 one decision from several declared angles. Every advocate receives the same pinned evidence and
 acceptance criteria, names its burden of proof and defeat condition, and runs separately from the
 Lead that synthesizes its claims. The posture label is neither a Persona nor authority, and a

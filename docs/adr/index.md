@@ -31,8 +31,8 @@ return from myth to law; the images themselves supply no technical proof:
 | Another center remains real | consent, refusal, revocation, and bounded delegation | [HitL](25-hitl.md), [IAM](38-iam.md), [A2A](26-a2a.md) |
 | Coherence must not require one planetary throne | operator-controlled runtimes, node-local refusal, and bounded federation | [Containers](08-containers.md), [Orchestrator](23-orchestrator.md), [A2A](26-a2a.md), [Multinode](42-multinode.md) |
 | A changed form does not erase its source | privacy lineage, local transformation, and exact declassification | [Security](09-security.md), [Persistence](06-persistence.md), [Context](21-context.md) |
-| Power must meet consequence | correlated evidence and adversarial evaluation | [Observability](29-observability.md), [Evaluation](34-evaluation.md) |
-| Repair may change the vessel | versioned creation, rollback, evolution, and promotion | [SDLC](16-sdlc.md), [Evolution](18-evolution.md), [Assimilation](35-assimilation.md) |
+| Power must meet consequence | correlated evidence and adversarial evaluation | [Observability](29-observability.md), [Drift](34-drift.md) |
+| Repair may change the vessel | versioned creation, rollback, evolution, and promotion | [Smith](16-smith.md), [Evolution](18-evolution.md), [Assimilation](35-assimilation.md) |
 
 The full cosmology lives in [Transcendence](../divination/transcendence/index.md). A Covenant may
 name the telos it serves, but its decision must stand on technical requirements and consequences.
@@ -62,7 +62,7 @@ name the telos it serves, but its decision must stand on technical requirements 
 | Which paths does LychD own, preserve, or refuse to delete? | [13 — Layout](13-layout.md) |
 | How are durable jobs executed and recovered? | [14 — Workers](14-workers.md) |
 | Which browser architecture and transport boundary govern the Altar? | [15 — Frontend](15-frontend.md) |
-| How does a software change move from intent through verified delivery and subsequent revision? | [16 — SDLC](16-sdlc.md) |
+| How does a software change move from intent through verified delivery and subsequent revision? | [16 — Smith](16-smith.md) |
 | How are source, packages, images, and receipts bound into a release? | [17 — Packaging](17-packaging.md) |
 | How may the body alter itself without severing recovery? | [18 — Evolution](18-evolution.md) |
 | Which command grammar and destructive safeguards govern the Pulse? | [19 — CLI](19-cli.md) |
@@ -85,7 +85,7 @@ name the telos it serves, but its decision must stand on technical requirements 
 | How are speculative worlds isolated, judged, and promoted? | [31 — Simulation](31-simulation.md) |
 | How are Persona, Sigil, attribution, and revision bound? | [32 — Identity](32-identity.md) |
 | How are training corpora admitted and resulting weights promoted? | [33 — Training](33-training.md) |
-| How are capabilities tried, calibrated, and compared? | [34 — Evaluation](34-evaluation.md) |
+| How are capabilities tried, calibrated, and compared? | [34 — Drift](34-drift.md) |
 | How does foreign craft pass through Lab, test, and promotion? | [35 — Assimilation](35-assimilation.md) |
 
 ## Senses, Network, and Federation

@@ -25,7 +25,7 @@ armed wearable / optical mocap source
 → Familiar mission observations, effects, and settlement
 ```
 
-[Live Kinesis](../../sepulcher/extensions/prism/live-kinesis.md) is the proposed seam for source
+[Live Kinesis](../../sepulcher/aspects/prism/live-kinesis.md) is the proposed seam for source
 epochs, clocks, retargeting, gaps, and expiring motion segments. A pinned GMR adapter is one
 candidate for its technical mapping. Familiar would bind each `FamiliarBody@3` to a finite dance
 mission, the designated consenting performer, dance mode, space, duration, and stop policy.

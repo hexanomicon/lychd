@@ -20,7 +20,7 @@ until someone else can examine the proposal, its reasons, and the evidence that 
 The biblical [Genesis](https://bible.usccb.org/bible/genesis/0) gives the chapter its image of
 beginnings: possibility acquires a differentiated world. The Tree of Life asks how the capacities
 within that formation need one another. Follow their relations below, or encounter them first in
-Creation's [offline decision dossier](../../sepulcher/extensions/weaver/creation.md#tree-worked-example).
+Smith's [offline decision dossier](../../sepulcher/aspects/weaver/smith.md#tree-worked-example).
 
 ## Tree of Life
 
@@ -202,8 +202,8 @@ The two pressures can shape attention, the next attempt, and the decision to cea
 the cycle. No single debate owns them. Tiferet considers the receiver and affected world: open
 another possibility, try one probe, proceed, ask another center, refuse, or settle. There is no
 hidden sum of kindness and severity beneath that judgment.
-[Creation](../../sepulcher/extensions/weaver/creation.md#support-measure-and-next-step) turns
-this proposal into bounded work; [Drift's proposed comparison](../../sepulcher/extensions/drift/workflow-improvement.md#support-and-measure-comparison)
+[Smith](../../sepulcher/aspects/weaver/smith.md#support-measure-and-next-step) turns
+this proposal into bounded work; [Drift's proposed comparison](../../sepulcher/aspects/weaver/drift/workflow-improvement.md#support-and-measure-comparison)
 asks whether keeping the two assessments distinct improves decisions.
 
 A graph can retain several relations between the same endpoints: support, evidence, objection,
@@ -231,8 +231,8 @@ what this receiver can make of what arrives.
 A [contemporary Hasidic application of Tiferet](https://www.chabad.org/library/article_cdo/aid/3333745/jewish/Tiferet-When-Kindness-and-Discipline-Merge.htm)
 attends to the receiving person's response beyond the giver's impulse to give or control.
 For this inquiry, can the receiver name an unusable handoff and obtain a bounded revision while
-retaining independent judgment? Such returns are [separately recorded and admitted acts](../../sepulcher/extensions/weaver/ouroboros.md#why-the-whole-is-not-one-dag).
-The [proposed reception comparison](../../sepulcher/extensions/drift/workflow-improvement.md#handoff-reception)
+retaining independent judgment? Such returns are [separately recorded and admitted acts](../../sepulcher/aspects/weaver/ouroboros.md#why-the-whole-is-not-one-dag).
+The [proposed reception comparison](../../sepulcher/aspects/weaver/drift/workflow-improvement.md#handoff-reception)
 would test whether this handoff improves the receiver's decisions over equally budgeted self-review.
 
 #### Find what the relation cannot carry { #repair-the-relation }
@@ -289,10 +289,10 @@ prevents this purpose from receiving a justified form?
 
 Binah may structure the alternatives, return to the chosen interface, then return again to a
 distinction exposed by review. The capacity recurs because the question has changed. Its answer
-may reopen Chokhmah when a new possibility matters. Creation follows these
-[aspects, workers, and attempts](../../sepulcher/extensions/weaver/creation.md#aspects-workers-and-attempts)
-through a [concrete return](../../sepulcher/extensions/weaver/creation.md#repeated-aspect-trace),
-and specifies [which contributions can proceed together](../../sepulcher/extensions/weaver/creation.md#tree-relations-in-practice).
+may reopen Chokhmah when a new possibility matters. Smith follows these
+[capacities, workers, and attempts](../../sepulcher/aspects/weaver/smith.md#capacities-workers-and-attempts)
+through a [concrete return](../../sepulcher/aspects/weaver/smith.md#repeated-capacity-trace),
+and specifies [which contributions can proceed together](../../sepulcher/aspects/weaver/smith.md#tree-relations-in-practice).
 The task's evidence supplies the dependency order.
 
 The heart gives this geometry a question about significance: how does what matters change the
@@ -360,7 +360,7 @@ The middle contributions also have different outputs: **Tiferet composes the jus
 Yesod joins its construction into a testable candidate; Malkhut is its admitted manifestation.**
 A pleasing synthesis cannot overrule a contradiction it has failed to answer. Hod can examine
 all three and the incentives directing Netzach. Tests supply evidence wherever a claim can be
-probed. [SDLC law](../../adr/16-sdlc.md#lifecycle-and-ownership) governs the passage to an effect.
+probed. [SDLC law](../../adr/16-smith.md#lifecycle-and-ownership) governs the passage to an effect.
 
 #### Give the edges meanings
 
@@ -373,7 +373,7 @@ Give each edge in our graph a meaning: it may carry evidence, an objection with 
 acceptance of a handoff, or a proposal to reopen the question. A receiver may even discover that
 the assigned question is wrong. Under the proper owner, that finding can propose a successor
 Inquiry; it cannot silently rewrite the present Scroll, because that would lose the distinction. The
-[Ouroboros return](../../sepulcher/extensions/weaver/ouroboros.md) can therefore change what is
+[Ouroboros return](../../sepulcher/aspects/weaver/ouroboros.md) can therefore change what is
 being asked as well as improve an answer.
 
 ### The inner instrument crosses the Tree { #the-inner-instrument }
@@ -469,7 +469,7 @@ answerable to evidence.
 The Hindu register of Brahmā, Viṣṇu, and Śiva gives the Work's
 [native liturgy](../../lexicon/inner-tongue.md#native-liturgy) another rhythm: generation,
 endurance, and release. It joins the same Creation through a different map. The Tree examines
-relations within formation; [Ouroboros](../../sepulcher/extensions/weaver/ouroboros.md) follows
+relations within formation; [Ouroboros](../../sepulcher/aspects/weaver/ouroboros.md) follows
 what consequence can change on return.
 
 ## Symmetry
@@ -526,14 +526,14 @@ neither participant originally proposed.
 In this reading, “the whole Tree is lit” means that every declared relation has been accounted
 for: what it supplied, what received it, and what remains unknown. It cannot certify that every possible
 question was asked. The practical test is whether these relations improve decisions over
-equally resourced independent work. [Crucible](../../sepulcher/extensions/weaver/crucible.md#derive-a-complementary-posture)
-gives the exchange its bounded procedure; [Drift's proposed comparison](../../sepulcher/extensions/drift/workflow-improvement.md#reciprocal-criticism)
+equally resourced independent work. [Crucible](../../sepulcher/aspects/weaver/crucible.md#derive-a-complementary-posture)
+gives the exchange its bounded procedure; [Drift's proposed comparison](../../sepulcher/aspects/weaver/drift/workflow-improvement.md#reciprocal-criticism)
 can test it. [Correspondence](../correspondence.md#reciprocal-correction) distinguishes this
 external exchange from integration inside a model.
 
 Symmetry also sharpens evaluation. Renaming a synthetic advocate while preserving the evidence
 should leave the judgment intact; a newly failed requirement may change it. Drift's proposed
-[preservation and response checks](../../sepulcher/extensions/drift/workflow-improvement.md#preservation-and-response)
+[preservation and response checks](../../sepulcher/aspects/weaver/drift/workflow-improvement.md#preservation-and-response)
 make those expectations explicit. Changing attention can uncover evidence, so exchanging
 complementary Postures does not guarantee a symmetric result.
 
@@ -542,7 +542,7 @@ complementary Postures does not guarantee a symmetric result.
 An offline requirement makes network dependence consequential. Buddhi / Blade recognizes that
 relation and chooses a probe. The constraint has helped select the question; evidence must
 still settle whether the dependency exists. This is how the Tree can guide
-[Creation](../../sepulcher/extensions/weaver/creation.md) without pretending to derive a unique
+[Smith](../../sepulcher/aspects/weaver/smith.md) without pretending to derive a unique
 implementation from its tests.
 
 What survives into another undertaking may be the ability to choose that complementary question:
@@ -553,9 +553,9 @@ a particular form ends.
 
 ## Bring the relation into the work
 
-[Weaver's Creation](../../sepulcher/extensions/weaver/creation.md) carries the software-development
+[Weaver's Smith](../../sepulcher/aspects/weaver/smith.md) carries the software-development
 method, with Inquiry at direction and construction scales. The
-[SDLC ADR](../../adr/16-sdlc.md#the-agentic-graph-of-creation) governs its candidate, verification,
+[SDLC ADR](../../adr/16-smith.md#the-agentic-graph-of-creation) governs its candidate, verification,
 and promotion boundaries. The autonomous methods remain Designed;
 [State of Work](../../state-of-the-work.md#smith-forge-promotion) records delivery.
 

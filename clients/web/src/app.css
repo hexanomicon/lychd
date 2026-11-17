@@ -2,12 +2,15 @@
    LychD · The Altar — design tokens (canonical; ADR 15)
    Black work plane · graphite frame · neutral actions · cyan manipulation
    Matrix-green activity · cloth-purple identity · readable quiet context.
-   One canonical LychD Dark palette.
+   One canonical LychD Dark palette; bounded decorative accent preference.
 
    Native CSS is the styling language. Tokens remain ordinary custom properties;
    semantic component classes consume them without a utility or preprocessing DSL.
    ══════════════════════════════════════════════════════════════════════ */
 @layer reset, base, components;
+
+:root[data-altar-accent="iris"] { --color-accent: #aebcf0; }
+:root[data-altar-accent="neutral"] { --color-accent: #ccd1d9; }
 
 :root {
   /* ── substrate ─────────────────────────────────────────── */

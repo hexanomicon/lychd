@@ -9,7 +9,7 @@
   import { PublicNoteManager, initialNotesState, emptyNoteDraft, correctionDraft, validateDraft, prepareNote, notesHref, notesSelection } from "$lib/pages/bridge/state/archive/notes";
   import { altarNavigationContext, type AltarNavigation } from "$lib/navigation/instruments";
 
-  let { selection, onSelect }: { selection: string; onSelect: (selection: string) => void } = $props();
+  let { selection, onSelect, embedded = false, active = true, onClose, onSettled, registerSelectionGuard }: { selection: string; onSelect: (selection: string) => void; embedded?: boolean; active?: boolean; onClose?: () => void; onSettled?: (selection: string) => void; registerSelectionGuard?: (guard: (selection: string) => boolean, apply: (selection: string) => void) => () => void } = $props();
   const navigation = getContext<AltarNavigation | undefined>(altarNavigationContext);
   let noteState = $state.raw(initialNotesState());
   let preparation = $state.raw(initialPreparationState());
@@ -52,31 +52,47 @@
   const transient = $derived(preparationTransient || hasDraft || !!noteState.frozen || noteState.intakeUnknown || !!noteState.transitionUnknown || noteState.writing);
   const commandBlocked = $derived(preparationBusy || noteState.writing || noteState.detailBusy || !!(noteState.transitionUnknown && noteState.transitionUnknown.recordId === noteState.selected && !noteState.transitionUnknown.checked));
   afterNavigate(() => {
+    if (embedded) return;
     ++focusGeneration;
     revokeReview = null;
     manager.select(selection);
     void focusSelection(selection);
   });
+  function applySelection(next: string) {
+    ++focusGeneration; revokeReview = null; manager.select(next); void focusSelection(next);
+  }
+  function selectLink(event: MouseEvent, next: string) {
+    if (!embedded || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    onSelect(next);
+  }
+  function returnLink(event: MouseEvent) {
+    if (!embedded || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault(); onClose?.();
+  }
   onMount(() => {
+    const stopGuard = registerSelectionGuard?.((next) => next === selection || !preparationTransient || window.confirm("Leave public notes? Draft and frozen intake/preparation references will be lost. Leaving does not cancel model work or resolve an unknown write. Keep the exact record, source and generation references."), applySelection);
     manager.select(selection);
     const expected = selection;
     void manager.load().then(() => focusSelection(expected, true));
+    return stopGuard;
   });
   async function focusSelection(expected: string, initialFallback = false) {
     await tick();
-    if (!alive || selection !== expected) return;
+    if (!alive || !active || selection !== expected) return;
     if (initialFallback && document.activeElement instanceof HTMLElement && document.activeElement.closest("a,button,input,textarea,select,[contenteditable=true],[tabindex]")) return;
     (expected === "new" ? formHeading : expected === "manage" ? metadataHeading : detailHeading)?.focus();
   }
   async function openDiscardReview() {
     discardReview = true; await tick();
-    if (alive && discardReview) discardHeading?.focus();
+    if (alive && active && discardReview) discardHeading?.focus();
   }
   onDestroy(() => { alive = false; ++draftGeneration; preparationController.dispose(); manager.dispose(); });
   function guardUnload(event: BeforeUnloadEvent) {
     if (transient) { event.preventDefault(); event.returnValue = ""; }
   }
   beforeNavigate((event) => {
+    if (embedded && !event.willUnload) return;
     const target = event.to?.url, values = target?.searchParams.getAll("notes") ?? [];
     const stays = !event.willUnload && target?.pathname === "/bridge" && values.length === 1 &&
       notesSelection(values[0] ?? null) !== null && !target.searchParams.has("investigation");
@@ -86,44 +102,44 @@
     event.preventDefault();
     if (preparing || preparationBusy || noteState.intakeUnknown || noteState.writing || noteState.frozen || !noteState.profile) return;
     errors = validateDraft($state.snapshot(draft));
-    if (errors.length) { await tick(); errorHeading?.focus(); return; }
+    if (errors.length) { await tick(); if (active) errorHeading?.focus(); return; }
     const version = ++draftGeneration, namespace = noteState.profile.namespace_id, generation = focusGeneration, expected = selection;
     preparing = true;
     try {
       const body = await prepareNote($state.snapshot(draft), namespace, crypto.randomUUID());
       if (!alive || version !== draftGeneration || namespace !== noteState.profile?.namespace_id || generation !== focusGeneration || expected !== selection) return;
       manager.freeze(body);
-    } catch { if (alive && version === draftGeneration) { errors = ["Exact UTF-8 digest could not be prepared. No request was sent."]; await tick(); errorHeading?.focus(); } }
+    } catch { if (alive && version === draftGeneration) { errors = ["Exact UTF-8 digest could not be prepared. No request was sent."]; await tick(); if (active) errorHeading?.focus(); } }
     finally { if (alive && version === draftGeneration) preparing = false; }
   }
   async function submit(replay = false) {
     const expected = selection, generation = focusGeneration;
     if (replay) await manager.replay(); else await manager.submit();
     if (!alive || generation !== focusGeneration || expected !== selection) return;
-    if (!noteState.frozen && !noteState.intakeUnknown) { draft = emptyNoteDraft(); if (noteState.selected) onSelect(noteState.selected); }
+    if (!noteState.frozen && !noteState.intakeUnknown) { draft = emptyNoteDraft(); if (noteState.selected) (onSettled ?? onSelect)(noteState.selected); }
     await tick();
-    if (alive && generation === focusGeneration && expected === selection) detailHeading?.focus();
+    if (alive && active && generation === focusGeneration && expected === selection) detailHeading?.focus();
   }
   async function stageCorrection(record: NoteRecord) {
     if (preparationBusy || noteState.frozen || noteState.writing || hasDraft) { await openDiscardReview(); return; }
     draft = correctionDraft(record); errors = []; onSelect("new");
-    await tick(); formHeading?.focus();
+    await tick(); if (active) formHeading?.focus();
   }
   async function reviewRevoke(record: NoteRecord) {
-    revokeReview = record; await tick(); reviewHeading?.focus();
+    revokeReview = record; await tick(); if (active) reviewHeading?.focus();
   }
   async function confirmRevoke() {
     const expected = revokeReview, focus = selection, generation = focusGeneration; revokeReview = null;
     if (expected) await manager.transition("revoke", expected);
     await tick();
-    if (alive && generation === focusGeneration && focus === selection) detailHeading?.focus();
+    if (alive && active && generation === focusGeneration && focus === selection) detailHeading?.focus();
   }
   function discard() {
     manager.discardIntake(); ++draftGeneration; draft = emptyNoteDraft(); errors = []; discardReview = false; preparing = false;
   }
 </script>
 
-<svelte:head><title>Public notes — Bridge — LychD</title></svelte:head>
+<svelte:head>{#if !embedded}<title>Public notes — Bridge — LychD</title>{/if}</svelte:head>
 <svelte:window onbeforeunload={guardUnload} />
 <section class="public-notes" aria-labelledby="notes-title">
   <PageHeader
@@ -132,7 +148,7 @@
     description="Explicit public intake and exact revision management. Conversation text is never saved here automatically."
     titleId="notes-title"
   >
-    <nav aria-label="Public notes focus"><a href={navigation?.bridgePath ?? "/bridge"}>Return to conversation</a><a href={notesHref("manage")}>Manage notes</a><a href={notesHref("new")}>New public note</a></nav>
+    <nav aria-label="Public notes focus"><a href={navigation?.bridgePath ?? "/bridge"} onclick={returnLink}>{embedded ? "Close Memory" : "Return to conversation"}</a><a href={notesHref("manage")} onclick={(event) => selectLink(event, "manage")}>Manage notes</a><a href={notesHref("new")} onclick={(event) => selectLink(event, "new")}>New public note</a></nav>
   </PageHeader>
   {#if noteState.profilePhase === "loading"}<p role="status">Loading authorized public-note configuration…</p>
   {:else if noteState.profile}
@@ -156,7 +172,7 @@
       <button class="rune-btn" disabled={noteState.listBusy || noteState.writing} onclick={() => { filter = noteState.frozen!.source_key; void manager.list(false, filter); }}>Look up exact intake source key</button>
     {:else}<p>The original body is unavailable. Reload recovers authorized metadata only; identical replay is unavailable.</p>{/if}
   </aside>{/if}
-  {#if noteState.transitionUnknown}<aside class="notice" aria-label="Lifecycle attempt"><p>Unconfirmed {noteState.transitionUnknown.target} of <a href={notesHref(noteState.transitionUnknown.recordId)}>{noteState.transitionUnknown.recordId}</a>, namespace <code>{noteState.transitionUnknown.namespace}</code>, expected version {noteState.transitionUnknown.version}. Check exact metadata before a new decision. A newer version does not attribute this occurrence.</p></aside>{/if}
+  {#if noteState.transitionUnknown}<aside class="notice" aria-label="Lifecycle attempt"><p>Unconfirmed {noteState.transitionUnknown.target} of <a href={notesHref(noteState.transitionUnknown.recordId)} onclick={(event) => selectLink(event, noteState.transitionUnknown!.recordId)}>{noteState.transitionUnknown.recordId}</a>, namespace <code>{noteState.transitionUnknown.namespace}</code>, expected version {noteState.transitionUnknown.version}. Check exact metadata before a new decision. A newer version does not attribute this occurrence.</p></aside>{/if}
 
   {#if noteState.profile}
     {#if selection === "new"}
@@ -196,7 +212,7 @@
         <p>Applied exact source filter: <code>{noteState.filter || "None (all source keys)"}</code></p>
         <p>{noteState.records.length} loaded; this is not a total count. At most 50 records per request. All lifecycles are inspectable.</p>
         {#if noteState.listBusy}<p role="status">Loading metadata…</p>{:else if !noteState.records.length && !noteState.listError}<p>No retained metadata in this selection.</p>{/if}
-        <ul>{#each noteState.records as record (record.reference.record_id)}<li><a href={notesHref(record.reference.record_id)}>{record.source_key} · {record.source_revision}</a> — {record.lifecycle} · version {record.reference.lifecycle_version}</li>{/each}</ul>
+        <ul>{#each noteState.records as record (record.reference.record_id)}<li><a href={notesHref(record.reference.record_id)} onclick={(event) => selectLink(event, record.reference.record_id)}>{record.source_key} · {record.source_revision}</a> — {record.lifecycle} · version {record.reference.lifecycle_version}</li>{/each}</ul>
         {#if noteState.cursor}<button class="rune-btn" disabled={noteState.listBusy} onclick={() => manager.list(true)}>Load more metadata</button>{/if}
       </section>
     {/if}
@@ -216,8 +232,8 @@
         <p>Controlled source text is cleared and an anti-reingestion tombstone remains. Earlier answers and backups are outside this promise. Revocation cannot return this revision to recall.</p>
         <button class="rune-btn" onclick={() => { revokeReview = null; detailHeading?.focus(); }}>Keep revision</button><button class="rune-btn" disabled={commandBlocked} onclick={confirmRevoke}>Confirm exact revoke</button>
       </section>{/if}
-      <PublicNotePreparation state={preparation} controller={preparationController} blocked={noteState.writing} recordAvailable={!!noteState.record} />
-      <a href={notesHref("manage")}>Return to metadata list</a>
+      <PublicNotePreparation {active} state={preparation} controller={preparationController} blocked={noteState.writing} recordAvailable={!!noteState.record} />
+      <a href={notesHref("manage")} onclick={(event) => selectLink(event, "manage")}>Return to metadata list</a>
     </article>{/if}
   {/if}
 </section>

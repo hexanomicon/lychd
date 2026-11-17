@@ -18,6 +18,7 @@ const page = appPage as Omit<typeof appPage, "url"> & { url: import("svelte/reac
 import { goto } from "$app/navigation";
 import { getLoomCatalogue, getLoomPatternRevision, getOrbRun } from "$lib/api/client";
 import LoomView from "./LoomView.svelte";
+import { createEvaluationWorkspace, setEvaluationWorkspace } from "$lib/pages/loom/state/evaluation/workspace.svelte";
 
 const summary: LoomSummary = {
   publication: "published",
@@ -105,6 +106,24 @@ it("inspects the exact revision requested by a deep link", async () => {
   view.unmount();
 });
 
+it("offers keyboard-operable Score and Evaluation tabs without automatically reading output", async () => {
+  vi.mocked(getLoomPatternRevision).mockResolvedValue(projection);
+  const view = render(LoomView, { patternId: "bridge_chat", revision: "1" });
+  const scoreTab = await screen.findByRole("tab", { name: "Score" });
+  expect(scoreTab.getAttribute("aria-selected")).toBe("true");
+  await fireEvent.keyDown(scoreTab, { key: "ArrowRight" });
+  const evaluationTab = screen.getByRole("tab", { name: "Evaluation" });
+  expect(document.activeElement).toBe(evaluationTab);
+  expect(evaluationTab.getAttribute("aria-selected")).toBe("true");
+  expect(screen.getByRole("heading", { name: "Manual output review" })).toBeTruthy();
+  expect(getOrbRun).not.toHaveBeenCalled();
+  await fireEvent.click(screen.getByRole("button", { name: "New review for this score" }));
+  await fireEvent.input(screen.getByLabelText("Goal (up to 4,000 characters)"), { target: { value: "Preserve this draft" } });
+  await fireEvent.click(scoreTab); await fireEvent.click(evaluationTab);
+  expect((screen.getByLabelText("Goal (up to 4,000 characters)") as HTMLTextAreaElement).value).toBe("Preserve this draft");
+  view.unmount();
+});
+
 it("explains when a deep-linked Pattern revision is unavailable", async () => {
   vi.mocked(getLoomPatternRevision).mockRejectedValue(
     new Error("No such Pattern revision is woven.")
@@ -117,6 +136,17 @@ it("explains when a deep-linked Pattern revision is unavailable", async () => {
   expect(getLoomPatternRevision).toHaveBeenCalledWith("bridge_chat", "retired");
   expect(goto).not.toHaveBeenCalled();
   view.unmount();
+});
+
+it.each([401, 403])("clears protected reviews on a current linked Run %i refusal", async status => {
+  const workspace = createEvaluationWorkspace();
+  const clear = vi.spyOn(workspace, "clearProtected");
+  function Wrapper(...args: Parameters<typeof LoomView>) { setEvaluationWorkspace(workspace); return LoomView(...args); }
+  page.url.href = "http://localhost/loom/bridge_chat/1?run=run-a";
+  vi.mocked(getOrbRun).mockRejectedValue({ status });
+  const component = render(Wrapper, { patternId: "bridge_chat", revision: "1" });
+  await screen.findByRole("alert");
+  expect(clear).toHaveBeenCalledOnce(); expect(getLoomPatternRevision).not.toHaveBeenCalled(); component.unmount();
 });
 
 const runSnapshot: OrbRunSnapshot = {

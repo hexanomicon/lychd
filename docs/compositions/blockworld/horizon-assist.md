@@ -43,7 +43,7 @@ The first action passage is attributed transcript or explicit text, a closed typ
 validation, one serial Graph action, and a client-observed result. Unrecognized or ambiguous
 instructions refuse. Text never becomes an arbitrary control command, shell command, administrator
 command or MCP tool name. Speech capture, transcription and synthesis retain their own
-[Echo](../../sepulcher/extensions/echo.md) boundary.
+[Echo](../../sepulcher/aspects/echo.md) boundary.
 
 The adapter exposes `status` as a closed operational projection: client screen/dimension,
 creative mode, frame/tick/chunk counters and finite performance measurements, selected renderer
@@ -299,7 +299,7 @@ group; a late process launch is adopted and retired without audio even after its
 Required OS ownership settlement may exceed that deadline. Unproven player retirement ends the
 session and keeps capture closed. This helper is not native Echo playback admission or a physical
 speaker qualification.
-The shared [local player](../../sepulcher/extensions/echo-local-probe.md#probe-contract) uses
+The shared [local player](../../sepulcher/aspects/echo-local-probe.md#probe-contract) uses
 the host's ALSA `default` output unless `pulse` is explicitly selected at its helper boundary.
 There is no device fallback, routing change or volume adjustment.
 

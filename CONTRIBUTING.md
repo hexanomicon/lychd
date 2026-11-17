@@ -1,159 +1,103 @@
 # Contributing to LychD
 
-Begin with one concrete change: a reader who cannot find the right page, a failing contract, or a
-new capability with a named owner. Establish what the owning documentation promises, make the
-change at that boundary, and leave enough evidence for the next contributor to understand it.
-
-This guide takes you from a checkout to a reviewable contribution. [State of
-Work](docs/state-of-the-work.md) tells you what current evidence supports; the
-[Covenants](docs/adr/index.md) explain accepted decisions. Coding agents first load the routes in
-[AGENTS.md](AGENTS.md).
+Start with one concrete change and its owning contract. [State of Work](docs/state-of-the-work.md)
+records delivery; the [Covenants](docs/adr/index.md) own architectural decisions. Coding agents
+enter through [AGENTS.md](AGENTS.md).
 
 ## Find the part you want to change
 
-Looking for a first contribution? Start with the [selected work in #52](https://github.com/hexanomicon/lychd/issues/52), then follow the relevant project boundary below.
-
-If you are new to the codebase, follow one request through the [Overview](docs/map.md). Then choose
-the boundary your change crosses:
+Choose work from [#52](https://github.com/hexanomicon/lychd/issues/52). New to the codebase?
+Follow one request through the [Overview](docs/map.md), then enter the affected boundary:
 
 | Your change concerns… | Read first |
 | --- | --- |
-| Application startup, domain logic, or persistence | [Backend](docs/adr/11-backend.md), then its linked source and tests. |
-| Run admission, execution, or recovery | [Workers](docs/adr/14-workers.md) and the relevant [Graph](docs/adr/24-graph.md) section. |
-| Agent steps, consent continuation, or delegated work | [Agents](docs/adr/20-agents.md), then [HitL](docs/adr/25-hitl.md) or [Graph](docs/adr/24-graph.md). |
-| Browser behavior or API projection | [Frontend](docs/adr/15-frontend.md), then the affected instrument in the [Altar source map](clients/web/src/README.md). |
-| Extension configuration or typed contributions | [Extension authoring](docs/sepulcher/extensions/authoring.md), then its linked Phoenix source and isolated tests. |
-| Documentation, vocabulary, or lore | [Documentation topology](docs/adr/01-doctrine.md#documentation-topology), then the owning page and its neighbors. |
+| Startup, domain logic, persistence | [Backend](docs/adr/11-backend.md); trace the [runtime actuator](src/lychd/system/services/runtime.py). |
+| Run admission, execution, recovery | [Workers](docs/adr/14-workers.md) and [Graph](docs/adr/24-graph.md). |
+| Agent steps, consent, delegated work | [Agents](docs/adr/20-agents.md), [HitL](docs/adr/25-hitl.md), and the [Bridge workflow](src/lychd/agents/workflows/bridge_chat.py). Check [delegation delivery](docs/state-of-the-work.md#delegated-agent-execution) before adding a runtime. |
+| Browser behavior, API projection | [Frontend](docs/adr/15-frontend.md) and the [Altar source map](clients/web/src/README.md). |
+| Extension configuration, typed contributions | [Extensions](docs/sepulcher/extensions/index.md), then the contribution guide for the thing being added. |
+| Upstream code, tests, documentation, assets | [Reuse upstream material](#reuse-upstream-material). |
+| Documentation, vocabulary, lore | [Documentation topology](docs/adr/01-doctrine.md#documentation-topology), then the owning page. |
 
-You can start with that one boundary. Use the Covenant index for adjacent decisions as the change
-reaches them; the full grimoire is not a prerequisite to a first contribution.
-
-### Start with three development lanes
-
-Use these entry points to divide work around the same system contracts:
-
-| Lane | Trace one contract | First verification |
-| --- | --- | --- |
-| Agentic | [Bridge workflow](src/lychd/agents/workflows/bridge_chat.py): model result → consent → completed history. Read [delegation status](docs/state-of-the-work.md#delegated-agent-execution) before adding an external runtime. | `make test PYTEST_TARGETS="tests/agents tests/unit/domain/delegation tests/unit/domain/cortex/test_delegate_resume.py"` |
-| Fullstack | [Altar source map](clients/web/src/README.md): generated API contract → retained evidence → accessible instrument. | `make frontend-check` and the affected `tests/web` slice; then `make frontend-build`. |
-| Backend | [Runtime actuator](src/lychd/system/services/runtime.py): observation → effect → settlement → reopened admission or containment. | `make test PYTEST_TARGETS="tests/unit/system/services/test_runtime.py tests/unit/domain/orchestration"` |
-
-Claim one contract in an issue before changing it. Changes to shared API types, checkpoint identity,
-or effect settlement need review from the adjacent lane; keep their source, tests and generated
-artifacts together. A first contribution should reproduce one failure and close it through the
-existing owner. The [quality gates](#quality-checks) distinguish repository evidence from live-host
-acceptance; the [delivery ledger](docs/state-of-the-work.md) keeps the remaining boundaries.
+Claim one contract, reproduce a failure, and use its source and focused tests. Changes to shared
+API types, checkpoint identity or effect settlement need review from the adjacent owners.
+[Select checks](#test-selection) for the affected boundary; read adjacent Covenants as needed.
 
 ## Branches and everyday collaboration
 
 ### Coordinate before starting work
 
-For substantial work, first read the relevant existing issues, assignees, recent coordination
-comments and linked pull requests. Use published branches as supporting evidence of candidate
-work, not proof that a task is claimed, active or abandoned. Record which repository and work
-items were checked and when; inaccessible or stale information remains an explicit gap. An
-operator-assigned task may proceed within its existing authority while reporting that gap;
-missing access does not establish that nobody else is working there.
+Before substantial work, read relevant issues, assignees, recent coordination comments and linked
+PRs. Record the repository, work items, observation time and access gaps. Branches are supporting
+evidence, not proof that work is claimed, active or abandoned. An operator-assigned task may
+proceed within its existing authority despite a visibility gap.
 
-Announce the intended outcome and approximate area before construction. The initial claim does
-not need an exact file list: exploration establishes the affected contracts, dependencies and
-smallest verifiable slice. Update the scope when those become clear. A claim coordinates work;
-it grants neither exclusive ownership of an area nor unlimited agent write access. A delegated
-writer still needs the bounded input and effect contract in
-[Development bootstrap](docs/sepulcher/extensions/weaver/development-bootstrap.md#establish-the-campaign-before-dispatch).
+Announce the intended outcome and approximate area in the existing owning issue, or create a
+concrete task issue. Name the responsible contributor, add an assignee when permitted, and set
+**In progress** when implementation starts. Small fixes may state scope in the PR or commit
+without a separate issue or prior discussion. External contributors need no private-board access. A claim grants neither exclusive ownership
+of an area nor unlimited write authority.
 
-Use an existing issue when it already owns the outcome; otherwise create a concrete task issue.
-Record the responsible contributor and a short claim comment, with an assignee when repository
-permissions allow. Team members set the board item **In progress** when implementation starts;
-external contributors need neither private-board access nor Discord membership. Small fixes may
-still describe their scope in the PR or commit without a separate issue or prior discussion.
-
-Unsettled proposals can use GitHub Discussions or Discord as described in
-[shared stewardship](#grow-into-shared-stewardship). Carry the agreed implementation scope into
-the issue so the next contributor can find it. Publish a linked draft PR when there is useful
-candidate work to inspect, and update the issue/PR when scope changes, work is handed off,
-paused or abandoned. A branch's existence or inactivity does not replace that update. Refresh
-the relevant coordination before selecting another task or accepting a handoff. Agents use
-the same procedure under their actual account and communication permissions; this rule does
-not itself authorize posting or changing GitHub state.
+Publish a linked draft PR when there is useful work to inspect. Update the issue/PR when scope,
+responsibility or disposition changes, including pauses and abandonment; refresh coordination
+before selecting another task or accepting a handoff. Exploration can establish the exact file
+list, but a delegated writer needs a bounded input/effect contract before construction.
+Agents follow the same procedure under their actual communication permissions; this rule does
+not authorize posting or changing GitHub state.
 
 ### Current phase: team integration through dev
 
-Send ordinary pull requests to `dev`, including contributions from forks. `main` stays the
-default branch and the source of published documentation; it records the last deliberately
-verified snapshot. `dev` is the shared integration branch. Start short task branches from current
-`dev`; the earlier solo direct-to-main phase has ended.
+Ordinary task branches start from current `dev`; fork and team PRs target `dev`. `main` remains
+the default branch and the deliberately verified public snapshot.
 
-1. For substantial work, agree a small slice in an issue and claim it. For small fixes, describe
-   the change in the PR or commit. Branch from current `dev`.
-2. Open a draft PR to `dev` when work would benefit from visibility or discussion. Link the issue
-   with `Refs #N`; describe the result and checks in the PR template.
-3. Read your complete change, including AI-generated code and tests. Obtain one approving review
-   from another eligible contributor (subject to the temporary founder exception below), resolve
-   review conversations, and pass the required checks.
-   Changed diffs invalidate stale approvals. Human review remains the responsibility of the
-   people involved; an automated review is not a substitute. The author may merge once these
-   conditions hold. Small fixes follow the same PR path.
-4. Check the combined result on `dev`. Required checks are **Core Python 3.14.8 (OCI test image)**,
-   **Core Python 3.15.0 (OCI test image)**, **Altar contracts and build**, and **Hexanomicon build**.
-   They run on PRs and pushes to both long-lived branches. Run additional affected-boundary checks
-   before promotion; these automatic gates do not qualify real host operation.
+1. Keep each PR small and cohesive; link its issue with `Refs #N`.
+2. Inspect the full diff, including generated code/tests. Obtain one approving review from
+   another eligible contributor, resolve conversations and pass the required checks. Changed
+   diffs invalidate stale approvals; automated review does not replace human responsibility.
+3. The author may merge after those gates. Small fixes follow the same PR path.
+4. Verify the combined `dev` result before [promotion](#promote-a-tested-snapshot).
 
-**Temporary founder exception, 4 November 2026:** At the operator's explicit instruction,
-`zenithruneblade` may push to `dev` and `main`, or merge a PR, without another contributor's
-approval. This named-account exception remains until the operator revokes it. The four required
-checks still apply; record the scope, exact source and verification before adopting a change.
-Use the exact tested `dev` commit for promotion to `main`. Other contributors continue through
-the ordinary PR and approving-review path.
+The four required checks are **Core Python 3.14.8 (OCI test image)**,
+**Core Python 3.15.0 (OCI test image)**, **Altar contracts and build**, and **Hexanomicon build**.
+They run on PRs and pushes to both long-lived branches. Add affected-boundary checks; CI does
+not establish live-host acceptance.
 
-Keep task branches short and leave disruptive unfinished work there. When shared `dev` breaks,
-fix or revert the regression before piling on more changes. Preserve shared history: fix forward
-or revert instead of resetting or force-pushing `dev` or `main`. Squashing a disposable task PR
-into `dev` is fine; preserve ancestry when moving work between `dev` and `main`.
+**Temporary founder exception, 4 November 2026:** `zenithruneblade` may push to `dev` and `main`
+or merge without another contributor's approval until the operator revokes this named-account
+exception. All four checks still apply. Record scope, exact source and verification; promotion
+uses the exact tested `dev` commit. Other contributors retain the ordinary PR/review path.
 
-Aim to integrate small, independently verified and compatible slices frequently, preferably
-within the working day. Updating a private branch from `dev` does not by itself deliver a slice.
-Split a long change through compatible intermediate states instead of keeping the whole feature
-isolated; an unfinished feature must not break the shared result. When review or CI capacity is
-saturated, finish and verify waiting candidates before admitting more construction. Branch age
-is a reason to inspect scope and dependencies, not permission to merge unready work.
+Integrate independently verified, compatible slices frequently, preferably within the working day.
+Keep unfinished disruptive work on short task branches. When `dev` breaks, fix or revert before
+adding more changes; when review or CI capacity is full, finish waiting work before starting more.
+Branch age grants no permission to merge. Preserve shared history: no force pushes or deletion
+of `dev`/`main`. Disposable task PRs may be squashed into `dev`.
 
-The `@hexanomicon/core` team has repository **Write** access and a shared review/mention target.
-Its membership grows through agreed responsibility; paid and independent contributors can become
-maintainers. `dev` requires PR review and checks, with the named founder exception above.
-`main` permits checked updates by the
-`@hexanomicon/release-maintainers` team and repository administrators; classic push restrictions
-do not exclude administrators. Required checks apply to administrators too. Both long-lived
-branches reject force pushes and deletion. Repository Write alone does not permit an ordinary
-developer to update `main`. Project access is granted separately; `core` has **Write** on the private
-[delivery board](https://github.com/orgs/hexanomicon/projects/1). External contributors use public
-issues and fork PRs without joining the team or needing board access.
+`@hexanomicon/core` has repository **Write** and a shared review target. Only
+`@hexanomicon/release-maintainers` and repository administrators may update `main`; required
+checks also apply to administrators. `main` permits checked direct promotion without a separate
+PR. Repository Write alone grants no ordinary direct-main permission. Project access is separate:
+`core` has **Write** on the private [delivery board](https://github.com/orgs/hexanomicon/projects/1).
+External contributors use public issues and fork PRs without team or board membership.
 
 ### Agent-assisted campaigns
 
-Use [Development bootstrap](docs/sepulcher/extensions/weaver/development-bootstrap.md) for a
-bounded operator campaign and its later native handoffs. Claim a concrete contract, pin the
-actual input closure and allowed paths, reserve verification/reviewer capacity, and give each
-writer a separate candidate surface. A dirty checkout needs an explicit admitted patch and
-selected untracked inputs; a commit alone does not identify it. Preserve unrelated operator work.
+Follow [Development bootstrap](docs/sepulcher/aspects/weaver/development-bootstrap.md).
+Pin the actual input closure, allowed paths and effects; reserve verification/reviewer capacity
+and a separate candidate surface per writer. Include admitted dirty patches and selected untracked
+inputs: a commit alone does not identify a dirty checkout. Preserve unrelated work.
 
-Agents return candidate bytes and attributed observations. Inspect the complete diff and verify
-the integrated object against the original acceptance criteria; independent review records its
-exposure and conflicts. Platform sessions use their actual identities and permissions, without
-claiming LychD containment. Idle work selects only eligible tasks under current standing authority
-and stops when review capacity, useful work or its budget is exhausted. The guide's pilot limits
-do not impose a new approval count or change the branch/promotion policy below.
+Review returned bytes and attributed observations against the original acceptance criteria;
+record reviewer exposure and conflicts. Platform sessions retain their actual identities and
+permissions. Idle work stays within standing authority and stops when useful work, review capacity
+or budget runs out. The bootstrap's pilot limits do not change approval or promotion rules.
 
 ### Promote a tested snapshot
 
-Record the exact candidate commit, checks and relevant untested boundaries in the linked issue or
-PR. Wait for all four required **push-to-dev** checks on that exact commit; a passing PR
-merge-preview or manually dispatched workflow does not establish this result. A candidate includes
-all of its earlier changes. Verify that it belongs to `dev`, then advance `main` to that exact
-commit with a **fast-forward** (preserving history). A release maintainer or repository
-administrator may do this under the agreed scope; keep a working backup so promotion does not
-depend on the founder. `main` deliberately requires checks without requiring a separate PR, which
-would obstruct this exact-commit promotion path.
+Record the exact commit, checks and untested boundaries in the issue/PR. Wait for all four
+required **push-to-dev** checks on that commit, including its earlier changes. A PR merge-preview
+or manual run is insufficient. A release maintainer or administrator then fast-forwards `main`
+to that tested `dev` commit; keep a working backup maintainer.
 
 In a clean checkout, replace `FULL_TESTED_COMMIT_SHA` with the recorded commit:
 
@@ -164,100 +108,82 @@ git merge-base --is-ancestor FULL_TESTED_COMMIT_SHA origin/dev &&
 git push origin FULL_TESTED_COMMIT_SHA:refs/heads/main
 ```
 
-Stop if any command fails. If `main` and the candidate have diverged, merge current `main` into
-`dev`, resolve and verify the resulting candidate, then retry. A direct fix to `main` must also be
-merged back into `dev`. Ordinary fast-forward promotions need no merge back. Avoid routine
-cherry-picking or squash/rebase promotion between the long-lived branches: that creates a
-different history and may create an untested combination. Keep `dev` when cleaning up merged
-branches. Main publication updates the documentation site; it is not a package release.
+Stop on any failure. If history diverged, merge current `main` into `dev`, resolve, verify the new
+candidate and retry. Merge direct-main fixes back into `dev`; ordinary fast-forward promotions
+need no merge back. Avoid routine cherry-pick, squash or rebase promotion between these branches:
+it changes ancestry and can create an untested combination. Keep `dev` during branch cleanup.
+Publishing `main` updates the documentation site; it is not a package release.
 
-Dependabot version updates target `dev`. Security-update PRs can target the default `main` branch
-instead: carry the security fix through a reviewed PR to `dev`, verify the resulting commit and
-promote it, then reconcile the original security PR after `main` contains the fix. Do not give a
-bot permission to bypass these gates. An urgent exception needs an explicit recorded scope and
-verification, followed by synchronization back into `dev`.
+Dependabot version updates target `dev`. For security PRs targeting default `main`, carry the fix
+through a reviewed `dev` PR, verify and promote, then reconcile the original PR. Bots do not bypass
+these gates. An urgent exception needs recorded scope and verification, followed by synchronization
+back into `dev`.
 
 ### Issues and the board
 
-- **In progress:** implementation is underway. **Review:** the implementation, tests and docs
-  need human reading and challenge; request additional eyes where useful.
-- **Testing:** the feature needs acceptance in the relevant environment, usually after
-  integration into `dev`. Tests also run earlier. Small changes can pass directly from Review to
-  Done when acceptance and promotion are complete.
-- **Done:** the full issue criteria are verified, required changes are on `main`, and affected
-  documentation is current. A partial PR does not complete its parent issue.
+| State | Meaning |
+| --- | --- |
+| In progress | Implementation is underway. |
+| Review | Implementation, tests and docs need human review. |
+| Testing | Acceptance is needed in the relevant environment, usually after `dev` integration; tests also run earlier. |
+| Done | Full issue criteria are verified, changes are on `main`, and affected documentation is current. |
 
-During the team phase, closing keywords in a PR targeting `dev` do not close its issue while `main` is the default.
-Use explicit issue references during development, then close completed issues and set Done after
-promotion. The promoting maintainer updates those issues and the board, or names who will.
-Review, acceptance and promotion are recorded manually; a green CI run or merged PR
-does not close an issue on its own.
+Small changes may go from Review to Done after acceptance and promotion. Partial PRs do not
+complete parent issues. Closing keywords on `dev` PRs do not close issues while `main` is default;
+use explicit references, then close completed issues after promotion. The promoting maintainer
+updates issues/board or names who will. CI and a merged PR do not perform that acceptance.
 
 ## Grow into shared stewardship
 
-Core and extension developers share a path into maintainership: contribute useful work, preserve
-compatibility, review changes, and discuss concerns with the community. Use the shared Discord for
-conversation, help and working threads; use [GitHub Discussions](https://github.com/hexanomicon/lychd/discussions)
-for proposals, questions and showcases that should remain easy to find. Issues track bugs and
-concrete implementation tasks; an open-ended idea can start in Discussions without making every
-small fix pass through a separate discussion. Record accepted decisions and their evidence in the
-owning repository documentation, with links to the relevant pull request or commit so others can
-follow and challenge them. Contributions remain welcome through GitHub without a Discord account.
+Maintainer responsibility follows demonstrated contributions, compatibility work and review,
+with an explicit scope independent of employment or founding status; there is no fixed-size inner
+circle. Use Discord for working conversation, [Discussions](https://github.com/hexanomicon/lychd/discussions)
+for lasting proposals/questions/showcases, and issues for concrete work. Small fixes need no prior
+Discussion, and contributions need no Discord account. Record accepted decisions and evidence in
+the owning docs, linked to their PR or commit.
 
-Maintainer responsibility follows demonstrated work and an explicit scope, independently of
-employment or founding status. There is no fixed-size inner circle to join. The future
+Current authority comes from repository permissions and review. The future
 [source roster](docs/adr/17-packaging.md#forge-neutral-source-trust) and
-[Evolution promotion roster](docs/adr/18-evolution.md#future-quorum-roster) describe individual
-credentials and collective decisions for keeping a shared canon. Those protocols remain Designed;
-today, maintainers use explicit repository permissions and human review. Community participation
-does not itself issue credentials or authorize a release.
+[Evolution roster](docs/adr/18-evolution.md#future-quorum-roster) do not grant participation-based
+credentials or release authority.
 
 ## Supported Environment
 
-- Python supports `>=3.12,<3.16`; `.python-version` pins 3.15.0 for repository tooling.
-  Core tests, lint, formatting checks and typing execute only in the explicit OCI check image
-  built from `Containerfile.tests`, with `uv` 0.13.0. There is no host-native Core test profile.
-- The Vessel uses the stable `python:3.14.8-slim-bookworm` base. Core Python CI selects both
-  3.14.8 and 3.15.0; the manual Python and PostgreSQL jobs use the same two versions. These
-  configured lanes keep the repository and Vessel interpreters under explicit checks; passing
-  portable tests does not qualify a Linux image or database deployment.
-- Host operation targets a free and open-source Linux stack with systemd, cgroup v2, and rootless
-  Podman/Quadlet. Most repository tests use isolated substitutes and do not prove that a real host
-  works; [Summoning](docs/summoning.md) owns the live-host prerequisites and rite.
-- Frontend work uses Node.js 24.20.0 (`.nvmrc`) and npm 12.0.2
-  (`clients/web/package.json`): supported ranges are 24.20.x-or-newer within Node 24 and
-  12.0.x-or-newer within npm 12, starting at 12.0.2. npm 12 keeps dependency lifecycle
-  scripts blocked unless explicitly approved; the Linux Altar build requires no such approvals.
-- Android client setup and focused checks are in [the client README](clients/android/README.md).
-  Its Gradle gates are separate from the Python and web-client commands below.
-
-Companion client checks use JDK 17 and a pinned Gradle wrapper. The Kotlin/JVM interaction tests
-need no Android SDK. Building the opt-in Android application requires the SDK; its instrumented
-tests also require a selected device or emulator. The [Android client README](clients/android/README.md)
-owns those commands and their evidence boundaries.
+- Python range: `>=3.12,<3.16`; repository tooling pins 3.15.0, production Vessel uses
+  `python:3.14.8-slim-bookworm`. Core CI and manual Python/PostgreSQL checks cover both 3.14.8
+  and 3.15.0 using `uv` 0.13.0. Core tests, lint, formatting and typing run only in the explicit
+  `Containerfile.tests` OCI image.
+- Live hosts target free/open-source Linux with systemd, cgroup v2 and rootless Podman/Quadlet.
+  [Summoning](docs/summoning.md) owns host prerequisites; isolated repository checks do not
+  qualify a deployment.
+- Web tooling pins Node.js 24.20.0 (`.nvmrc`) and npm 12.0.2 (`clients/web/package.json`).
+  Supported ranges are Node 24.20.x or newer within 24 and npm 12.0.x or newer within 12,
+  starting at 12.0.2. npm lifecycle scripts stay blocked unless explicitly approved;
+  the Linux Altar build needs no approvals.
+- [Android client setup and checks](clients/android/README.md) use JDK 17 and the pinned Gradle
+  wrapper. JVM tests need no SDK; the opt-in app build needs the Android SDK, and instrumented
+  tests need a selected device/emulator. These gates are separate from Python/web checks.
 
 ## Setup and Commands
 
-A working OCI engine is required for Core verification; rootless Podman is the default. `make` builds an explicit
-allowlisted source context and runs the resulting exact OCI image; it mounts neither the checkout
-nor HOME. Docker may be selected explicitly with `LYCHD_TEST_ENGINE=docker`. Missing engines
-or failed builds stop the check; there is no host fallback. Docker uses Buildx with `--resource`
-support (locally checked with 0.36.1), or an explicitly selected classic builder; Podman uses
-its native build limits.
+Core verification requires a working OCI engine: rootless Podman by default, or explicitly
+`LYCHD_TEST_ENGINE=docker`. The wrapper builds an allowlisted source image and runs its exact ID
+without mounting the checkout or HOME. Missing engines/build failures stop the check; there is
+no host fallback. Docker needs Buildx with `--resource` support (checked with 0.36.1) or an
+explicitly selected classic builder; Podman uses native build limits.
 
-Install host operator or frontend tooling only when the change needs it:
+Install host CLI or frontend tooling only when needed:
 
 ```bash
 make install
-make frontend-install    # Frontend changes only
+make frontend-install    # Web work only
 make help
 ```
 
-`make install` creates or updates host CLI tooling in `.venv` from `uv.lock`, including the local
-`postgres-binary` convenience extra; it does not supply a supported host Core test environment. `make frontend-install` runs `npm ci` from the web-client lock.
-
-`make init` materializes local host layout; it is not a development bootstrap. Use it only for
-[Summoning](docs/summoning.md) or deliberate host-initialization testing.
+`make install` updates `.venv` from `uv.lock`, including the `postgres-binary` convenience extra;
+that is host tooling, not a Core test environment. `make frontend-install` uses locked `npm ci`.
+`make init` materializes host layout: reserve it for [Summoning](docs/summoning.md) or deliberate
+host-initialization tests.
 
 ### Quality Checks
 
@@ -269,603 +195,142 @@ make test PYTEST_TARGETS="tests/unit"
 make check
 ```
 
-Omit a target variable for the repository-wide default. `make check` runs the complete
-non-mutating Python lint, format, type, and test suite—not frontend checks. Use `make format` only
-when you intend to change files.
+Omit target variables for repository-wide defaults. `make check` runs non-mutating Python
+lint/format/type/tests; frontend checks are separate. `make format` changes files.
+Select an interpreter with `LYCHD_TEST_PYTHON=3.14.8` or `3.15.0`.
 
-Every Core command above enters `Containerfile.tests` through `scripts/container_checks.sh`.
-Use `LYCHD_TEST_PYTHON=3.14.8` or `3.15.0` to select a reviewed interpreter lane. Ordinary check
-containers have no network, added capabilities, host checkout, HOME or daemon socket.
-Tests run serially by default so shared resource probes remain deterministic. Set an explicit
-worker count such as `N=8` to opt into bounded parallelism, use `K="expression"` for pytest name
-selection, and use `VERBOSE=1` for raw output, long tracebacks, and live DEBUG logs. Ordinary runs use
-pytest's native compact report, capture logs, and allocate a unique scratch directory beneath
-`.cache/pytest` inside the disposable container; `PYTEST_BASETEMP` also names a container path.
-Reports and scratch do not persist on the host unless separately admitted for export. Use an ordinary test-data path such as a fresh `/tmp` directory, outside
-protected authority roots such as `~/.codex`; mount-authority tests deliberately reject those roots.
+PR/push Core CI runs lint, formatting, strict typing and `make test-ci`; [the Makefile](Makefile)
+owns `CI_PYTEST_TARGETS`. This subset uses in-process substitutes and does not replace the full
+ordinary `make test`/`make check` selection. Automatic Altar CI regenerates contracts, checks,
+tests and builds the client, rejecting unexpected generated changes; Hexanomicon CI builds clean.
+Both jobs always report without path filters. Manual Repository Checks additionally offers full
+Python and disposable PostgreSQL jobs. Host-specific Quadlet/filesystem acceptance remains separate.
+The tag/manual release-candidate workflow produces a non-publishing artifact receipt.
 
-Pull requests and pushes to `dev` and `main` run **Core Python CI**: repository lint, formatting and strict
-typing, followed by `make test-ci`. This explicit selection covers configuration, database model
-contracts, release archive checks, container server policy, operator control, failed or masked unit
-deletion previews, credential and contributed-secret checks, init binding-site refusal,
-animation/dispatch/orchestration, core Run and delegated-job logic, extensions, agents and web contracts,
-Scout destination/parser/supervisor contracts and qualification-receipt freshness,
-plus configuration, extension contribution, reconstructed Bridge resume, Reach operator policy,
-Gateway/administration fixtures and supervisor custody, and the inactive Blockworld
-placement workflow.
-It runs in the explicit OCI check image with in-process substitutes. The host needs the OCI
-engine to build and launch that image; ordinary test code receives no daemon socket, running
-database, systemd service, model or GPU. It does not prove host operation.
-`CI_PYTEST_TARGETS` in the Makefile owns the exact selection. Reproduce it locally with:
+For web changes, run `make frontend-check` and `make frontend-build`. Both regenerate OpenAPI
+through offline host tooling without starting Core; Node tests keep their separate boundary.
+Review the generated static Altar under `src/lychd/public/` with the source change.
 
-```bash
-make lint format-check type-check
-make test-ci
-```
-
-The **Repository Checks** workflow runs **Altar contracts and build** and **Hexanomicon build** on
-every pull request and push to `dev` or `main`. Both jobs always report; there is no path filter
-that can leave a required check pending. The Altar job regenerates contracts, checks/tests/builds
-the client, and rejects unexpected generated changes; the documentation job runs a clean build.
-Manual dispatch additionally runs full `make check` and disposable PostgreSQL jobs.
-Host-dependent Quadlet/filesystem differences on GitHub runners remain unresolved; automatic
-checks do not waive broader acceptance for a change that needs it. The Pages workflow publishes
-documentation on `main`; the tag/manual release-candidate workflow remains a separate
-non-publishing artifact receipt. `make test` and `make check` retain their full `not container`
-marker selection; `make test-ci` does not replace them for final verification.
-
-Disposable PostgreSQL receipts are an explicit host-integration profile, not part of ordinary
-`make check`:
-
-```bash
-LYCHD_TEST_ENGINE=docker LYCHD_TEST_DAEMON_SOCKET=/absolute/path/to/owned-docker.sock make test-containers
-```
-
-The bounded [Intercom operator session](docs/sepulcher/intercom.md) uses the production outbound
-public-text service. Its two PostgreSQL modules additionally accept only an explicitly supplied
-disposable `LYCHD_INTERCOM_TEST_DATABASE_URL`; the migration module needs empty public Intercom
-tables. They do not start a container implicitly. The independent SDK qualification uses a separate
-Python environment and test-only signing middleware; it does not add the SDK to production
-dependencies. `uv run --locked python scripts/intercom_lab.py --help` performs no external effect.
-
-The check image includes the separate `container-test` dependency group. This target requires
-an explicitly named absolute Docker daemon socket; it admits that socket and host
-networking to the test harness for disposable PostgreSQL. The socket profile disables the
-container SELinux label boundary for that trusted daemon-capable harness; it never relabels the
-host socket. Ordinary checks retain their container label boundary. It grants no such authority to the
-production Vessel and may pull the pinned `pgvector` image. Ryuk remains unprivileged by
-default. A rootless compatibility environment may deliberately opt in with
-`TESTCONTAINERS_RYUK_PRIVILEGED=true make test-containers`; do not export that setting as a normal
-repository default.
-
-The maintained [Ward/native-authority PostgreSQL profile](docs/state-of-the-work.md#remote-iam)
-records 23 cases: 18 Ward migration/runtime cases and five isolated inactive candidate-authority
-cases. This does not turn ordinary CI into a live database test or qualify installed activation.
-
-The former warm-model ASGI, spawned-process and host-native TCP Bridge receipts, trusted browser
-receipt and installed-hybrid receipt are frozen historical observations. They were retired on
-20 October 2026 at base `7057210a`; they do not qualify this check image or a rebuilt production
-Vessel. [State of Work](docs/state-of-the-work.md#current-evidence-envelope) retains their exact
-scope. Current container runtime, browser and lifecycle qualification remain pending.
-
-The specialised engine/host proof descriptions below retain their named external boundaries.
-Their former host Python commands are not a supported Core verification route. A new occurrence
-requires an explicitly admitted OCI harness carrying those exact prerequisites and terminal
-receipts; the default wrapper does not forward arbitrary proof environment, files or sockets.
-No host-native fallback is supported when that adaptation is unavailable.
-
-Real private-manager tests require a fresh task-owned delegated user service. A private bus and
-HOME alone do not isolate cgroups: another manager could migrate unrelated processes from its
-inherited cgroup. The harness verifies the exact transient unit, delegation, ancestry, writable
-cgroup and exclusive task processes before launching; it never falls back to the installed
-manager. Ordinary unavailable environments skip; an explicitly required proof fails.
-
-The host-native signed-stop proof and its server, credential-source, TCP and private-manager
-fixtures are retired. Current active container stop/start completion remains unavailable until
-its own authenticated lifecycle passage is implemented and qualified. Historical native stops
-cannot establish container settlement or authorize a direct fallback.
-
-The separate Linux target-switch proof requires the installed Quadlet generator, an ordinary
-rootless Podman cache containing the exact Python image pinned in its test, and a responding user
-session bus. It exports that image without network access, then uses a private image store and
-user manager. Read the test's resource and cleanup contract before opting in:
-
-```bash
-proof_unit="lychd-proof-quadlet-$$.service"
-systemd-run --user --unit="$proof_unit" --collect --wait --pipe --service-type=exec \
-  --property=Delegate=yes --property=RuntimeMaxSec=1000 --property=TimeoutStopSec=30 \
-  --property="WorkingDirectory=$PWD" --setenv="LYCHD_SYSTEMD_PROOF_OUTER_UNIT=$proof_unit" \
-  --setenv=LYCHD_REQUIRE_QUADLET_PROOF=1 /usr/bin/make test M=container N=0 \
-  PYTEST_TARGETS=tests/integration/test_systemd_quadlet_transaction.py \
-  PYTEST_BASETEMP=/tmp/lychd-quadlet-proof
-```
-
-Choose a fresh, short `PYTEST_BASETEMP` path. The proof needs up to 1 GiB of temporary storage
-(monitored, not quota-enforced), retains its receipt there, and refuses missing prerequisites when
-explicitly required. It does not start production units, load a model or qualify the full
-Orchestrator/Host Reactor path. Without the opt-in flag, the live case skips.
-
-The separate embedding transport proof requires Linux, a working ordinary rootless Podman
-cache with the exact image pinned by the tracked public embedding fixture, and the already
-available public Qwen3-Embedding-0.6B Q8_0 file. It verifies the file size and SHA-256 before
-Podman access; it never downloads, copies, relabels or modifies the model file. Keep that file
-quiescent throughout the run. On SELinux hosts, prepare a dedicated public fixture with a
-container-readable shared context (`container_file_t:s0`); a private MCS label left by another
-container is insufficient. The test neither disables SELinux nor relabels the supplied file.
-
-```bash
-LYCHD_REQUIRE_EMBEDDING_PROOF=1 LYCHD_EMBEDDING_FIXTURE=/absolute/path/Qwen3-Embedding-0.6B-Q8_0.gguf make test M=container N=0 PYTEST_TARGETS=tests/integration/test_llamacpp_embedding_runtime.py PYTEST_BASETEMP=/tmp/lychd-embedding-proof
-```
-
-Choose a fresh basetemp path. Without the flag, the live case skips before artifact or engine
-access; with it, missing prerequisites fail. The proof creates one uniquely owned disposable
-container with no network, host ports or GPU, then enters only its network namespace to exercise
-the actual registry, Dispatcher and HTTPX embedding driver. The server has a CPU limit of 60 seconds and
-an address-space limit of 4 GiB, the child 30 seconds/2 GiB, and bounded output. These
-are process limits, not cgroup quotas. Work is bounded to 175 seconds and cleanup has 30 seconds;
-artifact hashing is outside that work clock. Inspect `embedding-runtime/receipt.json` beneath
-the test's basetemp directory for both proof and cleanup success. This qualifies transport
-against an externally started runtime; it does not prove Orchestrator activation or Archive
-semantic recall. The ordinary image cache and its shared helper lifetime remain operator-owned.
-
-### Native semantic memory proof
-
-The separate fixed Archive composition proof joins authenticated in-process ASGI, real
-PostgreSQL and that registered CPU embedding profile. It exercises candidate exclusion,
-promotion/derivation, source-attributed recall/resolution, correction/rederivation, revocation
-and historical replay. It makes at most eight embedding operations/16 POSTs/4,088 input tokens;
-it generates no answer. It needs the same quiescent public model/rootless cache above, the
-installed `container-test` dependencies, local Docker socket and the already cached PostgreSQL
-image `sha256:1963bc48febf543433baa1ce3edcc6cc08154de722e22495f86681cc9a849026`.
-It never pulls either image or selects a warm service.
-
-The prior direct-host pytest launch is retired as a Core verification route. The retained
-Archive observation describes its historical trusted user-unit profile; a new execution needs
-an admitted OCI adaptation of its external model, database, namespace and terminal-custody
-requirements. No current container qualification is asserted here.
-
-The helper owns one model container with no IP network/host port/GPU, one networkless
-PostgreSQL container with a fresh temporary Unix-socket bind and anonymous data, and one
-FD-pinned model-namespace loopback relay. PostgreSQL has observed512MiB/zero-swap/one-CPU/128PID
-cgroup limits. Model CPU/address-space bounds remain per process; the relay has separately
-observed fixed limits. The trusted outer caller needs ordinary Podman user-namespace setup;
-only the model's zero-capability/NoNewPrivileges state is asserted. These are no aggregate host
-or untrusted guest containment guarantees.
-
-Without the opt-in flag the case skips before artifact/tool access; with it, missing prerequisites
-fail. Inspect `archive-semantic-native/receipt.json` and retained workflow/fence journals beneath
-the fresh basetemp: proof, cleanup, closed clients and zero leases must all pass. Even after a
-failure, independently reconcile the exact recorded unit/PID groups/cgroups, owned model and PG
-containers, anonymous volume, listener and socket before admitting another occurrence. Preserve
-unrelated work, warm services, model bytes and retained data. The maintained receipt and ordinary
-inert/source-freshness tests qualify the named synthetic profile; neither ordinary CI nor this
-command proves semantic Bridge/browser delivery, general retrieval quality or autonomous operation.
-
-The separate `test_semantic_answer_native_runtime.py` has a maintained qualification for one
-fixed public synthetic Bridge5 A/B/C occurrence, separate from the Archive receipt above. Its
-sanitized receipt is `tests/fixtures/archive/native-semantic-answer-runtime-2026-10-19.json`;
-the ordinary inert test binds its critical source hashes through `_sources(ANSWER_PROFILE)`.
-It additionally needs a
-fresh scoped warm-Chat relay and private six-key `ProbeProfile` declaration, separately admitted
-through `LYCHD_SEMANTIC_ANSWER_CHAT_PROFILE` and
-`LYCHD_REQUIRE_SEMANTIC_ANSWER_NATIVE_PROOF=1`. It reserves four embedding operations/eight POSTs
-and an outer ceiling of two Chat calls with 256 output tokens each. The current
-`generated-answer-and-empty-recall-v2` case profile tightens its transport fence to one Chat call:
-A requires a source-attributed answer with strict final `stop`; B refuses revoked authority before
-Chat; C requires a labelled deterministic empty-recall outcome with no Chat grant, Context assembly
-or SDK suffix. There is no prior-history replay. A known `length` on the generated answer fails;
-neither a useful text fragment nor successful Run transport relaxes that oracle. Historical v1
-attempts and their spent allowances remain unchanged; every new occurrence needs fresh admission.
-The maintained occurrence used four embedding operations/eight POSTs/118 input tokens and one
-Chat POST; an independent retained visible-output review passed its fixed A/B/C cases, and Root's
-separate terminal audit passed all 23 terminal checks. This qualifies authenticated in-process
-ASGI, actual PostgreSQL, the named CPU embedding and warm Qwen3.8-27B profile with `bridge_chat@5`.
-It does not qualify installed startup, browser delivery, automatic crash recovery, general answer
-quality or aggregate containment. Raw SDK state/history and replay equality remain test-backed
-reports rather than independently reconstructed evidence. The raw helper's `semantic-answer-v1`
-qualification and two-Chat outer ceiling remain intact; active v2 admission allowed one and
-observed one. Admit the relay, actual model/readiness request allowance, shared leases,
-SQL owner and terminal cleanup before running it; the ordinary Archive command does not do so.
-Independent source/content review and physical settlement remain separate from test assertions.
-
-Scout's separate Linux x86-64 extraction proof requires an already installed Bubblewrap and a
-reviewed dedicated CPython installation. Outside the checkout, prepare a JSON profile with
-absolute `bwrap` and `python_root` paths plus a `libraries` array containing the individual
-`ld-linux-x86-64.so.2`, `libc.so.6`, `libdl.so.2`, `libgcc_s.so.1`, `libm.so.6`,
-`libpthread.so.0`, `librt.so.1` and `libutil.so.1` paths. The interpreter root must contain
-`bin/python3` and `lib`, with no operator material or credentials. Keep these files quiescent.
-The proof fingerprints the dedicated runtime tree up to 512 MiB/20,000 entries; it neither
-installs a runtime nor mounts a broad host library directory.
-
-```bash
-LYCHD_REQUIRE_SCOUT_EXTRACTION_PROOF=1 LYCHD_SCOUT_EXTRACTION_PROFILE=/absolute/path/runtime.json make test M=container N=0 PYTEST_TARGETS=tests/integration/test_scout_extraction_runtime.py PYTEST_BASETEMP=/tmp/lychd-scout-extraction-proof
-```
-
-Use a fresh basetemp path. Without the flag this live test skips; with it, missing prerequisites
-fail. The proof uses synthetic bytes, a temporary local socket and disposable namespace workers.
-It verifies extraction, host-access denial, CPU/address-space/process limits, pipe flooding and
-termination after timeout, cancellation and supervisor death, including observed new-session
-descendants. It performs no external request. Each extraction has five seconds plus two seconds
-for cleanup; the complete proof includes several such cases and bounded runtime hashing. The
-generated `receipt.json` stays below basetemp; the sanitized maintained receipt is in
-[Scout's fixtures](tests/fixtures/scout/linux-extraction-runtime.json). A source change invalidates
-that receipt's freshness test and requires review and requalification. This proves only the
-identified local extractor, not Scout Fetch, workflow integration or the general Coffin boundary.
-
-The separate RSS proof reuses that exact shared runtime and requires Expat 2.6 or newer with
-reparse deferral enabled. Run the unchanged static proof first against the current complete
-source/runtime closure, then supply its actual generated raw receipt (the maintained sanitized
-static fixture is not that input):
-
-```bash
-LYCHD_REQUIRE_SCOUT_EXTRACTION_PROOF=1 \
-LYCHD_REQUIRE_SCOUT_RSS_EXTRACTION_PROOF=1 \
-LYCHD_SCOUT_EXTRACTION_PROFILE=/absolute/path/runtime.json \
-LYCHD_SCOUT_STATIC_EXTRACTION_RECEIPT=/absolute/current-run/receipt.json \
-make test M=container N=0 \
-  PYTEST_TARGETS=tests/integration/test_scout_rss_extraction_runtime.py \
-  K=test_scout_rss_extraction_host_boundary PYTEST_BASETEMP=/tmp/lychd-scout-rss-proof
-```
-
-Use a second fresh basetemp and keep both source and runtime unchanged through the joined proof.
-Inspect its generated sanitized receipt and observed process settlement before admitting a
-[maintained RSS copy](tests/fixtures/scout/linux-rss-extraction-runtime.json). Ordinary CI checks
-that copy's exact six source fingerprints and its agreement with the maintained static runtime.
-The RSS proof adds actual ordinary/hostile child calls, exact launch/protocol observations and
-RSS-request output/timeout/cancellation cases; the fresh static proof owns the shared host-access,
-resource-exhaustion and detached-descendant/death tests. Neither proves native feed admission,
-network acquisition, digest custody or watching.
-
-### Scout network and extraction qualification
-
-Scout's DNS/TLS and current-authority proofs use real local servers inside a dedicated Linux
-x86-64 OCI qualification adapter. Run the unchanged static, DNS/TLS and authority tests in that
-order from a checkout with Docker,
-`curl`, `sha256sum`, `python3` and `timeout` available. Host Python uses only the standard library
-for isolated metadata and local Unix-socket Docker Engine API control; all Core tests execute in
-the OCI image. This explicitly admitted profile selects Python 3.15.0, Docker 29.7.2/API 1.55 and
-runc 1.5.1 on Linux x86-64. Select an existing artifact directory outside the
-checkout; every invocation allocates a fresh run directory there:
-
-```bash
-LYCHD_SCOUT_QUALIFICATION_PROFILE=trusted-scout-c2 \
-LYCHD_SCOUT_QUALIFICATION_OUTPUT=/absolute/existing/artifact-directory \
-  bash scripts/container_scout_qualification.sh
-```
-
-The manually dispatched **Repository Checks** workflow selects the separate
-`trusted-scout-ci-c1` profile with `scope=scout` on its selected source revision. The default
-`scope=contracts` keeps the full Python/PostgreSQL checks separate. CI uses the pinned official
-Docker setup action and Docker 29.9.3, with an exact API 1.56/runc 1.5.2 preflight. CLI and
-controller must share its explicit local Unix socket; a remote endpoint, context override or
-fallback refuses. The action's runtime directory is under the runner's temporary directory;
-no daemon socket is mounted into a test container.
-
-CI-c1 loads one owned named AppArmor policy with an explicit `userns` permission and
-`flags=(unconfined)` for the **trusted outer setup**, in addition to the label exception below.
-This follows [Ubuntu's documented namespace mechanism](https://documentation.ubuntu.com/release-notes/24.04/).
-Both the outer process and fresh namespace child must retain that exact named label/mode.
-It prevents Ubuntu's implicit restricted-user-namespace transition during trusted sandbox setup;
-it is not a claim of LSM confinement or production safety. The three actual proofs and their negative controls remain
-unchanged: the worker must still have an empty read-only mount root, no procfs, no network,
-and no authority to create nested namespaces. The measured kernel, actual cgroups, namespace
-readbacks, unchanged host inventory and owned-container settlement must all pass. Missing
-features or a different engine fail; there is no automatic profile negotiation.
-Its measured Azure kernel has no `crypto` sysctl subtree: CI-c1 declares that exact eight-entry
-top-level inventory and masks its six non-user/non-kernel subtrees. The twelve user-quota entries
-and their eleven masks are unchanged. Extra or missing entries still refuse. The fresh-child
-observer receives only the selected registered profile argument, with an empty environment.
-The loader refuses an existing policy, compiles without cache, adds without replacement, and
-compares the actual kernel-exported policy bytes with the owned compiled input. Cleanup requires
-matching source/binary/kernel identities, terminal controller custody and no container using the
-policy, including unexpected unlabelled users. Ambiguity preserves the policy and fails until
-ephemeral runner teardown. The global AppArmor user-namespace restriction stays enabled and is
-observed before and after; no host sysctl or AppArmor service is changed. This setup is CI-only.
-
-The seven-day artifact contains only fixed sanitized JSON exports, engine/image and settlement
-metadata, source/profile hashes, bounded proof logs and build diagnostics. It excludes test basetemps and ephemeral
-TLS keys. Review the actual generated results and settlement before updating maintained fixtures;
-dispatch success does not replace that admission. Local C2's exact engine and LSM rules remain
-separate.
-
-The adapter derives from the exact source-bound `Containerfile.tests` image ID, adds Bubblewrap, `ip` and
-OpenSSL, and supplies a dedicated CPython installation with eight individual loader/library
-paths. A unique owned local tag resolves that base for the adapter build; exact image IDs before
-and after, plus the adapter's base-layer prefix, are verified. A config ID is not used as a
-registry manifest digest. Builds may download official image, Debian and locked Python dependencies. The launcher
-fetches one immutable, SHA-256-checked official Moby default seccomp profile and permits only the
-additional namespace clone/unshare and mount operations required by Scout's fixed Bubblewrap
-command. Other default restrictions remain. Missing kernel/user-namespace support fails; there is
-no host pytest, privileged-container or unconfined-seccomp fallback. `--build-only` builds the
-images without running qualification. The dedicated interpreter uses the fixed sandbox search
-path `/runtime/lib:/lib64`, matching its unchanged read-only mounts without requiring procfs to
-resolve `$ORIGIN`; its actual bytes require the static proof.
-
-The `trusted-scout-c2` profile explicitly disables SELinux label confinement for its own container.
-It leaves host SELinux enforcement and the ordinary check harness unchanged. The controller first
-captures the daemon's complete default path restrictions in a nonstarted owned container, then
-preserves those defaults except for replacing read-only `/proc/sys` with read-only
-`/proc/sys/kernel` and adding 18 audited masks. Before starting the proof it verifies the actual
-image, command, complete path arrays, security options, environment and resource settings.
-This is a trusted test/setup profile, not default Docker/SELinux or production qualification.
-
-Local C2's outer setup sees seven masked non-user sysctl subtrees, native read-only kernel controls and
-11 masked user-quota leaves around the native `max_user_namespaces` interface. The user-quota
-masks do **not** remain field-specific after a fresh user namespace: trusted Bubblewrap setup can
-see its own namespace's quota interfaces. No acquired body chooses setup code or arguments.
-The unchanged static proof must establish that the untrusted worker receives an empty read-only
-mount root with no procfs, unrelated descriptors or authority to create nested namespaces.
-The controller records the actual outer and fresh-child observations plus unchanged host quota
-and namespace identities before/after. It refuses inventory drift rather than adding unknown paths.
-
-The test container has no checkout, HOME or daemon mounts and uses `--network=none`. Setup assigns
-`93.184.216.34/32` only to that container namespace's loopback. It then changes to the ordinary
-check user, clears every capability set and requires `no_new_privs` before executing tests.
-Actual cgroup readback must show 2 GiB memory, two CPUs and 256 PIDs.
-The unchanged fixture independently verifies that the namespace differs from the launcher's,
-only loopback exists and no external route is present. First, the unchanged static extraction
-boundary proof qualifies this actual CPython/Bubblewrap runtime, including its hostile input,
-host-access, resource-limit and descendant-settlement cases. The DNS/TLS test always receives the
-explicit extraction profile; it checks actual DNS answers, pinned TLS/SNI/Host, certificate refusal, HTTP framing, mixed-address
-refusal, redirect admission and the final HTTP handoff gate. Its generated `receipt.json` contains
-source/dependency identities and observed checks. The launcher exports only generated sanitized
-receipts, safe logs, exact image identities, the seccomp profile/hash and capability evidence
-outside the checkout before removing its owned container. Basetemps and ephemeral certificate
-keys remain inside the removed container. Review the actual generated receipt files before
-maintained fixture replacement; this command does not update fixtures automatically.
-The [separate OCI static receipt](tests/fixtures/scout/linux-oci-extraction-runtime.json) binds the
-actual runtime, recipe, lock and paired network receipts; its freshness guard does not replace
-the historical static/RSS runtime evidence. These receipts qualify this isolated mechanism profile, not a
-production authorizer, durable Scout attempt, workflow, public website or SearXNG service.
-
-The separate current-authority proof uses the same isolated namespace, but joins the production
-credential owner, policy, Run fence and network gate to those real servers. The adapter runs it
-after DNS/TLS with a separate fresh basetemp. It needs no extraction profile. It checks the exact GET, path/query substitution, authority
-revocation during TLS, finite network budgets and measured gate accounting. Preparation and
-claim values are explicit fixtures: this does not exercise database admission, extraction
-authorization or inference. Its [maintained receipt](tests/fixtures/scout/linux-authority-runtime.json)
-and freshness test bind the authority, transport, fixture and dependency versions actually tested.
-
-The composed Scout proof requires its own explicitly admitted OCI adaptation of that isolated
-namespace profile; the bounded adapter above runs only the two network proofs. Its selection is
-`LYCHD_REQUIRE_SCOUT_COMPOSED_PROOF=1`,
-`PYTEST_TARGETS=tests/integration/test_scout_composed_runtime.py`, a fresh basetemp, and the
-required `LYCHD_SCOUT_EXTRACTION_PROFILE`. It also requires the installed `container-test`
-dependencies, the local `/var/run/docker.sock` daemon and an already cached
-`pgvector/pgvector:pg18-trixie` image. It selects the cached image ID without pulling and creates
-one uniquely owned PostgreSQL container with no IP network or published port, 512 MiB memory,
-one CPU and 128 PIDs. Only a dedicated temporary socket directory is mounted; any permission or
-SELinux label adaptation stays within that directory. Database API calls have ten-second
-timeouts and readiness has a thirty-second polling deadline; the composed async passage has
-sixty seconds, with bounded extraction and network cleanup. Runtime hashing is separate.
-
-The proof exercises real credential admission, durable native consent, store-issued claim,
-current network authority, fixed extraction, settlement and retained turns. It also challenges
-revocation during TLS and refetch after service reconstruction. Explicit node calls and a
-`FunctionModel` leave HTTP routing, SAQ process execution, durable Graph checkpoint/resume and
-model inference unqualified. The receipt passes only after database, volume and socket-directory
-cleanup. Inspect the generated `receipt.json`; its [sanitized maintained copy](tests/fixtures/scout/linux-composed-runtime.json)
-and freshness test bind the critical source and dependency identities. This does not repeat the
-extractor's separate adversarial qualification or establish general host compatibility.
-
-Scavenger's separate PostgreSQL observation proof targets the native application store and
-reference-only Run/Graph handoff. Use the already available disposable PostgreSQL fixture, not
-an installed profile database, with a fresh basetemp. This fixture also requires the observed
-loopback-only qualification namespace described above, including the host launcher's
-`LYCHD_SCOUT_HOST_NETNS` identity; run the whole command inside that namespace:
-
-```bash
-LYCHD_REQUIRE_SCAVENGER_PG_PROOF=1 make test M=container N=0 \
-  PYTEST_TARGETS=tests/integration/test_scavenger_feed_pg.py \
-  PYTEST_BASETEMP=/tmp/lychd-scavenger-feed-proof
-```
-
-The real acquisition case in that same file additionally requires
-`LYCHD_REQUIRE_SCOUT_COMPOSED_PROOF=1` and the reviewed
-`LYCHD_SCOUT_EXTRACTION_PROFILE=/absolute/path/runtime.json`. Run it inside the observed isolated
-DNS/TLS namespace described above, with the composed proof's cached PostgreSQL/image/socket
-prerequisites and a new basetemp. The namespace and PostgreSQL fixture must be observed; flags
-alone supply no evidence. Inspect terminal proof and cleanup results before accepting a receipt.
-The procedure does not assert a successful maintained receipt or installed cutover. Public
-Internet acquisition, a real SAQ worker process, process restart, model operation, recurring
-cadence, Search and mobile remain outside this qualification claim. Platform-agent construction
-of candidate source does not establish native LychD containment.
-
-The optional offline music engineering profile runs without the Vessel or a native Composition:
-
-```bash
-uv sync --locked --group music-probe --inexact
-uv run --locked --group music-probe python scripts/music_probe.py --help
-```
-
-The `music-probe` group installs DawDreamer and NumPy for finite native audio proofs; it is not a
-Vessel dependency. The typing group includes NumPy's array annotations without installing
-DawDreamer. Native audio tests explicitly skip when DawDreamer is absent; a group-enabled gate must run
-inside an explicit OCI test image containing those dependencies. The default check image does not
-qualify that optional group; do not substitute a host pytest invocation. Pure recipe, CLI and Comfy transport tests require no running model or service.
-Keep recipes, imported media and results in explicit absolute paths outside every checkout.
-[Workbench](docs/compositions/riffmaw/workbench.md) owns the supported probe operations and limits.
-
-For frontend changes, run:
-
-```bash
-make frontend-check
-make frontend-build
-```
-
-Both regenerate the Litestar OpenAPI contract through offline host build tooling. Schema export
-constructs no Core listener or lifespan; frontend client tests retain their separate Node boundary.
-This host tooling does not create a host-native Core deployment or test profile. The build updates the tracked static Altar in
-`src/lychd/public/`; review and commit it with its source change.
-
-For documentation changes, run the architecture selection through the OCI wrapper. Run the
-clean Zensical command inside an explicitly admitted OCI documentation environment:
+For docs, run the architecture suite through the OCI wrapper, then the clean build inside an
+admitted OCI documentation environment:
 
 ```bash
 make test PYTEST_TARGETS="tests/architecture" N=0
 uv run --locked --only-group docs zensical build --clean
 ```
 
-Run Python checks and the clean documentation build sequentially. The clean build removes
-Zensical's default `.cache`, which also holds repository test temporary directories. Keep any
-explicit uv cache outside that directory while performing the clean build.
+Run them sequentially: the clean build removes `.cache`, including repository test scratch.
+Keep an explicit uv cache outside it. Check local links/fragments and update inbound links,
+parent indexes and the owning `.nav.yml` when routes move. Zensical's built-in Awesome Nav reads
+`docs/.nav.yml` and section-local lists relative to each file; new pages need explicit entries.
+`zensical.toml` owns renderer/theme configuration; no extra navigation package is needed.
+`make docs` serves local documentation on port 7778.
 
-Check local file links and fragments, including links into a renamed heading. A moved page needs
-its incoming links, parent index, compatibility anchors, and the owning `.nav.yml` updated
-together. The architecture suite checks the delivery ledger and its evidence routes; the clean
-build checks the published tree. `make docs` serves the Hexanomicon at `http://localhost:7778` for
-local reading and layout inspection.
-
-Zensical's built-in [Awesome Nav](https://zensical.org/docs/compatibility/mkdocs/plugins/#awesome-nav)
-reads `docs/.nav.yml` for the top-level order and section-local `.nav.yml` files for their pages.
-Paths are relative to the file's directory. Add a page to its section's list where readers should
-encounter it; a new subsection can have its own `.nav.yml` and be referenced by directory name.
-The lists preserve a deliberate reading order: new files are not automatically added to the menu.
-No separate Awesome Pages or Awesome Nav package is required. `zensical.toml` keeps the renderer,
-theme, extensions, and site metadata.
+Specialized model, database, namespace and host proofs have different prerequisites and receipt
+boundaries. Follow [qualification profiles](tests/README.md) for PostgreSQL, Intercom/Atlas,
+Quadlet, embedding/semantic memory, Scout/Scavenger and optional music probes. Historical
+host-native receipts do not qualify the current image; [State of Work](docs/state-of-the-work.md#current-evidence-envelope)
+owns their status. The ordinary wrapper does not forward arbitrary proof flags, files or sockets.
 
 ### Browser development and its backend
 
-Frontend checks and the static build need the Python and Node dependencies above, but no running
-Vessel, database, GPU, or model. Start there for a first frontend contribution.
+Frontend checks/build need Python/Node dependencies, not a running Vessel, database, GPU or model.
+For an interactive preview, run `make developer-fixture` and `make frontend-dev` in separate
+terminals. Defaults: fixture `http://127.0.0.1:8000`, Vite `http://127.0.0.1:5173`, forwarding
+`/api` and `/schema`. Vite alone loads the shell; API reads require the fixture.
 
-For local backend validation, run `make developer-fixture` in one terminal and
-`make frontend-dev` in another. With the default listener settings, the fixture uses
-`http://127.0.0.1:8000`; Vite serves the source client at `http://127.0.0.1:5173` and forwards
-`/api` and `/schema` to it. Vite alone can load the shell, but API reads need the fixture.
+Each fixture start prints user `magus` and a fresh password. Its process-local memory contains
+one labelled synthetic conversation and failed Run for Bridge, Orb and the exact Loom Pattern.
+It reads no operator secrets/configuration and starts no database, worker, model or Host Reactor.
+The failed Run represents no execution; all mutations are refused, even with valid credentials/CSRF.
 
-Each fixture start prints username `magus` and a fresh password in its terminal. It reads no
-operator configuration or secrets and starts no database, queue worker, model, or Host Reactor. Its
-memory state ends with the process. One labelled synthetic conversation and failed Run supply
-sample data for Bridge, Orb, and the exact Pattern revision in Loom. The failed status records
-no graph, model, or host execution. All mutations are refused, including requests with valid
-credentials and CSRF.
+`make developer-fixture CANVAS_AUTHORING=1` admits only Canvas and existing Project authoring
+in that disposable memory. Authentication, Origin, CSRF and handler scopes stay active;
+conversation admission, consent and physical transitions stay refused. Stopping loses edits.
 
-For the disposable Canvas creation/save/discard journey, explicitly opt in with
-`make developer-fixture CANVAS_AUTHORING=1`. This admits only Canvas and existing Project
-authoring into the fixture's process-local memory. Normal authentication, Origin, CSRF and
-handler scopes remain active; conversation admission, consent decisions and physical transitions
-remain refused. It starts no database, model, worker or host operation, and stopping it loses
-the synthetic edits. The default fixture remains read-only.
+For manual browser verification, use a dedicated local browser profile, authenticate at
+`http://127.0.0.1:5173/api/v1/altar/status`, then open `/bridge` and follow its synthetic Run to Orb
+and its exact Pattern in Loom. Check authentication across those reads. Commands/backend tests
+alone do not qualify this journey; [State](docs/state-of-the-work.md#current-evidence-envelope)
+records the current and retired browser evidence, including retained-reply rendering limits.
 
-This developer fixture's manual browser check uses a dedicated local browser profile: open
-`http://127.0.0.1:5173/api/v1/altar/status`, authenticate with the terminal credentials, then open
-`http://127.0.0.1:5173/bridge` and follow the synthetic Run into Orb and its exact Pattern in
-Loom. Check that authentication carries across those reads. These commands and backend tests
-alone do not qualify that browser workflow; [State of Work](docs/state-of-the-work.md#current-evidence-envelope)
-records the evidence boundary.
-
-A separate frozen source-browser receipt records one fixed authenticated keyboard journey,
-controlled failure, useful reply and retained reload against the retired host-native CLI/Granian
-profile and its compiled Altar. Its explicit fixtures and independent review are recorded in that same State envelope;
-it does not qualify the current container fixture, rebuilt Vessel or ordinary installed startup. Reloaded replies may use
-generic **Retained reply** cards; retained failed text does not imply every live badge survives.
-
-The fixture admits the exact Vite origin through the normal Host, CORS, Origin, authentication,
-and CSRF boundaries. Keep credentials out of Vite configuration, URLs, environment variables,
-and source; preserve the browser's Origin. Do not connect this preview to the installation used
-for Summoning. Real-host browser acceptance uses the compiled Altar at Litestar's own origin
-and follows [Summoning](docs/summoning.md). The disposable fixture grants no production macOS
-support or Linux host qualification.
-
-The Atlas database module also accepts `LYCHD_ATLAS_TEST_DATABASE_URL` inside the OCI test
-profile for a daemon-free disposable sidecar. It requires the literal `canvas-postgres:5432`
-host and `canvas_test` database on an operator-created internal network. This profile grants
-the check container no Docker socket, host network or production database access. The operator
-owns both temporary containers and their cleanup; the module recreates only its two Atlas tables.
+Preserve the browser Origin and normal Host/CORS/authentication/CSRF checks. Keep credentials out
+of Vite config, URLs, environment and source. Use the disposable fixture separately from the
+Summoning installation; real-host acceptance uses compiled Altar at Litestar's own origin.
+This preview grants neither production macOS support nor Linux host qualification.
 
 ### Test Selection
 
-Start with the closest test that can fail, then widen by boundary. For example:
+Start with the nearest failing contract, then widen across affected boundaries:
 
-```bash
-make test PYTEST_TARGETS="tests/unit" K="expression"
-make test PYTEST_TARGETS="tests/integration"
-make coverage
-```
+| Change | Checks |
+| --- | --- |
+| Domain/utilities | Matching `tests/unit/` subtree. |
+| Database/filesystem/services/cross-layer | Matching `tests/integration/` and affected unit tests. |
+| Architecture/packaging/public contracts/docs topology | `tests/architecture/`. |
+| Web contracts/projections | `tests/web/`; add frontend checks for OpenAPI/client changes. |
+| Frontend | `make frontend-check` and `make frontend-build`. |
 
-`K` selects test names. `M` replaces the default `not container` marker expression; include
-`not container` when a custom marker selection should retain that exclusion. Most tests are
-classified by directory, and the registered `unit` and `slow` markers are currently unapplied. `M=unit` therefore collects
-nothing: use `PYTEST_TARGETS="tests/unit"`. `make coverage` is a separate serial branch-coverage
-gate with the configured 80% floor; ordinary tests and CI do not enable coverage implicitly.
+`PYTEST_TARGETS` selects paths, `K="expression"` test names. `M` replaces the default
+`not container` marker expression; preserve that exclusion explicitly when needed. Most selection
+uses directories: registered `unit` and `slow` markers are unapplied, so `M=unit` collects nothing.
+Runs are serial by default; `N=8` opts into bounded parallelism. `VERBOSE=1` enables raw output,
+long tracebacks and DEBUG logs; otherwise pytest captures logs and uses its compact report.
 
-Choose the evidence boundary that matches the change:
+Scratch is unique under the disposable container's `.cache/pytest`; `PYTEST_BASETEMP` is also a
+container path. Reports do not persist without an admitted export. Use ordinary task scratch
+such as fresh `/tmp` paths, outside protected authority roots such as `~/.codex`.
+Ordinary checks receive no network, added capabilities, daemon socket, live database, systemd,
+model or GPU. [Special profiles](tests/README.md) explicitly admit their extra prerequisites.
 
-- Pure domain or utility changes: the matching `tests/unit/` subtree.
-- Database, filesystem, service wiring, or cross-layer changes: matching `tests/integration/`
-  tests plus affected unit tests.
-- Architecture, packaging, public contracts, or documentation topology: `tests/architecture/`.
-- Web contracts or projections: matching `tests/web/` tests; add `make frontend-check` when the
-  OpenAPI contract or client changes.
-- Frontend source: `make frontend-check` and `make frontend-build`.
-
-Run `make check` before review when practical. Report skipped host checks: tests, generated plans,
-and mocks are not live systemd, Podman, PostgreSQL, GPU, or model-engine receipts.
+`make coverage` separately enforces serial branch coverage with the configured 80% floor;
+ordinary tests/CI do not enable coverage implicitly. Run full `make check` before review when
+practical and report skipped live checks with their limits.
 
 ## Implementation Conventions
 
-- **Python:** Support the declared range, use PEP 695 generics, and keep boot-hook imports lazy
+- **Python:** support the declared range, use PEP 695 generics and keep boot-hook imports lazy
   where startup order requires it.
-- **Paths:** Do not hardcode user paths such as `~/.config/...`. Use the `PATH_*` authorities in
-  `src/lychd/system/constants.py`.
-- **Boundaries:** Domain computes intent without host mutation; system services own filesystem,
-  process, systemd, and other effects. Backend route/repository law is in
-  **[ADR 11](docs/adr/11-backend.md)**.
-- **Dependencies:** Use `uv add` or `uv remove` with the correct dependency group and commit the
-  resulting `pyproject.toml` and `uv.lock` changes together. Frontend dependencies must likewise
-  update both `clients/web/package.json` and `clients/web/package-lock.json`.
-- **Frontend:** Follow **[ADR 15](docs/adr/15-frontend.md)**. The Altar is a Svelte 5/SvelteKit
-  static SPA served by Litestar; do not add SvelteKit server routes, a JavaScript production
-  server, or handwritten mirrors of generated OpenAPI transport contracts. Coding agents must
-  also follow the [frontend scope](.agents/scopes/frontend.md) before touching `clients/web/**`.
-- **Logging:** Use `structlog` with stable semantic event names. Make fatal initialization errors
-  useful; shared configuration captures exceptions and tracebacks.
-- **Documentation:** Follow
-  **[ADR 01 §Documentation Topology](docs/adr/01-doctrine.md#documentation-topology)**. Root files
-  are thin entry doors; ADRs own accepted decisions, the lexicon owns canonical terms,
-  compositions own native reference application contracts, worked examples, and their local
-  current-material statement, while State of Work owns the shared whole-system evidence envelope.
-  xDDD establishes vocabulary and boundaries in the owning documentation before
-  implementation. Myth is constitutional telos, not evidence that a feature ships. If code changes
-  system truth, update its owning documentation and routing links in the same change.
+- **Paths:** use `PATH_*` from `src/lychd/system/constants.py`, not hardcoded user paths.
+- **Boundaries:** domain computes intent; system services own filesystem/process/systemd effects.
+  Follow [Backend](docs/adr/11-backend.md).
+- **Dependencies:** use `uv add`/`uv remove` with the right group; commit `pyproject.toml` and
+  `uv.lock` together. Web changes pair `package.json` and `package-lock.json`.
+- **Frontend:** follow [ADR 15](docs/adr/15-frontend.md): static Svelte 5/SvelteKit SPA served by
+  Litestar, no SvelteKit server routes or JS production server, no handwritten OpenAPI mirrors.
+  Agents load the [frontend scope](.agents/scopes/frontend.md).
+- **Logging:** use `structlog`, stable event names and useful fatal initialization errors.
+- **Documentation:** follow [ADR 01 topology](docs/adr/01-doctrine.md#documentation-topology).
+  Establish vocabulary and boundaries in owning docs before implementation (xDDD); myth is
+  constitutional telos, not delivery evidence. Update owners and stale routes/status with code.
 
 ## Reuse upstream material
 
-Reuse a useful existing mechanism when its terms and maintenance boundary fit the local need.
-Before copying or adapting it, follow
-[upstream reuse and notices](docs/sepulcher/extensions/smith.md#upstream-reuse-and-notices):
-pin the source, decide the permitted form of reuse, retain the source-to-local mapping and changes,
-and verify the required notices in each distributed artifact. The same rule covers agent-produced
-ports, tests, documentation and assets. An upstream dependency's license is not inferred from the
-parent repository's badge.
-
-An ordinary dependency addition or service integration keeps its own review and inventory duties;
-it does not automatically become an Assimilation campaign or require a full Dossier. Use the
-Smith procedure when deriving a local mechanism from foreign craft or incorporating its expression.
-
-[ADR 00](docs/adr/00-license.md#receiving-third-party-material) owns the legal boundary;
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records incorporated source and routes packaged
-inventories. README Tribute is curated gratitude, not a checklist for every imported fragment.
+Before copying, adapting or deriving a local mechanism from upstream material, follow
+[Assimilation's reuse procedure](docs/sepulcher/aspects/weaver/assimilation.md#upstream-reuse-and-notices).
+It covers exact provenance, applicable terms, changes and shipped notices, including agent-produced
+ports, tests, docs and assets. Ordinary dependencies/integrations retain license and inventory
+duties without automatically requiring an Assimilation Dossier. [ADR 00](docs/adr/00-license.md#receiving-third-party-material)
+owns the legal boundary; [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records incorporations.
+README Tribute remains curated gratitude.
 
 ## Change and Review Discipline
 
-Keep each contribution cohesive: one reviewable intent, its tests, generated artifacts, and
-documentation made necessary by changed truth. Do not mix unrelated cleanup into behavior work.
-Inspect the complete diff and retain third-party notices when dependencies or adapted source change.
+Keep one reviewable intent, its tests, generated artifacts and required docs together. Inspect the
+complete diff and third-party notices; exclude unrelated cleanup. Review against owning source,
+tests, ADRs and State rather than repeated summaries.
 
-A review description should state:
+For a changed capability, contract, procedure or context route, verify discovery from a realistic
+question through maintained entrypoints without supplying the destination. Record the question,
+entrypoint, observed route to owner/evidence, result, repairs and gaps; test a neighboring task when
+changing a shared route. Agents follow [context-loading verification](.agents/workflows/context-loading.md).
+Link checks alone do not establish discoverability.
 
-1. what behavior or boundary changed;
-2. which checks ran and their results;
-3. which live-host or external checks did not run;
-4. which documentation, generated contracts, or delivery claims changed.
-
-Review against the owning source, test, ADR, and State of Work entry rather than against prose
-elsewhere that merely repeats them.
+The PR description states the changed behavior/boundary, checks and results, unrun live/external
+checks, and affected docs/generated contracts/delivery claims.
 
 ## License
 
-Contributions are accepted and distributed under **MPL-2.0**. There is no CLA or private
-relicensing grant, and no `Signed-off-by` trailer is required. See [ADR 00](docs/adr/00-license.md)
-for the contribution policy and [LICENSE](LICENSE) for the binding terms.
+Contributions are inbound/outbound **MPL-2.0**, preserving applicable third-party terms. There is
+no CLA, private relicensing grant or required `Signed-off-by` trailer. [ADR 00](docs/adr/00-license.md)
+owns the policy; [LICENSE](LICENSE) supplies the binding terms.

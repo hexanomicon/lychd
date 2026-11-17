@@ -55,7 +55,7 @@ automatic SAQ retries.
 A hardware wait keeps this Ghoul resident: `AWAITING_HARDWARE` returns in the same hop and cannot
 survive restart. A consent or delegated wait commits checkpoint and exact owner before entering
 `AWAITING_CONSENT` or `AWAITING_DELEGATE`. One later resume admission creates the next pending
-delivery in the same transaction; publication may follow. [Stasis and return](../extensions/weaver/stasis-and-return.md)
+delivery in the same transaction; publication may follow. [Stasis and return](../aspects/weaver/stasis-and-return.md)
 explains those thresholds.
 
 For worker-owned `DONE` or `FAILED` settlement, the sequence is:

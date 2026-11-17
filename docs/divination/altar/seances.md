@@ -39,6 +39,11 @@ beyond closing or reloading the tab. It is not a saved Archive note. No automati
 inference, memory intake, or training follows from selecting words, adding a note, or opening
 another instrument.
 
+**Memory** opens the same [shared panel](memory.md) available in Bridge. Its Working material
+section collects these quotations across séances; its Public notes and Recall sections expose
+the separately governed Archive controls. Opening it leaves the live Bridge's conversation
+unchanged. Private quotations are never prefilled into public-note intake.
+
 The collection holds at most 32 selections and 128,000 quotation-and-note characters across
 séances. A larger selection or note is refused without silently shortening it. Closing or
 reloading warns while material remains in the document.
@@ -68,4 +73,4 @@ the conversation and point back to exact turns. The map can open beside the chat
 area. The séance list and conversation can fold independently while the selected conversation and
 draft stay in place. **Open in Atlas** would widen the view around those same identities. A Circle
 would focus one Invocation within that scope. The retained transcript and document-local
-working-material collection are the current tools.
+working-material collection are the current tools. The scoped map and durable curation are future work.

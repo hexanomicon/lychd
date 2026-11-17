@@ -136,6 +136,10 @@ For each proposed handoff, retain the exact payload, attempt identity, receiving
 separate outcome. The dossier references original artifacts so a reader can return to the
 evidence; it does not become their byte-custody owner.
 
+An operator may revisit a dossier that preserves conflicting attributed sources and their
+interpretations even when no downstream proposal is made. That useful result needs no receiving
+admission; any handoff actually attempted still needs its own accounted disposition.
+
 Completion means the admitted scope was processed and every proposed handoff has an accounted
 disposition. It does not require every proposal to be accepted. Partial work identifies unfinished
 sources or proposals; refusal names the blocker; cancellation stops new work. An unknown receiving

@@ -27,12 +27,12 @@ icon: material/language-html5
   preserve exact session, Run, consent, Project, and focused-application navigation.
 - Generated UI uses closed descriptors. Model and extension content cannot supply HTML,
   JavaScript, Svelte, or imports.
-- Circle focuses one admitted Invocation within Bridge. Its current form is the per-turn Run strip.
+- A Circle focuses one admitted Invocation within a séance. Its current form is the per-turn Run strip.
 - Native CSS includes keyboard access, visible focus, non-colour cues, reduced motion, named
   regions, and visible unknown/error states.
-- The Altar ships one canonical built-in appearance, **LychD Dark**. Its semantic colour boundary
-  must remain closed enough for a future validated operator palette override without promising a
-  second built-in theme, arbitrary CSS, or extension-owned UI.
+- The Altar ships one canonical built-in appearance, **LychD Dark**, with a finite browser-local
+  decorative accent preference. Its semantic colour boundary remains closed; this preference
+  supplies no arbitrary CSS, second complete theme, or extension-owned UI.
 - The Altar keeps a replaceable localization boundary for interface copy, accessibility labels,
   pluralization, locale-sensitive formatting, and text direction. Interface locale never rewrites
   Intent, model output, artifacts, or evidence.
@@ -69,9 +69,9 @@ owns delivery.
 
 | Instrument | Browser contract | Current limit |
 | --- | --- | --- |
-| Bridge | One mounted conversation with session selection, single-active-Run text admission, reconstruction, semantic stream, consent, closed fragments, and focused investigations and public notes. Séances adds retained inspection and explicit continuation. | Finite dictation requires configuration. Live reconstruction and tokens are process-local. Retained reads use snapshots, and selections last for the open browser document. |
+| Bridge | One mounted conversation with session selection, single-active-Run text admission, reconstruction, semantic stream, consent, closed fragments, and focused investigations and public notes. Séances adds retained inspection and explicit continuation. | Finite dictation requires configuration. Live reconstruction and tokens are process-local. Retained reads use snapshots, and working material stays in the open browser document. |
 | Atlas | Retained knowledge and provenance, with Canvas as the visual authoring surface | Project catalogue and retained records with one primary board per Project. The shared memory map is a design target. |
-| Loom | Exact Scroll and Pattern revision, with its declared workflow, Context policy and Evaluation | The fixed registry reader shows supplied stations and permissions. Nested expansion and full Context policy and Evaluation views are design targets. |
+| Loom | Exact Scroll and Pattern revision, with its declared workflow, Context policy and Evaluation | The registry reader shows supplied stations and permissions. Evaluation supports retrospective document-local manual review. Nested expansion and a complete Context-policy projection are design targets. |
 | Nexus | Timestamped capability observations, nonbinding plan preview, typed request, and ticket stream | Observations and tickets are process-local and lack complete restart recovery. |
 | Orb | Paged Run catalogue, parallel graph field, and bounded selected-Run evidence feeds | Capture labels and gaps remain visible. Complete traces, nested subworkflow identity, and annotation are future work. |
 | Applications | Bounded disclosure for other admitted applications | Each application keeps its existing admission and operation contracts. |
@@ -96,17 +96,15 @@ navigation and does not recur on stream refresh. An event return preserves the o
 and selected record. A stale or unavailable selection is reported, never silently replaced with
 another Run.
 
-[Circle](../divination/altar/circle.md) is likewise not a separate instrument or route in the present
-contract. One Bridge séance may contain many Invocation/Run projections; a future Circle focus may
-compose authorized Loom, Nexus, and Orb lenses around exactly one of them without importing their
-authority into browser state. The current run strip is only its delivered seed.
+One Bridge séance may contain many Invocations. A future [Circle](../divination/altar/circle.md)
+focus may compose authorized Loom, Nexus, and Orb lenses around exactly one of them while each
+lens retains its own authority. The per-turn Run strip is the delivered presentation.
 
 ### Creation investigation within Bridge
 
 The existing `/bridge` route may focus the protected public-source Creation investigation through
-an explicit `investigation` query: `new` opens intake; a case UUID selects retained state. This is
-Bridge admission and a Composition-owned reply, not a sixth instrument or ordinary chat turn.
-Creation creates its own admission and Session. Orb keeps the exact returned Run's retained
+an explicit `investigation` query. Use `new` for intake or a case UUID for retained state.
+Creation has its own admission and Session and owns the reply. Orb keeps the exact returned Run's retained
 evidence; Atlas next steps remain recorded text, never queued admission. The global Bridge link
 continues to return to the last explicit ordinary session without this focus. Investigation
 navigation must preserve ordinary session drafts, unresolved offerings and consent state.
@@ -323,6 +321,53 @@ A compact dark-wood altar mark with two separate legs, purple cloth and small fr
 candles opens About; a permanent product wordmark is unnecessary in the masthead. About retains
 the LychD identity, version, source and licence provenance. The fixed natural-colour mark is
 decorative identity, never a connection or activity indicator.
+
+#### Shared Memory panel
+
+One shell-owned **Memory** panel opens from Bridge or Séances without changing the live
+conversation or sending a request to a model. It distinguishes **Working material · this tab**,
+**Public notes**, and **Recall**. Working material reuses the bounded quotation collection;
+opening it makes no Archive request. Public notes and Recall reuse their existing typed controllers,
+explicit intake and promotion, current-access fences, and unknown-outcome recovery. They do not
+share a generic memory lifecycle. Promoted records are eligible under policy, not guaranteed inputs
+to a later Context. Recall selection does not prove consumption or provider transmission.
+
+The shell mounts each section lazily and preserves initialized managers while the panel is closed
+or another instrument is selected. Closing presentation does not replay or cancel a write. Legacy
+`/bridge?notes=...` links remain compatibility entries to the same public-note surface; no second
+manager is created. Section changes preserve drafts or require the existing explicit discard
+boundary. Source text, private quotations and queries do not enter browser storage. No action
+prefills public-note intake from a private conversation or admits conversation memory implicitly.
+
+The panel is a named modal drawer with keyboard dismissal, background inertness and opener
+return. Narrow layouts use one modal boundary at a time, preserving the mounted Bridge and its
+state while suspending its modal presentation. Current refusals clear protected projections through their owning controllers;
+late responses cannot restore them.
+
+#### Manual evaluation in Loom
+
+An exact Loom revision offers **Score** and **Evaluation** views. The initial evaluation task is
+**Manual output review**, explicitly retrospective and limited to retained output; it runs no
+new trial. The reader declares a bounded goal and criteria, freezes that review contract, chooses
+an exact Run, and records criterion verdicts, reasons and evidence limitations. Criteria written
+after a historical execution are never described as predeclared trial criteria. Run status,
+review completion and quality verdict remain separate, with `UNKNOWN` as the initial verdict.
+
+The full pinned Run manifest and inspection binding must match the displayed score. Output comes
+from an authorized exact Session snapshot and a supplied agent turn matching that Run, not a
+process-local Orb content projection. Missing, ambiguous, mismatched or refused reads stay
+unavailable; no latest-answer fallback or invented durable turn identity is permitted. Frozen
+source records bind exact quoted bytes, their digest, supplied Session/Run references and timestamp.
+
+The browser owns only a bounded document-local review draft and immutable completed review
+records, with visible export/discard actions and a document-exit warning. Reviewer identity is
+self-declared, not authenticated attribution. A completed record freezes criteria, source,
+declared reviewer, verdicts, rationale, limitations and timestamps. Regrading creates a new review
+revision with the same frozen criteria and output; changed criteria or reviewer require a new
+review and contract. JSON and readable Markdown export preserve those distinctions. Nothing is saved
+to Vessel or localStorage, and no browser record is presented as a durable Drift Outcome, measured
+workflow improvement, promotion decision or evidence that another revision reproduced a trajectory.
+[Drift](34-drift.md) continues to own the general trial and independent judgment contracts.
 
 #### Séance inspection and working material
 
@@ -598,13 +643,17 @@ A citation preserves its source and basis across those views.
 
 Canvas authors boards within Atlas. A board may display a typed relationship or offer a
 separately admitted action to author one. A relationship requires explicit attribution and
-source references. Layout and ink remain board content.
+source references. Layout and ink remain board content. Saving or curating memory needs
+explicit admission and attributable provenance.
 
 [Archive](27-memory.md) owns admission, lifecycle, and Recall. [Context](21-context.md) owns
 selection and assembly for an Invocation. Opening a map or following a citation supplies
 navigation only. Cross-instrument links use identities and evidence supplied by their owners.
 Loom projects the declared score. Nexus projects capability readiness and physical transitions.
 Orb projects observed evidence scoped to actual Runs, with its capture limits visible.
+[Memory](../divination/altar/memory.md) documents the current public-source profile and
+document-local working material. The shared ontology, séance map, and generalized curation
+remain design work.
 
 ### Independent Concerns, decomposition, and addressing
 
@@ -1009,7 +1058,7 @@ reconnect, delete, rejection, and resync preserve the authoritative semantic twi
 
 Loom's future workflow projection expands nested declared subgraphs so every declared agent can
 be inspected. The reader may open one group or expand the whole declared graph. Context policy
-and [Evaluation](34-evaluation.md) attach to the exact Pattern revision. Archive governs record
+and [Evaluation](34-drift.md) attach to the exact Pattern revision. Archive governs record
 eligibility, and Context governs assembly for each Invocation. Execution evidence remains
 attached to its actual Run and opens in Orb.
 
@@ -1076,11 +1125,22 @@ same contract; it is not a route to rewriting the browser shell.
 ### Canonical appearance and bounded palette configuration
 
 The canonical Altar has one complete built-in appearance: **LychD Dark**. Dark is the product
-default and the only appearance Core currently designs, releases, and supports. The document and
+default and the supported surface, text, focus and status palette. The document and
 native controls use a dark colour scheme; Core does not follow `prefers-color-scheme`, expose a
 light/system selector, or create presentation state merely to imply choice. “Readable by day and
 night” remains an acceptance target requiring contrast plus bright- and dim-environment browser
 receipts, not a conclusion inferred from dark tokens.
+
+The shell's **Appearance** control offers three reviewed decorative accent IDs: **Violet**
+(default), **Iris**, and **Neutral**, plus an explicit reset. Only decorative identity treatment
+changes; text, surfaces, controls, focus, readiness, activity, warning and refusal keep their
+canonical semantic roles. Fixed brand artwork and authored Canvas ink retain their colours.
+The typed preference is local to this browser: a versioned allowlisted ID in localStorage, then
+the canonical default when absent, invalid or unavailable. It is read after mount, never from
+operator settings or an extension; explicit selection and reset take precedence in the current
+document even when storage is unavailable. Cross-tab updates accept only that same closed grammar.
+No colour strings, selectors, assets, opacity, layout or executable content can enter it. This is
+an accent preference rather than a complete theme editor or a light/system selector.
 
 The styling boundary nevertheless stays configurable in one deliberately narrow direction. A
 future operator-local palette may provide a partial map over an allowlisted set of semantic colour
@@ -1108,8 +1168,8 @@ runtime CSS plug-in surface.
 
 Palette choice is local presentation configuration. It never changes a Run, Pattern, event,
 artifact, consent, authority, status, or retained evidence, and it cannot remove their textual and
-structural cues. The current implementation has only the fixed LychD Dark palette and no operator
-override source; [State](../state-of-the-work.md#altar-and-observability) owns that boundary.
+structural cues. The supported decorative preference does not establish the future operator
+override source; [State](../state-of-the-work.md#altar-and-observability) owns delivery.
 
 ### Interface locale and content language
 

@@ -6,8 +6,8 @@ shapes:
 - `vllm/glm.toml`: an earlier static vLLM configuration for one model.
 - `llamacpp/router.toml`: a router-mode configuration backed by an INI model catalogue.
 
-Begin with the current [Rune contract](../../../../docs/sepulcher/animator/soulstone/rune.md) and
-its [engine recipe](../../../../docs/sepulcher/animator/soulstone/engines/index.md). The older vLLM
+Begin with the current [Rune contract](../../../../docs/sepulcher/extensions/animators/soulstone/rune.md) and
+its [engine recipe](../../../../docs/sepulcher/extensions/animators/soulstone/engines/index.md). The older vLLM
 framework fields must be expressed through `exec`; model files, runtime support, image, and GPU
 devices need explicit declarations.
 

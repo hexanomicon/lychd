@@ -5,7 +5,7 @@ support files. LychD does not load this tree automatically.
 
 Some Soulstone fragments retain an earlier configuration shape: they assume a default model
 mount, place presets inside Codex, or express vLLM flags as top-level TOML fields. Adapt them to the
-current [Rune contract](../docs/sepulcher/animator/soulstone/rune.md) before use. For a first host
+current [Rune contract](../docs/sepulcher/extensions/animators/soulstone/rune.md) before use. For a first host
 and model, follow [Summoning](../docs/summoning.md), which supplies the current declaration and
 acceptance procedure.
 
